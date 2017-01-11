@@ -1,77 +1,88 @@
 Modeling In H2O
 ===============
 
-Supervised
-----------
+:mod:`H2OEstimator`
+-------------------
+.. autoclass:: h2o.estimators.estimator_base.H2OEstimator
+    :members:
+    :show-inheritance:
 
-:mod:`H2ODeepLearningEstimator`
--------------------------------
-.. autoclass:: h2o.estimators.deeplearning.H2ODeepLearningEstimator
-  :members:
-  :show-inheritance:
 
-:mod:`H2OGeneralizedLinearEstimator`
-------------------------------------
-.. autoclass:: h2o.estimators.glm.H2OGeneralizedLinearEstimator
-  :members:
-  :show-inheritance:
-
-:mod:`H2OGradientBoostingEstimator`
------------------------------------
-.. autoclass:: h2o.estimators.gbm.H2OGradientBoostingEstimator
-  :members:
-  :show-inheritance:
-
-:mod:`H2ONaiveBayesEstimator`
+:mod:`H2OAggregatorEstimator`
 -----------------------------
-.. autoclass:: h2o.estimators.naive_bayes.H2ONaiveBayesEstimator
-  :members:
-  :show-inheritance:
-
-:mod:`H2ORandomForestEstimator`
--------------------------------
-.. autoclass:: h2o.estimators.random_forest.H2ORandomForestEstimator
-  :members:
-  :show-inheritance:
-
-Unsupervised
-------------
+.. autoclass:: h2o.estimators.aggregator.H2OAggregatorEstimator
+    :show-inheritance:
+    :members:
 
 :mod:`H2OAutoEncoderEstimator`
 ------------------------------
 .. autoclass:: h2o.estimators.deeplearning.H2OAutoEncoderEstimator
-  :members:
-  :show-inheritance:
+    :show-inheritance:
+    :members:
+
+:mod:`H2ODeepLearningEstimator`
+-------------------------------
+.. autoclass:: h2o.estimators.deeplearning.H2ODeepLearningEstimator
+    :show-inheritance:
+    :members:
+
+:mod:`H2ODeepWaterEstimator`
+----------------------------
+.. autoclass:: h2o.estimators.deepwater.H2ODeepWaterEstimator
+    :show-inheritance:
+    :members:
+
+:mod:`H2OGradientBoostingEstimator`
+-----------------------------------
+.. autoclass:: h2o.estimators.gbm.H2OGradientBoostingEstimator
+    :show-inheritance:
+    :members:
+
+:mod:`H2OGeneralizedLinearEstimator`
+------------------------------------
+.. autoclass:: h2o.estimators.glm.H2OGeneralizedLinearEstimator
+    :show-inheritance:
+    :members:
 
 :mod:`H2OGeneralizedLowRankEstimator`
 -------------------------------------
 .. autoclass:: h2o.estimators.glrm.H2OGeneralizedLowRankEstimator
-  :members:
-  :show-inheritance:
+    :show-inheritance:
+    :members:
 
 :mod:`H2OKMeansEstimator`
 -------------------------
 .. autoclass:: h2o.estimators.kmeans.H2OKMeansEstimator
-  :members:
-  :show-inheritance:
+    :show-inheritance:
+    :members:
+
+:mod:`H2ONaiveBayesEstimator`
+-----------------------------
+.. autoclass:: h2o.estimators.naive_bayes.H2ONaiveBayesEstimator
+    :show-inheritance:
+    :members:
 
 :mod:`H2OPrincipalComponentAnalysisEstimator`
-----------------------------------------------
+---------------------------------------------
 .. autoclass:: h2o.estimators.pca.H2OPrincipalComponentAnalysisEstimator
- :members:
- :show-inheritance:
+    :show-inheritance:
+    :members:
 
-Misc
-----
+:mod:`H2ORandomForestEstimator`
+-------------------------------
+.. autoclass:: h2o.estimators.random_forest.H2ORandomForestEstimator
+    :show-inheritance:
+    :members:
 
-:mod:`H2OEstimator`
--------------------
-.. autoclass:: h2o.estimators.estimator_base.H2OEstimator
-  :members:
-  :show-inheritance:
+:mod:`H2OSingularValueDecompositionEstimator`
+---------------------------------------------
+.. autoclass:: h2o.estimators.svd.H2OSingularValueDecompositionEstimator
+    :show-inheritance:
+    :members:
 
-:mod:`H2OGridSearch`
------------------------------
-.. autoclass:: h2o.grid.grid_search.H2OGridSearch
-  :members:
-  :show-inheritance:
+:mod:`H2OWord2vecEstimator`
+---------------------------
+.. autoclass:: h2o.estimators.word2vec.H2OWord2vecEstimator
+    :show-inheritance:
+    :members:
+

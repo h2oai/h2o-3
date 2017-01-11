@@ -403,6 +403,29 @@ def gen_init(modules):
     yield bi.wrap(", ".join('"%s"' % clz for _, clz in sorted(modules)), indent="    ")
     yield ")"
 
+
+def gen_models_docs(modules):
+    yield "Modeling In H2O"
+    yield "==============="
+    yield ""
+    yield ":mod:`H2OEstimator`"
+    yield "-------------------"
+    yield ".. autoclass:: h2o.estimators.estimator_base.H2OEstimator"
+    yield "    :members:"
+    yield "    :show-inheritance:"
+    yield ""
+    yield ""
+    for module, clz in sorted(modules):
+        if clz == "H2OEstimator": continue
+        yield ":mod:`%s`" % clz
+        yield "-" * (7 + len(clz))
+        yield ".. autoclass:: h2o.estimators.%s.%s" % (module, clz)
+        yield "    :show-inheritance:"
+        yield "    :members:"
+        yield ""
+
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 #   MAIN:
 # ----------------------------------------------------------------------------------------------------------------------
@@ -420,6 +443,7 @@ def main():
         modules.append((module, algo_to_classname(name)))
 
     bi.write_to_file("__init__.py", gen_init(modules))
+    bi.write_to_file("../../docs/modeling.rst", gen_models_docs(modules))
 
     type_adapter1.vprint_translation_map()
 
