@@ -15,13 +15,12 @@ tokenize <- function(sentences, stop.words = STOP_WORDS) {
     tokenized.lower <- h2o.tolower(tokenized)
     # remove short words (less than 2 characters)
     tokenized.lenghts <- h2o.nchar(tokenized.lower)
-    tokenized.filtered <- tokenized.lower[tokenized.lenghts >= 2 || tokenized.lenghts == NaN,]
+    tokenized.filtered <- tokenized.lower[is.na(tokenized.lenghts) || tokenized.lenghts >= 2,]
     # remove words that contain numbers
     tokenized.words <- tokenized.filtered[h2o.sub(tokenized.filtered, pattern = "[0-9]", replacement = "") == tokenized.filtered,]
 
     # remove stop words
-    # FIXME: we need to convert Strings to Factors because matching only works on Factors
-    tokenized.words[is.na(tokenized.words) || (! (as.factor(tokenized.words) %in% STOP_WORDS)),]
+    tokenized.words[is.na(tokenized.words) || (! tokenized.words %in% STOP_WORDS),]
 }
 
 aggregate2vecs <- function(word.vectors, words) {
