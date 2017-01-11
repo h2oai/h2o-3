@@ -1,5 +1,6 @@
 package water.udf.specialized;
 
+import water.fvec.CStrChunk;
 import water.fvec.Chunk;
 import water.fvec.Vec;
 import water.parser.BufferedString;
@@ -35,7 +36,11 @@ public class Strings extends DataColumns.BaseFactory<String> {
         throw new IllegalArgumentException("position was " + Long.toHexString(position) + "; " + iae.getMessage(), iae);
       } catch (ArrayIndexOutOfBoundsException aie) {
         aie.printStackTrace();
-        throw new IllegalArgumentException("Position was " + Long.toHexString(position) + ", i=" + i + ", got " + aie.getMessage() + "; details: " + this, aie);
+        CStrChunk cs = (CStrChunk) c;
+        int idx = cs.idx(i);
+        int offset = cs.intAt(idx);
+        int valstart = cs.valtart();
+        throw new IllegalArgumentException("Position was " + Long.toHexString(position) + ", i=" + i + ", got " + aie.getMessage() + "; details: " + this + "; idx=" + idx + ", offset=" + offset + ", valstart=" + valstart, aie);
       }
     }
 

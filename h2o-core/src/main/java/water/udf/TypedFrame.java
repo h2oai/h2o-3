@@ -78,7 +78,8 @@ public class TypedFrame<X> extends Frame {
       }
     };
     MRTask mrTask = task.doAll(vec0);
-    return mrTask._fr.vecs()[0];
+    final Vec vec = mrTask._fr.vecs()[0];
+    return vec;
   }
 
   protected DataColumn<X> newColumn(Vec vec) throws IOException {
