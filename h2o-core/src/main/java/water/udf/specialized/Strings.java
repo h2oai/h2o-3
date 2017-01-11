@@ -40,7 +40,7 @@ public class Strings extends DataColumns.BaseFactory<String> {
         int idx = cs.idx(i);
         int offset = cs.intAt(idx);
         int valstart = cs.valtart();
-        throw new IllegalArgumentException("Position was " + Long.toHexString(position) + ", i=" + i + ", got " + aie.getMessage() + "; details: " + this + "; idx=" + idx + ", offset=" + offset + ", valstart=" + valstart, aie);
+        throw new IllegalArgumentException("AIOOBE: Position was " + Long.toHexString(position) + ", i=" + i + ", got " + aie.getMessage() + "; details: " + this + "; idx=" + idx + ", offset=" + offset + ", valstart=" + valstart, aie);
       }
     }
 
