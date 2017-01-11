@@ -35,7 +35,7 @@ public class Strings extends DataColumns.BaseFactory<String> {
         throw new IllegalArgumentException("position was " + Long.toHexString(position) + "; " + iae.getMessage(), iae);
       } catch (ArrayIndexOutOfBoundsException aie) {
         aie.printStackTrace();
-        throw new IllegalArgumentException("position was " + Long.toHexString(position) + ", i=" + i + ", got " + aie.getMessage() + "; details: " + this, aie);
+        throw new IllegalArgumentException("Position was " + Long.toHexString(position) + ", i=" + i + ", got " + aie.getMessage() + "; details: " + this, aie);
       }
     }
 
