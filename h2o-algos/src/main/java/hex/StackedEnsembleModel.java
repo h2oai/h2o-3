@@ -3,6 +3,7 @@ package hex;
 import hex.ensemble.StackedEnsemble;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMModel;
+import hex.tree.drf.DRFModel;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
@@ -173,6 +174,15 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
   }
 
   private DistributionFamily distributionFamily(Model aModel) {
+    // TODO: hack alert: In DRF, _parms._distribution is always set to multinomial.  Yay.
+    if (aModel instanceof DRFModel)
+      if (aModel._output.isBinomialClassifier())
+        return DistributionFamily.bernoulli;
+      else if (aModel._output.isClassifier())
+        throw new H2OIllegalArgumentException("Don't know how to set the distribution for a multinomial Random Forest classifier.");
+      else
+        return DistributionFamily.gaussian;
+
     try {
       Field familyField = ReflectionUtils.findNamedField(aModel._parms, "_family");
       Field distributionField = (familyField != null ? null : ReflectionUtils.findNamedField(aModel, "_dist"));
@@ -189,15 +199,30 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         catch (IllegalArgumentException e) {
           throw new H2OIllegalArgumentException("Don't know how to find the right DistributionFamily for Family: " + thisFamily);
         }
-      } else if (null != distributionField) {
-        Distribution distribution = ((Distribution)distributionField.get(aModel));
-        if (null != distribution)
-          return distribution.distribution;
-        else
-          return aModel._parms._distribution; // TODO: could be AUTO. . .
-      } else {
-        throw new H2OIllegalArgumentException("Don't know how to stack models that have neither a distribution hyperparameter nor a family hyperparameter.");
       }
+
+      if (null != distributionField) {
+        Distribution distribution = ((Distribution)distributionField.get(aModel));
+        DistributionFamily distributionFamily;
+        if (null != distribution)
+          distributionFamily = distribution.distribution;
+        else
+          distributionFamily = aModel._parms._distribution;
+
+        // NOTE: If the algo does smart guessing of the distribution family we need to duplicate the logic here.
+        if (distributionFamily == DistributionFamily.AUTO) {
+          if (aModel._output.isBinomialClassifier())
+            distributionFamily = DistributionFamily.bernoulli;
+          else if (aModel._output.isClassifier())
+            throw new H2OIllegalArgumentException("Don't know how to determine the distribution for a multinomial classifier.");
+          else
+            distributionFamily = DistributionFamily.gaussian;
+        } // DistributionFamily.AUTO
+
+        return distributionFamily;
+      }
+
+      throw new H2OIllegalArgumentException("Don't know how to stack models that have neither a distribution hyperparameter nor a family hyperparameter.");
     }
     catch (Exception e) {
       throw new H2OIllegalArgumentException(e.toString(), e.toString());
@@ -260,9 +285,11 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
         // In GLM, we get _family instead of _distribution.
         // Further, we have Family.binomial instead of DistributionFamily.bernoulli.
-        DistributionFamily thisDistribution = distributionFamily(aModel);
-        if (_parms._distribution != thisDistribution)
-          throw new H2OIllegalArgumentException("Base models are inconsistent; they use different distributions: " + _parms._distribution + " and: " + thisDistribution);
+        // We also handle DistributionFamily.AUTO in distributionFamily()
+        //
+        // Hack alert: DRF only does Bernoulli and Gaussian, so only compare _domains.length above.
+        if (! (aModel instanceof DRFModel) && distributionFamily(aModel) != distributionFamily(this))
+          throw new H2OIllegalArgumentException("Base models are inconsistent; they use different distributions: " + distributionFamily(this) + " and: " + distributionFamily(aModel));
 
         // TODO: If we're set to DistributionFamily.AUTO then GLM might auto-conform the response column
         // giving us inconsistencies.
