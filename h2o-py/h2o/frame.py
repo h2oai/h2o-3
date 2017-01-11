@@ -1082,9 +1082,8 @@ class H2OFrame(object):
 
         Rows are assigned a fold according to the current row number modulo ``n_folds``.
 
-        :params int n_folds: An integer specifying the number of validation sets to split the training data into.
-
-        :returns: A single column H2OFrame with the fold assignments.
+        :param int n_folds: An integer specifying the number of validation sets to split the training data into.
+        :returns: A single-column H2OFrame with the fold assignments.
         """
         return H2OFrame._expr(expr=ExprNode("modulo_kfold_column", self, n_folds))._frame()  # want this to be eager!
 
@@ -1567,6 +1566,7 @@ class H2OFrame(object):
             fr._ex._cache.types = None
         return fr
 
+
     def rbind(self, data):
         """
         Append data to this frame row-wise.
@@ -1603,7 +1603,7 @@ class H2OFrame(object):
         :param List[str] destination_frames: The names of the split frames.
         :param int seed: seed for the random number generator
 
-        :returns: A list of ``H2OFrame``s
+        :returns: A list of H2OFrames
         """
         assert_is_type(ratios, [numeric], None)
         assert_is_type(destination_frames, [str], None)
@@ -2545,11 +2545,11 @@ class H2OFrame(object):
     @staticmethod
     def mktime(year=1970, month=0, day=0, hour=0, minute=0, second=0, msec=0):
         """
-        Deprecated, use `.moment()` instead.
+        Deprecated, use :func:`moment` instead.
 
         This function was left for backward-compatibility purposes only. It is
         not very stable, and counterintuitively uses 0-based months and days,
-        so "January 4th, 2001" should be entered as `mktime(2001, 0, 3)`.
+        so "January 4th, 2001" should be entered as ``mktime(2001, 0, 3)``.
         """
         return H2OFrame._expr(ExprNode("mktime", year, month, day, hour, minute, second, msec))
 

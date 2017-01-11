@@ -630,19 +630,19 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @property
     def Lambda(self):
-        """[DEPRECATED] Use self.lambda_ instead"""
+        """DEPRECATED. Use ``self.lambda_`` instead"""
         return self._parms["lambda"] if "lambda" in self._parms else None
 
     @Lambda.setter
     def lambda_(self, value):
-        """[DEPRECATED] Use self.lambda_ instead"""
         self._parms["lambda"] = value
 
     @staticmethod
     def getGLMRegularizationPath(model):
         """
         Extract full regularization path explored during lambda search from glm model.
-        @param model - source lambda search model
+
+        :param model: source lambda search model
         """
         x = h2o.api("GET /3/GetGLMRegPath", data={"model": model._model_json["model_id"]["name"]})
         ns = x.pop("coefficient_names")
@@ -660,10 +660,12 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def makeGLMModel(model, coefs, threshold=.5):
         """
         Create a custom GLM model using the given coefficients.
+
         Needs to be passed source model trained on the dataset to extract the dataset information from.
-          @param model - source model, used for extracting dataset information
-          @param coefs - dictionary containing model coefficients
-          @param threshold - (optional, only for binomial) decision threshold used for classification
+
+        :param model: source model, used for extracting dataset information
+        :param coefs: dictionary containing model coefficients
+        :param threshold: (optional, only for binomial) decision threshold used for classification
         """
         model_json = h2o.api(
             "POST /3/MakeGLMModel",
