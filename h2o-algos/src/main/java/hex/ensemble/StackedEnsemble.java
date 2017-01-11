@@ -12,6 +12,7 @@ import water.Key;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.Log;
 
 /**
@@ -44,16 +45,21 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
   @Override protected StackedEnsembleDriver trainModelImpl() { return _driver = new StackedEnsembleDriver(); }
 
   public static void addModelPredictionsToLevelOneFrame(Model aModel, Frame aModelsPredictions, Frame levelOneFrame) {
-    if (aModel._output.isBinomialClassifier())
-      levelOneFrame.add(aModel._key.toString(), aModelsPredictions.vec("YES"));
-    else if (aModel._output.isClassifier())
+    if (aModel._output.isBinomialClassifier()) {
+      // GLM uses a different column name than the other algos, yay!
+      Vec preds = aModelsPredictions.vec("YES");
+      if (null == preds) preds = aModelsPredictions.vec("predict");
+
+      levelOneFrame.add(aModel._key.toString(), preds);
+    } else if (aModel._output.isClassifier()) {
       throw new H2OIllegalArgumentException("Don't yet know how to stack multinomial classifiers: " + aModel._key);
-    else if (aModel._output.isAutoencoder())
+    } else if (aModel._output.isAutoencoder()) {
       throw new H2OIllegalArgumentException("Don't yet know how to stack autoencoders: " + aModel._key);
-    else if (!aModel._output.isSupervised())
+    } else if (!aModel._output.isSupervised()) {
       throw new H2OIllegalArgumentException("Don't yet know how to stack unsupervised models: " + aModel._key);
-    else
+    } else {
       levelOneFrame.add(aModel._key.toString(), aModelsPredictions.vec("predict"));
+    }
   }
 
   private class StackedEnsembleDriver extends Driver {
@@ -90,6 +96,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       init(true);
       if (error_count() > 0)
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(StackedEnsemble.this);
+
       _model = new StackedEnsembleModel(dest(), _parms, new StackedEnsembleModel.StackedEnsembleOutput(StackedEnsemble.this));
       _model.delete_and_lock(_job); // and clear & write-lock it (smashing any prior)
 
