@@ -75,7 +75,7 @@
 #' @param clip_gradient Clip gradients once their absolute value is larger than this value. Defaults to 10.
 #' @param network Network architecture. Must be one of: "auto", "user", "lenet", "alexnet", "vgg", "googlenet", "inception_bn",
 #'        "resnet". Defaults to auto.
-#' @param backend Deep Learning Backend. Must be one of: "auto", "mxnet", "caffe", "tensorflow". Defaults to mxnet.
+#' @param backend Deep Learning Backend. Must be one of: "mxnet", "caffe", "tensorflow". Defaults to mxnet.
 #' @param image_shape Width and height of image. Defaults to [0, 0].
 #' @param channels Number of (color) channels. Defaults to 3.
 #' @param sparse \code{Logical}. Sparse data handling (more efficient for data with lots of 0 values). Defaults to FALSE.
@@ -141,7 +141,7 @@ h2o.deepwater <- function(x, y, training_frame,
                           mini_batch_size = 32,
                           clip_gradient = 10,
                           network = c("auto", "user", "lenet", "alexnet", "vgg", "googlenet", "inception_bn", "resnet"),
-                          backend = c("auto", "mxnet", "caffe", "tensorflow"),
+                          backend = c("mxnet", "caffe", "tensorflow"),
                           image_shape = c(0, 0),
                           channels = 3,
                           sparse = FALSE,

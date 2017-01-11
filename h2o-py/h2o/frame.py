@@ -311,10 +311,10 @@ class H2OFrame(object):
 
 
 
-    def _import_parse(self, path, destination_frame, header, separator, column_names, column_types, na_strings):
+    def _import_parse(self, path, pattern, destination_frame, header, separator, column_names, column_types, na_strings):
         if is_type(path, str) and "://" not in path:
             path = os.path.abspath(path)
-        rawkey = h2o.lazy_import(path)
+        rawkey = h2o.lazy_import(path, pattern)
         self._parse(rawkey, destination_frame, header, separator, column_names, column_types, na_strings)
         return self
 
@@ -1892,14 +1892,20 @@ class H2OFrame(object):
         """
         Compute the frame's sum by-column (or by-row).
 
-        @param skipna: if True (default), then NAs are ignored during the computation. Otherwise presence
+        Parameters
+        ----------
+        skipna : boolean
+            If True (default), then NAs are ignored during the computation. Otherwise presence
             of NAs renders the entire result NA.
-        @param axis: direction of sum computation. If 0 (default), then sum is computed columnwise, and the result
+        axis : int
+            Direction of sum computation. If 0 (default), then sum is computed columnwise, and the result
             is a frame with 1 row and number of columns as in the original frame. If 1, then sum is computed rowwise
             and the result is a frame with 1 column (called "sum"), and number of rows equal to the number of rows
             in the original frame.
 
-        @returns H2OFrame: the results frame.
+        Returns
+        -------
+        H2OFrame: the results frame.
         """
         assert_is_type(skipna, bool)
         assert_is_type(axis, 0, 1)
@@ -1926,14 +1932,20 @@ class H2OFrame(object):
         """
         Compute the frame's means by-column (or by-row).
 
-        @param skipna: if True (default), then NAs are ignored during the computation. Otherwise presence
+        Parameters
+        ----------
+        skipna : boolean
+            If True (default), then NAs are ignored during the computation. Otherwise presence
             of NAs renders the entire result NA.
-        @param axis: direction of mean computation. If 0 (default), then mean is computed columnwise, and the result
+        axis : int
+            Direction of mean computation. If 0 (default), then mean is computed columnwise, and the result
             is a frame with 1 row and number of columns as in the original frame. If 1, then mean is computed rowwise
             and the result is a frame with 1 column (called "mean"), and number of rows equal to the number of rows
             in the original frame.
 
-        @returns H2OFrame: the results frame.
+        Returns
+        -------
+        H2OFrame: the results frame.
         """
         assert_is_type(skipna, bool)
         assert_is_type(axis, 0, 1)

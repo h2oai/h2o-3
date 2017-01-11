@@ -49,7 +49,7 @@ public abstract class Persist {
    */
   abstract public List<String> calcTypeaheadMatches(String filter, int limit);
 
-  abstract public void importFiles(String path, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels);
+  abstract public void importFiles(String path, String pattern, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels);
 
   // The filename can be either byte encoded if it starts with % followed by
   // a number, or is a normal key name with special characters encoded in
