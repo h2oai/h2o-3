@@ -20,7 +20,8 @@ from ..model.autoencoder import H2OAutoEncoderModel
 from ..model.binomial import H2OBinomialModel
 from ..model.clustering import H2OClusteringModel
 from ..model.dim_reduction import H2ODimReductionModel
-from ..model.metrics_base import *  # NOQA
+from ..model.metrics_base import (H2OBinomialModelMetrics, H2OClusteringModelMetrics, H2ORegressionModelMetrics,
+                                  H2OMultinomialModelMetrics, H2OAutoEncoderModelMetrics, H2ODimReductionModelMetrics)
 from ..model.model_base import ModelBase
 from ..model.multinomial import H2OMultinomialModel
 from ..model.regression import H2ORegressionModel
@@ -34,49 +35,32 @@ class EstimatorAttributeError(AttributeError):
 
 class H2OEstimator(ModelBase):
     """
-    H2O Estimators.
+    Base class for H2O Estimators.
 
     H2O Estimators implement the following methods for model construction:
-        * start - Top-level user-facing API for asynchronous model build
-        * join  - Top-level user-facing API for blocking on async model build
-        * train - Top-level user-facing API for model building.
-        * fit - Used by scikit-learn.
 
-    Because H2OEstimator instances are instances of ModelBase, these objects can use the
-    H2O model API.
+        - ``start()`` - Top-level user-facing API for asynchronous model build
+        - ``join()``  - Top-level user-facing API for blocking on async model build
+        - ``train()`` - Top-level user-facing API for model building.
+        - ``fit()`` - Used by scikit-learn.
+
+    Because H2OEstimator instances are instances of ModelBase, these objects can use the H2O model API.
     """
 
     def start(self, x, y=None, training_frame=None, offset_column=None, fold_column=None,
               weights_column=None, validation_frame=None, **params):
         """
-        Train the model asynchronously.
+        Train the model asynchronously (to block for results call :meth:`join`).
 
-        To block for results, call join.
-
-        Parameters
-        ----------
-        x : list
-            A list of column names or indices indicating the predictor columns.
-
-        y : str
-            An index or a column name indicating the response column.
-
-        training_frame : H2OFrame
-            The H2OFrame having the columns indicated by x and y (as well as any
+        :param x: A list of column names or indices indicating the predictor columns.
+        :param y: An index or a column name indicating the response column.
+        :param H2OFrame training_frame: The H2OFrame having the columns indicated by x and y (as well as any
             additional columns specified by fold, offset, and weights).
-
-        offset_column : str, optional
-            The name or index of the column in training_frame that holds the offsets.
-
-        fold_column : str, optional
-            The name or index of the column in training_frame that holds the per-row fold
+        :param offset_column: The name or index of the column in training_frame that holds the offsets.
+        :param fold_column: The name or index of the column in training_frame that holds the per-row fold
             assignments.
-
-        weights_column : str, optional
-            The name or index of the column in training_frame that holds the per-row weights.
-
-        validation_frame : H2OFrame, optional
-            H2OFrame with validation data to be scored on while training.
+        :param weights_column: The name or index of the column in training_frame that holds the per-row weights.
+        :param validation_frame: H2OFrame with validation data to be scored on while training.
         """
         self._future = True
         self.train(x=x,
@@ -87,6 +71,7 @@ class H2OEstimator(ModelBase):
                    weights_column=weights_column,
                    validation_frame=validation_frame,
                    **params)
+
 
     def join(self):
         """Wait until job's completion."""
@@ -103,33 +88,16 @@ class H2OEstimator(ModelBase):
         """
         Train the H2O model.
 
-        Parameters
-        ----------
-        x : list, None
-            A list of column names or indices indicating the predictor columns.
-
-        y :
-            An index or a column name indicating the response column.
-
-        training_frame : H2OFrame
-            The H2OFrame having the columns indicated by x and y (as well as any
+        :param x: A list of column names or indices indicating the predictor columns.
+        :param y: An index or a column name indicating the response column.
+        :param H2OFrame training_frame: The H2OFrame having the columns indicated by x and y (as well as any
             additional columns specified by fold, offset, and weights).
-
-        offset_column : str, optional
-            The name or index of the column in training_frame that holds the offsets.
-
-        fold_column : str, optional
-            The name or index of the column in training_frame that holds the per-row fold
+        :param offset_column: The name or index of the column in training_frame that holds the offsets.
+        :param fold_column: The name or index of the column in training_frame that holds the per-row fold
             assignments.
-
-        weights_column : str, optional
-            The name or index of the column in training_frame that holds the per-row weights.
-
-        validation_frame : H2OFrame, optional
-            H2OFrame with validation data to be scored on while training.
-
-        max_runtime_secs : float
-            Maximum allowed runtime in seconds for model training. Use 0 to disable.
+        :param weights_column: The name or index of the column in training_frame that holds the per-row weights.
+        :param validation_frame: H2OFrame with validation data to be scored on while training.
+        :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
         """
         assert_is_type(training_frame, H2OFrame)
         assert_is_type(validation_frame, None, H2OFrame)
@@ -231,6 +199,7 @@ class H2OEstimator(ModelBase):
         model_json = h2o.api("GET /%d/Models/%s" % (rest_ver, model.dest_key))["models"][0]
         self._resolve_model(model.dest_key, model_json)
 
+
     @staticmethod
     def _keyify_if_h2oframe(item):
         if isinstance(item, H2OFrame):
@@ -239,6 +208,7 @@ class H2OEstimator(ModelBase):
             return [quoted(i) if i is None else quoted(i.frame_id) for i in item]
         else:
             return item
+
 
     def _resolve_model(self, model_id, model_json):
         metrics_class, model_class = H2OEstimator._metrics_class(model_json)
@@ -268,6 +238,7 @@ class H2OEstimator(ModelBase):
         H2OEstimator.mixin(self, model_class)
         self.__dict__.update(m.__dict__.copy())
 
+
     # TODO: replace with a property which is overriden in subclasses
     def _compute_algo(self):
         name = self.__class__.__name__
@@ -282,6 +253,7 @@ class H2OEstimator(ModelBase):
         if name == "H2ORandomForestEstimator": return "drf"
         if name == "H2OPCA": return "pca"
         if name == "H2OSVD": return "svd"
+
 
     @staticmethod
     def mixin(obj, cls):
@@ -298,20 +270,10 @@ class H2OEstimator(ModelBase):
 
         A warning will be issued if a caller other than sklearn attempts to use this method.
 
-        Parameters
-        ----------
-            x : H2OFrame
-                An H2OFrame consisting of the predictor variables.
-
-            y : H2OFrame, optional
-                An H2OFrame consisting of the response variable.
-
-            params : optional
-                Extra arguments.
-
-        Returns
-        -------
-            The current instance of H2OEstimator for method chaining.
+        :param H2OFrame x: An H2OFrame consisting of the predictor variables.
+        :param H2OFrame y: An H2OFrame consisting of the response variable.
+        :param params: Extra arguments.
+        :returns: The current instance of H2OEstimator for method chaining.
         """
         stk = inspect.stack()[1:]
         warn = True
@@ -348,21 +310,17 @@ class H2OEstimator(ModelBase):
             out[key] = value
         return out
 
+
     def set_params(self, **parms):
         """
         Used by sklearn for updating parameters during grid search.
 
-        Parameters
-        ----------
-            parms : dict
-                A dictionary of parameters that will be set on this model.
-
-        Returns
-        -------
-            Returns self, the current estimator object with the parameters all set as desired.
+        :param parms: A dictionary of parameters that will be set on this model.
+        :returns: self, the current estimator object with the parameters all set as desired.
         """
         self._parms.update(parms)
         return self
+
 
     @staticmethod
     def _metrics_class(model_json):
