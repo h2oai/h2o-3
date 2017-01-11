@@ -695,7 +695,11 @@ def get_grid(grid_id):
     hyper_params = {param: set() for param in gs.hyper_names}
     for param in gs.hyper_names:
         for model in models:
-            hyper_params[param].add(model.full_parameters[param]["actual_value"][0])
+            if isinstance(model.full_parameters[param]["actual_value"], list):
+                hyper_params[param].add(model.full_parameters[param]["actual_value"][0])
+            else:
+                hyper_params[param].add(model.full_parameters[param]["actual_value"])
+
     hyper_params = {str(param): list(vals) for param, vals in hyper_params.items()}
     gs.hyper_params = hyper_params
     gs.model = model.__class__()
