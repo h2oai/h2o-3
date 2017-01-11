@@ -64,13 +64,14 @@ public class PersistManager {
   private PersistStatsEntry[] stats;
   public PersistStatsEntry[] getStats() { return stats; }
 
-  public static boolean isHdfsPath(String path) {
+  public boolean isHdfsPath(String path) {
     String s = path.toLowerCase();
     if (s.startsWith("hdfs:")
         || s.startsWith("s3:")
         || s.startsWith("s3n:")
         || s.startsWith("s3a:")
-        || s.startsWith("maprfs:")) {
+        || s.startsWith("maprfs:")
+        || useHdfsAsFallback() && I[Value.HDFS] != null && I[Value.HDFS].canHandle(path)) {
       return true;
     }
     return false;
@@ -263,8 +264,11 @@ public class PersistManager {
    * @param dels  (Output) I don't know what this is
    */
   public void importFiles(String path, String pattern, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
-    String s = path.toLowerCase(); // path must not be null
-    if( s.startsWith("http:") || s.startsWith("https:") ) {
+    URI uri = URI.create(path);
+    String scheme = uri.getScheme();
+    if (scheme == null || "file".equals(scheme)) {
+      I[Value.NFS].importFiles(path, pattern, files, keys, fails, dels);
+    } else if ("http".equals(scheme) || "https".equals(scheme)) {
       try {
         java.net.URL url = new URL(path);
         Key destination_key = Key.make(path);
@@ -276,22 +280,16 @@ public class PersistManager {
       } catch( Throwable e) {
         fails.add(path); // Fails for e.g. broken sockets silently swallow exceptions and just record the failed path
       }
-    }
-    else if(s.startsWith("s3:")) {
+    } else if ("s3".equals(scheme)) {
       if (I[Value.S3] == null) throw new H2OIllegalArgumentException("S3 support is not configured");
       I[Value.S3].importFiles(path, pattern, files, keys, fails, dels);
-    }
-    else if( s.startsWith("hdfs:") ||
-        s.startsWith("s3n:") || 
-        s.startsWith("s3a:") || 
-        s.startsWith("maprfs:") ||
-        (useHdfsAsFallback() && I[Value.HDFS] != null && I[Value.HDFS].canHandle(s))) {
+    } else if ("hdfs".equals(scheme) ||
+        "s3n:".equals(scheme) ||
+        "s3a:".equals(scheme) ||
+        "maprfs:".equals(scheme) ||
+        (useHdfsAsFallback() && I[Value.HDFS] != null && I[Value.HDFS].canHandle(path))) {
       if (I[Value.HDFS] == null) throw new H2OIllegalArgumentException("HDFS, S3N, and S3A support is not configured");
       I[Value.HDFS].importFiles(path, pattern, files, keys, fails, dels);
-    }
-    else {
-      // Attempt NFS import instead
-      I[Value.NFS].importFiles(path, pattern, files, keys, fails, dels);
     }
 
     if(pattern != null && !pattern.isEmpty()) {
@@ -518,7 +516,7 @@ public class PersistManager {
         case Schemes.S3:
           return I[Value.S3];
         default:
-          if (useHdfsAsFallback() && I[Value.HDFS].canHandle(uri.toString())) {
+          if (useHdfsAsFallback() && I[Value.HDFS] != null && I[Value.HDFS].canHandle(uri.toString())) {
             return I[Value.HDFS];
           } else {
             throw new IllegalArgumentException("Cannot find persist manager for scheme " + scheme);

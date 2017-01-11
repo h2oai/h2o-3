@@ -29,7 +29,7 @@ public class NodePersistentStorage {
       return;
     }
 
-    if (PersistManager.isHdfsPath(npsDir)) {
+    if (H2O.getPM().isHdfsPath(npsDir)) {
       NPS_SEPARATOR = "/";
     }
     else {

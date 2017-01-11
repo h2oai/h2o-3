@@ -556,7 +556,8 @@ public final class PersistHdfs extends Persist {
   public boolean canHandle(String path) {
     URI uri = new Path(path).toUri();
     try {
-      return FileSystem.getFileSystemClass(uri.getScheme(), CONF) != null;
+      // Skip undefined scheme
+      return uri.getScheme() != null && FileSystem.getFileSystemClass(uri.getScheme(), CONF) != null;
     } catch (IOException e) {
       return false;
     }
