@@ -38,6 +38,7 @@ buildscript {
         classpath 'org.testng:testng:6.8'
         classpath "be.insaneprogramming.gradle:animalsniffer-gradle-plugin:+"
         classpath 'me.champeau.gradle:jmh-gradle-plugin:0.3.1'
+        classpath 'ca.cutterslade.gradle:gradle-dependency-analyze:1.1.0'
     }
 }
 
@@ -122,6 +123,7 @@ ext {
 //
 allprojects {
     group = 'ai.h2o'
+    apply plugin: 'project-report'
 
     apply plugin: 'idea'
     apply plugin: 'eclipse'
@@ -205,6 +207,7 @@ subprojects {
             logger.warn("The project $project needs CI for running tests! You can pass `-PdoCI=true` to force CI behaviour.")
             project.testMultiNode.enabled = project.ext.isCi
         }
+        //apply plugin: 'ca.cutterslade.analyze'
     }
 
     // Configure Scala projects
