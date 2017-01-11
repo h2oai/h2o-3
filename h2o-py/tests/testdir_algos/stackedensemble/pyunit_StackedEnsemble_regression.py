@@ -12,7 +12,7 @@ from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
 
 def stackedensemble_gaussian():
     # 
-    # australia.csv
+    # australia.csv: Gaussian
     # 
     australia_hex = h2o.import_file(path=pyunit_utils.locate("smalldata/extdata/australia.csv"),
                                     destination_frame="australia.hex")
@@ -63,7 +63,7 @@ def stackedensemble_gaussian():
 
 
     # 
-    # ecology.csv
+    # ecology.csv: Gaussian
     # 
     ecology_train = h2o.import_file(path=pyunit_utils.locate("smalldata/gbm_test/ecology_model.csv"), destination_frame="ecology_train")
     myX = ["SegSumT", "SegTSeas", "SegLowFlow", "DSDist", "DSMaxSlope", "USAvgT", "USRainDays", "USSlope", "USNative", "DSDam", "Method", "LocSed"]
@@ -99,6 +99,50 @@ def stackedensemble_gaussian():
     stacker.train(model_id="my_ensemble", y="Angaus", training_frame=ecology_train)
     print("trained H2OStackedEnsembleEstimator: " + str(stacker))
     predictions = stacker.predict(ecology_train)  # training data
+    print("preditions for ensemble are in: " + predictions.frame_id)
+
+
+
+
+
+    # 
+    # insurance.csv: Poisson
+    # 
+    insurance_train = h2o.import_file(path=pyunit_utils.locate("smalldata/glm_test/insurance.csv"), destination_frame="insurance_train")
+    insurance_train["offset"] = insurance_train["Holders"].log()
+
+    myX = list(range(3))
+  
+    my_gbm = H2OGradientBoostingEstimator(ntrees = 10, max_depth = 3, min_rows = 2, learn_rate = 0.2, nfolds = 5, fold_assignment='Modulo', keep_cross_validation_predictions = True, distribution = 'poisson')
+    my_gbm.train(y = "Claims", x = myX, training_frame = insurance_train)
+    print("GBM performance: ")
+    my_gbm.model_performance(insurance_train).show()
+
+ 
+    my_rf = H2ORandomForestEstimator(ntrees = 10, max_depth = 3, min_rows = 2, nfolds = 5, fold_assignment='Modulo', keep_cross_validation_predictions = True)
+    my_rf.train(y = "Claims", x = myX, training_frame = insurance_train)
+    print("RF performance: ")
+    my_rf.model_performance(insurance_train).show()
+
+ 
+    my_dl = H2ODeepLearningEstimator(nfolds=5, fold_assignment='Modulo', keep_cross_validation_predictions = True, distribution = 'poisson')
+    my_dl.train(y = "Claims", x = myX, training_frame = insurance_train)
+    print("DL performance: ")
+    my_dl.model_performance(insurance_train).show()
+
+ 
+    # NOTE: don't specify family
+    my_glm = H2OGeneralizedLinearEstimator(nfolds = 5, fold_assignment='Modulo', keep_cross_validation_predictions = True, family = 'poisson')
+    my_glm.train(y = "Claims", x = myX, training_frame = insurance_train)
+    print("GLM performance: ")
+    my_glm.model_performance(insurance_train).show()
+
+
+    stacker = H2OStackedEnsembleEstimator(selection_strategy="choose_all", base_models=[my_gbm.model_id, my_rf.model_id, my_glm.model_id])
+    print("created H2OStackedEnsembleEstimator: " + str(stacker))
+    stacker.train(model_id="my_ensemble", y="Claims", training_frame=insurance_train)
+    print("trained H2OStackedEnsembleEstimator: " + str(stacker))
+    predictions = stacker.predict(insurance_train)  # training data
     print("preditions for ensemble are in: " + predictions.frame_id)
 
 if __name__ == "__main__":
