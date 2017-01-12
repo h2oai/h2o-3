@@ -1134,10 +1134,14 @@ class ModelBase(backwards_compatible()):
         return h2o.get_frame(fid["name"])
 
 
+    def score_history(self):
+        """DEPRECATED. Use :meth:`scoring_history` instead."""
+        return self.scoring_history()
+
+
     # Deprecated functions; left here for backward compatibility
     _bcim = {
         "giniCoef": lambda self, *args, **kwargs: self.gini(*args, **kwargs),
-        "score_history": lambda self: self.scoring_history(),
     }
 
 
