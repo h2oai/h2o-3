@@ -259,6 +259,7 @@ public class Env extends Iced {
     init(new AstCountSubstringsWords());
     init(new AstEntropy());
     init(new AstLStrip());
+    init(new AstGrep());
     init(new AstReplaceAll());
     init(new AstReplaceFirst());
     init(new AstRStrip());
