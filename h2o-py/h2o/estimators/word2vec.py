@@ -41,7 +41,7 @@ class H2OWord2vecEstimator(H2OEstimator):
         """
         Id of the training data frame (Not required, to allow initial validation of model parameters).
 
-        Type: ``str``
+        Type: ``str``.
         """
         return self._parms.get("training_frame")
 
@@ -56,7 +56,7 @@ class H2OWord2vecEstimator(H2OEstimator):
         """
         This will discard words that appear less than <int> times
 
-        Type: ``int``  (default: ``5``)
+        Type: ``int``  (default: ``5``).
         """
         return self._parms.get("min_word_freq")
 
@@ -71,7 +71,7 @@ class H2OWord2vecEstimator(H2OEstimator):
         """
         Use the Skip-Gram model
 
-        One of: ``"skip_gram"``  (default: ``"skip_gram"``)
+        One of: ``"skip_gram"``  (default: ``"skip_gram"``).
         """
         return self._parms.get("word_model")
 
@@ -86,7 +86,7 @@ class H2OWord2vecEstimator(H2OEstimator):
         """
         Use Hierarchical Softmax
 
-        One of: ``"hsm"``  (default: ``"hsm"``)
+        One of: ``"hsm"``  (default: ``"hsm"``).
         """
         return self._parms.get("norm_model")
 
@@ -101,7 +101,7 @@ class H2OWord2vecEstimator(H2OEstimator):
         """
         Set size of word vectors
 
-        Type: ``int``  (default: ``100``)
+        Type: ``int``  (default: ``100``).
         """
         return self._parms.get("vec_size")
 
@@ -116,7 +116,7 @@ class H2OWord2vecEstimator(H2OEstimator):
         """
         Set max skip length between words
 
-        Type: ``int``  (default: ``5``)
+        Type: ``int``  (default: ``5``).
         """
         return self._parms.get("window_size")
 
@@ -132,7 +132,7 @@ class H2OWord2vecEstimator(H2OEstimator):
         Set threshold for occurrence of words. Those that appear with higher frequency in the training data
         will be randomly down-sampled; useful range is (0, 1e-5)
 
-        Type: ``float``  (default: ``0.001``)
+        Type: ``float``  (default: ``0.001``).
         """
         return self._parms.get("sent_sample_rate")
 
@@ -147,7 +147,7 @@ class H2OWord2vecEstimator(H2OEstimator):
         """
         Set the starting learning rate
 
-        Type: ``float``  (default: ``0.025``)
+        Type: ``float``  (default: ``0.025``).
         """
         return self._parms.get("init_learning_rate")
 
@@ -162,7 +162,7 @@ class H2OWord2vecEstimator(H2OEstimator):
         """
         Number of training iterations to run
 
-        Type: ``int``  (default: ``5``)
+        Type: ``int``  (default: ``5``).
         """
         return self._parms.get("epochs")
 

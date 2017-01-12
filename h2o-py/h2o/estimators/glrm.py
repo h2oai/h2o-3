@@ -47,7 +47,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Id of the training data frame (Not required, to allow initial validation of model parameters).
 
-        Type: ``str``
+        Type: ``str``.
         """
         return self._parms.get("training_frame")
 
@@ -62,7 +62,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Id of the validation data frame.
 
-        Type: ``str``
+        Type: ``str``.
         """
         return self._parms.get("validation_frame")
 
@@ -77,7 +77,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Names of columns to ignore for training.
 
-        Type: ``List[str]``
+        Type: ``List[str]``.
         """
         return self._parms.get("ignored_columns")
 
@@ -92,7 +92,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Ignore constant columns.
 
-        Type: ``bool``  (default: ``True``)
+        Type: ``bool``  (default: ``True``).
         """
         return self._parms.get("ignore_const_cols")
 
@@ -107,7 +107,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Whether to score during each iteration of model training.
 
-        Type: ``bool``  (default: ``False``)
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("score_each_iteration")
 
@@ -122,7 +122,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Frame key to save resulting X
 
-        Type: ``str``
+        Type: ``str``.
         """
         return self._parms.get("loading_name")
 
@@ -137,7 +137,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Transformation of training data
 
-        One of: ``"none"``, ``"standardize"``, ``"normalize"``, ``"demean"``, ``"descale"``  (default: ``"none"``)
+        One of: ``"none"``, ``"standardize"``, ``"normalize"``, ``"demean"``, ``"descale"``  (default: ``"none"``).
         """
         return self._parms.get("transform")
 
@@ -152,7 +152,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Rank of matrix approximation
 
-        Type: ``int``  (default: ``1``)
+        Type: ``int``  (default: ``1``).
         """
         return self._parms.get("k")
 
@@ -168,7 +168,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Numeric loss function
 
         One of: ``"quadratic"``, ``"absolute"``, ``"huber"``, ``"poisson"``, ``"hinge"``, ``"logistic"``, ``"periodic"``
-        (default: ``"quadratic"``)
+        (default: ``"quadratic"``).
         """
         return self._parms.get("loss")
 
@@ -184,7 +184,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Loss function by column (override)
 
         Type: ``List[Enum["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic", "categorical",
-        "ordinal"]]``
+        "ordinal"]]``.
         """
         return self._parms.get("loss_by_col")
 
@@ -199,7 +199,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Loss function by column index (override)
 
-        Type: ``List[int]``
+        Type: ``List[int]``.
         """
         return self._parms.get("loss_by_col_idx")
 
@@ -214,7 +214,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Categorical loss function
 
-        One of: ``"categorical"``, ``"ordinal"``  (default: ``"categorical"``)
+        One of: ``"categorical"``, ``"ordinal"``  (default: ``"categorical"``).
         """
         return self._parms.get("multi_loss")
 
@@ -229,7 +229,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Length of period (only used with periodic loss function)
 
-        Type: ``int``  (default: ``1``)
+        Type: ``int``  (default: ``1``).
         """
         return self._parms.get("period")
 
@@ -245,7 +245,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Regularization function for X matrix
 
         One of: ``"none"``, ``"quadratic"``, ``"l2"``, ``"l1"``, ``"non_negative"``, ``"one_sparse"``,
-        ``"unit_one_sparse"``, ``"simplex"``  (default: ``"none"``)
+        ``"unit_one_sparse"``, ``"simplex"``  (default: ``"none"``).
         """
         return self._parms.get("regularization_x")
 
@@ -261,7 +261,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Regularization function for Y matrix
 
         One of: ``"none"``, ``"quadratic"``, ``"l2"``, ``"l1"``, ``"non_negative"``, ``"one_sparse"``,
-        ``"unit_one_sparse"``, ``"simplex"``  (default: ``"none"``)
+        ``"unit_one_sparse"``, ``"simplex"``  (default: ``"none"``).
         """
         return self._parms.get("regularization_y")
 
@@ -276,7 +276,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Regularization weight on X matrix
 
-        Type: ``float``  (default: ``0``)
+        Type: ``float``  (default: ``0``).
         """
         return self._parms.get("gamma_x")
 
@@ -291,7 +291,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Regularization weight on Y matrix
 
-        Type: ``float``  (default: ``0``)
+        Type: ``float``  (default: ``0``).
         """
         return self._parms.get("gamma_y")
 
@@ -306,7 +306,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Maximum number of iterations
 
-        Type: ``int``  (default: ``1000``)
+        Type: ``int``  (default: ``1000``).
         """
         return self._parms.get("max_iterations")
 
@@ -321,7 +321,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Maximum number of updates, defaults to 2*max_iterations
 
-        Type: ``int``  (default: ``2000``)
+        Type: ``int``  (default: ``2000``).
         """
         return self._parms.get("max_updates")
 
@@ -336,7 +336,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Initial step size
 
-        Type: ``float``  (default: ``1``)
+        Type: ``float``  (default: ``1``).
         """
         return self._parms.get("init_step_size")
 
@@ -351,7 +351,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Minimum step size
 
-        Type: ``float``  (default: ``0.0001``)
+        Type: ``float``  (default: ``0.0001``).
         """
         return self._parms.get("min_step_size")
 
@@ -366,7 +366,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         RNG seed for initialization
 
-        Type: ``int``  (default: ``-1``)
+        Type: ``int``  (default: ``-1``).
         """
         return self._parms.get("seed")
 
@@ -381,7 +381,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Initialization mode
 
-        One of: ``"random"``, ``"svd"``, ``"plus_plus"``, ``"user"``  (default: ``"plus_plus"``)
+        One of: ``"random"``, ``"svd"``, ``"plus_plus"``, ``"user"``  (default: ``"plus_plus"``).
         """
         return self._parms.get("init")
 
@@ -397,7 +397,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Method for computing SVD during initialization (Caution: Power and Randomized are currently experimental and
         unstable)
 
-        One of: ``"gram_s_v_d"``, ``"power"``, ``"randomized"``  (default: ``"randomized"``)
+        One of: ``"gram_s_v_d"``, ``"power"``, ``"randomized"``  (default: ``"randomized"``).
         """
         return self._parms.get("svd_method")
 
@@ -412,7 +412,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         User-specified initial Y
 
-        Type: ``str``
+        Type: ``str``.
         """
         return self._parms.get("user_y")
 
@@ -427,7 +427,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         User-specified initial X
 
-        Type: ``str``
+        Type: ``str``.
         """
         return self._parms.get("user_x")
 
@@ -442,7 +442,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Expand categorical columns in user-specified initial Y
 
-        Type: ``bool``  (default: ``True``)
+        Type: ``bool``  (default: ``True``).
         """
         return self._parms.get("expand_user_y")
 
@@ -457,7 +457,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Reconstruct original training data by reversing transform
 
-        Type: ``bool``  (default: ``False``)
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("impute_original")
 
@@ -472,7 +472,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Recover singular values and eigenvectors of XY
 
-        Type: ``bool``  (default: ``False``)
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("recover_svd")
 
@@ -487,7 +487,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
-        Type: ``float``  (default: ``0``)
+        Type: ``float``  (default: ``0``).
         """
         return self._parms.get("max_runtime_secs")
 

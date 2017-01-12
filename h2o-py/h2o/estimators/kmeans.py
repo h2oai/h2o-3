@@ -44,7 +44,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Id of the training data frame (Not required, to allow initial validation of model parameters).
 
-        Type: ``str``
+        Type: ``str``.
         """
         return self._parms.get("training_frame")
 
@@ -59,7 +59,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Id of the validation data frame.
 
-        Type: ``str``
+        Type: ``str``.
         """
         return self._parms.get("validation_frame")
 
@@ -74,7 +74,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Number of folds for N-fold cross-validation (0 to disable or >= 2).
 
-        Type: ``int``  (default: ``0``)
+        Type: ``int``  (default: ``0``).
         """
         return self._parms.get("nfolds")
 
@@ -89,7 +89,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Whether to keep the predictions of the cross-validation models.
 
-        Type: ``bool``  (default: ``False``)
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("keep_cross_validation_predictions")
 
@@ -104,7 +104,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Whether to keep the cross-validation fold assignment.
 
-        Type: ``bool``  (default: ``False``)
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("keep_cross_validation_fold_assignment")
 
@@ -120,7 +120,7 @@ class H2OKMeansEstimator(H2OEstimator):
         Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify
         the folds based on the response variable, for classification problems.
 
-        One of: ``"auto"``, ``"random"``, ``"modulo"``, ``"stratified"``  (default: ``"auto"``)
+        One of: ``"auto"``, ``"random"``, ``"modulo"``, ``"stratified"``  (default: ``"auto"``).
         """
         return self._parms.get("fold_assignment")
 
@@ -135,7 +135,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Column with cross-validation fold index assignment per observation.
 
-        Type: ``str``
+        Type: ``str``.
         """
         return self._parms.get("fold_column")
 
@@ -150,7 +150,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Names of columns to ignore for training.
 
-        Type: ``List[str]``
+        Type: ``List[str]``.
         """
         return self._parms.get("ignored_columns")
 
@@ -165,7 +165,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Ignore constant columns.
 
-        Type: ``bool``  (default: ``True``)
+        Type: ``bool``  (default: ``True``).
         """
         return self._parms.get("ignore_const_cols")
 
@@ -180,7 +180,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Whether to score during each iteration of model training.
 
-        Type: ``bool``  (default: ``False``)
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("score_each_iteration")
 
@@ -196,7 +196,7 @@ class H2OKMeansEstimator(H2OEstimator):
         The max. number of clusters. If estimate_k is disabled, the model will find k centroids, otherwise it will find
         up to k centroids.
 
-        Type: ``int``  (default: ``1``)
+        Type: ``int``  (default: ``1``).
         """
         return self._parms.get("k")
 
@@ -211,7 +211,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Whether to estimate the number of clusters (<=k) iteratively and deterministically.
 
-        Type: ``bool``  (default: ``False``)
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("estimate_k")
 
@@ -226,7 +226,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         User-specified points
 
-        Type: ``str``
+        Type: ``str``.
         """
         return self._parms.get("user_points")
 
@@ -241,7 +241,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Maximum training iterations (if estimate_k is enabled, then this is for each inner Lloyds iteration)
 
-        Type: ``int``  (default: ``10``)
+        Type: ``int``  (default: ``10``).
         """
         return self._parms.get("max_iterations")
 
@@ -256,7 +256,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Standardize columns before computing distances
 
-        Type: ``bool``  (default: ``True``)
+        Type: ``bool``  (default: ``True``).
         """
         return self._parms.get("standardize")
 
@@ -271,7 +271,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         RNG Seed
 
-        Type: ``int``  (default: ``-1``)
+        Type: ``int``  (default: ``-1``).
         """
         return self._parms.get("seed")
 
@@ -286,7 +286,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Initialization mode
 
-        One of: ``"random"``, ``"plus_plus"``, ``"furthest"``, ``"user"``  (default: ``"furthest"``)
+        One of: ``"random"``, ``"plus_plus"``, ``"furthest"``, ``"user"``  (default: ``"furthest"``).
         """
         return self._parms.get("init")
 
@@ -301,7 +301,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
-        Type: ``float``  (default: ``0``)
+        Type: ``float``  (default: ``0``).
         """
         return self._parms.get("max_runtime_secs")
 
@@ -317,7 +317,7 @@ class H2OKMeansEstimator(H2OEstimator):
         Encoding scheme for categorical features
 
         One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``
-        (default: ``"auto"``)
+        (default: ``"auto"``).
         """
         return self._parms.get("categorical_encoding")
 

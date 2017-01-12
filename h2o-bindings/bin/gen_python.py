@@ -190,8 +190,10 @@ def gen_module(schema, algo):
             extrahelp = "One of: " + ", ".join("``%s``" % v for v in vals)
         else:
             extrahelp = "Type: ``%s``" % param["dtype"]
-        if param["default_value"] is not None:
-            extrahelp += "  (default: ``%s``)" % stringify(param["default_value"])
+        if param["default_value"] is None:
+            extrahelp += "."
+        else:
+            extrahelp += "  (default: ``%s``)." % stringify(param["default_value"])
 
         yield "    @property"
         yield "    def %s(self):" % pname

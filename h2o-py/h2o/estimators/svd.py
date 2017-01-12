@@ -42,7 +42,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         Id of the training data frame (Not required, to allow initial validation of model parameters).
 
-        Type: ``str``
+        Type: ``str``.
         """
         return self._parms.get("training_frame")
 
@@ -57,7 +57,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         Id of the validation data frame.
 
-        Type: ``str``
+        Type: ``str``.
         """
         return self._parms.get("validation_frame")
 
@@ -72,7 +72,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         Names of columns to ignore for training.
 
-        Type: ``List[str]``
+        Type: ``List[str]``.
         """
         return self._parms.get("ignored_columns")
 
@@ -87,7 +87,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         Ignore constant columns.
 
-        Type: ``bool``  (default: ``True``)
+        Type: ``bool``  (default: ``True``).
         """
         return self._parms.get("ignore_const_cols")
 
@@ -102,7 +102,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         Whether to score during each iteration of model training.
 
-        Type: ``bool``  (default: ``False``)
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("score_each_iteration")
 
@@ -117,7 +117,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         Transformation of training data
 
-        One of: ``"none"``, ``"standardize"``, ``"normalize"``, ``"demean"``, ``"descale"``  (default: ``"none"``)
+        One of: ``"none"``, ``"standardize"``, ``"normalize"``, ``"demean"``, ``"descale"``  (default: ``"none"``).
         """
         return self._parms.get("transform")
 
@@ -132,7 +132,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         Method for computing SVD (Caution: Power and Randomized are currently experimental and unstable)
 
-        One of: ``"gram_s_v_d"``, ``"power"``, ``"randomized"``  (default: ``"gram_s_v_d"``)
+        One of: ``"gram_s_v_d"``, ``"power"``, ``"randomized"``  (default: ``"gram_s_v_d"``).
         """
         return self._parms.get("svd_method")
 
@@ -147,7 +147,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         Number of right singular vectors
 
-        Type: ``int``  (default: ``1``)
+        Type: ``int``  (default: ``1``).
         """
         return self._parms.get("nv")
 
@@ -162,7 +162,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         Maximum iterations
 
-        Type: ``int``  (default: ``1000``)
+        Type: ``int``  (default: ``1000``).
         """
         return self._parms.get("max_iterations")
 
@@ -177,7 +177,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         RNG seed for k-means++ initialization
 
-        Type: ``int``  (default: ``-1``)
+        Type: ``int``  (default: ``-1``).
         """
         return self._parms.get("seed")
 
@@ -192,7 +192,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         Save left singular vectors?
 
-        Type: ``bool``  (default: ``True``)
+        Type: ``bool``  (default: ``True``).
         """
         return self._parms.get("keep_u")
 
@@ -207,7 +207,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         Frame key to save left singular vectors
 
-        Type: ``str``
+        Type: ``str``.
         """
         return self._parms.get("u_name")
 
@@ -222,7 +222,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         Whether first factor level is included in each categorical expansion
 
-        Type: ``bool``  (default: ``True``)
+        Type: ``bool``  (default: ``True``).
         """
         return self._parms.get("use_all_factor_levels")
 
@@ -237,7 +237,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
-        Type: ``float``  (default: ``0``)
+        Type: ``float``  (default: ``0``).
         """
         return self._parms.get("max_runtime_secs")
 

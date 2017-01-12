@@ -54,7 +54,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Id of the training data frame (Not required, to allow initial validation of model parameters).
 
-        Type: ``str``
+        Type: ``str``.
         """
         return self._parms.get("training_frame")
 
@@ -69,7 +69,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Id of the validation data frame.
 
-        Type: ``str``
+        Type: ``str``.
         """
         return self._parms.get("validation_frame")
 
@@ -84,7 +84,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Number of folds for N-fold cross-validation (0 to disable or >= 2).
 
-        Type: ``int``  (default: ``0``)
+        Type: ``int``  (default: ``0``).
         """
         return self._parms.get("nfolds")
 
@@ -99,7 +99,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Whether to keep the predictions of the cross-validation models.
 
-        Type: ``bool``  (default: ``False``)
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("keep_cross_validation_predictions")
 
@@ -114,7 +114,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Whether to keep the cross-validation fold assignment.
 
-        Type: ``bool``  (default: ``False``)
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("keep_cross_validation_fold_assignment")
 
@@ -129,7 +129,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Whether to score during each iteration of model training.
 
-        Type: ``bool``  (default: ``False``)
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("score_each_iteration")
 
@@ -144,7 +144,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Score the model after every so many trees. Disabled if set to 0.
 
-        Type: ``int``  (default: ``0``)
+        Type: ``int``  (default: ``0``).
         """
         return self._parms.get("score_tree_interval")
 
@@ -160,7 +160,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify
         the folds based on the response variable, for classification problems.
 
-        One of: ``"auto"``, ``"random"``, ``"modulo"``, ``"stratified"``  (default: ``"auto"``)
+        One of: ``"auto"``, ``"random"``, ``"modulo"``, ``"stratified"``  (default: ``"auto"``).
         """
         return self._parms.get("fold_assignment")
 
@@ -175,7 +175,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Column with cross-validation fold index assignment per observation.
 
-        Type: ``str``
+        Type: ``str``.
         """
         return self._parms.get("fold_column")
 
@@ -190,7 +190,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Response variable column.
 
-        Type: ``str``
+        Type: ``str``.
         """
         return self._parms.get("response_column")
 
@@ -205,7 +205,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Names of columns to ignore for training.
 
-        Type: ``List[str]``
+        Type: ``List[str]``.
         """
         return self._parms.get("ignored_columns")
 
@@ -220,7 +220,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Ignore constant columns.
 
-        Type: ``bool``  (default: ``True``)
+        Type: ``bool``  (default: ``True``).
         """
         return self._parms.get("ignore_const_cols")
 
@@ -235,7 +235,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Offset column. This will be added to the combination of columns before applying the link function.
 
-        Type: ``str``
+        Type: ``str``.
         """
         return self._parms.get("offset_column")
 
@@ -252,7 +252,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
         weights are not allowed.
 
-        Type: ``str``
+        Type: ``str``.
         """
         return self._parms.get("weights_column")
 
@@ -267,7 +267,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Balance training data class counts via over/under-sampling (for imbalanced data).
 
-        Type: ``bool``  (default: ``False``)
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("balance_classes")
 
@@ -283,7 +283,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
         be automatically computed to obtain class balance during training. Requires balance_classes.
 
-        Type: ``List[float]``
+        Type: ``List[float]``.
         """
         return self._parms.get("class_sampling_factors")
 
@@ -299,7 +299,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
         balance_classes.
 
-        Type: ``float``  (default: ``5``)
+        Type: ``float``  (default: ``5``).
         """
         return self._parms.get("max_after_balance_size")
 
@@ -314,7 +314,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         [Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs
 
-        Type: ``int``  (default: ``20``)
+        Type: ``int``  (default: ``20``).
         """
         return self._parms.get("max_confusion_matrix_size")
 
@@ -329,7 +329,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
 
-        Type: ``int``  (default: ``0``)
+        Type: ``int``  (default: ``0``).
         """
         return self._parms.get("max_hit_ratio_k")
 
@@ -344,7 +344,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Number of trees.
 
-        Type: ``int``  (default: ``50``)
+        Type: ``int``  (default: ``50``).
         """
         return self._parms.get("ntrees")
 
@@ -359,7 +359,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Maximum tree depth.
 
-        Type: ``int``  (default: ``5``)
+        Type: ``int``  (default: ``5``).
         """
         return self._parms.get("max_depth")
 
@@ -374,7 +374,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Fewest allowed (weighted) observations in a leaf.
 
-        Type: ``float``  (default: ``10``)
+        Type: ``float``  (default: ``10``).
         """
         return self._parms.get("min_rows")
 
@@ -389,7 +389,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point
 
-        Type: ``int``  (default: ``20``)
+        Type: ``int``  (default: ``20``).
         """
         return self._parms.get("nbins")
 
@@ -405,7 +405,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         For numerical columns (real/int), build a histogram of (at most) this many bins at the root level, then decrease
         by factor of two per level
 
-        Type: ``int``  (default: ``1024``)
+        Type: ``int``  (default: ``1024``).
         """
         return self._parms.get("nbins_top_level")
 
@@ -421,7 +421,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         For categorical columns (factors), build a histogram of this many bins, then split at the best point. Higher
         values can lead to more overfitting.
 
-        Type: ``int``  (default: ``1024``)
+        Type: ``int``  (default: ``1024``).
         """
         return self._parms.get("nbins_cats")
 
@@ -438,7 +438,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         stopping_tolerance instead. Previous version of H2O would stop making trees when the R^2 metric equals or
         exceeds this
 
-        Type: ``float``  (default: ``1.797693135e+308``)
+        Type: ``float``  (default: ``1.797693135e+308``).
         """
         return self._parms.get("r2_stopping")
 
@@ -454,7 +454,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
         stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
 
-        Type: ``int``  (default: ``0``)
+        Type: ``int``  (default: ``0``).
         """
         return self._parms.get("stopping_rounds")
 
@@ -470,7 +470,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Metric to use for early stopping (AUTO: logloss for classification, deviance for regression)
 
         One of: ``"auto"``, ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``,
-        ``"lift_top_group"``, ``"misclassification"``, ``"mean_per_class_error"``  (default: ``"auto"``)
+        ``"lift_top_group"``, ``"misclassification"``, ``"mean_per_class_error"``  (default: ``"auto"``).
         """
         return self._parms.get("stopping_metric")
 
@@ -485,7 +485,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
 
-        Type: ``float``  (default: ``0.001``)
+        Type: ``float``  (default: ``0.001``).
         """
         return self._parms.get("stopping_tolerance")
 
@@ -500,7 +500,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
-        Type: ``float``  (default: ``0``)
+        Type: ``float``  (default: ``0``).
         """
         return self._parms.get("max_runtime_secs")
 
@@ -515,7 +515,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Seed for pseudo random number generator (if applicable)
 
-        Type: ``int``  (default: ``-1``)
+        Type: ``int``  (default: ``-1``).
         """
         return self._parms.get("seed")
 
@@ -530,7 +530,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.
 
-        Type: ``bool``  (default: ``False``)
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("build_tree_one_node")
 
@@ -545,7 +545,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Learning rate (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``0.1``)
+        Type: ``float``  (default: ``0.1``).
         """
         return self._parms.get("learn_rate")
 
@@ -560,7 +560,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Scale the learning rate by this factor after each tree (e.g., 0.99 or 0.999)
 
-        Type: ``float``  (default: ``1``)
+        Type: ``float``  (default: ``1``).
         """
         return self._parms.get("learn_rate_annealing")
 
@@ -576,7 +576,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Distribution function
 
         One of: ``"auto"``, ``"bernoulli"``, ``"multinomial"``, ``"gaussian"``, ``"poisson"``, ``"gamma"``,
-        ``"tweedie"``, ``"laplace"``, ``"quantile"``, ``"huber"``  (default: ``"auto"``)
+        ``"tweedie"``, ``"laplace"``, ``"quantile"``, ``"huber"``  (default: ``"auto"``).
         """
         return self._parms.get("distribution")
 
@@ -591,7 +591,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Desired quantile for Quantile regression, must be between 0 and 1.
 
-        Type: ``float``  (default: ``0.5``)
+        Type: ``float``  (default: ``0.5``).
         """
         return self._parms.get("quantile_alpha")
 
@@ -606,7 +606,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Tweedie power for Tweedie regression, must be between 1 and 2.
 
-        Type: ``float``  (default: ``1.5``)
+        Type: ``float``  (default: ``1.5``).
         """
         return self._parms.get("tweedie_power")
 
@@ -621,7 +621,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Desired quantile for Huber/M-regression (threshold between quadratic and linear loss, must be between 0 and 1).
 
-        Type: ``float``  (default: ``0.9``)
+        Type: ``float``  (default: ``0.9``).
         """
         return self._parms.get("huber_alpha")
 
@@ -636,7 +636,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Model checkpoint to resume training with.
 
-        Type: ``str``
+        Type: ``str``.
         """
         return self._parms.get("checkpoint")
 
@@ -651,7 +651,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Row sample rate per tree (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``1``)
+        Type: ``float``  (default: ``1``).
         """
         return self._parms.get("sample_rate")
 
@@ -666,7 +666,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Row sample rate per tree per class (from 0.0 to 1.0)
 
-        Type: ``List[float]``
+        Type: ``List[float]``.
         """
         return self._parms.get("sample_rate_per_class")
 
@@ -681,7 +681,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Column sample rate (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``1``)
+        Type: ``float``  (default: ``1``).
         """
         return self._parms.get("col_sample_rate")
 
@@ -696,7 +696,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Relative change of the column sampling rate for every level (from 0.0 to 2.0)
 
-        Type: ``float``  (default: ``1``)
+        Type: ``float``  (default: ``1``).
         """
         return self._parms.get("col_sample_rate_change_per_level")
 
@@ -711,7 +711,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Column sample rate per tree (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``1``)
+        Type: ``float``  (default: ``1``).
         """
         return self._parms.get("col_sample_rate_per_tree")
 
@@ -726,7 +726,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Minimum relative improvement in squared error reduction for a split to happen
 
-        Type: ``float``  (default: ``1e-05``)
+        Type: ``float``  (default: ``1e-05``).
         """
         return self._parms.get("min_split_improvement")
 
@@ -742,7 +742,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         What type of histogram to use for finding optimal split points
 
         One of: ``"auto"``, ``"uniform_adaptive"``, ``"random"``, ``"quantiles_global"``, ``"round_robin"``  (default:
-        ``"auto"``)
+        ``"auto"``).
         """
         return self._parms.get("histogram_type")
 
@@ -757,7 +757,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Maximum absolute value of a leaf node prediction
 
-        Type: ``float``  (default: ``1.797693135e+308``)
+        Type: ``float``  (default: ``1.797693135e+308``).
         """
         return self._parms.get("max_abs_leafnode_pred")
 
@@ -772,7 +772,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions
 
-        Type: ``float``  (default: ``0``)
+        Type: ``float``  (default: ``0``).
         """
         return self._parms.get("pred_noise_bandwidth")
 
@@ -788,7 +788,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Encoding scheme for categorical features
 
         One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``
-        (default: ``"auto"``)
+        (default: ``"auto"``).
         """
         return self._parms.get("categorical_encoding")
 

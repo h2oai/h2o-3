@@ -41,7 +41,7 @@ class H2OAggregatorEstimator(H2OEstimator):
         """
         Id of the training data frame (Not required, to allow initial validation of model parameters).
 
-        Type: ``str``
+        Type: ``str``.
         """
         return self._parms.get("training_frame")
 
@@ -56,7 +56,7 @@ class H2OAggregatorEstimator(H2OEstimator):
         """
         Response variable column.
 
-        Type: ``str``
+        Type: ``str``.
         """
         return self._parms.get("response_column")
 
@@ -71,7 +71,7 @@ class H2OAggregatorEstimator(H2OEstimator):
         """
         Names of columns to ignore for training.
 
-        Type: ``List[str]``
+        Type: ``List[str]``.
         """
         return self._parms.get("ignored_columns")
 
@@ -86,7 +86,7 @@ class H2OAggregatorEstimator(H2OEstimator):
         """
         Ignore constant columns.
 
-        Type: ``bool``  (default: ``True``)
+        Type: ``bool``  (default: ``True``).
         """
         return self._parms.get("ignore_const_cols")
 
@@ -101,7 +101,7 @@ class H2OAggregatorEstimator(H2OEstimator):
         """
         Radius scaling
 
-        Type: ``float``  (default: ``1``)
+        Type: ``float``  (default: ``1``).
         """
         return self._parms.get("radius_scale")
 
@@ -116,7 +116,7 @@ class H2OAggregatorEstimator(H2OEstimator):
         """
         Transformation of training data
 
-        One of: ``"none"``, ``"standardize"``, ``"normalize"``, ``"demean"``, ``"descale"``  (default: ``"normalize"``)
+        One of: ``"none"``, ``"standardize"``, ``"normalize"``, ``"demean"``, ``"descale"``  (default: ``"normalize"``).
         """
         return self._parms.get("transform")
 
@@ -132,7 +132,7 @@ class H2OAggregatorEstimator(H2OEstimator):
         Encoding scheme for categorical features
 
         One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``
-        (default: ``"auto"``)
+        (default: ``"auto"``).
         """
         return self._parms.get("categorical_encoding")
 

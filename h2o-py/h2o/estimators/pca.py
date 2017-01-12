@@ -42,7 +42,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         """
         Id of the training data frame (Not required, to allow initial validation of model parameters).
 
-        Type: ``str``
+        Type: ``str``.
         """
         return self._parms.get("training_frame")
 
@@ -57,7 +57,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         """
         Id of the validation data frame.
 
-        Type: ``str``
+        Type: ``str``.
         """
         return self._parms.get("validation_frame")
 
@@ -72,7 +72,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         """
         Names of columns to ignore for training.
 
-        Type: ``List[str]``
+        Type: ``List[str]``.
         """
         return self._parms.get("ignored_columns")
 
@@ -87,7 +87,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         """
         Ignore constant columns.
 
-        Type: ``bool``  (default: ``True``)
+        Type: ``bool``  (default: ``True``).
         """
         return self._parms.get("ignore_const_cols")
 
@@ -102,7 +102,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         """
         Whether to score during each iteration of model training.
 
-        Type: ``bool``  (default: ``False``)
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("score_each_iteration")
 
@@ -117,7 +117,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         """
         Transformation of training data
 
-        One of: ``"none"``, ``"standardize"``, ``"normalize"``, ``"demean"``, ``"descale"``  (default: ``"none"``)
+        One of: ``"none"``, ``"standardize"``, ``"normalize"``, ``"demean"``, ``"descale"``  (default: ``"none"``).
         """
         return self._parms.get("transform")
 
@@ -132,7 +132,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         """
         Method for computing PCA (Caution: Power and GLRM are currently experimental and unstable)
 
-        One of: ``"gram_s_v_d"``, ``"power"``, ``"randomized"``, ``"glrm"``  (default: ``"gram_s_v_d"``)
+        One of: ``"gram_s_v_d"``, ``"power"``, ``"randomized"``, ``"glrm"``  (default: ``"gram_s_v_d"``).
         """
         return self._parms.get("pca_method")
 
@@ -147,7 +147,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         """
         Rank of matrix approximation
 
-        Type: ``int``  (default: ``1``)
+        Type: ``int``  (default: ``1``).
         """
         return self._parms.get("k")
 
@@ -162,7 +162,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         """
         Maximum training iterations
 
-        Type: ``int``  (default: ``1000``)
+        Type: ``int``  (default: ``1000``).
         """
         return self._parms.get("max_iterations")
 
@@ -177,7 +177,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         """
         Whether first factor level is included in each categorical expansion
 
-        Type: ``bool``  (default: ``False``)
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("use_all_factor_levels")
 
@@ -192,7 +192,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         """
         Whether to compute metrics on the training data
 
-        Type: ``bool``  (default: ``True``)
+        Type: ``bool``  (default: ``True``).
         """
         return self._parms.get("compute_metrics")
 
@@ -207,7 +207,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         """
         Whether to impute missing entries with the column mean
 
-        Type: ``bool``  (default: ``False``)
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("impute_missing")
 
@@ -222,7 +222,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         """
         RNG seed for initialization
 
-        Type: ``int``  (default: ``-1``)
+        Type: ``int``  (default: ``-1``).
         """
         return self._parms.get("seed")
 
@@ -237,7 +237,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         """
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
-        Type: ``float``  (default: ``0``)
+        Type: ``float``  (default: ``0``).
         """
         return self._parms.get("max_runtime_secs")
 
