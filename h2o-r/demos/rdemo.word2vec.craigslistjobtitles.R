@@ -17,7 +17,7 @@ tokenize <- function(sentences, stop.words = STOP_WORDS) {
     tokenized.lenghts <- h2o.nchar(tokenized.lower)
     tokenized.filtered <- tokenized.lower[is.na(tokenized.lenghts) || tokenized.lenghts >= 2,]
     # remove words that contain numbers
-    tokenized.words <- tokenized.filtered[h2o.sub(tokenized.filtered, pattern = "[0-9]", replacement = "") == tokenized.filtered,]
+    tokenized.words <- tokenized.filtered[h2o.grep("[0-9]", tokenized.filtered, invert = TRUE, output.logical = TRUE),]
 
     # remove stop words
     tokenized.words[is.na(tokenized.words) || (! tokenized.words %in% STOP_WORDS),]
