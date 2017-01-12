@@ -6,6 +6,7 @@ import water.MRTask;
 import water.Value;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.UploadFileVec;
+import water.util.FileUtils;
 import water.util.Log;
 import water.persist.Persist.PersistEntry;
 
@@ -261,7 +262,7 @@ public class PersistManager {
    * @param dels  (Output) I don't know what this is
    */
   public void importFiles(String path, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
-    URI uri = URI.create(path);
+    URI uri = FileUtils.getURI(path);
     String scheme = uri.getScheme();
     if (scheme == null || "file".equals(scheme)) {
       I[Value.NFS].importFiles(path, files, keys, fails, dels);
