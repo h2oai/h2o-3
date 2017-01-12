@@ -16,14 +16,24 @@ public abstract class DataChunk<T> implements TypedChunk<T> {
   
   public DataChunk(Chunk c) { this.c = c; }
 
-  protected static int indexOf(long position) { return Integer.MAX_VALUE & (int) position; }
-
-  static long positionOf(int cidx, long i) {
-    return ((long)cidx << Integer.SIZE) | indexOf(i);
+  protected int indexOf(long position) { 
+    return indexOf(position, c.len());
   }
 
-  static long positionOf(long index, int cidx, long start) {
-    return positionOf(cidx, index - start);
+  protected static int indexOf(long position, int chunkLength) {
+    int p = Integer.MAX_VALUE & (int) position;
+    if (p >= chunkLength || p < 0) {
+      throw new ArrayIndexOutOfBoundsException("The size of chunk is " + chunkLength + ", but you want #" + p);
+    }
+    return p;
+  }
+
+  static long positionOf(int cidx, long i, int chunkLength) {
+    return ((long)cidx << Integer.SIZE) | indexOf(i, chunkLength);
+  }
+
+  static long positionOf(long index, int cidx, long start, int chunkLength) {
+    return positionOf(cidx, index - start, chunkLength);
   }
 
   @Override public boolean isNA(long i) { return c.isNA(indexOf(i)); }

@@ -20,6 +20,7 @@ import static water.udf.specialized.Strings.*;
 /**
  * Test for UDF
  */
+@SuppressWarnings("unchecked")
 public class UdfTest extends UdfTestBase {
   
   int requiredCloudSize() { return 3; }
@@ -77,7 +78,6 @@ public class UdfTest extends UdfTestBase {
     }));
     assertEquals("<<0>>", c.apply(0));
     assertEquals(null, c.apply(42));
-    assertEquals("<<2016>>", c.apply(2016));
     Column<String> materialized = Strings.materialize(c);
 
     for (int i = 0; i < 100000; i++) {
@@ -234,10 +234,13 @@ public class UdfTest extends UdfTestBase {
       Double expected = z2.apply(j);
       assertEquals(z2.isNA(j), materialized.isNA(j));
       // the following exposes a problem. nulls being returned.
-      if (expected == null) assertTrue("At " + i + "/" + Long.toHexString(j) +":", materialized.isNA(j));
-      Double actual = materialized.apply(j);
-      
-      if (!z2.isNA(j)) assertEquals(expected, actual, 0.0001);
+      if (expected == null) {
+        assertTrue("At " + i + "/" + Long.toHexString(j) +":", materialized.isNA(j));
+      } else {
+        Double actual = materialized.apply(j);
+
+        if (!z2.isNA(j)) assertEquals(expected, actual, 0.0001);
+      }
     }
   }
 
@@ -359,8 +362,8 @@ public class UdfTest extends UdfTestBase {
     Column<Double> x1 = new FoldingColumn<>(PureFunctions.SUM_OF_SQUARES, x);
 
     for (int i = 0; i < 100000; i++) {
-      double xi = x.apply(i);
-      assertEquals(xi*xi, x1.apply(i), 0.0001);
+      double xi = x.getByRowNumber(i);
+      assertEquals(xi*xi, x1.getByRowNumber(i), 0.0001);
     }
 
     try {
@@ -377,6 +380,7 @@ public class UdfTest extends UdfTestBase {
       assertEquals(r.apply(j), materialized.apply(j), 0.0001);
     }
   }
+
   @Test
   public void testFoldingColumnCompatibility() throws Exception {
     Column<Double> x = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {

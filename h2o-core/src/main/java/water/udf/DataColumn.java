@@ -36,7 +36,7 @@ public abstract class DataColumn<T> extends ColumnBase<T> {
 
   public long positionOfRow(long i) {
     Chunk ch = vec.chunkForRow(i);
-    return DataChunk.positionOf(i, ch.cidx(), ch.start());
+    return DataChunk.positionOf(i, ch.cidx(), ch.start(), ch.len());
   }
 
   @Override
@@ -58,7 +58,7 @@ public abstract class DataColumn<T> extends ColumnBase<T> {
           @Override
           public Long next() {
             if (!hasNext()) throw new IndexOutOfBoundsException("Chunk#" + ci + ", last was #" + i);
-            Long x = DataChunk.positionOf(ci, i);
+            Long x = DataChunk.positionOf(ci, i, c.len());
             if (++i >= c.len()) {
               ++ci;
               if (ci < ciMax) c = vec().chunkForChunkIdx(ci);
@@ -111,7 +111,7 @@ public abstract class DataColumn<T> extends ColumnBase<T> {
   
   public boolean isNA(long i) {
     final Chunk chunk = chunkAt(i);
-    return chunk.isNA(DataChunk.indexOf(i));
+    return chunk.isNA(DataChunk.indexOf(i, chunk.len()));
   }
 
   public Vec vec() {
