@@ -1,10 +1,4 @@
 # -*- encoding: utf-8 -*-
-"""
-This module implements grid search class. All grid search things inherit from this class.
-
-:copyright: (c) 2016 H2O.ai
-:license:   Apache License Version 2.0 (see LICENSE for details)
-"""
 from __future__ import division, print_function, absolute_import, unicode_literals
 
 import itertools
@@ -15,7 +9,7 @@ from h2o.frame import H2OFrame
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.two_dim_table import H2OTwoDimTable
 from h2o.display import H2ODisplay
-from h2o.grid.metrics import *
+from h2o.grid.metrics import *  # NOQA
 from h2o.utils.backward_compatibility import backwards_compatible
 from h2o.utils.shared_utils import deprecated, quoted
 from h2o.utils.compatibility import *  # NOQA

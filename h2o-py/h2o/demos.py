@@ -19,6 +19,7 @@ from h2o.utils.typechecks import assert_is_type
 
 def gbm(interactive=True, echo=True, testing=False):
     """GBM model demo."""
+
     def demo_body(go):
         """
         Demo of H2O's Gradient Boosting estimator.
@@ -78,6 +79,7 @@ def gbm(interactive=True, echo=True, testing=False):
 
 def deeplearning(interactive=True, echo=True, testing=False):
     """Deep Learning model demo."""
+
     def demo_body(go):
         """
         Demo of H2O's Deep Learning model.
@@ -136,6 +138,7 @@ def deeplearning(interactive=True, echo=True, testing=False):
 
 def glm(interactive=True, echo=True, testing=False):
     """GLM model demo."""
+
     def demo_body(go):
         """
         Demo of H2O's Generalized Linear Estimator.

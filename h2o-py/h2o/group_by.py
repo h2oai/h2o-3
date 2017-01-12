@@ -19,10 +19,10 @@ class GroupBy(object):
 
     Sample usage:
 
-           >>> my_frame = ...  # some existing H2OFrame
-           >>> grouped = my_frame.group_by(by=["C1","C2"])
-           >>> grouped.sum(col="X1",na="all").mean(col="X5",na="all").max()
-           >>> grouped.get_frame()
+       >>> my_frame = ...  # some existing H2OFrame
+       >>> grouped = my_frame.group_by(by=["C1", "C2"])
+       >>> grouped.sum(col="X1", na="all").mean(col="X5", na="all").max()
+       >>> grouped.get_frame()
 
     Any number of aggregations may be chained together in this manner.
 
@@ -30,9 +30,7 @@ class GroupBy(object):
     then it is assumed that the aggregation should apply to all columns but the
     group by columns.
 
-    The na parameter is one of ["all","ignore","rm"].
-        "all"    - include NAs
-        "rm"     - exclude NAs
+    The ``na`` parameter is one of ``"all"`` (include NAs), ``"ignore"``, ``"rm"`` (exclude NAs).
 
     Variance (var) and standard deviation (sd) are the sample (not population) statistics.
     """
@@ -50,51 +48,59 @@ class GroupBy(object):
         else:
             self._by = [self._by]
 
+
     def min(self, col=None, na="all"):
         return self._add_agg("min", col, na)
+
 
     def max(self, col=None, na="all"):
         return self._add_agg("max", col, na)
 
+
     def mean(self, col=None, na="all"):
         return self._add_agg("mean", col, na)
+
 
     def count(self, na="all"):
         return self._add_agg("nrow", None, na)
 
+
     def sum(self, col=None, na="all"):
         return self._add_agg("sum", col, na)
+
 
     def sd(self, col=None, na="all"):
         return self._add_agg("sdev", col, na)
 
+
     def var(self, col=None, na="all"):
         return self._add_agg("var", col, na)
+
 
     # def first(self,col=None,na="all"): return self._add_agg("first",col,na)
     # def last( self,col=None,na="all"): return self._add_agg("last",col,na)
     def ss(self, col=None, na="all"):
         return self._add_agg("sumSquares", col, na)
 
+
     def mode(self, col=None, na="all"):
         return self._add_agg("mode", col, na)
 
+
     @property
     def frame(self):
-        """
-        :return: the result of the group by
-        """
+        """The resulting frame of the group by."""
         return self.get_frame()
 
+
     def get_frame(self):
-        """
-        :return: the result of the group by
-        """
+        """The resulting frame of the group by."""
         if not self._res:
             aggs = []
             for k in self._aggs: aggs += (self._aggs[k])
             self._res = h2o.H2OFrame._expr(expr=ExprNode("GB", self._fr, self._by, *aggs))
         return self._res
+
 
     def _add_agg(self, op, col, na):
         if op == "nrow": col = 0
@@ -115,6 +121,7 @@ class GroupBy(object):
         name = "{}_{}".format(op, self._fr.names[cidx])
         self._aggs[name] = [op, cidx, na]
         return self
+
 
     def __repr__(self):
         print("GroupBy: ")
