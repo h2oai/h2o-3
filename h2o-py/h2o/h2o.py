@@ -807,18 +807,16 @@ def ls():
     return H2OFrame._expr(expr=ExprNode("ls")).as_data_frame(use_pandas=True)
 
 
-def frame(frame_id, exclude=""):
+def frame(frame_id):
     """
     Retrieve metadata for an id that points to a Frame.
 
     :param frame_id: the key of a Frame in H2O.
-    :param exclude: ?
 
     :returns: dict containing the frame meta-information.
     """
     assert_is_type(frame_id, str)
-    assert_is_type(exclude, str)
-    return api("GET /3/Frames/%s" % (frame_id + exclude))
+    return api("GET /3/Frames/%s" % frame_id)
 
 
 def frames():
