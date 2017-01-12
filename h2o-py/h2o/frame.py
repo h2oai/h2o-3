@@ -1992,9 +1992,9 @@ class H2OFrame(object):
 
         This function can only be applied to single-column categorical frame.
         """
-        if self.ncols > 1:
+        if self.ncols != 1:
             raise H2OValueError("This operation only applies to a single factor column")
-        if self.types[0] != "enum":
+        if self.types[self.names[0]] != "enum":
             raise H2OValueError("Input is not a factor. This operation only applies to a single factor column")
         return self.levels()[0]
 
@@ -2027,7 +2027,7 @@ class H2OFrame(object):
         :param str pattern: The pattern to count matches on in each string. This can also be a list of strings,
             in which case all of them will be searched for.
         """
-        assert_is_type(pattern, str)
+        assert_is_type(pattern, str, [str])
         fr = H2OFrame._expr(expr=ExprNode("countmatches", self, pattern))
         fr._ex._cache.nrows = self.nrow
         fr._ex._cache.ncols = self.ncol
@@ -2485,7 +2485,7 @@ class H2OFrame(object):
         """
         assert_is_type(breaks, [numeric])
         if self.ncols != 1: raise H2OValueError("Single-column frame is expected")
-        if self.types[0] not in {"int", "real"}: raise H2OValueError("A numeric column is expected")
+        if self.types[self.names[0]] not in {"int", "real"}: raise H2OValueError("A numeric column is expected")
         fr = H2OFrame._expr(expr=ExprNode("cut", self, breaks, labels, include_lowest, right, dig_lab),
                             cache=self._ex._cache)
         fr._ex._cache.types = {k: "enum" for k in self.names}
