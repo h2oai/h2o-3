@@ -240,4 +240,9 @@ public abstract class Persist {
   public boolean delete(String path) {
     throw new RuntimeException("Not implemented");
   }
+
+  /** Returns true if the persist layer understands given path. */
+  public boolean canHandle(String path) {
+    throw new RuntimeException("Not implemented");
+  }
 }

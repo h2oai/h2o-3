@@ -98,6 +98,11 @@ should be added to the group automatically.
    :maxdepth: 2
 
    security
+
+.. toctree::
+   :maxdepth: 2
+
+   data-sources
    
 .. toctree::
    :maxdepth: 1
