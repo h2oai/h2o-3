@@ -193,7 +193,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     public IcedHashMapGeneric<BufferedString, Integer> _vocab;
 
     @Override public ModelCategory getModelCategory() {
-      return ModelCategory.Unknown;
+      return ModelCategory.WordEmbedding;
     }
   }
 
