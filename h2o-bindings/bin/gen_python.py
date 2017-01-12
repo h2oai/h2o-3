@@ -184,17 +184,22 @@ def gen_module(schema, algo):
         ptype = param["ptype"]
         if pname == "model_id": continue  # The getter is already defined in ModelBase
         sname = pname[:-1] if pname[-1] == '_' else pname
-        phelp = param["dtype"] + ": " + param["help"]
+
+        if param["dtype"].startswith("Enum"):
+            vals = param["dtype"][5:-1].split(", ")
+            extrahelp = "One of: " + ", ".join("``%s``" % v for v in vals)
+        else:
+            extrahelp = "Type: ``%s``" % param["dtype"]
         if param["default_value"] is not None:
-            phelp += " (Default: %s)" % stringify(param["default_value"])
+            extrahelp += "  (default: ``%s``)" % stringify(param["default_value"])
+
         yield "    @property"
         yield "    def %s(self):" % pname
-        if len(phelp) > 100:
-            yield '        """'
-            yield "        %s" % bi.wrap(phelp, indent=(" " * 8), indent_first=False)
-            yield '        """'
-        else:
-            yield '        """%s"""' % phelp
+        yield '        """'
+        yield "        %s" % bi.wrap(param["help"], indent=(" " * 8), indent_first=False)
+        yield ""
+        yield "        %s" % bi.wrap(extrahelp, indent=(" " * 8), indent_first=False)
+        yield '        """'
         yield "        return self._parms.get(\"%s\")" % sname
         yield ""
         yield "    @%s.setter" % pname
@@ -285,10 +290,8 @@ def help_epilogue_for(algo):
                          >>> model.train(x=range(4), y=4, training_frame=fr)"""
     if algo == "glm":
         return """
-            Returns
-            -------
-            A subclass of ModelBase is returned. The specific subclass depends on the machine learning task at hand
-            (if it's binomial classification, then an H2OBinomialModel is returned, if it's regression then a
+            A subclass of :class:`ModelBase` is returned. The specific subclass depends on the machine learning task
+            at hand (if it's binomial classification, then an H2OBinomialModel is returned, if it's regression then a
             H2ORegressionModel is returned). The default print-out of the models is shown, but further GLM-specific
             information can be queried out of the object. Upon completion of the GLM, the resulting object has
             coefficients, normalized coefficients, residual/null deviance, aic, and a host of model metrics including
@@ -311,7 +314,7 @@ def class_extra_for(algo):
                 return self._parms["lambda"] if "lambda" in self._parms else None
 
             @Lambda.setter
-            def lambda_(self, value):
+            def Lambda(self, value):
                 self._parms["lambda"] = value
 
             @staticmethod
@@ -360,12 +363,10 @@ def class_extra_for(algo):
         # Ask the H2O server whether a Deep Water model can be built (depends on availability of native backends)
         @staticmethod
         def available():
-            \"\"\"
-            Returns True if a deep water model can be built, or False otherwise.
-            \"\"\"
+            \"\"\"Returns True if a deep water model can be built, or False otherwise.\"\"\"
             builder_json = h2o.api("GET /3/ModelBuilders", data={"algo": "deepwater"})
             visibility = builder_json["model_builders"]["deepwater"]["visibility"]
-            if (visibility == "Experimental"):
+            if visibility == "Experimental":
                 print("Cannot build a Deep Water model - no backend found.")
                 return False
             else:
