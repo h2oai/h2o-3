@@ -1,6 +1,7 @@
 package ai.h2o.automl;
 
 
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Key;
@@ -26,28 +27,31 @@ public class AutoMLTest extends TestUtil {
 //    }
 //  }
 //
-//  @Test public void checkMeta() {
-//    Frame fr=null;
-//    AutoML aml=null;
-//    try {
-//      fr = parse_test_file(Key.make("a.hex"), "smalldata/iris.csv");
-//      aml = new AutoML(Key.<AutoML>make(),"iris_wheader",fr, 4, "", -1, -1, false, null, true);
-//      aml.learn();
+@Test public void checkMeta() {
+  AutoML aml=null;
+  try {
+    AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+    autoMLBuildSpec.input_spec.training_path = new ImportFilesV3.ImportFiles();
+    autoMLBuildSpec.input_spec.training_path.path = "smalldata/iris/iris_wheader.csv";
+    autoMLBuildSpec.input_spec.response_column = "class";
+    autoMLBuildSpec.build_control.loss = "AUTO";
+    autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(3600);
+
+    aml = AutoML.startAutoML(autoMLBuildSpec);
+    // sepal_len column
+    // check the third & fourth moment computations
+    Assert.assertTrue(aml.frameMetadata._cols[0]._thirdMoment == 0.17642222222222248);
+    Assert.assertTrue(aml.frameMetadata._cols[0]._fourthMoment == 1.1332434671886653);
 //
-//      // sepal_len column
-//      // check the third & fourth moment computations
-//      Assert.assertTrue(aml._fm._cols[0]._thirdMoment == 0.17642222222222248);
-//      Assert.assertTrue(aml._fm._cols[0]._fourthMoment == 1.1332434671886653);
-//
-//      // check skew and kurtosis
-//      Assert.assertTrue(aml._fm._cols[0]._skew == 0.31071214388181395);
-//      Assert.assertTrue(aml._fm._cols[0]._kurtosis == 2.410255837401182);
-//    } finally {
-//      // cleanup
-//      if(fr!=null)  fr.delete();
-//      if(aml!=null) aml.delete();
-//    }
-//  }
+    // check skew and kurtosis
+    Assert.assertTrue(aml.frameMetadata._cols[0]._skew == 0.31071214388181395);
+    Assert.assertTrue(aml.frameMetadata._cols[0]._kurtosis == 2.410255837401182);
+  } finally {
+    // cleanup
+    if(aml!=null) aml.getTrainingFrame().delete();
+    if(aml!=null) aml.delete();
+  }
+}
 
   @Test public void SanTanderTest() {
     //Frame fr=null;
