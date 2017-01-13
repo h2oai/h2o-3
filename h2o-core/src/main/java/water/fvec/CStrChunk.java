@@ -1,6 +1,7 @@
 package water.fvec;
 
 import water.*;
+import water.util.SetOfBytes;
 import water.util.UnsafeUtils;
 import water.parser.BufferedString;
 
@@ -231,10 +232,11 @@ public class CStrChunk extends Chunk {
    * NewChunk is the same size as the original, despite trimming.
    *
    * @param nc NewChunk to be filled with strip version of strings in this chunk
-   * @param set chars to strip, treated as ASCII
+   * @param chars chars to strip, treated as ASCII
    * @return Filled NewChunk
    */
-  public NewChunk asciiLStrip(NewChunk nc, String set) {
+  public NewChunk asciiLStrip(NewChunk nc, String chars) {
+    SetOfBytes set = new SetOfBytes(chars);
     // copy existing data
     nc = this.inflate_impl(nc);
     //update offsets and byte array
@@ -242,14 +244,15 @@ public class CStrChunk extends Chunk {
       int j = 0;
       int off = intAt(i);
       if (off != NA) {
-        while( intersects(_mem[_valstart + off + j], set) ) j++;
+        while( set.contains(_mem[_valstart + off + j]) ) j++;
         if (j > 0) nc.set_is(i,off + j);
       }
     }
     return nc;
   }
 
-  public NewChunk asciiRStrip(NewChunk nc, String set) {
+  public NewChunk asciiRStrip(NewChunk nc, String chars) {
+    SetOfBytes set = new SetOfBytes(chars);
     // copy existing data
     nc = this.inflate_impl(nc);
     //update offsets and byte array
@@ -259,7 +262,7 @@ public class CStrChunk extends Chunk {
       if (off != NA) {
         while( _mem[_valstart+off+j] != 0 ) j++; //Find end
         j--;
-        while( intersects(_mem[_valstart + off + j], set) ) { // March back while char in set
+        while( set.contains(_mem[_valstart + off + j]) ) { // March back while char in set
           nc._ss[off+j] = 0; //Set new end
           j--;
         }
