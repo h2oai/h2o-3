@@ -137,15 +137,34 @@ public class TestUtil extends Iced {
   @Rule transient public TestRule runRule = new TestRule() {
     @Override public Statement apply(Statement base, Description description) {
       String testName = description.getClassName() + "#" + description.getMethodName();
-      if ((ignoreTestsNames != null && Arrays.asList(ignoreTestsNames).contains(testName)) ||
-          (doonlyTestsNames != null && !Arrays.asList(doonlyTestsNames).contains(testName))) {
+      boolean ignored = false;
+      if (ignoreTestsNames != null && ignoreTestsNames.length > 0) {
+        for (String tn : ignoreTestsNames) {
+          if (testName.startsWith(tn)) {
+            ignored = true;
+            break;
+          }
+        }
+      }
+      if (doonlyTestsNames != null && doonlyTestsNames.length > 0) {
+        ignored = true;
+        for (String tn : doonlyTestsNames) {
+          if (testName.startsWith(tn)) {
+            ignored = false;
+            break;
+          }
+        }
+      }
+      if (ignored) {
         // Ignored tests trump do-only tests
         Log.info("#### TEST " + testName + " IGNORED");
         return new Statement() {
           @Override
           public void evaluate() throws Throwable {}
         };
-      } else { return base; }
+      } else {
+        return base;
+      }
     }
   };
 
