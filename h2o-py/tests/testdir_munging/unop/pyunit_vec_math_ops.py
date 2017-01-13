@@ -11,6 +11,9 @@ import scipy.special
 
 
 def vec_math_ops():
+    seed0 = random.random()
+    random.seed(seed0)
+    print("Using seed %d" % seed0)
 
     sin_cos_tan_atan_sinh_cosh_tanh_asinh_data = [[random.uniform(-10,10) for r in range(10)] for c in range(10)]
     asin_acos_atanh_data = [[random.uniform(-1,1) for r in range(10)] for c in range(10)]
@@ -54,26 +57,28 @@ def vec_math_ops():
     pyunit_utils.np_comparison_check(h2o_data1[c].tanh(), np.tanh(np_data1[:,c]), 10)
     pyunit_utils.np_comparison_check(h2o_data3[c].acosh(), np.arccosh(np_data3[:,c]), 10)
     pyunit_utils.np_comparison_check(h2o_data1[c].asinh(), np.arcsinh(np_data1[:,c]), 10)
-    h2o_val = h2o_data3[c].gamma()[5,:].flatten()
-    num_val = math.gamma(h2o_data3[5,c])
-    assert abs(h2o_val - num_val) <  max(abs(h2o_val), abs(num_val)) * 1e-6, \
-        "check unsuccessful! h2o computed {0} and math computed {1}. expected equal gamma values between h2o and" \
-        "math".format(h2o_val,num_val)
-    h2o_val = h2o_data3[c].lgamma()[5,:].flatten()
-    num_val = math.lgamma(h2o_data3[5,c])
-    assert abs(h2o_val - num_val) <  max(abs(h2o_val), abs(num_val)) * 1e-6, \
-        "check unsuccessful! h2o computed {0} and math computed {1}. expected equal lgamma values between h2o and " \
-        "math".format(h2o_val,num_val)
-    h2o_val = h2o_data3[c].digamma()[5,:].flatten()
-    num_val = scipy.special.polygamma(0,h2o_data3[5,c])
-    assert abs(h2o_val - num_val) <  max(abs(h2o_val), abs(num_val)) * 1e-6, \
-        "check unsuccessful! h2o computed {0} and math computed {1}. expected equal digamma values between h2o and " \
-        "math".format(h2o_val,num_val)
-    h2o_val = h2o_data3[c].trigamma()[5,:].flatten()
-    num_val = scipy.special.polygamma(1,h2o_data3[5,c])
-    assert abs(h2o_val - float(num_val)) <  max(abs(h2o_val), abs(num_val)) * 1e-6, \
-        "check unsuccessful! h2o computed {0} and math computed {1}. expected equal trigamma values between h2o and " \
-        "math".format(h2o_val,num_val)
+
+    x_val = h2o_data3[5, c].flatten()
+    h2o_val = h2o_data3[c].gamma()[5, :].flatten()
+    num_val = math.gamma(x_val)
+    assert abs(h2o_val - num_val) < max(abs(h2o_val), abs(num_val)) * 1e-6, \
+        "h2o computed gamma({0}) = {1} while math computed gamma({0}) = {2}".format(x_val, h2o_val, num_val)
+
+    h2o_val = h2o_data3[c].lgamma()[5, :].flatten()
+    num_val = math.lgamma(x_val)
+    assert abs(h2o_val - num_val) < max(abs(h2o_val), abs(num_val)) * 1e-6, \
+        "h2o computed lgamma({0}) = {1} while math computed lgamma({0}) = {2}".format(x_val, h2o_val, num_val)
+
+    h2o_val = h2o_data3[c].digamma()[5, :].flatten()
+    num_val = scipy.special.polygamma(0, x_val)
+    assert abs(h2o_val - num_val) < max(abs(h2o_val), abs(num_val)) * 1e-6, \
+        "h2o computed digamma({0}) = {1} while scipy computed digamma({0}) = {2}".format(x_val, h2o_val, num_val)
+
+    h2o_val = h2o_data3[c].trigamma()[5, :].flatten()
+    num_val = scipy.special.polygamma(1, x_val)
+    assert abs(h2o_val - num_val) < max(abs(h2o_val), abs(num_val)) * 1e-6, \
+        "h2o computed trigamma({0}) = {1} while scipy computed trigamma({0}) = {2}".format(x_val, h2o_val, num_val)
+
     # for c in range(col):
     #     h2o_val = h2o_data5[c].all()
     #     num_val = True if np.all(np_data5[:,c]) else False
