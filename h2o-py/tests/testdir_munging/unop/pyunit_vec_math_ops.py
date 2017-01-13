@@ -44,6 +44,10 @@ def vec_math_ops():
         r = h2o_round[0]
         assert (s == r).all(), "Expected these to be equal, but signif: {0}, round: {1}".format(s, r)
 
+    test1 = (h2o_data1 == h2o_data1).all()
+    test2 = (h2o_data1 == h2o_data2).all()
+    assert test1 is True and test2 is False, "API change detected, the tests below will be ineffective"
+
     print("Testing trigonometric functions")
     assert ((h2o_data1.cos() - h2o.H2OFrame(np.cos(np_data1))).abs() < 1e-12).all()
     assert ((h2o_data1.sin() - h2o.H2OFrame(np.sin(np_data1))).abs() < 1e-12).all()
