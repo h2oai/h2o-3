@@ -241,10 +241,11 @@ public class CStrChunk extends Chunk {
     nc = this.inflate_impl(nc);
     //update offsets and byte array
     for(int i=0; i < _len; i++) {
-      int j = 0;
       int off = intAt(i);
       if (off != NA) {
-        while( set.contains(_mem[_valstart + off + j]) ) j++;
+        int j = 0;
+        off += _valstart;
+        while( set.contains(_mem[off + j]) ) j++;
         if (j > 0) nc.set_is(i,off + j);
       }
     }
@@ -257,28 +258,19 @@ public class CStrChunk extends Chunk {
     nc = this.inflate_impl(nc);
     //update offsets and byte array
     for(int i=0; i < _len; i++) {
-      int j = 0;
       int off = intAt(i);
       if (off != NA) {
-        while( _mem[_valstart+off+j] != 0 ) j++; //Find end
-        j--;
-        while( set.contains(_mem[_valstart + off + j]) ) { // March back while char in set
-          nc._ss[off+j] = 0; //Set new end
-          j--;
+        off += _valstart;
+        int pos = off;
+        while( _mem[pos++] != 0 ); //Find end
+        pos--;
+        while(pos >= off && set.contains(_mem[pos]) ) { // March back while char in set
+          nc._ss[pos] = 0; //Set new end
+          pos--;
         }
       }
     }
     return nc;
-  }
-
-  /**
-   * Does c intersect w/ set?
-   * @param c char to look for
-   * @param set set to look in
-   * @return true if c is in set
-   */
-  private boolean intersects(byte c, String set) {
-    return set.indexOf(c) >= 0;
   }
 }
 
