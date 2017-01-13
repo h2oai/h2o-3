@@ -74,7 +74,7 @@ public class AutoMLBuildSpecV3 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpec
          direction=API.Direction.INPUT,
          is_member_of_frames = {"training_frame", "validation_frame"},
          required = false
-      )a
+      )
     public String[] ignored_columns;
   } // class AutoMLInputV3
 
