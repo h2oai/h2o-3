@@ -37,13 +37,13 @@ function cleanup () {
 trap cleanup SIGTERM SIGINT
 
 
-MAX_MEM="-Xmx2g"
+MAX_MEM=${H2O_JVM_XMX:-2g}
 # Check if coverage should be run
 if [ $JACOCO_ENABLED = true ]
 then
     AGENT="../jacoco/jacocoagent.jar"
     COVERAGE="-javaagent:$AGENT=destfile=build/jacoco/h2o-scala.exec"
-    MAX_MEM="-Xmx8g"
+    MAX_MEM=${H2O_JVM_XMX:-8g}
 else
     COVERAGE=""
 fi
@@ -58,7 +58,7 @@ else
   # Increase XMX since JAVA_HOME can point to java6
   JAVA6_REGEXP=".*1\.6.*"
   if [[ $TEST_JAVA_HOME =~ $JAVA6_REGEXP ]]; then
-    JAVA_CMD="${JAVA_CMD} $MAX_MEM"
+    JAVA_CMD="${JAVA_CMD} -Xmx${MAX_MEM}"
   fi
 fi
 
