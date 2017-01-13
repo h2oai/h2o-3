@@ -23,7 +23,7 @@ import static water.udf.specialized.Strings.*;
 @SuppressWarnings("unchecked")
 public class UdfTest extends UdfTestBase {
   
-  int requiredCloudSize() { return 3; }
+  int requiredCloudSize() { return 5; }
   
   private DataColumn<Double> sines() throws java.io.IOException {
     return willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
