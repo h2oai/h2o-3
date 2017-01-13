@@ -21,7 +21,8 @@ from ..model.binomial import H2OBinomialModel
 from ..model.clustering import H2OClusteringModel
 from ..model.dim_reduction import H2ODimReductionModel
 from ..model.metrics_base import (H2OBinomialModelMetrics, H2OClusteringModelMetrics, H2ORegressionModelMetrics,
-                                  H2OMultinomialModelMetrics, H2OAutoEncoderModelMetrics, H2ODimReductionModelMetrics)
+                                  H2OMultinomialModelMetrics, H2OAutoEncoderModelMetrics, H2ODimReductionModelMetrics,
+                                  H2OWordEmbeddingModelMetrics)
 from ..model.model_base import ModelBase
 from ..model.multinomial import H2OMultinomialModel
 from ..model.regression import H2ORegressionModel
