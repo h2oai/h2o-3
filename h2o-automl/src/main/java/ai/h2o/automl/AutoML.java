@@ -11,10 +11,8 @@ import hex.grid.HyperSpaceSearchCriteria;
 import hex.tree.SharedTreeModel;
 import hex.tree.gbm.GBMModel;
 import water.*;
-import water.api.GridSearchHandler.DefaultModelParametersBuilderFactory;
 import water.api.schemas3.ImportFilesV3;
 import water.api.schemas3.KeyV3;
-import water.api.schemas3.ModelParametersSchemaV3;
 import water.exceptions.H2OAbstractRuntimeException;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -237,6 +235,8 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
   public void learn() {
 
     // step 1: gather initial frame metadata and guess the problem type
+
+    // TODO: Nishant says sometimes frameMetadata is null, so maybe we need to wait for it?
     frameMetadata = new FrameMetadata(trainingFrame,
             trainingFrame.find(buildSpec.input_spec.response_column),
             trainingFrame.toString()).computeFrameMetaPass1();
@@ -250,6 +250,8 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     // step 2: build a fast RF
     // ModelBuilder initModel = selectInitial(frameMetadata);
     // Model m = build(initModel); // need to track this...
+
+    // TODO: add the models to the modellist so they get deleted
 
     // step 2 for AutoML phase 1: do a random hyperparameter search with GBM
     Key<Grid> gridKey = Key.make("grid_0_" + this._key.toString());
@@ -344,7 +346,6 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
   }
 
   public void delete() {
-    trainingFrame.delete();  // TODO: no
     frameMetadata.delete();
     for (Model m : models()) m.delete();
     DKV.remove(MODELLIST);
