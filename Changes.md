@@ -2,6 +2,22 @@
 
 ##H2O
 
+###Tutte (3.10.2.2) - 1/12/2017
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3876'>PUBDEV-3876</a>] -         Enable HDFS-like filesystems
+</li>
+</ul>
+
+<h4>        Task
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3816'>PUBDEV-3816</a>] -         import functions required for r-release check
+</li>
+</ul>
+
 ###Tutte (3.10.2.1) - 12/22/2016
 
 <h4>        Bug
