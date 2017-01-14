@@ -183,6 +183,7 @@ public class FrameMetadata extends Iced {
     Val res = Rapids.exec(x);
     Frame f = res.getFrame();
     long cnt = _fr.numRows()  -  f.numRows();
+    f.delete();
     return (_rowsWithNa=cnt);
 
   }
