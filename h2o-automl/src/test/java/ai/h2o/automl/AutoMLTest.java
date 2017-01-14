@@ -58,6 +58,7 @@ public class AutoMLTest extends TestUtil {
     AutoML aml=null;
     try {
       // was: makeAutoML(Key<AutoML> key, String datasetPath, String[] relationPaths, String responseName, String loss, long maxTime, double minAccuracy, boolean ensemble, algo[] excludeAlgos, boolean tryMutations )
+      // input frame
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
       autoMLBuildSpec.input_spec.training_path = new ImportFilesV3.ImportFiles();
       //autoMLBuildSpec.input_spec.training_path.path = "smalldata/santander/train.csv.zip";
@@ -70,18 +71,18 @@ public class AutoMLTest extends TestUtil {
       autoMLBuildSpec.input_spec.training_path.path = "smalldata/allyears2k_headers.zip";
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_control.loss = "AUTO";
-      autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(300);
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(5);
 
       aml = AutoML.makeAutoML(Key.<AutoML>make(), autoMLBuildSpec);
-      aml.learn();
+      AutoML.startAutoML(aml);
+      aml.get();
 
-      aml = AutoML.startAutoML(autoMLBuildSpec);
       //Assert.assertTrue(aml.frameMetadata._cols[0]._skew == 0.31071214388181395);
-      System.out.print(aml.frameMetadata._cols[0]._skew);
+      //System.out.print(aml.frameMetadata._cols[0]._skew);
 
     } finally {
       // cleanup
-      if(aml!=null) aml.delete();
+      if(aml!=null) aml.deleteWithChildren();
     }
   }
 }
