@@ -74,6 +74,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
   private Frame validationFrame;         // optional validation frame
   private Vec responseVec;
   FrameMetadata frameMetadata;           // metadata for trainingFrame
+  private Key<Grid> gridKey;             // Grid key from GridSearch
   private boolean isClassification;
 
   private long timeRemaining;
@@ -206,6 +207,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
   public void stop() {
     if (null == jobs) return; // already stopped
     for (Job j : jobs) j.stop();
+    for (Job j : jobs) j.get(); // Hold until they all completely stop.
     totalTime = -1;
     timeRemaining = -1;
     jobs = null;
@@ -237,6 +239,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     // step 1: gather initial frame metadata and guess the problem type
 
     // TODO: Nishant says sometimes frameMetadata is null, so maybe we need to wait for it?
+    // null FrameMetadata arises when delete() is called without waiting for start() to finish.
     frameMetadata = new FrameMetadata(trainingFrame,
             trainingFrame.find(buildSpec.input_spec.response_column),
             trainingFrame.toString()).computeFrameMetaPass1();
@@ -292,21 +295,18 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
 */
 
     Log.info("AutoML: starting hyperparameter search");
-
     Job<Grid> gridJob = GridSearch.startGridSearch(gridKey,
             gbmParameters, // TODO
             searchParams, // TODO
             new GridSearch.SimpleParametersBuilderFactory<GBMModel.GBMParameters>(),
             searchCriteria);
 
-    // TODO: poll!  (better than this)
-    while (gridJob.isRunning())
-      try {
-        Thread.sleep(100);
-      } catch (InterruptedException e) {
-      }
-    ;
-    // TODO:
+    jobs.add(gridJob);
+
+
+    gridJob.get(); // Hold out until Grid Search is done (or if the job times out)
+
+
     this.job.update(1, "grid search complete");
 
     Log.info("AutoML: build done");
@@ -324,19 +324,36 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
   public static AutoML startAutoML(AutoMLBuildSpec buildSpec) {
     // TODO: name this job better
     AutoML aml = AutoML.makeAutoML(Key.<AutoML>make(), buildSpec);
-
     DKV.put(aml);
-
-    Job job = new TimedH2OJob(aml, aml._key).start();
-    aml.job = job;
-    job._max_runtime_msecs = Math.round(1000 * buildSpec.build_control.stopping_criteria.max_runtime_secs());
-    job._work = 3; // import, feature generation, grid search
-
-    aml.job.update(1, "data import complete");
-
-    DKV.put(aml);
+    startAutoML(aml);
     return aml;
   }
+
+  /**
+   * Takes in an AutoML instance and starts running it. Progress can be tracked via its job().
+   * @param aml
+   * @return
+     */
+  public static void startAutoML(AutoML aml) {
+    // Currently AutoML can only run one job at a time
+    if (aml.job == null || !aml.job.isRunning()) {
+      Job job = new TimedH2OJob(aml, aml._key).start();
+      aml.job = job;
+      job._max_runtime_msecs = Math.round(1000 * aml.buildSpec.build_control.stopping_criteria.max_runtime_secs());
+      job._work = 3;
+      aml.job.update(1, "data import complete");
+
+      DKV.put(aml);
+    }
+  }
+
+  /**
+   * Holds until AutoML's job is completed, if a job exists.
+   */
+  public void get() {
+    if (job != null) job.get();
+  }
+
 
   public Key<Model> getLeaderKey() {
     final Value val = DKV.get(LEADER);
@@ -346,10 +363,29 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
   }
 
   public void delete() {
-    frameMetadata.delete();
+    //if (frameMetadata != null) frameMetadata.delete(); //TODO: We shouldn't have to worry about FrameMetadata being null
+    AutoMLUtils.cleanup_adapt(trainingFrame, origTrainingFrame);
     for (Model m : models()) m.delete();
     DKV.remove(MODELLIST);
     DKV.remove(LEADER);
+    remove();
+  }
+
+  /**
+   * Same as delete() but also deletes all Objects made from this instance.
+   */
+  public void deleteWithChildren() {
+    delete();
+    if (gridKey != null) gridKey.remove();
+
+    // If the Frame was made here (e.g. buildspec contained a path, then it will be deleted
+    if (buildSpec.input_spec.training_frame == null) {
+      origTrainingFrame.delete();
+    }
+    if (buildSpec.input_spec.validation_frame == null && buildSpec.input_spec.validation_path != null) {
+      validationFrame.delete();
+    }
+
   }
 
   private ModelBuilder selectInitial(FrameMetadata fm) {  // may use _isClassification so not static method
