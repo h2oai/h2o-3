@@ -17,9 +17,23 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.file.Paths;
 
-import static deepwater.backends.mxnet.util.copy;
-
 public class DeepWaterMXNetIntegrationTest extends DeepWaterAbstractIntegrationTest {
+
+  static long copy(InputStream var0, OutputStream var1) throws IOException {
+    byte[] var2 = new byte[4096];
+    long var3 = 0L;
+
+    while(true) {
+      int var5 = var0.read(var2);
+      if(var5 == -1) {
+        return var3;
+      }
+
+      var1.write(var2, 0, var5);
+      var3 += (long)var5;
+    }
+  }
+
 
   @Override
   DeepWaterParameters.Backend getBackend() { return DeepWaterParameters.Backend.mxnet; }
