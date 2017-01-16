@@ -35,8 +35,8 @@ public class  DeepwaterCaffeBackend implements BackendTrain {
   @Override
   public void saveModel(BackendModel m, String model_path) {
     // Basic testing
-    System.out.println("Caffe backend: building new MLP model");
-
+    System.out.println("Caffe backend: saving MLP model");
+    System.out.println("File path and name: " + model_path);
   }
 
   // TODO
@@ -44,8 +44,8 @@ public class  DeepwaterCaffeBackend implements BackendTrain {
   @Override
   public void loadParam(BackendModel m, String param_path) {
     // Basic testing
-    System.out.println("Caffe backend: building new MLP model");
-
+    System.out.println("Caffe backend: loading MLP parameters");
+    System.out.println("File path and name: " + param_path);
   }
 
   // TODO
@@ -53,8 +53,8 @@ public class  DeepwaterCaffeBackend implements BackendTrain {
   @Override
   public void saveParam(BackendModel m, String param_path) {
     // Basic testing
-    System.out.println("Caffe backend: building new MLP model");
-
+    System.out.println("Caffe backend: saving MLP parameters");
+    System.out.println("File path and name: " + param_path);
   }
 
   @Override
@@ -71,7 +71,7 @@ public class  DeepwaterCaffeBackend implements BackendTrain {
   @Override
   public void setParameter(BackendModel m, String name, float value) {
     // Basic testing
-    System.out.println("Caffe backend: building new MLP model");
+    System.out.println("Caffe backend: setting parameters");
     if (name.equals("learning_rate"))
       ((DeepwaterCaffeModel)m)._learning_rate = value;
     else if (name.equals("momentum"))
