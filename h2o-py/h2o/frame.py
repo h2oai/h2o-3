@@ -2895,14 +2895,14 @@ def _binop(lhs, op, rhs):
     elif is_type(lhs, pandas_timestamp):
         lhs = H2OFrame.moment(date=lhs.to_pydatetime())
     elif is_type(lhs, numpy_datetime):
-        lhs = H2OFrame.moment(date=datetime.utcfromtimestamp(lhs.astype(int) / 1e9))
+        lhs = H2OFrame.moment(date=datetime.datetime.utcfromtimestamp(lhs.astype(int) / 1e9))
 
     if isinstance(rhs, datetime.date):
         rhs = H2OFrame.moment(date=rhs)
     elif is_type(rhs, pandas_timestamp):
         rhs = H2OFrame.moment(date=rhs.to_pydatetime())
     elif is_type(rhs, numpy_datetime):
-        rhs = H2OFrame.moment(date=datetime.utcfromtimestamp(rhs.astype(int) / 1e9))
+        rhs = H2OFrame.moment(date=datetime.datetime.utcfromtimestamp(rhs.astype(int) / 1e9))
 
     cache = lhs._ex._cache if isinstance(lhs, H2OFrame) else rhs._ex._cache
     return H2OFrame._expr(expr=ExprNode(op, lhs, rhs), cache=cache)
