@@ -80,14 +80,9 @@ public class RequestServer extends HttpServlet {
   public static ArrayList<Route> routes() { return routesList; }
   public static Route lookupRoute(RequestUri uri) { return routesTree.lookup(uri, null); }
 
-  private static HttpLogFilter[] _filters=null;
+  private static HttpLogFilter[] _filters=new HttpLogFilter[]{defaultFilter()};
   public static void setFilters(HttpLogFilter... filters) {
     _filters=filters;
-  }
-
-  static {
-    if( _filters==null )
-      setFilters(defaultFilter());
   }
 
   /**
