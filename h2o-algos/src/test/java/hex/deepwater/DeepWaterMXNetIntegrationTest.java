@@ -38,7 +38,7 @@ public class DeepWaterMXNetIntegrationTest extends DeepWaterAbstractIntegrationT
   DeepWaterParameters.Backend getBackend() { return DeepWaterParameters.Backend.mxnet; }
 
   public static String extractFile(String path, String file) throws IOException {
-    InputStream in = util.class.getResourceAsStream(Paths.get(path, file).toString());
+    InputStream in = DeepWaterMXNetIntegrationTest.class.getClassLoader().getResourceAsStream(Paths.get(path, file).toString());
     String target = Paths.get(System.getProperty("java.io.tmpdir"), file).toString();
     OutputStream out = new FileOutputStream(target);
     copy(in, out);
