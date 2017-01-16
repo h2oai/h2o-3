@@ -3,7 +3,6 @@ package hex.deepwater;
 import deepwater.backends.BackendModel;
 import deepwater.backends.BackendParams;
 import deepwater.backends.RuntimeOptions;
-import deepwater.backends.mxnet.util;
 import deepwater.datasets.ImageDataSet;
 import org.junit.Assert;
 import org.junit.Ignore;
