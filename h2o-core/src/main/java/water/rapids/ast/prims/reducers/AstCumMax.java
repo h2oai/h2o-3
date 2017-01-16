@@ -3,9 +3,7 @@ package water.rapids.ast.prims.reducers;
 
 public class AstCumMax extends AstCumu {
   @Override
-  public int nargs() {
-    return 1 + 1;
-  }
+  public int nargs() { return 1 + 2; }
 
   @Override
   public String str() {

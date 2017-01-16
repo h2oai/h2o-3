@@ -2,7 +2,6 @@ package water.bindings.examples.retrofit;
 
 import water.bindings.H2oApi;
 import water.bindings.pojos.*;
-import water.bindings.proxies.retrofit.*;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -21,7 +20,7 @@ public class GBM_Example {
 
         // STEP 1: import raw file
         ImportFilesV3 importBody = h2o.importFiles(
-            "http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz"
+            "http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz", null
           );
         System.out.println("import: " + importBody);
 
@@ -70,7 +69,7 @@ public class GBM_Example {
         gbmParms.responseColumn = responseColumn;
 
         System.out.println("About to train GBM. . .");
-        GBMV3 gbmBody = (GBMV3)h2o.train_gbm(gbmParms);
+        GBMV3 gbmBody = h2o.train_gbm(gbmParms);
         System.out.println("gbmBody: " + gbmBody);
 
 
@@ -86,6 +85,9 @@ public class GBM_Example {
         GBMModelV3 model = (GBMModelV3)models.models[0];
         System.out.println("new GBM model: " + model);
         // System.out.println("new GBM model: " + models.models[0]);
+        assert model.getClass() == GBMModelV3.class;
+        assert model.output.getClass() == GBMModelOutputV3.class;
+        assert model.parameters.getClass() == GBMParametersV3.class;
 
 
         // STEP 8: predict!

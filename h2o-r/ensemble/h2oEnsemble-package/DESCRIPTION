@@ -7,9 +7,10 @@ Author: Erin LeDell
 Maintainer: Erin LeDell <erin@h2o.ai>
 Description: H2O Ensemble implements the Super Learner ensemble (stacking) algorithm using the H2O R interface to provide base learning algorithms.   
 License: Apache License (== 2.0)
-Depends: R (>= 2.13.0), h2o (>= 3.7.0.1)
+Depends: h2o (>= 3.8.1.3)
+Imports: utils, stats
+Suggests: testthat, cvAUC (>= 1.0.1)
 NeedsCompilation: no
 SystemRequirements: Java (>= 1.6)
-Suggests: SuperLearner, cvAUC, testthat
 URL: https://github.com/h2oai/h2o-3/tree/master/h2o-r/ensemble/h2oEnsemble-package
 BugReports: https://0xdata.atlassian.net/issues/?filter=14900

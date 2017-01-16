@@ -68,8 +68,8 @@ public class MeanResidualDeviance extends Iced {
 
     MeanResidualBuilder(Distribution dist) { _dist = dist; }
 
-    @Override public void map( Chunk ca, Chunk cp) { map(ca,cp,null); }
-    @Override public void map( Chunk ca, Chunk cp, Chunk cw) {
+    @Override public void map(Chunk ca, Chunk cp) { map(ca, cp, (Chunk)null); }
+    @Override public void map(Chunk ca, Chunk cp, Chunk cw) {
       _mean_residual_deviance=0;
       _wcount=0;
       final int len = Math.min(ca._len, cp._len);

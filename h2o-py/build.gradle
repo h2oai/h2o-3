@@ -49,7 +49,7 @@ task upgradeOrInstallTabulate(type: Exec) {
 }
 
 task upgradeOrInstallWheel(type: Exec) {
-    commandLine getOsSpecificCommandLine(["pip", "install", "wheel", "--user", "--upgrade"])
+    commandLine getOsSpecificCommandLine(["pip", "install", "wheel", "--user", "--upgrade", "--ignore-installed"])
 }
 
 task buildDist(type: Exec) {

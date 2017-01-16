@@ -69,13 +69,13 @@ datetest <- function(){
   for( i in 2:10) {
     hdf[[paste("month",i,sep="")]] <- month(hdf[[paste("ds",i,sep="")]])
   }
-  
+
   # extract year & month from each date and put total month count in its own column (on server)
   for( i in 2:10) {
     hdf[[paste("idx",i,sep="")]] <- year(hdf[[paste("ds",i,sep="")]]) * 12 + month(hdf[[paste("ds",i,sep="")]])
   }
   #server dataframe is now 37 columns, 10 dates, 9 years, 9 months, 9 totalmonths
-  
+
   # set the column names for the new columns
   cc <- colnames(hdf)
   nn <- c( paste('year', 2:10, sep=''), paste('month', 2:10, sep=''), paste('idx', 2:10, sep='') )
@@ -99,16 +99,16 @@ datetest <- function(){
   rdf$ds10 <- as.Date(rdf$ds10, format='%Y_%m_%d')
 
   # create year, month, and totalmonth columns for R's version of the data
-  years <- data.frame(lapply(rdf, function(x) as.POSIXlt(x)$year))
+  years <- data.frame(lapply(rdf, function(x) as.POSIXlt(x)$year+1900))
   colnames(years) <- paste(rep("year",10),c(1:10),sep="")
 
   # as.POSIX.lt(x).mon returns a 0-11 range, but the R/H2O month(x) method returns 1-12
   months <- data.frame(lapply(rdf, function(x) as.POSIXlt(x)$mon + 1))
   colnames(months) <- paste(rep("month",10),c(1:10),sep="")
-  
+
   idx <- 12*years + months
   colnames(idx) <- paste(rep("idx",10),c(1:10),sep="")
-  
+
   rdf <- cbind(rdf, years, months, idx)
 
   #Compare the results imported from H2O (ldf) to R's results (rdf)
@@ -118,11 +118,11 @@ datetest <- function(){
     expect_that(ldf[[paste("year",i,sep="")]], equals(rdf[[paste("year",i,sep="")]]))
     print_diff(rdf[[paste("month",i,sep="")]], ldf[[paste("month",i,sep="")]])
     expect_that(ldf[[paste("month",i,sep="")]], equals(rdf[[paste("month",i,sep="")]]))
-    print_diff(rdf[[paste("idx",i,sep="")]], ldf[[paste("idx",i,sep="")]])    
+    print_diff(rdf[[paste("idx",i,sep="")]], ldf[[paste("idx",i,sep="")]])
     expect_that(ldf[[paste("idx",i,sep="")]], equals(rdf[[paste("idx",i,sep="")]]))
   }
-  
-  
+
+
   Log.info('Test 2')
   origTZ = h2o.getTimezone()
   #test 1
@@ -139,17 +139,17 @@ datetest <- function(){
   for (i in 2:11) {
     ldf[[paste("c",i,sep="")]] <- strftime(c1dates, formats[[i]], tz="America/Los_Angeles")
   }
-  
+
   #load data frame into H2O
   hdf = as.h2o(ldf, "hdf")
   #parse strings and enums into dates on H2O
   for (i in 1:11) {
     hdf[[paste("c",i,sep="")]] <- as.Date(hdf[[paste("c",i,sep="")]], formats[[i]])
   }
-  
+
   # convert dates in R into milliseconds
   lmillis <- data.frame(as.vector(unclass(as.POSIXct(c1dates, formats[1], tz="America/Los_Angeles")) * 1000))
-  
+
   #pull results back from H2O
   ldf <- as.data.frame(hdf)
   # compare milliseconds from R with those from H2O

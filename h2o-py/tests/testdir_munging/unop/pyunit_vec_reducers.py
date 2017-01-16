@@ -45,7 +45,7 @@ def frame_reducers():
     assert abs(h2o_val - num_val) < 1e-06, \
         "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal var values between h2o and " \
         "numpy".format(h2o_val,num_val)
-    h2o_val = h2o_data[c].mean()[0]
+    h2o_val = h2o_data[c].mean().getrow()[0]
     num_val = np.mean(np_data[c])
     assert abs(h2o_val - num_val) < 1e-06, \
         "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal mean values between h2o and " \

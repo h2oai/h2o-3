@@ -28,7 +28,7 @@ public interface IGeneratedModel {
     /** Return a number of classes in response column.
      *
      * @return number of response classes
-     * @throws java.lang.UnsupportedOperationException in case that it is call on non-classifier model.
+     * @throws java.lang.UnsupportedOperationException if called on a non-classifier model.
      */
     public int getNumResponseClasses();
 
@@ -73,9 +73,9 @@ public interface IGeneratedModel {
      * @param preds allocated array to hold a prediction
      * @return returned preds parameter filled by prediction
      * @deprecated use method IGenModel#score0
-     */
     @Deprecated
     public float[] predict(double[] data, float[] preds);
+     */
 
     /** Predict the given row and return prediction using given number of iterations (e.g., number of trees from forest).
      *
@@ -83,6 +83,6 @@ public interface IGeneratedModel {
      * @param preds allocated array to hold a prediction
      * @param maxIters maximum number of iterations to use during predicting process
      * @return returned preds parameter filled by prediction
-     */
     public float[] predict(double[] data, float[] preds, int maxIters);
+     */
 }

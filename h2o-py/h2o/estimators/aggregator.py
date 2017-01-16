@@ -82,7 +82,7 @@ class H2OAggregatorEstimator(H2OEstimator):
 
     @property
     def radius_scale(self):
-        """float: Radius scaling (Default: 1.0)"""
+        """float: Radius scaling (Default: 1)"""
         return self._parms.get("radius_scale")
 
     @radius_scale.setter

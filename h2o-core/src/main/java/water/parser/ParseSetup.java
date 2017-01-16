@@ -402,6 +402,8 @@ public class ParseSetup extends Iced {
                   "Remaining files have been ignored.";
         }*/
       }
+      if (_gblSetup==null)
+        throw new RuntimeException("This H2O node couldn't find the file(s) to parse. Please check files and/or working directories.");
       _gblSetup.setFileName(FileUtils.keyToFileName(key));
     }
 

@@ -7,7 +7,7 @@ import logging
 import os
 import re
 
-__all__ = ("H2OConfigReader", )
+__all__ = ("H2OConfigReader", "get_config_value")
 
 
 class H2OConfigReader(object):
@@ -34,13 +34,14 @@ class H2OConfigReader(object):
     #-------------------------------------------------------------------------------------------------------------------
 
     _allowed_config_keys = {
-        "init.check_version", "init.proxy", "init.url", "init.cluster_id", "init.verify_ssl_certificates"
+        "init.check_version", "init.proxy", "init.url", "init.cluster_id", "init.verify_ssl_certificates",
+        "init.cookies", "general.allow_breaking_changes"
     }
 
     def __init__(self):
         """Initialize the singleton instance of H2OConfigReader."""
         assert not hasattr(H2OConfigReader, "_instance"), "H2OConfigReader is intended to be used as a singleton"
-        self._logger = logging.getLogger("h2opy")
+        self._logger = logging.getLogger("h2o")
         self._config = {}
         self._config_loaded = False
 
@@ -59,7 +60,7 @@ class H2OConfigReader(object):
             if os.path.isfile(f):
                 self._logger.info("Reading config file %s" % f)
                 section_rx = re.compile(r"^\[(\w+)\]$")
-                keyvalue_rx = re.compile(r"^(\w+:)?([\w\.]+)\s*=\s*(.*)$")
+                keyvalue_rx = re.compile(r"^(\w+:)?([\w.]+)\s*=\s*(.*)$")
                 with io.open(f, "rt", encoding="utf-8") as config_file:
                     section_name = None
                     for lineno, line in enumerate(config_file):
@@ -82,11 +83,12 @@ class H2OConfigReader(object):
                             else:
                                 self._logger.error("Key %s is not a valid config key" % key)
                             continue
-                        self._logger.error("Syntax error in config file line %d" % lineno)
+                        self._logger.error("Syntax error in config file line %d: %s" % (lineno, line))
                 self._config = dict(conf)
                 return
 
-    def _candidate_log_files(self):
+    @staticmethod
+    def _candidate_log_files():
         """Return possible locations for the .h2oconfig file, one at a time."""
         # Search for .h2oconfig in the current directory and all parent directories
         relpath = ".h2oconfig"
@@ -99,3 +101,9 @@ class H2OConfigReader(object):
             yield abspath
         # Also check if .h2oconfig exists in the user's directory
         yield os.path.expanduser("~/.h2oconfig")
+
+
+
+def get_config_value(key, default=None):
+    """Return config value corresponding to the provided `key`."""
+    return H2OConfigReader.get_config().get(key, default)

@@ -43,6 +43,9 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
     };
   }
 
+  @Override public boolean havePojo() { return true; }
+  @Override public boolean haveMojo() { return false; }
+
   @Override
   public ToEigenVec getToEigenVec() {
     return LinearAlgebraUtils.toEigen;
@@ -217,6 +220,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
      */
     public final void buildModel() {
       DeepLearningModel cp = null;
+      List<Key> removeMe = new ArrayList();
       if (_parms._checkpoint == null) {
         cp = new DeepLearningModel(dest(), _parms, new DeepLearningModel.DeepLearningModelOutput(DeepLearning.this), _train, _valid, nclasses());
         if (_parms._pretrained_autoencoder != null) {
@@ -251,7 +255,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
           for (String st : previous.adaptTestForTrain(_train,true,false)) Log.warn(st);
           for (String st : previous.adaptTestForTrain(_valid,true,false)) Log.warn(st);
           dinfo = makeDataInfo(_train, _valid, _parms, nclasses());
-          DKV.put(dinfo);
+          DKV.put(dinfo); // For FrameTask that needs DataInfo in the DKV as a standalone thing - the DeepLearningModel has its own copy inside itself
+          removeMe.add(dinfo._key);
           cp = new DeepLearningModel(dest(), _parms, previous, false, dinfo);
           cp.write_lock(_job);
 
@@ -299,6 +304,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         }
       }
       trainModel(cp);
+      for (Key k : removeMe) DKV.remove(k);
 
       // clean up, but don't delete weights and biases if user asked for export
       List<Key> keep = new ArrayList<>();
@@ -438,16 +444,26 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         if (!stop_requested() && _parms._overwrite_with_best_model && model.actual_best_model_key != null && _parms._nfolds == 0) {
           DeepLearningModel best_model = DKV.getGet(model.actual_best_model_key);
           if (best_model != null && best_model.loss() < model.loss() && Arrays.equals(best_model.model_info().units, model.model_info().units)) {
-            if (!_parms._quiet_mode)
+            if (!_parms._quiet_mode) {
               Log.info("Setting the model to be the best model so far (based on scoring history).");
+              Log.info("Best model's loss: " + best_model.loss() + " vs this model's loss (before overwriting it with the best model): " + model.loss());
+            }
             DeepLearningModelInfo mi = IcedUtils.deepCopy(best_model.model_info());
             // Don't cheat - count full amount of training samples, since that's the amount of training it took to train (without finding anything better)
             mi.set_processed_global(model.model_info().get_processed_global());
             mi.set_processed_local(model.model_info().get_processed_local());
-            model.set_model_info(mi);
+            DeepLearningParameters parms = model.model_info().get_params(); // backup the parameters for this model
+            model.set_model_info(mi); // this overwrites also the parameters from the previous best model, but we only want the state
+            model.model_info().parameters = parms; // restore the parameters
             model.update(_job);
             model.doScoring(trainScoreFrame, validScoreFrame, _job._key, model.iterations, true);
-            assert(best_model.loss() == model.loss());
+            if (best_model.loss() != model.loss()) {
+              if (!_parms._quiet_mode) {
+                Log.info("Best model's loss: " + best_model.loss() + " vs this model's loss (after overwriting it with the best model) : " + model.loss());
+              }
+              Log.warn("Even though the model was reset to the previous best model, we observe different scoring results. " +
+                  "Most likely, the data set has changed during a checkpoint restart. If so, please compare the metrics to observe your data shift.");
+            }
           }
         }
         //store coefficient names for future use

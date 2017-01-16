@@ -116,6 +116,7 @@ public class RequestServer extends HttpServlet {
       MIME_JS = "application/javascript",
       MIME_JPEG = "image/jpeg",
       MIME_PNG = "image/png",
+      MIME_SVG = "image/svg+xml",
       MIME_GIF = "image/gif",
       MIME_WOFF = "application/x-font-woff",
       MIME_DEFAULT_BINARY = "application/octet-stream",
@@ -186,6 +187,23 @@ public class RequestServer extends HttpServlet {
       routesList.add(route);
       return route;
     } catch (MalformedURLException e) {
+      throw H2O.fail(e.getMessage());
+    }
+  }
+
+  /**
+   * Register an HTTP request handler for the given URL pattern.
+   *
+   * @param method_uri combined method/url pattern of the endpoint, for
+   *                   example: {@code "GET /3/Jobs/{job_id}"}
+   * @param handler_clz class of the handler (should inherit from
+   *                    {@link RestApiHandler}).
+   */
+  public static Route registerEndpoint(String method_uri, Class<? extends RestApiHandler> handler_clz) {
+    try {
+      RestApiHandler handler = handler_clz.newInstance();
+      return registerEndpoint(handler.name(), method_uri, handler_clz, null, handler.help());
+    } catch (Exception e) {
       throw H2O.fail(e.getMessage());
     }
   }
@@ -665,7 +683,7 @@ public class RequestServer extends HttpServlet {
 
   private static NanoResponse redirectToFlow() {
     NanoResponse res = new NanoResponse(HTTP_REDIRECT, MIME_PLAINTEXT, "");
-    res.addHeader("Location", "/flow/index.html");
+    res.addHeader("Location", H2O.ARGS.context_path + "/flow/index.html");
     return res;
   }
 
@@ -829,6 +847,7 @@ public class RequestServer extends HttpServlet {
       case "htm":case "html": mime = MIME_HTML; break;
       case "jpg":case "jpeg": mime = MIME_JPEG; break;
       case "png": mime = MIME_PNG; break;
+      case "svg": mime = MIME_SVG; break;
       case "gif": mime = MIME_GIF; break;
       case "woff": mime = MIME_WOFF; break;
       default: mime = MIME_DEFAULT_BINARY;

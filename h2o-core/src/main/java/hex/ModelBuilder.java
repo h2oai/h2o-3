@@ -18,7 +18,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   public ToEigenVec getToEigenVec() { return null; }
 
-  private IcedHashMap<Key,String> _toDelete = new IcedHashMap<>();
+  transient private IcedHashMap<Key,String> _toDelete = new IcedHashMap<>();
   void cleanUp() { FrameUtils.cleanUp(_toDelete); }
 
   public Job<M> _job;     // Job controlling this build
@@ -207,8 +207,18 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
             (nFoldWork()+1/*main model*/) * _parms.progressUnits(), _parms._max_runtime_secs);
   }
 
-  /** Train a model as part of a larger Job; the Job already exists and has started. */
-  final public M trainModelNested() {
+  /**
+   * Train a model as part of a larger Job;
+   *
+   * @param fr: Input frame override, ignored if null.
+   *   In some cases, algos do not work directly with the original frame in the K/V store.
+   *   Instead they run on a private anonymous copy (eg: reblanced dataset).
+   *   Use this argument if you want nested job to work on the actual working copy rather than the original Frame in the K/V.
+   *   Example: Outer job rebalances dataset and then calls nested job. To avoid needless second reblance, pass in the (already rebalanced) working copy.
+   * */
+  final public M trainModelNested(Frame fr) {
+    if(fr != null) // Use the working copy (e.g. rebalanced) instead of the original K/V store version
+      _train = fr;
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     _start_time = System.currentTimeMillis();
@@ -368,6 +378,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
       // Shallow clone - not everything is a private copy!!!
       ModelBuilder<M, P, O> cv_mb = (ModelBuilder)this.clone();
+      cv_mb._train = cvTrain;
       cv_mb._result = Key.make(identifier); // Each submodel gets its own key
       cv_mb._parms = (P) _parms.clone();
       // Fix up some parameters of the clone
@@ -396,16 +407,28 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public void cv_buildModels(int N, ModelBuilder<M, P, O>[] cvModelBuilders ) {
     H2O.H2OCountedCompleter submodel_tasks[] = new H2O.H2OCountedCompleter[N];
     int nRunning=0;
+    RuntimeException rt = null;
     for( int i=0; i<N; ++i ) {
       if( _job.stop_requested() ) break; // Stop launching but still must block for all async jobs
       Log.info("Building cross-validation model " + (i + 1) + " / " + N + ".");
       cvModelBuilders[i]._start_time = System.currentTimeMillis();
       submodel_tasks[i] = H2O.submitTask(cvModelBuilders[i].trainModelImpl());
-      if(++nRunning == nModelsInParallel()) //piece-wise advance in training the CV models
-        while (nRunning>0) submodel_tasks[i+1-nRunning--].join();
+      if(++nRunning == nModelsInParallel()) { //piece-wise advance in training the CV models
+        while (nRunning > 0) try {
+          submodel_tasks[i + 1 - nRunning--].join();
+        } catch (RuntimeException t) {
+          if (rt == null) rt = t;
+        }
+        if(rt != null) throw rt;
+      }
     }
     for( int i=0; i<N; ++i ) //all sub-models must be completed before the main model can be built
-      submodel_tasks[i].join();
+      try {
+        submodel_tasks[i].join();
+      } catch(RuntimeException t){
+        if(rt == null) rt = t;
+      }
+    if(rt != null) throw rt;
     cv_computeAndSetOptimalParameters(cvModelBuilders);
   }
 
@@ -558,6 +581,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
   // no hasResponse, call isSupervised instead (response is mandatory if isSupervised is true)
 
+  public boolean havePojo() { return false; }
+  public boolean haveMojo() { return false; }
+
   protected int _nclass; // Number of classes; 1 for regression; 2+ for classification
 
   public int nclasses(){return _nclass;}
@@ -568,7 +594,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * Find and set response/weights/offset/fold and put them all in the end,
    * @return number of non-feature vecs
    */
-  protected int separateFeatureVecs() {
+  public int separateFeatureVecs() {
     int res = 0;
     if(_parms._weights_column != null) {
       Vec w = _train.remove(_parms._weights_column);
@@ -760,7 +786,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         error("_train", "Missing training frame");
       return;
     }
-    Frame tr = _parms.train();
+    Frame tr = _train != null?_train:_parms.train();
     if( tr == null ) { error("_train", "Missing training frame: "+_parms._train); return; }
     _train = new Frame(null /* not putting this into KV */, tr._names.clone(), tr.vecs().clone());
     if (expensive) {
@@ -794,6 +820,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (_parms._fold_assignment != Model.Parameters.FoldAssignmentScheme.AUTO) {
         error("_fold_assignment", "Fold assignment is only allowed for cross-validation.");
       }
+    }
+    if (_parms._distribution == DistributionFamily.modified_huber) {
+      error("_distribution", "Modified Huber distribution is not supported yet.");
     }
     if (_parms._distribution != DistributionFamily.tweedie) {
       hide("_tweedie_power", "Only for Tweedie Distribution.");
@@ -899,7 +928,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (va.numRows()==0) error("_validation_frame", "Validation frame must have > 0 rows.");
       _valid = new Frame(null /* not putting this into KV */, va._names.clone(), va.vecs().clone());
       try {
-        String[] msgs = Model.adaptTestForTrain(_valid, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec(), _toDelete);
+        String[] msgs = Model.adaptTestForTrain(_valid, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec(), _toDelete, false);
         _vresponse = _valid.vec(_parms._response_column);
         if (_vresponse == null && _parms._response_column != null)
           error("_validation_frame", "Validation frame must have a response column '" + _parms._response_column + "'.");

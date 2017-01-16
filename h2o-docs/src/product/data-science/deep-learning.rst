@@ -148,6 +148,13 @@ recommended, as model performance can vary greatly.
    improve generalization. Specify one value per hidden layer. The range
    is >= 0 to <1, and the default is 0.5.
 
+-  **categorical_encoding**: Specify one of the following encoding schemes for handling categorical features:
+
+  - ``auto``: Allow the algorithm to decide
+  - ``one_hot_internal``: On the fly N+1 new cols for categorical features with N levels (default)
+  - ``binary``: No more than 32 columns per categorical feature
+  - ``eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
+
 -  **l1**: Specify the L1 regularization to add stability and improve
    generalization; sets the value of many weights to 0.
 
@@ -161,9 +168,17 @@ recommended, as model performance can vary greatly.
     - Use **Absolute**, **Quadratic**, or **Huber** for regression 
     - Use **Absolute**, **Quadratic**, **Huber**, or **CrossEntropy** for classification
 
--  **distribution**: Specify the distribution type from the drop-down
-   list. The options are auto, bernoulli, multinomial, gaussian,
-   poisson, gamma, laplace, quantile or tweedie.
+-  **distribution**: Specify the distribution (i.e., the loss function). The options are AUTO, bernoulli, multinomial, gaussian, poisson, gamma, laplace, quantile, huber, or tweedie.
+
+  - If the distribution is ``bernoulli``, the the response column must be 2-class categorical
+  - If the distribution is ``multinomial``, the response column must be categorical.
+  - If the distribution is ``poisson``, the response column must be numeric.
+  - If the distribution is ``laplace``, the response column must be numeric.
+  - If the distribution is ``tweedie``, the response column must be numeric.
+  - If the distribution is ``gaussian``, the response column must be numeric.
+  - If the distribution is ``huber``, the response column must be numeric.
+  - If the distribution is ``gamma``, the response column must be numeric.
+  - If the distribution is ``quantile``, the response column must be numeric.
 
 -  **quantile\_alpha**: (Only applicable if *Quantile* is specified for
    **distribution**) Specify the quantile to be used for Quantile
@@ -212,16 +227,20 @@ recommended, as model performance can vary greatly.
      3. N+1 models do *not* use **overwrite\_with\_best\_model**
      4. N+1 models may be off by the number specified for **stopping\_rounds** from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
 
--  **stopping\_metric**: Specify the metric to use for early stopping.
+-  **stopping_metric**: Specify the metric to use for early stopping.
    The available options are:
 
-   -  **AUTO**: Logloss for classification, deviance for regression
-   -  **deviance**
-   -  **logloss**
-   -  **MSE**
-   -  **AUC**
-   -  **r2**
-   -  **misclassification**
+    - ``auto``: This defaults to ``logloss`` for classification, ``deviance`` for regression
+    - ``deviance``
+    - ``logloss``
+    - ``mse``
+    - ``rmse``
+    - ``mae``
+    - ``rmsle``
+    - ``auc``
+    - ``lift_top_group``
+    - ``misclassification``
+    - ``mean_per_class_error``
 
 -  **stopping\_tolerance**: Specify the relative tolerance for the
    metric-based stopping to stop training if the improvement is less

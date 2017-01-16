@@ -110,6 +110,59 @@ For cluster startup, if you are not launching on Hadoop, then you will not need 
 
 --------------
 
+**What's the best approach to help diagnose a possible memory problem on a cluster?**
+
+We've found that the best way to understand JVM memory consumption is to turn on the following JVM flags:
+
+::
+
+   -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCTimeStamps
+
+You can then use the following tool to analyze the output: http://www.tagtraum.com/gcviewer-download.html
+
+--------------
+
+**How can I debug memory issues?**
+
+We recommend the following approach using R to debug memory issues:
+
+::
+
+   my for loop {
+    # perform loop
+
+    rm(R object that isn’t needed anymore)
+    rm(R object of h2o thing that isn’t needed anymore)
+
+    # trigger removal of h2o back-end objects that got rm’d above, since the rm can be lazy.
+    gc()
+    # optional extra one to be paranoid.  this is usually very fast.
+    gc()
+
+    # optionally sanity check that you see only what you expect to see here, and not more.
+    h2o.ls()
+
+    # tell back-end cluster nodes to do three back-to-back JVM full GCs.
+    h2o:::.h2o.garbageCollect()
+    h2o:::.h2o.garbageCollect()
+    h2o:::.h2o.garbageCollect()
+   }
+
+Note that the ``h2o.garbageCollct()`` function works as follows:
+
+::
+
+   # Trigger an explicit garbage collection across all nodes in the H2O cluster.
+   .h2o.garbageCollect <- function() {
+     res <- .h2o.__remoteSend("GarbageCollect", method = "POST")
+   }
+
+
+This tells the backend to do a forcible full-GC on each node in the H2O cluster. Doing three of them back-to-back makes it stand out clearly in the gcviewer chart where the bottom-of-inner loop is. You can then correlate what you expect to see with the X (time) axis of the memory utilization graph. 
+
+At this point you want to see if the bottom trough of the usage is growing from iteration to iteration after the triple full-GC bars in the graph. If the trough is not growing from iteration to iteration, then there is no leak; your usage is just really too much, and you need a bigger heap. If the trough is growing, then there is likely some kind of leak. You can try to use ``h2o.ls()`` to learn where the leak is. If ``h2o.ls()`` doesn't help, then you will have to drill much deeper using, for example, YourKit and reviewing the JVM-level heap profiles. 
+
+----------
 
 Algorithms
 ----------
@@ -442,6 +495,87 @@ H2O uses two ports:
 You can start the cluster behind the firewall, but to reach it, you must
 make a tunnel to reach the ``REST_API`` port. To use the cluster, the
 ``REST_API`` port of at least one node must be reachable.
+
+--------------
+
+**How can I create a multi-node H2O cluster on a SLURM system?**
+
+The syntax below comes from `https://github.com/ck37/savio-notes/blob/master/h2o-slurm-multinode.Rmd <https://github.com/ck37/savio-notes/blob/master/h2o-slurm-multinode.Rmd>`__ and describes how to create a multi-node H2O cluster on a Simple Linux Utility for Resource Management (SLURM) system using R. 
+
+::
+
+    # Check on the nodes we have access to.
+    node_list = Sys.getenv("SLURM_NODELIST")
+    cat("SLURM nodes:", node_list, "\n")
+
+    # Loop up IPs of the allocated nodes.
+    if (node_list != "") {
+      nodes = strsplit(node_list, ",")[[1]]
+      ips = rep(NA, length(nodes))
+      for (i in 1:length(nodes)) {
+        args = c("hosts", nodes[i])
+        result = system2("getent", args = args, stdout = T)
+        # Extract the IP from the result output.
+        ips[i] = sub("^([^ ]+) +.*$", "\\1", result, perl = T)
+      }
+      cat("SLURM IPs:", paste(ips, collapse=", "), "\n")
+      # Combine into a network string for h2o.
+      network = paste0(paste0(ips, "/32"), collapse=",")
+      cat("Network:", network, "\n")
+    }
+
+    # Specify how many nodes we want h2o to use.
+    h2o_num_nodes = length(ips)
+
+    # Options to pass to java call:
+    args = c(
+      # -Xmx30g allocate 30GB of RAM per node. Needs to come before "-jar"
+      "-Xmx30g",
+      # Specify path to downloaded h2o jar.
+      "-jar ~/software/h2o-latest/h2o.jar",
+      # Specify a cloud name for the cluster.
+      "-name h2o_r",
+      # Specify IPs of other nodes.
+      paste("-network", network)
+    )
+    cat(paste0("Args:\n", paste(args, collapse="\n"), "\n"))
+
+    # Run once for each node we want to start.
+    for (node_i in 1:h2o_num_nodes) {
+      cat("\nLaunching h2o worker on", ips[node_i], "\n")
+      new_args = c(ips[node_i], "java", args)
+      # Ssh into the target IP and launch an h2o worker with its own
+      # output and error files. These could go in a subdirectory.
+      cmd_result = system2("ssh", args = new_args,
+                           stdout = paste0("h2o_out_", node_i, ".txt"),
+                           stderr = paste0("h2o_err_", node_i, ".txt"),
+                           # Need to specify wait=F so that it runs in the background.
+                           wait = F)
+      # This should be 0.
+      cat("Cmd result:", cmd_result, "\n")
+      # Wait one second between inits.
+      Sys.sleep(1L)
+    }
+
+    # Wait 3 more seconds to find all the nodes, otherwise we may only
+    # find the node on localhost.
+    Sys.sleep(3L)
+
+    # Check if h2o is running. We will see ssh processes and one java process.
+    system2("ps", c("-ef", "| grep h2o.jar"), stdout = T)
+
+    suppressMessages(library(h2oEnsemble))
+
+    # Connect to our existing h2o cluster.
+    # Do not try to start a new server from R.
+    h2o.init(startH2O = F)
+
+    #################################
+
+    # Run H2O commands here.
+
+    #################################
+    h2o.shutdown(prompt = F)
 
 --------------
 

@@ -205,7 +205,7 @@ public class AstImpute extends AstPrimitive {
       Frame imputes = groupByFrame;
       if (imputes == null) {
         // Build and run a GroupBy command
-        AstRoot ast_grp = new AstGroup();
+        AstGroup ast_grp = new AstGroup();
 
         // simple case where user specified a column... col == -1 means do all columns
         if (doAllVecs) {

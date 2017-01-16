@@ -11,6 +11,7 @@ import water.nbhm.NonBlockingHashMap;
 import water.parser.Categorical;
 import water.parser.BufferedString;
 import water.util.ArrayUtils;
+import water.util.Log;
 
 import java.util.Arrays;
 
@@ -35,7 +36,7 @@ final class RollupStats extends Iced {
 
   // Computed in 1st pass
   volatile long _naCnt; //count(!isNA(X))
-  double _mean, _sigma; //sum(X) and sum(X^2) for non-NA values
+  double _mean, _sigma; //mean(X) and sqrt(sum((X-mean(X))^2)) for non-NA values
   long    _rows,        //count(X) for non-NA values
           _nzCnt,       //count(X!=0) for non-NA values
           _size,        //byte size
@@ -253,6 +254,10 @@ final class RollupStats extends Iced {
   private static class Roll extends MRTask<Roll> {
     final Key _rskey;
     RollupStats _rs;
+
+    @Override
+    protected boolean modifiesVolatileVecs(){return false;}
+
     Roll( H2OCountedCompleter cmp, Key rskey ) { super(cmp); _rskey=rskey; }
     @Override public void map( Chunk c ) { _rs = new RollupStats(0).map(c); }
     @Override public void reduce( Roll roll ) { _rs.reduce(roll._rs); }
@@ -268,8 +273,20 @@ final class RollupStats extends Iced {
         }
       }
       // mean & sigma not allowed on more than 2 classes; for 2 classes the assumption is that it's true/false
-      if( _fr.anyVec().isCategorical() && _fr.anyVec().domain().length > 2 )
+      Vec vec = _fr.anyVec();
+      String[] ss = vec.domain();
+      if( vec.isCategorical() && ss.length > 2 )
         _rs._mean = _rs._sigma = Double.NaN;
+      if( ss != null ) {
+        long dsz = (2/*hdr*/+1/*len*/+ss.length)*8;  // Size of base domain array
+        for( String s : vec.domain() )
+          if( s != null )
+            dsz += 2*s.length() + (2/*hdr*/+1/*value*/+1/*hash*/+2/*hdr*/+1/*len*/)*8;
+        _rs._size += dsz;             // Account for domain size in Vec size
+        // Account for Chunk key size
+        int keysize = (2/*hdr*/+1/*kb*/+1/*hash*/+2/*hdr*/+1/*len*/)*8+ vec._key._kb.length;
+        _rs._size += vec.nChunks()*(keysize*4/*key+value ptr in DKV, plus 50% fill rate*/);
+      }
     }
     // Just toooo common to report always.  Drowning in multi-megabyte log file writes.
     @Override public boolean logVerbose() { return false; }
@@ -437,18 +454,35 @@ final class RollupStats extends Iced {
           Value oldv = DKV.DputIfMatch(_rsKey, nnn, v, fs);
           fs.blockForPending();
           if(oldv == v){ // got the lock, compute the rollups
-            Roll r = new Roll(null,_rsKey).doAll(vec);
-                // computed the stats, now compute histo if needed and install the response and quit
-            r._rs._checksum ^= vec.length();
-            if(_computeHisto)
-              computeHisto(r._rs, vec, nnn);
-            else
-              installResponse(nnn, r._rs);
-            break;
+            try {
+              Roll r = new Roll(null, _rsKey).doAll(vec);
+              // computed the stats, now compute histo if needed and install the response and quit
+              r._rs._checksum ^= vec.length();
+              if (_computeHisto)
+                computeHisto(r._rs, vec, nnn);
+              else
+                installResponse(nnn, r._rs);
+              break;
+            } catch (Exception e) {
+              Log.err(e);
+              if (cleanupStats(nnn))
+                throw e;
+              else
+                throw new IllegalStateException("Unable to clean up RollupStats after an exception (see cause). " +
+                      "This could cause a key leakage, key=" + _rsKey, e);
+            }
           } // else someone else is modifying the rollups => try again
         }
       }
       tryComplete();
+    }
+
+    private boolean cleanupStats(Value current) {
+      Futures fs = new Futures();
+      Value old = DKV.DputIfMatch(_rsKey, null, current, fs);
+      boolean success = old != current;
+      fs.blockForPending();
+      return success;
     }
 
     final void computeHisto(final RollupStats rs, Vec vec, final Value nnn) {

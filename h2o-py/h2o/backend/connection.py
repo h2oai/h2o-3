@@ -38,6 +38,10 @@ from h2o.model.metrics_base import (H2ORegressionModelMetrics, H2OClusteringMode
 
 __all__ = ("H2OConnection", )
 
+if tuple(int(x) for x in requests.__version__.split('.')) < (2, 10):
+    print("[WARNING] H2O requires requests module of version 2.10 or newer. You have version %s.\n"
+          "You can upgrade to the newest version of the module running from the command line\n"
+          "    $ pip%s install --upgrade requests" % (requests.__version__, sys.version_info[0]))
 
 
 class H2OConnection(backwards_compatible()):
@@ -67,7 +71,7 @@ class H2OConnection(backwards_compatible()):
 
     @staticmethod
     def open(server=None, url=None, ip=None, port=None, https=None, auth=None, verify_ssl_certificates=True,
-             proxy=None, cluster_id=None, verbose=True, _msgs=None):
+             proxy=None, cluster_id=None, cookies=None, verbose=True, _msgs=None):
         r"""
         Establish connection to an existing H2O server.
 
@@ -102,6 +106,7 @@ class H2OConnection(backwards_compatible()):
             check for the presence of these variables and issue a warning if they are found. In order to suppress
             that warning and use proxy from the environment, pass ``proxy="(default)"``.
         :param cluster_id: name of the H2O cluster to connect to. This option is used from Steam only.
+        :param cookies: Cookie (or list of) to add to requests
         :param verbose: if True, then connection progress info will be printed to the stdout.
         :param _msgs: custom messages to display during connection. This is a tuple (initial message, success message,
             failure message).
@@ -145,6 +150,7 @@ class H2OConnection(backwards_compatible()):
         assert_is_type(proxy, str, None)
         assert_is_type(auth, AuthBase, (str, str), None)
         assert_is_type(cluster_id, int, None)
+        assert_is_type(cookies, str, [str], None)
         assert_is_type(_msgs, None, (str, str, str))
 
         conn = H2OConnection()
@@ -154,6 +160,7 @@ class H2OConnection(backwards_compatible()):
         conn._verify_ssl_cert = bool(verify_ssl_certificates)
         conn._auth = auth
         conn._cluster_id = cluster_id
+        conn._cookies = cookies
         conn._proxies = None
         if proxy and proxy != "(default)":
             conn._proxies = {scheme: proxy}
@@ -238,12 +245,17 @@ class H2OConnection(backwards_compatible()):
             assert_is_type(save_to, str)
             stream = True
 
+        if self._cookies is not None and isinstance(self._cookies, list):
+            self._cookies = ";".join(self._cookies)
+
         # Make the request
         start_time = time.time()
         try:
             self._log_start_transaction(endpoint, data, json, files, params)
+
             headers = {"User-Agent": "H2O Python client/" + sys.version.replace("\n", ""),
-                       "X-Cluster": self._cluster_id}
+                       "X-Cluster": self._cluster_id,
+                       "Cookie": self._cookies}
             resp = requests.request(method=method, url=url, data=data, json=json, files=files, params=params,
                                     headers=headers, timeout=self._timeout, stream=stream,
                                     auth=self._auth, verify=self._verify_ssl_cert, proxies=self._proxies)
@@ -278,9 +290,11 @@ class H2OConnection(backwards_compatible()):
         """
         if self._session_id:
             try:
+                # If the server gone bad, we don't want to wait forever...
+                if self._timeout is None: self._timeout = 1
                 self.request("DELETE /4/sessions/%s" % self._session_id)
                 self._print("H2O session %s closed." % self._session_id)
-            except:
+            except Exception:
                 pass
             self._session_id = None
         self._stage = -1
@@ -372,7 +386,8 @@ class H2OConnection(backwards_compatible()):
         self._verify_ssl_cert = None
         self._auth = None           # Authentication token
         self._proxies = None        # `proxies` dictionary in the format required by the requests module
-        self._cluster_id= None
+        self._cluster_id = None
+        self._cookies = None
         self._cluster = None        # H2OCluster object
         self._verbose = None        # Print detailed information about connection status
         self._requests_counter = 0  # how many API requests were made
@@ -451,15 +466,6 @@ class H2OConnection(backwards_compatible()):
                 value = value["name"]
             else:
                 value = str(value)
-            # Some hackery here... It appears that requests library cannot stomach "upgraded" strings if they contain
-            # certain characters such as '/'. Therefore we explicitly cast them to their native representation.
-            # Reproduction steps:
-            #   >>> import requests
-            #   >>> from future.types import newstr as str
-            #   >>> requests.get("http://www.google.com/search", params={"q": str("/foo/bar")})
-            # (throws a "KeyError 47" exception).
-            # if PY2 and hasattr(value, "__native__"): value = value.__native__()
-            # if PY2 and hasattr(key, "__native__"): key = key.__native__()
             res[key] = value
         return res
 

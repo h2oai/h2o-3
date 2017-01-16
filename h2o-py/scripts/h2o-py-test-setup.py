@@ -10,7 +10,7 @@ _IS_PYDEMO_                   = False
 _IS_PYUNIT_                   = False
 _IS_PYBOOKLET_                = False
 _RESULTS_DIR_                 = False
-_TEST_NAME_                   = None
+_TEST_NAME_                   = ""
 _FORCE_CONNECT_               = False
 
 def parse_args(args):
@@ -98,13 +98,6 @@ def unknownArg(arg):
     print("")
     usage()
 
-def set_pyunit_pkg_attrs(pkg):
-    setattr(pkg, '__on_hadoop__', _ON_HADOOP_)
-    setattr(pkg, '__hadoop_namenode__', _HADOOP_NAMENODE_)
-
-def set_pybooklet_pkg_attrs(pkg):
-    setattr(pkg, '__test_name__', _TEST_NAME_)
-    setattr(pkg, '__results_dir__', _RESULTS_DIR_)
 
 def h2o_test_setup(sys_args):
     h2o_py_dir = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),".."))
@@ -116,8 +109,11 @@ def h2o_test_setup(sys_args):
     import h2o
     from tests import pyunit_utils, pydemo_utils, pybooklet_utils
 
-    set_pyunit_pkg_attrs(pyunit_utils)
-    set_pybooklet_pkg_attrs(pybooklet_utils)
+    for pkg in (pyunit_utils, pybooklet_utils):
+        setattr(pkg, '__on_hadoop__', _ON_HADOOP_)
+        setattr(pkg, '__hadoop_namenode__', _HADOOP_NAMENODE_)
+        setattr(pkg, '__test_name__', _TEST_NAME_)
+        setattr(pkg, '__results_dir__', _RESULTS_DIR_)
 
     if _IS_PYUNIT_ or _IS_IPYNB_ or _IS_PYBOOKLET_ or _IS_PYDEMO_:
         pass
@@ -126,7 +122,8 @@ def h2o_test_setup(sys_args):
                                 "{0}".format(_TEST_NAME_))
 
     print("[{0}] {1}\n".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()), "Connect to h2o on IP: {0} PORT: {1}".format(_H2O_IP_, _H2O_PORT_)))
-    h2o.init(ip=_H2O_IP_, port=_H2O_PORT_, strict_version_check=False, force_connect=_FORCE_CONNECT_)
+    h2o.connect(ip=_H2O_IP_, port=_H2O_PORT_, verbose=False)
+    h2o.utils.config.H2OConfigReader.get_config()["general.allow_breaking_changes"] = True
 
     #rest_log = os.path.join(_RESULTS_DIR_, "rest.log")
     #h2o.start_logging(rest_log)

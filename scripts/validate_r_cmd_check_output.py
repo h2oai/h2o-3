@@ -80,6 +80,13 @@ class Check:
 
             r"^The Date field is over a month old.*",
             r"^Checking URLs requires 'libcurl' support in the R build",
+            # relation to optional data.table package
+            r"^\* checking package dependencies ... NOTE",
+            r"^Package suggested but not available for checking*",
+            r"^\* checking Rd cross-references ... NOTE",
+            r"^Package unavailable to check Rd xrefs*",
+            r"^Status: 3 NOTEs",
+            r"^Status: 4 NOTEs"
             ]
 
         s = f.readline()

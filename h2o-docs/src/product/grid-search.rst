@@ -1,6 +1,197 @@
 Grid (Hyperparameter) Search
 ============================
 
+Supported Grid Search Hyperparameters
+-------------------------------------
+
+The following hyperparameters are supported by grid search.
+
+Common Hyperparameters
+~~~~~~~~~~~~~~~~~~~~~~
+
+-  ``weights_column``
+-  ``offset_column``
+-  ``fold_column``
+-  ``fold_assignment``
+-  ``stopping_rounds``
+-  ``max_runtime_secs``
+-  ``stopping_metric``
+-  ``stopping_tolerance``
+
+Shared Tree Hyperparameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Note**: The Shared Tree hyperparameters apply to DRF and GBM.
+
+-  ``balance_classes``
+-  ``class_sampling_factors``
+-  ``max_after_balance_size``
+-  ``ntrees``
+-  ``max_depth``
+-  ``min_rows``
+-  ``nbins``
+-  ``nbins_top_level``
+-  ``nbins_cats``
+-  ``seed``
+-  ``sample_rate``
+-  ``sample_rate_per_class``
+-  ``col_sample_rate_per_tree``
+-  ``col_sample_rate_change_per_level``
+-  ``min_split_improvement``
+-  ``histogram_type``
+
+DRF Hyperparameters
+~~~~~~~~~~~~~~~~~~~
+
+-  ``mtries``
+-  ``categorical_encoding``
+
+GBM Hyperparameters
+~~~~~~~~~~~~~~~~~~~
+
+-  ``learn_rate``
+-  ``learn_rate_annealing``
+-  ``col_sample_rate``
+-  ``max_abs_leafnode_pred``
+-  ``pred_noise_bandwidth``
+-  ``distribution``
+-  ``tweedie_power``
+-  ``quantile_alpha``
+-  ``huber_alpha``
+-  ``categorical_encoding``
+
+K-Means Hyperparameters
+~~~~~~~~~~~~~~~~~~~~~~~
+
+-  ``max_iterations``
+-  ``standardize``
+-  ``seed``
+-  ``init``
+-  ``estimate_k``
+-  ``categorical_encoding``
+
+GLM Hyperparameters
+~~~~~~~~~~~~~~~~~~~
+
+-  ``seed``
+-  ``tweedie_variance_power``
+-  ``tweedie_link_power``
+-  ``alpha``
+-  ``lambda``
+-  ``missing_values_handling``
+
+GLRM Hyperparameters
+~~~~~~~~~~~~~~~~~~~~
+
+-  ``transform``
+-  ``k``
+-  ``loss``
+-  ``multi_loss``
+-  ``loss_by_col``
+-  ``period``
+-  ``regularization_x``
+-  ``regularization_y``
+-  ``gamma_x``
+-  ``gamma_y``
+-  ``max_iterations``
+-  ``max_updates``
+-  ``init_step_size``
+-  ``min_step_size``
+-  ``seed``
+-  ``init``
+-  ``svd_method``
+
+Naïve Bayes Hyperparameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  ``laplace``
+-  ``min_sdev``
+-  ``eps_sdev``
+-  ``min_prob``
+-  ``eps_prob``
+-  ``compute_metrics``
+-  ``seed``
+
+PCA Hyperparameters
+~~~~~~~~~~~~~~~~~~~
+
+-  ``transform``
+-  ``k``
+-  ``max_iterations``
+
+Deep Learning Hyperparameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  ``balance_classes``
+-  ``class_sampling_factors``
+-  ``max_after_balance_size``
+-  ``activation``
+-  ``hidden``
+-  ``epochs``
+-  ``train_samples_per_iteration``
+-  ``target_ratio_comm_to_comp``
+-  ``seed``
+-  ``adaptive_rate``
+-  ``rho``
+-  ``epsilon``
+-  ``rate``
+-  ``rate_annealing``
+-  ``rate_decay``
+-  ``momentum_start``
+-  ``momentum_ramp``
+-  ``momentum_stable``
+-  ``nesterov_accelerated_gradient``
+-  ``input_dropout_ratio``
+-  ``hidden_dropout_ratios``
+-  ``l1``
+-  ``l2``
+-  ``max_w2``
+-  ``initial_weight_distribution``
+-  ``initial_weight_scale``
+-  ``initial_weights``
+-  ``initial_biases``
+-  ``loss``
+-  ``distribution``
+-  ``tweedie_power``
+-  ``quantile_alpha``
+-  ``score_interval``
+-  ``score_training_samples``
+-  ``score_validation_samples``
+-  ``score_duty_cycle``
+-  ``classification_stop``
+-  ``regression_stop``
+-  ``quiet_mode``
+-  ``score_validation_sampling``
+-  ``overwrite_with_best_model``
+-  ``use_all_factor_levels``
+-  ``standardize``
+-  ``variable_importances``
+-  ``fast_mode``
+-  ``force_load_balance``
+-  ``replicate_training_data``
+-  ``single_node_mode``
+-  ``shuffle_training_data``
+-  ``missing_values_handling``
+-  ``sparse``
+-  ``col_major``
+-  ``average_activation``
+-  ``sparsity_beta``
+-  ``max_categorical_features``
+-  ``reproducible``
+-  ``elastic_averaging``
+-  ``elastic_averaging_moving_rate``
+-  ``elastic_averaging_regularization``
+-  ``categorical_encoding``
+
+Aggregator Hyperparameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  ``radius_scale``
+-  ``transform``
+-  ``pca_method``
+-  ``k``
+-  ``max_iterations``
+
 REST API
 --------
 
@@ -52,189 +243,8 @@ models). An example is:
 With grid search, each model is built sequentially, allowing users to
 view each model as it is built.
 
-Supported Grid Search Hyperparameters
--------------------------------------
-
-The following hyperparameters are supported by grid search.
-
-Common Hyperparameters
-~~~~~~~~~~~~~~~~~~~~~~
-
--  ``validation_frame``
--  ``response_column``
--  ``weights_column``
--  ``offset_column``
--  ``fold_column``
--  ``fold_assignment``
--  ``stopping_rounds``
--  ``max_runtime_secs``
--  ``stopping_metric``
--  ``stopping_tolerance``
-
-Shared Tree Hyperparameters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-**Note**: The Shared Tree hyperparameters apply to DRF and GBM.
-
--  ``balance_classes``
--  ``class_sampling_factors``
--  ``max_after_balance_size``
--  ``ntrees``
--  ``max_depth``
--  ``min_rows``
--  ``nbins``
--  ``nbins_top_level``
--  ``nbins_cats``
--  ``r2_stopping``
--  ``seed``
--  ``build_tree_one_node``
--  ``sample_rate``
--  ``sample_rate_per_class``
--  ``col_sample_rate_per_tree``
--  ``col_sample_rate_change_per_level``
--  ``score_tree_interval``
--  ``min_split_improvement``
--  ``histogram_type``
-
-DRF Hyperparameters
-~~~~~~~~~~~~~~~~~~~
-
--  ``mtries``
-
-GBM Hyperparameters
-~~~~~~~~~~~~~~~~~~~
-
--  ``learn_rate``
--  ``learn_rate_annealing``
--  ``distribution``
--  ``quantile_alpha``
--  ``tweedie_power``
--  ``col_sample_rate``
--  ``max_abs_leafnode_pred``
-
-K-Means Hyperparameters
-~~~~~~~~~~~~~~~~~~~~~~~
-
--  ``max_iterations``
--  ``standardize``
--  ``seed``
--  ``init``
-
-GLM Hyperparameters
-~~~~~~~~~~~~~~~~~~~
-
--  ``transform``
--  ``k``
--  ``loss``
--  ``multi_loss``
--  ``loss_by_col``
--  ``period``
--  ``regularization_x``
--  ``regularization_y``
--  ``gamma_x``
--  ``gamma_y``
--  ``max_iterations``
--  ``max_updates``
--  ``missing_values_handling``
--  ``init_step_size``
--  ``min_step_size``
--  ``seed``
--  ``init``
--  ``svd_method``
-
-Naïve Bayes Hyperparameters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
--  ``laplace``
--  ``min_sdev``
--  ``eps_sdev``
--  ``min_prob``
--  ``eps_prob``
--  ``compute_metrics``
--  ``seed``
-
-PCA Hyperparameters
-~~~~~~~~~~~~~~~~~~~
-
--  ``transform``
--  ``k``
--  ``max_iterations``
-
-Deep Learning Hyperparameters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
--  ``balance_classes``
--  ``class_sampling_factors``
--  ``max_after_balance_size``
--  ``max_confusion_matrix_size``
--  ``overwrite_with_best_model``
--  ``use_all_factor_levels``
--  ``standardize``
--  ``activation``
--  ``hidden``
--  ``epochs``
--  ``train_samples_per_iteration``
--  ``target_ratio_comm_to_comp``
--  ``seed``
--  ``adaptive_rate``
--  ``rho``
--  ``epsilon``
--  ``rate``
--  ``rate_annealing``
--  ``rate_decay``
--  ``momentum_start``
--  ``momentum_ramp``
--  ``momentum_stable``
--  ``nesterov_accelerated_gradient``
--  ``input_dropout_ratio``
--  ``hidden_dropout_ratios``
--  ``l1``
--  ``l2``
--  ``max_w2``
--  ``initial_weight_distribution``
--  ``initial_weight_scale``
--  ``initial_weights``
--  ``initial_biases``
--  ``loss``
--  ``distribution``
--  ``tweedie_power``
--  ``quantile_alpha``
--  ``score_interval``
--  ``score_training_samples``
--  ``score_validation_samples``
--  ``score_duty_cycle``
--  ``classification_stop``
--  ``regression_stop``
--  ``quiet_mode``
--  ``score_validation_sampling``
--  ``variable_importances``
--  ``fast_mode``
--  ``force_load_balance``
--  ``replicate_training_data``
--  ``single_node_mode``
--  ``shuffle_training_data``
--  ``missing_values_handling``
--  ``sparse``
--  ``col_major``
--  ``average_activation``
--  ``sparsity_beta``
--  ``max_categorical_features``
--  ``reproducible``
--  ``elastic_averaging``
--  ``elastic_averaging_moving_rate``
--  ``elastic_averaging_regularization``
-
-Aggregator Hyperparameters
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
--  ``radius_scale``
--  ``transform``
--  ``pca_method``
--  ``k``
--  ``max_iterations``
-
 Example
--------
+~~~~~~~
 
 Invoke a new GBM model grid search by POSTing the following request to
 ``/99/Grid/gbm``:
@@ -493,7 +503,7 @@ Example
 Exposing grid search end-point for a new algorithm
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In the following example, the PCA algorithm has been implemented and we
+In the following example, the PCA algorithm has been implemented, and we
 would like to expose the algorithm via REST API. The following aspects
 are assumed:
 
@@ -616,6 +626,7 @@ Caveats/In Progress
 -  The model builder job and grid jobs are not associated.
 -  There is no way to list the hyper space parameters that caused a
    model builder job failure.
+- The ``get_grid`` (Python) or ``getGrid`` (R) function can be called to retrieve a grid search instance. If neither cross-validation nor a validation frame is used in the grid search, then the training metrics will display in the "get grid" output. If a validation frame is passed to the grid, and ``nfolds = 0``, then the validation metrics will display. However, if ``nfolds`` > 1, then cross-validation metrics will display even if a validation frame is provided.
 
 Additional Documentation
 ------------------------

@@ -2,6 +2,7 @@ package hex;
 
 import water.*;
 import water.fvec.*;
+import water.util.ArrayUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -98,7 +99,7 @@ public class DataInfo extends Keyed<DataInfo> {
   public int _cats;  // "raw" number of categorical columns as they exist in the frame
   public int [] _catOffsets;   // offset column indices for the 1-hot expanded values (includes enum-enum interaction)
   public boolean [] _catMissing;  // bucket for missing levels
-  private int [] _catNAFill;    // majority class of each categorical col (or last bucket if _catMissing[i] is true)
+  public int [] _catNAFill;    // majority class of each categorical col (or last bucket if _catMissing[i] is true)
   public int [] _permutation; // permutation matrix mapping input col indices to adaptedFrame
   public double [] _normMul;  // scale the predictor column by this value
   public double [] _normSub;  // subtract from the predictor this value
@@ -262,7 +263,7 @@ public class DataInfo extends Keyed<DataInfo> {
       }
       else
         _catOffsets[i+1] = (len += v.domain().length - (useAllFactorLevels?0:1) + (missingBucket? 1 : 0)); //missing values turn into a new factor level
-      _catNAFill[i] = imputeMissing?imputeCat(train.vec(cats[i])):_catMissing[i]?v.domain().length - (_useAllFactorLevels || isInteractionVec(i)?0:1):-100;
+      _catNAFill[i] = imputeMissing?imputeCat(train.vec(cats[i]),_useAllFactorLevels):_catMissing[i]?v.domain().length - (_useAllFactorLevels || isInteractionVec(i)?0:1):-100;
       _permutation[i] = cats[i];
     }
     _numOffsets = MemoryManager.malloc4(nnums+1);
@@ -436,8 +437,14 @@ public class DataInfo extends Keyed<DataInfo> {
     _catNAFill = catModes;
   }
 
-  public static int imputeCat(Vec v) {
-    if(v.isCategorical()) return v.mode();
+
+  public static int imputeCat(Vec v) {return imputeCat(v,true);}
+  public static int imputeCat(Vec v, boolean useAllFactorLevels) {
+    if(v.isCategorical()) {
+      if (useAllFactorLevels) return v.mode();
+      long[] bins = v.bins();
+      return ArrayUtils.maxIndex(bins,1);
+    }
     return (int)Math.round(v.mean());
   }
 

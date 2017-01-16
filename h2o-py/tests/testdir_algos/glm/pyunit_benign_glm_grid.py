@@ -21,8 +21,8 @@ def benign_grid():
   for model in gs:
     assert isinstance(model, H2OGeneralizedLinearEstimator)
   gs.show()
-  print(gs.sort_by('F1', False))
-  best_model_id = gs.sort_by('F1', False)['Model Id'][0]
+  print(gs.get_grid(sort_by='F1', decreasing=True))
+  best_model_id = gs.get_grid(sort_by='F1', decreasing=True).model_ids[0]
   best_model = h2o.get_model(best_model_id)
   best_model.predict(training_data)
   gs.predict(training_data)
@@ -38,7 +38,7 @@ def benign_grid():
 
   max_models_g.show()
   print(max_models_g.grid_id)
-  print(max_models_g.sort_by('F1', False))
+  print(max_models_g.get_grid(sort_by='F1', decreasing=True))
 
   assert len(max_models_g.models) == 3, "expected 3 models, got: {}".format(len(max_models_g.models))
   print(max_models_g.sorted_metric_table())
@@ -50,7 +50,7 @@ def benign_grid():
 
   asymp_g.show()
   print(asymp_g.grid_id)
-  print(asymp_g.sort_by('F1', False))
+  print(asymp_g.get_grid(sort_by='F1', decreasing=True))
 
   assert len(asymp_g.models) == 5, "expected 5 models, got: {}".format(len(asymp_g.models))
 

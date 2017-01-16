@@ -18,7 +18,8 @@ def runif_check():
     r_i = imported_frame[0].runif(1234)
 
     print("This demonstrates that seeding runif on identical frames with different chunk distributions provides " \
-          "different results. upload_file: {0}, import_frame: {1}.".format(r_u.mean()[0], r_i.mean()[0]))
+          "different results. upload_file: {0}, import_frame: {1}."
+          .format(r_u.mean().getrow()[0], r_i.mean().getrow()[0]))
 
 
 

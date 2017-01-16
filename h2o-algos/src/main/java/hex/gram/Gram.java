@@ -3,6 +3,7 @@ package hex.gram;
 
 import hex.DataInfo;
 import hex.FrameTask;
+import hex.FrameTask2;
 import jsr166y.ForkJoinTask;
 import jsr166y.RecursiveAction;
 import water.*;
@@ -735,31 +736,43 @@ public final class Gram extends Iced<Gram> {
    * in R's notation g = t(X)%*%X/nobs, nobs = number of rows of X with no NA.
    * @author tomasnykodym
    */
-  public static class GramTask extends FrameTask<GramTask> {
+  public static class GramTask extends FrameTask2<GramTask> {
+    private  boolean _std = true;
     public Gram _gram;
     public long _nobs;
+    boolean _intercept = false;
 
     public GramTask(Key<Job> jobKey, DataInfo dinfo){
-      super(jobKey,dinfo);
+      super(null,dinfo,jobKey);
     }
-    @Override protected boolean chunkInit(){
-      _gram = new Gram(_dinfo.fullN(), _dinfo.largestCat(), _dinfo.numNums(), _dinfo._cats, false);
-      return true;
+    public GramTask(Key<Job> jobKey, DataInfo dinfo, boolean std, boolean intercept){
+      super(null,dinfo,jobKey);
+      _std = std;
+      _intercept = intercept;
     }
-    @Override protected void processRow(long gid, DataInfo.Row r) {
-      double w = 1; // todo add weights to dinfo?
-      _gram.addRow(r, w);
+    @Override public void chunkInit(){
+      _gram = new Gram(_dinfo.fullN(), _dinfo.largestCat(), _dinfo.numNums(), _dinfo._cats, _intercept);
+    }
+    double _prev = 0;
+    @Override protected void processRow(DataInfo.Row r) {
+      _gram.addRow(r, r.weight);
       ++_nobs;
+      double current = (_gram.get(_dinfo.fullN()-1,_dinfo.fullN()-1) - _prev);
+      _prev += current;
     }
-    @Override protected void chunkDone(long n){
-      double r = 1.0/_nobs;
-      _gram.mul(r);
+    @Override public void chunkDone(){
+      if(_std) {
+        double r = 1.0 / _nobs;
+        _gram.mul(r);
+      }
     }
     @Override public void reduce(GramTask gt){
-      double r1 = (double)_nobs/(_nobs+gt._nobs);
-      _gram.mul(r1);
-      double r2 = (double)gt._nobs/(_nobs+gt._nobs);
-      gt._gram.mul(r2);
+      if(_std) {
+        double r1 = (double) _nobs / (_nobs + gt._nobs);
+        _gram.mul(r1);
+        double r2 = (double) gt._nobs / (_nobs + gt._nobs);
+        gt._gram.mul(r2);
+      }
       _gram.add(gt._gram);
       _nobs += gt._nobs;
     }

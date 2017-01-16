@@ -5,6 +5,8 @@ import water.H2O;
 import water.Key;
 import water.api.schemas3.*;
 import water.api.schemas3.RapidsHelpV3.RapidsExpressionV3;
+import water.api.schemas4.InputSchemaV4;
+import water.api.schemas4.SessionIdV4;
 import water.exceptions.H2OIllegalArgumentException;
 import water.rapids.ast.AstRoot;
 import water.rapids.Rapids;
@@ -29,15 +31,13 @@ public class RapidsHandler extends Handler {
 
     Session ses = RapidsHandler.SESSIONS.get(rapids.session_id);
     if (ses == null) {
-      ses = new Session();
+      ses = new Session(rapids.session_id);
       RapidsHandler.SESSIONS.put(rapids.session_id, ses);
     }
 
     Val val;
     try {
-      // No locking, no synchronization - since any local locking is NOT a
-      // cluster-wide lock locking, which just provides the illusion of safety
-      // but not the actuality.
+      // This call is synchronized on the session instance
       val = Rapids.exec(rapids.ast, ses);
     } catch (IllegalArgumentException e) {
       throw e;
@@ -50,6 +50,7 @@ public class RapidsHandler extends Handler {
     switch (val.type()) {
       case Val.NUM:  return new RapidsNumberV3(val.getNum());
       case Val.NUMS: return new RapidsNumbersV3(val.getNums());
+      case Val.ROW:  return new RapidsNumbersV3(val.getRow());
       case Val.STR:  return new RapidsStringV3(val.getStr());
       case Val.STRS: return new RapidsStringsV3(val.getStrs());
       case Val.FRM:  return new RapidsFrameV3(val.getFrame());
@@ -89,9 +90,7 @@ public class RapidsHandler extends Handler {
   }
 
 
-  // For now, only 1 active Rapids session-per-cloud.  Needs to be per-session
-  // id... but clients then need to announce which session with each rapids call
-
+  /** Map of session-id (sent by the client) to the actual session instance. */
   public static HashMap<String, Session> SESSIONS = new HashMap<>();
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
@@ -112,4 +111,21 @@ public class RapidsHandler extends Handler {
     }
     return p;
   }
+
+  public static class StartSession4 extends RestApiHandler<InputSchemaV4, SessionIdV4> {
+    @Override public String name() {
+      return "newSession4";
+    }
+    @Override public String help() {
+      return "Start a new Rapids session, and return the session id.";
+    }
+
+    @Override
+    public SessionIdV4 exec(int ignored, InputSchemaV4 input) {
+      SessionIdV4 out = new SessionIdV4();
+      out.session_key = "_sid" + Key.make().toString().substring(0, 5);
+      return out;
+    }
+  }
+
 }

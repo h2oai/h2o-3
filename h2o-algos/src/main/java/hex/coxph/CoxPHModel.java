@@ -20,6 +20,7 @@ import water.fvec.Vec;
  */
 
 public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
+
   public static class CoxPHParameters extends Model.Parameters {
     public String algoName() { return "CoxPH"; }
     public String fullName() { return "Cox Proportional Hazards"; }

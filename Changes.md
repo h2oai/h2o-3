@@ -2,6 +2,303 @@
 
 ##H2O
 
+###Tutte (3.10.2.2) - 1/12/2017
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3876'>PUBDEV-3876</a>] -         Enable HDFS-like filesystems
+</li>
+</ul>
+
+<h4>        Task
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3816'>PUBDEV-3816</a>] -         import functions required for r-release check
+</li>
+</ul>
+
+###Tutte (3.10.2.1) - 12/22/2016
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3291'>PUBDEV-3291</a>] -         Summary() doesn&#39;t update stats values when asfactor() is applied
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3498'>PUBDEV-3498</a>] -         rectangular assign to a categorical column does not work (should be possible to assign either an existing level, or a new one)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3618'>PUBDEV-3618</a>] -         Numerical Column Names in H2O and R
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3690'>PUBDEV-3690</a>] -         pred_noise_bandwidth parameter is not reproducible with seed
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3723'>PUBDEV-3723</a>] -         Fix mktime() referencing from 0 base to 1 base for month and day
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3728'>PUBDEV-3728</a>] -         Binary loss functions return error in GLRM
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3747'>PUBDEV-3747</a>] -         python hist() plotted bars overlap
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3750'>PUBDEV-3750</a>] -         Python set_levels doesn&#39;t change other methods
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3753'>PUBDEV-3753</a>] -         h2o doc: glm grid search hyper parameters missing/incorrect listing. Presently glrm&#39;s is marked as glm&#39;s
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3764'>PUBDEV-3764</a>] -         Partial Plot incorrectly calculates for constant categorical column
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3778'>PUBDEV-3778</a>] -         h2o.proj_archetypes returns error if constant column is dropped in GLRM model
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3788'>PUBDEV-3788</a>] -         GLRM loss by col produces error if constant columns are dropped
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3796'>PUBDEV-3796</a>] -         isna() overwrites column names
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3812'>PUBDEV-3812</a>] -         NullPointerException with Quantile GBM, cross validation, &amp; sample_rate &lt; 1
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3819'>PUBDEV-3819</a>] -         R h2o.download_mojo broken - writes a 1 byte file
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3831'>PUBDEV-3831</a>] -         Seed definition incorrect in R API for RF, GBM, GLM, NB
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3834'>PUBDEV-3834</a>] -         h2o.glm: get AIOOB exception with xval and lambda search
+</li>
+</ul>
+
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3482'>PUBDEV-3482</a>] -         Supporting GLM binomial model to allow two arbitrary integer values
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3376'>PUBDEV-3376</a>] -         Implement ISAX calculations per ISAX word
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3377'>PUBDEV-3377</a>] -         Optimizations and final fixes for ISAX
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3664'>PUBDEV-3664</a>] -         Implement GLM MOJO
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3501'>PUBDEV-3501</a>] -         Variance metrics are missing from GLRM that are available in PCA
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3541'>PUBDEV-3541</a>] -         py h2o.as_list() should not return headers
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3715'>PUBDEV-3715</a>] -         Modify sum() calculation to work on rows or columns
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3737'>PUBDEV-3737</a>] -         make sure that the generated R bindings work with StackedEnsemble
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3833'>PUBDEV-3833</a>] -         Add HDP 2.5 Support
+</li>
+</ul>
+
+<h4>        Task
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3012'>PUBDEV-3012</a>] -         Remove grid.sort_by method in Python API
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3695'>PUBDEV-3695</a>] -         Documentation: Add GLM to list of algorithms that support MOJOs
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3791'>PUBDEV-3791</a>] -         Documentation: Add quasibinomomial family in GLM
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3676'>PUBDEV-3676</a>] -         Add SLURM cluster documentation
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3692'>PUBDEV-3692</a>] -         Add memory check for GLRM before proceeding
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3765'>PUBDEV-3765</a>] -         Check to make sure hinge loss works for GLRM
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3803'>PUBDEV-3803</a>] -         Add parameters from _upload_python_object to H2OFrame constructor
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3804'>PUBDEV-3804</a>] -         Refer to .h2o.jar.env when detaching R package
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3805'>PUBDEV-3805</a>] -         Call on proper port when exiting R/detaching package
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3806'>PUBDEV-3806</a>] -         Modify search for config file in R api
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3818'>PUBDEV-3818</a>] -         properly handle url in R docs from autogen
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3256'>PUBDEV-3256</a>] -         Documentation: As a GLM user, I want to be able to better understand the parameters
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3758'>PUBDEV-3758</a>] -         Fix bad/inconsistent/empty categorical (bitset) splits for DRF/GBM
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3793'>PUBDEV-3793</a>] -         Auto-generate R bindings
+</li>
+</ul>
+
+###Turnbull (3.10.1.2) - 12/14/2016
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2801'>PUBDEV-2801</a>] -         Starting h2o server from R ignores IP and port parameters
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3484'>PUBDEV-3484</a>] -         Treat 1-element numeric list as acceptable when numeric input required
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3509'>PUBDEV-3509</a>] -         h2o&#39;s cor() breaks R&#39;s native cor()
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3592'>PUBDEV-3592</a>] -         h2o.get_grid isn&#39;t working
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3607'>PUBDEV-3607</a>] -         `cor` function should properly pass arguments
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3629'>PUBDEV-3629</a>] -         Avoid confusing error message when column name is not found.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3631'>PUBDEV-3631</a>] -         overwrite_with_best_model fails when using checkpoint
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3633'>PUBDEV-3633</a>] -         plot.h2oModel in R no longer supports metrics with uppercase names (e.g. AUC)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3642'>PUBDEV-3642</a>] -         Fix citibike R demo
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3697'>PUBDEV-3697</a>] -         Create an Attribute for Number of Interal Trees in Python
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3704'>PUBDEV-3704</a>] -         Error with early stopping and score_tree_interval on GBM
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3735'>PUBDEV-3735</a>] -         Python&#39;s coef() and coef_norm() should use column name not index
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3757'>PUBDEV-3757</a>] -         Perfbar does not work for hierarchical path passed via -h2o_context
+</li>
+</ul>
+
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3474'>PUBDEV-3474</a>] -         Show Partial Dependence Plots in Flow
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3620'>PUBDEV-3620</a>] -         Allow setting nthreads &gt; 255.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3700'>PUBDEV-3700</a>] -         Add RMSE, MAE, RMSLE, and lift_top_group as stopping metrics
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3719'>PUBDEV-3719</a>] -         Update h2o.mean in R to match Python API
+</li>
+</ul>
+
+<h4>        Task
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3579'>PUBDEV-3579</a>] -         Document Partial Dependence Plot in Flow
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3621'>PUBDEV-3621</a>] -         Add R endpoint for cumsum, cumprod, cummin, and cummax
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3649'>PUBDEV-3649</a>] -         Modify correlation matrix calculation to match R
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3657'>PUBDEV-3657</a>] -         Remove max_confusion_matrix_size from booklets &amp; py doc
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-645'>HEXDEV-645</a>] -         aggregator should calculate domain for enum columns in aggregated output frames &amp; member frames based on current output or member frame
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-658'>HEXDEV-658</a>] -         Naive Bayes (and maybe GLM): Drop limit on classes that can be predicted (currently 1000)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3625'>PUBDEV-3625</a>] -         Speed up GBM and DRF
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3756'>PUBDEV-3756</a>] -         Support `-context_path` to change servlet path for REST API
+</li>
+</ul>
+
+<h4>        IT Help
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3279'>PUBDEV-3279</a>] -         Adding a custom loss-function
+</li>
+</ul>
+
+###Turing (3.10.0.10) - 11/7/2016
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3484'>PUBDEV-3484</a>] -         Treat 1-element numeric list as acceptable when numeric input required
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3675'>PUBDEV-3675</a>] -         Cannot determine file type
+</li>
+</ul>
+
+###Turing (3.10.0.9) - 10/25/2016
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3546'>PUBDEV-3546</a>] -         h2o.year() method does not return year
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3559'>PUBDEV-3559</a>] -         Regression Training Metrics: Deviance and MAE were swapped
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3568'>PUBDEV-3568</a>] -         h2o.max returns NaN even when na.rf condition is set to TRUE
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3593'>PUBDEV-3593</a>] -         Fix display of array-valued entries in TwoDimTables such as grid search results
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3585'>PUBDEV-3585</a>] -         Optimize algorithm for automatic estimation of K for K-Means
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-646'>HEXDEV-646</a>] -         include flow, /3/ API accessible Aggregator model in h2o-3
+</li>
+</ul>
+
+###Turing (3.10.0.8) - 10/10/2016
+
+<h4>        Technical task
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3363'>PUBDEV-3363</a>] -         R binding for new MOJO
+</li>
+</ul>
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3384'>PUBDEV-3384</a>] -         S3 API method PersistS3#uriToKey breaks expected contract
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3437'>PUBDEV-3437</a>] -         GLM multinomial with defaults fails on attached dataset
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3441'>PUBDEV-3441</a>] -         .structure() encounters list index out of bounds when nan is encountered in column
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3455'>PUBDEV-3455</a>] -         max_active_predi tors option in glm does not work anymore
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3461'>PUBDEV-3461</a>] -         Printed PCA model metrics in R is missing
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3477'>PUBDEV-3477</a>] -         R - Unnecessary JDK requirement on Windows
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3505'>PUBDEV-3505</a>] -         uuid columns with mostly missing values causes parse to fail.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-599'>HEXDEV-599</a>] -         Fold Column not available in h2o.grid
+</li>
+</ul>
+
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-1943'>PUBDEV-1943</a>] -         Compute partial dependence data
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3422'>PUBDEV-3422</a>] -         Create Method to Return Columns of Specific Type
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3491'>PUBDEV-3491</a>] -         Find optimal number of clusters in K-Means
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3492'>PUBDEV-3492</a>] -         Add optional categorical encoding schemes for GBM/DRF
+</li>
+</ul>
+
+<h4>        Task
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3327'>PUBDEV-3327</a>] -         Tasks for completing MOJO support
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3444'>PUBDEV-3444</a>] -         Ensure functions have `h2o.*` alias in R API
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3465'>PUBDEV-3465</a>] -         Sync up functionality of download_mojo and download_pojo in R &amp; Py
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3499'>PUBDEV-3499</a>] -         Improve the stopping criterion for K-Means Lloyds iterations
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-596'>HEXDEV-596</a>] -         Encryption of H2O communication channels
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-636'>HEXDEV-636</a>] -         add option to Aggregator model to show ignored columns in output frame
+</li>
+</ul>
+
 ###Turing (3.10.0.7) - 9/19/2016
 
 <h4>        Bug

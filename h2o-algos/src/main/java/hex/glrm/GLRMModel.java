@@ -1,6 +1,9 @@
 package hex.glrm;
 
 import hex.*;
+import hex.genmodel.algos.glrm.GlrmInitialization;
+import hex.genmodel.algos.glrm.GlrmLoss;
+import hex.genmodel.algos.glrm.GlrmRegularizer;
 import hex.svd.SVDModel.SVDParameters;
 import water.*;
 import water.fvec.Chunk;
@@ -56,7 +59,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     // Data transformation (demean to compare with PCA)
     public DataInfo.TransformType _transform = DataInfo.TransformType.NONE;
     public int _k = 1;                       // Rank of resulting XY matrix
-    public GLRM.Initialization _init = GLRM.Initialization.PlusPlus;  // Initialization of Y matrix
+    public GlrmInitialization _init = GlrmInitialization.PlusPlus;  // Initialization of Y matrix
     public SVDParameters.Method _svd_method = SVDParameters.Method.Randomized;  // SVD initialization method (for _init = SVD)
     public Key<Frame> _user_y;               // User-specified Y matrix (for _init = User)
     public Key<Frame> _user_x;               // User-specified X matrix (for _init = User)
@@ -81,12 +84,10 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     public double _init_step_size = 1.0;          // Initial step size (decrease until we hit min_step_size)
     public double _min_step_size = 1e-4;          // Min step size
 
-    // public Key<Frame> _representation_key;     // Key to save X matrix
     public String _representation_name;
     public boolean _recover_svd = false;          // Recover singular values and eigenvectors of XY at the end?
     public boolean _impute_original = false;      // Reconstruct original training data by reversing _transform?
     public boolean _verbose = true;               // Log when objective increases each iteration?
-
   }
 
 
@@ -154,6 +155,16 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     // Training time
     public ArrayList<Long> _training_time_ms = new ArrayList<>();
 
+    // Total column variance for expanded and transformed data
+    public double _total_variance;
+
+    // Standard deviation of each principal component
+    public double[] _std_deviation;
+
+    // Importance of principal components
+    // Standard deviation, proportion of variance explained, and cumulative proportion of variance explained
+    public TwoDimTable _importance;
+
     public GLRMOutput(GLRM b) { super(b); }
 
     /** Override because base class implements ncols-1 for features with the
@@ -189,6 +200,11 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     ab.getKey(_output._representation_key, fs);
     return super.readAll_impl(ab, fs);
   }
+
+  @Override public GlrmMojoWriter getMojo() {
+    return new GlrmMojoWriter(this);
+  }
+
 
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -375,7 +391,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     fullFrm.add(loadingFrm);
 
     GLRMScore gs = new GLRMScore(ncols, _parms._k, false).doAll(fullFrm);
-    ModelMetrics mm = gs._mb.makeModelMetrics(GLRMModel.this, adaptedFr, null, null);   // save error metrics based on imputed data
+    ModelMetrics mm = gs._mb.makeModelMetrics(GLRMModel.this, frame, null, null);   // save error metrics based on imputed data
     return (ModelMetricsGLRM) mm;
   }
 

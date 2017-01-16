@@ -98,7 +98,7 @@ Erin LeDell \email{erin@h2o.ai}
 # An example of binary classification on a local machine using h2o.ensemble
 
 library(h2oEnsemble)  # Requires version >=0.1.7 of h2oEnsemble
-localH2O <-  h2o.init(nthreads = -1)  # Start an H2O cluster with nthreads = num cores on your machine
+localH2O <- h2o.init(nthreads = -1) # Start H2O cluster using all available CPU threads
 
 
 # Import a sample binary outcome train/test set into R
@@ -115,8 +115,10 @@ test[,y] <- as.factor(test[,y])
 
 # Specify the base learner library & the metalearner
 # Let's use a reproducible library (set seed on RF and GBM):
-h2o.randomForest.1 <- function(..., ntrees = 100, seed = 1) h2o.randomForest.wrapper(..., ntrees = ntrees, seed = seed)
-h2o.gbm.1 <- function(..., ntrees = 100, seed = 1) h2o.gbm.wrapper(..., ntrees = ntrees, seed = seed)
+h2o.randomForest.1 <- function(..., ntrees = 100, seed = 1)
+  h2o.randomForest.wrapper(..., ntrees = ntrees, seed = seed)
+h2o.gbm.1 <- function(..., ntrees = 100, seed = 1)
+  h2o.gbm.wrapper(..., ntrees = ntrees, seed = seed)
 learner <- c("h2o.glm.wrapper", "h2o.randomForest.1", "h2o.gbm.1")
 metalearner <- "h2o.glm.wrapper"
 
@@ -151,7 +153,8 @@ print(perf, metric = "AUC")
 # Now let's re-train the metalearner fit to see if we get better performance.
 # Previously, we used a GLM metalearner, and now we will try a non-negative GLM.
 
-h2o.glm_nn <- function(..., non_negative = TRUE) h2o.glm.wrapper(..., non_negative = non_negative)
+h2o.glm_nn <- function(..., non_negative = TRUE)
+  h2o.glm.wrapper(..., non_negative = non_negative)
 newfit <- h2o.metalearn(fit, metalearner = "h2o.glm_nn")
 
 # Compute test set performance:

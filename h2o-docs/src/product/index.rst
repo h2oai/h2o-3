@@ -72,6 +72,11 @@ should be added to the group automatically.
 .. toctree::
    :maxdepth: 2
 
+   save-and-load-model
+
+.. toctree::
+   :maxdepth: 2
+
    pojo-quick-start
    
 .. toctree::
@@ -93,6 +98,11 @@ should be added to the group automatically.
    :maxdepth: 2
 
    security
+
+.. toctree::
+   :maxdepth: 2
+
+   data-sources
    
 .. toctree::
    :maxdepth: 1
@@ -109,6 +119,11 @@ should be added to the group automatically.
 
    migrating
    
+.. toctree::
+   :maxdepth: 2
+
+   parameters
+
 .. toctree::
    :maxdepth: 2
 

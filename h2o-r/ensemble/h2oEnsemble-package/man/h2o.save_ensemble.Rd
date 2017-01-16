@@ -40,9 +40,8 @@ Erin LeDell \email{erin@h2o.ai}
 \dontrun{
 # An example of binary classification on a local machine using h2o.ensemble
 
-library(h2oEnsemble)  # Requires version >=0.0.4 of h2oEnsemble
-library(cvAUC)  # Used to calculate test set AUC (requires version >=1.0.1 of cvAUC)
-localH2O <-  h2o.init(nthreads = -1)  # Start an H2O cluster with nthreads = num cores on your machine
+library(h2oEnsemble)
+localH2O <- h2o.init(nthreads = -1) # Start H2O cluster using all available CPU threads
 
 
 # Import a sample binary outcome train/test set into R
@@ -58,8 +57,8 @@ test[,y] <- as.factor(test[,y])
 
 
 # Specify the base learner library & the metalearner
-learner <- c("h2o.glm.wrapper", "h2o.randomForest.wrapper", 
-               "h2o.gbm.wrapper", "h2o.deeplearning.wrapper")
+learner <- c("h2o.glm.wrapper", "h2o.randomForest.wrapper",
+             "h2o.gbm.wrapper", "h2o.deeplearning.wrapper")
 metalearner <- "h2o.deeplearning.wrapper"
 
 
@@ -73,7 +72,7 @@ fit <- h2o.ensemble(x = x, y = y,
                     cvControl = list(V = 5, shuffle = TRUE))
 
 # Save ensemble model (a collection of H2OModels and an RData object) to disk
-h2o.save_ensemble(fit, path = "./h2o-ensemble-model-savetest", force = FALSE, export_levelone = FALSE)
+h2o.save_ensemble(fit, path = "./h2o-ensemble-model-savetest")
 rm(fit)
 
 # Load model from disk

@@ -60,6 +60,7 @@ setRefClass("H2OConnectionMutableState",
 #' @slot username Username to login with.
 #' @slot password Password to login with.
 #' @slot cluster_id Cluster to login to. Used for Steam connections
+#' @slot cookies Cookies to add to request
 #' @slot mutable An \code{H2OConnectionMutableState} object to hold the mutable state for the H2O connection.
 #' @aliases H2OConnection
 #' @export
@@ -68,6 +69,7 @@ setClass("H2OConnection",
                         https="logical", insecure="logical",
                         username="character", password="character",
                         cluster_id="numeric",
+                        cookies="character",
                         mutable="H2OConnectionMutableState"),
          prototype(ip           = NA_character_,
                    port         = NA_integer_,
@@ -77,6 +79,7 @@ setClass("H2OConnection",
                    username     = NA_character_,
                    password     = NA_character_,
                    cluster_id   = NA_integer_,
+                   cookies      = NA_character_,
                    mutable      = new("H2OConnectionMutableState")))
 
 setClassUnion("H2OConnectionOrNULL", c("H2OConnection", "NULL"))
@@ -276,6 +279,9 @@ setClass("H2OAutoEncoderModel", contains="H2OModel")
 #' @rdname H2OModel-class
 #' @export
 setClass("H2ODimReductionModel", contains="H2OModel")
+#' @rdname H2OModel-class
+#' @export
+setClass("H2OWordEmbeddingModel", contains="H2OModel")
 
 #'
 #' Accessor Methods for H2OModel Object
@@ -504,6 +510,10 @@ setMethod("show", "H2ODimReductionMetrics", function(object) {
     }
   } else print(NULL)
 })
+
+#' @rdname H2OModelMetrics-class
+#' @export
+setClass("H2OWordEmbeddingMetrics", contains="H2OModelMetrics")
 
 #' H2O Future Model
 #'

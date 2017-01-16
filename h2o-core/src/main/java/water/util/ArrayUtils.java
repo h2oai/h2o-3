@@ -1,9 +1,6 @@
 package water.util;
 
-import water.DKV;
-import water.Futures;
-import water.Key;
-import water.MemoryManager;
+import water.*;
 import water.fvec.*;
 
 import java.text.DecimalFormat;
@@ -166,6 +163,10 @@ public class ArrayUtils {
     for(int i = 0; i < a.length; i++ ) a[i] += b[i];
     return a;
   }
+  public static float[] add(float ca, float[] a, float cb, float[] b) {
+    for(int i = 0; i < a.length; i++ ) a[i] = (ca * a[i]) + (cb * b[i]);
+    return a;
+  }
   public static float[][] add(float[][] a, float[][] b) {
     for(int i = 0; i < a.length; i++ ) add(a[i],b[i]);
     return a;
@@ -180,6 +181,20 @@ public class ArrayUtils {
     double [][] res = ary.clone();
     for(int i = 0 ; i < res.length; ++i)
       res[i] = ary[i].clone();
+    return res;
+  }
+
+  public static <T extends Iced> T[][] deepClone(T [][] ary){
+    T [][] res = ary.clone();
+    for(int i = 0 ; i < res.length; ++i)
+      res[i] = deepClone(res[i]);
+    return res;
+  }
+  public static <T extends Iced> T[] deepClone(T [] ary){
+    T [] res = ary.clone();
+    for(int j = 0; j < res.length; ++j)
+      if(res[j] != null)
+        res[j] = (T)res[j].clone();
     return res;
   }
 
@@ -214,6 +229,7 @@ public class ArrayUtils {
     return a;
   }
   public static double[][] add(double[][] a, double[][] b) {
+    if (a == null) return b;
     for(int i = 0; i < a.length; i++ ) a[i] = add(a[i], b[i]);
     return a;
   }
@@ -329,6 +345,20 @@ public class ArrayUtils {
   public static double[][] transpose(double[][] ary) {
     if(ary == null) return null;
     double[][] res = new double[ary[0].length][ary.length];
+    for(int i = 0; i < res.length; i++) {
+      for(int j = 0; j < res[0].length; j++)
+        res[i][j] = ary[j][i];
+    }
+    return res;
+  }
+
+  public static <T> T[] cloneOrNull(T[] ary){return ary == null?null:ary.clone();}
+
+  public static <T> T[][] transpose(T[][] ary) {
+    if(ary == null|| ary.length == 0) return ary;
+    T [][] res  = Arrays.copyOf(ary,ary[0].length);
+    for(int i = 0; i < res.length; ++i)
+      res[i] = Arrays.copyOf(ary[0],ary.length);
     for(int i = 0; i < res.length; i++) {
       for(int j = 0; j < res[0].length; j++)
         res[i][j] = ary[j][i];
@@ -547,6 +577,18 @@ public class ArrayUtils {
     return result;
   }
   public static int maxIndex(long[] from) {
+    int result = 0;
+    for (int i = 1; i<from.length; ++i)
+      if (from[i]>from[result]) result = i;
+    return result;
+  }
+  public static int maxIndex(long[] from, int off) {
+    int result = off;
+    for (int i = off+1; i<from.length; ++i)
+      if (from[i]>from[result]) result = i;
+    return result;
+  }
+  public static int maxIndex(float[] from) {
     int result = 0;
     for (int i = 1; i<from.length; ++i)
       if (from[i]>from[result]) result = i;
@@ -1246,7 +1288,7 @@ public class ArrayUtils {
   }
 
   public static Object[][] zip(Object[] a, Object[] b) {
-    if (a.length != b.length) throw new IllegalArgumentException("Cannot zip arrays of different lenghts!");
+    if (a.length != b.length) throw new IllegalArgumentException("Cannot zip arrays of different lengths!");
     Object[][] result = new Object[a.length][2];
     for (int i = 0; i < a.length; i++) {
       result[i][0] = a[i];
@@ -1552,4 +1594,28 @@ public class ArrayUtils {
     }
     return false;
   }
+
+  /**
+   * Convert an array of primitive types into an array of corresponding boxed types. Due to quirks of Java language
+   * this cannot be done in any generic way -- there should be a separate function for each use case...
+   * @param arr input array of `char`s
+   * @return output array of `Character`s
+   */
+  public static Character[] box(char[] arr) {
+    Character[] res = new Character[arr.length];
+    for (int i = 0; i < arr.length; i++)
+      res[i] = arr[i];
+    return res;
+  }
+
+  /**
+   * Convert an ArrayList of Integers to a primitive int[] array.
+   */
+  public static int[] toPrimitive(ArrayList<Integer> arr) {
+    int[] res = new int[arr.size()];
+    for (int i = 0; i < res.length; i++)
+      res[i] = arr.get(i);
+    return res;
+  }
+
 }

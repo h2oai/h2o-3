@@ -3,6 +3,7 @@ package hex.optimization;
 
 import water.Iced;
 import water.util.ArrayUtils;
+import water.util.Log;
 
 import java.util.Arrays;
 
@@ -200,7 +201,8 @@ public class OptimizationUtils {
       "Number of calls to gradient solver has reached the limit.", // 3
       "The step is at the lower bound stpmin.", // 4
       "The step is at the upper bound stpmax.", // 5
-      "Rounding errors prevent further progress, ftol/gtol tolerances may be too small." // 6
+      "Rounding errors prevent further progress, ftol/gtol tolerances may be too small.", // 6
+      "Non-negative differential." // 7
     };
 
     private double nextStep(GradientInfo ginfo, double dg, double stp, double off) {
@@ -331,9 +333,11 @@ public class OptimizationUtils {
       double maxObj = _ginfox._objVal - _minRelativeImprovement*_ginfox._objVal;
       final double dgInit = ArrayUtils.innerProduct(_ginfox._gradient, direction);
       final double dgtest = dgInit * _ftol;
-      assert dgtest < 1e-4:"invalid gradient/direction, got positive differential " + dgtest;
-      if(dgtest >= 0)
+      if(dgtest > 1e-4) Log.warn("MoreThuente LS: got possitive differential " + dgtest);
+      if(dgtest >= 0) {
+        _returnStatus = 7;
         return false;
+      }
       double [] beta = new double[_beta.length];
       double width = _maxStep - _minStep;
       double oldWidth = 2*width;
@@ -372,7 +376,6 @@ public class OptimizationUtils {
           step *= .5;
           continue;
         }
-
         double dgp = ArrayUtils.innerProduct(newGinfo._gradient, direction);
         if(Double.isNaN(step) || _brackt && (step <= _stMin || step >= _stMax)) {
           _returnStatus = 6;
@@ -434,7 +437,12 @@ public class OptimizationUtils {
         step = nextStep;
       }
       boolean succ = _ginfox._objVal < oldObjval;
-      if(succ) _beta = beta;
+      if(succ) {
+        // make sure we have correct beta (not all return cases have valid current beta!)
+        for (int i = 0; i < beta.length; ++i)
+          beta[i] = _beta[i] + _stx * direction[i];
+        _beta = beta;
+      }
       return succ;
     }
 

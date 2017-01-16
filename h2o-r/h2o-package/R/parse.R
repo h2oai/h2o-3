@@ -6,6 +6,8 @@
 #' Parse the Raw Data produced by the import phase.
 #'
 #' @param data An H2OFrame object to be parsed.
+#' @param pattern (Optional) Character string containing a regular expression to match file(s) in
+#'        the folder.
 #' @param destination_frame (Optional) The hex key assigned to the parsed file.
 #' @param header (Optional) A logical value indicating whether the first row is
 #'        the column header. If missing, H2O will automatically try to detect
@@ -26,9 +28,10 @@
 #' @param chunk_size size of chunk of (input) data in bytes
 #' @seealso \link{h2o.importFile}, \link{h2o.parseSetup}
 #' @export
-h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.names=NULL,
-                         col.types=NULL, na.strings=NULL, blocking=FALSE, parse_type=NULL, chunk_size=NULL) {
-  parse.params <- h2o.parseSetup(data,destination_frame,header,sep,col.names,col.types, na.strings=na.strings, parse_type=parse_type)
+h2o.parseRaw <- function(data, pattern="", destination_frame = "", header=NA, sep = "", col.names=NULL,
+                         col.types=NULL, na.strings=NULL, blocking=FALSE, parse_type = NULL, chunk_size = NULL) {
+  parse.params <- h2o.parseSetup(data, pattern="", destination_frame, header, sep, col.names, col.types,
+                                 na.strings = na.strings, parse_type = parse_type, chunk_size = chunk_size)
   for(w in parse.params$warnings){
     cat('WARNING:',w,'\n')
   }
@@ -75,19 +78,10 @@ h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.
   if(!is.character(path) || is.na(path) || !nzchar(path)) stop("`path` must be a non-empty character string")
   if(!is.character(pattern) || length(pattern) != 1L || is.na(pattern)) stop("`pattern` must be a character string")
   .key.validate(destination_frame)
-  if(length(path) > 1L) {
-    destFrames <- c()
-    fails <- c()
-    for(path2 in path){
-      res <-.h2o.__remoteSend(.h2o.__IMPORT, path=path2)
-      destFrames <- c(destFrames, res$destination_frames)
-      fails <- c(fails, res$fails)
-    }
-    res$destination_frames <- destFrames
-    res$fails <- fails
-  } else {
-    res <- .h2o.__remoteSend(.h2o.__IMPORT, path=path)
-  }
+  res <-.h2o.__remoteSend(.h2o.__IMPORT, path=path, pattern=pattern)
+  destFrame <- res$destination_frames
+  fails <- res$fails
+
   if(length(res$fails) > 0L) {
     for(i in seq_len(length(res$fails)))
       cat(res$fails[[i]], "failed to import")
@@ -115,7 +109,8 @@ h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.
 #' @inheritParams h2o.parseRaw
 #' @seealso \link{h2o.parseRaw}
 #' @export
-h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", col.names=NULL, col.types=NULL, na.strings=NULL, parse_type=NULL) {
+h2o.parseSetup <- function(data, pattern="", destination_frame = "", header = NA, sep = "", col.names = NULL, col.types = NULL,
+                           na.strings = NULL, parse_type = NULL, chunk_size = NULL) {
 
   # Allow single frame or list of frames; turn singleton into a list
   if( is.H2OFrame(data) ) data <- list(data)
@@ -185,9 +180,11 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
     } else { stop("`col.types` must be a character vector or list") }
   }
 
-  # check the parse_type
-  # currently valid types are ARFF, XLS, CSV, SVMLight
+  # set parse_type
   if( !is.null(parse_type) ) parseSetup$parse_type <- parse_type
+
+  # set chunk_size
+  if( !is.null(chunk_size) ) parseSetup$chunk_size <- chunk_size
 
   # make a name only if there was no destination_frame ( i.e. !nzchar("") == TRUE )
   if( !nzchar(destination_frame) ) destination_frame <- .key.make(parseSetup$destination_frame)

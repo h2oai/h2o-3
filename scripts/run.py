@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*-  encoding: utf-8  -*-
 """
 Test harness.
@@ -400,40 +400,29 @@ class H2OCloudNode(object):
     def scrape_port_from_stdout(self):
         """
         Look at the stdout log and figure out which port the JVM chose.
-        Write this to self.port.
-        This call is blocking.
-        Exit if this fails.
 
-        :return none
+        If successful, port number is stored in self.port; otherwise the
+        program is terminated. This call is blocking, and will wait for
+        up to 30s for the server to start up.
         """
-        retries = 30
-        while retries > 0:
-            if self.terminated: return
-            f = open(self.output_file_name, "r")
-            s = f.readline()
-            while len(s) > 0:
-                if self.terminated: return
-                match_groups = re.search(r"Listening for HTTP and REST traffic on http.*://(\S+):(\d+)", s)
-                if match_groups is not None:
-                    port = match_groups.group(2)
-                    if port is not None:
-                        self.port = port
-                        f.close()
-                        print("H2O Cloud {} Node {} started with output file {}".format(self.cloud_num,
-                                                                                        self.node_num,
-                                                                                        self.output_file_name))
+        regex = re.compile(r"Open H2O Flow in your web browser: https?://([^:]+):(\d+)")
+        retries_left = 30
+        while retries_left and not self.terminated:
+            with open(self.output_file_name, "r") as f:
+                for line in f:
+                    mm = re.search(regex, line)
+                    if mm is not None:
+                        self.port = mm.group(2)
+                        print("H2O cloud %d node %d listening on port %s\n    with output file %s" %
+                              (self.cloud_num, self.node_num, self.port, self.output_file_name))
                         return
-
-                s = f.readline()
-
-            f.close()
-            retries -= 1
-            if self.terminated: return
+            if self.terminated: break
+            retries_left -= 1
             time.sleep(1)
 
-        print("")
-        print("ERROR: Too many retries starting cloud.")
-        print("")
+        if self.terminated: return
+        print("\nERROR: Too many retries starting cloud %d.\nCheck the output log %s.\n" %
+              (self.cloud_num, self.output_file_name))
         sys.exit(1)
 
 

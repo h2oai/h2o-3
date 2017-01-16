@@ -1,5 +1,5 @@
 library(testthat)
-library(h2oEnsemble)
 library(cvAUC)
+library(h2oEnsemble)
 
 test_check("h2oEnsemble")

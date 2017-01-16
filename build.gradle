@@ -20,11 +20,15 @@ apply from: 'gradle/timing.gradle'
 // classpath
 buildscript {
     repositories {
+        maven {
+            url 'https://plugins.gradle.org/m2/'
+        }
         mavenCentral()
         jcenter()
     }
 
     dependencies {
+        classpath 'org.ow2.asm:asm:5.1'
         classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.2'
         classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.7.1'
         classpath 'com.github.townsfolk:gradle-release:1.2'
@@ -33,7 +37,7 @@ buildscript {
         classpath 'com.adaptc.gradle:nexus-workflow:0.6'
         classpath 'org.testng:testng:6.8'
         classpath "be.insaneprogramming.gradle:animalsniffer-gradle-plugin:+"
-        classpath "io.spring.gradle:dependency-management-plugin:0.5.4.RELEASE"
+        classpath 'me.champeau.gradle:jmh-gradle-plugin:0.3.1'
     }
 }
 
@@ -93,6 +97,11 @@ ext {
       // The S3 tests needs credentials which are provided by test environment.
       // Because of restrictions of Amazon they cannot be stored in repository.
       project(':h2o-persist-s3'),
+    ]
+
+    // Projects with micro-benchmarks
+    ubenchProjects = [
+      project(':h2o-core')
     ]
 
     //
@@ -214,6 +223,12 @@ subprojects {
 
     if (project in pythonProjects) {
         apply from: "$rootDir/gradle/r.gradle"   // same plugins
+    }
+
+    if (project in ubenchProjects) {
+        if (project.hasProperty("doUBench") && project.doUBench == "true") {
+            apply from: "$rootDir/gradle/ubench.gradle"
+        }
     }
 }
 

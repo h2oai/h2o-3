@@ -158,7 +158,7 @@ public class GLMBasicTestBinomial extends TestUtil {
             scoreTrain = model.score(_prostateTrain);
             assertTrue("shoul've thrown IAE", false);
           } catch (IllegalArgumentException iae) {
-            assertTrue(iae.getMessage().contains("Test/Validation dataset is missing offset vector"));
+            assertTrue(iae.getMessage().contains("Test/Validation dataset is missing offset column"));
           }
           hex.ModelMetricsBinomialGLM mmTrain = (ModelMetricsBinomialGLM)hex.ModelMetricsBinomial.getFromDKV(model, fTrain);
           hex.AUC2 adata = mmTrain._auc;
@@ -356,7 +356,7 @@ public class GLMBasicTestBinomial extends TestUtil {
             scoreTrain = model.score(_prostateTrain);
             assertTrue("shoul've thrown IAE", false);
           } catch (IllegalArgumentException iae) {
-            assertTrue(iae.getMessage().contains("Test/Validation dataset is missing offset vector"));
+            assertTrue(iae.getMessage().contains("Test/Validation dataset is missing offset column"));
           }
           hex.ModelMetricsBinomialGLM mmTrain = (ModelMetricsBinomialGLM)hex.ModelMetricsBinomial.getFromDKV(model, fTrain);
           hex.AUC2 adata = mmTrain._auc;
@@ -609,7 +609,7 @@ public class GLMBasicTestBinomial extends TestUtil {
             scoreTrain.delete();
 //            assertTrue("shoul've thrown IAE", false); //TN-1 now autofills with weights 1
 //          } catch (IllegalArgumentException iae) {
-//            assertTrue(iae.getMessage().contains("Test/Validation dataset is missing weights vector"));
+//            assertTrue(iae.getMessage().contains("Test/Validation dataset is missing weights column"));
 //          }
           Frame f = new Frame(_prostateTrain);
           f.remove("CAPSULE");
@@ -909,7 +909,7 @@ public class GLMBasicTestBinomial extends TestUtil {
           try {
             model = new GLM(params,Key.<GLMModel>make("prostate_model")).trainModel().get();
           } catch(Exception iae) {
-            assertTrue(iae.getMessage().contains("Test dataset is missing weights vector"));
+            assertTrue(iae.getMessage().contains("Test/Validation dataset is missing weights column"));
           }
           params._valid = null;
           model = new GLM(params,Key.<GLMModel>make("prostate_model")).trainModel().get();
@@ -1028,46 +1028,39 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._beta_epsilon = 1e-4;
     GLM job0 = null;
     try {
-      job0 = new GLM(params);
       params._solver = Solver.L_BFGS;
+      job0 = new GLM(params);
       GLMModel model = job0.trainModel().get();
       assertFalse("should've thrown, p-values only supported with IRLSM",true);
     } catch(H2OModelBuilderIllegalArgumentException t) {
     }
     try {
-      job0 = new GLM(params);
       params._solver = Solver.COORDINATE_DESCENT_NAIVE;
+      job0 = new GLM(params);
       GLMModel model = job0.trainModel().get();
       assertFalse("should've thrown, p-values only supported with IRLSM",true);
     } catch(H2OModelBuilderIllegalArgumentException t) {
     }
     try {
-      job0 = new GLM(params);
       params._solver = Solver.COORDINATE_DESCENT;
+      job0 = new GLM(params);
       GLMModel model = job0.trainModel().get();
       assertFalse("should've thrown, p-values only supported with IRLSM",true);
     } catch(H2OModelBuilderIllegalArgumentException t) {
     }
     params._solver = Solver.IRLSM;
     try {
-      job0 = new GLM(params);
       params._lambda = new double[]{1};
+      job0 = new GLM(params);
       GLMModel model = job0.trainModel().get();
       assertFalse("should've thrown, p-values only supported with no regularization",true);
     } catch(H2OModelBuilderIllegalArgumentException t) {
     }
-    params._lambda = new double[]{0};
-    try {
-      params._lambda_search = true;
-      GLMModel model = job0.trainModel().get();
-      assertFalse("should've thrown, p-values only supported with no regularization (i.e. no lambda search)",true);
-    } catch(H2OModelBuilderIllegalArgumentException t) {
-    }
     params._lambda_search = false;
+    params._lambda = new double[]{0};
     GLM job = new GLM(params);
     GLMModel model = null;
     try {
-
       model = job.trainModel().get();
       String[] names_expected = new String[]{"Intercept", "ID", "AGE", "RACE.R2", "RACE.R3", "DPROS.b", "DPROS.c", "DPROS.d", "DCAPS.b", "PSA", "VOL", "GLEASON"};
       double[] stder_expected = new double[]{2.383945093, 0.001376361, 0.022369891, 1.542397413, 1.582718967, 0.395088333, 0.416197382, 0.542651183, 0.517959064, 0.011148747, 0.008753002, 0.182282351};

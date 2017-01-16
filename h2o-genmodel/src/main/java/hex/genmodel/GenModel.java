@@ -1,10 +1,15 @@
 package hex.genmodel;
 
 import hex.ModelCategory;
+import hex.genmodel.utils.GenmodelBitSet;
 import water.genmodel.IGeneratedModel;
 
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
+import java.util.List;
 
 /**
  * This is a helper class to support Java generated models.
@@ -49,14 +54,19 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   }
 
   /** Returns this model category. */
-  @Override abstract public ModelCategory getModelCategory();
+  @Override public abstract ModelCategory getModelCategory();
+
+  /** Override this for models that may produce results in different categories. */
+  @Override public EnumSet<ModelCategory> getModelCategories() {
+    return EnumSet.of(getModelCategory());
+  }
 
 
   //--------------------------------------------------------------------------------------------------------------------
   // IGeneratedModel interface
   //--------------------------------------------------------------------------------------------------------------------
 
-  @Override abstract public String getUUID();
+  @Override public abstract String getUUID();
 
   /** Returns number of columns used as input for training (i.e., exclude response and offset columns). */
   @Override public int getNumCols() {
@@ -143,6 +153,16 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     return isClassifier()? 1 + getNumResponseClasses() : 2;
   }
 
+  public int getPredsSize(ModelCategory mc) {
+    return (mc == ModelCategory.DimReduction)? nclasses() :
+           (mc == ModelCategory.AutoEncoder)? nfeatures() : getPredsSize();
+  }
+
+  public static String createAuxKey(String k) {
+    return k + ".aux";
+  }
+
+  /*
   @Override
   public float[] predict(double[] data, float[] preds) {
     return predict(data, preds, 0);
@@ -152,6 +172,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   public float[] predict(double[] data, float[] preds, int maxIters) {
     throw new UnsupportedOperationException("Unsupported operation - use score0 method!");
   }
+  */
 
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -162,6 +183,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
    *  the data array in the order needed by the model. Missing columns use NaN.
    *  </p>
    */
+  /*
   public double[] map(Map<String, Double> row, double data[]) {
     for (int i = 0; i < nfeatures(); i++) {
       Double d = row.get(_names[i]);
@@ -169,21 +191,23 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     }
     return data;
   }
+  */
 
   /** Subclasses implement the scoring logic.  The data is pre-loaded into a
    *  re-used temp array, in the order the model expects.  The predictions are
    *  loaded into the re-used temp array, which is also returned.  This call
    *  exactly matches the hex.Model.score0, but uses the light-weight
    *  GenModel class. */
-  abstract public double[] score0(double[] row, double[] preds);
+  public abstract double[] score0(double[] row, double[] preds);
 
   public double[] score0(double[] row, double offset, double[] preds) {
     throw new UnsupportedOperationException("`offset` column is not supported");
   }
 
+  /*
   // Does the mapping lookup for every row, no allocation.
   // data and preds arrays are pre-allocated and can be re-used for every row.
-  public double[] score0(Map<String, Double> row, double data[], double preds[]) {
+  public double[] score0(Map<String, Double> row, double[] data, double[] preds) {
     Double offset = _offsetColumn == null? null : row.get(_offsetColumn);
     return score0(map(row, data), offset == null? 0.0 : offset, preds);
   }
@@ -191,7 +215,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   // Does the mapping lookup for every row.
   // preds array is pre-allocated and can be re-used for every row.
   // Allocates a double[] for every row.
-  public double[] score0(Map<String, Double> row, double preds[]) {
+  public double[] score0(Map<String, Double> row, double[] preds) {
     return score0(row, new double[nfeatures()], preds);
   }
 
@@ -200,6 +224,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   public double[] score0(Map<String, Double> row) {
     return score0(row, new double[nfeatures()], new double[nclasses()+1]);
   }
+  */
 
   /**
    * Correct a given list of class probabilities produced as a prediction by a model back to prior class distribution
@@ -233,7 +258,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
    *  @param threshold threshold for binary classifier
    * @return the best prediction (index of class, zero-based)
    */
-  public static int getPrediction(double[] preds, double[] priorClassDist, double data[], double threshold) {
+  public static int getPrediction(double[] preds, double[] priorClassDist, double[] data, double threshold) {
     if (preds.length == 3) {
       return (preds[2] >= threshold) ? 1 : 0; //no tie-breaking
     }
@@ -256,6 +281,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
       for( double d : data ) hash ^= Double.doubleToRawLongBits(d) >> 6; // drop 6 least significants bits of mantissa (layout of long is: 1b sign, 11b exp, 52b mantisa)
 
     if (priorClassDist!=null) {
+      assert(preds.length==priorClassDist.length+1);
       // Tie-breaking based on prior probabilities
       // Example: probabilities are 0.4, 0.2, 0.4 for a 3-class problem with priors 0.7, 0.1, 0.2
       // Probability of predicting class 1 should be higher than for class 3 based on the priors
@@ -284,13 +310,21 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   }
 
   // Utility to do bitset lookup from a POJO
-  public static boolean bitSetContains(byte[] bits, int bitoff, double dnum ) {
-    if (Double.isNaN(dnum)) return true; // we want NAs to go right (fail every test), so !bitSetContains must return false
-    int num = (int)dnum;
-    assert num >= 0 : "bitSet can only contain integer factor levels >= 0, but got " + num;
-    num -= bitoff;
-    return (num >= 0) && (num < (bits.length<<3)) &&
-      (bits[num >> 3] & ((byte)1 << (num & 7))) != 0;
+  public static boolean bitSetContains(byte[] bits, int bitoff, double dnum) {
+    assert(!Double.isNaN(dnum));
+    int idx = (int)dnum;
+    int len = bits.length << 3;
+    idx -= bitoff;
+    assert (idx >= 0 && idx < len): "Must have "+bitoff+" <= idx <= " + (bitoff+len-1) + ": " + idx;
+    return (bits[idx >> 3] & ((byte)1 << (idx & 7))) != 0;
+  }
+
+  public static boolean bitSetIsInRange(byte[] bits, int bitoff, double dnum) {
+    assert(!Double.isNaN(dnum));
+    int idx = (int)dnum;
+    int len = bits.length << 3;
+    idx -= bitoff;
+    return (idx >= 0 && idx < len);
   }
 
   // --------------------------------------------------------------------------
@@ -453,10 +487,76 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     return tweedie_link_power == 0?Math.max(2e-16,Math.exp(x)):Math.pow(x, 1.0/ tweedie_link_power);
   }
 
-
-
-
   /** ??? */
   public String getHeader() { return null; }
+
+  // Helper for DeepWater
+  static public void setInput(final double[] from, float[] to, int _nums, int _cats, int[] _catOffsets, double[] _normMul, double[] _normSub, boolean useAllFactorLevels) {
+    float[] nums = new float[_nums]; // a bit wasteful - reallocated each time
+    int[] cats = new int[_cats]; // a bit wasteful - reallocated each time
+    for (int i = 0; i < _cats; ++i) {
+      if (Double.isNaN(from[i])) {
+        cats[i] = (_catOffsets[i + 1] - 1); //use the extra level for NAs made during training
+      } else {
+        int c = (int) from[i];
+        if (useAllFactorLevels)
+          cats[i] = c + _catOffsets[i];
+        else if (c != 0)
+          cats[i] = c + _catOffsets[i] - 1;
+        if (cats[i] >= _catOffsets[i + 1])
+          cats[i] = (_catOffsets[i + 1] - 1);
+      }
+    }
+    for (int i = _cats; i < _cats + _nums; ++i) {
+      double d = from[i];
+      if (_normMul != null) d = (d - _normSub[i - _cats]) * _normMul[i - _cats];
+      nums[i - _cats] = (float)d; //can be NaN for missing numerical data
+    }
+    assert(to.length == _nums + _catOffsets[_cats]);
+    Arrays.fill(to, 0f);
+    for (int i = 0; i < _cats; ++i)
+      to[cats[i]] = 1f; // one-hot encode categoricals
+    for (int i = 0; i < _nums; ++i)
+      to[_catOffsets[_cats] + i] = Double.isNaN(nums[i]) ? 0f : nums[i];
+  }
+
+  public static void img2pixels(BufferedImage img, int w, int h, int channels, float[] pixels, int start, float[] mean) throws IOException {
+    // resize the image
+    BufferedImage scaledImg = new BufferedImage(w, h, img.getType());
+    Graphics2D g2d = scaledImg.createGraphics();
+    g2d.drawImage(img, 0, 0, w, h, null);
+    g2d.dispose();
+
+    int r_idx = start;
+    int g_idx = r_idx + w * h;
+    int b_idx = g_idx + w * h;
+
+    for (int i = 0; i < h; i++) {
+      for (int j = 0; j < w; j++) {
+        Color mycolor = new Color(scaledImg.getRGB(j, i));
+        int red = mycolor.getRed();
+        int green = mycolor.getGreen();
+        int blue = mycolor.getBlue();
+        if (channels==1) {
+          pixels[r_idx] = (red+green+blue)/3;
+          if (mean!=null) {
+            pixels[r_idx] -= mean[r_idx];
+          }
+        } else {
+          pixels[r_idx] = red;
+          pixels[g_idx] = green;
+          pixels[b_idx] = blue;
+          if (mean!=null) {
+            pixels[r_idx] -= mean[r_idx-start];
+            pixels[g_idx] -= mean[g_idx-start];
+            pixels[b_idx] -= mean[b_idx-start];
+          }
+        }
+        r_idx++;
+        g_idx++;
+        b_idx++;
+      }
+    }
+  }
 
 }

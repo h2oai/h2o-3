@@ -32,7 +32,7 @@ def grid_glrm_iris():
   gs.train(x=list(range(4)), y=4, training_frame=irisH2O)
   for model in gs:
     assert isinstance(model, H2OGeneralizedLowRankEstimator)
-  print(gs.sort_by("mse"))
+  print(gs.get_grid(sort_by="mse"))
   #print gs.hit_ratio_table()
 
   assert len(gs) == size_of_hyper_space

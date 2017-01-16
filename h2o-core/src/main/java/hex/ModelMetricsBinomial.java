@@ -2,6 +2,7 @@ package hex;
 
 import hex.genmodel.GenModel;
 import water.MRTask;
+import water.Scope;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -40,6 +41,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     if (_auc != null) sb.append(" AUC: " + (float)_auc._auc + "\n");
     sb.append(" logloss: " + (float)_logloss + "\n");
     sb.append(" mean_per_class_error: " + (float)_mean_per_class_error + "\n");
+    sb.append(" default threshold: " + (_auc == null ? 0.5 : (float)_auc.defaultThreshold()) + "\n");
     if (cm() != null) sb.append(" CM: " + cm().toASCII());
     if (_gainsLift != null) sb.append(_gainsLift);
     return sb.toString();
@@ -77,7 +79,9 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
    * @return ModelMetrics object
    */
   static public ModelMetricsBinomial make(Vec targetClassProbs, Vec actualLabels, String[] domain) {
+    Scope.enter();
     Vec _labels = actualLabels.toCategoricalVec();
+    if (domain==null) domain = _labels.domain();
     if (_labels == null || targetClassProbs == null)
       throw new IllegalArgumentException("Missing actualLabels or predictedProbs for binomial metrics!");
     if (!targetClassProbs.isNumeric())
@@ -96,6 +100,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     Frame preds = new Frame(targetClassProbs);
     ModelMetricsBinomial mm = (ModelMetricsBinomial)mb.makeModelMetrics(null, predsLabel, null, preds);
     mm._description = "Computed on user-given predictions and labels, using F1-optimal threshold: " + mm.auc_obj().defaultThreshold() + ".";
+    Scope.exit();
     return mm;
   }
 

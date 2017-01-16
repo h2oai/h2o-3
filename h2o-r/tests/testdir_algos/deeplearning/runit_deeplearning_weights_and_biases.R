@@ -43,7 +43,7 @@ check.deeplearning_imbalanced <- function() {
 
 
     df <- as.h2o(iris)
-    dl1 <- h2o.deeplearning(1:4,5,df,hidden=c(10,10),export_weights_and_biases = TRUE, seed=1234, reproducible=T)
+    dl1 <- h2o.deeplearning(x=1:4,y=5,training_frame=df,hidden=c(10,10),export_weights_and_biases = TRUE, seed=1234, reproducible=T)
     p1 <- h2o.predict(dl1, df)
     ll1 <- h2o.logloss(h2o.performance(dl1,df))
     print(ll1)
@@ -57,7 +57,8 @@ check.deeplearning_imbalanced <- function() {
     b3 <- h2o.biases(dl1,3)
 
     ## make a model from given weights/biases
-    dl2 <- h2o.deeplearning(1:4,5,df,hidden=c(10,10),initial_weights=c(w1,w2,w3),initial_biases=c(b1,b2,b3), epochs=0)
+    dl2 <- h2o.deeplearning(x=1:4,y=5,training_frame=df,hidden=c(10,10),initial_weights=c(w1,w2,w3),initial_biases=c(b1,b2,b3), epochs=0)
+
     p2 <- h2o.predict(dl2, df)
     ll2 <- h2o.logloss(h2o.performance(dl2,df))
     print(ll2)
@@ -68,12 +69,12 @@ check.deeplearning_imbalanced <- function() {
     checkTrue(abs(ll2 - ll1) < 1e-6)
 
     ## make another model with partially set weights/biases
-    dl3 <- h2o.deeplearning(1:4,5,training_frame=df,hidden=c(10,10),initial_weights=list(w1,NULL,w3),initial_biases=list(b1,b2,NULL), epochs=10, seed=1234, reproducible=T)
+    dl3 <- h2o.deeplearning(x=1:4,y=5,training_frame=df,hidden=c(10,10),initial_weights=list(w1,NULL,w3),initial_biases=list(b1,b2,NULL), epochs=10, seed=1234, reproducible=T)
     ll3 <- h2o.logloss(h2o.performance(dl3,df))
     checkTrue(ll3 < ll1)
 
     ## make another model with partially set user-modified weights/biases
-    dl4 <- h2o.deeplearning(1:4,5,training_frame=df,hidden=c(10,10),initial_weights=list(w1*1.1,w2*0.9,sqrt(w3)),initial_biases=list(b1,b2,NULL), epochs=10, seed=1234, reproducible=T)
+    dl4 <- h2o.deeplearning(x=1:4,y=5,training_frame=df,hidden=c(10,10),initial_weights=list(w1*1.1,w2*0.9,sqrt(w3)),initial_biases=list(b1,b2,NULL), epochs=10, seed=1234, reproducible=T)
     ll4 <- h2o.logloss(h2o.performance(dl4,df))
 }
 

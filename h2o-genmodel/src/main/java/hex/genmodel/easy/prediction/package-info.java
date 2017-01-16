@@ -1,5 +1,5 @@
 /**
- * Prediction types that can be returned by generated POJO models.
+ * Prediction types that can be returned by generated POJO and MOJO models.
  *
  * Every model has a model category returned by getModelCategory().
  * The model creates predictions of the appropriate kind.

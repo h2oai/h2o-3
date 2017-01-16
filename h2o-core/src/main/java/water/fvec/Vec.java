@@ -47,6 +47,7 @@ import java.util.UUID;
  *   <tr><td>        </td><td>{@link #set(long,float)} </td><td>{@code NaN} </td><td>Limited precision takes less memory</td>
  *   <tr><td>        </td><td>{@link #set(long,long)}  </td><td>Cannot set  </td><td></td>
  *   <tr><td>        </td><td>{@link #set(long,String)}</td><td>{@code null}</td><td>Convenience wrapper for String</td>
+ *   <tr><td>        </td<td>{@link #set(long,UUID)}</td><td>{@code null}</td></tr>
  *   <tr><td>        </td><td>{@link #setNA(long)}     </td><td>            </td><td></td>
  *   </table>
  *
@@ -154,6 +155,8 @@ import java.util.UUID;
  * @author Cliff Click
  */
 public class Vec extends Keyed<Vec> {
+  public interface Holder { Vec vec(); }
+  
   // Vec internal type: one of T_BAD, T_UUID, T_STR, T_NUM, T_CAT, T_TIME
   byte _type;                   // Vec Type
 
@@ -174,6 +177,7 @@ public class Vec extends Keyed<Vec> {
   // bytesize) bounces through the DKV to fetch the latest copy of the Rollups
   // - lest a Vec.set changes the rollups and we return a stale copy.
   transient private Key _rollupStatsKey;
+  private boolean _volatile;
 
   /** Returns the categorical toString mapping array, or null if not an categorical column.
    *  Not a defensive clone (to expensive to clone; coding error to change the
@@ -276,7 +280,7 @@ public class Vec extends Keyed<Vec> {
   private int chunkLen( int cidx ) { espc(); return (int) (_espc[cidx + 1] - _espc[cidx]); }
 
   /** Check that row-layouts are compatible. */
-  boolean checkCompatible( Vec v ) {
+  public boolean isCompatibleWith(Vec v) {
     // Vecs are compatible iff they have same group and same espc (i.e. same length and same chunk-distribution)
     return (espc() == v.espc() || Arrays.equals(_espc, v._espc)) &&
             (VectorGroup.sameGroup(this, v) || length() < 1e3);
@@ -310,7 +314,11 @@ public class Vec extends Keyed<Vec> {
   }
   /** Make a new zero-filled vector with the given row count. 
    *  @return New zero-filled vector with the given row count. */
-  public static Vec makeZero( long len ) { return makeCon(0d,len); }
+  public static Vec makeZero( long len ) { return makeZero(len, T_NUM); }
+
+  public static Vec makeZero(long len, byte typeCode) {
+    return makeCon(0.0, len, true, typeCode);
+  }
 
   /** Make a new constant vector with the given row count, and redistribute the data
    * evenly around the cluster.
@@ -322,11 +330,26 @@ public class Vec extends Keyed<Vec> {
     return makeCon(x,len,true);
   }
 
+  /**
+   * Make a new constant vector of the specified type.
+   * @param x The value with which to fill the Vec.
+   * @param len The number of rows in the produced Vec.
+   * @param type Type of the Vec to construct.
+   */
+  public static Vec makeCon(double x, long len, byte type) {
+    int log_rows_per_chunk = FileVec.DFLT_LOG2_CHUNK_SIZE;
+    return makeCon(x, len, log_rows_per_chunk, true, type);
+  }
+
   /** Make a new constant vector with the given row count. 
    *  @return New constant vector with the given row count. */
   public static Vec makeCon(double x, long len, boolean redistribute) {
+    return makeCon(x,len,redistribute, T_NUM);
+  }
+
+  public static Vec makeCon(double x, long len, boolean redistribute, byte typeCode) {
     int log_rows_per_chunk = FileVec.DFLT_LOG2_CHUNK_SIZE;
-    return makeCon(x,len,log_rows_per_chunk,redistribute);
+    return makeCon(x,len,log_rows_per_chunk,redistribute, typeCode);
   }
 
   /** Make a new constant vector with the given row count, and redistribute the data evenly
@@ -348,12 +371,16 @@ public class Vec extends Keyed<Vec> {
       espc[i] = espc[i-1]+len/nchunks;
     espc[nchunks] = len;
     VectorGroup vg = VectorGroup.VG_LEN1;
-    return makeCon(0,vg,ESPC.rowLayout(vg._key,espc));
+    return makeCon(0, vg, ESPC.rowLayout(vg._key, espc), T_NUM);
   }
 
   /** Make a new constant vector with the given row count.
    *  @return New constant vector with the given row count. */
   public static Vec makeCon(double x, long len, int log_rows_per_chunk, boolean redistribute) {
+    return makeCon(x, len, log_rows_per_chunk, redistribute, T_NUM);
+  }
+
+  public static Vec makeCon(double x, long len, int log_rows_per_chunk, boolean redistribute, byte type) {
     int chunks0 = (int)Math.max(1,len>>log_rows_per_chunk); // redistribute = false
     int chunks1 = (int)Math.min( 4 * H2O.NUMCPUS * H2O.CLOUD.size(), len); // redistribute = true
     int nchunks = (redistribute && chunks0 < chunks1 && len > 10*chunks1) ? chunks1 : chunks0;
@@ -363,7 +390,7 @@ public class Vec extends Keyed<Vec> {
       espc[i] = redistribute ? espc[i-1]+len/nchunks : ((long)i)<<log_rows_per_chunk;
     espc[nchunks] = len;
     VectorGroup vg = VectorGroup.VG_LEN1;
-    return makeCon(x,vg,ESPC.rowLayout(vg._key,espc));
+    return makeCon(x, vg, ESPC.rowLayout(vg._key, espc), type);
   }
 
   public Vec [] makeDoubles(int n, double [] values) {
@@ -428,7 +455,10 @@ public class Vec extends Keyed<Vec> {
   }
 
   public static Vec makeCon( final long l, String[] domain, VectorGroup group, int rowLayout ) {
-    final Vec v0 = new Vec(group.addVec(), rowLayout, domain);
+    return makeCon(l, domain, group, rowLayout, domain == null? T_NUM : T_CAT);
+  }
+  private static Vec makeCon( final long l, String[] domain, VectorGroup group, int rowLayout, byte type ) {
+    final Vec v0 = new Vec(group.addVec(), rowLayout, domain, type);
     final int nchunks = v0.nChunks();
     new MRTask() {              // Body of all zero chunks
       @Override protected void setupLocal() {
@@ -442,12 +472,38 @@ public class Vec extends Keyed<Vec> {
     return v0;
   }
 
+  public static Vec makeTimeVec(double[] vals, Key<Vec> vecKey){
+    if (vecKey == null) vecKey = Vec.VectorGroup.VG_LEN1.addVec();
+    int layout = ESPC.rowLayout(vecKey, new long[]{0, vals.length});
+    Vec v = new Vec(vecKey, layout, null, Vec.T_TIME);
+    NewChunk nc = new NewChunk(v, 0);
+    Futures fs = new Futures();
+    for (double d: vals)
+      nc.addNum(d);
+    nc.close(fs);
+    DKV.put(v._key, v, fs);
+    fs.blockForPending();
+    return v;
+  }
+
   public static Vec makeVec(double [] vals, Key<Vec> vecKey){
     Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey,new long[]{0,vals.length}));
     NewChunk nc = new NewChunk(v,0);
     Futures fs = new Futures();
     for(double d:vals)
       nc.addNum(d);
+    nc.close(fs);
+    DKV.put(v._key, v, fs);
+    fs.blockForPending();
+    return v;
+  }
+
+  public static Vec makeVec(String [] vals, Key<Vec> vecKey){
+    Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey,new long[]{0,vals.length}),null, Vec.T_STR);
+    NewChunk nc = new NewChunk(v,0);
+    Futures fs = new Futures();
+    for(String s:vals)
+      nc.addStr(s);
     nc.close(fs);
     DKV.put(v._key, v, fs);
     fs.blockForPending();
@@ -492,11 +548,12 @@ public class Vec extends Keyed<Vec> {
    *  and initialized to the given constant value.
    *  @return A new vector with the same size and data layout as the current one,
    *  and initialized to the given constant value.  */
-  public Vec makeCon( final double d ) { return makeCon(d, group(), _rowLayout); }
+  public Vec makeCon(final double d) { return makeCon(d, group(), _rowLayout, T_NUM); }
+  public Vec makeCon(final double d, byte type) { return makeCon(d, group(), _rowLayout, type); }
 
-  private static Vec makeCon( final double d, VectorGroup group, int rowLayout ) {
-    if( (long)d==d ) return makeCon((long)d, null, group, rowLayout);
-    final Vec v0 = new Vec(group.addVec(), rowLayout, null, T_NUM);
+  private static Vec makeCon( final double d, VectorGroup group, int rowLayout, byte type ) {
+    if( (long)d==d ) return makeCon((long)d, null, group, rowLayout, type);
+    final Vec v0 = new Vec(group.addVec(), rowLayout, null, type);
     final int nchunks = v0.nChunks();
     new MRTask() {              // Body of all zero chunks
       @Override protected void setupLocal() {
@@ -511,6 +568,61 @@ public class Vec extends Keyed<Vec> {
   }
 
   public Vec [] makeZeros(int n){return makeZeros(n,null,null);}
+
+  /**
+   * Make a temporary work vec of double [] .
+   * Volatile vecs can only be used locally (chunks do not serialize) and are assumed to change frequently(MRTask call preWiting() by default).
+   * Chunks stores as C8DVolatileChunk - expose data directly as double [].
+   *
+   * @param n number of columns
+   * @return
+   */
+  public Vec [] makeVolatileDoubles(int n){
+    Vec [] vecs = makeZeros(n);
+    for(Vec v:vecs) {
+      v._volatile = true;
+      DKV.put(v);
+    }
+    new MRTask(){
+      @Override public void map(Chunk [] cs){
+        int len = cs[0].len();
+        for(int i = 0; i < cs.length; ++i) {
+          cs[i].setVolatile(MemoryManager.malloc8d(len));
+        }
+      }
+    }.doAll(vecs);
+
+    return vecs;
+  }
+
+  /**
+   * Make a temporary work vec of int [] .
+   * Volatile vecs can only be used locally (chunks do not serialize) and are assumed to change frequently(MRTask call preWiting() by default).
+   * Chunks stores as C4VolatileChunk - expose data directly as int [].
+   *
+   * @param cons integer array with constant used to fill each column.
+   * @return
+   */
+  public Vec [] makeVolatileInts(final int [] cons){
+    Vec [] vecs = makeZeros(cons.length);
+    for(Vec v:vecs) {
+      v._volatile = true;
+      DKV.put(v);
+    }
+    new MRTask(){
+      @Override public void map(Chunk [] cs){
+        int len = cs[0].len();
+        for(int i = 0; i < cs.length; ++i) {
+          int [] vals = MemoryManager.malloc4(len);
+          Arrays.fill(vals,cons[i]);
+          cs[i].setVolatile(vals);
+        }
+      }
+    }.doAll(vecs);
+
+    return vecs;
+  }
+
   public Vec [] makeZeros(int n, String [][] domain, byte[] types){ return makeCons(n, 0, domain, types);}
 
   // Make a bunch of compatible zero Vectors
@@ -722,6 +834,8 @@ public class Vec extends Keyed<Vec> {
    *  @return Checksum of the Vec's content  */
   @Override protected long checksum_impl() { return rollupStats()._checksum;}
 
+  public boolean isVolatile() {return _volatile;}
+
 
   private static class SetMutating extends TAtomic<RollupStats> {
     @Override protected RollupStats atomic(RollupStats rs) {
@@ -736,7 +850,14 @@ public class Vec extends Keyed<Vec> {
    *  contents. */
   public void preWriting( ) {
     if( !writable() ) throw new IllegalArgumentException("Vector not writable");
-    final Key rskey = rollupStatsKey();
+    setMutating(rollupStatsKey());
+  }
+
+  /**
+   * Marks the Vec as mutating. Vec needs to be marked as mutating whenever
+   * it is modified ({@link #preWriting()}) or removed ({@link #remove_impl(Futures)}).
+   */
+  private static void setMutating(Key rskey) {
     Value val = DKV.get(rskey);
     if( val != null ) {
       RollupStats rs = val.get(RollupStats.class);
@@ -792,6 +913,7 @@ public class Vec extends Keyed<Vec> {
     return Key.make(bits);
   }
 
+  public transient int [] _cids; // local chunk ids
   /** Get a Chunk Key from a chunk-index.  Basically the index-to-key map.
    *  @return Chunk Key from a chunk-index */
   public Key chunkKey(int cidx ) { return chunkKey(_key,cidx); }
@@ -936,7 +1058,12 @@ public class Vec extends Keyed<Vec> {
    *  constructing Strings.
    *  @return {@code i}th element as {@link BufferedString} or null if missing, or
    *  throw if not a String */
-  public final BufferedString atStr( BufferedString bStr, long i ) { return chunkForRow(i).atStr_abs(bStr, i); }
+  public final BufferedString atStr( BufferedString bStr, long i ) {
+    if (isCategorical()) { //for categorical vecs, return the factor level
+      if (isNA(i)) return null;
+      return bStr.set(_domain[(int)at8(i)]);
+    } else return chunkForRow(i).atStr_abs(bStr, i);
+  }
 
   /** A more efficient way to read randomly to a Vec - still single-threaded,
    *  but much faster than Vec.at(i).  Limited to single-threaded
@@ -957,6 +1084,7 @@ public class Vec extends Keyed<Vec> {
     public final long    at8( long i ) { return chk(i). at8_abs(i); }
     public final double   at( long i ) { return chk(i).  at_abs(i); }
     public final boolean isNA(long i ) { return chk(i).isNA_abs(i); }
+    public final BufferedString atStr(BufferedString sb, long i) { return chk(i).atStr_abs(sb, i); }
     public final long length() { return Vec.this.length(); }
   }
 
@@ -988,7 +1116,7 @@ public class Vec extends Keyed<Vec> {
   }
 
   /** Set the element as missing the slow way.  */
-  final void setNA( long i ) {
+  public final void setNA( long i ) {
     Chunk ck = chunkForRow(i);
     ck.setNA_abs(i);
     postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
@@ -999,6 +1127,12 @@ public class Vec extends Keyed<Vec> {
   public final void set( long i, String str) {
     Chunk ck = chunkForRow(i);
     ck.set_abs(i, str);
+    postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
+  }
+
+  public final void set(long i, UUID uuid) {
+    Chunk ck = chunkForRow(i);
+    ck.set_abs(i, uuid);
     postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
   }
 
@@ -1107,23 +1241,39 @@ public class Vec extends Keyed<Vec> {
    *  associated Chunks.
    *  @return Passed in Futures for flow-coding  */
   @Override public Futures remove_impl( Futures fs ) {
-    // Bulk dumb local remove - no JMM, no ordering, no safety.
-    final int ncs = nChunks();
-    new MRTask() {
-      @Override public void setupLocal() { bulk_remove(_key,ncs); }
-    }.doAllNodes();
+    bulk_remove(new Key[]{_key}, nChunks());
     return fs;
   }
+
+  static void bulk_remove( final Key[] keys, final int ncs ) {
+    // Need to mark the Vec as mutating to make sure that no running computations of RollupStats will
+    // re-insert the rollups into DKV after they are deleted in bulk_remove(Key, int).
+    Futures fs = new Futures();
+    for (Key key : keys) fs.add(new SetMutating().fork(chunkKey(key,-2)));
+    fs.blockForPending();
+    // Bulk dumb local remove - no JMM, no ordering, no safety.
+    // Remove Vecs everywhere first - important! (this should make simultaneously running Rollups to fail)
+    new MRTask() {
+      @Override public void setupLocal() {
+        for( Key k : keys ) if( k != null ) Vec.bulk_remove_vec(k, ncs);
+      }
+    }.doAllNodes();
+    // Remove RollupStats
+    new MRTask() {
+      @Override public void setupLocal() {
+        for( Key k : keys ) if( k != null ) H2O.raw_remove(chunkKey(k,-2));
+      }
+    }.doAllNodes();
+  }
+
   // Bulk remove: removes LOCAL keys only, without regard to total visibility.
   // Must be run in parallel on all nodes to preserve semantics, completely
   // removing the Vec without any JMM communication.
-  static void bulk_remove( Key vkey, int ncs ) {
+  private static void bulk_remove_vec( Key vkey, int ncs ) {
     for( int i=0; i<ncs; i++ ) {
       Key kc = chunkKey(vkey,i);
       H2O.raw_remove(kc);
     }
-    Key kr = chunkKey(vkey,-2); // Rollup Stats
-    H2O.raw_remove(kr);
     H2O.raw_remove(vkey);
   }
 
@@ -1437,5 +1587,14 @@ public class Vec extends Keyed<Vec> {
     }
     public static void clear() { ESPCS.clear(); }
     @Override protected long checksum_impl() { throw H2O.fail(); }
+  }
+
+  public static Key setChunkIdx(Key k, int cidx){
+    UnsafeUtils.set4(k._kb, 6, cidx); // chunk#
+    return k;
+  }
+
+  public boolean isHomedLocally(int cidx){
+    return chunkKey(cidx).home();
   }
 }

@@ -3,6 +3,8 @@ package water.fvec;
 import water.*;
 import water.parser.BufferedString;
 
+import java.util.UUID;
+
 /** A compression scheme, over a chunk of data - a single array of bytes.
  *  Chunks are mapped many-to-1 to a {@link Vec}.  The <em>actual</em> vector
  *  header info is in the Vec - which contains info to find all the bytes of
@@ -16,19 +18,18 @@ import water.parser.BufferedString;
  *  single Java byte array in a single JVM heap, and only an int's worth of
  *  elements.  Chunks support both the notions of a global row-number and a
  *  chunk-local numbering.  The global row-number calls are variants of {@code
- *  at} and {@code set}.  If the row is outside the current Chunk's range, the
- *  data will be loaded by fetching from the correct Chunk.  This probably
- *  involves some network traffic, and if all rows are loaded then the entire
- *  dataset will be pulled local (possibly triggering an OutOfMemory).
+ *  at_abs} and {@code set_abs}.  If the row is outside the current Chunk's
+ *  range, the data will be loaded by fetching from the correct Chunk.  This
+ *  probably involves some network traffic, and if all rows are loaded then the
+ *  entire dataset will be pulled locally (possibly triggering an OutOfMemory).
  *
  *  <p>The chunk-local numbering supports the common {@code for} loop iterator
- *  pattern, using {@code at} and {@code set} calls that end in a '{@code 0}',
- *  and is faster than the global row-numbering for tight loops (because it
- *  avoids some range checks):
- *  <pre>
- *  for( int row=0; row &lt; chunk._len; row++ )
+ *  pattern, using {@code at*} and {@code set} calls, and is faster than the
+ *  global row-numbering for tight loops (because it skips some range checks):
+ *  <pre>{@code
+ *  for (int row = 0; row < chunk._len; row++)
  *    ...chunk.atd(row)...
- *  </pre>
+ *  }</pre>
  *
  *  <p>The array-like API allows loading and storing elements in and out of
  *  Chunks.  When loading, values are decompressed.  When storing, an attempt
@@ -46,8 +47,8 @@ import water.parser.BufferedString;
  *  #close} is made; again this is handled by MRTask directly.
  *
  *  <p>In addition to normal load and store operations, Chunks support the
- *  notion a missing element via the {@code isNA_abs()} calls, and a "next
- *  non-zero" notion for rapidly iterating over sparse data.
+ *  notion a missing element via the {@link #isNA} call, and a "next non-zero"
+ *  notion for rapidly iterating over sparse data.
  *
  *  <p><b>Data Types</b>
  *
@@ -67,12 +68,13 @@ import water.parser.BufferedString;
  *  coding error and will be flagged.  If you are working with integer data
  *  with missing elements, you must first check for a missing value before
  *  loading it:
- *  <pre>
+ *  <pre>{@code
  *  if( !chk.isNA(row) ) ...chk.at8(row)....
- *  </pre>
+ *  }</pre>
  *
  *  <p>The same holds true for the other non-real types (timestamps, UUIDs,
- *  Strings, or categoricals); they must be checked for missing before being used.
+ *  Strings, or categoricals): they must be checked for missing before being
+ *  used.
  *
  *  <p><b>Performance Concerns</b>
  *
@@ -95,20 +97,20 @@ import water.parser.BufferedString;
  *  Note that due "NaN poisoning" if any row element is missing, the entire
  *  distance calculated will be NaN.
  *  <pre>{@code
-final double[] _point;                             // The given point
-public void map( Chunk[] chks ) {                  // Map over a set of same-numbered Chunks
-  for( int row=0; row < chks[0]._len; row++ ) {    // For all rows
-    double dist=0;                                 // Squared distance
-    for( int col=0; col < chks.length-1; col++ ) { // For all cols, except the last output col
-      double d = chks[col].atd(row) - _point[col]; // Distance along this dimension
-      dist += d*d;                                 // Sum-squared-distance
-    }
-    chks[chks.length-1].set( row, dist );          // Store back the distance in the last col
-  }
-}}</pre>
+ *  final double[] _point;                             // The given point
+ *  public void map( Chunk[] chks ) {                  // Map over a set of same-numbered Chunks
+ *   for( int row=0; row < chks[0]._len; row++ ) {    // For all rows
+ *     double dist=0;                                 // Squared distance
+ *     for( int col=0; col < chks.length-1; col++ ) { // For all cols, except the last output col
+ *       double d = chks[col].atd(row) - _point[col]; // Distance along this dimension
+ *       dist += d*d;                                 // Sum-squared-distance
+ *     }
+ *     chks[chks.length-1].set( row, dist );          // Store back the distance in the last col
+ *   }
+ *  }}</pre>
  */
 
-public abstract class Chunk extends Iced<Chunk> {
+public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
 
   public Chunk() {}
   private Chunk(byte [] bytes) {_mem = bytes;initFromBytes();}
@@ -116,7 +118,7 @@ public abstract class Chunk extends Iced<Chunk> {
   /**
    * Sparse bulk interface, stream through the compressed values and extract them into dense double array.
    * @param vals holds extracted values, length must be >= this.sparseLen()
-   * @param vals holds extracted chunk-relative row ids, length must be >= this.sparseLen()
+   * @param ids holds extracted chunk-relative row ids, length must be >= this.sparseLen()
    * @return number of extracted (non-zero) elements, equal to sparseLen()
    */
   public int asSparseDoubles(double[] vals, int[] ids){return asSparseDoubles(vals,ids,Double.NaN);}
@@ -219,9 +221,7 @@ public abstract class Chunk extends Iced<Chunk> {
 
   public void setBytes(byte[] mem) { _mem = mem; }
 
-  /** Used by a ParseExceptionTest to break the Chunk invariants and trigger an
-   *  NPE.  Not intended for public use. */
-  public final void crushBytes() { _mem=null; }
+
 
   final long at8_abs(long i) {
     long x = i - (_start>0 ? _start : 0);
@@ -418,6 +418,8 @@ public abstract class Chunk extends Iced<Chunk> {
    *  objects). */
   public final void set_abs(long i, String str) { long x = i-_start; if (0 <= x && x < _len) set((int) x, str); else _vec.set(i,str); }
 
+  public final void set_abs(long i, UUID uuid) { long x = i-_start; if (0 <= x && x < _len) set((int) x, uuid); else _vec.set(i,uuid); }
+
   public boolean hasFloat(){return true;}
   public boolean hasNA(){return true;}
 
@@ -548,6 +550,38 @@ public abstract class Chunk extends Iced<Chunk> {
     return str;
   }
 
+  public final UUID set(int idx, UUID uuid) {
+    setWrite();
+    long lo = uuid.getLeastSignificantBits();
+    long hi = uuid.getMostSignificantBits();
+
+    if( _chk2.set_impl(idx, lo, hi) ) return uuid;
+    _chk2 = inflate_impl(new NewChunk(this));
+    _chk2.set_impl(idx,lo, hi);
+    return uuid;
+  }
+
+  private Object setUnknown(int idx) {
+    setNA(idx);
+    return null;
+  }
+
+  /**
+   * @param idx index of the value in Chunk
+   * @param x new value to set
+   * @return x on success, or null if something went wrong
+   */
+  public final Object setAny(int idx, Object x) {
+    return x instanceof String         ? set(idx, (String) x) :
+           x instanceof Double         ? set(idx, (Double)x) :
+           x instanceof Float          ? set(idx, (Float)x) :
+           x instanceof Long           ? set(idx, (Long)x) :
+           x instanceof Integer        ? set(idx, ((Integer)x).longValue()) :
+           x instanceof UUID           ? set(idx, (UUID) x) :
+           x instanceof java.util.Date ? set(idx, ((java.util.Date) x).getTime()) :
+           /* otherwise */               setUnknown(idx);
+      }
+
   /** After writing we must call close() to register the bulk changes.  If a
    *  NewChunk was needed, it will be compressed into some other kind of Chunk.
    *  The resulting Chunk (either a modified self, or a compressed NewChunk)
@@ -559,6 +593,7 @@ public abstract class Chunk extends Iced<Chunk> {
     if( this  instanceof NewChunk ) _chk2 = this;
     if( _chk2 == null ) return fs;          // No change?
     if( _chk2 instanceof NewChunk ) _chk2 = ((NewChunk)_chk2).new_close();
+
     DKV.put(_vec.chunkKey(cidx),_chk2,fs,true); // Write updated chunk back into K/V
     return fs;
   }
@@ -569,12 +604,41 @@ public abstract class Chunk extends Iced<Chunk> {
     return _cidx;
   }
 
+  public final Chunk setVolatile(double [] ds) {
+    Chunk res;
+    Value v = new Value(_vec.chunkKey(_cidx), res = new C8DVolatileChunk(ds),ds.length*8,Value.ICE);
+    DKV.put(v._key,v);
+    return res;
+  }
+
+  public final Chunk setVolatile(int[] vals) {
+    Chunk res;
+    Value v = new Value(_vec.chunkKey(_cidx), res = new C4VolatileChunk(vals),vals.length*4,Value.ICE);
+    DKV.put(v._key,v);
+    return res;
+  }
+
+  public boolean isVolatile() {return false;}
+
+  static class WrongType extends IllegalArgumentException {
+    private final Class<?> expected;
+    private final Class<?> actual;
+
+    public WrongType(Class<?> expected, Class<?> actual) {
+      super("Expected: " + expected + ", actual: " + actual);
+      this.expected = expected;
+      this.actual = actual;
+    }
+  }
+
+  static WrongType wrongType(Class<?> expected, Class<?> actual) { return new WrongType(expected, actual); }
+
   /** Chunk-specific readers.  Not a public API */
   abstract double   atd_impl(int idx);
   abstract long     at8_impl(int idx);
   abstract boolean isNA_impl(int idx);
-  long at16l_impl(int idx) { throw new IllegalArgumentException("Not a UUID"); }
-  long at16h_impl(int idx) { throw new IllegalArgumentException("Not a UUID"); }
+  long at16l_impl(int idx) { throw wrongType(UUID.class, Object.class); }
+  long at16h_impl(int idx) { throw wrongType(UUID.class, Object.class); }
   BufferedString atStr_impl(BufferedString bStr, int idx) { throw new IllegalArgumentException("Not a String"); }
 
   /** Chunk-specific writer.  Returns false if the value does not fit in the
@@ -583,10 +647,10 @@ public abstract class Chunk extends Iced<Chunk> {
   abstract boolean set_impl  (int idx, double d );
   abstract boolean set_impl  (int idx, float f );
   abstract boolean setNA_impl(int idx);
-  boolean set_impl (int idx, String str) { throw new IllegalArgumentException("Not a String"); }
-
+  boolean set_impl (int idx, String str) { return false; }
+  boolean set_impl(int i, long lo, long hi) { return false; }
   //Zero sparse methods:
-  
+
   /** Sparse Chunks have a significant number of zeros, and support for
    *  skipping over large runs of zeros in a row.
    *  @return true if this Chunk is sparse.  */
@@ -609,7 +673,7 @@ public abstract class Chunk extends Iced<Chunk> {
         res[k++] = i;
     return k;
   }
-  
+
   //NA sparse methods:
   
   /** Sparse Chunks have a significant number of NAs, and support for
@@ -624,7 +688,7 @@ public abstract class Chunk extends Iced<Chunk> {
 
   // Next non-NA. Analogous to nextNZ()
   public int nextNNA(int rid){ return rid + 1;}
-  
+
   /** Get chunk-relative indices of values (nonnas for nasparse, all for dense)
    *  stored in this chunk.  For dense chunks, this will contain indices of all
    *  the rows in this chunk.
@@ -633,7 +697,7 @@ public abstract class Chunk extends Iced<Chunk> {
     for( int i = 0; i < _len; ++i) res[i] = i;
     return _len;
   }
-  
+
   /** Report the Chunk min-value (excluding NAs), or NaN if unknown.  Actual
    *  min can be higher than reported.  Used to short-cut RollupStats for
    *  constant and boolean chunks. */
@@ -657,8 +721,8 @@ public abstract class Chunk extends Iced<Chunk> {
    *  Chunk, but in a highly optimized way. */
   public Chunk nextChunk( ) { return _vec.nextChunk(this); }
 
-  /** @return String version of a Chunk, currently just the class name */
-  @Override public String toString() { return getClass().getSimpleName(); }
+  /** @return String version of a Chunk, class name and range*/
+  @Override public String toString() { return getClass().getSimpleName() + "[" + _start + ".." + (_start + _len - 1) + "]"; }
 
   /** In memory size in bytes of the compressed Chunk plus embedded array. */
   public long byteSize() {
@@ -673,7 +737,7 @@ public abstract class Chunk extends Iced<Chunk> {
   public final  AutoBuffer write_impl(AutoBuffer bb) {return bb.putA1(_mem);}
 
   @Override
-  public final byte [] asBytes(){return _mem;}
+  public byte [] asBytes(){return _mem;}
 
   @Override
   public final Chunk reloadFromBytes(byte [] ary){
@@ -744,4 +808,5 @@ public abstract class Chunk extends Iced<Chunk> {
       sb.append("at8_abs[" + (k+_start) + "] = " + atd(k) + ", _chk2 = " + (_chk2 != null?_chk2.atd(k):"") + "\n");
     throw new RuntimeException(sb.toString());
   }
+
 }

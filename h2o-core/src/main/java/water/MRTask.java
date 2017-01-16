@@ -252,7 +252,8 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    *  <strong>local</strong> Chunks.  All map variants are called, but only one
    *  is expected to be overridden. */
   public void map( Chunk c0, Chunk c1 ) { }
-  //public void map( Chunk c0, Chunk c1, NewChunk nc) { }
+  public void map( Chunk c0, Chunk c1, NewChunk nc) { }
+  public void map( Chunk c0, NewChunk nc0, NewChunk nc1) { }
   //public void map( Chunk c0, Chunk c1, NewChunk nc1, NewChunk nc2 ) { }
 
   /** Override with your map implementation.  This overload is given three
@@ -501,6 +502,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     H2O.submitTask(this);
   }
 
+  protected boolean modifiesVolatileVecs(){return true;}
   /*
    * Set top-level fields and fire off remote work (if there is any to do) to 2 selected
    * child JVM/nodes. Setup for local work: fire off any global work to cloud neighbors; do all
@@ -511,6 +513,10 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
       (_profile = new MRProfile(this))._localstart = System.currentTimeMillis();
     // Make a blockable Futures for both internal and user work to block on.
     _fs = new Futures();
+    if(modifiesVolatileVecs() && _fr != null){
+      for(Vec v:_fr.vecs())
+        if(v.isVolatile())v.preWriting();
+    }
     _topLocal = true;
     // Check for global vs local work
     int selfidx = selfidx();
@@ -624,25 +630,32 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
         // Call all the various map() calls that apply
         if(_profile!=null)
           _profile._userstart = System.currentTimeMillis();
-        if( _fr.vecs().length == 1 ) map(bvs[0]);
-        if( _fr.vecs().length == 2 ) map(bvs[0], bvs[1]);
-        if( _fr.vecs().length == 3 ) map(bvs[0], bvs[1], bvs[2]);
-        if( true                  )  map(bvs );
-        if( _output_types != null && _output_types.length == 1 ) { // convenience versions for cases with single output.
-          if( appendableChunks == null ) throw H2O.fail(); // Silence IdeaJ warnings
-          if( _fr.vecs().length == 1 ) map(bvs[0], appendableChunks[0]);
-          if( _fr.vecs().length == 2 ) map(bvs[0], bvs[1],appendableChunks[0]);
-          //if( _fr.vecs().length == 3 ) map(bvs[0], bvs[1], bvs[2],appendableChunks[0]);
-          //if( true                  )  map(bvs,    appendableChunks[0]);
+
+        int num_fr_vecs = _fr.vecs().length;
+        int num_outputs = _output_types == null? 0 : _output_types.length;
+        if (num_outputs == 0) {
+          if (num_fr_vecs == 1) map(bvs[0]);
+          else if (num_fr_vecs == 2) map(bvs[0], bvs[1]);
+          else if (num_fr_vecs == 3) map(bvs[0], bvs[1], bvs[2]);
+          map(bvs);
         }
-        if( _output_types != null && _output_types.length == 2) { // convenience versions for cases with 2 outputs (e.g split).
-          if( appendableChunks == null ) throw H2O.fail(); // Silence IdeaJ warnings
-          if( _fr.vecs().length == 1 ) map(bvs[0], appendableChunks[0],appendableChunks[1]);
-          //if( _fr.vecs().length == 2 ) map(bvs[0], bvs[1],appendableChunks[0],appendableChunks[1]);
-          //if( _fr.vecs().length == 3 ) map(bvs[0], bvs[1], bvs[2],appendableChunks[0],appendableChunks[1]);
-          if( true                  )  map(bvs,    appendableChunks[0],appendableChunks[1]);
+        else if (num_outputs == 1) {  // convenience versions for cases with single output.
+          assert appendableChunks != null;
+          if (num_fr_vecs == 1) map(bvs[0], appendableChunks[0]);
+          else if (num_fr_vecs == 2) map(bvs[0], bvs[1], appendableChunks[0]);
+          // else if (fr_vecs_length == 3) map(bvs[0], bvs[1], bvs[2], appendableChunks[0]);
+          map(bvs, appendableChunks[0]);
         }
-        map(bvs,appendableChunks);
+        else if (num_outputs == 2) {  // convenience versions for cases with 2 outputs (e.g split).
+          assert appendableChunks != null;
+          if (num_fr_vecs == 1) map(bvs[0], appendableChunks[0], appendableChunks[1]);
+          // else if (fr_vecs_length == 2) map(bvs[0], bvs[1], appendableChunks[0], appendableChunks[1]);
+          // else if (fr_vecs_length == 3) map(bvs[0], bvs[1], bvs[2], appendableChunks[0], appendableChunks[1]);
+          map(bvs, appendableChunks[0], appendableChunks[1]);
+        }
+        if (num_outputs >= 0)
+          map(bvs, appendableChunks);
+
         _res = self();          // Save results since called map() at least once!
         // Further D/K/V put any new vec results.
         if(_profile!=null)

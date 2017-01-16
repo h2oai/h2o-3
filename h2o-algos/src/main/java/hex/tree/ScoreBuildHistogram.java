@@ -5,6 +5,7 @@ import water.H2O.H2OCountedCompleter;
 import water.MRTask;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
+import water.fvec.Frame;
 import water.util.ArrayUtils;
 
 /**  Score and Build Histogram
@@ -39,7 +40,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   final DTree _tree; // Read-only, shared (except at the histograms in the Nodes)
   final int   _leaf; // Number of active leaves (per tree)
   // Histograms for every tree, split & active column
-  final DHistogram _hcs[/*tree-relative node-id*/][/*column*/];
+  DHistogram _hcs[/*tree-relative node-id*/][/*column*/];
   final DistributionFamily _family;
   final int _weightIdx;
   final int _workIdx;
@@ -58,6 +59,10 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     _weightIdx = weightIdx;
     _workIdx = workIdx;
     _nidIdx = nidIdx;
+  }
+
+  public ScoreBuildHistogram dfork2(byte[] types, Frame fr, boolean run_local) {
+    return dfork(types,fr,run_local);
   }
 
   /** Marker for already decided row. */
@@ -96,7 +101,9 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     }
   }
 
-  @Override final public void map( Chunk[] chks ) {
+
+  @Override
+  public void map(Chunk[] chks) {
     final Chunk wrks = chks[_workIdx];
     final Chunk nids = chks[_nidIdx];
     final Chunk weight = _weightIdx>=0 ? chks[_weightIdx] : new C0DChunk(1, chks[0].len());
@@ -144,7 +151,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   // assigned DecidedNode, "scoring" the row against that Node's decision
   // criteria, and assigning the row to a new child UndecidedNode (and
   // giving it an improved prediction).
-  private void score_decide(Chunk chks[], Chunk nids, int nnids[]) {
+  protected void score_decide(Chunk chks[], Chunk nids, int nnids[]) {
     for( int row=0; row<nids._len; row++ ) { // Over all rows
       int nid = (int)nids.at8(row);          // Get Node to decide from
       if( isDecidedRow(nid)) {               // already done
@@ -163,7 +170,6 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
         nnids[row] = xnid-_leaf;
         dn = _tree.decided(nid); // Parent steers us
       }
-
       assert !isDecidedRow(nid);
       nid = dn.getChildNodeID(chks,row); // Move down the tree 1 level
       if( !isDecidedRow(nid) ) {
@@ -252,7 +258,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
           }
           DHistogram h = hcs[n][c];
           if( h==null ) continue; // Ignore untracked columns in this split
-          lh.resizeIfNeeded(h._w.length);
+          lh.resizeIfNeeded(h._nbin);
           h.updateSharedHistosAndReset(lh, ws, cs, ys, rows, nh[n], n == 0 ? 0 : nh[n - 1]);
         }
       }

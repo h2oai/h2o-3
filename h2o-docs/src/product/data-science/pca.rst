@@ -86,12 +86,6 @@ Interpreting a PCA Model
 PCA output returns a table displaying the number of components specified
 by the value for ``k``.
 
-Scree and cumulative variance plots for the components are returned as
-well. Users can access them by clicking on the black button labeled
-"Scree and Variance Plots" at the top left of the results page. A scree
-plot shows the variance of each component, while the cumulative variance
-plot shows the total variance accounted for by the set of components.
-
 The output for PCA includes the following:
 
 -  Model parameters (hidden)
@@ -171,7 +165,7 @@ The covariance matrix :math:`C_{x}` is
 
 where :math:`n` is the number of observations, and :math:`C_{x}` is a square, symmetric :math:`m \times m` matrix, the diagonal entries of which are the variances of attributes, and the off-diagonal entries are covariances between attributes.
 
-PCA convergence is based on the method described by Gockenbach: "The rate of convergence of the power method depends on the ratio :math:`lambda_2|/|\lambda_1`. If this is small...then the power method converges rapidly. If the ratio is close to 1, then convergence is quite slow. The power method will fail if :math:`lambda_2| = |\lambda_1`." (567).
+PCA convergence is based on the method described by Gockenbach: "The rate of convergence of the power method depends on the ratio :math:`|\lambda_2|/|\lambda_1|`. If this is small...then the power method converges rapidly. If the ratio is close to 1, then convergence is quite slow. The power method will fail if :math:`|\lambda_2| = |\lambda_1|`." (567).
 
 The objective of PCA is to maximize variance while minimizing
 covariance.

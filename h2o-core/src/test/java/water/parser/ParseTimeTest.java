@@ -71,12 +71,15 @@ public class ParseTimeTest extends TestUtil {
     String[] data = new String[] {
         "12Jun10:10:00:00",
         "12JUN2010:10:00:00",
-        "\"12JUN2010 10:00:00\"",
-        "\"12JUN2010:10:00:00 PM\"",
+        "12JUN2010 10:00:00",              // Embedded blank, no  quotes
+        "\"12JUN2010 10:00:00\"",          // Embedded blank, yes quotes
+        "12JUN2010:10:00:00 PM",           // Embedded blank, no  quotes
+        "\"12JUN2010:10:00:00 PM\"",       // Embedded blank, yes quotes
         "12JUN2010:10:00:00.123456789",
         "\"12JUN2010:10:00:00.123456789 PM\"",
         "12June2010",
-        "\"24-MAR-14 06.10.48.000000000 PM\"",
+        "24-MAR-14 06.10.48.000000000 PM",     // Embedded blank, no  quotes
+        "\"24-MAR-14 06.10.48.000000000 PM\"", // Embedded blank, yes quotes
         "\"24-MAR-14 06.10.48.000000000PM\"",
         "\"24-MAR-14:06.10.48.123 AM\"",
         "24-MAR-14:06.10.48.123AM",
@@ -87,16 +90,21 @@ public class ParseTimeTest extends TestUtil {
         "\"24MAR78:06.10:48.000 PM\"",   // should assume 1978
         "\"24MAR1968:06.10:48.000 PM\"", // should be a negative time, pre-Epoch
         "2015-12-03 15:43:21.654321 ",   // Evil trailing blank
+        "\"2015-12-03 15:43:21.654321 \"", // Evil trailing blank, quoted
+        "20151203-15:43:21.654",         // No dash '-' separator between yyyyMMdd, and then one between dd-HH
     };
 
     double[][] exp = new double[][] {  // These ms counts all presume PST
         d(1276362000000L ),
         d(1276362000000L ),
         d(1276362000000L ),
+        d(1276362000000L ),
+        d(1276405200000L ),
         d(1276405200000L ),
         d(1276362000123L ),
         d(1276405200123L ),
         d(1276326000000L ),
+        d(1395709848000L ),
         d(1395709848000L ),
         d(1395709848000L ),
         d(1395666648123L ),
@@ -108,6 +116,8 @@ public class ParseTimeTest extends TestUtil {
         d(259639848000L  ),
         d(-55892952000L  ),
         d(1449186201654L ),
+        d(1449186201654L ),
+        d(1449186201654L ),
     };
 
     StringBuilder sb1 = new StringBuilder();
@@ -116,6 +126,7 @@ public class ParseTimeTest extends TestUtil {
     Key r1 = Key.make("r1");
     ParseSetup ps = ParseSetup.guessSetup(k1, false, 0);
     ps._separator = ',';
+    ps._number_columns = 1;
     Frame dataFrame = ParseDataset.parse(r1, k1, true, ps);
 
     for (int i=0; i < exp.length; i++ )  // Adjust exp[][] to local time
@@ -293,4 +304,10 @@ public class ParseTimeTest extends TestUtil {
       Assert.assertEquals(exp[i],vec.at8(i));
     fr.delete();
   }
+
+  @Test public void testParseInvalidPubDev3675() {
+    long millis = ParseTime.attemptTimeParse(new BufferedString("XXXX0101"));
+    Assert.assertEquals("Expected Long.MIN_VALUE as a marker of invalid date", Long.MIN_VALUE, millis);
+  }
+
 }

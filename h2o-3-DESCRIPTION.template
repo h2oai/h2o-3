@@ -1,0 +1,16 @@
+Package: h2o-3
+Version: SUBST_PROJECT_VERSION
+Type: Backend
+Title: h2o-3 project build R dependencies
+Date: SUBST_PROJECT_DATE
+Author: The H2O.ai team
+Maintainer: The H2O.ai team
+Description: Standalone R DESCRIPTION file which defines R dependencies for
+  h2o-3 java project build and tests.
+License: Apache License (== 2.0)
+URL: https://github.com/h2oai/h2o-3
+NeedsCompilation: yes
+SystemRequirements: Java (>= 1.7)
+Additional_repositories: http://Rdatatable.github.io/data.table
+Depends: spatial, proto, randomForest, boot, rgl, ade4, RUnit, AUC, mlbench, HDtweedie, LiblineaR, statmod, bit, bit64, R.methodsS3, R.oo, R.utils, bitops, RCurl, caTools, KernSmooth, gtools, gdata, gplots, ROCR, codetools, iterators, foreach, lattice, Matrix, nlme, mgcv, glmnet, modeltools, flexclust, MASS, nnet, flexmix, DEoptimR, robustbase, trimcluster, mclust, kernlab, diptest, mvtnorm, prabclus, cluster, class, e1071, fpc, foreign, acepack, Formula, rpart, colorspace, munsell, dichromat, labeling, mime, R6, rstudioapi, git2r, brew, whisker, magrittr, stringi, BH, RColorBrewer, gtable, Rcpp, digest, xml2, curl, rversions, jsonlite, gridExtra, survival, gbm, latticeExtra, stringr, evaluate, roxygen2, memoise, crayon, testthat, httr, devtools, plyr, reshape2, scales, ggplot2, Hmisc
+Suggests: data.table

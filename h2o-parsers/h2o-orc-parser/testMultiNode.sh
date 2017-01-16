@@ -49,14 +49,14 @@ else
   fi
 fi
 
-MAX_MEM="-Xmx3g"
+MAX_MEM=${H2O_JVM_XMX:-3g}
 
 # Check if coverage should be run
 if [ $JACOCO_ENABLED = true ]
 then
     AGENT="../../jacoco/jacocoagent.jar"
     COVERAGE="-javaagent:$AGENT=destfile=build/jacoco/h2o-parser_orc.exec"
-    MAX_MEM="-Xmx3g"
+    MAX_MEM=${H2O_JVM_XMX:-3g}
 else
     COVERAGE=""
 fi
@@ -65,7 +65,7 @@ fi
 #   build/classes/main - Main h2o core classes
 #   build/classes/test - Test h2o core classes
 #   build/resources/main - Main resources (e.g. page.html)
-JVM="nice $JAVA_CMD -ea $COVERAGE $MAX_MEM -Xms3g -cp build/libs/h2o-orc-parser-test.jar${SEP}build/libs/h2o-orc-parser.jar${SEP}../../h2o-core/build/libs/h2o-core-test.jar${SEP}../../h2o-core/build/libs/h2o-core.jar${SEP}../../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../../lib/*"
+JVM="nice $JAVA_CMD -ea $COVERAGE -Xmx${MAX_MEM} -Xms${MAX_MEM} -cp build/libs/h2o-orc-parser-test.jar${SEP}build/libs/h2o-orc-parser.jar${SEP}../../h2o-core/build/libs/h2o-core-test.jar${SEP}../../h2o-core/build/libs/h2o-core.jar${SEP}../../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../../lib/*"
 
 echo "$JVM" > $OUTDIR/jvm_cmd.txt
 # Ahhh... but the makefile runs the tests skipping the jar'ing step when possible.

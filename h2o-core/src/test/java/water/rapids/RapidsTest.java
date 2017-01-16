@@ -9,11 +9,19 @@ import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
+import water.rapids.ast.AstRoot;
+import water.rapids.ast.params.AstNumList;
+import water.rapids.ast.params.AstStr;
 import water.rapids.vals.ValFrame;
 import water.util.ArrayUtils;
+import water.util.Log;
 
 import java.io.File;
 import java.util.Arrays;
+
+import static org.junit.Assert.*;
+import static water.rapids.Rapids.IllegalASTException;
+
 
 public class RapidsTest extends TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
@@ -24,42 +32,92 @@ public class RapidsTest extends TestUtil {
     checkTree(tree);
   }
 
+  @Test public void testParseString() {
+    astStr_ok("'hello'", "hello");
+    astStr_ok("\"one two three\"", "one two three");
+    astStr_ok("\"  \\\"  \"", "  \"  ");
+    astStr_ok("\"\\\\\"", "\\");
+    astStr_ok("'test\"omg'", "test\"omg");
+    astStr_ok("'sun\nmoon'", "sun\nmoon");
+    astStr_ok("'a\\nb'", "a\nb");
+    astStr_ok("'\\n\\r\\t\\b\\f\\'\\\"\\\\'", "\n\r\t\b\f\'\"\\");
+    astStr_ok("'\\x00\\xa2\\xBC\\xDe\\xFF\\xcb'", "\u0000\u00A2\u00BC\u00DE\u00FF\u00CB");
+    astStr_ok("\"\\uABCD\\u0000\\uffff\"", "\uABCD\u0000\uFFFF");
+    astStr_ok("\"\\U0001F578\"", new String(Character.toChars(0x1F578)));
+
+    parse_err("\"hello");
+    parse_err("\"one\"two\"");
+    parse_err("\"something\'");
+    parse_err("'\\+'");
+    parse_err("'\\0'");
+    parse_err("'\\xA'");
+    parse_err("'\\xHI");
+    parse_err("'\\u123 spam'");
+    parse_err("'\\U'");
+    parse_err("'\\U12345678'");
+    parse_err("'\\U1F578'");
+    parse_err("'\\U+1F578'");
+    parse_err("'\\u{1F578}'");
+  }
+
+  @Test public void testParseNumList() {
+    astNumList_ok("[]", new double[0]);
+    astNumList_ok("[1 2 3]", ard(1, 2, 3));
+    astNumList_ok("[1, 2, 3]", ard(1, 2, 3));
+    astNumList_ok("[1     , 2\t, 3,4]", ard(1, 2, 3, 4));
+    astNumList_ok("[000.1 -3 17.003 2e+01 +11.1 1234567890]", ard(0.1, -3, 17.003, 20, 11.1, 1234567890));
+    astNumList_ok("[NaN nan]", ard(Double.NaN, Double.NaN));
+    astNumList_ok("[1 2:3 5:10:2]", ard(1, 2, 3, 4, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23));
+    astNumList_ok("[-0.5:10:0.1]", ard(-0.5, -0.4, -0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3, 0.4));
+    parse_err("[21 11");
+    parse_err("[1 0.00.0]");
+    parse_err("[0 1 true false]");
+    parse_err("[#1 #2 #3]");
+    parse_err("[0 1 'hello']");
+    parse_err("[1:0]");
+    parse_err("[0:nan:2]");
+    parse_err("[0:2:nan]");
+    parse_err("[1:0:5]");
+    parse_err("[1:-20]");
+    parse_err("[1:20:-5]");
+  }
+
   @Test public void test1() {
     // Checking `hex + 5`
-    String tree = "(+ a.hex #5)";
+    String tree = "(+ a.hex 5)";
     checkTree(tree);
   }
 
   @Test public void test2() {
     // Checking `hex + 5 + 10`
-    String tree = "(+ a.hex (+ #5 #10))";
+    String tree = "(+ a.hex (+ 5 10))";
     checkTree(tree);
   }
 
   @Test public void test3() {
     // Checking `hex + 5 - 1 * hex + 15 * (23 / hex)`
-    String tree = "(+ (- (+ a.hex #5) (* #1 a.hex)) (* #15 (/ #23 a.hex)))";
+    String tree = "(+ (- (+ a.hex 5) (* 1 a.hex)) (* 15 (/ 23 a.hex)))";
     checkTree(tree);
   }
 
   @Test public void test4() {
     //Checking `hex == 5`, <=, >=, <, >, !=
-    String tree = "(== a.hex #5)";
+    String tree = "(== a.hex 5)";
     checkTree(tree);
-    tree = "(<= a.hex #5)";
+    tree = "(<= a.hex 5)";
     checkTree(tree);
-    tree = "(>= a.hex #1.25132)";
+    tree = "(>= a.hex 1.25132)";
     checkTree(tree);
-    tree = "(< a.hex #112.341e-5)";
+    tree = "(< a.hex 112.341e-5)";
     checkTree(tree);
-    tree = "(> a.hex #0.0123)";
+    tree = "(> a.hex 0.0123)";
     checkTree(tree);
-    tree = "(!= a.hex #0)";
+    tree = "(!= a.hex 0)";
     checkTree(tree);
   }
   @Test public void test4_throws() {
     String tree = "(== a.hex (cols a.hex [1 2]))";
-    checkTree(tree,true);
+    checkTree(tree, "Frames must have same columns, found 4 columns and 2 columns.");
   }
 
   @Test public void test5() {
@@ -115,7 +173,7 @@ public class RapidsTest extends TestUtil {
     checkTree(tree);
     // Unknown var2
     tree = "({var1 . (* var1 var2)} 3)";
-    checkTree(tree,true);
+    checkTree(tree, "Name lookup of 'var2' failed");
     // Compute 3* a.hex[0,0]
     tree = "({var1 . (* var1 (rows a.hex [0]))} 3)";
     checkTree(tree);
@@ -222,8 +280,8 @@ public class RapidsTest extends TestUtil {
     checkTree(tree);
   }
 
-  private void checkTree(String tree) { checkTree(tree,false); }
-  private void checkTree(String tree, boolean expectThrow) {
+  private void checkTree(String tree) { checkTree(tree, null); }
+  private void checkTree(String tree, String thrownMessage) {
     //Frame r = frame(new double[][]{{-1},{1},{2},{3},{4},{5},{6},{254}});
     //Key ahex = Key.make("a.hex");
     //Frame fr = new Frame(ahex, null, new Vec[]{r.remove(0)});
@@ -233,7 +291,7 @@ public class RapidsTest extends TestUtil {
     fr.remove(4).remove();
     try {
       Val val = Rapids.exec(tree);
-      Assert.assertFalse(expectThrow);
+      Assert.assertNull(thrownMessage);
       System.out.println(val.toString());
       if (val instanceof ValFrame) {
         Frame fr2 = val.getFrame();
@@ -241,7 +299,11 @@ public class RapidsTest extends TestUtil {
         fr2.remove();
       }
     } catch( IllegalArgumentException iae ) {
-      if( !expectThrow ) throw iae;
+      if (thrownMessage != null) {
+        Assert.assertEquals(thrownMessage, iae.getMessage());
+        Log.debug("Expected Exception suppressed", iae);
+      } else
+        throw iae;
     } finally {
       fr.delete();
     }
@@ -287,7 +349,7 @@ public class RapidsTest extends TestUtil {
       r = new Frame(r);
       DKV.put(r);
       System.out.println(r);
-      String x = String.format("(merge %s %s #1 #0 [] [] \"auto\")",l._key,r._key);
+      String x = String.format("(merge %s %s 1 0 [] [] \"auto\")",l._key,r._key);
       Val res = Rapids.exec(x);
       f = res.getFrame();
       System.out.println(f);
@@ -380,15 +442,15 @@ public class RapidsTest extends TestUtil {
     try {
       fr = parse_test_file(Key.make("a.hex"),"smalldata/airlines/AirlinesTrainMM.csv.zip");
       System.out.printf(fr.toString());
-      Rapids.exec("(tmp= flow_1 (h2o.runif a.hex -1))",ses);
+      Rapids.exec("(h2o.runif a.hex -1)->flow_1",ses);
       Rapids.exec("(tmp= f.25 (rows a.hex (<  flow_1 0.25) ) )",ses);
-      Rapids.exec("(tmp= f.75 (rows a.hex (>= flow_1 0.25) ) )",ses);
-      Rapids.exec("(tmp= flow_2 (h2o.runif a.hex -1))",ses);
+      Rapids.exec("(rows a.hex (>= flow_1 0.25) )->f.75",ses);
+      Rapids.exec("(h2o.runif a.hex -1)->flow_2",ses);
       ses.end(null);
     } catch( Throwable ex ) {
       throw ses.endQuietly(ex);
     } finally {
-      fr.delete();
+      if (fr != null) fr.delete();
     }
   }
 
@@ -406,7 +468,11 @@ public class RapidsTest extends TestUtil {
       ps.getColumnTypes()[1] = Vec.T_CAT;
       ParseDataset.parse(Key.make( "census.hex"), new Key[]{nfs._key}, true, ps);
       
-      exec_str("(assign census.hex (colnames= census.hex [0 1 2 3 4 5 6 7 8] [\"Community.Area.Number\" \"COMMUNITY.AREA.NAME\" \"PERCENT.OF.HOUSING.CROWDED\" \"PERCENT.HOUSEHOLDS.BELOW.POVERTY\" \"PERCENT.AGED.16..UNEMPLOYED\" \"PERCENT.AGED.25..WITHOUT.HIGH.SCHOOL.DIPLOMA\" \"PERCENT.AGED.UNDER.18.OR.OVER.64\" \"PER.CAPITA.INCOME.\" \"HARDSHIP.INDEX\"]))", ses);
+      exec_str("(assign census.hex (colnames= census.hex\t[0 1 2 3 4 5 6 7 8] \n" +
+               "['Community.Area.Number' 'COMMUNITY.AREA.NAME' \"PERCENT.OF.HOUSING.CROWDED\" \r\n" +
+               " \"PERCENT.HOUSEHOLDS.BELOW.POVERTY\" \"PERCENT.AGED.16..UNEMPLOYED\" " +
+               " \"PERCENT.AGED.25..WITHOUT.HIGH.SCHOOL.DIPLOMA\" \"PERCENT.AGED.UNDER.18.OR.OVER.64\" " +
+               " \"PER.CAPITA.INCOME.\" \"HARDSHIP.INDEX\"]))", ses);
 
       exec_str("(assign crimes.hex (colnames= crimes.hex [0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21] [\"ID\" \"Case.Number\" \"Date\" \"Block\" \"IUCR\" \"Primary.Type\" \"Description\" \"Location.Description\" \"Arrest\" \"Domestic\" \"Beat\" \"District\" \"Ward\" \"Community.Area\" \"FBI.Code\" \"X.Coordinate\" \"Y.Coordinate\" \"Year\" \"Updated.On\" \"Latitude\" \"Longitude\" \"Location\"]))", ses);
 
@@ -415,11 +481,11 @@ public class RapidsTest extends TestUtil {
       exec_str("(assign crimes.hex (append crimes.hex (tmp= unary_op_6 (day (tmp= nary_op_5 (cols crimes.hex [2])))) \"Day\"))", ses);
 
       checkSaneFrame();
-      exec_str("(assign crimes.hex (append crimes.hex (tmp= binary_op_31 (+ (tmp= unary_op_7 (month nary_op_5)) #1)) \"Month\"))", ses);
+      exec_str("(assign crimes.hex (append crimes.hex (tmp= binary_op_31 (+ (tmp= unary_op_7 (month nary_op_5)) 1)) \"Month\"))", ses);
 
       exec_str("(rm nary_op_30)",ses);
 
-      exec_str("(assign crimes.hex (append crimes.hex (tmp= binary_op_32 (+ (tmp= binary_op_9 (- (tmp= unary_op_8 (year nary_op_5)) #1900)) #1900)) \"Year\"))", ses);
+      exec_str("(assign crimes.hex (append crimes.hex (tmp= binary_op_32 (+ (tmp= binary_op_9 (- (tmp= unary_op_8 (year nary_op_5)) 1900)) 1900)) \"Year\"))", ses);
 
       exec_str("(assign crimes.hex (append crimes.hex (tmp= unary_op_10 (week nary_op_5)) \"WeekNum\"))", ses);
 
@@ -429,7 +495,7 @@ public class RapidsTest extends TestUtil {
       checkSaneFrame();
 
       exec_str("(assign crimes.hex (append crimes.hex (tmp= unary_op_11 (dayOfWeek nary_op_5)) \"WeekDay\"))", ses);
-      exec_str("(rm nfs:\\C:\\Users\\cliffc\\Desktop\\h2o-3\\smalldata\\chicago\\chicagoCrimes10k.csv.zip)",ses);
+      exec_str("(rm 'nfs:\\\\C:\\\\Users\\\\cliffc\\\\Desktop\\\\h2o-3\\\\smalldata\\\\chicago\\\\chicagoCrimes10k.csv.zip')", ses);
 
       exec_str("(assign crimes.hex (append crimes.hex (tmp= unary_op_12 (hour nary_op_5)) \"HourOfDay\"))", ses);
 
@@ -489,7 +555,7 @@ public class RapidsTest extends TestUtil {
       exec_str("(tmp= nary_op_37 (merge subset_35 census.hex TRUE FALSE [] [] \"auto\"))", ses);
 
       // nary_op_38 = merge( nary_op_37 subset_36_2); Vecs in nary_op_38 and nary_pop_37 and X shared
-      exec_str("(tmp= subset_41 (rows (tmp= nary_op_38 (merge nary_op_37 subset_36_2 TRUE FALSE [] [] \"auto\")) (tmp= binary_op_40 (<= (tmp= nary_op_39 (h2o.runif nary_op_38 30792152736.5179)) #0.8))))", ses);
+      exec_str("(tmp= subset_41 (rows (tmp= nary_op_38 (merge nary_op_37 subset_36_2 TRUE FALSE [] [] \"auto\")) (tmp= binary_op_40 (<= (tmp= nary_op_39 (h2o.runif nary_op_38 30792152736.5179)) 0.8))))", ses);
 
       // Standard "head of 10 rows" pattern for printing
       exec_str("(tmp= subset_44 (rows subset_41 [0:10]))", ses);
@@ -498,7 +564,7 @@ public class RapidsTest extends TestUtil {
       exec_str("(rm binary_op_40)",ses);
       exec_str("(rm nary_op_37)",ses);
 
-      exec_str("(tmp= subset_43 (rows nary_op_38 (tmp= binary_op_42 (> nary_op_39 #0.8))))", ses);
+      exec_str("(tmp= subset_43 (rows nary_op_38 (tmp= binary_op_42 (> nary_op_39 0.8))))", ses);
 
       // Chicago demo continues on past, but this is all I've captured for now
 
@@ -524,4 +590,23 @@ public class RapidsTest extends TestUtil {
     }
   }
 
+  private static void astNumList_ok(String expr, double[] expected) {
+    AstRoot res = Rapids.parse(expr);
+    assertTrue(res instanceof AstNumList);
+    if (expected != null)
+      assertArrayEquals(expected, ((AstNumList)res).expand(), 1e-10);
+  }
+
+  private static void astStr_ok(String expr, String expected) {
+    AstRoot res = Rapids.parse(expr);
+    assertTrue(res instanceof AstStr);
+    assertEquals(expected, ((AstStr)res).getStr());
+  }
+
+  private static void parse_err(String expr) {
+    try {
+      Rapids.parse(expr);
+      fail("Expression " + expr + " expected to fail, however it did not.");
+    } catch (IllegalASTException ignored) {}
+  }
 }

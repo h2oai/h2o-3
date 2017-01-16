@@ -1,5 +1,7 @@
 package hex.glrm;
 
+import hex.genmodel.algos.glrm.GlrmInitialization;
+import hex.genmodel.algos.glrm.GlrmLoss;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -53,7 +55,7 @@ public class GLRMGridTest extends TestUtil {
       params._train = fr._key;
       params._seed = 4224L;
       params._loss = GlrmLoss.Absolute;
-      params._init = GLRM.Initialization.SVD;
+      params._init = GlrmInitialization.SVD;
 
       //
       // Fire off a grid search multiple times with same key and make sure
@@ -116,7 +118,7 @@ public class GLRMGridTest extends TestUtil {
       params._train = fr._key;
       params._seed = 4224L;
       params._loss = GlrmLoss.Absolute;
-      params._init = GLRM.Initialization.SVD;
+      params._init = GlrmInitialization.SVD;
 
       //
       // Fire off a grid two  times with same key and make sure

@@ -110,7 +110,9 @@ public class NonBlockingHashMap<TypeK, TypeV>
   }
 
   // --- hash ----------------------------------------------------------------
-  // Helper function to spread lousy hashCodes
+  // Helper function to spread lousy hashCodes Throws NPE for null Key, on
+  // purpose - as the first place to conveniently toss the required NPE for a
+  // null Key.
   private static final int hash(final Object key) {
     int h = key.hashCode();     // The real hashCode call
     h ^= (h>>>20) ^ (h>>>12);
@@ -119,7 +121,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
     return h;
   }
 
- 
+
 
   // --- The Hash Table --------------------
   // Slot 0 is always used for a 'CHM' entry below to hold the interesting
@@ -282,17 +284,17 @@ public class NonBlockingHashMap<TypeK, TypeV>
 
   /** Returns the number of key-value mappings in this map.
    *  @return the number of key-value mappings in this map */
-  @Override 
+  @Override
   public int     size       ( )                       { return chm(_kvs).size(); }
   /** Returns <tt>size() == 0</tt>.
    *  @return <tt>size() == 0</tt> */
-  @Override 
+  @Override
   public boolean isEmpty    ( )                       { return size() == 0;      }
 
   /** Tests if the key in the table using the <tt>equals</tt> method.
    * @return <tt>true</tt> if the key is in the table using the <tt>equals</tt> method
    * @throws NullPointerException if the specified key is null  */
-  @Override 
+  @Override
   public boolean containsKey( Object key )            { return get(key) != null; }
 
   /** Legacy method testing if some key maps into the specified value in this
@@ -904,17 +906,20 @@ public class NonBlockingHashMap<TypeK, TypeV>
       // with a higher reprobe rate
       //if( sz >= (oldlen>>1) ) // If we are >50% full of keys then...
       //  newsz = oldlen<<1;    // Double size
-
-      // Last (re)size operation was very recent?  Then double again; slows
-      // down resize operations for tables subject to a high key churn rate.
+      
+      // Last (re)size operation was very recent?  Then double again
+      // despite having few live keys; slows down resize operations
+      // for tables subject to a high key churn rate - but do not
+      // forever grow the table.  If there is a high key churn rate
+      // the table needs a steady state of rare same-size resize
+      // operations to clean out the dead keys.
       long tm = System.currentTimeMillis();
-      long q=0;
       if( newsz <= oldlen && // New table would shrink or hold steady?
-          (tm <= topmap._last_resize_milli+10000 || // Recent resize (less than 10 sec ago)
-           (q=_slots.estimate_get()) >= (sz<<1)) )  // 1/2 of keys are dead?
+          tm <= topmap._last_resize_milli+10000)  // Recent resize (less than 10 sec ago)
         newsz = oldlen<<1;      // Double the existing size
 
-      // Do not shrink, ever
+      // Do not shrink, ever.  If we hit this size once, assume we
+      // will again.
       if( newsz < oldlen ) newsz = oldlen;
 
       // Convert to power-of-2

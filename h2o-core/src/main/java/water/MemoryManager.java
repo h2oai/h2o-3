@@ -41,6 +41,9 @@ import water.util.PrettyPrint;
  * @author cliffc
  */
 abstract public class MemoryManager {
+  // Track timestamp of last oom log to avoid spamming the logs with junk.
+  private static volatile long oomLastLogTimestamp = 0;
+  private static final long SIXTY_SECONDS_IN_MILLIS = 60 * 1000;
 
   // max heap memory
   public static final long MEM_MAX = Runtime.getRuntime().maxMemory();
@@ -62,7 +65,6 @@ abstract public class MemoryManager {
   // A monotonically increasing total count memory allocated via MemoryManager.
   // Useful in tracking total memory consumed by algorithms - just ask for the
   // before & after amounts and diff them.
-  static final AtomicLong MEM_ALLOC = new AtomicLong();
 
   static void setMemGood() {
     if( CAN_ALLOC ) return;
@@ -118,6 +120,7 @@ abstract public class MemoryManager {
       Cleaner.DESIRED = d;      // Desired caching level
     final long cacheUsageNow = Cleaner.Histo.cached();
 
+    boolean skipThisLogMessageToAvoidSpammingTheLogs = false;
     String m="";
     if( cacheUsageNow > Cleaner.DESIRED ) {
       m = (CAN_ALLOC?"Swapping!  ":"blocked:   ");
@@ -131,9 +134,21 @@ abstract public class MemoryManager {
         // Here we enter the zone of possibly dieing for OOM.  There's no point
         // in blocking allocations, as no more memory can be freed by more
         // cache-flushing.  Might as well proceed on a "best effort" basis.
+
+        long now = System.currentTimeMillis();
+        if ((now - oomLastLogTimestamp) >= SIXTY_SECONDS_IN_MILLIS) {
+          oomLastLogTimestamp = now;
+        }
+        else {
+          skipThisLogMessageToAvoidSpammingTheLogs = true;
+        }
       } else { 
         m = "MemGood:   "; // Cache is low enough, room for POJO allocation - full steam ahead!
       }
+    }
+
+    if (skipThisLogMessageToAvoidSpammingTheLogs) {
+      return;
     }
 
     // No logging if under memory pressure: can deadlock the cleaner thread
@@ -221,7 +236,6 @@ abstract public class MemoryManager {
           try { _lock.wait(300*1000); } catch (InterruptedException ex) { }
         }
       }
-      MEM_ALLOC.addAndGet(bytes);
       try {
         switch( type ) {
         case  1: return new byte   [elems];
@@ -257,7 +271,12 @@ abstract public class MemoryManager {
   public static int    [] malloc4 (int size) { return (int    [])malloc(size,size*4L, 4,null,0); }
   public static long   [] malloc8 (int size) { return (long   [])malloc(size,size*8L, 8,null,0); }
   public static float  [] malloc4f(int size) { return (float  [])malloc(size,size*4L, 5,null,0); }
-  public static double [] malloc8d(int size) { return (double [])malloc(size,size*8L, 9,null,0); }
+  public static double [] malloc8d(int size) {
+    if(size < 32) try { // fast path for small arrays (e.g. histograms in gbm)
+      return new double [size];
+    } catch (OutOfMemoryError oom){/* fall through */}
+    return (double [])malloc(size,size*8L, 9,null,0);
+  }
   public static double [][] malloc8d(int m, int n) {
     double [][] res = new double[m][];
     for(int i = 0; i < m; ++i)

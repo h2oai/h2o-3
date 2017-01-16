@@ -63,7 +63,7 @@ public class DeepLearningGradientCheck extends TestUtil {
               DistributionFamily.laplace,
               DistributionFamily.quantile,
               DistributionFamily.huber,
-              DistributionFamily.modified_huber,
+              // DistributionFamily.modified_huber,
               DistributionFamily.gamma,
               DistributionFamily.poisson,
               DistributionFamily.AUTO,
@@ -406,7 +406,7 @@ public class DeepLearningGradientCheck extends TestUtil {
             DistributionFamily.poisson,
             DistributionFamily.tweedie,
             DistributionFamily.bernoulli,
-            DistributionFamily.modified_huber,
+//            DistributionFamily.modified_huber,
 //              DistributionFamily.multinomial, //no gradient/deviance implemented
     }) {
       DeepLearningParameters p = new DeepLearningParameters();

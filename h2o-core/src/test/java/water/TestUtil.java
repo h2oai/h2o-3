@@ -14,6 +14,7 @@ import water.parser.DefaultParserProviders;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 import water.util.Log;
+import water.util.StringUtils;
 import water.util.Timer;
 import water.util.TwoDimTable;
 
@@ -21,8 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -35,7 +35,10 @@ public class TestUtil extends Iced {
   private static String[] ignoreTestsNames;
   private static String[] doonlyTestsNames;
   protected static int _initial_keycnt = 0;
+  /** Minimal cloud size to start test. */
   protected static int MINCLOUDSIZE = Integer.parseInt(System.getProperty("cloudSize", "1"));
+  /** Default time in ms to wait for clouding */
+  protected static int DEFAULT_TIME_FOR_CLOUDING = 30000 /* ms */;
 
   public TestUtil() { this(1); }
   public TestUtil(int minCloudSize) {
@@ -58,21 +61,32 @@ public class TestUtil extends Iced {
 
   // ==== Test Setup & Teardown Utilities ====
   // Stall test until we see at least X members of the Cloud
-  public static void stall_till_cloudsize(int x) {
-    stall_till_cloudsize(new String[] {}, x);
+  protected static int getDefaultTimeForClouding() {
+    return JACOCO_ENABLED
+        ? DEFAULT_TIME_FOR_CLOUDING * 10
+        : DEFAULT_TIME_FOR_CLOUDING;
   }
+
+  public static void stall_till_cloudsize(int x) {
+    stall_till_cloudsize(x, getDefaultTimeForClouding());
+  }
+
+  public static void stall_till_cloudsize(int x, int timeout) {
+    stall_till_cloudsize(new String[] {}, x, timeout);
+  }
+
   public static void stall_till_cloudsize(String[] args, int x) {
+    stall_till_cloudsize(args, x, getDefaultTimeForClouding());
+  }
+
+  public static void stall_till_cloudsize(String[] args, int x, int timeout) {
     x = Math.max(MINCLOUDSIZE, x);
     if( !_stall_called_before ) {
       H2O.main(args);
       H2O.registerRestApis(System.getProperty("user.dir"));
       _stall_called_before = true;
     }
-    if (JACOCO_ENABLED) {
-      H2O.waitForCloudSize(x, 300000);
-    } else {
-      H2O.waitForCloudSize(x, 30000);
-    }
+    H2O.waitForCloudSize(x, timeout);
     _initial_keycnt = H2O.store_size();
   }
 
@@ -98,12 +112,13 @@ public class TestUtil extends Iced {
     }
     assertTrue("Keys leaked: " + leaked_keys + ", cnt = " + cnt, leaked_keys <= 0 || cnt == 0);
     // Bulk brainless key removal.  Completely wipes all Keys without regard.
-    new MRTask(){
-      @Override public void setupLocal() {  H2O.raw_clear();  water.fvec.Vec.ESPC.clear(); }
-    }.doAllNodes();
+    new DKVCleaner().doAllNodes();
     _initial_keycnt = H2O.store_size();
   }
 
+  private static class DKVCleaner extends MRTask<DKVCleaner> {
+    @Override public void setupLocal() {  H2O.raw_clear();  water.fvec.Vec.ESPC.clear(); }
+  }
 
   /** Execute this rule before each test to print test name and test class */
   @Rule transient public TestRule logRule = new TestRule() {
@@ -121,15 +136,34 @@ public class TestUtil extends Iced {
   @Rule transient public TestRule runRule = new TestRule() {
     @Override public Statement apply(Statement base, Description description) {
       String testName = description.getClassName() + "#" + description.getMethodName();
-      if ((ignoreTestsNames != null && Arrays.asList(ignoreTestsNames).contains(testName)) ||
-              (doonlyTestsNames != null && !Arrays.asList(doonlyTestsNames).contains(testName))) {
+      boolean ignored = false;
+      if (ignoreTestsNames != null && ignoreTestsNames.length > 0) {
+        for (String tn : ignoreTestsNames) {
+          if (testName.startsWith(tn)) {
+            ignored = true;
+            break;
+          }
+        }
+      }
+      if (doonlyTestsNames != null && doonlyTestsNames.length > 0) {
+        ignored = true;
+        for (String tn : doonlyTestsNames) {
+          if (testName.startsWith(tn)) {
+            ignored = false;
+            break;
+          }
+        }
+      }
+      if (ignored) {
         // Ignored tests trump do-only tests
         Log.info("#### TEST " + testName + " IGNORED");
         return new Statement() {
           @Override
           public void evaluate() throws Throwable {}
         };
-      } else { return base; }
+      } else {
+        return base;
+      }
     }
   };
 
@@ -174,6 +208,8 @@ public class TestUtil extends Iced {
     if( !file.exists() )
       file = new File("../target/" + fname);
     if( !file.exists() )
+      file = new File(StringUtils.expandPath(fname));
+    if( !file.exists() )
       file = null;
     return file;
   }
@@ -214,12 +250,12 @@ public class TestUtil extends Iced {
     assertTrue("File should exist: " + name, file.exists());
   }
 
-  private static void checkFile(String name, File file) {
+  public static void checkFile(String name, File file) {
     checkFileEntry(name, file);
     assertTrue("Expected a readable file: " + name, file.canRead());
   }
 
-  private static File[] checkFolder(String name, File folder) {
+  static File[] checkFolder(String name, File folder) {
     checkFileEntry(name, folder);
     assertTrue("Expected a folder: " + name, folder.isDirectory());
     File[] files = folder.listFiles();
@@ -254,7 +290,7 @@ public class TestUtil extends Iced {
 
     // create new parseSetup in order to store our na_string
     ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO,(byte) ',',true,
-            check_header,0,null,null,null,null,null));
+        check_header,0,null,null,null,null,null));
 
     // add the na_strings into p.
     if (na_string != null) {
@@ -315,7 +351,7 @@ public class TestUtil extends Iced {
 
     // create new parseSetup in order to store our na_string
     ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO,(byte) ',',true,
-            check_header,0,null,null,null,null,null));
+        check_header,0,null,null,null,null,null));
 
     // add the na_strings into p.
     if (na_string != null) {
@@ -347,13 +383,101 @@ public class TestUtil extends Iced {
    *  @param domain Categorical/Factor names, mapped by the data values
    *  @param rows Data
    *  @return The Vec  */
-  public static Vec vec(String[] domain, int ...rows) { 
+  public static Vec vec(String[] domain, int ...rows) {
     Key<Vec> k = Vec.VectorGroup.VG_LEN1.addVec();
     Futures fs = new Futures();
     AppendableVec avec = new AppendableVec(k,Vec.T_NUM);
     avec.setDomain(domain);
     NewChunk chunk = new NewChunk(avec, 0);
     for( int r : rows ) chunk.addNum(r);
+    chunk.close(0, fs);
+    Vec vec = avec.layout_and_close(fs);
+    fs.blockForPending();
+    return vec;
+  }
+
+  /** A numeric Vec from an array of ints */
+  public static Vec ivec(int...rows) {
+    return vec(null, rows);
+  }
+
+  /** A categorical Vec from an array of strings */
+  public static Vec cvec(String ...rows) {
+    return cvec(null, rows);
+  }
+
+  public static Vec cvec(String[] domain, String ...rows) {
+    HashMap<String, Integer> domainMap = new HashMap<>(10);
+    ArrayList<String> domainList = new ArrayList<>(10);
+    if (domain != null) {
+      int j = 0;
+      for (String s : domain) {
+        domainMap.put(s, j++);
+        domainList.add(s);
+      }
+    }
+    int[] irows = new int[rows.length];
+    for (int i = 0, j = 0; i < rows.length; i++) {
+      String s = rows[i];
+      if (!domainMap.containsKey(s)) {
+        domainMap.put(s, j++);
+        domainList.add(s);
+      }
+      irows[i] = domainMap.get(s);
+    }
+    return vec(domainList.toArray(new String[]{}), irows);
+  }
+
+  /** A numeric Vec from an array of doubles */
+  public static Vec dvec(double...rows) {
+    Key<Vec> k = Vec.VectorGroup.VG_LEN1.addVec();
+    Futures fs = new Futures();
+    AppendableVec avec = new AppendableVec(k, Vec.T_NUM);
+    NewChunk chunk = new NewChunk(avec, 0);
+    for (double r : rows)
+      chunk.addNum(r);
+    chunk.close(0, fs);
+    Vec vec = avec.layout_and_close(fs);
+    fs.blockForPending();
+    return vec;
+  }
+
+  /** A time Vec from an array of ints */
+  public static Vec tvec(int...rows) {
+    Key<Vec> k = Vec.VectorGroup.VG_LEN1.addVec();
+    Futures fs = new Futures();
+    AppendableVec avec = new AppendableVec(k, Vec.T_TIME);
+    NewChunk chunk = new NewChunk(avec, 0);
+    for (int r : rows)
+      chunk.addNum(r);
+    chunk.close(0, fs);
+    Vec vec = avec.layout_and_close(fs);
+    fs.blockForPending();
+    return vec;
+  }
+
+  /** A string Vec from an array of strings */
+  public static Vec svec(String...rows) {
+    Key<Vec> k = Vec.VectorGroup.VG_LEN1.addVec();
+    Futures fs = new Futures();
+    AppendableVec avec = new AppendableVec(k, Vec.T_STR);
+    NewChunk chunk = new NewChunk(avec, 0);
+    for (String r : rows)
+      chunk.addStr(r);
+    chunk.close(0, fs);
+    Vec vec = avec.layout_and_close(fs);
+    fs.blockForPending();
+    return vec;
+  }
+
+  /** A string Vec from an array of strings */
+  public static Vec uvec(UUID...rows) {
+    Key<Vec> k = Vec.VectorGroup.VG_LEN1.addVec();
+    Futures fs = new Futures();
+    AppendableVec avec = new AppendableVec(k, Vec.T_UUID);
+    NewChunk chunk = new NewChunk(avec, 0);
+    for (UUID r : rows)
+      chunk.addUUID(r);
     chunk.close(0, fs);
     Vec vec = avec.layout_and_close(fs);
     fs.blockForPending();
@@ -377,7 +501,7 @@ public class TestUtil extends Iced {
     return r;
   }
 
-// Java7+  @SafeVarargs
+  // Java7+  @SafeVarargs
   public static <T> T[] aro(T ...a) { return a ;}
 
   // ==== Comparing Results ====
@@ -390,9 +514,52 @@ public class TestUtil extends Iced {
     }
   }
 
+  public static void assertUUIDVecEquals(Vec expecteds, Vec actuals) {
+    assertEquals(expecteds.length(), actuals.length());
+    assertEquals("Vec types match", expecteds.get_type_str(), actuals.get_type_str());
+    for(int i = 0; i < expecteds.length(); i++) {
+      UUID expected = new UUID(expecteds.at16l(i), expecteds.at16h(i));
+      UUID actual = new UUID(actuals.at16l(i), actuals.at16h(i));
+      final String message = i + ": " + expected + " != " + actual + ", chunkIds = " + expecteds.elem2ChunkIdx(i) + ", " + actuals.elem2ChunkIdx(i) + ", row in chunks = " + (i - expecteds.chunkForRow(i).start()) + ", " + (i - actuals.chunkForRow(i).start());
+      assertEquals(message, expected, actual);
+    }
+  }
+
+  private static String toStr(BufferedString bs) { return bs != null ? bs.toString() : null; }
+
+  public static void assertStringVecEquals(Vec expecteds, Vec actuals) {
+    assertEquals(expecteds.length(), actuals.length());
+    assertEquals("Vec types match", expecteds.get_type_str(), actuals.get_type_str());
+    for(int i = 0; i < expecteds.length(); i++) {
+      String expected = toStr(expecteds.atStr(new BufferedString(), i));
+      String actual = toStr(actuals.atStr(new BufferedString(), i));
+      final String message = i + ": " + expected + " != " + actual + ", chunkIds = " + expecteds.elem2ChunkIdx(i) + ", " + actuals.elem2ChunkIdx(i) + ", row in chunks = " + (i - expecteds.chunkForRow(i).start()) + ", " + (i - actuals.chunkForRow(i).start());
+      assertEquals(message, expected, actual);
+    }
+  }
+
+  private static String getFactorAsString(Vec v, long row) { return v.isNA(row) ? null : v.factor((long) v.at(row)); }
+
+  public static void assertCatVecEquals(Vec expecteds, Vec actuals) {
+    assertEquals(expecteds.length(), actuals.length());
+    assertEquals("Vec types match", expecteds.get_type_str(), actuals.get_type_str());
+    for(int i = 0; i < expecteds.length(); i++) {
+      String expected = getFactorAsString(expecteds, i);
+      String actual = getFactorAsString(actuals, i);
+      final String message = i + ": " + expected + " != " + actual + ", chunkIds = " + expecteds.elem2ChunkIdx(i) + ", " + actuals.elem2ChunkIdx(i) + ", row in chunks = " + (i - expecteds.chunkForRow(i).start()) + ", " + (i - actuals.chunkForRow(i).start());
+      assertEquals(message, expected, actual);
+    }
+  }
+
   public static void checkStddev(double[] expected, double[] actual, double threshold) {
     for(int i = 0; i < actual.length; i++)
       Assert.assertEquals(expected[i], actual[i], threshold);
+  }
+
+  public static void checkIcedArrays(IcedWrapper[][] expected, IcedWrapper[][] actual, double threshold) {
+    for(int i = 0; i < actual.length; i++)
+      for (int j = 0; j < actual[0].length; j++)
+      Assert.assertEquals(expected[i][j].d, actual[i][j].d, threshold);
   }
 
   public static boolean[] checkEigvec(double[][] expected, double[][] actual, double threshold) {

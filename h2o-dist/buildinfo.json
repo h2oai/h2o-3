@@ -30,28 +30,28 @@
         },
         {
             "distribution" : "cdh5.4.2",
-            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-cdh5.4.2.zip",
-            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-cdh5.4.2.zip"
+            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-cdh5.4.zip",
+            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-cdh5.4.zip"
         },
         {
             "distribution" : "cdh5.5.3",
-            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-cdh5.5.3.zip",
-            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-cdh5.5.3.zip"
+            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-cdh5.5.zip",
+            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-cdh5.5.zip"
         },
         {
             "distribution" : "cdh5.6.0",
-            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-cdh5.6.0.zip",
-            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-cdh5.6.0.zip"
+            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-cdh5.6.zip",
+            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-cdh5.6.zip"
         },
         {
             "distribution" : "cdh5.7.0",
-            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-cdh5.7.0.zip",
-            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-cdh5.7.0.zip"
+            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-cdh5.7.zip",
+            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-cdh5.7.zip"
         },
         {
             "distribution" : "cdh5.8.0",
-            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-cdh5.8.0.zip",
-            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-cdh5.8.0.zip"
+            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-cdh5.8.zip",
+            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-cdh5.8.zip"
         },
         {
             "distribution" : "hdp2.1",
@@ -74,14 +74,19 @@
             "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-hdp2.4.zip"
         },
         {
+            "distribution" : "hdp2.5",
+            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-hdp2.5.zip",
+            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-hdp2.5.zip"
+        },
+        {
             "distribution" : "mapr3.1.1",
-            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-mapr3.1.1.zip",
-            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-mapr3.1.1.zip"
+            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-mapr3.1.zip",
+            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-mapr3.1.zip"
         },
         {
             "distribution" : "mapr4.0.1",
-            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-mapr4.0.1.zip",
-            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-mapr4.0.1.zip"
+            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-mapr4.0.zip",
+            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-mapr4.0.zip"
         },
         {
             "distribution" : "mapr5.0",
@@ -129,7 +134,7 @@
         {
             "name" : "Migrating to H2O 3",
             "id"   : "doc-migration",
-            "path" : "docs-website/h2o-docs/Migration.html"
+            "path" : "docs-website/h2o-docs/migrating.html"
         }
     ],
 

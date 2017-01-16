@@ -406,7 +406,7 @@ public class GLMBasicTestRegression extends TestUtil {
             scoreTrain = model.score(fr);
             assertTrue("shoul've thrown IAE", false);
           } catch (IllegalArgumentException iae) {
-            assertTrue(iae.getMessage().contains("Test/Validation dataset is missing offset vector"));
+            assertTrue(iae.getMessage().contains("Test/Validation dataset is missing offset column"));
           }
           scoreTrain = model.score(_canCarTrain);
           hex.ModelMetricsRegressionGLM mmTrain = (ModelMetricsRegressionGLM)hex.ModelMetricsRegression.getFromDKV(model, _canCarTrain);

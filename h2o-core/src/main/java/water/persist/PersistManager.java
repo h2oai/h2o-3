@@ -6,6 +6,7 @@ import water.MRTask;
 import water.Value;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.UploadFileVec;
+import water.util.FileUtils;
 import water.util.Log;
 import water.persist.Persist.PersistEntry;
 
@@ -16,6 +17,10 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
+
+import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
 
 /**
  * One true persistence manager which hides the implementations from H2O.
@@ -24,6 +29,11 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class PersistManager {
   final static public int MAX_BACKENDS = 8;
+
+  /** Property which enable HDFS as default fallback persistent layer. For example,
+   * if swift fs is regirestered properly under HDFS and user specifies swift based URI, the persist
+   * layer forwards the request through HDFS API. */
+  final static String PROP_ENABLE_HDFS_FALLBACK = SYSTEM_PROP_PREFIX + "persist.enable.hdfs.fallback";
 
   /** Persistence schemes; used as file prefixes eg "hdfs://some_hdfs_path/some_file" */
   public static class Schemes {
@@ -55,10 +65,14 @@ public class PersistManager {
   private PersistStatsEntry[] stats;
   public PersistStatsEntry[] getStats() { return stats; }
 
-  public static boolean isHdfsPath(String path) {
+  public boolean isHdfsPath(String path) {
     String s = path.toLowerCase();
-    if (s.startsWith("hdfs:") || s.startsWith("s3:") || s.startsWith("s3n:")
-                          || s.startsWith("s3a:") || s.startsWith("maprfs:")) {
+    if (s.startsWith("hdfs:")
+        || s.startsWith("s3:")
+        || s.startsWith("s3n:")
+        || s.startsWith("s3a:")
+        || s.startsWith("maprfs:")
+        || useHdfsAsFallback() && I[Value.HDFS] != null && I[Value.HDFS].canHandle(path)) {
       return true;
     }
     return false;
@@ -177,6 +191,8 @@ public class PersistManager {
       ikey = I[Value.HDFS].uriToKey(uri);
     } else if ("file".equals(scheme) || scheme == null) {
       ikey = I[Value.NFS].uriToKey(uri);
+    } else if (useHdfsAsFallback() && I[Value.HDFS].canHandle(uri.toString())) {
+        ikey = I[Value.HDFS].uriToKey(uri);
     } else {
       throw new H2OIllegalArgumentException("Unsupported schema '" + scheme + "' for given uri " + uri);
     }
@@ -215,8 +231,11 @@ public class PersistManager {
       }
     } else if(s.startsWith("s3://")) {
       return I[Value.S3].calcTypeaheadMatches(filter, limit);
-    } else if (s.startsWith("hdfs:") || s.startsWith("s3:") || s.startsWith("s3n:") ||
-             s.startsWith("s3a:") || s.startsWith("maprfs:")) {
+    } else if (s.startsWith("hdfs:")
+               || s.startsWith("s3n:")
+               || s.startsWith("s3a:")
+               || s.startsWith("maprfs:")
+               || useHdfsAsFallback() && I[Value.HDFS] != null && I[Value.HDFS].canHandle(s)) {
       if (I[Value.HDFS] == null) {
         throw new H2OIllegalArgumentException("HDFS, S3, S3N, and S3A support is not configured");
       }
@@ -239,14 +258,18 @@ public class PersistManager {
    * importFiles(importFiles.path, files, keys, fails, dels);
    *
    * @param path  (Input) Path to import data from
+   * @param pattern (Input) Regex pattern to match files by
    * @param files (Output) List of files found
    * @param keys  (Output) List of keys corresponding to files
    * @param fails (Output) List of failed files which mismatch among nodes
    * @param dels  (Output) I don't know what this is
    */
-  public void importFiles(String path, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
-    String s = path.toLowerCase(); // path must not be null
-    if( s.startsWith("http:") || s.startsWith("https:") ) {
+  public void importFiles(String path, String pattern, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
+    URI uri = FileUtils.getURI(path);
+    String scheme = uri.getScheme();
+    if (scheme == null || "file".equals(scheme)) {
+      I[Value.NFS].importFiles(path, pattern, files, keys, fails, dels);
+    } else if ("http".equals(scheme) || "https".equals(scheme)) {
       try {
         java.net.URL url = new URL(path);
         Key destination_key = Key.make(path);
@@ -258,24 +281,28 @@ public class PersistManager {
       } catch( Throwable e) {
         fails.add(path); // Fails for e.g. broken sockets silently swallow exceptions and just record the failed path
       }
-      return;
+    } else if ("s3".equals(scheme)) {
+      if (I[Value.S3] == null) throw new H2OIllegalArgumentException("S3 support is not configured");
+      I[Value.S3].importFiles(path, pattern, files, keys, fails, dels);
+    } else if ("hdfs".equals(scheme) ||
+        "s3n:".equals(scheme) ||
+        "s3a:".equals(scheme) ||
+        "maprfs:".equals(scheme) ||
+        (useHdfsAsFallback() && I[Value.HDFS] != null && I[Value.HDFS].canHandle(path))) {
+      if (I[Value.HDFS] == null) throw new H2OIllegalArgumentException("HDFS, S3N, and S3A support is not configured");
+      I[Value.HDFS].importFiles(path, pattern, files, keys, fails, dels);
     }
 
-    if(s.startsWith("s3:")) {
-      if (I[Value.S3] == null) throw new H2OIllegalArgumentException("S3 support is not configured");
-      I[Value.S3].importFiles(path, files, keys, fails, dels);
-      return;
+    if(pattern != null && !pattern.isEmpty()) {
+      files.retainAll(matchPattern(path,files,pattern)); //New files ArrayList after matching pattern of choice
+      keys.retainAll(matchPattern(path,keys,pattern)); //New keys ArrayList after matching pattern of choice
+      //New fails ArrayList after matching pattern of choice. Only show failures that match pattern
+      if(!fails.isEmpty()) {
+        fails.retainAll(matchPattern(path, fails, pattern));
+      }
     }
-    if( s.startsWith("hdfs:") ||
-        s.startsWith("s3n:") || 
-        s.startsWith("s3a:") || 
-        s.startsWith("maprfs:")) {
-      if (I[Value.HDFS] == null) throw new H2OIllegalArgumentException("HDFS, S3N, and S3A support is not configured");
-      I[Value.HDFS].importFiles(path, files, keys, fails, dels);
-      return;
-    }
-    // Attempt NFS import instead
-    I[Value.NFS].importFiles(path, files, keys, fails, dels);
+
+    return;
   }
 
 
@@ -479,7 +506,7 @@ public class PersistManager {
       return I[Value.ICE];
     }
 
-    if (scheme != null ) {
+    if (scheme != null) {
       switch (scheme) {
         case Schemes.FILE:
           return I[Value.ICE]; // Local FS
@@ -490,10 +517,62 @@ public class PersistManager {
         case Schemes.S3:
           return I[Value.S3];
         default:
-          throw new IllegalArgumentException("Cannot find persist manager for scheme " + scheme);
+          if (useHdfsAsFallback() && I[Value.HDFS] != null && I[Value.HDFS].canHandle(uri.toString())) {
+            return I[Value.HDFS];
+          } else {
+            throw new IllegalArgumentException("Cannot find persist manager for scheme " + scheme);
+          }
       }
     } else {
       return I[Value.ICE];
     }
+  }
+
+  /**
+   * Finds all entries in the list that matches the regex
+   * @param prefix The substring to extract before pattern matching
+   * @param fileList The list of strings to check
+   * @param matchStr The regular expression to use on the string after prefix
+   * @return list containing the matching entries
+   */
+  public ArrayList<String> matchPattern(String prefix, ArrayList<String> fileList, String matchStr){
+    ArrayList<String> result = new ArrayList<String>();
+    Pattern pattern = Pattern.compile(matchStr);
+    if (matchStr != null) {
+      for(String s : fileList){
+        Matcher matcher = pattern.matcher(afterPrefix(s,prefix));
+        if (matcher.find()) {
+          result.add(s);
+        }
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Returns the part of the string that occurs after the first index of the substring
+   * @param wholeString A string that needs to be subsetted
+   * @param substring The substring to extract
+   * @return string after substring
+   */
+  private static String afterPrefix(String wholeString , String substring) {
+    // Returns a substring containing all characters after a string.
+    int posSubstring = wholeString.lastIndexOf(substring);
+    if (posSubstring == -1) {
+      return "";
+    }
+    int adjustedPosSubstring = posSubstring + substring.length();
+    if (adjustedPosSubstring >= wholeString.length()) {
+      return "";
+    }
+    return wholeString.substring(adjustedPosSubstring);
+  }
+
+  /** Should HDFS persist layer be used as default persist layer
+   * for unknown URL schema.
+    * @return  true if HDFS should handle unknown URL schema.
+   */
+  static boolean useHdfsAsFallback() {
+    return System.getProperty(PROP_ENABLE_HDFS_FALLBACK, "true").equals("true");
   }
 }

@@ -213,6 +213,7 @@ public class AstDdply extends AstPrimitive {
         _result = new double[res.numCols()];
         for (int i = 0; i < res.numCols(); i++)
           _result[i] = res.vec(i).at(0);
+        res.remove();
       } else if (val.isNum())
         _result = new double[]{val.getNum()};
       else if (val.isNums())

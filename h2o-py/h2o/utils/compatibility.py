@@ -66,7 +66,7 @@ from future.utils import PY2, PY3, with_metaclass
 __all__ = ("PY2", "PY3", "with_metaclass",  "bytes_iterator",
            "range", "filter", "map", "zip", "viewitems", "viewkeys", "viewvalues",
            "apply", "cmp", "coerce", "execfile", "file", "long", "raw_input", "reduce", "reload", "unicode", "xrange",
-           "StandardError", "chr", "input", "open", "next", "round", "super", "csv_dict_writer")
+           "StandardError", "chr", "input", "open", "next", "round", "super", "csv_dict_writer", "repr2")
 
 
 
@@ -152,3 +152,10 @@ def bytes_iterator(s):
             yield ch
     else:
         raise TypeError("String argument expected, got %s" % type(s))
+
+def repr2(x):
+    """Analogous to repr(), but will suppress 'u' prefix when repr-ing a unicode string."""
+    s = repr(x)
+    if len(s) >= 2 and s[0] == "u" and (s[1] == "'" or s[1] == '"'):
+        s = s[1:]
+    return s

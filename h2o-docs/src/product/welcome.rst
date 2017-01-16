@@ -23,7 +23,12 @@ The `Recommended Systems <http://www.h2o.ai/product/recommended-systems-for-h2o/
    
 -  **Languages**: Scala, R, and Python are not required to use H2O unless you want to use H2O in those environments, but Java is always required. Supported versions include:
 
-   -  Java 7 or later. To build H2O or run H2O tests, the 64-bit JDK is required. To run the H2O binary using either the command line, R, or Python packages, only 64-bit JRE is required. Both of these are available on the `Java download page <http://www.oracle.com/technetwork/java/javase/downloads/index.html>`__.
+   -  Java 7 or later. **Note**: Java 9 is not yet released and is not currently supported.
+
+      - To build H2O or run H2O tests, the 64-bit JDK is required. 
+      - To run the H2O binary using either the command line, R, or Python packages, only 64-bit JRE is required. 
+      - Both of these are available on the `Java download page <http://www.oracle.com/technetwork/java/javase/downloads/index.html>`__.
+
    -  Scala 2.10 or later
    -  R version 3 or later
    -  Python 2.7.x or 3.5.x 
@@ -352,9 +357,7 @@ Pythonistas will be glad to know that H2O now provides support for this
 popular programming language. Python users can also use H2O with IPython
 notebooks. For more information, refer to the following links.
 
--  Click
-   `here <http://www.h2o.ai/download/h2o/python>`__
-   to view instructions on how to use H2O with Python.
+-  Instructions for using H2O with Python are available on the `Download page <http://www.h2o.ai/download>`__ . Select the version you want to install (latest stable release or nightly build), then click the **Install in Python** tab.
 
 -  `Python docs <../h2o-py/docs/index.html>`_: This document represents the definitive guide to using
    Python with H2O.
@@ -398,7 +401,6 @@ obtain better predictive performance.
    the concepts behind ensembles and how to use them.
 
 
-
 API Users
 --------------
 
@@ -433,7 +435,7 @@ own custom app that uses H2O.
 -  `H2O Algos Java Developer Documentation <../h2o-algos/javadoc/index.html>`_: The definitive Java API guide
    for the algorithms used by H2O.
 
--  `h2o-genmodel (POJO) Javadoc <../h2o-genmodel/javadoc/index.html>`_: Provides a step-by-step guide to creating and implementing POJOs in a Java application.
+-  `h2o-genmodel (POJO/MOJO) Javadoc <../h2o-genmodel/javadoc/index.html>`_: Provides a step-by-step guide to creating and implementing POJOs or MOJOs in a Java application.
 
 
 Developers
@@ -464,18 +466,11 @@ For JUnit tests to pass, you may need multiple H2O nodes. Create a
 After starting multiple "worker" node processes in addition to the JUnit
 test process, they will cloud up and run the multi-node JUnit tests.
 
--  `Recommended Systems <http://www.h2o.ai/product/recommended-systems-for-h2o/>`_: This one-page PDF provides a basic overview of
-   the operating systems, languages and APIs, Hadoop resource manager
-   versions, cloud computing environments, browsers, and other resources
-   recommended to run H2O.
-
 -  `Developer Documentation <https://github.com/h2oai/h2o-3#4-building-h2o-3>`_: Detailed instructions on how to build and
    launch H2O, including how to clone the repository, how to pull from
    the repository, and how to install required dependencies.
 
--  Click
-   `here <http://www.h2o.ai/download/h2o/maven>`__
-   to view instructions on how to use H2O with Maven.
+-  You can view instructions for using H2O with Maven on the `Download page <http://www.h2o.ai/download>`__. Select the version of H2O you want to install (latest stable release or nightly build), then click the **Use from Maven** tab.
 
 -  `Maven install <https://github.com/h2oai/h2o-3/blob/master/build.gradle>`_: This page provides information on how to build a
    version of H2O that generates the correct IDE files.
@@ -488,8 +483,7 @@ test process, they will cloud up and run the multi-node JUnit tests.
 -  `H2O Droplet Project Templates <https://github.com/h2oai/h2o-droplets>`_: This page provides template info for projects
    created in Java, Scala, or Sparkling Water.
 
--  `H2O Scala API Developer Documentation <../h2o-scala/scaladoc/index.html>`_: The definitive Scala API guide
-   for H2O.
+-  H2O Scala API Developer Documentation for `Scala 2.11 <../h2o-scala_2.11/scaladoc/index.html>`__ or `Scala 2.10 <../h2o-scala_2.10/scaladoc/index.html>`__: The definitive Scala API guide for H2O.
    
 -  `Hacking Algos <http://blog.h2o.ai/2014/11/hacking-algorithms-in-h2o-with-cliff/>`_: This blog post by Cliff walks you through building a
    new algorithm, using K-Means, Quantiles, and Grep as examples.

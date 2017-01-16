@@ -17,7 +17,7 @@ public class UploadFileVec extends FileVec {
     assert _len==-1;            // Not closed
     assert (c._vec == null);    // Don't try to re-purpose a chunk.
     c._vec = this;              // Attach chunk to this vec.
-    DKV.put(chunkKey(_nchunks++),c,fs); // Write updated chunk back into K/V
+    DKV.put(chunkKey(_nchunks++),c,fs,true); // Write updated chunk back into K/V
   }
 
   // Close, and possible replace the prior chunk with a new, larger Chunk

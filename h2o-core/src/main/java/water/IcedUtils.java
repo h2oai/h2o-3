@@ -7,6 +7,7 @@ public class IcedUtils {
 
   /** Deep-copy clone given iced object. */
   static public <T extends Iced> T deepCopy(T iced) {
+    if (iced == null) return null;
     AutoBuffer ab = new AutoBuffer();
     iced.write(ab);
     ab.flipForReading();

@@ -244,7 +244,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     def max_after_balance_size(self):
         """
         float: Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
-        balance_classes. (Default: 5.0)
+        balance_classes. (Default: 5)
         """
         return self._parms.get("max_after_balance_size")
 
@@ -256,7 +256,9 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @property
     def max_confusion_matrix_size(self):
-        """int: Maximum size (# classes) for confusion matrices to be printed in the Logs (Default: 20)"""
+        """
+        int: [Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs (Default: 20)
+        """
         return self._parms.get("max_confusion_matrix_size")
 
     @max_confusion_matrix_size.setter
@@ -303,7 +305,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @property
     def min_rows(self):
-        """float: Fewest allowed (weighted) observations in a leaf (in R called 'nodesize'). (Default: 10.0)"""
+        """float: Fewest allowed (weighted) observations in a leaf. (Default: 10)"""
         return self._parms.get("min_rows")
 
     @min_rows.setter
@@ -356,7 +358,11 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @property
     def r2_stopping(self):
-        """float: Stop making trees when the R^2 metric equals or exceeds this (Default: 1.79769313486e+308)"""
+        """
+        float: r2_stopping is no longer supported and will be ignored if set - please use stopping_rounds,
+        stopping_metric and stopping_tolerance instead. Previous version of H2O would stop making trees when the R^2
+        metric equals or exceeds this (Default: 1.797693135e+308)
+        """
         return self._parms.get("r2_stopping")
 
     @r2_stopping.setter
@@ -382,7 +388,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     @property
     def stopping_metric(self):
         """
-        Enum["auto", "deviance", "logloss", "mse", "auc", "lift_top_group", "r2", "misclassification",
+        Enum["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "lift_top_group", "misclassification",
         "mean_per_class_error"]: Metric to use for early stopping (AUTO: logloss for classification, deviance for
         regression) (Default: "auto")
         """
@@ -390,7 +396,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @stopping_metric.setter
     def stopping_metric(self, stopping_metric):
-        assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "auc", "lift_top_group", "r2", "misclassification", "mean_per_class_error"))
+        assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "lift_top_group", "misclassification", "mean_per_class_error"))
         self._parms["stopping_metric"] = stopping_metric
 
 
@@ -410,7 +416,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @property
     def max_runtime_secs(self):
-        """float: Maximum allowed runtime in seconds for model training. Use 0 to disable. (Default: 0.0)"""
+        """float: Maximum allowed runtime in seconds for model training. Use 0 to disable. (Default: 0)"""
         return self._parms.get("max_runtime_secs")
 
     @max_runtime_secs.setter
@@ -457,7 +463,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @property
     def learn_rate_annealing(self):
-        """float: Scale the learning rate by this factor after each tree (e.g., 0.99 or 0.999)  (Default: 1.0)"""
+        """float: Scale the learning rate by this factor after each tree (e.g., 0.99 or 0.999)  (Default: 1)"""
         return self._parms.get("learn_rate_annealing")
 
     @learn_rate_annealing.setter
@@ -529,7 +535,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @property
     def sample_rate(self):
-        """float: Row sample rate per tree (from 0.0 to 1.0) (Default: 1.0)"""
+        """float: Row sample rate per tree (from 0.0 to 1.0) (Default: 1)"""
         return self._parms.get("sample_rate")
 
     @sample_rate.setter
@@ -551,7 +557,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @property
     def col_sample_rate(self):
-        """float: Column sample rate (from 0.0 to 1.0) (Default: 1.0)"""
+        """float: Column sample rate (from 0.0 to 1.0) (Default: 1)"""
         return self._parms.get("col_sample_rate")
 
     @col_sample_rate.setter
@@ -562,7 +568,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @property
     def col_sample_rate_change_per_level(self):
-        """float: Relative change of the column sampling rate for every level (from 0.0 to 2.0) (Default: 1.0)"""
+        """float: Relative change of the column sampling rate for every level (from 0.0 to 2.0) (Default: 1)"""
         return self._parms.get("col_sample_rate_change_per_level")
 
     @col_sample_rate_change_per_level.setter
@@ -573,7 +579,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @property
     def col_sample_rate_per_tree(self):
-        """float: Column sample rate per tree (from 0.0 to 1.0) (Default: 1.0)"""
+        """float: Column sample rate per tree (from 0.0 to 1.0) (Default: 1)"""
         return self._parms.get("col_sample_rate_per_tree")
 
     @col_sample_rate_per_tree.setter
@@ -611,7 +617,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @property
     def max_abs_leafnode_pred(self):
-        """float: Maximum absolute value of a leaf node prediction (Default: 1.79769313486e+308)"""
+        """float: Maximum absolute value of a leaf node prediction (Default: 1.797693135e+308)"""
         return self._parms.get("max_abs_leafnode_pred")
 
     @max_abs_leafnode_pred.setter
@@ -623,7 +629,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     @property
     def pred_noise_bandwidth(self):
         """
-        float: Bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions (Default: 0.0)
+        float: Bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions (Default: 0)
         """
         return self._parms.get("pred_noise_bandwidth")
 

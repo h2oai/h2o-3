@@ -26,10 +26,10 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     this(jobKey, dinfo, 0xDECAFBEE, -1, false);
   }
   public FrameTask(Key<Job> jobKey, DataInfo dinfo, long seed, int iteration, boolean sparse) {
-    this(jobKey,dinfo._key,dinfo._activeCols,seed,iteration, sparse,null);
+    this(jobKey,dinfo==null?null:dinfo._key,dinfo==null?null:dinfo._activeCols,seed,iteration, sparse,null);
   }
   public FrameTask(Key<Job> jobKey, DataInfo dinfo, long seed, int iteration, boolean sparse, H2O.H2OCountedCompleter cmp) {
-    this(jobKey,dinfo._key,dinfo._activeCols,seed,iteration, sparse,cmp);
+    this(jobKey,dinfo==null?null:dinfo._key,dinfo==null?null:dinfo._activeCols,seed,iteration, sparse,cmp);
   }
   private FrameTask(Key<Job> jobKey, Key dinfoKey, int [] activeCols,long seed, int iteration, boolean sparse, H2O.H2OCountedCompleter cmp) {
     super(cmp);
@@ -100,7 +100,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
    * Extracts the values, applies regularization to numerics, adds appropriate offsets to categoricals,
    * and adapts response according to the CaseMode/CaseValue if set.
    */
-  @Override public final void map(Chunk [] chunks, NewChunk [] outputs) {
+  @Override public void map(Chunk [] chunks, NewChunk [] outputs) {
     if(_jobKey != null && _jobKey.get() != null && _jobKey.get().stop_requested()) throw new Job.JobCancelledException();
     final int nrows = chunks[0]._len;
     final long offset = chunks[0].start();

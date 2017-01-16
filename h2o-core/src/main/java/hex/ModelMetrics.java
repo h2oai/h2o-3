@@ -21,7 +21,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   final Key _frameKey;
   final ModelCategory _model_category;
   final long _model_checksum;
-  long _frame_checksum;
+  long _frame_checksum;  // when constant column is dropped, frame checksum changed.  Need re-assign for GLRM.
   public final long _scoring_time;
 
   // Cached fields - cached them when needed
