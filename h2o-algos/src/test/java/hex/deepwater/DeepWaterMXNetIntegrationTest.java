@@ -3,6 +3,7 @@ package hex.deepwater;
 import deepwater.backends.BackendModel;
 import deepwater.backends.BackendParams;
 import deepwater.backends.RuntimeOptions;
+import deepwater.backends.mxnet.util;
 import deepwater.datasets.ImageDataSet;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -13,14 +14,23 @@ import water.util.StringUtils;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.nio.file.Paths;
+
+import static deepwater.backends.mxnet.util.copy;
 
 public class DeepWaterMXNetIntegrationTest extends DeepWaterAbstractIntegrationTest {
 
   @Override
   DeepWaterParameters.Backend getBackend() { return DeepWaterParameters.Backend.mxnet; }
 
+  public static String extractFile(String path, String file) throws IOException {
+    InputStream in = util.class.getResourceAsStream(Paths.get(path, file).toString());
+    String target = Paths.get(System.getProperty("java.io.tmpdir"), file).toString();
+    OutputStream out = new FileOutputStream(target);
+    copy(in, out);
+    return target;
+  }
 
   // This test has nothing to do with H2O - Pure integration test of deepwater/backends/mxnet
   @Test
@@ -37,12 +47,11 @@ public class DeepWaterMXNetIntegrationTest extends DeepWaterAbstractIntegrationT
       bparm.set("mini_batch_size", 1);
 
       // Load the model
-//    File file = new File(getClass().getClassLoader().getResource("deepwater/backends/mxnet/models/Inception/synset.txt").getFile()); //FIXME: Use the model in the resource
-      String path = "../deepwater/mxnet/src/main/resources/deepwater/backends/mxnet/models/Inception/";
-      BackendModel _model = backend.buildNet(id, opts, bparm, nclasses, StringUtils.expandPath(path + "Inception_BN-symbol.json"));
-      backend.loadParam(_model, StringUtils.expandPath(path + "Inception_BN-0039.params"));
-      water.fvec.Frame labels = parse_test_file(path + "synset.txt");
-      float[] mean = backend.loadMeanImage(_model, path + "mean_224.nd");
+      String path = "/deepwater/backends/mxnet/models/Inception/";
+      BackendModel _model = backend.buildNet(id, opts, bparm, nclasses, StringUtils.expandPath(extractFile(path, "Inception_BN-symbol.json")));
+      backend.loadParam(_model, StringUtils.expandPath(extractFile(path, "Inception_BN-0039.params")));
+      water.fvec.Frame labels = parse_test_file(extractFile(path, "synset.txt"));
+      float[] mean = backend.loadMeanImage(_model, extractFile(path, "mean_224.nd"));
 
       // Turn the image into a vector of the correct size
       File imgFile = find_test_file("smalldata/deepwater/imagenet/test2.jpg");
