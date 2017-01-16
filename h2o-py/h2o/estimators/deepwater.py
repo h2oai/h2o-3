@@ -769,9 +769,9 @@ class H2ODeepWaterEstimator(H2OEstimator):
     @property
     def problem_type(self):
         """
-        Enum["auto", "image", "text", "dataset"]: Problem type, auto-detected by default. If set to image, the H2OFrame
-        must contain a string column containing the path (URI or URL) to the images in the first column. If set to text,
-        the H2OFrame must contain a string column containing the text in the first column. If set to dataset, Deep Water
+        Enum["auto", "image", "dataset"]: Problem type, auto-detected by default. If set to image, the H2OFrame must
+        contain a string column containing the path (URI or URL) to the images in the first column. If set to text, the
+        H2OFrame must contain a string column containing the text in the first column. If set to dataset, Deep Water
         behaves just like any other H2O Model and builds a model on the provided H2OFrame (non-String columns).
         (Default: "auto")
         """
@@ -779,7 +779,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
 
     @problem_type.setter
     def problem_type(self, problem_type):
-        assert_is_type(problem_type, None, Enum("auto", "image", "text", "dataset"))
+        assert_is_type(problem_type, None, Enum("auto", "image", "dataset"))
         self._parms["problem_type"] = problem_type
 
 

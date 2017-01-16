@@ -95,7 +95,7 @@
 #'        the path (URI or URL) to the images in the first column. If set to text, the H2OFrame must contain a string
 #'        column containing the text in the first column. If set to dataset, Deep Water behaves just like any other H2O
 #'        Model and builds a model on the provided H2OFrame (non-String columns). Must be one of: "auto", "image",
-#'        "text", "dataset". Defaults to auto.
+#'        "dataset". Defaults to auto.
 #' @export
 h2o.deepwater <- function(x, y, training_frame,
                           model_id = NULL,
@@ -155,7 +155,7 @@ h2o.deepwater <- function(x, y, training_frame,
                           hidden = NULL,
                           input_dropout_ratio = 0,
                           hidden_dropout_ratios = NULL,
-                          problem_type = c("auto", "image", "text", "dataset")
+                          problem_type = c("auto", "image", "dataset")
                           ) 
 {
   #If x is missing, then assume user wants to use all columns as features.
