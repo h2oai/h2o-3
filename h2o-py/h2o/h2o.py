@@ -67,6 +67,7 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
     :param cluster_id: Name of the H2O cluster to connect to. This option is used from Steam only.
     :param cookies: Cookie (or list of) to add to request
     :param verbose: Set to False to disable printing connection status messages.
+    :returns: the new :class:`H2OConnection` object.
     """
     global h2oconn
     h2oconn = H2OConnection.open(server=server, url=url, ip=ip, port=port, https=https, auth=auth,
@@ -86,7 +87,7 @@ def api(endpoint, data=None, json=None, filename=None, save_to=None):
 
 
 def connection():
-    """Return current H2OConnection handler."""
+    """Return the current :class:`H2OConnection` handler."""
     return h2oconn
 
 
@@ -250,6 +251,8 @@ def lazy_import(path, pattern=None):
 
     :param path: A path to a data file (remote or local).
     :param pattern: Character string containing a regular expression to match file(s) in the folder.
+    :returns: either a :class:`H2OFrame` with the content of the provided file, or a list of such frames if
+        importing multiple files.
     """
     assert_is_type(path, str, [str])
     assert_is_type(pattern, str, None)
@@ -298,7 +301,7 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
     :param na_strings: A list of strings, or a list of lists of strings (one list per column), or a dictionary
         of column names to strings which are to be interpreted as missing values.
 
-    :returns: a new H2OFrame instance.
+    :returns: a new :class:`H2OFrame` instance.
 
     :examples:
         >>> frame = h2o.upload_file("/path/to/local/data")
@@ -357,7 +360,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     :param pattern: Character string containing a regular expression to match file(s) in the folder if `path` is a
         directory.
 
-    :returns: a new H2OFrame instance.
+    :returns: a new :class:`H2OFrame` instance.
 
     :examples:
         >>> # Single file import
@@ -411,7 +414,7 @@ def import_sql_table(connection_url, table, username, password, columns=None, op
     :param password: password for SQL server
     :param optimize: optimize import of SQL table for faster imports. Experimental.
 
-    :returns: :class:`H2OFrame` containing data of specified SQL table
+    :returns: an :class:`H2OFrame` containing data of the specified SQL table.
 
     :examples:
         >>> conn_url = "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false"
@@ -453,7 +456,7 @@ def import_sql_select(connection_url, select_query, username, password, optimize
     :param password: password for SQL server
     :param optimize: optimize import of SQL table for faster imports. Experimental.
 
-    :returns: :class:`H2OFrame` containing data of specified SQL query
+    :returns: an :class:`H2OFrame` containing data of the specified SQL query.
 
     :examples:
         >>> conn_url = "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false"
@@ -509,7 +512,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     :param na_strings: A list of strings, or a list of lists of strings (one list per column), or a dictionary
         of column names to strings which are to be interpreted as missing values.
 
-    :returns: a dictionary is returned containing all of the guesses made by the H2O backend.
+    :returns: a dictionary containing parse parameters guessed by the H2O backend.
     """
     coltype = U(None, "unknown", "uuid", "string", "float", "real", "double", "int", "numeric",
                 "categorical", "factor", "enum", "time")
@@ -627,7 +630,8 @@ def assign(data, xid):
     (internal) Assign new id to the frame.
 
     :param data: an H2OFrame whose id should be changed
-    :param xid: new id for the frame
+    :param xid: new id for the frame.
+    :returns: the passed frame.
     """
     assert_is_type(data, H2OFrame)
     assert_is_type(xid, str)
@@ -645,6 +649,7 @@ def deep_copy(data, xid):
 
     :param data: an H2OFrame to be cloned
     :param xid: (internal) id to be assigned to the new frame.
+    :returns: new :class:`H2OFrame` which is the clone of the passed frame.
     """
     assert_is_type(data, H2OFrame)
     assert_is_type(xid, str)
@@ -694,7 +699,7 @@ def get_grid(grid_id):
 
     :param grid_id: The grid identification in h2o
 
-    :returns: H2OGridSearch instance
+    :returns: an :class:`H2OGridSearch` instance.
     """
     assert_is_type(grid_id, str)
     grid_json = api("GET /99/Grids/%s" % grid_id)
@@ -796,7 +801,7 @@ def rapids(expr):
 
     :param expr: The rapids expression (ascii string).
 
-    :returns: The JSON response (as a python dictionary) of the Rapids execution
+    :returns: The JSON response (as a python dictionary) of the Rapids execution.
     """
     assert_is_type(expr, str)
     return ExprNode.rapids(expr)
@@ -960,7 +965,7 @@ def export_file(frame, path, force=False, parts=1):
 
 
 def cluster():
-    """Return H2OCluster object describing the backend H2O cloud."""
+    """Return :class:`H2OCluster` object describing the backend H2O cloud."""
     return h2oconn.cluster if h2oconn else None
 
 
@@ -1112,7 +1117,7 @@ def interaction(data, factors, pairwise, max_factors, min_occurrence, destinatio
     :param min_occurrence: Min. occurrence threshold for factor levels in pair-wise interaction terms
     :param destination_frame: a string indicating the destination key. If empty, this will be auto-generated by H2O.
 
-    :returns: H2OFrame
+    :returns: :class:`H2OFrame`
     """
     assert_is_type(data, H2OFrame)
     assert_is_type(factors, [str, int])

@@ -484,9 +484,9 @@ class H2OGridSearch(backwards_compatible()):
         """
         Retreive the null deviance if this model has the attribute, or None otherwise.
 
-        :param:  train Get the null deviance for the training set. If both train and valid are False, then
+        :param train: Get the null deviance for the training set. If both train and valid are False, then
             train is selected by default.
-        :param:  valid Get the null deviance for the validation set. If both train and valid are True, then
+        :param valid: Get the null deviance for the validation set. If both train and valid are True, then
             train is selected by default.
 
         :returns: the null deviance, or None if it is not present.

@@ -189,7 +189,12 @@ class H2OFrame(object):
 
     @staticmethod
     def get_frame(frame_id):
-        """Retrieve an existing H2OFrame from the H2O cluster using the frame's id."""
+        """
+        Retrieve an existing H2OFrame from the H2O cluster using the frame's id.
+
+        :param str frame_id: id of the frame to retrieve
+        :returns: an existing H2OFrame with the id provided; or None if such frame doesn't exist.
+        """
         fr = H2OFrame()
         fr._ex._cache._id = frame_id
         try:
@@ -212,7 +217,7 @@ class H2OFrame(object):
 
     @property
     def names(self):
-        """The list of column names."""
+        """The list of column names (List[str])."""
         if not self._ex._cache.names_valid():
             self._ex._cache.flush()
             self._frame(True)
@@ -225,7 +230,7 @@ class H2OFrame(object):
 
     @property
     def nrows(self):
-        """Number of rows in the dataframe."""
+        """Number of rows in the dataframe (int)."""
         if not self._ex._cache.nrows_valid():
             self._ex._cache.flush()
             self._frame(True)
@@ -234,7 +239,7 @@ class H2OFrame(object):
 
     @property
     def ncols(self):
-        """Number of columns in the dataframe."""
+        """Number of columns in the dataframe (int)."""
         if not self._ex._cache.ncols_valid():
             self._ex._cache.flush()
             self._frame(True)
@@ -243,7 +248,7 @@ class H2OFrame(object):
 
     @property
     def shape(self):
-        """Number of rows and columns in the dataframe as a tuple (nrows, ncols)."""
+        """Number of rows and columns in the dataframe as a tuple ``(nrows, ncols)``."""
         return self.nrows, self.ncols
 
 
@@ -258,7 +263,7 @@ class H2OFrame(object):
 
     @property
     def frame_id(self):
-        """Internal id of the frame."""
+        """Internal id of the frame (str)."""
         return self._frame()._ex._cache._id
 
     @frame_id.setter
@@ -273,7 +278,13 @@ class H2OFrame(object):
 
 
     def type(self, col):
-        """The type for a named column."""
+        """
+        The type for the given column.
+
+        :param col: either a name, or an index of the column to look up
+        :returns: type of the column, one of: ``str``, ``int``, ``real``, ``enum``, ``time``, ``bool``.
+        :raises H2OValueError: if such column does not exist in the frame.
+        """
         assert_is_type(col, int, str)
         if not self._ex._cache.types_valid() or not self._ex._cache.names_valid():
             self._ex._cache.flush()
@@ -366,6 +377,8 @@ class H2OFrame(object):
             - ``"time"``         - Long msec since the Unix Epoch - with a variety of display/parse options
             - ``"uuid"``         - UUID
             - ``"bad"``          - No none-NA rows (triple negative! all NAs or zero rows)
+
+        :returns: new H2OFrame containing only columns of the requested type from the current frame.
         """
         assert_is_type(coltype, "numeric", "categorical", "string", "time", "uuid", "bad")
         assert_is_type(self, H2OFrame)
@@ -419,8 +432,13 @@ class H2OFrame(object):
                 except UnicodeEncodeError:
                     print(s.encode("ascii", "replace"))
 
+
     def summary(self):
-        """Summary includes min/mean/max/sigma and other rollup data."""
+        """
+        Display summary information about the frame.
+
+        Summary includes min/mean/max/sigma and other rollup data.
+        """
         if not self._ex._cache.is_valid(): self._frame()._ex._cache.fill()
         if H2ODisplay._in_ipy():
             import IPython.display
@@ -438,7 +456,6 @@ class H2OFrame(object):
 
         :param bool chunk_summary: Retrieve the chunk summary along with the distribution summary
         """
-
         res = h2o.api("GET /3/Frames/%s" % self.frame_id, data={"row_count": 10})["frames"][0]
         self._ex._cache._fill_data(res)
         print("Rows:{}".format(self.nrow))
@@ -460,14 +477,32 @@ class H2OFrame(object):
 
 
     def head(self, rows=10, cols=200):
-        """Return the first ``rows`` and ``cols`` of the frame as a new H2OFrame."""
+        """
+        Return the first ``rows`` and ``cols`` of the frame as a new H2OFrame.
+
+        :param int rows: maximum number of rows to return
+        :param int cols: maximum number of columns to return
+        :returns: a new H2OFrame cut from the top left corner of the current frame, and having dimensions at
+            most ``rows`` x ``cols``.
+        """
+        assert_is_type(rows, int)
+        assert_is_type(cols, int)
         nrows = min(self.nrows, rows)
         ncols = min(self.ncols, cols)
         return self[:nrows, :ncols]
 
 
     def tail(self, rows=10, cols=200):
-        """Return the last ``rows`` and ``cols`` of the frame as a new H2OFrame."""
+        """
+        Return the last ``rows`` and ``cols`` of the frame as a new H2OFrame.
+
+        :param int rows: maximum number of rows to return
+        :param int cols: maximum number of columns to return
+        :returns: a new H2OFrame cut from the bottom left corner of the current frame, and having dimensions at
+            most ``rows`` x ``cols``.
+        """
+        assert_is_type(rows, int)
+        assert_is_type(cols, int)
         nrows = min(self.nrows, rows)
         ncols = min(self.ncols, cols)
         start_idx = self.nrows - nrows
@@ -475,7 +510,9 @@ class H2OFrame(object):
 
 
     def logical_negation(self):
-        """Logical NOT applied to each element of the frame."""
+        """
+        Returns new H2OFrame equal to elementwise Logical NOT applied to the current frame.
+        """
         return H2OFrame._expr(expr=ExprNode("not", self), cache=self._ex._cache)
 
 
@@ -595,50 +632,68 @@ class H2OFrame(object):
 
 
     def flatten(self):
-        """Convert a 1x1 frame into a scalar."""
+        """
+        Convert a 1x1 frame into a scalar.
+
+        :returns: content of this 1x1 frame as a scalar (``int``, ``float``, or ``str``).
+        :raises H2OValueError: if current frame has shape other than 1x1
+        """
         if self.shape != (1, 1): raise H2OValueError("Not a 1x1 Frame")
         return ExprNode("flatten", self)._eager_scalar()
 
 
     def getrow(self):
-        """Convert a 1xn frame into an n-element list."""
+        """
+        Convert a 1xn frame into an n-element list.
+
+        :returns: content of this 1xn frame as a Python list.
+        :raises H2OValueError: if current frame has more than one row.
+        """
         if self.nrows != 1:
             raise H2OValueError("This method can only be applied to single-row frames")
         return ExprNode("getrow", self)._eager_scalar()
 
 
     def mult(self, matrix):
-        """Multiply this frame, viewed as a matrix, by another matrix."""
+        """
+        Multiply this frame, viewed as a matrix, by another matrix.
+
+        :param matrix: another frame that you want to multiply the current frame by; must be compatible with the
+            current frame (i.e. its number of rows must be the same as number of columns in the current frame).
+        :returns: new H2OFrame, which is the result of multiplying the current frame by ``matrix``.
+        """
+        if self.ncols != matrix.nrows:
+            raise H2OValueError("Matrix is not compatible for multiplication with the current frame")
         return H2OFrame._expr(expr=ExprNode("x", self, matrix))
 
 
     def cos(self):
-        """Make new frame with values equal to the cosines of the values in the current frame."""
+        """Return new frame equal to elementwise cosine of the current frame."""
         return self._unop("cos")
 
 
     def sin(self):
-        """Make new frame with values equal to the sines of the values in the current frame."""
+        """Return new frame equal to elementwise sine of the current frame."""
         return self._unop("sin")
 
 
     def tan(self):
-        """Make new frame with values equal to the tangents of the values in the current frame."""
+        """Return new frame equal to elementwise tangent of the current frame."""
         return self._unop("tan")
 
 
     def acos(self):
-        """Make new frame with values equal to the arc cosines of the values in the current frame."""
+        """Return new frame equal to elementwise arc cosine of the current frame."""
         return self._unop("acos")
 
 
     def asin(self):
-        """Make new frame with values equal to the arc sines of the values in the current frame."""
+        """Return new frame equal to elementwise arc sine of the current frame."""
         return self._unop("asin")
 
 
     def atan(self):
-        """Make new frame with values equal to the arc tangents of the values in the current frame."""
+        """Return new frame equal to elementwise arc tangent of the current frame."""
         return self._unop("atan")
 
 
@@ -648,63 +703,63 @@ class H2OFrame(object):
 
 
     def sinh(self):
-        """Make new frame with values equal to the hyperbolic sines of the values in the current frame."""
+        """Return new frame equal to elementwise hyperbolic sine of the current frame."""
         return self._unop("sinh")
 
 
     def tanh(self):
-        """Make new frame with values equal to the hyperbolic tangents of the values in the current frame."""
+        """Return new frame equal to elementwise hyperbolic tangent of the current frame."""
         return self._unop("tanh")
 
 
     def acosh(self):
-        """Make new frame with values equal to the inverse hyperbolic cosines of the values in the current frame."""
+        """Return new frame equal to elementwise inverse hyperbolic cosine of the current frame."""
         return self._unop("acosh")
 
 
     def asinh(self):
-        """Make new frame with values equal to the inverse hyperbolic sines of the values in the current frame."""
+        """Return new frame equal to elementwise inverse hyperbolic sine of the current frame."""
         return self._unop("asinh")
 
 
     def atanh(self):
-        """Make new frame with values equal to the inverse hyperbolic tangents of the values in the current frame."""
+        """Return new frame equal to elementwise inverse hyperbolic tangent of the current frame."""
         return self._unop("atanh")
 
 
     def cospi(self):
-        """Make new frame with values equal to the cosines of the values in the current frame multiplied by Pi."""
+        """Return new frame equal to elementwise cosine of the current frame multiplied by Pi."""
         return self._unop("cospi")
 
 
     def sinpi(self):
-        """Make new frame with values equal to the sines of the values in the current frame multiplied by Pi."""
+        """Return new frame equal to elementwise sine of the current frame multiplied by Pi."""
         return self._unop("sinpi")
 
 
     def tanpi(self):
-        """Make new frame with values equal to the tangents of the values in the current frame multiplied by Pi."""
+        """Return new frame equal to elementwise tangent of the current frame multiplied by Pi."""
         return self._unop("tanpi")
 
 
     def abs(self):
-        """Make a new frame by taking absolute values of the current frame."""
+        """Return new frame equal to elementwise absolute value of the current frame."""
         return self._unop("abs")
 
 
     def sign(self):
-        """Signs of the values in the frame: -1 for negatives, +1 for positives, and 0 for zeros."""
+        """Return new frame equal to signs of the values in the frame: -1 , +1, or 0."""
         return self._unop("sign")
 
 
     def sqrt(self):
-        """Make new frame with values equal to square roots of the values in the current frame."""
+        """Return new frame equal to elementwise square root of the current frame."""
         return self._unop("sqrt")
 
 
     def trunc(self):
         """
-        Apply the numeric trunction function.
+        Apply the numeric truncation function.
 
         ``trunc(x)`` is the integer obtained from ``x`` by dropping its decimal tail. This is equal to ``floor(x)``
         if ``x`` is positive, and ``ceil(x)`` if ``x`` is negative. Truncation is also called "rounding towards zero".
@@ -786,7 +841,26 @@ class H2OFrame(object):
         Each parameter should be either an integer, or a single-column H2OFrame
         containing the corresponding time parts for each row.
 
-        :returns: H2OFrame of one column containing the date in millis since the epoch.
+        The "date" part of the timestamp can be specified using either the tuple ``(year, month, day)``, or an
+        explicit ``date`` parameter. The "time" part of the timestamp is optional, but can be specified either via
+        the ``time`` parameter, or via the ``(hour, minute, second, msec)`` tuple.
+
+        :param year: the year part of the constructed date
+        :param month: the month part of the constructed date
+        :param day: the day-of-the-month part of the constructed date
+        :param hour: the hours part of the constructed date
+        :param minute: the minutes part of the constructed date
+        :param second: the seconds part of the constructed date
+        :param msec: the milliseconds part of the constructed date
+        :param date date: construct the timestamp from the Python's native ``datetime.date`` (or ``datetime.datetime``)
+            object. If the object passed is of type ``date``, then you can specify the time part using either the
+            ``time`` argument, or ``hour`` ... ``msec`` arguments (but not both). If the object passed is of type
+            ``datetime``, then no other arguments can be provided.
+        :param time time: construct the timestamp from this Python's native ``datetime.time`` object. This argument
+            cannot be used alone, it should be supplemented with either ``date`` argument, or ``year`` ... ``day``
+            tuple.
+
+        :returns: H2OFrame with one column containing the date constructed from the provided arguments.
         """
         assert_is_type(date, None, datetime.date)
         assert_is_type(time, None, datetime.time)
@@ -821,7 +895,7 @@ class H2OFrame(object):
                 second = date.second
                 msec = date.microsecond // 1000
         if year is None or month is None or day is None:
-            raise H2OValueError("Either arguments `year`, `month` and `day` or the `date` are required.")
+            raise H2OValueError("Either arguments (`year`, `month` and `day`) or the `date` are required.")
         if hour is None: hour = 0
         if minute is None: minute = 0
         if second is None: second = 0
