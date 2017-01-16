@@ -289,7 +289,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         //
         // Hack alert: DRF only does Bernoulli and Gaussian, so only compare _domains.length above.
         if (! (aModel instanceof DRFModel) && distributionFamily(aModel) != distributionFamily(this))
-          throw new H2OIllegalArgumentException("Base models are inconsistent; they use different distributions: " + distributionFamily(this) + " and: " + distributionFamily(aModel));
+          Log.warn("Base models are inconsistent; they use different distributions: " + distributionFamily(this) + " and: " + distributionFamily(aModel) + ". Is this intentional?");
 
         // TODO: If we're set to DistributionFamily.AUTO then GLM might auto-conform the response column
         // giving us inconsistencies.
