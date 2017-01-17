@@ -310,21 +310,19 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   }
 
   // Utility to do bitset lookup from a POJO
-  public static boolean bitSetContains(byte[] bits, int bitoff, double dnum) {
+  public static boolean bitSetContains(byte[] bits, int nbits, int bitoff, double dnum) {
     assert(!Double.isNaN(dnum));
     int idx = (int)dnum;
-    int len = bits.length << 3;
     idx -= bitoff;
-    assert (idx >= 0 && idx < len): "Must have "+bitoff+" <= idx <= " + (bitoff+len-1) + ": " + idx;
+    assert (idx >= 0 && idx < nbits): "Must have "+bitoff+" <= idx <= " + (bitoff+nbits-1) + ": " + idx;
     return (bits[idx >> 3] & ((byte)1 << (idx & 7))) != 0;
   }
 
-  public static boolean bitSetIsInRange(byte[] bits, int bitoff, double dnum) {
+  public static boolean bitSetIsInRange(int nbits, int bitoff, double dnum) {
     assert(!Double.isNaN(dnum));
     int idx = (int)dnum;
-    int len = bits.length << 3;
     idx -= bitoff;
-    return (idx >= 0 && idx < len);
+    return (idx >= 0 && idx < nbits);
   }
 
   // --------------------------------------------------------------------------
