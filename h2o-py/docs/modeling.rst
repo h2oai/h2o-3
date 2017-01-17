@@ -82,12 +82,6 @@ Unsupervised
     :show-inheritance:
     :members:
 
-:mod:`H2OWord2vecEstimator`
----------------------------
-.. autoclass:: h2o.estimators.word2vec.H2OWord2vecEstimator
-    :show-inheritance:
-    :members:
-
 
 Miscellaneous
 +++++++++++++
@@ -101,6 +95,12 @@ Miscellaneous
 :mod:`H2OGridSearch`
 --------------------
 .. autoclass:: h2o.grid.grid_search.H2OGridSearch
+    :show-inheritance:
+    :members:
+
+:mod:`H2OWord2vecEstimator`
+---------------------------
+.. autoclass:: h2o.estimators.word2vec.H2OWord2vecEstimator
     :show-inheritance:
     :members:
 

@@ -452,7 +452,7 @@ def main():
         bi.vprint("Generating model: " + name)
         bi.write_to_file("%s.py" % module, gen_module(mb, name))
         category = "Supervised" if mb["supervised"] else "Unsupervised"
-        if name == "H2OGridSearch":
+        if name == "word2vec":
             category = "Miscellaneous"
         modules.append((module, algo_to_classname(name), category))
 
