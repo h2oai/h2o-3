@@ -61,6 +61,14 @@ public class PartialDependence extends Lockable<PartialDependence> {
     if (_nbins < 2 || _nbins > 100) {
       throw new IllegalArgumentException("_nbins must be in [2, 100].");
     }
+    final Frame fr = _frame_id.get();
+    for (int i = 0; i < _cols.length; ++i) {
+      final String col = _cols[i];
+      Vec v = fr.vec(col);
+      if (v.isCategorical() && v.cardinality() > _nbins) {
+        throw new IllegalArgumentException("Column " + col + "'s cardinality of " + v.cardinality() + " > nbins of " + _nbins);
+      }
+    }
   }
 
   private class PartialDependenceDriver extends H2O.H2OCountedCompleter<PartialDependenceDriver> {
@@ -73,10 +81,6 @@ public class PartialDependence extends Lockable<PartialDependence> {
         final String col = _cols[i];
         Log.debug("Computing partial dependence of model on '" + col + "'.");
         Vec v = fr.vec(col);
-        if (v.isCategorical() && v.cardinality() > _nbins) {
-          Log.warn("Too many categorical levels for column: " + col + ". Not creating partial dependence plot.");
-          continue;
-        }
         int actualbins = _nbins;
         if (v.isInt() && (v.max() - v.min() + 1) < _nbins) {
           actualbins = (int) (v.max() - v.min() + 1);
