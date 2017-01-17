@@ -48,7 +48,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
     if (aModel._output.isBinomialClassifier()) {
       // GLM uses a different column name than the other algos, yay!
       Vec preds = aModelsPredictions.vec("YES");
-      if (null == preds) preds = aModelsPredictions.vec("predict");
+      if (null == preds) preds = aModelsPredictions.vec("p1");
 
       levelOneFrame.add(aModel._key.toString(), preds);
     } else if (aModel._output.isClassifier()) {
