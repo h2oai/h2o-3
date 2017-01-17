@@ -413,6 +413,8 @@ def gen_init(modules):
 
 
 def gen_models_docs(modules):
+    yield ":tocdepth: 3"
+    yield ""
     yield "Modeling In H2O"
     yield "==============="
     for cat in ["Supervised", "Unsupervised", "Miscellaneous"]:

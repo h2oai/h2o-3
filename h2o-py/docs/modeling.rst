@@ -1,3 +1,5 @@
+:tocdepth: 3
+
 Modeling In H2O
 ===============
 
