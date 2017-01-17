@@ -140,10 +140,10 @@ public class IcedBitSet extends Iced {
   }
 
   public SB toJava( SB sb, String varname, int col) {
-    return sb.p("!GenModel.bitSetContains(").p(varname).p(", ").p(_bitoff).p(", data[").p(col).p("])");
+    return sb.p("!GenModel.bitSetContains(").p(varname).p(", ").p(_nbits).p(", ").p(_bitoff).p(", data[").p(col).p("])");
   }
 
-  public SB toJavaRangeCheck(SB sb, String varname, int col) {
-    return sb.p("GenModel.bitSetIsInRange(").p(varname).p(", ").p(_bitoff).p(", data[").p(col).p("])");
+  public SB toJavaRangeCheck(SB sb, int col) {
+    return sb.p("GenModel.bitSetIsInRange(").p(_nbits).p(", ").p(_bitoff).p(", data[").p(col).p("])");
   }
 }
