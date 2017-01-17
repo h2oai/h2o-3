@@ -150,15 +150,8 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
       for (int i = 0; i < _len; ++i)
         if (_buf[_off + i] != str._buf[str._off + i]) return false;
       return true;
-    } // FIXME: Called in NA_String detection during CsvParser, UTF-8 sensitive
-     else if (o instanceof String) {
-      String str = (String) o;
-      if (str.length() != _len) return false;
-      for (int i = 0; i < _len; ++i)
-        if (_buf[_off + i] != str.charAt(i)) return false;
-      return true;
     }
-    return false; //FIXME find out if this is required for some case or if an exception can be thrown
+    return false;
   }
 
   // Thou Shalt Not use accessors in performance critical code - because it
