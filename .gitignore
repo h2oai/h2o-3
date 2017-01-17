@@ -61,8 +61,8 @@ guidelines.py
 Rlibrary
 
 # Data folders
-bigdata/
-smalldata/
+bigdata
+smalldata
 
 # Ignore Eclipse project settings
 .classpath
@@ -92,6 +92,8 @@ make-java6.sh
 
 # Ignore generated code
 src-gen/
+h2o-3-DESCRIPTION
+gradle/buildnumber.properties
 
 # Doc stuff
 .Rapp.history
