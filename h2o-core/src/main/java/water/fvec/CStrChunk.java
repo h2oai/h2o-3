@@ -6,7 +6,6 @@ import water.util.UnsafeUtils;
 import water.parser.BufferedString;
 
 import java.util.Arrays;
-import java.util.HashMap;
 
 public class CStrChunk extends Chunk {
   static final int NA = -1;
@@ -42,6 +41,7 @@ public class CStrChunk extends Chunk {
   }
 
   public int intAt(int i) { return UnsafeUtils.get4(_mem, idx(i)); }
+  public byte byteAt(int i) { return _mem[_valstart+i]; }
   
   @Override public long at8_impl(int idx) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
   @Override public double atd_impl(int idx) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
@@ -49,7 +49,7 @@ public class CStrChunk extends Chunk {
     int off = intAt(idx);
     if( off == NA ) return null;
     int len = 0;
-    while( _mem[_valstart+off+len] != 0 ) len++;
+    while( byteAt(off+len) != 0 ) len++;
     return bStr.set(_mem,_valstart+off,len);
   }
 
@@ -134,11 +134,11 @@ public class CStrChunk extends Chunk {
       int off = intAt(i);
       if (off != NA) {
         //UTF chars will appear as negative values. In Java spec, space is any char 0x20 and lower
-        while( _mem[_valstart+off+j] > 0 && _mem[_valstart+off+j] < 0x21) j++;
+        while( byteAt(off+j) > 0 && byteAt(off+j) < 0x21) j++;
         if (j > 0) nc.set_is(i,off + j);
-        while( _mem[_valstart+off+j] != 0 ) j++; //Find end
+        while( byteAt(off+j) != 0 ) j++; //Find end
         j--;
-        while( _mem[_valstart+off+j] > 0 && _mem[_valstart+off+j] < 0x21) { //March back to find first non-space
+        while( byteAt(off+j) > 0 && byteAt(off+j) < 0x21) { //March back to find first non-space
           nc._ss[off+j] = 0; //Set new end
           j--;
         }
@@ -146,7 +146,7 @@ public class CStrChunk extends Chunk {
     }
     return nc;
   }
-  
+
   /**
    * Optimized substring() method for a buffer of only ASCII characters.
    * The presence of UTF-8 multi-byte characters would give incorrect results
@@ -160,14 +160,14 @@ public class CStrChunk extends Chunk {
   public NewChunk asciiSubstring(NewChunk nc, int startIndex, int endIndex) {
     // copy existing data
     nc = this.inflate_impl(nc);
-    
+
     //update offsets and byte array
     for (int i = 0; i < _len; i++) {
       int off = intAt(i);
       if (off != NA) {
         int len = 0;
-        while (_mem[_valstart + off + len] != 0) len++; //Find length
-        nc.set_is(i,startIndex < len ? off + startIndex : off + len);
+        while (byteAt(off + len) != 0) len++; //Find length
+        nc.set_is(i, startIndex < len ? off + startIndex : off + len);
         for (; len > endIndex - 1; len--) {
           nc._ss[off + len] = 0; //Set new end
         }
@@ -191,39 +191,43 @@ public class CStrChunk extends Chunk {
     // fill in lengths
     for(int i=0; i < _len; i++) {
       int off = intAt(i);
-      int len = 0;
       if (off != NA) {
-        while (_mem[_valstart + off + len] != 0) len++;
+        int len = 0;
+        while (byteAt(off + len) != 0) len++;
         nc.addNum(len, 0);
       } else nc.addNA();
     }
     return nc;
   }
-  
+
   public NewChunk asciiEntropy(NewChunk nc) {
     nc.alloc_doubles(_len);
     for (int i = 0; i < _len; i++) {
       int off = intAt(i);
-      if (off != NA) {
-        HashMap<Byte, Integer> freq = new HashMap<>();
-        int j = 0;
-        while (_mem[_valstart + off + j] != 0)  {
-          Integer count = freq.get(_mem[_valstart + off + j]);
-          if (count == null) freq.put(_mem[_valstart + off + j], 1);
-          else freq.put(_mem[_valstart + off + j], count+1);
-          j++;
-        }
-        double sume = 0;
-        int N = j;
-        double n;
-        for (Byte b : freq.keySet()) {
-          n = freq.get(b);
-          sume += -n/N * Math.log(n/N) / Math.log(2);
-        }
-        nc.addNum(sume);
-      } else nc.addNA();
+      double sume = entropyAt(i);
+      if (Double.isNaN(sume)) nc.addNA();
+      else                    nc.addNum(sume);
     }
     return nc;
+  }
+
+  double entropyAt(int i) {
+    int off = intAt(i);
+    if (off == NA) return Double.NaN;
+    int[] frq = new int[256];
+    int count = 0;
+    for (; byteAt(off+count) != 0; count++) {
+      frq[0xff & byteAt(off + count)]++;
+    }
+    double sum = 0;
+    for (int b = 0; b < 256; b++) {
+      int f = frq[b];
+      if (f > 0) {
+        double x = (double)f / count;
+        sum += x * Math.log(x);
+      }
+    }
+    return - sum / Math.log(2);
   }
 
   /**
@@ -244,8 +248,7 @@ public class CStrChunk extends Chunk {
       int off = intAt(i);
       if (off != NA) {
         int j = 0;
-        off += _valstart;
-        while( set.contains(_mem[off + j]) ) j++;
+        while( set.contains(byteAt(off + j)) ) j++;
         if (j > 0) nc.set_is(i,off + j);
       }
     }
@@ -260,14 +263,10 @@ public class CStrChunk extends Chunk {
     for(int i=0; i < _len; i++) {
       int off = intAt(i);
       if (off != NA) {
-        off += _valstart;
         int pos = off;
-        while( _mem[pos++] != 0 ); //Find end
-        pos--;
-        while(pos >= off && set.contains(_mem[pos]) ) { // March back while char in set
-          nc._ss[pos] = 0; //Set new end
-          pos--;
-        }
+        while(byteAt(pos) != 0) pos++; //Find end
+        while(pos --> off && set.contains(byteAt(pos)));
+        nc._ss[pos+1] = 0; //Set new end
       }
     }
     return nc;
