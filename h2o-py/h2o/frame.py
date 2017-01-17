@@ -378,7 +378,7 @@ class H2OFrame(object):
             - ``"uuid"``         - UUID
             - ``"bad"``          - No none-NA rows (triple negative! all NAs or zero rows)
 
-        :returns: new H2OFrame containing only columns of the requested type from the current frame.
+        :returns: list of indices of columns that have the requested type
         """
         assert_is_type(coltype, "numeric", "categorical", "string", "time", "uuid", "bad")
         assert_is_type(self, H2OFrame)
@@ -2568,10 +2568,13 @@ class H2OFrame(object):
 
     def which(self):
         """
-        Return the list of row indices for which the frame contains non-zero values.
+        Compose the list of row indices for which the frame contains non-zero values.
 
-        Only applicable to numeric single-column frames.
+        Only applicable to integer single-column frames.
         Equivalent to comprehension ``[index for index, value in enumerate(self) if value]``.
+
+        :returns: a new single-column frame containing indices of those rows in the original frame
+            that contained non-zero values.
         """
         return H2OFrame._expr(expr=ExprNode("which", self))
 
