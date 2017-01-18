@@ -12,6 +12,7 @@ import hex.glm.GLMModel.GLMWeightsFun;
 import water.H2O;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
 
@@ -187,8 +188,8 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
       ModelMetricsBinomial metricsBinommial = (ModelMetricsBinomial) metrics;
       GainsLift gl = null;
       if (preds!=null) {
-        Vec resp = f.vec(m._parms._response_column);
-        Vec weights = f.vec(m._parms._weights_column);
+        VecAry resp = f.vec(m._parms._response_column);
+        VecAry weights = f.vec(m._parms._weights_column);
         if (resp != null) {
           gl = new GainsLift(preds.lastVec(), resp, weights);
           gl.exec(m._output._job);

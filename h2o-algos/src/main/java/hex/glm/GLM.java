@@ -408,7 +408,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (hasWeightCol() || skippingRows) { // need to re-compute means and sd
         boolean setWeights = skippingRows;// && _parms._lambda_search && _parms._alpha[0] > 0;
         if (setWeights) {
-          Vec wc = _weights == null ? _dinfo._adaptedFrame.anyVec().makeCon(1) : _weights.makeCopy();
+          VecAry wc = _weights == null ? new VecAry(_dinfo._adaptedFrame.anyVec().makeCon(1)) : _weights.makeCopy();
           _dinfo.setWeights(_generatedWeights = "__glm_gen_weights", wc);
         }
 
@@ -447,10 +447,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       if (_parms._prior > 0)
         _iceptAdjust = -Math.log(_state._ymu[0] * (1 - _parms._prior) / (_parms._prior * (1 - _state._ymu[0])));
-      ArrayList<Vec> vecs = new ArrayList<>();
-      if(_weights != null) vecs.add(_weights);
-      if(_offset != null) vecs.add(_offset);
-      vecs.add(_response);
+      VecAry vecs = new VecAry();
+      if(_weights != null) vecs.append(_weights);
+      if(_offset != null) vecs.append(_offset);
+      vecs.append(_response);
       double [] beta = getNullBeta();
       GLMGradientInfo ginfo = new GLMGradientSolver(_job,_parms, _dinfo, 0, _state.activeBC()).getGradient(beta);
       _lmax = lmax(ginfo._gradient);
@@ -1677,7 +1677,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
 
     public BetaConstraint(Frame beta_constraints) {
-      Vec v = beta_constraints.vec("names");
+      VecAry v = beta_constraints.vec("names");
       String[] dom;
       int[] map;
       if (v.isString(0)) {

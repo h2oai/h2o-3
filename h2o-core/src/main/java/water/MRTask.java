@@ -413,7 +413,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   // Special mode to run once-per-node
   public T doAllNodes() { return doAll((Key[])null); }
 
-  public void asyncExecOnAllNodes() { dfork((Key[]) null); }
+  public MRTask<T> asyncExecOnAllNodes() { dfork((Key[]) null); return this; }
 
   /**
    * Invokes the map/reduce computation over the given Vec instances and produces

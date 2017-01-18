@@ -193,7 +193,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
     // such variables will get categorical loss function, and will get expanded into 2 columns.
     _lossFunc = new GlrmLoss[_ncolA];
     for (int i = 0; i < _ncolA; i++) {
-      Vec vi = _train.vec(i);
+      VecAry vi = _train.vec(i);
       _lossFunc[i] = vi.isCategorical()? _parms._multi_loss : _parms._loss;
     }
 
@@ -220,7 +220,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
 
     // Check that all loss functions correspond to their actual type
     for (int i = 0; i < _ncolA; i++) {
-      Vec vi = _train.vec(i);
+      VecAry vi = _train.vec(i);
       GlrmLoss lossi = _lossFunc[i];
       if (vi.isNumeric()) {
         if (!lossi.isForNumeric())
@@ -609,8 +609,8 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         fr = new Frame(_train);
         Vec anyvec = fr.anyVec();
         assert anyvec != null;
-        for (int i = 0; i < _ncolX; i++) fr.add("xcol_" + i, anyvec.makeZero());
-        for (int i = 0; i < _ncolX; i++) fr.add("wcol_" + i, anyvec.makeZero());
+        for (int i = 0; i < _ncolX; i++) fr.add("xcol_" + i, new VecAry(anyvec.makeZero()));
+        for (int i = 0; i < _ncolX; i++) fr.add("wcol_" + i, new VecAry(anyvec.makeZero()));
         dinfo = new DataInfo(/* train */ fr, /* validation */ null, /* nResponses */ 0, /* useAllFactorLevels */ true,
                              /* pred. transform */ _parms._transform, /* resp. transform */ DataInfo.TransformType.NONE,
                              /* skipMissing */ false, /* imputeMissing */ false, /* missingBucket */ false,
@@ -699,16 +699,16 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
 
         // 4) Save solution to model output
         // Save X frame for user reference later
-        Vec[] xvecs = new Vec[_ncolX];
+        VecAry xvecs = new VecAry();
         String[] xnames = new String[_ncolX];
         if (overwriteX) {
           for (int i = 0; i < _ncolX; i++) {
-            xvecs[i] = fr.vec(idx_xnew(i, _ncolA, _ncolX));
+            xvecs.append(fr.vec(idx_xnew(i, _ncolA, _ncolX)));
             xnames[i] = "Arch" + String.valueOf(i + 1);
           }
         } else {
           for (int i = 0; i < _ncolX; i++) {
-            xvecs[i] = fr.vec(idx_xold(i, _ncolA));
+            xvecs.append(fr.vec(idx_xold(i, _ncolA)));
             xnames[i] = "Arch" + String.valueOf(i + 1);
           }
         }
@@ -737,7 +737,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         List<Key<Vec>> keep = new ArrayList<>();
         if (model != null) {
           Frame loadingFrm = DKV.getGet(model._output._representation_key);
-          if (loadingFrm != null) for (Vec vec: loadingFrm.vecs()) keep.add(vec._key);
+          if (loadingFrm != null) for (Vec vec: loadingFrm.vecs().vecs()) keep.add(vec._key);
           model.unlock(_job);
         }
         if (tinfo != null) tinfo.remove();

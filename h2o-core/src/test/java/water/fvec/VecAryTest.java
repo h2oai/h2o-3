@@ -109,6 +109,26 @@ public class VecAryTest extends TestUtil {
     vecs3.remove();
   }
 
+  @Test public void testReplace(){
+    Vec v0 = TestUtil.vec(tiny_data);
+    VecAry vecs0 = new VecAry(v0).rebalance(3,true);
+    double [] sums = new SumTsk().doAll(vecs0)._sums;
+    vecs0.replace(1,vecs0.select(1));
+    assertTrue(vecs0._colFilter == null);
+    Vec v1 = TestUtil.vec(tiny_data_2);
+    VecAry vecs1 = new VecAry(v1).align(vecs0,true);
+    double [] sums1 = new SumTsk().doAll(vecs1)._sums;
+    VecAry x = vecs0.replace(1,vecs1.select(1));
+    double [] expected_sums = sums.clone();
+    expected_sums[1] = sums1[1];
+    assertArrayEquals(expected_sums,new SumTsk().doAll(vecs0)._sums,0);
+    vecs0.remove();
+    vecs1.remove();
+    // test x is still alive
+    assertEquals(sums[1],new SumTsk().doAll(x)._sums[0],0);
+    // there should be no leaks after removing x!
+    x.remove();
+  }
   @Test
   public void testRemove(){
     Vec v0 = TestUtil.vec(tiny_data);

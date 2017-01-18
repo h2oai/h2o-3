@@ -149,7 +149,7 @@ public class GLMTest  extends TestUtil {
       // make data so that the expected coefficients is icept = col[0] = 1.0
       FVecTest.makeByteVec(raw, "x,y\n0,2\n1,4\n2,8\n3,16\n4,32\n5,64\n6,128\n7,256");
       fr = ParseDataset.parse(parsed, raw);
-      Vec v = fr.vec(0);
+      VecAry v = fr.vec(0);
       System.out.println(v.min() + ", " + v.max() + ", mean = " + v.mean());
       GLMParameters params = new GLMParameters(Family.poisson);
       params._train = fr._key;
@@ -437,7 +437,7 @@ public class GLMTest  extends TestUtil {
       -4.303234e-04,  2.608783e-05,  7.889196e-05, -3.559375e-04, -5.551586e-04, -2.777131e-04, 6.505911e-04,  1.033867e-05,  1.837583e-05,  6.750772e-04,
        1.247379e-04, -5.408403e-04,  -4.453114e-04,
     };
-  Vec origRes = null;
+  VecAry origRes = null;
     try {
       fr = parse_test_file(parsed, "smalldata/covtype/covtype.20k.data");
       fr.removeVecs("C21").remove();
@@ -450,7 +450,7 @@ public class GLMTest  extends TestUtil {
       params._lambda = new double[]{0};
       params._alpha = new double[]{0};
       origRes = fr.removeVecs("C55");
-      Vec res = fr.add("C55",origRes.toCategoricalVec());
+      VecAry res = fr.add("C55",origRes.toCategoricalVec());
       double [] means = new double [res.domain().length];
       long [] bins = res.bins(0);
       double sumInv = 1.0/ArrayUtils.sum(bins);
@@ -1056,9 +1056,9 @@ public class GLMTest  extends TestUtil {
     GLMModel model1 = null, model2 = null, model3 = null, model4 = null;
     Frame frMM = parse_test_file(Key.make("AirlinesMM"), "smalldata/airlines/AirlinesTrainMM.csv.zip");
     Frame frG = parse_test_file(Key.make("gram"), "smalldata/airlines/gram_std.csv", true);
-    Vec xy = frG.removeVecs("xy");
+    VecAry xy = frG.removeVecs("xy");
     frMM.removeVecs("C1").remove();
-    Vec v;
+    VecAry v;
     frMM.add("IsDepDelayed", (v = frMM.removeVecs("IsDepDelayed")).makeCopy(null));
     v.remove();
     DKV.put(frMM._key, frMM);
@@ -1773,7 +1773,7 @@ public class GLMTest  extends TestUtil {
         String resp = tfr.lastVecName();
         if (fam==Family.binomial || fam==Family.multinomial) {
           resp = fam==Family.multinomial?"rad":"chas";
-          Vec v = tfr.removeVecs(resp);
+          VecAry v = tfr.removeVecs(resp);
           tfr.add(resp, v.toCategoricalVec());
           v.remove();
           DKV.put(tfr);

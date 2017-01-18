@@ -16,6 +16,7 @@ import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.*;
 import water.util.ArrayUtils;
 
@@ -228,7 +229,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           glm.error("beta_constraints","beta constraints are not supported for family = multionomial");
         Frame f = _beta_constraints.get();
         if(f == null) glm.error("beta_constraints","Missing frame for beta constraints");
-        Vec v = f.vec("names");
+        VecAry v = f.vec("names");
         if(v == null)glm.error("beta_constraints","Beta constraints parameter must have names column with valid coefficient names");
         // todo: check the coefficient names
         v = f.vec("upper_bounds");

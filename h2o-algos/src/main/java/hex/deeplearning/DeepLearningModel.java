@@ -373,9 +373,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           preds = score(fTrain);
           mtrain = ModelMetrics.getFromDKV(this, fTrain);
           if (get_params()._distribution == DistributionFamily.huber) {
-            Vec absdiff = new MathUtils.ComputeAbsDiff().doAll(1, (byte)3,
-                new Frame(new String[]{"a","p"}, new Vec[]{fTrain.vec(get_params()._response_column), preds.anyVec()})
-            ).outputFrame().anyVec();
+            VecAry absdiff = new MathUtils.ComputeAbsDiff().doAll(1, (byte)3,
+                new Frame(new String[]{"a","p"}, new VecAry(fTrain.vec(get_params()._response_column).append(preds.vecs())))
+            ).outputFrame().vecs();
             double huberDelta = MathUtils.computeWeightedQuantile(fTrain.vec(get_params()._weights_column), absdiff, get_params()._huber_alpha);
             if (model_info().gradientCheck == null) _dist.setHuberDelta(huberDelta);
           }

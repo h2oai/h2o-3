@@ -3,10 +3,7 @@ package hex.glrm;
 import hex.*;
 import hex.svd.SVDModel.SVDParameters;
 import water.*;
-import water.fvec.Chunk;
-import water.fvec.ChunkAry;
-import water.fvec.Frame;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.util.*;
 import water.util.TwoDimTable;
 
@@ -208,10 +205,10 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     Frame loadingFrm = DKV.get(_output._representation_key).get();
     fullFrm.add(loadingFrm);
     String[][] adaptedDomme = adaptedFr.domains();
-    Vec anyVec = fullFrm.anyVec();
+    VecAry anyVec = fullFrm.vecs();
     assert anyVec != null;
     for (int i = 0; i < ncols; i++) {
-      Vec v = anyVec.makeZero();
+      VecAry v = new VecAry(anyVec.makeZero());
       v.setDomain(0,adaptedDomme[i]);
       fullFrm.add(prefix + _output._names[i], v);
     }

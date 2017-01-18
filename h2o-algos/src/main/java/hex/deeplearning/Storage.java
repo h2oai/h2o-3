@@ -232,7 +232,7 @@ public class Storage {
     final int log_rows_per_chunk = Math.max(1, FileVec.DFLT_LOG2_CHUNK_SIZE - (int) Math.floor(Math.log(1) / Math.log(2.)));
     Vec vv = makeCon(0, v.size(), log_rows_per_chunk, false /* no rebalancing! */);
     Frame f = new Frame(key, new VecAry(vv), true);
-    try( Vec.Writer vw = f.vecs().open() ) {
+    try( VecAry.Writer vw = f.vecs().open() ) {
       for (int r = 0; r < v.size(); ++r)
         vw.set(r, v.get(r));
     }

@@ -131,7 +131,7 @@ public class FrameUtils {
     }
   }
 
-  public static int [] asInts(Vec v){
+  public static int [] asInts(VecAry v){
     if(v.length() > 100000) throw new IllegalArgumentException("Vec is too big to be extracted into array");
     return new Vec2IntArryTsk((int)v.length()).doAll(v).res;
   }

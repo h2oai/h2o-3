@@ -734,13 +734,13 @@ public class Vec extends Keyed<Vec> {
     }
   }
 
-  public void removeCols(final int... ids){
+  public Futures removeCols(Futures fs, final int... ids){
     assert numCols() > 1;
     RemoveColsFromRollupsTsk t = new RemoveColsFromRollupsTsk(numCols(),ids);
     t.invoke(rollupStatsKey());
-    if(t._removed) remove();
-    else
-    new MRTask(){
+    if(t._removed)
+      return remove(fs);
+    fs.add(new MRTask(){
       @Override public void setupLocal(){
         for(int i = 0; i < nChunks(); ++i){
           Key k = chunkKey(i);
@@ -751,7 +751,8 @@ public class Vec extends Keyed<Vec> {
           }
         }
       }
-    }.doAllNodes();
+    }.asyncExecOnAllNodes());
+    return fs;
   }
 
   public RollupsAry tryFetchRollups(){

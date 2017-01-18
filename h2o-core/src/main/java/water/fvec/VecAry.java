@@ -35,6 +35,8 @@ public final class VecAry extends Iced<VecAry> {
     _blockOffset = newSelf._blockOffset;
     _numCols = newSelf._numCols;
     _numRows = newSelf._numRows;
+    if(_colFilter != null && _colFilter.length == _blockOffset[_blockOffset.length-1] && ArrayUtils.isSorted(_colFilter))
+      _colFilter = null;
     return this;
   }
 
@@ -322,21 +324,25 @@ public final class VecAry extends Iced<VecAry> {
   }
 
   public Futures remove(Futures fs) {
+    Vec [] vecs = fetchVecs();
     if (_colFilter == null) {
-      for (Vec v : vecs())
+      for (Vec v : vecs)
         if (v != null)
           v.remove(fs);
       return fs;
     }
-    Arrays.sort(_vecIds);
-    int off = 0, j = 0;
-    Vec [] vecs = fetchVecs();
-    for (int i = 0; i < _vecs.length; ++i) {
-      final int ncols = vecs[i].numCols();
-      int jStart = j;
-      while (j < _colFilter.length && _colFilter[j] < off + ncols) j++;
-      if (j - jStart == ncols) _vecs[i].remove(fs);
-      else _vecs[i].removeCols(Arrays.copyOfRange(_colFilter, jStart, j));
+    ArrayUtils.IntAry vids = new ArrayUtils.IntAry();
+    for(int i = 0; i < vecs.length; ++i){
+      int from = _blockOffset[i];
+      int to = _blockOffset[i+1];
+      for(int x:_colFilter){
+        if(from <= x && x < to)
+          vids.add(x-from);
+      }
+      if(vids.size() > 0) {
+        vecs[i].removeCols(fs, vids.toArray());
+        vids.clear();
+      }
     }
     return fs;
   }

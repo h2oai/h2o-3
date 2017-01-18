@@ -12,6 +12,7 @@ import water.Key;
 import water.MemoryManager;
 import water.api.schemas3.ModelSchemaV3;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 
 /**
  * The Deep Learning model
@@ -31,11 +32,11 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     // get "response_column" from SupervisedModel.SupervisedParameters
     // get "ignored_columns" from SupervisedModel.SupervisedParameters from Model.Parameters
 
-    public Vec start_column;
-    public Vec stop_column;
-    public Vec event_column;
-    public Vec weights_column;
-    public Vec[] offset_columns;
+    public VecAry start_column;
+    public VecAry stop_column;
+    public VecAry event_column;
+    public VecAry weights_column;
+    public VecAry offset_columns;
     public static enum CoxPHTies { efron, breslow }
     public CoxPHTies ties = CoxPHTies.efron;
     public double init = 0;
@@ -117,7 +118,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
    * @return preds, can contain NaNs
    */
   @Override public double[] score0(double[] data, double[] preds) {
-    final int n_offsets = (_parms.offset_columns == null) ? 0 : _parms.offset_columns.length;
+    final int n_offsets = (_parms.offset_columns == null) ? 0 : _parms.offset_columns.numCols();
     final int n_time    = _output.time.length;
     final int n_coef    = _output.coef.length;
     final int n_cats    = _output.data_info._cats;

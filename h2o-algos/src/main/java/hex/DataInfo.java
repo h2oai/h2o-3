@@ -27,7 +27,7 @@ public class DataInfo extends Keyed<DataInfo> {
   private int _foldId = -1;
   private int _outputId = -1;
 
-  public Vec setWeights(String name, Vec vec) {
+  public VecAry setWeights(String name, VecAry vec) {
     if(_weightsId != -1)
       return _adaptedFrame.replace(_weightsId,vec);
     _weightsId = _adaptedFrame.numCols();
@@ -127,14 +127,14 @@ public class DataInfo extends Keyed<DataInfo> {
   public int weightChunkId(){return _weightsId;}
   public int outputChunkId() { return outputChunkId(0);}
   public int outputChunkId(int n) { return _outputId;}
-  public void addOutput(String name, Vec v) {
+  public void addOutput(String name, VecAry v) {
     if(_offsetId == -1)
       _offsetId = _adaptedFrame.numCols();
     _adaptedFrame.add(name,v);
   }
-  public Vec getOutputVec(int i) {return _adaptedFrame.vec(_outputId+i);}
+  public VecAry getOutputVec(int i) {return _adaptedFrame.vec(_outputId+i);}
 
-  public void setResponse(String name, Vec v){
+  public void setResponse(String name, VecAry v){
     if(_responseId == -1)
       _responseId = _adaptedFrame.numCols();
     _adaptedFrame.add(name,v);
@@ -287,9 +287,9 @@ public class DataInfo extends Keyed<DataInfo> {
     _numMeans = new double[numNums()];
     int meanIdx=0;
     for(int i=0;i<nnums;++i) {
-      Vec v = train.vec(nums[i]);
-      if( v instanceof InteractionWrappedVec ) {
-        InteractionWrappedVec iwv = (InteractionWrappedVec)v;
+      VecAry v = train.vec(nums[i]);
+      if( v.vecs()[0] instanceof InteractionWrappedVec ) {
+        InteractionWrappedVec iwv = (InteractionWrappedVec)v.vecs()[0];
         double[] means = iwv.getMeans();
         int start = iwv._useAllFactorLevels?0:1;
         int length   = iwv.expandedLength();
@@ -401,7 +401,7 @@ public class DataInfo extends Keyed<DataInfo> {
     _interactions = null;
     ArrayList<Integer> interactionVecs = new ArrayList<>();
     for(int i=0;i<fr.numCols();++i)
-      if( fr.vec(i) instanceof InteractionWrappedVec ) interactionVecs.add(i);
+      if( fr.vec(i).vecs()[0] instanceof InteractionWrappedVec ) interactionVecs.add(i);
 
     if( interactionVecs.size() > 0 ) {
       _interactionVecs = new int[interactionVecs.size()];
@@ -434,8 +434,8 @@ public class DataInfo extends Keyed<DataInfo> {
     _catNAFill = catModes;
   }
 
-  public static int imputeCat(Vec v) {return imputeCat(v,0);}
-  public static int imputeCat(Vec v, int i) {
+  public static int imputeCat(VecAry v) {return imputeCat(v,0);}
+  public static int imputeCat(VecAry v, int i) {
     if(v.isCategorical(i)) return v.mode(i);
     return (int)Math.round(v.mean(i));
   }
@@ -584,12 +584,12 @@ public class DataInfo extends Keyed<DataInfo> {
   private void setTransform(TransformType t, double [] normMul, double [] normSub, int vecStart, int n) {
     int idx=0; // idx!=i when interactions are in play, otherwise, it's just 'i'
     for (int i = 0; i < n; ++i) {
-      Vec v = _adaptedFrame.vec(vecStart + i);
-      boolean isIWV = v instanceof InteractionWrappedVec;
+      VecAry v = _adaptedFrame.vec(vecStart + i);
+      boolean isIWV = v.vecs()[0] instanceof InteractionWrappedVec;
       switch (t) {
         case STANDARDIZE:
           if( isIWV ) {
-            InteractionWrappedVec iwv = (InteractionWrappedVec)v;
+            InteractionWrappedVec iwv = (InteractionWrappedVec)v.vecs()[0];
             for(int offset=0;offset<iwv.expandedLength();++offset) {
               normMul[idx+offset] = iwv.getMul(offset+(_useAllFactorLevels?0:1));
               normSub[idx+offset] = iwv.getSub(offset+(_useAllFactorLevels?0:1));
@@ -649,7 +649,7 @@ public class DataInfo extends Keyed<DataInfo> {
   public boolean isInteractionVec(int colid) {
     if( null==_interactions && null==_interactionVecs ) return false;
     if( _adaptedFrame!=null )
-      return _adaptedFrame.vec(colid) instanceof InteractionWrappedVec;
+      return _adaptedFrame.vec(colid).vecs()[0] instanceof InteractionWrappedVec;
     else
       return Arrays.binarySearch(_interactionVecs,colid) >= 0;
   }
@@ -906,7 +906,7 @@ public class DataInfo extends Keyed<DataInfo> {
 
   public final int getCategoricalIdFromInteraction(int cid, int val) {
     InteractionWrappedVec v;
-    if( (v=(InteractionWrappedVec)_adaptedFrame.vec(cid)).isCategorical() ) return getCategoricalId(cid,val);
+    if( (v=(InteractionWrappedVec)_adaptedFrame.vec(cid).vecs()[0]).isCategorical() ) return getCategoricalId(cid,val);
     assert v.domain()!=null : "No domain levels found for interactions! cid: " + cid + " val: " + val;
     cid -= _cats;
     if( val >= _numOffsets[cid+1] ) { // previously unseen interaction (aka new domain level)
@@ -947,7 +947,7 @@ public class DataInfo extends Keyed<DataInfo> {
     int numValsIdx=0; // since we're dense, need a second index to track interaction nums
     for( int i=0;i<n;i++) {
       if( isInteractionVec(_cats + i) ) {  // categorical-categorical interaction is handled as plain categorical (above)... so if we have interactions either v1 is categorical, v2 is categorical, or neither are categorical
-        InteractionWrappedVec iwv = (InteractionWrappedVec)_adaptedFrame.vec(_cats+i);
+        InteractionWrappedVec iwv = (InteractionWrappedVec)_adaptedFrame.vec(_cats+i).vecs()[0];
         int interactionOffset = getInteractionOffset(chunks,_cats+i,rid);
         for(int offset=0;offset<iwv.expandedLength();++offset) {
           if( i < _intLvls.length && _intLvls[i]!=null && Arrays.binarySearch(_intLvls[i],offset) < 0 ) continue; // skip the filtered out interactions
@@ -989,8 +989,8 @@ public class DataInfo extends Keyed<DataInfo> {
 //    else if( c._c2IsCat ) return (int)c._c[1].at8(rid)-(useAllFactors?0:1);
 //    return 0;
   }
-  public Vec getWeightsVec(){return _adaptedFrame.vec(weightChunkId());}
-  public Vec getOffsetVec(){return _adaptedFrame.vec(offsetChunkId());}
+  public VecAry getWeightsVec(){return _adaptedFrame.vec(weightChunkId());}
+  public VecAry getOffsetVec(){return _adaptedFrame.vec(offsetChunkId());}
   public Row newDenseRow(){return new Row(false,numNums(),_cats,_responses,0,0);}  // TODO: _nums => numNums since currently extracting out interactions into dense
   public Row newDenseRow(double[] numVals, long start) {
     return new Row(false, numVals, null, null, 0, start);

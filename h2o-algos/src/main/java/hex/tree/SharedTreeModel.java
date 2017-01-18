@@ -8,10 +8,7 @@ import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.exceptions.JCodeSB;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.util.*;
 
 import java.io.IOException;
@@ -245,14 +242,14 @@ public abstract class SharedTreeModel<
       }
     }.doAll(outputcols, Vec.T_STR, adaptFrm).outputFrame(destination_key, names, null);
 
-    Vec vv;
-    Vec[] nvecs = new Vec[res.vecs().numCols()];
+    VecAry vv;
+    VecAry nvecs = new VecAry();
     for(int c=0;c<res.vecs().numCols();++c) {
       vv = res.vec(c);
       try {
-        nvecs[c] = vv.toCategoricalVec();
+        nvecs.append(vv.toCategoricalVec());
       } catch (Exception e) {
-        VecUtils.deleteVecs(nvecs, c);
+        nvecs.remove();
         throw e;
       }
     }
