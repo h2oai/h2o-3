@@ -270,6 +270,7 @@ public final class VecAry extends Iced<VecAry> {
    */
   public VecAry select(int... idxs) {
     VecAry res = new VecAry();
+    if(idxs.length == 0) return res;
     if (_colFilter != null) idxs = ArrayUtils.select(_colFilter, idxs);
     int vid = getBlockId(idxs[0]);
     int off = _blockOffset[vid];
@@ -303,7 +304,6 @@ public final class VecAry extends Iced<VecAry> {
     }
     int[] rem = ArrayUtils.complement(idxs, numCols());
     replaceWith(select(rem));
-    // now removeVecs from this
     return res;
   }
 
@@ -330,8 +330,9 @@ public final class VecAry extends Iced<VecAry> {
     }
     Arrays.sort(_vecIds);
     int off = 0, j = 0;
+    Vec [] vecs = fetchVecs();
     for (int i = 0; i < _vecs.length; ++i) {
-      final int ncols = _vecs[i].numCols();
+      final int ncols = vecs[i].numCols();
       int jStart = j;
       while (j < _colFilter.length && _colFilter[j] < off + ncols) j++;
       if (j - jStart == ncols) _vecs[i].remove(fs);
@@ -377,12 +378,16 @@ public final class VecAry extends Iced<VecAry> {
         int min = apndee._blockOffset[vid];
         int offAdjst = offsetMap[vid];
         _colFilter[_numCols+i] = c + offAdjst;
-        while((i+1) < apndee._numCols && (c = apndee._colFilter[i+1]) >= min && c < max)
+        while((i+1) < apndee._numCols && (c = apndee.colFilter(i+1)) >= min && c < max)
           _colFilter[_numCols+ ++i] = c + offAdjst;
       }
       if(newvecCnt > 0) {
         _blockOffset = Arrays.copyOf(blockOffset,maxId+1);
         _vecIds = ArrayUtils.append(_vecIds,ArrayUtils.select(apndee._vecIds,newVecs));
+        Vec [] avecs = apndee._vecs;
+        if(_vecs != null && avecs != null){
+          _vecs = ArrayUtils.append(_vecs,ArrayUtils.select(avecs,newVecs));
+        } else _vecs = null;
       }
       _numCols += apndee.numCols();
       if(_colFilter.length == _blockOffset[_blockOffset.length-1] && ArrayUtils.isSorted(_colFilter))
@@ -490,9 +495,12 @@ public final class VecAry extends Iced<VecAry> {
     DKV.prefetch(Vec.VectorGroup.getVecKeyById(_groupKey, _vecIds[i]));
   }
 
+  private Key<Vec> vecKey(int i){
+    return Vec.VectorGroup.getVecKeyById(_groupKey, _vecIds[i]);
+  }
   private Vec getVec(int i) {
     if (isEmpty()) throw new IllegalArgumentException("accessing vec from and empty vec array");
-    Key<Vec> k = Vec.VectorGroup.getVecKeyById(_groupKey, _vecIds[i]);
+    Key<Vec> k = vecKey(i);
     Vec v = k.get();
     assert v != null : "missing vec " + k;
     return v;
@@ -974,6 +982,15 @@ public final class VecAry extends Iced<VecAry> {
     int vecId = getBlockId(col);
     int off = col - _blockOffset[vecId];
     fetchVec(vecId).set(rownum, off,str);
+  }
+
+  public void checkAllVecsExist() {
+    if(!isEmpty()) {
+      RollupsAry rsa = rollupStats();
+      for (int i = 0; i < _vecIds.length; ++i)
+        if (rsa.isRemoved(i))
+          throw new IllegalArgumentException("Missing vec " + vecKey(i));
+    }
   }
 
   /** A more efficient way to read randomly to a Vec - still single-threaded,

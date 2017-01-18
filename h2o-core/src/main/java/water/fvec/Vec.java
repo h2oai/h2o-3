@@ -795,6 +795,7 @@ public class Vec extends Keyed<Vec> {
       } catch( Throwable t ) {
         t.printStackTrace();
         System.err.println("Remote rollups failed with an exception, wrapping and rethrowing: "+t);
+        t.printStackTrace();
         throw new RuntimeException(t);
       }
       // 2. fetch - done in two steps to go through standard DKV.get and enable local caching
