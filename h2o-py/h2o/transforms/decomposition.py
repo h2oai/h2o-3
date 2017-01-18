@@ -1,4 +1,6 @@
 from ..estimators.estimator_base import H2OEstimator
+from h2o.utils.typechecks import Enum
+from h2o.utils.typechecks import assert_is_type
 
 
 class H2OPCA(H2OEstimator):
@@ -8,11 +10,12 @@ class H2OPCA(H2OEstimator):
     algo = "pca"
 
     def __init__(self, model_id=None, k=None, max_iterations=None, seed=None,
-                 transform=("NONE", "DEMEAN", "DESCALE", "STANDARDIZE", "NORMALIZE"),
+                 transform="NONE",
                  use_all_factor_levels=False,
-                 pca_method=("GramSVD", "Power", "GLRM"),
+                 pca_method="GramSVD",
                  ignore_const_cols=True,
-                 impute_missing=False):
+                 impute_missing=False,
+                 compute_metrics=True):
         """
         Principal Components Analysis
 
@@ -41,15 +44,23 @@ class H2OPCA(H2OEstimator):
             - ``"Power"``: computation of the SVD using the power iteration method,
             - ``"GLRM"``: fit a generalized low rank model with an l2 loss function (no regularization) and solve for
               the SVD using local matrix algebra.
+            - ``"Randomized"``: computation of the SVD using the randomized method from thesis of Nathan P. Halko,
+                Randomized methods for computing low-rank approximation of matrices,
+        :param bool ignore_const_cols: If true, will ignore constant columns.  Default is True.
+        :param bool impute_missing:  whether to impute NA/missing values.
+        :param bool compute_metrics: whether to compute metrics on training data.  Default to True
 
         :returns: A new instance of H2OPCA.
+
         """
         super(H2OPCA, self).__init__()
         self._parms = locals()
         self._parms = {k: v for k, v in self._parms.items() if k != "self"}
-        self._parms["pca_method"] = "GramSVD" if isinstance(pca_method, tuple) else pca_method
-        self._parms["transform"] = "NONE" if isinstance(transform, tuple) else transform
 
+        assert_is_type(pca_method, Enum("GramSVD", "Power", "GLRM", "Randomized"))
+        self._parms["pca_method"]=pca_method
+        assert_is_type(transform, Enum("NONE", "DEMEAN", "DESCALE", "STANDARDIZE", "NORMALIZE"))
+        self._parms["transform"]=transform
 
     def fit(self, X, y=None, **params):
         return super(H2OPCA, self).fit(X)
@@ -67,15 +78,12 @@ class H2OPCA(H2OEstimator):
         """
         return self.predict(X)
 
-
-
-
 class H2OSVD(H2OEstimator):
     """Singular Value Decomposition"""
     algo = "svd"
 
     def __init__(self, nv=None, max_iterations=None, transform=None, seed=None,
-                 use_all_factor_levels=None, svd_method=None):
+                 use_all_factor_levels=None, svd_method="GramSVD"):
         """
         Singular value decomposition of an H2OFrame.
 
@@ -109,8 +117,11 @@ class H2OSVD(H2OEstimator):
         super(H2OSVD, self).__init__()
         self._parms = locals()
         self._parms = {k: v for k, v in self._parms.items() if k != "self"}
-        self._parms["svd_method"] = "GramSVD" if isinstance(svd_method, tuple) else svd_method
-        self._parms["transform"] = "NONE" if isinstance(transform, tuple) else transform
+
+        assert_is_type(svd_method, Enum("GramSVD", "Power", "GLRM", "Randomized"))
+        self._parms["svd_method"] = svd_method
+        assert_is_type(transform, Enum("NONE", "DEMEAN", "DESCALE", "STANDARDIZE", "NORMALIZE"))
+        self._parms["transform"]=transform
         self._parms['_rest_version'] = 99
 
 

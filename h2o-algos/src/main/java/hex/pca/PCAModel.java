@@ -4,7 +4,10 @@ import hex.DataInfo;
 import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetrics;
-import water.*;
+import water.DKV;
+import water.Job;
+import water.Key;
+import water.MRTask;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
@@ -13,6 +16,8 @@ import water.fvec.Frame;
 import water.util.JCodeGen;
 import water.util.SBPrintStream;
 import water.util.TwoDimTable;
+
+import java.util.ArrayList;
 
 public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCAOutput> {
 
@@ -71,6 +76,11 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
 
     // Permutation matrix mapping training col indices to adaptedFrame
     public int[] _permutation;
+
+    // the following fields are added for scoring history which can different fields depending on the PCA Method
+    // here are the common fields for all PCA methods
+    public ArrayList<Long> _training_time_ms = new ArrayList<>();
+
 
     public PCAOutput(PCA b) { super(b); }
 

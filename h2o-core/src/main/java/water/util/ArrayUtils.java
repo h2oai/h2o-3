@@ -1,7 +1,10 @@
 package water.util;
 
 import water.*;
-import water.fvec.*;
+import water.fvec.AppendableVec;
+import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
 
 import java.text.DecimalFormat;
 import java.util.*;
@@ -1637,8 +1640,8 @@ public class ArrayUtils {
   }
 
   public static boolean isSorted(int[] vals) {
-    for(int i = 1; i < vals.length; ++i)
-      if(vals[i-1] > vals[i]) return false;
+    for (int i = 1; i < vals.length; ++i)
+      if (vals[i - 1] > vals[i]) return false;
     return true;
   }
 }
