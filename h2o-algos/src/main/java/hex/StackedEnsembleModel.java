@@ -56,7 +56,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
     public StackedEnsembleOutput(Job job) { _job = job; }
     // The metalearner model (e.g., a GLM that has a coefficient for each of the base_learners).
-    public Model _meta_model;
+    public Model _metalearner;
   }
 
   /**
@@ -110,7 +110,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
     // Score the dataset, building the class distribution & predictions
 
-    Model metalearner = this._output._meta_model;
+    Model metalearner = this._output._metalearner;
     Frame levelOneAdapted = new Frame(levelOneFrame);
     metalearner.adaptTestForTrain(levelOneAdapted, true, computeMetrics);
 
@@ -328,8 +328,8 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
   // TODO: Are we leaking anything?
   @Override protected Futures remove_impl(Futures fs ) {
-    if (_output._meta_model != null)
-        DKV.remove(_output._meta_model._key, fs);
+    if (_output._metalearner != null)
+        DKV.remove(_output._metalearner._key, fs);
 
     return super.remove_impl(fs);
   }
