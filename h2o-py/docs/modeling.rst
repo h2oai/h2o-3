@@ -76,12 +76,6 @@ Unsupervised
     :show-inheritance:
     :members:
 
-:mod:`H2OSingularValueDecompositionEstimator`
----------------------------------------------
-.. autoclass:: h2o.estimators.svd.H2OSingularValueDecompositionEstimator
-    :show-inheritance:
-    :members:
-
 
 Miscellaneous
 +++++++++++++
@@ -95,6 +89,12 @@ Miscellaneous
 :mod:`H2OGridSearch`
 --------------------
 .. autoclass:: h2o.grid.grid_search.H2OGridSearch
+    :show-inheritance:
+    :members:
+
+:mod:`H2OSingularValueDecompositionEstimator`
+---------------------------------------------
+.. autoclass:: h2o.estimators.svd.H2OSingularValueDecompositionEstimator
     :show-inheritance:
     :members:
 

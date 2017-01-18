@@ -2588,7 +2588,6 @@ class H2OFrame(object):
         the same row count.  Single column frames are broadened to match wider
         Frames.  Scalars are allowed, and are also broadened to match wider frames.
 
-        :param test: Frame of values treated as booleans; may be a single column
         :param yes: Frame to use if ``test`` is true; may be a scalar or single column
         :param no: Frame to use if ``test`` is false; may be a scalar or single column
 
