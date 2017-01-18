@@ -312,7 +312,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
 
     // Abstract classes implemented by the tree builders
-    abstract protected M makeModel( Key modelKey, P parms);
+    abstract protected M makeModel(Key<M> modelKey, P parms);
     abstract protected boolean doOOBScoring();
     abstract protected boolean buildNextKTrees();
     abstract protected void initializeModelSpecifics();
@@ -535,6 +535,27 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   protected final Vec vec_work( Frame fr, int c) { return fr.vecs()[idx_work(c)]; }
   protected final Vec vec_nids( Frame fr, int c) { return fr.vecs()[idx_nids(c)]; }
   protected final Vec vec_oobt( Frame fr       ) { return fr.vecs()[idx_oobt()]; }
+
+  protected static class FrameMap extends Iced<FrameMap> {
+    public int responseIndex;
+    public int offsetIndex;
+    public int weightIndex;
+    public int tree0Index;
+    public int work0Index;
+    public int nids0Index;
+    public int oobtIndex;
+
+    public FrameMap() {}  // For Externalizable interface
+    public FrameMap(SharedTree t) {
+      responseIndex = t.idx_resp();
+      offsetIndex = t.idx_offset();
+      weightIndex = t.idx_weight();
+      tree0Index = t.idx_tree(0);
+      work0Index = t.idx_work(0);
+      nids0Index = t.idx_nids(0);
+      oobtIndex = t.idx_oobt();
+    }
+  }
 
   protected double[] data_row( Chunk chks[], int row, double[] data) {
     assert data.length == _ncols;

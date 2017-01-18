@@ -154,8 +154,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
   // ----------------------
   private class GBMDriver extends Driver {
+    private transient FrameMap frameMap;
+
     @Override protected boolean doOOBScoring() { return false; }
     @Override protected void initializeModelSpecifics() {
+      frameMap = new FrameMap(GBM.this);
       _mtry_per_tree = Math.max(1, (int)(_parms._col_sample_rate_per_tree * _ncols)); //per-tree
       if (!(1 <= _mtry_per_tree && _mtry_per_tree <= _ncols)) throw new IllegalArgumentException("Computed mtry_per_tree should be in interval <1,"+_ncols+"> but it is " + _mtry_per_tree);
       _mtry = Math.max(1, (int)(_parms._col_sample_rate * _parms._col_sample_rate_per_tree * _ncols)); //per-split
@@ -175,18 +178,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       _model._output._init_f = _initialPrediction; //always write the initial value here (not just for Bernoulli)
 
       // Set the initial prediction into the tree column 0
-      if( _initialPrediction != 0.0 ) {
-        final double init = _initialPrediction;
-        new MRTask() {
-          @Override
-          public void map(Chunk tree) {
-            if(tree instanceof C8DVolatileChunk){
-              Arrays.fill(((C8DVolatileChunk)tree).getValues(),init);
-            } else  for (int i = 0; i < tree._len; i++) tree.set(i, init);
-          }
-        }.doAll(vec_tree(_train, 0), _parms._build_tree_one_node); // Only setting tree-column 0
+      if (_initialPrediction != 0.0) {
+        new FillVecWithConstant(_initialPrediction)
+          .doAll(vec_tree(_train, 0), _parms._build_tree_one_node);  // Only setting tree-column 0
       }
     }
+
 
     /**
      * Helper to compute the initial value for Laplace/Huber/Quantile (incl. optional offset and obs weights)
@@ -194,17 +191,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
      */
     private double getInitialValueQuantile(double quantile) {
       // obtain y - o
-      Vec y = hasOffsetCol() ? new MRTask() {
-        @Override public void map(Chunk[] chks, NewChunk[] nc) {
-          final Chunk resp = chk_resp(chks);
-          final Chunk offset = chk_offset(chks);
-          for (int i=0; i<chks[0]._len; ++i)
-            nc[0].addNum(resp.atd(i) - offset.atd(i)); //y - o
-        }
-      }.doAll(1, (byte)3 /*numeric*/, _train).outputFrame().anyVec() : response();
+      Vec y = hasOffsetCol()
+          ? new ResponseLessOffsetTask(frameMap).doAll(1, Vec.T_NUM, _train).outputFrame().anyVec()
+          : response();
 
       // Now compute (weighted) quantile of y - o
-      double res = Double.NaN;
+      double res;
       QuantileModel qm = null;
       Frame tempFrame = null;
       try {
@@ -243,139 +235,23 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
       double init = 0; //start with initial value of 0 for convergence
       do {
-        double newInit = new NewtonRaphson(init).doAll(train).value();
+        double newInit = new NewtonRaphson(frameMap, new Distribution(_parms), init).doAll(train).value();
         delta = Math.abs(init - newInit);
         init = newInit;
-        Log.info("Iteration " + ++count + ": initial value: " + init);
+        Log.info("Iteration " + (++count) + ": initial value: " + init);
       } while (count < N && delta >= tol);
       if (delta > tol) Log.warn("Not fully converged.");
       Log.info("Newton-Raphson iteration ran for " + count + " iteration(s). Final residual: " + delta);
       return init;
     }
 
-    /**
-     * Newton-Raphson fixpoint iteration to find a self-consistent initial value
-     */
-    private class NewtonRaphson extends MRTask<NewtonRaphson> {
-      double _init;
-      double _num;
-      double _denom;
-      public double value() {
-        return _init + _num/_denom;
-      }
-      NewtonRaphson(double init) { _init = init; }
-      @Override public void map( Chunk chks[] ) {
-        Chunk ys = chk_resp(chks);
-        Chunk offset = chk_offset(chks);
-        Chunk weight = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len);
-        Distribution dist = new Distribution(_parms);
-        for( int row = 0; row < ys._len; row++) {
-          double w = weight.atd(row);
-          if (w == 0) continue;
-          if (ys.isNA(row)) continue;
-          double y = ys.atd(row);
-          double o = offset.atd(row);
-          double p = dist.linkInv(o + _init);
-          _num += w*(y-p);
-          _denom += w*p*(1.-p);
-        }
-      }
 
-      @Override
-      public void reduce(NewtonRaphson mrt) {
-        _num += mrt._num;
-        _denom += mrt._denom;
-      }
-    }
-
-    // --------------------------------------------------------------------------
-    // Compute Residuals
-    // Do this for all rows, whether OOB or not
-    class ComputePredAndRes extends MRTask<ComputePredAndRes> {
-      @Override public void map( Chunk chks[] ) {
-        Chunk ys = chk_resp(chks);
-        Chunk offset = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len);
-        Chunk preds = chk_tree(chks, 0); // Prior tree sums
-        C8DVolatileChunk wk = (C8DVolatileChunk) chk_work(chks, 0); // Place to store residuals
-        Chunk weights = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len);
-        double fs[] = _nclass > 1 ? new double[_nclass+1] : null;
-        Distribution dist = new Distribution(_parms);
-        for( int row = 0; row < wk._len; row++) {
-          double weight = weights.atd(row);
-          if (weight == 0) continue;
-          if (ys.isNA(row)) continue;
-          double f = preds.atd(row) + offset.atd(row);
-          double y = ys.atd(row);
-//          Log.info(f + " vs " + y); //expect that the model predicts very negative values for 0 and very positive values for 1
-          if( _parms._distribution == DistributionFamily.multinomial ) {
-            double sum = score1(chks, weight,0.0 /*offset not used for multiclass*/,fs,row);
-            if( Double.isInfinite(sum) ) { // Overflow (happens for constant responses)
-              for (int k = 0; k < _nclass; k++) {
-                wk = (C8DVolatileChunk) chk_work(chks, k);
-                wk.getValues()[row] = (((int)y == k ? 1f : 0f) - (Double.isInfinite(fs[k + 1]) ? 1.0f : 0.0f));
-              }
-            } else {
-              for( int k=0; k<_nclass; k++ ) { // Save as a probability distribution
-                if( _model._output._distribution[k] != 0 ) {
-                  wk = (C8DVolatileChunk) chk_work(chks, k);
-                  wk.getValues()[row] = (((int)y == k ? 1f : 0f) - (float)(fs[k + 1] / sum));
-                }
-              }
-            }
-          } else {
-            wk.getValues()[row] = ((float) dist.negHalfGradient(y, f));
-          }
-        }
-      }
-    }
-
-    class ComputeMinMax extends MRTask<ComputeMinMax> {
-      public ComputeMinMax(int firstLeafIndex, int totalNumNodes) {
-        _firstLeafIndex = firstLeafIndex;
-        _totalNumNodes = totalNumNodes;
-      }
-      int _firstLeafIndex;
-      int _totalNumNodes;
-      float[] _mins;
-      float[] _maxs;
-      @Override public void map( Chunk chks[] ) {
-        int _len = _totalNumNodes - _firstLeafIndex; //number of leaves
-        _mins = new float[_len];
-        _maxs = new float[_len];
-        Arrays.fill(_mins, Float.MAX_VALUE);
-        Arrays.fill(_maxs, -Float.MAX_VALUE);
-
-        Chunk ys = chk_resp(chks);
-        Chunk offset = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len);
-        Chunk preds = chk_tree(chks, 0); // Prior tree sums
-        Chunk nids = chk_nids(chks, 0);
-        Chunk weights = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len);
-        for( int row = 0; row < preds._len; row++) {
-          if( ys.isNA(row) ) continue;
-          if (weights.atd(row)==0) continue;
-          int nid = (int)nids.at8(row);
-          assert(nid!=ScoreBuildHistogram.UNDECIDED_CHILD_NODE_ID);
-          if (nid < 0) continue; //skip OOB and otherwise skipped rows
-          float f = (float)(preds.atd(row) + offset.atd(row));
-          int idx = nid - _firstLeafIndex;
-          _mins[idx] = Math.min(_mins[idx], f);
-          _maxs[idx] = Math.max(_maxs[idx], f);
-        }
-      }
-
-      @Override
-      public void reduce(ComputeMinMax mrt) {
-        ArrayUtils.reduceMin(_mins, mrt._mins);
-        ArrayUtils.reduceMax(_maxs, mrt._maxs);
-      }
-    }
-
-    final static private double MIN_LOG_TRUNC = -19;
-    final static private double MAX_LOG_TRUNC = 19;
+    private static final double MIN_LOG_TRUNC = -19;
+    private static final double MAX_LOG_TRUNC = 19;
 
     private void truncatePreds(final DTree tree, int firstLeafIndex, DistributionFamily dist) {
       if (firstLeafIndex==tree._len) return;
-      ComputeMinMax minMax = new ComputeMinMax(firstLeafIndex, tree._len).doAll(_train);
+      ComputeMinMax minMax = new ComputeMinMax(frameMap, firstLeafIndex, tree._len).doAll(_train);
       if (DEV_DEBUG) {
         Log.info("Number of leaf nodes: " + minMax._mins.length);
         Log.info("Min: " + java.util.Arrays.toString(minMax._mins));
@@ -438,16 +314,17 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         // Jerome Friedman 1999: Greedy Function Approximation: A Gradient Boosting Machine
         // https://statweb.stanford.edu/~jhf/ftp/trebst.pdf
         // compute absolute diff |y-(f+o)| for all rows
-        Vec diff = new ComputeAbsDiff().doAll(1, (byte)3 /*numeric*/, _train).outputFrame().anyVec();
+        Vec diff = new ComputeAbsDiff(frameMap).doAll(1, (byte)3 /*numeric*/, _train).outputFrame().anyVec();
         Distribution dist = new Distribution(_parms);
         // compute weighted alpha-quantile of the absolute residual -> this is the delta for the huber loss
         huberDelta = MathUtils.computeWeightedQuantile(_weights, diff, _parms._huber_alpha);
         dist.setHuberDelta(huberDelta);
         // now compute residuals using the gradient of the huber loss (with a globally adjusted delta)
-        new StoreResiduals(dist).doAll(_train, _parms._build_tree_one_node);
+        new StoreResiduals(frameMap, dist).doAll(_train, _parms._build_tree_one_node);
       } else {
         // compute predictions and residuals in one shot
-        new ComputePredAndRes().doAll(_train, _parms._build_tree_one_node);
+        new ComputePredAndRes(frameMap, _nclass, _model._output._distribution, new Distribution(_parms))
+            .doAll(_train, _parms._build_tree_one_node);
       }
       for (int k = 0; k < _nclass; k++) {
         if (DEV_DEBUG && ktrees[k]!=null) {
@@ -469,7 +346,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // ----
       // ESL2, page 387.  Step 2b iii.  Compute the gammas (leaf node predictions === fit best constant), and store them back
       // into the tree leaves.  Includes learn_rate.
-      GammaPass gp = new GammaPass(ktrees, leaves, new Distribution(_parms));
+      GammaPass gp = new GammaPass(frameMap, ktrees, leaves, new Distribution(_parms), _nclass);
       gp.doAll(_train);
       if (_parms._distribution == DistributionFamily.laplace) {
         fitBestConstantsQuantile(ktrees, leaves[0], 0.5); //special case for Laplace: compute the median for each leaf node and store that as prediction
@@ -494,7 +371,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // new tree, in the 'tree' columns.  Also, zap the NIDs for next pass.
       // Tree <== f(Tree)
       // Nids <== 0
-      new AddTreeContributions(ktrees).doAll(_train);
+      new AddTreeContributions(
+          frameMap, ktrees, _parms._pred_noise_bandwidth, _parms._seed, _parms._ntrees, _model._output._ntrees
+      ).doAll(_train);
 
       // sanity check
       for (int k = 0; k < _nclass; k++) {
@@ -593,52 +472,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       } // -- k-trees are done
     }
 
-    private class ComputeDiff extends MRTask<ComputeDiff> {
-      @Override
-      public void map(Chunk[] chks, NewChunk[] nc) {
-        final Chunk y = chk_resp(chks);
-        final Chunk o = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len);
-        final Chunk f = chk_tree(chks,0);
-        for (int i=0; i<chks[0].len(); ++i)
-          nc[0].addNum(y.atd(i) - (f.atd(i) + o.atd(i)));
-      }
-    }
-
-    private class ComputeAbsDiff extends MRTask<ComputeAbsDiff> {
-      @Override
-      public void map(Chunk[] chks, NewChunk[] nc) {
-        final Chunk y = chk_resp(chks);
-        final Chunk o = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len);
-        final Chunk f = chk_tree(chks,0);
-        for (int i=0; i<chks[0].len(); ++i)
-          nc[0].addNum(Math.abs(y.atd(i) - (f.atd(i) + o.atd(i))));
-      }
-    }
-
-    private class StoreResiduals extends MRTask<StoreResiduals> {
-      Distribution _dist;
-      StoreResiduals(Distribution dist) { _dist = dist; }
-      @Override public void map( Chunk chks[] ) {
-        Chunk ys = chk_resp(chks);
-        Chunk offset = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len);
-        Chunk preds = chk_tree(chks, 0); // Prior tree sums
-        C8DVolatileChunk wk = (C8DVolatileChunk) chk_work(chks, 0); // Place to store residuals
-        Chunk weights = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len);
-        for( int row = 0; row < wk._len; row++) {
-          double weight = weights.atd(row);
-          if (weight == 0) continue;
-          if (ys.isNA(row)) continue;
-          double f = preds.atd(row) + offset.atd(row);
-          double y = ys.atd(row);
-          wk.getValues()[row] = ((float) _dist.negHalfGradient(y, f));
-        }
-      }
-    }
 
     private void fitBestConstantsQuantile(DTree[] ktrees, int firstLeafIndex, double quantile) {
       if (firstLeafIndex == ktrees[0]._len) return; // no splits happened - nothing to do
       assert(_nclass==1);
-      Vec diff = new ComputeDiff().doAll(1, (byte)3 /*numeric*/, _train).outputFrame().anyVec();
+      Vec diff = new ComputeDiff(frameMap).doAll(1, (byte)3 /*numeric*/, _train).outputFrame().anyVec();
       Vec weights = hasWeightCol() ? _train.vecs()[idx_weight()] : null;
       Vec strata = vec_nids(_train,0);
 
@@ -659,72 +497,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
     }
 
-    public class DiffMinusMedianDiff extends MRTask<DiffMinusMedianDiff> {
-      Vec _strata;
-      final int _strataMin;
-      double[] _terminalMedians;
-      DiffMinusMedianDiff(Vec strata, double[] terminalMedians) {
-        _strata = strata;
-        _strataMin = (int) strata.min();
-        _terminalMedians = terminalMedians;
-      }
-      @Override
-      public void map(Chunk[] chks) {
-        final Chunk strata = chks[0];
-        final Chunk diff = chks[1];
-        final int strataMin = _strataMin;
-        for (int i=0; i<chks[0].len(); ++i) {
-          int nid = (int)strata.atd(i);
-          diff.set(i, diff.atd(i) - _terminalMedians[nid-strataMin]);
-        }
-      }
-    }
-
-    private final class HuberLeafMath extends MRTask<HuberLeafMath> {
-      // INPUT
-      final double _huberDelta;
-      final Vec _strata;
-      final int _strataMin;
-      final int _strataMax;
-      // OUTPUT
-      double[/*leaves*/] _huberGamma, _wcounts;
-      public HuberLeafMath(double huberDelta, Vec strata) {
-        _huberDelta = huberDelta;
-        _strata = strata;
-        _strataMin = (int)_strata.min();
-        _strataMax = (int)_strata.max();
-      }
-      @Override
-      public void map(Chunk cs[]) {
-        if (_strataMin < 0 || _strataMax < 0) {
-          Log.warn("No Huber math can be done since there's no strata.");
-          return;
-        }
-        final int nstrata = _strataMax - _strataMin + 1;
-        Log.info("Computing Huber math for (up to) " + nstrata + " different strata.");
-        _huberGamma = new double[nstrata];
-        _wcounts = new double[nstrata];
-        Chunk weights = hasWeightCol() ? chk_weight(cs) : new C0DChunk(1, cs[0]._len);
-        Chunk stratum = chk_nids(cs, 0 /*regression*/);
-        Chunk diffMinusMedianDiff = cs[cs.length-1];
-        for (int row=0;row<cs[0]._len;++row) {
-          int nidx = (int) stratum.at8(row) - _strataMin; //get terminal node for this row
-          _huberGamma[nidx] += weights.atd(row) * Math.signum(diffMinusMedianDiff.atd(row)) * Math.min(Math.abs(diffMinusMedianDiff.atd(row)), _huberDelta);
-                  _wcounts[nidx] += weights.atd(row);
-        }
-      }
-      @Override
-      public void reduce(HuberLeafMath mrt) {
-        ArrayUtils.add(_huberGamma,mrt._huberGamma);
-        ArrayUtils.add(_wcounts,mrt._wcounts);
-      }
-
-      @Override
-      protected void postGlobal() {
-        for (int i = 0; i< _huberGamma.length; ++i)
-          _huberGamma[i]/=_wcounts[i];
-      }
-    }
 
     // Jerome Friedman 1999: Greedy Function Approximation: A Gradient Boosting Machine
     // https://statweb.stanford.edu/~jhf/ftp/trebst.pdf
@@ -733,7 +505,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       assert(_nclass==1);
 
       // get diff y-(f+o) and weights and strata (node idx)
-      Vec diff = new ComputeDiff().doAll(1, (byte)3 /*numeric*/, _train).outputFrame().anyVec();
+      Vec diff = new ComputeDiff(frameMap).doAll(1, (byte)3 /*numeric*/, _train).outputFrame().anyVec();
       Vec weights = hasWeightCol() ? _train.vecs()[idx_weight()] : null;
       Vec strata = vec_nids(_train,0);
 
@@ -752,7 +524,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // where huberDelta is the alpha-percentile of the residual across all observations
       Frame tmpFrame2 = new Frame(_train.vecs());
       tmpFrame2.add("resMinusMedianRes", diffMinusMedianDiff);
-      double[] huberGamma = new HuberLeafMath(huberDelta,strata).doAll(tmpFrame2)._huberGamma;
+      double[] huberGamma = new HuberLeafMath(frameMap, huberDelta,strata).doAll(tmpFrame2)._huberGamma;
 
       // now assign the median per leaf + the above _huberCorrection[i] to each leaf
       final DTree tree = ktrees[0];
@@ -797,170 +569,557 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
     }
 
-    // Set terminal node estimates (gamma)
-    // ESL2, page 387.  Step 2b iii.
-    // Nids <== f(Nids)
-    // For classification (bernoulli):
-    //    gamma_i = sum (w_i * res_i) / sum (w_i*p_i*(1 - p_i)) where p_i = y_i - res_i
-    // For classification (multinomial):
-    //    gamma_i_k = (nclass-1)/nclass * (sum res_i / sum (|res_i|*(1-|res_i|)))
-    // For regression (gaussian):
-    //    gamma_i = sum res_i / count(res_i)
-    private class GammaPass extends MRTask<GammaPass> {
-      final DTree _trees[]; // Read-only, shared (except at the histograms in the Nodes)
-      final int _leafs[];  // Starting index of leaves (per class-tree)
-      final Distribution _dist;
-      private double _num[/*tree/klass*/][/*tree-relative node-id*/];
-      private double _denom[/*tree/klass*/][/*tree-relative node-id*/];
 
-      double gamma(int tree, int nid) {
-        if (_denom[tree][nid] == 0) return 0;
-        double g = _num[tree][nid]/ _denom[tree][nid];
-        assert (!Double.isInfinite(g) && !Double.isNaN(g));
-        if (_dist.distribution == DistributionFamily.poisson ||
-            _dist.distribution == DistributionFamily.gamma ||
-            _dist.distribution == DistributionFamily.tweedie)
-        {
-          return _dist.link(g);
-        } else {
-          return g;
-        }
+    @Override protected GBMModel makeModel(Key<GBMModel> modelKey, GBMModel.GBMParameters parms) {
+      return new GBMModel(modelKey, parms, new GBMModel.GBMOutput(GBM.this));
+    }
+
+  }
+
+
+  //--------------------------------------------------------------------------------------------------------------------
+
+  private static class FillVecWithConstant extends MRTask<FillVecWithConstant> {
+    private double init;
+
+    public FillVecWithConstant(double d) {
+      init = d;
+    }
+
+    @Override
+    protected boolean modifiesVolatileVecs() {
+      return true;
+    }
+
+    @Override
+    public void map(Chunk tree) {
+      if (tree instanceof C8DVolatileChunk) {
+        Arrays.fill(((C8DVolatileChunk) tree).getValues(), init);
+      } else {
+        for (int i = 0; i < tree._len; i++)
+          tree.set(i, init);
       }
+    }
+  }
 
-      GammaPass(DTree trees[],
-                int leafs[],
-                Distribution distribution
-      ) {
-        _leafs=leafs;
-        _trees=trees;
-        _dist = distribution;
-      }
-      @Override public void map( Chunk[] chks ) {
-        _denom = new double[_nclass][];
-        _num = new double[_nclass][];
-        final Chunk resp = chk_resp(chks); // Response for this frame
 
-        // For all tree/klasses
-        for( int k=0; k<_nclass; k++ ) {
-          final DTree tree = _trees[k];
-          final int   leaf = _leafs[k];
-          if( tree == null ) continue; // Empty class is ignored
-          assert(tree._len-leaf >= 0);
+  private static class ResponseLessOffsetTask extends MRTask<ResponseLessOffsetTask> {
+    private FrameMap fm;
 
-          // A leaf-biased array of all active Tree leaves.
-          final double denom[] = _denom[k] = new double[tree._len-leaf];
-          final double num[] = _num[k] = new double[tree._len-leaf];
-          final C4VolatileChunk nids = (C4VolatileChunk) chk_nids(chks, k); // Node-ids  for this tree/class
-          int [] nids_vals = nids.getValues();
-          final Chunk ress = chk_work(chks, k); // Residuals for this tree/class
-          final Chunk offset = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len); // Residuals for this tree/class
-          final Chunk preds = chk_tree(chks,k);
-          final Chunk weights = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len);
+    public ResponseLessOffsetTask(FrameMap frameMap) {
+      fm = frameMap;
+    }
 
-          // If we have all constant responses, then we do not split even the
-          // root and the residuals should be zero.
-          if( tree.root() instanceof LeafNode )
-            continue;
-          Distribution dist = new Distribution(_parms);
-          for( int row=0; row<nids._len; row++ ) { // For all rows
-            double w = weights.atd(row);
-            if (w==0) continue;
+    @Override
+    public void map(Chunk[] chks, NewChunk[] nc) {
+      final Chunk resp = chks[fm.responseIndex];
+      final Chunk offset = chks[fm.offsetIndex];
+      for (int i = 0; i < chks[0]._len; ++i)
+        nc[0].addNum(resp.atd(i) - offset.atd(i));  // y - o
+    }
+  }
 
-            double y = resp.atd(row); //response
-            if (Double.isNaN(y)) continue;
 
-            // Compute numerator and denominator of terminal node estimate (gamma)
-            int nid = (int)nids.at8(row);          // Get Node to decide from
-            final boolean wasOOBRow = ScoreBuildHistogram.isOOBRow(nid); //same for all k
-            if (wasOOBRow) nid = ScoreBuildHistogram.oob2Nid(nid);
-            if (nid < 0) continue;
-            DecidedNode dn = tree.decided(nid);           // Must have a decision point
-            if( dn._split == null )                    // Unable to decide?
-              dn = tree.decided(dn.pid());  // Then take parent's decision
-            int leafnid = dn.getChildNodeID(chks,row); // Decide down to a leafnode
-            assert leaf <= leafnid && leafnid < tree._len :
-                    "leaf: " + leaf + " leafnid: " + leafnid + " tree._len: " + tree._len + "\ndn: " + dn;
-            assert tree.node(leafnid) instanceof LeafNode;
-            // Note: I can tell which leaf/region I end up in, but I do not care for
-            // the prediction presented by the tree.  For GBM, we compute the
-            // sum-of-residuals (and sum/abs/mult residuals) for all rows in the
-            // leaf, and get our prediction from that.
-            nids_vals[row] =  leafnid;
-            assert !ress.isNA(row);
+  /**
+   * Newton-Raphson fixpoint iteration to find a self-consistent initial value
+   */
+  private static class NewtonRaphson extends MRTask<NewtonRaphson> {
+    private FrameMap fm;
+    private Distribution dist;
+    private double _init;
+    private double _numerator;
+    private double _denominator;
 
-            // OOB rows get placed properly (above), but they don't affect the computed Gamma (below)
-            // For Laplace/Quantile distribution, we need to compute the median of (y-offset-preds == y-f), will be done outside of here
-            if (wasOOBRow
-                    || _parms._distribution == DistributionFamily.laplace
-                    || _parms._distribution == DistributionFamily.huber
-                    || _parms._distribution == DistributionFamily.quantile) continue;
+    public NewtonRaphson(FrameMap frameMap, Distribution distribution, double initialValue) {
+      assert frameMap != null && distribution != null;
+      fm = frameMap;
+      dist = distribution;
+      _init = initialValue;
+      _numerator = 0;
+      _denominator = 0;
+    }
 
-            double z = ress.atd(row); //residual
-            double f = preds.atd(row) + offset.atd(row);
-            int idx=leafnid-leaf;
-            num[idx] += dist.gammaNum(w, y, z, f);
-            denom[idx] += dist.gammaDenom(w, y, z, f);
-          }
-        }
-      }
-      @Override public void reduce( GammaPass gp ) {
-        ArrayUtils.add(_denom,gp._denom);
-        ArrayUtils.add(_num,gp._num);
+    public double value() {
+      return _init + _numerator / _denominator;
+    }
+
+    @Override
+    public void map(Chunk[] chks) {
+      Chunk ys = chks[fm.responseIndex];
+      Chunk offset = chks[fm.offsetIndex];
+      Chunk weight = fm.weightIndex >= 0 ? chks[fm.weightIndex] : new C0DChunk(1, chks[0]._len);
+      for (int row = 0; row < ys._len; row++) {
+        double w = weight.atd(row);
+        if (w == 0) continue;
+        if (ys.isNA(row)) continue;
+        double y = ys.atd(row);
+        double o = offset.atd(row);
+        double p = dist.linkInv(o + _init);
+        _numerator += w * (y - p);
+        _denominator += w * p * (1. - p);
       }
     }
 
-    private class AddTreeContributions extends MRTask<AddTreeContributions> {
-      DTree[] _ktrees;
-      AddTreeContributions(DTree[] ktrees) { _ktrees = ktrees; }
-      @Override public void map( Chunk chks[] ) {
-        // For all tree/klasses
-        for( int k=0; k<_nclass; k++ ) {
-          final DTree tree = _ktrees[k];
-          if( tree == null ) continue;
-          final C4VolatileChunk nids = (C4VolatileChunk) chk_nids(chks,k);
-          final int [] nids_vals = nids.getValues();
-          final C8DVolatileChunk ct   = (C8DVolatileChunk) chk_tree(chks, k);
-          double [] ct_vals = ct.getValues();
-          final Chunk y   = chk_resp(chks);
-          final Chunk weights = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len);
-          long baseseed = (0xDECAF + _parms._seed) * (0xFAAAAAAB + k * _parms._ntrees + _model._output._ntrees);
-          for( int row=0; row<nids._len; row++ ) {
-            int nid = nids_vals[row];
-            nids_vals[row] = ScoreBuildHistogram.FRESH;
-            if( nid < 0 ) continue;
-            if (y.isNA(row)) continue;
-            if (weights.atd(row)==0) continue;
-            double factor = 1;
-            if (_parms._pred_noise_bandwidth !=0) {
-              _rand.setSeed(baseseed + nid); //bandwidth is a function of tree number, class and node id (but same for all rows in that node)
-              factor += _rand.nextGaussian() * _parms._pred_noise_bandwidth;
+    @Override
+    public void reduce(NewtonRaphson mrt) {
+      _numerator += mrt._numerator;
+      _denominator += mrt._denominator;
+    }
+  }
+
+
+  /**
+   * Compute Residuals
+   * Do this for all rows, whether OOB or not
+   */
+  private static class ComputePredAndRes extends MRTask<ComputePredAndRes> {
+    private FrameMap fm;
+    private int nclass;
+    private boolean[] out;
+    private Distribution dist;
+
+    public ComputePredAndRes(FrameMap frameMap, int nClasses, double[] outputDistribution, Distribution distribution) {
+      fm = frameMap;
+      nclass = nClasses;
+      dist = distribution;
+      out = new boolean[outputDistribution.length];
+      for (int i = 0; i < out.length; i++) out[i] = (outputDistribution[i] != 0);
+    }
+
+    @Override
+    public void map(Chunk[] chks) {
+      Chunk ys = chks[fm.responseIndex];
+      Chunk offset = fm.offsetIndex >= 0 ? chks[fm.offsetIndex] : new C0DChunk(0, chks[0]._len);
+      Chunk preds = chks[fm.tree0Index];  // Prior tree sums
+      C8DVolatileChunk wk = (C8DVolatileChunk) chks[fm.work0Index]; // Place to store residuals
+      Chunk weights = fm.weightIndex >= 0 ? chks[fm.weightIndex] : new C0DChunk(1, chks[0]._len);
+      double[] fs = nclass > 1 ? new double[nclass + 1] : null;
+      for (int row = 0; row < wk._len; row++) {
+        double weight = weights.atd(row);
+        if (weight == 0) continue;
+        if (ys.isNA(row)) continue;
+        double f = preds.atd(row) + offset.atd(row);
+        double y = ys.atd(row);
+//          Log.info(f + " vs " + y); //expect that the model predicts very negative values for 0 and very positive values for 1
+        if (dist.distribution == DistributionFamily.multinomial && fs != null) {
+          double sum = score1static(chks, fm.tree0Index, 0.0 /*not used for multiclass*/, fs, row, dist, nclass);
+          if (Double.isInfinite(sum)) {  // Overflow (happens for constant responses)
+            for (int k = 0; k < nclass; k++) {
+              wk = (C8DVolatileChunk) chks[fm.work0Index + k];
+              wk.getValues()[row] = ((int) y == k ? 1f : 0f) - (Double.isInfinite(fs[k + 1]) ? 1.0f : 0.0f);
             }
-            // Prediction stored in Leaf is cut to float to be deterministic in reconstructing
-            // <tree_klazz> fields from tree prediction
-            ct_vals[row] = ((float)(ct.atd(row) + factor * ((LeafNode)tree.node(nid))._pred ));
+          } else {
+            for (int k = 0; k < nclass; k++) { // Save as a probability distribution
+              if (out[k]) {
+                wk = (C8DVolatileChunk) chks[fm.work0Index + k];
+                wk.getValues()[row] = (((int) y == k ? 1f : 0f) - (float) (fs[k + 1] / sum));
+              }
+            }
           }
+        } else {
+          wk.getValues()[row] = ((float) dist.negHalfGradient(y, f));
+        }
+      }
+    }
+  }
+
+
+  private static class ComputeMinMax extends MRTask<ComputeMinMax> {
+    private FrameMap fm;
+    int firstLeafIdx;
+    int _totalNumNodes;
+    float[] _mins;
+    float[] _maxs;
+
+
+    public ComputeMinMax(FrameMap frameMap, int firstLeafIndex, int totalNumNodes) {
+      fm = frameMap;
+      firstLeafIdx = firstLeafIndex;
+      _totalNumNodes = totalNumNodes;
+    }
+
+    @Override
+    public void map(Chunk[] chks) {
+      int len = _totalNumNodes - firstLeafIdx;  // number of leaves
+      _mins = new float[len];
+      _maxs = new float[len];
+      Arrays.fill(_mins, Float.MAX_VALUE);
+      Arrays.fill(_maxs, -Float.MAX_VALUE);
+
+      Chunk ys = chks[fm.responseIndex];
+      Chunk offset = fm.offsetIndex >= 0 ? chks[fm.offsetIndex] : new C0DChunk(0, chks[0]._len);
+      Chunk preds = chks[fm.tree0Index]; // Prior tree sums
+      Chunk nids = chks[fm.nids0Index];
+      Chunk weights = fm.weightIndex >= 0 ? chks[fm.weightIndex] : new C0DChunk(1, chks[0]._len);
+      for (int row = 0; row < preds._len; row++) {
+        if (ys.isNA(row)) continue;
+        if (weights.atd(row) == 0) continue;
+        int nid = (int) nids.at8(row);
+        assert (nid != ScoreBuildHistogram.UNDECIDED_CHILD_NODE_ID);
+        if (nid < 0) continue; //skip OOB and otherwise skipped rows
+        float f = (float) (preds.atd(row) + offset.atd(row));
+        int idx = nid - firstLeafIdx;
+        _mins[idx] = Math.min(_mins[idx], f);
+        _maxs[idx] = Math.max(_maxs[idx], f);
+      }
+    }
+
+    @Override
+    public void reduce(ComputeMinMax mrt) {
+      ArrayUtils.reduceMin(_mins, mrt._mins);
+      ArrayUtils.reduceMax(_maxs, mrt._maxs);
+    }
+  }
+
+
+  private static class ComputeDiff extends MRTask<ComputeDiff> {
+    private FrameMap fm;
+
+    public ComputeDiff(FrameMap frameMap) {
+      fm = frameMap;
+    }
+
+    @Override
+    public void map(Chunk[] chks, NewChunk[] nc) {
+      final Chunk y = chks[fm.responseIndex];
+      final Chunk o = fm.offsetIndex >= 0 ? chks[fm.offsetIndex] : new C0DChunk(0, chks[0]._len);
+      final Chunk f = chks[fm.tree0Index];
+      for (int i = 0; i < chks[0].len(); ++i)
+        nc[0].addNum(y.atd(i) - (f.atd(i) + o.atd(i)));
+    }
+  }
+
+
+  private static class ComputeAbsDiff extends MRTask<ComputeAbsDiff> {
+    private FrameMap fm;
+
+    public ComputeAbsDiff(FrameMap frameMap) {
+      fm = frameMap;
+    }
+
+    @Override
+    public void map(Chunk[] chks, NewChunk[] nc) {
+      final Chunk y = chks[fm.responseIndex];
+      final Chunk o = fm.offsetIndex >= 0 ? chks[fm.offsetIndex] : new C0DChunk(0, chks[0]._len);
+      final Chunk f = chks[fm.tree0Index];
+      for (int i = 0; i < chks[0].len(); ++i)
+        nc[0].addNum(Math.abs(y.atd(i) - (f.atd(i) + o.atd(i))));
+    }
+  }
+
+
+  public static class DiffMinusMedianDiff extends MRTask<DiffMinusMedianDiff> {
+    private final int _strataMin;
+    private double[] _terminalMedians;
+
+    public DiffMinusMedianDiff(Vec strata, double[] terminalMedians) {
+      _strataMin = (int) strata.min();
+      _terminalMedians = terminalMedians;
+    }
+
+    @Override
+    public void map(Chunk[] chks) {
+      final Chunk strata = chks[0];
+      final Chunk diff = chks[1];
+      for (int i = 0; i < chks[0].len(); ++i) {
+        int nid = (int) strata.atd(i);
+        diff.set(i, diff.atd(i) - _terminalMedians[nid - _strataMin]);
+      }
+    }
+  }
+
+
+  private static final class HuberLeafMath extends MRTask<HuberLeafMath> {
+    // INPUT
+    final FrameMap fm;
+    final double _huberDelta;
+    final Vec _strata;
+    final int _strataMin;
+    final int _strataMax;
+    // OUTPUT
+    double[/*leaves*/] _huberGamma, _wcounts;
+
+    public HuberLeafMath(FrameMap frameMap, double huberDelta, Vec strata) {
+      fm = frameMap;
+      _huberDelta = huberDelta;
+      _strata = strata;
+      _strataMin = (int) _strata.min();
+      _strataMax = (int) _strata.max();
+    }
+
+    @Override
+    public void map(Chunk[] cs) {
+      if (_strataMin < 0 || _strataMax < 0) {
+        Log.warn("No Huber math can be done since there's no strata.");
+        return;
+      }
+      final int nstrata = _strataMax - _strataMin + 1;
+      Log.info("Computing Huber math for (up to) " + nstrata + " different strata.");
+      _huberGamma = new double[nstrata];
+      _wcounts = new double[nstrata];
+      Chunk weights = fm.weightIndex >= 0 ? cs[fm.weightIndex] : new C0DChunk(1, cs[0]._len);
+      Chunk stratum = cs[fm.nids0Index];
+      Chunk diffMinusMedianDiff = cs[cs.length - 1];
+      for (int row = 0; row < cs[0]._len; ++row) {
+        int nidx = (int) stratum.at8(row) - _strataMin; //get terminal node for this row
+        _huberGamma[nidx] += weights.atd(row) * Math.signum(diffMinusMedianDiff.atd(row)) * Math.min(Math.abs(diffMinusMedianDiff.atd(row)), _huberDelta);
+        _wcounts[nidx] += weights.atd(row);
+      }
+    }
+
+    @Override
+    public void reduce(HuberLeafMath mrt) {
+      ArrayUtils.add(_huberGamma, mrt._huberGamma);
+      ArrayUtils.add(_wcounts, mrt._wcounts);
+    }
+
+    @Override
+    protected void postGlobal() {
+      for (int i = 0; i < _huberGamma.length; ++i)
+        _huberGamma[i] /= _wcounts[i];
+    }
+  }
+
+
+  private static class StoreResiduals extends MRTask<StoreResiduals> {
+    private FrameMap fm;
+    private Distribution dist;
+
+    public StoreResiduals(FrameMap frameMap, Distribution distribution) {
+      fm = frameMap;
+      dist = distribution;
+    }
+
+    @Override
+    protected boolean modifiesVolatileVecs() {
+      return true;
+    }
+
+    @Override
+    public void map(Chunk[] chks) {
+      Chunk ys = chks[fm.responseIndex];
+      Chunk offset = fm.offsetIndex >= 0 ? chks[fm.offsetIndex] : new C0DChunk(0, chks[0]._len);
+      Chunk preds = chks[fm.tree0Index];  // Prior tree sums
+      C8DVolatileChunk wk = (C8DVolatileChunk) chks[fm.work0Index]; // Place to store residuals
+      Chunk weights = fm.weightIndex >= 0 ? chks[fm.weightIndex] : new C0DChunk(1, chks[0]._len);
+      for (int row = 0; row < wk._len; row++) {
+        double weight = weights.atd(row);
+        if (weight == 0) continue;
+        if (ys.isNA(row)) continue;
+        double f = preds.atd(row) + offset.atd(row);
+        double y = ys.atd(row);
+        wk.getValues()[row] = ((float) dist.negHalfGradient(y, f));
+      }
+    }
+  }
+
+
+  /**
+   * Set terminal node estimates (gamma)
+   * ESL2, page 387.  Step 2b iii.
+   * Nids <== f(Nids)
+   * For classification (bernoulli):
+   * <pre>{@code    gamma_i = sum (w_i * res_i) / sum (w_i*p_i*(1 - p_i)) where p_i = y_i - res_i}</pre>
+   * For classification (multinomial):
+   * <pre>{@code    gamma_i_k = (nclass-1)/nclass * (sum res_i / sum (|res_i|*(1-|res_i|)))}</pre>
+   * For regression (gaussian):
+   * <pre>{@code    gamma_i = sum res_i / count(res_i)}</pre>
+   */
+  private static class GammaPass extends MRTask<GammaPass> {
+    private final FrameMap fm;
+    private final DTree[] _trees; // Read-only, shared (except at the histograms in the Nodes)
+    private final int[] _leafs;  // Starting index of leaves (per class-tree)
+    private final Distribution _dist;
+    private final int _nclass;
+    private double[/*tree/klass*/][/*tree-relative node-id*/] _num;
+    private double[/*tree/klass*/][/*tree-relative node-id*/] _denom;
+
+    public GammaPass(FrameMap frameMap, DTree[] trees, int[] leafs, Distribution distribution, int nClasses) {
+      fm = frameMap;
+      _leafs = leafs;
+      _trees = trees;
+      _dist = distribution;
+      _nclass = nClasses;
+    }
+
+    double gamma(int tree, int nid) {
+      if (_denom[tree][nid] == 0) return 0;
+      double g = _num[tree][nid] / _denom[tree][nid];
+      assert (!Double.isInfinite(g) && !Double.isNaN(g));
+      if (_dist.distribution == DistributionFamily.poisson ||
+          _dist.distribution == DistributionFamily.gamma ||
+          _dist.distribution == DistributionFamily.tweedie) {
+        return _dist.link(g);
+      } else {
+        return g;
+      }
+    }
+
+    @Override
+    protected boolean modifiesVolatileVecs() {
+      return true;
+    }
+
+    @Override
+    public void map(Chunk[] chks) {
+      _denom = new double[_nclass][];
+      _num = new double[_nclass][];
+      final Chunk resp = chks[fm.responseIndex]; // Response for this frame
+
+      // For all tree/klasses
+      for (int k = 0; k < _nclass; k++) {
+        final DTree tree = _trees[k];
+        final int leaf = _leafs[k];
+        if (tree == null) continue; // Empty class is ignored
+        assert (tree._len - leaf >= 0);
+
+        // A leaf-biased array of all active Tree leaves.
+        final double[] denom = _denom[k] = new double[tree._len - leaf];
+        final double[] num = _num[k] = new double[tree._len - leaf];
+        final C4VolatileChunk nids = (C4VolatileChunk) chks[fm.nids0Index + k]; // Node-ids  for this tree/class
+        int[] nids_vals = nids.getValues();
+        final Chunk ress = chks[fm.work0Index + k];  // Residuals for this tree/class
+        final Chunk offset = fm.offsetIndex >= 0 ? chks[fm.offsetIndex] : new C0DChunk(0, chks[0]._len);
+        final Chunk preds = chks[fm.tree0Index + k];
+        final Chunk weights = fm.weightIndex >= 0 ? chks[fm.weightIndex] : new C0DChunk(1, chks[0]._len);
+
+        // If we have all constant responses, then we do not split even the
+        // root and the residuals should be zero.
+        if (tree.root() instanceof LeafNode)
+          continue;
+        for (int row = 0; row < nids._len; row++) { // For all rows
+          double w = weights.atd(row);
+          if (w == 0) continue;
+
+          double y = resp.atd(row); //response
+          if (Double.isNaN(y)) continue;
+
+          // Compute numerator and denominator of terminal node estimate (gamma)
+          int nid = (int) nids.at8(row);          // Get Node to decide from
+          final boolean wasOOBRow = ScoreBuildHistogram.isOOBRow(nid); //same for all k
+          if (wasOOBRow) nid = ScoreBuildHistogram.oob2Nid(nid);
+          if (nid < 0) continue;
+          DecidedNode dn = tree.decided(nid);           // Must have a decision point
+          if (dn._split == null)                    // Unable to decide?
+            dn = tree.decided(dn.pid());  // Then take parent's decision
+          int leafnid = dn.getChildNodeID(chks, row); // Decide down to a leafnode
+          assert leaf <= leafnid && leafnid < tree._len :
+              "leaf: " + leaf + " leafnid: " + leafnid + " tree._len: " + tree._len + "\ndn: " + dn;
+          assert tree.node(leafnid) instanceof LeafNode;
+          // Note: I can tell which leaf/region I end up in, but I do not care for
+          // the prediction presented by the tree.  For GBM, we compute the
+          // sum-of-residuals (and sum/abs/mult residuals) for all rows in the
+          // leaf, and get our prediction from that.
+          nids_vals[row] = leafnid;
+          assert !ress.isNA(row);
+
+          // OOB rows get placed properly (above), but they don't affect the computed Gamma (below)
+          // For Laplace/Quantile distribution, we need to compute the median of (y-offset-preds == y-f), will be done outside of here
+          if (wasOOBRow
+              || _dist.distribution == DistributionFamily.laplace
+              || _dist.distribution == DistributionFamily.huber
+              || _dist.distribution == DistributionFamily.quantile) continue;
+
+          double z = ress.atd(row);  // residual
+          double f = preds.atd(row) + offset.atd(row);
+          int idx = leafnid - leaf;
+          num[idx] += _dist.gammaNum(w, y, z, f);
+          denom[idx] += _dist.gammaDenom(w, y, z, f);
         }
       }
     }
 
-    @Override protected GBMModel makeModel( Key modelKey, GBMModel.GBMParameters parms) {
-      return new GBMModel(modelKey,parms,new GBMModel.GBMOutput(GBM.this));
+    @Override
+    public void reduce(GammaPass gp) {
+      ArrayUtils.add(_denom, gp._denom);
+      ArrayUtils.add(_num, gp._num);
+    }
+  }
+
+
+  private static class AddTreeContributions extends MRTask<AddTreeContributions> {
+    private FrameMap fm;
+    private DTree[] _ktrees;
+    private int _nclass;
+    private double _pred_noise_bandwidth;
+    private long _seed;
+    private int _ntrees1;
+    private int _ntrees2;
+
+    public AddTreeContributions(
+        FrameMap frameMap, DTree[] ktrees, double predictionNoiseBandwidth, long seed, int nTreesInp, int nTreesOut
+    ) {
+      fm = frameMap;
+      _ktrees = ktrees;
+      _nclass = ktrees.length;
+      _pred_noise_bandwidth = predictionNoiseBandwidth;
+      _seed = seed;
+      _ntrees1 = nTreesInp;
+      _ntrees2 = nTreesOut;
     }
 
+    @Override
+    protected boolean modifiesVolatileVecs() {
+      return true;
+    }
+
+    @Override
+    public void map(Chunk[] chks) {
+      Random rand = RandomUtils.getRNG(_seed);
+
+      // For all tree/klasses
+      for (int k = 0; k < _nclass; k++) {
+        final DTree tree = _ktrees[k];
+        if (tree == null) continue;
+        final C4VolatileChunk nids = (C4VolatileChunk) chks[fm.nids0Index + k];
+        final int[] nids_vals = nids.getValues();
+        final C8DVolatileChunk ct = (C8DVolatileChunk) chks[fm.tree0Index + k];
+        double[] ct_vals = ct.getValues();
+        final Chunk y = chks[fm.responseIndex];
+        final Chunk weights = fm.weightIndex >= 0 ? chks[fm.weightIndex] : new C0DChunk(1, chks[0]._len);
+        long baseseed = (0xDECAF + _seed) * (0xFAAAAAAB + k * _ntrees1 + _ntrees2);
+        for (int row = 0; row < nids._len; row++) {
+          int nid = nids_vals[row];
+          nids_vals[row] = ScoreBuildHistogram.FRESH;
+          if (nid < 0) continue;
+          if (y.isNA(row)) continue;
+          if (weights.atd(row) == 0) continue;
+          double factor = 1;
+          if (_pred_noise_bandwidth != 0) {
+            rand.setSeed(baseseed + nid); //bandwidth is a function of tree number, class and node id (but same for all rows in that node)
+            factor += rand.nextGaussian() * _pred_noise_bandwidth;
+          }
+          // Prediction stored in Leaf is cut to float to be deterministic in reconstructing
+          // <tree_klazz> fields from tree prediction
+          ct_vals[row] = ((float) (ct.atd(row) + factor * ((LeafNode) tree.node(nid))._pred));
+        }
+      }
+    }
+  }
+
+
+
+  //--------------------------------------------------------------------------------------------------------------------
+
+  // Read the 'tree' columns, do model-specific math and put the results in the
+  // fs[] array, and return the sum.  Dividing any fs[] element by the sum
+  // turns the results into a probability distribution.
+  @Override protected double score1(Chunk[] chks, double weight, double offset, double[/*nclass*/] fs, int row) {
+    return score1static(chks, idx_tree(0), offset, fs, row, new Distribution(_parms), _nclass);
   }
 
   // Read the 'tree' columns, do model-specific math and put the results in the
   // fs[] array, and return the sum.  Dividing any fs[] element by the sum
   // turns the results into a probability distribution.
-  @Override protected double score1( Chunk chks[], double weight, double offset, double fs[/*nclass*/], int row ) {
-    double f = chk_tree(chks,0).atd(row) + offset;
-    double p = new Distribution(_parms).linkInv(f);
-    if( _parms._distribution == DistributionFamily.modified_huber || _parms._distribution == DistributionFamily.bernoulli ) {
+  private static double score1static(Chunk[] chks, int treeIdx, double offset, double[] fs, int row, Distribution dist, int nClasses) {
+    double f = chks[treeIdx].atd(row) + offset;
+    double p = dist.linkInv(f);
+    if (dist.distribution == DistributionFamily.modified_huber || dist.distribution == DistributionFamily.bernoulli) {
       fs[2] = p;
-      fs[1] = 1.0-p;
+      fs[1] = 1.0 - p;
       return 1;                 // f2 = 1.0 - f1; so f1+f2 = 1.0
-    } else if (_parms._distribution == DistributionFamily.multinomial) {
-      if (_nclass == 2) {
+    } else if (dist.distribution == DistributionFamily.multinomial) {
+      if (nClasses == 2) {
         // This optimization assumes the 2nd tree of a 2-class system is the
         // inverse of the first.  Fill in the missing tree
         fs[1] = p;
@@ -968,15 +1127,15 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         return fs[1] + fs[2];
       }
       // Multinomial loss function; sum(exp(data)).  Load tree data
-      assert(offset==0);
+      assert (offset == 0);
       fs[1] = f;
-      for( int k=1; k<_nclass; k++ )
-        fs[k+1]=chk_tree(chks,k).atd(row);
+      for (int k = 1; k < nClasses; k++)
+        fs[k + 1] = chks[treeIdx + k].atd(row);
       // Rescale to avoid Infinities; return sum(exp(data))
       return hex.genmodel.GenModel.log_rescale(fs);
-    }
-    else {
+    } else {
       return fs[0] = p;
     }
   }
+
 }
