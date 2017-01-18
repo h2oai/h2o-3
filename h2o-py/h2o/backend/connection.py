@@ -35,14 +35,129 @@ from h2o.utils.shared_utils import stringify_list, print2
 from h2o.utils.typechecks import (assert_is_type, assert_matches, assert_satisfies, is_type, numeric)
 from h2o.model.metrics_base import (H2ORegressionModelMetrics, H2OClusteringModelMetrics, H2OBinomialModelMetrics,
                                     H2OMultinomialModelMetrics, H2OAutoEncoderModelMetrics)
+from h2o.utils.typechecks import assert_is_type, is_type
 
-__all__ = ("H2OConnection", )
+__all__ = ("H2OConnection", "H2OConnectionConf", )
 
 if tuple(int(x) for x in requests.__version__.split('.')) < (2, 10):
     print("[WARNING] H2O requires requests module of version 2.10 or newer. You have version %s.\n"
           "You can upgrade to the newest version of the module running from the command line\n"
           "    $ pip%s install --upgrade requests" % (requests.__version__, sys.version_info[0]))
 
+class H2OConnectionConf(object):
+    """
+    Configuration of connection to H2O.
+
+    The main goal of this class is to specify location of running
+    H2O instance and properties of connection. The location of running instance
+    is given by schema, ip, port, context_path parameters forming connection URL in
+    the following way: ``schema://ip:port/context_path``
+    """
+
+    @staticmethod
+    def create(conf):
+        """
+        Create a new instance of this class from given dictionary.
+        The method only uses keys which corresponds to properties
+        this class, ignores rest of keys.
+        :param conf:  dictionary of parameters
+        :return:  a new instance of this class filled with values from given dictionary
+        """
+        cconf = H2OConnectionConf()
+        for k,v in conf.items():
+            if hasattr(cconf, k):
+                setattr(cconf, k, v)
+        return cconf
+
+    def __init__(self):
+        self._ip = None
+        self._port = None
+        self._https = None
+        self._context_path = ''
+        self._verify_ssl_certificates = True
+        self._proxy = None
+        self._auth = None
+        self._cookies = None
+        self._verbose = True
+
+    @property
+    def ip(self):
+        return self._ip
+
+    @ip.setter
+    def ip(self, value):
+        assert_is_type(value, str)
+        self._ip = value
+
+    @property
+    def port(self):
+        return self._port
+
+    @port.setter
+    def port(self, value):
+        assert_is_type(value, int)
+        self._port = value
+
+    @property
+    def https(self):
+        return self._https
+
+    @https.setter
+    def https(self, value):
+        assert_is_type(value, bool)
+        self._https = value
+
+    @property
+    def context_path(self):
+        return self._context_path
+
+    @context_path.setter
+    def context_path(self, value):
+        assert_is_type(value, str)
+        self._context_path = value
+
+    @property
+    def verify_ssl_certificates(self):
+        return self._verify_ssl_certificates
+
+    @verify_ssl_certificates.setter
+    def verify_ssl_certificates(self, value):
+        assert_is_type(value, bool)
+        self._verify_ssl_certificates = value
+
+    @property
+    def proxy(self):
+        return self._proxy
+
+    @proxy.setter
+    def proxy(self, value):
+        self._proxy = value
+
+    @property
+    def auth(self):
+        return self._auth
+
+    @auth.setter
+    def auth(self, value):
+        self._auth = value
+
+    @property
+    def cookies(self):
+        return self._cookies
+
+    @cookies.setter
+    def cookies(self, value):
+        assert_is_type(value, [str])
+        self.cookies = value
+
+    @property
+    def verbose(self):
+        return self._verbose
+
+    @verbose.setter
+    def verbose(self, value):
+        assert_is_type(value, bool)
+        self._verbose = value
 
 class H2OConnection(backwards_compatible()):
     """
@@ -125,14 +240,16 @@ class H2OConnection(backwards_compatible()):
             ip = server.ip
             port = server.port
             scheme = server.scheme
+            context_path = ''
         elif url is not None:
             assert_is_type(url, str)
             assert_is_type(ip, None, "`ip` should be None when `url` parameter is supplied")
             # We don't allow any Unicode characters in the URL. Maybe some day we will...
-            match = assert_matches(url, r"^(https?)://((?:[\w-]+\.)*[\w-]+):(\d+)/?$")
+            match = assert_matches(url, r"^(https?)://((?:[\w-]+\.)*[\w-]+):(\d+)/?([\w-]*)?$")
             scheme = match.group(1)
             ip = match.group(2)
             port = int(match.group(3))
+            context_path = "/%s" % (match.group(4))
         else:
             if ip is None: ip = str("localhost")
             if port is None: port = 54321
@@ -144,6 +261,7 @@ class H2OConnection(backwards_compatible()):
             assert_matches(ip, r"(?:[\w-]+\.)*[\w-]+")
             assert_satisfies(port, 1 <= port <= 65535)
             scheme = "https" if https else "http"
+            context_path = ''
 
         if verify_ssl_certificates is None: verify_ssl_certificates = True
         assert_is_type(verify_ssl_certificates, bool)
@@ -156,7 +274,7 @@ class H2OConnection(backwards_compatible()):
         conn = H2OConnection()
         conn._verbose = bool(verbose)
         conn._local_server = server
-        conn._base_url = "%s://%s:%d" % (scheme, ip, port)
+        conn._base_url = "%s://%s:%d%s" % (scheme, ip, port, context_path)
         conn._verify_ssl_cert = bool(verify_ssl_certificates)
         conn._auth = auth
         conn._cluster_id = cluster_id

@@ -12,6 +12,7 @@ import os
 import warnings
 
 from h2o.backend import H2OConnection
+from h2o.backend import H2OConnectionConf
 from h2o.backend import H2OLocalServer
 from h2o.exceptions import H2OConnectionError, H2OValueError
 from h2o.utils.config import H2OConfigReader
@@ -46,9 +47,8 @@ warnings.filterwarnings('ignore', category=DeprecationWarning, module='.*/IPytho
 
 h2oconn = None
 
-
 def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_certificates=None, auth=None,
-            proxy=None, cluster_id=None, cookies=None, verbose=True):
+            proxy=None, cluster_id=None, cookies=None, verbose=True, connection_conf=None):
     """
     Connect to an existing H2O server, remote or local.
 
@@ -67,12 +67,18 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
     :param cluster_id: Name of the H2O cluster to connect to. This option is used from Steam only.
     :param cookies: Cookie (or list of) to add to request
     :param verbose: Set to False to disable printing connection status messages.
+    :param connection_conf: Connection configuration object encapsulating connection parameters.
     :returns: the new :class:`H2OConnection` object.
     """
     global h2oconn
-    h2oconn = H2OConnection.open(server=server, url=url, ip=ip, port=port, https=https, auth=auth,
-                                 verify_ssl_certificates=verify_ssl_certificates, proxy=proxy,
-                                 cluster_id=cluster_id, cookies=cookies, verbose=verbose)
+    if connection_conf:
+        h2oconn = _connect_with_conf(connection_conf)
+        verbose = connection_conf.verbose
+    else:
+        h2oconn = H2OConnection.open(server=server, url=url, ip=ip, port=port, https=https,
+                                     auth=auth, verify_ssl_certificates=verify_ssl_certificates,
+                                     proxy=proxy, cluster_id=cluster_id, cookies=cookies,
+                                     verbose=verbose)
     h2oconn.cluster.timezone = "UTC"
     if verbose:
         h2oconn.cluster.show_status()
@@ -1236,6 +1242,24 @@ def _check_connection():
     if not h2oconn or not h2oconn.cluster:
         raise H2OConnectionError("Not connected to a cluster. Did you run `h2o.connect()`?")
 
+def _connect_with_conf(conn_conf):
+    conf = conn_conf
+    if isinstance(conn_conf, dict):
+        conf = H2OConnectionConf.create(conn_conf)
+
+    ip = conf.ip
+    port = conf.port
+    context_path = conf.context_path
+    if conf.https:
+        schema = "https"
+    else:
+        schema = "http"
+
+    url = "{}://{}:{}/{}".format(schema, ip, port, context_path)
+
+    return connect(url = url, verify_ssl_certificates = conf.verify_ssl_certificates,
+                   auth = conf.auth, proxy = conf.proxy, cluster_id = None,
+                   cookies = conf.cookies, verbose = conf.verbose)
 
 #-----------------------------------------------------------------------------------------------------------------------
 #  ALL DEPRECATED METHODS BELOW
