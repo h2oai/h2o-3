@@ -71,7 +71,7 @@ class H2OConnection(backwards_compatible()):
 
     @staticmethod
     def open(server=None, url=None, ip=None, port=None, https=None, auth=None, verify_ssl_certificates=True,
-             proxy=None, cluster_id=None, cookies=None, verbose=True, _msgs=None):
+             proxy=None, cluster_id=None, cookies=None, verbose=True, _msgs=None, context_path=None):
         r"""
         Establish connection to an existing H2O server.
 
@@ -156,7 +156,10 @@ class H2OConnection(backwards_compatible()):
         conn = H2OConnection()
         conn._verbose = bool(verbose)
         conn._local_server = server
-        conn._base_url = "%s://%s:%d" % (scheme, ip, port)
+        if context_path is not None:
+            conn._base_url = "%s://%s:%d/%s" % (scheme, ip, port, context_path)
+        else:
+            conn._base_url = "%s://%s:%d" % (scheme, ip, port)
         conn._verify_ssl_cert = bool(verify_ssl_certificates)
         conn._auth = auth
         conn._cluster_id = cluster_id
