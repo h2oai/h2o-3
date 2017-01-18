@@ -169,7 +169,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     public String algoName() { return "Word2Vec"; }
     public String fullName() { return "Word2Vec"; }
     public String javaName() { return Word2VecModel.class.getName(); }
-    @Override public long progressUnits() { return _epochs; }
+    @Override public long progressUnits() { return train().vec(0).nChunks() * _epochs; }
     static final int MAX_VEC_SIZE = 10000;
 
     public Word2Vec.WordModel _word_model = Word2Vec.WordModel.SkipGram;

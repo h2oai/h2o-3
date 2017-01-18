@@ -67,7 +67,7 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
         long tstart = System.currentTimeMillis();
         for (int i = 0; i < _parms._epochs; i++) {
           long start = System.currentTimeMillis();
-          WordVectorTrainer trainer = new WordVectorTrainer(modelInfo).doAll(_parms.trainVec());
+          WordVectorTrainer trainer = new WordVectorTrainer(_job, modelInfo).doAll(_parms.trainVec());
           long stop = System.currentTimeMillis();
           long actProcessedWords = trainer._processedWords;
           long estProcessedWords = trainer._nodeProcessedWords._val;
@@ -76,7 +76,6 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
                     " is significantly lower than actual number processed words " + actProcessedWords);
           trainer.updateModelInfo(modelInfo);
           model.update(_job); // Early version of model is visible
-          _job.update(1);
           double duration = (stop - start) / 1000.0;
           Log.info("Epoch " + i + " took "  + duration + "s; Words trained/s: " + actProcessedWords / duration);
         }
