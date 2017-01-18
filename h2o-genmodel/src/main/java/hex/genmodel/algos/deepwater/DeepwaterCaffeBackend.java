@@ -18,7 +18,21 @@ public class  DeepwaterCaffeBackend implements BackendTrain {
     if (name.equals("MLP")) {
       // TODO: add non-MLP Models such as lenet, inception_bn, etc.
       // Basic testing
+      int num_layers = ((int[]) bparms.get("hidden")).length;
+      int[] hidden = (int[]) bparms.get("hidden");
+      String[] activation = (String[]) bparms.get("activations");
+      double[] dropout =  (double[]) bparms.get("hidden_dropout_ratios");
       System.out.println("Caffe backend: building new MLP model");
+      System.out.println("  Parameters");
+      System.out.format("  Mini batch size: %d \n", ((Integer) bparms.get("mini_batch_size")).intValue());
+      System.out.format("  Hidden layers: %d \n", num_layers);
+      System.out.format("  Number of classes: %d (output neurons) \n", num_classes);
+      System.out.format("  Input dropout ratio: %f \n", ((Double) bparms.get("input_dropout_ratio")).doubleValue());
+      for(int i=0; i<num_layers; ++i ){
+        System.out.format("    hidden layer: %d  size: %d activation: %s  dropout ratio: %f \n", i+1, hidden[i], activation[i], dropout[i]);
+      }
+      //
+
       return new DeepwaterCaffeModel(
               num_classes,
               ((Integer) bparms.get("mini_batch_size")).intValue(),
@@ -71,7 +85,7 @@ public class  DeepwaterCaffeBackend implements BackendTrain {
   @Override
   public void setParameter(BackendModel m, String name, float value) {
     // Basic testing
-    System.out.println("Caffe backend: setting parameters");
+    System.out.println("Caffe backend: setting parameter  "+name);
     if (name.equals("learning_rate"))
       ((DeepwaterCaffeModel)m)._learning_rate = value;
     else if (name.equals("momentum"))
@@ -83,7 +97,8 @@ public class  DeepwaterCaffeBackend implements BackendTrain {
   @Override
   public float[]/*ignored*/ train(BackendModel m, float[/*mini_batch * input_neurons*/] data, float[/*mini_batch*/] label) {
     // Basic testing
-    System.out.println("Caffe backend: building new MLP model");
+    System.out.format("Caffe backend: training   data size: %d  label size: %d \n", data.length, label.length);
+
     // implement training here
 
     return null; //return value is always ignored
@@ -99,7 +114,7 @@ public class  DeepwaterCaffeBackend implements BackendTrain {
   @Override
   public float[/*mini_batch * num_classes*/] predict(BackendModel m, float[/*mini_batch * input_neurons*/] data) {
     // Basic testing
-    System.out.println("Caffe backend: building new MLP model");
+    System.out.format("Caffe backend: predicting data size: %d \n", data.length);
     DeepwaterCaffeModel cm = ((DeepwaterCaffeModel)m);
     return new float[cm.mini_batch_size*cm.num_classes];
   }
