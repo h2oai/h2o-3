@@ -203,7 +203,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
               _weights = stratified.vec(_parms._weights_column);
               // Recompute distribution since the input frame was modified
               MRUtils.ClassDist cdmt2 = _weights != null ?
-                      new MRUtils.ClassDist(_nclass).doAll(_response, _weights) : new MRUtils.ClassDist(_nclass).doAll(_response);
+                      new MRUtils.ClassDist(_nclass).doAll(new VecAry(_response).append(_weights)) : new MRUtils.ClassDist(_nclass).doAll(_response);
               _model._output._distribution = cdmt2.dist();
               _model._output._modelClassDist = cdmt2.rel_dist();
             }
@@ -279,7 +279,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         // One Tree per class, each tree needs a NIDs.  For empty classes use a -1
         // NID signifying an empty regression tree.
         for( int i=0; i<_nclass; i++ )
-          _train.add("NIDs_"+domain[i], _response.makeCon(_model._output._distribution==null ? 0 : (_model._output._distribution[i]==0?-1:0)));
+          _train.add("NIDs_"+domain[i], _response.makeCons(_model._output._distribution==null ? 0 : (_model._output._distribution[i]==0?-1:0)));
 
         // Append number of trees participating in on-the-fly scoring
         _train.add("OUT_BAG_TREES", _response.makeZero());
@@ -377,7 +377,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     //           O( #active_splits * #bins * #ncols )
     // but is NOT over all the data.
     ScoreBuildOneTree sb1ts[] = new ScoreBuildOneTree[_nclass];
-    AVecAry vecs = fr.vecs();
+    VecAry vecs = fr.vecs();
     for( int k=0; k<_nclass; k++ ) {
       final DTree tree = ktrees[k]; // Tree for class K
       if( tree == null ) continue;
@@ -516,10 +516,10 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   protected Chunk chk_oobt(Chunk chks[])          { return chks[idx_oobt()]; }
 
 
-  protected final Vec vec_resp( Frame fr       ) { return fr.vecs(idx_resp()); }
-  protected final Vec vec_tree( Frame fr, int c) { return fr.vecs(idx_tree(c)); }
-  protected final Vec vec_work( Frame fr, int c) { return fr.vecs(idx_work(c)); }
-  protected final Vec vec_nids( Frame fr, int c) { return fr.vecs(idx_nids(c)); }
+  protected final VecAry vec_resp( Frame fr       ) { return fr.vecs(idx_resp()); }
+  protected final VecAry vec_tree( Frame fr, int c) { return fr.vecs(idx_tree(c)); }
+  protected final VecAry vec_work( Frame fr, int c) { return fr.vecs(idx_work(c)); }
+  protected final VecAry vec_nids( Frame fr, int c) { return fr.vecs(idx_nids(c)); }
 
 
   protected double[] data_row( ChunkAry chks, int row, double[] data) {
@@ -590,7 +590,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // Score on training data
       _job.update(0,"Scoring the model.");
       _model._output._job = _job; // to allow to share the job for quantiles task
-      Score sc = new Score(this,_model._output._ntrees>0/*score 0-tree model from scratch*/,oob,response()._key,_model._output.getModelCategory(),computeGainsLift).doAll(train(), build_tree_one_node);
+      Score sc = new Score(this,_model._output._ntrees>0/*score 0-tree model from scratch*/,oob,response(),_model._output.getModelCategory(),computeGainsLift).doAll(train(), build_tree_one_node);
       ModelMetrics mm = sc.makeModelMetrics(_model, _parms.train());
       out._training_metrics = mm;
       if (oob) out._training_metrics._description = "Metrics reported on Out-Of-Bag training samples";
@@ -598,7 +598,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
       // Score again on validation data
       if( _parms._valid != null ) {
-        Score scv = new Score(this,false,false,vresponse()._key,_model._output.getModelCategory(),computeGainsLift).doAll(valid(), build_tree_one_node);
+        Score scv = new Score(this,false,false,vresponse(),_model._output.getModelCategory(),computeGainsLift).doAll(valid(), build_tree_one_node);
         ModelMetrics mmv = scv.makeModelMetrics(_model,_parms.valid());
         out._validation_metrics = mmv;
         if (_model._output._ntrees>0 || scoreZeroTrees()) //don't score the 0-tree model - the error is too large
@@ -828,9 +828,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
    */
   protected double getInitialValue() {
     return new InitialValue(_parms).doAll(
-            _response,
-            hasWeightCol() ? _weights : _response.makeCon(1),
-            hasOffsetCol() ? _offset : _response.makeCon(0)
+            new VecAry(_response).append(
+            hasWeightCol() ? _weights : _response.makeCons(1)).append(
+            hasOffsetCol() ? _offset : _response.makeCons(0))
     ).initialValue();
   }
 

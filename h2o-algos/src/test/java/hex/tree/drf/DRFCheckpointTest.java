@@ -10,6 +10,7 @@ import water.TestUtil;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 
 import static water.ModelSerializationTest.assertTreeEquals;
 import static water.ModelSerializationTest.getTrees;
@@ -84,11 +85,11 @@ public class DRFCheckpointTest extends TestUtil {
                                             int ntreesInPriorModel, int ntreesInNewModel,
                                             float sampleRateInPriorModel, float sampleRateInNewModel) {
     Frame f = parse_test_file(dataset);
-    Vec v = f.removeVecs("economy"); if (v!=null) v.remove(); //avoid overfitting for binomial case for cars dataset
+    VecAry v = f.removeVecs("economy"); if (v!=null) v.remove(); //avoid overfitting for binomial case for cars dataset
     DKV.put(f);
     // If classification turn response into categorical
     if (classification) {
-      Vec respVec = f.vec(responseIdx);
+      VecAry respVec = f.vec(responseIdx);
       f.replace(responseIdx, respVec.toCategoricalVec()).removeVecs();
       DKV.put(f._key, f);
     }

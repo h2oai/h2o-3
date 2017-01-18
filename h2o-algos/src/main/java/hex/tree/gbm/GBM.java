@@ -192,21 +192,21 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
      */
     private double getInitialValueQuantile(double quantile) {
       // obtain y - o
-      Vec y = hasOffsetCol() ? new MRTask() {
+      VecAry y = hasOffsetCol() ? new MRTask() {
         @Override public void map(Chunk[] chks, NewChunk[] nc) {
           final Chunk resp = chk_resp(chks);
           final Chunk offset = chk_offset(chks);
           for (int i=0; i<chks[0]._len; ++i)
             nc[0].addNum(resp.atd(i) - offset.atd(i)); //y - o
         }
-      }.doAll(1, (byte)3 /*numeric*/, _train).outputFrame().anyVec() : response();
+      }.doAll(1, (byte)3 /*numeric*/, _train).outputFrame().vecs() : response();
 
       // Now compute (weighted) quantile of y - o
       double res = Double.NaN;
       QuantileModel qm = null;
       Frame tempFrame = null;
       try {
-        tempFrame = new Frame(Key.<Frame>make(H2O.SELF), new String[]{"y"}, new Vec[]{y});
+        tempFrame = new Frame(Key.<Frame>make(H2O.SELF), new String[]{"y"}, y);
         if (hasWeightCol()) tempFrame.add("w", _weights);
         DKV.put(tempFrame);
         QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
@@ -436,7 +436,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         // Jerome Friedman 1999: Greedy Function Approximation: A Gradient Boosting Machine
         // https://statweb.stanford.edu/~jhf/ftp/trebst.pdf
         // compute absolute diff |y-(f+o)| for all rows
-        Vec diff = new ComputeAbsDiff().doAll(1, (byte)3 /*numeric*/, _train).outputFrame().anyVec();
+        VecAry diff = new ComputeAbsDiff().doAll(1, (byte)3 /*numeric*/, _train).outputFrame().vecs();
         Distribution dist = new Distribution(_parms);
         // compute weighted alpha-quantile of the absolute residual -> this is the delta for the huber loss
         huberDelta = MathUtils.computeWeightedQuantile(_weights, diff, _parms._huber_alpha);
@@ -449,7 +449,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
       for (int k = 0; k < _nclass; k++) {
         if (DEV_DEBUG && ktrees[k]!=null) {
-          System.out.println("Updated predictions in WORK col for class " + k + ":\n" + new Frame(new String[]{"WORK"},new Vec[]{vec_work(_train, k)}).toString());
+          System.out.println("Updated predictions in WORK col for class " + k + ":\n" + new Frame(new String[]{"WORK"},vec_work(_train, k)).toString());
         }
       }
 
@@ -460,7 +460,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       growTrees(ktrees, leaves, _rand);
       for (int k = 0; k < _nclass; k++) {
         if (DEV_DEBUG && ktrees[k]!=null) {
-          System.out.println("Grew trees. Updated NIDs for class " + k + ":\n" + new Frame(new String[]{"NIDS"},new Vec[]{vec_nids(_train, k)}).toString());
+          System.out.println("Grew trees. Updated NIDs for class " + k + ":\n" + new Frame(new String[]{"NIDS"},vec_nids(_train, k)).toString());
         }
       }
 
@@ -534,7 +534,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         Sample ss[] = new Sample[_nclass];
         for (int k = 0; k < _nclass; k++)
           if (ktrees[k] != null)
-            ss[k] = new Sample(ktrees[k], _parms._sample_rate, _parms._sample_rate_per_class).dfork(null, new Frame(vec_nids(_train, k), _response), _parms._build_tree_one_node);
+            ss[k] = new Sample(ktrees[k], _parms._sample_rate, _parms._sample_rate_per_class).dfork(null, new Frame(vec_nids(_train, k).append(_response)), _parms._build_tree_one_node);
         for (int k = 0; k < _nclass; k++) {
           if (ss[k] != null) {
             ss[k].getResult();
@@ -630,9 +630,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     private void fitBestConstantsQuantile(DTree[] ktrees, int firstLeafIndex, double quantile) {
       if (firstLeafIndex == ktrees[0]._len) return; // no splits happened - nothing to do
       assert(_nclass==1);
-      Vec diff = new ComputeDiff().doAll(1, (byte)3 /*numeric*/, _train).outputFrame().anyVec();
-      Vec weights = hasWeightCol() ? _train.vecs(idx_weight()) : null;
-      Vec strata = vec_nids(_train,0);
+      VecAry diff = new ComputeDiff().doAll(1, (byte)3 /*numeric*/, _train).outputFrame().vecs();
+      VecAry weights = hasWeightCol() ? _train.vecs(idx_weight()) : null;
+      VecAry strata = vec_nids(_train,0);
 
       // compute quantile for all leaf nodes
       Quantile.StratifiedQuantilesTask sqt = new Quantile.StratifiedQuantilesTask(null, quantile, diff, weights, strata, QuantileModel.CombineMethod.INTERPOLATE);
@@ -652,9 +652,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     }
 
     public class DiffMinusMedianDiff extends MRTask<DiffMinusMedianDiff> {
-      Vec _strata;
+      VecAry _strata;
       double[] _terminalMedians;
-      DiffMinusMedianDiff(Vec strata, double[] terminalMedians) {
+      DiffMinusMedianDiff(VecAry strata, double[] terminalMedians) {
         _strata = strata;
         _terminalMedians = terminalMedians;
       }
@@ -672,10 +672,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     private final class HuberLeafMath extends MRTask<HuberLeafMath> {
       // INPUT
       final double _huberDelta;
-      final Vec _strata;
+      final VecAry _strata;
       // OUTPUT
       double[/*leaves*/] _huberGamma, _wcounts;
-      public HuberLeafMath(double huberDelta, Vec strata) {
+      public HuberLeafMath(double huberDelta, VecAry strata) {
         _huberDelta = huberDelta;
         _strata = strata;
       }
@@ -720,9 +720,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       assert(_nclass==1);
 
       // get diff y-(f+o) and weights and strata (node idx)
-      Vec diff = new ComputeDiff().doAll(1, (byte)3 /*numeric*/, _train).outputFrame().anyVec();
-      Vec weights = hasWeightCol() ? _train.vecs(idx_weight()) : null;
-      Vec strata = vec_nids(_train,0);
+      VecAry diff = new ComputeDiff().doAll(1, (byte)3 /*numeric*/, _train).outputFrame().vecs();
+      VecAry weights = hasWeightCol() ? _train.vecs(idx_weight()) : null;
+      VecAry strata = vec_nids(_train,0);
 
       // compute median diff for each leaf node
       Quantile.StratifiedQuantilesTask sqt = new Quantile.StratifiedQuantilesTask(null, 0.5 /*median of weighted residuals*/, diff, weights, strata, QuantileModel.CombineMethod.INTERPOLATE);
@@ -731,9 +731,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
       // subtract median(diff) from residuals for all observations of each leaf
       DiffMinusMedianDiff hp = new DiffMinusMedianDiff(strata, sqt._quantiles /*median residuals per leaf*/);
-      Frame tmpFrame1 = new Frame(new String[]{"strata","diff"}, new Vec[]{strata,diff});
+      Frame tmpFrame1 = new Frame(new String[]{"strata","diff"}, new VecAry(strata).append(diff));
       hp.doAll(tmpFrame1);
-      Vec diffMinusMedianDiff = diff;
+      VecAry diffMinusMedianDiff = diff;
 
       // for each leaf, compute the mean of Math.signum(resMinusMedianRes) * Math.min(Math.abs(resMinusMedianRes), huberDelta),
       // where huberDelta is the alpha-percentile of the residual across all observations

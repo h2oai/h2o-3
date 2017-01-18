@@ -163,7 +163,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
    */
   private  NonBlockingHashMap<BufferedString, Integer>  buildVocabHashMap() {
     NonBlockingHashMap<BufferedString, Integer> vocabHM;
-    Vec word = ((Frame) _w2vKey.get()).vec(0);
+    VecAry word = ((Frame) _w2vKey.get()).vec(0);
     final int vocabSize = (int) ((Frame) _w2vKey.get()).numRows();
     vocabHM = new NonBlockingHashMap<>(vocabSize);
     for(int i=0; i < vocabSize; i++) vocabHM.put(word.atStr(new BufferedString(),i),i);
@@ -346,7 +346,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
       long vocabWordsPow = 0;
       _uniTable = new int[UNIGRAM_TABLE_SIZE];
 
-      Vec wCount = (_parameters._vocabKey.get()).vec(1);
+      VecAry wCount = (_parameters._vocabKey.get()).vec(1);
       for (int i=0; i < wCount.length(); i++) vocabWordsPow += Math.pow(wCount.at8(i), UNIGRAM_POWER);
       for (int i = 0, j =0; i < UNIGRAM_TABLE_SIZE; i++) {
         _uniTable[i] = j;
@@ -405,7 +405,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
       long[] count = new long[_vocabSize * 2 - 1];
       int[] binary = new int[_vocabSize * 2 - 1];
       int[] parent_node = new int[_vocabSize * 2 - 1];
-      Vec wCount = (_parameters._vocabKey.get()).vec(1);
+      VecAry wCount = (_parameters._vocabKey.get()).vec(1);
       _HBWTCode = new int[_vocabSize][];
       _HBWTPoint = new int[_vocabSize][];
 
@@ -480,9 +480,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
      */
     private long getTrainFrameSize(Frame tf) {
       long count=0;
-
-      for (Vec v: tf.vecs()) if(v.isString()) count += v.length();
-
+      for (VecAry v: tf.vecs().singleVecs()) if(v.isString()) count += v.length();
       return count;
     }
   }

@@ -89,24 +89,24 @@ public class GLMBasicTestBinomial extends TestUtil {
       +0.334941144,+0.172066050,+0.292733797,+0.001169431,+0.114393635,+0.153848294,+0.632500120,+0.387718306,+0.269126887,+0.564594040
     };
 
-    Vec offsetVecTrain = _prostateTrain.anyVec().makeZero();
-    try( Vec.Writer vw = offsetVecTrain.open() ) {
+    VecAry offsetVecTrain = _prostateTrain.vecs().makeZero();
+    try( VecAry.Writer vw = offsetVecTrain.open() ) {
       for (int i = 0; i < offset_train.length; ++i)
         vw.set(i, offset_train[i]);
     }
 
-    Vec offsetVecTest = _prostateTest.anyVec().makeZero();
-    try( Vec.Writer vw = offsetVecTest.open() ) {
+    VecAry offsetVecTest = _prostateTest.vecs().makeZero();
+    try( VecAry.Writer vw = offsetVecTest.open() ) {
       for (int i = 0; i < offset_test.length; ++i)
         vw.set(i, offset_test[i]);
     }
 
     Key fKeyTrain = Key.make("prostate_with_offset_train");
     Key fKeyTest  = Key.make("prostate_with_offset_test");
-    Frame fTrain = new Frame(fKeyTrain, new String[]{"offset"}, new Vec[]{offsetVecTrain});
+    Frame fTrain = new Frame(fKeyTrain, new String[]{"offset"}, new VecAry(offsetVecTrain));
     fTrain.add(_prostateTrain.names(), _prostateTrain.vecs());
     DKV.put(fKeyTrain,fTrain);
-    Frame fTest = new Frame(fKeyTest, new String[]{"offset"}, new Vec[]{offsetVecTest});
+    Frame fTest = new Frame(fKeyTest, new String[]{"offset"}, new VecAry(offsetVecTest));
     fTest.add(_prostateTest.names(),_prostateTest.vecs());
     DKV.put(fKeyTest,fTest);
 //    Call:  glm(formula = CAPSULE ~ . - RACE - DPROS - DCAPS, family = binomial,
@@ -178,7 +178,7 @@ public class GLMBasicTestBinomial extends TestUtil {
           assertEquals(model._output._validation_metrics._MSE, mmTest._MSE, 1e-8);
           assertEquals(((ModelMetricsBinomialGLM) model._output._validation_metrics)._resDev, mmTest._resDev, 1e-8);
           // test the actual predictions
-          Vec.Reader preds = scoreTest.vec("p1").new Reader();
+          VecAry.Reader preds = scoreTest.vec("p1").new Reader();
           for(int i = 0; i < pred_test.length; ++i)
             assertEquals(pred_test[i],preds.at(i),CD?1e-3:1e-6);
           GLMTest.testScoring(model,fTrain);
@@ -286,24 +286,24 @@ public class GLMBasicTestBinomial extends TestUtil {
       +0.47880901,+0.29185818,+0.42648317,+0.01247279,+0.18372518,+0.27281535,+0.63807876,+0.44563524,+0.32821696,+0.43636099
     };
 
-    Vec offsetVecTrain = _prostateTrain.anyVec().makeZero();
-    try( Vec.Writer vw = offsetVecTrain.open() ) {
+    VecAry offsetVecTrain = _prostateTrain.vecs().makeZero();
+    try( VecAry.Writer vw = offsetVecTrain.open() ) {
       for (int i = 0; i < offset_train.length; ++i)
         vw.set(i, offset_train[i]);
     }
 
-    Vec offsetVecTest = _prostateTest.anyVec().makeZero();
-    try( Vec.Writer vw = offsetVecTest.open() ) {
+    VecAry offsetVecTest = _prostateTest.vecs().makeZero();
+    try( VecAry.Writer vw = offsetVecTest.open() ) {
       for (int i = 0; i < offset_test.length; ++i)
         vw.set(i, offset_test[i]);
     }
 
     Key fKeyTrain = Key.make("prostate_with_offset_train");
     Key fKeyTest  = Key.make("prostate_with_offset_test");
-    Frame fTrain = new Frame(fKeyTrain, new String[]{"offset"}, new Vec[]{offsetVecTrain});
+    Frame fTrain = new Frame(fKeyTrain, new String[]{"offset"}, new VecAry(offsetVecTrain));
     fTrain.add(_prostateTrain.names(), _prostateTrain.vecs());
     DKV.put(fKeyTrain,fTrain);
-    Frame fTest = new Frame(fKeyTest, new String[]{"offset"}, new Vec[]{offsetVecTest});
+    Frame fTest = new Frame(fKeyTest, new String[]{"offset"}, new VecAry(offsetVecTest));
     fTest.add(_prostateTest.names(),_prostateTest.vecs());
     DKV.put(fKeyTest,fTest);
 //    Call:  glm(formula = CAPSULE ~ . - ID - RACE - DCAPS - DPROS - 1, family = binomial,
@@ -377,7 +377,7 @@ public class GLMBasicTestBinomial extends TestUtil {
           assertEquals(((ModelMetricsBinomialGLM) model._output._validation_metrics)._resDev, mmTest._resDev, 1e-8);
           GLMTest.testScoring(model,fTest);
           // test the actual predictions
-          Vec.Reader preds = scoreTest.vec("p1").new Reader();
+          VecAry.Reader preds = scoreTest.vec("p1").new Reader();
           for(int i = 0; i < pred_test.length; ++i)
             assertEquals(pred_test[i],preds.at(i), CD?1e-3:1e-6);// s == Solver.COORDINATE_DESCENT_NAIVE
         } finally {
@@ -515,8 +515,8 @@ public class GLMBasicTestBinomial extends TestUtil {
     //double [] weights = new double[290];
     //Arrays.fill(weights, 1);
 
-    Vec offsetVecTrain = _prostateTrain.anyVec().makeZero();
-    try( Vec.Writer vw = offsetVecTrain.open() ) {
+    VecAry offsetVecTrain = _prostateTrain.vecs().makeZero();
+    try( VecAry.Writer vw = offsetVecTrain.open() ) {
       for (int i = 0; i < weights.length; ++i)
         vw.set(i, weights[i]);
     }
@@ -528,7 +528,7 @@ public class GLMBasicTestBinomial extends TestUtil {
 //    vw.close();
     Key fKeyTrain = Key.make("prostate_with_weights_train");
 //    Key fKeyTest  = Key.make("prostate_with_offset_test");
-    Frame fTrain = new Frame(fKeyTrain, new String[]{"weights"}, new Vec[]{offsetVecTrain});
+    Frame fTrain = new Frame(fKeyTrain, new String[]{"weights"}, new VecAry(offsetVecTrain));
     fTrain.add(_prostateTrain.names(), _prostateTrain.vecs());
     DKV.put(fKeyTrain,fTrain);
 //    Frame fTest = new Frame(fKeyTest, new String[]{"offset"}, new Vec[]{offsetVecTest});
@@ -849,28 +849,28 @@ public class GLMBasicTestBinomial extends TestUtil {
 
 
 
-    Vec offsetVecTrain = _prostateTrain.anyVec().makeZero();
-    try( Vec.Writer vw = offsetVecTrain.open() ) {
+    VecAry offsetVecTrain = _prostateTrain.vecs().makeZero();
+    try( VecAry.Writer vw = offsetVecTrain.open() ) {
       for (int i = 0; i < offset_train.length; ++i)
         vw.set(i, offset_train[i]);
     }
 
-    Vec weightsVecTrain = _prostateTrain.anyVec().makeZero();
-    try( Vec.Writer vw = weightsVecTrain.open() ) {
+    VecAry weightsVecTrain = _prostateTrain.vecs().makeZero();
+    try( VecAry.Writer vw = weightsVecTrain.open() ) {
       for (int i = 0; i < weights_train.length; ++i)
         vw.set(i, weights_train[i]);
     }
 
-    Vec offsetVecTest = _prostateTest.anyVec().makeZero();
-    try( Vec.Writer vw = offsetVecTest.open() ) {
+    VecAry offsetVecTest = _prostateTest.vecs().makeZero();
+    try( VecAry.Writer vw = offsetVecTest.open() ) {
       for (int i = 0; i < offset_test.length; ++i)
         vw.set(i, offset_test[i]);
     }
 
-    Frame fTrain = new Frame(Key.<Frame>make("prostate_with_offset_train"), new String[]{"offset","weights"}, new Vec[]{offsetVecTrain, weightsVecTrain});
+    Frame fTrain = new Frame(Key.<Frame>make("prostate_with_offset_train"), new String[]{"offset","weights"}, new VecAry(offsetVecTrain).append(weightsVecTrain));
     fTrain.add(_prostateTrain.names(), _prostateTrain.vecs());
     DKV.put(fTrain);
-    Frame fTest = new Frame(Key.<Frame>make("prostate_with_offset_test"), new String[]{"offset"}, new Vec[]{offsetVecTest});
+    Frame fTest = new Frame(Key.<Frame>make("prostate_with_offset_test"), new String[]{"offset"}, new VecAry(offsetVecTest));
     fTest.add(_prostateTest.names(),_prostateTest.vecs());
     DKV.put(fTest);
 //    Call:  glm(formula = CAPSULE ~ . - ID - RACE - DCAPS - DPROS - 1, family = binomial,

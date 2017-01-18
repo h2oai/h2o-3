@@ -16,6 +16,7 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.parser.ParseDataset;
 import water.rapids.Rapids;
 import water.util.Log;
@@ -55,12 +56,12 @@ public class DeepLearningProstateTest extends TestUtil {
             boolean classification = !(i == 0 && resp == 2);
             String respname = frame.name(resp);
             if (classification && !frame.vec(resp).isCategorical()) {
-              Vec r = frame.vec(resp).toCategoricalVec();
+              VecAry r = frame.vec(resp).toCategoricalVec();
               frame.removeVecs(resp).removeVecs();
               frame.add(respname, r);
               DKV.put(frame);
 
-              Vec vr = vframe.vec(respname).toCategoricalVec();
+              VecAry vr = vframe.vec(respname).toCategoricalVec();
               vframe.removeVecs(respname).remove();
               vframe.add(respname, vr);
               DKV.put(vframe);
@@ -375,7 +376,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                             double threshold;
                                             if (model2._output.isClassifier()) {
                                               Frame pred = null;
-                                              Vec labels, predlabels, pred2labels;
+                                              VecAry labels, predlabels, pred2labels;
                                               try {
                                                 pred = model2.score(valid);
                                                 DKV.put(Key.make("pred"), pred);

@@ -3,10 +3,7 @@ package hex;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import water.*;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
-import water.fvec.VecAry;
+import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
@@ -123,7 +120,8 @@ public class GainsLift extends Iced {
     init(job); //check parameters and obtain _quantiles from _preds
     try {
       GainsLiftBuilder gt = new GainsLiftBuilder(_quantiles);
-      gt = (_weights != null) ? gt.doAll(new VecAry(_labels).append(_preds).append(_weights)) : gt.doAll(new VecAry(_labels).append(_preds));
+      VecAry data = (_weights != null) ? new VecAry(_labels).append(_preds).append(_weights) :new VecAry(_labels).append(_preds);
+      gt.doAll(data);
       response_rates = gt.response_rates();
       avg_response_rate = gt.avg_response_rate();
       events = gt.events();
@@ -203,19 +201,22 @@ public class GainsLift extends Iced {
       _thresh = thresh.clone();
     }
 
-    @Override public void map( Chunk ca, Chunk cp) { map(ca,cp,null); }
-    @Override public void map( Chunk ca, Chunk cp, Chunk cw) {
+    @Override public void map( Chunk ca, Chunk cp) {
+      map(ca,cp,(Chunk)null);
+    }
+    @Override public void map(ChunkAry cs) {
+      int ca = 0; int cp = 1; int cw = cs._numCols == 3?2:-1;
       _events = new long[_thresh.length];
       _observations = new long[_thresh.length];
       _avg_response = 0;
-      final int len = Math.min(ca._len, cp._len);
+      final int len = cs._len;
       for( int i=0; i < len; i++ ) {
-        if (ca.isNA(i)) continue;
-        final int a = (int)ca.at8(i);
+        if (cs.isNA(i,ca)) continue;
+        final int a = cs.at4(i,ca);
         if (a != 0 && a != 1) throw new IllegalArgumentException("Invalid values in actualLabels: must be binary (0 or 1).");
-        if (cp.isNA(i)) continue;
-        final double pr = cp.atd(i);
-        final double w = cw!=null?cw.atd(i):1;
+        if (cs.isNA(i,cp)) continue;
+        final double pr = cs.atd(i,cp);
+        final double w = cw!=-1?cs.atd(i,cw):1;
         perRow(pr, a, w);
       }
     }

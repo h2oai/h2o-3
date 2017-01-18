@@ -21,6 +21,7 @@ import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.test.util.GridTestUtils;
 import water.util.ArrayUtils;
 
@@ -34,7 +35,7 @@ public class DRFGridTest extends TestUtil {
   @Test public void testCarsGrid() {
     Grid<DRFModel.DRFParameters> grid = null;
     Frame fr = null;
-    Vec old = null;
+    VecAry old = null;
     try {
       fr = parse_test_file("smalldata/junit/cars.csv");
       fr.removeVecs("name").remove(); // Remove unique id
@@ -120,7 +121,7 @@ public class DRFGridTest extends TestUtil {
   public void testDuplicatesCarsGrid() {
     Grid grid = null;
     Frame fr = null;
-    Vec old = null;
+    VecAry old = null;
     try {
       fr = parse_test_file("smalldata/junit/cars_20mpg.csv");
       fr.removeVecs("name").remove(); // Remove unique id
@@ -175,7 +176,7 @@ public class DRFGridTest extends TestUtil {
     try {
       fr = parse_test_file("smalldata/junit/cars.csv");
       fr.removeVecs("name").remove();
-      Vec old = fr.removeVecs("economy (mpg)");
+      VecAry old = fr.removeVecs("economy (mpg)");
       fr.add("economy (mpg)", old); // response to last column
       DKV.put(fr);
 
@@ -300,7 +301,7 @@ public class DRFGridTest extends TestUtil {
     try {
       fr = parse_test_file("smalldata/junit/cars.csv");
       fr.removeVecs("name").remove();
-      Vec old = fr.removeVecs("economy (mpg)");
+      VecAry old = fr.removeVecs("economy (mpg)");
       fr.add("economy (mpg)", old); // response to last column
       DKV.put(fr);
 

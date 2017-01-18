@@ -134,7 +134,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
 
         VecAry vecs = orig.vecs();
         // Add workspace vector for exemplar assignment
-        Vec assignment = vecs.makeZero();
+        VecAry assignment = vecs.makeZero();
         vecs.append(assignment);
 
         _job.update(1, "Aggregating.");
@@ -148,7 +148,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         model._counts = new long[aggTask._exemplars.length];
         for(int i=0;i<aggTask._exemplars.length;++i)
           model._counts[i] = aggTask._exemplars[i]._cnt;
-        model._exemplar_assignment_vec_key = assignment._key;
+        model._exemplar_assignment = assignment;
         model._output._output_frame = Key.make("aggregated_" + _parms._train.toString() + "_by_" + model._key);
 
         _job.update(1, "Creating output frame.");
@@ -159,7 +159,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
       } finally {
         if (model != null) {
           model.unlock(_job);
-          Scope.untrack(Collections.singletonList(model._exemplar_assignment_vec_key));
+          Scope.untrack(model._exemplar_assignment.vecs());
           Frame outFrame = model._output._output_frame.get();
           if (outFrame != null)
             for(Vec v:outFrame.vecs().vecs())

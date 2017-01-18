@@ -66,7 +66,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
    * @param actualLabels A Vec containing the actual labels (can be for fewer labels than what's in domain, since the predictions can be for a small subset of the data)
    * @return ModelMetrics object
    */
-  static public ModelMetricsBinomial make(Vec targetClassProbs, Vec actualLabels) {
+  static public ModelMetricsBinomial make(VecAry targetClassProbs, VecAry actualLabels) {
     return make(targetClassProbs,actualLabels,actualLabels.domain());
   }
 
@@ -77,7 +77,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
    * @param domain The two class labels (domain[0] is the non-target class, domain[1] is the target class, for which probabilities are given)
    * @return ModelMetrics object
    */
-  static public ModelMetricsBinomial make(Vec targetClassProbs, Vec actualLabels, String[] domain) {
+  static public ModelMetricsBinomial make(VecAry targetClassProbs, VecAry actualLabels, String[] domain) {
     VecAry _labels = actualLabels.toCategoricalVec();
     if (_labels == null || targetClassProbs == null)
       throw new IllegalArgumentException("Missing actualLabels or predictedProbs for binomial metrics!");

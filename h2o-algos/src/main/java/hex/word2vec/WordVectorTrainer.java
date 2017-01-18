@@ -2,10 +2,7 @@ package hex.word2vec;
 
 import water.H2O;
 import water.MRTask;
-import water.fvec.CStrChunk;
-import water.fvec.Vec;
-import water.fvec.Chunk;
-import water.fvec.Frame;
+import water.fvec.*;
 import water.nbhm.NonBlockingHashMap;
 import water.parser.BufferedString;
 import water.util.Log;
@@ -81,7 +78,7 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
 
 
   private void buildVocabHashMap() {
-    Vec word = _vocab.vec(0);
+    VecAry word = _vocab.vec(0);
     _vocabHM = new NonBlockingHashMap<>((int)_vocab.numRows());
     for(int i=0; i < _vocab.numRows(); i++) _vocabHM.put(word.atStr(new BufferedString(),i),i);
   }
@@ -95,7 +92,7 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
    * All words in sentence should be in vocab
    */
   private int getSentence(int[] sentence, CStrChunk cs) {
-    Vec count = _vocab.vec(1);
+    VecAry count = _vocab.vec(1);
     BufferedString tmp = new BufferedString();
     float ran;
     int wIdx, sentIdx = 0;

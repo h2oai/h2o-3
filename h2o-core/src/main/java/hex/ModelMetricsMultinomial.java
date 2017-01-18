@@ -105,7 +105,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
    * @param actualLabels A Vec containing the actual labels (can be for fewer labels than what's in domain, since the predictions can be for a small subset of the data)
    * @return ModelMetrics object
    */
-  static public ModelMetricsMultinomial make(Frame perClassProbs, Vec actualLabels) {
+  static public ModelMetricsMultinomial make(Frame perClassProbs, VecAry actualLabels) {
     String[] names = perClassProbs.names();
     String[] label = actualLabels.domain();
     String[] union = ArrayUtils.union(names, label, true);
@@ -121,7 +121,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
    * @param domain Ordered list of factor levels for which the probabilities are given (perClassProbs[i] are the per-observation probabilities for belonging to class domain[i])
    * @return ModelMetrics object
    */
-  static public ModelMetricsMultinomial make(Frame perClassProbs, Vec actualLabels, String[] domain) {
+  static public ModelMetricsMultinomial make(Frame perClassProbs, VecAry actualLabels, String[] domain) {
     VecAry _labels = actualLabels.toCategoricalVec();
     if (_labels == null || perClassProbs == null)
       throw new IllegalArgumentException("Missing actualLabels or predictedProbs for multinomial metrics!");

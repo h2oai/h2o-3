@@ -120,7 +120,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   protected MRTask(H2O.H2OCountedCompleter cmp) {super(cmp); }
   protected MRTask(byte prior) { super(prior); }
 
-  protected int[] outBlocks(){return new int[]{_output_types == null?0:1};}
+  protected int[] outBlocks(){return new int[]{_output_types == null?0:_output_types.length};}
 
   /**
    * This Frame instance is the handle for computation over a set of Vec instances. Recall
@@ -372,6 +372,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    *  blocking. */
   public final T doAll( Vec... vecs ) { return doAll(null,vecs); }
   public final T doAll( VecAry vecs ) { return doAll(null,vecs); }
+  public final T doAll( VecAry vecs , boolean runOnOneNode) { return doAll(null,new Frame(vecs),runOnOneNode); }
   public final T doAll(byte[] types, Vec... vecs ) { return doAll(types,new Frame(vecs), false); }
   public final T doAll(byte[] types, VecAry vecs ) { return doAll(types,new Frame(vecs), false); }
   public final T doAll(byte type, Vec... vecs ) { return doAll(new byte[]{type},new Frame(vecs), false); }
@@ -606,7 +607,6 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
         if(_profile!=null)
           _profile._userstart = System.currentTimeMillis();
         if(_output_types != null){
-
           final VectorGroup vg = v0.group();
           int [] oblocks = outBlocks();
           _appendables = new AppendableVec[oblocks.length];
@@ -618,7 +618,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
           NewChunkAry [] ncs = new NewChunkAry[_appendables.length];
           for(int i = 0; i < _appendables.length; ++i)
             ncs[i] = _appendables[i].chunkForChunkIdx(_lo);
-          if(ncs.length == 1) map(cs,ncs[1]);
+          if(ncs.length == 1) map(cs,ncs[0]);
           else map(cs,ncs);
           if(_profile!=null)
             _profile._closestart = System.currentTimeMillis();

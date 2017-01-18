@@ -65,7 +65,7 @@ public class FrameTestUtil extends Frame {
     }
   }
 
-  public static String[] collectS(Vec v) {
+  public static String[] collectS(VecAry v) {
     String[] res = new String[(int) v.length()];
     BufferedString tmpStr = new BufferedString();
       for (int i = 0; i < v.length(); i++)

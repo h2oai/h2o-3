@@ -699,7 +699,7 @@ public final class VecAry extends Iced<VecAry> {
     return fetchVec(vecId).naCnt(off);
   }
 
-  public double max() {return min(0);}
+  public double max() {return max(0);}
 
   public double max(int c) {
     if (_colFilter != null) c = _colFilter[c];
@@ -715,14 +715,14 @@ public final class VecAry extends Iced<VecAry> {
     int off = c - _blockOffset[vecId];
     return fetchVec(vecId).isConst(off);
   }
-  public boolean isBad() { return isConst(0);}
+  public boolean isBad() { return isBad(0);}
   public boolean isBad(int c) {
     if (_colFilter != null) c = _colFilter[c];
     int vecId = getBlockId(c);
     int off = c - _blockOffset[vecId];
     return fetchVec(vecId).isBad(off);
   }
-  public boolean isBinary() { return isConst(0);}
+  public boolean isBinary() { return isBinary(0);}
   public boolean isBinary(int c) {
     if (_colFilter != null) c = _colFilter[c];
     int vecId = getBlockId(c);
@@ -929,6 +929,9 @@ public final class VecAry extends Iced<VecAry> {
   public VecAry makeZero(){return makeZero(1);}
   public VecAry makeZero(int numcols) {
     return new VecAry(fetchVec(0).makeZeros(numcols));
+  }
+  public VecAry makeCons(double ... vals) {
+    return new VecAry(fetchVec(0).makeCons(vals));
   }
 
   public VecAry adaptTo( String[] domain ) {

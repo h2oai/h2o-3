@@ -462,7 +462,7 @@ public class Frame extends Lockable<Frame> {
   public Frame add( Frame fr ) { add(fr._names,fr.vecs(),fr.numCols()); return this; }
 
   /** Insert a named column as the first column */
-  public Frame prepend( String name, Vec vec ) {
+  public Frame prepend( String name, VecAry vec ) {
     if( find(name) != -1 ) throw new IllegalArgumentException("Duplicate name '"+name+"' in Frame");
     _vecs = new VecAry(vec).append(_vecs);
     final int len = _names != null ? _names.length : 0;
@@ -575,7 +575,7 @@ public class Frame extends Lockable<Frame> {
   public void restructure( String[] names, VecAry vecs) {
     // Make empty to dodge asserts, then "add()" them all which will check for
     // compatible Vecs & names.
-    _names = new String[0];
+    _names = names;
     _vecs = vecs;
   }
 

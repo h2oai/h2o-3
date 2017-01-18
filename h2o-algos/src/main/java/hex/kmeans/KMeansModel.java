@@ -80,7 +80,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
       String prefix = "cluster_";
       Frame adaptFrm = new Frame(adaptedFr);
       for(int c = 0; c < len; c++)
-        adaptFrm.add(prefix + Double.toString(c+1), adaptFrm.anyVec().makeZero());
+        adaptFrm.add(prefix + Double.toString(c+1), adaptFrm.vecs().makeZero());
       new MRTask() {
         @Override public void map( ChunkAry chks ) {
           if (isCancelled() || j != null && j.stop_requested()) return;

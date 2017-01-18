@@ -8,6 +8,7 @@ import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 
 /** Score the tree columns, and produce a confusion matrix and AUC
  */
@@ -15,7 +16,7 @@ public class Score extends MRTask<Score> {
   final SharedTree _bldr;
   final boolean _is_train;      // Scoring on pre-scored training data vs full-score data
   final boolean _oob;           // Computed on OOB
-  final Key<Vec> _kresp;        // Response vector key (might be either train or validation)
+  final VecAry _kresp;        // Response vector key (might be either train or validation)
   final ModelCategory _mcat;    // Model category (Binomial, Regression, etc)
   ModelMetrics.MetricBuilder _mb;
 //  GainsLift.GainsLiftBuilder _gainsLiftBuilder;
@@ -25,7 +26,7 @@ public class Score extends MRTask<Score> {
    *  It expect already adapted validation dataset which is adapted to a model
    *  and contains a response which is adapted to confusion matrix domain.
    */
-  public Score(SharedTree bldr, boolean is_train, boolean oob, Key<Vec> kresp, ModelCategory mcat, boolean computeGainsLift) { _bldr = bldr; _is_train = is_train; _oob = oob; _kresp = kresp; _mcat = mcat; _computeGainsLift = computeGainsLift; }
+  public Score(SharedTree bldr, boolean is_train, boolean oob, VecAry kresp, ModelCategory mcat, boolean computeGainsLift) { _bldr = bldr; _is_train = is_train; _oob = oob; _kresp = kresp; _mcat = mcat; _computeGainsLift = computeGainsLift; }
 
   @Override public void map( Chunk chks[] ) {
     Chunk ys = _bldr.chk_resp(chks);  // Response
@@ -36,7 +37,7 @@ public class Score extends MRTask<Score> {
     // Because of adaption - the validation training set has at least as many
     // classes as the training set (it may have more).  The Confusion Matrix
     // needs to be at least as big as the training set domain.
-    String[] domain = _kresp.get().domain();
+    String[] domain = _kresp.domain();
     // If this is a score-on-train AND DRF, then oobColIdx makes sense,
     // otherwise this field is unused.
     final int oobColIdx = _bldr.idx_oobt();

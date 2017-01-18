@@ -290,13 +290,13 @@ class ModelMetricsHandler extends Handler {
       if (pred.numCols()!=1) {
         throw new H2OIllegalArgumentException("predictions_frame", "make", "For domains with 2 class labels, the predictions_frame must have exactly one column containing the class-1 probabilities.");
       }
-      ModelMetricsBinomial mm = ModelMetricsBinomial.make(pred.anyVec(), act.anyVec(), s.domain);
+      ModelMetricsBinomial mm = ModelMetricsBinomial.make(pred.vecs(), act.vecs(), s.domain);
       s.model_metrics = new ModelMetricsBinomialV3().fillFromImpl(mm);
     } else if (s.domain.length>2){
       if (pred.numCols()!=s.domain.length) {
         throw new H2OIllegalArgumentException("predictions_frame", "make", "For domains with " + s.domain.length + " class labels, the predictions_frame must have exactly " + s.domain.length + " columns containing the class-probabilities.");
       }
-      ModelMetricsMultinomial mm = ModelMetricsMultinomial.make(pred, act.anyVec(), s.domain);
+      ModelMetricsMultinomial mm = ModelMetricsMultinomial.make(pred, act.vecs(), s.domain);
       s.model_metrics = new ModelMetricsMultinomialV3().fillFromImpl(mm);
     } else {
       throw H2O.unimpl();

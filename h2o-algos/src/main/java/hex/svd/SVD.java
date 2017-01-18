@@ -121,13 +121,13 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       return v;
     }
 
-    private double computeSigmaU(DataInfo dinfo, SVDModel model, int k, double[][] ivv_sum, Vec[] uvecs) {
+    private double computeSigmaU(DataInfo dinfo, SVDModel model, int k, double[][] ivv_sum, VecAry uvecs) {
       double[] ivv_vk = ArrayUtils.multArrVec(ivv_sum, model._output._v[k]);
       CalcSigmaU ctsk = new CalcSigmaU(_job._key, dinfo, ivv_vk).doAll(Vec.T_NUM, dinfo._adaptedFrame);
       model._output._d[k] = ctsk._sval;
       assert ctsk._nobs == model._output._nobs : "Processed " + ctsk._nobs + " rows but expected " + model._output._nobs;    // Check same number of skipped rows as Gram
       Frame tmp = ctsk.outputFrame();
-      uvecs[k] = tmp.vec(0);   // Save output column of U
+      uvecs.append(tmp.vec(0));   // Save output column of U
       tmp.unlock(_job);
       return model._output._d[k];
     }
@@ -203,7 +203,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         Frame ayqfrm = new Frame(dinfo._adaptedFrame);
         ayqfrm.add(ybig);
         for (int i = 0; i < _parms._nv; i++)
-          ayqfrm.add("qcol_" + i, ayqfrm.anyVec().makeZero());
+          ayqfrm.add("qcol_" + i, ayqfrm.vecs().makeZero());
         Frame ayfrm = ayqfrm.subframe(0, ncolA + _parms._nv);   // [A,Y]
         Frame yqfrm = ayqfrm.subframe(ncolA, ayqfrm.numCols());   // [Y,Q]
         Frame aqfrm = ayqfrm.subframe(0, ncolA);
@@ -261,9 +261,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
       try {
         // 0) Make input frame [A,Q], where A = read-only training data, Q = matrix from randomized subspace iteration
-        Vec[] vecs = new Vec[ncolA + _parms._nv];
-        for (int i = 0; i < ncolA; i++) vecs[i] = dinfo._adaptedFrame.vec(i);
-        for (int i = 0; i < _parms._nv; i++) vecs[ncolA + i] = qfrm.vec(i);
+        VecAry vecs = new VecAry();//[ncolA + _parms._nv];
+        vecs.append(dinfo._adaptedFrame.vecs().selectRange(0,ncolA));
+        for (int i = 0; i < _parms._nv; i++) vecs.append(qfrm.vecs().selectRange(0,_parms._nv));
         Frame aqfrm = new Frame(vecs);
 
         // 1) Form the matrix B' = A'Q = (Q'A)'
@@ -301,7 +301,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       SVDModel model = null;
       DataInfo dinfo = null;
       Frame u = null, qfrm = null;
-      Vec[] uvecs = null;
+      VecAry uvecs = new VecAry();
 
       try {
         init(true);   // Initialize parameters
@@ -400,7 +400,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           if (!_parms._only_v) {
             model._output._d = new double[_parms._nv];
             model._output._u_key = Key.make(u_name);
-            uvecs = new Vec[_parms._nv];
             computeSigmaU(dinfo, model, 0, ivv_sum, uvecs);  // Compute first singular value \sigma_1
           }
           model._output._iterations = 1;
@@ -437,7 +436,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           model._output._v = ArrayUtils.transpose(model._output._v);  // Transpose to get V (since vectors were stored as rows)
 
           if (!_parms._only_v && !_parms._keep_u) {          // Delete U vecs if computed, but user does not want it returned
-            for( Vec uvec : uvecs ) uvec.remove();
+            uvecs.remove();
             model._output._u_key = null;
           } else if (!_parms._only_v && _parms._keep_u) {   // Divide U cols by singular values and save to DKV
             u = new Frame(model._output._u_key, null, uvecs);
@@ -470,9 +469,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         List<Key<Vec>> keep = new ArrayList<>();
         if (model._output!=null) {
           Frame uFrm = DKV.getGet(model._output._u_key);
-          if (uFrm != null) for (Vec vec : uFrm.vecs()) keep.add(vec._key);
+          if (uFrm != null) for (Vec vec : uFrm.vecs().vecs()) keep.add(vec._key);
           Frame vFrm = DKV.getGet(model._output._v_key);
-          if (vFrm != null) for (Vec vec : vFrm.vecs()) keep.add(vec._key);
+          if (vFrm != null) for (Vec vec : vFrm.vecs().vecs()) keep.add(vec._key);
         }
         Scope.untrack(keep);
       }

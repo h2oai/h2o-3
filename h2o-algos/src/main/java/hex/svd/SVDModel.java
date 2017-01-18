@@ -138,7 +138,7 @@ public class SVDModel extends Model<SVDModel, SVDModel.SVDParameters, SVDModel.S
   @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, final Job j, boolean computeMetrics) {
     Frame adaptFrm = new Frame(adaptedFr);
     for(int i = 0; i < _parms._nv; i++)
-      adaptFrm.add("PC"+String.valueOf(i+1),adaptFrm.anyVec().makeZero());
+      adaptFrm.add("PC"+String.valueOf(i+1),adaptFrm.vecs().makeZero());
 
     new MRTask() {
       @Override public void map( ChunkAry chks ) {

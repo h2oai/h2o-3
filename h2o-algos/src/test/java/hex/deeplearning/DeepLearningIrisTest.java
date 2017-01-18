@@ -15,6 +15,7 @@ import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.MathUtils;
@@ -124,12 +125,12 @@ public class DeepLearningIrisTest extends TestUtil {
                               // of classes is not known unless we visit
                               // all the response data - force that now.
                               String respname = _train.lastVecName();
-                              Vec resp = _train.lastVec().toCategoricalVec();
+                              VecAry resp = _train.lastVec().toCategoricalVec();
                               _train.removeVecs(respname).remove();
                               _train.add(respname, resp);
                               DKV.put(_train);
 
-                              Vec vresp = _test.lastVec().toCategoricalVec();
+                              VecAry vresp = _test.lastVec().toCategoricalVec();
                               _test.removeVecs(respname).remove();
                               _test.add(respname, vresp);
                               DKV.put(_test);

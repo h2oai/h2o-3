@@ -5,6 +5,7 @@ import hex.ModelCategory;
 import hex.word2vec.Word2VecModel.*;
 import water.Scope;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.Log;
 
 public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecParameters,Word2VecModel.Word2VecOutput> {
@@ -26,7 +27,7 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
     super.init(expensive);
     if (_parms._train != null) { //Can be called without an existing frame, but when present check for a string col
       Boolean useableCol = false;
-      for (Vec v : _parms.train().vecs()) if (v.isString()) useableCol = true;
+      for (VecAry v : _parms.train().vecs().singleVecs()) if (v.isString()) useableCol = true;
       if (!useableCol) error("_train", "Training input frame lacks any string columns for Word2Vec to analyze.");
     }
     if (_parms._vecSize > Word2VecParameters.MAX_VEC_SIZE) error("_vecSize", "Requested vector size of "+_parms._vecSize+" in Word2Vec, exceeds limit of "+Word2VecParameters.MAX_VEC_SIZE+".");

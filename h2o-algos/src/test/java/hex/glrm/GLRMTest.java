@@ -11,6 +11,7 @@ import water.*;
 import water.fvec.Frame;
 import water.fvec.UploadFileVec;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.parser.ParseDataset;
 import water.rapids.Rapids;
 import water.rapids.Val;
@@ -105,7 +106,7 @@ public class GLRMTest extends TestUtil {
     train = DKV.getGet("train_parsed");
     try {
       Log.info("num chunks: ", train.anyVec().nChunks());
-      Vec[] acs_zcta_vec = {train.vec(0).toCategoricalVec()};
+      VecAry acs_zcta_vec = train.vec(0).toCategoricalVec();
       Frame acs_zcta_fr = new Frame(Key.<Frame>make("acs_zcta_fr"),new String[] {"name"}, acs_zcta_vec);
       DKV.put(acs_zcta_fr);
       train.removeVecs(0).removeVecs();

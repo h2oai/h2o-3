@@ -22,6 +22,7 @@ import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.test.util.GridTestUtils;
 import water.util.ArrayUtils;
 
@@ -39,7 +40,7 @@ public class GBMGridTest extends TestUtil {
   public void testCarsGrid() {
     Grid<GBMModel.GBMParameters> grid = null;
     Frame fr = null;
-    Vec old = null;
+    VecAry old = null;
     try {
       fr = parse_test_file("smalldata/junit/cars.csv");
       fr.removeVecs("name").remove(); // Remove unique id
@@ -127,7 +128,7 @@ public class GBMGridTest extends TestUtil {
   public void testDuplicatesCarsGrid() {
     Grid grid = null;
     Frame fr = null;
-    Vec old = null;
+    VecAry old = null;
     try {
       fr = parse_test_file("smalldata/junit/cars_20mpg.csv");
       fr.removeVecs("name").remove(); // Remove unique id
@@ -178,7 +179,7 @@ public class GBMGridTest extends TestUtil {
     Grid grid = null;
     GBMModel gbmRebuilt = null;
     Frame fr = null;
-    Vec old = null;
+    VecAry old = null;
     try {
       fr = parse_test_file("smalldata/junit/cars.csv");
       fr.removeVecs("name").remove();

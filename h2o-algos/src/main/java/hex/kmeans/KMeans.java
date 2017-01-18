@@ -74,7 +74,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       info("_init", "Initialization scheme is ignored when estimate_k is enabled - algorithm is deterministic.");
       if (expensive) {
         boolean numeric = false;
-        for (Vec v : _train.vecs()) {
+        for (VecAry v : _train.vecs().singleVecs()) {
           if (v.isNumeric()) {
             numeric = true;
             break;
@@ -272,7 +272,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         if (_parms._estimate_k)
           Log.info("Cutoff for relative improvement in within_cluster_sum_of_squares: " + rel_improvement_cutoff);
         VecAry vecs2 = new VecAry(vecs);
-        vecs2.append(vecs2.makeCon(-1));
+        vecs2.append(vecs2.makeCons(-1));
         for (int k = startK; k <= _parms._k; ++k) {
           Log.info("Running Lloyds iteration for " + k + " centroids.");
           model._output._iterations = 0;  // Loop ends only when iterations > max_iterations with strict inequality

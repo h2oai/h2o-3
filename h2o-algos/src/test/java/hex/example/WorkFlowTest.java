@@ -71,13 +71,13 @@ public class WorkFlowTest extends TestUtil {
       // 2- light data munging
 
       // Convert start time to: Day since the Epoch
-      Vec startime = data.vec("starttime");
+      VecAry startime = data.vec("starttime");
       data.add(new TimeSplit().doIt(startime));
 
       // Now do a monster Group-By.  Count bike starts per-station per-day
-      Vec days = data.vec("Days");
+      VecAry days = data.vec("Days");
       long start = System.currentTimeMillis();
-      Frame bph = new CountBikes(days).doAll(days,data.vec("start station name")).makeFrame(Key.make("bph.hex"));
+      Frame bph = new CountBikes(days).doAll(new VecAry(days).append(data.vec("start station name"))).makeFrame(Key.make("bph.hex"));
       System.out.println("Groupby took "+(System.currentTimeMillis()-start));
       System.out.println(bph);
       System.out.println(bph.toString(10000,20));
@@ -191,7 +191,7 @@ public class WorkFlowTest extends TestUtil {
 
   // Split out Days, Month, DayOfWeek and HourOfDay from Unix Epoch msec
   class TimeSplit extends MRTask<TimeSplit> {
-    public Frame doIt(Vec time) {
+    public Frame doIt(VecAry time) {
       return doAll(new byte[]{Vec.T_NUM}, time).outputFrame(new String[]{"Days"}, null);
     }
 
@@ -210,7 +210,7 @@ public class WorkFlowTest extends TestUtil {
     private int idx( long day, long sid ) {
       return (int)((day-_day0)*_num_sid+sid);
     }
-    CountBikes( Vec vday ) {
+    CountBikes( VecAry vday ) {
       _day0 = (int)vday.at8(0);
       _last_day = (int)vday.at8((int)vday.length()-1)+1;
     }

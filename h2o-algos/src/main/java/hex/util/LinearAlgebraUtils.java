@@ -348,7 +348,7 @@ public class LinearAlgebraUtils {
   public static int numColsExp(Frame fr, boolean useAllFactorLevels) {
     final int uAFL = useAllFactorLevels ? 0 : 1;
     int cols = 0;
-    for( Vec vec : fr.vecs() )
+    for( VecAry vec : fr.vecs().singleVecs() )
       cols += (vec.isCategorical() && vec.domain() != null) ? vec.domain().length - uAFL : 1;
     return cols;
   }
@@ -387,8 +387,8 @@ public class LinearAlgebraUtils {
     }
   }
 
-  public static Vec toEigen(Vec src) {
-    Frame train = new Frame(Key.<Frame>make(), new String[]{"enum"}, new Vec[]{src});
+  public static VecAry toEigen(VecAry src) {
+    Frame train = new Frame(Key.<Frame>make(), new String[]{"enum"}, src);
     DataInfo dinfo = new DataInfo(train, null, 0, true /*_use_all_factor_levels*/, DataInfo.TransformType.NONE,
             DataInfo.TransformType.NONE, /* skipMissing */ false, /* imputeMissing */ true,
             /* missingBucket */ false, /* weights */ null, /* offset */ null, /* fold */ null, /* intercept */ false);
@@ -400,10 +400,10 @@ public class LinearAlgebraUtils {
     for (int i = 0; i < rounded.length; ++i)
       rounded[i] = (float) gtsk._gram._diag[i];
     dinfo.remove();
-    Vec v = new ProjectOntoEigenVector(multiple(rounded, (int) gtsk._nobs, 1)).doAll(1, (byte) 3, train).outputFrame().anyVec();
+    VecAry v = new ProjectOntoEigenVector(multiple(rounded, (int) gtsk._nobs, 1)).doAll(1, (byte) 3, train).outputFrame().vecs();
     return v;
   }
   public static ToEigenVec toEigen = new ToEigenVec() {
-    @Override public Vec toEigenVec(Vec src) { return toEigen(src); }
+    @Override public VecAry toEigenVec(VecAry src) { return toEigen(src); }
   };
 }

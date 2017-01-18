@@ -15,6 +15,7 @@ import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.rapids.ast.prims.advmath.AstKFold;
 import water.util.ArrayUtils;
 
@@ -38,7 +39,7 @@ public class XValPredictionsCheck extends TestUtil {
     try {
       // Load data, hack frames
       tfr = parse_test_file("smalldata/iris/iris_wheader.csv");
-      Frame foldId = new Frame(new String[]{"foldId"}, new Vec[]{AstKFold.kfoldColumn(tfr.vec("class").makeZero(), nfolds, 543216789)});
+      Frame foldId = new Frame(new String[]{"foldId"}, new VecAry(AstKFold.kfoldColumn(tfr.vec("class").makeZero(), nfolds, 543216789)));
       tfr.add(foldId);
       DKV.put(tfr);
 
