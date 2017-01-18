@@ -17,8 +17,10 @@ import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.util.*;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
@@ -2942,7 +2944,7 @@ public class GBMTest extends TestUtil {
     }
   }
 
-  @Test public void lowCardinality() throws FileNotFoundException {
+  @Test public void lowCardinality() throws IOException {
     int[] vals = new int[]{2,10,20,25,26,27,100};
     double[] maes = new double[vals.length];
     int i=0;
@@ -2982,6 +2984,7 @@ public class GBMTest extends TestUtil {
         if( model != null ) model.delete();
         if( train != null ) train.remove();
         if( train_preds  != null ) train_preds .remove();
+        new File("model.zip").delete();
         Scope.exit();
       }
     }
