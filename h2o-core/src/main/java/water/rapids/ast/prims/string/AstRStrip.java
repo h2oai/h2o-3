@@ -41,27 +41,27 @@ public class AstRStrip extends AstPrimitive {
     String set = asts[2].exec(env).getStr();
 
     // Type check
-    for (Vec v : fr.vecs())
+    for (VecAry v : fr.vecs().singleVecs())
       if (!(v.isCategorical() || v.isString()))
         throw new IllegalArgumentException("trim() requires a string or categorical column. "
             + "Received " + fr.anyVec().get_type_str()
             + ". Please convert column to a string or categorical first.");
 
     // Transform each vec
-    Vec nvs[] = new Vec[fr.numCols()];
+    VecAry nvs = new VecAry();
     int i = 0;
-    for (Vec v : fr.vecs()) {
+    for (VecAry v : fr.vecs().singleVecs()) {
       if (v.isCategorical())
-        nvs[i] = rstripCategoricalCol(v, set);
+        nvs.append(rstripCategoricalCol(v, set));
       else
-        nvs[i] = rstripStringCol(v, set);
+        nvs.append(rstripStringCol(v, set));
       i++;
     }
 
     return new ValFrame(new Frame(nvs));
   }
 
-  private Vec rstripCategoricalCol(Vec vec, String set) {
+  private VecAry rstripCategoricalCol(VecAry vec, String set) {
     String[] doms = vec.domain().clone();
 
     HashMap<String, ArrayList<Integer>> strippedToOldDomainIndices = new HashMap<>();
@@ -82,11 +82,10 @@ public class AstRStrip extends AstPrimitive {
     //Check for duplicated domains
     if (strippedToOldDomainIndices.size() < doms.length)
       return VecUtils.DomainDedupe.domainDeduper(vec, strippedToOldDomainIndices);
-
     return vec.makeCopy(new String[][]{doms});
   }
 
-  private Vec rstripStringCol(Vec vec, String set) {
+  private VecAry rstripStringCol(VecAry vec, String set) {
     final String charSet = set;
     return new MRTask() {
       @Override
@@ -106,6 +105,6 @@ public class AstRStrip extends AstPrimitive {
           }
         }
       }
-    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().vecs();
   }
 }

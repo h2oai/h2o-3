@@ -34,7 +34,7 @@ public class SparseTest extends TestUtil {
   private ChunkAry setAndClose(double val, int id, ChunkAry c, Futures fs){return setAndClose(new double[]{val},new int[]{id},c,fs);}
   private ChunkAry setAndClose(double [] vals, int [] ids, ChunkAry c, Futures fs) {
     final int cidx = c.cidx();
-    final Vec vec = c._vec;
+    final VecAry vec = c._vec;
     for(int i = 0; i < vals.length; ++i)
       c.set(ids[i], vals[i]);
     c.close(fs);
@@ -92,7 +92,7 @@ public class SparseTest extends TestUtil {
       }
       fs.blockForPending();
     } finally {
-      c0._vec.remove();
+      c0._vec.removeVecs();
     }
   }
 

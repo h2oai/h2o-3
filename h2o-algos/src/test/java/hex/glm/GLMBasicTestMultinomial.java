@@ -1,22 +1,16 @@
 package hex.glm;
 
 import hex.FrameSplitter;
-import hex.ModelMetricsBinomialGLM;
 import hex.ModelMetricsBinomialGLM.ModelMetricsMultinomialGLM;
-import hex.ModelMetricsMultinomial;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Solver;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
 
 import water.fvec.*;
-import water.util.FrameUtils;
-
-import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -33,7 +27,7 @@ public class GLMBasicTestMultinomial extends TestUtil {
   public static void setup() {
     stall_till_cloudsize(1);
     _covtype = parse_test_file("smalldata/covtype/covtype.20k.data");
-    _covtype.replace(_covtype.numCols()-1,_covtype.lastVec().toCategoricalVec()).remove();
+    _covtype.replace(_covtype.numCols()-1,_covtype.lastVec().toCategoricalVec()).removeVecs();
     Key[] keys = new Key[]{Key.make("train"),Key.make("test")};
     H2O.submitTask(new FrameSplitter(_covtype, new double[]{.8},keys,null)).join();
     _train = DKV.getGet(keys[0]);

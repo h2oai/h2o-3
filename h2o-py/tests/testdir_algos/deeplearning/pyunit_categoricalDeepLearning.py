@@ -16,7 +16,7 @@ def deeplearning_multi():
   prostate[3] = prostate[3].asfactor()  #RACE -> Factor
   prostate[4] = prostate[4].asfactor()  #DPROS -> Factor
   prostate[5] = prostate[5].asfactor()  #DCAPS -> Factor
-  prostate = prostate.drop('ID')        #remove ID
+  prostate = prostate.drop('ID')        #removeVecs ID
   prostate.describe()
 
   hh = H2ODeepLearningEstimator(loss="CrossEntropy",

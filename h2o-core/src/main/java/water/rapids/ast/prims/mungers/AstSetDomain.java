@@ -36,7 +36,7 @@ public class AstSetDomain extends AstPrimitive {
     String[] _domains = ((AstStrList) asts[2])._strs;
     if (f.numCols() != 1)
       throw new IllegalArgumentException("Must be a single column. Got: " + f.numCols() + " columns.");
-    VecAry v = f.anyVec();
+    VecAry v = f.vecs();
     if (!v.isCategorical())
       throw new IllegalArgumentException("Vector must be a factor column. Got: " + v.get_type_str());
     if (_domains != null && _domains.length != v.domain().length) {

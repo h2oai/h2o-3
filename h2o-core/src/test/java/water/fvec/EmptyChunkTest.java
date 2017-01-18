@@ -54,7 +54,7 @@ public class EmptyChunkTest extends TestUtil {
     Frame f = createFrame(fname, chunkLayout);
 
     try {
-      Vec vec = f.vec(0);
+      VecAry vec = f.vec(0);
       long[] chunkLens = chunkLayout;
       assertChunkInvariants(vec, numberOfChunks, chunkLens);
     } finally {
@@ -63,7 +63,7 @@ public class EmptyChunkTest extends TestUtil {
     }
   }
 
-  private void assertChunkInvariants(Vec vec, int numOfChunks, long[] chunkLens) {
+  private void assertChunkInvariants(VecAry vec, int numOfChunks, long[] chunkLens) {
     assert numOfChunks == chunkLens.length : "ups wrong test setup";
     long[] espc = new long[numOfChunks+1];
     for (int i=0; i<numOfChunks; i++) {

@@ -11,7 +11,6 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
-import water.fvec.Chunk;
 import water.fvec.ChunkAry;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -38,7 +37,7 @@ public class DeepLearningGradientCheck extends TestUtil {
               "Merit", "Class"
       }) {
         Vec f = tfr.vec(s).toCategoricalVec();
-        tfr.remove(s).remove();
+        tfr.removeVecs(s).remove();
         tfr.add(s, f);
       }
       DKV.put(tfr);
@@ -50,7 +49,7 @@ public class DeepLearningGradientCheck extends TestUtil {
         }
       }.doAll(tfr.vecs(new String[]{"Class","Binary"}));
       Vec cv = tfr.vec("Binary").toCategoricalVec();
-      tfr.remove("Binary").remove();
+      tfr.removeVecs("Binary").remove();
       tfr.add("Binary", cv);
       DKV.put(tfr);
 

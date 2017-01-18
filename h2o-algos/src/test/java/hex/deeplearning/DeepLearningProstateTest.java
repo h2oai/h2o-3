@@ -1,7 +1,6 @@
 package hex.deeplearning;
 
 import hex.ConfusionMatrix;
-import hex.Distribution;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.ClassSamplingMethod;
 import hex.genmodel.utils.DistributionFamily;
@@ -57,12 +56,12 @@ public class DeepLearningProstateTest extends TestUtil {
             String respname = frame.name(resp);
             if (classification && !frame.vec(resp).isCategorical()) {
               Vec r = frame.vec(resp).toCategoricalVec();
-              frame.remove(resp).remove();
+              frame.removeVecs(resp).removeVecs();
               frame.add(respname, r);
               DKV.put(frame);
 
               Vec vr = vframe.vec(respname).toCategoricalVec();
-              vframe.remove(respname).remove();
+              vframe.removeVecs(respname).remove();
               vframe.add(respname, vr);
               DKV.put(vframe);
             }

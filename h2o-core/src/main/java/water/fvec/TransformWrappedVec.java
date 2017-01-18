@@ -32,18 +32,17 @@ import water.rapids.ast.params.AstNum;
  * @author spencer
  */
 public class TransformWrappedVec extends WrappedVec {
-  private transient VecAry _masterVecs;
+
   private final AstRoot _fun;
 
   public TransformWrappedVec(Key key, int rowLayout, AstRoot fun, VecAry masterVecs) {
-    super(key, rowLayout, null);
+    super(key, rowLayout, masterVecs);
     _fun=fun;
-    _masterVec = masterVecs;
     DKV.put(this);
   }
 
   public TransformWrappedVec(VecAry v, AstRoot fun) {
-    this(v.group().addVec(), v._rowLayout, fun, v);
+    this(v.group().addVec(), v.rowLayout(), fun, v);
   }
 
   public Vec makeVec() {
@@ -58,14 +57,14 @@ public class TransformWrappedVec extends WrappedVec {
   }
 
   @Override public Vec doCopy() {
-    Vec v = new TransformWrappedVec(group().addVec(), _rowLayout, _fun, _masterVecs);
+    Vec v = new TransformWrappedVec(group().addVec(), _rowLayout, _fun, _masterVec);
     v.setDomain(0,domain()==null?null:domain().clone());
     return v;
   }
 
   @Override
   public DBlock chunkIdx(int cidx) {
-    return new TransformWrappedChunk(_fun, this, _masterVecs.chunkForChunkIdx(cidx));
+    return new TransformWrappedChunk(_fun, this, _masterVec.chunkForChunkIdx(cidx));
   }
 
   public static class TransformWrappedChunk extends Chunk {

@@ -65,7 +65,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
       int numCols = _modelBuilderTrain.numCols();
       String responseVecName = _modelBuilderTrain.names()[numCols-1];
-      Vec responseVec = _modelBuilderTrain.remove(numCols-1);
+      Vec responseVec = _modelBuilderTrain.removeVecs(numCols-1);
 
       for (int i = 0; i < offset_ncol; i++) {
         Vec offsetVec = _parms.offset_columns[i];
@@ -84,7 +84,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     private void applyTrainingFrameSideEffects() {
       int numCols = _modelBuilderTrain.numCols();
       String responseVecName = _modelBuilderTrain.names()[numCols-1];
-      Vec responseVec = _modelBuilderTrain.remove(numCols-1);
+      Vec responseVec = _modelBuilderTrain.removeVecs(numCols-1);
 
       final boolean use_weights_column = (_parms.weights_column != null);
       final boolean use_start_column   = (_parms.start_column != null);

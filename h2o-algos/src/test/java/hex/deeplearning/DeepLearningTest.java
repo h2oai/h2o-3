@@ -76,7 +76,7 @@ public class DeepLearningTest extends TestUtil {
         new PrepData() {
           @Override
           int prep(Frame fr) {
-            fr.remove("name").remove();
+            fr.removeVecs("name").remove();
             return fr.find("cylinders");
           }
         },
@@ -96,7 +96,7 @@ public class DeepLearningTest extends TestUtil {
         new PrepData() {
           @Override
           int prep(Frame fr) {
-            fr.remove("name").remove();
+            fr.removeVecs("name").remove();
             return fr.find("cylinders");
           }
         },
@@ -118,7 +118,7 @@ public class DeepLearningTest extends TestUtil {
             @Override
             int prep(Frame fr) {
               for (int i = 0; i < 7; i++) {
-                Vec v = fr.remove(3);
+                Vec v = fr.removeVecs(3);
                 if (v!=null) v.remove();
               }
               return 3;
@@ -156,7 +156,7 @@ public class DeepLearningTest extends TestUtil {
         new PrepData() {
           @Override
           int prep(Frame fr) {
-            fr.remove("ID").remove();
+            fr.removeVecs("ID").remove();
             return fr.find("CAPSULE");
           }
         },
@@ -173,7 +173,7 @@ public class DeepLearningTest extends TestUtil {
         new PrepData() {
           @Override
           int prep(Frame fr) {
-            fr.remove("ID").remove();
+            fr.removeVecs("ID").remove();
             return fr.find("CAPSULE");
           }
         },
@@ -191,7 +191,7 @@ public class DeepLearningTest extends TestUtil {
         new PrepData() {
           @Override
           int prep(Frame fr) {
-            fr.remove("ID").remove();
+            fr.removeVecs("ID").remove();
             return fr.find("CAPSULE");
           }
         },
@@ -208,7 +208,7 @@ public class DeepLearningTest extends TestUtil {
         new PrepData() {
           @Override
           int prep(Frame fr) {
-            fr.remove("ID").remove();
+            fr.removeVecs("ID").remove();
             return fr.find("CAPSULE");
           }
         },
@@ -225,7 +225,7 @@ public class DeepLearningTest extends TestUtil {
         new PrepData() {
           @Override
           int prep(Frame fr) {
-            fr.remove("ID").remove();
+            fr.removeVecs("ID").remove();
             return fr.find("CAPSULE");
           }
         },
@@ -242,7 +242,7 @@ public class DeepLearningTest extends TestUtil {
             new PrepData() {
               @Override
               int prep(Frame fr) {
-                fr.remove("ID").remove();
+                fr.removeVecs("ID").remove();
                 return fr.find("CAPSULE");
               }
             },
@@ -259,7 +259,7 @@ public class DeepLearningTest extends TestUtil {
             new PrepData() {
               @Override
               int prep(Frame fr) {
-                fr.remove("ID").remove();
+                fr.removeVecs("ID").remove();
                 return fr.find("AGE");
               }
             },
@@ -275,7 +275,7 @@ public class DeepLearningTest extends TestUtil {
         new PrepData() {
           @Override
           int prep(Frame fr) {
-            fr.remove("ID").remove();
+            fr.removeVecs("ID").remove();
             return fr.find("AGE");
           }
         },
@@ -291,7 +291,7 @@ public class DeepLearningTest extends TestUtil {
         new PrepData() {
           @Override
           int prep(Frame fr) {
-            fr.remove("ID").remove();
+            fr.removeVecs("ID").remove();
             return fr.find("AGE");
           }
         },
@@ -307,7 +307,7 @@ public class DeepLearningTest extends TestUtil {
         new PrepData() {
           @Override
           int prep(Frame fr) {
-            fr.remove("ID").remove();
+            fr.removeVecs("ID").remove();
             return fr.find("AGE");
           }
         },
@@ -323,7 +323,7 @@ public class DeepLearningTest extends TestUtil {
             new PrepData() {
               @Override
               int prep(Frame fr) {
-                fr.remove("ID").remove();
+                fr.removeVecs("ID").remove();
                 return fr.find("AGE");
               }
             },
@@ -374,7 +374,7 @@ public class DeepLearningTest extends TestUtil {
                         "CancellationCode", "CarrierDelay", "WeatherDelay",
                         "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed", "TailNum"
                 }) {
-                  fr.remove(s).remove();
+                  fr.removeVecs(s).remove();
                 }
                 return fr.find("IsDepDelayed");
               }
@@ -393,7 +393,7 @@ public class DeepLearningTest extends TestUtil {
         new PrepData() {
           @Override
           int prep(Frame fr) {
-            Vec resp = fr.remove("C2");
+            Vec resp = fr.removeVecs("C2");
             fr.add("C2", resp.toCategoricalVec());
             resp.remove();
             return fr.find("C3");
@@ -417,10 +417,10 @@ public class DeepLearningTest extends TestUtil {
     Vec resp = fr.vecs(idx);
     Vec ret = null;
     if (classification) {
-      ret = fr.remove(idx);
+      ret = fr.removeVecs(idx);
       fr.add(rname,resp.toCategoricalVec());
     } else {
-      fr.remove(idx);
+      fr.removeVecs(idx);
       fr.add(rname,resp);
     }
     return ret;
@@ -516,7 +516,7 @@ public class DeepLearningTest extends TestUtil {
       for (int i = 0; i < N; ++i) {
         frTrain = parse_test_file("./smalldata/covtype/covtype.20k.data");
         Vec resp = frTrain.lastVec().toCategoricalVec();
-        frTrain.remove(frTrain.vecs()._numCols - 1).remove();
+        frTrain.removeVecs(frTrain.vecs()._numCols - 1).removeVecs();
         frTrain.add("Response", resp);
         DKV.put(frTrain);
         dl._train = frTrain._key;
@@ -576,12 +576,12 @@ public class DeepLearningTest extends TestUtil {
     if (covtype) {
       frTrain = parse_test_file("./smalldata/covtype/covtype.20k.data");
       Vec resp = frTrain.lastVec().toCategoricalVec();
-      frTrain.remove(frTrain.vecs()._numCols - 1).remove();
+      frTrain.removeVecs(frTrain.vecs()._numCols - 1).removeVecs();
       frTrain.add("Response", resp);
     } else {
       frTrain = parse_test_file("./bigdata/server/HIGGS.csv");
       Vec resp = frTrain.vecs(0).toCategoricalVec();
-      frTrain.remove(0).remove();
+      frTrain.removeVecs(0).removeVecs();
       frTrain.prepend("Response", resp);
     }
     DKV.put(frTrain);
@@ -840,8 +840,8 @@ public class DeepLearningTest extends TestUtil {
 //      DKV.put(third1kSVM);
 
       first1kCSV = parse_test_file("/users/arno/first1k.csv");
-//      first1kCSV.remove(first1kCSV.find("C1")).remove(); //remove id
-      Vec response = first1kCSV.remove(first1kCSV.find("C2")); //remove response, but keep it around outside the frame
+//      first1kCSV.removeVecs(first1kCSV.find("C1")).removeVecs(); //removeVecs id
+      Vec response = first1kCSV.removeVecs(first1kCSV.find("C2")); //removeVecs response, but keep it around outside the frame
       Vec responseFactor = response.toCategoricalVec(); //turn response into a categorical
       response.remove();
 //      first1kCSV.prepend("C2", first1kCSV.anyVec().makeCon(0)); //add a dummy column (will be the first predictor)
@@ -849,19 +849,19 @@ public class DeepLearningTest extends TestUtil {
       DKV.put(first1kCSV);
 
 //      second1kCSV = parse_test_file("/users/arno/second1k.csv");
-//      second1kCSV.remove(second1kCSV.find("C1")).remove(); //remove id
-//      response = second1kCSV.remove(second1kCSV.find("C2")); //remove response, but keep it around outside the frame
+//      second1kCSV.removeVecs(second1kCSV.find("C1")).removeVecs(); //removeVecs id
+//      response = second1kCSV.removeVecs(second1kCSV.find("C2")); //removeVecs response, but keep it around outside the frame
 //      responseFactor = response.toCategoricalVec(); //turn response into a categorical
-//      response.remove();
+//      response.removeVecs();
 //      second1kCSV.prepend("C2", second1kCSV.anyVec().makeCon(0)); //add a dummy column (will be the first predictor)
 //      second1kCSV.prepend("C1", responseFactor); //add back response as first column
 //      DKV.put(second1kCSV);
 //
 //      third1kCSV = parse_test_file("/users/arno/third1k.csv");
-//      third1kCSV.remove(third1kCSV.find("C1")).remove(); //remove id
-//      response = third1kCSV.remove(third1kCSV.find("C2")); //remove response, but keep it around outside the frame
+//      third1kCSV.removeVecs(third1kCSV.find("C1")).removeVecs(); //removeVecs id
+//      response = third1kCSV.removeVecs(third1kCSV.find("C2")); //removeVecs response, but keep it around outside the frame
 //      responseFactor = response.toCategoricalVec(); //turn response into a categorical
-//      response.remove();
+//      response.removeVecs();
 //      third1kCSV.prepend("C2", third1kCSV.anyVec().makeCon(0)); //add a dummy column (will be the first predictor)
 //      third1kCSV.prepend("C1", responseFactor); //add back response as first column
 //      DKV.put(third1kCSV);
@@ -904,17 +904,17 @@ public class DeepLearningTest extends TestUtil {
 //        Log.info("POJO SVM Train Check");
       Frame pred;
 //        assertTrue(model.testJavaScoring(first1kSVM, pred = model.score(first1kSVM), 1e-5));
-//        pred.remove();
+//        pred.removeVecs();
 //
 //        Log.info("POJO SVM Validation Check");
-//        DKV.remove(model._key); model._key = Key.make(); DKV.put(model);
+//        DKV.removeVecs(model._key); model._key = Key.make(); DKV.put(model);
 //        assertTrue(model.testJavaScoring(second1kSVM,  pred = model.score(second1kSVM), 1e-5));
-//        pred.remove();
+//        pred.removeVecs();
 //
 //        Log.info("POJO SVM Test Check");
-//        DKV.remove(model._key); model._key = Key.make(); DKV.put(model);
+//        DKV.removeVecs(model._key); model._key = Key.make(); DKV.put(model);
 //        assertTrue(model.testJavaScoring(third1kSVM,  pred = model.score(third1kSVM), 1e-5));
-//        pred.remove();
+//        pred.removeVecs();
 
       Log.info("POJO CSV Train Check");
       DKV.remove(model._key); model._key = Key.make(); DKV.put(model);
@@ -922,24 +922,24 @@ public class DeepLearningTest extends TestUtil {
       pred.remove();
 
 //        Log.info("POJO CSV Validation Check");
-//        DKV.remove(model._key); model._key = Key.make(); DKV.put(model);
+//        DKV.removeVecs(model._key); model._key = Key.make(); DKV.put(model);
 //        assertTrue(model.testJavaScoring(second1kCSV,  pred = model.score(second1kCSV), 1e-5));
-//        pred.remove();
+//        pred.removeVecs();
 //
 //        Log.info("POJO CSV Test Check");
-//        DKV.remove(model._key); model._key = Key.make(); DKV.put(model);
+//        DKV.removeVecs(model._key); model._key = Key.make(); DKV.put(model);
 //        assertTrue(model.testJavaScoring(third1kCSV, pred = model.score(third1kSVM), 1e-5));
-//        pred.remove();
+//        pred.removeVecs();
 //
 //        Log.info("POJO SVM vs H2O CSV Test Check");
-//        DKV.remove(model._key); model._key = Key.make(); DKV.put(model);
+//        DKV.removeVecs(model._key); model._key = Key.make(); DKV.put(model);
 //        assertTrue(model.testJavaScoring(third1kSVM, pred = model.score(third1kCSV), 1e-5));
-//        pred.remove();
+//        pred.removeVecs();
 //
 //        Log.info("POJO CSV vs H2O SVM Test Check");
-//        DKV.remove(model._key); model._key = Key.make(); DKV.put(model);
+//        DKV.removeVecs(model._key); model._key = Key.make(); DKV.put(model);
 //        assertTrue(model.testJavaScoring(third1kSVM, pred = model.score(third1kCSV), 1e-5));
-//        pred.remove();
+//        pred.removeVecs();
       assertTrue(job.isStopped()); //HEX-1817
     } finally {
       if (first1kSVM != null) first1kSVM.remove();
@@ -1115,7 +1115,7 @@ public class DeepLearningTest extends TestUtil {
             "Class"
         }) {
           Vec resp = tfr.vec(s).toCategoricalVec();
-          tfr.remove(s).remove();
+          tfr.removeVecs(s).remove();
           tfr.add(s, resp);
           DKV.put(tfr);
         }
@@ -1168,7 +1168,7 @@ public class DeepLearningTest extends TestUtil {
               "Class"
       }) {
         Vec resp = tfr.vec(s).toCategoricalVec();
-        tfr.remove(s).remove();
+        tfr.removeVecs(s).remove();
         tfr.add(s, resp);
         DKV.put(tfr);
       }
@@ -1408,7 +1408,7 @@ public class DeepLearningTest extends TestUtil {
               "CAPSULE"
       }) {
         Vec resp = tfr.vec(s).toCategoricalVec();
-        tfr.remove(s).remove();
+        tfr.removeVecs(s).remove();
         tfr.add(s, resp);
         DKV.put(tfr);
       }
@@ -1450,7 +1450,7 @@ public class DeepLearningTest extends TestUtil {
               "CAPSULE"
       }) {
         Vec resp = tfr.vec(s).toCategoricalVec();
-        tfr.remove(s).remove();
+        tfr.removeVecs(s).remove();
         tfr.add(s, resp);
         DKV.put(tfr);
       }
@@ -1596,7 +1596,7 @@ public class DeepLearningTest extends TestUtil {
 
     try {
       tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
-      Vec r = tfr.remove("chas");
+      Vec r = tfr.removeVecs("chas");
       tfr.add("chas",r.toCategoricalVec());
       DKV.put(tfr);
       r.remove();
@@ -1932,7 +1932,7 @@ public class DeepLearningTest extends TestUtil {
 
     try {
       tfr = parse_test_file("./smalldata/junit/titanic_alt.csv");
-      Vec v = tfr.remove("survived");
+      Vec v = tfr.removeVecs("survived");
       tfr.add("survived", v.toCategoricalVec());
       v.remove();
       DKV.put(tfr);
@@ -1969,7 +1969,7 @@ public class DeepLearningTest extends TestUtil {
       String response = "survived";
       tfr = parse_test_file("./smalldata/junit/titanic_alt.csv");
       if (tfr.vec(response).isBinary()) {
-        Vec v = tfr.remove(response);
+        Vec v = tfr.removeVecs(response);
         tfr.add(response, v.toCategoricalVec());
         v.remove();
       }
@@ -2009,12 +2009,12 @@ public class DeepLearningTest extends TestUtil {
       tfr = parse_test_file("./smalldata/junit/titanic_alt.csv");
       vfr = parse_test_file("./smalldata/junit/titanic_alt.csv");
       if (tfr.vec(response).isBinary()) {
-        Vec v = tfr.remove(response);
+        Vec v = tfr.removeVecs(response);
         tfr.add(response, v.toCategoricalVec());
         v.remove();
       }
       if (vfr.vec(response).isBinary()) {
-        Vec v = vfr.remove(response);
+        Vec v = vfr.removeVecs(response);
         vfr.add(response, v.toCategoricalVec());
         v.remove();
       }
@@ -2052,7 +2052,7 @@ public class DeepLearningTest extends TestUtil {
       String response = "survived";
       tfr = parse_test_file("./smalldata/junit/titanic_alt.csv");
       if (tfr.vec(response).isBinary()) {
-        Vec v = tfr.remove(response);
+        Vec v = tfr.removeVecs(response);
         tfr.add(response, v.toCategoricalVec());
         v.remove();
       }
@@ -2091,7 +2091,7 @@ public class DeepLearningTest extends TestUtil {
       String response = "age";
       tfr = parse_test_file("./smalldata/junit/titanic_alt.csv");
       if (tfr.vec(response).isBinary()) {
-        Vec v = tfr.remove(response);
+        Vec v = tfr.removeVecs(response);
         tfr.add(response, v.toCategoricalVec());
         v.remove();
       }
@@ -2154,7 +2154,7 @@ public class DeepLearningTest extends TestUtil {
         small = fs.getResult()[0];
         large = fs.getResult()[1];
         preds = model.score(small);
-        preds.remove(0); //remove label, keep only probs
+        preds.removeVecs(0); //removeVecs label, keep only probs
         Vec labels = small.vec("C785"); //actual
         String[] fullDomain = train.vec("C785").domain(); //actual
 
@@ -2184,7 +2184,7 @@ public class DeepLearningTest extends TestUtil {
     Scope.enter();
     try {
       train = parse_test_file("./smalldata/junit/titanic_alt.csv");
-      Vec v = train.remove("pclass");
+      Vec v = train.removeVecs("pclass");
       train.add("pclass", v.toCategoricalVec());
       v.remove();
       DKV.put(train);
@@ -2201,7 +2201,7 @@ public class DeepLearningTest extends TestUtil {
       model = new DeepLearning(p).trainModel().get();
 
       preds = model.score(train);
-      preds.remove(0); //remove label, keep only probs
+      preds.removeVecs(0); //removeVecs label, keep only probs
       Vec labels = train.vec("pclass"); //actual
       String[] fullDomain = train.vec("pclass").domain(); //actual
 
@@ -2224,7 +2224,7 @@ public class DeepLearningTest extends TestUtil {
     Scope.enter();
     try {
       train = parse_test_file("./smalldata/junit/titanic_alt.csv");
-      Vec v = train.remove("survived");
+      Vec v = train.removeVecs("survived");
       train.add("survived", v.toCategoricalVec());
       v.remove();
       DKV.put(train);

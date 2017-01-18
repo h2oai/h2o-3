@@ -20,11 +20,11 @@ public class CategoricalTest extends TestUtil{
 
   @Test public void testCancelSparseCategoricals() {
     Frame frame = null;
-    Vec stringVec = null;
-    Vec catVec = null;
+    VecAry stringVec = null;
+    VecAry catVec = null;
     try {
       frame = parse_test_file("smalldata/junit/iris.csv");
-      Vec vec = frame.lastVec();
+      VecAry vec = frame.lastVec();
       assert vec.naCnt() == 0;
       stringVec = vec.toStringVec();
       assert stringVec.naCnt() == 0;

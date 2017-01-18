@@ -11,6 +11,8 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
+import water.fvec.VecAry;
+
 import static water.parser.ParserTest.makeByteVec;
 
 import java.util.Arrays;
@@ -32,7 +34,7 @@ public class ParserTestARFF extends TestUtil {
       Assert.assertEquals(len, fr.numRows());
       Assert.assertEquals(exp.length, fr.numCols());
       for (int j = 0; j < fr.numCols(); ++j) {
-        Vec vec = fr.vecs().select(j);
+        VecAry vec = fr.vecs().select(j);
         if (exp[j] == Vec.T_TIME) { //Time
           Assert.assertTrue(vec.isTime());
 //          Assert.assertFalse(vec.isInt()); //FIXME time is encoded as integer, but should isInt() be true?

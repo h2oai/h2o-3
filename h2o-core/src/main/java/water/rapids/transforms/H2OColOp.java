@@ -47,11 +47,11 @@ public class H2OColOp extends Transform<H2OColOp> {
         if(_newNames==null) _newCol[i] = f.uniquify(i > 0 ? _newCol[i - 1] : _oldCol);
         f.add(_newCol[i], fr.vec(i));
       }
-      if( _inplace ) f.remove(f.find(_oldCol)).remove();
+      if( _inplace ) f.removeVecs(f.find(_oldCol)).removeVecs();
     } else {
       _newCol = _newNames==null?new String[]{_inplace ? _oldCol : f.uniquify(_oldCol)}:_newCol;
-      if( _inplace ) f.replace(f.find(_oldCol), fr.anyVec()).remove();
-      else          f.add(_newNames == null ? _newCol[0] : _newNames[0], fr.anyVec());
+      if( _inplace ) f.replace(f.find(_oldCol), fr.vecs()).removeVecs();
+      else          f.add(_newNames == null ? _newCol[0] : _newNames[0], fr.vecs());
     }
     DKV.put(f);
     return f;

@@ -25,7 +25,7 @@ public class TransformWrappedVecTest extends TestUtil {
       }.doAll(iv);
       iv.remove();
     } finally {
-      if( null!=v ) v.remove();
+      if( null!=v ) v.removeVecs();
     }
   }
 }

@@ -6,6 +6,7 @@ import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
@@ -64,8 +65,8 @@ public class AstRectangleAssignTest extends TestUtil {
     }
   }
 
-  private static double[] vec2array(Vec v) {
-    Vec.Reader ovr = v.new Reader();
+  private static double[] vec2array(VecAry v) {
+    VecAry.Reader ovr = v.new Reader();
     assert ovr.length() < Integer.MAX_VALUE;
     final int len = (int) ovr.length();
     double[] array = new double[len];
@@ -73,7 +74,7 @@ public class AstRectangleAssignTest extends TestUtil {
     return array;
   }
 
-  private static String[] catVec2array(Vec v) {
+  private static String[] catVec2array(VecAry v) {
     double[] raw = vec2array(v);
     String[] cats = new String[raw.length];
     for (int i = 0; i < cats.length; i++) cats[i] = v.factor(0,(int)raw[i]);

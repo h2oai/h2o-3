@@ -126,7 +126,7 @@ public class FVecTest extends TestUtil {
   // ==========================================================================
   @Test public void testParse2() {
     Frame fr = null;
-    Vec vz = null;
+    VecAry vz = null;
     try {
       fr = parse_test_file("smalldata/junit/syn_2659x1049.csv.gz");
       assertEquals(fr.numCols(),1050); // Count of columns
@@ -141,7 +141,7 @@ public class FVecTest extends TestUtil {
       VecAry vecs = fr.vecs();
       vz = vecs.makeZero();
       // Add column 0 & 1 into the temp column
-      new PairSum().doAll(new VecAry(vecs,vz));
+      new PairSum().doAll(new VecAry(new VecAry(vecs).append(vz)));
       // Add the temp to frame
       // Now total the temp col
       fr.delete();              // Remove all other columns
@@ -207,7 +207,7 @@ public class FVecTest extends TestUtil {
       assertEquals(10,bins.length);
       // TODO: should test percentiles?
       for(long l:bins) assertEquals(1,l);
-      Vec.Writer w = v2.open();
+      VecAry.Writer w = new VecAry(v2).open();
       try {
         v2.min();
         assertTrue("should have thrown IAE since we're requesting rollups while changing the Vec (got Vec.Writer)",false); // fail - should've thrown

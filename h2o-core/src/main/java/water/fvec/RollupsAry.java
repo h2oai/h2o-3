@@ -69,10 +69,19 @@ public class RollupsAry extends Iced {
   }
 
 
+  public boolean isReady(VecAry v,boolean computeHisto){
+    if(_rs == null) return false;
+    for(int i = 0; i < _rs.length; ++i){
+      if(_rs == null || _rs[i] == null || _rs[i].isComputing() || !isRemoved(i) && computeHisto && computeHisto(v.getType(i)) && !_rs[i].hasHisto())
+        return false;
+    }
+    return true;
+  }
+
   public boolean isReady(Vec v,boolean computeHisto){
     if(_rs == null) return false;
     for(int i = 0; i < _rs.length; ++i){
-      if(_rs == null || _rs[i] == null || _rs[i].isComputing() || !isRemoved(i) && computeHisto && computeHisto(v._types[i]) && !_rs[i].hasHisto())
+      if(_rs == null || _rs[i] == null || _rs[i].isComputing() || !isRemoved(i) && computeHisto && computeHisto(v.getType(i)) && !_rs[i].hasHisto())
         return false;
     }
     return true;

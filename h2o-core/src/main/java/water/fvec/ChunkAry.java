@@ -12,7 +12,7 @@ import java.util.Arrays;
  * Created by tomas on 10/5/16.
  */
 public class ChunkAry<C extends Chunk> extends Iced {
-  public final Vec _vec;
+  public final VecAry _vec;
   public final long _start;
   public final int _len; // numrows in this chunk
   public final int _numCols;
@@ -21,7 +21,16 @@ public class ChunkAry<C extends Chunk> extends Iced {
   C [] _cs;
   int [] _ids;
 
-  public ChunkAry(Vec v,int cidx, C... cs){this(v,cidx,cs,null);}
+  public ChunkAry(VecAry v,int cidx, C c){
+    _vec = v;
+    _cidx = cidx;
+    _start = _vec.chunk2StartElem(cidx);
+    _len = (int)(_vec.chunk2StartElem(cidx+1) - _start);
+    _numCols = v.numCols();
+    _ids = null;
+    _cs = (C[])new Chunk[]{c};
+  }
+  public ChunkAry(VecAry v,int cidx, C... cs){this(v,cidx,cs,null);}
   public ChunkAry(int cidx, int len, C... cs){
     _vec = null;
     _cidx = cidx;
@@ -31,7 +40,7 @@ public class ChunkAry<C extends Chunk> extends Iced {
     _cs = cs;
     _ids = null;
   }
-  public ChunkAry(Vec v,int cidx, C [] cs, int [] ids){
+  public ChunkAry(VecAry v,int cidx, C [] cs, int [] ids){
     _vec = v;
     _cidx = cidx;
     _start = _vec.chunk2StartElem(cidx);
@@ -91,9 +100,15 @@ public class ChunkAry<C extends Chunk> extends Iced {
 
   public final double set(int i, double d){ set(i,0,d); return d; }
 
+  public final void setAll(int c, double val){
+    _cs[c] = (C)new C0DChunk(val,_len);
+  }
   public final void set(int i, C ck){
     _cs[i] = ck;
-    _changedCols.add(i);
+    if(_changedCols == null)
+      _changedCols = new ArrayUtils.IntAry(i);
+    else
+      _changedCols.add(i);
   }
   public final double set(int i, int j, double d){
     setWrite(j);
@@ -199,6 +214,15 @@ public class ChunkAry<C extends Chunk> extends Iced {
   }
 
   public String set(int i, int j, String str){
+    if(_ids != null){
+      j = Arrays.binarySearch(_ids,j);
+      if(j < 0) throw new ArrayIndexOutOfBoundsException(j);
+    }
+    if(!_cs[j].set_impl(i,str))
+      (_cs[j] = (C)_cs[j].inflate_impl(new NewChunk(Vec.T_STR))).set_impl(i,str);
+    return str;
+  }
+  public BufferedString set(int i, int j, BufferedString str){
     if(_ids != null){
       j = Arrays.binarySearch(_ids,j);
       if(j < 0) throw new ArrayIndexOutOfBoundsException(j);

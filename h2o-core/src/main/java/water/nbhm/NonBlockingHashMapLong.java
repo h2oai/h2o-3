@@ -1045,7 +1045,7 @@ public class NonBlockingHashMapLong<TypeV>
    *  The collection is backed by the map, so changes to the map are reflected
    *  in the collection, and vice-versa.  The collection supports element
    *  removal, which removes the corresponding mapping from this map, via the
-   *  <tt>Iterator.remove</tt>, <tt>Collection.remove</tt>,
+   *  <tt>Iterator.removeVecs</tt>, <tt>Collection.removeVecs</tt>,
    *  <tt>removeAll</tt>, <tt>retainAll</tt>, and <tt>clear</tt> operations.
    *  It does not support the <tt>add</tt> or <tt>addAll</tt> operations.
    *
@@ -1095,7 +1095,7 @@ public class NonBlockingHashMapLong<TypeV>
    *  set is backed by the map, so changes to the map are reflected in the
    *  set, and vice-versa.  The set supports element removal, which removes
    *  the corresponding mapping from this map, via the
-   *  <tt>Iterator.remove</tt>, <tt>Set.remove</tt>, <tt>removeAll</tt>,
+   *  <tt>Iterator.removeVecs</tt>, <tt>Set.removeVecs</tt>, <tt>removeAll</tt>,
    *  <tt>retainAll</tt>, and <tt>clear</tt> operations.  It does not support
    *  the <tt>add</tt> or <tt>addAll</tt> operations.
    *
@@ -1147,7 +1147,7 @@ public class NonBlockingHashMapLong<TypeV>
    *  set is backed by the map, so changes to the map are reflected in the
    *  set, and vice-versa.  The set supports element removal, which removes
    *  the corresponding mapping from the map, via the
-   *  <tt>Iterator.remove</tt>, <tt>Set.remove</tt>, <tt>removeAll</tt>,
+   *  <tt>Iterator.removeVecs</tt>, <tt>Set.removeVecs</tt>, <tt>removeAll</tt>,
    *  <tt>retainAll</tt>, and <tt>clear</tt> operations.  It does not support
    *  the <tt>add</tt> or <tt>addAll</tt> operations.
    *

@@ -8,8 +8,8 @@ import water.*;
 public class SubsetVec extends WrappedVec {
   final Key _subsetRowsKey;
   transient Vec _rows;          // Cached copy of the rows-Vec
-  public SubsetVec(Key key, int rowLayout, Key masterVecKey, Key subsetRowsKey) {
-    super(key, rowLayout, masterVecKey);
+  public SubsetVec(Key key, int rowLayout, VecAry masterVec, Key subsetRowsKey) {
+    super(key, rowLayout, masterVec);
     _subsetRowsKey = subsetRowsKey;
   }
   public Vec rows() {
@@ -43,8 +43,8 @@ public class SubsetVec extends WrappedVec {
   // 
   static class SubsetChunk extends Chunk {
     final Chunk _crows;
-    final Vec _masterVec;
-    protected SubsetChunk(Chunk crows, SubsetVec vec, Vec masterVec) {
+    final VecAry _masterVec;
+    protected SubsetChunk(Chunk crows, SubsetVec vec, VecAry masterVec) {
       _masterVec = masterVec;
       _len = crows._len;
       _crows  = crows;

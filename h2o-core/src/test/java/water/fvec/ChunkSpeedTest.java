@@ -313,9 +313,9 @@ public class ChunkSpeedTest extends TestUtil {
     Frame fr = new Frame();
     for (int i=0; i<cols; ++i) {
       if (parallel)
-        fr.add("C" + i, Vec.makeCon(0, rows)); //multi-chunk (based on #cores)
+        fr.add("C" + i, new VecAry(Vec.makeCon(0, rows))); //multi-chunk (based on #cores)
       else
-        fr.add("C"+i, Vec.makeVec(raw[i], Vec.newKey())); //directly fill from raw double array (1 chunk)
+        fr.add("C"+i, new VecAry(Vec.makeVec(raw[i], Vec.newKey()))); //directly fill from raw double array (1 chunk)
     }
     if (parallel) new FillTask().doAll(fr);
 
@@ -345,15 +345,16 @@ public class ChunkSpeedTest extends TestUtil {
 //    Log.info(v.length());
 //    Log.info(v.nzCnt());
 //    Log.info(v.naCnt());
-//    v.remove();
+//    v.removeVecs();
     for (int i=0; i<cols; ++i)
-      fr.add("C" + i, Vec.makeCon(0, rows, parallel)); //multi-chunk (based on #cores)
+      fr.add("C" + i, new VecAry(Vec.makeCon(0, rows, parallel))); //multi-chunk (based on #cores)
     new FillTask().doAll(fr);
 
     long start = System.currentTimeMillis();
+    fr.vecs().preWriting();
+    fr.vecs().postWrite(new Futures()).blockForPending();
     for (int r = 0; r < rep; ++r) {
       for (int i=0; i<cols; ++i) {
-        DKV.remove(fr.vec(i).rollupStatsKey());
         fr.vec(i).mean();
       }
     }

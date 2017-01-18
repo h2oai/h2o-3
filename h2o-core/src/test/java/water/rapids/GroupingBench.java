@@ -107,7 +107,7 @@ class WriteOrder extends MRTask<WriteOrder> {
     WriteOrder(long[][] counts, int[][] order, long min, long max) { _counts = counts; _order = order; _min = min; _max = max; }
     @Override public void map( ChunkAry chk ) {
         long nanos[] = new long[5];
-        Vec vec = chk._vec;
+        VecAry vec = chk._vec;
         int range = (int)(_max-_min+1);
         long[] espc = vec.espc();
 

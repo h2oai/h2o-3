@@ -8,10 +8,7 @@ import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 
 import java.util.Arrays;
 
@@ -32,11 +29,11 @@ public class MathUtils {
     return y * Math.log(y) - y + .5*Math.log(2*Math.PI*y);
   }
 
-  static public double computeWeightedQuantile(Vec weight, Vec values, double alpha) {
+  static public double computeWeightedQuantile(VecAry weight, VecAry values, double alpha) {
     QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
     Frame tempFrame = weight == null ?
-            new Frame(Key.<Frame>make(), new String[]{"y"},     new Vec[]{values}) :
-            new Frame(Key.<Frame>make(), new String[]{"y","w"}, new Vec[]{values, weight});
+            new Frame(Key.<Frame>make(), new String[]{"y"},     values) :
+            new Frame(Key.<Frame>make(), new String[]{"y","w"}, new VecAry(values).append(weight));
     DKV.put(tempFrame);
     parms._train = tempFrame._key;
     parms._probs = new double[]{alpha};
@@ -521,7 +518,7 @@ public class MathUtils {
         throw new H2OIllegalArgumentException("dimensions must be >= 1");
       if (width*height*depth != input.numCols())
         throw new H2OIllegalArgumentException("dimensions HxWxD must match the # columns of the frame");
-      for (Vec v : input.vecs()) {
+      for (VecAry v : input.vecs().singleVecs()) {
         if (v.naCnt() > 0)
           throw new H2OIllegalArgumentException("DCT can not be computed on rows with missing values");
         if (!v.isNumeric())

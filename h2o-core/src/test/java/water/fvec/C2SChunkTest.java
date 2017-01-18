@@ -118,7 +118,7 @@ public class C2SChunkTest extends TestUtil {
     water.Key key = Vec.newKey();
     Vec vec = new Vec(key, Vec.ESPC.rowLayout(key,new long[]{0,15}),1).makeZero();
     int[] vals = new int[]{0, 3, 0, 6, 0, 0, 0, -32769, 0, 12, 234, 32765, 0, 0, 19};
-    Vec.Writer w = vec.open();
+    VecAry.Writer w = new VecAry(vec).open();
     for (int i =0; i<vals.length; ++i) w.set(i, vals[i]);
     w.close();
 

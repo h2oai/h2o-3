@@ -85,7 +85,7 @@ public class NaiveBayesTest extends TestUtil {
       train = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
       for(int i = 0; i < cats.length; i++)
         Scope.track(train.replace(cats[i], train.vec(cats[i]).toCategoricalVec()));
-      train.remove("ID").remove();
+      train.removeVecs("ID").remove();
       DKV.put(train._key, train);
 
       NaiveBayesParameters parms = new NaiveBayesParameters();

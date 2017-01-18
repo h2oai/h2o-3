@@ -41,27 +41,27 @@ public class AstLStrip extends AstPrimitive {
     String set = asts[2].exec(env).getStr();
 
     // Type check
-    for (Vec v : fr.vecs())
+    for (VecAry v : fr.vecs().singleVecs())
       if (!(v.isCategorical() || v.isString()))
         throw new IllegalArgumentException("trim() requires a string or categorical column. "
             + "Received " + fr.anyVec().get_type_str()
             + ". Please convert column to a string or categorical first.");
 
     // Transform each vec
-    Vec nvs[] = new Vec[fr.numCols()];
+    VecAry nvs = new VecAry();//[fr.numCols()];
     int i = 0;
-    for (Vec v : fr.vecs()) {
+    for (VecAry v : fr.vecs().singleVecs()) {
       if (v.isCategorical())
-        nvs[i] = lstripCategoricalCol(v, set);
+        nvs.append(lstripCategoricalCol(v, set));
       else
-        nvs[i] = lstripStringCol(v, set);
+        nvs.append(lstripStringCol(v, set));
       i++;
     }
 
     return new ValFrame(new Frame(nvs));
   }
 
-  private Vec lstripCategoricalCol(Vec vec, String set) {
+  private VecAry lstripCategoricalCol(VecAry vec, String set) {
     String[] doms = vec.domain().clone();
 
     HashMap<String, ArrayList<Integer>> strippedToOldDomainIndices = new HashMap<>();
@@ -86,7 +86,7 @@ public class AstLStrip extends AstPrimitive {
     return vec.makeCopy(new String[][]{doms});
   }
 
-  private Vec lstripStringCol(Vec vec, String set) {
+  private VecAry lstripStringCol(VecAry vec, String set) {
     final String charSet = set;
     return new MRTask() {
       @Override
@@ -106,6 +106,6 @@ public class AstLStrip extends AstPrimitive {
           }
         }
       }
-    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().vecs();
   }
 }

@@ -25,12 +25,12 @@ public class SortTest extends TestUtil {
       // 0 and 1, and completely sorted on a record-number based column 2.
       // Sort will be on columns 0 and 1, in that order, and is expected stable.
       fr = buildFrame(1000,10);
-      fr.insertVec(0,"row",fr.remove(2));
+      fr.insertVec(0,"row",fr.removeVecs(2));
       //
       Val val = Rapids.exec(tree);
       assertTrue( val instanceof ValFrame);
       res = val.getFrame();
-      res.add("row",res.remove(0));
+      res.add("row",res.removeVecs(0));
       new CheckSort().doAll(res);
     } finally {
       if( fr  != null ) fr .delete();
@@ -42,9 +42,9 @@ public class SortTest extends TestUtil {
     Frame fr = null, res = null;
     try {
       fr = buildFrame(1000,10);
-      fr.insertVec(0,"row",fr.remove(2));
+      fr.insertVec(0,"row",fr.removeVecs(2));
       res = Merge.sort(fr,new int[]{1,2});
-      res.add("row",res.remove(0));
+      res.add("row",res.removeVecs(0));
       new CheckSort().doAll(res);
     } finally {
       if( fr  != null ) fr .delete();
@@ -84,7 +84,7 @@ public class SortTest extends TestUtil {
       }
       // Last row of chunk is sorted relative to 1st row of next chunk
       long row = cs._start+cs._len;
-      Vec v = cs._vec;
+      VecAry v = cs._vec;
       if( row < cs._vec.length() ) {
         long y0 = v.at8(row,0);
         long y1 = v.at8(row,1);

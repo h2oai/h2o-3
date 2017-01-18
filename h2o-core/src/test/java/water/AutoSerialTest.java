@@ -319,7 +319,7 @@ public class AutoSerialTest extends Iced {
     Assert.assertEquals(12,x);
     Assert.assertEquals(345,y);
     Assert.assertEquals("6789",str);
-//    todo readJSON does not work, it is also not used anywehere, we should either fix it or remove it.
+//    todo readJSON does not work, it is also not used anywehere, we should either fix it or removeVecs it.
 //    SimpleFreezableTest c = new SimpleFreezableTest().readJSON(new AutoBuffer(jsonBytes));
 //    byte [] cbytes = AutoBuffer.javaSerializeWritePojo(c);
 //    Assert.assertArrayEquals(abytes,cbytes);

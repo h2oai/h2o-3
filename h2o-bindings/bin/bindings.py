@@ -147,7 +147,7 @@ def init(language, output_dir, clear_dir=True):
                 else:
                     os.unlink(filepath)
         except Exception as e:
-            print("Unable to remove file %s: %r" % (filepath, e))
+            print("Unable to removeVecs file %s: %r" % (filepath, e))
             sys.exit(9)
 
     # Check that the provided server is accessible; then print its status (if in --verbose mode).
@@ -228,7 +228,7 @@ def endpoints(raw=False):
             assert re_api_name.match(apiname), "Bad api name %s" % apiname
             apinames[apiname] = path
 
-            # These redundant paths cause conflicts, remove them
+            # These redundant paths cause conflicts, removeVecs them
             if path == "/3/NodePersistentStorage/categories/{category}/exists": continue
             if path == "/3/ModelMetrics/frames/{frame}/models/{model}": continue
             if path == "/3/ModelMetrics/frames/{frame}": continue

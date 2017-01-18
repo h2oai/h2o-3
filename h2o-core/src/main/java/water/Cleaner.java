@@ -153,7 +153,7 @@ class Cleaner extends Thread {
         if( isChunk && !val.isPersisted() && !diskFull && ((Key)ok).home() ) { // && (force || (lazyPersist() && lazy_clean(key)))) {
           long now_ns = System.nanoTime();
           try { val.storePersist(); } // Write to disk
-          catch( FileNotFoundException fnfe ) { continue; } // Can happen due to racing key delete/remove
+          catch( FileNotFoundException fnfe ) { continue; } // Can happen due to racing key delete/removeVecs
           catch( IOException e ) {
             Log.warn( isDiskFull()
                       ? "Disk full! Disabling swapping to disk." + (force?" Memory low! Please free some space in " + H2O.ICE_ROOT + "!":"")
@@ -291,7 +291,7 @@ class Cleaner extends Thread {
     // to throw out enough things to hit the desired cached memory level.
     long clean_to( long desired ) {
       long age = _eldest;       // Age of bucket zero
-      if( _cached < desired ) return age; // Already there; nothing to remove
+      if( _cached < desired ) return age; // Already there; nothing to removeVecs
       long s = 0;               // Total amount toss out
       for( long t : _hs ) {     // For all buckets...
         s += t;                 // Raise amount tossed out

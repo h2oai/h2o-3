@@ -6,6 +6,7 @@ import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.ArrayUtils;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
@@ -19,9 +20,9 @@ public class GainsLift extends Iced {
 
   //INPUT
   public int _groups = -1;
-  public Vec _labels;
-  public Vec _preds; //of length N, n_i = N/GROUPS
-  public Vec _weights;
+  public VecAry _labels;
+  public VecAry _preds; //of length N, n_i = N/GROUPS
+  public VecAry _weights;
 
   //OUTPUT
   public double[] response_rates; // p_i = e_i/n_i
@@ -30,10 +31,10 @@ public class GainsLift extends Iced {
   public long[] observations; // n_i
   TwoDimTable table;
 
-  public GainsLift(Vec preds, Vec labels) {
+  public GainsLift(VecAry preds, VecAry labels) {
     this(preds, labels, null);
   }
-  public GainsLift(Vec preds, Vec labels, Vec weights) {
+  public GainsLift(VecAry preds, VecAry labels, VecAry weights) {
     _preds = preds;
     _labels = labels;
     _weights = weights;
@@ -57,10 +58,10 @@ public class GainsLift extends Iced {
     // The vectors are from different groups => align them, but properly delete it after computation
     if (!_labels.group().equals(_preds.group())) {
       _preds = _labels.align(_preds);
-      Scope.track(_preds);
+      Scope.track(_preds.vecs()[0]);
       if (_weights !=null) {
         _weights = _labels.align(_weights);
-        Scope.track(_weights);
+        Scope.track(_weights.vecs()[0]);
       }
     }
 
@@ -83,9 +84,9 @@ public class GainsLift extends Iced {
       try {
         QuantileModel.QuantileParameters qp = new QuantileModel.QuantileParameters();
         if (_weights==null) {
-          fr = new Frame(Key.<Frame>make(), new String[]{"predictions"}, new Vec[]{_preds});
+          fr = new Frame(Key.<Frame>make(), new String[]{"predictions"}, _preds);
         } else {
-          fr = new Frame(Key.<Frame>make(), new String[]{"predictions", "weights"}, new Vec[]{_preds, _weights});
+          fr = new Frame(Key.<Frame>make(), new String[]{"predictions", "weights"}, new VecAry(_preds).append(_weights));
           qp._weights_column = "weights";
         }
         DKV.put(fr);
@@ -122,7 +123,7 @@ public class GainsLift extends Iced {
     init(job); //check parameters and obtain _quantiles from _preds
     try {
       GainsLiftBuilder gt = new GainsLiftBuilder(_quantiles);
-      gt = (_weights != null) ? gt.doAll(_labels, _preds, _weights) : gt.doAll(_labels, _preds);
+      gt = (_weights != null) ? gt.doAll(new VecAry(_labels).append(_preds).append(_weights)) : gt.doAll(new VecAry(_labels).append(_preds));
       response_rates = gt.response_rates();
       avg_response_rate = gt.avg_response_rate();
       events = gt.events();

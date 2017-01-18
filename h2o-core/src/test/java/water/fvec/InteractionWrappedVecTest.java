@@ -19,18 +19,18 @@ public class InteractionWrappedVecTest extends TestUtil {
 
       // interact species and sepal len -- all levels (expanded length is 3)
       fr = parse_test_file(Key.make("a.hex"), "smalldata/iris/iris_wheader.csv");
-      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, true, true, false, fr.vec(0)._key, fr.vec(4)._key);
+      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, true, true, false, fr.vecs(0,4));
       Assert.assertTrue(interactionVec.expandedLength()==3);
       interactionVec.remove();
 
 
       // interact species and sepal len -- not all factor levels
-      interactionVec =  new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, false,true, false, fr.vec(0)._key, fr.vec(4)._key);
+      interactionVec =  new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, false,true, false, fr.vecs(0,4));
       Assert.assertTrue(interactionVec.expandedLength()==2); // dropped first level
       interactionVec.remove();
 
       // interact 2 numeric cols: sepal_len sepal_wid
-      interactionVec =  new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, true, true, false, fr.vec(0)._key, fr.vec(1)._key);
+      interactionVec =  new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, true, true, false, fr.vecs(0,1));
       Assert.assertTrue(interactionVec.expandedLength()==1);
     } finally {
       if( fr!=null ) fr.delete();
@@ -45,9 +45,9 @@ public class InteractionWrappedVecTest extends TestUtil {
     int FAKEMAXFORTEST=1000;
     try {
       fr = parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
-      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, true, true, false, fr.vec(8)._key, fr.vec(16)._key);
+      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, true, true, false, fr.vecs(8,16));
       CreateInteractions.createInteractionDomain cid = new CreateInteractions.createInteractionDomain(false,false);
-      cid.doAll(fr.vec(8),fr.vec(16));
+      cid.doAll(fr.vecs(8,16));
 
       // sorted according to occurence Greatest -> Least
       String[] domain = new CreateInteractions(FAKEMAXFORTEST,1).makeDomain(cid.getMap(), fr.vec(8).domain(), fr.vec(16).domain());
@@ -62,7 +62,7 @@ public class InteractionWrappedVecTest extends TestUtil {
       interactionVec.remove();
 
       // don't include all cat levels
-      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, false, true, false, fr.vec(8)._key, fr.vec(16)._key);
+      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, false, true, false, fr.vecs(8,16));
       Assert.assertTrue(interactionVec.expandedLength()==286);
 
       System.out.println(interactionVec.mode());
@@ -88,7 +88,7 @@ public class InteractionWrappedVecTest extends TestUtil {
     String[] B = new String[]{"PIT", "DEN"};
     try {
       fr = parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
-      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, A, B, true, true, false, fr.vec(8)._key, fr.vec(16)._key);
+      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, A, B, true, true, false, fr.vecs(8,16));
 
       int[] a = new int[A.length];
       int[] b = new int[B.length];
@@ -97,7 +97,7 @@ public class InteractionWrappedVecTest extends TestUtil {
       idx=0;
       for(String s:B) b[idx++]= Arrays.asList(fr.vec(16).domain()).indexOf(s);
       CreateInteractions.createInteractionDomain cid = new CreateInteractions.createInteractionDomain(false,false,a,b);
-      cid.doAll(fr.vec(8), fr.vec(16));
+      cid.doAll(fr.vecs(8,16));
       String[] domain = new CreateInteractions(FAKEMAXFORTEST,1).makeDomain(cid.getMap(), fr.vec(8).domain(), fr.vec(16).domain());
       Arrays.sort(domain);
       Assert.assertArrayEquals(interactionVec.domain(), domain);
@@ -131,16 +131,16 @@ public class InteractionWrappedVecTest extends TestUtil {
     try {
 
       fr = makeFrame(1<<20);
-      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, true, true, false, fr.vec(0)._key, fr.vec(2)._key);
+      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, true, true, false, fr.vecs(0,2));
       Assert.assertTrue(interactionVec.expandedLength()==5);
       interactionVec.remove();
 
 
-      interactionVec =  new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, false, true, false, fr.vec(1)._key, fr.vec(4)._key);
+      interactionVec =  new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, false, true, false, fr.vecs(1,4));
       Assert.assertTrue(interactionVec.expandedLength()==4); // dropped first level
       interactionVec.remove();
 
-      interactionVec =  new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, true, true, false, fr.vec(0)._key, fr.vec(1)._key);
+      interactionVec =  new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, true, true, false, fr.vecs(0,1));
       Assert.assertTrue(interactionVec.expandedLength()==1);
     } finally {
       if( fr!=null ) fr.delete();
@@ -154,9 +154,9 @@ public class InteractionWrappedVecTest extends TestUtil {
     int FAKEMAXFORTEST=1000;
     try {
       fr = makeFrame(1 << 20);
-      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, true, true, false, fr.vec(2)._key, fr.vec(4)._key);
+      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, true, true, false, fr.vecs(2,4));
       CreateInteractions.createInteractionDomain cid = new CreateInteractions.createInteractionDomain(false,false);
-      cid.doAll(fr.vec(2),fr.vec(4));
+      cid.doAll(fr.vecs(2,4));
 
       // sorted according to occurence Greatest -> Least
       String[] domain = new CreateInteractions(FAKEMAXFORTEST,1).makeDomain(cid.getMap(), fr.vec(2).domain(), fr.vec(4).domain());
@@ -171,7 +171,7 @@ public class InteractionWrappedVecTest extends TestUtil {
       interactionVec.remove();
 
       // don't include all cat levels
-      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, false, true, false, fr.vec(2)._key, fr.vec(4)._key);
+      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, false, true, false, fr.vecs(2,4));
       Assert.assertTrue(interactionVec.expandedLength()==16);
 
       System.out.println(interactionVec.mode());
@@ -201,7 +201,7 @@ public class InteractionWrappedVecTest extends TestUtil {
       A = new String[]{fullA[0],fullA[3],fullA[4] };
       B = new String[]{fullB[1],fullB[0]};
 
-      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, A, B, true, true, false, fr.vec(3)._key, fr.vec(8)._key);
+      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, A, B, true, true, false, fr.vecs(3,8));
 
       int[] a = new int[A.length];
       int[] b = new int[B.length];
@@ -210,7 +210,7 @@ public class InteractionWrappedVecTest extends TestUtil {
       idx=0;
       for(String s:B) b[idx++]= Arrays.asList(fullB).indexOf(s);
       CreateInteractions.createInteractionDomain cid = new CreateInteractions.createInteractionDomain(false,false,a,b);
-      cid.doAll(fr.vec(3), fr.vec(8));
+      cid.doAll(fr.vecs(3,8));
       String[] domain = new CreateInteractions(FAKEMAXFORTEST,1).makeDomain(cid.getMap(), fullA, fullB);
       Arrays.sort(domain);
       Assert.assertArrayEquals(interactionVec.domain(), domain);

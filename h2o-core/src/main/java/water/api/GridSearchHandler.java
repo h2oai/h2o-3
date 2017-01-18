@@ -106,7 +106,7 @@ public class GridSearchHandler<G extends Grid<MP>,
                                                  (HyperSpaceSearchCriteria)gss.search_criteria.createAndFillImpl());
 
     // Fill schema with job parameters
-    // FIXME: right now we have to remove grid parameters which we sent back
+    // FIXME: right now we have to removeVecs grid parameters which we sent back
     gss.hyper_parameters = null;
     gss.total_models = gsJob._result.get().getModelCount(); // TODO: looks like it's currently always 0
     gss.job = new JobV3(gsJob);

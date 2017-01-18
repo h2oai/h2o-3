@@ -46,15 +46,15 @@ import java.util.Arrays;
  *  Frame fr = water.parser.ParseDataset.parse(Key.make("myKey"),nfs._key);
  *  </pre>
  *
- *  <p>Example: Find and remove the Vec called "unique_id" from the Frame,
+ *  <p>Example: Find and removeVecs the Vec called "unique_id" from the Frame,
  *  since modeling with a unique_id can lead to overfitting:
  *  <pre>
- *  Vec uid = fr.remove("unique_id");
+ *  Vec uid = fr.removeVecs("unique_id");
  *  </pre>
  *
  *  <p>Example: Move the response column to the last position:
  *  <pre>
- *  fr.add("response",fr.remove("response"));
+ *  fr.add("response",fr.removeVecs("response"));
  *  </pre>
  *
  */
@@ -71,17 +71,19 @@ public class Frame extends Lockable<Frame> {
     return false;
   }
 
-  public Frame(Vec... vecs){this(null,vecs);}
+  public Frame(Vec... vecs){this(null, new VecAry(vecs));}
+  public Frame(VecAry vecs){this(null,vecs);}
   /** Creates an internal frame composed of the given Vecs and default names.  The frame has no key. */
 
   /** Creates an internal frame composed of the given Vecs and names.  The frame has no key. */
-  public Frame(String names[], Vec... vecs) {
+  public Frame(String names[], Vec... vecs) {this(names,new VecAry(vecs));}
+  public Frame(String names[], VecAry vecs) {
     this(null, names, vecs);
   }
 
   /** Creates an empty frame with given key. */
   public Frame(Key<Frame> key) {
-    this(key, null, null);
+    this(key, (String[])null, (VecAry)null);
   }
 
   /**
@@ -96,8 +98,9 @@ public class Frame extends Lockable<Frame> {
       _names[i] = defaultColName(i);
   }
 
-  /** Creates a frame with given key, names and vectors. */
-  public Frame(Key<Frame> key, String names[], Vec... vecs) { // allways only 1 vec
+  public Frame(Key k, String names[], Vec... vecs) { this(k,names,new VecAry(vecs));}
+    /** Creates a frame with given key, names and vectors. */
+  public Frame(Key<Frame> key, String names[], VecAry vecs) { // allways only 1 vec
     super(key);
     // Require all Vecs already be installed in the K/V store
     _vecs = new VecAry(vecs);
@@ -210,7 +213,7 @@ public class Frame extends Lockable<Frame> {
 
   /** Returns the first readable vector.
    *  @return the first readable Vec */
-  public final VecAry anyVec() {return _vecs;}
+  public final Vec anyVec() {return _vecs.isEmpty()?null:_vecs.fetchVec(0);}
 
   /** The array of column names.
    *  @return the array of column names */
@@ -223,7 +226,7 @@ public class Frame extends Lockable<Frame> {
   }
 
   public final VecAry vecs(int... idxs) {
-    return idxs.length == 0?new VecAry(_vecs):_vecs.select(idxs);
+    return idxs.length == 0?_vecs:_vecs.select(idxs);
   }
 
   public VecAry vecs(String[] names) {
@@ -242,16 +245,16 @@ public class Frame extends Lockable<Frame> {
    *  remotely, or that the _vecs array was shared and now needs to be a
    *  defensive copy.
    *  @return the new instance of the Frame's Vec[] */
-  public final AVecAry reloadVecs() { _vecs.reloadVecs(); return _vecs; }
+  public final VecAry reloadVecs() { _vecs.reloadVecs(); return _vecs; }
 
   /** Returns the Vec by given index, implemented by code: {@code vecs()[idx]}.
    *  @param idx idx of column
    *  @return this frame idx-th vector, never returns <code>null</code> */
-  public final Vec vec(int idx) { return _vecs.select(idx); }
+  public final VecAry vec(int idx) { return _vecs.select(idx); }
 
   /**  Return a Vec by name, or null if missing
    *  @return a Vec by name, or null if missing */
-  public Vec vec(String name) { int idx = find(name); return idx==-1 ? null : _vecs.select(idx); }
+  public VecAry vec(String name) { int idx = find(name); return idx==-1 ? null : _vecs.select(idx); }
 
   /**   Finds the column index with a matching name, or -1 if missing
    *  @return the column index with a matching name, or -1 if missing */
@@ -265,13 +268,19 @@ public class Frame extends Lockable<Frame> {
     return -1;
   }
 
-  public int find( Vec v ) {
-    int id = v.vecId();
-    return ArrayUtils.find(_vecs._vecIds,id);
+  public int find( VecAry v ) {
+    if(v.numCols() != 1) throw new IllegalArgumentException("expected exactly one vec");
+    int vid = v._vecIds[0];
+    int x = ArrayUtils.find(_vecs._vecIds,vid);
+    if(x == -1)return -1;
+    int off = _vecs._blockOffset[x];
+    int id =  v._colFilter == null?0:v._colFilter[0];
+    int y = off + id;
+    return _vecs._colFilter == null?y:ArrayUtils.find(_vecs._colFilter,y);
   }
 
-    /** Bulk {@link #find(String)} api
-     *  @return An array of column indices matching the {@code names} array */
+  /** Bulk {@link #find(String)} api
+   *  @return An array of column indices matching the {@code names} array */
   public int[] find(String[] names) {
     if( names == null ) return null;
     int[] res = new int[names.length];
@@ -301,7 +310,7 @@ public class Frame extends Lockable<Frame> {
     public String _column_name;
 
 
-    public Vec vec() {
+    public VecAry vec() {
       Value v = DKV.get(_frame);
       if (null == v) return null;
       Frame f = v.get();
@@ -311,7 +320,7 @@ public class Frame extends Lockable<Frame> {
   }
 
   /** Type for every Vec */
-  public byte[] types() {return _vecs._types;}
+  public byte[] types() {return _vecs.types();}
 
   /** String name for each Vec type */
   public String[] typesStr() {  // typesStr not strTypes since shows up in intelliJ next to types
@@ -438,9 +447,8 @@ public class Frame extends Lockable<Frame> {
   /** Append a named Vec to the Frame.  Names are forced unique, by appending a
    *  unique number if needed.
    *  @return the added Vec, for flow-coding */
-  public Vec add( String name, Vec vec ) {
+  public VecAry add( String name, VecAry vec ) {
     vec = makeCompatible(new Frame(vec));
-    checkCompatible(name=uniquify(name),vec);  // Throw IAE is mismatch
     int ncols = _names.length;
     String[] names = Arrays.copyOf(_names,ncols+1);  names[ncols] = name;
     _names = names;
@@ -497,7 +505,7 @@ public class Frame extends Lockable<Frame> {
     return _vecs.postWrite(fs);
   }
 
-  /** Actually remove/delete all Vecs from memory, not just from the Frame.
+  /** Actually removeVecs/delete all Vecs from memory, not just from the Frame.
    *  @return the original Futures, for flow-coding */
   @Override protected Futures remove_impl(Futures fs) {
     return _vecs.remove(fs);
@@ -506,7 +514,7 @@ public class Frame extends Lockable<Frame> {
   /** Replace one column with another. Caller must perform global update (DKV.put) on
    *  this updated frame.
    *  @return The old column, for flow-coding */
-  public VecAry replace(int col, Vec nv) {
+  public VecAry replace(int col, VecAry nv) {
     return _vecs.replace(col,nv);
   }
 
@@ -519,30 +527,30 @@ public class Frame extends Lockable<Frame> {
   }
 
   /** Split this Frame; return a subframe created from the given column interval, and
-   *  remove those columns from this Frame.
+   *  removeVecs those columns from this Frame.
    *  @param startIdx index of first column (inclusive)
    *  @param endIdx index of the last column (exclusive)
    *  @return a new Frame containing specified interval of columns */
   public Frame extractFrame(int startIdx, int endIdx) {
     Frame f = subframe(startIdx, endIdx);
-    remove(startIdx, endIdx);
+    removeVecs(startIdx, endIdx);
     return f;
   }
 
   /** Removes the column with a matching name.
    *  @return The removed column */
-  public Vec remove( String name ) { return remove(find(name)); }
+  public VecAry removeVecs(String name ) { return removeVecs(find(name)); }
 
-  public Frame remove( String[] names ) {
+  public Frame removeVecs(String[] names ) {
     for( String name : names )
-      remove(find(name));
+      removeVecs(find(name));
     return this;
   }
 
   /** Removes a list of columns by index; the index list must be sorted
    *  @return an array of the removed columns */
-  public VecAry remove( int... idxs ) {
-    VecAry res = _vecs.remove(idxs);
+  public VecAry removeVecs(int... idxs ) {
+    VecAry res = _vecs.removeVecs(idxs);
     if(!ArrayUtils.isSorted(idxs)){
       idxs = idxs.clone();
       Arrays.sort(idxs);
@@ -560,7 +568,7 @@ public class Frame extends Lockable<Frame> {
    *  @param startIdx - start index of column (inclusive)
    *  @param endIdx - end index of column (exclusive)
    *  @return array of removed columns  */
-  AVecAry remove(int startIdx, int endIdx) {return remove(ArrayUtils.seq(startIdx,endIdx));}
+  VecAry removeVecs(int startIdx, int endIdx) {return removeVecs(ArrayUtils.seq(startIdx,endIdx));}
 
 
   /** Restructure a Frame completely, but only for a specified number of columns (counting up)  */
@@ -599,7 +607,7 @@ public class Frame extends Lockable<Frame> {
       if (n > MAX_EQ2_COLS)
         throw new IllegalArgumentException("Too many requested columns (requested " + n +", max " + MAX_EQ2_COLS + ")");
       cols = new long[(int)n];
-      Vec.Reader v = fr.anyVec().new Reader();
+      VecAry.Reader v = fr.vecs().new Reader();
       for (long i = 0; i < v.length(); i++)
         cols[(int)i] = v.at8(i);
     } else
@@ -648,7 +656,7 @@ public class Frame extends Lockable<Frame> {
       if( rows.length==0 || rows[0] < 0 ) {
         if (rows.length != 0 && rows[0] < 0) {
           Vec v0 = this.anyVec().makeZero();
-          Vec v = new MRTask() {
+          VecAry v = new MRTask() {
             @Override public void map(ChunkAry cs) {
               for (long er : rows) {
                 if (er >= 0) continue;
@@ -657,11 +665,11 @@ public class Frame extends Lockable<Frame> {
                 cs.set((int) (er - cs._start), 1);
               }
             }
-          }.doAll(v0).getResult()._fr.anyVec();
+          }.doAll(v0).getResult()._fr._vecs;
           Keyed.remove(v0._key);
           Frame slicedFrame = new DeepSlice(rows, c2, vecs()).doAll(types(c2), this.add("select_vec", v)).outputFrame(names(c2), domains(c2));
-          Keyed.remove(v._key);
-          Keyed.remove(this.remove(this.numCols() - 1)._key);
+          v.remove();
+          this.removeVecs(this.numCols() - 1).remove();
           return slicedFrame;
         } else {
           return new DeepSlice(rows.length == 0 ? null : rows, c2, vecs()).doAll(types(c2), this).outputFrame(names(c2), domains(c2));
@@ -695,7 +703,7 @@ public class Frame extends Lockable<Frame> {
     VecAry vecs = _vecs.select(c2);
     String [] names = ArrayUtils.select(_names,c2);
     Frame ff = new Frame(names, vecs);
-    ff.add("predicate", frows.anyVec());
+    ff.add("predicate", frows._vecs);
     return new DeepSelect().doAll(types(c2),ff).outputFrame(names(c2),domains(c2));
   }
 
@@ -797,20 +805,20 @@ public class Frame extends Lockable<Frame> {
         break;
       case Vec.T_STR :
         coltypes[i] = "string";
-        for( int j=0; j<len; j++ ) { strCells[j+H][i] = _vecs.isNA(off+j) ? "" : _vecs.atStr(tmpStr,off+j).toString(); dblCells[j+H][i] = TwoDimTable.emptyDouble; }
+        for( int j=0; j<len; j++ ) { strCells[j+H][i] = _vecs.isNA(off+j,i) ? "" : _vecs.atStr(tmpStr,off+j).toString(); dblCells[j+H][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_CAT:
         coltypes[i] = "string";
-        for( int j=0; j<len; j++ ) { strCells[j+H][i] = _vecs.isNA(off+j) ? "" : _vecs.factor(i,_vecs.at4(off+j,i));  dblCells[j+H][i] = TwoDimTable.emptyDouble; }
+        for( int j=0; j<len; j++ ) { strCells[j+H][i] = _vecs.isNA(off+j,i) ? "" : _vecs.factor(i,_vecs.at4(off+j,i));  dblCells[j+H][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_TIME:
         coltypes[i] = "string";
         DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
-        for( int j=0; j<len; j++ ) { strCells[j+H][i] = _vecs.isNA(off+j) ? "" : fmt.print(_vecs.at8(off+j)); dblCells[j+H][i] = TwoDimTable.emptyDouble; }
+        for( int j=0; j<len; j++ ) { strCells[j+H][i] = _vecs.isNA(off+j,i) ? "" : fmt.print(_vecs.at8(off+j)); dblCells[j+H][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_NUM:
-        coltypes[i] = _vecs.isInt() ? "long" : "double";
-        for( int j=0; j<len; j++ ) { dblCells[j+H][i] = _vecs.isNA(off+j) ? TwoDimTable.emptyDouble : _vecs.at(off + j); strCells[j+H][i] = null; }
+        coltypes[i] = _vecs.isInt(i) ? "long" : "double";
+        for( int j=0; j<len; j++ ) { dblCells[j+H][i] = _vecs.isNA(off+j,i) ? TwoDimTable.emptyDouble : _vecs.at(off + j); strCells[j+H][i] = null; }
         break;
       case Vec.T_UUID:
         throw H2O.unimpl();

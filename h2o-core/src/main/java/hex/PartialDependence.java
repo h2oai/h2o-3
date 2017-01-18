@@ -5,6 +5,7 @@ import water.*;
 import water.api.schemas3.KeyV3;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.Log;
 import water.util.TwoDimTable;
 
@@ -36,7 +37,7 @@ public class PartialDependence extends Lockable<PartialDependence> {
     // to be able to delete the model metrics that got added to it.
     // Note: All threads doing the scoring call model_id.get() and then
     // update the _model_metrics only on the temporary live object, not in DKV.
-    // At the end, we call model.remove() and we need those model metrics to be
+    // At the end, we call model.removeVecs() and we need those model metrics to be
     // deleted with it, so we must make sure we keep the live POJO alive.
     _job.start(new PartialDependenceDriver(), _cols.length);
     return _job;
@@ -72,7 +73,7 @@ public class PartialDependence extends Lockable<PartialDependence> {
       for (int i = 0; i < _cols.length; ++i) {
         final String col = _cols[i];
         Log.debug("Computing partial dependence of model on '" + col + "'.");
-        Vec v = fr.vec(col);
+        VecAry v = fr.vec(col);
         if (v.isCategorical() && v.cardinality() > _nbins) {
           Log.warn("Too many categorical levels for column: " + col + ". Not creating partial dependence plot.");
           continue;
@@ -103,8 +104,8 @@ public class PartialDependence extends Lockable<PartialDependence> {
             public void compute2() {
               Frame fr = _frame_id.get();
               Frame test = new Frame(fr.names(), fr.vecs());
-              Vec orig = test.remove(col);
-              Vec cons = orig.makeCon(value);
+              VecAry orig = test.removeVecs(col);
+              VecAry cons = new VecAry(orig.vecs()[0].makeCon(value));
               if (cat) cons.setDomain(0,fr.vec(col).domain());
               test.add(col, cons);
               Frame preds = null;
@@ -138,7 +139,7 @@ public class PartialDependence extends Lockable<PartialDependence> {
             baselineMeanResponse = preds.vec(0).mean();
           } else throw H2O.unimpl();
         } finally {
-          if (preds!=null) preds.remove();
+          if (preds!=null) preds.removeVecs();
         }
         */
 

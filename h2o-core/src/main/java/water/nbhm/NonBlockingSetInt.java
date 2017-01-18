@@ -88,7 +88,7 @@ public class NonBlockingSetInt extends AbstractSet<Integer> implements Serializa
   }
   /** 
    * Remove {@code o} from the set.  This is the uppercase {@link Integer}
-   * version of remove, requires a type-check and auto-unboxing.  When
+   * version of removeVecs, requires a type-check and auto-unboxing.  When
    * possible use the {@code int} version of {@link #remove(int)} for
    * efficiency.
    * @return <tt>true</tt> if i was removed to the set.

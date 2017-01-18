@@ -35,7 +35,7 @@ public class AstSkewness extends AstPrimitive {
         return new ValNums(ds);
     }
 
-    public static double skewness(Vec v) {
+    public static double skewness(VecAry v) {
         return AstHist.third_moment(v);
     }
 }

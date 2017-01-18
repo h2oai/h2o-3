@@ -352,7 +352,7 @@ public class DataInfoTest extends TestUtil {
 //      gold.delete();
 //      if( di0!=null ) {
 //        di0.dropInteractions();
-//        di0.remove();
+//        di0.removeVecs();
 //      }
 //    }
 //  }

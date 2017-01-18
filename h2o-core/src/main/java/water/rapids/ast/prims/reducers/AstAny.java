@@ -1,6 +1,7 @@
 package water.rapids.ast.prims.reducers;
 
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.vals.ValNum;
@@ -30,7 +31,7 @@ public class AstAny extends AstPrimitive {
   public ValNum apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Val val = stk.track(asts[1].exec(env));
     if (val.isNum()) return new ValNum(val.getNum() == 0 ? 0 : 1);
-    for (Vec vec : val.getFrame().vecs())
+    for (VecAry vec : val.getFrame().vecs().singleVecs())
       if (vec.nzCnt() + vec.naCnt() > 0)
         return new ValNum(1);   // Some nonzeros in there somewhere
     return new ValNum(0);

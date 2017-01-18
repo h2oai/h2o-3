@@ -359,7 +359,7 @@ class TestGLMMultinomial:
             pyunit_utils.move_files(self.sandbox_dir, self.training_data_file, self.training_filename)
             pyunit_utils.move_files(self.sandbox_dir, self.validation_data_file, self.validation_filename)
             pyunit_utils.move_files(self.sandbox_dir, self.test_data_file, self.test_filename)
-        else:   # remove those files instead of moving them
+        else:   # removeVecs those files instead of moving them
             remove_files.append(self.training_data_file)
             remove_files.append(self.validation_data_file)
             remove_files.append(self.test_data_file)
@@ -415,7 +415,7 @@ class TestGLMMultinomial:
         if not(self.test_failed):   # all tests have passed.  Delete sandbox if if was not wiped before
             pyunit_utils.make_Rsandbox_dir(self.current_dir, self.test_name, False)
 
-        # remove any csv files left in test directory, do not remove them, shared computing resources
+        # removeVecs any csv files left in test directory, do not removeVecs them, shared computing resources
         if len(remove_files) > 0:
             for file in remove_files:
                 pyunit_utils.remove_files(file)

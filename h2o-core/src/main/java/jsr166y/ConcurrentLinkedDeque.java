@@ -1289,8 +1289,8 @@ public class ConcurrentLinkedDeque<E>
         private E nextItem;
 
         /**
-         * Node returned by most recent call to next. Needed by remove.
-         * Reset to null if this element is deleted by a call to remove.
+         * Node returned by most recent call to next. Needed by removeVecs.
+         * Reset to null if this element is deleted by a call to removeVecs.
          */
         private Node<E> lastRet;
 

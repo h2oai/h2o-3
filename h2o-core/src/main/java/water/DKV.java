@@ -207,9 +207,9 @@ public abstract class DKV {
 
     // Pending write to same key from this node?  Take that write instead.
     // Moral equivalent of "peeking into the cpu store buffer".  Can happen,
-    // e.g., because a prior 'put' of a null (i.e. a remove) is still mid-
+    // e.g., because a prior 'put' of a null (i.e. a removeVecs) is still mid-
     // send to the remote, so the local get has missed above, but a remote
-    // get still might 'win' because the remote 'remove' is still in-progress.
+    // get still might 'win' because the remote 'removeVecs' is still in-progress.
     TaskPutKey tpk = home.pendingPutKey(key);
     if( tpk != null ) return tpk._xval == null || tpk._xval.isNull() ? null : tpk._xval;
 

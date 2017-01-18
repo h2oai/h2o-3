@@ -3,6 +3,7 @@ package water.rapids.ast.prims.assign;
 import water.H2O;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
@@ -48,7 +49,7 @@ public class AstAppend extends AstPrimitive {
         throw new IllegalArgumentException("Source must be a Frame or Number, but found a " + vsrc.getClass());
     }
     dst = new Frame(dst._names.clone(), dst.vecs().clone());
-    dst.add(newColName, vec);
+    dst.add(newColName, new VecAry(vec));
     return new ValFrame(dst);
   }
 }

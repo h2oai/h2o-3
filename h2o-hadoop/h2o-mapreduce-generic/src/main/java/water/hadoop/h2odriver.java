@@ -981,7 +981,7 @@ public class h2odriver extends Configured implements Tool {
       Runtime.getRuntime().removeShutdownHook(ctrlc);
     }
     catch (IllegalStateException ignore) {
-      // If "Shutdown in progress" exception would be thrown, just ignore and don't bother to remove the hook.
+      // If "Shutdown in progress" exception would be thrown, just ignore and don't bother to removeVecs the hook.
     }
     ctrlc = null;
 

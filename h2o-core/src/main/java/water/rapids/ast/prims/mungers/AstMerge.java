@@ -392,7 +392,7 @@ public class AstMerge extends AstPrimitive {
       else if (c.hasFloat()) nc.addNum(c.atd(row));
       else nc.addNum(c.at8(row), 0);
     }
-    protected static void addElem(NewChunk nc, Vec v, long absRow, BufferedString bStr) {
+    protected static void addElem(NewChunk nc, VecAry v, long absRow, BufferedString bStr) {
       switch (v.getType(0)) {
         case Vec.T_NUM:
           nc.addNum(v.at(absRow));
@@ -467,7 +467,7 @@ public class AstMerge extends AstPrimitive {
     public void map(ChunkAry chks, NewChunkAry nchks) {
       // Shared common hash map
       final IcedHashMap<Row, String> rows = _rows;
-      AVecAry vecs = _hashed.vecs(); // Data source from hashed set
+      VecAry vecs = _hashed.vecs(); // Data source from hashed set
 //      assert vecs.length == _ncols + nchks.length;
       Row row = new Row(_ncols);   // Recycled Row object on the bigger dataset
       BufferedString bStr = new BufferedString(); // Recycled BufferedString
@@ -487,7 +487,7 @@ public class AstMerge extends AstPrimitive {
       }
     }
 
-    void addRow(NewChunkAry nchks, ChunkAry chks, AVecAry vecs, int relRow, long absRow, BufferedString bStr) {
+    void addRow(NewChunkAry nchks, ChunkAry chks, VecAry vecs, int relRow, long absRow, BufferedString bStr) {
       int c = 0;
       for (; c < chks._numCols; ++c) addElem((NewChunk)nchks.getChunk(c), chks.getChunk(c), relRow,bStr);
       for (; c < nchks._numCols; ++c) addElem((NewChunk)nchks.getChunk(c), vecs.select(c - chks._numCols + _ncols), absRow, bStr);

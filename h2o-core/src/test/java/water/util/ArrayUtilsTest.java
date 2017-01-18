@@ -98,9 +98,9 @@ public class ArrayUtilsTest extends TestUtil {
   @Test
   public void testRemoveOneObjectFromEmpty() {
     Integer[] sut = {};
-    assertArrayEquals("Nothing to remove",    sut, remove(sut, -1));
-    assertArrayEquals("Nothing to remove",    sut, remove(sut, 0));
-    assertArrayEquals("Nothing to remove",    sut, remove(sut, 1));
+    assertArrayEquals("Nothing to removeVecs",    sut, remove(sut, -1));
+    assertArrayEquals("Nothing to removeVecs",    sut, remove(sut, 0));
+    assertArrayEquals("Nothing to removeVecs",    sut, remove(sut, 1));
   }
 
   @Test
@@ -132,9 +132,9 @@ public class ArrayUtilsTest extends TestUtil {
   @Test
   public void testRemoveOneByteFromEmpty() {
     byte[] sut = {};
-    assertArrayEquals("Nothing to remove",    sut, remove(sut, -1));
-    assertArrayEquals("Nothing to remove",    sut, remove(sut, 0));
-    assertArrayEquals("Nothing to remove",    sut, remove(sut, 1));
+    assertArrayEquals("Nothing to removeVecs",    sut, remove(sut, -1));
+    assertArrayEquals("Nothing to removeVecs",    sut, remove(sut, 0));
+    assertArrayEquals("Nothing to removeVecs",    sut, remove(sut, 1));
   }
 
   @Test
@@ -166,9 +166,9 @@ public class ArrayUtilsTest extends TestUtil {
   @Test
   public void testRemoveOneIntFromEmpty() {
     int[] sut = {};
-    assertArrayEquals("Nothing to remove",    sut, remove(sut, -1));
-    assertArrayEquals("Nothing to remove",    sut, remove(sut, 0));
-    assertArrayEquals("Nothing to remove",    sut, remove(sut, 1));
+    assertArrayEquals("Nothing to removeVecs",    sut, remove(sut, -1));
+    assertArrayEquals("Nothing to removeVecs",    sut, remove(sut, 0));
+    assertArrayEquals("Nothing to removeVecs",    sut, remove(sut, 1));
   }
 
   @Test

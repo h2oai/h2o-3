@@ -43,7 +43,7 @@ def ipy_valid_lines(block):
             import matplotlib
             matplotlib.use('Agg', warn=False)
 
-    # remove ipython magic functions
+    # removeVecs ipython magic functions
     lines = [line for line in lines if not line.startswith('%')]
 
     # don't show any plots

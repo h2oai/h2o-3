@@ -83,14 +83,13 @@ public final class ParseDataset {
         ((FileVec) ice).setChunkSize(setup._chunk_size);
         nchunks += ((FileVec) ice).nChunks();
         Log.info("Parse chunk size " + setup._chunk_size);
-      } else if(ice instanceof Frame && ((Frame)ice).vec(0) instanceof FileVec) {
-        if(i == 0) v = ((Frame)ice).vec(0);
-        ((FileVec) ((Frame) ice).vec(0)).setChunkSize((Frame) ice, setup._chunk_size);
+      } else if(ice instanceof Frame && ((Frame)ice).vec(0).vecs()[0] instanceof FileVec) {
+        if(i == 0) v = ((Frame)ice).vec(0).vecs()[0];
+        ((FileVec) ((Frame) ice).vec(0).vecs()[0]).setChunkSize((Frame) ice, setup._chunk_size);
         nchunks += (((Frame) ice).vec(0)).nChunks();
         Log.info("Parse chunk size " + setup._chunk_size);
       }
     }
-    final VectorGroup vg = v.group();
     final ParseDataset pds = new ParseDataset(dest);
     new Frame(pds._job._result,new String[0],new Vec[0]).delete_and_lock(pds._job); // Write-Lock BEFORE returning
     return pds._job.start(new H2OCountedCompleter() {
@@ -147,8 +146,8 @@ public final class ParseDataset {
         if (ice instanceof FileVec) {
           ((FileVec) ice).setChunkSize(setup._chunk_size);
           Log.info("Parse chunk size " + setup._chunk_size);
-        } else if (ice instanceof Frame && ((Frame) ice).vec(0) instanceof FileVec) {
-          ((FileVec) ((Frame) ice).vec(0)).setChunkSize((Frame) ice, setup._chunk_size);
+        } else if (ice instanceof Frame && ((Frame) ice).vec(0).vecs()[0] instanceof FileVec) {
+          ((FileVec) ((Frame) ice).vec(0).vecs()[0]).setChunkSize((Frame) ice, setup._chunk_size);
           Log.info("Parse chunk size " + setup._chunk_size);
         }
       }
@@ -210,7 +209,7 @@ public final class ParseDataset {
     private void parseCleanup() {
       assert !_pds._job.isStopped(); // Job still running till job.onExCompletion returns
       Futures fs = new Futures();
-      // Find & remove all partially-built output vecs & chunks.
+      // Find & removeVecs all partially-built output vecs & chunks.
       // Since this is racily called, perhaps multiple times, read _mfpt only exactly once.
       MultiFileParseTask mfpt = _pds._mfpt;
       _pds._mfpt = null;        // Read once, test for null once.
@@ -673,7 +672,7 @@ public final class ParseDataset {
     // Mapping from Chunk# to node index holding the initial category mappings.
     // It is either self for all the non-parallel parses, or the Chunk-home for parallel parses.
     private int[] _chunk2ParseNodeMap;
-    // Job Key, to unlock & remove raw parsed data; to report progress
+    // Job Key, to unlock & removeVecs raw parsed data; to report progress
     private final Key<Job> _jobKey;
     // A mapping of Key+ByteVec to rolling total Chunk counts.
     private final int[]  _fileChunkOffsets;
@@ -963,7 +962,7 @@ public final class ParseDataset {
         p.parseChunk(in._cidx, din, dout);
         (_dout = dout).close(_fs);
         Job.update(in._len, _jobKey); // Record bytes parsed
-        // remove parsed data right away
+        // removeVecs parsed data right away
         freeMem(in);
       }
 
@@ -980,7 +979,7 @@ public final class ParseDataset {
         for(int i=0; i < 2; i++) {  // iterate over this chunk and the next one
           cidx += i;
           if (!_visited.add(cidx)) { // Second visit
-            Value v = Value.STORE_get(in._vec.newChunkKey(cidx));
+            Value v = Value.STORE_get(in._vec.vecs()[0].newChunkKey(cidx));
             if (v == null || !v.isPersisted()) return; // Not found, or not on disk somewhere
             v.freePOJO();           // Eagerly toss from memory
             v.freeMem();
@@ -1021,7 +1020,7 @@ public final class ParseDataset {
       }
     }
 
-    // Find & remove all partially built output chunks & vecs
+    // Find & removeVecs all partially built output chunks & vecs
     private Futures onExceptionCleanup(Futures fs) {
       int nchunks = _chunk2ParseNodeMap.length;
       int ncols = _parseSetup._number_columns;

@@ -471,13 +471,15 @@ public class FrameUtils {
         for (int i=0;i<frameVecs._numCols;++i)
           if (frameVecs.isCategorical(i) && ArrayUtils.find(_skipCols, _frame._names[i])==-1)
             numCategoricals++;
-
-        Vec[] extraVecs = new Vec[_skipCols.length];
-        for (int i=0; i< extraVecs.length; ++i) {
-          Vec v = _frame.vec(_skipCols[i]); //can be null
-          if (v!=null) extraVecs[i] = v;
+        VecAry extraVecs = new VecAry();
+        ArrayList<String> names = new ArrayList<>();
+        for (int i=0; i< _skipCols.length; ++i) {
+          VecAry v = _frame.vec(_skipCols[i]); //can be null
+          if (v != null) {
+            names.add(_skipCols[i]);
+            extraVecs.append(v);
+          }
         }
-
         Frame categoricalFrame = new Frame();
         Frame outputFrame = new Frame(_destKey);
         int[] categorySizes = new int[numCategoricals];
@@ -503,14 +505,13 @@ public class FrameUtils {
         Frame binaryCols = mrtask.doAll(numOutputColumns, Vec.T_NUM, categoricalFrame).outputFrame();
         binaryCols._names = catnames.toArray(new String[0]);
         outputFrame.add(binaryCols);
-        for (int i=0;i<extraVecs.length;++i) {
-          if (extraVecs[i]!=null)
-            outputFrame.add(_skipCols[i], extraVecs[i].makeCopy());
-        }
+        if(!extraVecs.isEmpty())
+          outputFrame.add(names.toArray(new String[names.size()]), extraVecs.makeCopy());
         DKV.put(outputFrame);
         tryComplete();
       }
     }
+
 
     public Job<Frame> exec() {
       if (_frame == null)
@@ -575,15 +576,18 @@ public class FrameUtils {
       @Override public void compute2() {
         VecAry frameVecs = _frame.vecs();
         int numCategoricals = 0;
+        ArrayList<String> names = new ArrayList<>();
         for (int i=0;i<frameVecs._numCols;++i)
           if (frameVecs.isCategorical(i) && (_skipCols==null || ArrayUtils.find(_skipCols, _frame._names[i])==-1))
             numCategoricals++;
-
-        Vec[] extraVecs = _skipCols==null?null:new Vec[_skipCols.length];
+        VecAry extraVecs = _skipCols==null?null:new VecAry();
         if (extraVecs!=null) {
-          for (int i = 0; i < extraVecs.length; ++i) {
-            Vec v = _frame.vec(_skipCols[i]); //can be null
-            if (v != null) extraVecs[i] = v;
+          for (int i = 0; i < _skipCols.length; ++i) {
+            VecAry v = _frame.vec(_skipCols[i]); //can be null
+            if (v != null) {
+              names.add(_skipCols[i]);
+              extraVecs.append(v);
+            }
           }
         }
 
@@ -611,12 +615,9 @@ public class FrameUtils {
           }
         }
         outputFrame.add(binaryCols);
-        if (_skipCols!=null) {
-          for (int i = 0; i < extraVecs.length; ++i) {
-            if (extraVecs[i] != null)
-              outputFrame.add(_skipCols[i], extraVecs[i].makeCopy());
-          }
-        }
+        if (_skipCols!=null)
+          if(!extraVecs.isEmpty())
+            outputFrame.add(names.toArray(new String[names.size()]),extraVecs.makeCopy());
         DKV.put(outputFrame);
         tryComplete();
       }
@@ -662,10 +663,15 @@ public class FrameUtils {
 
       @Override public void compute2() {
         VecAry frameVecs = _frame.vecs();
-        Vec[] extraVecs = new Vec[_skipCols==null?0:_skipCols.length];
-        for (int i=0; i< extraVecs.length; ++i) {
-          Vec v = _skipCols==null||_skipCols.length<=i?null:_frame.vec(_skipCols[i]); //can be null
-          if (v!=null) extraVecs[i] = v;
+        VecAry extraVecs = new VecAry();
+        ArrayList<String> names = new ArrayList<>();
+        if(_skipCols != null)
+        for (int i=0; i< _skipCols.length; ++i) {
+          VecAry v = _frame.vec(_skipCols[i]);
+          if(v != null) {
+            extraVecs.append(v); //can be null
+            names.add(_skipCols[i]);
+          }
         }
         Frame outputFrame = new Frame(_destKey);
         for (int i = 0; i < frameVecs._numCols; ++i) {
@@ -675,10 +681,8 @@ public class FrameUtils {
           else
             outputFrame.add(_frame.name(i), frameVecs.select(i).makeCopy());
         }
-        for (int i=0;i<extraVecs.length;++i) {
-          if (extraVecs[i]!=null)
-            outputFrame.add(_skipCols[i], extraVecs[i].makeCopy());
-        }
+        if(!extraVecs.isEmpty())
+          outputFrame.add(names.toArray(new String[names.size()]),extraVecs.makeCopy());
         DKV.put(outputFrame);
         tryComplete();
       }

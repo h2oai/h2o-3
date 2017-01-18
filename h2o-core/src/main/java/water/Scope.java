@@ -29,7 +29,7 @@ public class Scope {
   /** Enter a new Scope */
   static public void enter() { _scope.get()._keys.push(new HashSet<Key>()); }
 
-  /** Exit the inner-most Scope, remove all Keys created since the matching
+  /** Exit the inner-most Scope, removeVecs all Keys created since the matching
    *  enter call except for the listed Keys.
    *  @return Returns the list of kept keys. */
   static public Key[] exit(Key... keep) {

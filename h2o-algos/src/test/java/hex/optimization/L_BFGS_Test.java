@@ -66,8 +66,8 @@ public class L_BFGS_Test  extends TestUtil {
       glmp._alpha = new double[]{0};
       glmp._lambda = new double[]{1e-5};
       Frame source = parse_test_file(parsedKey, "smalldata/glm_test/prostate_cat_replaced.csv");
-      source.add("CAPSULE", source.remove("CAPSULE"));
-      source.remove("ID").remove();
+      source.add("CAPSULE", source.removeVecs("CAPSULE"));
+      source.removeVecs("ID").remove();
       Frame valid = new Frame(source._names.clone(),source.vecs().clone());
       dinfo = new DataInfo(source, valid, 1, false, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, /* weights */ null, /* offset */ null, /* fold */ null);
       DKV.put(dinfo._key,dinfo);

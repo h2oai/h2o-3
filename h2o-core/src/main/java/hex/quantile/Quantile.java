@@ -82,10 +82,10 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
             Arrays.fill(model._output._quantiles[n], Double.NaN);
             continue;
           }
-          double sumRows=_weights == null ? vecs.length()-vecs.naCnt(n) : new SumWeights().doAll(vecs.select(n), _weights).sum;
+          double sumRows=_weights == null ? vecs.length()-vecs.naCnt(n) : new SumWeights().doAll(vecs.select(n).append(_weights)).sum;
           // Compute top-level histogram
           Histo h1 = new Histo(vecs.min(n),vecs.max(n),0,sumRows,vecs.isInt(n));
-          h1 = _weights==null ? h1.doAll(vecs.select(n)) : h1.doAll(vecs.select(n), _weights);
+          h1 = _weights==null ? h1.doAll(vecs.select(n)) : h1.doAll(vecs.select(n).append(_weights));
 
           // For each probability, see if we have it exactly - or else run
           // passes until we do.
@@ -95,7 +95,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
 
             model._output._iterations++; // At least one iter per-prob-per-column
             while( Double.isNaN(model._output._quantiles[n][p] = h.findQuantile(prob,_parms._combine_method)) ) {
-              h = _weights == null ? h.refinePass(prob).doAll(vecs.select(n)) : h.refinePass(prob).doAll(vecs.select(n), _weights); // Full pass at higher resolution
+              h = _weights == null ? h.refinePass(prob).doAll(vecs.select(n)) : h.refinePass(prob).doAll(vecs.select(n).append(_weights)); // Full pass at higher resolution
               model._output._iterations++; // also count refinement iterations
             }
 

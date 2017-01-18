@@ -13,7 +13,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import hex.Distribution;
 import hex.Model;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
@@ -43,8 +42,8 @@ public class GBMGridTest extends TestUtil {
     Vec old = null;
     try {
       fr = parse_test_file("smalldata/junit/cars.csv");
-      fr.remove("name").remove(); // Remove unique id
-      old = fr.remove("cylinders");
+      fr.removeVecs("name").remove(); // Remove unique id
+      old = fr.removeVecs("cylinders");
       fr.add("cylinders", old.toCategoricalVec()); // response to last column
       DKV.put(fr);
 
@@ -131,8 +130,8 @@ public class GBMGridTest extends TestUtil {
     Vec old = null;
     try {
       fr = parse_test_file("smalldata/junit/cars_20mpg.csv");
-      fr.remove("name").remove(); // Remove unique id
-      old = fr.remove("economy");
+      fr.removeVecs("name").remove(); // Remove unique id
+      old = fr.removeVecs("economy");
       fr.add("economy", old); // response to last column
       DKV.put(fr);
 
@@ -182,8 +181,8 @@ public class GBMGridTest extends TestUtil {
     Vec old = null;
     try {
       fr = parse_test_file("smalldata/junit/cars.csv");
-      fr.remove("name").remove();
-      old = fr.remove("economy (mpg)");
+      fr.removeVecs("name").remove();
+      old = fr.removeVecs("economy (mpg)");
 
       fr.add("economy (mpg)", old); // response to last column
       DKV.put(fr);

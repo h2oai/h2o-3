@@ -224,11 +224,11 @@ public class RapidsTest extends TestUtil {
   private void checkTree(String tree, boolean expectThrow) {
     //Frame r = frame(new double[][]{{-1},{1},{2},{3},{4},{5},{6},{254}});
     //Key ahex = Key.make("a.hex");
-    //Frame fr = new Frame(ahex, null, new Vec[]{r.remove(0)});
+    //Frame fr = new Frame(ahex, null, new Vec[]{r.removeVecs(0)});
     //r.delete();
     //DKV.put(ahex, fr);
     Frame fr = parse_test_file(Key.make("a.hex"),"smalldata/iris/iris_wheader.csv");
-    fr.remove(4).remove();
+    fr.removeVecs(4).removeVecs();
     try {
       Val val = Rapids.exec(tree);
       Assert.assertFalse(expectThrow);
@@ -289,11 +289,11 @@ public class RapidsTest extends TestUtil {
       Val res = Rapids.exec(x);
       f = res.getFrame();
       System.out.println(f);
-      Vec names = f.vec(0);
+      VecAry names = f.vec(0);
       Assert.assertEquals(names.factor(0,names.at4(0,0)),"Cliff");
-      Vec ages  = f.vec(1);
+      VecAry ages  = f.vec(1);
       Assert.assertEquals(ages .factor(0,ages .at4(0,0)),">dirt");
-      Vec skilz = f.vec(2);
+      VecAry skilz = f.vec(2);
       Assert.assertEquals(skilz.factor(0,skilz.at4(0,0)),"hacker");
     } finally {
       if( f != null ) f.delete();
@@ -359,7 +359,7 @@ public class RapidsTest extends TestUtil {
       Value val = Value.STORE_get(k);
       if( val != null && val.isFrame() ) {
         Frame fr = val.get();
-        AVecAry vecs = fr.vecs();
+        VecAry vecs = fr.vecs();
         for(Vec v:vecs.vecs()) {
           if( DKV.get(v._key) == null ) {
             System.err.println("Frame "+fr._key+" in the DKV, is missing Vec "+v._key);

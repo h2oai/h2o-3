@@ -375,7 +375,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @property
     def remove_collinear_columns(self):
-        """bool: in case of linearly dependent columns remove some of the dependent columns (Default: False)"""
+        """bool: in case of linearly dependent columns removeVecs some of the dependent columns (Default: False)"""
         return self._parms.get("remove_collinear_columns")
 
     @remove_collinear_columns.setter

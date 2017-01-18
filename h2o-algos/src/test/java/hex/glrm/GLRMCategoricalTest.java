@@ -90,7 +90,7 @@ public class GLRMCategoricalTest extends TestUtil {
       train = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
       for(int i = 0; i < cats.length; i++)
         Scope.track(train.replace(cats[i], train.vec(cats[i]).toCategoricalVec()));
-      train.remove("ID").remove();
+      train.removeVecs("ID").remove();
       DKV.put(train._key, train);
 
       GLRMParameters parms = new GLRMParameters();
@@ -135,7 +135,7 @@ public class GLRMCategoricalTest extends TestUtil {
       train = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
       for(int i = 0; i < cats.length; i++)
         Scope.track(train.replace(cats[i], train.vec(cats[i]).toCategoricalVec()));
-      train.remove("ID").remove();
+      train.removeVecs("ID").remove();
       DKV.put(train._key, train);
 
       for(GlrmLoss loss : new GlrmLoss[] {
@@ -197,7 +197,7 @@ public class GLRMCategoricalTest extends TestUtil {
       train = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
       for(int i = 0; i < cats.length; i++)
         Scope.track(train.replace(cats[i], train.vec(cats[i]).toCategoricalVec()));
-      train.remove("ID").remove();
+      train.removeVecs("ID").remove();
       DKV.put(train._key, train);
 
       GLRMParameters parms = new GLRMParameters();
@@ -278,7 +278,7 @@ public class GLRMCategoricalTest extends TestUtil {
       fr = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
       for(int i = 0; i < cats.length; i++)
         Scope.track(fr.replace(cats[i], fr.vec(cats[i]).toCategoricalVec()));
-      fr.remove("ID").remove();
+      fr.removeVecs("ID").remove();
       DKV.put(fr._key, fr);
       DataInfo dinfo = new DataInfo(fr, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, false, false, false, /* weights */ null, /* offset */ null, /* fold */ null);
 

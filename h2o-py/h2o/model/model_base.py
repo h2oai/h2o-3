@@ -760,7 +760,7 @@ class ModelBase(backwards_compatible()):
 
     # Delete from cluster as model goes out of scope
     # def __del__(self):
-    #   h2o.remove(self._id)
+    #   h2o.removeVecs(self._id)
 
     def _plot(self, timestep, metric, server=False):
         plt = _get_matplotlib_pyplot(server)

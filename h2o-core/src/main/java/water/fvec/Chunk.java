@@ -400,5 +400,5 @@ public abstract class Chunk extends DBlock {
     if(c != 0) throw new ArrayIndexOutOfBoundsException(c);
     return this;
   }
-  @Override public ChunkAry chunkAry(Vec v, int cidx){return new ChunkAry(v,cidx,this);}
+  @Override public ChunkAry chunkAry(VecAry v, int cidx){return new ChunkAry(v,cidx,this);}
 }

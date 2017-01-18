@@ -37,13 +37,13 @@ public class DataInfo extends Keyed<DataInfo> {
 
   public void dropWeights() {
     if(_weightsId == -1)return;
-    _adaptedFrame.remove(_weightsId);
+    _adaptedFrame.removeVecs(_weightsId);
     _weightsId = -1;
   }
 
   public void dropInteractions() { // only called to cleanup the InteractionWrappedVecs!
     if(_interactions!=null) {
-      _adaptedFrame.remove(_interactionVecs).remove();
+      _adaptedFrame.removeVecs(_interactionVecs).removeVecs();
       _interactions = null;
     }
   }
@@ -457,7 +457,7 @@ public class DataInfo extends Keyed<DataInfo> {
     //public DataInfo(Frame fr, int hasResponses, boolean useAllFactorLvls, double [] normSub, double [] normMul, double [] normRespSub, double [] normRespMul){
     int [][] catLvls = new int[_cats][];  // categorical levels to keep (used in getCategoricalOffsetId binary search)
     int [][] intLvls = new int[_interactionVecs==null?0:_interactionVecs.length][]; // interactions levels to keep (used in getInteractionOffsetId binary search)
-    int [] ignoredCols = MemoryManager.malloc4(_nums + _cats);  // capital 'v' Vec indices to be frame.remove'd
+    int [] ignoredCols = MemoryManager.malloc4(_nums + _cats);  // capital 'v' Vec indices to be frame.removeVecs'd
     // first do categoricals...
     if(_catOffsets != null) {
       int coff = _useAllFactorLevels?0:1;
@@ -526,7 +526,7 @@ public class DataInfo extends Keyed<DataInfo> {
     for(int k = prev; k < _nums; ++k)
       ignoredCols[ignoredCnt++] = k+_cats;
     Frame f = new Frame(_adaptedFrame.names().clone(),_adaptedFrame.vecs().clone());
-    if(ignoredCnt > 0) f.remove(Arrays.copyOf(ignoredCols,ignoredCnt));
+    if(ignoredCnt > 0) f.removeVecs(Arrays.copyOf(ignoredCols,ignoredCnt));
     assert catLvls.length < f.numCols():"cats = " + catLvls.length + " numcols = " + f.numCols();
     double [] normSub = null;
     double [] normMul = null;

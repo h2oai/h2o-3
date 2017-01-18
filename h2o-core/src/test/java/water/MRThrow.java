@@ -39,7 +39,7 @@ public class MRThrow extends TestUtil {
         if( ex == null ) fail("should've thrown");
       }
     } finally {
-      if( vec != null ) vec.remove(); // remove from DKV
+      if( vec != null ) vec.remove(); // removeVecs from DKV
     }
   }
 
@@ -75,7 +75,7 @@ public class MRThrow extends TestUtil {
         }
       }
     } finally {
-      if( vec != null ) vec.remove(); // remove from DKV
+      if( vec != null ) vec.remove(); // removeVecs from DKV
     }
   }
 

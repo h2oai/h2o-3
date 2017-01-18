@@ -123,10 +123,10 @@ public class AppendableVec extends Vec {
   public Vec close(int rowLayout, Futures fs) {
     // Compute #chunks
     int nchunk = _tmp_espc.length;
-    DKV.remove(chunkKey(nchunk),fs); // remove potential trailing key
+    DKV.remove(chunkKey(nchunk),fs); // removeVecs potential trailing key
     while( nchunk > 1 && _tmp_espc[nchunk-1] == 0 ) {
       nchunk--;
-      DKV.remove(chunkKey(nchunk),fs); // remove potential trailing key
+      DKV.remove(chunkKey(nchunk),fs); // removeVecs potential trailing key
     }
     // Replacement plain Vec for AppendableVec.
     Vec vec = new Vec(_key, rowLayout, domains(), _types);
@@ -145,7 +145,7 @@ public class AppendableVec extends Vec {
   }
   // None of these are supposed to be called while building the new vector
   @Override public DBlock chunkIdx( int cidx ) { throw H2O.fail(); }
-  @Override public long length() { throw H2O.fail(); }
+  @Override public long length() { return 0; }
   @Override public int nChunks() { throw H2O.fail(); }
   @Override public int elem2ChunkIdx( long i ) { throw H2O.fail(); }
   @Override protected long chunk2StartElem( int cidx ) { return -1; }

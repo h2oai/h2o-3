@@ -1347,7 +1347,7 @@ public class ForkJoinPool extends AbstractExecutorService {
             stealCount.getAndAdd(w.totalSteals + w.nsteals);
             int idx = w.poolIndex;
             lock.lock();
-            try {                           // remove record from array
+            try {                           // removeVecs record from array
                 WorkQueue[] ws = workQueues;
                 if (ws != null && idx >= 0 && idx < ws.length && ws[idx] == w)
                     ws[idx] = null;
@@ -2515,7 +2515,7 @@ public class ForkJoinPool extends AbstractExecutorService {
      * without altering their execution status. These may include
      * artificially generated or wrapped tasks. This method is
      * designed to be invoked only when the pool is known to be
-     * quiescent. Invocations at other times may not remove all
+     * quiescent. Invocations at other times may not removeVecs all
      * tasks. A failure encountered while attempting to add elements
      * to collection {@code c} may result in elements being in
      * neither, either or both collections when the associated

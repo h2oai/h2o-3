@@ -622,7 +622,7 @@ class H2OConnection(backwards_compatible()):
     # Access to any of these vars / methods will produce deprecation warnings.
     # Consult backwards_compatible.py for the description of these vars.
     #
-    # These methods are deprecated since July 2016. Please remove them if it's 2017 already...
+    # These methods are deprecated since July 2016. Please removeVecs them if it's 2017 already...
     #-------------------------------------------------------------------------------------------------------------------
 
     _bcsv = {"__ENCODING__": "utf-8", "__ENCODING_ERROR__": "replace"}

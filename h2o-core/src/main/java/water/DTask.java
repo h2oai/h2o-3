@@ -67,7 +67,7 @@ public abstract class DTask<T extends DTask> extends H2OCountedCompleter<T> {
    * are available here.  */
   public void onAckAck() {}
 
-  /** Override to remove 2 lines of logging per RPC.  0.5M RPC's will lead to
+  /** Override to removeVecs 2 lines of logging per RPC.  0.5M RPC's will lead to
    *  1M lines of logging at about 50 bytes/line produces 50M of log file,
    *  which will swamp all other logging output. */
   public boolean logVerbose() { return true; }
@@ -107,7 +107,7 @@ public abstract class DTask<T extends DTask> extends H2OCountedCompleter<T> {
     }
   }
 
-  /** Task to cleanly remove value from the K/V (call it's remove()
+  /** Task to cleanly removeVecs value from the K/V (call it's removeVecs()
    *  destructor) without the need to fetch it locally first.  */
   public static class RemoveCall extends DKeyTask {
     public RemoveCall(H2OCountedCompleter cmp, Key k) { super(cmp, k);}

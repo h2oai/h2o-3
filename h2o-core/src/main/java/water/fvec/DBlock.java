@@ -13,7 +13,7 @@ import java.util.Arrays;
 public abstract class DBlock extends Iced<DBlock> {
   public boolean isColumnBased() {return true;}
   public abstract Chunk getColChunk(int c);
-  public abstract ChunkAry chunkAry(Vec v, int cidx);
+  public abstract ChunkAry chunkAry(VecAry v, int cidx);
 
   public abstract int numCols();
 
@@ -28,7 +28,7 @@ public abstract class DBlock extends Iced<DBlock> {
 
     public void setChunk(int i, Chunk c){_cs[i] = c;}
     @Override
-    public ChunkAry chunkAry(Vec v, int cidx) {return new ChunkAry(v,cidx,_cs);}
+    public ChunkAry chunkAry(VecAry v, int cidx) {return new ChunkAry(v,cidx,_cs);}
 
     @Override
     public int numCols() {return _cs.length;}

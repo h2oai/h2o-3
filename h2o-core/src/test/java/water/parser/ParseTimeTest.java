@@ -146,7 +146,7 @@ public class ParseTimeTest extends TestUtil {
     };
     for (int i=0; i < exp.length; i++ )  // Adjust exp[] to local time
       exp[i] += pst.getOffset(exp[i]) - localTZ.getOffset(exp[i]);
-    Vec vec = fr.vec("Date");
+    VecAry vec = fr.vec("Date");
     for (int i=0; i < exp.length; i++ )
       Assert.assertEquals(exp[i],vec.at8(i));
     fr.delete();
@@ -173,7 +173,7 @@ public class ParseTimeTest extends TestUtil {
     };
     for (int i=0; i < exp.length; i++ )  // Adjust exp[] to local time
       exp[i] += pst.getOffset(exp[i]) - localTZ.getOffset(exp[i]);
-    Vec vec = fr.vec("Date");
+    VecAry vec = fr.vec("Date");
     for (int i=0; i < exp.length; i++ )
       Assert.assertEquals(exp[i],vec.at8(i));
     fr.delete();
@@ -200,7 +200,7 @@ public class ParseTimeTest extends TestUtil {
     };
     for (int i=0; i < exp.length; i++ )  // Adjust exp[] to local time
       exp[i] += pst.getOffset(exp[i]) - localTZ.getOffset(exp[i]);
-    Vec vec = fr.vec("Date");
+    VecAry vec = fr.vec("Date");
     for (int i=0; i < exp.length; i++ )
       Assert.assertEquals(exp[i],vec.at8(i));
     fr.delete();
@@ -234,7 +234,7 @@ public class ParseTimeTest extends TestUtil {
     };
     for (int i=0; i < exp.length; i++ )  // Adjust exp[] to local time
       exp[i] += pst.getOffset(exp[i]) - localTZ.getOffset(exp[i]);
-    Vec vec = fr.vec("Date");
+    VecAry vec = fr.vec("Date");
     for (int i=0; i < exp.length; i++ )
       Assert.assertEquals(exp[i],vec.at8(i));
     fr.delete();
@@ -288,7 +288,7 @@ public class ParseTimeTest extends TestUtil {
       25388000L,
       30008000L,
     };
-    Vec vec = fr.vec("Time");
+    VecAry vec = fr.vec("Time");
     for (int i=0; i < exp.length; i++ )
       Assert.assertEquals(exp[i],vec.at8(i));
     fr.delete();

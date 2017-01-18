@@ -20,7 +20,7 @@ public abstract class Keyed<T extends Keyed> extends Iced<T> {
     return remove_impl(fs);
   }
 
-  /** Override to remove subparts, but not self, of composite Keyed objects.  
+  /** Override to removeVecs subparts, but not self, of composite Keyed objects.
    *  Examples include {@link Vec} (removing associated {@link Chunk} keys)
    *  and {@link Frame} (removing associated {@link Vec} keys.) */
   protected Futures remove_impl( Futures fs ) { return fs; }

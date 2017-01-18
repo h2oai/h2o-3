@@ -34,7 +34,7 @@ public class GLMTest  extends TestUtil {
     Frame fr2 = new Frame(fr);
     Frame preds = Scope.track(m.score(fr2));
     m.adaptTestForTrain(fr2,true,false);
-    fr2.remove(fr2.numCols()-1); // remove response
+    fr2.removeVecs(fr2.numCols()-1); // removeVecs response
     int p = m._output._dinfo._cats + m._output._dinfo._nums;
     int p2 = fr2.numCols() - (m._output._dinfo.hasWeights()?1:0)- (m._output._dinfo.hasOffset()?1:0);
     assert p == p2: p + " != " + p2;
@@ -292,7 +292,7 @@ public class GLMTest  extends TestUtil {
       params._train = parsed;
       params._lambda = new double[]{0};
       params._use_all_factor_levels = true;
-      fr.add("Useless", fr.remove("Useless"));
+      fr.add("Useless", fr.removeVecs("Useless"));
 
       dinfo = new DataInfo(fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, null, null, null);
       DKV.put(dinfo._key,dinfo);
@@ -440,8 +440,8 @@ public class GLMTest  extends TestUtil {
   Vec origRes = null;
     try {
       fr = parse_test_file(parsed, "smalldata/covtype/covtype.20k.data");
-      fr.remove("C21").remove();
-      fr.remove("C29").remove();
+      fr.removeVecs("C21").remove();
+      fr.removeVecs("C29").remove();
       GLMParameters params = new GLMParameters(Family.multinomial);
       params._response_column = "C55";
       // params._response = fr.find(params._response_column);
@@ -449,7 +449,7 @@ public class GLMTest  extends TestUtil {
       params._train = parsed;
       params._lambda = new double[]{0};
       params._alpha = new double[]{0};
-      origRes = fr.remove("C55");
+      origRes = fr.removeVecs("C55");
       Vec res = fr.add("C55",origRes.toCategoricalVec());
       double [] means = new double [res.domain().length];
       long [] bins = res.bins(0);
@@ -650,8 +650,8 @@ public class GLMTest  extends TestUtil {
       assertTrue(glm.isStopped());
       double[] beta = model.beta();
       System.out.println("beta = " + Arrays.toString(beta));
-      fr.add("CAPSULE", fr.remove("CAPSULE"));
-      fr.remove("ID").remove();
+      fr.add("CAPSULE", fr.removeVecs("CAPSULE"));
+      fr.removeVecs("ID").remove();
       DKV.put(fr._key, fr);
       // now check the ginfo
       DataInfo dinfo = new DataInfo(fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false, false,  null, null, null);
@@ -807,7 +807,7 @@ public class GLMTest  extends TestUtil {
     GLMModel model = null;
 
     Frame fr = parse_test_file(parsed, "smalldata/logreg/prostate.csv");
-    fr.remove("ID").remove();
+    fr.removeVecs("ID").remove();
     DKV.put(fr._key, fr);
     Key betaConsKey = Key.make("beta_constraints");
 
@@ -833,7 +833,7 @@ public class GLMTest  extends TestUtil {
       params._max_iterations = 1000;
       glm = new GLM( params, modelKey);
       model = glm.trainModel().get();
-      fr.add("CAPSULE", fr.remove("CAPSULE"));
+      fr.add("CAPSULE", fr.removeVecs("CAPSULE"));
       // now check the ginfo
       DataInfo dinfo = new DataInfo(fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false, false,  null, null, null);
       GLMGradientTask lt = new GLMBinomialGradientTask(null,dinfo, params, 0, beta_1).doAll(dinfo._adaptedFrame);
@@ -855,9 +855,9 @@ public class GLMTest  extends TestUtil {
 //
 //    Frame frMM = parse_test_file("smalldata/glm_tets/train-2.csv");
 //
-////    Vec xy = frG.remove("xy");
-//    frMM.remove("").remove();
-//    frMM.add("IsDepDelayed", frMM.remove("IsDepDelayed"));
+////    Vec xy = frG.removeVecs("xy");
+//    frMM.removeVecs("").removeVecs();
+//    frMM.add("IsDepDelayed", frMM.removeVecs("IsDepDelayed"));
 //    DKV.put(frMM._key,frMM);
 //    Frame fr = parse_test_file("smalldata/airlines/AirlinesTrain.csv.zip"), res = null;
 //    //  Distance + Origin + Dest + UniqueCarrier
@@ -876,7 +876,7 @@ public class GLMTest  extends TestUtil {
 //      Assert.assertEquals(model1.validation().residual_deviance, mm._resDev, 1e-4);
 //      System.out.println("NDOF = " + model1.validation().nullDOF() + ", numRows = " + score1.numRows());
 //      Assert.assertEquals(model1.validation().residual_deviance, mm._MSE * score1.numRows(), 1e-4);
-//      mm.remove();
+//      mm.removeVecs();
 //      res = model1.score(fr);
 //      // Build a POJO, validate same results
 //      Assert.assertTrue(model1.testJavaScoring(fr, res, 1e-15));
@@ -897,7 +897,7 @@ public class GLMTest  extends TestUtil {
 //        assertEquals(xy.at(i), glmt._xy[i], 1e-5);
 //      }
 //      frG.delete();
-//      xy.remove();
+//      xy.removeVecs();
 //      params._standardize = true;
 //      params._family = Family.binomial;
 //      params._link = Link.logit;
@@ -1056,14 +1056,14 @@ public class GLMTest  extends TestUtil {
     GLMModel model1 = null, model2 = null, model3 = null, model4 = null;
     Frame frMM = parse_test_file(Key.make("AirlinesMM"), "smalldata/airlines/AirlinesTrainMM.csv.zip");
     Frame frG = parse_test_file(Key.make("gram"), "smalldata/airlines/gram_std.csv", true);
-    Vec xy = frG.remove("xy");
-    frMM.remove("C1").remove();
+    Vec xy = frG.removeVecs("xy");
+    frMM.removeVecs("C1").remove();
     Vec v;
-    frMM.add("IsDepDelayed", (v = frMM.remove("IsDepDelayed")).makeCopy(null));
+    frMM.add("IsDepDelayed", (v = frMM.removeVecs("IsDepDelayed")).makeCopy(null));
     v.remove();
     DKV.put(frMM._key, frMM);
     Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"), res = null;
-    fr.add("IsDepDelayed",(v =fr.remove("IsDepDelayed")).makeCopy(null));
+    fr.add("IsDepDelayed",(v =fr.removeVecs("IsDepDelayed")).makeCopy(null));
     v.remove();
     DKV.put(fr._key,fr);
     //  Distance + Origin + Dest + UniqueCarrier
@@ -1526,8 +1526,8 @@ public class GLMTest  extends TestUtil {
       ModelMetrics mm3 = ModelMetrics.getFromDKV(model3,fr);
       assertEquals("mse don't match, " + model3._output._training_metrics._MSE + " != " + mm3._MSE,model3._output._training_metrics._MSE,mm3._MSE,1e-8);
       assertEquals("res-devs don't match, " + ((ModelMetricsBinomialGLM)model3._output._training_metrics)._resDev + " != " + ((ModelMetricsBinomialGLM)mm3)._resDev,((ModelMetricsBinomialGLM)model3._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM)mm3)._resDev,1e-4);
-      fr.add("CAPSULE", fr.remove("CAPSULE"));
-      fr.remove("ID").remove();
+      fr.add("CAPSULE", fr.removeVecs("CAPSULE"));
+      fr.removeVecs("ID").remove();
       DKV.put(fr._key,fr);
       DataInfo dinfo = new DataInfo(fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false, false,  null, null, null);
       model3.score(fr).delete();
@@ -1773,7 +1773,7 @@ public class GLMTest  extends TestUtil {
         String resp = tfr.lastVecName();
         if (fam==Family.binomial || fam==Family.multinomial) {
           resp = fam==Family.multinomial?"rad":"chas";
-          Vec v = tfr.remove(resp);
+          Vec v = tfr.removeVecs(resp);
           tfr.add(resp, v.toCategoricalVec());
           v.remove();
           DKV.put(tfr);

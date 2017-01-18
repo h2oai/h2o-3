@@ -255,7 +255,7 @@ class Test_gbm_grid_search:
         else:   # all tests have passed.  Delete sandbox if if was not wiped before
             pyunit_utils.make_Rsandbox_dir(self.current_dir, self.test_name, False)
 
-        # remove any csv files left in test directory
+        # removeVecs any csv files left in test directory
         pyunit_utils.remove_csv_files(self.current_dir, ".csv")
         pyunit_utils.remove_csv_files(self.current_dir, ".json")
 

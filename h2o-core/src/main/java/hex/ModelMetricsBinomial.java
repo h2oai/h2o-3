@@ -6,6 +6,7 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
 
@@ -77,7 +78,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
    * @return ModelMetrics object
    */
   static public ModelMetricsBinomial make(Vec targetClassProbs, Vec actualLabels, String[] domain) {
-    Vec _labels = actualLabels.toCategoricalVec();
+    VecAry _labels = actualLabels.toCategoricalVec();
     if (_labels == null || targetClassProbs == null)
       throw new IllegalArgumentException("Missing actualLabels or predictedProbs for binomial metrics!");
     if (!targetClassProbs.isNumeric())
@@ -178,9 +179,9 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
         auc = new AUC2(_auc);
         gl = null;
         if (preds!=null) {
-          Vec resp = m==null && f.vec(f.numCols()-1).isCategorical() ? f.vec(f.numCols()-1) //work-around for the case where we don't have a model, assume that the last column is the actual response
+          VecAry resp = m==null && f.vec(f.numCols()-1).isCategorical() ? f.vec(f.numCols()-1) //work-around for the case where we don't have a model, assume that the last column is the actual response
                   : f.vec(m._parms._response_column);
-          Vec weight = m==null?null : frameWithWeights.vec(m._parms._weights_column);
+          VecAry weight = m==null?null : frameWithWeights.vec(m._parms._weights_column);
           if (resp != null) {
             try {
               gl = new GainsLift(preds.lastVec(), resp, weight);

@@ -134,7 +134,7 @@ public class KVTest extends TestUtil {
       int sum = water.util.ArrayUtils.sum(bh._x);
       assertEquals(file.length(),sum);
     } finally {
-      if( nfs != null ) nfs.remove(); // remove from DKV
+      if( nfs != null ) nfs.remove(); // removeVecs from DKV
     }
     System.out.println("MultiMbFile "+(System.currentTimeMillis()-start));
   }

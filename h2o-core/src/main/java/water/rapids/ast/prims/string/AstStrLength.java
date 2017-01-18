@@ -34,31 +34,31 @@ public class AstStrLength extends AstPrimitive {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
 
     // Type check
-    for (Vec v : fr.vecs())
+    for (VecAry v : fr.vecs().singleVecs())
       if (!(v.isCategorical() || v.isString()))
         throw new IllegalArgumentException("length() requires a string or categorical column. "
             + "Received " + fr.anyVec().get_type_str()
             + ". Please convert column to a string or categorical first.");
 
     // Transform each vec
-    Vec nvs[] = new Vec[fr.numCols()];
+    VecAry nvs = new VecAry();
     int i = 0;
-    for (Vec v : fr.vecs()) {
+    for (VecAry v : fr.vecs().singleVecs()) {
       if (v.isCategorical())
-        nvs[i] = lengthCategoricalCol(v);
+        nvs.append(lengthCategoricalCol(v));
       else
-        nvs[i] = lengthStringCol(v);
+        nvs.append(lengthStringCol(v));
       i++;
     }
 
     return new ValFrame(new Frame(nvs));
   }
 
-  private Vec lengthCategoricalCol(Vec vec) {
+  private VecAry lengthCategoricalCol(VecAry vec) {
     //String[] doms = vec.domain();
     //int[] catLengths = new int[doms.length];
     //for (int i = 0; i < doms.length; ++i) catLengths[i] = doms[i].length();
-    Vec res = new MRTask() {
+    VecAry res = new MRTask() {
       transient int[] catLengths;
 
       @Override
@@ -78,11 +78,11 @@ public class AstStrLength extends AstPrimitive {
           else
             newChk.addNum(catLengths[(int) chk.atd(i)], 0);
       }
-    }.doAll(1, Vec.T_NUM, new Frame(vec)).outputFrame().anyVec();
+    }.doAll(1, Vec.T_NUM, new Frame(vec)).outputFrame().vecs();
     return res;
   }
 
-  private Vec lengthStringCol(Vec vec) {
+  private VecAry lengthStringCol(VecAry vec) {
     return new MRTask() {
       @Override
       public void map(Chunk chk, NewChunk newChk) {
@@ -99,6 +99,6 @@ public class AstStrLength extends AstPrimitive {
           }
         }
       }
-    }.doAll(new byte[]{Vec.T_NUM}, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_NUM}, vec).outputFrame().vecs();
   }
 }

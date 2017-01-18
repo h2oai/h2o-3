@@ -193,7 +193,7 @@ abstract public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
   }
 
   protected I fillImpl(I impl, String[] fieldsToSkip) {
-    PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.CONSISTENT, fieldsToSkip); // TODO: make field names in the impl classes consistent and remove
+    PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.CONSISTENT, fieldsToSkip); // TODO: make field names in the impl classes consistent and removeVecs
     PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES, fieldsToSkip);
     return impl;
   }
@@ -217,7 +217,7 @@ abstract public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
 
   protected S fillFromImpl(I impl, String[] fieldsToSkip) {
     PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, fieldsToSkip);
-    PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.CONSISTENT, fieldsToSkip);  // TODO: make field names in the impl classes consistent and remove
+    PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.CONSISTENT, fieldsToSkip);  // TODO: make field names in the impl classes consistent and removeVecs
     //noinspection unchecked  (parameter <S> should be the derived class itself)
     return (S) this;
   }

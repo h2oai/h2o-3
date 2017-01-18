@@ -11,8 +11,11 @@ import java.util.Arrays;
  * Created by tomas on 10/11/16.
  */
 public class NewChunkAry extends ChunkAry<NewChunk> {
+  final Vec _av;
   public NewChunkAry(Vec v, int cidx, NewChunk[] cs, int[] ids) {
-    super(v, cidx, cs, ids);
+    super(cidx,-1,cs);
+    _av = v;
+    _ids = ids;
   }
   public final void addNA(int c){_cs[c].addNA();}
   public final void addNum(double d){addNum(0,d);}
@@ -70,11 +73,11 @@ public class NewChunkAry extends ChunkAry<NewChunk> {
   @Override
   public Futures close(Futures fs){
     Chunk [] cs = new Chunk[_cs.length];
-    int len = _cs[0].len();
     for(int i = 0; i < _cs.length; ++i)
       cs[i] = _cs[i].compress();
     _cs = null;
-    return _vec.closeChunk(_cidx,len,cs.length == 1?cs[0]:new DBlock.MultiChunkBlock(cs),fs);
+    DBlock db = _numCols == 1?cs[0]:new DBlock.MultiChunkBlock(cs);
+    return _av.closeChunk(_cidx,cs[0]._len,db,fs);
   }
   public void addInflated(int c, DVal inflated) {
     _cs[c].addInflated(inflated);

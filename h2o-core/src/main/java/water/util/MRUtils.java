@@ -96,7 +96,7 @@ public class MRUtils {
   public static class ClassDist extends MRTask<ClassDist> {
     final int _nclass;
     protected double[] _ys;
-    public ClassDist(final Vec label) { _nclass = label.domain().length; }
+    public ClassDist(final VecAry label) { _nclass = label.domain().length; }
     public ClassDist(int n) { _nclass = n; }
 
     public final double[] dist() { return _ys; }
@@ -171,16 +171,15 @@ public class MRUtils {
    * @param verbose Whether to print verbose info
    * @return Sampled frame, with approximately the same number of samples from each class (or given by the requested sampling ratios)
    */
-  public static Frame sampleFrameStratified(final Frame fr, Vec label, Vec weights, float[] sampling_ratios, long maxrows, final long seed, final boolean allowOversampling, final boolean verbose) {
+  public static Frame sampleFrameStratified(final Frame fr, VecAry label, VecAry weights, float[] sampling_ratios, long maxrows, final long seed, final boolean allowOversampling, final boolean verbose) {
     if (fr == null) return null;
     assert(label.isCategorical());
     if (maxrows < label.domain().length) {
       Log.warn("Attempting to do stratified sampling to fewer samples than there are class labels - automatically increasing to #rows == #labels (" + label.domain().length + ").");
       maxrows = label.domain().length;
     }
-
     ClassDist cd = new ClassDist(label);
-    double[] dist = weights != null ? cd.doAll(label, weights).dist() : cd.doAll(label).dist();
+    double[] dist = weights != null ? cd.doAll(new VecAry(label).append(weights)).dist() : cd.doAll(label).dist();
     assert(dist.length > 0);
     Log.info("Doing stratified sampling for data set containing " + fr.numRows() + " rows from " + dist.length + " classes. Oversampling: " + (allowOversampling ? "on" : "off"));
     if (verbose)
@@ -240,13 +239,13 @@ public class MRUtils {
    * @param debug Whether to print debug info
    * @return Stratified frame
    */
-  public static Frame sampleFrameStratified(final Frame fr, Vec label, Vec weights, final float[] sampling_ratios, final long seed, final boolean debug) {
+  public static Frame sampleFrameStratified(final Frame fr, VecAry label, VecAry weights, final float[] sampling_ratios, final long seed, final boolean debug) {
     return sampleFrameStratified(fr, label, weights, sampling_ratios, seed, debug, 0);
   }
 
   // internal version with repeat counter
   // currently hardcoded to do up to 10 tries to get a row from each class, which can be impossible for certain wrong sampling ratios
-  private static Frame sampleFrameStratified(final Frame fr, Vec label, Vec weights, final float[] sampling_ratios, final long seed, final boolean debug, int count) {
+  private static Frame sampleFrameStratified(final Frame fr, VecAry label, VecAry weights, final float[] sampling_ratios, final long seed, final boolean debug, int count) {
     if (fr == null) return null;
     assert(label.isCategorical());
     assert(sampling_ratios != null && sampling_ratios.length == label.domain().length);

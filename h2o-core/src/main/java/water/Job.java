@@ -181,7 +181,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     jobs = Arrays.copyOf(jobs,j);     // Shrink out removed
     Key keys[] = new Key[j];
     for( int i=0; i<j; i++ ) keys[i] = jobs[i]._key;
-    // One-shot throw-away attempt at remove dead jobs from the jobs list
+    // One-shot throw-away attempt at removeVecs dead jobs from the jobs list
     DKV.DputIfMatch(LIST,new Value(LIST,new JobList(keys)),val,new Futures());
     return jobs;
   }

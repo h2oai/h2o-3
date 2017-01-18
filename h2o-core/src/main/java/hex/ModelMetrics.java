@@ -146,7 +146,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     excluded.add("hr");
     excluded.add("cm");
     excluded.add("auc_obj");
-    excluded.add("remove");
+    excluded.add("removeVecs");
     excluded.add("nobs");
     if (m!=null) {
       for (Method meth : m.getClass().getMethods()) {

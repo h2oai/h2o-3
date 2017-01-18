@@ -91,7 +91,7 @@ public class AccuracyTestingSuite {
       writeStackTrace(e,summaryLog);
       System.exit(-1);
     }
-    dataSetsCSVRows.remove(0); // remove the header
+    dataSetsCSVRows.remove(0); // removeVecs the header
 
     // Test Cases
     this.testCasesCSVPath = testCasesCSVPath;
@@ -173,7 +173,7 @@ public class AccuracyTestingSuite {
       System.exit(-1);
     }
 
-    testCaseEntries.remove(0); // remove header line
+    testCaseEntries.remove(0); // removeVecs header line
     ArrayList<TestCase> testCaseArray = new ArrayList<>();
     String[] testCaseEntry;
     for (String t : testCaseEntries) {

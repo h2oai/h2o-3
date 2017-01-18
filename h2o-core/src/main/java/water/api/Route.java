@@ -15,7 +15,7 @@ final public class Route extends Iced {
 
   // TODO: handlers are now stateless, so create a single instance and stash it here
   // TODO: all fields should be final!
-  // TODO: remove no-args ctor, since it is not used
+  // TODO: removeVecs no-args ctor, since it is not used
   public String  _http_method;
   public String _url;
   public String _summary;
@@ -29,7 +29,7 @@ final public class Route extends Iced {
 
   /** Handler factory configures a way how handler is instantiated.
    *
-   * PLEASE: do not remove it even H2O is not using it. It is used by Sparkling Water, since
+   * PLEASE: do not removeVecs it even H2O is not using it. It is used by Sparkling Water, since
    * it needs to pass a Spark context to a new handler
    */
   final HandlerFactory _handler_factory;

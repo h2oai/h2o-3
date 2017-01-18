@@ -2,6 +2,7 @@ package water.rapids.ast.prims.advmath;
 
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.rapids.Env;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstPrimitive;
@@ -27,7 +28,7 @@ public class AstStratifiedKFold extends AstPrimitive {
 
   @Override
   public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
-    Vec foldVec = stk.track(asts[1].exec(env)).getFrame().anyVec().makeZero();
+    VecAry foldVec = new VecAry(stk.track(asts[1].exec(env)).getFrame().anyVec().makeZero());
     int nfolds = (int) asts[2].exec(env).getNum();
     long seed = (long) asts[3].exec(env).getNum();
     return new ValFrame(new Frame(AstKFold.stratifiedKFoldColumn(foldVec, nfolds, seed == -1 ? new Random().nextLong() : seed)));

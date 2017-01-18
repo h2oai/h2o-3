@@ -72,19 +72,19 @@ public class GBMTest extends TestUtil {
   @Test public void testBasicGBM() {
     // Regression tests
     basicGBM("./smalldata/junit/cars.csv",
-            new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
+            new PrepData() { int prep(Frame fr ) {fr.removeVecs("name").remove(); return ~fr.find("economy (mpg)"); }},
             false, gaussian);
 
     basicGBM("./smalldata/junit/cars.csv",
-            new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
+            new PrepData() { int prep(Frame fr ) {fr.removeVecs("name").remove(); return ~fr.find("economy (mpg)"); }},
             false, DistributionFamily.poisson);
 
     basicGBM("./smalldata/junit/cars.csv",
-            new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
+            new PrepData() { int prep(Frame fr ) {fr.removeVecs("name").remove(); return ~fr.find("economy (mpg)"); }},
             false, DistributionFamily.gamma);
 
     basicGBM("./smalldata/junit/cars.csv",
-            new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
+            new PrepData() { int prep(Frame fr ) {fr.removeVecs("name").remove(); return ~fr.find("economy (mpg)"); }},
             false, DistributionFamily.tweedie);
 
     // Classification tests
@@ -99,17 +99,17 @@ public class GBMTest extends TestUtil {
             false, DistributionFamily.bernoulli);
 
     basicGBM("./smalldata/logreg/prostate.csv",
-            new PrepData() { int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("CAPSULE"); }
+            new PrepData() { int prep(Frame fr) { fr.removeVecs("ID").remove(); return fr.find("CAPSULE"); }
             },
             false, DistributionFamily.bernoulli);
 
     basicGBM("./smalldata/logreg/prostate.csv",
-            new PrepData() { int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("CAPSULE"); }
+            new PrepData() { int prep(Frame fr) { fr.removeVecs("ID").remove(); return fr.find("CAPSULE"); }
             },
             false, DistributionFamily.multinomial);
 
     basicGBM("./smalldata/junit/cars.csv",
-            new PrepData() { int prep(Frame fr) { fr.remove("name").remove(); return fr.find("cylinders"); }
+            new PrepData() { int prep(Frame fr) { fr.removeVecs("name").remove(); return fr.find("cylinders"); }
             },
             false, DistributionFamily.multinomial);
 
@@ -125,15 +125,15 @@ public class GBMTest extends TestUtil {
 
     basicGBM("./smalldata/airlines/allyears2k_headers.zip",
             new PrepData() { int prep(Frame fr) {
-              for( String s : ignored_aircols ) fr.remove(s).remove();
+              for( String s : ignored_aircols ) fr.removeVecs(s).remove();
               return fr.find("IsArrDelayed"); }
             },
             false, DistributionFamily.bernoulli);
 //    // Bigger Tests
 //    basicGBM("../datasets/98LRN.CSV",
 //             new PrepData() { int prep(Frame fr ) {
-//               fr.remove("CONTROLN").remove();
-//               fr.remove("TARGET_D").remove();
+//               fr.removeVecs("CONTROLN").removeVecs();
+//               fr.removeVecs("TARGET_D").removeVecs();
 //               return fr.find("TARGET_B"); }});
 
 //    basicGBM("../datasets/UCI/UCI-large/covtype/covtype.data",
@@ -146,7 +146,7 @@ public class GBMTest extends TestUtil {
     basicGBM("./smalldata/logreg/prostate.csv",
             new PrepData() {
               int prep(Frame fr) {
-                fr.remove("ID").remove(); // Remove not-predictive ID
+                fr.removeVecs("ID").remove(); // Remove not-predictive ID
                 int ci = fr.find("RACE"); // Change RACE to categorical
                 Scope.track(fr.replace(ci,fr.vecs(ci).toCategoricalVec()));
                 return fr.find("CAPSULE"); // Prostate: predict on CAPSULE
@@ -216,7 +216,7 @@ public class GBMTest extends TestUtil {
       Scope.enter();
       parms._valid = parse_test_file("smalldata/gbm_test/ecology_eval.csv")._key;
       Frame  train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
-      train.remove("Site").remove();     // Remove unique ID
+      train.removeVecs("Site").remove();     // Remove unique ID
       int ci = train.find("Angaus");    // Convert response to categorical
       Scope.track(train.replace(ci, train.vecs(ci).toCategoricalVec()));
       DKV.put(train);                    // Update frame after hacking it
@@ -252,7 +252,7 @@ public class GBMTest extends TestUtil {
     Scope.enter();
     try {
       Frame train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
-      train.remove("Site").remove();     // Remove unique ID
+      train.removeVecs("Site").remove();     // Remove unique ID
       int ci = train.find("Angaus");
       Scope.track(train.replace(ci, train.vecs(ci).toCategoricalVec()));   // Convert response 'Angaus' to categorical
       DKV.put(train);                    // Update frame after hacking it
@@ -263,7 +263,7 @@ public class GBMTest extends TestUtil {
       gbm = new GBM(parms).trainModel().get();
 
       pred = parse_test_file("smalldata/gbm_test/ecology_eval.csv" );
-      pred.remove("Angaus").remove();    // No response column during scoring
+      pred.removeVecs("Angaus").remove();    // No response column during scoring
       res = gbm.score(pred);
 
       // Build a POJO, validate same results
@@ -330,7 +330,7 @@ public class GBMTest extends TestUtil {
     try {
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       fr = parse_test_file("smalldata/gbm_test/ecology_model.csv");
-      fr.remove("Site").remove();        // Remove unique ID
+      fr.removeVecs("Site").remove();        // Remove unique ID
       int ci = fr.find("Angaus");
       Scope.track(fr.replace(ci, fr.vecs(ci).toCategoricalVec()));   // Convert response 'Angaus' to categorical
       DKV.put(fr);                       // Update after hacking
@@ -368,21 +368,21 @@ public class GBMTest extends TestUtil {
 
   //  MSE generated by GBM with/without validation dataset should be same
   @Test public void testModelScoreKeeperEqualityOnProstateBernoulli() {
-    final PrepData prostatePrep = new PrepData() { @Override int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("CAPSULE"); } };
+    final PrepData prostatePrep = new PrepData() { @Override int prep(Frame fr) { fr.removeVecs("ID").remove(); return fr.find("CAPSULE"); } };
     ScoreKeeper[] scoredWithoutVal = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, false, DistributionFamily.bernoulli)._scored_train;
     ScoreKeeper[] scoredWithVal    = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, true , DistributionFamily.bernoulli)._scored_valid;
     Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", scoredWithoutVal, scoredWithVal);
   }
 
   @Test public void testModelScoreKeeperEqualityOnProstateGaussian() {
-    final PrepData prostatePrep = new PrepData() { @Override int prep(Frame fr) { fr.remove("ID").remove(); return ~fr.find("CAPSULE"); } };
+    final PrepData prostatePrep = new PrepData() { @Override int prep(Frame fr) { fr.removeVecs("ID").remove(); return ~fr.find("CAPSULE"); } };
     ScoreKeeper[] scoredWithoutVal = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, false, gaussian)._scored_train;
     ScoreKeeper[] scoredWithVal    = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, true , gaussian)._scored_valid;
     Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", scoredWithoutVal, scoredWithVal);
   }
 
   @Test public void testModelScoreKeeperEqualityOnProstateMultinomial() {
-    final PrepData prostatePrep = new PrepData() { @Override int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("RACE"); } };
+    final PrepData prostatePrep = new PrepData() { @Override int prep(Frame fr) { fr.removeVecs("ID").remove(); return fr.find("RACE"); } };
     ScoreKeeper[] scoredWithoutVal = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, false, DistributionFamily.multinomial)._scored_train;
     ScoreKeeper[] scoredWithVal    = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, true , DistributionFamily.multinomial)._scored_valid;
     Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", scoredWithoutVal, scoredWithVal);
@@ -426,8 +426,8 @@ public class GBMTest extends TestUtil {
       Frame inF2 = parse_test_file("bigdata/laptop/usecases/cup98VAL_z.csv");
       tfr = inF1.subframe(inF1.find(cols)); // Just the columns to train on
       vfr = inF2.subframe(cols);
-      inF1.remove(cols).remove(); // Toss all the rest away
-      inF2.remove(cols).remove();
+      inF1.removeVecs(cols).remove(); // Toss all the rest away
+      inF2.removeVecs(cols).remove();
       tfr.replace(0, tfr.vec("DOB").toCategoricalVec());     // Convert 'DOB' to categorical
       vfr.replace(0, vfr.vec("DOB").toCategoricalVec());
       DKV.put(tfr);
@@ -589,7 +589,7 @@ public class GBMTest extends TestUtil {
               "CancellationCode", "CarrierDelay", "WeatherDelay",
               "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
       }) {
-        tfr.remove(s).remove();
+        tfr.removeVecs(s).remove();
       }
       DKV.put(tfr);
       for (int i=0; i<N; ++i) {
@@ -645,7 +645,7 @@ public class GBMTest extends TestUtil {
               "CancellationCode", "CarrierDelay", "WeatherDelay",
               "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
       }) {
-        tfr.remove(s).remove();
+        tfr.removeVecs(s).remove();
       }
       DKV.put(tfr);
       for (int i=0; i<N; ++i) {
@@ -1219,9 +1219,9 @@ public class GBMTest extends TestUtil {
     Scope.enter();
     try {
       tfr = parse_test_file("smalldata/junit/cars_20mpg.csv");
-      tfr.remove("name").remove(); // Remove unique id
-      tfr.remove("economy").remove();
-      old = tfr.remove("economy_20mpg");
+      tfr.removeVecs("name").remove(); // Remove unique id
+      tfr.removeVecs("economy").remove();
+      old = tfr.removeVecs("economy_20mpg");
       tfr.add("economy_20mpg", old.toCategoricalVec()); // response to last column
       DKV.put(tfr);
 
@@ -1268,14 +1268,14 @@ public class GBMTest extends TestUtil {
 
     try {
       tfr = parse_test_file("smalldata/junit/cars_20mpg.csv");
-      tfr.remove("name").remove(); // Remove unique id
+      tfr.removeVecs("name").remove(); // Remove unique id
       DKV.put(tfr);
 
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       parms._train = tfr._key;
       parms._response_column = "economy_20mpg";
       parms._fold_column = "cylinders";
-      Vec old = tfr.remove("cylinders");
+      Vec old = tfr.removeVecs("cylinders");
       tfr.add("cylinders",old.toCategoricalVec());
       DKV.put(tfr);
       parms._ntrees = 10;
@@ -1303,7 +1303,7 @@ public class GBMTest extends TestUtil {
 
     try {
       tfr = parse_test_file("smalldata/junit/cars_20mpg.csv");
-      tfr.remove("name").remove(); // Remove unique id
+      tfr.removeVecs("name").remove(); // Remove unique id
       new MRTask() {
         @Override
         public void map(ChunkAry c) {
@@ -1345,8 +1345,8 @@ public class GBMTest extends TestUtil {
 
     try {
       tfr = parse_test_file("smalldata/junit/cars_20mpg.csv");
-      tfr.remove("name").remove(); // Remove unique id
-      old = tfr.remove("cylinders");
+      tfr.removeVecs("name").remove(); // Remove unique id
+      old = tfr.removeVecs("cylinders");
       tfr.add("folds", old.toCategoricalVec());
       old.remove();
       DKV.put(tfr);
@@ -1384,7 +1384,7 @@ public class GBMTest extends TestUtil {
               "CancellationCode", "CarrierDelay", "WeatherDelay",
               "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
       }) {
-        tfr.remove(s).remove();
+        tfr.removeVecs(s).remove();
       }
       DKV.put(tfr);
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
@@ -1566,7 +1566,7 @@ public class GBMTest extends TestUtil {
 //            // Build a POJO, validate same results
 //            Frame pred = gbm.score(tfr);
 //            Assert.assertTrue(gbm.testJavaScoring(tfr,pred,1e-15));
-//            pred.remove();
+//            pred.removeVecs();
 
               ModelMetricsRegression mm = (ModelMetricsRegression)gbm._output._validation_metrics;
               hm.put(mm.mse(), new Triple<>(sample_rate, col_sample_rate, col_sample_rate_per_tree));
@@ -1656,8 +1656,8 @@ public class GBMTest extends TestUtil {
     Scope.enter();
     try {
       Frame train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
-      train.remove("Site").remove();     // Remove unique ID
-      train.remove("Method").remove();   // Remove categorical
+      train.removeVecs("Site").remove();     // Remove unique ID
+      train.removeVecs("Method").remove();   // Remove categorical
       DKV.put(train);                    // Update frame after hacking it
       parms._train = train._key;
       parms._response_column = "DSDist"; // Train on the outcome
@@ -1693,8 +1693,8 @@ public class GBMTest extends TestUtil {
     Scope.enter();
     try {
       Frame train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
-      train.remove("Site").remove();     // Remove unique ID
-      train.remove("Method").remove();   // Remove categorical
+      train.removeVecs("Site").remove();     // Remove unique ID
+      train.removeVecs("Method").remove();   // Remove categorical
       DKV.put(train);                    // Update frame after hacking it
       parms._train = train._key;
       parms._response_column = "DSDist"; // Train on the outcome
@@ -2329,7 +2329,7 @@ public class GBMTest extends TestUtil {
               "CancellationCode", "CarrierDelay", "WeatherDelay",
               "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
       }) {
-        tfr.remove(s).remove();
+        tfr.removeVecs(s).remove();
       }
       DKV.put(tfr);
       for (int i=0; i<N; ++i) {
@@ -2371,7 +2371,7 @@ public class GBMTest extends TestUtil {
               "CancellationCode", "CarrierDelay", "WeatherDelay",
               "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
       }) {
-        tfr.remove(s).remove();
+        tfr.removeVecs(s).remove();
       }
       DKV.put(tfr);
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
@@ -2457,8 +2457,8 @@ public class GBMTest extends TestUtil {
     Scope.enter();
     try {
       Frame train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
-      train.remove("Site").remove();     // Remove unique ID
-      train.remove("Method").remove();   // Remove categorical
+      train.removeVecs("Site").remove();     // Remove unique ID
+      train.removeVecs("Method").remove();   // Remove categorical
       DKV.put(train);                    // Update frame after hacking it
       parms._train = train._key;
       parms._response_column = "DSDist"; // Train on the outcome
@@ -2664,7 +2664,7 @@ public class GBMTest extends TestUtil {
         String resp = tfr.lastVecName();
         if (dist==modified_huber || dist==bernoulli || dist==multinomial) {
           resp = dist==multinomial?"rad":"chas";
-          Vec v = tfr.remove(resp);
+          Vec v = tfr.removeVecs(resp);
           tfr.add(resp, v.toCategoricalVec());
           v.remove();
           DKV.put(tfr);

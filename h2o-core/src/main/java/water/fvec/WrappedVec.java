@@ -6,16 +6,16 @@ import water.*;
  */
 abstract class WrappedVec extends Vec {
   /** A key for underlying vector which contains values which are transformed by this vector. */
-  final Key<Vec> _masterVecKey;
+  final VecAry _masterVec;
   /** Cached instances of underlying vector. */
-  transient Vec _masterVec;
-  public WrappedVec(Key key, int rowLayout, Key masterVecKey ) { this(key,rowLayout,null,masterVecKey);  }
-  public WrappedVec(Key key, int rowLayout, String[] domain, Key masterVecKey) {
+
+  public WrappedVec(Key key, int rowLayout, VecAry masterVec ) { this(key,rowLayout,null,masterVec);  }
+  public WrappedVec(Key key, int rowLayout, String[] domain, VecAry masterVec) {
     super(key, rowLayout, new String[][]{domain}, new byte[]{domain == null?Vec.T_NUM:Vec.T_CAT});
-    _masterVecKey = masterVecKey;
+    _masterVec = masterVec;
   }
 
-  public Vec masterVec() { return _masterVec!=null ? _masterVec : (_masterVec = _masterVecKey.get()); }
+  public VecAry masterVec() { return _masterVec; }
   // Map from chunk-index to Chunk.  These wrappers are making custom Chunks
   abstract public DBlock chunkIdx(int cidx);
 }

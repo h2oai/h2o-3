@@ -109,15 +109,20 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
       for(int i = 0; i < ncs.length; ++i)
         ncs[i] = new NewChunk(_srcVecs.getType(i));
       int len = 0;
+      int lastId = -1;
       while(N > len) {
         ChunkAry srcRaw = _srcVecs.chunkForRow(chks._start+ len);
-        int x = Math.min(N-len,srcRaw._len);
+        assert lastId == -1 || lastId == srcRaw.cidx()-1;
+        lastId = srcRaw.cidx();
+        int off = (int)((chks._start+len) - srcRaw._start);
+        assert off >=0 && off < srcRaw._len;
+        int x = Math.min(N-len,srcRaw._len-off);
         for(int i = 0; i < srcRaw._numCols; ++i)
-          srcRaw.add2Chunk(i,ncs[i],0,x);
+          srcRaw.add2Chunk(i,ncs[i],off,off+x);
         len += x;
       }
-      for(int i = 0; i < chks._len; ++i)
-        chks.set(i,ncs[i].compress());
+      for(int i = 0; i < chks._numCols; ++i)
+        chks.set(i,ncs[i]);
     }
   }
 }

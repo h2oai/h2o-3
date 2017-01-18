@@ -789,7 +789,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       int ridx = frame.find(_output.responseName());
       if (ridx != -1) { // drop the response for scoring!
         frame = new Frame(frame);
-        frame.remove(ridx);
+        frame.removeVecs(ridx);
       }
     }
     Frame adaptFrm = new Frame(frame);

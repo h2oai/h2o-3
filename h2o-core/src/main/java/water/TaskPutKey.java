@@ -48,7 +48,7 @@ public class TaskPutKey extends DTask<TaskPutKey> {
 
   // Received an ACK
   @Override public void onAck() {
-    // remove local cache but NOT in case it is already on disk
+    // removeVecs local cache but NOT in case it is already on disk
     // (ie memory can be reclaimed and we assume we have plenty of disk space)
     if( _dontCache && !_xval.isPersisted() ) H2O.putIfMatch(_xkey, null, _xval);
     if( _xval != null ) _xval.completeRemotePut();

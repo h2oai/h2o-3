@@ -3,6 +3,7 @@ package water.rapids;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.ArrayUtils;
 import water.util.Log;
 
@@ -101,7 +102,7 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
 
   private void initBaseShift() {
     for (int i=0; i<_whichCols.length; i++) {
-      Vec col = _DF.vec(_whichCols[i]);
+      VecAry col = _DF.vec(_whichCols[i]);
       // TODO: strings that aren't already categoricals and fixed precision double.
       long max;
       if (col.isCategorical()) {

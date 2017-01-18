@@ -28,7 +28,10 @@ public class AstKFold extends AstPrimitive {
     return "kfold_column";
   }
 
-  public static Vec kfoldColumn(Vec v, final int nfolds, final long seed) {
+  public static VecAry kfoldColumn(Vec v, final int nfolds, final long seed) {
+    return kfoldColumn(new VecAry(v),nfolds,seed);
+  }
+  public static VecAry kfoldColumn(VecAry v, final int nfolds, final long seed) {
     new MRTask() {
       @Override
       public void map(ChunkAry c) {
@@ -42,7 +45,10 @@ public class AstKFold extends AstPrimitive {
     return v;
   }
 
-  public static Vec moduloKfoldColumn(Vec v, final int nfolds) {
+  public static VecAry moduloKfoldColumn(Vec v, final int nfolds) {
+    return moduloKfoldColumn(new VecAry(v),nfolds);
+  }
+  public static VecAry moduloKfoldColumn(VecAry v, final int nfolds) {
     new MRTask() {
       @Override
       public void map(ChunkAry c) {
@@ -54,7 +60,7 @@ public class AstKFold extends AstPrimitive {
     return v;
   }
 
-  public static Vec stratifiedKFoldColumn(Vec y, final int nfolds, final long seed) {
+  public static VecAry stratifiedKFoldColumn(VecAry y, final int nfolds, final long seed) {
     // for each class, generate a fold column (never materialized)
     // therefore, have a seed per class to be used by the map call
     if (!(y.isCategorical() || (y.isNumeric() && y.isInt())))
@@ -110,7 +116,7 @@ public class AstKFold extends AstPrimitive {
           }
         }
       }
-    }.doAll(new Frame(y, y.makeZero()))._fr.vec(1);
+    }.doAll(new Frame(y.append(y.makeZero())))._fr.vec(1);
   }
 
   @Override

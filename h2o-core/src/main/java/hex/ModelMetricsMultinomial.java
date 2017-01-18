@@ -6,6 +6,7 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
 import water.util.TwoDimTable;
@@ -121,12 +122,12 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
    * @return ModelMetrics object
    */
   static public ModelMetricsMultinomial make(Frame perClassProbs, Vec actualLabels, String[] domain) {
-    Vec _labels = actualLabels.toCategoricalVec();
+    VecAry _labels = actualLabels.toCategoricalVec();
     if (_labels == null || perClassProbs == null)
       throw new IllegalArgumentException("Missing actualLabels or predictedProbs for multinomial metrics!");
     if (_labels.length() != perClassProbs.numRows())
       throw new IllegalArgumentException("Both arguments must have the same length for multinomial metrics (" + _labels.length() + "!=" + perClassProbs.numRows() + ")!");
-    for (Vec p : perClassProbs.vecs()) {
+    for (VecAry p : perClassProbs.vecs().singleVecs()) {
       if (!p.isNumeric())
         throw new IllegalArgumentException("Predicted probabilities must be numeric per-class probabilities for multinomial metrics.");
       if (p.min() < 0 || p.max() > 1)

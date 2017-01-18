@@ -71,12 +71,12 @@ public class GBMCheckpointTest extends TestUtil {
                                             int ntreesInPriorModel, int ntreesInNewModel,
                                             float sampleRateInPriorModel, float sampleRateInNewModel) {
     Frame f = parse_test_file(dataset);
-    Vec v = f.remove("economy"); if (v!=null) v.remove(); //avoid overfitting for binomial case for cars dataset
+    Vec v = f.removeVecs("economy"); if (v!=null) v.remove(); //avoid overfitting for binomial case for cars dataset
     DKV.put(f);
     // If classification turn response into categorical
     if (classification) {
       Vec respVec = f.vec(responseIdx);
-      f.replace(responseIdx, VecUtils.toCategoricalVec(respVec)).remove();
+      f.replace(responseIdx, VecUtils.toCategoricalVec(respVec)).removeVecs();
       DKV.put(f._key, f);
     }
     GBMModel model = null;
@@ -148,16 +148,16 @@ public class GBMCheckpointTest extends TestUtil {
 
     Vec old = null;
 
-    tr.remove("name").remove();
-    tr.remove("economy").remove();
-    val.remove("name").remove();
-    val.remove("economy").remove();
+    tr.removeVecs("name").remove();
+    tr.removeVecs("economy").remove();
+    val.removeVecs("name").remove();
+    val.removeVecs("economy").remove();
 
-    old = tr.remove("economy_20mpg");
+    old = tr.removeVecs("economy_20mpg");
     tr.add("economy_20mpg", old);
     DKV.put(tr);
 
-    old = val.remove("economy_20mpg");
+    old = val.removeVecs("economy_20mpg");
     val.add("economy_20mpg", old);
     DKV.put(val);
 

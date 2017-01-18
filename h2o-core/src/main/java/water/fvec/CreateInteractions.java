@@ -147,7 +147,7 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
     for (int l=0; l<al.size(); ++l) {
       int[] factors = al.get(l);
       int idx1 = factors[0];
-      Vec tmp = null;
+      VecAry tmp = null;
       int start = factors.length == 1 ? 0 : 1;
       Frame _out = null;
       for (int i = start; i < factors.length; ++i) {
@@ -161,22 +161,21 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
           name = source_frame._names[idx1] + "_" + source_frame._names[idx2];
         }
 //      Log.info("Combining columns " + idx1 + " and " + idx2);
-        final Vec A = i > 1 ? _out.vecs(idx1) : source_frame.vecs(idx1);
-        final Vec B = source_frame.vecs(idx2);
+        final VecAry A = i > 1 ? _out.vecs(idx1) : source_frame.vecs(idx1);
+        final VecAry B = source_frame.vecs(idx2);
 
         // Pass 1: compute unique domains of all interaction features
-        createInteractionDomain pass1 = new createInteractionDomain(idx1 == idx2, _ci._interactOnNA).doAll(A, B);
+        createInteractionDomain pass1 = new createInteractionDomain(idx1 == idx2, _ci._interactOnNA).doAll(new VecAry(A).append(B));
 
         // Create a new Vec based on the domain
-        final Vec vec = source_frame.anyVec().makeZero(makeDomain(pass1._unsortedMap, A.domain(), B.domain()));
+        final VecAry vec = new VecAry(source_frame.anyVec().makeZero(makeDomain(pass1._unsortedMap, A.domain(), B.domain())));
         if (i > 1) {
           _out.add(name, vec);
         } else {
           assert(_out == null);
-          _out = new Frame(new String[]{name}, new Vec[]{vec});
+          _out = new Frame(new String[]{name}, vec);
         }
-        final Vec C = _out.lastVec();
-
+        final VecAry C = _out.lastVec();
         // Create array of categorical pairs, in the same (sorted) order as in the _domain map -> for linear lookup
         // Note: "other" is not mapped in keys, so keys.length can be 1 less than domain.length
         long[] keys = new long[_sortedMap.size()];
@@ -187,14 +186,14 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
         assert (C.domain().length == keys.length || C.domain().length == keys.length + 1); // domain might contain _other
 
         // Pass 2: fill Vec values
-        new fillInteractionCategoricals(idx1 == idx2, keys).doAll(A, B, C);
+        new fillInteractionCategoricals(idx1 == idx2, keys).doAll(new VecAry(A).append(B).append(C));
         tmp = C;
 
-        // remove temporary vec
+        // removeVecs temporary vec
         if (i > 1) {
           final int idx = _out.vecs()._numCols - 2; //second-last vec
 //        Log.info("Removing column " + _out._names[idx]);
-          _out.remove(idx).remove();
+          _out.removeVecs(idx).removeVecs();
         }
         _ci._job.update(1);
       }

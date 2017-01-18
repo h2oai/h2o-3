@@ -30,10 +30,10 @@ public class VecUtils {
    *  @param src A {@link Vec} whose values will be used as the basis for a new categorical {@link Vec}
    *  @return the resulting categorical Vec
    */
-  public static Vec toCategoricalVec(Vec src) {
+  public static VecAry toCategoricalVec(VecAry src) {
     switch (src.getType(0)) {
       case Vec.T_CAT:
-        return src.makeCopy(new String[][]{src.domain(0)});
+        return src.makeCopy();
       case Vec.T_NUM:
         return numericToCategorical(src);
       case Vec.T_STR: // PUBDEV-2204
@@ -58,7 +58,7 @@ public class VecUtils {
    * @param vec a string {@link Vec}
    * @return a categorical {@link Vec}
    */
-  public static Vec stringToCategorical(Vec vec) {
+  public static VecAry stringToCategorical(VecAry vec) {
     final String[] vecDomain = new CollectStringVecDomain().domain(vec);
 
     MRTask task = new MRTask() {
@@ -102,7 +102,7 @@ public class VecUtils {
    * @param src a numeric {@link Vec}
    * @return a categorical {@link Vec}
    */
-  public static Vec numericToCategorical(Vec src) {
+  public static VecAry numericToCategorical(VecAry src) {
     if (src.isInt()) {
       int min = (int) src.min(), max = (int) src.max();
       // try to do the fast domain collection
@@ -135,7 +135,7 @@ public class VecUtils {
    *  @param src A {@link Vec} whose values will be used as the basis for a new numeric {@link Vec}
    *  @return the resulting numeric {@link Vec}
    */
-  public static Vec toNumericVec(Vec src) {
+  public static VecAry toNumericVec(VecAry src) {
     switch (src.getType(0)) {
       case Vec.T_CAT:
         return categoricalToInt(src);
@@ -144,7 +144,7 @@ public class VecUtils {
       case Vec.T_NUM:
       case Vec.T_TIME:
       case Vec.T_UUID:
-        return src.makeCopy(null, new byte[]{Vec.T_NUM});
+        return src.makeCopy();
       default:
         throw new H2OIllegalArgumentException("Unrecognized column type " + src.get_type_str()
             + " given to toNumericVec()");
@@ -162,9 +162,9 @@ public class VecUtils {
    * @param src a string {@link Vec}
    * @return a numeric {@link Vec}
    */
-  public static Vec stringToNumeric(Vec src) {
+  public static VecAry stringToNumeric(VecAry src) {
     if(!src.isString()) throw new H2OIllegalArgumentException("stringToNumeric conversion only works on string columns");
-    Vec res = new MRTask() {
+    VecAry res = new MRTask() {
       @Override public void map(Chunk chk, NewChunk newChk){
         if (chk instanceof C0DChunk) { // all NAs
           for (int i=0; i < chk._len; i++)
@@ -188,7 +188,7 @@ public class VecUtils {
           }
         }
       }
-    }.doAll(Vec.T_NUM, src).outputFrame().anyVec();
+    }.doAll(Vec.T_NUM, src).outputFrame().vecs();
     assert res != null;
     return res;
   }
@@ -210,12 +210,12 @@ public class VecUtils {
    * @param src a categorical {@link Vec}
    * @return a numeric {@link Vec}
    */
-  public static Vec categoricalToInt(final Vec src) {
+  public static VecAry categoricalToInt(final VecAry src) {
     if( src.isInt() && (src.domain()==null || src.domain().length == 0)) return copyOver(src, Vec.T_NUM, null);
     if( !src.isCategorical() ) throw new IllegalArgumentException("categoricalToInt conversion only works on categorical columns.");
     // check if the 1st lvl of the domain can be parsed as int
     boolean useDomain=false;
-    Vec newVec = copyOver(src, Vec.T_NUM, null);
+    VecAry newVec = copyOver(src, Vec.T_NUM, null);
     try {
       Integer.parseInt(src.domain()[0]);
       useDomain=true;
@@ -250,21 +250,49 @@ public class VecUtils {
    *  @param src A {@link Vec} whose values will be used as the basis for a new string {@link Vec}
    *  @return the resulting string {@link Vec}
    */
-  public static Vec toStringVec(Vec src) {
-    switch (src.getType(0)) {
-      case Vec.T_STR:
-        return src.makeCopy();
-      case Vec.T_CAT:
-        return categoricalToStringVec(src);
-      case Vec.T_UUID:
-        return UUIDToStringVec(src);
-      case Vec.T_TIME:
-      case Vec.T_NUM:
-        return numericToStringVec(src);
-      default:
-        throw new H2OIllegalArgumentException("Unrecognized column type " + src.get_type_str()
-            + " given to toStringVec().");
-    }
+  public static VecAry toStringVec(VecAry src) {
+    final byte [] types = src.types();
+    VecAry res = src.makeZero(types.length);
+    new MRTask(){
+      public void map(ChunkAry cs){
+        for(int c = 0; c < types.length; ++c){
+          switch(types[c]){
+            case Vec.T_BAD:
+              cs.setAll(c+types.length,Double.NaN);
+              break;
+            case Vec.T_CAT:
+              for(int r = 0; r < cs._len; ++r)
+                cs.set(r,c+types.length,_fr.vecs().factor(c,cs.at4(r,c)));
+              break;
+            case Vec.T_NUM:
+              if(_fr.vecs().isInt(c)) {
+                for (int r = 0; r < cs._len; ++r)
+                  cs.set(r, c + types.length, Long.toString(cs.at8(r, c)));
+              } else {
+                for (int r = 0; r < cs._len; ++r)
+                  cs.set(r, c + types.length, Double.toString(cs.atd(r, c)));
+              }
+              break;
+            case Vec.T_TIME:
+              for (int r = 0; r < cs._len; ++r)
+                cs.set(r, c + types.length, Long.toString(cs.at8(r, c)));
+              break;
+            case Vec.T_UUID:
+              for (int r = 0; r < cs._len; ++r)
+                cs.set(r, c + types.length, PrettyPrint.UUID(cs.at16l(r,c),cs.at16h(r,c)));
+              break;
+            case Vec.T_STR:
+              BufferedString bs = new BufferedString();
+              for (int r = 0; r < cs._len; ++r)
+                cs.set(r, c + types.length, cs.atStr(bs,r,c));
+              break;
+            default:
+              throw H2O.unimpl();
+          }
+        }
+      }
+    }.doAll(src.append(res));
+    return res;
   }
 
   /**
@@ -445,7 +473,7 @@ public class VecUtils {
         }
       }
     }
-    public static Vec domainDeduper(Vec vec, HashMap<String, ArrayList<Integer>> substringToOldDomainIndices) {
+    public static VecAry domainDeduper(VecAry vec, HashMap<String, ArrayList<Integer>> substringToOldDomainIndices) {
       HashMap<Integer, Integer> oldToNewDomainIndex = new HashMap<>();
       int newDomainIndex = 0;
       SortedSet<String> alphabetizedSubstrings = new TreeSet<>(substringToOldDomainIndices.keySet());
@@ -457,7 +485,7 @@ public class VecUtils {
       }
       VecUtils.DomainDedupe domainDedupe = new VecUtils.DomainDedupe(oldToNewDomainIndex);
       String[][] dom2D = {Arrays.copyOf(alphabetizedSubstrings.toArray(), alphabetizedSubstrings.size(), String[].class)};
-      return domainDedupe.doAll(new byte[]{Vec.T_CAT}, vec).outputFrame(null, null, dom2D).anyVec();
+      return domainDedupe.doAll(new byte[]{Vec.T_CAT}, vec).outputFrame(null, null, dom2D).vecs();
     }
   }
 
@@ -503,10 +531,10 @@ public class VecUtils {
     f.blockForPending();
   }
 
-  private static Vec copyOver(Vec src, byte type, long[] domain) {
+  private static VecAry copyOver(VecAry src, byte type, long[] domain) {
     String[][] dom = new String[1][];
     dom[0]=domain==null?null:ArrayUtils.toString(domain);
-    return new CPTask(domain).doAll(type, src).outputFrame(null,dom).anyVec();
+    return new CPTask(domain).doAll(new byte[]{type}, src).outputFrame(null,dom).vecs();
   }
 
   private static class CPTask extends MRTask<CPTask> {
@@ -557,7 +585,7 @@ public class VecUtils {
       }
     }
 
-    public String[] domain(Vec vec) {
+    public String[] domain(VecAry vec) {
       assert vec.isString() : "String vector expected. Unsupported vector type: " + vec.get_type_str();
       this.doAll(vec);
       return domain();

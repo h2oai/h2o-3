@@ -281,7 +281,7 @@ public class PojoUtils {
             //
             // Assigning an impl field into a schema field, e.g. a DeepLearningParameters into a DeepLearningParametersV2.
             //
-            dest_field.set(dest, SchemaServer.schema(/* ((Schema)dest).getSchemaVersion() TODO: remove HACK!! */ 3,
+            dest_field.set(dest, SchemaServer.schema(/* ((Schema)dest).getSchemaVersion() TODO: removeVecs HACK!! */ 3,
                 (Class<? extends Iced>)orig_field.get(origin).getClass()).fillFromImpl((Iced) orig_field.get(origin)));
           } else if (Schema.class.isAssignableFrom(orig_field.getType()) && Schema.getImplClass((Class<? extends Schema>)orig_field.getType()).isAssignableFrom(dest_field.getType())) {
             //
@@ -535,7 +535,7 @@ public class PojoUtils {
 
       } else {
         // Scalar or String, possibly with an automagic type conversion as copyProperties does.
-        // TODO: refactor the type conversions out of copyProperties so they all work, and remove
+        // TODO: refactor the type conversions out of copyProperties so they all work, and removeVecs
         // this now-redundant code:
         try {
           Field f = o.getClass().getField(key);

@@ -57,7 +57,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "beta_constraints",
             "max_active_predictors",
             "interactions",
-            // dead unused args forced here by backwards compatibility, remove in V4
+            // dead unused args forced here by backwards compatibility, removeVecs in V4
             "balance_classes",
             "class_sampling_factors",
             "max_after_balance_size",
@@ -201,7 +201,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help="request p-values computation, p-values work only with IRLSM solver and no regularization", level = Level.secondary, direction = Direction.INPUT)
     public boolean compute_p_values; // _remove_collinear_columns
 
-    @API(help="in case of linearly dependent columns remove some of the dependent columns", level = Level.secondary, direction = Direction.INPUT)
+    @API(help="in case of linearly dependent columns removeVecs some of the dependent columns", level = Level.secondary, direction = Direction.INPUT)
     public boolean remove_collinear_columns; // _remove_collinear_columns
 
     /////////////////////

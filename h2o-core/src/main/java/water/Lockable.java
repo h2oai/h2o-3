@@ -40,15 +40,15 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
   // -----------
   // Atomic create+overwrite of prior key.
   // If prior key exists, block until acquire a write-lock.
-  // Then call remove, removing all of a prior key.
+  // Then call removeVecs, removing all of a prior key.
   // The replace this object as the new Lockable, still write-locked.
   // "locker" can be null, meaning the special no-Job locker; for use by expected-fast operations
   //
-  // Example: write-lock & remove an old Frame, and replace with a new locked Frame
+  // Example: write-lock & removeVecs an old Frame, and replace with a new locked Frame
   //     Local-Node                              Master-Node
   // (1)  new,old    -->write_lock(job)-->          old
   // (2)  new,old.waiting...                     new,old+job-locked atomic xtn loop
-  // (3)                                            old.remove onSuccess
+  // (3)                                            old.removeVecs onSuccess
   // (4)  new        <--update success <--       new+job-locked
 
   /** Write-lock {@code this._key} by {@code job_key}.  

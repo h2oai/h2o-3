@@ -498,7 +498,7 @@ public class AstVariance extends AstPrimitive {
     }
   }
 
-  public static double getVar(Vec v) {
+  public static double getVar(VecAry v) {
     return v.naCnt() == 0 ? v.sigma() * v.sigma() : Double.NaN;
   }
 }

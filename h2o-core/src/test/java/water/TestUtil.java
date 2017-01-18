@@ -343,12 +343,12 @@ public class TestUtil extends Iced {
   /** A Numeric Vec from an array of ints
    *  @param rows Data
    *  @return The Vec  */
-  public static Vec vec(int...rows) { return vec(null, rows); }
+  public static VecAry vec(int...rows) { return vec(null, rows); }
   /** A Categorical/Factor Vec from an array of ints - with categorical/domain mapping
    *  @param domain Categorical/Factor names, mapped by the data values
    *  @param rows Data
    *  @return The Vec  */
-  public static Vec vec(String[] domain, int ...rows) { 
+  public static VecAry vec(String[] domain, int ...rows) {
     Key<Vec> k = Vec.VectorGroup.VG_LEN1.addVec();
     Futures fs = new Futures();
     AppendableVec avec = new AppendableVec(k,Vec.T_NUM);
@@ -358,7 +358,7 @@ public class TestUtil extends Iced {
     chunk.close(fs);
     Vec vec = avec.layout_and_close(fs);
     fs.blockForPending();
-    return vec;
+    return new VecAry(vec);
   }
 
   public static Vec vec(double[][] vals) {
@@ -413,7 +413,7 @@ public class TestUtil extends Iced {
 
   // ==== Comparing Results ====
 
-  public static void assertVecEquals(Vec expecteds, Vec actuals, double delta) {
+  public static void assertVecEquals(VecAry expecteds, VecAry actuals, double delta) {
     assertEquals(expecteds.length(), actuals.length());
     for(int i = 0; i < expecteds.length(); i++) {
       final String message = i + ": " + expecteds.at(i) + " != " + actuals.at(i) + ", chunkIds = " + expecteds.elem2ChunkIdx(i) + ", " + actuals.elem2ChunkIdx(i) + ", row in chunks = " + (i - expecteds.chunkForRow(i).start()) + ", " + (i - actuals.chunkForRow(i).start());
@@ -462,8 +462,8 @@ public class TestUtil extends Iced {
     int ncomp = expected.numCols();
 
     for(int j = 0; j < ncomp; j++) {
-      Vec.Reader vexp = expected.vec(j).new Reader();
-      Vec.Reader vact = actual.vec(j).new Reader();
+      VecAry.Reader vexp = expected.vec(j).new Reader();
+      VecAry.Reader vact = actual.vec(j).new Reader();
       Assert.assertEquals(vexp.length(), vact.length());
       for (int i = 0; i < nfeat; i++) {
         Assert.assertEquals(vexp.at8(i), flipped[j] ? -vact.at8(i) : vact.at8(i), threshold);

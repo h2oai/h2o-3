@@ -18,7 +18,7 @@ public abstract class AstRollupOp extends AstReducerOp {
     return new String[]{"ary"};
   }
 
-  public abstract double rup(Vec vec);
+  public abstract double rup(VecAry vec);
 
   @Override
   public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {

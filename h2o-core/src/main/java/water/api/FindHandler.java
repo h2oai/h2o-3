@@ -19,9 +19,9 @@ class FindHandler extends Handler {
     Frame frame = find.key._fr;
     // Peel out an optional column; restrict to this column
     if( find.column != null ) {
-      Vec vec = frame.vec(find.column);
+      VecAry vec = frame.vec(find.column);
       if( vec==null ) throw new H2OColumnNotFoundArgumentException("column", frame, find.column);
-      find.key = new FrameV3(new Frame(new String[]{find.column}, new Vec[]{vec}));
+      find.key = new FrameV3(new Frame(new String[]{find.column}, vec));
     }
 
     // Convert the search string into a column-specific flavor

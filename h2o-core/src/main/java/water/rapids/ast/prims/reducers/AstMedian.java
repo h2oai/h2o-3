@@ -61,7 +61,7 @@ public class AstMedian extends AstPrimitive {
     return median;
   }
 
-  static double median(Vec v, QuantileModel.CombineMethod combine_method) {
+  static double median(VecAry v, QuantileModel.CombineMethod combine_method) {
     return median(new Frame(v), combine_method);
   }
 }

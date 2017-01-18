@@ -56,7 +56,7 @@ public class FrameTestUtil extends Frame {
     assertValues(f.vec(0), expValues);
   }
 
-  public static void assertValues(Vec v, String[] expValues) {
+  public static void assertValues(VecAry v, String[] expValues) {
     Assert.assertEquals("Number of rows", expValues.length, v.length());
     BufferedString tmpStr = new BufferedString();
     for (int i = 0; i < v.length(); i++) {

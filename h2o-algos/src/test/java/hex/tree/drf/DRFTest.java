@@ -81,7 +81,7 @@ public class DRFTest extends TestUtil {
             new PrepData() {
               @Override
               int prep(Frame fr) {
-                fr.remove("name").remove();
+                fr.removeVecs("name").remove();
                 return fr.find("cylinders");
               }
             },
@@ -103,7 +103,7 @@ public class DRFTest extends TestUtil {
             new PrepData() {
               @Override
               int prep(Frame fr) {
-                fr.remove("name").remove();
+                fr.removeVecs("name").remove();
                 return fr.find("cylinders");
               }
             },
@@ -127,7 +127,7 @@ public class DRFTest extends TestUtil {
                 @Override
                 int prep(Frame fr) {
                   for (int i = 0; i < 7; i++) {
-                    fr.remove(3).remove();
+                    fr.removeVecs(3).removeVecs();
                   }
                   return 3;
                 }
@@ -164,7 +164,7 @@ public class DRFTest extends TestUtil {
             new PrepData() {
               @Override
               int prep(Frame fr) {
-                fr.remove("MonthlyIncome").remove();
+                fr.removeVecs("MonthlyIncome").remove();
                 return fr.find("SeriousDlqin2yrs");
               }
             },
@@ -184,7 +184,7 @@ public class DRFTest extends TestUtil {
             new PrepData() {
               @Override
               int prep(Frame fr) {
-                fr.remove("ID").remove();
+                fr.removeVecs("ID").remove();
                 return fr.find("CAPSULE");
               }
             },
@@ -204,7 +204,7 @@ public class DRFTest extends TestUtil {
             new PrepData() {
               @Override
               int prep(Frame fr) {
-                fr.remove("ID").remove();
+                fr.removeVecs("ID").remove();
                 return fr.find("AGE");
               }
             },
@@ -223,7 +223,7 @@ public class DRFTest extends TestUtil {
             new PrepData() {
               @Override
               int prep(Frame fr) {
-                fr.remove("ID").remove();
+                fr.removeVecs("ID").remove();
                 return fr.find("AGE");
               }
             },
@@ -242,7 +242,7 @@ public class DRFTest extends TestUtil {
             new PrepData() {
               @Override
               int prep(Frame fr) {
-                fr.remove("ID").remove();
+                fr.removeVecs("ID").remove();
                 return fr.find("AGE");
               }
             },
@@ -260,7 +260,7 @@ public class DRFTest extends TestUtil {
             new PrepData() {
               @Override
               int prep(Frame fr) {
-                Vec resp = fr.remove("C2");
+                Vec resp = fr.removeVecs("C2");
                 fr.add("C2", VecUtils.toCategoricalVec(resp));
                 resp.remove();
                 return fr.find("C3");
@@ -282,13 +282,13 @@ public class DRFTest extends TestUtil {
               @Override
               int prep(Frame fr) {
                 String[] names = fr.names().clone();
-                AVecAry en = fr.remove(new int[]{1,4,5,8});
+                AVecAry en = fr.removeVecs(new int[]{1,4,5,8});
                 fr.add(names[1], VecUtils.toCategoricalVec(en.select(0))); //CAPSULE
                 fr.add(names[4], VecUtils.toCategoricalVec(en.select(1))); //DPROS
                 fr.add(names[5], VecUtils.toCategoricalVec(en.select(2))); //DCAPS
                 fr.add(names[8], VecUtils.toCategoricalVec(en.select(3))); //GLEASON
                 for (Vec v : en) v.remove();
-                fr.remove(0).remove(); //drop ID
+                fr.removeVecs(0).removeVecs(); //drop ID
                 return 4; //CAPSULE
               }
             },
@@ -346,7 +346,7 @@ public class DRFTest extends TestUtil {
                         "CancellationCode", "CarrierDelay", "WeatherDelay",
                         "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
                 }) {
-                  fr.remove(s).remove();
+                  fr.removeVecs(s).remove();
                 }
                 return fr.find("IsDepDelayed");
               }
@@ -372,10 +372,10 @@ public class DRFTest extends TestUtil {
     Vec resp = fr.vecs(idx);
     Vec ret = null;
     if (classification) {
-      ret = fr.remove(idx);
+      ret = fr.removeVecs(idx);
       fr.add(rname, VecUtils.toCategoricalVec(resp));
     } else {
-      fr.remove(idx);
+      fr.removeVecs(idx);
       fr.add(rname,resp);
     }
     return ret;
@@ -706,7 +706,7 @@ public class DRFTest extends TestUtil {
               "CancellationCode", "CarrierDelay", "WeatherDelay",
               "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
       }) {
-        tfr.remove(s).remove();
+        tfr.removeVecs(s).remove();
       }
       DKV.put(tfr);
       for (int i=0; i<N; ++i) {
@@ -1034,7 +1034,7 @@ public class DRFTest extends TestUtil {
               "CancellationCode", "CarrierDelay", "WeatherDelay",
               "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
       }) {
-        tfr.remove(s).remove();
+        tfr.removeVecs(s).remove();
       }
       DKV.put(tfr);
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
@@ -1079,7 +1079,7 @@ public class DRFTest extends TestUtil {
               "CancellationCode", "CarrierDelay", "WeatherDelay",
               "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
       }) {
-        tfr.remove(s).remove();
+        tfr.removeVecs(s).remove();
       }
       DKV.put(tfr);
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
@@ -1169,7 +1169,7 @@ public class DRFTest extends TestUtil {
               "CancellationCode", "CarrierDelay", "WeatherDelay",
               "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
       }) {
-        tfr.remove(s).remove();
+        tfr.removeVecs(s).remove();
       }
       DKV.put(tfr);
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
@@ -1254,9 +1254,9 @@ public class DRFTest extends TestUtil {
     Scope.enter();
     try {
       tfr = parse_test_file("smalldata/junit/cars_20mpg.csv");
-      tfr.remove("name").remove(); // Remove unique id
-      tfr.remove("economy").remove();
-      old = tfr.remove("economy_20mpg");
+      tfr.removeVecs("name").remove(); // Remove unique id
+      tfr.removeVecs("economy").remove();
+      old = tfr.removeVecs("economy_20mpg");
       tfr.add("economy_20mpg", VecUtils.toCategoricalVec(old)); // response to last column
       DKV.put(tfr);
 
@@ -1304,9 +1304,9 @@ public class DRFTest extends TestUtil {
       Scope.enter();
       try {
         tfr = parse_test_file("smalldata/junit/cars_20mpg.csv");
-        tfr.remove("name").remove(); // Remove unique id
-        tfr.remove("economy").remove();
-        old = tfr.remove("economy_20mpg");
+        tfr.removeVecs("name").remove(); // Remove unique id
+        tfr.removeVecs("economy").remove();
+        old = tfr.removeVecs("economy_20mpg");
         tfr.add("economy_20mpg", VecUtils.toCategoricalVec(old)); // response to last column
         DKV.put(tfr);
 
@@ -1347,7 +1347,7 @@ public class DRFTest extends TestUtil {
       for (String s : new String[]{
               "name",
       }) {
-        tfr.remove(s).remove();
+        tfr.removeVecs(s).remove();
       }
       DKV.put(tfr);
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
@@ -1416,7 +1416,7 @@ public class DRFTest extends TestUtil {
 //            // Build a POJO, validate same results
 //            Frame pred = drf.score(tfr);
 //            Assert.assertTrue(drf.testJavaScoring(tfr,pred,1e-15));
-//            pred.remove();
+//            pred.removeVecs();
 
               ModelMetricsRegression mm = (ModelMetricsRegression)drf._output._validation_metrics;
               hm.put(mm.mse(), new Triple<>(sample_rate, col_sample_rate, col_sample_rate_per_tree));

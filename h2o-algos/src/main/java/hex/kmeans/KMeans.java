@@ -335,7 +335,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
           if (lo != null && hi != null && _parms._estimate_k)
             centers = splitLargestCluster(centers, lo, hi, means, mults, impute_cat, vecs2, k);
         } //k-finder
-        vecs2.remove(vecs2._numCols-1).remove();
+        vecs2.removeVecs(vecs2._numCols-1).removeVecs();
         Log.info(model._output._model_summary);
         Log.info(model._output._scoring_history);
         Log.info(((ModelMetricsClustering)model._output._training_metrics).createCentroidStatsTable().toString());

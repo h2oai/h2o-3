@@ -4,6 +4,7 @@ import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.rapids.Env;
 import water.rapids.vals.ValNum;
 import water.rapids.ast.AstPrimitive;
@@ -30,7 +31,7 @@ public class AstProdNa extends AstPrimitive {
   @Override
   public ValNum apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    for (Vec v : fr.vecs())
+    for (VecAry v : fr.vecs().singleVecs())
       if (v.isCategorical() || v.isUUID() || v.isString())
         throw new IllegalArgumentException("`" + str() + "`" + " only defined on a data frame with all numeric variables");
     double prod = new AstProdNa.RedProd().doAll(fr)._d;

@@ -63,7 +63,7 @@ public class AstIfElse extends AstPrimitive {
     // If all zero's, return false and never execute true.
     Frame fr = new Frame(tst);
     Val tval = null;
-    for (Vec vec : tst.vecs())
+    for (VecAry vec : tst.vecs().singleVecs())
       if (vec.min() != 0 || vec.max() != 0) {
         tval = exec_check(env, stk, tst, asts[2], fr);
         break;
@@ -75,7 +75,7 @@ public class AstIfElse extends AstPrimitive {
 
     // If all nonzero's (or NA's), then never execute false.
     Val fval = null;
-    for (Vec vec : tst.vecs())
+    for (VecAry vec : tst.vecs().singleVecs())
       if (vec.nzCnt() + vec.naCnt() < vec.length()) {
         fval = exec_check(env, stk, tst, asts[3], fr);
         break;
@@ -98,7 +98,7 @@ public class AstIfElse extends AstPrimitive {
       } else if (ts != null) {
         for (int i = 0; i < tst.numCols(); ++i) {
           if (has_ffr) {
-            Vec v = fr.vec(i + tst.numCols() + (has_tfr ? tst.numCols() : 0));
+            VecAry v = fr.vec(i + tst.numCols() + (has_tfr ? tst.numCols() : 0));
             if (!v.isCategorical())
               throw H2O.unimpl("Column is not categorical.");
             String[] dom = Arrays.copyOf(v.domain(), v.domain().length + 1);
@@ -112,7 +112,7 @@ public class AstIfElse extends AstPrimitive {
       } else { // fs!=null
         for (int i = 0; i < tst.numCols(); ++i) {
           if (has_tfr) {
-            Vec v = fr.vec(i + tst.numCols() + (has_ffr ? tst.numCols() : 0));
+            VecAry v = fr.vec(i + tst.numCols() + (has_ffr ? tst.numCols() : 0));
             if (!v.isCategorical())
               throw H2O.unimpl("Column is not categorical.");
             String[] dom = Arrays.copyOf(v.domain(), v.domain().length + 1);

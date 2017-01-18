@@ -124,7 +124,7 @@ public final class Gram extends Iced<Gram> {
    *
    * The advantage of this method over the standard solve is that it can deal with Non-SPD matrices.
    * Gram matrix comes out as Non-SPD if we have collinear columns.
-   * QR decomposition can identify collinear (redundant) columns and remove them from the dataset.
+   * QR decomposition can identify collinear (redundant) columns and removeVecs them from the dataset.
    *
    * QR computation:
    * QR is computed using Gram-Schmidt elimination, using Gram matrix instead of the underlying dataset.

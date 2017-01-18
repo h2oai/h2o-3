@@ -3,6 +3,7 @@ package water.rapids.ast.prims.mungers;
 import water.H2O;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.ast.AstRoot;
@@ -64,7 +65,7 @@ public class AstCBind extends AstPrimitive {
         case Val.NUM:
           // Auto-expand scalars to fill every row
           double d = vals[i].getNum();
-          fr.add(Double.toString(d), vec.makeCon(d));
+          fr.add(Double.toString(d), new VecAry(vec.makeCon(d)));
           break;
         default:
           throw H2O.unimpl();

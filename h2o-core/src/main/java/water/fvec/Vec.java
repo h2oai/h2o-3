@@ -541,7 +541,7 @@ public class Vec extends Keyed<Vec> {
           for(int r = 0; r < cs._len; r++ )
             cs.set(r,c, r + 1 + cs._start);
       }
-    }.doAll(makeZero(len, redistribute))._fr.vecs();
+    }.doAll(makeZero(len, redistribute))._fr.vecs().vecs()[0];
   }
 
   /** Make a new vector initialized to increasing integers, starting with `min`.
@@ -554,7 +554,7 @@ public class Vec extends Keyed<Vec> {
           for (int r = 0; r < cs._len; r++)
             cs.set(r,c, r + min + cs._start);
       }
-    }.doAll(makeZero(len))._fr.vecs();
+    }.doAll(makeZero(len))._fr.vecs().vecs()[0];
   }
 
   /** Make a new vector initialized to increasing integers, starting with `min`.
@@ -567,7 +567,7 @@ public class Vec extends Keyed<Vec> {
           for (int r = 0; r < cs._len; r++)
             cs.set(r, c, r + min + cs._start);
       }
-    }.doAll(makeZero(len, redistribute))._fr.vecs();
+    }.doAll(makeZero(len, redistribute))._fr.vecs().vecs()[0];
   }
 
   /** Make a new vector initialized to increasing integers mod {@code repeat}.
@@ -580,7 +580,7 @@ public class Vec extends Keyed<Vec> {
           for(int r = 0; r < cs._len; ++r )
             cs.set(r,c, (r + cs._start) % repeat);
       }
-    }.doAll(makeZero(len))._fr.vecs();
+    }.doAll(makeZero(len))._fr.vecs().vecs()[0];
   }
 
   /** Make a new vector initialized to random numbers with the given seed */
@@ -840,7 +840,7 @@ public class Vec extends Keyed<Vec> {
       final Key rskey = rollupStatsKey();
       Value val = DKV.get(rollupStatsKey());
       if (val != null) {
-        RollupStats rs = val.get(RollupStats.class);
+        RollupsAry rs = val.get(RollupsAry.class);
         if (rs.isMutating())  // Vector was mutating, is now allowed for rollups
           DKV.remove(rskey, fs);// Removing will cause them to be rebuilt, on demand
       }
@@ -959,17 +959,11 @@ public class Vec extends Keyed<Vec> {
     return Key.make(bits);
   }
 
+
   Futures closeChunk(int cidx, int len, DBlock db, Futures fs){
     DKV.put(newChunkKey(cidx),db,fs);
     return fs;
   }
-
-  Futures closeChunk(ChunkAry c, Futures fs){
-    return closeChunk(c._cidx,c._len,c._numCols == 1?c.getChunk(0):new DBlock.MultiChunkBlock(c.getChunks()),fs);
-  }
-
-
-
 
   /** Get the group this vector belongs to.  In case of a group with only one
    *  vector, the object actually does not exist in KV store.  This is the ONLY
@@ -986,19 +980,14 @@ public class Vec extends Keyed<Vec> {
    *  call on every Chunk index on the same node will probably trigger an OOM!
    *  @return Chunk for a chunk# */
   public ChunkAry chunkForChunkIdx(int cidx) {
-    DBlock data = chunkIdx(cidx);        // Chunk# to chunk data
-    return data.chunkAry(this,cidx);
+    return  chunkIdx(cidx).chunkAry(new VecAry(this),cidx);
   }
-
-
-
   /** The Chunk for a row#.  Warning: this pulls the data locally; using this
    *  call on every Chunk index on the same node will probably trigger an OOM!
    *  @return Chunk for a row# */
   public final ChunkAry chunkForRow(long i) { return chunkForChunkIdx(elem2ChunkIdx(i)); }
 
   // ======= Direct Data Accessors ======
-
 
   /** Fetch element the slow way, as a long.  Floating point values are
    *  silently rounded to an integer.  Throws if the value is missing. 
@@ -1058,39 +1047,6 @@ public class Vec extends Keyed<Vec> {
     return ck.atStr(bStr, ck.chunkRelativeOffset(i),j);
   }
 
-  /** A more efficient way to read randomly to a Vec - still single-threaded,
-   *  but much faster than Vec.at(i).  Limited to single-threaded
-   *  single-machine reads.
-   *
-   * Usage:
-   * Vec.Reader vr = vec.new Reader();
-   * x = vr.at(0);
-   * y = vr.at(1);
-   * z = vr.at(2);
-   */
-  public final class Reader {
-    private ChunkAry _cache;
-    private ChunkAry chk(long i) {
-      ChunkAry c = _cache;
-      return (c != null && c.start() <= i && i < c.start()+ c._len) ? c : (_cache = chunkForRow(i));
-    }
-    public final long    at8( long i) { return at8(i,0); }
-    public final long    at8( long i, int j ) {
-      ChunkAry ck = chk(i);
-      return ck.at8(ck.chunkRelativeOffset(i),j);
-    }
-    public final double   at( long i) { return at(i,0);}
-    public final double   at( long i, int j ) {
-      ChunkAry ck = chk(i);
-      return ck.atd(ck.chunkRelativeOffset(i),j);
-    }
-    public final boolean isNA(long i) {return isNA(i,0);}
-    public final boolean isNA(long i, int j) {
-      ChunkAry ck = chk(i);
-      return ck.isNA(ck.chunkRelativeOffset(i),j);
-    }
-    public final long length() { return Vec.this.length(); }
-  }
 
   /** Write element the slow way, as a long.  There is no way to write a
    *  missing value with this call.  Under rare circumstances this can throw:
@@ -1134,69 +1090,8 @@ public class Vec extends Keyed<Vec> {
     postWrite(ck.close(new Futures())).blockForPending();
   }
 
-  /** A more efficient way to write randomly to a Vec - still single-threaded,
-   *  still slow, but much faster than Vec.set().  Limited to single-threaded
-   *  single-machine writes.
-   *
-   * Usage:
-   * try( Vec.Writer vw = vec.open() ) {
-   *   vw.set(0, 3.32);
-   *   vw.set(1, 4.32);
-   *   vw.set(2, 5.32);
-   * }
-   */
-  public final class Writer implements java.io.Closeable {
-    private ChunkAry _cache;
-    int _j;
-    private ChunkAry chk(long i) {
-      ChunkAry c = _cache;
-      return (c != null && c.start() <= i && i < c.start()+ c._len) ? c : (_cache = chunkForRow(i));
-    }
-    private Writer() { this(0);}
-    private Writer(int j) { preWriting(); }
 
-    public final void set( long i, long   l) { set(i,_j,l);}
-    public final void set( long i, int j, long   l) {
-      ChunkAry ck = chk(i);
-      ck.set(ck.chunkRelativeOffset(i),j, l);
-    }
-    public final void set( long i, double   d) { set(i,_j,d);}
-    public final void set( long i, int j, double d) {
-      ChunkAry ck = chk(i);
-      ck.set(ck.chunkRelativeOffset(i),j, d);
-    }
-    public final void set( long i, float  f) { set(i,f);}
-    public final void set( long i, int j, float  f) {
-      ChunkAry ck = chk(i);
-      ck.set(ck.chunkRelativeOffset(i),j, f);
-    }
-    public final void setNA( long i        ) { setNA(i,_j); }
-    public final void setNA( long i, int j) {
-      ChunkAry ck = chk(i);
-      ck.setNA(ck.chunkRelativeOffset(i),j);
-    }
-    public final void set( long i,String str){ set(i,_j,str); }
-    public final void set( long i,int j, String str){
-      ChunkAry ck = chk(i);
-      ck.set(ck.chunkRelativeOffset(i),j,str);
-    }
-    public Futures close(Futures fs) { return postWrite(closeLocal(fs)); }
-    public void close() { close(new Futures()).blockForPending(); }
-  }
 
-  /** Create a writer for bulk serial writes into this Vec.
-   *  @return A Writer for bulk serial writes */
-  public final Writer open() { return new Writer(); }
-
-  /** Close all chunks that are local (not just the ones that are homed)
-   *  This should only be called from a Writer object */
-  private Futures closeLocal(Futures fs) {
-    int nc = nChunks();
-    for( int i=0; i<nc; i++ )
-      if( H2O.containsKey(chunkKey(i)) )
-        chunkForChunkIdx(i).close(fs);
-    return fs;                  // Flow-coding
-  }
 
 
   /** Pretty print the Vec: {@code [#elems, min/mean/max]{chunks,...}}
@@ -1221,7 +1116,7 @@ public class Vec extends Keyed<Vec> {
    * @return TwoDimTable that can be toString()'ed, etc.
    */
   public TwoDimTable toTwoDimTable(int off, int len) {
-    return new Frame(this).toTwoDimTable(off, len);
+    return new Frame(new VecAry(this)).toTwoDimTable(off, len);
   }
 
   /**
@@ -1230,24 +1125,24 @@ public class Vec extends Keyed<Vec> {
    */
   public TwoDimTable toTwoDimTable() {
     int len = (int)Math.min(Integer.MAX_VALUE, length());
-    return new Frame(this).toTwoDimTable(0,len);
+    return new Frame(new VecAry(this)).toTwoDimTable(0,len);
   }
 
   /**
    * Convenience method for converting to a categorical vector.
    * @return A categorical vector based on the contents of the original vector.
    */
-  public Vec toCategoricalVec() {return VecUtils.toCategoricalVec(this);}
+  public VecAry toCategoricalVec() {return VecUtils.toCategoricalVec(new VecAry(this));}
   /**
    * Convenience method for converting to a string vector.
    * @return A string vector based on the contents of the original vector.
    */
-  public Vec toStringVec() {return VecUtils.toStringVec(this);}
+  public VecAry toStringVec() {return VecUtils.toStringVec(new VecAry(this));}
   /**
    * Convenience method for converting to a numeric vector.
    * @return A numeric vector based on the contents of the original vector.
    */
-  public Vec toNumericVec() {return VecUtils.toNumericVec(this);}
+  public VecAry toNumericVec() {return VecUtils.toNumericVec(new VecAry(this));}
 
   /** True if two Vecs are equal.  Checks for equal-Keys only (so it is fast)
    *  and not equal-contents.
@@ -1259,18 +1154,18 @@ public class Vec extends Keyed<Vec> {
    *  @return Vec's hashcode */
   @Override public int hashCode() { return _key.hashCode(); }
 
-  /** Remove associated Keys when this guy removes.  For Vecs, remove all
+  /** Remove associated Keys when this guy removes.  For Vecs, removeVecs all
    *  associated Chunks.
    *  @return Passed in Futures for flow-coding  */
   @Override public Futures remove_impl( Futures fs ) {
-    // Bulk dumb local remove - no JMM, no ordering, no safety.
+    // Bulk dumb local removeVecs - no JMM, no ordering, no safety.
     final int ncs = nChunks();
     new MRTask() {
       @Override public void setupLocal() { bulk_remove(_key,ncs); }
     }.doAllNodes();
     return fs;
   }
-  // Bulk remove: removes LOCAL keys only, without regard to total visibility.
+  // Bulk removeVecs: removes LOCAL keys only, without regard to total visibility.
   // Must be run in parallel on all nodes to preserve semantics, completely
   // removing the Vec without any JMM communication.
   static void bulk_remove( Key vkey, int ncs ) {
@@ -1310,18 +1205,8 @@ public class Vec extends Keyed<Vec> {
    * @return a copy of vec which shared the same {@link VectorGroup} with this vector
    */
   public Vec align(final Vec vec) {
-    return new Frame(this).makeCompatible(new Frame(vec),true);
+    return new Frame(this).makeCompatible(new Frame(vec),true).vecs()[0];
   }
-
-
-  /** Make a Vec adapting this cal vector to the 'to' categorical Vec.  The adapted
-   *  CategoricalWrappedVec has 'this' as it's masterVec, but returns results in the 'to'
-   *  domain (or just past it, if 'this' has elements not appearing in the 'to'
-   *  domain). */
-  public CategoricalWrappedVec adaptTo( String[] domain ) {
-    return new CategoricalWrappedVec(group().addVec(),_rowLayout,domain,this._key);
-  }
-
 
   /**
    * Get Vec from the same vector group as src by it's vector group id.
@@ -1335,6 +1220,8 @@ public class Vec extends Keyed<Vec> {
     UnsafeUtils.set4(bits,2,vecId);
     return Key.make(bits);
   }
+
+
 
   public static Key<Vec> setChunkId(Key vecKey, int chunkId){
     UnsafeUtils.set4(vecKey._kb,6,chunkId);
@@ -1373,6 +1260,13 @@ public class Vec extends Keyed<Vec> {
     // The number of Vec keys handed out by the this VectorGroup already.
     // Updated by overwriting in a TAtomic.
     final int _len;
+
+    public static Key<Vec> getVecKeyById(Key groupKey, int vecId){
+      byte [] bits = groupKey._kb.clone();
+      bits[0] = Key.VEC;
+      UnsafeUtils.set4(bits,2,vecId);
+      return Key.make(bits);
+    }
 
     // New empty VectorGroup (no Vecs handed out)
     public VectorGroup() { super(init_key()); _len = 0; }
@@ -1470,7 +1364,7 @@ public class Vec extends Keyed<Vec> {
      *  @return VectorGroups's hashcode */
     @Override public int hashCode() { return _key.hashCode(); }
     @Override protected long checksum_impl() { throw H2O.fail(); }
-    // Fail to remove a VectorGroup unless you also remove all related Vecs,
+    // Fail to removeVecs a VectorGroup unless you also removeVecs all related Vecs,
     // Chunks, Rollups (and any Frame that uses them), etc.
     @Override protected Futures remove_impl( Futures fs ) { throw H2O.fail(); }
     /** Write out K/V pairs */

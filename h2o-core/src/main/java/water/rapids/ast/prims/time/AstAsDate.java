@@ -3,10 +3,7 @@ package water.rapids.ast.prims.time;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormatter;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.parser.BufferedString;
 import water.parser.ParseTime;
 import water.rapids.Env;
@@ -38,7 +35,7 @@ public class AstAsDate extends AstPrimitive {
   @Override
   public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    Vec vec = fr.vecs();
+    VecAry vec = fr.vecs();
     if (fr.vecs()._numCols != 1 || !(vec.isCategorical() || vec.isString()))
       throw new IllegalArgumentException("as.Date requires a single column of factors or strings");
 

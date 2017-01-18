@@ -38,27 +38,27 @@ public class AstToLower extends AstPrimitive {
   public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     // Type check
-    for (Vec v : fr.vecs())
+    for (VecAry v : fr.vecs().singleVecs())
       if (!(v.isCategorical() || v.isString()))
         throw new IllegalArgumentException("tolower() requires a string or categorical column. "
             + "Received " + fr.anyVec().get_type_str()
             + ". Please convert column to a string or categorical first.");
 
     // Transform each vec
-    Vec nvs[] = new Vec[fr.numCols()];
+    VecAry nvs = new VecAry();//new Vec[fr.numCols()];
     int i = 0;
-    for (Vec v : fr.vecs()) {
+    for (VecAry v : fr.vecs().singleVecs()) {
       if (v.isCategorical())
-        nvs[i] = toLowerCategoricalCol(v);
+        nvs.append(toLowerCategoricalCol(v));
       else
-        nvs[i] = toLowerStringCol(v);
+        nvs.append(toLowerStringCol(v));
       i++;
     }
 
     return new ValFrame(new Frame(nvs));
   }
 
-  private Vec toLowerCategoricalCol(Vec vec) {
+  private VecAry toLowerCategoricalCol(VecAry vec) {
     assert vec.numCols() == 1;
     String[] dom = vec.domain().clone();
     for (int i = 0; i < dom.length; ++i)
@@ -66,7 +66,7 @@ public class AstToLower extends AstPrimitive {
     return vec.makeCopy(new String[][]{dom});
   }
 
-  private Vec toLowerStringCol(Vec vec) {
+  private VecAry toLowerStringCol(VecAry vec) {
     return new MRTask() {
       @Override
       public void map(Chunk chk, NewChunk newChk) {
@@ -85,6 +85,6 @@ public class AstToLower extends AstPrimitive {
           }
         }
       }
-    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().vecs();
   }
 }

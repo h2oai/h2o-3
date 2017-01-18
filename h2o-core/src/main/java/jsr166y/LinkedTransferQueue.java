@@ -319,7 +319,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * In addition to minimizing garbage retention via self-linking
      * described above, we also unlink removed interior nodes. These
      * may arise due to timed out or interrupted waits, or calls to
-     * remove(x) or Iterator.remove.  Normally, given a node that was
+     * removeVecs(x) or Iterator.removeVecs.  Normally, given a node that was
      * at one time known to be the predecessor of some node s that is
      * to be removed, we can unsplice s by CASing the next field of
      * its predecessor if it still points to s (otherwise s must
@@ -358,7 +358,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * background threads or by spreading work to other threads)
      * because in the main contexts in which removal occurs, the
      * caller is already timed-out, cancelled, or performing a
-     * potentially O(n) operation (e.g. remove(x)), none of which are
+     * potentially O(n) operation (e.g. removeVecs(x)), none of which are
      * time-critical enough to warrant the overhead that alternatives
      * would impose on other threads.
      *
@@ -491,7 +491,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
         }
 
         /**
-         * Tries to artificially match a data node -- used by remove.
+         * Tries to artificially match a data node -- used by removeVecs.
          */
         final boolean tryMatchData() {
             // assert isData;
@@ -792,7 +792,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
     final class Itr implements Iterator<E> {
         private Node nextNode;   // next node to return item for
         private E nextItem;      // the corresponding item
-        private Node lastRet;    // last returned node, to support remove
+        private Node lastRet;    // last returned node, to support removeVecs
         private Node lastPred;   // predecessor to unlink lastRet
 
         /**
@@ -801,9 +801,9 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
         private void advance(Node prev) {
             /*
              * To track and avoid buildup of deleted nodes in the face
-             * of calls to both Queue.remove and Itr.remove, we must
+             * of calls to both Queue.removeVecs and Itr.removeVecs, we must
              * include variants of unsplice and sweep upon each
-             * advance: Upon Itr.remove, we may need to catch up links
+             * advance: Upon Itr.removeVecs, we may need to catch up links
              * from lastPred, and upon other removes, we might need to
              * skip ahead from stale nodes and unsplice deleted ones
              * found while advancing.
@@ -954,7 +954,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
     }
 
     /**
-     * Main implementation of remove(Object)
+     * Main implementation of removeVecs(Object)
      */
     private boolean findAndRemove(Object e) {
         if (e != null) {

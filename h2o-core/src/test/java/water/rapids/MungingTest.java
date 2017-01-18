@@ -192,7 +192,7 @@ public class MungingTest extends TestUtil {
 //
 //        frame.delete();
 //        f.delete();
-//        v.remove();
+//        v.removeVecs();
 //
 //    }
 

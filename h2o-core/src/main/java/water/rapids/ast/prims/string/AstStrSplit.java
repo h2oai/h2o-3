@@ -36,29 +36,25 @@ public class AstStrSplit extends AstPrimitive {
     String splitRegEx = asts[2].exec(env).getStr();
 
     // Type check
-    for (Vec v : fr.vecs())
+    for (VecAry v : fr.vecs().singleVecs())
       if (!(v.isCategorical() || v.isString()))
         throw new IllegalArgumentException("strsplit() requires a string or categorical column. "
             + "Received " + fr.anyVec().get_type_str()
             + ". Please convert column to a string or categorical first.");
 
     // Transform each vec
-    ArrayList<Vec> vs = new ArrayList<>(fr.numCols());
-    for (Vec v : fr.vecs()) {
-      AVecAry splits;
+    VecAry vs = new VecAry();
+    for (VecAry v : fr.vecs().singleVecs()) {
       if (v.isCategorical()) {
-        splits = strSplitCategoricalCol(v, splitRegEx);
-        for (Vec split : splits) vs.add(split);
+        vs.append(strSplitCategoricalCol(v, splitRegEx));
       } else {
-        splits = strSplitStringCol(v, splitRegEx);
-        for (Vec split : splits) vs.add(split);
+        vs.append(strSplitStringCol(v, splitRegEx));
       }
     }
-
-    return new ValFrame(new Frame(vs.toArray(new Vec[vs.size()])));
+    return new ValFrame(new Frame(vs));
   }
 
-  private AVecAry strSplitCategoricalCol(Vec vec, String splitRegEx) {
+  private VecAry strSplitCategoricalCol(VecAry vec, String splitRegEx) {
     final String[] old_domains = vec.domain();
     final String[][] new_domains = newDomains(old_domains, splitRegEx);
 
@@ -121,7 +117,7 @@ public class AstStrSplit extends AstPrimitive {
     return doms;
   }
 
-  private AVecAry strSplitStringCol(Vec vec, final String splitRegEx) {
+  private VecAry strSplitStringCol(VecAry vec, final String splitRegEx) {
     final int newColCnt = (new AstStrSplit.CountSplits(splitRegEx)).doAll(vec)._maxSplits;
     return new MRTask() {
       @Override

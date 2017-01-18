@@ -39,7 +39,7 @@ public class KMeansTest extends TestUtil {
 
   //PUBDEV-871: Double-check the training metrics (gathered by computeStatsFillModel) and the scoring logic by scoring on the training set
   private static void checkConsistency(KMeansModel kmm) {
-    //FIXME: TODO: remove this false, and fix the algo! PUBDEV-871
+    //FIXME: TODO: removeVecs this false, and fix the algo! PUBDEV-871
     if (false) {
       KMeansModel.KMeansParameters parms = kmm._parms;
       Assert.assertTrue((ArrayUtils.sum(kmm._output._size) - parms.train().numRows()) <= 1);

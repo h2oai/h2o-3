@@ -216,7 +216,7 @@ public class GroupByTest extends TestUtil {
 
   @Test public void testGroupbyTableSpeed() {
     Frame ids = parse_test_file(Key.make("cov"),"smalldata/junit/id_cols.csv");
-    ids.replace(0,ids.anyVec().toCategoricalVec()).remove();
+    ids.replace(0,ids.anyVec().toCategoricalVec()).removeVecs();
     System.out.println(ids.toString(0,10));
 
     long start = System.currentTimeMillis();

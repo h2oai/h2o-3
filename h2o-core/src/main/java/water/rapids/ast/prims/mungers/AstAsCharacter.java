@@ -2,6 +2,7 @@ package water.rapids.ast.prims.mungers;
 
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.ast.AstRoot;
@@ -31,17 +32,7 @@ public class AstAsCharacter extends AstPrimitive {
   @Override
   public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame ary = stk.track(asts[1].exec(env)).getFrame();
-    Vec[] nvecs = new Vec[ary.numCols()];
-    Vec vv;
-    for (int c = 0; c < nvecs.length; ++c) {
-      vv = ary.vec(c);
-      try {
-        nvecs[c] = vv.toStringVec();
-      } catch (Exception e) {
-        VecUtils.deleteVecs(nvecs, c);
-        throw e;
-      }
-    }
+    VecAry nvecs = ary.vecs().toStringVec();
     return new ValFrame(new Frame(ary._names, nvecs));
   }
 }

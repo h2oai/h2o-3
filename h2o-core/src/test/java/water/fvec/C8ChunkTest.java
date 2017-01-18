@@ -60,7 +60,7 @@ public class C8ChunkTest extends TestUtil {
     water.Key key = Vec.newKey();
     Vec vec = new Vec(key, Vec.ESPC.rowLayout(key,new long[]{0,15}),1).makeZero();
     long[] vals = new long[]{Long.MIN_VALUE+1, 1, 0, 2, 0, 51, 0, 33, 0, 21234, 3422, 3767, 0, 0, Long.MAX_VALUE};
-    Vec.Writer w = vec.open();
+    VecAry.Writer w = new VecAry(vec).open();
     for (int i =0; i<vals.length; ++i) w.set(i, vals[i]);
     w.close();
 
@@ -73,7 +73,7 @@ public class C8ChunkTest extends TestUtil {
 
     int[] NAs = new int[]{1, 5, 2};
     int[] notNAs = new int[]{0, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14};
-    w = vec.open();
+    w = new VecAry(vec).open();
     for (int i:NAs) w.setNA(i);
     w.close();
 

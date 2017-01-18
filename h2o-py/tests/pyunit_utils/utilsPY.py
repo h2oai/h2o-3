@@ -202,7 +202,7 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs)
         in_csv = os.path.join(tmpdir, "in.csv")
         h2o.download_csv(test[x], in_csv)
 
-        # hack: the PredictCsv driver can't handle quoted strings, so remove them
+        # hack: the PredictCsv driver can't handle quoted strings, so removeVecs them
         f = open(in_csv, "r+")
         csv = f.read()
         csv = re.sub('\"', "", csv)
@@ -757,7 +757,7 @@ def generate_training_set_glm(csv_filename, row_count, col_count, min_p_value, m
     # need to delete this data sample before proceeding
     if ('multinomial' in family_type.lower()) or ('binomial' in family_type.lower()):
         if 'threshold' in class_method.lower():
-            if np.any(response_y < 0):  # remove negative entries out of data set
+            if np.any(response_y < 0):  # removeVecs negative entries out of data set
                 (x_mat, response_y) = remove_negative_response(x_mat, response_y)
 
     # write to file in csv format
@@ -835,7 +835,7 @@ def remove_negative_response(x_mat, response_y):
     to be greater by margin than the second highest class probability, the data sample is discarded.  However, when we
     generate the data set, we keep all samples.  For data sample with maximum class probability that fails to be
     greater by margin than the second highest class probability, the response is set to be -1.  This function will
-    remove all data samples (predictors and responses) with response set to -1.
+    removeVecs all data samples (predictors and responses) with response set to -1.
 
     :param x_mat: predictor matrix containing all predictor values
     :param response_y: response that can be negative if that data sample is to be removed
@@ -843,9 +843,9 @@ def remove_negative_response(x_mat, response_y):
     :return: tuple containing x_mat, response_y with negative data samples removed.
     """
     y_response_negative = np.where(response_y < 0)    # matrix of True or False
-    x_mat = np.delete(x_mat,y_response_negative[0].transpose(),axis=0)  # remove predictor row with negative response
+    x_mat = np.delete(x_mat,y_response_negative[0].transpose(),axis=0)  # removeVecs predictor row with negative response
 
-    # remove rows with negative response
+    # removeVecs rows with negative response
     response_y = response_y[response_y >= 0]
 
     return x_mat,response_y.transpose()
@@ -1203,7 +1203,7 @@ def move_files(dir_path, old_name, new_file, action='move'):
 
 def remove_files(filename):
     """
-    Simple function to remove data set saved in filename if the dynamic test is completed with no
+    Simple function to removeVecs data set saved in filename if the dynamic test is completed with no
     error.  Some data sets we use can be rather big.  This is performed to save space.
 
     :param filename: string representing the file to be removed.  Full path is included.
@@ -1451,7 +1451,7 @@ def compare_two_arrays(array1, array2, eps, tolerance, comparison_string, array1
 
 def make_Rsandbox_dir(base_dir, test_name, make_dir):
     """
-    This function will remove directory "Rsandbox/test_name" off directory base_dir and contents if it exists.
+    This function will removeVecs directory "Rsandbox/test_name" off directory base_dir and contents if it exists.
     If make_dir is True, it will create a clean directory "Rsandbox/test_name" off directory base_dir.
 
     :param base_dir: string contains directory path where we want to build our Rsandbox/test_name off from
@@ -1464,7 +1464,7 @@ def make_Rsandbox_dir(base_dir, test_name, make_dir):
 
     # create the Rsandbox directory path for the test.
     syndatasets_dir = os.path.join(base_dir, "Rsandbox_" + test_name)
-    if os.path.exists(syndatasets_dir):     # remove Rsandbox directory if it exists
+    if os.path.exists(syndatasets_dir):     # removeVecs Rsandbox directory if it exists
         shutil.rmtree(syndatasets_dir)
 
     if make_dir:    # create Rsandbox directory if make_dir is True
@@ -1567,16 +1567,16 @@ def replace_nan_with_mean(data_with_nans, nans_row_col_indices, col_means):
     return data_with_nans
 
 
-def remove_csv_files(dir_path, suffix=".csv", action='remove', new_dir_path=""):
+def remove_csv_files(dir_path, suffix=".csv", action='removeVecs', new_dir_path=""):
     """
     Given a directory, this function will gather all function ending with string specified
-    in suffix.  Next, it is going to delete those files if action is set to 'remove'.  If
+    in suffix.  Next, it is going to delete those files if action is set to 'removeVecs'.  If
     action is set to 'copy', a new_dir_path must be specified where the files ending with suffix
     will be moved to this new directory instead.
 
     :param dir_path: string representing full path to directory of interest
     :param suffix: string representing suffix of filename that are to be found and deleted
-    :param action: string, optional, denote the action to perform on files, 'remove' or 'move'
+    :param action: string, optional, denote the action to perform on files, 'removeVecs' or 'move'
     :param new_dir_path: string, optional, representing full path to new directory
 
     :return: None
@@ -1590,14 +1590,14 @@ def remove_csv_files(dir_path, suffix=".csv", action='remove', new_dir_path=""):
     for fn in to_remove:
         temp_fn = os.path.join(dir_path, fn)
 
-        # only remove if file actually exists.
+        # only removeVecs if file actually exists.
         if os.path.isfile(temp_fn):
-            if 'remove' in action:
+            if 'removeVecs' in action:
                 remove_files(temp_fn)
             elif 'copy' in action:
                 move_files(new_dir_path, temp_fn, fn, action=action)
             else:
-                print("action string can only be 'remove' or 'copy.")
+                print("action string can only be 'removeVecs' or 'copy.")
                 sys.exit(1)
 
 
@@ -2064,7 +2064,7 @@ def gen_grid_search(model_params, hyper_params, exclude_parameters, gridable_par
             if para_name not in hyper_params.keys():    # add default value to user defined parameter list
                  # gridable parameter not seen before.  Randomly generate values for it
                 if ('int' in gridable_types[count_index]) or ('long' in gridable_types[count_index]):
-                    # make sure integer values are not duplicated, using set action to remove duplicates
+                    # make sure integer values are not duplicated, using set action to removeVecs duplicates
                     hyper_params[para_name] = list(set([random.randint(min_int_val, max_int_val) for p in
                                                         range(0, max_int_number)]))
                 elif ('double' in gridable_types[count_index]) or ('float' in gridable_types[count_index]):
@@ -2167,7 +2167,7 @@ def insert_error_grid_search(hyper_params, gridable_parameters, gridable_types, 
     error_number generated, the following errors can be introduced:
 
     error_number = 0: randomly alter the name of a hyper-parameter name;
-    error_number = 1: randomly choose a hyper-parameter and remove all elements in its list
+    error_number = 1: randomly choose a hyper-parameter and removeVecs all elements in its list
     error_number = 2: add randomly generated new hyper-parameter names with random list
     error_number other: randomly choose a hyper-parameter and insert an illegal type into it
 
@@ -2268,7 +2268,7 @@ def generate_redundant_parameters(hyper_params, gridable_parameters, gridable_de
     num_params = random.randint(1, len(error_hyper_params))
     params_list = list(error_hyper_params)
 
-    # remove default values out of hyper_params
+    # removeVecs default values out of hyper_params
     for key in params_list:
         default_value = gridable_defaults[gridable_parameters.index(key )]
 

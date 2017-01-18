@@ -174,13 +174,11 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
   public FramesV3 column(int version, FramesV3 s) { // TODO: should return a Vec schema
     Frame frame = getFromDKV("key", s.frame_id.key());
 
-    Vec vec = frame.vec(s.column);
+    VecAry vec = frame.vec(s.column);
     if (null == vec)
       throw new H2OColumnNotFoundArgumentException("column", s.frame_id.toString(), s.column);
-
-    Vec[] vecs = { vec };
     String[] names = { s.column };
-    Frame new_frame = new Frame(names, vecs);
+    Frame new_frame = new Frame(names, vec);
     s.frames = new FrameV3[1];
     s.frames[0] = new FrameV3().fillFromImpl(new_frame);
     ((FrameV3)s.frames[0]).clearBinsField();
@@ -191,7 +189,7 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 columnDomain(int version, FramesV3 s) {
     Frame frame = getFromDKV("key", s.frame_id.key());
-    Vec vec = frame.vec(s.column);
+    VecAry vec = frame.vec(s.column);
     if (vec == null)
       throw new H2OColumnNotFoundArgumentException("column", s.frame_id.toString(), s.column);
     s.domain = new String[1][];
@@ -278,7 +276,7 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 delete(int version, FramesV3 frames) {
     Frame frame = getFromDKV("key", frames.frame_id.key()); // safe
-    frame.delete();             // lock & remove
+    frame.delete();             // lock & removeVecs
     return frames;
   }
 

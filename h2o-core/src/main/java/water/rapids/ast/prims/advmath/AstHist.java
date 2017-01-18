@@ -38,7 +38,7 @@ public class AstHist extends AstPrimitive {
     Frame fr2;
     Frame f = stk.track(asts[1].exec(env)).getFrame();
     if (f.numCols() != 1) throw new IllegalArgumentException("Hist only applies to single numeric columns.");
-    Vec vec = f.anyVec();
+    VecAry vec = f.vecs();
     if (!vec.isNumeric()) throw new IllegalArgumentException("Hist only applies to single numeric columns.");
     //TODO Add case when vec is a constant numeric
     if(vec.isConst()) throw new IllegalArgumentException("Hist does not apply to constant numeric columns.");
@@ -121,35 +121,35 @@ public class AstHist extends AstPrimitive {
     return new ValFrame(fr2);
   }
 
-  public static int sturges(Vec v) {
+  public static int sturges(VecAry v) {
     return (int) Math.ceil(1 + log2(v.length()));
   }
 
-  public static int rice(Vec v) {
+  public static int rice(VecAry v) {
     return (int) Math.ceil(2 * Math.pow(v.length(), 1. / 3.));
   }
 
-  public static int sqrt(Vec v) {
+  public static int sqrt(VecAry v) {
     return (int) Math.sqrt(v.length());
   }
 
-  public static int doane(Vec v) {
+  public static int doane(VecAry v) {
     return (int) (1 + log2(v.length()) + log2(1 + (Math.abs(third_moment(v)) / sigma_g1(v))));
   }
 
-  public static int scott(Vec v, double h) {
+  public static int scott(VecAry v, double h) {
     return (int) Math.ceil((v.max() - v.min()) / h);
   }
 
-  public static int fd(Vec v, double h) {
+  public static int fd(VecAry v, double h) {
     return (int) Math.ceil((v.max() - v.min()) / h);
   }   // Freedman-Diaconis slightly modified to use MAD instead of IQR
 
-  public static double fds_h(Vec v) {
+  public static double fds_h(VecAry v) {
     return 2 * AstMad.mad(new Frame(v), null, 1.4826) * Math.pow(v.length(), -1. / 3.);
   }
 
-  public static double scotts_h(Vec v) {
+  public static double scotts_h(VecAry v) {
     return 3.5 * Math.sqrt(AstVariance.getVar(v)) / (Math.pow(v.length(), 1. / 3.));
   }
 
@@ -157,11 +157,11 @@ public class AstHist extends AstPrimitive {
     return (Math.log(numerator)) / Math.log(2) + 1e-10;
   }
 
-  public static double sigma_g1(Vec v) {
+  public static double sigma_g1(VecAry v) {
     return Math.sqrt((6 * (v.length() - 2)) / ((v.length() + 1) * (v.length() + 3)));
   }
 
-  public static double third_moment(Vec v) {
+  public static double third_moment(VecAry v) {
     final double mean = v.mean();
     AstHist.ThirdMomTask t = new AstHist.ThirdMomTask(mean).doAll(v);
     double m2 = t._ss / v.length();
@@ -203,7 +203,7 @@ public class AstHist extends AstPrimitive {
     }
   }
 
-  public static double fourth_moment(Vec v) {
+  public static double fourth_moment(VecAry v) {
     final double mean = v.mean();
     AstHist.FourthMomTask t = new AstHist.FourthMomTask(mean).doAll(v);
     double m2 = t._ss / v.length();
@@ -245,7 +245,7 @@ public class AstHist extends AstPrimitive {
     }
   }
 
-  public double[] computeCuts(Vec v, int numBreaks) {
+  public double[] computeCuts(VecAry v, int numBreaks) {
     if (numBreaks <= 0) throw new IllegalArgumentException("breaks must be a positive number");
     // just make numBreaks cuts equidistant from each other spanning range of [v.min, v.max]
     double min;

@@ -190,11 +190,11 @@ public class GLMBasicTestBinomial extends TestUtil {
       }
     } finally {
       if (fTrain != null) {
-        fTrain.remove("offset").remove();
+        fTrain.removeVecs("offset").remove();
         DKV.remove(fTrain._key);
       }
       if(fTest != null){
-        fTest.remove("offset").remove();
+        fTest.removeVecs("offset").remove();
         DKV.remove(fTest._key);
       }
     }
@@ -388,11 +388,11 @@ public class GLMBasicTestBinomial extends TestUtil {
       }
     } finally {
       if (fTrain != null) {
-        fTrain.remove("offset").remove();
+        fTrain.removeVecs("offset").remove();
         DKV.remove(fTrain._key);
       }
       if(fTest != null) {
-        fTest.remove("offset").remove();
+        fTest.removeVecs("offset").remove();
         DKV.remove(fTest._key);
       }
     }
@@ -612,7 +612,7 @@ public class GLMBasicTestBinomial extends TestUtil {
 //            assertTrue(iae.getMessage().contains("Test/Validation dataset is missing weights vector"));
 //          }
           Frame f = new Frame(_prostateTrain);
-          f.remove("CAPSULE");
+          f.removeVecs("CAPSULE");
           // test we can generate predictions with no weights (no metrics)
           scoreTrain = model.score(f);
           scoreTrain.delete();
@@ -651,7 +651,7 @@ public class GLMBasicTestBinomial extends TestUtil {
       }
     } finally {
       if (fTrain != null) {
-        fTrain.remove("weights").remove();
+        fTrain.removeVecs("weights").remove();
         DKV.remove(fTrain._key);
       }
 //      if(fTest != null)fTest.delete();

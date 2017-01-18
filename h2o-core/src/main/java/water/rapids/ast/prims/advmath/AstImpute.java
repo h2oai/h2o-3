@@ -4,10 +4,7 @@ import hex.quantile.QuantileModel;
 import water.Freezable;
 import water.H2O;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.ChunkAry;
-import water.fvec.Frame;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.rapids.*;
 import water.rapids.ast.AstFrame;
 import water.rapids.ast.AstPrimitive;
@@ -97,7 +94,7 @@ public class AstImpute extends AstPrimitive {
     if (col >= fr.numCols())
       throw new IllegalArgumentException("Column not -1 or in range 0 to " + fr.numCols());
     final boolean doAllVecs = col == -1;
-    final Vec vec = doAllVecs ? null : fr.vec(col);
+    final VecAry vec = doAllVecs ? null : fr.vec(col);
 
     // Technique used for imputation
     AstRoot method = null;

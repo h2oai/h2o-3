@@ -46,7 +46,7 @@ class Test_glm_grid_search:
     test2_illegal_name_value: test for condition 1 and 2.  Randomly go into the hyper_parameters that we
     have specified, either
         a. randomly alter the name of a hyper-parameter name (fatal, exception will be thrown)
-        b. randomly choose a hyper-parameter and remove all elements in its list (fatal)
+        b. randomly choose a hyper-parameter and removeVecs all elements in its list (fatal)
         c. add randomly generated new hyper-parameter names with random list (fatal)
         d: randomly choose a hyper-parameter and insert an illegal type into it (non fatal, model built with
            legal hyper-parameters settings only and error messages printed out for illegal hyper-parameters
@@ -438,7 +438,7 @@ class Test_glm_grid_search:
         test2_illegal_name_value: test for condition 1 and 2.  Randomly go into the hyper_parameters that we
         have specified, either
         a. randomly alter the name of a hyper-parameter name (fatal, exception will be thrown)
-        b. randomly choose a hyper-parameter and remove all elements in its list (fatal)
+        b. randomly choose a hyper-parameter and removeVecs all elements in its list (fatal)
         c. add randomly generated new hyper-parameter names with random list (fatal)
         d: randomly choose a hyper-parameter and insert an illegal type into it (non fatal, model built with
            legal hyper-parameters settings only and error messages printed out for illegal hyper-parameters
@@ -447,7 +447,7 @@ class Test_glm_grid_search:
         The following error conditions will be created depending on the error_number generated:
 
         error_number = 0: randomly alter the name of a hyper-parameter name;
-        error_number = 1: randomly choose a hyper-parameter and remove all elements in its list
+        error_number = 1: randomly choose a hyper-parameter and removeVecs all elements in its list
         error_number = 2: add randomly generated new hyper-parameter names with random list
         error_number = 3: randomly choose a hyper-parameter and insert an illegal type into it
 
@@ -525,7 +525,7 @@ class Test_glm_grid_search:
         params_dict["family"] = self.family
         params_dict["nfolds"] = self.nfolds
 
-        # remove stopping_rounds, stopping_tolerance if included
+        # removeVecs stopping_rounds, stopping_tolerance if included
         if "stopping_rounds" in list(params_dict):
             del params_dict["stopping_rounds"]
 
@@ -577,7 +577,7 @@ def test_grid_search_for_glm_over_all_params():
 
     if test_glm_grid.test_failed:  # exit with error if any tests have failed
         sys.exit(1)
-    else:   # remove json files if everything passes
+    else:   # removeVecs json files if everything passes
         test_glm_grid.tear_down()
 
 

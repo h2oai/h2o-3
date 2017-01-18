@@ -38,27 +38,27 @@ public class AstTrim extends AstPrimitive {
   public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     // Type check
-    for (Vec v : fr.vecs())
+    for (VecAry v : fr.vecs().singleVecs())
       if (!(v.isCategorical() || v.isString()))
         throw new IllegalArgumentException("trim() requires a string or categorical column. "
             + "Received " + fr.anyVec().get_type_str()
             + ". Please convert column to a string or categorical first.");
 
     // Transform each vec
-    Vec nvs[] = new Vec[fr.numCols()];
+    VecAry nvs = new VecAry(); // new Vec[fr.numCols()];
     int i = 0;
-    for (Vec v : fr.vecs()) {
+    for (VecAry v : fr.vecs().singleVecs()) {
       if (v.isCategorical())
-        nvs[i] = trimCategoricalCol(v);
+        nvs.append(trimCategoricalCol(v));
       else
-        nvs[i] = trimStringCol(v);
+        nvs.append(trimStringCol(v));
       i++;
     }
 
     return new ValFrame(new Frame(nvs));
   }
 
-  private Vec trimCategoricalCol(Vec vec) {
+  private VecAry trimCategoricalCol(VecAry vec) {
     String[] doms = vec.domain().clone();
 
     HashMap<String, ArrayList<Integer>> trimmedToOldDomainIndices = new HashMap<>();
@@ -82,7 +82,7 @@ public class AstTrim extends AstPrimitive {
     return vec.makeCopy(new String[][]{doms});
   }
 
-  private Vec trimStringCol(Vec vec) {
+  private VecAry trimStringCol(VecAry vec) {
     return new MRTask() {
       @Override
       public void map(Chunk chk, NewChunk newChk) {
@@ -93,6 +93,6 @@ public class AstTrim extends AstPrimitive {
           // so UTF-8 safe methods are not needed here.
         else ((CStrChunk) chk).asciiTrim(newChk);
       }
-    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().vecs();
   }
 }

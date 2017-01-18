@@ -128,7 +128,7 @@ public class NewVectorTest extends TestUtil {
       assertTrue("Found chunk class " + c4.getClass() + " but expected C1NChunk", c4 instanceof C1NChunk);
 
       // Now doing the same for multiple writes, close() only at the end for better speed
-      try (Vec.Writer vw = vec.open()) {
+      try (VecAry.Writer vw = new VecAry(vec).open()) {
         vw.set(1, 4);
         vw.set(2, 5);
         vw.set(3, 6);

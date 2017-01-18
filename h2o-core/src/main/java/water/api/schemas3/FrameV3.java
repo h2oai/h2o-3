@@ -132,9 +132,9 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
     @API(help="Percentile values, matching the default percentiles", direction=API.Direction.OUTPUT)
     public double[] percentiles;
 
-    transient Vec _vec;
+    transient VecAry _vec;
 
-    ColV3(String name, Vec vec, long off, int len) {
+    ColV3(String name, VecAry vec, long off, int len) {
       label=name;
 
       missing_count = vec.naCnt();
@@ -181,8 +181,7 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
       }
       _vec = vec;               // Better HTML display, not in the JSON
       if (len > 0)  // len == 0 is presumed to be a header file
-        precision = vec.chunkForRow(0).precision();
-
+        precision = vec.chunkForChunkIdx(0).precision();
     }
 
     public void clearBinsField() {

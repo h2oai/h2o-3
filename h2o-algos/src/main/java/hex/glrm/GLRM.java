@@ -748,9 +748,9 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         // Clean up unused copy of X matrix
         if (fr != null) {
           if (overwriteX) {
-            for (int i = 0; i < _ncolX; i++) fr.vec(idx_xold(i, _ncolA)).remove();
+            for (int i = 0; i < _ncolX; i++) fr.vec(idx_xold(i, _ncolA)).removeVecs();
           } else {
-            for (int i = 0; i < _ncolX; i++) fr.vec(idx_xnew(i, _ncolA, _ncolX)).remove();
+            for (int i = 0; i < _ncolX; i++) fr.vec(idx_xnew(i, _ncolA, _ncolX)).removeVecs();
           }
         }
         Scope.untrack(keep);

@@ -21,10 +21,10 @@ public class VecUtilsTest extends TestUtil {
     try {
       Assert.assertTrue(f.vec(4).isCategorical());
       int categoricalCnt = f.vec(4).cardinality();
-      f.replace(4, f.vec(4).toStringVec()).remove();
+      f.replace(4, f.vec(4).toStringVec()).removeVecs();
       DKV.put(f);
       Assert.assertTrue(f.vec(4).isString());
-      f.replace(4, f.vec(4).toCategoricalVec()).remove();
+      f.replace(4, f.vec(4).toCategoricalVec()).removeVecs();
       DKV.put(f);
       Assert.assertTrue(f.vec(4).isCategorical());
       Assert.assertEquals(categoricalCnt, f.vec(4).cardinality());

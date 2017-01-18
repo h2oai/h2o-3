@@ -635,7 +635,7 @@ public class RequestServer extends HttpServlet {
       return r;
     }
 
-    // TODO: remove this entire switch
+    // TODO: removeVecs this entire switch
     switch (type) {
       case html: // return JSON for html requests
       case json:
@@ -792,7 +792,7 @@ public class RequestServer extends HttpServlet {
   }
 
   // cache of all loaded resources
-  @SuppressWarnings("MismatchedQueryAndUpdateOfCollection") // remove this once TO-DO below is addressed
+  @SuppressWarnings("MismatchedQueryAndUpdateOfCollection") // removeVecs this once TO-DO below is addressed
   private static final NonBlockingHashMap<String,byte[]> _cache = new NonBlockingHashMap<>();
 
   // Returns the response containing the given uri with the appropriate mime type.

@@ -864,7 +864,7 @@ class H2OFrame(object):
         Parameters
         ----------
           na_rm : bool, default=False
-            True or False to remove NAs from computation.
+            True or False to removeVecs NAs from computation.
 
         Returns
         -------
@@ -1747,7 +1747,7 @@ class H2OFrame(object):
         Parameters
         ----------
           na_rm: bool, default=False
-            If True, then remove NAs from the computation.
+            If True, then removeVecs NAs from the computation.
 
         Returns
         -------
@@ -1762,7 +1762,7 @@ class H2OFrame(object):
         Parameters
         ----------
           na_rm: bool, default=False
-            If True, then remove NAs from the computation.
+            If True, then removeVecs NAs from the computation.
 
         Returns
         -------
@@ -1777,7 +1777,7 @@ class H2OFrame(object):
         Parameters
         ----------
           na_rm: bool, default=False
-            If True, then remove NAs from the computation.
+            If True, then removeVecs NAs from the computation.
 
         Returns
         -------
@@ -1798,7 +1798,7 @@ class H2OFrame(object):
         Parameters
         ----------
           na_rm: bool, default=False
-            If True, then remove NAs from the computation.
+            If True, then removeVecs NAs from the computation.
 
         Returns
         -------

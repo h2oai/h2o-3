@@ -1181,6 +1181,12 @@ public class ArrayUtils {
     return res;
   }
 
+  public static byte[] select(byte[] ary, int[] idxs) {
+    byte [] res = MemoryManager.malloc1(idxs.length);
+    for(int i = 0; i < res.length; ++i)
+      res[i] = ary[idxs[i]];
+    return res;
+  }
   public static int[] select(int[] ary, int[] idxs) {
     int [] res = MemoryManager.malloc4(idxs.length);
     for(int i = 0; i < res.length; ++i)
@@ -1376,13 +1382,13 @@ public class ArrayUtils {
       vecs[c] = vec.close(rowLayout,fs);
     }
     fs.blockForPending();
-    Frame fr = new Frame(key, names, vecs);
+    Frame fr = new Frame(key, names, new VecAry(vecs));
     if( key != null ) DKV.put(key, fr);
     return fr;
   }
   public static Frame frame(double[]... rows) { return frame(null, rows); }
   public static Frame frame(String[] names, double[]... rows) { return frame(Key.<Frame>make(), names, rows); }
-  public static Frame frame(String name, Vec vec) { Frame f = new Frame(); f.add(name, vec); return f; }
+  public static Frame frame(String name, VecAry vec) { Frame f = new Frame(); f.add(name, vec); return f; }
 
   /**
    * Remove b from a, both a,b are assumed to be sorted.
@@ -1638,6 +1644,7 @@ public class ArrayUtils {
   }
 
   public static final class IntAry {
+    public IntAry(int ...vals){_ary = vals; _sz = vals.length;}
     int [] _ary = new int[4];
     int _sz;
     public void add(int i){

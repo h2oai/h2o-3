@@ -2,10 +2,12 @@ package water.fvec;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.Key;
-import water.TestUtil;
+import water.*;
 import water.parser.ParseDataset;
 import water.util.ArrayUtils;
+
+import java.lang.reflect.Array;
+import java.util.Arrays;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -17,38 +19,139 @@ public class VecAryTest extends TestUtil {
   @BeforeClass
   public static void setup() { stall_till_cloudsize(1); }
 
-
+  double [][] tiny_data = new double[][] {
+      {1.1,1.2,1.3,1.4,1.5},
+      {2.1,2.2,2.3,2.4,2.5},
+      {3.1,3.2,3.3,3.4,3.5},
+      {4.1,4.2,4.3,4.4,4.5},
+      {5.1,5.2,5.3,5.4,5.5}
+  };
+  double [][] tiny_data_2 = new double[][] {
+      {1,2,3,4,5},
+      {2.1,2.2,2.3,2.4,2.5},
+      {3.1,3.2,3.3,3.4,3.5},
+      {4.1,4.2,4.3,4.4,4.5},
+      {5.1,5.2,5.3,5.4,5.5}
+  };
   @Test
   public void tinyTest() {
-    double [][] data = new double[][] {
-        {1.1,1.2,1.3,1.4,1.5},
-        {2.1,2.2,2.3,2.4,2.5},
-        {3.1,3.2,3.3,3.4,3.5},
-        {4.1,4.2,4.3,4.4,4.5},
-        {5.1,5.2,5.3,5.4,5.5}
-    };
-    Vec v0 = TestUtil.vec(data);
+    Vec v0 = TestUtil.vec(tiny_data);
     VecAry vecs = new VecAry(v0);
     assertArrayEquals(new double[]{3.1,3.2,3.3,3.4,3.5},vecs.means(),0);
     assertArrayEquals(ArrayUtils.makeConst(5,1.581139),vecs.sds(),1e-5);
-    for(int r = 0; r < data.length; ++r){
-      for(int c = 0; c < data[r].length; ++c){
-        assertEquals(data[r][c],vecs.at(r,c),0);
+    for(int r = 0; r < tiny_data.length; ++r){
+      for(int c = 0; c < tiny_data[r].length; ++c){
+        assertEquals(tiny_data[r][c],vecs.at(r,c),0);
       }
     }
-    VecAry vecs2 = vecs.remove(0,2,4);
+    VecAry vecs2 = vecs.removeVecs(0,2,4);
     assertArrayEquals(new double[]{3.2,3.4},vecs.means(),0);
-    for(int r = 0; r < data.length; ++r){
-      assertEquals(data[r][1],vecs.at(r,0),0);
-      assertEquals(data[r][3],vecs.at(r,1),0);
+    for(int r = 0; r < tiny_data.length; ++r){
+      assertEquals(tiny_data[r][1],vecs.at(r,0),0);
+      assertEquals(tiny_data[r][3],vecs.at(r,1),0);
     }
     vecs.remove();
     assertArrayEquals(new double[]{3.1,3.3,3.5},vecs2.means(),0);
-    for(int r = 0; r < data.length; ++r){
-      assertEquals(data[r][0],vecs2.at(r,0),0);
-      assertEquals(data[r][2],vecs2.at(r,1),0);
-      assertEquals(data[r][4],vecs2.at(r,2),0);
+    for(int r = 0; r < tiny_data.length; ++r){
+      assertEquals(tiny_data[r][0],vecs2.at(r,0),0);
+      assertEquals(tiny_data[r][2],vecs2.at(r,1),0);
+      assertEquals(tiny_data[r][4],vecs2.at(r,2),0);
     }
+    vecs2.remove();
+  }
+
+  private static class SumTsk extends MRTask<SumTsk>{
+    public double [] _sums;
+    @Override public void map(ChunkAry cs) {
+      _sums = new double[cs._numCols];
+      for (int c = 0; c < cs._numCols; ++c) {
+        double s = 0;
+        for (int r = 0; r < cs._len; ++r)
+          s += cs.atd(r, c);
+        _sums[c] = s;
+      }
+    }
+    @Override public void reduce(SumTsk t){
+      ArrayUtils.add(_sums,t._sums);
+    }
+  }
+
+  @Test
+  public void testRebalance(){
+    VecAry vecs = null;
+    try {
+      Vec v0 = TestUtil.vec(tiny_data);
+      vecs = new VecAry(v0).rebalance(3,true);
+      for(int r = 0; r < tiny_data.length; ++r){
+        for(int c = 0; c < tiny_data[r].length; ++c){
+          assertEquals(tiny_data[r][c],vecs.at(r,c),0);
+        }
+      }
+    } finally {
+      if(vecs != null)vecs.remove();
+    }
+  }
+
+  @Test
+  public void testCopy() {
+    Vec v0 = TestUtil.vec(tiny_data);
+    VecAry vecs0 = new VecAry(v0).rebalance(3,true);
+    Vec v1 = TestUtil.vec(tiny_data_2);
+    VecAry vecs1 = new VecAry(v1).rebalance(3,true);
+    VecAry vecs3 = vecs1.select(1,3);
+    vecs3.append(vecs0.select(1,3));
+    vecs3 = vecs3.select(1,3,0,2);
+    vecs3 = vecs3.makeCopy();
+    System.out.println(Arrays.toString(vecs0.means()));
+    System.out.println(Arrays.toString(vecs1.means()));
+    System.out.println(Arrays.toString(vecs3.means()));
+    vecs0.remove();
+    vecs1.remove();
+    vecs3.remove();
+  }
+
+  @Test
+  public void testRemove(){
+    Vec v0 = TestUtil.vec(tiny_data);
+
+    VecAry vecs0 = new VecAry(v0).rebalance(3,true);
+    VecAry vecs1 = new VecAry(vecs0);
+    VecAry vecs2 = vecs0.removeVecs(1,3);
+    VecAry vecs3 = vecs0.select(1,3);
+
+
+  }
+  @Test
+  public void testAppend() {
+    Vec v0 = TestUtil.vec(tiny_data);
+    VecAry vecs0 = new VecAry(v0).rebalance(3,true);
+    Vec v1 = TestUtil.vec(tiny_data_2);
+    VecAry vecs1 = new VecAry(v1).align(vecs0,true);
+    double [] mus0 = vecs0.means();
+    double [] mus1 = vecs1.means();
+    double [] sums0 = new SumTsk().doAll(vecs0)._sums;
+    double [] sums1 = new SumTsk().doAll(vecs1)._sums;
+    VecAry vecs2 = new VecAry(vecs0);
+    vecs2.append(vecs1);
+    System.out.println("expected means = " + Arrays.toString(ArrayUtils.append(mus0,mus1)));
+    System.out.println("actual   means = " + Arrays.toString(vecs2.means()));
+    assertArrayEquals(ArrayUtils.append(mus0,mus1),vecs2.means(),0);
+    double [] sums2 = new SumTsk().doAll(vecs2)._sums;
+    System.out.println("sums0 = " + Arrays.toString(sums0) + ", sums1 = " + Arrays.toString(sums1));
+    System.out.println("sums = " + Arrays.toString(sums2));
+    assertArrayEquals(ArrayUtils.append(sums0,sums1),sums2,0);
+    VecAry vecs3 = vecs1.select(1,3);
+    vecs3.append(vecs0.select(1,3));
+    System.out.println(Arrays.toString(vecs3.means()));
+    vecs3 = vecs3.select(1,3,0,2);
+    double [] sums3 = new SumTsk().doAll(vecs3)._sums;
+    assertEquals(sums1[3],sums3[0],0);
+    assertEquals(sums2[3],sums3[1],0);
+    assertEquals(sums1[1],sums3[2],0);
+    assertEquals(sums2[1],sums3[3],0);
+    System.out.println(Arrays.toString(vecs0.means()));
+    System.out.println(Arrays.toString(vecs1.means()));
+    System.out.println(Arrays.toString(vecs3.means()));
     vecs2.remove();
   }
 
@@ -63,19 +166,20 @@ public class VecAryTest extends TestUtil {
       Frame fr = ParseDataset.parse(Key.make(), fv._key);
       VecAry vecs = fr.vecs();
       for(int i = 0; i < vecs.numCols(); ++i){
-        Vec vi = vecs.select(i);
+        VecAry vi = vecs.select(i);
         assertEquals(vecs.mean(i),vi.mean(),0.0);
       }
       double [] mus = vecs.means();
       double [] sds = vecs.sds();
       for(int i = 0; i < vecs.numCols(); ++i){
         double mu = vecs.mean(i);
-        VecAry vi = vecs.remove(i);
+        VecAry vi = vecs.removeVecs(i);
         assertEquals(mu,vi.mean(),0.0);
         vecs.insertVec(i,vi);
         assertArrayEquals(mus,vecs.means(),0);
         assertArrayEquals(sds,vecs.sds(),0);
       }
+
       System.out.println("parsed data into " + fr.numRows() + " x " + fr.numCols() + ", into " + fr.anyVec().nChunks() + " chunks and " + fr._vecs._vecIds.length + " vecs");
       fr.delete();
     }

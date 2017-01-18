@@ -66,8 +66,8 @@ public class CStrChunkTest extends TestUtil {
 
       //Create a label vector
       byte[] typeArr = {Vec.T_STR};
-      Vec labels = frame.lastVec().makeCons(1, 0, null, typeArr);
-      Vec.Writer writer = labels.open();
+      VecAry labels = new VecAry(frame.anyVec().makeCons(1, 0, null, typeArr));
+      VecAry.Writer writer = labels.open();
       int rowCnt = (int)frame.lastVec().length();
       for (int r = 0; r < rowCnt; r++) // adding labels in reverse order
         writer.set(rowCnt-r-1, "Foo"+(r+1));

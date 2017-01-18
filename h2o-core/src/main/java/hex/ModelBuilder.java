@@ -151,9 +151,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   private static final Map<String, Class<? extends Model>> _algo_to_model_class = new HashMap<>();
 
   /** Train response vector. */
-  public Vec response(){return _response;}
+  public VecAry response(){return _response;}
   /** Validation response vector. */
-  public Vec vresponse(){return _vresponse == null ? _response : _vresponse;}
+  public VecAry vresponse(){return _vresponse == null ? _response : _vresponse;}
 
   abstract protected class Driver extends H2O.H2OCountedCompleter<Driver> {
     protected Driver(){ super(); }
@@ -236,8 +236,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   // Work for each requested fold
   protected int nFoldWork() {
     if( _parms._fold_column == null ) return _parms._nfolds;
-    Vec f = _parms._train.get().vec(_parms._fold_column);
-    Vec fc = VecUtils.toCategoricalVec(f);
+    VecAry f = _parms._train.get().vec(_parms._fold_column);
+    VecAry fc = VecUtils.toCategoricalVec(f);
     int N = fc.domain(0).length;
     fc.remove();
     return N;
@@ -256,10 +256,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       Scope.enter();
 
       // Step 1: Assign each row to a fold
-      final Vec foldAssignment = cv_AssignFold(N);
+      final VecAry foldAssignment = cv_AssignFold(N);
 
       // Step 2: Make 2*N binary weight vectors
-      final AVecAry weights = cv_makeWeights(N,foldAssignment);
+      final VecAry weights = cv_makeWeights(N,foldAssignment);
 
       // Step 3: Build N train & validation frames; build N ModelBuilders; error check them all
       ModelBuilder<M, P, O> cvModelBuilders[] = cv_makeFramesAndBuilders(N,weights);
@@ -293,9 +293,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   // Step 1: Assign each row to a fold
   // TODO: Implement better splitting algo (with Strata if response is
   // categorical), e.g. http://www.lexjansen.com/scsug/2009/Liang_Xie2.pdf
-  public Vec cv_AssignFold(int N) {
+  public VecAry cv_AssignFold(int N) {
     assert(N>=2);
-    Vec fold = train().vec(_parms._fold_column);
+    VecAry fold = train().vec(_parms._fold_column);
     if( fold != null ) {
       if( !fold.isInt() ||
           (!(fold.min() == 0 && fold.max() == N-1) &&
@@ -315,10 +315,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   // Step 2: Make 2*N binary weight vectors
-  public AVecAry cv_makeWeights(final int N, Vec foldAssignment ) {
+  public VecAry cv_makeWeights(final int N, VecAry foldAssignment ) {
     String origWeightsName = _parms._weights_column;
-    Vec origWeight  = origWeightsName != null ? train().vec(origWeightsName) : train().anyVec().makeCon(1.0);
-    Frame folds_and_weights = new Frame(foldAssignment, origWeight);
+    VecAry origWeight  = origWeightsName != null ? train().vec(origWeightsName) : new VecAry(train().anyVec().makeCon(1.0));
+    Frame folds_and_weights = new Frame(foldAssignment.append(origWeight));
     VecAry weights = new MRTask() {
         @Override public void map(ChunkAry chks, NewChunkAry nchks) {
           int foldId = 0; int origId = 1;
@@ -334,7 +334,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         }
       }.doAll(2*N,Vec.T_NUM,folds_and_weights).outputFrame().vecs();
     if (_parms._keep_cross_validation_fold_assignment)
-      DKV.put(new Frame(Key.<Frame>make("cv_fold_assignment_" + _result.toString()), new String[]{"fold_assignment"}, new Vec[]{foldAssignment.makeCopy()}));
+      DKV.put(new Frame(Key.<Frame>make("cv_fold_assignment_" + _result.toString()), new String[]{"fold_assignment"},foldAssignment.makeCopy()));
     if( _parms._fold_column == null && !_parms._keep_cross_validation_fold_assignment) foldAssignment.remove();
     if( origWeightsName == null ) origWeight.remove(); // Cleanup temp
 
@@ -345,7 +345,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   // Step 3: Build N train & validation frames; build N ModelBuilders; error check them all
-  public ModelBuilder<M, P, O>[] cv_makeFramesAndBuilders( int N, AVecAry weights ) {
+  public ModelBuilder<M, P, O>[] cv_makeFramesAndBuilders( int N, VecAry weights ) {
     final long old_cs = _parms.checksum();
     final String origDest = _result.toString();
 
@@ -353,7 +353,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (train().find(weightName) != -1) throw new H2OIllegalArgumentException("Frame cannot contain a Vec called '" + weightName + "'.");
 
     Frame cv_fr = new Frame(train().names(),train().vecs());
-    if( _parms._weights_column!=null ) cv_fr.remove( _parms._weights_column ); // The CV frames will have their own private weight column
+    if( _parms._weights_column!=null ) cv_fr.removeVecs( _parms._weights_column ); // The CV frames will have their own private weight column
 
     ModelBuilder<M, P, O>[] cvModelBuilders = new ModelBuilder[N];
     for( int i=0; i<N; i++ ) {
@@ -419,7 +419,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   // Step 5: Score the CV models
-  public ModelMetrics.MetricBuilder[] cv_scoreCVModels(int N, AVecAry weights, ModelBuilder<M, P, O>[] cvModelBuilders) {
+  public ModelMetrics.MetricBuilder[] cv_scoreCVModels(int N, VecAry weights, ModelBuilder<M, P, O>[] cvModelBuilders) {
     if( _job.stop_requested() ) return null;
     ModelMetrics.MetricBuilder[] mbs = new ModelMetrics.MetricBuilder[N];
     Futures fs = new Futures();
@@ -444,7 +444,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
       DKV.remove(cvModelBuilders[i]._parms._train,fs);
       DKV.remove(cvModelBuilders[i]._parms._valid,fs);
-      weights.remove(2*i,2*i+1).remove();
+      weights.removeVecs(2*i,2*i+1).remove();
     }
     fs.blockForPending();
     return mbs;
@@ -538,11 +538,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   public boolean isSupervised(){return false;}
 
-  protected transient Vec _response; // Handy response column
-  protected transient Vec _vresponse; // Handy response column
-  protected transient Vec _offset; // Handy offset column
-  protected transient Vec _weights; // observation weight column
-  protected transient Vec _fold; // fold id column
+  protected transient VecAry _response; // Handy response column
+  protected transient VecAry _vresponse; // Handy response column
+  protected transient VecAry _offset; // Handy offset column
+  protected transient VecAry _weights; // observation weight column
+  protected transient VecAry _fold; // fold id column
   protected transient String[] _origNames;
   protected transient String[][] _origDomains;
 
@@ -573,7 +573,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected int separateFeatureVecs() {
     int res = 0;
     if(_parms._weights_column != null) {
-      Vec w = _train.remove(_parms._weights_column);
+      VecAry w = _train.removeVecs(_parms._weights_column);
       if(w == null)
         error("_weights_column","Weights column '" + _parms._weights_column  + "' not found in the training frame");
       else {
@@ -594,7 +594,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       assert(!hasWeightCol());
     }
     if(_parms._offset_column != null) {
-      Vec o = _train.remove(_parms._offset_column);
+      VecAry o = _train.removeVecs(_parms._offset_column);
       if(o == null)
         error("_offset_column","Offset column '" + _parms._offset_column  + "' not found in the training frame");
       else {
@@ -613,7 +613,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       assert(!hasOffsetCol());
     }
     if(_parms._fold_column != null) {
-      Vec f = _train.remove(_parms._fold_column);
+      VecAry f = _train.removeVecs(_parms._fold_column);
       if(f == null)
         error("_fold_column","Fold column '" + _parms._fold_column  + "' not found in the training frame");
       else {
@@ -638,7 +638,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       assert(!hasFoldCol());
     }
     if(isSupervised() && _parms._response_column != null) {
-      _response = _train.remove(_parms._response_column);
+      _response = _train.removeVecs(_parms._response_column);
       if (_response == null) {
         if (isSupervised())
           error("_response_column", "Response column '" + _parms._response_column + "' not found in the training frame");
@@ -683,7 +683,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           _removedCols.add(_train.name(i));
           names.add(_train.name(i));
         }
-        _train.remove(rmcols);
+        _train.removeVecs(rmcols);
         String msg = "Dropping constant columns: " + names.toString();
         warn("_train", msg);
         if (expensive) Log.info();
@@ -822,7 +822,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     // Drop explicitly dropped columns
     if( _parms._ignored_columns != null ) {
-      _train.remove(_parms._ignored_columns);
+      _train.removeVecs(_parms._ignored_columns);
       if( expensive ) Log.info("Dropping ignored columns: "+Arrays.toString(_parms._ignored_columns));
     }
     // Rebalance train and valid datasets
@@ -832,7 +832,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     // Drop all non-numeric columns (e.g., String and UUID).  No current algo
-    // can use them, and otherwise all algos will then be forced to remove
+    // can use them, and otherwise all algos will then be forced to removeVecs
     // them.  Text algos (grep, word2vec) take raw text columns - which are
     // numeric (arrays of bytes).
     ignoreBadColumns(separateFeatureVecs(), expensive);
@@ -870,7 +870,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if(_response != null && computePriorClassDistribution()) {
           if (isClassifier() && isSupervised()) {
             MRUtils.ClassDist cdmt =
-                _weights != null ? new MRUtils.ClassDist(nclasses()).doAll(_response, _weights) : new MRUtils.ClassDist(nclasses()).doAll(_response);
+                _weights != null ? new MRUtils.ClassDist(nclasses()).doAll(_response.append(_weights)) : new MRUtils.ClassDist(nclasses()).doAll(_response);
             _distribution = cdmt.dist();
             _priorClassDist = cdmt.rel_dist();
           } else {                    // Regression; only 1 "class"
@@ -1068,11 +1068,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   private static Frame combineHoldoutPredictions(Key<Frame>[] predKeys, Key key) {
     int N = predKeys.length;
     Frame template = predKeys[0].get();
-    Vec[] vecs = new Vec[N*template.numCols()];
+    VecAry vecs = new VecAry();
     int idx=0;
     for (int i=0;i<N;++i)
       for (int j=0;j<predKeys[i].get().numCols();++j)
-        vecs[idx++]=predKeys[i].get().vec(j);
+        vecs.append(predKeys[i].get().vecs());
     return new HoldoutPredictionCombiner(N,template.numCols()).doAll(template.types(),new Frame(vecs)).outputFrame(key, template.names(),template.domains());
   }
 
@@ -1109,7 +1109,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     excluded.add("makeSchema");
     excluded.add("hr");
     excluded.add("frame");
-    excluded.add("remove");
+    excluded.add("removeVecs");
     excluded.add("cm");
     excluded.add("auc_obj");
     List<Method> methods = new ArrayList<>();

@@ -136,7 +136,7 @@ public class Weaver {
    * each node takes the bytecode and class name and puts a new {@link ByteArrayClassPath} onto
    * {@link Weaver#_pool}'s classpath. Since there is no mechanism for retrieving these
    * {@link ClassPath} instances later, they are stored in {@link Weaver#CLASSPATHS} so that
-   * reload events can remove the old paths. Similarly, {@link Weaver#CLASSLOADERS} holds on
+   * reload events can removeVecs the old paths. Similarly, {@link Weaver#CLASSLOADERS} holds on
    * to the loaders of dynamically created classes so that classes can be reloaded and old
    * {@link ClassLoader} instances pruned.
    *

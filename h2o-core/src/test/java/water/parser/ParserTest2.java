@@ -63,7 +63,7 @@ public class ParserTest2 extends TestUtil {
     Assert.assertEquals(9,nlines);
     Assert.assertEquals(9,fr.numCols());
     for(int i = 0; i < nlines-2; ++i)
-      for( Vec v : fr.vecs() )
+      for( VecAry v : fr.vecs().singleVecs() )
         Assert.assertTrue("error at line "+i+", vec " + v.chunkForChunkIdx(0).getClass().getSimpleName(),
                    !Double.isNaN(v.at(i)) && !v.isNA(i) );
     VecAry vecs = fr.vecs();

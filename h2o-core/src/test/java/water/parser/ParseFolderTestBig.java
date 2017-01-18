@@ -9,6 +9,7 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 
 public class ParseFolderTestBig extends TestUtil {
   @BeforeClass static public void setup() { stall_till_cloudsize(1); }
@@ -33,12 +34,12 @@ public class ParseFolderTestBig extends TestUtil {
     Frame k1 = null, k2 = null;
     try {
       k1 = parse_test_file("bigdata/laptop/usecases/cup98LRN_z.csv");
-      Vec v1 = k1.vec("RDATE_5");
+      VecAry v1 = k1.vec("RDATE_5");
       System.out.println(v1.toString());
       System.out.printf("%b %e %d %b %s\n", v1.isCategorical(), v1.min(), v1.naCnt(), v1.isCategorical(), Arrays.toString(v1.domain()));
 
       k2 = parse_test_file("bigdata/laptop/usecases/cup98VAL_z.csv");
-      Vec v2 = k2.vec("SOLIH");
+      VecAry v2 = k2.vec("SOLIH");
       System.out.println(v2.toString());
       System.out.printf("%b %e %d %b %s\n",v2.isCategorical(),v2.min(),v2.naCnt(),v2.isCategorical(),Arrays.toString(v2.domain()));
 

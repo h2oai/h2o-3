@@ -377,7 +377,7 @@ public final class SchemaMetadata extends Iced {
     for (Field field : Weaver.getWovenFields(schema.getClass())) {
       FieldMetadata fmd = FieldMetadata.createIfApiAnnotation(schema, field, superclassFields);
       if (null != fmd) // skip transient or other non-annotated fields
-        fields.add(fmd);  // NOTE: we include non-JSON fields here; remove them later if we don't want them
+        fields.add(fmd);  // NOTE: we include non-JSON fields here; removeVecs them later if we don't want them
     }
     return fields;
   }

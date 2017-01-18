@@ -29,8 +29,8 @@ public class CategoricalWrappedVec extends WrappedVec {
   int _p=0;
 
   /** Main constructor: convert from one categorical to another */
-  public CategoricalWrappedVec(Key key, int rowLayout, String[] toDomain, Key masterVecKey) {
-    super(key, rowLayout, masterVecKey);
+  public CategoricalWrappedVec(Key key, int rowLayout, String[] toDomain, VecAry masterVec) {
+    super(key, rowLayout, masterVec);
     computeMap(masterVec().domain(),toDomain,masterVec().isBad());
     DKV.put(this);
   }
@@ -46,7 +46,7 @@ public class CategoricalWrappedVec extends WrappedVec {
   }
 
   @Override public CategoricalWrappedChunk chunkIdx(int cidx) {
-    return new CategoricalWrappedChunk(masterVec().chunkIdx(cidx).getColChunk(0), this);
+    return new CategoricalWrappedChunk(masterVec().chunkForChunkIdx(cidx).getChunk(0), this);
   }
 
   /** Compute a mapping from the 'from' domain to the 'to' domain.  Strings in
@@ -83,7 +83,7 @@ public class CategoricalWrappedVec extends WrappedVec {
       if( fromIsBad ) { _map = new int[0]; return; }
       int min = Integer.valueOf(to[0]);
       int max = Integer.valueOf(to[to.length-1]);
-      Vec mvec = masterVec();
+      VecAry mvec = masterVec();
       if( !(mvec.isInt() && mvec.min() >= min && mvec.max() <= max) )
         throw new NumberFormatException(); // Unable to figure out a valid mapping
 
@@ -138,7 +138,7 @@ public class CategoricalWrappedVec extends WrappedVec {
 
   @Override
   public Vec doCopy() {
-    return new CategoricalWrappedVec(group().addVec(),_rowLayout, domain(), _masterVecKey);
+    return new CategoricalWrappedVec(group().addVec(),_rowLayout, domain(), _masterVec);
   }
 
   public static class CategoricalWrappedChunk extends Chunk {

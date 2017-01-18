@@ -285,7 +285,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
         did = true;             // Did cancel (was not cancelled already)
         _target.taskRemove(_tasknum);
         _target = null;         // Flag as canceled
-//        UDPTimeOutThread.PENDING.remove(this);
+//        UDPTimeOutThread.PENDING.removeVecs(this);
       }
       notifyAll();              // notify in any case
     }
@@ -592,7 +592,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
             return ackack(ab, _tasknum); // Ignore duplicate response packet
           ab.drainClose();
         } else {
-//          UDPTimeOutThread.PENDING.remove(_tasknum);
+//          UDPTimeOutThread.PENDING.removeVecs(_tasknum);
           _dt.read(ab);             // Read the answer (under lock?)
           _size_rez = ab.size();    // Record received size
           ab.close();               // Also finish the read (under lock?  even if canceled, since need to drain TCP)

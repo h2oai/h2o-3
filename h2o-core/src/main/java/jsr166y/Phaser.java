@@ -956,7 +956,7 @@ public class Phaser {
     }
 
     /**
-     * Variant of releaseWaiters that additionally tries to remove any
+     * Variant of releaseWaiters that additionally tries to removeVecs any
      * nodes no longer waiting for advance due to timeout or
      * interrupt. Currently, nodes are removed only if they are at
      * head of queue, which suffices to reduce memory footprint in

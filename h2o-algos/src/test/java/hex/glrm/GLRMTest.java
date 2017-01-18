@@ -108,7 +108,7 @@ public class GLRMTest extends TestUtil {
       Vec[] acs_zcta_vec = {train.vec(0).toCategoricalVec()};
       Frame acs_zcta_fr = new Frame(Key.<Frame>make("acs_zcta_fr"),new String[] {"name"}, acs_zcta_vec);
       DKV.put(acs_zcta_fr);
-      train.remove(0).remove();
+      train.removeVecs(0).removeVecs();
       DKV.put(train);
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;

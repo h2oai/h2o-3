@@ -30,7 +30,7 @@ public class ParseExceptionTest extends TestUtil {
     try {
       // Cleanup is buggy, in the other JVMs run-on, and produce more output
       // keys even after the job is canceled.  Sleep till they hopefully
-      // shutdown, then remove keys.
+      // shutdown, then removeVecs keys.
       System.out.print(H2O.STOREtoString());
       try { Thread.sleep(5000); } catch( InterruptedException ignore ) { }
       Value v = DKV.get(fkey0);

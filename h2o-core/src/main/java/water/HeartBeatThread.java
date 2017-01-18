@@ -28,7 +28,7 @@ public class HeartBeatThread extends Thread {
   static public final int TIMEOUT = 60000;
 
   // Timeout in msec before we decide a Node is suspect, and call for a vote
-  // to remove him.  This must be strictly greater than the TIMEOUT.
+  // to removeVecs him.  This must be strictly greater than the TIMEOUT.
   static final int SUSPECT = TIMEOUT+500;
 
   // uniquely number heartbeats for better timelines

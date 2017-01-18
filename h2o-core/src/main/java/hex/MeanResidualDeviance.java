@@ -5,54 +5,40 @@ import water.MRTask;
 import water.Scope;
 import water.fvec.Chunk;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 
 public class MeanResidualDeviance extends Iced {
 
   //INPUT
-  public Vec _actuals;
-  public Vec _preds;
-  public Vec _weights;
+  public VecAry _vals;
+
   public Distribution _dist;
 
   //OUTPUT
   public double meanResidualDeviance;
 
-  public MeanResidualDeviance(Distribution dist, Vec preds, Vec actuals, Vec weights) {
-    _preds = preds;
-    _actuals = actuals;
-    _weights = weights;
+  public MeanResidualDeviance(Distribution dist, VecAry vals /* preds, actuals, weights */) {
+    _vals = vals;
     _dist = dist;
   }
 
   private void init() throws IllegalArgumentException {
-    if( _actuals ==null || _preds ==null )
+    if( _vals ==null )
       throw new IllegalArgumentException("Missing actual targets or predicted values!");
-    if (_actuals.length() != _preds.length())
-      throw new IllegalArgumentException("Both arguments must have the same length ("+ _actuals.length()+"!="+ _preds.length()+")!");
-    if (!_actuals.isNumeric())
-      throw new IllegalArgumentException("Actual target column must be numeric!");
-    if (_preds.isCategorical())
-      throw new IllegalArgumentException("Predicted targets cannot be class labels, expect continuous values.");
-    if (_weights != null && !_weights.isNumeric())
-      throw new IllegalArgumentException("Observation weights must be numeric.");
 
-    // The vectors are from different groups => align them, but properly delete it after computation
-    if (!_actuals.group().equals(_preds.group())) {
-      _preds = _actuals.align(_preds);
-      Scope.track(_preds);
-      if (_weights !=null) {
-        _weights = _actuals.align(_weights);
-        Scope.track(_weights);
-      }
-    }
+    if (!_vals.isNumeric(1))
+      throw new IllegalArgumentException("Actual target column must be numeric!");
+    if (_vals.isCategorical(0))
+      throw new IllegalArgumentException("Predicted targets cannot be class labels, expect continuous values.");
+    if (_vals.numCols() == 3 && !_vals.isNumeric(2))
+      throw new IllegalArgumentException("Observation weights must be numeric.");
   }
 
   public MeanResidualDeviance exec() {
     Scope.enter();
     init();
     try {
-      MeanResidualBuilder gt = new MeanResidualBuilder(_dist);
-      gt = (_weights != null) ? gt.doAll(_actuals, _preds, _weights) : gt.doAll(_actuals, _preds);
+      MeanResidualBuilder gt = new MeanResidualBuilder(_dist).doAll(_vals);
       meanResidualDeviance=gt._mean_residual_deviance;
     } finally {
       Scope.exit();

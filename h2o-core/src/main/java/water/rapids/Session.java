@@ -89,7 +89,7 @@ public class Session {
     Futures fs = new Futures();
     for (Frame fr : FRAMES.values()) {
       fs = downRefCnt(fr, fs);   // Remove internal Vecs one by one
-      DKV.remove(fr._key, fs);   // Shallow remove, internal Vecs removed 1-by-1
+      DKV.remove(fr._key, fs);   // Shallow removeVecs, internal Vecs removed 1-by-1
     }
     fs.blockForPending();
     FRAMES.clear();             // No more temp frames
@@ -100,8 +100,10 @@ public class Session {
       Vec[] vecs = fr.vecs().vecs();
       for (int i = 0; i < vecs.length; i++) {
         _addRefCnt(vecs[i], -1); // Returning frame has refcnt +1, lower it now; should go to zero internal refcnts.
-        if (GLOBALS.contains(vecs[i])) // Copy if shared with globals
-          fr.replace(i, vecs[i].makeCopy());
+        if (GLOBALS.contains(vecs[i])) { // Copy if shared with globals
+          fr.restructure(fr.names(), fr.vecs().makeCopy());
+          break;
+        }
       }
     }
     GLOBALS.clear();            // No longer tracking globals
@@ -127,7 +129,7 @@ public class Session {
             vec.remove(fs);
           }
         }
-        DKV.remove(fr._key, fs);   // Shallow remove, internal Vecs removed 1-by-1
+        DKV.remove(fr._key, fs);   // Shallow removeVecs, internal Vecs removed 1-by-1
       }
       fs.blockForPending();
       FRAMES.clear();
@@ -190,7 +192,7 @@ public class Session {
    */
   Frame addGlobals(Frame fr) {
     if (!FRAMES.containsKey(fr._key))
-      Collections.addAll(GLOBALS, fr.vecs());
+      Collections.addAll(GLOBALS, fr.vecs().vecs());
     return fr;                  // Flow coding
   }
 
@@ -222,9 +224,9 @@ public class Session {
       }
     } else {                    // Else a temp and not a global
       fs = downRefCnt(fr, fs);   // Standard down-ref counting of all Vecs
-      FRAMES.remove(fr._key);   // And remove from temps
+      FRAMES.remove(fr._key);   // And removeVecs from temps
     }
-    DKV.remove(fr._key, fs);     // Shallow remove, internal were Vecs removed 1-by-1
+    DKV.remove(fr._key, fs);     // Shallow removeVecs, internal were Vecs removed 1-by-1
     fs.blockForPending();
   }
 

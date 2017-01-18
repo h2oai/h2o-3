@@ -14,7 +14,7 @@ public class RemoveAllHandler extends Handler {
   public RemoveAllV3 remove(int version, RemoveAllV3 u) {
     Log.info("Removing all objects");
     Futures fs = new Futures();
-    // Cancel and remove leftover running jobs
+    // Cancel and removeVecs leftover running jobs
     for( Job j : Job.jobs() ) { j.stop_requested(); j.remove(fs); }
     // Wipe out any and all session info
     if( RapidsHandler.SESSIONS != null ) {

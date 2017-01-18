@@ -42,27 +42,27 @@ public class AstCountMatches extends AstPrimitive {
         : new String[]{asts[2].exec(env).getStr()};
 
     // Type check
-    for (Vec v : fr.vecs())
+    for (VecAry v : fr.vecs().singleVecs())
       if (!(v.isCategorical() || v.isString()))
         throw new IllegalArgumentException("countmatches() requires a string or categorical column. "
             + "Received " + fr.anyVec().get_type_str()
             + ". Please convert column to a string or categorical first.");
 
     // Transform each vec
-    Vec nvs[] = new Vec[fr.numCols()];
+    VecAry nvs = new VecAry();//new Vec[fr.numCols()];
     int i = 0;
-    for (Vec v : fr.vecs()) {
+    for (VecAry v : fr.vecs().singleVecs()) {
       if (v.isCategorical())
-        nvs[i] = countMatchesCategoricalCol(v, pattern);
+        nvs.append(countMatchesCategoricalCol(v, pattern));
       else
-        nvs[i] = countMatchesStringCol(v, pattern);
+        nvs.append(countMatchesStringCol(v, pattern));
       i++;
     }
 
     return new ValFrame(new Frame(nvs));
   }
 
-  private Vec countMatchesCategoricalCol(Vec vec, String[] pattern) {
+  private VecAry countMatchesCategoricalCol(VecAry vec, String[] pattern) {
     final int[] matchCounts = countDomainMatches(vec.domain(), pattern);
     return new MRTask() {
       @Override
@@ -75,7 +75,7 @@ public class AstCountMatches extends AstPrimitive {
           } else ncs[0].addNA();
         }
       }
-    }.doAll(1, Vec.T_NUM, new Frame(vec)).outputFrame().anyVec();
+    }.doAll(1, Vec.T_NUM, new Frame(vec)).outputFrame().vecs();
   }
 
   int[] countDomainMatches(String[] domain, String[] pattern) {
@@ -86,7 +86,7 @@ public class AstCountMatches extends AstPrimitive {
     return res;
   }
 
-  private Vec countMatchesStringCol(Vec vec, String[] pat) {
+  private VecAry countMatchesStringCol(VecAry vec, String[] pat) {
     final String[] pattern = pat;
     return new MRTask() {
       @Override
@@ -107,6 +107,6 @@ public class AstCountMatches extends AstPrimitive {
           }
         }
       }
-    }.doAll(Vec.T_NUM, new Frame(vec)).outputFrame().anyVec();
+    }.doAll(Vec.T_NUM, new Frame(vec)).outputFrame().vecs();
   }
 }

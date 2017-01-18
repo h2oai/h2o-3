@@ -498,7 +498,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     // verification that the client got the answer.  So this is just a really
     // old attempt to restart a long-completed task.
     if( rpc._tsknum > _removed_task_ids.get() ) return null; // Task is new
-    _work.remove(rpc._tsknum); // Bogus insert, need to remove it
+    _work.remove(rpc._tsknum); // Bogus insert, need to removeVecs it
     return _removed_task;      // And return a generic Golden Completed object
   }
   // Record the final return value for a DTask.  Should happen only once.
@@ -515,7 +515,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     RPC.RPCCall rpc = _work.get(task);
     if( rpc == null ) return;   // Already stopped tracking
 
-    // Atomically attempt to remove the 'dt'.  If we win, we are the sole
+    // Atomically attempt to removeVecs the 'dt'.  If we win, we are the sole
     // thread running the dt.onAckAck.  Also helps GC: the 'dt' is done (sent
     // to client and we received the ACKACK), but the rpc might need to stick
     // around a long time - and the dt might be big.
@@ -530,7 +530,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
       RPC.RPCCall rpc2 = _work.get(t+1); // RPC of 1st not-removed ID
       if( rpc2 == null || rpc2._dt != null || !_removed_task_ids.compareAndSet(t,t+1) )
         break;                  // Stop when we hit in-progress tasks
-      _work.remove(t+1);        // Else we can remove the tracking now
+      _work.remove(t+1);        // Else we can removeVecs the tracking now
     }
   }
 

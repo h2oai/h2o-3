@@ -37,7 +37,7 @@ public class AstCountSubstringsWords extends AstPrimitive {
     String wordsPath = asts[2].exec(env).getStr();
 
     //Type check
-    for (Vec v : fr.vecs())
+    for (VecAry v : fr.vecs().singleVecs())
       if (!(v.isCategorical() || v.isString()))
         throw new IllegalArgumentException("num_valid_substrings() requires a string or categorical column. "
             + "Received " + fr.anyVec().get_type_str()
@@ -50,21 +50,21 @@ public class AstCountSubstringsWords extends AstPrimitive {
       e.printStackTrace();
     }
     //Transform each vec
-    Vec nvs[] = new Vec[fr.numCols()];
+    VecAry nvs = new VecAry();// = new Vec[fr.numCols()];
     int i = 0;
-    for (Vec v : fr.vecs()) {
+    for (VecAry v : fr.vecs().singleVecs()) {
       if (v.isCategorical())
-        nvs[i] = countSubstringsWordsCategoricalCol(v, words);
+        nvs.append(countSubstringsWordsCategoricalCol(v, words));
       else
-        nvs[i] = countSubstringsWordsStringCol(v, words);
+        nvs.append(countSubstringsWordsStringCol(v, words));
       i++;
     }
 
     return new ValFrame(new Frame(nvs));
   }
 
-  private Vec countSubstringsWordsCategoricalCol(Vec vec, final HashSet<String> words) {
-    Vec res = new MRTask() {
+  private VecAry countSubstringsWordsCategoricalCol(VecAry vec, final HashSet<String> words) {
+    VecAry res = new MRTask() {
       transient double[] catCounts;
 
       @Override
@@ -84,11 +84,11 @@ public class AstCountSubstringsWords extends AstPrimitive {
           else
             newChk.addNum(catCounts[(int) chk.atd(i)]);
       }
-    }.doAll(1, Vec.T_NUM, new Frame(vec)).outputFrame().anyVec();
+    }.doAll(1, Vec.T_NUM, new Frame(vec)).outputFrame().vecs();
     return res;
   }
 
-  private Vec countSubstringsWordsStringCol(Vec vec, final HashSet<String> words) {
+  private VecAry countSubstringsWordsStringCol(VecAry vec, final HashSet<String> words) {
     return new MRTask() {
       @Override
       public void map(Chunk chk, NewChunk newChk) {
@@ -106,7 +106,7 @@ public class AstCountSubstringsWords extends AstPrimitive {
           }
         }
       }
-    }.doAll(new byte[]{Vec.T_NUM}, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_NUM}, vec).outputFrame().vecs();
   }
 
   // count all substrings >= 2 chars that are in words

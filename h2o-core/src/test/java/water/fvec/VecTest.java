@@ -21,8 +21,8 @@ public class VecTest extends TestUtil {
     testToCategoricalDomainMatch(vec(0, 1, 2, 99, 4, 5, 6), ar("0", "1", "2", "4", "5", "6", "99"));
   }
 
-  private void testToCategoricalDomainMatch(Vec f, String[] expectedDomain) {
-    Vec ef = null;
+  private void testToCategoricalDomainMatch(VecAry f, String[] expectedDomain) {
+    VecAry ef = null;
     try {
       ef = f.toCategoricalVec();
       String[] actualDomain = ef.domain();

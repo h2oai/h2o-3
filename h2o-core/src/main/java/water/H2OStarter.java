@@ -10,7 +10,7 @@ public class H2OStarter {
    * Start H2O node.
    *
    * @param args  H2O parameters
-   * @param relativeResourcePath  FIXME remove it
+   * @param relativeResourcePath  FIXME removeVecs it
    * @param finalizeRestRegistration  close registration of REST API
    */
   public static void start(String[] args, String relativeResourcePath, boolean finalizeRestRegistration) {

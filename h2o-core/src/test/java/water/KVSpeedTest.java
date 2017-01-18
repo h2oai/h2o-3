@@ -168,7 +168,7 @@ public class KVSpeedTest extends TestUtil {
           System.out.println("insert msec="+(now-start)+", msec/op="+((double)(now-start))/PAR/NKEY);
           start = now;
 
-          // Now remove them all
+          // Now removeVecs them all
           for( int i = 0; i < PAR; ++i ) {
             final int fi = i;
             rs.set(fi,new RecursiveAction() {
@@ -180,7 +180,7 @@ public class KVSpeedTest extends TestUtil {
           }
           ForkJoinTask.invokeAll(rs);
           now = System.currentTimeMillis();
-          System.out.println("remove msec="+(now-start)+", msec/op="+((double)(now-start))/PAR/NKEY);
+          System.out.println("removeVecs msec="+(now-start)+", msec/op="+((double)(now-start))/PAR/NKEY);
           start = now;
 
           tryComplete();

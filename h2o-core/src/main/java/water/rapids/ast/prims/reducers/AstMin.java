@@ -1,6 +1,7 @@
 package water.rapids.ast.prims.reducers;
 
 import water.fvec.Vec;
+import water.fvec.VecAry;
 
 /**
  */
@@ -13,7 +14,7 @@ public class AstMin extends AstRollupOp {
     return Math.min(l, r);
   }
 
-  public double rup(Vec vec) {
+  public double rup(VecAry vec) {
     return vec.min();
   }
 }

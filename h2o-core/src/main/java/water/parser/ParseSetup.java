@@ -267,7 +267,7 @@ public class ParseSetup extends Iced {
     //Calc chunk-size
     // FIXME: should be a parser specific - or at least parser should be able to override defaults
     Iced ice = DKV.getGet(fkeys[0]);
-    if (ice instanceof Frame && ((Frame) ice).vec(0) instanceof UploadFileVec) {
+    if (ice instanceof Frame && ((Frame) ice).vec(0).vecs()[0] instanceof UploadFileVec) {
       t._gblSetup._chunk_size = FileVec.DFLT_CHUNK_SIZE;
     } else {
       t._gblSetup._chunk_size = FileVec.calcOptimalChunkSize(t._totalParseSize, t._gblSetup._number_columns, t._maxLineLength,

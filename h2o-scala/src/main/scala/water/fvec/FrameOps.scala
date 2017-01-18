@@ -52,7 +52,7 @@ trait FrameOps { self: H2OFrame =>  // Mix only with H2OFrame types
       (idx, transformation(name, vec))
     }).foreach { case (idx: Int, newVec: Vec) => {
       val v = self.replace(idx, newVec)
-      if (removeVec) v.remove(futures)
+      if (removeVec) v.removeVecs(futures)
     }}
     // Block for all fired deletes
     futures.blockForPending()

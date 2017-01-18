@@ -30,7 +30,7 @@ def check_story(story_name, paragraphs):
 
     # 2. Execute the story
 
-    # first, remove any h2o.init calls
+    # first, removeVecs any h2o.init calls
     remove_lines = []
     for idx, l in enumerate(story):
         if "h2o.init" in l: remove_lines.append(idx)

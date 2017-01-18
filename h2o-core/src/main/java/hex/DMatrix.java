@@ -61,7 +61,7 @@ public class DMatrix  {
   public static Frame transpose(Frame src, Frame tgt){
     if(src.numRows() != tgt.numCols() || src.numCols() != tgt.numRows())
       throw new IllegalArgumentException("dimension do not match!");
-    for(Vec v:src.vecs()) {
+    for(VecAry v:src.vecs().singleVecs()) {
       if (v.isCategorical())
         throw new IllegalArgumentException("transpose can only be applied to all-numeric frames (representing a matrix)");
       if(v.length() > 1000000)

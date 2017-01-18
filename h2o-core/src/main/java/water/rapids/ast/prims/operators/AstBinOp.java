@@ -203,7 +203,7 @@ abstract public class AstBinOp extends AstPrimitive {
     final VecAry newvecs = newfr.vecs();
     for (int i = 0; i < oldvecs._numCols; i++)
       if ((oldvecs.isCategorical(i) && !categoricalOK)) // categorical are OK (op is EQ/NE)
-        newvecs.replace(i,newvecs.makeCon(Double.NaN));
+        newvecs.replace(i,new VecAry(newvecs.vecs()[0].makeCon(Double.NaN)));
     return new ValFrame(newfr);
   }
 
@@ -362,7 +362,7 @@ abstract public class AstBinOp extends AstPrimitive {
     return new ValRow(res, names);
   }
 
-  private ValFrame vec_op_frame(Vec vec, Frame fr) {
+  private ValFrame vec_op_frame(VecAry vec, Frame fr) {
     // Already checked for same rows, non-zero frame
     Frame rt = new Frame(fr);
     rt.add("", vec);
@@ -382,7 +382,7 @@ abstract public class AstBinOp extends AstPrimitive {
     return cleanCategorical(fr, res); // Cleanup categorical misuse
   }
 
-  private ValFrame frame_op_vec(Frame fr, Vec vec) {
+  private ValFrame frame_op_vec(Frame fr, VecAry vec) {
     // Already checked for same rows, non-zero frame
     Frame lf = new Frame(fr);
     lf.add("", vec);

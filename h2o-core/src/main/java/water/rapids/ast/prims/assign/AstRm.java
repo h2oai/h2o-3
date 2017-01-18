@@ -37,7 +37,7 @@ public class AstRm extends AstPrimitive {
     if (val.isFrame())
       env._ses.remove(val.<Frame>get()); // Remove unshared Vecs
     else
-      Keyed.remove(id);           // Normal (e.g. Model) remove
+      Keyed.remove(id);           // Normal (e.g. Model) removeVecs
 
     return new ValNum(1);
   }

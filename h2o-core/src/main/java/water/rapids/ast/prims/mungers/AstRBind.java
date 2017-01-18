@@ -5,10 +5,7 @@ import water.DKV;
 import water.H2O;
 import water.Key;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.ast.AstRoot;
@@ -169,9 +166,9 @@ public class AstRBind extends AstPrimitive {
 
     // An RBindTask for each column
     private void forkVecTask(final int colnum) {
-      Vec[] vecs = new Vec[_frs.length]; // Source Vecs
+      VecAry vecs = new VecAry();//[_frs.length]; // Source Vecs
       for (int i = 1; i < _frs.length; i++)
-        vecs[i] = _frs[i].vec(colnum);
+        vecs.append(_frs[i].vec(colnum));
 //      new AstRBind.RbindTask(new AstRBind.ParallelRbinds.Callback(), vecs, _vecs[colnum], _espc, _cmaps[colnum]).fork();
     }
 

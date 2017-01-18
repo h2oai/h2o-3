@@ -1,6 +1,7 @@
 package water.rapids.ast.prims.reducers;
 
 import water.fvec.Vec;
+import water.fvec.VecAry;
 
 /**
  */
@@ -13,7 +14,7 @@ public class AstMaxNa extends AstNaRollupOp {
     return Math.max(l, r);
   }
 
-  public double rup(Vec vec) {
+  public double rup(VecAry vec) {
     return vec.max();
   }
 }

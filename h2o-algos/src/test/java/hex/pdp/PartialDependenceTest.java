@@ -25,7 +25,7 @@ public class PartialDependenceTest extends TestUtil {
       // Frame
       fr = parse_test_file("smalldata/prostate/prostate.csv");
       for (String s : new String[]{"RACE","GLEASON","DPROS","DCAPS","CAPSULE"}) {
-        Vec v = fr.remove(s);
+        Vec v = fr.removeVecs(s);
         fr.add(s, v.toCategoricalVec());
         v.remove();
       }
@@ -64,7 +64,7 @@ public class PartialDependenceTest extends TestUtil {
       // Frame
       fr = parse_test_file("smalldata/prostate/prostate.csv");
       for (String s : new String[]{"RACE","GLEASON","DPROS","DCAPS","CAPSULE"}) {
-        Vec v = fr.remove(s);
+        Vec v = fr.removeVecs(s);
         fr.add(s, v.toCategoricalVec());
         v.remove();
       }
@@ -105,7 +105,7 @@ public class PartialDependenceTest extends TestUtil {
       // Frame
       fr = parse_test_file("smalldata/prostate/prostate.csv");
       for (String s : new String[]{"RACE","GLEASON","DPROS","DCAPS","CAPSULE"}) {
-        Vec v = fr.remove(s);
+        Vec v = fr.removeVecs(s);
         fr.add(s, v.toCategoricalVec());
         v.remove();
       }

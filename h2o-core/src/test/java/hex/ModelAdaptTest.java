@@ -4,6 +4,7 @@ import org.junit.*;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.ArrayUtils;
 
 public class ModelAdaptTest extends TestUtil {
@@ -61,7 +62,7 @@ public class ModelAdaptTest extends TestUtil {
     AModel.AParms p = new AModel.AParms();
     AModel.AOutput o = new AModel.AOutput();
 
-    Vec cat = vec(new String[]{"A","B"},0,1,0,1);
+    VecAry cat = vec(new String[]{"A","B"},0,1,0,1);
     Frame trn = new Frame();
     trn.add("cat",cat);
     o._names = trn.names();
@@ -70,7 +71,7 @@ public class ModelAdaptTest extends TestUtil {
     AModel am = new AModel(Key.make(),p,o);
     
     Frame tst = new Frame();
-    tst.add("cat", cat.makeCon(Double.NaN)); // All NAN/missing column
+    tst.add("cat", new VecAry(cat.vecs()[0].makeCon(Double.NaN))); // All NAN/missing column
     Frame adapt = new Frame(tst);
     String[] warns = am.adaptTestForTrain(adapt,true, true);
     Assert.assertTrue(warns.length == 0); // No errors during adaption

@@ -94,7 +94,7 @@ public class RBindTest extends TestUtil {
   private Frame checkTree(String tree) { return checkTree(tree,false); }
   private Frame checkTree(String tree, boolean expectThrow) {
     Frame fr = parse_test_file(Key.make("a.hex"),"smalldata/iris/iris_wheader.csv");
-    fr.remove(4).remove();
+    fr.removeVecs(4).removeVecs();
     try {
       Val val = Rapids.exec(tree);
       Assert.assertFalse(expectThrow);

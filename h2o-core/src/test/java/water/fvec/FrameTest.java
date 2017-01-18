@@ -28,26 +28,26 @@ public class FrameTest extends TestUtil {
   public void testRemoveColumn() {
     Scope.enter();
     Frame testData = parse_test_file(Key.make("test_deep_select_1"), "smalldata/sparse/created_frame_binomial.svm.zip");
-    Set<Vec> removedVecs = new HashSet<>();
+    Set<VecAry> removedVecs = new HashSet<>();
 
     try {
       // dataset to split
       int initialSize = testData.numCols();
-      removedVecs.add(testData.remove(-1));
+      removedVecs.add(testData.removeVecs(-1));
       assertEquals(initialSize, testData.numCols());
-      removedVecs.add(testData.remove(0));
+      removedVecs.add(testData.removeVecs(0));
       assertEquals(initialSize - 1, testData.numCols());
       assertEquals("C2", testData._names[0]);
-      removedVecs.add(testData.remove(initialSize - 2));
+      removedVecs.add(testData.removeVecs(initialSize - 2));
       assertEquals(initialSize - 2, testData.numCols());
       assertEquals("C" + (initialSize - 1), testData._names[initialSize - 3]);
-      removedVecs.add(testData.remove(42));
+      removedVecs.add(testData.removeVecs(42));
       assertEquals(initialSize - 3, testData.numCols());
       assertEquals("C43", testData._names[41]);
       assertEquals("C45", testData._names[42]);
     } finally {
       Scope.exit();
-      for (Vec v : removedVecs) if (v != null) v.remove();
+      for (VecAry v : removedVecs) if (v != null) v.remove();
       testData.delete();
       H2O.STORE.clear();
     }

@@ -32,30 +32,29 @@ public class AstEntropy extends AstPrimitive {
   public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     //Type check
-    for (Vec v : fr.vecs())
+    for (VecAry v : fr.vecs().singleVecs())
       if (!(v.isCategorical() || v.isString()))
         throw new IllegalArgumentException("entropy() requires a string or categorical column. "
             + "Received " + fr.anyVec().get_type_str()
             + ". Please convert column to a string or categorical first.");
 
     //Transform each vec
-    Vec nvs[] = new Vec[fr.numCols()];
+    VecAry nvs = new VecAry();
     int i = 0;
-    for (Vec v : fr.vecs()) {
+    for (VecAry v : fr.vecs().singleVecs()) {
       if (v.isCategorical())
-        nvs[i] = entropyCategoricalCol(v);
+        nvs.append(entropyCategoricalCol(v));
       else
-        nvs[i] = entropyStringCol(v);
+        nvs.append(entropyStringCol(v));
       i++;
     }
 
     return new ValFrame(new Frame(nvs));
   }
 
-  private Vec entropyCategoricalCol(Vec vec) {
-    Vec res = new MRTask() {
+  private VecAry entropyCategoricalCol(VecAry vec) {
+    return new MRTask() {
       transient double[] catEntropies;
-
       @Override
       public void setupLocal() {
         String[] doms = _fr.anyVec().domain();
@@ -73,11 +72,10 @@ public class AstEntropy extends AstPrimitive {
           else
             newChk.addNum(catEntropies[(int) chk.atd(i)]);
       }
-    }.doAll(1, Vec.T_NUM, new Frame(vec)).outputFrame().anyVec();
-    return res;
+    }.doAll(1, Vec.T_NUM, new Frame(vec)).outputFrame().vecs();
   }
 
-  private Vec entropyStringCol(Vec vec) {
+  private VecAry entropyStringCol(VecAry vec) {
     return new MRTask() {
       @Override
       public void map(Chunk chk, NewChunk newChk) {
@@ -97,7 +95,7 @@ public class AstEntropy extends AstPrimitive {
           }
         }
       }
-    }.doAll(new byte[]{Vec.T_NUM}, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_NUM}, vec).outputFrame().vecs();
   }
 
   //Shannon's entropy

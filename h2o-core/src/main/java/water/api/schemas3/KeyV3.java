@@ -35,7 +35,7 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
 
   public KeyV3() {
     // NOTE: this is a bit of a hack; without this we won't have the type parameter.
-    // We'll be able to remove this once we have proper typed Key subclasses, like FrameKey.
+    // We'll be able to removeVecs this once we have proper typed Key subclasses, like FrameKey.
     // Set the new type both in Schema and in SchemaV3, so that they are always in sync.
     String newType = "Key<" + getKeyedClassType() + ">";
     __meta.schema_type = newType;

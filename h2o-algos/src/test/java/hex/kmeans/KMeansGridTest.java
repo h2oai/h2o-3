@@ -120,7 +120,7 @@ public class KMeansGridTest extends TestUtil {
     Frame fr = null;
     try {
       fr = parse_test_file("smalldata/iris/iris_wheader.csv");
-      fr.remove("class").remove();
+      fr.removeVecs("class").remove();
       DKV.put(fr);
 
       // Setup hyperparameter search space
@@ -166,7 +166,7 @@ public class KMeansGridTest extends TestUtil {
                                      ard(6.5, 3.0, 5.8, 2.2)));
     try {
       fr = parse_test_file("smalldata/iris/iris_wheader.csv");
-      fr.remove("class").remove();
+      fr.removeVecs("class").remove();
       DKV.put(fr);
 
       // Setup hyperparameter search space
@@ -214,7 +214,7 @@ public class KMeansGridTest extends TestUtil {
                                      ard(6.5, 3.0, 5.8, 2.2)));
     try {
       fr = parse_test_file("smalldata/iris/iris_wheader.csv");
-      fr.remove("class").remove();
+      fr.removeVecs("class").remove();
       DKV.put(fr);
 
       // Setup random hyperparameter search space

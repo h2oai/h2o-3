@@ -11,6 +11,7 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.init.Linpack;
 import water.init.NetworkTest;
 import water.util.Log;
@@ -247,7 +248,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         DataInfo dinfo;
         try {
           // PUBDEV-2513: Adapt _train and _valid (in-place) to match the frames that were used for the previous model
-          // This can add or remove dummy columns (can happen if the dataset is sparse and datasets have different non-const columns)
+          // This can add or removeVecs dummy columns (can happen if the dataset is sparse and datasets have different non-const columns)
           for (String st : previous.adaptTestForTrain(_train,true,false)) Log.warn(st);
           for (String st : previous.adaptTestForTrain(_valid,true,false)) Log.warn(st);
           dinfo = makeDataInfo(_train, _valid, _parms, nclasses());
@@ -359,10 +360,10 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
           }
           train = sampleFrameStratified(
                   train, train.lastVec(), train.vec(model._output.weightsName()), trainSamplingFactors, (long)(mp._max_after_balance_size*train.numRows()), mp._seed, true, false);
-          Vec l = train.lastVec();
-          Vec w = train.vec(model._output.weightsName());
+          VecAry l = train.lastVec();
+          VecAry w = train.vec(model._output.weightsName());
           MRUtils.ClassDist cd = new MRUtils.ClassDist(l);
-          model._output._modelClassDist = _weights != null ? cd.doAll(l, w).rel_dist() : cd.doAll(l).rel_dist();
+          model._output._modelClassDist = _weights != null ? cd.doAll(new VecAry(l).append(w)).rel_dist() : cd.doAll(l).rel_dist();
         }
         model.training_rows = train.numRows();
         if (_weights != null && _weights.min()==0 && _weights.max()==1 && _weights.isInt()) {

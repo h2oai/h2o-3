@@ -60,7 +60,7 @@ public class Futures {
     for( int i=0; i<_pending_cnt; i++ )
       if( _pending[i].isDone() ) {// Done?
         waitAndCheckForException(_pending[i]);
-        // Do cheap array compression to remove from list
+        // Do cheap array compression to removeVecs from list
         _pending[i--] = _pending[--_pending_cnt];
       }
   }

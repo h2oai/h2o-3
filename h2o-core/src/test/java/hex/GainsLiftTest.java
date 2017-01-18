@@ -5,6 +5,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.TestUtil;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.Log;
 
 import java.util.Random;
@@ -21,8 +22,8 @@ public class GainsLiftTest extends TestUtil {
       a[i] = rng.nextDouble() > 0.8 ? 1 : 0;
       p[i] = 0.343424;
     }
-    Vec actual = Vec.makeVec(a, new String[]{"N","Y"}, Vec.newKey());
-    Vec predict = Vec.makeVec(p, Vec.newKey());
+    VecAry actual = new VecAry(Vec.makeVec(a, new String[]{"N","Y"}, Vec.newKey()));
+    VecAry predict = new VecAry(Vec.makeVec(p, Vec.newKey()));
 
     GainsLift gl = new GainsLift(predict, actual);
     gl._groups = 10;
@@ -43,8 +44,8 @@ public class GainsLiftTest extends TestUtil {
       a[i] = rng.nextDouble() > 0.8 ? 1 : 0;
       p[i] = a[i] == 0 ? 0.5*rng.nextDouble() : 0.5 + rng.nextDouble() * 0.5;
     }
-    Vec actual = Vec.makeVec(a, new String[]{"N","Y"}, Vec.newKey());
-    Vec predict = Vec.makeVec(p, Vec.newKey());
+    VecAry actual = new VecAry(Vec.makeVec(a, new String[]{"N","Y"}, Vec.newKey()));
+    VecAry predict = new VecAry(Vec.makeVec(p, Vec.newKey()));
 
     GainsLift gl = new GainsLift(predict, actual);
     gl._groups = 10;
@@ -68,8 +69,8 @@ public class GainsLiftTest extends TestUtil {
       a[i] = rng.nextDouble() > 0.8 ? 1 : 0;
       p[i] = a[i] == 0 ? 0.5 + 0.5*rng.nextDouble() : 0.5*rng.nextDouble();
     }
-    Vec actual = Vec.makeVec(a, new String[]{"N","Y"}, Vec.newKey());
-    Vec predict = Vec.makeVec(p, Vec.newKey());
+    VecAry actual = new VecAry(Vec.makeVec(a, new String[]{"N","Y"}, Vec.newKey()));
+    VecAry predict = new VecAry(Vec.makeVec(p, Vec.newKey()));
 
     GainsLift gl = new GainsLift(predict, actual);
     gl._groups = 10;
@@ -93,8 +94,8 @@ public class GainsLiftTest extends TestUtil {
       a[i] = rng.nextDouble() > 0.8 ? 1 : 0;
       p[i] = rng.nextDouble();
     }
-    Vec actual = Vec.makeVec(a, new String[]{"N","Y"}, Vec.newKey());
-    Vec predict = Vec.makeVec(p, Vec.newKey());
+    VecAry actual = new VecAry(Vec.makeVec(a, new String[]{"N","Y"}, Vec.newKey()));
+    VecAry predict = new VecAry(Vec.makeVec(p, Vec.newKey()));
 
     GainsLift gl = new GainsLift(predict, actual);
     gl._groups = 10;
@@ -117,8 +118,8 @@ public class GainsLiftTest extends TestUtil {
       p[i] = rng.nextDouble() > 0.5 ? 0.7 : 0.4;
       if (rng.nextDouble() > 0.85) p[i] = Double.NaN;
     }
-    Vec actual = Vec.makeVec(a, new String[]{"N","Y"}, Vec.newKey());
-    Vec predict = Vec.makeVec(p, Vec.newKey());
+    VecAry actual = new VecAry(Vec.makeVec(a, new String[]{"N","Y"}, Vec.newKey()));
+    VecAry predict = new VecAry(Vec.makeVec(p, Vec.newKey()));
 
     GainsLift gl = new GainsLift(predict, actual);
     gl._groups = 10;
@@ -141,8 +142,8 @@ public class GainsLiftTest extends TestUtil {
       p[i] = rng.nextDouble() > 0.5 ? 0.7 : 0.4;
       if (rng.nextDouble() > 0.85) a[i] = Double.NaN;
     }
-    Vec actual = Vec.makeVec(a, new String[]{"N","Y"}, Vec.newKey());
-    Vec predict = Vec.makeVec(p, Vec.newKey());
+    VecAry actual = new VecAry(Vec.makeVec(a, new String[]{"N","Y"}, Vec.newKey()));
+    VecAry predict = new VecAry(Vec.makeVec(p, Vec.newKey()));
 
     GainsLift gl = new GainsLift(predict, actual);
     gl._groups = 10;
@@ -166,8 +167,8 @@ public class GainsLiftTest extends TestUtil {
       if (rng.nextDouble() > 0.85) a[i] = Double.NaN;
       if (rng.nextDouble() > 0.85) p[i] = Double.NaN;
     }
-    Vec actual = Vec.makeVec(a, new String[]{"N","Y"}, Vec.newKey());
-    Vec predict = Vec.makeVec(p, Vec.newKey());
+    VecAry actual = new VecAry(Vec.makeVec(a, new String[]{"N","Y"}, Vec.newKey()));
+    VecAry predict = new VecAry(Vec.makeVec(p, Vec.newKey()));
 
     GainsLift gl = new GainsLift(predict, actual);
     gl._groups = 10;
@@ -195,8 +196,8 @@ public class GainsLiftTest extends TestUtil {
       a[i] = rng.nextDouble() > 0.8 ? 1 : 0;
       p[i] = (1-thresh)+thresh*rng.nextDouble();
     }
-    Vec actual = Vec.makeVec(a, new String[]{"N","Y"}, Vec.newKey());
-    Vec predict = Vec.makeVec(p, Vec.newKey());
+    VecAry actual = new VecAry(Vec.makeVec(a, new String[]{"N","Y"}, Vec.newKey()));
+    VecAry predict = new VecAry(Vec.makeVec(p, Vec.newKey()));
 
     GainsLift gl = new GainsLift(predict, actual);
     gl._groups = 10;
@@ -218,8 +219,8 @@ public class GainsLiftTest extends TestUtil {
       a[i] = rng.nextDouble() > 0.999 ? 1 : 0;
       p[i] = a[i] == 0 ? 0.5*rng.nextDouble() : 0.5 + rng.nextDouble() * 0.5;
     }
-    Vec actual = Vec.makeVec(a, new String[]{"N","Y"}, Vec.newKey());
-    Vec predict = Vec.makeVec(p, Vec.newKey());
+    VecAry actual = new VecAry(Vec.makeVec(a, new String[]{"N","Y"}, Vec.newKey()));
+    VecAry predict = new VecAry(Vec.makeVec(p, Vec.newKey()));
 
     GainsLift gl = new GainsLift(predict, actual);
     gl._groups = 10;
@@ -242,8 +243,8 @@ public class GainsLiftTest extends TestUtil {
       a[i] = rng.nextDouble() > 0.999 ? 1 : 0;
       p[i] = a[i] == 0 ? 0.5*rng.nextDouble() : 0.5 + rng.nextDouble() * 0.5;
     }
-    Vec actual = Vec.makeVec(a, new String[]{"N","Y"}, Vec.newKey());
-    Vec predict = Vec.makeVec(p, Vec.newKey());
+    VecAry actual = new VecAry(Vec.makeVec(a, new String[]{"N","Y"}, Vec.newKey()));
+    VecAry predict = new VecAry(Vec.makeVec(p, Vec.newKey()));
 
     GainsLift gl = new GainsLift(predict, actual);
     gl._groups = 20;

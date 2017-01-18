@@ -134,7 +134,7 @@ public class AstRectangleAssign extends AstPrimitive {
       return;
     }
     // Handle large case
-    AVecAry vecs = ses.copyOnWrite(dst, cols);
+    VecAry vecs = ses.copyOnWrite(dst, cols);
     VecAry vecs2 = vecs.select(cols);
     rows.sort();                // Side-effect internal sort; needed for fast row lookup
     new AssignFrameFrameTask(rows, svecs).doAll(vecs2);
@@ -185,12 +185,12 @@ public class AstRectangleAssign extends AstPrimitive {
       assert anyVec != null;  // if anyVec was null, then dst.numRows() would have been 0
       Vec vsrc = anyVec.makeCon(src);
       for (int col : cols)
-        dst.replace(col, vsrc);
+        dst.replace(col, new VecAry(vsrc));
       if (dst._key != null) DKV.put(dst);
       return;
     }
     // Handle large case
-    AVecAry vecs = ses.copyOnWrite(dst, cols);
+    VecAry vecs = ses.copyOnWrite(dst, cols);
     VecAry vecs2 = vecs.select(cols); // Just the selected columns get updated
     rows.sort();                // Side-effect internal sort; needed for fast row lookup
     new AssignFrameScalarTask(rows, src).doAll(vecs2);
@@ -216,17 +216,17 @@ public class AstRectangleAssign extends AstPrimitive {
   private void assign_frame_scalar(Frame dst, int[] cols, AstNumList rows, String src, Session ses) {
     // Check for needing to copy before updating
     // Handle fast small case
-    AVecAry dvecs = dst.vecs();
+    VecAry dvecs = dst.vecs();
     long nrows = rows.cnt();
     if( nrows==1 ) {
       long drow = (long)rows.expand()[0];
-      for( Vec vec : dvecs )
+      for( VecAry vec : dvecs.singleVecs() )
         vec.set(drow, src);
       return;
     }
 
     // Handle large case
-    AVecAry vecs = ses.copyOnWrite(dst, cols);
+    VecAry vecs = ses.copyOnWrite(dst, cols);
     VecAry vecs2 = vecs.select(cols); // Just the selected columns get updated
     rows.sort();                // Side-effect internal sort; needed for fast row lookup
     new AssignFrameStringScalarTask(rows, src).doAll(vecs2);

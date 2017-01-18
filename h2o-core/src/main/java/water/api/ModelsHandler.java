@@ -183,7 +183,7 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelsV3 delete(int version, ModelsV3 s) {
     Model model = getFromDKV("key", s.model_id.key());
-    model.delete();             // lock & remove
+    model.delete();             // lock & removeVecs
     return s;
   }
 

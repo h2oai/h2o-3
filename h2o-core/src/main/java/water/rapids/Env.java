@@ -73,7 +73,7 @@ public class Env extends Iced {
       return fr;
     }
 
-    // Pop-all and remove dead.  If a Frame was not "tracked" above, then if it
+    // Pop-all and removeVecs dead.  If a Frame was not "tracked" above, then if it
     // goes dead it will leak on function exit.  If a Frame is returned from a
     // function and not declared "returning", any Vecs it shares with Frames
     // that are dying in this opcode will be deleted out from under it.

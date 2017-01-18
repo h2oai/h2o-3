@@ -68,11 +68,11 @@ public class AstApply extends AstPrimitive {
     // 1 row column per applied function result (per column), and as many rows
     // as there are columns in the returned Frames.
     Val v0 = vals[0];
-    Vec ovecs[] = new Vec[vecs._numCols];
+    VecAry ovecs = new VecAry();
     switch (v0.type()) {
       case Val.NUM:
         for (int i = 0; i < vecs._numCols; i++)
-          ovecs[i] = Vec.makeCon(vals[i].getNum(), 1L); // Since the zero column is a number, all must be numbers
+          ovecs.append(new VecAry(Vec.makeCon(vals[i].getNum(), 1L))); // Since the zero column is a number, all must be numbers
         break;
       case Val.FRM:
         long nrows = v0.getFrame().numRows();
@@ -82,12 +82,12 @@ public class AstApply extends AstPrimitive {
             throw new IllegalArgumentException("apply result Frames must have one column, found " + res.numCols() + " cols");
           if (res.numRows() != nrows)
             throw new IllegalArgumentException("apply result Frames must have all the same rows, found " + nrows + " rows and " + res.numRows());
-          ovecs[i] = res.vec(0);
+          ovecs.append(res.vec(0));
         }
         break;
       case Val.NUMS:
         for (int i = 0; i < vecs._numCols; i++)
-          ovecs[i] = Vec.makeCon(vals[i].getNums()[0], 1L);
+          ovecs.append(Vec.makeCon(vals[i].getNums()[0], 1L));
         break;
       case Val.STRS:
         throw H2O.unimpl();

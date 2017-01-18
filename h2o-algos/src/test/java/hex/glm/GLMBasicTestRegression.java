@@ -5,7 +5,6 @@ import hex.deeplearning.DeepLearningModel;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Solver;
-import junit.framework.Assert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -46,8 +45,8 @@ public class GLMBasicTestRegression extends TestUtil {
     NFSFileVec nfs = NFSFileVec.make(f);
     Key outputKey = Key.make("prostate_cat_train.hex");
     _canCarTrain = ParseDataset.parse(outputKey, nfs._key);
-    _canCarTrain.add("Merit", (_merit = _canCarTrain.remove("Merit")).toCategoricalVec());
-    _canCarTrain.add("Class", (_class = _canCarTrain.remove("Class")).toCategoricalVec());
+    _canCarTrain.add("Merit", (_merit = _canCarTrain.removeVecs("Merit")).toCategoricalVec());
+    _canCarTrain.add("Class", (_class = _canCarTrain.removeVecs("Class")).toCategoricalVec());
 
     DKV.put(_canCarTrain._key, _canCarTrain);
     f = find_test_file_static("smalldata/glm_test/earinf.txt");
@@ -72,14 +71,14 @@ public class GLMBasicTestRegression extends TestUtil {
     DKV.put(_upsampled._key, _upsampled);
     _prostateTrain = parse_test_file("smalldata/glm_test/prostate_cat_train.csv");
     _airlines = parse_test_file("smalldata/airlines/AirlinesTrain.csv.zip");
-    Vec v = _airlines.remove("IsDepDelayed");
+    Vec v = _airlines.removeVecs("IsDepDelayed");
     Vec v2 = v.makeCopy(null);
     _airlines.add("IsDepDelayed",v2);
     v.remove();
     DKV.put(_airlines._key,_airlines);
 //    System.out.println("made copy of vec " + v._key + " -> " + v2._key + ", in DKV? src =" + ((DKV.get(v._key) != null)) + ", dst = " + (DKV.get(v2._key) != null));
     _airlinesMM = parse_test_file(Key.make("AirlinesMM"), "smalldata/airlines/AirlinesTrainMM.csv.zip");
-    v = _airlinesMM.remove("IsDepDelayed");
+    v = _airlinesMM.removeVecs("IsDepDelayed");
     _airlinesMM.add("IsDepDelayed",v.makeCopy(null));
     v.remove();
     DKV.put(_airlinesMM._key,_airlinesMM);
@@ -402,7 +401,7 @@ public class GLMBasicTestRegression extends TestUtil {
           // test scoring
           try {
             Frame fr = new Frame(_canCarTrain.names(),_canCarTrain.vecs());
-            fr.remove(parms._offset_column);
+            fr.removeVecs(parms._offset_column);
             scoreTrain = model.score(fr);
             assertTrue("shoul've thrown IAE", false);
           } catch (IllegalArgumentException iae) {

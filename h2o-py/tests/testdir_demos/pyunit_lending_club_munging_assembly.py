@@ -45,7 +45,7 @@ def lending_club_munging_assembly():
       ("issue_d_Year_as_numeric", H2OColOp(op=H2OFrame.asnumeric, col="issue_d_Year", inplace=True)),                                                                                # string -> double
 
       # do some munging of the emp_length column
-      ("emp_length_rm_years",  H2OColOp(op=H2OFrame.gsub, col="emp_length", inplace=True, pattern="([ ]*+[a-zA-Z].*)|(n/a)", replacement="")),  # remove " year" and " years", also translate n/a to ""
+      ("emp_length_rm_years",  H2OColOp(op=H2OFrame.gsub, col="emp_length", inplace=True, pattern="([ ]*+[a-zA-Z].*)|(n/a)", replacement="")),  # removeVecs " year" and " years", also translate n/a to ""
       ("emp_length_trim",      H2OColOp(op=H2OFrame.trim, col="emp_length", inplace=True)),                                                     # trim all the WS off
       ("emp_length_lt1_point5",H2OColOp(op=H2OFrame.gsub, col="emp_length", inplace=True, pattern="< 1",    replacement="0.5")),                # translate < 1 => 0.5
       ("emp_length_10plus",    H2OColOp(op=H2OFrame.gsub, col="emp_length", inplace=True, pattern="10\\+",    replacement="10")),               # translate 10+ to 10

@@ -3,7 +3,6 @@ package hex.tree.drf;
 import hex.tree.CompressedTree;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
@@ -85,12 +84,12 @@ public class DRFCheckpointTest extends TestUtil {
                                             int ntreesInPriorModel, int ntreesInNewModel,
                                             float sampleRateInPriorModel, float sampleRateInNewModel) {
     Frame f = parse_test_file(dataset);
-    Vec v = f.remove("economy"); if (v!=null) v.remove(); //avoid overfitting for binomial case for cars dataset
+    Vec v = f.removeVecs("economy"); if (v!=null) v.remove(); //avoid overfitting for binomial case for cars dataset
     DKV.put(f);
     // If classification turn response into categorical
     if (classification) {
       Vec respVec = f.vec(responseIdx);
-      f.replace(responseIdx, respVec.toCategoricalVec()).remove();
+      f.replace(responseIdx, respVec.toCategoricalVec()).removeVecs();
       DKV.put(f._key, f);
     }
     DRFModel model = null;

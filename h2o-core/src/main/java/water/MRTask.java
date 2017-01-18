@@ -371,8 +371,11 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   /** Invokes the map/reduce computation over the given Vecs.  This call is
    *  blocking. */
   public final T doAll( Vec... vecs ) { return doAll(null,vecs); }
+  public final T doAll( VecAry vecs ) { return doAll(null,vecs); }
   public final T doAll(byte[] types, Vec... vecs ) { return doAll(types,new Frame(vecs), false); }
+  public final T doAll(byte[] types, VecAry vecs ) { return doAll(types,new Frame(vecs), false); }
   public final T doAll(byte type, Vec... vecs ) { return doAll(new byte[]{type},new Frame(vecs), false); }
+  public final T doAll(byte type, VecAry vecs ) { return doAll(new byte[]{type},new Frame(vecs), false); }
   public final T doAll( Vec vec, boolean run_local ) { return doAll(null,vec, run_local); }
   public final T doAll(byte[] types, Vec vec, boolean run_local ) { return doAll(types,new Frame(vec), run_local); }
 
@@ -425,6 +428,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   public final T dfork( byte[] types, Vec... vecs) { return dfork(types,new Frame(vecs),false); }
 
   public final T dfork(Vec... vecs){ return dfork(null,new Frame(vecs),false); }
+  public final T dfork(VecAry vecs){ return dfork(null,new Frame(vecs),false); }
   /**
    * Invokes the map/reduce computation over the given Frame instance. This call is
    * asynchronous. It returns 'this', on which <code>getResult</code> may be invoked
@@ -595,7 +599,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
         if(_profile!=null) _profile._closestart = System.currentTimeMillis();
       }
     } else if( _hi > _lo ) {    // Frame, Single chunk?
-      Vec v0 = _fr.anyVec();
+      VecAry v0 = _fr.vecs();
       if( _run_local || v0.isHomedLocally(_lo) ) { // And chunk is homed here?
         assert(_run_local || !H2O.ARGS.client) : "Client node should not process any keys in MRTask!";
         ChunkAry cs = v0.chunkForChunkIdx(_lo);

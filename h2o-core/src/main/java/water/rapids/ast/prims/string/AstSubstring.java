@@ -38,29 +38,29 @@ public class AstSubstring extends AstPrimitive {
     if (startIndex < 0) startIndex = 0;
     int endIndex = asts[3] instanceof AstNumList ? Integer.MAX_VALUE : (int) asts[3].exec(env).getNum();
     // Type check
-    for (Vec v : fr.vecs())
+    for (VecAry v : fr.vecs().singleVecs())
       if (!(v.isCategorical() || v.isString()))
         throw new IllegalArgumentException("substring() requires a string or categorical column. "
             + "Received " + fr.anyVec().get_type_str()
             + ". Please convert column to a string or categorical first.");
 
     // Transform each vec
-    Vec nvs[] = new Vec[fr.numCols()];
+    VecAry nvs = new VecAry();
     int i = 0;
-    for (Vec v : fr.vecs()) {
+    for (VecAry v : fr.vecs().singleVecs()) {
       if (v.isCategorical())
-        nvs[i] = substringCategoricalCol(v, startIndex, endIndex);
+        nvs.append(substringCategoricalCol(v, startIndex, endIndex));
       else
-        nvs[i] = substringStringCol(v, startIndex, endIndex);
+        nvs.append(substringStringCol(v, startIndex, endIndex));
       i++;
     }
 
     return new ValFrame(new Frame(nvs));
   }
 
-  private Vec substringCategoricalCol(Vec vec, int startIndex, int endIndex) {
+  private VecAry substringCategoricalCol(VecAry vec, int startIndex, int endIndex) {
     if (startIndex >= endIndex) {
-      Vec v = Vec.makeZero(vec.length());
+      VecAry v = vec.makeZero();
       v.setDomain(0,new String[]{""});
       return v;
     }
@@ -88,7 +88,7 @@ public class AstSubstring extends AstPrimitive {
     return vec.makeCopy(new String[][]{dom});
   }
 
-  private Vec substringStringCol(Vec vec, final int startIndex, final int endIndex) {
+  private VecAry substringStringCol(VecAry vec, final int startIndex, final int endIndex) {
     return new MRTask() {
       @Override
       public void map(Chunk chk, NewChunk newChk) {
@@ -113,7 +113,7 @@ public class AstSubstring extends AstPrimitive {
           }
         }
       }
-    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().vecs();
   }
 
 }

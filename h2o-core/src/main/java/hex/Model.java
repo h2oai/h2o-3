@@ -804,7 +804,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     int good = 0;               // Any matching column names, at all?
     int convNaN = 0;
     for( int i=0; i<names.length; i++ ) {
-      Vec vec = test.vec(names[i]); // Search in the given validation set
+      VecAry vec = test.vec(names[i]); // Search in the given validation set
       // For supervised problems, if the test set has no response, then we don't fill that in with NAs.
       boolean isResponse = response != null && names[i].equals(response);
       boolean isWeights = weights != null && names[i].equals(weights);
@@ -816,7 +816,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       if(vec == null && isOffset)
         throw new IllegalArgumentException("Test/Validation dataset is missing offset vector '" + offset + "'");
       if(vec == null && isWeights && computeMetrics && expensive) {
-        vec = test.anyVec().makeCon(1);
+        vec = new VecAry(test.anyVec().makeCon(1));
         msgs.add(H2O.technote(1, "Test/Validation dataset is missing the weights column '" + names[i] + "' (needed because a response was found and metrics are to be computed): substituting in a column of 1s"));
         //throw new IllegalArgumentException(H2O.technote(1, "Test dataset is missing weights vector '" + weights + "' (needed because a response was found and metrics are to be computed)."));
       }
@@ -827,10 +827,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         if( expensive ) {
           if (isFold) {
             str = "Test/Validation dataset is missing fold column '" + names[i] + "': substituting in a column of 0s";
-            vec = test.anyVec().makeCon(0);
+            vec = new VecAry(test.anyVec().makeCon(0));
           } else {
             str = "Test/Validation dataset is missing training column '" + names[i] + "': substituting in a column of NAs";
-            vec = test.anyVec().makeCon(missing);
+            vec = new VecAry(test.anyVec().makeCon(missing));
             convNaN++;
           }
           vec.setDomain(0,domains[i]);
@@ -842,7 +842,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           if (vec.isString())
             vec = VecUtils.stringToCategorical(vec); //turn a String column into a categorical column (we don't delete the original vec here)
           if( expensive && vec.domain() != domains[i] && !Arrays.equals(vec.domain(),domains[i]) ) { // Result needs to be the same categorical
-            CategoricalWrappedVec evec;
+            VecAry evec;
             try {
               evec = vec.adaptTo(domains[i]); // Convert to categorical or throw IAE
             } catch( NumberFormatException nfe ) {
@@ -924,7 +924,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
     Frame output = predictScoreImpl(fr, adaptFr, destination_key, j, computeMetrics); // Predict & Score
     // Log modest confusion matrices
-    Vec predicted = output.vecs(0); // Modeled/predicted response
+    VecAry predicted = output.vecs(0); // Modeled/predicted response
     String mdomain[] = predicted.domain(); // Domain of predictions (union of test and train)
 
     // Output is in the model's domain, but needs to be mapped to the scored
@@ -944,11 +944,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         }
       }
       */
-      Vec actual = fr.vec(_output.responseName());
+      VecAry actual = fr.vec(_output.responseName());
       if( actual != null ) {  // Predict does not have an actual, scoring does
         String sdomain[] = actual.domain(); // Scored/test domain; can be null
-        if (sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain, sdomain))
-          output.replace(0, new CategoricalWrappedVec(actual.group().addVec(), actual._rowLayout, sdomain, predicted._key));
+        if (sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain, sdomain)) {
+          VecAry x = predicted.adaptTo(sdomain).append(output.vecs().selectRange(1,output.numCols())).makeCopy();
+          String [] names = output._names;
+          output.remove();
+          DKV.put(output = new Frame(output._key,names,x));
+        }
       }
     }
     cleanup_adapt(adaptFr, fr);
@@ -1008,10 +1012,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   // Remove temp keys.  TODO: Really should use Scope but Scope does not
   // currently allow nested-key-keepers.
   static protected void cleanup_adapt( Frame adaptFr, Frame fr ) {
-    Vec [] vecs = adaptFr.vecs().vecs();
-    for( int i=0; i<vecs.length; i++ )
-      if( fr.find(vecs[i]) == -1 ) //only delete vecs that aren't shared
-        vecs[i].remove();
+    VecAry vecs = adaptFr.vecs();
+    VecAry toRem = new VecAry();
+    for( VecAry x:vecs.singleVecs() )
+      if( fr.find(x) == -1 ) //only delete vecs that aren't shared
+        toRem.append(x);
+    if(!toRem.isEmpty())
+      toRem.remove();
     DKV.remove(adaptFr._key); //delete the frame header
   }
 
@@ -1594,7 +1601,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       // dataset's domain.
       int[] omap = null;
       if( _output.isClassifier() ) {
-        Vec actual = fr.vec(_output.responseName());
+        VecAry actual = fr.vec(_output.responseName());
         String sdomain[] = actual == null ? null : actual.domain(); // Scored/test domain; can be null
         String mdomain[] = model_predictions.vec(0).domain(); // Domain of predictions (union of test and train)
         if( sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain, sdomain)) {
@@ -1725,7 +1732,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     int idx = 0;
     for (InteractionPair ip : interactions) {
       interactionNames[idx] = fr.name(ip._v1) + "_" + fr.name(ip._v2);
-      InteractionWrappedVec iwv =new InteractionWrappedVec(anyTrainVec.group().addVec(), anyTrainVec._rowLayout, ip._v1Enums, ip._v2Enums, useAllFactorLevels, skipMissing, standardize, fr.vec(ip._v1)._key, fr.vec(ip._v2)._key);
+      InteractionWrappedVec iwv =new InteractionWrappedVec(anyTrainVec.group().addVec(), anyTrainVec._rowLayout, ip._v1Enums, ip._v2Enums, useAllFactorLevels, skipMissing, standardize, fr.vecs(ip._v1,ip._v2));
 //      if(!valid) ip.setDomain(iwv.domain());
       interactionVecs[idx++] = iwv;
     }
@@ -1737,13 +1744,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     InteractionWrappedVec[] interactionVecs = new InteractionWrappedVec[interactions.length];
     int idx = 0;
     for (InteractionPair ip : interactions)
-      interactionVecs[idx++] = new InteractionWrappedVec(anyTrainVec.group().addVec(), anyTrainVec._rowLayout, ip._v1Enums, ip._v2Enums, useAllFactorLevels, skipMissing, standardize, fr.vec(ip._v1)._key, fr.vec(ip._v2)._key);
+      interactionVecs[idx++] = new InteractionWrappedVec(anyTrainVec.group().addVec(), anyTrainVec._rowLayout, ip._v1Enums, ip._v2Enums, useAllFactorLevels, skipMissing, standardize, fr.vecs(ip._v1,ip._v2));
     return interactionVecs;
   }
 
   public static InteractionWrappedVec makeInteraction(Frame fr, InteractionPair ip, boolean useAllFactorLevels, boolean skipMissing, boolean standardize) {
     Vec anyVec = fr.anyVec();
-    return new InteractionWrappedVec(anyVec.group().addVec(), anyVec._rowLayout, ip._v1Enums, ip._v2Enums, useAllFactorLevels, skipMissing, standardize, fr.vec(ip._v1)._key, fr.vec(ip._v2)._key);
+    return new InteractionWrappedVec(anyVec.group().addVec(), anyVec._rowLayout, ip._v1Enums, ip._v2Enums, useAllFactorLevels, skipMissing, standardize, fr.vecs(ip._v1,ip._v2));
   }
 
   /**

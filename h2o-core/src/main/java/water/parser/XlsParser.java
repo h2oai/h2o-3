@@ -229,7 +229,7 @@ class XlsParser extends Parser {
       int size = d.get4(SIZE_POS);
       String name = "";
       for( int i = 0; i < nameSize ; i+=2 ) name += (char)d.get2(i);
-      name = name.replaceAll("\0", ""); // remove trailing nul (C string?)
+      name = name.replaceAll("\0", ""); // removeVecs trailing nul (C string?)
       Props p = new Props(name,type,startBlock,size);
       _props.add(p);
       if( name.equalsIgnoreCase("workbook") || name.equalsIgnoreCase("book") )

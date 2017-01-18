@@ -1649,7 +1649,7 @@ final public class H2O {
     Value res = STORE.putIfMatchUnlocked(key,val,old);
     if( res != old ) return res; // Return the failure cause
     // Persistence-tickle.
-    // If the K/V mapping is going away, remove the old guy.
+    // If the K/V mapping is going away, removeVecs the old guy.
     // If the K/V mapping is changing, let the store cleaner just overwrite.
     // If the K/V mapping is new, let the store cleaner just create
     if( old != null && val == null ) old.removePersist(); // Remove the old guy

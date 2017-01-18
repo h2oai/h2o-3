@@ -62,7 +62,7 @@ public class DeepLearningMissingTest extends TestUtil {
           // add missing values to the training data (excluding the response)
           if (missing_fraction > 0) {
             Frame frtmp = new Frame(Key.<Frame>make(), train.names(), train.vecs());
-            frtmp.remove(frtmp.numCols() - 1); //exclude the response
+            frtmp.removeVecs(frtmp.numCols() - 1); //exclude the response
             DKV.put(frtmp._key, frtmp); //need to put the frame (to be modified) into DKV for MissingInserter to pick up
             FrameUtils.MissingInserter j = new FrameUtils.MissingInserter(frtmp._key, seed, missing_fraction);
             j.execImpl().get(); //MissingInserter is non-blocking, must block here explicitly

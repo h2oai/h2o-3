@@ -3,13 +3,14 @@ package water.parser;
 import water.fvec.Chunk;
 import water.fvec.ChunkAry;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 
 /**
  * Parser data in taking data from fluid vec chunk.
  *  @author tomasnykodym
  */
 public class FVecParseReader implements ParseReader {
-  final Vec _vec;
+  final VecAry _vec;
   ChunkAry _chk;
   int _idx;
   final long _firstLine;
@@ -40,6 +41,6 @@ public class FVecParseReader implements ParseReader {
    * @return underlying Chunk
    */
   public Chunk getChunk() { return _chk.getChunk(0); }
-  public Vec getVec() { return _vec; }
+  public VecAry getVec() { return _vec; }
   public long start() { return _chk._start; }
 }

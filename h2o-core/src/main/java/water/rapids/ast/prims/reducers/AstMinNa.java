@@ -1,6 +1,7 @@
 package water.rapids.ast.prims.reducers;
 
 import water.fvec.Vec;
+import water.fvec.VecAry;
 
 /**
  * Subclasses take a Frame and produces a scalar.  NAs are dropped
@@ -21,7 +22,7 @@ public class AstMinNa extends AstNaRollupOp {
     return Math.min(l, r);
   }
 
-  public double rup(Vec vec) {
+  public double rup(VecAry vec) {
     return vec.min();
   }
 }

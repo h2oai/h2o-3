@@ -26,10 +26,7 @@ import java.util.Map;
  * @author spencer
  */
 public class InteractionWrappedVec extends WrappedVec {
-  private final Key<Vec> _masterVecKey1;
-  private final Key<Vec> _masterVecKey2;
-  private transient Vec _masterVec1;
-  private transient Vec _masterVec2;
+  private final VecAry _masterVecs;
   private String[] _v1Domain;
   private String[] _v2Domain;
   public boolean _useAllFactorLevels;
@@ -42,14 +39,11 @@ public class InteractionWrappedVec extends WrappedVec {
   private String _v1Enums[]; // only interact these enums from vec 1
   private String _v2Enums[]; // only interact these enums from vec 2
 
-  public InteractionWrappedVec(Key key, int rowLayout, String[] vec1DomainLimit, String[] vec2DomainLimit, boolean useAllFactorLevels, boolean skipMissing, boolean standardize, Key<Vec> masterVecKey1, Key<Vec> masterVecKey2) {
+  public InteractionWrappedVec(Key key, int rowLayout, String[] vec1DomainLimit, String[] vec2DomainLimit, boolean useAllFactorLevels, boolean skipMissing, boolean standardize, VecAry masterVecs) {
     super(key, rowLayout, null);
-    _masterVecKey1=masterVecKey1;
-    _masterVecKey2=masterVecKey2;
+    _masterVecs=masterVecs;
     _v1Enums=vec1DomainLimit;
     _v2Enums=vec2DomainLimit;
-    _masterVec1=_masterVecKey1.get();
-    _masterVec2=_masterVecKey2.get();
     _useAllFactorLevels=useAllFactorLevels;
     _skipMissing=skipMissing;
     setupDomain(_standardize=standardize);  // performs MRTask if both vecs are categorical!!
@@ -67,8 +61,6 @@ public class InteractionWrappedVec extends WrappedVec {
     return super.domain();
   }
 
-  public Vec v1() { return _masterVec1==null?(_masterVec1=_masterVecKey1.get()):_masterVec1; }
-  public Vec v2() { return _masterVec2==null?(_masterVec2=_masterVecKey2.get()):_masterVec2; }
 
   /**
    * Obtain the length of the expanded (i.e. one-hot expanded) interaction column.
@@ -165,11 +157,11 @@ public class InteractionWrappedVec extends WrappedVec {
   public long[] getBins() { return _bins; }
   public String[] missingDomains() { return _missingDomains; }
   private void setupDomain(boolean standardize) {
-    if( _masterVec1.isCategorical() || _masterVec2.isCategorical() ) {
-      _v1Domain = _masterVec1.domain();
-      _v2Domain = _masterVec2.domain();
+    if( _masterVecs.isCategorical(0) || _masterVecs.isCategorical(1) ) {
+      _v1Domain = _masterVecs.domain(0);
+      _v2Domain = _masterVecs.domain(1);
       if( _v1Domain!=null && _v2Domain!=null ) {
-        CombineDomainTask t =new CombineDomainTask(_v1Domain, _v2Domain,_v1Enums,_v2Enums, _useAllFactorLevels,_skipMissing).doAll(_masterVec1, _masterVec2);
+        CombineDomainTask t =new CombineDomainTask(_v1Domain, _v2Domain,_v1Enums,_v2Enums, _useAllFactorLevels,_skipMissing).doAll(_masterVecs);
         setDomain(0,t._dom);
         _bins=t._bins;
         _types[0] = Vec.T_CAT; // vec is T_NUM up to this point
@@ -284,14 +276,12 @@ public class InteractionWrappedVec extends WrappedVec {
   }
 
   @Override public ChunkAry chunkForChunkIdx(int cidx) {
-    Chunk[] cs = new Chunk[2];
-    cs[0] = (_masterVec1!=null?_masterVec1: (_masterVec1=_masterVecKey1.get())).chunkForChunkIdx(cidx).getChunk(0);
-    cs[1] = (_masterVec2!=null?_masterVec2: (_masterVec2=_masterVecKey2.get())).chunkForChunkIdx(cidx).getChunk(0);
-    return new ChunkAry(this,cidx,new InteractionWrappedChunk(this, cs));
+    Chunk[] cs = _masterVecs.chunkForChunkIdx(cidx).getChunks();
+    return new ChunkAry(new VecAry(this),cidx,new InteractionWrappedChunk(this, cs));
   }
 
   @Override public Vec doCopy() {
-    InteractionWrappedVec v = new InteractionWrappedVec(group().addVec(), _rowLayout,_v1Enums,_v2Enums, _useAllFactorLevels, _skipMissing, _standardize, _masterVecKey1, _masterVecKey2);
+    InteractionWrappedVec v = new InteractionWrappedVec(group().addVec(), _rowLayout,_v1Enums,_v2Enums, _useAllFactorLevels, _skipMissing, _standardize, _masterVecs);
     if( null!=domain()  ) v.setDomain(0,domain(0));
     if( null!=_v1Domain ) v._v1Domain=_v1Domain.clone();
     if( null!=_v2Domain ) v._v2Domain=_v2Domain.clone();

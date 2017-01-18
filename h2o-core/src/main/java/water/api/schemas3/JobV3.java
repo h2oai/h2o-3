@@ -63,7 +63,7 @@ public class JobV3 extends SchemaV3<Job, JobV3> {
     if( job == null ) return this;
     // Handle fields in subclasses:
     PojoUtils.copyProperties(this, job, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
-    PojoUtils.copyProperties(this, job, PojoUtils.FieldNaming.CONSISTENT);  // TODO: make consistent and remove
+    PojoUtils.copyProperties(this, job, PojoUtils.FieldNaming.CONSISTENT);  // TODO: make consistent and removeVecs
 
     key = new JobKeyV3(job._key);
     description = job._description;

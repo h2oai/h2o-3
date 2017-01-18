@@ -31,7 +31,7 @@ public class AstKurtosis extends AstPrimitive {
         return new ValNums(ds);
     }
 
-    public static double kurtosis(Vec v) {
+    public static double kurtosis(VecAry v) {
         return AstHist.fourth_moment(v);
     }
 }

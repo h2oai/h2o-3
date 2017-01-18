@@ -150,7 +150,7 @@ public class SchemaServer {
           if (name.equals("Gini")) continue; // proper name
           if (name.endsWith("AUC")) continue; // trainAUC, validAUC
 
-          // TODO: remove after we move these into a TwoDimTable:
+          // TODO: removeVecs after we move these into a TwoDimTable:
           if ("f0point5".equals(name) || "f0point5_for_criteria".equals(name) || "f1_for_criteria".equals(name) ||
               "f2_for_criteria".equals(name)) continue;
 

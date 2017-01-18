@@ -25,7 +25,7 @@ public abstract class DTreeScorer<T extends DTreeScorer<T>> extends MRTask<T> {
     for (int t=0; t<ntrees; t++) {
       Key[] treek = _treeKeys[t];
       _trees[t] = new CompressedTree[treek.length];
-      // FIXME remove get by introducing fetch class for all trees
+      // FIXME removeVecs get by introducing fetch class for all trees
       for (int i=0; i<treek.length; i++)
         if (treek[i]!=null)
           _trees[t][i] = DKV.get(treek[i]).get();
