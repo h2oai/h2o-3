@@ -1,4 +1,4 @@
-package hex.genmodel.algos.deepwater.caffe;
+package hex.genmodel.algos.deepwater;
 
 import com.google.protobuf.nano.CodedInputByteBufferNano;
 import com.google.protobuf.nano.CodedOutputByteBufferNano;
