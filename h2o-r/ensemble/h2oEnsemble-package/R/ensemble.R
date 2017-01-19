@@ -149,6 +149,7 @@ h2o.ensemble <- function(x, y, training_frame,
   }
   else {
     if(!is.null(weights_column)){
+    Z$y <- training_frame[,c(y)]
     Z$weights <- training_frame[, c(weights_column)]  
     runtime$metalearning <- system.time(metafit <- match.fun(metalearner)(x = learner, 
                                                                           y = "y", 
