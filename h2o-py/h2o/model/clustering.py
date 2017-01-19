@@ -64,7 +64,6 @@ class H2OClusteringModel(ModelBase):
         If more than one options is set to True, then return a dictionary of metrics where
         the keys are "train", "valid", and "xval".
 
-        :param thresholds: If None, then the thresholds in this set of metrics will be used.
         :param bool train: If True, return the total sum of squares value for the training data.
         :param bool valid: If True, return the total sum of squares value for the validation data.
         :param bool xval: If True, return the total sum of squares value for each of the cross-validated splits.
@@ -86,7 +85,6 @@ class H2OClusteringModel(ModelBase):
         If more than one options is set to True, then return a dictionary of metrics where
         the keys are "train", "valid", and "xval".
 
-        :param thresholds: If None, then the thresholds in this set of metrics will be used.
         :param bool train: If True, return the total within cluster sum of squares value for the training data.
         :param bool valid: If True, return the total within cluster sum of squares value for the validation data.
         :param bool xval: If True, return the total within cluster sum of squares value for each of the
@@ -109,7 +107,6 @@ class H2OClusteringModel(ModelBase):
         If more than one options is set to True, then return a dictionary of metrics where
         the keys are "train", "valid", and "xval".
 
-        :param thresholds: If None, then the thresholds in this set of metrics will be used.
         :param bool train: If True, return the total sum of squares value for the training data.
         :param bool valid: If True, return the total sum of squares value for the validation data.
         :param bool xval: If True, return the total sum of squares value for each of the cross-validated splits.
@@ -131,7 +128,6 @@ class H2OClusteringModel(ModelBase):
         If more than one options is set to True, then return a dictionary of metrics where
         the keys are "train", "valid", and "xval".
 
-        :param thresholds: If None, then the thresholds in this set of metrics will be used.
         :param bool train: If True, return the centroid statistic for the training data.
         :param bool valid: If True, return the centroid statistic for the validation data.
         :param bool xval: If True, return the centroid statistic for each of the cross-validated splits.

@@ -668,92 +668,92 @@ class H2OFrame(object):
 
 
     def cos(self):
-        """Return new frame equal to elementwise cosine of the current frame."""
+        """Return new H2OFrame equal to elementwise cosine of the current frame."""
         return self._unop("cos")
 
 
     def sin(self):
-        """Return new frame equal to elementwise sine of the current frame."""
+        """Return new H2OFrame equal to elementwise sine of the current frame."""
         return self._unop("sin")
 
 
     def tan(self):
-        """Return new frame equal to elementwise tangent of the current frame."""
+        """Return new H2OFrame equal to elementwise tangent of the current frame."""
         return self._unop("tan")
 
 
     def acos(self):
-        """Return new frame equal to elementwise arc cosine of the current frame."""
+        """Return new H2OFrame equal to elementwise arc cosine of the current frame."""
         return self._unop("acos")
 
 
     def asin(self):
-        """Return new frame equal to elementwise arc sine of the current frame."""
+        """Return new H2OFrame equal to elementwise arc sine of the current frame."""
         return self._unop("asin")
 
 
     def atan(self):
-        """Return new frame equal to elementwise arc tangent of the current frame."""
+        """Return new H2OFrame equal to elementwise arc tangent of the current frame."""
         return self._unop("atan")
 
 
     def cosh(self):
-        """Make new frame with values equal to the hyperbolic cosines of the values in the current frame."""
+        """Make new H2OFrame with values equal to the hyperbolic cosines of the values in the current frame."""
         return self._unop("cosh")
 
 
     def sinh(self):
-        """Return new frame equal to elementwise hyperbolic sine of the current frame."""
+        """Return new H2OFrame equal to elementwise hyperbolic sine of the current frame."""
         return self._unop("sinh")
 
 
     def tanh(self):
-        """Return new frame equal to elementwise hyperbolic tangent of the current frame."""
+        """Return new H2OFrame equal to elementwise hyperbolic tangent of the current frame."""
         return self._unop("tanh")
 
 
     def acosh(self):
-        """Return new frame equal to elementwise inverse hyperbolic cosine of the current frame."""
+        """Return new H2OFrame equal to elementwise inverse hyperbolic cosine of the current frame."""
         return self._unop("acosh")
 
 
     def asinh(self):
-        """Return new frame equal to elementwise inverse hyperbolic sine of the current frame."""
+        """Return new H2OFrame equal to elementwise inverse hyperbolic sine of the current frame."""
         return self._unop("asinh")
 
 
     def atanh(self):
-        """Return new frame equal to elementwise inverse hyperbolic tangent of the current frame."""
+        """Return new H2OFrame equal to elementwise inverse hyperbolic tangent of the current frame."""
         return self._unop("atanh")
 
 
     def cospi(self):
-        """Return new frame equal to elementwise cosine of the current frame multiplied by Pi."""
+        """Return new H2OFrame equal to elementwise cosine of the current frame multiplied by Pi."""
         return self._unop("cospi")
 
 
     def sinpi(self):
-        """Return new frame equal to elementwise sine of the current frame multiplied by Pi."""
+        """Return new H2OFrame equal to elementwise sine of the current frame multiplied by Pi."""
         return self._unop("sinpi")
 
 
     def tanpi(self):
-        """Return new frame equal to elementwise tangent of the current frame multiplied by Pi."""
+        """Return new H2OFrame equal to elementwise tangent of the current frame multiplied by Pi."""
         return self._unop("tanpi")
 
 
     def abs(self):
-        """Return new frame equal to elementwise absolute value of the current frame."""
+        """Return new H2OFrame equal to elementwise absolute value of the current frame."""
         return self._unop("abs")
 
 
     def sign(self):
-        """Return new frame equal to signs of the values in the frame: -1 , +1, or 0."""
+        """Return new H2OFrame equal to signs of the values in the frame: -1 , +1, or 0."""
         return self._unop("sign")
 
 
     def sqrt(self):
-        """Return new frame equal to elementwise square root of the current frame."""
+        """Return new H2OFrame equal to elementwise square root of the current frame."""
         return self._unop("sqrt")
 
 
@@ -763,6 +763,8 @@ class H2OFrame(object):
 
         ``trunc(x)`` is the integer obtained from ``x`` by dropping its decimal tail. This is equal to ``floor(x)``
         if ``x`` is positive, and ``ceil(x)`` if ``x`` is negative. Truncation is also called "rounding towards zero".
+
+        :returns: new H2OFrame of truncated values of the original frame.
         """
         return self._unop("trunc")
 
@@ -771,7 +773,10 @@ class H2OFrame(object):
         """
         Apply the ceiling function to the current frame.
 
-        ``ceil(x)`` is the smallest integer greater or equal to ``x``."""
+        ``ceil(x)`` is the smallest integer greater or equal to ``x``.
+
+        :returns: new H2OFrame of ceiling values of the original frame.
+        """
         return self._unop("ceiling")
 
 
@@ -779,57 +784,60 @@ class H2OFrame(object):
         """
         Apply the floor function to the current frame.
 
-        ``floor(x)`` is the largest integer smaller or equal to ``x``."""
+        ``floor(x)`` is the largest integer smaller or equal to ``x``.
+
+        :returns: new H2OFrame of floor values of the original frame.
+        """
         return self._unop("floor")
 
 
     def log(self):
-        """Compute the natural logarithm of the frame."""
+        """Return new H2oFrame equals to elementwise natural logarithm of the current frame."""
         return self._unop("log")
 
 
     def log10(self):
-        """Compute the decimal logarithm of the frame."""
+        """Return new H2oFrame equals to elementwise decimal logarithm of the current frame."""
         return self._unop("log10")
 
 
     def log1p(self):
-        """Compute ``ln(1 + x)`` for each ``x`` in the frame."""
+        """Return new H2oFrame equals to elementwise ``ln(1 + x)`` for each ``x`` in the current frame."""
         return self._unop("log1p")
 
 
     def log2(self):
-        """Compute the binary logarithm of the frame."""
+        """Return new H2oFrame equals to elementwise binary logarithm of the current frame."""
         return self._unop("log2")
 
 
     def exp(self):
-        """Compute the exponent (i.e. ``e^x``) of the frame."""
+        """Return new H2oFrame equals to elementwise exponent (i.e. ``e^x``) of the current frame."""
         return self._unop("exp")
 
 
     def expm1(self):
-        """Compute the exponent minus 1 (i.e. ``e^x - 1``) of the frame."""
+        """Return new H2oFrame equals to elementwise exponent minus 1 (i.e. ``e^x - 1``) of the current frame."""
         return self._unop("expm1")
 
 
     def gamma(self):
-        """Compute the gamma function of the frame."""
+        """Return new H2oFrame equals to elementwise gamma function of the current frame."""
         return self._unop("gamma")
 
 
     def lgamma(self):
-        """Compute the logarithm of the gamma function of the frame."""
+        """Return new H2oFrame equals to elementwise logarithm of the gamma function of the current frame."""
         return self._unop("lgamma")
 
 
     def digamma(self):
-        """Compute the digamma function of the frame."""
+        """Return new H2oFrame equals to elementwise digamma function of the current frame."""
         return self._unop("digamma")
 
 
     def trigamma(self):
-        """Compute the trigamma function of the frame."""
+        """Return new H2oFrame equals to elementwise trigamma function of the current frame."""
         return self._unop("trigamma")
 
 
@@ -1037,6 +1045,7 @@ class H2OFrame(object):
         Convert the frame (containing strings / categoricals) into the ``date`` format.
 
         :param str format: the format string (e.g. "YYYY-mm-dd")
+        :returns: new H2OFrame with "date" column types
         """
         fr = H2OFrame._expr(expr=ExprNode("as.Date", self, format), cache=self._ex._cache)
         if fr._ex._cache.types_valid():
@@ -1049,6 +1058,7 @@ class H2OFrame(object):
         Compute cumulative sum over rows / columns of the frame.
 
         :param int axis: 0 for column-wise, 1 for row-wise
+        :returns: new H2OFrame with cumulative sums of the original frame.
         """
         return H2OFrame._expr(expr=ExprNode("cumsum", self, axis), cache=self._ex._cache)
 
@@ -1058,6 +1068,7 @@ class H2OFrame(object):
         Compute cumulative product over rows / columns of the frame.
 
         :param int axis: 0 for column-wise, 1 for row-wise
+        :returns: new H2OFrame with cumulative products of the original frame.
         """
         return H2OFrame._expr(expr=ExprNode("cumprod", self, axis), cache=self._ex._cache)
 
@@ -1067,6 +1078,7 @@ class H2OFrame(object):
         Compute cumulative minimum over rows / columns of the frame.
 
         :param int axis: 0 for column-wise, 1 for row-wise
+        :returns: new H2OFrame with running minimums of the original frame.
         """
         return H2OFrame._expr(expr=ExprNode("cummin", self, axis), cache=self._ex._cache)
 
@@ -1076,6 +1088,7 @@ class H2OFrame(object):
         Compute cumulative maximum over rows / columns of the frame.
 
         :param int axis: 0 for column-wise, 1 for row-wise
+        :returns: new H2OFrame with running maximums of the original frame.
         """
         return H2OFrame._expr(expr=ExprNode("cummax", self, axis), cache=self._ex._cache)
 
@@ -1085,6 +1098,7 @@ class H2OFrame(object):
         Compute the product of all values in the frame.
 
         :param bool na_rm: If True then NAs will be ignored during the computation.
+        :returns: product of all values in the frame (a float)
         """
         return ExprNode("prod.na" if na_rm else "prod", self)._eager_scalar()
 
@@ -1834,7 +1848,7 @@ class H2OFrame(object):
         :param float fraction: A number between 0 and 1 indicating the fraction of entries to replace with missing.
         :param int seed: The seed for the random number generator used to determine which values to make missing.
 
-        :returns: the original frame with missing values inserted.
+        :returns: the original H2OFrame with missing values inserted.
         """
         kwargs = {}
         kwargs['dataset'] = self.frame_id  # Eager; forces eval now for following REST call
@@ -1867,6 +1881,10 @@ class H2OFrame(object):
             is a frame with 1 row and number of columns as in the original frame. If 1, then sum is computed rowwise
             and the result is a frame with 1 column (called "sum"), and number of rows equal to the number of rows
             in the original frame.
+        :returns: either a list of sum of values per-column (old semantic); or an H2OFrame containing sum of values
+            per-column/per-row in the original frame (new semantic). The new semantic is triggered by either
+            providing the ``return_frame=True`` parameter, or having the ``general.allow_breaking_changed`` config
+            option turned on.
         """
         assert_is_type(skipna, bool)
         assert_is_type(axis, 0, 1)
@@ -1900,6 +1918,10 @@ class H2OFrame(object):
             result is a frame with 1 row and number of columns as in the original frame. If 1, then mean is computed
             rowwise and the result is a frame with 1 column (called "mean"), and number of rows equal to the number
             of rows in the original frame.
+        :returns: either a list of mean values per-column (old semantic); or an H2OFrame containing mean values
+            per-column/per-row from the original frame (new semantic). The new semantic is triggered by either
+            providing the ``return_frame=True`` parameter, or having the ``general.allow_breaking_changed`` config
+            option turned on.
         """
         assert_is_type(skipna, bool)
         assert_is_type(axis, 0, 1)
@@ -2039,7 +2061,11 @@ class H2OFrame(object):
 
 
     def asfactor(self):
-        """Convert columns in the current frame to categoricals."""
+        """
+        Convert columns in the current frame to categoricals.
+
+        :returns: new H2OFrame with columns of the "enum" type.
+        """
         fr = H2OFrame._expr(expr=ExprNode("as.factor", self), cache=self._ex._cache)
         if fr._ex._cache.types_valid():
             fr._ex._cache.types = {list(fr._ex._cache.types)[0]: "enum"}
@@ -2074,7 +2100,11 @@ class H2OFrame(object):
 
 
     def transpose(self):
-        """Transpose rows and columns of this frame."""
+        """
+        Transpose rows and columns of this frame.
+
+        :returns: new H2OFrame where with rows/columns from the original frame transposed.
+        """
         return H2OFrame._expr(expr=ExprNode("t", self))
 
 
@@ -2100,6 +2130,8 @@ class H2OFrame(object):
 
         :param str pattern: The pattern to count matches on in each string. This can also be a list of strings,
             in which case all of them will be searched for.
+        :returns: numeric H2OFrame with the same shape as the original, containing counts of matches of the
+            pattern for each cell in the original frame.
         """
         assert_is_type(pattern, str, [str])
         fr = H2OFrame._expr(expr=ExprNode("countmatches", self, pattern))
@@ -2146,6 +2178,8 @@ class H2OFrame(object):
         If omitted, the set argument defaults to removing whitespace.
 
         :param str set: The set of characters to lstrip from strings in column
+        :returns: a new H2OFrame with the same shape as the original frame and having all its values
+            trimmed from the left (equivalent of Python's ``str.lstrip()``).
         """
         # work w/ None; parity with python lstrip
         if set is None: set = " "
@@ -2164,6 +2198,8 @@ class H2OFrame(object):
         If omitted, the set argument defaults to removing whitespace.
 
         :param str set: The set of characters to rstrip from strings in column
+        :returns: a new H2OFrame with the same shape as the original frame and having all its values
+            trimmed from the right (equivalent of Python's ``str.rstrip()``).
         """
         # work w/ None; parity with python rstrip
         if set is None: set = " "
@@ -2301,6 +2337,7 @@ class H2OFrame(object):
         :param str pattern: A regular expression.
         :param str replacement: A replacement string.
         :param bool ignore_case: If True then pattern will match case-insensitively.
+        :returns: an H2OFrame with all values matching ``pattern`` replaced with ``replacement``.
         """
         return H2OFrame._expr(expr=ExprNode("replacefirst", self, pattern, replacement, ignore_case))
 
@@ -2312,6 +2349,7 @@ class H2OFrame(object):
         :param str pattern: A regular expression.
         :param str replacement: A replacement string.
         :param bool ignore_case: If True then pattern will match case-insensitively.
+        :returns: an H2OFrame with all occurrences of ``pattern`` in all values replaced with ``replacement``.
         """
         return H2OFrame._expr(expr=ExprNode("replaceall", self, pattern, replacement, ignore_case))
 
@@ -2338,12 +2376,20 @@ class H2OFrame(object):
 
 
     def toupper(self):
-        """Translate characters from lower to upper case for a particular column."""
+        """
+        Translate characters from lower to upper case for a particular column.
+
+        :returns: new H2OFrame with all strings in the current frame converted to the uppercase.
+        """
         return H2OFrame._expr(expr=ExprNode("toupper", self), cache=self._ex._cache)
 
 
     def tolower(self):
-        """Translate characters from upper to lower case for a particular column."""
+        """
+        Translate characters from upper to lower case for a particular column.
+
+        :returns: new H2OFrame with all strings in the current frame converted to the lowercase.
+        """
         return H2OFrame._expr(expr=ExprNode("tolower", self), cache=self._ex._cache)
 
 
@@ -2359,6 +2405,7 @@ class H2OFrame(object):
         version of the original.
 
         :param int length_out: Number of columns (rows) of the resulting H2OFrame
+        :returns: new H2OFrame with repeated data from the current frame.
         """
         return H2OFrame._expr(expr=ExprNode("rep_len", self, length_out))
 
@@ -2371,6 +2418,7 @@ class H2OFrame(object):
             numbers then shift each column by the corresponding amount.
         :param scale: If True, then scale the data by each column's standard deviation. If False, no scaling
             is done. If ``scale`` is a list of numbers, then scale each column by the requested amount.
+        :returns: an H2OFrame with scaled values from the current frame.
         """
         return H2OFrame._expr(expr=ExprNode("scale", self, center, scale), cache=self._ex._cache)
 
@@ -2380,6 +2428,7 @@ class H2OFrame(object):
         Round doubles/floats to the given number of significant digits.
 
         :param int digits: Number of significant digits to retain.
+        :returns: new H2OFrame with rounded values from the original frame.
         """
         return H2OFrame._expr(expr=ExprNode("signif", self, digits), cache=self._ex._cache)
 
@@ -2391,6 +2440,7 @@ class H2OFrame(object):
         :param int digits: The number of decimal places to retain. Rounding to a negative number of decimal places is
             not supported. For rounding we use the "round half to even" mode (IEC 60559 standard), so that
             ``round(2.5) = 2`` and ``round(3.5) = 4``.
+        :returns: new H2OFrame with rounded values from the original frame.
         """
         return H2OFrame._expr(expr=ExprNode("round", self, digits), cache=self._ex._cache)
 
@@ -2404,7 +2454,11 @@ class H2OFrame(object):
 
 
     def ascharacter(self):
-        """Convert all columns in the frame into strings."""
+        """
+        Convert all columns in the frame into strings.
+
+        :returns: new H2OFrame with columns of "string" type.
+        """
         fr = H2OFrame._expr(expr=ExprNode("as.character", self), cache=self._ex._cache)
         if fr._ex._cache.types_valid():
             fr._ex._cache.types = {k: "string" for k in fr._ex._cache.types.keys()}
@@ -2412,7 +2466,11 @@ class H2OFrame(object):
 
 
     def na_omit(self):
-        """Remove rows with NAs from the H2OFrame."""
+        """
+        Remove rows with NAs from the H2OFrame.
+
+        :returns: new H2OFrame with all rows from the original frame containing any NAs removed.
+        """
         fr = H2OFrame._expr(expr=ExprNode("na.omit", self), cache=self._ex._cache)
         fr._ex._cache.nrows = -1
         return fr
@@ -2430,9 +2488,10 @@ class H2OFrame(object):
 
 
     def isna(self):
-        """For each element in an H2OFrame, determine if it is NA or not.
+        """
+        For each element in an H2OFrame, determine if it is NA or not.
 
-        This creates a frame of 1s and 0s, where 1s mean the values were NAs.
+        :returns: an H2OFrame of 1s and 0s, where 1s mean the values were NAs.
         """
         fr = H2OFrame._expr(expr=ExprNode("is.na", self))
         fr._ex._cache.nrows = self._ex._cache.nrows
@@ -2444,7 +2503,11 @@ class H2OFrame(object):
 
 
     def year(self):
-        """Extract the "year" part from a date column."""
+        """
+        Extract the "year" part from a date column.
+
+        :returns: a single-column H2OFrame containing the "year" part from the source frame.
+        """
         fr = H2OFrame._expr(expr=ExprNode("year", self), cache=self._ex._cache)
         if fr._ex._cache.types_valid():
             fr._ex._cache.types = {k: "int" for k in self._ex._cache.types.keys()}
@@ -2452,7 +2515,11 @@ class H2OFrame(object):
 
 
     def month(self):
-        """Extract the "month" part from a date column."""
+        """
+        Extract the "month" part from a date column.
+
+        :returns: a single-column H2OFrame containing the "month" part from the source frame.
+        """
         fr = H2OFrame._expr(expr=ExprNode("month", self), cache=self._ex._cache)
         if fr._ex._cache.types_valid():
             fr._ex._cache.types = {k: "int" for k in self._ex._cache.types.keys()}
@@ -2460,7 +2527,11 @@ class H2OFrame(object):
 
 
     def week(self):
-        """Extract the "week" part from a date column."""
+        """
+        Extract the "week" part from a date column.
+
+        :returns: a single-column H2OFrame containing the "week" part from the source frame.
+        """
         fr = H2OFrame._expr(expr=ExprNode("week", self), cache=self._ex._cache)
         if fr._ex._cache.types_valid():
             fr._ex._cache.types = {k: "int" for k in self._ex._cache.types.keys()}
@@ -2468,7 +2539,11 @@ class H2OFrame(object):
 
 
     def day(self):
-        """Extract the "day" part from a date column."""
+        """
+        Extract the "day" part from a date column.
+
+        :returns: a single-column H2OFrame containing the "day" part from the source frame.
+        """
         fr = H2OFrame._expr(expr=ExprNode("day", self), cache=self._ex._cache)
         if fr._ex._cache.types_valid():
             fr._ex._cache.types = {k: "int" for k in self._ex._cache.types.keys()}
@@ -2476,7 +2551,11 @@ class H2OFrame(object):
 
 
     def dayOfWeek(self):
-        """Extract the "day-of-week" part from a date column."""
+        """
+        Extract the "day-of-week" part from a date column.
+
+        :returns: a single-column H2OFrame containing the "day-of-week" part from the source frame.
+        """
         fr = H2OFrame._expr(expr=ExprNode("dayOfWeek", self), cache=self._ex._cache)
         if fr._ex._cache.types_valid():
             fr._ex._cache.types = {k: "int" for k in self._ex._cache.types.keys()}
@@ -2484,8 +2563,36 @@ class H2OFrame(object):
 
 
     def hour(self):
-        """Extract the "hour-of-day" part from a date column."""
+        """
+        Extract the "hour-of-day" part from a date column.
+
+        :returns: a single-column H2OFrame containing the "hour-of-day" part from the source frame.
+        """
         fr = H2OFrame._expr(expr=ExprNode("hour", self), cache=self._ex._cache)
+        if fr._ex._cache.types_valid():
+            fr._ex._cache.types = {k: "int" for k in self._ex._cache.types.keys()}
+        return fr
+
+
+    def minute(self):
+        """
+        Extract the "minute" part from a date column.
+
+        :returns: a single-column H2OFrame containing the "minute" part from the source frame.
+        """
+        fr = H2OFrame._expr(expr=ExprNode("minute", self), cache=self._ex._cache)
+        if fr._ex._cache.types_valid():
+            fr._ex._cache.types = {k: "int" for k in self._ex._cache.types.keys()}
+        return fr
+
+
+    def second(self):
+        """
+        Extract the "second" part from a date column.
+
+        :returns: a single-column H2OFrame containing the "second" part from the source frame.
+        """
+        fr = H2OFrame._expr(expr=ExprNode("second", self), cache=self._ex._cache)
         if fr._ex._cache.types_valid():
             fr._ex._cache.types = {k: "int" for k in self._ex._cache.types.keys()}
         return fr
@@ -2533,10 +2640,12 @@ class H2OFrame(object):
         """
         Make a vector of the positions of (first) matches of its first argument in its second.
 
-        Only applicable to single-column categorical frames.
+        Only applicable to single-column categorical/string frames.
 
         :param List table: the list of items to match against
         :param int nomatch: value that should be returned when there is no match.
+        :returns: a new H2OFrame containing for each cell from the source frame the index where
+            the pattern ``table`` first occurs within that cell.
         """
         return H2OFrame._expr(expr=ExprNode("match", self, table, nomatch, None))
 
@@ -2602,6 +2711,7 @@ class H2OFrame(object):
 
         :param fun: a lambda expression to be applied per row or per column.
         :param axis: 0 = apply to each column; 1 = apply to each row
+        :returns: a new H2OFrame with the results of applying ``fun`` to the current frame.
         """
         from .astfun import _bytecode_decompile_lambda
         assert_is_type(axis, 0, 1)

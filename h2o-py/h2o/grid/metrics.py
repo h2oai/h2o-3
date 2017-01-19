@@ -413,6 +413,7 @@ class H2OBinomialGridSearch(object):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
+        :param str metric: The name of the metric to search for.
         :param bool train: If train is True, then return the threshold_by_max_metric value for the training data.
         :param bool valid: If valid is True, then return the threshold_by_max_metric value for the validation data.
         :param bool xval:  If xval is True, then return the threshold_by_max_metric value for the cross validation data.
@@ -429,6 +430,7 @@ class H2OBinomialGridSearch(object):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
+        :param float threshold: The threshold value to search for.
         :param bool train: If train is True, then return the idx_by_threshold for the training data.
         :param bool valid: If valid is True, then return the idx_by_threshold for the validation data.
         :param bool xval:  If xval is True, then return the idx_by_threshold for the cross validation data.
@@ -607,6 +609,8 @@ class H2OMultinomialGridSearch(object):
     def confusion_matrix(self, data):
         """
         Returns a confusion matrix based of H2O's default prediction threshold for a dataset.
+
+        :param data: metric for which the confusion matrix will be calculated.
         """
         return {model.model_id: model.confusion_matrix(data) for model in self.models}
 
@@ -616,13 +620,13 @@ class H2OMultinomialGridSearch(object):
         Retrieve the Hit Ratios.
 
         If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        If more than one option is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param bool train: If train is True, then return the R^2 value for the training data.
-        :param bool valid: If valid is True, then return the R^2 value for the validation data.
-        :param bool xval:  If xval is True, then return the R^2 value for the cross validation data.
-        :returns: The R^2 for this multinomial model.
+        :param bool train: If train is True, then return the hit ratio value for the training data.
+        :param bool valid: If valid is True, then return the hit ratio value for the validation data.
+        :param bool xval:  If xval is True, then return the hit ratio value for the cross validation data.
+        :returns: The hit ratio for this multinomial model.
         """
         return {model.model_id: model.hit_ratio_table(train, valid, xval) for model in self.models}
 
@@ -635,10 +639,10 @@ class H2OMultinomialGridSearch(object):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param bool train: If train is True, then return the mean_per_class_error value for the training data.
-        :param bool valid: If valid is True, then return the mean_per_class_error value for the validation data.
-        :param bool xval:  If xval is True, then return the mean_per_class_error value for the cross validation data.
-        :returns: The mean_per_class_error for this multinomial model.
+        :param bool train: If train is True, then return the mean per class error value for the training data.
+        :param bool valid: If valid is True, then return the mean per class error value for the validation data.
+        :param bool xval:  If xval is True, then return the mean per class error value for the cross validation data.
+        :returns: The mean per class error for this multinomial model.
         """
         return {model.model_id: model.mean_per_class_error(train, valid, xval) for model in self.models}
 

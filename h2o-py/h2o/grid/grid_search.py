@@ -39,6 +39,7 @@ class H2OGridSearch(backwards_compatible()):
             >>> criteria = {"strategy": "RandomDiscrete", "stopping_rounds": 5,
             ...             "stopping_metric": "misclassification",
             ...             "stopping_tolerance": 0.00001}
+    :returns: a new H2OGridSearch instance
 
     Examples
     --------

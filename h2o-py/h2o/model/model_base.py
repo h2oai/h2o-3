@@ -61,7 +61,7 @@ class ModelBase(backwards_compatible()):
 
     @property
     def default_params(self):
-        """The default parameters of the model."""
+        """Dictionary of the default parameters of the model."""
         params = {}
         for p in self.parms:
             params[p] = self.parms[p]["default_value"]
@@ -70,7 +70,7 @@ class ModelBase(backwards_compatible()):
 
     @property
     def actual_params(self):
-        """Actual parameters of the model."""
+        """Dictionary of actual parameters of the model."""
         params_to_select = {"model_id": "name",
                             "response_column": "column_name",
                             "training_frame": "name",
@@ -86,7 +86,7 @@ class ModelBase(backwards_compatible()):
 
     @property
     def full_parameters(self):
-        """Full specification of all parameters."""
+        """Dictionary of the full specification of all parameters."""
         return self.parms
 
 
@@ -682,7 +682,7 @@ class ModelBase(backwards_compatible()):
         If path is an empty string, then dump the output to screen.
 
         :param path:  An absolute path to the directory where POJO should be saved.
-
+        :param get_genmodel_jar: if True, then also download h2o-genmodel.jar and store it in folder ``path``.
         :returns: name of the POJO file written.
         """
         assert_is_type(path, str)

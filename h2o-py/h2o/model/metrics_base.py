@@ -490,7 +490,7 @@ class H2OBinomialModelMetrics(MetricsBase):
         Produce the desired metric plot.
 
         :param type: the type of metric plot (currently, only ROC supported).
-        :param show: if False, the plot is not shown. matplotlib show method is blocking.
+        :param server: if True, generate plot inline using matplotlib's "Agg" backend.
         :returns: None
         """
         # TODO: add more types (i.e. cutoffs)

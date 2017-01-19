@@ -727,6 +727,7 @@ def get_frame(frame_id):
     """
     Obtain a handle to the frame in H2O with the frame_id key.
 
+    :param str frame_id: id of the frame to retrieve.
     :returns: an :class:`H2OFrame` object
     """
     assert_is_type(frame_id, str)
@@ -953,8 +954,8 @@ def export_file(frame, path, force=False, parts=1):
         Convenient for large datasets that take too long to store in a single file.
         Use parts=-1 to instruct H2O to determine the optimal number of part files or
         specify your desired maximum number of part files. Path needs to be a directory
-        when exporting to multiple files.
-        Default is to export to a single file (parts=1).
+        when exporting to multiple files, also that directory must be empty.
+        Default is ``parts = 1``, which is to export to a single file.
     """
     assert_is_type(frame, H2OFrame)
     assert_is_type(path, str)

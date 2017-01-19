@@ -427,6 +427,7 @@ class H2OBinomialModel(ModelBase):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
+        :param str metric: name of the metric to retrieve.
         :param thresholds: If None, then the thresholds in this set of metrics will be used.
         :param bool train: If True, return the metric value for the training data.
         :param bool valid: If True, return the metric value for the validation data.
@@ -449,6 +450,7 @@ class H2OBinomialModel(ModelBase):
 
         :param str timestep: A unit of measurement for the x-axis.
         :param str metric: A unit of measurement for the y-axis.
+        :param bool server: if True, then generate the image inline (using matplotlib's "Agg" backend)
         """
         assert_is_type(metric, "AUTO", "logloss", "auc", "classification_error", "rmse")
         if self._model_json["algo"] in ("deeplearning", "deepwater", "drf", "gbm"):
@@ -532,6 +534,7 @@ class H2OBinomialModel(ModelBase):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
+        :param str metric: The metric to search for.
         :param bool train: If True, return the find threshold by max metric value for the training data.
         :param bool valid: If True, return the find threshold by max metric value for the validation data.
         :param bool xval: If True, return the find threshold by max metric value for each of the cross-validated splits.
@@ -553,6 +556,7 @@ class H2OBinomialModel(ModelBase):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
+        :param float threshold: Threshold value to search for in the threshold list.
         :param bool train: If True, return the find idx by threshold value for the training data.
         :param bool valid: If True, return the find idx by threshold value for the validation data.
         :param bool xval: If True, return the find idx by threshold value for each of the cross-validated splits.
