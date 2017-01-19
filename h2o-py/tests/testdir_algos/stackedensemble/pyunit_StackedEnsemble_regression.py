@@ -98,8 +98,10 @@ def stackedensemble_gaussian():
     print("created H2OStackedEnsembleEstimator: " + str(stacker))
     stacker.train(model_id="my_ensemble", y="Angaus", training_frame=ecology_train)
     print("trained H2OStackedEnsembleEstimator: " + str(stacker))
+    print("trained H2OStackedEnsembleEstimator via get_model: " + str(h2o.get_model("my_ensemble")))
+
     predictions = stacker.predict(ecology_train)  # training data
-    print("preditions for ensemble are in: " + predictions.frame_id)
+    print("predictions for ensemble are in: " + predictions.frame_id)
 
 
 
@@ -142,6 +144,10 @@ def stackedensemble_gaussian():
     print("created H2OStackedEnsembleEstimator: " + str(stacker))
     stacker.train(model_id="my_ensemble", y="Claims", training_frame=insurance_train)
     print("trained H2OStackedEnsembleEstimator: " + str(stacker))
+
+    print("metalearner: ")
+    print(h2o.get_model(stacker.metalearner()['name']))
+
     predictions = stacker.predict(insurance_train)  # training data
     print("preditions for ensemble are in: " + predictions.frame_id)
 
