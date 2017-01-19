@@ -110,6 +110,7 @@ class H2OConnection(backwards_compatible()):
         :param verbose: if True, then connection progress info will be printed to the stdout.
         :param _msgs: custom messages to display during connection. This is a tuple (initial message, success message,
             failure message).
+        :param context_path: Context path under which H2O server is registered.
 
         :returns: A new :class:`H2OConnection` instance.
         :raises H2OConnectionError: if the server cannot be reached.
