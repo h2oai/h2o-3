@@ -7,16 +7,25 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.parser.BufferedString;
-import water.rapids.Env;
-import water.rapids.ast.AstPrimitive;
-import water.rapids.ast.AstRoot;
+import water.rapids.Val;
+import water.rapids.ast.AstBuiltin;
 import water.rapids.vals.ValFrame;
 
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class AstGrep extends AstPrimitive {
+/**
+ * Searches for matches to argument ‘regex’ within each element
+ * of a string column.
+ *
+ * Params:
+ *  - regex regular expression
+ *  - ignore_case if ignore_case == 1, matching is case insensitive
+ *  - invert if invert == 1, identifies elements that do not match the regex
+ *  - output_logical if output_logical == 1, result will be a logical vector, otherwise returns matching positions
+ */
+public class AstGrep extends AstBuiltin<AstGrep> {
 
   @Override
   public String[] args() {
@@ -34,12 +43,12 @@ public class AstGrep extends AstPrimitive {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
-    Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    String regex = asts[2].exec(env).getStr();
-    boolean ignoreCase = asts[3].exec(env).getNum() == 1;
-    boolean invert = asts[4].exec(env).getNum() == 1;
-    boolean outputLogical = asts[5].exec(env).getNum() == 1;
+  protected Val exec(Val[] args) {
+    Frame fr = args[1].getFrame();
+    String regex = args[2].getStr();
+    boolean ignoreCase = args[3].getNum() == 1;
+    boolean invert = args[4].getNum() == 1;
+    boolean outputLogical = args[5].getNum() == 1;
     GrepHelper grepHelper = new GrepHelper(regex, ignoreCase, invert, outputLogical);
 
     if ((fr.numCols() != 1) || ! (fr.anyVec().isCategorical() || fr.anyVec().isString()))
@@ -110,7 +119,7 @@ public class AstGrep extends AstPrimitive {
     public void map(Chunk c, NewChunk n) {
       OutputWriter w = OutputWriter.makeWriter(_gh, n, c.start());
       Pattern p = _gh.compilePattern();
-      Matcher m = p.matcher("dummy");
+      Matcher m = p.matcher("");
       BufferedString bs = new BufferedString();
       int rows = c._len;
       for (int r = 0; r < rows; r++) {
