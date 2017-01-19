@@ -32,6 +32,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/compute_p_values
    data-science/algo-params/distribution
    data-science/algo-params/early_stopping
+   data-science/algo-params/estimate_k
    data-science/algo-params/family
    data-science/algo-params/fold_assignment
    data-science/algo-params/fold_column
@@ -40,8 +41,10 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/huber_alpha
    data-science/algo-params/ignore_const_cols
    data-science/algo-params/ignored_columns
+   data-science/algo-params/init
    data-science/algo-params/interactions
    data-science/algo-params/intercept
+   data-science/algo-params/k
    data-science/algo-params/keep_cross_validation_fold_assignment
    data-science/algo-params/keep_cross_validation_predictions
    data-science/algo-params/lambda
@@ -88,6 +91,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/tweedie_link_power
    data-science/algo-params/tweedie_power
    data-science/algo-params/tweedie_variance_power
+   data-science/algo-params/user_points
    data-science/algo-params/validation_frame
    data-science/algo-params/weights_column
    data-science/algo-params/y
