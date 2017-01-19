@@ -145,25 +145,31 @@ The number of clusters :math:`K` is user-defined and is determined a priori.
 1. Choose :math:`K` initial cluster centers :math:`m_{k}` according to one of the
    following:
 
-   -  **Randomization**: Choose :math:`K` clusters from the set of :math:`N` observations at random so that each observation has an equal chance of being chosen.
+    - **Random**: Choose :math:`K` clusters from the set of :math:`N` observations at random so that each observation has an equal chance of being chosen.
 
-   -  **Plus Plus**: Choose one center :math:`m_{1}` at random.
+    - **Furthest** (Default): 
 
-    a. Calculate the difference between :math:`m_{1}` and each of the remaining :math:`N-1` observations :math:`x_{i}`. :math:`d(x_{i}, m_{1}) = \|(x_{i}-m_{1})\|^2`
+      a. Choose one center :math:`m_{1}` at random.
 
-    b. Let :math:`P(i)` be the probability of choosing :math:`x_{i}` as :math:`m_{2}`. Weight :math:`P(i)` by :math:`d(x_{i}, m_{1})` so that those :math:`x_{i}` furthest from :math:`m_{2}` have a higher probability of being selected than those :math:`x_{i}` close to :math:`m_{1}`.
+      b. Calculate the difference between :math:`m_{1}` and each of the remaining :math:`N-1` observations :math:`x_{i}`. :math:`d(x_{i}, m_{1}) = ||(x_{i}-m_{1})||^2`
 
-    c. Choose the next center :math:`m_{2}` by drawing at random according to the weighted probability distribution.
-   
-    d. Repeat until :math:`K` centers have been chosen.
+      c. Choose :math:`m_{2}` to be the :math:`x_{i}` that maximizes :math:`d(x_{i}, m_{1})`.
 
-   -  **Furthest**: Choose one center :math:`m_{1}` at random.
+      d. Repeat until :math:`K` centers have been chosen.
 
-    a. Calculate the difference between :math:`m_{1}` and each of the remaining :math:`N-1` observations :math:`x_{i}`. :math:`d(x_{i}, m_{1}) = ||(x_{i}-m_{1})||^2`
+    - **PlusPlus**: 
 
-    b. Choose :math:`m_{2}` to be the :math:`x_{i}` that maximizes :math:`d(x_{i}, m_{1})`.
+      a. Choose one center :math:`m_{1}` at random.
 
-    c. Repeat until :math:`K` centers have been chosen.
+      b. Calculate the difference between :math:`m_{1}` and each of the remaining :math:`N-1` observations :math:`x_{i}`. :math:`d(x_{i}, m_{1}) = \|(x_{i}-m_{1})\|^2`
+
+      c. Let :math:`P(i)` be the probability of choosing :math:`x_{i}` as :math:`m_{2}`. Weight :math:`P(i)` by :math:`d(x_{i}, m_{1})` so that those :math:`x_{i}` furthest from :math:`m_{2}` have a higher probability of being selected than those :math:`x_{i}` close to :math:`m_{1}`.
+
+      d. Choose the next center :math:`m_{2}` by drawing at random according to the weighted probability distribution.
+       
+      e. Repeat until :math:`K` centers have been chosen. 
+
+    - **User** initialization allows you to specify a file (using the ``user_points`` parameter) that includes a vector of initial cluster centers. 
 
 2. Once :math:`K` initial centers have been chosen calculate the difference
    between each observation :math:`x_{i}` and each of the centers
