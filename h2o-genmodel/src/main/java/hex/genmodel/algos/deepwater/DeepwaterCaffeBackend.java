@@ -1,74 +1,76 @@
 package hex.genmodel.algos.deepwater;
 
+import java.util.Arrays;
+
 import deepwater.backends.BackendModel;
 import deepwater.backends.BackendParams;
 import deepwater.backends.BackendTrain;
 import deepwater.backends.RuntimeOptions;
 import deepwater.datasets.ImageDataSet;
 
-public class  DeepwaterCaffeBackend implements BackendTrain {
-  // TODO
+/**
+ * This backend forward requests to a docker images running the python
+ * Caffe interface. C.f h20-docker/caffe for more information.
+ */
+public class DeepwaterCaffeBackend implements BackendTrain {
   @Override
   public void delete(BackendModel m) {
-    // drop external process
+    ((DeepwaterCaffeModel) m).close();
   }
 
   @Override
   public BackendModel buildNet(ImageDataSet dataset, RuntimeOptions opts, BackendParams bparms, int num_classes, String name /*ignored for now*/) {
     if (name.equals("MLP")) {
       // TODO: add non-MLP Models such as lenet, inception_bn, etc.
-      // Basic testing
-      int num_layers = ((int[]) bparms.get("hidden")).length;
       int[] hidden = (int[]) bparms.get("hidden");
-      String[] activation = (String[]) bparms.get("activations");
-      double[] dropout =  (double[]) bparms.get("hidden_dropout_ratios");
+      int[] sizes = new int[hidden.length + 2];
+      sizes[0] = 0;  // why ?
+      System.arraycopy(hidden, 0, sizes, 1, hidden.length);
+      sizes[sizes.length - 1] = num_classes;
+      // Basic information
+      int num_layers = ((int[]) bparms.get("hidden")).length;
       System.out.println("Caffe backend: building new MLP model");
       System.out.println("  Parameters");
-      System.out.format("  Mini batch size: %d \n", ((Integer) bparms.get("mini_batch_size")).intValue());
+      System.out.format("  Mini batch size: %d \n", ((Integer) bparms.get("mini_batch_size")));
       System.out.format("  Hidden layers: %d \n", num_layers);
-      System.out.format("  Number of classes: %d (output neurons) \n", num_classes);
-      System.out.format("  Input dropout ratio: %f \n", ((Double) bparms.get("input_dropout_ratio")).doubleValue());
-      for(int i=0; i<num_layers; ++i ){
-        System.out.format("    hidden layer: %d  size: %d activation: %s  dropout ratio: %f \n", i+1, hidden[i], activation[i], dropout[i]);
-      }
       //
-
       return new DeepwaterCaffeModel(
-              num_classes,
-              ((Integer) bparms.get("mini_batch_size")).intValue(),
-              (int[]) bparms.get("hidden"),
-              (String[]) bparms.get("activations"),
-              ((Double) bparms.get("input_dropout_ratio")).doubleValue(),
-              (double[]) bparms.get("hidden_dropout_ratios")
+          (Integer) bparms.get("mini_batch_size"),
+          sizes,
+          (String[]) bparms.get("activations"),
+          (double[]) bparms.get("hidden_dropout_ratios")
       );
     } else throw new UnsupportedOperationException("Only MLP is supported for now for Caffe.");
   }
 
-  // TODO
   // graph (model definition) only
   @Override
   public void saveModel(BackendModel m, String model_path) {
-    // Basic testing
+    // Basic information
     System.out.println("Caffe backend: saving MLP model");
     System.out.println("File path and name: " + model_path);
+    //
+    ((DeepwaterCaffeModel) m).saveModel(model_path);
   }
 
-  // TODO
   // full state of everything but the graph to continue training
   @Override
   public void loadParam(BackendModel m, String param_path) {
-    // Basic testing
+    // Basic information
     System.out.println("Caffe backend: loading MLP parameters");
     System.out.println("File path and name: " + param_path);
+    //
+    ((DeepwaterCaffeModel) m).loadParam(param_path);
   }
 
-  // TODO
   // full state of everything but the graph to continue training
   @Override
   public void saveParam(BackendModel m, String param_path) {
-    // Basic testing
+    // Basic information
     System.out.println("Caffe backend: saving MLP parameters");
     System.out.println("File path and name: " + param_path);
+    //
+    ((DeepwaterCaffeModel) m).saveParam(param_path);
   }
 
   @Override
@@ -81,26 +83,24 @@ public class  DeepwaterCaffeBackend implements BackendTrain {
     throw new UnsupportedOperationException();
   }
 
-  // DONE
   @Override
   public void setParameter(BackendModel m, String name, float value) {
-    // Basic testing
+    // Basic information
     System.out.println("Caffe backend: setting parameter  "+name);
+    //
     if (name.equals("learning_rate"))
-      ((DeepwaterCaffeModel)m)._learning_rate = value;
+      ((DeepwaterCaffeModel) m).learning_rate(value);
     else if (name.equals("momentum"))
-      ((DeepwaterCaffeModel)m)._momentum = value;
+      ((DeepwaterCaffeModel) m).momentum(value);
   }
 
-  // TODO
   // given a mini-batch worth of data and labels, train
   @Override
   public float[]/*ignored*/ train(BackendModel m, float[/*mini_batch * input_neurons*/] data, float[/*mini_batch*/] label) {
-    // Basic testing
+    // Basic information
     System.out.format("Caffe backend: training   data size: %d  label size: %d \n", data.length, label.length);
-
-    // implement training here
-
+    //
+    ((DeepwaterCaffeModel) m).train(data, label);
     return null; //return value is always ignored
   }
 
@@ -109,35 +109,13 @@ public class  DeepwaterCaffeBackend implements BackendTrain {
     throw new UnsupportedOperationException();
   }
 
-  // TODO
   // return predictions (num_classes logits (softmax outputs) x mini_batch)
   @Override
   public float[/*mini_batch * num_classes*/] predict(BackendModel m, float[/*mini_batch * input_neurons*/] data) {
-    // Basic testing
+    // new float[cm.mini_batch_size * cm.num_classes];
+    // Basic information
     System.out.format("Caffe backend: predicting data size: %d \n", data.length);
-    DeepwaterCaffeModel cm = ((DeepwaterCaffeModel)m);
-    return new float[cm.mini_batch_size*cm.num_classes];
-  }
-
-  private static class DeepwaterCaffeModel implements BackendModel {
-    public DeepwaterCaffeModel(int num_classes, int mini_batch_size, int[] hidden, String[] activations, double input_dropout_ratio, double[] hidden_dropout_ratios) {
-      this.num_classes = num_classes;
-      this.mini_batch_size = mini_batch_size;
-      this.hidden = hidden;
-      this.activations = activations;
-      this.input_dropout_ratio = input_dropout_ratio;
-      this.hidden_dropout_ratios = hidden_dropout_ratios;
-    }
-
-    int num_classes;
-    int mini_batch_size;
-    int[] hidden;                   //neurons per layer
-    String[] activations;           //per layer
-    double input_dropout_ratio;
-    double[] hidden_dropout_ratios; //per layer
-
-    // other stuff
-    float _learning_rate;
-    float _momentum;
+    //
+    return ((DeepwaterCaffeModel) m).predict(data);
   }
 }
