@@ -10,11 +10,8 @@ import ml.dmlc.xgboost4j.java.XGBoostError;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
-import water.api.schemas3.VarImpV3;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.ArrayUtils;
-import water.util.FrameUtils;
 import water.util.Log;
 
 import java.io.*;
@@ -170,76 +167,6 @@ public class XGBoostTest extends TestUtil {
     }
   }
 
-  static DMatrix convertFrametoDMatrix(Frame f, String response, String weight, String fold, String[] featureMap) throws XGBoostError {
-    // one-hot encoding
-    FrameUtils.CategoricalOneHotEncoder enc = new FrameUtils.CategoricalOneHotEncoder(f, new String[]{response, weight, fold});
-    Frame encoded = enc.exec().get();
-    long denseLen = encoded.numRows()*(encoded.numCols() - 1 /*response*/);
-    if (denseLen > (1<<28)) throw new IllegalArgumentException("Too many matrix elements.");
-    if (encoded.numRows() > (1<<28)) throw new IllegalArgumentException("Too many rows.");
-
-    if (featureMap!=null) {
-      StringBuilder sb = new StringBuilder();
-      for (int i = 0; i < encoded.numCols(); ++i) {
-        sb.append(i).append(" ").append(encoded.name(i)).append(" ");
-        if (encoded.vec(i).isBinary()) sb.append("i");
-        else if (encoded.vec(i).isInt()) sb.append("int");
-        else sb.append("q");
-        sb.append("\n");
-      }
-      featureMap[0] = sb.toString();
-    }
-
-
-    // convert to CSC sparse matrix
-    // example matrix:
-    // 1 0 2 0
-    // 4 0 0 3
-    // 3 1 2 0
-//    long[] colHeaders = new long[] {0,        3,  4,     6,    7}; //offsets
-//    float[] data = new float[]     {1f,4f,3f, 1f, 2f,2f, 3f};      //non-zeros down each column
-//    int[] rowIndex = new int[]     {0,1,2,    2,  0, 2,  1};       //row index for each non-zero
-    long[] colHeaders = new long[encoded.numCols() - 1 /*response*/ + 1 /*final offset*/];
-    float[] data   = new float[(int)denseLen];
-    int[] rowIndex = new int[(int)denseLen];
-
-    // extract predictors
-    int nz=0;
-    int col=0;
-    for (int i=0;i<encoded.numCols();++i) {
-      if (encoded.name(i).equals(response)) continue;
-
-      colHeaders[col] = nz;
-      Vec.Reader v = encoded.vec(i).new Reader();
-      for (int j=0;j<v.length();++j) {
-        double val = v.at(j);
-        if (!Double.isNaN(val) && val!=0) {
-          data[nz] = (float)val;
-          rowIndex[nz] = j;
-          nz++;
-        }
-      }
-      col++;
-    }
-    // extract response vector
-    Vec.Reader respVec = encoded.vec(response).new Reader();
-    int nRows = (int)respVec.length();
-    float[] resp = new float[nRows];
-    for (int i=0;i<nRows;++i)
-      resp[i] = (float)respVec.at(i);
-
-    colHeaders[colHeaders.length-1] = nz;
-    data = Arrays.copyOf(data, nz);
-    rowIndex = Arrays.copyOf(rowIndex, nz);
-
-    DMatrix trainMat = new DMatrix(colHeaders, rowIndex, data, DMatrix.SparseType.CSC, 0);
-    trainMat.setLabel(resp);
-//    trainMat.setWeight(null); //obs weight //FIXME
-//    trainMat.setGroup(null); //fold
-    encoded.remove();
-    return trainMat;
-  }
-
   @Test
   public void H2OFrame() throws XGBoostError, IOException {
     Frame tfr = null;
@@ -267,14 +194,14 @@ public class XGBoostTest extends TestUtil {
 
       // create sparse DMatrices
       String[] featureMap = new String[]{""};
-      DMatrix trainMat = convertFrametoDMatrix(trainFrame, response, weight, fold, featureMap);
-      DMatrix testMat = convertFrametoDMatrix(testFrame, response, weight, fold, null);
+      DMatrix trainMat = hex.tree.xgboost.XGBoost.convertFrametoDMatrix(trainFrame, response, weight, fold, featureMap);
+      DMatrix testMat = hex.tree.xgboost.XGBoost.convertFrametoDMatrix(testFrame, response, weight, fold, null);
 
       // set parameters
       HashMap<String, Object> params = new HashMap<>();
       params.put("eta", 0.1);
       params.put("max_depth", 5);
-      params.put("silent", 1);
+      params.put("silent", 0);
       params.put("objective", "binary:logistic");
 
       HashMap<String, DMatrix> watches = new HashMap<>();
