@@ -716,6 +716,14 @@ class ModelBase(backwards_compatible()):
         return list(m.values())[0] if len(m) == 1 else m
 
 
+    def metalearner(self):
+        """Print the metalearner for the model, if any.  Currently only used by H2OStackedEnsembleEstimator."""
+        model = self._model_json["output"]
+        if "metalearner" in model and model["metalearner"] is not None:
+            return model["metalearner"]
+        print("No metalearner for this model")
+
+
     def download_pojo(self, path="", get_genmodel_jar=False):
         """
         Download the POJO for this model to the directory specified by path.
