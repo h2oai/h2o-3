@@ -1,6 +1,8 @@
 Missing Values (Categorical/Factors)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+**Note** Unlike in GLM, in GBM numerical values are handled the same way as categorical values. Missing values are not imputed with the mean, as is done by default in GLM.
+
 - **How does the algorithm handle missing values during training?**
 
  Missing values are interpreted as containing information (i.e., missing for a reason), rather than missing at random. During tree building, split decisions for every node are found by minimizing the loss function and treating missing values as a separate category that can go either left or right. 
