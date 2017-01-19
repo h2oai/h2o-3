@@ -1,6 +1,5 @@
 package hex.api;
 
-import hex.word2vec.Word2VecModel;
 import water.H2O;
 import hex.ModelBuilder;
 import water.api.GridSearchHandler;
@@ -21,6 +20,7 @@ public class RegisterAlgos extends water.api.AbstractRegister {
       new hex.tree.gbm    .GBM         (true),
       new hex.aggregator  .Aggregator  (true),
       new hex.deepwater   .DeepWater   (true),
+      new hex.tree.xgboost.XGBoost     (true),
       new hex.word2vec    .Word2Vec    (true),
       new hex.ensemble    .StackedEnsemble(true),
     };
