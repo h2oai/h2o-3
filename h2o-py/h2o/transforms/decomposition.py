@@ -10,7 +10,9 @@ class H2OPCA(H2OEstimator):
     def __init__(self, model_id=None, k=None, max_iterations=None, seed=None,
                  transform=("NONE", "DEMEAN", "DESCALE", "STANDARDIZE", "NORMALIZE"),
                  use_all_factor_levels=False,
-                 pca_method=("GramSVD", "Power", "GLRM")):
+                 pca_method=("GramSVD", "Power", "GLRM"),
+                 ignore_const_cols=True,
+                 impute_missing=False):
         """
         Principal Components Analysis
 
