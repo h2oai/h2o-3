@@ -132,14 +132,14 @@ h2o.downloadCSV <- function(data, filename) {
 #' @seealso \code{\link{h2o.loadModel}} for loading a model to H2O from disk
 #' @examples
 #' \dontrun{
-#' library(h2o)
-#' h2o.init()
-#' prostate.hex <- h2o.importFile(path = paste("https://raw.github.com",
-#'    "h2oai/h2o-2/master/smalldata/logreg/prostate.csv", sep = "/"),
-#'    destination_frame = "prostate.hex")
-#' prostate.glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
-#'    training_frame = prostate.hex, family = "binomial", alpha = 0.5)
-#' h2o.saveModel(object = prostate.glm, path = "/Users/UserName/Desktop", force=TRUE)
+#' # library(h2o)
+#' # h2o.init()
+#' # prostate.hex <- h2o.importFile(path = paste("https://raw.github.com",
+#' #    "h2oai/h2o-2/master/smalldata/logreg/prostate.csv", sep = "/"),
+#' #    destination_frame = "prostate.hex")
+#' # prostate.glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
+#' #    training_frame = prostate.hex, family = "binomial", alpha = 0.5)
+#' # h2o.saveModel(object = prostate.glm, path = "/Users/UserName/Desktop", force=TRUE)
 #' }
 #' @export
 h2o.saveModel <- function(object, path="", force=FALSE) {
@@ -164,12 +164,12 @@ h2o.saveModel <- function(object, path="", force=FALSE) {
 #' @seealso \code{\link{h2o.saveModel}} for saving a model to disk as a binary object.
 #' @examples
 #' \dontrun{
-#' library(h2o)
-#' h2o.init()
-#' prostate.hex <- h2o.uploadFile(path = system.file("extdata", "prostate.csv", package="h2o"))
-#' prostate.glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
-#'                         training_frame = prostate.hex, family = "binomial", alpha = 0.5)
-#' h2o.saveMojo(object = prostate.glm, path = "/Users/UserName/Desktop", force=TRUE)
+#' # library(h2o)
+#' # h2o.init()
+#' # prostate.hex <- h2o.uploadFile(path = system.file("extdata", "prostate.csv", package="h2o"))
+#' # prostate.glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
+#' #                         training_frame = prostate.hex, family = "binomial", alpha = 0.5)
+#' # h2o.saveMojo(object = prostate.glm, path = "/Users/UserName/Desktop", force=TRUE)
 #' }
 #' @export
 h2o.saveMojo <- function(object, path="", force=FALSE) {
