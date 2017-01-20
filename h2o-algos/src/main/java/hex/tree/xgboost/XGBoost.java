@@ -133,6 +133,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   public XGBoost(XGBoostModel.XGBoostParameters parms                   ) { super(parms     ); init(false); }
   public XGBoost(XGBoostModel.XGBoostParameters parms, Key<XGBoostModel> key) { super(parms, key); init(false); }
   public XGBoost(boolean startup_once) { super(new XGBoostModel.XGBoostParameters(),startup_once); }
+  public boolean isSupervised(){return true;}
 
   @Override protected int nModelsInParallel() {
     return 1;
@@ -246,6 +247,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
     final void buildModel() {
       XGBoostModel model = new XGBoostModel(_result,_parms,new XGBoostOutput(XGBoost.this));
+      model.write_lock(_job);
       String[] featureMap = new String[]{""};
       try {
         DMatrix trainMat = convertFrametoDMatrix(_parms._train.get(),
@@ -280,10 +282,12 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           model._output._training_time_ms = ArrayUtils.copyAndFillOf(model._output._training_time_ms, model._output._ntrees+1, System.currentTimeMillis());
           model.doScoring(booster, trainMat, validMat);
           model.computeVarImp(booster.getFeatureScore("featureMap.txt"));
+          model.update(_job);
         }
       } catch (XGBoostError xgBoostError) {
         xgBoostError.printStackTrace();
       }
+      model.unlock(_job);
     }
   }
 }
