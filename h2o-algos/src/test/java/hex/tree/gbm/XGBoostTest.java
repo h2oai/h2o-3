@@ -3,6 +3,7 @@ package hex.tree.gbm;
 import hex.ModelMetricsBinomial;
 import hex.SplitFrame;
 import hex.VarImp;
+import hex.tree.xgboost.XGBoostModel;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoost;
@@ -240,6 +241,91 @@ public class XGBoostTest extends TestUtil {
         }
         VarImp vi = new VarImp(viFloat, names);
       }
+    } finally {
+      if (trainFrame!=null) trainFrame.remove();
+      if (testFrame!=null) testFrame.remove();
+      if (tfr!=null) tfr.remove();
+    }
+  }
+
+  @Test
+  public void Weather() {
+    Frame tfr = null;
+    Frame trainFrame = null;
+    Frame testFrame = null;
+    try {
+      // Parse frame into H2O
+      tfr = parse_test_file("./smalldata/junit/weather.csv");
+      // remove columns correlated with the response
+      tfr.remove("RISK_MM").remove();
+      tfr.remove("EvapMM").remove();
+      DKV.put(tfr);
+
+      // split into train/test
+      SplitFrame sf = new SplitFrame(tfr, new double[] { 0.7, 0.3 }, null);
+      sf.exec().get();
+      Key[] ksplits = sf._destination_frames;
+      trainFrame = (Frame)ksplits[0].get();
+      testFrame = (Frame)ksplits[1].get();
+
+      // define special columns
+      String response = "RainTomorrow";
+      String weight = null;
+      String fold = null;
+
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._ntrees = 5;
+      parms._max_depth = 5;
+      parms._train = tfr._key;
+      parms._response_column = response;
+
+      XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Log.info(model);
+
+    } finally {
+      if (trainFrame!=null) trainFrame.remove();
+      if (testFrame!=null) testFrame.remove();
+      if (tfr!=null) tfr.remove();
+    }
+  }
+
+  @Test
+  public void WeatherCV() {
+    Frame tfr = null;
+    Frame trainFrame = null;
+    Frame testFrame = null;
+    try {
+      // Parse frame into H2O
+      tfr = parse_test_file("./smalldata/junit/weather.csv");
+      // remove columns correlated with the response
+      tfr.remove("RISK_MM").remove();
+      tfr.remove("EvapMM").remove();
+      DKV.put(tfr);
+
+      // split into train/test
+      SplitFrame sf = new SplitFrame(tfr, new double[] { 0.7, 0.3 }, null);
+      sf.exec().get();
+      Key[] ksplits = sf._destination_frames;
+      trainFrame = (Frame)ksplits[0].get();
+      testFrame = (Frame)ksplits[1].get();
+
+      // define special columns
+      String response = "RainTomorrow";
+      String weight = null;
+      String fold = null;
+
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._ntrees = 5;
+      parms._max_depth = 5;
+      parms._train = tfr._key;
+      parms._nfolds = 2;
+      parms._response_column = response;
+
+      XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Log.info(model);
+
     } finally {
       if (trainFrame!=null) trainFrame.remove();
       if (testFrame!=null) testFrame.remove();

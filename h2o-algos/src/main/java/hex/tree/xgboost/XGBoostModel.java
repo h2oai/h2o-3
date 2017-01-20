@@ -74,9 +74,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     if (_output.nclasses()==2)
       params.put("objective", "binary:logistic");
     else if (_output.nclasses()==1)
-      params.put("objective", "linear");
+      params.put("objective", "reg:linear");
     else
-      params.put("objective", "multinomial");
+      params.put("objective", "multi:softprob");
     return params;
   }
 
@@ -92,34 +92,40 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return new XGBoostMojoWriter(this);
   }
 
-  public void doScoring(Booster booster, DMatrix train, DMatrix valid, Vec trainResponse, Vec validResponse) throws XGBoostError {
-    float[][] preds = booster.predict(train);
+  private ModelMetrics makeMetrics(Booster booster, DMatrix data) throws XGBoostError {
+    float[][] preds = booster.predict(data);
     double[] dpreds = new double[preds.length];
     for (int j = 0; j < dpreds.length; ++j)
       dpreds[j] = preds[j][0];
+    for (int j = 0; j < dpreds.length; ++j)
+      assert(data.getWeight()[j]==1.0);
     Vec pred = Vec.makeVec(dpreds, Vec.newKey());
-    ModelMetricsBinomial mm = ModelMetricsBinomial.make(pred, trainResponse);
-    Log.info(mm);
+    Vec resp = Vec.makeVec(data.getLabel(), Vec.newKey());
+    ModelMetricsBinomial mm = ModelMetricsBinomial.make(pred, resp);
     pred.remove();
+    resp.remove();
+    return mm;
+  }
 
+  /**
+   * Score an XGBoost model on training and validation data (optional)
+   * Note: every row is scored, all observation weights are assumed to be equal
+   * @param booster xgboost model
+   * @param train training data
+   * @param valid validation data (optional, can be null)
+   * @throws XGBoostError
+   */
+  public void doScoring(Booster booster, DMatrix train, DMatrix valid) throws XGBoostError {
+    ModelMetrics mm = makeMetrics(booster, train);
+    Log.info(mm);
     _output._training_metrics = mm;
     _output._scored_train[_output._ntrees].fillFrom(mm);
-
-
-    if (valid!=null && validResponse!=null) {
-      preds = booster.predict(valid);
-      dpreds = new double[preds.length];
-      for (int j = 0; j < dpreds.length; ++j)
-        dpreds[j] = preds[j][0];
-      pred = Vec.makeVec(dpreds, Vec.newKey());
-      mm = ModelMetricsBinomial.make(pred, validResponse);
-      Log.info(mm);
-      pred.remove();
+    if (valid!=null) {
+      mm = makeMetrics(booster, train);
       _output._validation_metrics = mm;
       _output._scored_valid[_output._ntrees].fillFrom(mm);
     }
   }
-
 
   public void computeVarImp(Map<String,Integer> varimp) {
     // compute variable importance
