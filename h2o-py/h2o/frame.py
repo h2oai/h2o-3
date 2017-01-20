@@ -792,52 +792,52 @@ class H2OFrame(object):
 
 
     def log(self):
-        """Return new H2oFrame equals to elementwise natural logarithm of the current frame."""
+        """Return new H2OFrame equals to elementwise natural logarithm of the current frame."""
         return self._unop("log")
 
 
     def log10(self):
-        """Return new H2oFrame equals to elementwise decimal logarithm of the current frame."""
+        """Return new H2OFrame equals to elementwise decimal logarithm of the current frame."""
         return self._unop("log10")
 
 
     def log1p(self):
-        """Return new H2oFrame equals to elementwise ``ln(1 + x)`` for each ``x`` in the current frame."""
+        """Return new H2OFrame equals to elementwise ``ln(1 + x)`` for each ``x`` in the current frame."""
         return self._unop("log1p")
 
 
     def log2(self):
-        """Return new H2oFrame equals to elementwise binary logarithm of the current frame."""
+        """Return new H2OFrame equals to elementwise binary logarithm of the current frame."""
         return self._unop("log2")
 
 
     def exp(self):
-        """Return new H2oFrame equals to elementwise exponent (i.e. ``e^x``) of the current frame."""
+        """Return new H2OFrame equals to elementwise exponent (i.e. ``e^x``) of the current frame."""
         return self._unop("exp")
 
 
     def expm1(self):
-        """Return new H2oFrame equals to elementwise exponent minus 1 (i.e. ``e^x - 1``) of the current frame."""
+        """Return new H2OFrame equals to elementwise exponent minus 1 (i.e. ``e^x - 1``) of the current frame."""
         return self._unop("expm1")
 
 
     def gamma(self):
-        """Return new H2oFrame equals to elementwise gamma function of the current frame."""
+        """Return new H2OFrame equals to elementwise gamma function of the current frame."""
         return self._unop("gamma")
 
 
     def lgamma(self):
-        """Return new H2oFrame equals to elementwise logarithm of the gamma function of the current frame."""
+        """Return new H2OFrame equals to elementwise logarithm of the gamma function of the current frame."""
         return self._unop("lgamma")
 
 
     def digamma(self):
-        """Return new H2oFrame equals to elementwise digamma function of the current frame."""
+        """Return new H2OFrame equals to elementwise digamma function of the current frame."""
         return self._unop("digamma")
 
 
     def trigamma(self):
-        """Return new H2oFrame equals to elementwise trigamma function of the current frame."""
+        """Return new H2OFrame equals to elementwise trigamma function of the current frame."""
         return self._unop("trigamma")
 
 
@@ -1560,7 +1560,8 @@ class H2OFrame(object):
         Pop a column from the H2OFrame at index i.
 
         :param i: The index (int) or name (str) of the column to pop.
-        :returns: The column dropped from the frame; the frame is modified in-place and loses the column.
+        :returns: an H2OFrame containing the column dropped from the current frame; the current frame is modified
+            in-place and loses the column.
         """
         if is_type(i, str): i = self.names.index(i)
         col = H2OFrame._expr(expr=ExprNode("cols", self, i))
@@ -1814,6 +1815,9 @@ class H2OFrame(object):
             columns in common, rename the other columns so the columns are unique in the merged result.
         :param bool all_x: If True, include all rows from the left/self frame
         :param bool all_y: If True, include all rows from the right/other frame
+        :param by_x: list of columns in the current frame to use as a merge key.
+        :param by_y: list of columns in the ``other`` frame to use as a merge key. Should have the same number of
+            columns as in the ``by_x`` list.
 
         :returns: New H2OFrame with the result of merging the current frame with the ``other`` frame.
         """
@@ -2005,7 +2009,7 @@ class H2OFrame(object):
             ``"everything"``; and if False then default ``use`` is ``"complete.obs"``. This parameter has no effect
             if ``use`` is given explicitly.
 
-        :returns: A frame of the covariance matrix of the columns of this frame (if ``y`` is not given),
+        :returns: An H2OFrame of the covariance matrix of the columns of this frame (if ``y`` is not given),
             or with the columns of ``y`` (if ``y`` is given). However when this frame and ``y`` are both single rows
             or single columns, then the variance is returned as a scalar.
         """
@@ -2046,7 +2050,7 @@ class H2OFrame(object):
             ``"everything"``; and if False then default ``use`` is ``"complete.obs"``. This parameter has no effect
             if ``use`` is given explicitly.
 
-        :returns: A frame of the correlation matrix of the columns of this frame (if ``y`` is not given),
+        :returns: An H2OFrame of the correlation matrix of the columns of this frame (if ``y`` is not given),
             or with the columns of ``y`` (if ``y`` is given). However when this frame and ``y`` are both single rows
             or single columns, then the correlation is returned as a scalar.
         """
@@ -2480,8 +2484,8 @@ class H2OFrame(object):
         """
         Conduct a diff-1 transform on a numeric frame column.
 
-        This will create a frame where each element is equal to the corresponding element in the source
-        frame minus the previous-row element in the source frame.
+        :returns: an H2OFrame where each element is equal to the corresponding element in the source
+        frame minus the previous-row element in the same frame.
         """
         fr = H2OFrame._expr(expr=ExprNode("difflag1", self), cache=self._ex._cache)
         return fr
@@ -2620,7 +2624,7 @@ class H2OFrame(object):
         :param float test_frac: The fraction of rows that will belong to the "test".
         :param int seed: The seed for the random number generator.
 
-        :returns: A categorical column with two levels: ``"train"`` and ``"test"``.
+        :returns: an H2OFrame having single categorical column with two levels: ``"train"`` and ``"test"``.
 
         :examples:
           >>> stratsplit = df["y"].stratified_split(test_frac=0.3, seed=12349453)
@@ -2682,7 +2686,7 @@ class H2OFrame(object):
         Only applicable to integer single-column frames.
         Equivalent to comprehension ``[index for index, value in enumerate(self) if value]``.
 
-        :returns: a new single-column frame containing indices of those rows in the original frame
+        :returns: a new single-column H2OFrame containing indices of those rows in the original frame
             that contained non-zero values.
         """
         return H2OFrame._expr(expr=ExprNode("which", self))

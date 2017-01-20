@@ -18,6 +18,8 @@ class H2OMultinomialModel(ModelBase):
     def confusion_matrix(self, data):
         """
         Returns a confusion matrix based of H2O's default prediction threshold for a dataset.
+
+        :param H2OFrame data: the frame with the prediction results for which the confusion matrix should be extracted.
         """
         assert_is_type(data, H2OFrame)
         j = h2o.api("POST /3/Predictions/models/%s/frames/%s" % (self._id, data.frame_id))

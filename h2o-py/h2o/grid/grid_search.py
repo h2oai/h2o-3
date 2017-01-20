@@ -471,10 +471,11 @@ class H2OGridSearch(backwards_compatible()):
         """
         Retreive the residual degress of freedom if this model has the attribute, or None otherwise.
 
-        :param train: Get the residual dof for the training set. If both train and valid are False, then
+        :param bool train: Get the residual dof for the training set. If both train and valid are False, then
             train is selected by default.
-        :param valid: Get the residual dof for the validation set. If both train and valid are True, then
+        :param bool valid: Get the residual dof for the validation set. If both train and valid are True, then
             train is selected by default.
+        :param bool xval: Get the residual dof for the cross-validated models.
 
         :returns: the residual degrees of freedom, or None if they are not present.
         """
@@ -485,10 +486,11 @@ class H2OGridSearch(backwards_compatible()):
         """
         Retreive the null deviance if this model has the attribute, or None otherwise.
 
-        :param train: Get the null deviance for the training set. If both train and valid are False, then
+        :param bool train: Get the null deviance for the training set. If both train and valid are False, then
             train is selected by default.
-        :param valid: Get the null deviance for the validation set. If both train and valid are True, then
+        :param bool valid: Get the null deviance for the validation set. If both train and valid are True, then
             train is selected by default.
+        :param bool xval: Get the null deviance for the cross-validated models.
 
         :returns: the null deviance, or None if it is not present.
         """
@@ -499,10 +501,11 @@ class H2OGridSearch(backwards_compatible()):
         """
         Retreive the null degress of freedom if this model has the attribute, or None otherwise.
 
-        :param train: Get the null dof for the training set. If both train and valid are False, then train is
+        :param bool train: Get the null dof for the training set. If both train and valid are False, then train is
             selected by default.
-        :param valid: Get the null dof for the validation set. If both train and valid are True, then train is
+        :param bool valid: Get the null dof for the validation set. If both train and valid are True, then train is
             selected by default.
+        :param bool xval: Get the null dof for the cross-validated models.
 
         :returns: the null dof, or None if it is not present.
         """

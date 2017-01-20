@@ -79,7 +79,12 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
 
 
 def api(endpoint, data=None, json=None, filename=None, save_to=None):
-    """Perform a REST API request to a previously connected server."""
+    """
+    Perform a REST API request to a previously connected server.
+
+    This function is mostly for internal purposes, but may occasionally be useful for direct access to
+    the backend H2O server. It has same parameters as :meth:`H2OConnection.request <h2o.backend.H2OConnection.request>`.
+    """
     # type checks are performed in H2OConnection class
     _check_connection()
     return h2oconn.request(endpoint, data=data, json=json, filename=filename, save_to=save_to)
