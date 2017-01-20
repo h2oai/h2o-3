@@ -71,7 +71,8 @@ stackedensemble.gaussian.test <- function() {
                                base_models = list(my_gbm@model_id, my_rf@model_id))
   
   # Check that prediction works
-  #pred <- h2o.predict(stack, newdata = test)
+  pred <- h2o.predict(stack, newdata = train)  #works on train
+  #pred <- h2o.predict(stack, newdata = test) #but not test
   # Error: java.lang.IllegalArgumentException: Can not make vectors of different length compatible! 
   #expect_equal(nrow(pred), 5000)
   #expect_equal(ncol(pred), 1)

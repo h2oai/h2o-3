@@ -38,7 +38,7 @@ stackedensemble.gaussian.grid.test <- function() {
                        col_sample_rate = col_sample_rate_opt)
   
   gbm_grid <- h2o.grid(algorithm = "gbm", 
-                       grid_id = "gbm_grid",
+                       grid_id = "gbm_grid_gaussian",
                        x = x, 
                        y = y,
                        training_frame = train,
@@ -54,11 +54,12 @@ stackedensemble.gaussian.grid.test <- function() {
   stack <- h2o.stackedEnsemble(x = x, 
                                y = y, 
                                training_frame = train, 
-                               model_id = "my_ensemble_gbm_grid",
+                               model_id = "my_ensemble_gbm_grid_gaussian",
                                selection_strategy = c("choose_all"), 
                                base_models = gbm_grid@model_ids)
   
   # Check that prediction works
+  pred <- h2o.predict(stack, newdata = train)  #works on train
   #pred <- h2o.predict(stack, newdata = test)
   #Error: java.lang.IllegalArgumentException: Can not make vectors of different length compatible! 
   #expect_equal(nrow(pred), 5000)
