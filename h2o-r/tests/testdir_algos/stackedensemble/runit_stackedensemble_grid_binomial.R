@@ -3,14 +3,16 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 stackedensemble.binomial.grid.test <- function() {
   
-  # This test checks the following:
+  # This test checks the following (for binomial classification):
   # 
-  # 1) That h2o.stackedEnsemble executes w/o errors on a 
-  #    random-grid-based ensemble.
-  # 2) That the training and test error are smaller on the 
-  #    ensemble vs the base learners.
-  # 3) TO DO: That the validation_frame arg on 
-  #    h2o.stackedEnsemble works correctly    
+  # 1) That h2o.stackedEnsemble executes w/o errors 
+  #    on a random-grid-based ensemble.
+  # 2) That h2o.predict works on a stack
+  # 3) That h2o.performance works on a stack
+  # 4) That the training and test performance is 
+  #    better on a ensemble vs the base learners.
+  # 5) That the validation_frame arg on 
+  #    h2o.stackedEnsemble works correctly   
   
   train <- h2o.uploadFile(locate("smalldata/testng/higgs_train_5k.csv"), 
                           destination_frame = "higgs_train_5k")
@@ -55,36 +57,37 @@ stackedensemble.binomial.grid.test <- function() {
   stack <- h2o.stackedEnsemble(x = x, 
                                y = y, 
                                training_frame = train,
-                               #validation_frame = test,
+                               validation_frame = test,
                                model_id = "my_ensemble_gbm_grid_binomial",
                                selection_strategy = c("choose_all"), 
                                base_models = gbm_grid@model_ids)
   
   # Check that prediction works
-  pred <- h2o.predict(stack, newdata = train)  #works on train
-  #pred <- h2o.predict(stack, newdata = test)  #but not test
-  #Error: java.lang.IllegalArgumentException: Can not make vectors of different length compatible! 
-  #expect_equal(nrow(pred), 5000)
-  #expect_equal(ncol(pred), 3)
+  pred <- h2o.predict(stack, newdata = test)
+  expect_equal(nrow(pred), nrow(test))
+  expect_equal(ncol(pred), 3)
   
   # Eval ensemble perf
   perf_stack_train <- h2o.performance(stack)
-  #perf_stack_test <- h2o.performance(stack, newdata = test)  # ERROR!!
-  # Error in Filter(function(mm) { : subscript out of bounds
- 
-  
-  
+  perf_stack_test <- h2o.performance(stack, newdata = test)
+
+  # TO DO: Add print statements here to print out performance
   # Check that stack perf is better (bigger) than the best (biggest) base learner perf:
   # Training AUC for each base learner
   auc_gbm_grid_train <- sapply(gbm_grid@model_ids, function(mm) h2o.auc(h2o.getModel(mm), train = TRUE))
-  #expect_gte(h2o.auc(perf_stack_train), max(auc_gbm_grid_train))
+  #expect_gte(h2o.auc(perf_stack_train), max(auc_gbm_grid_train))  #NOT WORKING
   # Test AUC for each base learner
   auc_gbm_grid_test <- sapply(gbm_grid@model_ids, function(mm) h2o.auc(h2o.performance(h2o.getModel(mm), newdata = test)))
   expect_gte(h2o.auc(perf_stack_train), max(auc_gbm_grid_test))
-  # TO DO: Check that passing `test` as a validation_frame
-  #        produces the same metrics as h2o.performance(stack, test)
+  
+  
+  # Check that passing `test` as a validation_frame
+  # produces the same metrics as h2o.performance(stack, test)
+  # Since the metrics object is not exactly the same, we can just test that AUC is the same
+  perf_stack_validation_frame <- h2o.performance(stack, valid = TRUE)
+  expect_identical(h2o.auc(perf_stack_test), h2o.auc(perf_stack_validation_frame))
   
   
 }
 
-doTest("Stacked Ensemble Test", stackedensemble.gaussian.grid.test)
+doTest("Stacked (Random Grid) Ensemble Binomial Classification Test", stackedensemble.binomial.grid.test)

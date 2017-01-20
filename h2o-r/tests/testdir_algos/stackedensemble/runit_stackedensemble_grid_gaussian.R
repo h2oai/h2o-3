@@ -3,14 +3,16 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 stackedensemble.gaussian.grid.test <- function() {
   
-  # This test checks the following:
+  # This test checks the following (for gaussian regression):
   # 
-  # 1) That h2o.stackedEnsemble executes w/o errors on a 
-  #    random-grid-based ensemble.
-  # 2) That the training and test error are smaller on the 
-  #    ensemble vs the base learners.
-  # 3) TO DO: That the validation_frame arg on 
-  #    h2o.stackedEnsemble works correctly    
+  # 1) That h2o.stackedEnsemble executes w/o errors 
+  #    on a random-grid-based ensemble.
+  # 2) That h2o.predict works on a stack
+  # 3) That h2o.performance works on a stack
+  # 4) That the training and test performance is 
+  #    better on a ensemble vs the base learners.
+  # 5) That the validation_frame arg on 
+  #    h2o.stackedEnsemble works correctly     
   
   dat <- h2o.uploadFile(locate("smalldata/extdata/australia.csv"), 
                         destination_frame = "australia.hex")
@@ -53,26 +55,22 @@ stackedensemble.gaussian.grid.test <- function() {
   # Train a stacked ensemble using the GBM grid
   stack <- h2o.stackedEnsemble(x = x, 
                                y = y, 
-                               training_frame = train, 
+                               training_frame = train,
+                               validation_frame = test,
                                model_id = "my_ensemble_gbm_grid_gaussian",
                                selection_strategy = c("choose_all"), 
                                base_models = gbm_grid@model_ids)
   
   # Check that prediction works
-  pred <- h2o.predict(stack, newdata = train)  #works on train
-  #pred <- h2o.predict(stack, newdata = test)
-  #Error: java.lang.IllegalArgumentException: Can not make vectors of different length compatible! 
-  #expect_equal(nrow(pred), 5000)
-  #expect_equal(ncol(pred), 1)
+  pred <- h2o.predict(stack, newdata = test)
+  expect_equal(nrow(pred), nrow(test))
+  expect_equal(ncol(pred), 1)
   
   # Eval ensemble perf
   perf_stack_train <- h2o.performance(stack)
-  perf_stack_test <- h2o.performance(stack, newdata = test)  # ERROR!!
-  # ERROR MESSAGE:
-  #   
-  # Can not make vectors of different length compatible! 
+  perf_stack_test <- h2o.performance(stack, newdata = test)
   
-  
+  # TO DO: Need to finish...
   # Check that stack perf is better (smaller) than the best (smallest) base learner perf:
   # Training error
   #expect_lte(h2o.rmse(perf_stack_train), min(h2o.rmse(perf_gbm_train), h2o.rmse(perf_rf_train)))
