@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
-stackedensemble.gaussian.test <- function() {
+stackedensemble.binomial.test <- function() {
   
   # This test checks the following:
   # 
@@ -12,21 +12,22 @@ stackedensemble.gaussian.test <- function() {
   # 3) TO DO: That the validation_frame arg on 
   #    h2o.stackedEnsemble works correctly    
   
-  dat <- h2o.uploadFile(locate("smalldata/extdata/australia.csv"), 
-                        destination_frame = "australia.hex")
-  ss <- h2o.splitFrame(dat, seed = 1)
-  train <- ss[[1]]
-  test <- ss[[2]]
+  train <- h2o.uploadFile(locate("smalldata/testng/higgs_train_5k.csv"), 
+                          destination_frame = "higgs_train_5k")
+  test <- h2o.uploadFile(locate("smalldata/testng/higgs_test_5k.csv"), 
+                         destination_frame = "higgs_test_5k")
   print(summary(train))
-  x <- c("premax", "salmax", "minairtemp", "maxairtemp", "maxsst", "maxsoilmoist", "Max_czcs")
-  y <- "runoffnew"
+  y <- "response"
+  x <- setdiff(names(train), y)
+  train[,y] <- as.factor(train[,y])
+  test[,y] <- as.factor(test[,y])
   nfolds <- 5
   
   # Train & Cross-validate a GBM
   my_gbm <- h2o.gbm(x = x, 
                     y = y, 
                     training_frame = train, 
-                    distribution = "gaussian",
+                    distribution = "bernoulli",
                     ntrees = 10, 
                     max_depth = 3,
                     min_rows = 2, 
@@ -66,24 +67,25 @@ stackedensemble.gaussian.test <- function() {
                                y = y, 
                                training_frame = train,
                                #validation_frame = test,  #also test that validation_frame is working
-                               model_id = "my_ensemble", 
+                               model_id = "my_ensemble_binomial", 
                                selection_strategy = "choose_all",
                                base_models = list(my_gbm@model_id, my_rf@model_id))
   
   # Check that prediction works
   pred <- h2o.predict(stack, newdata = test)
   expect_equal(nrow(pred), 5000)
-  expect_equal(ncol(pred), 1)
+  expect_equal(ncol(pred), 3)
   
   # Eval ensemble perf
   perf_stack_train <- h2o.performance(stack)
-  perf_stack_test <- h2o.performance(stack, newdata = test)
+  #perf_stack_test <- h2o.performance(stack, newdata = test)  #ERROR!!
+  # Error in Filter(function(mm) { : subscript out of bounds
   
-  # Check that stack perf is better (smaller) than the best (smallest) base learner perf:
-  # Training error
-  expect_lte(h2o.rmse(perf_stack_train), min(h2o.rmse(perf_gbm_train), h2o.rmse(perf_rf_train)))
-  # Test error
-  expect_lte(h2o.rmse(perf_stack_test), min(h2o.rmse(perf_gbm_test), h2o.rmse(perf_rf_test)))
+  # Check that stack perf is better (bigger) than the best (biggest) base learner perf:
+  # Training AUC
+  expect_gte(h2o.auc(perf_stack_train), max(h2o.auc(perf_gbm_train), h2o.auc(perf_rf_train)))
+  # Test AUC
+  expect_gte(h2o.auc(perf_stack_test), max(h2o.auc(perf_gbm_test), h2o.auc(perf_rf_test)))
   
   # TO DO: Check that passing `test` as a validation_frame
   #        produces the same metrics as h2o.performance(stack, test)
