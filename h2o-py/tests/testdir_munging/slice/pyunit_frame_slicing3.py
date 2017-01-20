@@ -19,10 +19,14 @@ def test_slice3():
     check_frame(fr[::2, :], [[1, -1, 0], [4, -3, 50], [16, -5, 12], [64, -7, 1]])
     check_frame(fr[1:3, :2], [[2, -2], [4, -3]])
     check_frame(fr[:100, 1], [[-1], [-2], [-3], [-4], [-5], [-6], [-7]])
+    check_frame(fr[:, 1], [[-1], [-2], [-3], [-4], [-5], [-6], [-7]])
     check_frame(fr[-2:, :], [[32, -6, 99], [64, -7, 1]])
     check_frame(fr[-3:-1, -1:], [[12], [99]])
     check_frame(fr[-10:-6, :], [[1, -1, 0]])
     # check_frame(fr[-3::2, ::2], [[16, 12], [64, 1]])
+
+    fr[:, 1] = 0
+    check_frame(fr[:, 1], [[0]] * 7)
 
 
 def check_frame(actual, expected):

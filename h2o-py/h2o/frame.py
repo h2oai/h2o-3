@@ -1389,6 +1389,13 @@ class H2OFrame(object):
             elif isinstance(col_expr, slice):  # Col by slice
                 if col_expr.start is None and col_expr.stop is None:
                     col_expr = slice(0, self.ncol)  # Slice of all
+            if isinstance(row_expr, slice):
+                start = row_expr.start
+                step = row_expr.step
+                stop = row_expr.stop
+                if start is None: start = 0
+                if stop is None: stop = self.nrows
+                row_expr = slice(start, stop, step)
         elif isinstance(item, H2OFrame):
             row_expr = item  # Row slicing
         elif isinstance(item, list):
