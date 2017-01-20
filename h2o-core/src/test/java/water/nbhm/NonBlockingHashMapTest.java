@@ -174,7 +174,7 @@ public class NonBlockingHashMapTest {
       sut.put("Ad", (byte)0xad);
       fail("We were supposed to throw an IllegalStateException");
     } catch (IllegalStateException iae) {
-      // ase expected
+      // as expected
     }
   }
   @Test
