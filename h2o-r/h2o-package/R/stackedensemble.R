@@ -17,9 +17,13 @@
 #' @param base_models List of models which we can stack together.  Which ones are chosen depends on the selection_strategy. Defaults
 #'        to [].
 #' @export
-h2o.stackedEnsemble <- function(x, y, training_frame, model_id,
-                                selection_strategy = c("choose_all"),
-                                base_models = c()
+h2o.stackedEnsemble <- function(x,
+                                y,
+                                training_frame,
+                                model_id,
+                                validation_frame,
+                                base_models = c(),
+                                selection_strategy = c("choose_all")
                                 ) 
 {
   #If x is missing, then assume user wants to use all columns as features.
@@ -42,6 +46,8 @@ h2o.stackedEnsemble <- function(x, y, training_frame, model_id,
   # Parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame
+  if (!missing(validation_frame))
+    parms$validation_frame <- validation_frame
   args <- .verify_dataxy(training_frame, x, y)
   parms$response_column <- args$y
 

@@ -23,7 +23,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def __init__(self, **kwargs):
         super(H2OStackedEnsembleEstimator, self).__init__()
         self._parms = {}
-        names_list = {"selection_strategy", "base_models"}
+        names_list = {"model_id", "training_frame", "validation_frame", "base_models", "selection_strategy"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -37,14 +37,25 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         self._parms["_rest_version"] = 99
 
     @property
-    def selection_strategy(self):
-        """Enum["choose_all"]: Strategy for choosing which models to stack."""
-        return self._parms.get("selection_strategy")
+    def training_frame(self):
+        """str: Id of the training data frame (Not required, to allow initial validation of model parameters)."""
+        return self._parms.get("training_frame")
 
-    @selection_strategy.setter
-    def selection_strategy(self, selection_strategy):
-        assert_is_type(selection_strategy, None, Enum("choose_all"))
-        self._parms["selection_strategy"] = selection_strategy
+    @training_frame.setter
+    def training_frame(self, training_frame):
+        assert_is_type(training_frame, None, H2OFrame)
+        self._parms["training_frame"] = training_frame
+
+
+    @property
+    def validation_frame(self):
+        """str: Id of the validation data frame."""
+        return self._parms.get("validation_frame")
+
+    @validation_frame.setter
+    def validation_frame(self, validation_frame):
+        assert_is_type(validation_frame, None, H2OFrame)
+        self._parms["validation_frame"] = validation_frame
 
 
     @property
@@ -59,5 +70,16 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def base_models(self, base_models):
         assert_is_type(base_models, None, [str])
         self._parms["base_models"] = base_models
+
+
+    @property
+    def selection_strategy(self):
+        """Enum["choose_all"]: Strategy for choosing which models to stack."""
+        return self._parms.get("selection_strategy")
+
+    @selection_strategy.setter
+    def selection_strategy(self, selection_strategy):
+        assert_is_type(selection_strategy, None, Enum("choose_all"))
+        self._parms["selection_strategy"] = selection_strategy
 
 

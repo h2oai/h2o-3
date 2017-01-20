@@ -102,7 +102,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       baseIdx++;
     }
 
-    levelOneFrame.add(this.responseColumn, this.commonTrainingFrame.vec(this.responseColumn));
+    levelOneFrame.add(this.responseColumn, adaptFrm.vec(this.responseColumn));
 
     // TODO: what if we're running multiple in parallel and have a name collision?
     DKV.put(levelOneFrame);
@@ -129,7 +129,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       // This has just stored a ModelMetrics object for the (metalearner, preds_levelone) Model/Frame pair.
       // We need to be able to look it up by the (this, fr) pair.
       // The ModelMetrics object for the metalearner will be removed when the metalearner is removed.
-      ModelMetrics mmStackedEnsemble = mmMetalearner.deepCloneWithDifferentModelAndFrame(this, this.commonTrainingFrame);
+      ModelMetrics mmStackedEnsemble = mmMetalearner.deepCloneWithDifferentModelAndFrame(this, fr);
       this.addModelMetrics(mmStackedEnsemble);
     }
 

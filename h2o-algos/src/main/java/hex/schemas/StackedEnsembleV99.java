@@ -12,8 +12,11 @@ import water.api.schemas3.ModelParametersSchemaV3;
 public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,StackedEnsembleV99,StackedEnsembleV99.StackedEnsembleParametersV99> {
   public static final class StackedEnsembleParametersV99 extends ModelParametersSchemaV3<StackedEnsembleModel.StackedEnsembleParameters, StackedEnsembleParametersV99> {
     static public String[] fields = new String[]{
-            "selection_strategy",
-            "base_models",
+      "model_id",
+      "training_frame",
+      "validation_frame",
+      "base_models",
+      "selection_strategy",
     };
 
     @API(help = "Strategy for choosing which models to stack.", values = { "choose_all" }, gridable = false)
