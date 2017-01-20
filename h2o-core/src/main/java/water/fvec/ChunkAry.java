@@ -1,12 +1,11 @@
 package water.fvec;
 
-import water.Futures;
-import water.H2O;
-import water.Iced;
+import water.*;
 import water.parser.BufferedString;
 import water.util.ArrayUtils;
 
 import java.util.Arrays;
+import java.util.BitSet;
 
 /**
  * Created by tomas on 10/5/16.
@@ -17,7 +16,8 @@ public class ChunkAry<C extends Chunk> extends Iced {
   public final int _len; // numrows in this chunk
   public final int _numCols;
   public final int _cidx;
-  ArrayUtils.IntAry _changedCols;
+
+  private transient BitSet _changedColsBitset;
   C [] _cs;
   int [] _ids;
 
@@ -69,15 +69,32 @@ public class ChunkAry<C extends Chunk> extends Iced {
   public long start(){return _start;}
 
   public void close(){close(new Futures()).blockForPending();}
+
   public Futures close(Futures fs){
-    if(_changedCols == null || _changedCols.size() == 0)
-      return fs;
-    for(int i:_changedCols.toArray())
-      _cs[i] = (C)_cs[i].compress();
-    return _vec.closeChunk(this,fs);
+    if(_modified_cols == null)return fs;
+    Vec[] vecs = _vec.vecs();
+    int lb = Integer.MAX_VALUE, ub = Integer.MIN_VALUE;
+    int vecId = -1;
+    DBlock db = null; Key k = null;
+    for(int i = 0; i < _modified_cols.length; i++) {
+      if(!_modified_cols[i])continue;
+      int j = _vec.colFilter(i+_minModifiedCol);
+      while(j < ub){
+        lb = ub;
+        ub += vecs[++vecId].numCols();
+      }
+      if(j < lb){
+        if(vecId != -1) DKV.put(k,db);
+        vecId = _vec.getBlockId(j);
+        k = vecs[vecId].chunkKey(_cidx);
+        db = DKV.getGet(k);
+        lb = _vec._blockOffset[vecId];
+        ub = _vec._blockOffset[vecId];
+      }
+      db = db.setChunk(j-lb,_cs[i+_minModifiedCol].compress());
+    }
+    return fs;
   }
-
-
 
   private boolean isSparse(){return _ids != null;}
   public Chunk getChunk(int c){return _cs[c];}
@@ -93,9 +110,100 @@ public class ChunkAry<C extends Chunk> extends Iced {
 
   public Chunk[] getChunks(){return _cs;}
 
-  private void setWrite(int j){
-    if(_changedCols == null) _changedCols = new ArrayUtils.IntAry();
-    _changedCols.add(j);
+
+  ModifiedBlocks _modified;
+  private class ModifiedBlocks {
+    int [] _modified_cols_start = new int[1];
+    int [] _modified_cols_end = new int[1];
+    int  _pos;
+    int _lastId;
+    ArrayUtils.IntAry _modifiedBlocks = new ArrayUtils.IntAry();
+    int size() {return _modifiedBlocks.size();}
+    public int [] modifiedBlocks(){return _modifiedBlocks.toArray();}
+
+    private boolean written_to(int i) {
+      if (i >= _modified_cols_start[_lastId] && i < _modified_cols_end[_lastId])
+        return true;
+      int k = Arrays.binarySearch(_modified_cols_start, i);
+      if (k >= 0) return true;
+      k = -k - 2;
+      boolean res = (k >= 0 && i < _modified_cols_end[k]);
+      if (res) _lastId = k;
+      return res;
+    }
+
+    private void setWrite(int i){
+      if (!written_to(i)) {
+        int blockId = _vec.getBlockId(i);
+        _vec.vecs()[blockId].preWriting();
+        _modifiedBlocks.add(blockId);
+        int from = _vec._blockOffset[blockId];
+        int to = _vec._blockOffset[blockId+1];
+        if(_modified_cols_start == null) {
+          _modified_cols_start = new int[]{from};
+          _modified_cols_end = new int[]{to};
+        } else {
+          int k = - Arrays.binarySearch(_modified_cols_start,i)-1;
+          if(k < _modified_cols_start.length && _modified_cols_start[k] == to)
+            _modified_cols_start[k] = from;
+          else if(k > 0 && _modified_cols_end[k-1] == from){
+            _modified_cols_end[k-1] = to;
+          } else {
+            if(_modified_cols_start.length == _pos){
+              int newlen = Math.min(_modified_cols_start.length*2,_numCols);
+              _modified_cols_start = Arrays.copyOf(_modified_cols_start,newlen);
+              _modified_cols_end = Arrays.copyOf(_modified_cols_end,newlen);
+            }
+            for(int l = _modified_cols_start.length-1; l > k; --l){
+              _modified_cols_start[l] = _modified_cols_start[l-1];
+              _modified_cols_end[l] = _modified_cols_end[l-1];
+            }
+          }
+        }
+      }
+    }
+  }
+
+
+  boolean [] _modified_cols;
+  int _minModifiedCol = Integer.MAX_VALUE;
+
+  private boolean setModified(int col){
+    if(_modified_cols == null) {
+      _modified_cols = new boolean[8];
+      _modified_cols[0] = true;
+      _minModifiedCol = col;
+      return true;
+    }
+    if(col < _minModifiedCol){
+      int diff;
+      if(col <= 16){
+        diff = _minModifiedCol;
+        _minModifiedCol = 0;
+      } else {
+        int x = (col >> 1);
+        diff = _minModifiedCol - x;
+        col -= x;
+      }
+      boolean [] modified_cols = new boolean[_modified_cols.length+diff];
+      System.arraycopy(_modified_cols,0,modified_cols,diff,_modified_cols.length);
+      _modified_cols = modified_cols;
+      _modified_cols[col] = true;
+      return true;
+    } else {
+      col -= _minModifiedCol;
+      if(_modified_cols.length <= col)
+        _modified_cols = Arrays.copyOf(_modified_cols,Math.min(_numCols,Math.max(col+4,2*_modified_cols.length)));
+      if(_modified_cols[col])return false;
+      _modified_cols[col] = true;
+      return false;
+    }
+  }
+
+  private void setWrite(int col){
+    if(!setModified(col))return;
+    if(_modified == null) _modified = new ModifiedBlocks();
+    _modified.setWrite(_vec.colFilter(col));
   }
 
   public final double set(int i, double d){ set(i,0,d); return d; }
@@ -104,11 +212,8 @@ public class ChunkAry<C extends Chunk> extends Iced {
     _cs[c] = (C)new C0DChunk(val,_len);
   }
   public final void set(int i, C ck){
+    setWrite(i);
     _cs[i] = ck;
-    if(_changedCols == null)
-      _changedCols = new ArrayUtils.IntAry(i);
-    else
-      _changedCols.add(i);
   }
   public final double set(int i, int j, double d){
     setWrite(j);
@@ -250,10 +355,6 @@ public class ChunkAry<C extends Chunk> extends Iced {
   public void setNA(int i, int j){
     Chunk c = _ids != null?getOrMakeSparseChunk(j):_cs[j];
     c.setNA_impl(i);
-  }
-
-  public int[] changedCols() {
-    return _changedCols == null?new int[0]:_changedCols.toArray();
   }
 
   public boolean hasFloat(int c) {

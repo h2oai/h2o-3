@@ -541,10 +541,14 @@ public class Frame extends Lockable<Frame> {
    *  @return The removed column */
   public VecAry removeVecs(String name ) { return removeVecs(find(name)); }
 
-  public Frame removeVecs(String[] names ) {
-    for( String name : names )
-      removeVecs(find(name));
-    return this;
+  public VecAry removeVecs(String[] names ) {
+    int [] idxs = new int[names.length];
+    int j = 0;
+    for(int i = 0; i < names.length; ++i) {
+      int x = find(names[i]);
+      if(x != -1)idxs[j++] = x;
+    }
+    return (j > 0)?removeVecs(Arrays.copyOf(idxs,j)):new VecAry();
   }
 
   /** Removes a list of columns by index; the index list must be sorted

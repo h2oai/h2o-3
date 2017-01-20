@@ -268,23 +268,36 @@ final class RollupStats extends Iced {
 
   // Compute expensive histogram
   private static class Histo extends MRTask<Histo> {
-    final double _base, _stride; // Inputs
-    final int _nbins;            // Inputs
-    long[] _bins;                // Outputs
-    Histo( H2OCountedCompleter cmp, RollupStats rs, int nbins ) { super(cmp);_base = rs.h_base(); _stride = rs.h_stride(nbins); _nbins = nbins; }
-    @Override public void map( ChunkAry c ) {
-      _bins = new long[_nbins];
-      for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
-        double d = c.atd(i);
-        if( !Double.isNaN(d) ) _bins[idx(d)]++;
-      }
-      // Sparse?  We skipped all the zeros; do them now
-      if( c.isSparseZero() )
-        _bins[idx(0.0)] += (c._len - c.sparseLenZero());
+    final double [] _base, _stride; // Inputs
+    final int [] _nbins;            // Inputs
+    long[][] _bins;                // Outputs
+    Histo( H2OCountedCompleter cmp, int [] nbins, double [] base, double [] stride) {
+      super(cmp);
+      _base = base;
+      _stride = stride;
+      _nbins = nbins;
     }
-    private int idx( double d ) { int idx = (int)((d-_base)/_stride); return Math.min(idx,_bins.length-1); }
+    @Override public void map( ChunkAry cs ) {
+      _bins = new long[_nbins.length][];
+      for(int c = 0; c < cs._numCols; ++c) {
+        if(_nbins[c] == -1)continue;
+        _bins[c] = MemoryManager.malloc8(_nbins[c]);
+        for( int i=cs.nextNZ(-1,c); i< cs._len; i=cs.nextNZ(i,c) ) {
+          double d = cs.atd(i,c);
+          if( !Double.isNaN(d) ) _bins[c][idx(c,d)]++;
+        }
+        // Sparse?  We skipped all the zeros; do them now
+        if( cs.isSparseZero(c) )
+          _bins[c][idx(c,0.0)] += (cs._len - cs.sparseLenZero(c));
+      }
+    }
+    private int idx( int c, double d ) { int idx = (int)((d-_base[c])/_stride[c]); return Math.min(idx,_bins[c].length-1); }
 
-    @Override public void reduce( Histo h ) { ArrayUtils.add(_bins,h._bins); }
+    @Override public void reduce( Histo h ) {
+      for(int i = 0; i < _nbins.length; ++i)
+        if(_nbins[i] != -1)
+          ArrayUtils.add(_bins[i],h._bins[i]);
+    }
     // Just toooo common to report always.  Drowning in multi-megabyte log file writes.
     @Override public boolean logVerbose() { return false; }
   }
@@ -375,41 +388,50 @@ final class RollupStats extends Iced {
     }
 
     final void computeHisto(final RollupsAry rsa, Vec vec, final Value nnn) {
+      int [] nbins = new int[vec.numCols()];
+      double [] base = new double[nbins.length];
+      double [] stride = new double[nbins.length];
       for (int c = 0; c < rsa.numCols(); ++c) {
         RollupStats rs = rsa.getRollups(c);
-        // All NAs or non-math; histogram has zero bins
-        if (rs._naCnt == vec.length() || vec.isUUID(c)) {
-          rs._bins = new long[0];
-          continue;
+        if(!(vec.isNumeric(c) || vec.isCategorical(c)) || rs._naCnt == vec.length()){
+          nbins[c] = -1; continue;
         }
         // Constant: use a single bin
         double span = rs._maxs[0] - rs._mins[0];
         final long rows = vec.length() - rs._naCnt;
         assert rows > 0 : "rows = " + rows + ", vec.len() = " + vec.length() + ", naCnt = " + rs._naCnt;
         if (span == 0) {
-          rs._bins = new long[]{rows};
+          nbins[c] = -1;
           continue;
         }
         // Number of bins: MAX_SIZE by default.  For integers, bins for each unique int
         // - unless the count gets too high; allow a very high count for categoricals.
-        int nbins = MAX_SIZE;
+        int c_nbins = MAX_SIZE;
         if (rs._isInt && span < Integer.MAX_VALUE) {
-          nbins = (int) span + 1;      // 1 bin per int
+          c_nbins = (int) span + 1;      // 1 bin per int
           int lim = vec.isCategorical() ? Categorical.MAX_CATEGORICAL_COUNT : MAX_SIZE;
-          nbins = Math.min(lim, nbins); // Cap nbins at sane levels
+          c_nbins = Math.min(lim, c_nbins); // Cap nbins at sane levels
         }
-        Histo histo = new Histo(null, rs, nbins).doAll(vec);
-        assert ArrayUtils.sum(histo._bins) == rows;
-        rs._bins = histo._bins;
+        nbins[c] = c_nbins;
+        stride[c] = rs.h_stride(c_nbins);
+        base[c] = rs.h_base();
+      }
+      Histo histo = new Histo(null, nbins, base, stride).doAll(vec);
+      for(int i = 0; i < nbins.length; ++i){
+        if(nbins[i] == -1) continue;
+        RollupStats rs = rsa.getRollups(i);
+        final long rows = vec.length() - rs._naCnt;
+        assert ArrayUtils.sum(histo._bins[i]) == rows;
+        rs._bins = histo._bins[i];
         // Compute percentiles from histogram
         rs._pctiles = new double[Vec.PERCENTILES.length];
         int j = 0;                 // Histogram bin number
         int k = 0;                 // The next non-zero bin after j
         long hsum = 0;             // Rolling histogram sum
-        double base = rs.h_base();
-        double stride = rs.h_stride();
+        double c_base = rs.h_base();
+        double c_stride = rs.h_stride();
         double lastP = -1.0;       // any negative value to pass assert below first time
-        for (int i = 0; i < Vec.PERCENTILES.length; i++) {
+        for (int x = 0; x < Vec.PERCENTILES.length; x++) {
           final double P = Vec.PERCENTILES[i];
           assert P >= 0 && P <= 1 && P >= lastP;   // rely on increasing percentiles here. If P has dup then strange but accept, hence >= not >
           lastP = P;
@@ -420,7 +442,7 @@ final class RollupStats extends Iced {
           while (hsum < pint) hsum += rs._bins[j++];
           // j overshot by 1 bin; we added _bins[j-1] and this goes from too low to either exactly right or too big
           // pint now falls in bin j-1 (the ++ happened even when hsum==pint), so grab that bin value now
-          rs._pctiles[i] = base + stride * (j - 1);
+          rs._pctiles[i] = c_base + c_stride * (j - 1);
           if (h > 0 && pint == hsum) {
             // linearly interpolate between adjacent non-zero bins
             //      i) pint is the last of (j-1)'s bin count (>1 when either duplicates exist in input, or stride makes dups at lower accuracy)
@@ -428,7 +450,7 @@ final class RollupStats extends Iced {
             if (k < j) k = j; // if j jumped over the k needed for the last P, catch k up to j
             // Saves potentially winding k forward over the same zero stretch many times
             while (rs._bins[k] == 0) k++;  // find the next non-zero bin
-            rs._pctiles[i] += h * stride * (k - j + 1);
+            rs._pctiles[i] += h * c_stride * (k - j + 1);
           } // otherwise either h==0 and we know which bin, or fraction is between two positions that fall in the same bin
           // this guarantees we are within one bin of the exact answer; i.e. within (max-min)/MAX_SIZE
         }

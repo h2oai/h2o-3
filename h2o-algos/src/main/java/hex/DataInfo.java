@@ -309,8 +309,10 @@ public class DataInfo extends Keyed<DataInfo> {
 //    _adaptedFrame = train;
 
     setPredictorTransform(predictor_transform);
-    if(_responses > 0)
+    if(_responses > 0) {
       setResponseTransform(response_transform);
+      _responseId = _adaptedFrame.numCols()-_responses;
+    }
     _intLvls = new int[_interactionVecs==null?0:_interactionVecs.length][];
   }
 

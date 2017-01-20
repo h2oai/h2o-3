@@ -138,7 +138,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
    *  @return The POJO, probably the cached instance.  */
   public final <T extends Freezable> T get(Class<T> fc) {
     T pojo = getFreezable();
-    assert fc.isAssignableFrom(pojo.getClass());
+    assert fc.isAssignableFrom(pojo.getClass()):pojo.getClass().getName() + " can not be assigned to " + fc.getName();
     return pojo;
   }
   /** The FAST path get-POJO as a {@link Freezable} - final method for speed.

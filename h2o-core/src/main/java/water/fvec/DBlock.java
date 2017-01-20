@@ -19,6 +19,10 @@ public abstract class DBlock extends Iced<DBlock> {
 
   public abstract DBlock subRange(int off, int to);
 
+  public abstract DBlock setChunk(int i, Chunk c);
+
+
+
   public static class MultiChunkBlock extends DBlock  {
     final Chunk [] _cs;
     public MultiChunkBlock(Chunk [] cs){_cs = cs;}
@@ -26,7 +30,7 @@ public abstract class DBlock extends Iced<DBlock> {
     @Override
     public Chunk getColChunk(int c) {return _cs[c];}
 
-    public void setChunk(int i, Chunk c){_cs[i] = c;}
+    public DBlock setChunk(int i, Chunk c){_cs[i] = c; return this;}
     @Override
     public ChunkAry chunkAry(VecAry v, int cidx) {return new ChunkAry(v,cidx,_cs);}
 

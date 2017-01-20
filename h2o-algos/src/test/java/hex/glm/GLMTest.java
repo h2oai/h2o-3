@@ -500,6 +500,7 @@ public class GLMTest  extends TestUtil {
       HashMap<String, Double> coefs = model.coefficients();
       String[] cfs1 = new String[]{"Intercept", "economy (mpg)", "cylinders", "displacement (cc)", "weight (lb)", "0-60 mph (s)", "year"};
       double[] vls1 = new double[]{4.9504805, -0.0095859, -0.0063046, 0.0004392, 0.0001762, -0.0469810, 0.0002891};
+      System.out.println(model.coefficients());
       for (int i = 0; i < cfs1.length; ++i)
         assertEquals(vls1[i], coefs.get(cfs1[i]), 1e-4);
       // test gamma

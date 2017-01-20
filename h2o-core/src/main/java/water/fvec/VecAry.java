@@ -217,37 +217,11 @@ public final class VecAry extends Iced<VecAry> {
   }
 
   Futures closeChunk(ChunkAry c, Futures fs) {
-    int cidx = c._cidx;
-    Vec[] vecs = fetchVecs();
-    int[] changedCols = c.changedCols();
-    if (changedCols.length == 0) return fs;
-    int[] dstCols = _colFilter == null ? changedCols : ArrayUtils.select(ArrayUtils.invertedPermutation(_colFilter), changedCols);
-    int lb, ub = _blockOffset[1];
-    int blockId = -1;
-    int i = 0;
-    while (i < dstCols.length) {
-      int cid = dstCols[i];
-      blockId = (ub == cid) ? blockId + 1 : getBlockId(cid);
-      lb = _blockOffset[blockId];
-      ub = _blockOffset[blockId + 1];
-      int j = i;
-      while (i < dstCols.length && lb <= dstCols[i] && dstCols[i] < ub) i++;
-      Vec v = vecs[blockId];
-      if (v.numCols() == 1) {
-        assert j + 1 == i;
-        DKV.put(v.chunkKey(cidx), c.getChunk(changedCols[j]), fs);
-      } else {
-        Key key = vecs[blockId].chunkKey(cidx);
-        DBlock.MultiChunkBlock block = DKV.getGet(key);
-        for (int k = j; k < i; ++k)
-          block.setChunk(dstCols[k] - lb, c.getChunk(changedCols[k]));
-        DKV.put(key, block);
-      }
-    }
+
     return fs;
   }
 
-  private int getBlockId(int cid) {
+  int getBlockId(int cid) {
     int blockId;
     blockId = Arrays.binarySearch(_blockOffset, cid);
     if (blockId < 0) blockId = -blockId - 2;
@@ -403,7 +377,7 @@ public final class VecAry extends Iced<VecAry> {
 
   }
 
-  private int colFilter(int i) {
+  int colFilter(int i) {
     return _colFilter == null?i:_colFilter[i];
   }
 
@@ -567,7 +541,7 @@ public final class VecAry extends Iced<VecAry> {
   }
 
   public boolean isCategorical() {
-    return fetchVec(0).isCategorical();
+    return isCategorical(0);
   }
 
   public boolean isCategorical(int c) {

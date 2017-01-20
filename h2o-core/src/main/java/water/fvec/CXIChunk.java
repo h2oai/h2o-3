@@ -248,11 +248,13 @@ public class CXIChunk extends Chunk {
   protected double getFValue(int off){return getIValue(off);}
   protected final long getIValue(int off){
     switch(_valsz){
+      case 0: return 1;
       case 1: return _mem[off+ _ridsz]&0xFF;
       case 2: return UnsafeUtils.get2(_mem, off + _ridsz);
       case 4: return UnsafeUtils.get4(_mem, off + _ridsz);
       case 8: return UnsafeUtils.get8(_mem, off + _ridsz);
-      default: throw H2O.fail();
+      default:
+        throw H2O.fail();
    } 
   }
 

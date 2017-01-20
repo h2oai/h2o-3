@@ -13,6 +13,8 @@ import java.util.Arrays;
 public class RollupsAry extends Iced {
   public int removedCnt() {return _removed.cardinality();}
 
+
+
   private enum State {ready, computing, mutating};
 
   protected final RollupStats [] _rs;
@@ -21,12 +23,19 @@ public class RollupsAry extends Iced {
   public long _checksum;
   public final State _s;
 
-  public RollupsAry(int ncols){
+  static RollupsAry makeMutating(int ncols){
+    return new RollupsAry(ncols,State.mutating);
+  }
+  public RollupsAry(int ncols) {
+    this(ncols, State.ready);
+  }
+
+  private RollupsAry(int ncols,State s){
     _rs = new RollupStats[ncols];
     for(int i = 0; i < _rs.length; ++i)
       _rs[i] = new RollupStats(0);
     _removed = new IcedBitSet(ncols);
-    _s = State.ready;
+    _s = s;
     _tsk = null;
   }
 

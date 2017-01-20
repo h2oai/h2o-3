@@ -92,7 +92,7 @@ import java.util.UUID;
  *  is closed.  Clearing the RollupStats cache is fairly expensive for
  *  individual {@link #set} calls but is easy to amortize over a large count of
  *  writes; i.e., batch writing is efficient.  This is normally handled by the
- *  MRTask framework; the {@link Vec.Writer} framework allows
+ *  MRTask framework; the {@link VecAry.Writer} framework allows
  *  <em>single-threaded</em> efficient batch writing for smaller Vecs.
  *
  *  <p>Example usage of common stats:<pre>
@@ -623,7 +623,9 @@ public class Vec extends Keyed<Vec> {
   /** True if the column contains only NAs
    *  @return True if the column contains only NAs */
   public final boolean isBad() { return isBad(0); }
-  public final boolean isBad(int c) { return naCnt(c)==length(); }
+  public final boolean isBad(int c) {
+    return naCnt(c)==length();
+  }
   /** Vecs's mean 
    *  @return Vec's mean */
   public double mean() {return mean(0);}
@@ -811,9 +813,11 @@ public class Vec extends Keyed<Vec> {
   @Override protected long checksum_impl() {return rollupStats()._checksum;}
 
 
-  private static class SetMutating extends TAtomic<RollupStats> {
-    @Override protected RollupStats atomic(RollupStats rs) {
-      return rs != null && rs.isMutating() ? null : RollupStats.makeMutating();
+  private static class SetMutating extends TAtomic<RollupsAry> {
+    private final int _numcols;
+    public SetMutating(Vec v){_numcols = v.numCols();}
+    @Override protected RollupsAry atomic(RollupsAry rs) {
+      return rs != null && rs.isMutating() ? null :RollupsAry.makeMutating(_numcols);
     }
   }
 
@@ -827,11 +831,11 @@ public class Vec extends Keyed<Vec> {
     final Key rskey = rollupStatsKey();
     Value val = DKV.get(rskey);
     if( val != null ) {
-      RollupStats rs = val.get(RollupStats.class);
+      RollupsAry rs = val.get(RollupsAry.class);
       if( rs.isMutating() ) return; // Vector already locked against rollups
     }
     // Set rollups to "vector isMutating" atomically.
-    new SetMutating().invoke(rskey);
+    new SetMutating(this).invoke(rskey);
   }
 
   /** Stop writing into this Vec.  Rollup stats will again (lazily) be

@@ -401,26 +401,6 @@ public class NewChunk extends Chunk {
     if(isUUID() || _ds == null) return _missing != null && _missing.get(idx);
     return Double.isNaN(_ds[idx]);
   }
-  protected final boolean isCategorical2(int idx) {
-    return _xs!=null && _xs.isCategorical(idx);
-  }
-  protected final boolean isCategorical(int idx) {
-    if(_id == null)return isCategorical2(idx);
-    int j = Arrays.binarySearch(_id,0, _sparseLen,idx);
-    return j>=0 && isCategorical2(j);
-  }
-
-  public void addCategorical(int e) {
-    if(_ms == null || _ms.len() == _sparseLen)
-      append2slow();
-    if( e != 0 || !isSparseZero() ) {
-      _ms.set(_sparseLen,e);
-      _xs.setCategorical(_sparseLen);
-      if(_id != null) _id[_sparseLen] = _len;
-      ++_sparseLen;
-    }
-    ++_len;
-  }
   public void addNA() {
     if(!_sparseNA) {
       if (isString()) {
@@ -801,7 +781,7 @@ public class NewChunk extends Chunk {
     assert _ds == null;
     double [] ds = MemoryManager.malloc8d(_sparseLen);
     for(int i = 0; i < _sparseLen; ++i)
-      if(isNA2(i) || isCategorical2(i)) ds[i] = Double.NaN;
+      if(isNA2(i)) ds[i] = Double.NaN;
       else  ds[i] = _ms.get(i)*PrettyPrint.pow10(_xs.get(i));
     _ms = null;
     _xs = null;
@@ -960,20 +940,6 @@ public class NewChunk extends Chunk {
       return new C0DChunk(Double.NaN, _len);
     if( mode==Vec.T_STR )
       return new CStrChunk(_sslen, _ss, _sparseLen, _len, _is, _isAllASCII);
-    if(mode == Vec.T_CAT) {
-      for(int i = 0; i< _sparseLen; i++ )
-        if(isCategorical2(i))
-          _xs.set(i,0);
-        else if(!isNA2(i)){
-          setNA_impl2(i);
-          ++_naCnt;
-        }
-        // Smack any mismatched string/numbers
-    } else if( mode == Vec.T_NUM ) {
-      for(int i = 0; i< _sparseLen; i++ )
-        if(isCategorical2(i))
-          setNA_impl2(i);
-    }
     if( _ds != null && _ms != null ) {
       assert _type == Vec.T_UUID:"expected type UUID, got " + Vec.TYPE_STR[_type];
       return chunkUUID();
@@ -1313,7 +1279,7 @@ public class NewChunk extends Chunk {
     for(int i = 0; i < _len; ++i){
       double d = 0;
       if(_id == null || _id.length == 0 || (j < _id.length && _id[j] == i)) {
-        d = _ds != null?_ds[j]:(isNA2(j)|| isCategorical(j))?Double.NaN:_ms.get(j)*PrettyPrint.pow10(_xs.get(j));
+        d = _ds != null?_ds[j]:(isNA2(j))?Double.NaN:_ms.get(j)*PrettyPrint.pow10(_xs.get(j));
         ++j;
       }
       if (fitsInUnique) {
