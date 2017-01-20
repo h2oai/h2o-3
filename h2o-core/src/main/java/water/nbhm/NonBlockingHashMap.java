@@ -634,7 +634,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
     if( kvs == READONLY ) {     // Update attempt in a locked table?
       if( expVal == NO_MATCH_OLD || expVal == MATCH_ANY )
         throw new IllegalStateException("attempting to modify a locked table");
-      System.out.println("put denied for readonly");
+//      System.out.println("put denied for readonly");
       return READONLY;      // putIfMatch forced-miss for locked table
     }
     final int fullhash = hash  (key); // throws NullPointerException if key null
