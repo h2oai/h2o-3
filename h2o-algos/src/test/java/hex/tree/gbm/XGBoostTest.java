@@ -10,7 +10,9 @@ import ml.dmlc.xgboost4j.java.XGBoost;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.*;
+import water.DKV;
+import water.Key;
+import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
@@ -282,6 +284,7 @@ public class XGBoostTest extends TestUtil {
 
       XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
       Log.info(model);
+      model.delete();
 
     } finally {
       if (trainFrame!=null) trainFrame.remove();
@@ -295,6 +298,8 @@ public class XGBoostTest extends TestUtil {
     Frame tfr = null;
     Frame trainFrame = null;
     Frame testFrame = null;
+    Frame preds = null;
+    XGBoostModel model = null;
     try {
       // Parse frame into H2O
       tfr = parse_test_file("./smalldata/junit/weather.csv");
@@ -312,24 +317,33 @@ public class XGBoostTest extends TestUtil {
 
       // define special columns
       String response = "RainTomorrow";
-      String weight = null;
-      String fold = null;
-
+//      String weight = null;
+//      String fold = null;
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._ntrees = 5;
       parms._max_depth = 5;
-      parms._train = tfr._key;
-      parms._nfolds = 2;
+      parms._train = trainFrame._key;
+      parms._valid = testFrame._key;
+      parms._nfolds = 5;
       parms._response_column = response;
 
-      XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
       Log.info(model);
+
+      // TODO - fix scoring and MOJO
+//      preds = model.score(testFrame);
+//      Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
 
     } finally {
       if (trainFrame!=null) trainFrame.remove();
       if (testFrame!=null) testFrame.remove();
       if (tfr!=null) tfr.remove();
+      if (preds!=null) preds.remove();
+      if (model!=null) {
+        model.deleteCrossValidationModels();
+        model.delete();
+      }
     }
   }
 
