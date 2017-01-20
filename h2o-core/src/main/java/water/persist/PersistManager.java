@@ -265,6 +265,18 @@ public class PersistManager {
    * @param dels  (Output) I don't know what this is
    */
   public void importFiles(String path, String pattern, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
+    //Check for a glob in the path.
+    //In this case a glob is the following:
+    //1."*" (matches any number of any characters including none)
+    //2."?" (matches any single character)
+    //3."[]"(matches anything in brackets & specifies a range)
+    //4."{}"(matches anything in curley braces)
+    if(path.contains("*") || path.contains("?") || path.contains("[") || path.contains("{")){
+      String[] result = getGlob(path);
+      path = result[0];
+      pattern = result[1];
+    }
+
     URI uri = FileUtils.getURI(path);
     String scheme = uri.getScheme();
     if (scheme == null || "file".equals(scheme)) {
@@ -574,5 +586,51 @@ public class PersistManager {
    */
   static boolean useHdfsAsFallback() {
     return System.getProperty(PROP_ENABLE_HDFS_FALLBACK, "true").equals("true");
+  }
+
+  /**
+   * Search through a string representing a path and make a regex pattern if globs are present
+   * @param path A string that is a file path
+   * @return A string array that contains the path (with the glob taken out) and the glob (pattern)
+   */
+  public static String[] getGlob(String path) {
+    String pattern = null;
+    //Check path for a glob in path.
+    String[] pathSplit = path.split("(?=\\\\|/)", -1); //Split path by backward/forward slashes
+    for (int i = 0; i < pathSplit.length; i++) {
+      if (pathSplit[i].contains("*") || pathSplit[i].contains("?") || pathSplit[i].contains("[") || pathSplit[i].contains("{")) {
+        if (pattern == null || pattern.isEmpty()) {
+          pattern = pathSplit[i];
+        } else {
+          pattern = pattern.concat(pathSplit[i]);
+        }
+      }
+    }
+
+
+    pattern = pattern.replaceAll("^/", "");
+    path = path.replace(pattern,""); //Subset "path" by removing "pattern"
+
+    //Do some replacements to comply with equivalent Java regex
+    if(pattern.contains("*")){
+      pattern = pattern.replace("*",".*");
+    }
+    if(pattern.contains("?")){
+      pattern = pattern.replace("?",".");
+    }
+    if(pattern.contains("!")){
+      pattern = pattern.replace("!","^");
+    }
+    if(pattern.contains("{")){
+      pattern = pattern.replace("{", "(");
+    }
+    if(pattern.contains("}")){
+      pattern = pattern.replace("}", ")");
+    }
+    if(pattern.contains(",")){
+      pattern = pattern.replace(",","|");
+    }
+
+    return new String[] {path,pattern};
   }
 }
