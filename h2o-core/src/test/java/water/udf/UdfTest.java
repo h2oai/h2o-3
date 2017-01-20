@@ -20,6 +20,7 @@ import static water.udf.specialized.Strings.*;
 /**
  * Test for UDF
  */
+@SuppressWarnings("unchecked")
 public class UdfTest extends UdfTestBase {
   
   int requiredCloudSize() { return 5; }
@@ -63,7 +64,9 @@ public class UdfTest extends UdfTestBase {
 
     assertEquals(0.0, c.apply(0), 0.000001);
     assertEquals(210.0, c.apply(42), 0.000001);
-    assertEquals(100000.0, c.apply(20000), 0.000001);
+    final long position = c.positionOfRow(20000);
+    
+    assertEquals("@" + Long.toHexString(position), 20000*5.0, c.apply(position), 0.000001);
   }
 
   @Test
@@ -75,29 +78,49 @@ public class UdfTest extends UdfTestBase {
     }));
     assertEquals("<<0>>", c.apply(0));
     assertEquals(null, c.apply(42));
-    assertEquals("<<2016>>", c.apply(2016));
     Column<String> materialized = Strings.materialize(c);
 
     for (int i = 0; i < 100000; i++) {
-      assertEquals(c.apply(i), materialized.apply(i));
+      long coord = c.positionOfRow(i);
+      
+      assertEquals(c.apply(coord), materialized.apply(coord));
     }
   }
 
   @Test
   public void testOfEnums() throws Exception {
-    Column<Integer> c = willDrop(Enums.enums(new String[] {"Red", "White", "Blue"})
+    DataColumn<Integer> c = willDrop(Enums.enums(new String[] {"Red", "White", "Blue"})
         .newColumn(1 << 20, new Function<Long, Integer>() {
-       public Integer apply(Long i) { return (int)( i % 3); }
+       public Integer apply(Long i) {
+         return (int)( i % 3);
+       }
     }));
     assertEquals(0, c.apply(0).intValue());
     assertEquals(0, c.apply(42).intValue());
     assertEquals(1, c.apply(100).intValue());
-    assertEquals(2, c.apply(20000).intValue());
+    assertEquals(1, c.getByRowNumber(1000).intValue());
+    assertEquals(2, c.getByRowNumber(2000).intValue());
+    assertEquals(2, c.getByRowNumber(5000).intValue());
+
+    final long i1 = c.positionOfRow(10000);
+    final int expected = (int) (i1 % 3);
+    assertEquals("At " + Long.toHexString(i1), 1, c.apply(i1).intValue());
+    assertEquals(2, c.getByRowNumber(20000).intValue());
 
     Column<Integer> materialized = Enums.enums(new String[] {"Red", "White", "Blue"}).materialize(c);
 
     for (int i = 0; i < 100000; i++) {
-      assertEquals(c.apply(i), materialized.apply(i));
+      final long position = c.positionOfRow(i);
+      
+      int ci = (int)(position << 32);
+      int ic = (int)position & Integer.MAX_VALUE;
+
+//      Chunk ch = c.vec().chunkForRow((int)(i >> 32));
+//      long c2 = DataChunk.positionOf(i, ch.cidx(), ch.start());
+//      assertEquals(position, c2);
+      assertTrue(" got " + ic + " for " + ci + " from " + Long.toHexString(position) + " at " + i, ic < 0x8000);
+      
+      assertEquals(c.apply(position), materialized.apply(position));
     }
   }
 
@@ -105,16 +128,20 @@ public class UdfTest extends UdfTestBase {
   public void testOfDates() throws Exception {
     Column<Date> c = willDrop(Dates.newColumn(1 << 20, new Function<Long, Date>() {
        public Date apply(Long i) {
-        return new Date(i*3600000L*24);
+         return new Date(i*3600000L*24);
       }
     }));
     assertEquals(new Date(0), c.apply(0));
     assertEquals(new Date(258 * 24 * 3600 * 1000L), c.apply(258));
 
     Column<Date> materialized = Dates.materialize(c);
+    int i = 0;
+    for (long coord : c.positions()) {
+      final Date expected = c.apply(coord);
+      final Date actual = materialized.apply(coord);
 
-    for (int i = 0; i < 100000; i++) {
-      assertEquals(c.apply(i), materialized.apply(i));
+      assertEquals("@" + i + "/" + Long.toHexString(coord), expected, actual);
+      if (i++>10000) break;
     }
   }
 
@@ -151,7 +178,7 @@ public class UdfTest extends UdfTestBase {
     assertEquals("Red", y.apply(0));
     assertEquals("Red", y.apply(42));
     assertEquals("White", y.apply(100));
-    assertEquals("Blue", y.apply(20000));
+    assertEquals("Blue", y.getByRowNumber(20000));
   }
 
   @Test
@@ -162,7 +189,8 @@ public class UdfTest extends UdfTestBase {
 
     assertEquals(0.0, y.apply(0), 0.000001);
     assertEquals(44100.0, y.apply(42), 0.000001);
-    assertEquals(10000000000.0, y.apply(20000), 0.000001);
+    final long position = y.positionOfRow(20000);
+    assertEquals(25.0*20000*20000, y.apply(position), 0.000001);
   }
 
   @Test
@@ -188,22 +216,31 @@ public class UdfTest extends UdfTestBase {
     
     assertEquals(0.0, z1.apply(0), 0.000001);
     assertEquals(210.84001174779368, z1.apply(42), 0.000001);
-    assertEquals(100000.3387062632, z1.apply(20000), 0.000001);
+    final long position = z1.positionOfRow(20000);
+    assertEquals(100000.3387062632, z1.apply(position), 0.000001);
 
     assertEquals(0.0, z2.apply(0), 0.000001);
     assertEquals(44100.840011747794, z2.apply(42), 0.000001);
-    assertEquals(10000000000.3387062632, z2.apply(20000), 0.000001);
+    assertEquals(1000.0, x.getByRowNumber(200), 0.000001);
+    assertEquals(10000.0, x.getByRowNumber(2000), 0.000001);
+    assertEquals(100000.0, x.getByRowNumber(20000), 0.000001);
+    assertEquals(0.3387062632, y2.getByRowNumber(20000), 0.000001);
+    assertEquals(10000000000.3387062632, z2.getByRowNumber(20000), 0.000001);
 
     Column<Double> materialized = willDrop(Doubles.materialize(z2));
 
     for (int i = 0; i < 100000; i++) {
-      Double expected = z2.apply(i);
-      assertTrue(z2.isNA(i) == materialized.isNA(i));
+      long j = z2.positionOfRow(i);
+      Double expected = z2.apply(j);
+      assertEquals(z2.isNA(j), materialized.isNA(j));
       // the following exposes a problem. nulls being returned.
-      if (expected == null) assertTrue("At " + i + ":", materialized.isNA(i));
-      Double actual = materialized.apply(i);
-      
-      if (!z2.isNA(i)) assertEquals(expected, actual, 0.0001);
+      if (expected == null) {
+        assertTrue("At " + i + "/" + Long.toHexString(j) +":", materialized.isNA(j));
+      } else {
+        Double actual = materialized.apply(j);
+
+        if (!z2.isNA(j)) assertEquals(expected, actual, 0.0001);
+      }
     }
   }
 
@@ -269,28 +306,35 @@ public class UdfTest extends UdfTestBase {
 
   @Test
   public void testFun3() throws Exception {
-    Column<Double> x = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
+    Column<Double> xs = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
         public Double apply(Long i) { return Math.cos(i*0.0001)*Math.cos(i*0.0000001); }
       }));
 
-    Column<Double> y = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
+    Column<Double> ys = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
       public Double apply(Long i) { return Math.cos(i*0.0001)*Math.sin(i*0.0000001); }
     }));
 
-    Column<Double> z = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
+    Column<Double> zs = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
       public Double apply(Long i) { return Math.sin(i*0.0001); }
     }));
 
-    Column<Double> r = new Fun3Column<>(PureFunctions.X2_PLUS_Y2_PLUS_Z2, x, y, z);
+    Column<Double> rs = new Fun3Column<>(PureFunctions.X2_PLUS_Y2_PLUS_Z2, xs, ys, zs);
 
     for (int i = 0; i < 100000; i++) {
-      assertEquals(1.00, r.apply(i*10), 0.0001);
+      long j = rs.positionOfRow(i*10);
+      final Double x = xs.apply(j);
+      final Double y = ys.apply(j);
+      final Double z = zs.apply(j);
+      final Double r = rs.apply(j);
+      assertNotNull("@" + i + "/" + Long.toHexString(j) + " from " + x +"," +y+","+z + "->" + r, r);
+      assertEquals(1.00, r, 0.0001);
     }
 
-    Column<Double> materialized = Doubles.materialize(r);
+    Column<Double> materialized = Doubles.materialize(rs);
 
     for (int i = 0; i < 100000; i++) {
-      assertEquals(r.apply(i), materialized.apply(i), 0.0001);
+      long j = rs.positionOfRow(i*10);
+      assertEquals(rs.apply(j), materialized.apply(j), 0.0001);
     }
   }
 
@@ -311,14 +355,15 @@ public class UdfTest extends UdfTestBase {
     Column<Double> r = new FoldingColumn<>(PureFunctions.SUM_OF_SQUARES, x, y, z);
 
     for (int i = 0; i < 100000; i++) {
-      assertEquals(1.00, r.apply(i*10), 0.0001);
+      long j = r.positionOfRow(i*10);
+      assertEquals(1.00, r.apply(j), 0.0001);
     }
 
     Column<Double> x1 = new FoldingColumn<>(PureFunctions.SUM_OF_SQUARES, x);
 
     for (int i = 0; i < 100000; i++) {
-      double xi = x.apply(i);
-      assertEquals(xi*xi, x1.apply(i), 0.0001);
+      double xi = x.getByRowNumber(i);
+      assertEquals(xi*xi, x1.getByRowNumber(i), 0.0001);
     }
 
     try {
@@ -331,9 +376,11 @@ public class UdfTest extends UdfTestBase {
     Column<Double> materialized = Doubles.materialize(r);
 
     for (int i = 0; i < 100000; i++) {
-      assertEquals(r.apply(i), materialized.apply(i), 0.0001);
+      long j = r.positionOfRow(i);
+      assertEquals(r.apply(j), materialized.apply(j), 0.0001);
     }
   }
+
   @Test
   public void testFoldingColumnCompatibility() throws Exception {
     Column<Double> x = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
@@ -363,18 +410,24 @@ public class UdfTest extends UdfTestBase {
     final List<String> lines = Files.readLines(file, Charset.defaultCharset());
 
     // store it in H2O, with typed column as a wrapper (core H2O storage is a type-unaware Vec class)
-    Column<String> source = willDrop(Strings.newColumn(lines));
+    DataColumn<String> source = willDrop(Strings.newColumn(lines));
 
     // produce another (virtual) column that stores a list of strings as a row value
     Column<List<String>> split = new UnfoldingColumn<>(PureFunctions.splitBy(","), source, 10);
 
     // now check that we have the right data
     for (int i = 0; i < lines.size(); i++) {
+      long j = split.positionOfRow(i);
+      long j1 = source.positionOfRow(i);
+      assertEquals(j, j1);
+
       // since we specified width (10), the rest of the list is filled with nulls; have to ignore them. 
       // It's important to have the same width for the whole frame.
-      String actual = StringUtils.join(" ", Predicate.NOT_NULL.filter(split.apply(i)));
+      final List<String> found = split.apply(j);
+      String actual = StringUtils.join(" ", Predicate.NOT_NULL.filter(found));
       // so, have we lost any data?
-      assertEquals(lines.get(i).replaceAll("\\,", " ").trim(), actual);
+      final String expected = lines.get(i).replaceAll("\\,", " ").trim();
+      assertEquals("At " + i + "/" + Long.toHexString(j) + "... " + source.get(j1), expected, actual);
     }
   }
 
@@ -389,12 +442,14 @@ public class UdfTest extends UdfTestBase {
     
     for (int i = 0; i < lines.size(); i++) {
       List<String> fromColumns = new ArrayList<>(10);
+      long coord = columns.get(0).positionOfRow(i);
       for (int j = 0; j < 10; j++) {
-        String value = columns.get(j).get(i);
+        String value = columns.get(j).get(coord);
         if (value != null) fromColumns.add(value);
       }
       String actual = StringUtils.join(" ", fromColumns);
-      assertEquals(lines.get(i).replaceAll("\\,", " ").trim(), actual);
+      final String expected = lines.get(i).replaceAll("\\,", " ").trim();
+      assertEquals("At " + i, expected, actual);
     }
     
     assertTrue("Need to align the result", columns.get(5).isCompatibleWith(source));

@@ -28,7 +28,7 @@ public class CStrChunk extends Chunk {
     UnsafeUtils.copyMemory(ss,0,_mem,_valstart,sslen);
   }
 
-  private int idx(int i) { return _OFF+(i<<2); }
+  public int idx(int i) { return _OFF+(i<<2); }
   @Override public boolean setNA_impl(int idx) { return false; }
   @Override public boolean set_impl(int idx, float f) { if (Float.isNaN(f)) return false; else throw new IllegalArgumentException("Operation not allowed on string vector.");}
   @Override public boolean set_impl(int idx, double d) { if (Double.isNaN(d)) return false; else throw new IllegalArgumentException("Operation not allowed on string vector.");}
@@ -36,14 +36,16 @@ public class CStrChunk extends Chunk {
   @Override public boolean set_impl(int idx, String str) { return false; }
 
   @Override public boolean isNA_impl(int idx) {
-    int off = UnsafeUtils.get4(_mem,idx(idx));
+    int off = intAt(idx(idx));
     return off == NA;
   }
 
+  public int intAt(int i) { return UnsafeUtils.get4(_mem, i); }
+  
   @Override public long at8_impl(int idx) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
   @Override public double atd_impl(int idx) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
   @Override public BufferedString atStr_impl(BufferedString bStr, int idx) {
-    int off = UnsafeUtils.get4(_mem,idx(idx));
+    int off = intAt(idx(idx));
     if( off == NA ) return null;
     int len = 0;
     while( _mem[_valstart+off+len] != 0 ) len++;
@@ -52,7 +54,7 @@ public class CStrChunk extends Chunk {
 
   @Override protected final void initFromBytes () {
     _start = -1;  _cidx = -1;
-    _valstart = UnsafeUtils.get4(_mem,0);
+    _valstart = intAt(0);
     byte b = UnsafeUtils.get1(_mem,4);
     _isAllASCII = b != 0;
     set_len((_valstart-_OFF)>>2);
@@ -62,7 +64,7 @@ public class CStrChunk extends Chunk {
     nc._isAllASCII = _isAllASCII;
     int [] ids = nc.alloc_str_indices(_len);
     for( int i = 0; i < _len; i++ )
-      ids[i] = UnsafeUtils.get4(_mem,idx(i));
+      ids[i] = intAt(idx(i));
     nc._sslen = _mem.length - _valstart;
     nc._ss = MemoryManager.malloc1(nc._sslen);
     System.arraycopy(_mem,_valstart,nc._ss,0,nc._sslen);

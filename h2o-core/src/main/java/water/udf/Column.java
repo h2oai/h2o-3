@@ -25,13 +25,18 @@ import water.udf.fp.Function;
  * for instance.
  */
 public interface Column<T> extends Function<Long, T>, Vec.Holder {
-  T apply(long idx);
+  T apply(long i);
+  T getByRowNumber(long i);
   TypedChunk<T> chunkAt(int i);
   
-  boolean isNA(long idx);
+  Iterable<Long> positions();
+  
+  boolean isNA(long i);
   
   int rowLayout();
   long size();
 
   boolean isCompatibleWith(Column<?> ys);
+
+  long positionOfRow(long i);
 }

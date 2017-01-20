@@ -61,40 +61,4 @@ public class DataColumns {
 
     @Override public String toString() { return name; }
   }
-
-  // We may never need BufferedStrings
-//  public static class OfBS extends OnVector<BufferedString> {
-//    public OfBS(Vec vec) {
-//      super(vec, Vec.T_STR);
-//    }
-//
-//    @Override
-//    public BufferedString get(long idx) {
-//      BufferedString bs = new BufferedString();
-//      return vec.atStr(bs, idx);
-//    }
-//  }
-
-  //-------------------------------------------------------------
-
-// TODO(vlad): figure out if we should support UUIDs  
-//  public static final Factory<UUID> UUIDs = new Factory<UUID>(Vec.T_UUID) {
-//
-//    @Override public DataChunk<UUID> apply(final Chunk c) {
-//      return new DataChunk<UUID>(c) {
-//        @Override public UUID get(int idx) { return isNA(idx) ? null : new UUID(c.at16h(idx), c.at16l(idx)); }
-//        @Override public void set(int idx, UUID value) { c.set(idx, value); }
-//      };
-//    }
-//
-//    @Override public DataColumn<UUID> newColumn(final Vec vec) {
-//      if (vec.get_type() != Vec.T_UUID)
-//        throw new IllegalArgumentException("Expected a type UUID, got " + vec.get_type_str());
-//      return new DataColumn<UUID>(vec, typeCode, this) {
-//        @Override public UUID get(long idx) { return isNA(idx) ? null : new UUID(vec.at16h(idx), vec.at16l(idx)); }
-//        @Override public void set(long idx, UUID value) { vec.set(idx, value); }
-//      };
-//    }
-//  };
-
 }

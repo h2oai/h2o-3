@@ -37,12 +37,15 @@ public class Doubles extends DataColumns.BaseFactory<Double> {
     DoubleChunk(Chunk c) {
       super(c);
     }
-    @Override public Double get(int idx) { return c.isNA(idx) ? null : c.atd(idx); }
-
-    @Override public void set(int idx, Double value) {
-      if (value == null) c.setNA(idx); else c.set(idx, value);
+    @Override public Double get(long position) { 
+      int i = indexOf(position);
+      return c.isNA(i) ? Double.NaN : c.atd(i); 
     }
-    public void set(int idx, double value) { c.set(idx, value); }
+
+    @Override protected void setValue(int at, Double value) {
+      c.set(at, value);
+    }
+    public void set(int at, double value) { c.set(at, value); }
   }
 
   static class Column extends DataColumn<Double> {
@@ -53,16 +56,19 @@ public class Doubles extends DataColumns.BaseFactory<Double> {
     Column(Vec vec, ColumnFactory<Double> factory) {
       super(vec, factory);      
     }
-    public Double get(long idx) { return vec().at(idx); }
-
-    @Override public Double apply(Long idx) { return get(idx); }
-
-    @Override public Double apply(long idx) { return get(idx); }
-
-    @Override public void set(long idx, Double value) {
-      if (value == null) vec().setNA(idx); else vec().set(idx, value);
+    public Double get(long coord) {
+      DoubleChunk c = new DoubleChunk(chunkAt(coord));
+      return c.get(coord);
     }
 
-    public void set(long idx, double value) { vec().set(idx, value); }
+    @Override public void set(long coord, Double value) {
+      DoubleChunk c = new DoubleChunk(chunkAt(coord));
+      c.set(coord, value);
+    }
+
+    public void set(long coord, double value) {
+      DoubleChunk c = new DoubleChunk(chunkAt(coord));
+      c.set(coord, value);
+    }
   }
 }
