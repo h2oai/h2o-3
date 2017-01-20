@@ -10,6 +10,8 @@ import java.util.ArrayList;
 public class XGBoostOutput extends Model.Output {
   public XGBoostOutput(XGBoost b) {
     super(b);
+    _scored_train = new ScoreKeeper[]{new ScoreKeeper(Double.NaN)};
+    _scored_valid = new ScoreKeeper[]{new ScoreKeeper(Double.NaN)};
   }
 
   public int _ntrees;

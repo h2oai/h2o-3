@@ -26,6 +26,16 @@ import java.util.HashMap;
  */
 public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParameters,XGBoostOutput> {
 
+  /**
+   * convert an H2O Frame to a sparse DMatrix
+   * @param f H2O Frame
+   * @param response name of the response column
+   * @param weight name of the weight column
+   * @param fold name of the fold assignment column
+   * @param featureMap featureMap[0] will be populated with the column names and types
+   * @return DMatrix
+   * @throws XGBoostError
+   */
   public static DMatrix convertFrametoDMatrix(Frame f, String response, String weight, String fold, String[] featureMap) throws XGBoostError {
     // one-hot encoding
     FrameUtils.CategoricalOneHotEncoder enc = new FrameUtils.CategoricalOneHotEncoder(f, new String[]{response, weight, fold});
@@ -62,36 +72,51 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     // extract predictors
     int nz=0;
     int col=0;
+    Vec.Reader w = weight == null ? null : encoded.vec(weight).new Reader();
+    int nRows = (int)encoded.numRows();
     for (int i=0;i<encoded.numCols();++i) {
       if (encoded.name(i).equals(response)) continue;
-
       colHeaders[col] = nz;
       Vec.Reader v = encoded.vec(i).new Reader();
-      for (int j=0;j<v.length();++j) {
+      int k=0;
+      for (int j=0; j<nRows; ++j) {
         double val = v.at(j);
-        if (!Double.isNaN(val) && val!=0) {
-          data[nz] = (float)val;
-          rowIndex[nz] = j;
-          nz++;
+        double wgt = w == null ? 1 : w.at(j);
+        if (wgt!=0) {
+          if (!Double.isNaN(val) && val!=0) {
+            data[nz] = (float)val;
+            rowIndex[nz] = k;
+            nz++;
+          }
+          k++;
         }
       }
       col++;
     }
     // extract response vector
     Vec.Reader respVec = encoded.vec(response).new Reader();
-    int nRows = (int)respVec.length();
     float[] resp = new float[nRows];
-    for (int i=0;i<nRows;++i)
-      resp[i] = (float)respVec.at(i);
+    float[] weights = new float[nRows];
+    int j=0;
+    for (int i=0;i<nRows;++i) {
+      double wgt = w==null?1:w.at(i);
+      if (wgt!=0) {
+        resp[j] = (float) respVec.at(i);
+        weights[j] = (float)wgt;
+        j++;
+      }
+    }
 
     colHeaders[colHeaders.length-1] = nz;
     data = Arrays.copyOf(data, nz);
     rowIndex = Arrays.copyOf(rowIndex, nz);
+    resp = Arrays.copyOf(resp, j);
+    weights = Arrays.copyOf(weights, j);
 
     DMatrix trainMat = new DMatrix(colHeaders, rowIndex, data, DMatrix.SparseType.CSC, 0);
     trainMat.setLabel(resp);
-//    trainMat.setWeight(null); //obs weight //FIXME
-//    trainMat.setGroup(null); //fold
+    trainMat.setWeight(weights);
+//    trainMat.setGroup(null); //fold //FIXME
     encoded.remove();
     return trainMat;
   }
@@ -110,9 +135,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   public XGBoost(boolean startup_once) { super(new XGBoostModel.XGBoostParameters(),startup_once); }
 
   @Override protected int nModelsInParallel() {
-    if (!_parms._parallelize_cross_validation || _parms._max_runtime_secs != 0) return 1; //user demands serial building (or we need to honor the time constraints for all CV models equally)
-    if (_train.byteSize() < 1e6) return _parms._nfolds; //for small data, parallelize over CV models
-    return 2; //XGBoost always has some serial work, so it's fine to build two models at once
+    return 1;
   }
 
   /** Start the XGBoost training Job on an F/J thread. */
@@ -225,10 +248,13 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       XGBoostModel model = new XGBoostModel(_result,_parms,new XGBoostOutput(XGBoost.this));
       String[] featureMap = new String[]{""};
       try {
-        DMatrix trainMat = convertFrametoDMatrix(_parms._train.get(), _parms._response_column, _parms._weights_column, _parms._fold_column, featureMap);
-        DMatrix validMat = _parms._valid != null ? convertFrametoDMatrix(_parms._valid.get(), _parms._response_column, _parms._weights_column, _parms._fold_column, featureMap) : null;
+        DMatrix trainMat = convertFrametoDMatrix(_parms._train.get(),
+                _parms._response_column, _parms._weights_column, _parms._fold_column, featureMap);
 
-        OutputStream os = null;
+        DMatrix validMat = _parms._valid != null ? convertFrametoDMatrix(_parms._valid.get(),
+                _parms._response_column, _parms._weights_column, _parms._fold_column, featureMap) : null;
+
+        OutputStream os;
         try {
           os = new FileOutputStream("featureMap.txt");
           os.write(featureMap[0].getBytes());
@@ -240,7 +266,10 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         }
 
         HashMap<String, DMatrix> watches = new HashMap<>();
-        watches.put("valid", validMat);
+        if (validMat!=null)
+          watches.put("valid", validMat);
+        else
+          watches.put("train", trainMat);
 
         Booster booster = ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, model.createParams(), 0, watches, null, null);
         for( int tid=0; tid< _parms._ntrees; tid++) {
@@ -249,7 +278,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           model._output._scored_train = ArrayUtils.copyAndFillOf(model._output._scored_train, model._output._ntrees+1, new ScoreKeeper());
           model._output._scored_valid = model._output._scored_valid != null ? ArrayUtils.copyAndFillOf(model._output._scored_valid, model._output._ntrees+1, new ScoreKeeper()) : null;
           model._output._training_time_ms = ArrayUtils.copyAndFillOf(model._output._training_time_ms, model._output._ntrees+1, System.currentTimeMillis());
-          model.doScoring(booster, trainMat, validMat, train().vec(_parms._response_column), valid() != null ? valid().vec(_parms._response_column) : null);
+          model.doScoring(booster, trainMat, validMat);
           model.computeVarImp(booster.getFeatureScore("featureMap.txt"));
         }
       } catch (XGBoostError xgBoostError) {
