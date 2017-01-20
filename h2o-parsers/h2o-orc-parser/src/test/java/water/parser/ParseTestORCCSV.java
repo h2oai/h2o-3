@@ -6,62 +6,50 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.util.Log;
 
+import static java.lang.Math.abs;
 import static org.junit.Assert.assertTrue;
 
 /**
  * Test suite for orc parser.
  *
- * This test will attempt to parse a bunch of files (orc and csv).  We compare the frames of these files and make
- * sure that they are equivalent.
+ * This test will attempt to parse a bunch of files (orc and csv) containing only timestamp and data data.
+ * We compare the frames of these files and make sure that they are equivalent.
  *
  * -- Requested by Tomas N.
  *
  */
 public class ParseTestORCCSV extends TestUtil {
 
-    private String[] csvFiles = {"smalldata/parser/orc/orc2csv/TestOrcFile.testDate1900.csv",
-            "smalldata/parser/orc/orc2csv/TestOrcFile.testDate2038.csv",
-            "smalldata/parser/orc/orc2csv/orc_split_elim.csv", "smalldata/parser/csv2orc/prostate_NA.csv",
-            "smalldata/iris/iris.csv", "smalldata/jira/hexdev_29.csv"};
+    private String[] csvFiles = {"smalldata/parser/orc/orc2csv/testTimestamp.csv",
+            "smalldata/parser/orc/orc2csv/testDate1900.csv",
+            "smalldata/parser/orc/orc2csv/testDate2038.csv"};
 
-    private String[] orcFiles = {"smalldata/parser/orc/TestOrcFile.testDate1900.orc",
-            "smalldata/parser/orc/TestOrcFile.testDate2038.orc", "smalldata/parser/orc/orc_split_elim.orc",
-            "smalldata/parser/orc/prostate_NA.orc", "smalldata/parser/orc/iris.orc",
-            "smalldata/parser/orc/hexdev_29.orc"};
+    private String[] orcFiles = {"smalldata/parser/orc/testTimestamp.orc",
+            "smalldata/parser/orc/TestOrcFile.testDate1900.orc",
+            "smalldata/parser/orc/TestOrcFile.testDate2038.orc"};
 
-    private Boolean[] forceColumnTypes = {false, false, false, true, true, true};
+    private Boolean[] forceColumnTypes = {false, false, false, false, true, true, true};
 
     @BeforeClass
     static public void _preconditionJavaVersion() { // NOTE: the `_` force execution of this check after setup
         // Does not run test on Java6 since we are running on Hadoop lib
-        Assume.assumeTrue("Java6 is not supported", !System.getProperty("java.version", "NA").startsWith("1.6"));
+        Assume.assumeTrue("Java6 is not supported", !System.getProperty("java.version",
+                "NA").startsWith("1.6"));
     }
 
     @BeforeClass
-    static public void setup() { TestUtil.stall_till_cloudsize(5); }
+    static public void setup() { TestUtil.stall_till_cloudsize(1); }
 
     @Test
     public void testParseOrcCsvFiles() {
-        int f_index = 0;
-        Frame csv_frame = parse_test_file(csvFiles[f_index], "\\N", 0, null);
-        Frame orc_frame = null;
+        for (int f_index = 0; f_index < csvFiles.length; f_index++) {
 
-        if (forceColumnTypes[f_index]) {
-            byte[] types = csv_frame.types();
+            Frame csv_frame = parse_test_file(csvFiles[f_index], "\\N", 0, null);
+            Frame orc_frame = parse_test_file(orcFiles[f_index], null, 0, null);
 
-            for (int index = 0; index < types.length; index++) {
-                if (types[index] == 0)
-                    types[index] = 3;
-            }
-
-            orc_frame = parse_test_file(orcFiles[f_index], null, 0, types);
-        } else {
-            orc_frame = parse_test_file(orcFiles[f_index], null, 0, null);
-        }
-
-
-        // make sure column types are the same especially the enums
+            // make sure column types are the same especially the enums
             byte[] csv_types = csv_frame.types();
             byte[] orc_types = orc_frame.types();
 
@@ -72,9 +60,22 @@ public class ParseTestORCCSV extends TestUtil {
                 }
             }
 
-        assertTrue(TestUtil.isIdenticalUpToRelTolerance(csv_frame, orc_frame, 1e-5));
+            for (int col_index = 0; col_index < 2; col_index++) {
+                for (int row_index = 0; row_index < orc_frame.numRows(); row_index++) {
+                    long orc = orc_frame.vec(col_index).at8(row_index);
+                    long csv = csv_frame.vec(col_index).at8(row_index);
+                    long diff = orc - csv;
+                    if (abs(diff) > 0) {
+                        Log.info("**orc csv ts differ at row " + row_index + " col " + col_index + " and the difference is "
+                                + Long.toString(diff));
+                    }
+                }
+            }
 
-        csv_frame.delete();
-        orc_frame.delete();
+            assertTrue(TestUtil.isBitIdentical(orc_frame, csv_frame));
+
+            csv_frame.delete();
+            orc_frame.delete();
+        }
     }
 }

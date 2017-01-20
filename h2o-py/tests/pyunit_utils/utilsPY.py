@@ -2630,7 +2630,7 @@ def compareOneStringColumn(frame1, frame2, col_ind, rows, numElements):
     else:
         numElements = rows
 
-    for ele_ind in range(numElements):
+    for ele_ind in range(min(rows, numElements)):
         row_ind = row_indices[ele_ind]
 
         val1 = frame1[row_ind, col_ind]
@@ -2653,15 +2653,14 @@ def compareOneNumericColumn(frame1, frame2, col_ind, rows, tolerance, numElement
     :return: None.  Will throw exceptions if comparison failed.
     """
 
-    row_indices = []
+    row_indices = list(range(rows))
     if numElements > 0:
-        row_indices = random.sample(xrange(rows), numElements)
+        random.shuffle(row_indices)
     else:
-        numElements = rows  # Compare all elements
-        row_indices = list(range(rows))
+        numElements = rows
 
 
-    for ele_ind in range(numElements):
+    for ele_ind in range(min(rows, numElements)):
         row_ind = row_indices[ele_ind]
 
         val1 = frame1[row_ind, col_ind]
@@ -2677,8 +2676,6 @@ def compareOneNumericColumn(frame1, frame2, col_ind, rows, tolerance, numElement
         else:   # something is wrong, one frame got a missing value while the other is fine.
             assert 1 == 2,  "failed frame values check! frame1 value {0}, frame2 value {1} at row {2}, " \
                             "column {3}".format(val1, val2, row_ind, col_ind)
-
-import warnings
 
 def expect_warnings(filewithpath, warn_phrase="warn", warn_string_of_interest="warn", number_of_times=1, in_hdfs=False):
     """

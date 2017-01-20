@@ -19,6 +19,9 @@ def orc_parser_timestamp_date():
 
     :return: None
     """
+    origTZ = h2o.cluster().timezone
+    newZone = 'America/Los_Angeles'
+    h2o.cluster().timezone = newZone
 
     tol_time = 200              # comparing in ms or ns
     tol_numeric = 1e-5          # tolerance for comparing other numeric fields
@@ -41,7 +44,7 @@ def orc_parser_timestamp_date():
         assert pyunit_utils.compare_frames(h2oOrc, h2oCsv, numElements2Compare, tol_time, tol_numeric), \
             "H2O frame parsed from orc and csv files are different!"
 
-
+    h2o.cluster().timezone=origTZ
 if __name__ == "__main__":
     pyunit_utils.standalone_test(orc_parser_timestamp_date)
 else:
