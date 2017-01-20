@@ -72,24 +72,22 @@ stackedensemble.gaussian.test <- function() {
   
   # Check that prediction works
   pred <- h2o.predict(stack, newdata = train)  #works on train
-  #pred <- h2o.predict(stack, newdata = test) #but not test
-  # Error: java.lang.IllegalArgumentException: Can not make vectors of different length compatible! 
-  #expect_equal(nrow(pred), 5000)
-  #expect_equal(ncol(pred), 1)
+  # expect_equal(nrow(pred), 5000)
+  # expect_equal(ncol(pred), 1)
+
+  pred <- h2o.predict(stack, newdata = test) #but not test
+  # expect_equal(nrow(pred), 5000)
+  # expect_equal(ncol(pred), 1)
   
   # Eval ensemble perf
   perf_stack_train <- h2o.performance(stack)
-  #perf_stack_test <- h2o.performance(stack, newdata = test)
-  #Error in .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page,  : 
-  #ERROR MESSAGE:
-  #                         
-  #Can not make vectors of different length compatible! 
+  perf_stack_test <- h2o.performance(stack, newdata = test)
   
   # Check that stack perf is better (smaller) than the best (smallest) base learner perf:
   # Training error
-  #expect_lte(h2o.rmse(perf_stack_train), min(h2o.rmse(perf_gbm_train), h2o.rmse(perf_rf_train)))
+  # expect_lte(h2o.rmse(perf_stack_train), min(h2o.rmse(perf_gbm_train), h2o.rmse(perf_rf_train)))
   # Test error
-  #expect_lte(h2o.rmse(perf_stack_test), min(h2o.rmse(perf_gbm_test), h2o.rmse(perf_rf_test)))
+  # expect_lte(h2o.rmse(perf_stack_test), min(h2o.rmse(perf_gbm_test), h2o.rmse(perf_rf_test)))
   
   # TO DO: Check that passing `test` as a validation_frame
   #        produces the same metrics as h2o.performance(stack, test)
