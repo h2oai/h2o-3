@@ -73,6 +73,7 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
     h2oconn = H2OConnection.open(server=server, url=url, ip=ip, port=port, https=https, auth=auth,
                                  verify_ssl_certificates=verify_ssl_certificates, proxy=proxy,
                                  cluster_id=cluster_id, cookies=cookies, verbose=verbose)
+    h2oconn.cluster.timezone = "UTC"
     if verbose:
         h2oconn.cluster.show_status()
     return h2oconn
@@ -246,6 +247,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
                                      auth=auth, proxy=proxy, cluster_id=cluster_id, cookies=cookies, verbose=True)
     if check_version:
         version_check()
+    h2oconn.cluster.timezone = "UTC"
     h2oconn.cluster.show_status()
 
 

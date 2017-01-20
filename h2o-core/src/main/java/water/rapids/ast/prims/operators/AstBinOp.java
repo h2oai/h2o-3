@@ -336,7 +336,7 @@ abstract public class AstBinOp extends AstPrimitive {
   private ValFrame frame_op_row(Frame lf, Frame row) {
     final double[] rawRow = new double[row.numCols()];
     for (int i = 0; i < rawRow.length; ++i)
-      rawRow[i] = row.vec(i).isNumeric() ? row.vec(i).at(0) : Double.NaN; // is numeric, if not then NaN
+      rawRow[i] = row.vec(i).isNumeric() || row.vec(i).isTime() ? row.vec(i).at(0) : Double.NaN; // is numberlike, if not then NaN
     Frame res = new MRTask() {
       @Override
       public void map(Chunk[] chks, NewChunk[] cress) {

@@ -36,7 +36,7 @@ from h2o.utils.shared_utils import (_handle_numpy_array, _handle_pandas_data_fra
                                     _handle_python_lists, _is_list, _is_str_list, _py_tmp_key, _quoted,
                                     can_use_pandas, quote, normalize_slice, slice_is_normalized, check_frame_id)
 from h2o.utils.typechecks import (assert_is_type, assert_satisfies, Enum, I, is_type, numeric, numpy_ndarray,
-                                  pandas_dataframe, scipy_sparse, U)
+                                  numpy_datetime, pandas_dataframe, pandas_timestamp, scipy_sparse, U)
 
 __all__ = ("H2OFrame", )
 
@@ -2873,8 +2873,8 @@ class H2OFrame(object):
 #-----------------------------------------------------------------------------------------------------------------------
 
 def _binop(lhs, op, rhs):
-    assert_is_type(lhs, str, numeric, datetime.date, H2OFrame)
-    assert_is_type(rhs, str, numeric, datetime.date, H2OFrame)
+    assert_is_type(lhs, str, numeric, datetime.date, pandas_timestamp, numpy_datetime, H2OFrame)
+    assert_is_type(rhs, str, numeric, datetime.date, pandas_timestamp, numpy_datetime, H2OFrame)
     if isinstance(lhs, H2OFrame) and isinstance(rhs, H2OFrame):
         lrows, lcols = lhs.shape
         rrows, rcols = rhs.shape
@@ -2889,10 +2889,20 @@ def _binop(lhs, op, rhs):
         if not compatible:
             raise H2OValueError("Attempting to operate on incompatible frames: (%d x %d) and (%d x %d)"
                                 % (lrows, lcols, rrows, rcols))
+
     if isinstance(lhs, datetime.date):
         lhs = H2OFrame.moment(date=lhs)
+    elif is_type(lhs, pandas_timestamp):
+        lhs = H2OFrame.moment(date=lhs.to_pydatetime())
+    elif is_type(lhs, numpy_datetime):
+        lhs = H2OFrame.moment(date=datetime.datetime.utcfromtimestamp(lhs.astype(int) / 1e9))
+
     if isinstance(rhs, datetime.date):
         rhs = H2OFrame.moment(date=rhs)
+    elif is_type(rhs, pandas_timestamp):
+        rhs = H2OFrame.moment(date=rhs.to_pydatetime())
+    elif is_type(rhs, numpy_datetime):
+        rhs = H2OFrame.moment(date=datetime.datetime.utcfromtimestamp(rhs.astype(int) / 1e9))
 
     cache = lhs._ex._cache if isinstance(lhs, H2OFrame) else rhs._ex._cache
     return H2OFrame._expr(expr=ExprNode(op, lhs, rhs), cache=cache)
