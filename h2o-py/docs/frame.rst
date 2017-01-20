@@ -6,7 +6,7 @@ Data Manipulation
 .. autoclass:: h2o.frame.H2OFrame
     :members:
     :undoc-members:
-    :show-inheritance:
+
 
 :mod:`GroupBy`
 --------------

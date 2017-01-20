@@ -1,10 +1,4 @@
 # -*- encoding: utf-8 -*-
-"""
-Cross-validation.
-
-:copyright: (c) 2016 H2O.ai
-:license:   Apache License Version 2.0 (see LICENSE for details)
-"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 from h2o.utils.compatibility import *  # NOQA
 
@@ -21,6 +15,8 @@ class H2OPartitionIterator(object):
 
     def _test_masks(self):
         raise NotImplementedError()
+
+
 
 
 class H2OKFold(H2OPartitionIterator):
@@ -44,6 +40,8 @@ class H2OKFold(H2OPartitionIterator):
         if self.fr is None: raise ValueError("No H2OFrame available for computing folds.")
         self.fold_assignments = self.fr.kfold_column(self.n_folds, self.seed)
         self.fr = None
+
+
 
 
 class H2OStratifiedKFold(H2OPartitionIterator):

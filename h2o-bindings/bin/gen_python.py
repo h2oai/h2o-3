@@ -184,17 +184,24 @@ def gen_module(schema, algo):
         ptype = param["ptype"]
         if pname == "model_id": continue  # The getter is already defined in ModelBase
         sname = pname[:-1] if pname[-1] == '_' else pname
-        phelp = param["dtype"] + ": " + param["help"]
-        if param["default_value"] is not None:
-            phelp += " (Default: %s)" % stringify(param["default_value"])
+
+        if param["dtype"].startswith("Enum"):
+            vals = param["dtype"][5:-1].split(", ")
+            extrahelp = "One of: " + ", ".join("``%s``" % v for v in vals)
+        else:
+            extrahelp = "Type: ``%s``" % param["dtype"]
+        if param["default_value"] is None:
+            extrahelp += "."
+        else:
+            extrahelp += "  (default: ``%s``)." % stringify(param["default_value"])
+
         yield "    @property"
         yield "    def %s(self):" % pname
-        if len(phelp) > 100:
-            yield '        """'
-            yield "        %s" % bi.wrap(phelp, indent=(" " * 8), indent_first=False)
-            yield '        """'
-        else:
-            yield '        """%s"""' % phelp
+        yield '        """'
+        yield "        %s" % bi.wrap(param["help"], indent=(" " * 8), indent_first=False)
+        yield ""
+        yield "        %s" % bi.wrap(extrahelp, indent=(" " * 8), indent_first=False)
+        yield '        """'
         yield "        return self._parms.get(\"%s\")" % sname
         yield ""
         yield "    @%s.setter" % pname
@@ -285,10 +292,8 @@ def help_epilogue_for(algo):
                          >>> model.train(x=range(4), y=4, training_frame=fr)"""
     if algo == "glm":
         return """
-            Returns
-            -------
-            A subclass of ModelBase is returned. The specific subclass depends on the machine learning task at hand
-            (if it's binomial classification, then an H2OBinomialModel is returned, if it's regression then a
+            A subclass of :class:`ModelBase` is returned. The specific subclass depends on the machine learning task
+            at hand (if it's binomial classification, then an H2OBinomialModel is returned, if it's regression then a
             H2ORegressionModel is returned). The default print-out of the models is shown, but further GLM-specific
             information can be queried out of the object. Upon completion of the GLM, the resulting object has
             coefficients, normalized coefficients, residual/null deviance, aic, and a host of model metrics including
@@ -307,19 +312,19 @@ def class_extra_for(algo):
         return """
             @property
             def Lambda(self):
-                \"""[DEPRECATED] Use self.lambda_ instead\"""
+                \"""DEPRECATED. Use ``self.lambda_`` instead\"""
                 return self._parms["lambda"] if "lambda" in self._parms else None
 
             @Lambda.setter
-            def lambda_(self, value):
-                \"""[DEPRECATED] Use self.lambda_ instead\"""
+            def Lambda(self, value):
                 self._parms["lambda"] = value
 
             @staticmethod
             def getGLMRegularizationPath(model):
                 \"\"\"
                 Extract full regularization path explored during lambda search from glm model.
-                @param model - source lambda search model
+
+                :param model: source lambda search model
                 \"\"\"
                 x = h2o.api("GET /3/GetGLMRegPath", data={"model": model._model_json["model_id"]["name"]})
                 ns = x.pop("coefficient_names")
@@ -337,10 +342,12 @@ def class_extra_for(algo):
             def makeGLMModel(model, coefs, threshold=.5):
                 \"\"\"
                 Create a custom GLM model using the given coefficients.
+
                 Needs to be passed source model trained on the dataset to extract the dataset information from.
-                  @param model - source model, used for extracting dataset information
-                  @param coefs - dictionary containing model coefficients
-                  @param threshold - (optional, only for binomial) decision threshold used for classification
+
+                :param model: source model, used for extracting dataset information
+                :param coefs: dictionary containing model coefficients
+                :param threshold: (optional, only for binomial) decision threshold used for classification
                 \"\"\"
                 model_json = h2o.api(
                     "POST /3/MakeGLMModel",
@@ -358,12 +365,10 @@ def class_extra_for(algo):
         # Ask the H2O server whether a Deep Water model can be built (depends on availability of native backends)
         @staticmethod
         def available():
-            \"\"\"
-            Returns True if a deep water model can be built, or False otherwise.
-            \"\"\"
+            \"\"\"Returns True if a deep water model can be built, or False otherwise.\"\"\"
             builder_json = h2o.api("GET /3/ModelBuilders", data={"algo": "deepwater"})
             visibility = builder_json["model_builders"]["deepwater"]["visibility"]
-            if (visibility == "Experimental"):
+            if visibility == "Experimental":
                 print("Cannot build a Deep Water model - no backend found.")
                 return False
             else:
@@ -396,12 +401,40 @@ def gen_init(modules):
     yield "# This file is auto-generated by h2o-3/h2o-bindings/bin/gen_python.py"
     yield "# Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)"
     yield "#"
-    for module, clz in sorted(modules):
+    module_strs = []
+    for module, clz, category in sorted(modules):
+        if clz == "H2OGridSearch": continue
+        module_strs.append('"%s"' % clz)
         yield "from .%s import %s" % (module, clz)
     yield ""
     yield "__all__ = ("
-    yield bi.wrap(", ".join('"%s"' % clz for _, clz in sorted(modules)), indent="    ")
+    yield bi.wrap(", ".join(module_strs), indent="    ")
     yield ")"
+
+
+def gen_models_docs(modules):
+    yield ":tocdepth: 3"
+    yield ""
+    yield "Modeling In H2O"
+    yield "==============="
+    for cat in ["Supervised", "Unsupervised", "Miscellaneous"]:
+        yield ""
+        yield cat
+        yield "+" * len(cat)
+        yield ""
+        for module, clz, category in sorted(modules):
+            if category != cat: continue
+            fullmodule = "h2o.estimators.%s.%s" % (module, clz)
+            if clz == "H2OGridSearch":
+                fullmodule = "h2o.grid.grid_search.H2OGridSearch"
+            yield ":mod:`%s`" % clz
+            yield "-" * (7 + len(clz))
+            yield ".. autoclass:: %s" % fullmodule
+            yield "    :show-inheritance:"
+            yield "    :members:"
+            yield ""
+
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 #   MAIN:
@@ -409,17 +442,22 @@ def gen_init(modules):
 def main():
     bi.init("Python", "../../../h2o-py/h2o/estimators", clear_dir=False)
 
-    modules = [("deeplearning", "H2OAutoEncoderEstimator"),  # deeplearning module contains 2 classes in it...
-               ("estimator_base", "H2OEstimator")]
+    modules = [("deeplearning", "H2OAutoEncoderEstimator", "Unsupervised"),
+               ("estimator_base", "H2OEstimator", "Miscellaneous"),
+               ("grid_search", "H2OGridSearch", "Miscellaneous")]
     for name, mb in bi.model_builders().items():
         module = name
         if name == "drf": module = "random_forest"
         if name == "naivebayes": module = "naive_bayes"
         bi.vprint("Generating model: " + name)
         bi.write_to_file("%s.py" % module, gen_module(mb, name))
-        modules.append((module, algo_to_classname(name)))
+        category = "Supervised" if mb["supervised"] else "Unsupervised"
+        if name in {"svd", "word2vec"}:
+            category = "Miscellaneous"
+        modules.append((module, algo_to_classname(name), category))
 
     bi.write_to_file("__init__.py", gen_init(modules))
+    bi.write_to_file("../../docs/modeling.rst", gen_models_docs(modules))
 
     type_adapter1.vprint_translation_map()
 

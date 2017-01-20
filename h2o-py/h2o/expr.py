@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-Rapids expressions.
+Rapids expressions. These are helper classes for H2OFrame.
 
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
@@ -24,7 +24,8 @@ from h2o.utils.shared_utils import _is_fr, _py_tmp_key
 
 
 class ExprNode(object):
-    """Composable Expressions: This module contains code for the lazy expression DAG.
+    """
+    Composable Expressions: This module contains code for the lazy expression DAG.
 
     Execution Overview
     ------------------
@@ -103,8 +104,8 @@ class ExprNode(object):
                 self._cache._data = [float(x) for x in res['scalar']]
             else:
                 self._cache._data = None if res['scalar'] is None else float(res['scalar'])
-        if 'string' in res:  self._cache._data = res['string']
-        if 'funstr' in res:  raise NotImplementedError
+        if 'string' in res: self._cache._data = res['string']
+        if 'funstr' in res: raise NotImplementedError
         if 'key' in res:
             self._cache.nrows = res['num_rows']
             self._cache.ncols = res['num_cols']
@@ -203,6 +204,8 @@ class ExprNode(object):
         return h2o.api("POST /99/Rapids", data={"ast": expr, "session_id": h2o.connection().session_id})
 
 
+
+
 class ASTId:
     def __init__(self, name=None):
         if name is None:
@@ -211,6 +214,8 @@ class ASTId:
 
     def __repr__(self):
         return self.name
+
+
 
 
 class H2OCache(object):
@@ -285,7 +290,7 @@ class H2OCache(object):
         return not isinstance(self._data, dict)
 
     def is_valid(self):
-        return (# self._id is not None and
+        return (  # self._id is not None and
                 not self.is_empty() and \
                 self.nrows_valid() and
                 self.ncols_valid() and

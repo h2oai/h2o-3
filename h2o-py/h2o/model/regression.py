@@ -1,10 +1,4 @@
 # -*- encoding: utf-8 -*-
-"""
-Regression model.
-
-:copyright: (c) 2016 H2O.ai
-:license:   Apache License Version 2.0 (see LICENSE for details)
-"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from h2o.model.model_base import ModelBase
@@ -18,12 +12,12 @@ class H2ORegressionModel(ModelBase):
 
     def plot(self, timestep="AUTO", metric="AUTO", **kwargs):
         """
-        Plots training set (and validation set if available) scoring history for an H2ORegressionModel. The timestep and metric
-        arguments are restricted to what is available in its scoring history.
+        Plots training set (and validation set if available) scoring history for an H2ORegressionModel. The timestep
+        and metric arguments are restricted to what is available in its scoring history.
 
         :param timestep: A unit of measurement for the x-axis.
         :param metric: A unit of measurement for the y-axis.
-        :return: A scoring history plot.
+        :returns: A scoring history plot.
         """
 
         if self._model_json["algo"] in ("deeplearning", "deepwater", "drf", "gbm"):
@@ -37,11 +31,11 @@ class H2ORegressionModel(ModelBase):
 
 def _mean_var(frame, weights=None):
     """
-    Compute the (weighted) mean and variance
+    Compute the (weighted) mean and variance.
 
     :param frame: Single column H2OFrame
     :param weights: optional weights column
-    :return: The (weighted) mean and variance
+    :returns: The (weighted) mean and variance
     """
     return _colmean(frame), frame.var()
 
@@ -53,8 +47,7 @@ def h2o_mean_absolute_error(y_actual, y_predicted, weights=None):
     :param y_actual: H2OFrame of actual response.
     :param y_predicted: H2OFrame of predicted response.
     :param weights: (Optional) sample weights
-    :return: loss (float) (best is 0.0)
-
+    :returns: mean absolute error loss (best is 0.0).
     """
     ModelBase._check_targets(y_actual, y_predicted)
     return _colmean((y_predicted - y_actual).abs())
@@ -67,7 +60,7 @@ def h2o_mean_squared_error(y_actual, y_predicted, weights=None):
     :param y_actual: H2OFrame of actual response.
     :param y_predicted: H2OFrame of predicted response.
     :param weights: (Optional) sample weights
-    :return: loss (float) (best is 0.0)
+    :returns: mean squared error loss (best is 0.0).
     """
     ModelBase._check_targets(y_actual, y_predicted)
     return _colmean((y_predicted - y_actual) ** 2)
@@ -79,7 +72,7 @@ def h2o_median_absolute_error(y_actual, y_predicted):
 
     :param y_actual: H2OFrame of actual response.
     :param y_predicted: H2OFrame of predicted response.
-    :return: loss (float) (best is 0.0)
+    :returns: median absolute error loss (best is 0.0)
     """
     ModelBase._check_targets(y_actual, y_predicted)
     return (y_predicted - y_actual).abs().median()
@@ -87,12 +80,12 @@ def h2o_median_absolute_error(y_actual, y_predicted):
 
 def h2o_explained_variance_score(y_actual, y_predicted, weights=None):
     """
-    Explained variance regression score function
+    Explained variance regression score function.
 
     :param y_actual: H2OFrame of actual response.
     :param y_predicted: H2OFrame of predicted response.
     :param weights: (Optional) sample weights
-    :return: the explained variance score (float)
+    :returns: the explained variance score.
     """
     ModelBase._check_targets(y_actual, y_predicted)
 
@@ -105,12 +98,12 @@ def h2o_explained_variance_score(y_actual, y_predicted, weights=None):
 
 def h2o_r2_score(y_actual, y_predicted, weights=1.):
     """
-    R^2 (coefficient of determination) regression score function
+    R-squared (coefficient of determination) regression score function
 
     :param y_actual: H2OFrame of actual response.
     :param y_predicted: H2OFrame of predicted response.
     :param weights: (Optional) sample weights
-    :return: R^2 (float) (best is 1.0, lower is worse)
+    :returns: R-squared (best is 1.0, lower is worse).
     """
     ModelBase._check_targets(y_actual, y_predicted)
     numerator = (weights * (y_actual - y_predicted) ** 2).sum()
