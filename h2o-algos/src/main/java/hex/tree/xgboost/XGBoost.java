@@ -6,12 +6,14 @@ import hex.ScoreKeeper;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
-import water.*;
+import water.H2O;
+import water.Key;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
+import water.util.Log;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -280,14 +282,45 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           model._output._scored_train = ArrayUtils.copyAndFillOf(model._output._scored_train, model._output._ntrees+1, new ScoreKeeper());
           model._output._scored_valid = model._output._scored_valid != null ? ArrayUtils.copyAndFillOf(model._output._scored_valid, model._output._ntrees+1, new ScoreKeeper()) : null;
           model._output._training_time_ms = ArrayUtils.copyAndFillOf(model._output._training_time_ms, model._output._ntrees+1, System.currentTimeMillis());
-          model.doScoring(booster, trainMat, validMat);
-          model.computeVarImp(booster.getFeatureScore("featureMap.txt"));
-          model.update(_job);
+          doScoring(model, booster, trainMat, validMat, false);
         }
+        doScoring(model, booster, trainMat, validMat, true);
       } catch (XGBoostError xgBoostError) {
         xgBoostError.printStackTrace();
       }
       model.unlock(_job);
     }
+
+    long _firstScore = 0;
+    long _timeLastScoreStart = 0;
+    long _timeLastScoreEnd = 0;
+    private void doScoring(XGBoostModel model, Booster booster, DMatrix trainMat, DMatrix validMat, boolean finalScoring) throws XGBoostError {
+      long now = System.currentTimeMillis();
+      if (_firstScore == 0) _firstScore = now;
+      long sinceLastScore = now - _timeLastScoreStart;
+      _job.update(0, "Built " + model._output._ntrees + " trees so far (out of " + _parms._ntrees + ").");
+
+      boolean timeToScore = (now - _firstScore < _parms._initial_score_interval) || // Score every time for 4 secs
+          // Throttle scoring to keep the cost sane; limit to a 10% duty cycle & every 4 secs
+          (sinceLastScore > _parms._score_interval && // Limit scoring updates to every 4sec
+              (double) (_timeLastScoreEnd - _timeLastScoreStart) / sinceLastScore < 0.1); //10% duty cycle
+
+      boolean manualInterval = _parms._score_tree_interval > 0 && model._output._ntrees % _parms._score_tree_interval == 0;
+
+      // Now model already contains tid-trees in serialized form
+      if (_parms._score_each_iteration || finalScoring || // always score under these circumstances
+          (timeToScore && _parms._score_tree_interval == 0) || // use time-based duty-cycle heuristic only if the user didn't specify _score_tree_interval
+          manualInterval) {
+        _timeLastScoreStart = now;
+        model.doScoring(booster, trainMat, validMat);
+        _timeLastScoreEnd = System.currentTimeMillis();
+        model.computeVarImp(booster.getFeatureScore("featureMap.txt"));
+        model.update(_job);
+        Log.info(model);
+      }
+    }
   }
+
+
+
 }
