@@ -26,7 +26,7 @@ stackedensemble.binomial.grid.test <- function() {
   nfolds <- 5
   
   search_criteria <- list(strategy = "RandomDiscrete", 
-                          max_models = 4,
+                          max_models = 3,
                           seed = 1)
   nfolds <- 5
   
@@ -41,11 +41,11 @@ stackedensemble.binomial.grid.test <- function() {
                        col_sample_rate = col_sample_rate_opt)
   
   gbm_grid <- h2o.grid(algorithm = "gbm", 
-                       grid_id = "gbm_grid_higgs_binomial",
+                       grid_id = "gbm_grid_binomial",
                        x = x, 
                        y = y,
                        training_frame = train,
-                       ntrees = 50,
+                       ntrees = 10,
                        seed = 1,
                        nfolds = nfolds,
                        fold_assignment = "Modulo",
@@ -71,22 +71,26 @@ stackedensemble.binomial.grid.test <- function() {
   perf_stack_train <- h2o.performance(stack)
   perf_stack_test <- h2o.performance(stack, newdata = test)
 
-  # TO DO: Add print statements here to print out performance
-  # Check that stack perf is better (bigger) than the best (biggest) base learner perf:
   # Training AUC for each base learner
-  auc_gbm_grid_train <- sapply(gbm_grid@model_ids, function(mm) h2o.auc(h2o.getModel(mm), train = TRUE))
-  #expect_gte(h2o.auc(perf_stack_train), max(auc_gbm_grid_train))  #NOT WORKING
+  baselearner_best_auc_train <- max(sapply(gbm_grid@model_ids, function(mm) h2o.auc(h2o.getModel(mm), train = TRUE)))
+  stack_auc_train <- h2o.auc(perf_stack_train)
+  print(sprintf("Best Base-learner Training AUC:  %s", baselearner_best_auc_train))
+  print(sprintf("Ensemble Training AUC:  %s", stack_auc_train))
+  #expect_gte(stack_auc_train, baselearner_best_auc_train)  #Does not pass in this example, but this is ok
+
+  # Check that stack perf is better (bigger) than the best (biggest) base learner perf:
   # Test AUC for each base learner
-  auc_gbm_grid_test <- sapply(gbm_grid@model_ids, function(mm) h2o.auc(h2o.performance(h2o.getModel(mm), newdata = test)))
-  expect_gte(h2o.auc(perf_stack_train), max(auc_gbm_grid_test))
-  
+  baselearner_best_auc_test <- max(sapply(gbm_grid@model_ids, function(mm) h2o.auc(h2o.performance(h2o.getModel(mm), newdata = test))))
+  stack_auc_test <- h2o.auc(perf_stack_test)
+  print(sprintf("Best Base-learner Test AUC:  %s", baselearner_best_auc_test))
+  print(sprintf("Ensemble Test AUC:  %s", stack_auc_test))
+  expect_gte(stack_auc_test, baselearner_best_auc_test)
   
   # Check that passing `test` as a validation_frame
   # produces the same metrics as h2o.performance(stack, test)
   # Since the metrics object is not exactly the same, we can just test that AUC is the same
   perf_stack_validation_frame <- h2o.performance(stack, valid = TRUE)
   expect_identical(h2o.auc(perf_stack_test), h2o.auc(perf_stack_validation_frame))
-  
   
 }
 
