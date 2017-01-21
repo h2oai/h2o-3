@@ -154,6 +154,13 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
     return false;
   }
 
+  public boolean sameString(String str) {
+      if (str.length() != _len) return false;
+      for (int i = 0; i < _len; ++i)
+        if (_buf[_off + i] != str.charAt(i)) return false;
+      return true;
+  }
+  
   // Thou Shalt Not use accessors in performance critical code - because it
   // obfuscates the code's cost model.  All file-local uses of the accessors
   // has been stripped, please do not re-insert them.  In particular, the

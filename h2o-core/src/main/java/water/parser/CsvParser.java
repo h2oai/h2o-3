@@ -123,7 +123,7 @@ MAIN_LOOP:
                   && _setup._na_strings.length > colIdx
                   && _setup._na_strings[colIdx] != null) {
             for (String s : _setup._na_strings[colIdx]) {
-              if (str.equals(s)) {
+              if (str.sameString(s)) {
                 isNa = true;
                 break;
               }
