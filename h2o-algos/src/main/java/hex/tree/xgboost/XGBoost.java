@@ -1,17 +1,22 @@
 package hex.tree.xgboost;
 
+import hex.DataInfo;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.ScoreKeeper;
+import hex.glm.GLMTask;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
-import water.*;
+import water.H2O;
+import water.Key;
+import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
+import water.util.Log;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -25,6 +30,7 @@ import java.util.HashMap;
  *  Based on "Elements of Statistical Learning, Second Edition, page 387"
  */
 public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParameters,XGBoostOutput> {
+  @Override public boolean haveMojo() { return true; }
 
   /**
    * convert an H2O Frame to a sparse DMatrix
@@ -230,6 +236,38 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       error("_col_sample_rate", "col_sample_rate must be between 0 and 1");
   }
 
+  static DataInfo makeDataInfo(Frame train, Frame valid, XGBoostModel.XGBoostParameters parms, int nClasses) {
+    DataInfo dinfo = new DataInfo(
+            train,
+            valid,
+            1, //nResponses
+            true, //all factor levels
+            DataInfo.TransformType.NONE, //do not standardize
+            DataInfo.TransformType.NONE, //do not standardize response
+            parms._missing_values_handling == XGBoostModel.XGBoostParameters.MissingValuesHandling.Skip, //whether to skip missing
+            false, // do not replace NAs in numeric cols with mean
+            true,  // always add a bucket for missing values
+            parms._weights_column != null, // observation weights
+            parms._offset_column != null,
+            parms._fold_column != null
+    );
+    // Checks and adjustments:
+    // 1) observation weights (adjust mean/sigmas for predictors and response)
+    // 2) NAs (check that there's enough rows left)
+    GLMTask.YMUTask ymt = new GLMTask.YMUTask(dinfo, nClasses,nClasses == 1, parms._missing_values_handling == XGBoostModel.XGBoostParameters.MissingValuesHandling.Skip, true).doAll(dinfo._adaptedFrame);
+    if (ymt.wsum() == 0 && parms._missing_values_handling == XGBoostModel.XGBoostParameters.MissingValuesHandling.Skip)
+      throw new H2OIllegalArgumentException("No rows left in the dataset after filtering out rows with missing values. Ignore columns with many NAs or set missing_values_handling to 'MeanImputation'.");
+    if (parms._weights_column != null && parms._offset_column != null) {
+      Log.warn("Combination of offset and weights can lead to slight differences because Rollupstats aren't weighted - need to re-calculate weighted mean/sigma of the response including offset terms.");
+    }
+    if (parms._weights_column != null && parms._offset_column == null /*FIXME: offset not yet implemented*/) {
+      dinfo.updateWeightedSigmaAndMean(ymt.predictorSDs(), ymt.predictorMeans());
+      if (nClasses == 1)
+        dinfo.updateWeightedSigmaAndMeanForResponse(ymt.responseSDs(), ymt.responseMeans());
+    }
+    return dinfo;
+  }
+
   // ----------------------
   private class XGBoostDriver extends Driver {
     @Override
@@ -273,21 +311,59 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         else
           watches.put("train", trainMat);
 
-        Booster booster = ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, model.createParams(), 0, watches, null, null);
+        model.model_info()._booster = ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, model.createParams(), 0, watches, null, null);
         for( int tid=0; tid< _parms._ntrees; tid++) {
-          booster.update(trainMat, tid);
+          model.model_info()._booster.update(trainMat, tid);
+          // Optional: for convenience
+          {
+            model.update(_job);
+            model.model_info().nativeToJava();
+          }
           model._output._ntrees++;
           model._output._scored_train = ArrayUtils.copyAndFillOf(model._output._scored_train, model._output._ntrees+1, new ScoreKeeper());
           model._output._scored_valid = model._output._scored_valid != null ? ArrayUtils.copyAndFillOf(model._output._scored_valid, model._output._ntrees+1, new ScoreKeeper()) : null;
           model._output._training_time_ms = ArrayUtils.copyAndFillOf(model._output._training_time_ms, model._output._ntrees+1, System.currentTimeMillis());
-          model.doScoring(booster, trainMat, validMat);
-          model.computeVarImp(booster.getFeatureScore("featureMap.txt"));
-          model.update(_job);
+          doScoring(model, model.model_info()._booster, trainMat, validMat, false);
         }
+        doScoring(model, model.model_info()._booster, trainMat, validMat, true);
+        model.model_info().nativeToJava();
       } catch (XGBoostError xgBoostError) {
         xgBoostError.printStackTrace();
       }
+      model._output._boosterBytes = model.model_info()._boosterBytes;
       model.unlock(_job);
     }
+
+    long _firstScore = 0;
+    long _timeLastScoreStart = 0;
+    long _timeLastScoreEnd = 0;
+    private void doScoring(XGBoostModel model, Booster booster, DMatrix trainMat, DMatrix validMat, boolean finalScoring) throws XGBoostError {
+      long now = System.currentTimeMillis();
+      if (_firstScore == 0) _firstScore = now;
+      long sinceLastScore = now - _timeLastScoreStart;
+      _job.update(0, "Built " + model._output._ntrees + " trees so far (out of " + _parms._ntrees + ").");
+
+      boolean timeToScore = (now - _firstScore < _parms._initial_score_interval) || // Score every time for 4 secs
+          // Throttle scoring to keep the cost sane; limit to a 10% duty cycle & every 4 secs
+          (sinceLastScore > _parms._score_interval && // Limit scoring updates to every 4sec
+              (double) (_timeLastScoreEnd - _timeLastScoreStart) / sinceLastScore < 0.1); //10% duty cycle
+
+      boolean manualInterval = _parms._score_tree_interval > 0 && model._output._ntrees % _parms._score_tree_interval == 0;
+
+      // Now model already contains tid-trees in serialized form
+      if (_parms._score_each_iteration || finalScoring || // always score under these circumstances
+          (timeToScore && _parms._score_tree_interval == 0) || // use time-based duty-cycle heuristic only if the user didn't specify _score_tree_interval
+          manualInterval) {
+        _timeLastScoreStart = now;
+        model.doScoring(booster, trainMat, validMat);
+        _timeLastScoreEnd = System.currentTimeMillis();
+        model.computeVarImp(booster.getFeatureScore("featureMap.txt"));
+        model.update(_job);
+        Log.info(model);
+      }
+    }
   }
+
+
+
 }

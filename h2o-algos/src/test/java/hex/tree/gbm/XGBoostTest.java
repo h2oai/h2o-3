@@ -8,6 +8,7 @@ import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoost;
 import ml.dmlc.xgboost4j.java.XGBoostError;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
@@ -386,9 +387,8 @@ public class XGBoostTest extends TestUtil {
       model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
       Log.info(model);
 
-      // TODO - fix scoring and MOJO
-//      preds = model.score(testFrame);
-//      Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
+      preds = model.score(testFrame);
+      Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
 
     } finally {
       if (trainFrame!=null) trainFrame.remove();
@@ -436,8 +436,8 @@ public class XGBoostTest extends TestUtil {
       Log.info(model);
 
       // TODO - fix scoring and MOJO
-//      preds = model.score(testFrame);
-//      Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
+      preds = model.score(testFrame);
+      Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
 
     } finally {
       if (trainFrame!=null) trainFrame.remove();
