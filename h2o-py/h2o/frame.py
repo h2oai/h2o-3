@@ -767,7 +767,7 @@ class H2OFrame(object):
         -------
           H2OFrame of one column containing the date in millis since the epoch.
         """
-        assert_is_type(date, None, datetime.date)
+        assert_is_type(date, None, datetime.date, numpy_datetime, pandas_timestamp)
         assert_is_type(time, None, datetime.time)
         assert_is_type(year, None, int, H2OFrame)
         assert_is_type(month, None, int, H2OFrame)
@@ -784,6 +784,10 @@ class H2OFrame(object):
             second = time.second
             msec = time.microsecond // 1000
         if date is not None:
+            if is_type(date, pandas_timestamp):
+                date = date.to_pydatetime()
+            if is_type(date, numpy_datetime):
+                date = date.astype("M8[ms]").astype("O")
             if year is not None or month is not None or day is not None:
                 raise H2OValueError("Arguments year, month and day cannot be used together with `date`.")
             year = date.year
@@ -2897,19 +2901,10 @@ def _binop(lhs, op, rhs):
             raise H2OValueError("Attempting to operate on incompatible frames: (%d x %d) and (%d x %d)"
                                 % (lrows, lcols, rrows, rcols))
 
-    if isinstance(lhs, datetime.date):
+    if is_type(lhs, pandas_timestamp, numpy_datetime, datetime.date):
         lhs = H2OFrame.moment(date=lhs)
-    elif is_type(lhs, pandas_timestamp):
-        lhs = H2OFrame.moment(date=lhs.to_pydatetime())
-    elif is_type(lhs, numpy_datetime):
-        lhs = H2OFrame.moment(date=datetime.datetime.utcfromtimestamp(lhs.astype(int) / 1e9))
-
-    if isinstance(rhs, datetime.date):
+    if is_type(rhs, pandas_timestamp, numpy_datetime, datetime.date):
         rhs = H2OFrame.moment(date=rhs)
-    elif is_type(rhs, pandas_timestamp):
-        rhs = H2OFrame.moment(date=rhs.to_pydatetime())
-    elif is_type(rhs, numpy_datetime):
-        rhs = H2OFrame.moment(date=datetime.datetime.utcfromtimestamp(rhs.astype(int) / 1e9))
 
     cache = lhs._ex._cache if isinstance(lhs, H2OFrame) else rhs._ex._cache
     return H2OFrame._expr(expr=ExprNode(op, lhs, rhs), cache=cache)

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
+import datetime
 
 import h2o
 import pandas as pd
@@ -15,6 +16,9 @@ def test_date_comparisons():
     z2 = dfpd["date"].values[2]
     assert isinstance(z1, pd.Timestamp)
     assert isinstance(z2, np.datetime64)
+    # Check that the conversion used in H2OFrame.moment() work as expected
+    assert z1.to_pydatetime() == datetime.datetime(2011, 1, 1, 0, 0)
+    assert z2.astype("M8[ms]").astype("O") == datetime.datetime(2011, 1, 3, 0, 0)
 
     test1pd = dfpd["date"] > z1
     test1h2o = dfh2o["date"] > z1
