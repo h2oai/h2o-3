@@ -7,6 +7,7 @@ import deepwater.backends.RuntimeOptions;
 import deepwater.datasets.ImageDataSet;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
+import hex.genmodel.algos.deepwater.caffe.DeepwaterCaffeBackend;
 
 public class DeepwaterMojoModel extends MojoModel {
   public String _problem_type;

@@ -8,14 +8,14 @@ description = "H2O GenModel"
 apply from: "$rootDir/gradle/dataCheck.gradle"
 
 javadoc {
-    options.overview = "src/main/java/overview.html" // relative to source root
+  options.overview = "src/main/java/overview.html" // relative to source root
 
-    doLast {
-        copy {
-            from "src/main/java/doc-files"
-            into "$buildDir/docs/javadoc/doc-files"
-        }
-    }
+  doLast {
+     copy {
+       from "src/main/java/doc-files"
+       into "$buildDir/docs/javadoc/doc-files"
+     }
+  }
 }
 
 //
@@ -24,10 +24,10 @@ javadoc {
 //
 
 dependencies {
-    testCompile "junit:junit:${junitVersion}"
-    compile "net.sf.opencsv:opencsv:2.3"
-    compile "com.google.protobuf.nano:protobuf-javanano:3.1.0"
-    compile "ai.h2o:deepwater-backend-api:1.0.2"
+  testCompile "junit:junit:${junitVersion}"
+  compile "net.sf.opencsv:opencsv:2.3"
+  compile "com.google.protobuf.nano:protobuf-javanano:3.1.0"
+  compile "ai.h2o:deepwater-backend-api:1.0.2"
 }
 
 build.dependsOn shadowJar

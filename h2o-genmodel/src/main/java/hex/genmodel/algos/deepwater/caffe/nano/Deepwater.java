@@ -12,7 +12,8 @@ public interface Deepwater {
   public static final int SaveGraph = 3;
   public static final int Save = 4;
   public static final int Load = 5;
-  public static final int Response = 10;
+  public static final int Success = 10;
+  public static final int Failure = 11;
 
   public static final class Cmd extends
       com.google.protobuf.nano.MessageNano {
@@ -61,11 +62,11 @@ public interface Deepwater {
     // repeated double dropout_ratios = 203;
     public double[] dropoutRatios;
 
-    // optional bytes batch = 300;
-    public byte[] batch;
+    // repeated bytes data = 300;
+    public byte[][] data;
 
-    // optional bytes labels = 301;
-    public byte[] labels;
+    // optional string path = 400;
+    public java.lang.String path;
 
     public Cmd() {
       clear();
@@ -82,8 +83,8 @@ public interface Deepwater {
       sizes = com.google.protobuf.nano.WireFormatNano.EMPTY_INT_ARRAY;
       types = com.google.protobuf.nano.WireFormatNano.EMPTY_STRING_ARRAY;
       dropoutRatios = com.google.protobuf.nano.WireFormatNano.EMPTY_DOUBLE_ARRAY;
-      batch = com.google.protobuf.nano.WireFormatNano.EMPTY_BYTES;
-      labels = com.google.protobuf.nano.WireFormatNano.EMPTY_BYTES;
+      data = com.google.protobuf.nano.WireFormatNano.EMPTY_BYTES_ARRAY;
+      path = "";
       cachedSize = -1;
       return this;
     }
@@ -132,11 +133,16 @@ public interface Deepwater {
           output.writeDouble(203, this.dropoutRatios[i]);
         }
       }
-      if (!java.util.Arrays.equals(this.batch, com.google.protobuf.nano.WireFormatNano.EMPTY_BYTES)) {
-        output.writeBytes(300, this.batch);
+      if (this.data != null && this.data.length > 0) {
+        for (int i = 0; i < this.data.length; i++) {
+          byte[] element = this.data[i];
+          if (element != null) {
+            output.writeBytes(300, element);
+          }
+        }
       }
-      if (!java.util.Arrays.equals(this.labels, com.google.protobuf.nano.WireFormatNano.EMPTY_BYTES)) {
-        output.writeBytes(301, this.labels);
+      if (!this.path.equals("")) {
+        output.writeString(400, this.path);
       }
       super.writeTo(output);
     }
@@ -203,13 +209,23 @@ public interface Deepwater {
         size += dataSize;
         size += 2 * this.dropoutRatios.length;
       }
-      if (!java.util.Arrays.equals(this.batch, com.google.protobuf.nano.WireFormatNano.EMPTY_BYTES)) {
-        size += com.google.protobuf.nano.CodedOutputByteBufferNano
-            .computeBytesSize(300, this.batch);
+      if (this.data != null && this.data.length > 0) {
+        int dataCount = 0;
+        int dataSize = 0;
+        for (int i = 0; i < this.data.length; i++) {
+          byte[] element = this.data[i];
+          if (element != null) {
+            dataCount++;
+            dataSize += com.google.protobuf.nano.CodedOutputByteBufferNano
+                .computeBytesSizeNoTag(element);
+          }
+        }
+        size += dataSize;
+        size += 2 * dataCount;
       }
-      if (!java.util.Arrays.equals(this.labels, com.google.protobuf.nano.WireFormatNano.EMPTY_BYTES)) {
+      if (!this.path.equals("")) {
         size += com.google.protobuf.nano.CodedOutputByteBufferNano
-            .computeBytesSize(301, this.labels);
+            .computeStringSize(400, this.path);
       }
       return size;
     }
@@ -238,7 +254,8 @@ public interface Deepwater {
               case hex.genmodel.algos.deepwater.caffe.nano.Deepwater.SaveGraph:
               case hex.genmodel.algos.deepwater.caffe.nano.Deepwater.Save:
               case hex.genmodel.algos.deepwater.caffe.nano.Deepwater.Load:
-              case hex.genmodel.algos.deepwater.caffe.nano.Deepwater.Response:
+              case hex.genmodel.algos.deepwater.caffe.nano.Deepwater.Success:
+              case hex.genmodel.algos.deepwater.caffe.nano.Deepwater.Failure:
                 this.type = value;
                 break;
             }
@@ -359,11 +376,24 @@ public interface Deepwater {
             break;
           }
           case 2402: {
-            this.batch = input.readBytes();
+            int arrayLength = com.google.protobuf.nano.WireFormatNano
+                .getRepeatedFieldArrayLength(input, 2402);
+            int i = this.data == null ? 0 : this.data.length;
+            byte[][] newArray = new byte[i + arrayLength][];
+            if (i != 0) {
+              java.lang.System.arraycopy(this.data, 0, newArray, 0, i);
+            }
+            for (; i < newArray.length - 1; i++) {
+              newArray[i] = input.readBytes();
+              input.readTag();
+            }
+            // Last one without readTag.
+            newArray[i] = input.readBytes();
+            this.data = newArray;
             break;
           }
-          case 2410: {
-            this.labels = input.readBytes();
+          case 3202: {
+            this.path = input.readString();
             break;
           }
         }

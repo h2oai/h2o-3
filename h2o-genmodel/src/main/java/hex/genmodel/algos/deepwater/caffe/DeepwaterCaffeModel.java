@@ -1,4 +1,4 @@
-package hex.genmodel.algos.deepwater;
+package hex.genmodel.algos.deepwater.caffe;
 
 import com.google.protobuf.nano.CodedInputByteBufferNano;
 import com.google.protobuf.nano.CodedOutputByteBufferNano;
@@ -25,6 +25,7 @@ public class DeepwaterCaffeModel implements BackendModel {
   private float _momentum;
 
   private Process _process;
+  private static final ThreadLocal<ByteBuffer> _buffer = new ThreadLocal<>();
 
   DeepwaterCaffeModel(int batch_size, int[] sizes, String[] types, double[] dropout_ratios) {
     _batch_size = batch_size;
@@ -53,60 +54,109 @@ public class DeepwaterCaffeModel implements BackendModel {
         startDocker("h2oai/deepwater");
 //        startRegular();
 
-        Cmd proto = new Cmd();
-        proto.type = Deepwater.Create;
+        Cmd cmd = new Cmd();
+        cmd.type = Deepwater.Create;
         // proto.graph = _graph;  // TODO
-        proto.solverType = "SGD";
-        proto.sizes = _sizes;
-        proto.types = _types;
-        proto.dropoutRatios = _dropout_ratios;
-        proto.learningRate = _learning_rate;
-        proto.momentum = _momentum;
+        cmd.batchSize = _batch_size;
+        cmd.solverType = "SGD";
+        cmd.sizes = _sizes;
+        cmd.types = _types;
+        cmd.dropoutRatios = _dropout_ratios;
+        cmd.learningRate = _learning_rate;
+        cmd.momentum = _momentum;
         // TODO
         // proto.randomSeed = 5;
 
-        call(proto);
+        System.out.println("send " + cmd.type);
+        call(cmd);
       }
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }
 
+  void start() {
+    checkStarted();
+  }
+
   void saveModel(String model_path) {
     checkStarted();
+    Cmd cmd = new Cmd();
+    cmd.type = Deepwater.SaveGraph;
+    cmd.path = model_path;
+    call(cmd);
   }
 
   void saveParam(String param_path) {
     checkStarted();
+    Cmd cmd = new Cmd();
+    cmd.type = Deepwater.Save;
+    cmd.path = param_path;
+    call(cmd);
   }
 
   void loadParam(String param_path) {
     checkStarted();
+    Cmd cmd = new Cmd();
+    cmd.type = Deepwater.Load;
+    cmd.path = param_path;
+    call(cmd);
+  }
+
+  static void copy(float[] data, byte[] buff) {
+    if (data.length * 4 != buff.length)
+      throw new RuntimeException();
+    ByteBuffer buffer = _buffer.get();
+    if (buffer == null || buffer.capacity() < buff.length) {
+      _buffer.set(buffer = ByteBuffer.allocateDirect(buff.length));
+      buffer.order(ByteOrder.LITTLE_ENDIAN);
+    }
+    buffer.clear();
+    buffer.asFloatBuffer().put(data);
+    buffer.get(buff);
+  }
+
+  static void copy(float[][] buffs, Cmd cmd) {
+    cmd.data = new byte[buffs.length][];
+    for (int i = 0; i < buffs.length; i++) {
+      cmd.data[i] = new byte[buffs[i].length * 4];
+      copy(buffs[i], cmd.data[i]);
+    }
   }
 
   public void train(float[] data, float[] label) {
     checkStarted();
-
     Cmd cmd = new Cmd();
     cmd.type = Deepwater.Train;
     if (data.length != _batch_size * _sizes[0])
       throw new RuntimeException();
-    cmd.batch = new byte[data.length * 4];
     if (label.length != _batch_size * _sizes[_sizes.length - 1])
       throw new RuntimeException();
-    cmd.labels = new byte[label.length * 4];
-
-    ByteBuffer buffer = ByteBuffer.allocateDirect(cmd.batch.length);
-    buffer.order(ByteOrder.LITTLE_ENDIAN);
-    buffer.get(cmd.batch);
-
+    float[][] buffs = new float[][] {data, label};
+    copy(buffs, cmd);
     call(cmd);
   }
 
   public float[] predict(float[] data) {
     checkStarted();
+    Cmd cmd = new Cmd();
+    cmd.type = Deepwater.Test;
+    if (data.length != _batch_size * _sizes[0])
+      throw new RuntimeException();
+    float[][] buffs = new float[][] {data};
+    copy(buffs, cmd);
+    cmd = call(cmd);
 
-    return null;
+    ByteBuffer buffer = _buffer.get();
+    if (buffer == null || buffer.capacity() < cmd.data[0].length) {
+      _buffer.set(buffer = ByteBuffer.allocateDirect(cmd.data[0].length));
+      buffer.order(ByteOrder.LITTLE_ENDIAN);
+    }
+    buffer.clear();
+    buffer.put(cmd.data[0]);
+    float[] res = new float[cmd.data[0].length / 4];
+    buffer.asFloatBuffer().get(res);
+    return res;
   }
 
   //
@@ -171,7 +221,6 @@ public class DeepwaterCaffeModel implements BackendModel {
         buffer = ByteBuffer.allocate(len);
       buffer.position(0);
       buffer.limit(len);
-      System.out.println(len);
 
       while (buffer.position() < buffer.limit()) {
         read = stdout.read(buffer.array(), buffer.position(), buffer.limit());
