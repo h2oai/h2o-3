@@ -25,7 +25,7 @@ stackedensemble.gaussian.grid.test <- function() {
   nfolds <- 5
   
   search_criteria <- list(strategy = "RandomDiscrete", 
-                          max_models = 4,
+                          max_models = 3,
                           seed = 1)
   nfolds <- 5
   
@@ -44,7 +44,7 @@ stackedensemble.gaussian.grid.test <- function() {
                        x = x, 
                        y = y,
                        training_frame = train,
-                       ntrees = 50,
+                       ntrees = 10,
                        seed = 1,
                        nfolds = nfolds,
                        fold_assignment = "Modulo",
@@ -70,17 +70,27 @@ stackedensemble.gaussian.grid.test <- function() {
   perf_stack_train <- h2o.performance(stack)
   perf_stack_test <- h2o.performance(stack, newdata = test)
   
-  # TO DO: Need to finish...
-  # Check that stack perf is better (smaller) than the best (smallest) base learner perf:
-  # Training error
-  #expect_lte(h2o.rmse(perf_stack_train), min(h2o.rmse(perf_gbm_train), h2o.rmse(perf_rf_train)))
-  # Test error
-  #expect_lte(h2o.rmse(perf_stack_test), min(h2o.rmse(perf_gbm_test), h2o.rmse(perf_rf_test)))
+  # Training RMSE for each base learner
+  baselearner_best_rmse_train <- min(sapply(gbm_grid@model_ids, function(mm) h2o.rmse(h2o.getModel(mm), train = TRUE)))
+  stack_rmse_train <- h2o.rmse(perf_stack_train)
+  print(sprintf("Best Base-learner Training RMSE:  %s", baselearner_best_rmse_train))
+  print(sprintf("Ensemble Training RMSE:  %s", stack_rmse_train))
+  expect_lte(stack_rmse_train, baselearner_best_rmse_train)
+
+  # Check that stack perf is better (bigger) than the best (biggest) base learner perf:
+  # Test RMSE for each base learner
+  baselearner_best_rmse_test <- min(sapply(gbm_grid@model_ids, function(mm) h2o.rmse(h2o.performance(h2o.getModel(mm), newdata = test))))
+  stack_rmse_test <- h2o.rmse(perf_stack_test)
+  print(sprintf("Best Base-learner Test RMSE:  %s", baselearner_best_rmse_test))
+  print(sprintf("Ensemble Test RMSE:  %s", stack_rmse_test))
+  expect_lte(stack_rmse_test, baselearner_best_rmse_test)
   
-  # TO DO: Check that passing `test` as a validation_frame
-  #        produces the same metrics as h2o.performance(stack, test)
-  
+  # Check that passing `test` as a validation_frame
+  # produces the same metrics as h2o.performance(stack, test)
+  # Since the metrics object is not exactly the same, we can just test that AUC is the same
+  perf_stack_validation_frame <- h2o.performance(stack, valid = TRUE)
+  expect_identical(h2o.rmse(perf_stack_test), h2o.rmse(perf_stack_validation_frame))
   
 }
 
-doTest("Stacked Ensemble Test", stackedensemble.gaussian.grid.test)
+doTest("Stacked (Random Grid) Ensemble Gaussian Regression Test", stackedensemble.gaussian.grid.test)
