@@ -1,12 +1,15 @@
 package hex.tree.xgboost;
 
 import hex.*;
-import ml.dmlc.xgboost4j.java.*;
+import hex.genmodel.utils.DistributionFamily;
+import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
+import ml.dmlc.xgboost4j.java.XGBoostError;
 import water.H2O;
 import water.Key;
+import water.Scope;
+import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.Log;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -75,8 +78,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("objective", "binary:logistic");
     else if (_output.nclasses()==1)
       params.put("objective", "reg:linear");
-    else
+    else {
       params.put("objective", "multi:softprob");
+      params.put("num_class", _output.nclasses());
+    }
     return params;
   }
 
@@ -94,15 +99,40 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   private ModelMetrics makeMetrics(Booster booster, DMatrix data) throws XGBoostError {
     float[][] preds = booster.predict(data);
-    double[] dpreds = new double[preds.length];
-    for (int j = 0; j < dpreds.length; ++j)
-      dpreds[j] = preds[j][0];
-    for (int j = 0; j < dpreds.length; ++j)
-      assert(data.getWeight()[j]==1.0);
-    Vec pred = Vec.makeVec(dpreds, Vec.newKey());
     Vec resp = Vec.makeVec(data.getLabel(), Vec.newKey());
-    ModelMetricsBinomial mm = ModelMetricsBinomial.make(pred, resp);
-    pred.remove();
+    ModelMetrics mm;
+    if (_output.nclasses()<=2) {
+      double[] dpreds = new double[preds.length];
+      for (int j = 0; j < dpreds.length; ++j)
+        dpreds[j] = preds[j][0];
+      for (int j = 0; j < dpreds.length; ++j)
+        assert (data.getWeight()[j] == 1.0);
+      Vec pred = Vec.makeVec(dpreds, Vec.newKey());
+      if (_output.nclasses() == 1) {
+        mm = ModelMetricsRegression.make(pred, resp, DistributionFamily.gaussian);
+      } else {
+        mm = ModelMetricsBinomial.make(pred, resp);
+      }
+      pred.remove();
+    }
+    else {
+      // ugly: need to transpose the data to put it into a Frame to score -> could be sped up
+      double[][] dpreds = new double[_output.nclasses()][preds.length];
+      for (int i = 0; i < dpreds.length; ++i) {
+        for (int j = 0; j < dpreds[i].length; ++j) {
+          dpreds[i][j] = preds[j][i];
+        }
+      }
+      Vec[] pred = new Vec[_output.nclasses()];
+      for (int i = 0; i < pred.length; ++i) {
+        pred[i] = Vec.makeVec(dpreds[i], Vec.newKey());
+      }
+      Frame predFrame = new Frame(Key.<Frame>make(),pred,true);
+      Scope.enter();
+      mm = ModelMetricsMultinomial.make(predFrame, resp, resp.toCategoricalVec().domain());
+      Scope.exit();
+      predFrame.remove();
+    }
     resp.remove();
     return mm;
   }
@@ -117,11 +147,12 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
    */
   public void doScoring(Booster booster, DMatrix train, DMatrix valid) throws XGBoostError {
     ModelMetrics mm = makeMetrics(booster, train);
-    Log.info(mm);
+    mm._description = "Metrics reported on training frame";
     _output._training_metrics = mm;
     _output._scored_train[_output._ntrees].fillFrom(mm);
     if (valid!=null) {
-      mm = makeMetrics(booster, train);
+      mm = makeMetrics(booster, valid);
+      mm._description = "Metrics reported on validation frame";
       _output._validation_metrics = mm;
       _output._scored_valid[_output._ntrees].fillFrom(mm);
     }

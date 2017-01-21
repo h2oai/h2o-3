@@ -12,6 +12,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
+import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -251,10 +252,11 @@ public class XGBoostTest extends TestUtil {
   }
 
   @Test
-  public void Weather() {
+  public void WeatherBinary() {
     Frame tfr = null;
     Frame trainFrame = null;
     Frame testFrame = null;
+    XGBoostModel model = null;
     try {
       // Parse frame into H2O
       tfr = parse_test_file("./smalldata/junit/weather.csv");
@@ -282,19 +284,23 @@ public class XGBoostTest extends TestUtil {
       parms._train = tfr._key;
       parms._response_column = response;
 
-      XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
       Log.info(model);
-      model.delete();
+
+      // TODO - fix scoring and MOJO
+//      preds = model.score(testFrame);
+//      Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
 
     } finally {
       if (trainFrame!=null) trainFrame.remove();
       if (testFrame!=null) testFrame.remove();
       if (tfr!=null) tfr.remove();
+      if (model!=null) model.delete();
     }
   }
 
   @Test
-  public void WeatherCV() {
+  public void WeatherBinaryCV() {
     Frame tfr = null;
     Frame trainFrame = null;
     Frame testFrame = null;
@@ -344,6 +350,138 @@ public class XGBoostTest extends TestUtil {
         model.deleteCrossValidationModels();
         model.delete();
       }
+    }
+  }
+
+  @Test
+  public void ProstateRegression() {
+    Frame tfr = null;
+    Frame trainFrame = null;
+    Frame testFrame = null;
+    Frame preds = null;
+    XGBoostModel model = null;
+    try {
+      // Parse frame into H2O
+      tfr = parse_test_file("./smalldata/prostate/prostate.csv");
+
+      // split into train/test
+      SplitFrame sf = new SplitFrame(tfr, new double[] { 0.7, 0.3 }, null);
+      sf.exec().get();
+      Key[] ksplits = sf._destination_frames;
+      trainFrame = (Frame)ksplits[0].get();
+      testFrame = (Frame)ksplits[1].get();
+
+      // define special columns
+      String response = "AGE";
+//      String weight = null;
+//      String fold = null;
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._ntrees = 5;
+      parms._max_depth = 5;
+      parms._train = trainFrame._key;
+      parms._valid = testFrame._key;
+      parms._response_column = response;
+
+      model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Log.info(model);
+
+      // TODO - fix scoring and MOJO
+//      preds = model.score(testFrame);
+//      Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
+
+    } finally {
+      if (trainFrame!=null) trainFrame.remove();
+      if (testFrame!=null) testFrame.remove();
+      if (tfr!=null) tfr.remove();
+      if (preds!=null) preds.remove();
+      if (model!=null) {
+        model.delete();
+      }
+    }
+  }
+
+  @Test
+  public void ProstateRegressionCV() {
+    Frame tfr = null;
+    Frame trainFrame = null;
+    Frame testFrame = null;
+    Frame preds = null;
+    XGBoostModel model = null;
+    try {
+      // Parse frame into H2O
+      tfr = parse_test_file("./smalldata/prostate/prostate.csv");
+
+      // split into train/test
+      SplitFrame sf = new SplitFrame(tfr, new double[] { 0.7, 0.3 }, null);
+      sf.exec().get();
+      Key[] ksplits = sf._destination_frames;
+      trainFrame = (Frame)ksplits[0].get();
+      testFrame = (Frame)ksplits[1].get();
+
+      // define special columns
+      String response = "AGE";
+//      String weight = null;
+//      String fold = null;
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._ntrees = 5;
+      parms._nfolds = 5;
+      parms._max_depth = 5;
+      parms._train = trainFrame._key;
+      parms._valid = testFrame._key;
+      parms._response_column = response;
+
+      model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Log.info(model);
+
+      // TODO - fix scoring and MOJO
+//      preds = model.score(testFrame);
+//      Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
+
+    } finally {
+      if (trainFrame!=null) trainFrame.remove();
+      if (testFrame!=null) testFrame.remove();
+      if (tfr!=null) tfr.remove();
+      if (preds!=null) preds.remove();
+      if (model!=null) {
+        model.delete();
+        model.deleteCrossValidationModels();
+      }
+    }
+  }
+
+  @Test
+  public void MNIST() {
+    Frame tfr = null;
+    XGBoostModel model = null;
+    Scope.enter();
+    try {
+      // Parse frame into H2O
+      tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
+      Scope.track(tfr.replace(784, tfr.vecs()[784].toCategoricalVec()));   // Convert response 'C785' to categorical
+      DKV.put(tfr);
+
+      // define special columns
+      String response = "C785";
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._ntrees = 5;
+      parms._max_depth = 5;
+      parms._train = tfr._key;
+      parms._response_column = response;
+
+      model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Log.info(model);
+
+      // TODO - fix scoring and MOJO
+//      preds = model.score(testFrame);
+//      Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
+
+    } finally {
+      if (tfr!=null) tfr.remove();
+      if (model!=null) model.delete();
+      Scope.exit();
     }
   }
 
