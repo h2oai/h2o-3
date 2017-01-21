@@ -1242,6 +1242,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     excluded.add("makeSchema");
     excluded.add("hr");
     excluded.add("frame");
+    excluded.add("model");
     excluded.add("remove");
     excluded.add("cm");
     excluded.add("auc_obj");
