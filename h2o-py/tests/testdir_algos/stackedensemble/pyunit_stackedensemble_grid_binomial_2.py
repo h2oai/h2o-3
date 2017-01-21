@@ -29,7 +29,7 @@ def stackedensemble_grid_binomial():
                            destination_frame="higgs_test_5k")
 
     # Identify predictors and response
-    x = list(train.columns)
+    x = train.columns
     y = "response"
     x.remove(y)
 
@@ -37,60 +37,42 @@ def stackedensemble_grid_binomial():
     train[y] = train[y].asfactor()
     test[y] = test[y].asfactor()
 
-    search_criteria = {
-      "strategy": "RandomDiscrete",
-      "max_models": 4,
-      "seed": 1
-    }
-
+    search_criteria = {"strategy": "RandomDiscrete",
+                       "max_models": 3,
+                       "seed": 1}
     nfolds = 5
 
     # Specify GBM hyperparameters for the grid
-    hyper_params = {
-    "learn_rate" : [0.01, 0.03],
-    "max_depth": [3, 4, 5, 6, 9],
-    "sample_rate": [0.7, 0.8, 0.9, 1.0],
-    "col_sample_rate": [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
-    }
+    hyper_params = {"learn_rate": [0.01, 0.03],
+                    "max_depth": [3, 4, 5, 6, 9],
+                    "sample_rate": [0.7, 0.8, 0.9, 1.0],
+                    "col_sample_rate": [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]}
 
     # Train the grid
-    grid = H2OGridSearch(
-      model=H2OGradientBoostingEstimator,
-      hyper_params=hyper_params,
-      search_criteria=search_criteria,
-      grid_id = "gbm_grid_binomial"
-    )
-    grid.train(
-      x=x,
-      y=y,
-      training_frame=train,
-      nfolds=nfolds,
-      fold_assignment="Modulo",
-      keep_cross_validation_predictions=True,
-      seed=1
-    )
+    grid = H2OGridSearch(model=H2OGradientBoostingEstimator(ntrees=10, seed=1,
+                                                            nfolds=nfolds, fold_assignment="Modulo",
+                                                            keep_cross_validation_predictions=True),
+                         hyper_params=hyper_params,
+                         search_criteria=search_criteria,
+                         grid_id="gbm_grid_binomial")
 
-    # Train a stackeed ensemble using the GBM grid
+    grid.train(x=x, y=y, training_frame=train)
+
+    # Train a stacked ensemble using the GBM grid
     stack = H2OStackedEnsembleEstimator(model_id = "my_ensemble_gbm_grid_binomial", selection_strategy="choose_all", base_models=grid.model_ids)
     stack.train(x =x, y = y, training_frame= train, validation_frame= test)
 
 
-    # Check that predictions work
     # check that prediction works
     pred = stack.predict(test_data= test)
     assert pred.nrow == test.nrow, "expected " + str(pred.nrow) + " to be equal to " + str(test.nrow)
     assert pred.ncol == 3, "expected " + str(pred.ncol) + " to be equal to 3 but it was equal to " + str(pred.ncol)
 
-    # Eval ensemble perf
-    perf_stack_train = stack.model_performance()
-    perf_stack_test = stack.model_performance(test_data= test)
-
     # Evaluate ensemble performance
     perf_stack_train = stack.model_performance()
     perf_stack_test = stack.model_performance(test_data= test)
 
-    # Check that stack perf is better (bigger) than the best(biggest) base learner perf:
-    # Training AUC
+    # Training AUC for each base learner
     baselearner_best_auc_train = max([h2o.get_model(model).auc(train = True) for model in grid.model_ids])
     stack_auc_train = perf_stack_train.auc()
     print("Best Base-learner Training AUC:  {0}".format(baselearner_best_auc_train))
