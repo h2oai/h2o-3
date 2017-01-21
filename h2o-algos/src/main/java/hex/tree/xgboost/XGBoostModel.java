@@ -85,6 +85,17 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return params;
   }
 
+//  @Override
+//  public Frame score(Frame fr) throws IllegalArgumentException {
+//    //FIXME
+//    try {
+//      DMatrix trainMat = convertFrametoDMatrix(fr, _parms._response_column, _parms._weights_column, _parms._fold_column, null);
+//    } catch (XGBoostError xgBoostError) {
+//      xgBoostError.printStackTrace();
+//    }
+//    return fr;
+//  }
+
   @Override
   protected double[] score0(double[] data, double[] preds) {
     // FIXME
@@ -97,6 +108,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return new XGBoostMojoWriter(this);
   }
 
+  // Fast scoring using the C++ data structures
+  // However, we need to bring the data back to Java to compute the metrics
+  // For multinomial, we also need to transpose the data - which is slow
   private ModelMetrics makeMetrics(Booster booster, DMatrix data) throws XGBoostError {
     float[][] preds = booster.predict(data);
     Vec resp = Vec.makeVec(data.getLabel(), Vec.newKey());
