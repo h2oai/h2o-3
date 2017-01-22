@@ -64,7 +64,7 @@ stackedensemble.binomial.test <- function() {
   print("RF test performance: ")
   print(perf_rf_test)
     
-  # Train a stacked ensemble using the GBM and GLM above
+  # Train a stacked ensemble using the GBM and RF above
   stack <- h2o.stackedEnsemble(x = x, 
                                y = y, 
                                training_frame = train,
