@@ -22,7 +22,7 @@ def stackedensemble_guassian_test():
     5) That the validation_frame arg on H2OStackedEnsembleEstimator works correctly.
     """
 
-    col_types = ["Numeric","Numeric","Numeric","Enum","Enum","Numeric","Numeric","Numeric","Numeric"]
+    col_types = ["numeric", "numeric", "numeric", "enum", "enum", "numeric", "numeric", "numeric", "numeric"]
     dat = h2o.upload_file(path=pyunit_utils.locate("smalldata/extdata/prostate.csv"),
                           destination_frame="prostate_hex",
                           col_types= col_types)
@@ -30,7 +30,7 @@ def stackedensemble_guassian_test():
     print(train.summary())
 
     # Identify predictors and response
-    x = [CAPSULE","GLEASON","RACE","DPROS","DCAPS","PSA","VOL]
+    x = ["CAPSULE","GLEASON","RACE","DPROS","DCAPS","PSA","VOL"]
     y = "AGE"
 
     # set number of folds
