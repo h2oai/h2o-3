@@ -37,52 +37,37 @@ def stackedensemble_grid_gaussian():
     nfolds = 5
 
 
-    search_criteria = {
-      "strategy": "RandomDiscrete",
-      "max_models": 3,
-      "seed": 1
-    }
-
+    search_criteria = {"strategy": "RandomDiscrete", "max_models": 3, "seed": 1}
     nfolds = 5
 
     # Specify GBM hyperparameters for the grid
-    hyper_params = {
-      "learn_rate" : [0.01, 0.03],
-      "max_depth": [3, 4, 5, 6, 9],
-      "sample_rate": [0.7, 0.8, 0.9, 1.0],
-      "col_sample_rate": [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
-    }
+    hyper_params = {"learn_rate" : [0.01, 0.03], "max_depth": [3, 4, 5, 6, 9],
+                    "sample_rate": [0.7, 0.8, 0.9, 1.0],
+                    "col_sample_rate": [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]}
 
     # Train the grid
-    grid = H2OGridSearch(
-      model=H2OGradientBoostingEstimator(ntrees=10, seed=1,
+    grid = H2OGridSearch(model=H2OGradientBoostingEstimator(ntrees=10, seed=1,
                                          nfolds=nfolds, fold_assignment="Modulo",
                                          keep_cross_validation_predictions=True),
-      hyper_params=hyper_params,
-      search_criteria=search_criteria,
-      grid_id = "gbm_grid_guassian")
+                         hyper_params=hyper_params,
+                         search_criteria=search_criteria,
+                         grid_id="gbm_grid_guassian")
 
-    grid.train(x=x,y=y, training_frame=train)
+    grid.train(x=x, y=y, training_frame=train)
 
-    # Train a stackeed ensemble using the GBM grid
-    stack = H2OStackedEnsembleEstimator(model_id = "my_ensemble_gbm_grid_binomial",
+    # Train a stacked ensemble using the GBM grid
+    stack = H2OStackedEnsembleEstimator(model_id="my_ensemble_gbm_grid_guassian",
                                         selection_strategy="choose_all", base_models=grid.model_ids)
-    stack.train(x =x, y = y, training_frame= train, validation_frame= test)
-
+    stack.train(x=x, y=y, training_frame=train, validation_frame=test)
 
     # Check that predictions work
-    # check that prediction works
-    pred = stack.predict(test_data= test)
+    pred = stack.predict(test_data=test)
     assert pred.nrow == test.nrow, "expected " + str(pred.nrow) + " to be equal to " + str(test.nrow)
     assert pred.ncol == 3, "expected " + str(pred.ncol) + " to be equal to 3 but it was equal to " + str(pred.ncol)
 
-    # Eval ensemble perf
-    perf_stack_train = stack.model_performance()
-    perf_stack_test = stack.model_performance(test_data= test)
-
     # Evaluate ensemble performance
     perf_stack_train = stack.model_performance()
-    perf_stack_test = stack.model_performance(test_data= test)
+    perf_stack_test = stack.model_performance(test_data=test)
 
     # Training RMSE for each base learner
     baselearner_best_rmse_train = max([h2o.get_model(model).rmse(train = True) for model in grid.model_ids])
@@ -92,27 +77,28 @@ def stackedensemble_grid_gaussian():
     assert stack_rmse_train < baselearner_best_rmse_train, "expected stack_rmse_train would be less than " \
                                                          " found it wasn't baselearner_best_rmse_train"
 
-    # Test RMSE
-    baselearner_best_rmse_test = max([h2o.get_model(model).model_performance(test_data = test) for model in grid.model_ids])
+    # Check that stack perf is better (smaller) than the best (smaller) base learner perf:
+    # Test RMSE for each base learner
+    baselearner_best_rmse_test = min([h2o.get_model(model).model_performance(test_data = test) for model in grid.model_ids])
     stack_rmse_test = perf_stack_test.rmse()
     print("Best Base-learner Test RMSE:  {0}".format(baselearner_best_rmse_test))
     print("Ensemble Test RMSE:  {0}".format(stack_rmse_test))
-    assert stack_auc_test < baselearner_best_rmse_test, "expected stack_auc_test would be greater than " \
-                                                       " baselearner_best_rmse_test, found it wasn't  " \
-                                                       "baselearner_best_auc_test = "+ \
-                                                       str(baselearner_best_rmse_test) + ",stack_rmse_test " \
-                                                                                        " = "+ str(stack_rmse_test)
+    assert stack_rmse_test < baselearner_best_rmse_test, "expected stack_rmse_test would be less than " \
+                                                         "baselearner_best_rmse_test, found it wasn't " \
+                                                         "baselearner_best_rmse_test = "+ \
+                                                         str(baselearner_best_rmse_test) + ",stack_rmse_test " \
+                                                                                           "= "+ str(stack_rmse_test)
 
     # Check that passing `test` as a validation_frame produces the same metric as stack.model_performance(test)
     # since the metrics object is not exactly the same, we can just test that RMSE is the same
     perf_stack_validation_frame = stack.model_performance(valid = True)
-    assert stack_rmse_test == perf_stack_validation_frame.rmse(), "expected stack_auc_test to be the same as " \
-                                                                "perf_stack_validation_frame.rmse() found they were not " \
-                                                                "perf_stack_validation_frame.rmse() = " + \
-                                                                str(perf_stack_validation_frame.auc()) + \
-                                                                "stack_rmse_test was " + str(stack_rmse_test)
+    assert stack_rmse_test == perf_stack_validation_frame.rmse(), "expected stack_rmse_test to be the same as " \
+                                                                  "perf_stack_validation_frame.rmse() found they were not " \
+                                                                  "perf_stack_validation_frame.rmse() = " + \
+                                                                  str(perf_stack_validation_frame.rmse()) + \
+                                                                  "stack_rmse_test was " + str(stack_rmse_test)
 
 if __name__ == "__main__":
-  pyunit_utils.standalone_test(stackedensemble_grid_gaussian)
+    pyunit_utils.standalone_test(stackedensemble_grid_gaussian)
 else:
-  stackedensemble_grid_gaussian()
+    stackedensemble_grid_gaussian()

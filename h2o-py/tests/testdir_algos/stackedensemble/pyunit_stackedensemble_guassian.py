@@ -123,15 +123,15 @@ def stackedensemble_guassian_test():
     # Check that passing `test` as a validation_frame produces the same metric as stack.model_performance(test)
     # since the metrics object is not exactly the same, we can just test that RSME is the same
     perf_stack_validation_frame = stack.model_performance(valid = True)
-    assert stack_rmse_test == perf_stack_validation_frame.rmse(), "expected stack_auc_test to be the same as " \
+    assert stack_rmse_test == perf_stack_validation_frame.rmse(), "expected stack_rmse_test to be the same as " \
                                                                 "perf_stack_validation_frame.rmse() found they were not " \
                                                                 "perf_stack_validation_frame.rmse() = " + \
                                                                 str(perf_stack_validation_frame.rmse()) + \
                                                                 "stack_rmse_test was " + str(stack_rmse_test)
 
 if __name__ == "__main__":
-  pyunit_utils.standalone_test(stackedensemble_guassian_test)
+    pyunit_utils.standalone_test(stackedensemble_guassian_test)
 else:
-  stackedensemble_guassian_test()
+    stackedensemble_guassian_test()
 
 
