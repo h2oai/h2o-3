@@ -7,12 +7,12 @@ stackedensemble.gaussian.grid.test <- function() {
   # 
   # 1) That h2o.stackedEnsemble executes w/o errors 
   #    on a random-grid-based ensemble.
-  # 2) That h2o.predict works on a stack
-  # 3) That h2o.performance works on a stack
+  # 2) That h2o.predict works on a stack.
+  # 3) That h2o.performance works on a stack.
   # 4) That the training and test performance is 
   #    better on a ensemble vs the base learners.
   # 5) That the validation_frame arg on 
-  #    h2o.stackedEnsemble works correctly     
+  #    h2o.stackedEnsemble works correctly.   
   
   dat <- h2o.uploadFile(locate("smalldata/extdata/australia.csv"), 
                         destination_frame = "australia.hex")
@@ -27,8 +27,7 @@ stackedensemble.gaussian.grid.test <- function() {
   search_criteria <- list(strategy = "RandomDiscrete", 
                           max_models = 3,
                           seed = 1)
-  nfolds <- 5
-  
+
   # GBM Hyperparamters
   learn_rate_opt <- c(0.01, 0.03) 
   max_depth_opt <- c(3, 4, 5, 6, 9)

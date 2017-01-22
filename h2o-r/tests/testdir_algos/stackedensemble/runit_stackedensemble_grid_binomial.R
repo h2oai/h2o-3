@@ -28,7 +28,6 @@ stackedensemble.binomial.grid.test <- function() {
   search_criteria <- list(strategy = "RandomDiscrete", 
                           max_models = 3,
                           seed = 1)
-  nfolds <- 5
   
   # GBM Hyperparamters
   learn_rate_opt <- c(0.01, 0.03) 
