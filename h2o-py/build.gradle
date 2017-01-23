@@ -53,7 +53,7 @@ task upgradeOrInstallWheel(type: Exec) {
 }
 
 task buildDist(type: Exec) {
-    standardOutput = new FileOutputStream("build/tmp/h2o-py_buildDist.out")
+    standardOutput = new FileOutputStream("build/h2o-py_buildDist.out")
     commandLine getOsSpecificCommandLine(["python", "setup.py", "bdist_wheel"])
 }
 
