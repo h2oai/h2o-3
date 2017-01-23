@@ -39,7 +39,7 @@ check.kmeans.grid.iris.negative <- function(conn) {
 
   ## Non-gridable parameter passed as grid parameter
   grid_space <- list()
-  grid_space$init <- iris[c(2,70,148),1:4]
+  grid_space$user_points <- iris[c(2,70,148),1:4]
 
   Log.info(paste0("Constructing the grid of kmeans models with non-gridable parameter user_points"))
   expect_error(iris_kmeans_grid <- h2o.grid("kmeans", grid_id="kmeans_grid_iris_test", x=1:4, k=3, training_frame=iris, hyper_params=grid_space, do_hyper_params_check=TRUE))
