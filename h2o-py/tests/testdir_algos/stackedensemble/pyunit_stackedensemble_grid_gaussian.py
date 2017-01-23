@@ -33,17 +33,14 @@ def stackedensemble_grid_gaussian():
     x = ["premax", "salmax", "minairtemp", "maxairtemp", "maxsst", "maxsoilmoist", "Max_czcs"]
     y = "runoffnew"
 
-    # set number of folds
-    nfolds = 5
-
-
-    search_criteria = {"strategy": "RandomDiscrete", "max_models": 3, "seed": 1}
+    # Set number of folds
     nfolds = 5
 
     # Specify GBM hyperparameters for the grid
     hyper_params = {"learn_rate" : [0.01, 0.03], "max_depth": [3, 4, 5, 6, 9],
                     "sample_rate": [0.7, 0.8, 0.9, 1.0],
                     "col_sample_rate": [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]}
+    search_criteria = {"strategy": "RandomDiscrete", "max_models": 3, "seed": 1}                    
 
     # Train the grid
     grid = H2OGridSearch(model=H2OGradientBoostingEstimator(ntrees=10, seed=1,
@@ -63,14 +60,14 @@ def stackedensemble_grid_gaussian():
     # Check that predictions work
     pred = stack.predict(test_data=test)
     assert pred.nrow == test.nrow, "expected " + str(pred.nrow) + " to be equal to " + str(test.nrow)
-    assert pred.ncol == 3, "expected " + str(pred.ncol) + " to be equal to 3 but it was equal to " + str(pred.ncol)
+    assert pred.ncol == 1, "expected " + str(pred.ncol) + " to be equal to 1 but it was equal to " + str(pred.ncol)
 
     # Evaluate ensemble performance
     perf_stack_train = stack.model_performance()
     perf_stack_test = stack.model_performance(test_data=test)
 
     # Training RMSE for each base learner
-    baselearner_best_rmse_train = max([h2o.get_model(model).rmse(train = True) for model in grid.model_ids])
+    baselearner_best_rmse_train = max([h2o.get_model(model).rmse(train=True) for model in grid.model_ids])
     stack_rmse_train = perf_stack_train.rmse()
     print("Best Base-learner Training RMSE:  {0}".format(baselearner_best_rmse_train))
     print("Ensemble Training RMSE:  {0}".format(stack_rmse_train))
@@ -79,7 +76,7 @@ def stackedensemble_grid_gaussian():
 
     # Check that stack perf is better (smaller) than the best (smaller) base learner perf:
     # Test RMSE for each base learner
-    baselearner_best_rmse_test = min([h2o.get_model(model).model_performance(test_data = test) for model in grid.model_ids])
+    baselearner_best_rmse_test = max([h2o.get_model(model).model_performance(test_data=test).rmse() for model in grid.model_ids])
     stack_rmse_test = perf_stack_test.rmse()
     print("Best Base-learner Test RMSE:  {0}".format(baselearner_best_rmse_test))
     print("Ensemble Test RMSE:  {0}".format(stack_rmse_test))
