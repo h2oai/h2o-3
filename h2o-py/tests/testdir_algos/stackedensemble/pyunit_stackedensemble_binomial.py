@@ -43,53 +43,59 @@ def stackedensemble_binomial_test():
     nfolds = 5
 
     # train and cross-validate a GBM
-    my_gbm = H2OGradientBoostingEstimator(distribution = "bernoulli", ntrees = 10,
-                                          max_depth = 3, min_rows = 2, learn_rate = 0.2,
-                                          nfolds = nfolds, fold_assignment = "Modulo",
-                                          keep_cross_validation_predictions = True,
-                                          seed = 1)
-    my_gbm.train(x = x, y = y, training_frame = train)
+    my_gbm = H2OGradientBoostingEstimator(distribution="bernoulli", 
+                                          ntrees=10,
+                                          max_depth=3, 
+                                          min_rows=2, 
+                                          learn_rate=0.2,
+                                          nfolds=nfolds, 
+                                          fold_assignment="Modulo",
+                                          keep_cross_validation_predictions=True,
+                                          seed=1)
+    my_gbm.train(x=x, y=y, training_frame=train)
 
     # evaluate the performance
-    perf_gbm_train = my_gbm.model_performance(train = True)
-    perf_gbm_test = my_gbm.model_performance(test_data = test)
+    perf_gbm_train = my_gbm.model_performance(train=True)
+    perf_gbm_test = my_gbm.model_performance(test_data=test)
     print("GBM training performance: ")
     print(perf_gbm_train)
     print("GBM test performance: ")
     print(perf_gbm_test)
 
     # train and cross-validate a RF
-    my_rf = H2ORandomForestEstimator(ntrees = 50, nfolds = nfolds, fold_assignment = "Modulo",
-                                     keep_cross_validation_predictions = True, seed = 1)
+    my_rf = H2ORandomForestEstimator(ntrees=50, 
+                                     nfolds=nfolds, 
+                                     fold_assignment="Modulo",
+                                     keep_cross_validation_predictions=True, 
+                                     seed=1)
 
-    my_rf.train(x = x, y = y, training_frame= train)
+    my_rf.train(x=x, y=y, training_frame=train)
 
     # evaluate performance
-    perf_rf_train = my_rf.model_performance(train = True)
-    perf_rf_test = my_rf.model_performance(test_data= test)
+    perf_rf_train = my_rf.model_performance(train=True)
+    perf_rf_test = my_rf.model_performance(test_data=test)
     print("RF training performance: ")
     print(perf_rf_train)
     print("RF test performance: ")
     print(perf_rf_test)
 
     # Train a stacked ensemble using the GBM and GLM above
-    stack = H2OStackedEnsembleEstimator(model_id = "my_ensemble_binomial",
+    stack = H2OStackedEnsembleEstimator(model_id="my_ensemble_binomial",
                                         training_frame=train,
                                         validation_frame=test,
-                                        base_models = [my_gbm.model_id,  my_rf.model_id],
-                                        selection_strategy = "choose_all"
-                                        )
+                                        base_models=[my_gbm.model_id,  my_rf.model_id],
+                                        selection_strategy="choose_all")
 
-    stack.train(x = x, y= y, training_frame=train, validation_frame=test)  # also test that validation_frame is working
+    stack.train(x=x, y=y, training_frame=train, validation_frame=test)  # also test that validation_frame is working
 
     # check that prediction works
-    pred = stack.predict(test_data= test)
+    pred = stack.predict(test_data=test)
     assert pred.nrow == test.nrow, "expected " + str(pred.nrow) + " to be equal to " + str(test.nrow)
     assert pred.ncol == 3, "expected " + str(pred.ncol) + " to be equal to 3 but it was equal to " + str(pred.ncol)
 
     # Evaluate ensemble performance
     perf_stack_train = stack.model_performance()
-    perf_stack_test = stack.model_performance(test_data= test)
+    perf_stack_test = stack.model_performance(test_data=test)
 
     # Check that stack perf is better (bigger) than the best(biggest) base learner perf:
     # Training AUC
@@ -113,7 +119,7 @@ def stackedensemble_binomial_test():
 
     # Check that passing `test` as a validation_frame produces the same metric as stack.model_performance(test)
     # since the metrics object is not exactly the same, we can just test that AUC is the same
-    perf_stack_validation_frame = stack.model_performance(valid = True)
+    perf_stack_validation_frame = stack.model_performance(valid=True)
     assert stack_auc_test == perf_stack_validation_frame.auc(), "expected stack_auc_test to be the same as " \
                                                                 "perf_stack_validation_frame.auc() found they were not " \
                                                                 "perf_stack_validation_frame.auc() = " + \
