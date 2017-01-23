@@ -3864,8 +3864,9 @@ div[class^='highlight'] pre {
   top: 0;
   left: 0;
   width: 330px;
-  overflow: hidden;
-  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: scroll;
+  height: 100%;
   background: #343131;
   z-index: 200;
 }
