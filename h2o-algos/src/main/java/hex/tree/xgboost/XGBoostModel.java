@@ -11,8 +11,13 @@ import water.Scope;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+
+import static hex.tree.xgboost.XGBoost.convertFrametoDMatrix;
 
 public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> {
 
@@ -89,6 +94,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 //  public Frame score(Frame fr) throws IllegalArgumentException {
 //    //FIXME
 //    try {
+  // TODO: Keep the pointer to the converted frame in the C++ process
 //      DMatrix trainMat = convertFrametoDMatrix(fr, _parms._response_column, _parms._weights_column, _parms._fold_column, null);
 //    } catch (XGBoostError xgBoostError) {
 //      xgBoostError.printStackTrace();
@@ -98,8 +104,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   @Override
   protected double[] score0(double[] data, double[] preds) {
-    // FIXME
-    return new double[0];
+    return preds; //FIXME: implement
   }
 
 
@@ -112,9 +117,16 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   // However, we need to bring the data back to Java to compute the metrics
   // For multinomial, we also need to transpose the data - which is slow
   private ModelMetrics makeMetrics(Booster booster, DMatrix data) throws XGBoostError {
+    ModelMetrics[] mm = new ModelMetrics[1];
+    Frame pred = makePreds(booster, data, mm);
+    pred.remove();
+    return mm[0];
+  }
+
+  private Frame makePreds(Booster booster, DMatrix data, ModelMetrics[] mm) throws XGBoostError {
+    Frame predFrame;
     float[][] preds = booster.predict(data);
     Vec resp = Vec.makeVec(data.getLabel(), Vec.newKey());
-    ModelMetrics mm;
     if (_output.nclasses()<=2) {
       double[] dpreds = new double[preds.length];
       for (int j = 0; j < dpreds.length; ++j)
@@ -123,11 +135,11 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
         assert (data.getWeight()[j] == 1.0);
       Vec pred = Vec.makeVec(dpreds, Vec.newKey());
       if (_output.nclasses() == 1) {
-        mm = ModelMetricsRegression.make(pred, resp, DistributionFamily.gaussian);
+        mm[0] = ModelMetricsRegression.make(pred, resp, DistributionFamily.gaussian);
       } else {
-        mm = ModelMetricsBinomial.make(pred, resp);
+        mm[0] = ModelMetricsBinomial.make(pred, resp);
       }
-      pred.remove();
+      predFrame = new Frame(Key.<Frame>make(), new Vec[]{pred}, true);
     }
     else {
       // ugly: need to transpose the data to put it into a Frame to score -> could be sped up
@@ -141,14 +153,13 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       for (int i = 0; i < pred.length; ++i) {
         pred[i] = Vec.makeVec(dpreds[i], Vec.newKey());
       }
-      Frame predFrame = new Frame(Key.<Frame>make(),pred,true);
+      predFrame = new Frame(Key.<Frame>make(),pred,true);
       Scope.enter();
-      mm = ModelMetricsMultinomial.make(predFrame, resp, resp.toCategoricalVec().domain());
+      mm[0] = ModelMetricsMultinomial.make(predFrame, resp, resp.toCategoricalVec().domain());
       Scope.exit();
-      predFrame.remove();
     }
     resp.remove();
-    return mm;
+    return predFrame;
   }
 
   /**
@@ -184,5 +195,30 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
     _output._varimp = new VarImp(viFloat, names);
   }
+
+  @Override
+  public Frame score(Frame fr) throws IllegalArgumentException {
+    try {
+      // Create the Booster (TODO: only if not yet existant)
+      InputStream is = new ByteArrayInputStream(_output._boosterBytes);
+      Booster booster = Booster.loadModel(is);
+
+      // Create the DMatrix (TODO: only if not yet existant)
+      DMatrix trainMat = convertFrametoDMatrix(fr, _parms._response_column, _parms._weights_column, _parms._fold_column, null);
+
+      // make predictions
+      ModelMetrics[] mm = new ModelMetrics[1];
+      Frame preds = makePreds(booster, trainMat, mm);
+      if (_output.isClassifier())
+        preds.prepend("pred", preds.anyVec().doCopy());
+      return preds;
+    } catch (XGBoostError xgBoostError) {
+      xgBoostError.printStackTrace();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return null;
+  }
+
 
 }

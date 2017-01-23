@@ -22,6 +22,6 @@ public class XGBoostMojoWriter extends ModelMojoWriter<XGBoostModel, XGBoostMode
 
   @Override
   protected void writeModelData() throws IOException {
-    //FIXME
+    writeblob("boosterBytes", this.model._output._boosterBytes);
   }
 }
