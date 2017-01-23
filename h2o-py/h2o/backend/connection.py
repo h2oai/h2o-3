@@ -158,7 +158,7 @@ class H2OConnection(backwards_compatible()):
         conn = H2OConnection()
         conn._verbose = bool(verbose)
         conn._local_server = server
-        if context_path is not None:
+        if context_path is not None and len(context_path) > 1:
             conn._base_url = "%s://%s:%d%s" % (scheme, ip, port, context_path)
         else:
             conn._base_url = "%s://%s:%d" % (scheme, ip, port)
