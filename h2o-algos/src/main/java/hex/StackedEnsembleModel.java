@@ -26,6 +26,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
   public Frame commonTrainingFrame = null;
   public String responseColumn = null;
   private NonBlockingHashSet<String> names = null;  // keep columns as a set for easier comparison
+  private NonBlockingHashSet<String> ignoredColumns = null;  // keep ignored_columns as a set for easier comparison
   public int nfolds = -1;
   // TODO: add a separate holdout dataset for the ensemble
   // TODO: add a separate overall cross-validation for the ensemble, including _fold_column and FoldAssignmentScheme / _fold_assignment
@@ -233,9 +234,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     if (null == _parms._base_models || 0 == _parms._base_models.length)
       throw new H2OIllegalArgumentException("When creating a StackedEnsemble you must specify one or more models; found 0.");
 
-    if (null != _parms._ignored_columns)
-      throw new H2OIllegalArgumentException("A StackedEnsemble takes its ignored_columns list from the base models.  Do not specify ignored_columns for the ensemble model.");
-
     Model aModel = null;
     boolean beenHere = false;
 
@@ -262,6 +260,11 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         aNames.addAll(Arrays.asList(aModel._output._names));
         if (! aNames.equals(this.names))
           throw new H2OIllegalArgumentException("Base models are inconsistent: they use different column lists.  Found: " + this.names + " and: " + aNames + ".");
+
+        NonBlockingHashSet<String> anIgnoredColumns = new NonBlockingHashSet<>();
+        anIgnoredColumns.addAll(Arrays.asList(aModel._parms._ignored_columns));
+        if (! anIgnoredColumns.equals(this.ignoredColumns))
+          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different ignored_column lists.  Found: " + this.ignoredColumns + " and: " + aModel._parms._ignored_columns + ".");
 
         if (! responseColumn.equals(aModel._parms._response_column))
           throw new H2OIllegalArgumentException("Base models are inconsistent: they use different response columns.  Found: " + responseColumn + " and: " + aModel._parms._response_column + ".");
@@ -294,6 +297,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         // TODO: If we're set to DistributionFamily.AUTO then GLM might auto-conform the response column
         // giving us inconsistencies.
       } else {
+        // !beenHere: this is the first base_model
         _output._isSupervised = aModel.isSupervised();
         this.modelCategory = aModel._output.getModelCategory();
         this._dist = new Distribution(distributionFamily(aModel));
@@ -308,6 +312,18 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         _output._names = aModel._output._names;
         this.names = new NonBlockingHashSet<>();
         this.names.addAll(Arrays.asList(aModel._output._names));
+
+        this.ignoredColumns = new NonBlockingHashSet<>();
+        this.ignoredColumns.addAll(Arrays.asList(aModel._parms._ignored_columns));
+
+        // If the client has set _ignored_columns for the StackedEnsemble make sure it's
+        // consistent with the base_models:
+        if (null != this._parms._ignored_columns) {
+          NonBlockingHashSet<String> ensembleIgnoredColumns = new NonBlockingHashSet<>();
+          ensembleIgnoredColumns.addAll(Arrays.asList(this._parms._ignored_columns));
+          if (! ensembleIgnoredColumns.equals(this.ignoredColumns))
+            throw new H2OIllegalArgumentException("A StackedEnsemble takes its ignored_columns list from the base models.  An inconsistent list of ignored_columns was specified for the ensemble model.");
+        }
 
         responseColumn = aModel._parms._response_column;
 
