@@ -48,7 +48,7 @@ h2oconn = None
 
 
 def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_certificates=None, auth=None,
-            proxy=None, cluster_id=None, cookies=None, verbose=True, context_path=None):
+            proxy=None, cluster_id=None, cookies=None, verbose=True):
     """
     Connect to an existing H2O server, remote or local.
 
@@ -71,7 +71,7 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
     global h2oconn
     h2oconn = H2OConnection.open(server=server, url=url, ip=ip, port=port, https=https, auth=auth,
                                  verify_ssl_certificates=verify_ssl_certificates, proxy=proxy,
-                                 cluster_id=cluster_id, cookies=cookies, verbose=verbose, context_path=context_path)
+                                 cluster_id=cluster_id, cookies=cookies, verbose=verbose)
     if verbose:
         h2oconn.cluster.show_status()
     return h2oconn

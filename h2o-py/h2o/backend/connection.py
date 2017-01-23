@@ -71,7 +71,7 @@ class H2OConnection(backwards_compatible()):
 
     @staticmethod
     def open(server=None, url=None, ip=None, port=None, https=None, auth=None, verify_ssl_certificates=True,
-             proxy=None, cluster_id=None, cookies=None, verbose=True, _msgs=None, context_path=None):
+             proxy=None, cluster_id=None, cookies=None, verbose=True, _msgs=None):
         r"""
         Establish connection to an existing H2O server.
 
@@ -117,6 +117,7 @@ class H2OConnection(backwards_compatible()):
         :raises H2OServerError: if the server is in an unhealthy state (although this might be a recoverable error, the
             client itself should decide whether it wants to retry or not).
         """
+        context_path = None
         if server is not None:
             assert_is_type(server, H2OLocalServer)
             assert_is_type(ip, None, "`ip` should be None when `server` parameter is supplied")
@@ -130,10 +131,11 @@ class H2OConnection(backwards_compatible()):
             assert_is_type(url, str)
             assert_is_type(ip, None, "`ip` should be None when `url` parameter is supplied")
             # We don't allow any Unicode characters in the URL. Maybe some day we will...
-            match = assert_matches(url, r"^(https?)://((?:[\w-]+\.)*[\w-]+):(\d+)/?$")
+            match = assert_matches(url, r"^(https?)://((?:[\w-]+\.)*[\w-]+):(\d+)(/[\w-]*)?$")
             scheme = match.group(1)
             ip = match.group(2)
             port = int(match.group(3))
+            context_path = match.group(4)
         else:
             if ip is None: ip = str("localhost")
             if port is None: port = 54321
@@ -158,7 +160,7 @@ class H2OConnection(backwards_compatible()):
         conn._verbose = bool(verbose)
         conn._local_server = server
         if context_path is not None:
-            conn._base_url = "%s://%s:%d/%s" % (scheme, ip, port, context_path)
+            conn._base_url = "%s://%s:%d%s" % (scheme, ip, port, context_path)
         else:
             conn._base_url = "%s://%s:%d" % (scheme, ip, port)
         conn._verify_ssl_cert = bool(verify_ssl_certificates)
