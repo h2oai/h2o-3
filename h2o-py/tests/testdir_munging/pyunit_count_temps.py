@@ -10,6 +10,7 @@ def date_munge():
     # crimes_path = "smalldata/chicago/chicagoCrimes10k.csv.zip"
 
     hc = h2o.connection()
+    assert hc.session_id  # Make sure the `POST /4/session` call has happened
     tmps0 = pyunit_utils.temp_ctr()
 
     # GET /3/ImportFiles
@@ -38,7 +39,6 @@ def date_munge():
     crimes = crimes.drop("Date")
     print("# of REST calls used: %d" % (hc.requests_count - rest1))
 
-    # POST /4/sessions
     # POST /99/Rapids  {ast:(tmp= py8 (cols (append
     #                        (tmp= py7 (append
     #                         (tmp= py6 (append
@@ -65,7 +65,7 @@ def date_munge():
     print("Number of temps used: %d" % ntmps)
     print("Number of RESTs used: %d" % nrest)
     assert ntmps == 8
-    assert nrest == 3
+    assert nrest == 2
 
 
 

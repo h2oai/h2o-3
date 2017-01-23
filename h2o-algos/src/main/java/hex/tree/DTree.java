@@ -635,13 +635,13 @@ public class DTree extends Iced {
         _nodeType |= _split._equal == 1 ? 4 : (_split._equal == 2 ? 8 : 12);
 
       // int res = 7;  // 1B node type + flags, 2B colId, 4B float split val
-      // 1B node type + flags, 2B colId, 4B split val/small group or (2B offset + 2B size) + large group
-      int res = _split._equal == 3 ? 7 + _split._bs.numBytes() : 7;
+      // 1B node type + flags, 2B colId, 4B split val/small group or (2B offset + 4B size) + large group
+      int res = _split._equal == 3 ? 9 + _split._bs.numBytes() : 7;
 
       // NA handling correction
       res++; //1 byte for NA split dir
       if (_split._nasplit == DHistogram.NASplitDir.NAvsREST)
-        res -= _split._equal == 3 ? 4 + _split._bs.numBytes() : 4; //don't need certain stuff
+        res -= _split._equal == 3 ? 6 + _split._bs.numBytes() : 4; //don't need certain stuff
 
       Node left = _tree.node(_nids[0]);
       int lsz = left.size();
@@ -731,7 +731,7 @@ public class DTree extends Iced {
 
   public transient AutoBuffer _abAux;
   // Build a compressed-tree struct
-  public CompressedTree compress(int tid, int cls) {
+  public CompressedTree compress(int tid, int cls, String[][] domains) {
     int sz = root().size();
     if( root() instanceof LeafNode ) sz += 3; // Oops - tree-stump
     AutoBuffer ab = new AutoBuffer(sz);
@@ -740,7 +740,7 @@ public class DTree extends Iced {
       ab.put1(0).put2((char)65535); // Flag it special so the decompress doesn't look for top-level decision
     root().compress(ab, _abAux);      // Compress whole tree
     assert ab.position() == sz;
-    return new CompressedTree(ab.buf(),_nclass,_seed,tid,cls);
+    return new CompressedTree(ab.buf(),_nclass,_seed,tid,cls, domains);
   }
 
   static Split findBestSplitPoint(DHistogram hs, int col, double min_rows) {

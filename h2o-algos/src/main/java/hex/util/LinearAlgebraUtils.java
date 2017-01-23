@@ -174,7 +174,7 @@ public class LinearAlgebraUtils {
     public SMulTask(DataInfo ainfo, int ncolQ, int ncolExp) {
       _ainfo = ainfo;
       _ncolA = ainfo._adaptedFrame.numCols();
-      _ncolExp = ncolExp;   // when call from GLRM
+      _ncolExp = ncolExp;   // when call from GLRM or PCA
       _ncolQ = ncolQ;
     }
 

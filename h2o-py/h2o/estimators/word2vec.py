@@ -38,7 +38,11 @@ class H2OWord2vecEstimator(H2OEstimator):
 
     @property
     def training_frame(self):
-        """str: Id of the training data frame (Not required, to allow initial validation of model parameters)."""
+        """
+        Id of the training data frame (Not required, to allow initial validation of model parameters).
+
+        Type: ``str``.
+        """
         return self._parms.get("training_frame")
 
     @training_frame.setter
@@ -49,7 +53,11 @@ class H2OWord2vecEstimator(H2OEstimator):
 
     @property
     def min_word_freq(self):
-        """int: This will discard words that appear less than <int> times (Default: 5)"""
+        """
+        This will discard words that appear less than <int> times
+
+        Type: ``int``  (default: ``5``).
+        """
         return self._parms.get("min_word_freq")
 
     @min_word_freq.setter
@@ -60,7 +68,11 @@ class H2OWord2vecEstimator(H2OEstimator):
 
     @property
     def word_model(self):
-        """Enum["skip_gram"]: Use the Skip-Gram model (Default: "skip_gram")"""
+        """
+        Use the Skip-Gram model
+
+        One of: ``"skip_gram"``  (default: ``"skip_gram"``).
+        """
         return self._parms.get("word_model")
 
     @word_model.setter
@@ -71,7 +83,11 @@ class H2OWord2vecEstimator(H2OEstimator):
 
     @property
     def norm_model(self):
-        """Enum["hsm"]: Use Hierarchical Softmax (Default: "hsm")"""
+        """
+        Use Hierarchical Softmax
+
+        One of: ``"hsm"``  (default: ``"hsm"``).
+        """
         return self._parms.get("norm_model")
 
     @norm_model.setter
@@ -82,7 +98,11 @@ class H2OWord2vecEstimator(H2OEstimator):
 
     @property
     def vec_size(self):
-        """int: Set size of word vectors (Default: 100)"""
+        """
+        Set size of word vectors
+
+        Type: ``int``  (default: ``100``).
+        """
         return self._parms.get("vec_size")
 
     @vec_size.setter
@@ -93,7 +113,11 @@ class H2OWord2vecEstimator(H2OEstimator):
 
     @property
     def window_size(self):
-        """int: Set max skip length between words (Default: 5)"""
+        """
+        Set max skip length between words
+
+        Type: ``int``  (default: ``5``).
+        """
         return self._parms.get("window_size")
 
     @window_size.setter
@@ -105,8 +129,10 @@ class H2OWord2vecEstimator(H2OEstimator):
     @property
     def sent_sample_rate(self):
         """
-        float: Set threshold for occurrence of words. Those that appear with higher frequency in the training data
-        will be randomly down-sampled; useful range is (0, 1e-5) (Default: 0.001)
+        Set threshold for occurrence of words. Those that appear with higher frequency in the training data
+        will be randomly down-sampled; useful range is (0, 1e-5)
+
+        Type: ``float``  (default: ``0.001``).
         """
         return self._parms.get("sent_sample_rate")
 
@@ -118,7 +144,11 @@ class H2OWord2vecEstimator(H2OEstimator):
 
     @property
     def init_learning_rate(self):
-        """float: Set the starting learning rate (Default: 0.025)"""
+        """
+        Set the starting learning rate
+
+        Type: ``float``  (default: ``0.025``).
+        """
         return self._parms.get("init_learning_rate")
 
     @init_learning_rate.setter
@@ -129,7 +159,11 @@ class H2OWord2vecEstimator(H2OEstimator):
 
     @property
     def epochs(self):
-        """int: Number of training iterations to run (Default: 5)"""
+        """
+        Number of training iterations to run
+
+        Type: ``int``  (default: ``5``).
+        """
         return self._parms.get("epochs")
 
     @epochs.setter

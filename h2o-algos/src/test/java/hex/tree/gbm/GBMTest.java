@@ -17,8 +17,10 @@ import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.util.*;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
@@ -2843,7 +2845,10 @@ public class GBMTest extends TestUtil {
     }
   }
 
-  @Test public void highCardinality() {
+  @Test public void highCardinalityLowNbinsCats() { highCardinality(2000); }
+  @Test public void highCardinalityHighNbinsCats() { highCardinality(6000); }
+
+  public void highCardinality(int nbins_cats) {
     GBMModel gbm = null;
     GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
     Frame train=null, test=null, train_preds=null, test_preds=null;
@@ -2882,7 +2887,7 @@ public class GBMTest extends TestUtil {
         cf.string_fraction = 0.0;
         cf.binary_ones_fraction = 0.0;
         cf.missing_fraction = 0.2;
-        cf.factors = 3000;
+        cf.factors = 5000;
         cf.response_factors = 2;
         cf.positive_response = false;
         cf.has_response = true;
@@ -2896,7 +2901,7 @@ public class GBMTest extends TestUtil {
       parms._max_depth = 20; //allow it to overfit
       parms._min_rows = 1;
       parms._ntrees = 1;
-      parms._nbins_cats = 2000;
+      parms._nbins_cats = nbins_cats;
       parms._seed = 0x2834234;
 
       GBM job = new GBM(parms);
@@ -2942,7 +2947,7 @@ public class GBMTest extends TestUtil {
     }
   }
 
-  @Test public void lowCardinality() throws FileNotFoundException {
+  @Test public void lowCardinality() throws IOException {
     int[] vals = new int[]{2,10,20,25,26,27,100};
     double[] maes = new double[vals.length];
     int i=0;
@@ -2982,6 +2987,7 @@ public class GBMTest extends TestUtil {
         if( model != null ) model.delete();
         if( train != null ) train.remove();
         if( train_preds  != null ) train_preds .remove();
+        new File("model.zip").delete();
         Scope.exit();
       }
     }

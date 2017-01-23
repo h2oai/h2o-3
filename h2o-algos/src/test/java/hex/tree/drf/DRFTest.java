@@ -11,7 +11,6 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
-import water.api.StreamingSchema;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
@@ -22,7 +21,6 @@ import water.util.Triple;
 import water.util.VecUtils;
 
 import java.io.BufferedWriter;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.util.*;
 
@@ -279,6 +277,22 @@ public class DRFTest extends TestUtil {
             s("0", "1"));
   }
 
+  @Test public void test30kUnseenLevels() throws Throwable {
+    basicDRFTestOOBE_Regression(
+            "./smalldata/gbm_test/30k_cattest.csv", "cat30k",
+            new PrepData() {
+              @Override
+              int prep(Frame fr) {
+                return fr.find("C3");
+              }
+            },
+            50, //ntrees
+            20, //bins
+            10, //min_rows
+            5, //max_depth
+            0.25040633586487);
+  }
+
   @Test public void testProstate() throws Throwable {
     basicDRFTestOOBE_Classification(
             "./smalldata/prostate/prostate.csv.zip", "prostate2.zip.hex",
@@ -486,7 +500,7 @@ public class DRFTest extends TestUtil {
         Log.info("\nOOB Training CM:\n" + mm.cm().toASCII());
         Log.info("\nTraining CM:\n" + hex.ModelMetrics.getFromDKV(model, test).cm().toASCII());
       } else if (!classification) {
-        Assert.assertTrue("Expected: " + expMSE + ", Got: " + mm.mse(), expMSE == mm.mse());
+        Assert.assertTrue("Expected: " + expMSE + ", Got: " + mm.mse(), Math.abs(expMSE-mm.mse()) <= 1e-10*Math.abs(expMSE+mm.mse()));
         Log.info("\nOOB Training MSE: " + mm.mse());
         Log.info("\nTraining MSE: " + hex.ModelMetrics.getFromDKV(model, test).mse());
       }

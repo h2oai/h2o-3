@@ -3794,6 +3794,38 @@ h2o.tolower <- function(x) .newExpr("tolower", x)
 h2o.toupper <- function(x) .newExpr("toupper", x)
 
 #'
+#' Searches for matches to argument `pattern` within each element
+#'  of a string column.
+#'
+#' This function has similar semantics as R's native grep function
+#' and it supports a subset of its parameters. Default behavior is
+#' to return indices of the elements matching the pattern. Parameter
+#' `output.logical` can be used to return a logical vector indicating
+#' if the element matches the pattern (1) or not (0).
+#'
+#' @param pattern A character string containing a regular expression.
+#' @param x An H2O frame that wraps a single string column.
+#' @param ignore.case If TRUE case is ignored during matching.
+#' @param invert Identify elements that do not match the pattern.
+#' @param output.logical If TRUE returns logical vector of indicators instead of list of matching positions
+#' @return H2OFrame holding the matching positions or a logical vector
+#' if `output.logical` is enabled.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' addresses <- as.h2o(c("2307", "Leghorn St", "Mountain View", "CA", "94043"))
+#' zip.codes <- addresses[h2o.grep("[0-9]{5}", addresses, output.logical = TRUE),]
+#' }
+#' @export
+h2o.grep <- function(pattern, x, ignore.case = FALSE, invert = FALSE, output.logical = FALSE) {
+  result <- .newExpr("grep", x, .quote(pattern), ignore.case, invert, output.logical)
+  if (! output.logical)
+    result <- result + 1 # R indices start at 1
+  result
+}
+
+#'
 #' String Substitute
 #'
 #' Creates a copy of the target column in which each string has the first occurence of

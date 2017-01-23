@@ -416,7 +416,9 @@ numeric = U(int, float)
 
 h2oframe = _LazyClass("h2o", "H2OFrame")
 pandas_dataframe = _LazyClass("pandas", "DataFrame")
+pandas_timestamp = _LazyClass("pandas", "Timestamp")
 numpy_ndarray = _LazyClass("numpy", "ndarray")
+numpy_datetime = _LazyClass("numpy", "datetime64")
 scipy_sparse = _LazyClass("scipy.sparse", "issparse", lambda value, t: t(value))
 
 

@@ -1560,7 +1560,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           }
         }
 
-        EasyPredictModelWrapper epmw = new EasyPredictModelWrapper(genmodel);
+        EasyPredictModelWrapper epmw = new EasyPredictModelWrapper(
+                new EasyPredictModelWrapper.Config().setModel(genmodel).setConvertUnknownCategoricalLevelsToNa(true)
+        );
         RowData rowData = new RowData();
         BufferedString bStr = new BufferedString();
         for (int row = 0; row < fr.numRows(); row++) { // For all rows, single-threaded

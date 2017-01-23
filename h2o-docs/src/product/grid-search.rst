@@ -68,6 +68,7 @@ K-Means Hyperparameters
 -  ``seed``
 -  ``init``
 -  ``estimate_k``
+-  ``k``
 -  ``categorical_encoding``
 
 GLM Hyperparameters

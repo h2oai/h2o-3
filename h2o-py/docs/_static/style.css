@@ -20,3 +20,20 @@ code {
     -webkit-user-select: none;
     -moz-user-select: none;
 }
+
+table.docutils.field-list td.field-body p {
+    font-size: 100%;
+    line-height: 24px;
+}
+
+table.docutils.field-list td.field-body li p {
+    display: inline;
+}
+
+table.docutils.field-list td.field-body li p + p {
+    display: inline;
+}
+
+table.docutils.field-list td.field-body li p + p + ul {
+    margin-top: -6px;  /* Remove spacing between P and UL */
+}

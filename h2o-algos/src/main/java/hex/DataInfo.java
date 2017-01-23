@@ -856,6 +856,29 @@ public class DataInfo extends Keyed<DataInfo> {
       numVals[i] = val;
     }
 
+    /*
+    This method will perform an inner product of rows.  It will be able to handle categorical data
+    as well as numerical data.  However, the two rows must have exactly the same column types.  This
+    is used in a situation where the rows are coming from the same dataset.
+     */
+    public final double dotSame(Row rowj) {
+      // nums
+      double elementij = 0.0;
+      for(int i = 0; i < this.nNums; ++i)  {
+        elementij += this.numVals[i]*rowj.numVals[i]; // multiply numerical parts of columns
+      }
+
+      // cat X cat
+      if (this.binIds.length > 0) { // categorical columns exists
+        for (int j = 0; j < this.nBins; ++j) {
+          if (this.binIds[j] == rowj.binIds[j]) {
+            elementij += 1;
+          }
+        }
+      }
+      return elementij*this.weight*rowj.weight;
+    }
+
     public final double innerProduct(double [] vec) {
       double res = 0;
       int numStart = numStart();
