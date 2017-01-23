@@ -47,7 +47,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Id of the training data frame (Not required, to allow initial validation of model parameters).
 
-        Type: ``str``.
+        Type: ``H2OFrame``.
         """
         return self._parms.get("training_frame")
 
@@ -62,7 +62,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Id of the validation data frame.
 
-        Type: ``str``.
+        Type: ``H2OFrame``.
         """
         return self._parms.get("validation_frame")
 
@@ -412,7 +412,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         User-specified initial Y
 
-        Type: ``str``.
+        Type: ``H2OFrame``.
         """
         return self._parms.get("user_y")
 
@@ -427,7 +427,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         User-specified initial X
 
-        Type: ``str``.
+        Type: ``H2OFrame``.
         """
         return self._parms.get("user_x")
 
