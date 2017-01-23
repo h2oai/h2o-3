@@ -85,7 +85,8 @@ class H2OEstimator(ModelBase):
 
 
     def train(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None,
-              weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None):
+              weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None,
+              model_id=None):
         """
         Train the H2O model.
 
@@ -99,6 +100,7 @@ class H2OEstimator(ModelBase):
         :param weights_column: The name or index of the column in training_frame that holds the per-row weights.
         :param validation_frame: H2OFrame with validation data to be scored on while training.
         :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+        :param str model_id: Explicit ID to assign to the model object.
         """
         assert_is_type(training_frame, H2OFrame)
         assert_is_type(validation_frame, None, H2OFrame)
@@ -109,6 +111,7 @@ class H2OEstimator(ModelBase):
         assert_is_type(fold_column, None, int, str)
         assert_is_type(weights_column, None, int, str)
         assert_is_type(max_runtime_secs, None, numeric)
+        assert_is_type(model_id, None, str)
         algo = self.algo
         parms = self._parms.copy()
         if "__class__" in parms:  # FIXME: hackt for PY3
@@ -163,6 +166,7 @@ class H2OEstimator(ModelBase):
         parms["fold_column"] = fold_column
         parms["weights_column"] = weights_column
         parms["max_runtime_secs"] = max_runtime_secs
+        parms["model_id"] = model_id
 
         # Step 2
         is_auto_encoder = "autoencoder" in parms and parms["autoencoder"]

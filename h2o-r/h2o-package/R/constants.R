@@ -43,6 +43,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
                    data.frame(type = "list",      scalar = FALSE, row.names = "Key<Frame>[]", stringsAsFactors = FALSE),
                    data.frame(type = "character", scalar = TRUE,  row.names = "Key<Key>",     stringsAsFactors = FALSE),
                    data.frame(type = "H2OModel",  scalar = TRUE,  row.names = "Key<Model>",   stringsAsFactors = FALSE),
+                   data.frame(type = "list",      scalar = FALSE,  row.names = "Key<Model>[]", stringsAsFactors = FALSE),
                    data.frame(type = "numeric",   scalar = TRUE,  row.names = "int",          stringsAsFactors = FALSE),
                    data.frame(type = "numeric",   scalar = FALSE, row.names = "int[]",        stringsAsFactors = FALSE),
                    data.frame(type = "numeric",   scalar = TRUE,  row.names = "long",         stringsAsFactors = FALSE),

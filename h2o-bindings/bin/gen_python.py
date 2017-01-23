@@ -2,7 +2,6 @@
 # -*- encoding: utf-8 -*-
 from __future__ import unicode_literals
 import bindings as bi
-import re
 import sys
 PY3 = sys.version_info[0] == 3
 str_type = str if PY3 else (str, unicode)
@@ -114,7 +113,6 @@ def gen_module(schema, algo):
     init_extra = init_extra_for(algo)
     class_extra = class_extra_for(algo)
     module_extra = module_extra_for(algo)
-    pattern = re.compile(r"[^a-z]+")
 
     param_names = []
     for param in schema["parameters"]:
@@ -240,6 +238,7 @@ def algo_to_classname(algo):
     if algo == "drf": return "H2ORandomForestEstimator"
     if algo == "svd": return "H2OSingularValueDecompositionEstimator"
     if algo == "pca": return "H2OPrincipalComponentAnalysisEstimator"
+    if algo == "stackedensemble": return "H2OStackedEnsembleEstimator"
     return "H2O" + algo.capitalize() + "Estimator"
 
 def extra_imports_for(algo):
@@ -304,6 +303,8 @@ def init_extra_for(algo):
         return "if isinstance(self, H2OAutoEncoderEstimator): self._parms['autoencoder'] = True"
     if algo == "glrm":
         return """self._parms["_rest_version"] = 3"""
+    if algo == "stackedensemble":
+        return """self._parms["_rest_version"] = 99"""
 
 def class_extra_for(algo):
     if algo == "glm":
