@@ -38,7 +38,11 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
     @property
     def training_frame(self):
-        """str: Id of the training data frame (Not required, to allow initial validation of model parameters)."""
+        """
+        Id of the training data frame (Not required, to allow initial validation of model parameters).
+
+        Type: ``str``.
+        """
         return self._parms.get("training_frame")
 
     @training_frame.setter
@@ -49,7 +53,11 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
     @property
     def validation_frame(self):
-        """str: Id of the validation data frame."""
+        """
+        Id of the validation data frame.
+
+        Type: ``str``.
+        """
         return self._parms.get("validation_frame")
 
     @validation_frame.setter
@@ -61,8 +69,9 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     @property
     def base_models(self):
         """
-        List[str]: List of models which we can stack together.  Which ones are chosen depends on the selection_strategy.
-        (Default: [])
+        List of models which we can stack together.  Which ones are chosen depends on the selection_strategy.
+
+        Type: ``List[str]``  (default: ``[]``).
         """
         return self._parms.get("base_models")
 
@@ -74,7 +83,11 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
     @property
     def selection_strategy(self):
-        """Enum["choose_all"]: Strategy for choosing which models to stack."""
+        """
+        Strategy for choosing which models to stack.
+
+        One of: ``"choose_all"``.
+        """
         return self._parms.get("selection_strategy")
 
     @selection_strategy.setter
