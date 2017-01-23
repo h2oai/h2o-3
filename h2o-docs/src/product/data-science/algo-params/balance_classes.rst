@@ -1,7 +1,7 @@
 ``balance_classes``
 -------------------
 
-- Available in: GBM, DRF, Deep Learning
+- Available in: GBM, DRF, Deep Learning, Naïve-Bayes
 - Hyperparameter: yes
 
 Description
