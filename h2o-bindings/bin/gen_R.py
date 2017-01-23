@@ -430,7 +430,7 @@ def get_extra_params_for(algo):
     elif algo == "svd":
         return "training_frame, x, destination_key"
     elif algo == "stackedensemble":
-        return "x, y"
+        return "x, y, training_frame"
     elif algo == "word2vec":
         return "training_frame"
     else:

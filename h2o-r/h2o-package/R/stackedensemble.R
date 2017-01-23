@@ -20,7 +20,7 @@
 #'        to [].
 #' @param selection_strategy Strategy for choosing which models to stack. Must be one of: "choose_all".
 #' @export
-h2o.stackedEnsemble <- function(x, y,
+h2o.stackedEnsemble <- function(x, y, training_frame,
                                 model_id = NULL,
                                 validation_frame = NULL,
                                 base_models = c(),
