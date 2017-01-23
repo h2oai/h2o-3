@@ -16,6 +16,30 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     """
     Stacked Ensemble
 
+    Builds a stacked ensemble (aka "super learner") machine learning method that uses two
+    or more H2O learning algorithms to improve predictive performance. It is a loss-based
+    supervised learning method that finds the optimal combination of a collection of prediction
+    algorithms.This method supports regression and binary classification.
+
+    Examples
+    --------
+      >>> import h2o
+      >>> h2o.init()
+      >>> from h2o.estimators.random_forest import H2ORandomForestEstimator
+      >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+      >>> from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
+      >>> col_types = ["numeric", "numeric", "numeric", "enum", "enum", "numeric", "numeric", "numeric", "numeric"]
+      >>> dat = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv", destination_frame="prostate_hex", col_types= col_types)
+      >>> train, test = dat.split_frame(ratios=[.8], seed=1)
+      >>> x = ["CAPSULE","GLEASON","RACE","DPROS","DCAPS","PSA","VOL"]
+      >>> y = "AGE"
+      >>> my_gbm = H2OGradientBoostingEstimator()
+      >>> my_gbm.train(x=x, y=y, training_frame=train)
+      >>> my_rf = H2ORandomForestEstimator()
+      >>> my_rf.train(x=x, y=y, training_frame=train)
+      >>> stack = H2OStackedEnsembleEstimator(model_id="my_ensemble_guassian", training_frame=train, validation_frame=test, base_models=[my_gbm.model_id,  my_rf.model_id], selection_strategy="choose_all")
+      >>> stack.train(x=x, y=y, training_frame=train, validation_frame=test)
+      >>> stack.model_performance()
     """
 
     algo = "stackedensemble"
