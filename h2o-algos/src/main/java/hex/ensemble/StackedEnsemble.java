@@ -49,6 +49,8 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       // GLM uses a different column name than the other algos, yay!
       Vec preds = aModelsPredictions.vec("YES");
       if (null == preds) preds = aModelsPredictions.vec("p1");
+      if (null == preds) preds = aModelsPredictions.vec("1"); // Predictions column names have been changed. . .
+      if (null == preds) preds = aModelsPredictions.vec(1); // Predictions column names have been changed. . .
 
       levelOneFrame.add(aModel._key.toString(), preds);
     } else if (aModel._output.isClassifier()) {
