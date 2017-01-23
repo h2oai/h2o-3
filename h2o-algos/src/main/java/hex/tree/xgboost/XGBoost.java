@@ -27,6 +27,7 @@ import java.util.HashMap;
  *  Based on "Elements of Statistical Learning, Second Edition, page 387"
  */
 public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParameters,XGBoostOutput> {
+  @Override public boolean haveMojo() { return true; }
 
   /**
    * convert an H2O Frame to a sparse DMatrix
@@ -278,6 +279,11 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         Booster booster = ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, model.createParams(), 0, watches, null, null);
         for( int tid=0; tid< _parms._ntrees; tid++) {
           booster.update(trainMat, tid);
+          // Optional: for convenience
+          {
+            model.update(_job);
+            model._output._boosterBytes = booster.toByteArray();
+          }
           model._output._ntrees++;
           model._output._scored_train = ArrayUtils.copyAndFillOf(model._output._scored_train, model._output._ntrees+1, new ScoreKeeper());
           model._output._scored_valid = model._output._scored_valid != null ? ArrayUtils.copyAndFillOf(model._output._scored_valid, model._output._ntrees+1, new ScoreKeeper()) : null;
@@ -285,6 +291,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           doScoring(model, booster, trainMat, validMat, false);
         }
         doScoring(model, booster, trainMat, validMat, true);
+        model._output._boosterBytes = booster.toByteArray();
       } catch (XGBoostError xgBoostError) {
         xgBoostError.printStackTrace();
       }

@@ -14,6 +14,7 @@ public class XGBoostOutput extends Model.Output {
     _scored_valid = new ScoreKeeper[]{new ScoreKeeper(Double.NaN)};
   }
 
+  byte[] _boosterBytes;
   public int _ntrees;
   public ScoreKeeper[/*ntrees+1*/] _scored_train;
   public ScoreKeeper[/*ntrees+1*/] _scored_valid;
