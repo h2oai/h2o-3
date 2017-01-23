@@ -100,7 +100,6 @@ class H2OEstimator(ModelBase):
         :param weights_column: The name or index of the column in training_frame that holds the per-row weights.
         :param validation_frame: H2OFrame with validation data to be scored on while training.
         :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
-        :param str model_id: Explicit ID to assign to the model object.
         """
         assert_is_type(training_frame, H2OFrame)
         assert_is_type(validation_frame, None, H2OFrame)
