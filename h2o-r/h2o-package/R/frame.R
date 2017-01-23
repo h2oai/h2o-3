@@ -449,8 +449,11 @@ h2o.interaction <- function(data, destination_frame, factors, pairwise, max_fact
   if(!is.numeric(min_occurrence)) stop("min_occurrence must be a numeric value")
 
   parms <- list()
-  if(missing(destination_frame) || !base::is.character(destination_frame) || !nzchar(destination_frame))
+  if(missing(destination_frame) || !base::is.character(destination_frame) || !nzchar(destination_frame)){
     parms$dest = .key.make(prefix = "interaction")
+  }else{
+    parms$dest <- destination_frame
+  }
   .key.validate(parms$dest)
   parms$source_frame <- h2o.getId(data)
   parms$factor_columns <- .collapse.char(factors)
