@@ -97,6 +97,33 @@ public class BufferedStringTest {
   }
 
   @Test
+  public void testSameString() throws Exception {
+    BufferedString sut1 = new BufferedString("abc");
+    assertTrue(sut1.sameString("abc"));
+    assertFalse(sut1.sameString("ab"));
+    assertFalse(sut1.sameString("abd"));
+    assertFalse(sut1.sameString("abcd"));
+    assertFalse(sut1.sameString("abC"));
+    assertFalse(sut1.sameString("abс")); // this is Russian 'c' here
+    assertFalse(sut1.sameString("ab"));
+    BufferedString sut2 = new BufferedString("");
+    assertTrue(sut2.sameString(""));
+    assertFalse(sut2.sameString("a"));
+    BufferedString sut3 = new BufferedString("a0x0100b");
+    assertFalse(sut2.sameString("a0x0100b"));
+  }
+
+  @Test public void testIsOneOf() throws Exception {
+    BufferedString sut = new BufferedString("abc");
+    assertFalse(sut.isOneOf(null));
+    assertFalse(sut.isOneOf(new String[]{}));
+    assertFalse(sut.isOneOf(new String[]{"", "a", "b", "ab", "bc", "abcd", "xabc"}));
+    assertTrue(sut.isOneOf(new String[]{"abc", "a", "b", "ab", "bc", "abcd"}));
+    assertTrue(sut.isOneOf(new String[]{"a", "b", "ab", "bc", "abcd", "abc"}));
+    assertTrue(sut.isOneOf(new String[]{"", "b", "ab", "bc", "abcd", "abc", "whateva"}));
+  }
+  
+  @Test
   public void testGetBuffer() throws Exception {
 
   }

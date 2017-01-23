@@ -153,12 +153,19 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
     }
     return false;
   }
-
+  
   public boolean sameString(String str) {
       if (str.length() != _len) return false;
       for (int i = 0; i < _len; ++i)
         if (_buf[_off + i] != str.charAt(i)) return false;
       return true;
+  }
+
+  public boolean isOneOf(String[] samples) {
+    if (samples != null) {
+      for (String sample : samples) if (sameString(sample)) return true;
+    }
+    return false;
   }
   
   // Thou Shalt Not use accessors in performance critical code - because it
