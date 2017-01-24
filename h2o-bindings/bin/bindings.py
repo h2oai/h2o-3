@@ -317,7 +317,11 @@ def schemas(raw=False):
 
     def translate_name(name):
         if name is None: return
-        if name == "Apischemas3TimelineV3EventV3EventType": return "ApiTimelineEventTypeV3"
+        if name.startswith("Apischemas3"): name = name[len("Apischemas3"):]
+        if name.startswith("Apischemas4input"): name = name[len("Apischemas4input"):]
+        if name.startswith("Apischemas4output"): name = name[len("Apischemas4output"):]
+        if "V3" in name: name = name.replace("V3", "") + "V3"  # force multiple "V3"s at the end
+        if "V4" in name: name = name.replace("V4", "") + "V4"  # force multiple "V4"s at the end
         if name == "CreateframerecipesSimpleCreateFrameRecipeResponseType": return "SimpleRecipeResponseType"
         assert not pattern0.match(name), "Bad schema name %s (version number in the middle)" % name
         mm = pattern1.match(name) or pattern2.match(name)
