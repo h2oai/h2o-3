@@ -1460,8 +1460,6 @@ Partial Dependence Plots
 
 For models that include only numerical values, you can view a Partial Dependence Plot (PDP) for that model. This provides a graphical representation of the marginal effect of a variable on the class probability (classification) or response (regression). 
 
-**Note**: The outputted PDPs include the top 10 most important features in a model. 
-
 Viewing Partial Dependence Plots
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -1470,7 +1468,7 @@ Viewing Partial Dependence Plots
  .. figure:: images/score_pdp_menu.png
     :alt: Score > Partial Dependence Plot...
 
-2. Specify the Model and Frame that you want to use to retrieve the plots, and specify the number of bins (levels that PDP will compute). Note that more levels will result in slower speeds. Click **Compute** when you are done.
+2. Specify the Model and Frame that you want to use to retrieve the plots, and specify the number of bins (levels that PDP will compute). Note that more levels will result in slower speeds. By default, the top 10 features are used to build the plot. Alternatively, you can click the **Select Column?** button to build a plot based on a specified set of columns. Click **Compute** when you are done.
 
  **Note**: Be sure to specify the dataframe that was used to build the selected model.
 
