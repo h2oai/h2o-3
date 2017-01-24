@@ -149,7 +149,6 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
 
           //compute huber delta based on huber alpha quantile on absolute prediction error
           double huberDelta = computeHuberDelta(actual, preds.vecs(), weight, m._parms._huber_alpha);
-
           // make a deep copy of the model's current distribution state (huber delta)
           _dist = IcedUtils.deepCopy(m._dist);
           _dist.setHuberDelta(huberDelta);
@@ -158,7 +157,6 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       } else {
         meanResDeviance = _sumdeviance / _wcount; //mean residual deviance
       }
-      Scope.exit();
       ModelMetricsRegression mm = new ModelMetricsRegression(m, f, _count, mse, weightedSigma(), mae, rmsle, meanResDeviance);
       if (m!=null) m.addModelMetrics(mm);
       return mm;

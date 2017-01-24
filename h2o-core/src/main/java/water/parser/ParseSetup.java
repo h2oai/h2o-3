@@ -323,7 +323,7 @@ public class ParseSetup extends Iced {
       _file = key.toString();
       Iced ice = DKV.getGet(key);
       if(ice == null) throw new H2OIllegalArgumentException("Missing data","Did not find any data under key " + key);
-      ByteVec bv = (ByteVec)(ice instanceof ByteVec ? ice : ((Frame)ice).vecs());
+      ByteVec bv = (ByteVec)(ice instanceof ByteVec ? ice : ((Frame)ice).vecs().vecs()[0]);
       byte [] bits = ZipUtil.getFirstUnzippedBytes(bv);
       // The bits can be null
       if (bits != null && bits.length > 0) {

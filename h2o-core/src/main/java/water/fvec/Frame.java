@@ -83,7 +83,7 @@ public class Frame extends Lockable<Frame> {
 
   /** Creates an empty frame with given key. */
   public Frame(Key<Frame> key) {
-    this(key, (String[])null, (VecAry)null);
+    this(key, (String[])null, new VecAry());
   }
 
   /**

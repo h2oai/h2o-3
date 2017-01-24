@@ -35,6 +35,8 @@ public abstract class FileVec extends ByteVec {
     _len = len;
     _be = be;
   }
+
+  public long numRows(){return _len;}
   public void setNChunks(int n){
     _nChunks = n;
     setChunkSize((int)length()/n);

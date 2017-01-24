@@ -40,7 +40,7 @@ public class ParseTestAvro extends TestUtil {
         // sequence100k.avro
         new FrameAssertion("smalldata/parser/avro/sequence100k.avro", TestUtil.ari(1, 100000)) {
           @Override public void check(Frame f) {
-            Vec values = f.vec(0);
+            Vec values = f.vecs().vecs()[0];
             for (int i = 0; i < f.numRows(); i++) {
               assertEquals(i, values.at8(i));
             }

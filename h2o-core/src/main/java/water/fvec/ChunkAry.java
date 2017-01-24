@@ -91,7 +91,9 @@ public class ChunkAry<C extends Chunk> extends Iced {
         lb = _vec._blockOffset[vecId];
         ub = _vec._blockOffset[vecId];
       }
-      db = db.setChunk(j-lb,_cs[i+_minModifiedCol].compress());
+      Chunk chk = _cs[i+_minModifiedCol].compress();
+      db = db.setChunk(j-lb,chk);
+      assert chk._len == _len:_len + " != " + chk._len;
     }
     return fs;
   }
@@ -170,9 +172,10 @@ public class ChunkAry<C extends Chunk> extends Iced {
 
   private boolean setModified(int col){
     if(_modified_cols == null) {
-      _modified_cols = new boolean[8];
-      _modified_cols[0] = true;
-      _minModifiedCol = col;
+      int x = col <= 16?0:col;
+      _modified_cols = new boolean[Math.min(8,_numCols-x)];
+      _modified_cols[x] = true;
+      _minModifiedCol = x;
       return true;
     }
     if(col < _minModifiedCol){

@@ -284,10 +284,11 @@ public class DataInfo extends Keyed<DataInfo> {
       _numOffsets[i+1] = ++len;
       _permutation[i+ncats] = nums[i];
     }
+    RollupsAry rsa = train.vecs().rollupStats();
     _numMeans = new double[numNums()];
     int meanIdx=0;
     for(int i=0;i<nnums;++i) {
-      VecAry v = train.vec(nums[i]);
+      /* VecAry v = train.vec(nums[i]);
       if( v.vecs()[0] instanceof InteractionWrappedVec ) {
         InteractionWrappedVec iwv = (InteractionWrappedVec)v.vecs()[0];
         double[] means = iwv.getMeans();
@@ -295,9 +296,8 @@ public class DataInfo extends Keyed<DataInfo> {
         int length   = iwv.expandedLength();
         System.arraycopy(means,start,_numMeans,meanIdx,length);
         meanIdx+=length;
-      }
-      else
-        _numMeans[meanIdx++]=v.mean();
+      }  else */
+        _numMeans[meanIdx++]=rsa.mean(nums[i]);
     }
     for(int i = names.length-nResponses - (weight != null?1:0) - (offset != null?1:0) - (fold != null?1:0); i < names.length; ++i) {
       names[i] = train._names[i];
@@ -429,11 +429,13 @@ public class DataInfo extends Keyed<DataInfo> {
     _catLvls = catLevels;
     _intLvls = intLvls;
     _responses = dinfo._responses;
+    _responseId = _adaptedFrame.numCols()-1;
     _cats = catLevels.length;
     _useAllFactorLevels = true;//dinfo._useAllFactorLevels;
     _normMul = normMul;
     _normSub = normSub;
     _catNAFill = catModes;
+
   }
 
   public static int imputeCat(VecAry v) {return imputeCat(v,0);}
@@ -585,35 +587,23 @@ public class DataInfo extends Keyed<DataInfo> {
 
   private void setTransform(TransformType t, double [] normMul, double [] normSub, int vecStart, int n) {
     int idx=0; // idx!=i when interactions are in play, otherwise, it's just 'i'
-    for (int i = 0; i < n; ++i) {
-      VecAry v = _adaptedFrame.vec(vecStart + i);
-      boolean isIWV = v.vecs()[0] instanceof InteractionWrappedVec;
+    RollupsAry rsa = _adaptedFrame.vecs().rollupStats();
+    for (int i = vecStart; i < vecStart+n; ++i) {
       switch (t) {
         case STANDARDIZE:
-          if( isIWV ) {
-            InteractionWrappedVec iwv = (InteractionWrappedVec)v.vecs()[0];
-            for(int offset=0;offset<iwv.expandedLength();++offset) {
-              normMul[idx+offset] = iwv.getMul(offset+(_useAllFactorLevels?0:1));
-              normSub[idx+offset] = iwv.getSub(offset+(_useAllFactorLevels?0:1));
-            }
-          } else {
-            normMul[idx] = (v.sigma() != 0) ? 1.0 / v.sigma() : 1.0;
-            normSub[idx] = v.mean();
-          }
+          normMul[idx] = (rsa.sigma(i) != 0) ? 1.0 / rsa.sigma(i) : 1.0;
+          normSub[idx] = rsa.mean(i);
           break;
         case NORMALIZE:
-          if( isIWV ) throw H2O.unimpl();
-          normMul[idx] = (v.max() - v.min() > 0)?1.0/(v.max() - v.min()):1.0;
-          normSub[idx] = v.mean();
+          normMul[idx] = (rsa.max(i) - rsa.min(i) > 0)?1.0/(rsa.max(i) - rsa.min(i)):1.0;
+          normSub[idx] = rsa.mean(i);
           break;
         case DEMEAN:
-          if( isIWV ) throw H2O.unimpl();
           normMul[idx] = 1;
-          normSub[idx] = v.mean();
+          normSub[idx] = rsa.mean(i);
           break;
         case DESCALE:
-          if( isIWV ) throw H2O.unimpl();
-          normMul[idx] = (v.sigma() != 0)?1.0/v.sigma():1.0;
+          normMul[idx] = (rsa.sigma(i) != 0)?1.0/rsa.sigma(i):1.0;
           normSub[idx] = 0;
           break;
         default:
@@ -621,7 +611,7 @@ public class DataInfo extends Keyed<DataInfo> {
       }
       assert !Double.isNaN(normMul[idx]);
       assert !Double.isNaN(normSub[idx]);
-      idx = isIWV?(idx+nextNumericIdx(i)):(idx+1);
+      idx = (idx+1);
     }
   }
   public void setPredictorTransform(TransformType t){
@@ -896,7 +886,7 @@ public class DataInfo extends Keyed<DataInfo> {
       val -= 1;
     int [] offs = fullCatOffsets();
     if(val + offs[cid] >= offs[cid+1]) {  // previously unseen level
-      assert _valid:"categorical value out of bounds, got " + val + ", next cat starts at " + fullCatOffsets()[cid+1];
+      assert _valid:"categorical value out of bounds " + offs[cid]  + " <= "  + (offs[cid]+val) + " < " + offs[cid+1];
       val = _catNAFill[cid];
     }
     if (_catLvls[cid] != null) {  // some levels are ignored?

@@ -83,7 +83,7 @@ public class FileIntegrityChecker extends MRTask<FileIntegrityChecker> {
         if( DKV.get(k) != null ) dels.add(k.toString());
         new Frame(k).delete_and_lock((Key)null); // Lock before making the NFS; avoids racing ImportFiles creating same Frame
         NFSFileVec nfs = NFSFileVec.make(f, fs);
-        new Frame(k,new String[]{"C1"}, new Vec[]{nfs}).update((Key)null).unlock((Key)null);
+        new Frame(k,new String[]{"C1"}, nfs).update((Key)null).unlock((Key)null);
       }
     }
     fs.blockForPending();

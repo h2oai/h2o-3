@@ -1190,10 +1190,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     String [] names = makeScoringNames();
     String [][] domains = new String[names.length][];
     GLMScore gs = makeScoringTask(adaptFrm,true,j).doAll(names.length,Vec.T_NUM,adaptFrm);
-    if (gs._computeMetrics)
-      gs._mb.makeModelMetrics(this, fr, adaptFrm, gs.outputFrame());
     domains[0] = gs._domain;
-    return gs.outputFrame(Key.<Frame>make(destination_key),names, domains);
+    Frame res = gs.outputFrame(Key.<Frame>make(destination_key),names, domains);
+    if (gs._computeMetrics)
+      gs._mb.makeModelMetrics(this, fr, adaptFrm, res);
+    return res;
   }
 
   /** Score an already adapted frame.  Returns a MetricBuilder that can be used to make a model metrics.

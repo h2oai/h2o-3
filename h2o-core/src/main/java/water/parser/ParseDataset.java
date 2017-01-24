@@ -50,7 +50,7 @@ public final class ParseDataset {
     Iced ice = DKV.getGet(key);
     if(ice == null)
       throw new H2OIllegalArgumentException("Missing data","Did not find any data under key " + key);
-    return (ByteVec)(ice instanceof ByteVec ? ice : ((Frame)ice).vecs());
+    return (ByteVec)(ice instanceof ByteVec ? ice : ((Frame)ice).vecs().vecs()[0]);
   }
   static String [] getColumnNames(int ncols, String[] colNames) {
     if(colNames == null) { // no names, generate
@@ -1042,17 +1042,18 @@ public final class ParseDataset {
     Log.info("Parse result for " + fr._key + " (" + Long.toString(numRows) + " rows):");
     // get all rollups started in parallell, otherwise this takes ages!
     Futures fs = new Futures();
-    VecAry vecArr = fr.vecs();
-    vecArr.startRollupStats(fs);
+    VecAry vecs = fr.vecs();
+    vecs.startRollupStats(fs);
     fs.blockForPending();
     int namelen = 0;
     for (String s : fr.names()) namelen = Math.max(namelen, s.length());
     String format = " %"+namelen+"s %7s %12.12s %12.12s %12.12s %12.12s %11s %8s %6s";
     Log.info(String.format(format, "ColV2", "type", "min", "max", "mean", "sigma", "NAs", "constant", "cardinality"));
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    for( int i = 0; i < vecArr._numCols; i++ ) {
-      boolean isCategorical = vecArr.isCategorical(i);
-      boolean isConstant = vecArr.isConst(i);
+    RollupsAry rsa = vecs.rollupStats();
+    for( int i = 0; i < vecs._numCols; i++ ) {
+      boolean isCategorical = vecs.isCategorical(i);
+      boolean isConstant = rsa.isConst(i);
       String CStr = String.format("%"+namelen+"s:", fr.names()[i]);
       String typeStr;
       String minStr;
@@ -1060,25 +1061,25 @@ public final class ParseDataset {
       String meanStr="";
       String sigmaStr="";
 
-      switch( vecArr.getType(i) ) {
+      switch( vecs.getType(i) ) {
         case Vec.T_BAD :   typeStr = "all_NA" ;  minStr = "";  maxStr = "";  break;
         case Vec.T_UUID:  typeStr = "UUID"   ;  minStr = "";  maxStr = "";  break;
         case Vec.T_STR :  typeStr = "string" ;  minStr = "";  maxStr = "";  break;
         case Vec.T_NUM :  typeStr = "numeric";
-          minStr = String.format("%g", vecArr.min(i));
-          maxStr = String.format("%g", vecArr.max(i));
-          meanStr = String.format("%g", vecArr.mean(i));
-          sigmaStr = String.format("%g", vecArr.sigma(i));
+          minStr = String.format("%g", rsa.min(i));
+          maxStr = String.format("%g", rsa.max(i));
+          meanStr = String.format("%g", rsa.mean(i));
+          sigmaStr = String.format("%g", rsa.sigma(i));
           break;
-        case Vec.T_CAT :  typeStr = "factor" ;  minStr = vecArr.factor(i,0);  maxStr = vecArr.factor(i,vecArr.cardinality(i)-1); break;
-        case Vec.T_TIME:  typeStr = "time"   ;  minStr = sdf.format(vecArr.min(i));  maxStr = sdf.format(vecArr.max(i));  break;
+        case Vec.T_CAT :  typeStr = "factor" ;  minStr = vecs.factor(i,0);  maxStr = vecs.factor(i,vecs.cardinality(i)-1); break;
+        case Vec.T_TIME:  typeStr = "time"   ;  minStr = sdf.format(rsa.min(i));  maxStr = sdf.format(rsa.max(i));  break;
         default: throw H2O.unimpl();
       }
 
-      long numNAs = vecArr.naCnt(i);
+      long numNAs = rsa.naCnt(i);
       String naStr = (numNAs > 0) ? String.format("%d", numNAs) : "";
       String isConstantStr = isConstant ? "constant" : "";
-      String numLevelsStr = isCategorical ? String.format("%d", vecArr.domain(i).length) : "";
+      String numLevelsStr = isCategorical ? String.format("%d", vecs.domain(i).length) : "";
       boolean launchedWithHadoopJar = H2O.ARGS.launchedWithHadoopJar();
       boolean printLogSeparatorToStdout = false;
       boolean printColumnToStdout;
@@ -1091,7 +1092,7 @@ public final class ParseDataset {
 
         if (launchedWithHadoopJar) {
           printColumnToStdout = true;
-        } else if (vecArr._numCols <= (MAX_HEAD_TO_PRINT_ON_STDOUT + MAX_TAIL_TO_PRINT_ON_STDOUT)) {
+        } else if (vecs._numCols <= (MAX_HEAD_TO_PRINT_ON_STDOUT + MAX_TAIL_TO_PRINT_ON_STDOUT)) {
           // For small numbers of columns, print them all.
           printColumnToStdout = true;
         } else if (i < MAX_HEAD_TO_PRINT_ON_STDOUT) {
@@ -1099,16 +1100,14 @@ public final class ParseDataset {
         } else if (i == MAX_HEAD_TO_PRINT_ON_STDOUT) {
           printLogSeparatorToStdout = true;
           printColumnToStdout = false;
-        } else if ((i + MAX_TAIL_TO_PRINT_ON_STDOUT) < vecArr._numCols) {
+        } else if ((i + MAX_TAIL_TO_PRINT_ON_STDOUT) < vecs._numCols) {
           printColumnToStdout = false;
         } else {
           printColumnToStdout = true;
         }
       }
-
       if (printLogSeparatorToStdout)
         Log.info("Additional column information only sent to log file...");
-
       String s = String.format(format, CStr, typeStr, minStr, maxStr, meanStr, sigmaStr, naStr, isConstantStr, numLevelsStr);
       Log.info(s,printColumnToStdout);
     }

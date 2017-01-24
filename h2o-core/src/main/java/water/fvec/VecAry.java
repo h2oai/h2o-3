@@ -93,18 +93,20 @@ public final class VecAry extends Iced<VecAry> {
 
   public RollupsAry rollupStats(boolean computeHisto) {
     Futures fs = new Futures();
-    for (Vec v : fetchVecs()) v.startRollupStats(fs, computeHisto);
-    RollupStats[] rs = new RollupStats[_blockOffset[_blockOffset.length - 1]];
-    int i = 0;
-    for (Vec v : vecs()) {
-      RollupsAry rsa = v.rollupStats(computeHisto);
-      for (int j = 0; j < v.numCols(); ++j)
-        rs[i++] = rsa.isRemoved(j) ? null : rsa.getRollups(j);
+    RollupStats[] rs;
+    if (_vecIds.length == 1)
+      rs = fetchVec(0).rollupStats(computeHisto)._rs;
+    else {
+      for (Vec v : fetchVecs()) v.startRollupStats(fs, computeHisto);
+      rs = new RollupStats[_blockOffset[_blockOffset.length - 1]];
+      int i = 0;
+      for (Vec v : vecs()) {
+        RollupsAry rsa = v.rollupStats(computeHisto);
+        for (int j = 0; j < v.numCols(); ++j)
+          rs[i++] = rsa.isRemoved(j) ? null : rsa.getRollups(j);
+      }
     }
     if (_colFilter != null) rs = ArrayUtils.select(rs, _colFilter);
-    for (int j = 0; j < rs.length; ++j)
-      if (rs[j] == null)
-        throw new IllegalArgumentException("accessing rollups of a removed vec!");
     return new RollupsAry(rs);
   }
 
@@ -153,6 +155,7 @@ public final class VecAry extends Iced<VecAry> {
 
   public byte getType(int c) {
     if (_colFilter != null) c = _colFilter[c];
+    if(_vecIds.length == 1) return fetchVec(0).getType(c);
     int vecId = getBlockId(c);
     int off = c - _blockOffset[vecId];
     return fetchVecs()[vecId].getType(off);
@@ -222,6 +225,7 @@ public final class VecAry extends Iced<VecAry> {
   }
 
   int getBlockId(int cid) {
+    if(_vecIds.length == 1) return 0;
     int blockId;
     blockId = Arrays.binarySearch(_blockOffset, cid);
     if (blockId < 0) blockId = -blockId - 2;
@@ -496,7 +500,7 @@ public final class VecAry extends Iced<VecAry> {
   }
 
   protected final Vec fetchVec(int i) {
-    return _vecs == null?getVec(i):_vecs[i];
+    return (_vecs == null)?fetchVecs()[i]:_vecs[i];
   }
 
   protected final Vec[] fetchVecs() {
@@ -546,14 +550,17 @@ public final class VecAry extends Iced<VecAry> {
 
   public boolean isCategorical(int c) {
     if (_colFilter != null) c = _colFilter[c];
+    if(_vecIds.length == 1) return fetchVec(0).isCategorical(c);
     int vecId = getBlockId(c);
     int off = c - _blockOffset[vecId];
     return fetchVec(vecId).isCategorical(off);
   }
 
-  public boolean isNumeric() {return fetchVec(0).isNumeric(0);}
+  public boolean isNumeric() {return isNumeric(0);}
   public boolean isNumeric(int c) {
     if (_colFilter != null) c = _colFilter[c];
+    if(_vecIds.length == 0 || c < _blockOffset[1])
+      return fetchVec(0).isNumeric(c);
     int vecId = getBlockId(c);
     int off = c - _blockOffset[vecId];
     return fetchVec(vecId).isNumeric(off);
@@ -561,8 +568,9 @@ public final class VecAry extends Iced<VecAry> {
 
   public double min() {return min(0);}
 
-  public double min(int c) {
+  public final double min(int c) {
     if (_colFilter != null) c = _colFilter[c];
+    if(_vecIds.length == 1 || c < _blockOffset[1]) return fetchVec(0).min(c);
     int vecId = getBlockId(c);
     int off = c - _blockOffset[vecId];
     return fetchVec(vecId).min(off);
@@ -577,8 +585,9 @@ public final class VecAry extends Iced<VecAry> {
   }
   public double mean() {return mean(0);}
 
-  public double mean(int c) {
+  public final double mean(int c) {
     if (_colFilter != null) c = _colFilter[c];
+    if(_vecIds.length == 1) return fetchVec(0).mean(c);
     int vecId = getBlockId(c);
     int off = c - _blockOffset[vecId];
     return fetchVec(vecId).mean(off);
@@ -620,7 +629,7 @@ public final class VecAry extends Iced<VecAry> {
     if (_colFilter != null) c = _colFilter[c];
     int vecId = getBlockId(c);
     int off = c - _blockOffset[vecId];
-    return fetchVec(vecId).mins(off);
+    return fetchVec(vecId).maxs(off);
   }
 
   public long[] lazy_bins(int c) {
@@ -659,6 +668,7 @@ public final class VecAry extends Iced<VecAry> {
 
   public double sigma(int c) {
     if (_colFilter != null) c = _colFilter[c];
+    if(_vecIds.length == 1) return fetchVec(0).sigma(c);
     int vecId = getBlockId(c);
     int off = c - _blockOffset[vecId];
     return fetchVec(vecId).sigma(off);
@@ -668,6 +678,8 @@ public final class VecAry extends Iced<VecAry> {
 
   public long naCnt(int c) {
     if (_colFilter != null) c = _colFilter[c];
+    if(_vecIds.length == 1 || c < _blockOffset[1])
+      return fetchVec(0).naCnt(c);
     int vecId = getBlockId(c);
     int off = c - _blockOffset[vecId];
     return fetchVec(vecId).naCnt(off);
@@ -677,6 +689,7 @@ public final class VecAry extends Iced<VecAry> {
 
   public double max(int c) {
     if (_colFilter != null) c = _colFilter[c];
+    if(_vecIds.length==1 || c < _blockOffset[1]) return fetchVec(0).max(c);
     int vecId = getBlockId(c);
     int off = c - _blockOffset[vecId];
     return fetchVec(vecId).max(off);
@@ -685,6 +698,7 @@ public final class VecAry extends Iced<VecAry> {
   public boolean isConst() { return isConst(0);}
   public boolean isConst(int c) {
     if (_colFilter != null) c = _colFilter[c];
+    if(_vecIds.length == 1 || c < _blockOffset[1]) return vecs()[0].isConst(c);
     int vecId = getBlockId(c);
     int off = c - _blockOffset[vecId];
     return fetchVec(vecId).isConst(off);
@@ -709,7 +723,7 @@ public final class VecAry extends Iced<VecAry> {
     if (_colFilter != null) c = _colFilter[c];
     int vecId = getBlockId(c);
     int off = c - _blockOffset[vecId];
-    return fetchVec(vecId).isInt(off);
+    return fetchVec(vecId).isTime(off);
   }
   public boolean isInt() {
     return isInt(0);
@@ -801,9 +815,7 @@ public final class VecAry extends Iced<VecAry> {
     return fs;
   }
 
-  public double at(long l) {
-    return at(0);
-  }
+  public double at(long l) {return at(l,0);}
 
   public double at(long l, int c) {
     if (_colFilter != null) c = _colFilter[c];

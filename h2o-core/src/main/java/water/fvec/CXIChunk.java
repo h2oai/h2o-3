@@ -56,16 +56,23 @@ public class CXIChunk extends Chunk {
   }
 
   @Override public NewChunk add2Chunk(NewChunk nc, int from, int to) {
-    int prev = from -1;
-    int id;
-    for(int off = getOff(from); (id = getId(off)) < to; off += _ridsz + _valsz) {
-      if(id >= to) {
-        if(isSparseNA())
-          nc.addNAs(to-prev-1);
-        else
-          nc.addZeros(to-prev-1);
-        break;
+    if( from > to) throw new NegativeArraySizeException();
+    if(from == to)
+      return nc;
+    int prev = from-1;
+    int id = nextNZ(prev);
+    if(id == _len) {
+      nc.addZeros(to-from);
+      return nc;
+    }
+    int cnt = 0;
+    for(int off = getOff(id);(id = getId(off)) < to; off += _ridsz + _valsz) {
+      cnt++;
+      if(id <= prev){
+        System.out.println("haha + cnt = " + cnt);
+        off = nextNZ(prev);
       }
+      assert id > prev:" id = " + id + ", prev = " + prev + ", from = " + from + ", to = " + to  + ", cnt = " + cnt;
       if(isSparseNA())
         nc.addNAs(id-prev-1);
       else
@@ -75,7 +82,16 @@ public class CXIChunk extends Chunk {
         nc.addNA();
       else
         nc.addNum(v,0);
+
+      prev = id;
     }
+    if(prev < to-1) {
+      if (isSparseNA())
+        nc.addNAs(to - prev - 1);
+      else
+        nc.addZeros(to - prev - 1);
+    }
+    assert nc._len > 0;
     return nc;
   }
 
@@ -238,6 +254,8 @@ public class CXIChunk extends Chunk {
 
   // get id of nth (chunk-relative) stored element
   protected final int getId(int off){
+    if(off == _mem.length) return _len;
+    if(off > _mem.length) throw new ArrayIndexOutOfBoundsException(off);
     return _ridsz == 2
       ?UnsafeUtils.get2(_mem,off)&0xFFFF
       :UnsafeUtils.get4(_mem,off);

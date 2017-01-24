@@ -170,7 +170,7 @@ public class Vec extends Keyed<Vec> {
   // String domain, only for Categorical columns
   private String[][] _domains;
 
-  protected Vec() {}
+  protected Vec() {_rsKey = null;}
 
 
   /** Returns the categorical toString mapping array, or null if not an categorical column.
@@ -251,6 +251,7 @@ public class Vec extends Keyed<Vec> {
     _types = types;
     _domains = domains;
     _espc = ESPC.espc(this);
+    _rsKey = chunkKey(-2);
   }
 
   public int vecId(){
@@ -507,8 +508,8 @@ public class Vec extends Keyed<Vec> {
     return makeCons(group,rowLayout,d);
   }
 
-  public Vec makeZeros(int n){return makeZeros(n,null,null);}
-  public Vec makeZeros(int n, String [][] domain, byte[] types){ return makeCons(_rowLayout,0,domain,types);}
+  public Vec makeZeros(int n){return makeZeros(n,null,ArrayUtils.makeConst(n,Vec.T_NUM));}
+  public Vec makeZeros(int n, String [][] domain, byte[] types){ return makeCons(n,0,domain,types);}
 
   // Make a bunch of compatible zero Vectors
   public Vec makeCons(int n, final long l, String[][] domains, byte[] types) {
@@ -521,8 +522,9 @@ public class Vec extends Keyed<Vec> {
         if(res.isHomedLocally(i)){
           Key k = res.newChunkKey(i);
           Chunk [] cs = new Chunk[res.numCols()];
+          int len = (int)(_espc[i+1]-_espc[i]);
           for(int j = 0; j < cs.length; ++j)
-            cs[j] = new C0LChunk(l, 0);
+            cs[j] = new C0LChunk(l, len);
             DKV.put(k,new DBlock.MultiChunkBlock(cs), _fs);
         }
       }
@@ -737,7 +739,7 @@ public class Vec extends Keyed<Vec> {
   }
 
   public Futures removeCols(Futures fs, final int... ids){
-    assert numCols() > 1;
+    assert numCols() >= 1;
     RemoveColsFromRollupsTsk t = new RemoveColsFromRollupsTsk(numCols(),ids);
     t.invoke(rollupStatsKey());
     if(t._removed)
@@ -781,8 +783,8 @@ public class Vec extends Keyed<Vec> {
     return fs;
   }
 
+
   public RollupsAry rollupStats(boolean computeHisto) {
-    if( DKV.get(_key)== null ) throw new RuntimeException("Rollups not possible, because Vec was deleted: "+_key);
     final Key rskey = rollupStatsKey();
     RollupsAry rs = DKV.getGet(rskey);
     while(rs == null || (!rs.isReady(this,computeHisto))){
@@ -877,7 +879,7 @@ public class Vec extends Keyed<Vec> {
   }
 
   public int numCols(){return _types.length;}
-  public long numRows(){return _espc[_espc.length-1];}
+  public long numRows(){return espc()[_espc.length-1];}
 
 
 
@@ -898,19 +900,21 @@ public class Vec extends Keyed<Vec> {
   protected Key chunkKey(int cidx ) {
     return chunkKey(_key,cidx);
   }
+
   public static Key chunkKey(Key k, int cidx ) {
     byte [] bits = k._kb.clone();
     bits[0] = Key.CHK;
     UnsafeUtils.set4(bits, 6, cidx); // chunk#
     return Key.make(bits);
   }
+
   public boolean isHomedLocally(int cidx){return chunkKey(cidx).home_node() == H2O.SELF;}
   public Key newChunkKey(int cidx ) {return chunkKey(cidx);}
 
 
-
+  private final Key _rsKey;
   // Filled in lazily and racily... but all writers write the exact identical Key
-  public Key rollupStatsKey() {return chunkKey(-2);}
+  public final Key rollupStatsKey() {return _rsKey;}
 
   /** Get a Chunk's Value by index.  Basically the index-to-key map, plus the
    *  {@code DKV.get()}.  Warning: this pulls the data locally; using this call
@@ -967,7 +971,7 @@ public class Vec extends Keyed<Vec> {
 
 
   Futures closeChunk(int cidx, int len, DBlock db, Futures fs){
-    DKV.put(newChunkKey(cidx),db,fs);
+    DKV.put(chunkKey(cidx),db,fs);
     return fs;
   }
 

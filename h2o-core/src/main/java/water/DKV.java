@@ -162,7 +162,6 @@ public abstract class DKV {
 
   static public <T extends Iced> T getGet(String key) { return key == null ? null : (T)getGet(Key.make(key)); }
   static public <T extends Iced> T getGet(Key key) {
-    if (null == key) return null;
     Value v = get(key);
     if (null == v) return null;
     return v.get();

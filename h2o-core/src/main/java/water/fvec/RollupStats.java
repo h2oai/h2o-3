@@ -119,7 +119,7 @@ final class RollupStats extends Iced {
 
     // Check for popular easy cases: Boolean, possibly sparse, possibly NaN
     if( min==0 && max==1 ) {
-      int zs = ca._len -ca.sparseLenZero(); // Easy zeros
+      int zs = ca._len -ca.sparseLenZero(col); // Easy zeros
       int nans = 0;
       // Hard-count sparse-but-zero (weird case of setting a zero over a non-zero)
       for(int i = ca.nextNZ(-1,col); i< ca._len; i=ca.nextNZ(i,col) )
@@ -432,7 +432,7 @@ final class RollupStats extends Iced {
         double c_stride = rs.h_stride();
         double lastP = -1.0;       // any negative value to pass assert below first time
         for (int x = 0; x < Vec.PERCENTILES.length; x++) {
-          final double P = Vec.PERCENTILES[i];
+          final double P = Vec.PERCENTILES[x];
           assert P >= 0 && P <= 1 && P >= lastP;   // rely on increasing percentiles here. If P has dup then strange but accept, hence >= not >
           lastP = P;
           double pdouble = 1.0 + P * (rows - 1);   // following stats:::quantile.default type 7
@@ -442,7 +442,7 @@ final class RollupStats extends Iced {
           while (hsum < pint) hsum += rs._bins[j++];
           // j overshot by 1 bin; we added _bins[j-1] and this goes from too low to either exactly right or too big
           // pint now falls in bin j-1 (the ++ happened even when hsum==pint), so grab that bin value now
-          rs._pctiles[i] = c_base + c_stride * (j - 1);
+          rs._pctiles[x] = c_base + c_stride * (j - 1);
           if (h > 0 && pint == hsum) {
             // linearly interpolate between adjacent non-zero bins
             //      i) pint is the last of (j-1)'s bin count (>1 when either duplicates exist in input, or stride makes dups at lower accuracy)
@@ -450,7 +450,7 @@ final class RollupStats extends Iced {
             if (k < j) k = j; // if j jumped over the k needed for the last P, catch k up to j
             // Saves potentially winding k forward over the same zero stretch many times
             while (rs._bins[k] == 0) k++;  // find the next non-zero bin
-            rs._pctiles[i] += h * c_stride * (k - j + 1);
+            rs._pctiles[x] += h * c_stride * (k - j + 1);
           } // otherwise either h==0 and we know which bin, or fraction is between two positions that fall in the same bin
           // this guarantees we are within one bin of the exact answer; i.e. within (max-min)/MAX_SIZE
         }

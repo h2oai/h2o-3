@@ -46,8 +46,9 @@ public class AppendableVec extends Vec {
     for(int i = 0; i < _blocks.length; ++i) {
       if(_blocks[i] == 1)
         DKV.put(vecs()[i].chunkKey(cidx), db.getColChunk(off), fs);
-      else
-        DKV.put(vecs()[i].chunkKey(cidx), db.subRange(off,Math.min(db.numCols(),off + _blocks[i])), fs);
+      else {
+        DKV.put(vecs()[i].chunkKey(cidx), db.subRange(off, Math.min(db.numCols(), off + _blocks[i])), fs);
+      }
     }
     _numCols = Math.max(db.numCols(),_numCols);
     // Set the length into the temp ESPC at the Chunk index (accounting for _chunkOff)
@@ -124,12 +125,12 @@ public class AppendableVec extends Vec {
     // Compute #chunks
     int nchunk = _tmp_espc.length;
     DKV.remove(chunkKey(nchunk),fs); // removeVecs potential trailing key
+    // Replacement plain Vec for AppendableVec.
+    Vec vec = new Vec(_key, rowLayout, domains(), _types);
     while( nchunk > 1 && _tmp_espc[nchunk-1] == 0 ) {
       nchunk--;
       DKV.remove(chunkKey(nchunk),fs); // removeVecs potential trailing key
     }
-    // Replacement plain Vec for AppendableVec.
-    Vec vec = new Vec(_key, rowLayout, domains(), _types);
     DKV.put(_key,vec,fs);       // Inject the header into the K/V store
     return vec;
   }

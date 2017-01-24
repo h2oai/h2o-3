@@ -431,6 +431,7 @@ public class NewChunk extends Chunk {
     ++_len;
   }
 
+
   public void addNum (long val, int exp) {
     if( isUUID() || isString() ) {
       addNA();

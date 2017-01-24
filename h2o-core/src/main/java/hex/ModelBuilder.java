@@ -669,10 +669,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected void ignoreBadColumns(int specialVecs, boolean expensive){
     // Drop all-constant and all-bad columns.
     VecAry vecs = _train.vecs();
+    long numrows = vecs.length();
     if(_parms._ignore_const_cols) {
       ArrayUtils.IntAry removedCols = new ArrayUtils.IntAry();
+      RollupsAry rsa = _train.vecs().rollupStats();
       for(int i = 0; i < _train.numCols() - specialVecs; ++i){
-        if(vecs.isConst(i) || vecs.isBad(i) || (ignoreStringColumns() && vecs.isString(i)))
+        if(rsa.isConst(i) || rsa.isBad(i,numrows) || (ignoreStringColumns() && vecs.isString(i)))
           removedCols.add(i);
       }
       if(removedCols.size() > 0) {

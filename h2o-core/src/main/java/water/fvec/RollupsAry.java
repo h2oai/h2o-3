@@ -15,6 +15,7 @@ public class RollupsAry extends Iced {
 
 
 
+
   private enum State {ready, computing, mutating};
 
   protected final RollupStats [] _rs;
@@ -51,7 +52,17 @@ public class RollupsAry extends Iced {
     _removed = null;
     _tsk = fjt;
   }
+  public boolean isBad(int c, long numrows){return getRollups(c)._naCnt == numrows;}
+  public double min(int c){return getRollups(c)._mins[0];}
+  public double max(int c){return getRollups(c)._maxs[0];}
+  public double mean(int c){return getRollups(c)._mean;}
+  public double sigma(int c){return getRollups(c)._sigma;}
+  public long naCnt(int c) {return getRollups(c)._naCnt;}
 
+  public boolean isConst(int c) {
+    RollupStats rs = getRollups(c);
+    return rs._mins[0] == rs._maxs[0];
+  }
   public boolean isMutating(int i){return _rs[i].isMutating();}
 
   public int numCols(){return _rs.length;}
