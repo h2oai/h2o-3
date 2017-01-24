@@ -5,11 +5,9 @@ Missing Values
 
 **Brief Overview of Missing Values Handling**
 
-In GBM, the optimal direction for every feature value (numeric and categorical) is stored, including NAs, for future use.
+During training in GBM, the optimal split direction for every feature value (numeric and categorical, including missing values/NAs) is computed for future use during scoring. This means that missing numeric, categorical, or unseen categorical values are turned into NAs.
 
-For scoring, NAs have an optimal direction that is determined from the training data. This means that missing numeric, categorical, or unseen categorical values are turned into NAs and then follow that direction.
-
-Specifically, if there are no NAs in the training data, then NAs in the test data follow the majority direction (the direction with the most observations). If there are NAs in the training data, then NAs in the test data follow the direction that is optimal for the NAs of the training data. 
+Specifically, if there are no NAs in the training data, then NAs in the test data follow the majority direction (the direction with the most observations). If there are NAs in the training data, then NAs in the test data follow the direction that is optimal for the NAs of the training data.
 
 - **How does the algorithm handle missing values during training?**
 
