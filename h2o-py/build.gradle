@@ -28,7 +28,11 @@ ext {
 }
 
 task makeOutputDir(type: Exec) {
-    commandLine getOsSpecificCommandLine(['mkdir', '-p', 'build/tmp'])
+    if(Os.isFamily(Os.FAMILY_WINDOWS)){
+        commandLine getOsSpecificCommandLine(['mkdir', 'build\\tmp'])
+    } else {
+        commandLine getOsSpecificCommandLine(['mkdir', '-p', 'build/tmp'])
+    }
 }
 
 task setProjectVersion << {
