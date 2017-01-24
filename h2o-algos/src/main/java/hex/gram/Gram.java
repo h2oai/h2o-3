@@ -863,16 +863,21 @@ public final class Gram extends Iced<Gram> {
     }
     @Override public void chunkDone(){
       if(_std) {
-        double r = 1.0 / _nobs;
-        _gram.mul(r);
+        if (_nobs > 0) {  // removing NA rows may produce _nobs=0
+          double r = 1.0 / _nobs;
+          _gram.mul(r);
+        }
       }
     }
     @Override public void reduce(GramTask gt){
       if(_std) {
-        double r1 = (double) _nobs / (_nobs + gt._nobs);
-        _gram.mul(r1);
-        double r2 = (double) gt._nobs / (_nobs + gt._nobs);
-        gt._gram.mul(r2);
+        if ((_nobs > 0) && (gt._nobs > 0)) {  // removing NA rows may produce _nobs=0
+          double r1 = (double) _nobs / (_nobs + gt._nobs);
+          _gram.mul(r1);
+
+          double r2 = (double) gt._nobs / (_nobs + gt._nobs);
+          gt._gram.mul(r2);
+        }
       }
       _gram.add(gt._gram);
       _nobs += gt._nobs;
