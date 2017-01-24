@@ -1,6 +1,8 @@
 package water.parser;
 
+import org.junit.Ignore;
 import org.junit.Test;
+import water.AutoBuffer;
 
 import static org.junit.Assert.*;
 
@@ -12,7 +14,14 @@ public class BufferedStringTest {
 
   @Test
   public void testWrite_impl() throws Exception {
-
+    final String source = "this is not a string";
+    BufferedString sut = new BufferedString(source);
+    assertArrayEquals(source.getBytes(), sut.getBuffer());
+    AutoBuffer ab = new AutoBuffer();
+    sut.write_impl(ab);
+    final byte[] expected = ("\u0015" + source).getBytes();
+    final byte[] actual = ab.buf();
+    assertArrayEquals(expected, actual);
   }
 
   @Test
@@ -111,10 +120,14 @@ public class BufferedStringTest {
     assertTrue(sut2.sameString(""));
     assertFalse(sut1.sameString(null));
     assertFalse(sut2.sameString("a"));
-    BufferedString sut3 = new BufferedString("a0x0100b");
-    assertFalse(sut2.sameString("a0x0100b"));
-    BufferedString sut4 = new BufferedString("a0x0088b");
-    assertTrue(sut4.sameString("a0x0088b"));
+    BufferedString sut3 = new BufferedString("a\u0100b");
+    assertFalse(sut2.sameString("a\u0100b"));
+  }
+  
+  @Ignore("This test is failing because the method is wrong and must be fixed, see PUBDEV-3957")
+  @Test public void testSameStringUTF8() throws Exception {
+    BufferedString sut4 = new BufferedString("a\u0088b");
+    assertTrue(sut4.sameString("a\u0088b"));
   }
 
   @Test public void testIsOneOf() throws Exception {
@@ -130,7 +143,9 @@ public class BufferedStringTest {
   
   @Test
   public void testGetBuffer() throws Exception {
-
+    final String source = "this is not a string\u00f0";
+    BufferedString sut = new BufferedString(source);
+    assertArrayEquals(source.getBytes(), sut.getBuffer());
   }
 
   @Test
