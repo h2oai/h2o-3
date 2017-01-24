@@ -30,6 +30,10 @@ About the Data
  - Quantile: the response column must be numeric
  - Huber: the response column must be numeric
 
+ Refer to the `distribution <../algo-params/distribution.html>`__ parameter in the Appendix for more information about the ``distribution`` options. 
+
+.. _lossfunction:
+
 - **What loss function is automatically chosen for each of these distributions?**
 
  By default, the residual deviance is minimized, which is the natural loss for Poisson, Gamma, Tweedie, Huber, etc. For Laplace, the residual deviance is the same as absolute error. For Gaussian, it's the same as squared error.
