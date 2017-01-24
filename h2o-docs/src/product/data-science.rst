@@ -16,3 +16,4 @@ Data Science Algorithms
    data-science/gbm
    data-science/glrm
    data-science/deep-learning
+   data-science/stacked-ensembles
