@@ -3863,9 +3863,10 @@ div[class^='highlight'] pre {
   position: fixed;
   top: 0;
   left: 0;
-  width: 330px;
-  overflow: hidden;
-  min-height: 100%;
+  width: 340px;
+  overflow-x: hidden;
+  overflow-y: scroll;
+  height: 100%;
   background: #343131;
   z-index: 200;
 }
@@ -3979,7 +3980,10 @@ footer p {
 
   .wy-nav-side {
     left: -300px;
+    width: 300px;
+    overflow: hidden;
   }
+  
   .wy-nav-side.shift {
     width: 85%;
     left: 0;
