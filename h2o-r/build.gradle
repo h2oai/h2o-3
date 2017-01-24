@@ -90,9 +90,9 @@ task setProperties << {
     project.ext.BUILD_BRANCH = BUILD_BRANCH
     project.ext.R_VERSION    = getRVersion.output()
     project.ext.PDF_LATEX    = (pdflatex.output()).toLowerCase().contains("pdflatex") ? pdflatex.output() : ""
-    println "Git Branch: " + BUILD_BRANCH
-    println "R Version: " + R_VERSION
-    println "PDF LATEX: " + PDF_LATEX
+    println "    Git Branch: " + BUILD_BRANCH
+    println "    R Version: " + R_VERSION
+    println "    PDF LATEX: " + PDF_LATEX
 }
 
 task setDevPackageFiles << {
@@ -128,14 +128,21 @@ task setPackageFiles << {
 }
 
 task buildPackageDocumentation(type: Exec) {
+    doFirst {
+        standardOutput = new FileOutputStream("build/tmp/h2o-r_buildPackageDocumentation.out")
+        errorOutput = new FileOutputStream("build/tmp/h2o-r_buildPackageDocumentation.err")
+    }
     commandLine getOsSpecificCommandLine(['R', "-q", "-e", "library(devtools); document('h2o-package');"])
 }
 
 task genPDF(type: Exec) {
+    doFirst {
+        standardOutput = new FileOutputStream("build/tmp/h2o-r_genPDF.out")
+        errorOutput = new FileOutputStream("build/tmp/h2o-r_genPDF.err")
+    }
     ignoreExitValue=true
     if (SYS_OS == "windows") commandLine 'cmd', '/c', 'R', 'CMD', "Rd2pdf", "--force", "--output=h2o_package.pdf", "--title=\"h2o\"", "--no-preview", "h2o-package\\man"
     else commandLine 'R', "CMD", "Rd2pdf", "--force", "--output=h2o_package.pdf", "--title=\"h2o\"", "--no-preview", "h2o-package/man"
-    standardOutput = new ByteArrayOutputStream() // > /dev/null
 }
 
 genPDF.onlyIf { PDF_LATEX != "" && SYS_OS != "windows" }
@@ -155,7 +162,13 @@ task cpH2OAppJar << {
     copyFile([T,"..", "build", "h2o.jar"],[T, "h2o-package", "inst", "java", "h2o.jar"])
 }
 
-task buildPKG(type: Exec) { commandLine getOsSpecificCommandLine(['R', 'CMD', 'build', 'h2o-package']) }
+task buildPKG(type: Exec) {
+    doFirst {
+        standardOutput = new FileOutputStream("build/tmp/h2o-r_buildPKG.out")
+    }
+    commandLine getOsSpecificCommandLine(['R', 'CMD', 'build', 'h2o-package'])
+}
+
 task cpToR << {
     new File([T, "R", "src", "contrib"].join(File.separator)).mkdirs()
     copyFile([T, "README.md"], [T, "R", "README.md"])
@@ -178,7 +191,6 @@ task cleanUp << {
 }
 
 task cleaner << {
-    println "Cleaning..."
     new File([T, "h2o_package.pdf"].join(File.separator)).delete()
     new File([T, "h2o"].join(File.separator)).deleteDir()
     new File([T, "PACKAGES"].join(File.separator)).delete()
