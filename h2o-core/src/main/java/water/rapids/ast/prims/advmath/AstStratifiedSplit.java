@@ -42,7 +42,10 @@ public class AstStratifiedSplit extends AstPrimitive {
   @Override
   public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    String inputFrKey = asts[1].str();
+    //String inputFrKey = asts[1].str();
+    Key<Frame> inputFrKey = Key.make();
+    fr._key = inputFrKey;
+    DKV.put(fr);
     if (fr.numCols() != 1)
       throw new IllegalArgumentException("Must give a single column to stratify against. Got: " + fr.numCols() + " columns.");
     Vec y = fr.anyVec();
@@ -53,6 +56,7 @@ public class AstStratifiedSplit extends AstPrimitive {
     seed = seed == -1 ? new Random().nextLong() : seed;
     final long[] classes = new VecUtils.CollectDomain().doAll(y).domain();
     final int nClass = y.isNumeric() ? classes.length : y.domain().length;
+    final String[] domains = y.domain();
     final long[] seeds = new long[nClass]; // seed for each regular fold column (one per class)
     for (int i = 0; i < nClass; ++i)
       seeds[i] = getRNG(seed + i).nextLong();
@@ -72,8 +76,15 @@ public class AstStratifiedSplit extends AstPrimitive {
     for (int classLabel = 0; classLabel < nClass; ++classLabel) {
 
         // extract frame with index locations of the minority class
-        int clabel = classes == null ? classLabel : (int) classes[classLabel];
-        Frame idxFound = Rapids.exec("(rows " + idx._key + " (== " + inputFrKey + " " + clabel + "))").getFrame();
+        //int clabel = classes == null ? classLabel : (int) classes[classLabel];
+        Frame idxFound = null;
+        if (domains == null) {
+          // integer case
+          idxFound = Rapids.exec("(rows " + idx._key + " (== " + inputFrKey + " " + classes[classLabel] + "))").getFrame();
+        } else {
+          // enum case
+          idxFound = Rapids.exec("(rows " + idx._key + " (== " + inputFrKey + " \"" + domains[classLabel] + "\"))").getFrame();
+        }
         System.out.println(idxFound._key);
         //DKV.put(idxFound);
 
