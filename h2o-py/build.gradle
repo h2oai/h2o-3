@@ -1,3 +1,4 @@
+import org.apache.commons.io.output.ByteArrayOutputStream
 import org.apache.tools.ant.taskdefs.condition.Os
 import java.nio.file.FileSystems
 import java.nio.file.Files
@@ -26,9 +27,13 @@ ext {
     T               = getProjectDir().toString()
 }
 
+task makeOutputDir(type: Exec) {
+    commandLine getOsSpecificCommandLine(['mkdir', '-p', 'build/tmp'])
+}
+
 task setProjectVersion << {
     File INIT = new File([T, "h2o", "__init__.py"].join(File.separator))
-    print INIT.path
+    println "    INIT.path = " + INIT.path
     def txt=""
     txt = INIT.text
     txt = txt.replaceAll("SUBST_PROJECT_VERSION", PROJECT_VERSION)
@@ -37,7 +42,7 @@ task setProjectVersion << {
 
 task resetProjectVersion << {
     File INIT = new File([T, "h2o", "__init__.py"].join(File.separator))
-    print INIT.path
+    println "    INIT.path = " + INIT.path
     def txt=""
     txt = INIT.text
     txt = txt.replaceAll(PROJECT_VERSION, "SUBST_PROJECT_VERSION")
@@ -52,7 +57,10 @@ task upgradeOrInstallWheel(type: Exec) {
     commandLine getOsSpecificCommandLine(["pip", "install", "wheel", "--user", "--upgrade", "--ignore-installed"])
 }
 
-task buildDist(type: Exec) {
+task buildDist(type: Exec, dependsOn: makeOutputDir) {
+    doFirst {
+        standardOutput = new FileOutputStream("build/tmp/h2o-py_buildDist.out")
+    }
     commandLine getOsSpecificCommandLine(["python", "setup.py", "bdist_wheel"])
 }
 
