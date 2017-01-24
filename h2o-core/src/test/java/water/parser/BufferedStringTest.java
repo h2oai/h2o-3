@@ -99,6 +99,7 @@ public class BufferedStringTest {
   @Test
   public void testSameString() throws Exception {
     BufferedString sut1 = new BufferedString("abc");
+    assertFalse(sut1.sameString(null));
     assertTrue(sut1.sameString("abc"));
     assertFalse(sut1.sameString("ab"));
     assertFalse(sut1.sameString("abd"));
@@ -108,9 +109,12 @@ public class BufferedStringTest {
     assertFalse(sut1.sameString("ab"));
     BufferedString sut2 = new BufferedString("");
     assertTrue(sut2.sameString(""));
+    assertFalse(sut1.sameString(null));
     assertFalse(sut2.sameString("a"));
     BufferedString sut3 = new BufferedString("a0x0100b");
     assertFalse(sut2.sameString("a0x0100b"));
+    BufferedString sut4 = new BufferedString("a0x0088b");
+    assertTrue(sut4.sameString("a0x0088b"));
   }
 
   @Test public void testIsOneOf() throws Exception {
@@ -121,6 +125,7 @@ public class BufferedStringTest {
     assertTrue(sut.isOneOf(new String[]{"abc", "a", "b", "ab", "bc", "abcd"}));
     assertTrue(sut.isOneOf(new String[]{"a", "b", "ab", "bc", "abcd", "abc"}));
     assertTrue(sut.isOneOf(new String[]{"", "b", "ab", "bc", "abcd", "abc", "whateva"}));
+    assertTrue(sut.isOneOf(new String[]{"", null, "ab", "bc", "abcd", "abc", "whateva"}));
   }
   
   @Test
