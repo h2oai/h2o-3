@@ -72,7 +72,10 @@ Perform the following steps to create the H2O Artificial Intelligence VM.
    .. figure:: images/azure_locate_node.png
       :alt: Locate your node
 
-You are now ready to start using your H2O Artificial Intelligence VM! Go ahead and connect to your Jupyter notebooks and look for the H2O Examples to create your first H2O Model on Azure.
+You are now ready to start using your H2O Artificial Intelligence VM! Go ahead and connect to H2O Flow or to your Jupyter notebooks and look for the H2O Examples to create your first H2O Model on Azure. 
+
+- Connect to Jupyter Notebook by going to https://<VM DNS Name or IP Address>:8000/
+- Connect to H2O Flow by going to http://<VM DNS Name or IP Address>:54321/. (**Note**: Refer to `Using Flow - H2O's Web UI <flow.html>`__ for information about using Flow.)
 
 H2O Artificial Intelligence VM Troubleshooting Tips
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
