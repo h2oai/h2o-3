@@ -26,12 +26,22 @@ public class BufferedStringTest {
 
   @Test
   public void testRead_impl() throws Exception {
-
+    final String source = "this is not a string";
+    BufferedString sut1 = new BufferedString(source);
+    AutoBuffer ab = new AutoBuffer();
+    sut1.write_impl(ab);
+    ab.bufClose();
+//    BufferedString sut2 = new BufferedString("what?");
+//    sut2.read_impl(ab);
+//    assertEquals(sut1, sut2);
   }
 
   @Test
   public void testCompareTo() throws Exception {
-
+    final String source = "this is not a string";
+    BufferedString sut1 = new BufferedString(source);
+    assertEquals(0, sut1.compareTo(new BufferedString(source)));
+    assertEquals(2, sut1.compareTo(new BufferedString("this is not a stri")));
   }
 
   @Test
