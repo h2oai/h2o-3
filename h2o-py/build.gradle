@@ -29,7 +29,7 @@ ext {
 
 task makeOutputDir(type: Exec) {
     if(Os.isFamily(Os.FAMILY_WINDOWS)){
-        commandLine getOsSpecificCommandLine(['mkdir', 'build\\tmp'])
+        commandLine getOsSpecificCommandLine(['if not exist "build\\tmp" mkdir', 'build\\tmp'])
     } else {
         commandLine getOsSpecificCommandLine(['mkdir', '-p', 'build/tmp'])
     }
