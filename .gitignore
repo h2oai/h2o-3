@@ -98,3 +98,8 @@ gradle/buildnumber.properties
 # Doc stuff
 .Rapp.history
 *.synctex.gz
+
+# Ignore gradle home files
+caches
+wrapper
+
