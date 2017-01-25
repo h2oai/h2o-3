@@ -69,7 +69,7 @@ final class ExternalFrameHandler {
     static final byte DOWNLOAD_FRAME = 1;
 
     /**
-     * Method which receives the {@link SocketChannel} and {@link AutoBuffer} and dispatches the request for further processing
+     * Method which receives the {@link ByteChannel} and {@link AutoBuffer} and dispatches the request for further processing
      */
     void process(ByteChannel sock, AutoBuffer ab) throws IOException {
         int requestType = ab.get1();
