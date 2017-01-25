@@ -93,7 +93,7 @@ public class TestUtil extends Iced {
   @AfterClass
   public static void afterClass() {
     checkLeakedKeys();
-    killAll();
+//    killAll();
   }
   
   public static void checkLeakedKeys() {
