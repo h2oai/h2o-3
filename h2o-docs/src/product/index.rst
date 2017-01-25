@@ -41,6 +41,7 @@ should be added to the group automatically.
    
    starting-h2o
    aws
+   azure
    hadoop
    docker
 
