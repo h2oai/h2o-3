@@ -95,4 +95,112 @@ H2O Artificial Intelligence VM Troubleshooting Tips
 
   You will also need to run this command with ``sudo`` once the VM is restarted.
 
+H2O Artificial Intelligence for HDInsight
+-----------------------------------------
+
+The H2O Artificial Intelligence for HDInsight is an application you can install during the creation of a new HDInsight Cluster on Azure. This solution will install Sparkling Water on your spark cluster so you can exploit all the benefits from both Spark and H2O. 
+
+Create the H2O Artificial Intelligence for HDInsight
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Follow the steps below to create a new H2O Artificial Intelligence for HDInsight. 
+
+**Note**: Steps 1-3 are required in order to get access to H2O Flow; otherwise, these steps are optional. 
+
+1. Log in to your Azure portal at `https://azure.portal.com <https://azure.portal.com>`__ and create a new Resource Group. 
+
+   .. figure:: images/azure_new_resource_group.png
+      :alt: Create a new resource group
+
+2. Create a Virtual Network in the Resource Group you created in Step 1. 
+
+   .. figure:: images/azure_create_virtual_network.png
+      :alt: Create a virtual network
+
+3. Create a public IP address to access H2O Flow. 
+
+   .. figure:: images/azure_create_public_ip_address.png
+      :alt: Create a public IP address for H2O Flow
+
+4. In your Azure portal at `https://portal.azure.com <https://portal.azure.com>`__, search for H2O. Select **H2O Artificial Intelligence for HDInsight**, and then click the **Create** button and follow the UI instructions. 
+
+   **Note** H2O for HDInsight is exclusively for Spark and R Server HDI clusters version 3.5 (HDI v3.5). 
+
+   .. figure:: images/azure_select_h2o_hdinsight.png
+      :alt: Select H2O Artificial Intelligence for HDInsight
+
+5. On the Applications tab, select and accept the Terms of Use for H2O. 
+
+   .. figure:: images/azure_terms_of_use.png
+      :alt: Terms of Use for H2O
+
+6. On the Credentials tab, specify the following: 
+
+   - Cluster Login username and password. These are used to connect to your cluster.
+   - SSH Username and password. These are used to connect direcly to the VM present in the cluster.
+
+7. On the Data Source tab, you can configure either a Storage Account or a Data Lake Store. This is where your HDFS system will be located. Azure HDI separates the computing from the storage in their Hadoop environment. While the VMs serve as the computing nodes, the storage of those VMs are not used as the File System but instead as an Azure Data Lake Store or an Azure Storage Account. 
+
+8. On the Cluster Size tab, select the number of workers nodes you want on your HDI Cluster. Note that you can resize your cluster any time after creation. 
+
+9. (This is an optional Step for access H2O Flow.) In Advance Configurations, select the Virtual Network created in step 2. This step
+
+10. Select the existing resource group created in Step 1. 
+
+11. Click **Create** to begin the cluster creation. Note that the cluster creation can take up to 40 minutes. 
+
+12. Connect to your Jupyter Notebooks through https://<ClusterName>.azurehdinsight.net/jupyter, and log in using the Cluster Login username and password that you previously created. 
+
+13. In Jupyter, you will see 3 folders: PySparkling Examples, PySpark Examples, and Scala Examples. Select PySparkling Examples.
+
+14. The first step when creating a new notebook is to configure the Spark environment. This information is included in the **4_sentiment_sparkling** example. **Important**: For Spark 1.6 or 2.0, use the correct Maven coordinates.
+
+   .. figure:: images/azure_configure_spark_env.png
+      :alt: Example showing how to configure a Spark environment
+
+15. Add the Sparkling Water Egg file.
+
+   .. figure:: images/azure_sw_egg.png
+      :alt: Adding the Sparkling Water Egg file
+
+16. Start the H2O Cluster.
+
+   .. figure:: images/azure_start_h2o.png
+      :alt: Start the H2O Cluster
+
+17. You are ready to start building your H2O Models.
+
+    **Note**: Flow users, take note of the private IP address displayed when you start the cluster. Locate the nodes that have the same IP address in the Azure portal, and take note of the Network Interface. 
+
+   .. figure:: images/azure_hdinsight_nodes.png
+      :alt: Locating the nodes
+
+18. Go to the Public IP address you created in Step 3, and click on **Associate**. For the Resource Type, select **Network Interface**, and the select the Network Interface from Step 17. 
+
+19. Once the Public IP Address is associated with the correct network interface, connect to H2O Flow by going to http://<PUBLICIPADDRESS>:54321.
+
+   .. figure:: images/azure_h2o_flow.png
+      :alt: Open H2O Flow
+
+
+H2O Artificial Intelligence for HDInsight Troubleshooting Tips
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Make sure that you added the correct Maven coordinates and Python egg file when configuring the Spark environment. 
+
+- Make sure that the cluster has enough resources to allocate to your Spark application. For more information about the cluster available resources, go to http://<ClusterName>.azurehdinsight.net.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
