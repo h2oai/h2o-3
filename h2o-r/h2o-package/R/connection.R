@@ -27,7 +27,7 @@
 #' @param password (Optional) Password to login with.
 #' @param cluster_id (Optional) Cluster to login to. Used for Steam connections.
 #' @param cookies (Optional) Vector(or list) of cookies to add to request.
-#' @param context_path (Optional) Context path under which H2O server is registered.
+#' @param context_path (Optional) The last part of connection URL: http://<ip>:<port>/<context_path>
 #' @return this method will load it and return a \code{H2OConnection} object containing the IP address and port number of the H2O server.
 #' @note Users may wish to manually upgrade their package (rather than waiting until being prompted), which requires
 #' that they fully uninstall and reinstall the H2O package, and the H2O client package. You must unload packages running
@@ -235,6 +235,51 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
   }
   conn@mutable$session_id <- .init.session_id()
   invisible(conn)
+}
+
+#' Connect to a running H2O instance.
+#'
+#' @param ip Object of class \code{character} representing the IP address of the server where H2O is running.
+#' @param port Object of class \code{numeric} representing the port number of the H2O server.
+#' @param strict_version_check (Optional) Setting this to FALSE is unsupported and should only be done when advised by technical support.
+#' @param proxy (Optional) A \code{character} string specifying the proxy path.
+#' @param https (Optional) Set this to TRUE to use https instead of http.
+#' @param insecure (Optional) Set this to TRUE to disable SSL certificate checking.
+#' @param username (Optional) Username to login with.
+#' @param password (Optional) Password to login with.
+#' @param cookies (Optional) Vector(or list) of cookies to add to request.
+#' @param context_path (Optional) The last part of connection URL: http://<ip>:<port>/<context_path>
+#' @param config (Optional) A \code{list} describing connection parameters.
+#' @return an instance of \code{H2OConnection} object representing a connection to the running H2O instance.
+#' @examples
+#' \dontrun{
+#' # Try to connect to a H2O instance running at http://localhost:54321/cluster_X
+#' # If not found, start a local H2O instance from R with the default settings.
+#' h2o.connect(ip = "localhost", port = 54321, context_path = "cluster_X")
+#' # Or
+#' config = list(ip = "localhost", port = 54321, context_path = "cluster_X")
+#' h2o.connect(config = config)
+#'
+#' # Skip strict version check during connecting to the instance
+#' h2o.connect(config = c(strict_version_check = FALSE, config))
+#' }
+#' @export
+
+h2o.connect <- function(ip = "localhost", port = 54321, strict_version_check = TRUE,
+                        proxy = NA_character_ , https = FALSE, insecure = FALSE,
+                        username = NA_character_, password = NA_character_,
+                        cookies = NA_character_,
+                        context_path = NA_character_,
+                        config = NULL) {
+ if (!is.null(config)) {
+   # Directly pass the config to h2o.init and let R and H2O.init decide about parameters validity
+   do.call(h2o.init, c(startH2O=FALSE, config))
+ } else {
+   # Pass arguments directly
+   h2o.init(ip=ip, port=port, strict_version_check=strict_version_check,
+            proxy=proxy, https=https, insecure=insecure, password=password,
+            username=username, cookies=cookies, context_path=context_path)
+ }
 }
 
 #' Retrieve an H2O Connection
