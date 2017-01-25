@@ -60,7 +60,7 @@ public class DeepWaterMXNetIntegrationTest extends DeepWaterAbstractIntegrationT
       bparm.set("mini_batch_size", 1);
 
       // Load the model
-      String path = "/deepwater/backends/mxnet/models/Inception/";
+      String path = "deepwater/backends/mxnet/models/Inception/";
       BackendModel _model = backend.buildNet(id, opts, bparm, nclasses, StringUtils.expandPath(extractFile(path, "Inception_BN-symbol.json")));
       backend.loadParam(_model, StringUtils.expandPath(extractFile(path, "Inception_BN-0039.params")));
       water.fvec.Frame labels = parse_test_file(extractFile(path, "synset.txt"));
