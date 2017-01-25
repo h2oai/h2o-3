@@ -18,6 +18,7 @@ final class ExternalFrameWriterBackend {
      * @param ab {@link AutoBuffer} containing information necessary for preparing backend for writing
      */
     static void handleWriteToChunk(SocketChannel sock, AutoBuffer ab) throws IOException {
+        long threadId = ab.get8();
         String frameKey = ab.getStr();
         byte[] expectedTypes = ab.getA1();
         assert expectedTypes != null;
@@ -65,14 +66,14 @@ final class ExternalFrameWriterBackend {
         // close chunks at the end
         ChunkUtils.closeNewChunks(nchnk);
 
-        // Flag informing sender that all work is done and
+        // Flag informing sender's thread that all work is done and
         // chunks are ready to be finalized.
         //
         // This also needs to be sent because in the sender we have to
         // wait for all chunks to be written to DKV; otherwise we get race during finalizing and
         // it happens that we try to finalize frame with chunks not ready yet
         AutoBuffer outputAb = new AutoBuffer();
-        outputAb.put1(ExternalFrameHandler.CONFIRM_WRITING_DONE);
+        outputAb.put8(threadId);
         writeToChannel(outputAb, sock);
     }
 

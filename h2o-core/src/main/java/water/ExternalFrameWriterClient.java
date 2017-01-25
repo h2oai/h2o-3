@@ -52,6 +52,7 @@ final public class ExternalFrameWriterClient {
     private byte[] expectedTypes;
     // we discover the current column index based on number of data sent
     private int currentColIdx = 0;
+    private long threadId;
 
     /**
      * Initialize the External frame writer
@@ -62,6 +63,7 @@ final public class ExternalFrameWriterClient {
     public ExternalFrameWriterClient(ByteChannel channel){
         this.ab = new AutoBuffer();
         this.channel = channel;
+        threadId = Thread.currentThread().getId();
     }
 
 
@@ -75,6 +77,7 @@ final public class ExternalFrameWriterClient {
     public void createChunks(String frameKey, byte[] expectedTypes, int chunkId, int totalNumRows) throws IOException {
         ab.put1(ExternalFrameHandler.INIT_BYTE);
         ab.put1(ExternalFrameHandler.CREATE_FRAME);
+        ab.put8(threadId);
         ab.putStr(frameKey);
         this.expectedTypes = expectedTypes;
         ab.putA1(expectedTypes);
@@ -148,7 +151,7 @@ final public class ExternalFrameWriterClient {
         // this needs to be here because confirmAb.getInt() forces this code to wait for result and
         // all the previous work to be done on the recipient side. The assert around it is just additional, not
         // so important check
-        assert(confirmAb.get1() == ExternalFrameHandler.CONFIRM_WRITING_DONE);
+        assert(confirmAb.get8() == threadId);
     }
 
     private void increaseCurrentColIdx(){
