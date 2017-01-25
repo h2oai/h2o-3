@@ -91,6 +91,11 @@ public class TestUtil extends Iced {
   }
 
   @AfterClass
+  public static void afterClass() {
+    checkLeakedKeys();
+    killAll();
+  }
+  
   public static void checkLeakedKeys() {
     int leaked_keys = H2O.store_size() - _initial_keycnt;
     int cnt=0;
@@ -112,8 +117,39 @@ public class TestUtil extends Iced {
     }
     assertTrue("Keys leaked: " + leaked_keys + ", cnt = " + cnt, leaked_keys <= 0 || cnt == 0);
     // Bulk brainless key removal.  Completely wipes all Keys without regard.
-    new DKVCleaner().doAllNodes();
+    final DKVCleaner cleaner = new DKVCleaner().doAllNodes();
     _initial_keycnt = H2O.store_size();
+    cleaner.getResult();
+  }
+
+  private final static String KILLEM = ".*((water)|(jetty))\\..*";
+  
+  public static void killAll() {
+    
+    try {
+      H2O.getJetty().stop();
+      Paxos.class.notify();
+      Thread.sleep(500);
+    } catch (Exception e) {}
+    Thread[] threads = new Thread[Thread.activeCount()];
+    int nThreads = Thread.enumerate(threads);
+    for (int i = 0; i < nThreads; i++) {
+      Thread t = threads[i];
+      if (t != Thread.currentThread()) {
+        final StackTraceElement[] stackTrace = t.getStackTrace();
+        boolean found = false;
+        for (StackTraceElement entry : stackTrace) {
+          if (entry.toString().matches(KILLEM)) {
+            System.out.println(t.getName() + ": " + entry);
+            t.stop(); // yes, it's deprecated. But I want it to be killed.
+            found = true;
+            break;
+          }
+        }
+//        if (!found) System.out.println("I don't recognize this thread: " + t.getName() + ": " + Arrays.toString(stackTrace));
+      }
+
+    }
   }
 
   private static class DKVCleaner extends MRTask<DKVCleaner> {
