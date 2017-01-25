@@ -108,7 +108,7 @@ public class TCPReceiverThread extends Thread {
           new TCPReaderThread(wrappedSocket, new AutoBuffer(wrappedSocket, inetAddress), inetAddress).start();
           break;
         case TCP_EXTERNAL:
-          new ExternalFrameHandlerThread(sock, new AutoBuffer(sock, null)).start();
+          new ExternalFrameHandlerThread(wrappedSocket, new AutoBuffer(wrappedSocket, null)).start();
           break;
         default:
           throw H2O.fail("unexpected channel type " + chanType + ", only know 1 - Small, 2 - Big and 3 - ExternalFrameHandling");
