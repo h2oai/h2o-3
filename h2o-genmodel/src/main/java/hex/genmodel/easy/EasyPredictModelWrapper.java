@@ -21,6 +21,7 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -245,9 +246,63 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
    * @throws PredictException
    */
   public AutoEncoderModelPrediction predictAutoEncoder(RowData data) throws PredictException {
-    double[] preds = preamble(ModelCategory.AutoEncoder, data);
-    throw new RuntimeException("Unimplemented " + preds.length);
+    validateModelCategory(ModelCategory.AutoEncoder);
+
+    int size = m.getPredsSize(ModelCategory.AutoEncoder);
+    double[] output = new double[size];
+    double[] rawData = nanArray(m.nfeatures());
+    rawData = fillRawData(data, rawData);
+    output = m.score0(rawData, output);
+
+    AutoEncoderModelPrediction p = new AutoEncoderModelPrediction();
+    p.original = expandRawData(rawData, size);
+    p.reconstructed = output;
+    p.reconstructedRowData = reconstructedToRowData(output);
+
+    return p;
   }
+
+  private double[] expandRawData(double[] data, int size) {
+    double[] expanded = new double[size];
+    int pos = 0;
+    for (int i = 0; i < data.length; i++) {
+      if (m._domains[i] == null) {
+        expanded[pos] = data[i];
+        pos++;
+      } else {
+        int idx = Double.isNaN(data[i]) ? m._domains[i].length : (int) data[i];
+        expanded[pos + idx] = 1.0;
+        pos += m._domains[i].length + 1;
+      }
+    }
+    return expanded;
+  }
+
+  private RowData reconstructedToRowData(double[] reconstructed) {
+    RowData rd = new RowData();
+    int pos = 0;
+    for (int i = 0; i < m.nfeatures(); i++) {
+      Object value;
+      if (m._domains[i] == null) {
+        value = reconstructed[pos++];
+      } else {
+        value = catValuesAsMap(m._domains[i], reconstructed, pos);
+        pos += m._domains[i].length + 1;
+      }
+      rd.put(m._names[i], value);
+    }
+    return rd;
+  }
+
+  private static Map<String, Double> catValuesAsMap(String[] cats, double[] reconstructed, int offset) {
+    Map<String, Double> result = new HashMap<>(cats.length + 1);
+    for (int i = 0; i < cats.length; i++) {
+      result.put(cats[i], reconstructed[i + offset]);
+    }
+    result.put(null, reconstructed[offset + cats.length]);
+    return result;
+  }
+
   /**
    * Make a prediction on a new data point using a Dimension Reduction model (PCA, GLRM)
    * @param data A new data point.
@@ -489,10 +544,12 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     return predict(data, new double[m.getPredsSize(c)]);
   }
 
-  private void setToNaN(double[] arr) {
-    for (int i = 0; i < arr.length; i++) {
+  private static double[] nanArray(int len) {
+    double[] arr = new double[len];
+    for (int i = 0; i < len; i++) {
       arr[i] = Double.NaN;
     }
+    return arr;
   }
 
   private double[] fillRawData(RowData data, double[] rawData) throws PredictException {
@@ -610,10 +667,10 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
   }
 
   private double[] predict(RowData data, double[] preds) throws PredictException {
-    double[] rawData = new double[m.nfeatures()];
-    setToNaN(rawData);
+    double[] rawData = nanArray(m.nfeatures());
     rawData = fillRawData(data, rawData);
     preds = m.score0(rawData, preds);
     return preds;
   }
+
 }
