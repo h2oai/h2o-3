@@ -1,9 +1,6 @@
 package water.rapids.ast.prims.advmath;
 
-import water.DKV;
-import water.Key;
-import water.MRTask;
-import water.Value;
+import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
@@ -41,10 +38,9 @@ public class AstStratifiedSplit extends AstPrimitive {
 
   @Override
   public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
-    Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    //String inputFrKey = asts[1].str();
+    Frame oldfr = stk.track(asts[1].exec(env)).getFrame();
     Key<Frame> inputFrKey = Key.make();
-    fr._key = inputFrKey;
+    Frame fr = oldfr.deepCopy(inputFrKey.toString());
     DKV.put(fr);
     if (fr.numCols() != 1)
       throw new IllegalArgumentException("Must give a single column to stratify against. Got: " + fr.numCols() + " columns.");
@@ -64,51 +60,65 @@ public class AstStratifiedSplit extends AstPrimitive {
     // create frame with all 0s (default is train)
     Key<Frame> k1 = Key.make();
     Frame result = new Frame(k1, new String[]{"test_train_split"}, new Vec[]{Vec.makeCon(0.0,fr.anyVec().length())});
+    DKV.put(result);
     // create index frame
     Key<Frame> k2 = Key.make();
     Frame ones = new Frame(k2, new String[]{"ones"}, new Vec[]{Vec.makeCon(1.0,fr.anyVec().length())});
     DKV.put(ones);
-    System.out.println(ones._key);
     Frame idx = Rapids.exec("(cumsum " + ones._key + " 0)").getFrame();
     DKV.put(idx);
-    System.out.println(idx._key);
     // loop through each class
     for (int classLabel = 0; classLabel < nClass; ++classLabel) {
 
         // extract frame with index locations of the minority class
-        //int clabel = classes == null ? classLabel : (int) classes[classLabel];
         Frame idxFound = null;
         if (domains == null) {
           // integer case
-          idxFound = Rapids.exec("(rows " + idx._key + " (== " + inputFrKey + " " + classes[classLabel] + "))").getFrame();
+          idxFound = Rapids.exec("(rows " + idx._key + " (== " + fr._key + " " + classes[classLabel] + "))").getFrame();
         } else {
           // enum case
-          idxFound = Rapids.exec("(rows " + idx._key + " (== " + inputFrKey + " \"" + domains[classLabel] + "\"))").getFrame();
+          idxFound = Rapids.exec("(rows " + idx._key + " (== " + fr._key + " \"" + domains[classLabel] + "\"))").getFrame();
         }
-        System.out.println(idxFound._key);
-        //DKV.put(idxFound);
+        idxFound._key = Key.make();
+        DKV.put(idxFound);
 
         // calculate target number of this class to go to test
         int tnum = (int) Math.ceil(idxFound.anyVec().length() * testFrac);
 
-        // randomly pick the target number of indexes
+        // randomly select the target number of indexes
         int generated = 0;
         int count = 0;
-        HashSet<Integer> usedIdxs = new HashSet<Integer>();
+        HashSet<Long> usedIdxs = new HashSet<Long>();
         while (generated < tnum) {
-          int i = (int) (getRNG(count+seed).nextDouble() * idxFound.anyVec().length());
-          if (usedIdxs.contains(i)) { count+=1;continue; }
-          usedIdxs.add(i);
-          // update the train/test frame
-          result.anyVec().set(idxFound.anyVec().at8(i) - 1, 1.0);
+          long i = (long) (getRNG(count+seed).nextDouble() * idxFound.anyVec().length());
+          if (usedIdxs.contains(idxFound.vec(0).at8(i))) { count+=1;continue; }
+          usedIdxs.add(idxFound.vec(0).at8(i));
           generated += 1;
           count += 1;
         }
+        new ClassAssignMRTask(usedIdxs).doAll(result.anyVec());
         idxFound.delete();
     }
 
     ones.delete();
     idx.delete();
+    fr.delete();
     return new ValFrame(result);
   }
+  public static class ClassAssignMRTask extends MRTask<AstStratifiedSplit.ClassAssignMRTask> {
+     HashSet<Long> _idx;
+     ClassAssignMRTask(HashSet<Long> idx) {
+         _idx = idx;
+     };
+     @Override
+     public void map(Chunk ck) {
+       for (long i = 0; i<ck.len(); i++) {
+           if (_idx.contains(ck.cidx() + i)) {
+               ck.set((int)i,1.0);
+           }
+       }
+     }
+
+  }
+
 }
