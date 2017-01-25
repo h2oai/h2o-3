@@ -26,13 +26,13 @@ public class DeepwaterCaffeBackend implements BackendTrain {
       int[] hidden = (int[]) bparms.get("hidden");  // Hidden layers sizes are obtained
       int[] sizes = new int[hidden.length + 2];     // Sizes array includes input and output sizes
       System.arraycopy(hidden, 0, sizes, 1, hidden.length);
-      sizes[0] = 0;                                 // Input size set to 0! see data information
+      sizes[0] = dataset.getWidth();                // Input size set to dataset width
       sizes[sizes.length - 1] = num_classes;        // Last size set to num_classes
       // Activation functions
       String[] act = new String[hidden.length + 2];
       System.arraycopy((String[]) bparms.get("activations"), 0, act, 1, hidden.length);
-      act[0]            = "input";                   // Input type
-      act[act.length-1] = "output";                  // Input type
+      act[0]            = "data";                   // Input layer type for caffe
+      act[act.length-1] = "loss";                   // Output layer type for caffe
       // Drop out ratios
       double[] dropout = new double[hidden.length + 2];
       System.arraycopy((double[]) bparms.get("hidden_dropout_ratios"), 0, dropout, 1, hidden.length);
