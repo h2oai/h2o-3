@@ -1,7 +1,7 @@
 Using H2O with Azure
 ====================
 
-Microsoft Azure provides an important collection of cloud services, such as serveless computing, virtual machines, storage options, networking, and much more. Azure provides the tools for a user to create a Data Science environment with H2O. 
+Microsoft Azure provides an important collection of cloud services, such as serverless computing, virtual machines, storage options, networking, and much more. Azure provides the tools for a user to create a Data Science environment with H2O. 
 
 This section describes the two H2O options currently available on Microsoft Azure:
 
@@ -143,7 +143,7 @@ Follow the steps below to create a new H2O Artificial Intelligence for HDInsight
 
 8. On the Cluster Size tab, select the number of workers nodes you want on your HDI Cluster. Note that you can resize your cluster any time after creation. 
 
-9. (This is an optional Step for access H2O Flow.) In Advance Configurations, select the Virtual Network created in step 2. This step
+9. (This is an optional Step for access H2O Flow.) In Advance Configurations, select the Virtual Network created in step 2. 
 
 10. Select the existing resource group created in Step 1. 
 
