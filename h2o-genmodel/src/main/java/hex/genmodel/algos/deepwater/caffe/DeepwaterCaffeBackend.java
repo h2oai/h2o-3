@@ -22,16 +22,27 @@ public class DeepwaterCaffeBackend implements BackendTrain {
   public BackendModel buildNet(ImageDataSet dataset, RuntimeOptions opts, BackendParams bparms, int num_classes, String name /*ignored for now*/) {
     if (name.equals("MLP")) {
       // TODO: add non-MLP Models such as lenet, inception_bn, etc.
-      int[] hidden = (int[]) bparms.get("hidden");
-      int[] sizes = new int[hidden.length + 2];
-      sizes[0] = 0;  // ?
+      // Neurons per layer
+      int[] hidden = (int[]) bparms.get("hidden");  // Hidden layers sizes are obtained
+      int[] sizes = new int[hidden.length + 2];     // Sizes array includes input and output sizes
       System.arraycopy(hidden, 0, sizes, 1, hidden.length);
-      sizes[sizes.length - 1] = num_classes;
+      sizes[0] = 0;                                 // Input size set to 0! see data information
+      sizes[sizes.length - 1] = num_classes;        // Last size set to num_classes
+      // Activation functions
+      String[] act = new String[hidden.length + 2];
+      System.arraycopy((String[]) bparms.get("activations"), 0, act, 1, hidden.length);
+      act[0]            = "input";                   // Input type
+      act[act.length-1] = "output";                  // Input type
+      // Drop out ratios
+      double[] dropout = new double[hidden.length + 2];
+      System.arraycopy((double[]) bparms.get("hidden_dropout_ratios"), 0, dropout, 1, hidden.length);
+      dropout[0] = (double) bparms.get("input_dropout_ratio");
+      dropout[act.length-1] = 0.0;                    // Output dropout
       return new DeepwaterCaffeModel(
-          (Integer) bparms.get("mini_batch_size"),
+          (Integer) bparms.get("mini_batch_size"),    // Batch size information
           sizes,
-          (String[]) bparms.get("activations"),
-          (double[]) bparms.get("hidden_dropout_ratios")
+          act,
+          dropout
       );
     } else throw new UnsupportedOperationException("Only MLP is supported for now for Caffe.");
   }
