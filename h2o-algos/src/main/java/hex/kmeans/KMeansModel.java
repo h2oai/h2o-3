@@ -18,6 +18,8 @@ import water.util.ArrayUtils;
 import water.util.JCodeGen;
 import water.util.SBPrintStream;
 
+import static hex.genmodel.GenModel.Kmeans_preprocessData;
+
 public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
   @Override public ToEigenVec getToEigenVec() { return LinearAlgebraUtils.toEigen; }
 
@@ -126,7 +128,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
       tmp[i] = chks[i].atd(row_in_chunk);
 
     double[][] centers = _parms._standardize ? _output._centers_std_raw : _output._centers_raw;
-    double[] preds = hex.genmodel.GenModel.KMeans_simplex(centers,tmp,_output._domains,_output._normSub,_output._normMul);
+    double[] preds = hex.genmodel.GenModel.KMeans_simplex(centers,tmp,_output._domains);
     assert preds.length == _output._k[_output._k.length-1];
     assert Math.abs(ArrayUtils.sum(preds) - 1) < 1e-6 : "Sum of k-means distance ratios should equal 1";
     return preds;
@@ -141,10 +143,14 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
 
   @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {
     double[][] centers = _parms._standardize ? _output._centers_std_raw : _output._centers_raw;
-    preds[0] = hex.genmodel.GenModel.KMeans_closest(centers,data,_output._domains,_output._normSub,_output._normMul);
+    Kmeans_preprocessData(data, _output._normSub, _output._normMul, _output._mode);
+    preds[0] = hex.genmodel.GenModel.KMeans_closest(centers,data,_output._domains);
     return preds;
   }
 
+  @Override protected double data(Chunk[] chks, int row, int col){
+    return Kmeans_preprocessData(chks[col].atd(row),col,_output._normSub,_output._normMul,_output._mode);
+  }
   // Override in subclasses to provide some top-level model-specific goodness
   @Override protected void toJavaPredictBody(SBPrintStream body,
                                              CodeGeneratorPipeline classCtx,

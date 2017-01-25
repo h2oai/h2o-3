@@ -89,11 +89,11 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
       _within_sumsqe = new double[nclust];
       Arrays.fill(_size, 0);
       Arrays.fill(_within_sumsqe, 0);
-
       _colSum = new double[ncol];
       _colSumSq = new double[ncol];
       Arrays.fill(_colSum, 0);
       Arrays.fill(_colSumSq, 0);
+
     }
 
     // Compare row (dataRow) against centroid it was assigned to (preds[0])
@@ -111,7 +111,8 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
       int clus = (int)preds[0];
       double [] colSum = new double[_colSum.length];
       double [] colSumSq = new double[_colSumSq.length];
-      double sqr = hex.genmodel.GenModel.KMeans_distance(centers[clus], dataRow, clm._output._domains, sub, mul, colSum, colSumSq);
+      double sqr = hex.genmodel.GenModel.KMeans_distance(centers[clus], dataRow, ((ClusteringOutput) clm._output)._mode, colSum, colSumSq);
+      System.out.println(Arrays.toString(colSumSq));
       ArrayUtils.add(_colSum, colSum);
       ArrayUtils.add(_colSumSq, colSumSq);
       _count++;
@@ -150,8 +151,12 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
         mm._totss = mm._tot_withinss;
       else {
         mm._totss = 0;
-        for (int i = 0; i < _colSum.length; i++)
-          mm._totss += _colSumSq[i] - (_colSum[i] * _colSum[i]) / f.numRows();
+        for (int i = 0; i < _colSum.length; i++) {
+          if(((ClusteringOutput)clm._output)._mode[i] == -1)
+            mm._totss += _colSumSq[i] - (_colSum[i] * _colSum[i]) / f.numRows();
+          else
+            mm._totss += _colSum[i]; // simply add x[i] != modes[i] for categoricals
+        }
       }
       mm._betweenss = mm._totss - mm._tot_withinss;
       return m.addMetrics(mm);

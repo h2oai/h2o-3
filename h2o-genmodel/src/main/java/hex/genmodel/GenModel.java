@@ -325,14 +325,36 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     return (idx >= 0 && idx < nbits);
   }
 
+  // Todo: Done for K-means but we should really unify for all models.
+  public static void Kmeans_preprocessData(double [] data, double [] means, double [] mults, int[] modes){
+    for(int i = 0; i < data.length; i++) {
+      data[i] = Kmeans_preprocessData(data[i], i, means, mults, modes);
+    }
+  }
+
+  public static double Kmeans_preprocessData(double d, int i, double [] means, double [] mults, int[] modes){
+    if(modes[i] == -1) {    // Mode = -1 for non-categorical cols
+      if( Double.isNaN(d) )
+        d = means[i];
+      if( mults != null ) {
+        d -= means[i];
+        d *= mults[i];
+      }
+    } else {
+      if( Double.isNaN(d) )
+        d = modes[i];
+    }
+    return d;
+  }
+
   // --------------------------------------------------------------------------
   // KMeans utilities
   // For KMeansModel scoring; just the closest cluster center
-  public static int KMeans_closest(double[][] centers, double[] point, String[][] domains, double[] means, double[] mults) {
+  public static int KMeans_closest(double[][] centers, double[] point, String[][] domains) {
     int min = -1;
     double minSqr = Double.MAX_VALUE;
     for( int cluster = 0; cluster < centers.length; cluster++ ) {
-      double sqr = KMeans_distance(centers[cluster],point,domains,means,mults);
+      double sqr = KMeans_distance(centers[cluster],point,domains);
       if( sqr < minSqr ) {      // Record nearest cluster center
         min = cluster;
         minSqr = sqr;
@@ -342,11 +364,11 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   }
 
   // only used for GLRM initialization - inverse of distance to each cluster center normalized to sum to one
-  public static double[] KMeans_simplex(double[][] centers, double[] point, String[][] domains, double[] means, double[] mults) {
+  public static double[] KMeans_simplex(double[][] centers, double[] point, String[][] domains) {
     double[] dist = new double[centers.length];
     double sum = 0, inv_sum = 0;
     for( int cluster = 0; cluster < centers.length; cluster++ ) {
-      dist[cluster] = KMeans_distance(centers[cluster],point,domains,means,mults);
+      dist[cluster] = KMeans_distance(centers[cluster],point,domains);
       sum += dist[cluster];
       inv_sum += 1.0 / dist[cluster];
     }
@@ -377,28 +399,28 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
 
   // only used for metric builder - uses float[] and fills up colSum & colSumSq arrays, otherwise the same as method below.
   // WARNING - if changing this code - also change the code below
-  public static double KMeans_distance(double[] center, float[] point, String[][] domains, double[] means, double[] mults,
+  public static double KMeans_distance(double[] center, float[] point, int [] modes,
                                        double[] colSum, double[] colSumSq) {
     double sqr = 0;             // Sum of dimensional distances
     int pts = point.length;     // Count of valid points
 
     for(int column = 0; column < center.length; column++) {
       float d = point[column];
-      if( Float.isNaN(d) ) { pts--; continue; }
-      if( domains[column] != null ) { // Categorical?
+      if( Float.isNaN(d) ) {
+        pts--; continue; }
+      if( modes[column] != -1 ) { // Categorical?
         if( d != center[column] ) {
           sqr += 1.0;           // Manhattan distance
         }
-      } else {                  // Euclidean distance
-        if( mults != null ) {   // Standardize if requested
-          d -= means[column];
-          d *= mults[column];
+        if(d != modes[column]) {
+          colSum[column] += 1;
         }
+      } else {                  // Euclidean distance
         double delta = d - center[column];
         sqr += delta * delta;
+        colSum[column] += d;
+        colSumSq[column] += d*d;
       }
-      colSum[column] += d;
-      colSumSq[column] += d*d;
     }
     // Scale distance by ratio of valid dimensions to all dimensions - since
     // we did not add any error term for the missing point, the sum of errors
@@ -418,7 +440,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   }
 
   // WARNING - if changing this code - also change the code above
-  public static double KMeans_distance(double[] center, double[] point, String[][] domains, double[] means, double[] mults) {
+  public static double KMeans_distance(double[] center, double[] point,String[][] domains) {
     double sqr = 0;             // Sum of dimensional distances
     int pts = point.length;     // Count of valid points
 
@@ -429,10 +451,6 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
         if( d != center[column] )
           sqr += 1.0;           // Manhattan distance
       } else {                  // Euclidean distance
-        if( mults != null ) {   // Standardize if requested
-          d -= means[column];
-          d *= mults[column];
-        }
         double delta = d - center[column];
         sqr += delta * delta;
       }
