@@ -35,7 +35,6 @@ from h2o.utils.shared_utils import stringify_list, print2
 from h2o.utils.typechecks import (assert_is_type, assert_matches, assert_satisfies, is_type, numeric)
 from h2o.model.metrics_base import (H2ORegressionModelMetrics, H2OClusteringModelMetrics, H2OBinomialModelMetrics,
                                     H2OMultinomialModelMetrics, H2OAutoEncoderModelMetrics)
-from h2o.utils.typechecks import assert_is_type, is_type
 
 __all__ = ("H2OConnection", "H2OConnectionConf", )
 
@@ -54,22 +53,7 @@ class H2OConnectionConf(object):
     the following way: ``schema://ip:port/context_path``
     """
 
-    @staticmethod
-    def create(conf):
-        """
-        Create a new instance of this class from given dictionary.
-        The method only uses keys which corresponds to properties
-        this class, ignores rest of keys.
-        :param conf:  dictionary of parameters
-        :return:  a new instance of this class filled with values from given dictionary
-        """
-        cconf = H2OConnectionConf()
-        for k,v in conf.items():
-            if hasattr(cconf, k):
-                setattr(cconf, k, v)
-        return cconf
-
-    def __init__(self):
+    def __init__(self, config = None):
         self._ip = None
         self._port = None
         self._https = None
@@ -79,6 +63,28 @@ class H2OConnectionConf(object):
         self._auth = None
         self._cookies = None
         self._verbose = True
+        # Fill from config if it is specified
+        if config is not None:
+            self._fill_from_config(config)
+
+    """List of allowed property names exposed by this class"""
+    allowed_properties = ["ip", "port", "https", "context_path", "verify_ssl_certificates",
+                          "proxy", "auth", "cookies", "verbose"]
+    
+    def _fill_from_config(self, config):
+        """
+        Fill this instance from given dictionary.
+        The method only uses keys which corresponds to properties
+        this class, throws exception on unknown property name.
+        :param conf:  dictionary of parameters
+        :return:  a new instance of this class filled with values from given dictionary
+        :raises H2OValueError: if input config contains unknown property name.
+        """
+        for k,v in config.items():
+            if k in H2OConnectionConf.allowed_properties:
+                setattr(self, k, v)
+            else:
+                raise H2OValueError(message="Unsupported name of property: %s!" % k, var_name="config")
 
     @property
     def ip(self):
@@ -131,6 +137,7 @@ class H2OConnectionConf(object):
 
     @proxy.setter
     def proxy(self, value):
+        assert_is_type(value, str, None)
         self._proxy = value
 
     @property
@@ -139,6 +146,7 @@ class H2OConnectionConf(object):
 
     @auth.setter
     def auth(self, value):
+        assert_is_type(value, AuthBase, (str, str), None)
         self._auth = value
 
     @property
@@ -147,8 +155,8 @@ class H2OConnectionConf(object):
 
     @cookies.setter
     def cookies(self, value):
-        assert_is_type(value, [str])
-        self.cookies = value
+        assert_is_type(value, [str], None)
+        self._cookies = value
 
     @property
     def verbose(self):
@@ -158,6 +166,17 @@ class H2OConnectionConf(object):
     def verbose(self, value):
         assert_is_type(value, bool)
         self._verbose = value
+
+    @property
+    def url(self):
+        if self.https:
+            schema = "https"
+        else:
+            schema = "http"
+
+        curl = "{}://{}:{}/{}".format(schema, self.ip, self.port, self.context_path)
+        return curl
+
 
 class H2OConnection(backwards_compatible()):
     """
@@ -183,6 +202,11 @@ class H2OConnection(backwards_compatible()):
 
     Once the connection is established, you can send REST API requests to the server using :meth:`request`.
     """
+
+    """
+    Defines pattern matching URL in the following form ``schema://ip:port/context_path``.
+    """
+    url_pattern = r"^(https?)://((?:[\w-]+\.)*[\w-]+):(\d+)/?((/[\w-]+)+)?$"
 
     @staticmethod
     def open(server=None, url=None, ip=None, port=None, https=None, auth=None, verify_ssl_certificates=True,
@@ -245,11 +269,11 @@ class H2OConnection(backwards_compatible()):
             assert_is_type(url, str)
             assert_is_type(ip, None, "`ip` should be None when `url` parameter is supplied")
             # We don't allow any Unicode characters in the URL. Maybe some day we will...
-            match = assert_matches(url, r"^(https?)://((?:[\w-]+\.)*[\w-]+):(\d+)/?([\w-]*)?$")
+            match = assert_matches(url, H2OConnection.url_pattern)
             scheme = match.group(1)
             ip = match.group(2)
             port = int(match.group(3))
-            context_path = "/%s" % (match.group(4))
+            context_path = '' if match.group(4) is None else "%s" % (match.group(4))
         else:
             if ip is None: ip = str("localhost")
             if port is None: port = 54321
