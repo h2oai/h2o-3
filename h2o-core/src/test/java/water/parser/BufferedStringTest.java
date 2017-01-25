@@ -138,7 +138,7 @@ public class BufferedStringTest {
     assertFalse(sut1.sameString("abd"));
     assertFalse(sut1.sameString("abcd"));
     assertFalse(sut1.sameString("abC"));
-    assertFalse(sut1.sameString("abс")); // this is Russian 'c' here
+    assertFalse(sut1.sameString("ab\u0441")); // this is Russian 'c' here
     assertFalse(sut1.sameString("ab"));
     BufferedString sut2 = new BufferedString("");
     assertTrue(sut2.sameString(""));
