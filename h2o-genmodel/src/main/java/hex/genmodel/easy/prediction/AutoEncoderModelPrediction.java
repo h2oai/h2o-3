@@ -1,8 +1,9 @@
 package hex.genmodel.easy.prediction;
 
-/**
- * TODO
- */
+import hex.genmodel.easy.RowData;
+
 public class AutoEncoderModelPrediction extends AbstractPrediction {
-  // ? not sure what this should be.
+  public double[] original;
+  public double[] reconstructed;
+  public RowData reconstructedRowData;
 }
