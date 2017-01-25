@@ -268,6 +268,10 @@ class SharedTreeNode {
     return (domainValues != null);
   }
 
+  private String escapeQuotes(String s) {
+    return s.replace("\"", "\\\"");
+  }
+
   private void printDotNode(PrintStream os, boolean detail) {
     os.print("\"" + getDotName() + "\"");
     os.print(" [");
@@ -278,12 +282,12 @@ class SharedTreeNode {
     }
     else if (isBitset()) {
       os.print("shape=box,label=\"");
-      os.print(colName);
+      os.print(escapeQuotes(colName));
     }
     else {
       assert(! Float.isNaN(splitValue));
       os.print("shape=box,label=\"");
-      os.print(colName + " < " + splitValue);
+      os.print(escapeQuotes(colName) + " < " + splitValue);
     }
 
     if (detail) {
@@ -349,7 +353,7 @@ class SharedTreeNode {
     }
     os.print("label=\"");
     for (String s : arr) {
-      os.print(s + "\\n");
+      os.print(escapeQuotes(s) + "\\n");
     }
     os.print("\"");
     os.println("]");
