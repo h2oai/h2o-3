@@ -1885,7 +1885,8 @@ class TestRunner(object):
         """
         check if connection to h2o exists, and that h2o is healthy.
         """
-        if port <= 0: return False
+        if not port or int(port) <= 0:
+            return False
         h2o_okay = False
         try:
             http = requests.get("http://{}:{}/3/Cloud?skip_ticks=true".format(ip, port))
