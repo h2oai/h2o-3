@@ -1,9 +1,9 @@
 Using H2O with Azure
 ====================
 
-Microsoft Azure provides an important collection of cloud services such as serveless computing, virtual machines, storage options, networking and much more. Azure provides the tools for a user to create a Data Science environment with H2O. 
+Microsoft Azure provides an important collection of cloud services, such as serveless computing, virtual machines, storage options, networking, and much more. Azure provides the tools for a user to create a Data Science environment with H2O. 
 
-This section describes the two H2O options currently available on Microsoft Azure
+This section describes the two H2O options currently available on Microsoft Azure:
 
 - The H2O Artificial Intelligence VM solution
 - The H2O application for HDInsight 
@@ -44,10 +44,10 @@ Perform the following steps to create the H2O Artificial Intelligence VM.
 
 3. Follow the UI instructions and fill the Basic settings: 
 
-   - Username and Password that you will be using to connect to the VM
-   - Subscriptions where you want to create the VM
-   - The new resource group name 
-   - The Location where the VM is going to be created. 
+  - Username and Password that you will be using to connect to the VM
+  - Subscriptions where you want to create the VM
+  - The new resource group name 
+  - The Location where the VM is going to be created. 
 
    .. figure:: images/azure_basic_settings.png
       :alt: Azure Basic settings
@@ -55,9 +55,9 @@ Perform the following steps to create the H2O Artificial Intelligence VM.
 4. Click **OK** and move to the next step, which is Infrastructure setting.
 5. Specify the desired Infrastructure settings:
 
-   - Select the number of VMs that you want to create. (Note that specifying more than one VM means that you will create an H2O cluster.) 
-   - Specify the Storage Account. This represents the associated storage account for the VM
-   - Specify the Virtual Machine Size.
+  - Select the number of VMs that you want to create. (Note that specifying more than one VM means that you will create an H2O cluster.) 
+  - Specify the Storage Account. This represents the associated storage account for the VM
+  - Specify the Virtual Machine Size.
 
    .. figure:: images/azure_infrastructure_settings.png
       :alt: Azure Infrastructure settings
