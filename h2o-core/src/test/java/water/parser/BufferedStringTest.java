@@ -3,6 +3,8 @@ package water.parser;
 import org.junit.Ignore;
 import org.junit.Test;
 import water.AutoBuffer;
+import water.Paxos;
+import water.TestUtil;
 
 import static org.junit.Assert.*;
 
@@ -51,7 +53,19 @@ public class BufferedStringTest {
 
   @Test
   public void testAddChar() throws Exception {
-
+    final String source = "abc";
+    BufferedString sut1 = new BufferedString(source);
+    assertEquals(3, sut1.length());
+    sut1.addChar();
+    assertEquals(4, sut1.length());
+// TODO(vlad): fix the crash in the next line    
+//    String actual = sut1.bytesToString();
+//    assertEquals(source, actual);
+    // TODO(vlad): fix it; we don't need the cloud
+//    Paxos._commonKnowledge = true; // this is totally stupid; thank you Cliff for the fun
+// TODO(vlad): fix the crash in the next line    
+//    byte[] bytes = sut1.asBytes();
+//    assertArrayEquals(source.getBytes(), bytes);
   }
 
   @Test
@@ -131,7 +145,7 @@ public class BufferedStringTest {
     assertFalse(sut1.sameString(null));
     assertFalse(sut2.sameString("a"));
     BufferedString sut3 = new BufferedString("a\u0100b");
-    assertFalse(sut2.sameString("a\u0100b"));
+    assertFalse(sut3.sameString("a\u0100b"));
   }
   
   @Ignore("This test is failing because the method is wrong and must be fixed, see PUBDEV-3957")

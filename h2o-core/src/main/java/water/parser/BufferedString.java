@@ -61,6 +61,7 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
      return hash;
    }
 
+  // TODO(vlad): make sure that this method is not as destructive as it now is (see tests) 
    void addChar() {
      _len++;
    }
