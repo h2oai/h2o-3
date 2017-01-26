@@ -17,6 +17,7 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.Log;
+import water.util.Timer;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -44,6 +45,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
    */
   public static DMatrix convertFrametoDMatrix(Frame f, String response, String weight, String fold, String[] featureMap) throws XGBoostError {
     // one-hot encoding
+
+    // FIXME - use DataInfo for speedup
+
     FrameUtils.CategoricalOneHotEncoder enc = new FrameUtils.CategoricalOneHotEncoder(f, new String[]{response, weight, fold});
     Frame encoded = enc.exec().get();
     long denseLen = encoded.numRows()*(encoded.numCols() - 1 /*response*/);
@@ -122,7 +126,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     DMatrix trainMat = new DMatrix(colHeaders, rowIndex, data, DMatrix.SparseType.CSC, 0);
     trainMat.setLabel(resp);
     trainMat.setWeight(weights);
-//    trainMat.setGroup(null); //fold //FIXME
+//    trainMat.setGroup(null); //fold //FIXME - only needed if CV is internally done in XGBoost
     encoded.remove();
     return trainMat;
   }
@@ -234,6 +238,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       error("_learn_rate", "learn_rate must be between 0 and 1");
     if( !(0. < _parms._col_sample_rate && _parms._col_sample_rate <= 1.0) )
       error("_col_sample_rate", "col_sample_rate must be between 0 and 1");
+    if (_parms._grow_policy== XGBoostModel.XGBoostParameters.GrowPolicy.lossguide && _parms._tree_method!= XGBoostModel.XGBoostParameters.TreeMethod.hist)
+      error("_grow_policy", "must use tree_method=hist for grow_policy=lossguide");
   }
 
   static DataInfo makeDataInfo(Frame train, Frame valid, XGBoostModel.XGBoostParameters parms, int nClasses) {
@@ -312,19 +318,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           watches.put("train", trainMat);
 
         model.model_info()._booster = ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, model.createParams(), 0, watches, null, null);
-        for( int tid=0; tid< _parms._ntrees; tid++) {
-          model.model_info()._booster.update(trainMat, tid);
-          // Optional: for convenience
-          {
-            model.update(_job);
-            model.model_info().nativeToJava();
-          }
-          model._output._ntrees++;
-          model._output._scored_train = ArrayUtils.copyAndFillOf(model._output._scored_train, model._output._ntrees+1, new ScoreKeeper());
-          model._output._scored_valid = model._output._scored_valid != null ? ArrayUtils.copyAndFillOf(model._output._scored_valid, model._output._ntrees+1, new ScoreKeeper()) : null;
-          model._output._training_time_ms = ArrayUtils.copyAndFillOf(model._output._training_time_ms, model._output._ntrees+1, System.currentTimeMillis());
-          doScoring(model, model.model_info()._booster, trainMat, validMat, false);
-        }
+        scoreAndBuildTrees(model, trainMat, validMat);
         doScoring(model, model.model_info()._booster, trainMat, validMat, true);
         model.model_info().nativeToJava();
       } catch (XGBoostError xgBoostError) {
@@ -334,10 +328,40 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       model.unlock(_job);
     }
 
+    protected final void scoreAndBuildTrees(XGBoostModel model, DMatrix trainMat, DMatrix validMat) throws XGBoostError {
+      for( int tid=0; tid< _parms._ntrees; tid++) {
+        // During first iteration model contains 0 trees, then 1-tree, ...
+        boolean scored = doScoring(model, model.model_info()._booster, trainMat, validMat, false);
+        if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
+          doScoring(model, model.model_info()._booster, trainMat, validMat, true);
+          _job.update(_parms._ntrees-model._output._ntrees); //finish
+          return;
+        }
+
+        Timer kb_timer = new Timer();
+        try {
+          model.model_info()._booster.update(trainMat, tid);
+        } catch (XGBoostError xgBoostError) {
+          xgBoostError.printStackTrace();
+        }
+        Log.info((tid + 1) + ". tree was built in " + kb_timer.toString());
+        _job.update(1);
+        // Optional: for convenience
+//          model.update(_job);
+//          model.model_info().nativeToJava();
+        model._output._ntrees++;
+        model._output._scored_train = ArrayUtils.copyAndFillOf(model._output._scored_train, model._output._ntrees+1, new ScoreKeeper());
+        model._output._scored_valid = model._output._scored_valid != null ? ArrayUtils.copyAndFillOf(model._output._scored_valid, model._output._ntrees+1, new ScoreKeeper()) : null;
+        model._output._training_time_ms = ArrayUtils.copyAndFillOf(model._output._training_time_ms, model._output._ntrees+1, System.currentTimeMillis());
+      }
+      doScoring(model, model.model_info()._booster, trainMat, validMat, true);
+    }
+
     long _firstScore = 0;
     long _timeLastScoreStart = 0;
     long _timeLastScoreEnd = 0;
-    private void doScoring(XGBoostModel model, Booster booster, DMatrix trainMat, DMatrix validMat, boolean finalScoring) throws XGBoostError {
+    private boolean doScoring(XGBoostModel model, Booster booster, DMatrix trainMat, DMatrix validMat, boolean finalScoring) throws XGBoostError {
+      boolean scored = false;
       long now = System.currentTimeMillis();
       if (_firstScore == 0) _firstScore = now;
       long sinceLastScore = now - _timeLastScoreStart;
@@ -359,8 +383,10 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         _timeLastScoreEnd = System.currentTimeMillis();
         model.computeVarImp(booster.getFeatureScore("featureMap.txt"));
         model.update(_job);
-        Log.info(model);
+//        Log.info(model);
+        scored = true;
       }
+      return scored;
     }
   }
 

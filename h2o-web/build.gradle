@@ -125,6 +125,13 @@ task copyDeepWaterJarToWebRoot(type: Copy) {
   into "src/main/resources/www/${h2oRESTApiVersion}/"
 }
 
+task copyXGBoostJarToWebRoot(type: Copy) {
+  from {
+      file("${rootDir}/lib/xgboost4j-0.7-jar-with-dependencies.jar")
+  }
+  into "src/main/resources/www/${h2oRESTApiVersion}/"
+}
+
 
 task deleteBowerModules(type: Delete) {
   delete 'lib'
@@ -144,6 +151,10 @@ task deleteGenModelJarFromWebRoot(type: Delete) {
 
 task deleteDeepWaterJarFromWebRoot(type: Delete) {
     delete "src/main/resources/www/${h2oRESTApiVersion}/deepwater-all.jar"
+}
+
+task deleteXGBoostJarFromWebRoot(type: Delete) {
+    delete "src/main/resources/www/${h2oRESTApiVersion}/xgboost4j-0.7-jar-with-dependencies.jar"
 }
 
 
@@ -212,10 +223,11 @@ processResources.dependsOn compileHelpFiles
 processResources.dependsOn copyHelpImages
 processResources.dependsOn copyGenModelJarToWebRoot
 processResources.dependsOn copyDeepWaterJarToWebRoot
+processResources.dependsOn copyXGBoostJarToWebRoot
 
 compileAndInstallDocFiles.dependsOn installNpmPackages
 compileAndInstallDocFiles.dependsOn ":h2o-docs:build"
 build.dependsOn compileAndInstallDocFiles
 
 // Hook clean stage
-clean.dependsOn deleteFlowFromWebRoot, cleanUpSmokeTest, deleteGenModelJarFromWebRoot, deleteDeepWaterJarFromWebRoot, deleteDocFiles
+clean.dependsOn deleteFlowFromWebRoot, cleanUpSmokeTest, deleteGenModelJarFromWebRoot, deleteDeepWaterJarFromWebRoot, deleteXGBoostJarFromWebRoot, deleteDocFiles
