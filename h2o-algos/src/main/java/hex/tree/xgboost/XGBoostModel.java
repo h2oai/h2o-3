@@ -249,6 +249,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
 
   // TODO: replace with genmodel logic
+  // TODO: benchmark row-wise scoring vs frame->DMatrix->bulk scoring vs frame->DMatrix mini-batch scoring
   @Override
   public double[] score0(double[] data, double[] preds, double weight, double offset) {
     if (offset != 0) throw new UnsupportedOperationException("Offset != 0 is not supported.");
