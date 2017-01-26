@@ -45,6 +45,7 @@ h2o-dev.ipr
 node_modules/
 private/
 *Rsandbox*
+h2o-algos/model.zip
 h2o-r/R/
 h2o-r/h2o-package/inst/branch.txt
 h2o-r/h2o-package/man/inst/buildnum.txt
