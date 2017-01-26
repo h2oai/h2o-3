@@ -21,6 +21,10 @@ public class XGBoostMojoReader extends ModelMojoReader<XGBoostMojoModel> {
     } catch (XGBoostError xgBoostError) {
       xgBoostError.printStackTrace();
     }
+    _model._nums = readkv("nums");
+    _model._cats = readkv("cats");
+    _model._catOffsets = readkv("cat_offsets");
+    _model._useAllFactorLevels = readkv("use_all_factor_levels");
   }
 
   @Override
