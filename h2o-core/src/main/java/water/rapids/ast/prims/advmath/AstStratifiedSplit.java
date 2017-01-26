@@ -59,7 +59,9 @@ public class AstStratifiedSplit extends AstPrimitive {
     String[] dom = new String[]{"train", "test"};
     // create frame with all 0s (default is train)
     Key<Frame> k1 = Key.make();
-    Frame result = new Frame(k1, new String[]{"test_train_split"}, new Vec[]{Vec.makeCon(0.0,fr.anyVec().length())});
+    Vec resVec = Vec.makeCon(0,fr.anyVec().length());
+    resVec.setDomain(new String[]{"train","test"});
+    Frame result = new Frame(k1, new String[]{"test_train_split"}, new Vec[]{resVec});
     DKV.put(result);
     // create index frame
     Key<Frame> k2 = Key.make();
