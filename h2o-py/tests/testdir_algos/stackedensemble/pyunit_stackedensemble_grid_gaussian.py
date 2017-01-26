@@ -43,9 +43,11 @@ def stackedensemble_grid_gaussian():
     search_criteria = {"strategy": "RandomDiscrete", "max_models": 3, "seed": 1}                    
 
     # Train the grid
-    grid = H2OGridSearch(model=H2OGradientBoostingEstimator(ntrees=10, seed=1,
-                                         nfolds=nfolds, fold_assignment="Modulo",
-                                         keep_cross_validation_predictions=True),
+    grid = H2OGridSearch(model=H2OGradientBoostingEstimator(ntrees=10, 
+                                                            seed=1,
+                                                            nfolds=nfolds, 
+                                                            fold_assignment="Modulo",
+                                                            keep_cross_validation_predictions=True),
                          hyper_params=hyper_params,
                          search_criteria=search_criteria,
                          grid_id="gbm_grid_guassian")
@@ -54,7 +56,8 @@ def stackedensemble_grid_gaussian():
 
     # Train a stacked ensemble using the GBM grid
     stack = H2OStackedEnsembleEstimator(model_id="my_ensemble_gbm_grid_guassian",
-                                        selection_strategy="choose_all", base_models=grid.model_ids)
+                                        selection_strategy="choose_all", 
+                                        base_models=grid.model_ids)
     stack.train(x=x, y=y, training_frame=train, validation_frame=test)
 
     # Check that predictions work

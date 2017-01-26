@@ -81,8 +81,6 @@ def stackedensemble_binomial_test():
 
     # Train a stacked ensemble using the GBM and GLM above
     stack = H2OStackedEnsembleEstimator(model_id="my_ensemble_binomial",
-                                        training_frame=train,
-                                        validation_frame=test,
                                         base_models=[my_gbm.model_id,  my_rf.model_id],
                                         selection_strategy="choose_all")
 
