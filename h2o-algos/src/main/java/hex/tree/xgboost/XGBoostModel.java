@@ -111,18 +111,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return params;
   }
 
-//  @Override
-//  public Frame score(Frame fr) throws IllegalArgumentException {
-//    //FIXME
-//    try {
-  // TODO: Keep the pointer to the converted frame in the C++ process
-//      DMatrix trainMat = convertFrametoDMatrix(fr, _parms._response_column, _parms._weights_column, _parms._fold_column, null);
-//    } catch (XGBoostError xgBoostError) {
-//      xgBoostError.printStackTrace();
-//    }
-//    return fr;
-//  }
-
   @Override
   protected double[] score0(double[] data, double[] preds) {
     return score0(data, preds, 1.0, 0.0);
@@ -152,8 +140,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       double[] dpreds = new double[preds.length];
       for (int j = 0; j < dpreds.length; ++j)
         dpreds[j] = preds[j][0];
-      for (int j = 0; j < dpreds.length; ++j)
-        assert (data.getWeight()[j] == 1.0);
+//      for (int j = 0; j < dpreds.length; ++j)
+//        assert (data.getWeight()[j] == 1.0);
       Vec pred = Vec.makeVec(dpreds, Vec.newKey());
       if (_output.nclasses() == 1) {
         mm[0] = ModelMetricsRegression.make(pred, resp, DistributionFamily.gaussian);
@@ -287,8 +275,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   private void setDataInfoToOutput(DataInfo dinfo) {
     if (dinfo == null) return;
     // update the model's expected frame format - needed for train/test adaptation
-    _output._names = dinfo._adaptedFrame.names();
-    _output._domains = dinfo._adaptedFrame.domains();
+//    _output._names = dinfo._adaptedFrame.names();
+//    _output._domains = dinfo._adaptedFrame.domains();
     _output._nums = dinfo._nums;
     _output._cats = dinfo._cats;
     _output._catOffsets = dinfo._catOffsets;
