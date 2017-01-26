@@ -203,7 +203,9 @@ public class ModelSerializationTest extends TestUtil {
     try {
       model.writeAll(new AutoBuffer(new FileOutputStream(file),true)).close();
       if( deleteModel ) model.delete();
-      return (M)Keyed.readAll(new AutoBuffer(new FileInputStream(file)));
+      final AutoBuffer ab = new AutoBuffer(new FileInputStream(file));
+      ab.sourceName = file.getAbsolutePath();
+      return (M)Keyed.readAll(ab);
     } finally {
       file.delete();
     }

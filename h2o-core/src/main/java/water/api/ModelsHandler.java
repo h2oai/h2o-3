@@ -217,7 +217,9 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
       URI targetUri = FileUtils.getURI(mimport.dir);
       Persist p = H2O.getPM().getPersistForURI(targetUri);
       InputStream is = p.open(targetUri.toString());
-      Model model = (Model)Keyed.readAll(new AutoBuffer(is));
+      final AutoBuffer ab = new AutoBuffer(is);
+      ab.sourceName = targetUri.toString();
+      Model model = (Model)Keyed.readAll(ab);
       s.models = new ModelSchemaV3[]{(ModelSchemaV3) SchemaServer.schema(version, model).fillFromImpl(model)};
     } catch (FSIOException e) {
       throw new H2OIllegalArgumentException("dir", "importModel", mimport.dir);
