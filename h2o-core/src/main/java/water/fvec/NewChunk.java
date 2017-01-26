@@ -852,7 +852,6 @@ public class NewChunk extends Chunk {
         }
       }
     }
-    
     assert cs == (_sparseLen - num_noncompressibles) : "cs = " + cs + " != " + (_sparseLen - num_noncompressibles) + ", sparsity type = " + sparsity_type;
     assert (sparsity_type == Compress.NA) == _sparseNA;
     if(sparsity_type == Compress.NA && _missing != null)
@@ -956,7 +955,7 @@ public class NewChunk extends Chunk {
         else if(_ds[i] != 0) ++_nzCnt;
       }
     } else {
-      _naCnt = _missing == null?0:_missing.cardinality();
+      _naCnt = _sparseNA?(_len-_sparseLen):_missing == null?0:_missing.cardinality();
       _nzCnt = _ms._nzs;
     }
 

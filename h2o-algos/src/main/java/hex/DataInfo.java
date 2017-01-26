@@ -120,7 +120,7 @@ public class DataInfo extends Keyed<DataInfo> {
   public String[] _interactionColumns; // the names of the columns to interact
   public int _interactionVecs[]; // the interaction columns appearing in _adaptedFrame
   public int[] _numOffsets; // offset column indices used by numerical interactions: total number of numerical columns is given by _numOffsets[_nums] - _numOffsets[0]
-  public int responseChunkId(int n){return _responseId;}
+  public int responseChunkId(int n){return _responseId+n;}
   public int foldChunkId(){return _foldId;}
 
   public int offsetChunkId(){return _offsetId;}
@@ -429,7 +429,7 @@ public class DataInfo extends Keyed<DataInfo> {
     _catLvls = catLevels;
     _intLvls = intLvls;
     _responses = dinfo._responses;
-    _responseId = _adaptedFrame.numCols()-1;
+    _responseId = _adaptedFrame.numCols()-_responses;
     _cats = catLevels.length;
     _useAllFactorLevels = true;//dinfo._useAllFactorLevels;
     _normMul = normMul;

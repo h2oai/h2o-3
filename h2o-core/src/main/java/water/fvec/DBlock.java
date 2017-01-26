@@ -31,8 +31,6 @@ public abstract class DBlock extends Iced<DBlock> {
     public Chunk getColChunk(int c) {return _cs[c];}
 
     public DBlock setChunk(int i, Chunk c){
-      if(i >= _cs.length)
-        System.out.println("haha");
       _cs[i] = c; return this;
     }
     @Override

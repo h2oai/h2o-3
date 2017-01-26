@@ -254,8 +254,6 @@ public class VecAryTest extends TestUtil {
       VecAry.Reader r4 = vecs4.new Reader();
       for (long r = 0; r < vecs0.length(); ++r) {
         for (int c = 0; c < n; ++c) {
-          if(n == 157 && r == 3 && c == 56)
-            System.out.println("haha");
           assertEquals(1000 * r + c, r3.at(r, permutation[c]), 0);
           assertEquals(1000 * r + c, r4.at(r, c), 0);
         }

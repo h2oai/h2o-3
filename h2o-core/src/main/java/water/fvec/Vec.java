@@ -291,8 +291,6 @@ public class Vec extends Keyed<Vec> {
     // Vecs are compatible iff they have same group and same espc (i.e. same length and same chunk-distribution)
     boolean res =  (espc() == v.espc() || Arrays.equals(_espc, v._espc)) &&
         (VectorGroup.sameGroup(this, v) || length() < 1e3);
-    if(!res)
-      System.out.println("haha");
     return (espc() == v.espc() || Arrays.equals(_espc, v._espc)) &&
             (VectorGroup.sameGroup(this, v) || length() < 1e3);
   }

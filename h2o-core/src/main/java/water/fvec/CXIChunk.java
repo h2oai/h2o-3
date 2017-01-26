@@ -68,10 +68,6 @@ public class CXIChunk extends Chunk {
     int cnt = 0;
     for(int off = getOff(id);(id = getId(off)) < to; off += _ridsz + _valsz) {
       cnt++;
-      if(id <= prev){
-        System.out.println("haha + cnt = " + cnt);
-        off = nextNZ(prev);
-      }
       assert id > prev:" id = " + id + ", prev = " + prev + ", from = " + from + ", to = " + to  + ", cnt = " + cnt;
       if(isSparseNA())
         nc.addNAs(id-prev-1);
