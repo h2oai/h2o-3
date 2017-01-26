@@ -1,5 +1,5 @@
-Using H2O with Azure
-====================
+Using H2O with Azure - BETA
+===========================
 
 Microsoft Azure provides an important collection of cloud services, such as serverless computing, virtual machines, storage options, networking, and much more. Azure provides the tools for a user to create a Data Science environment with H2O. 
 
@@ -7,6 +7,8 @@ This section describes the two H2O options currently available on Microsoft Azur
 
 - The H2O Artificial Intelligence VM solution
 - The H2O application for HDInsight 
+
+**Note**: This feature is currently in Beta and should be used for testing purposes only. 
 
 H2O Artificial Intelligence VM
 ------------------------------
