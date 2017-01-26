@@ -15,6 +15,11 @@ public class XGBoostOutput extends Model.Output {
   }
 
   byte[] _boosterBytes;
+  int _nums;
+  int _cats;
+  int[] _catOffsets;
+  boolean _useAllFactorLevels;
+
   public int _ntrees;
   public ScoreKeeper[/*ntrees+1*/] _scored_train;
   public ScoreKeeper[/*ntrees+1*/] _scored_valid;

@@ -23,5 +23,9 @@ public class XGBoostMojoWriter extends ModelMojoWriter<XGBoostModel, XGBoostMode
   @Override
   protected void writeModelData() throws IOException {
     writeblob("boosterBytes", this.model._output._boosterBytes);
+    writekv("nums", model._output._nums);
+    writekv("cats", model._output._cats);
+    writekv("cat_offsets", model._output._catOffsets);
+    writekv("use_all_factor_levels", model._output._useAllFactorLevels);
   }
 }
