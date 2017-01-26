@@ -102,4 +102,5 @@ gradle/buildnumber.properties
 # Ignore gradle home files
 caches
 wrapper
+native
 
