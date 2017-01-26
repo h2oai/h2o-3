@@ -458,8 +458,8 @@ It can sometimes be useful to see the coefficients for all lambda values or to o
 
 To extract the regularization path from R or python:
 
-- R: call h2o.getGLMFullRegularizationPath, takes the model as an argument
-- Python: H2OGeneralizedLinearEstimator.getGLMRegularizationPath (static method), takes the model as an argument
+- R: call h2o.getGLMFullRegularizationPath. This takes the model as an argument. An example is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/glm/runit_GLM_reg_path.R>`__.
+- Python: H2OGeneralizedLinearEstimator.getGLMRegularizationPath (static method). This takes the model as an argument. An example is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/glm/pyunit_glm_regularization_path.py>`__.
 
 Solvers
 ~~~~~~~
