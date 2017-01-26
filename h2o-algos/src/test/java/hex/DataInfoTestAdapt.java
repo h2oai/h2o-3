@@ -46,10 +46,8 @@ public class DataInfoTestAdapt extends TestUtil {
       GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
       parms._response_column = "petal_wid";
       Model.adaptTestForTrain(frSplits[1],null,null,dinfo._adaptedFrame.names(),dinfo._adaptedFrame.domains(),parms,true,false,interactions,null,null, false);
-
-      scoreInfo = dinfo.scoringInfo(frSplits[1]);
+      scoreInfo = dinfo.scoringInfo(dinfo._adaptedFrame._names,frSplits[1]);
       checkFrame(scoreInfo,expandSplits[1]);
-
     } finally {
       cleanup(fr,expanded);
       cleanup(frSplits);
@@ -94,7 +92,7 @@ public class DataInfoTestAdapt extends TestUtil {
       parms._response_column = "IsDepDelayed";
       Model.adaptTestForTrain(frSplits[1],null,null,dinfo._adaptedFrame.names(),dinfo._adaptedFrame.domains(),parms,true,false,interactions,null,null, false);
 
-      scoreInfo = dinfo.scoringInfo(frSplits[1]);
+      scoreInfo = dinfo.scoringInfo(dinfo._adaptedFrame._names,frSplits[1]);
       checkFrame(scoreInfo,expandSplits[1], skipMissing);
 
     } finally {

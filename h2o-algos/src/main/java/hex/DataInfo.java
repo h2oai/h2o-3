@@ -332,37 +332,6 @@ public class DataInfo extends Keyed<DataInfo> {
     return res;
   }
 
-  public DataInfo scoringInfo(Frame adaptFrame){
-    DataInfo res = IcedUtils.deepCopy(this);
-    res._normMul = null;
-    res._normRespSub = null;
-    res._normRespMul = null;
-    res._normRespSub = null;
-    res._predictor_transform = TransformType.NONE;
-    res._response_transform = TransformType.NONE;
-    res._adaptedFrame = adaptFrame;
-    res._weights = _weights && adaptFrame.find(_adaptedFrame.name(weightChunkId())) != -1;
-    res._offset = _offset && adaptFrame.find(_adaptedFrame.name(offsetChunkId())) != -1;
-    res._fold = _fold && adaptFrame.find(_adaptedFrame.name(foldChunkId())) != -1;
-    int resId = adaptFrame.find((_adaptedFrame.name(responseChunkId(0))));
-    if(resId == -1 || adaptFrame.vec(resId).isBad())
-      res._responses = 0;
-    else // NOTE: DataInfo can have extra columns encoded as response, e.g. helper columns when doing Multinomail IRLSM, don't need those for scoring!.
-      res._responses = 1;
-    res._valid = true;
-    res._interactions=_interactions;
-    res._interactionColumns=_interactionColumns;
-
-    // ensure that vecs are in the DKV, may have been swept up in the Scope.exit call
-    for( Vec v: res._adaptedFrame.vecs() )
-      if( v instanceof InteractionWrappedVec ) {
-        ((InteractionWrappedVec)v)._useAllFactorLevels=_useAllFactorLevels;
-        ((InteractionWrappedVec)v)._skipMissing=_skipMissing;
-        DKV.put(v);
-      }
-    return res;
-  }
-
   public double[] denormalizeBeta(double [] beta) {
     int N = fullN()+1;
     assert (beta.length % N) == 0:"beta len = " + beta.length + " expected multiple of" + N;
@@ -1176,5 +1145,36 @@ public class DataInfo extends Keyed<DataInfo> {
       }
     }
     return rows;
+  }
+
+  public DataInfo scoringInfo(String [] names, Frame adaptFrame){
+    DataInfo res = IcedUtils.deepCopy(this);
+    res._normMul = null;
+    res._normRespSub = null;
+    res._normRespMul = null;
+    res._normRespSub = null;
+    res._predictor_transform = TransformType.NONE;
+    res._response_transform = TransformType.NONE;
+    res._adaptedFrame = adaptFrame;
+    res._weights = _weights && adaptFrame.find(names[weightChunkId()]) != -1;
+    res._offset = _offset && adaptFrame.find(names[offsetChunkId()]) != -1;
+    res._fold = _fold && adaptFrame.find(names[foldChunkId()]) != -1;
+    int resId = adaptFrame.find(names[responseChunkId(0)]);
+    if(resId == -1 || adaptFrame.vec(resId).isBad())
+      res._responses = 0;
+    else // NOTE: DataInfo can have extra columns encoded as response, e.g. helper columns when doing Multinomail IRLSM, don't need those for scoring!.
+      res._responses = 1;
+    res._valid = true;
+    res._interactions=_interactions;
+    res._interactionColumns=_interactionColumns;
+
+    // ensure that vecs are in the DKV, may have been swept up in the Scope.exit call
+    for( Vec v: res._adaptedFrame.vecs() )
+      if( v instanceof InteractionWrappedVec) {
+        ((InteractionWrappedVec)v)._useAllFactorLevels=_useAllFactorLevels;
+        ((InteractionWrappedVec)v)._skipMissing=_skipMissing;
+        DKV.put(v);
+      }
+    return res;
   }
 }
