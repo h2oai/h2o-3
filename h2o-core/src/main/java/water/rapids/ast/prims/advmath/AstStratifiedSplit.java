@@ -1,5 +1,6 @@
 package water.rapids.ast.prims.advmath;
 
+import org.apache.commons.lang.ArrayUtils;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -61,7 +62,7 @@ public class AstStratifiedSplit extends AstPrimitive {
     Frame result = new Frame(k1, new String[]{"test_train_split"}, new Vec[]{resVec});
     DKV.put(result);
     // create index frame
-    ClassIdxTask finTask = new ClassIdxTask(nClass).doAll(fr);
+    ClassIdxTask finTask = new ClassIdxTask(nClass,classes).doAll(fr);
     // loop through each class
     HashSet<Long> usedIdxs = new HashSet<>();
     for (int classLabel = 0; classLabel < nClass; classLabel++) {
@@ -106,8 +107,11 @@ public class AstStratifiedSplit extends AstPrimitive {
   public class ClassIdxTask extends MRTask<AstStratifiedSplit.ClassIdxTask> {
     LongAry[] _iarray;
     int _nclasses;
-    ClassIdxTask(int nclasses) {
+    ArrayList<Long> _classes;
+    ClassIdxTask(int nclasses, long[] classes) {
       _nclasses = nclasses;
+      Long[] boxed = ArrayUtils.toObject(classes);
+      _classes = new ArrayList<Long>(Arrays.asList(boxed));
     }
 
     @Override
@@ -115,8 +119,9 @@ public class AstStratifiedSplit extends AstPrimitive {
       _iarray = new LongAry[_nclasses];
       for (int i = 0; i < _nclasses; i++) { _iarray[i] = new LongAry(); }
       for (int i = 0; i < ck[0].len(); i++) {
-        int clas = (int) ck[0].at8(i);
-        _iarray[clas].add(ck[0].start() + i);
+        long clas = ck[0].at8(i);
+        int clas_idx = _classes.indexOf(clas);
+        _iarray[clas_idx].add(ck[0].start() + i);
       }
     }
     @Override
