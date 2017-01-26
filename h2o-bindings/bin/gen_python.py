@@ -238,6 +238,7 @@ def gen_module(schema, algo):
 def algo_to_classname(algo):
     if algo == "deeplearning": return "H2ODeepLearningEstimator"
     if algo == "deepwater": return "H2ODeepWaterEstimator"
+    if algo == "xgboost": return "H2OXGBoostEstimator"
     if algo == "gbm": return "H2OGradientBoostingEstimator"
     if algo == "glm": return "H2OGeneralizedLinearEstimator"
     if algo == "glrm": return "H2OGeneralizedLowRankEstimator"
@@ -276,6 +277,8 @@ def help_preamble_for(algo):
             The default distribution function will guess the model type based on the response column type.
             Otherwise, the response column must be an enum for "bernoulli" or "multinomial", and numeric
             for all other distributions."""
+    if algo == "xgboost":
+        return """Builds a eXtreme Gradient Boosting model using the native XGBoost backend."""
     if algo == "naivebayes":
         return """
             The naive Bayes classifier assumes independence between predictor variables
@@ -406,6 +409,23 @@ def class_extra_for(algo):
             visibility = builder_json["model_builders"]["deepwater"]["visibility"]
             if visibility == "Experimental":
                 print("Cannot build a Deep Water model - no backend found.")
+                return False
+            else:
+                return True
+        """
+
+    elif algo == "xgboost":
+        return """
+        # Ask the H2O server whether a XGBoost model can be built (depends on availability of native backends)
+        @staticmethod
+        def available():
+            \"\"\"
+            Returns True if a XGBoost model can be built, or False otherwise.
+            \"\"\"
+            builder_json = h2o.api("GET /3/ModelBuilders", data={"algo": "xgboost"})
+            visibility = builder_json["model_builders"]["xgboost"]["visibility"]
+            if (visibility == "Experimental"):
+                print("Cannot build an XGBoost model - no backend found.")
                 return False
             else:
                 return True
