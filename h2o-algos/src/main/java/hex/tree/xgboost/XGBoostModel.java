@@ -20,8 +20,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   XGBoostModelInfo model_info() { return model_info; }
 
-  XGBoostParameters get_params() { return model_info().get_params(); }
-
   public static class XGBoostParameters extends Model.Parameters {
     public enum TreeMethod {
       auto, exact, approx, hist
