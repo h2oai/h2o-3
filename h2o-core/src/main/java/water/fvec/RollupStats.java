@@ -244,10 +244,13 @@ final class RollupStats extends Iced {
       else {
         _rs.postGlobal();
       }
-      for(int i = 0; i < _fr.numCols(); ++i)
+      for(int i = 0; i < _fr.numCols(); ++i) {
+        if(_fr.anyVec().isCategorical(i) && _fr.anyVec().domain(i) == null)
+          System.out.println("haha");
         // mean & sigma not allowed on more than 2 classes; for 2 classes the assumption is that it's true/false
-        if( _fr.anyVec().isCategorical(i) && _fr.anyVec().domain(i).length > 2 )
+        if (_fr.anyVec().isCategorical(i) && _fr.anyVec().domain(i).length > 2)
           _rs.setCategorical(i);
+      }
     }
     // Just toooo common to report always.  Drowning in multi-megabyte log file writes.
     @Override public boolean logVerbose() { return false; }

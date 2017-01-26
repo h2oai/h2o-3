@@ -219,7 +219,7 @@ public class NewChunk extends Chunk {
   protected transient Mantissas _ms;   // Mantissa
   protected transient BitSet   _missing;
   protected transient Exponents _xs;   // Exponent, or if _ls==0, NA or Categorical or Rows
-  private transient int    _id[];   // Indices (row numbers) of stored values, used for sparse
+  public transient int[]    _id;   // Indices (row numbers) of stored values, used for sparse
   private transient double _ds[];   // Doubles, for inflating via doubles
   public transient byte[]   _ss;   // Bytes of appended strings, including trailing 0
   private transient int    _is[];   // _is[] index of strings - holds offsets into _ss[]. _is[i] == -1 means NA/sparse
@@ -852,6 +852,7 @@ public class NewChunk extends Chunk {
         }
       }
     }
+    
     assert cs == (_sparseLen - num_noncompressibles) : "cs = " + cs + " != " + (_sparseLen - num_noncompressibles) + ", sparsity type = " + sparsity_type;
     assert (sparsity_type == Compress.NA) == _sparseNA;
     if(sparsity_type == Compress.NA && _missing != null)
@@ -949,7 +950,7 @@ public class NewChunk extends Chunk {
       boolean isInt = true;
       _nzCnt = 0;
       _naCnt = 0;
-      for(int i = 0 ; i < _ds.length; ++i) {
+      for(int i = 0 ; i < _sparseLen; ++i) {
         isInt &= (long)_ds[i] == _ds[i];
         if(Double.isNaN(_ds[i])) ++_naCnt;
         else if(_ds[i] != 0) ++_nzCnt;
@@ -1399,6 +1400,8 @@ public class NewChunk extends Chunk {
       if(idx >= 0)i = idx;
       else cancel_sparse(); // for now don't bother setting the sparse value
     }
+    if(i >= _sparseLen)
+      System.out.println("haha");
     assert i < _sparseLen;
     _ds[i] = d;
     _naCnt = -1;

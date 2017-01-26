@@ -19,7 +19,9 @@ public class NewChunkAry extends ChunkAry<NewChunk> {
   }
   public final void addNA(int c){_cs[c].addNA();}
   public final void addNum(double d){addNum(0,d);}
-  public final void addNum(int c, double d){_cs[c].addNum(d);}
+  public final void addNum(int c, double d){
+    _cs[c].addNum(d);
+  }
   public final void addNum(long l, int x){addNum(0,l,x);}
   public final void addNum(int c, long l, int x){_cs[c].addNum(l,x);}
   public final void addInteger(long l){addNum(0,l,0);}

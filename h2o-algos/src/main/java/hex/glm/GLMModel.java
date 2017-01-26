@@ -310,7 +310,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       switch(_family) {
         case gaussian:
           return 1;
-        case quasi_binomial:
+//        case quasi_binomial:
         case binomial:
         case multinomial:
           return mu * (1 - mu);
@@ -445,7 +445,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
     // supported families
     public enum Family {
-      gaussian(Link.identity), binomial(Link.logit), quasi_binomial(Link.logit),poisson(Link.log),
+      gaussian(Link.identity), binomial(Link.logit), /*quasi_binomial(Link.logit)*/poisson(Link.log),
       gamma(Link.inverse), multinomial(Link.multinomial), tweedie(Link.tweedie);
       public final Link defaultLink;
       Family(Link link){defaultLink = link;}

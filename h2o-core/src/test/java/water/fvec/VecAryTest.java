@@ -8,6 +8,7 @@ import water.util.ArrayUtils;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
+import java.util.Random;
 
 import static org.junit.Assert.*;
 
@@ -156,6 +157,115 @@ public class VecAryTest extends TestUtil {
     }
     vecs0.removeVecs(0,1,2).remove(); // should not be any leaks after this!
   }
+
+  @Test public  void testNewChunks(){
+    Vec v0 = TestUtil.vec(tiny_data);
+    VecAry vecs0 = new VecAry(v0).rebalance(3,true);
+    Frame fr = new MRTask(){
+      @Override public void map(ChunkAry cs, NewChunkAry ncs){
+        for(int r = 0; r < cs._len; ++r) {
+          for(int c = 0; c < cs._numCols; ++c){
+            ncs.addNum(c,10*cs.atd(r,c));
+          }
+        }
+      }
+    }.doAll(ArrayUtils.makeConst(5,Vec.T_NUM),vecs0).outputFrame();
+    VecAry vecs1 = fr.vecs();
+    VecAry.Reader r0 = vecs0.new Reader();
+    VecAry.Reader r1 = vecs1.new Reader();
+    for(long r = 0; r < vecs0.length(); ++r){
+      for(int c = 0; c < vecs0._numCols; ++c)
+      assertEquals(10*r0.at(r,c),r1.at(r,c),0);
+    }
+    vecs0.remove();
+    vecs1.remove();
+  }
+
+  @Test public  void testSet(){
+    Vec v0 = TestUtil.vec(tiny_data);
+    VecAry vecs0 = new VecAry(v0).rebalance(3,true);
+    VecAry vecs1 = new VecAry(vecs0).append(vecs0.makeZero(vecs0._numCols));
+    new MRTask(){
+      @Override public void map(ChunkAry cs){
+        int n = cs._numCols >> 1;
+        for(int r = 0; r < cs._len; ++r) {
+          for(int c = 0; c < n; ++c){
+            cs.set(r,n+c,10*cs.atd(r,c));
+          }
+        }
+      }
+    }.doAll(vecs1);
+    VecAry.Reader r0 = vecs0.new Reader();
+    VecAry.Reader r1 = vecs1.selectRange(vecs0._numCols,vecs1._numCols).new Reader();
+    for(long r = 0; r < vecs0.length(); ++r){
+      for(int c = 0; c < vecs0._numCols; ++c){
+        assertEquals("error at row " + r + ", col " + c + ": " + (10*r0.at(r,c)) + " ! = " + r1.at(r,c), 10*r0.at(r,c),r1.at(r,c),0);
+      }
+    }
+    VecAry vecs3 = vecs1.makeZero(10);
+    VecAry vecs4 = vecs1.makeZero(10);
+    // add some blocks
+    for(int i = 0; i < 15; ++i) {
+      vecs3.append(vecs1.makeZero(10));
+      vecs4.append(vecs1.makeZero(10));
+    }
+
+    Random rnd0 = new Random();
+    long seed0 = rnd0.nextLong();
+    System.out.println("seed0 = " + seed0);
+    rnd0.setSeed(seed0);
+    for(int x = 0; x < 1; x++) {
+      Random rnd = new Random();
+      long seed = rnd0.nextLong();
+      System.out.println("seed = " + seed);
+      rnd.setSeed(seed);
+      final int[] permutation = ArrayUtils.seq(0, vecs3.numCols());
+      final int n = rnd.nextInt(permutation.length);
+      for (int i = 0; i < permutation.length - 1; ++i) {
+        int j = i + rnd.nextInt(permutation.length - i);
+        int p = permutation[j];
+        permutation[j] = permutation[i];
+        permutation[i] = p;
+      }
+      System.out.println("perm: " + Arrays.toString(permutation));
+      System.out.println("n = " + n);
+      vecs4 = vecs4.select(permutation);
+      new MRTask() {
+        @Override
+        public void map(ChunkAry cs) {
+          for (int r = 0; r < cs._len; ++r) {
+            for (int c = 0; c < n; ++c) {
+              cs.set(r, c, 1000 * (r + cs._start) + c);
+            }
+          }
+        }
+      }.doAll(vecs4);
+      new MRTask() {
+        @Override
+        public void map(ChunkAry cs) {
+          for (int r = 0; r < cs._len; ++r) {
+            for (int c = 0; c < n; ++c) {
+              cs.set(r, permutation[c], 1000 * (r + cs._start) + c);
+            }
+          }
+        }
+      }.doAll(vecs3);
+      VecAry.Reader r3 = vecs3.new Reader();
+      VecAry.Reader r4 = vecs4.new Reader();
+      for (long r = 0; r < vecs0.length(); ++r) {
+        for (int c = 0; c < n; ++c) {
+          if(n == 157 && r == 3 && c == 56)
+            System.out.println("haha");
+          assertEquals(1000 * r + c, r3.at(r, permutation[c]), 0);
+          assertEquals(1000 * r + c, r4.at(r, c), 0);
+        }
+      }
+    }
+    vecs1.remove();
+    vecs3.remove();
+    vecs4.remove();
+  }
+
   @Test
   public void testAppend() {
     Vec v0 = TestUtil.vec(tiny_data);

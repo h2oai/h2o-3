@@ -819,6 +819,8 @@ public final class VecAry extends Iced<VecAry> {
 
   public double at(long l, int c) {
     if (_colFilter != null) c = _colFilter[c];
+    if(c < _blockOffset[1]) return fetchVec(0).at(l,c);
+    if(c < _blockOffset[2]) return fetchVec(1).at(l,c-_blockOffset[1]);
     int vecId = getBlockId(c);
     int off = c - _blockOffset[vecId];
     return fetchVec(vecId).at(l, off);
@@ -830,6 +832,8 @@ public final class VecAry extends Iced<VecAry> {
 
   public long at8(long l, int c) {
     if (_colFilter != null) c = _colFilter[c];
+    if(c < _blockOffset[1]) return fetchVec(0).at8(l,c);
+    if(c < _blockOffset[2]) return fetchVec(1).at8(l,c-_blockOffset[1]);
     int vecId = getBlockId(c);
     int off = c - _blockOffset[vecId];
     return fetchVec(vecId).at8(l, off);
@@ -900,7 +904,11 @@ public final class VecAry extends Iced<VecAry> {
   public VecAry makeCopy(String [][] domains) {
     if (isEmpty()) return new VecAry();
     Vec v0 = fetchVec(0);
-    final Vec v1 = new Vec(v0.group().addVec(), v0._rowLayout, domains, types());
+    byte [] types = types();
+    for(int i = 0; i < types.length; ++i)
+      if((domains == null || domains[i] == null) && types[i] == Vec.T_CAT)
+        types[i] = Vec.T_NUM;
+    final Vec v1 = new Vec(v0.group().addVec(), v0._rowLayout, domains, types);
     new MRTask() {
       @Override
       public void map(ChunkAry c) {

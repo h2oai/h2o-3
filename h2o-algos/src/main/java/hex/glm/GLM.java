@@ -368,8 +368,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         case gaussian:
 //          if (_nclass != 1) error("_family", H2O.technote(2, "Gaussian requires the response to be numeric."));
           break;
+//        case quasi_binomial:
+//          if (_nclass != 1) error("_family", H2O.technote(2, "Quasi_binomial requires the response to be numeric."));
+//          break;
         default:
-          error("_family", "Invalid distribution: " + _parms._distribution);
+          error("_family", "Invalid distribution: " + _parms._family);
       }
     }
     if (expensive) {

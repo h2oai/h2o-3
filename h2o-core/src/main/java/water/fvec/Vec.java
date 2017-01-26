@@ -490,12 +490,14 @@ public class Vec extends Keyed<Vec> {
     final int nchunks = v0.nChunks();
     new MRTask() {              // Body of all zero chunks
       @Override protected void setupLocal() {
+        final long [] espc = v0.espc();
         for( int i=0; i<nchunks; i++ ) {
           if(v0.isHomedLocally(i)) {
+            int len = (int)(espc[i+1] - espc[i]);
             Key k = v0.newChunkKey(i);
             Chunk[] cs = new Chunk[d.length];
             for(int j = 0; j < cs.length; ++j)
-              cs[j] = new C0DChunk(d[j],0);
+              cs[j] = new C0DChunk(d[j],len);
             if (k.home()) DKV.put(k, new DBlock.MultiChunkBlock(cs), _fs);
           }
         }
@@ -740,6 +742,8 @@ public class Vec extends Keyed<Vec> {
 
   public Futures removeCols(Futures fs, final int... ids){
     assert numCols() >= 1;
+    if(DKV.get(_key) == null) // already removed
+      return fs;
     RemoveColsFromRollupsTsk t = new RemoveColsFromRollupsTsk(numCols(),ids);
     t.invoke(rollupStatsKey());
     if(t._removed)

@@ -17,6 +17,8 @@ import water.fvec.*;
 import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.util.ArrayUtils;
+import water.util.Log;
+
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
@@ -33,17 +35,22 @@ public class GLMTest  extends TestUtil {
     // standard predictions
     Frame fr2 = new Frame(fr);
     Frame preds = Scope.track(m.score(fr2));
+    Log.info("adapting");
     m.adaptTestForTrain(fr2,true,false);
+    Log.info("adapting done, removing vecs");
     fr2.removeVecs(fr2.numCols()-1); // removeVecs response
+    Log.info("removing vecs done");
     int p = m._output._dinfo._cats + m._output._dinfo._nums;
     int p2 = fr2.numCols() - (m._output._dinfo.hasWeights()?1:0)- (m._output._dinfo.hasOffset()?1:0);
     assert p == p2: p + " != " + p2;
     fr2.add(preds.names(),preds.vecs());
     // test score0
+    Log.info("testing score");
     new TestScore0(m,m._output._dinfo.hasWeights(),m._output._dinfo.hasOffset()).doAll(fr2);
     // test pojo
     if((!m._output._dinfo.hasWeights() && !m._output._dinfo.hasOffset()))
       Assert.assertTrue(m.testJavaScoring(fr,preds,1e-15));
+    Log.info("all done");
     Scope.exit();
   }
 
@@ -1071,6 +1078,7 @@ public class GLMTest  extends TestUtil {
     String[] ignoredCols = new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek", "DepTime", "ArrTime", "IsDepDelayed_REC"};
     try {
       Scope.enter();
+      System.out.println("starting model1");
       GLMParameters params = new GLMParameters(Family.gaussian);
       params._response_column = "IsDepDelayed";
       params._ignored_columns = ignoredCols;
@@ -1080,7 +1088,9 @@ public class GLMTest  extends TestUtil {
       params._standardize = false;
       params._use_all_factor_levels = false;
       model1 = new GLM(params).trainModel().get();
+      Log.info("model1 done");
       testScoring(model1,fr);
+      Log.info("test scoring of model1 done");
       Frame score1 = model1.score(fr);
       ModelMetricsRegressionGLM mm = (ModelMetricsRegressionGLM) ModelMetrics.getFromDKV(model1, fr);
       Assert.assertEquals(((ModelMetricsRegressionGLM) model1._output._training_metrics)._resDev, mm._resDev, 1e-4);
@@ -1091,8 +1101,11 @@ public class GLMTest  extends TestUtil {
       // Build a POJO, validate same results
       params._train = frMM._key;
       params._ignored_columns = new String[]{"X"};
+      System.out.println("starting model 2");
       model2 = new GLM( params).trainModel().get();      HashMap<String, Double> coefs1 = model1.coefficients();
+      Log.info("model2 done");
       testScoring(model2,frMM);
+      Log.info("test scoring of model2 done");
       HashMap<String, Double> coefs2 = model2.coefficients();
       boolean failed = false;
       // compare against each other
@@ -1117,11 +1130,13 @@ public class GLMTest  extends TestUtil {
       // test the gram
       DataInfo dinfo = new DataInfo(frMM, null, 1, true, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false,  null, null, null);
       GLMIterationTask glmt = new GLMIterationTask(null, dinfo, new GLMWeightsFun(params), null).doAll(dinfo._adaptedFrame);
+      VecAry.Reader g_reader = frG.vecs().new Reader();
+      VecAry.Reader xy_reader = xy.new Reader();
       for(int i = 0; i < glmt._xy.length; ++i) {
         for(int j = 0; j <= i; ++j ) {
-          assertEquals(frG.vec(j).at(i), glmt._gram.get(i, j), 1e-5);
+          assertEquals(g_reader.at(i,j), glmt._gram.get(i, j), 1e-5);
         }
-        assertEquals(xy.at(i), glmt._xy[i], 1e-5);
+        assertEquals(xy_reader.at(i), glmt._xy[i], 1e-5);
       }
       xy.remove();
       params = (GLMParameters) params.clone();
@@ -1765,7 +1780,7 @@ public class GLMTest  extends TestUtil {
       Frame tfr = null;
       Frame res = null;
       Frame preds = null;
-      GLMModel gbm = null;
+      GLMModel glm = null;
 
       try {
         tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
@@ -1782,23 +1797,23 @@ public class GLMTest  extends TestUtil {
         parms._response_column = resp;
         parms._family = fam;
 
-        gbm = new GLM(parms).trainModel().get();
-        preds = gbm.score(tfr);
+        glm = new GLM(parms).trainModel().get();
+        preds = glm.score(tfr);
 
-        res = gbm.computeDeviances(tfr,preds,"myDeviances");
+        res = glm.computeDeviances(tfr,preds,"myDeviances");
         double meanDeviances = res.anyVec().mean();
-        if (gbm._output.nclasses()==2)
-          Assert.assertEquals(meanDeviances,((ModelMetricsBinomial) gbm._output._training_metrics)._logloss,1e-6*Math.abs(meanDeviances));
-        else if (gbm._output.nclasses()>2)
-          Assert.assertEquals(meanDeviances,((ModelMetricsMultinomial) gbm._output._training_metrics)._logloss,1e-6*Math.abs(meanDeviances));
+        if (glm._output.nclasses()==2)
+          Assert.assertEquals(meanDeviances,((ModelMetricsBinomial) glm._output._training_metrics)._logloss,1e-6*Math.abs(meanDeviances));
+        else if (glm._output.nclasses()>2)
+          Assert.assertEquals(meanDeviances,((ModelMetricsMultinomial) glm._output._training_metrics)._logloss,1e-6*Math.abs(meanDeviances));
         else
-          Assert.assertEquals(meanDeviances,((ModelMetricsRegression) gbm._output._training_metrics)._mean_residual_deviance,1e-6*Math.abs(meanDeviances));
+          Assert.assertEquals(meanDeviances,((ModelMetricsRegression) glm._output._training_metrics)._mean_residual_deviance,1e-6*Math.abs(meanDeviances));
 
       } finally {
         if (tfr != null) tfr.delete();
         if (res != null) res.delete();
         if (preds != null) preds.delete();
-        if (gbm != null) gbm.delete();
+        if (glm != null) glm.delete();
       }
     }
   }

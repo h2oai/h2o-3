@@ -30,7 +30,11 @@ public abstract class DBlock extends Iced<DBlock> {
     @Override
     public Chunk getColChunk(int c) {return _cs[c];}
 
-    public DBlock setChunk(int i, Chunk c){_cs[i] = c; return this;}
+    public DBlock setChunk(int i, Chunk c){
+      if(i >= _cs.length)
+        System.out.println("haha");
+      _cs[i] = c; return this;
+    }
     @Override
     public ChunkAry chunkAry(VecAry v, int cidx) {return new ChunkAry(v,cidx,_cs);}
 

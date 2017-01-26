@@ -1630,14 +1630,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       // Compare predictions, counting mis-predicts
       int totalMiss = 0;
       int miss = 0;
+      VecAry.Reader dreader =  dvecs.new Reader();
+      VecAry.Reader preader =  pvecs.new Reader();
       for (int row=0; row<fr.numRows(); row++) { // For all rows, single-threaded
 
         // Native Java API
         for (int col = 0; col < features.length; col++) // Build feature set
-          features[col] = dvecs.at(row,col);
+          features[col] = dreader.at(row,col);
         genmodel.score0(features, predictions);            // POJO predictions
         for (int col = 0; col < pvecs._numCols; col++) { // Compare predictions
-          double d = pvecs.at(row,col);                  // Load internal scoring predictions
+          double d = preader.at(row,col);                  // Load internal scoring predictions
           if (col == 0 && omap != null) d = omap[(int) d];  // map categorical response to scoring domain
           if (!MathUtils.compare(predictions[col], d, 1e-15, rel_epsilon)) {
             if (miss++ < 10)
@@ -1653,7 +1655,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       for( int row=0; row<fr.numRows(); row++ ) { // For all rows, single-threaded
         if (genmodel.getModelCategory() == ModelCategory.AutoEncoder) continue;
         for (int col = 0; col < features.length; col++) {
-          double val = dvecs.at(row,col);
+          double val = dreader.at(row,col);
           rowData.put(
                   genmodel._names[col],
                   genmodel._domains[col] == null ? (Double) val
@@ -1665,7 +1667,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         try { p=epmw.predict(rowData); }
         catch (PredictException e) { continue; }
         for (int col = 0; col < pvecs._numCols; col++) { // Compare predictions
-          double d = pvecs.at(row,col); // Load internal scoring predictions
+          double d = preader.at(row,col); // Load internal scoring predictions
           if (col == 0 && omap != null) d = omap[(int) d]; // map categorical response to scoring domain
           double d2 = Double.NaN;
           switch( genmodel.getModelCategory()) {

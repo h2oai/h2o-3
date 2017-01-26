@@ -73,23 +73,28 @@ public class ChunkAry<C extends Chunk> extends Iced {
   public Futures close(Futures fs){
     if(_modified_cols == null)return fs;
     Vec[] vecs = _vec.vecs();
-    int lb = Integer.MAX_VALUE, ub = Integer.MIN_VALUE;
-    int vecId = -1;
-    DBlock db = null; Key k = null;
+    int lb = 0, ub = _vec._blockOffset[1];
+    int vecId = 0;
+    Key k = vecs[0].chunkKey(_cidx);
+    DBlock db = DKV.getGet(k);
     for(int i = 0; i < _modified_cols.length; i++) {
       if(!_modified_cols[i])continue;
       int j = _vec.colFilter(i+_minModifiedCol);
-      while(j < ub){
-        lb = ub;
-        ub += vecs[++vecId].numCols();
-      }
-      if(j < lb){
-        if(vecId != -1) DKV.put(k,db);
-        vecId = _vec.getBlockId(j);
+      if((j >= ub || j < lb)){
+        if(vecId != -1)DKV.put(k,db);
+        while(j >= ub){
+          vecId++;
+          lb = ub;
+          ub = _vec._blockOffset[vecId+1];
+        }
+        if(j < lb){
+          if(vecId != -1) DKV.put(k,db);
+          vecId = _vec.getBlockId(j);
+          lb = _vec._blockOffset[vecId];
+          ub = _vec._blockOffset[vecId+1];
+        }
         k = vecs[vecId].chunkKey(_cidx);
         db = DKV.getGet(k);
-        lb = _vec._blockOffset[vecId];
-        ub = _vec._blockOffset[vecId];
       }
       Chunk chk = _cs[i+_minModifiedCol].compress();
       db = db.setChunk(j-lb,chk);
@@ -172,10 +177,11 @@ public class ChunkAry<C extends Chunk> extends Iced {
 
   private boolean setModified(int col){
     if(_modified_cols == null) {
-      int x = col <= 16?0:col;
-      _modified_cols = new boolean[Math.min(8,_numCols-x)];
-      _modified_cols[x] = true;
+      int x = col < 16?0:col;
+      _modified_cols = new boolean[Math.min(16,_numCols-x)];
+      _modified_cols[col - x] = true;
       _minModifiedCol = x;
+      assert (_modified_cols.length + _minModifiedCol) <= _numCols;
       return true;
     }
     if(col < _minModifiedCol){
@@ -187,16 +193,18 @@ public class ChunkAry<C extends Chunk> extends Iced {
         int x = (col >> 1);
         diff = _minModifiedCol - x;
         col -= x;
+        _minModifiedCol = x;
       }
       boolean [] modified_cols = new boolean[_modified_cols.length+diff];
       System.arraycopy(_modified_cols,0,modified_cols,diff,_modified_cols.length);
       _modified_cols = modified_cols;
       _modified_cols[col] = true;
+      assert (_modified_cols.length + _minModifiedCol) <= _numCols:" newlen = " + (_modified_cols.length +  _minModifiedCol) + ", maxlen = " + _numCols + ", diff = " + diff;
       return true;
     } else {
       col -= _minModifiedCol;
       if(_modified_cols.length <= col)
-        _modified_cols = Arrays.copyOf(_modified_cols,Math.min(_numCols,Math.max(col+4,2*_modified_cols.length)));
+        _modified_cols = Arrays.copyOf(_modified_cols,Math.min(_numCols-_minModifiedCol,Math.max(col+4,2*_modified_cols.length)));
       if(_modified_cols[col])return false;
       _modified_cols[col] = true;
       return false;
