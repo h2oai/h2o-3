@@ -83,7 +83,7 @@ public class AstStratifiedSplit extends AstPrimitive {
         DKV.put(idxFound);
 
         // calculate target number of this class to go to test
-        int tnum = (int) Math.ceil(idxFound.anyVec().length() * testFrac);
+        int tnum = (int) Math.max(Math.round(idxFound.anyVec().length() * testFrac), 1);
 
         // randomly select the target number of indexes
         int generated = 0;
@@ -91,8 +91,8 @@ public class AstStratifiedSplit extends AstPrimitive {
         HashSet<Long> usedIdxs = new HashSet<Long>();
         while (generated < tnum) {
           long i = (long) (getRNG(count+seed).nextDouble() * idxFound.anyVec().length());
-          if (usedIdxs.contains(idxFound.vec(0).at8(i))) { count+=1;continue; }
-          usedIdxs.add(idxFound.vec(0).at8(i));
+          if (usedIdxs.contains(idxFound.vec(0).at8(i) - 1)) { count+=1;continue; }
+          usedIdxs.add(idxFound.vec(0).at8(i) - 1);
           generated += 1;
           count += 1;
         }
