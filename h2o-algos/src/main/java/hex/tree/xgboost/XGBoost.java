@@ -1,13 +1,16 @@
 package hex.tree.xgboost;
 
+import hex.DataInfo;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.ScoreKeeper;
+import hex.glm.GLMTask;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import water.H2O;
 import water.Key;
+import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -233,6 +236,38 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       error("_col_sample_rate", "col_sample_rate must be between 0 and 1");
   }
 
+  static DataInfo makeDataInfo(Frame train, Frame valid, XGBoostModel.XGBoostParameters parms, int nClasses) {
+    DataInfo dinfo = new DataInfo(
+            train,
+            valid,
+            1, //nResponses
+            true, //all factor levels
+            DataInfo.TransformType.NONE, //do not standardize
+            DataInfo.TransformType.NONE, //do not standardize response
+            parms._missing_values_handling == XGBoostModel.XGBoostParameters.MissingValuesHandling.Skip, //whether to skip missing
+            false, // do not replace NAs in numeric cols with mean
+            true,  // always add a bucket for missing values
+            parms._weights_column != null, // observation weights
+            parms._offset_column != null,
+            parms._fold_column != null
+    );
+    // Checks and adjustments:
+    // 1) observation weights (adjust mean/sigmas for predictors and response)
+    // 2) NAs (check that there's enough rows left)
+    GLMTask.YMUTask ymt = new GLMTask.YMUTask(dinfo, nClasses,nClasses == 1, parms._missing_values_handling == XGBoostModel.XGBoostParameters.MissingValuesHandling.Skip, true).doAll(dinfo._adaptedFrame);
+    if (ymt.wsum() == 0 && parms._missing_values_handling == XGBoostModel.XGBoostParameters.MissingValuesHandling.Skip)
+      throw new H2OIllegalArgumentException("No rows left in the dataset after filtering out rows with missing values. Ignore columns with many NAs or set missing_values_handling to 'MeanImputation'.");
+    if (parms._weights_column != null && parms._offset_column != null) {
+      Log.warn("Combination of offset and weights can lead to slight differences because Rollupstats aren't weighted - need to re-calculate weighted mean/sigma of the response including offset terms.");
+    }
+    if (parms._weights_column != null && parms._offset_column == null /*FIXME: offset not yet implemented*/) {
+      dinfo.updateWeightedSigmaAndMean(ymt.predictorSDs(), ymt.predictorMeans());
+      if (nClasses == 1)
+        dinfo.updateWeightedSigmaAndMeanForResponse(ymt.responseSDs(), ymt.responseMeans());
+    }
+    return dinfo;
+  }
+
   // ----------------------
   private class XGBoostDriver extends Driver {
     @Override
@@ -276,25 +311,26 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         else
           watches.put("train", trainMat);
 
-        Booster booster = ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, model.createParams(), 0, watches, null, null);
+        model.model_info()._booster = ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, model.createParams(), 0, watches, null, null);
         for( int tid=0; tid< _parms._ntrees; tid++) {
-          booster.update(trainMat, tid);
+          model.model_info()._booster.update(trainMat, tid);
           // Optional: for convenience
           {
             model.update(_job);
-            model._output._boosterBytes = booster.toByteArray();
+            model.model_info().nativeToJava();
           }
           model._output._ntrees++;
           model._output._scored_train = ArrayUtils.copyAndFillOf(model._output._scored_train, model._output._ntrees+1, new ScoreKeeper());
           model._output._scored_valid = model._output._scored_valid != null ? ArrayUtils.copyAndFillOf(model._output._scored_valid, model._output._ntrees+1, new ScoreKeeper()) : null;
           model._output._training_time_ms = ArrayUtils.copyAndFillOf(model._output._training_time_ms, model._output._ntrees+1, System.currentTimeMillis());
-          doScoring(model, booster, trainMat, validMat, false);
+          doScoring(model, model.model_info()._booster, trainMat, validMat, false);
         }
-        doScoring(model, booster, trainMat, validMat, true);
-        model._output._boosterBytes = booster.toByteArray();
+        doScoring(model, model.model_info()._booster, trainMat, validMat, true);
+        model.model_info().nativeToJava();
       } catch (XGBoostError xgBoostError) {
         xgBoostError.printStackTrace();
       }
+      model._output._boosterBytes = model.model_info()._boosterBytes;
       model.unlock(_job);
     }
 
