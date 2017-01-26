@@ -45,6 +45,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
    */
   public static DMatrix convertFrametoDMatrix(Frame f, String response, String weight, String fold, String[] featureMap) throws XGBoostError {
     // one-hot encoding
+
+    // FIXME - use DataInfo for speedup
+
     FrameUtils.CategoricalOneHotEncoder enc = new FrameUtils.CategoricalOneHotEncoder(f, new String[]{response, weight, fold});
     Frame encoded = enc.exec().get();
     long denseLen = encoded.numRows()*(encoded.numCols() - 1 /*response*/);
@@ -123,7 +126,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     DMatrix trainMat = new DMatrix(colHeaders, rowIndex, data, DMatrix.SparseType.CSC, 0);
     trainMat.setLabel(resp);
     trainMat.setWeight(weights);
-//    trainMat.setGroup(null); //fold //FIXME
+//    trainMat.setGroup(null); //fold //FIXME - only needed if CV is internally done in XGBoost
     encoded.remove();
     return trainMat;
   }
@@ -235,6 +238,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       error("_learn_rate", "learn_rate must be between 0 and 1");
     if( !(0. < _parms._col_sample_rate && _parms._col_sample_rate <= 1.0) )
       error("_col_sample_rate", "col_sample_rate must be between 0 and 1");
+    if (_parms._grow_policy== XGBoostModel.XGBoostParameters.GrowPolicy.lossguide && _parms._tree_method!= XGBoostModel.XGBoostParameters.TreeMethod.hist)
+      error("_grow_policy", "must use tree_method=hist for grow_policy=lossguide");
   }
 
   static DataInfo makeDataInfo(Frame train, Frame valid, XGBoostModel.XGBoostParameters parms, int nClasses) {
@@ -378,7 +383,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         _timeLastScoreEnd = System.currentTimeMillis();
         model.computeVarImp(booster.getFeatureScore("featureMap.txt"));
         model.update(_job);
-        Log.info(model);
+//        Log.info(model);
         scored = true;
       }
       return scored;
