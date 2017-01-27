@@ -97,12 +97,21 @@ def stackedensemble_guassian_test():
 
     stack.train(x=x, y=y, training_frame=train, validation_frame=test)  # also test that validation_frame is working
 
-    # check that prediction works
+    # Check that prediction works
+    pred = stack.predict(test_data= test)
+    assert pred.nrow == test.nrow, "expected " + str(pred.nrow) + " to be equal to " + str(test.nrow)
+    assert pred.ncol == 1, "expected " + str(pred.ncol) + " to be equal to 1 but it was equal to " + str(pred.ncol)
+
+    # Does predict() have ugly side effects?
     pred = stack.predict(test_data= test)
     assert pred.nrow == test.nrow, "expected " + str(pred.nrow) + " to be equal to " + str(test.nrow)
     assert pred.ncol == 1, "expected " + str(pred.ncol) + " to be equal to 1 but it was equal to " + str(pred.ncol)
 
     # Evaluate ensemble performance
+    perf_stack_train = stack.model_performance()
+    perf_stack_test = stack.model_performance(test_data=test)
+
+    # Does performance() have ugly side effects?
     perf_stack_train = stack.model_performance()
     perf_stack_test = stack.model_performance(test_data=test)
 

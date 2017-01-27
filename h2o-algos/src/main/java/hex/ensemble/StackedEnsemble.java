@@ -6,9 +6,7 @@ import hex.ModelCategory;
 import hex.StackedEnsembleModel;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
-import water.DKV;
-import water.Job;
-import water.Key;
+import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
@@ -85,7 +83,19 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       levelOneFrame.add(_model.responseColumn, _model.commonTrainingFrame.vec(_model.responseColumn));
 
       // TODO: what if we're running multiple in parallel and have a name collision?
-      levelOneFrame.delete_and_lock(_job);  // delete preexisting and write lock
+
+      Frame old = DKV.getGet(levelOneFrame._key);
+      if (old != null && old instanceof Frame) {
+        Frame oldFrame = (Frame)old;
+        // Remove ALL the columns so we don't delete them in remove_impl.  Their
+        // lifetime is controlled by their model.
+        oldFrame.removeAll();
+        oldFrame.write_lock(_job);
+        oldFrame.update(_job);
+        oldFrame.unlock(_job);
+      }
+
+      levelOneFrame.delete_and_lock(_job);
       levelOneFrame.unlock(_job);
       Log.info("Finished creating \"level one\" frame for stacking: " + levelOneFrame.toString());
       return levelOneFrame;
