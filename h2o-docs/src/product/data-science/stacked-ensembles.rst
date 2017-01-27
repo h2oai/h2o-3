@@ -59,9 +59,9 @@ Defining an H2O Stacked Ensemble Model
 
 -  **base_models**: Specify a list of model IDs that can be stacked together. Models must have been cross-validated using ``nfolds`` > 1, they all must use the same cross-validation folds and ``keep_cross_validation_folds`` must be set to True.  
 
-Regarding the base models: One way to do guarantee identical folds across base models is to set **fold_assignment** = "Modulo" in all the base models.  Another way is to use **fold_assignment** = "Random" (the default) and then use same exact seed across the base learners.  The last way is to manually specify a fold column in the training data across the base learners.
+Regarding the base models: One way to guarantee identical folds across base models is to set **fold_assignment** = "Modulo" in all the base models.  Currently, using base models that were all trained with **fold_assignment** = "Modulo" is a strict requirement, but this will be `relaxed <https://0xdata.atlassian.net/browse/PUBDEV-3973>`__ in the next release to allow for identical user-specified folds or random folds that were generated with the same seed.
 
-In a `future release <https://0xdata.atlassian.net/browse/PUBDEV-3743>`__, there will be an additional **metalearner** parameter which allows for the user to specify the metalearning algorithm used.  Currently, the metalearner is fixed as a default H2O GLM with non-negative weights.
+Also in a `future release <https://0xdata.atlassian.net/browse/PUBDEV-3743>`__, there will be an additional **metalearner** parameter which allows for the user to specify the metalearning algorithm used.  Currently, the metalearner is fixed as a default H2O GLM with non-negative weights.
 
 You can follow the progress of H2O's Stacked Ensemble development `here <https://0xdata.atlassian.net/issues/?filter=19301>`__.
 
