@@ -559,8 +559,6 @@ def get_extra_params_for(algo):
         return "x, y, training_frame"
     elif algo == "svd":
         return "training_frame, x, destination_key"
-    #elif algo == "stackedensemble":
-    #    return "x, y, training_frame"
     elif algo == "word2vec":
         return "training_frame"
     else:
@@ -579,14 +577,6 @@ def help_extra_params_for(algo):
         return """#' @param x A vector containing the \code{character} names of the predictors in the model.
             #' @param destination_key (Optional) The unique hex key assigned to the resulting model.
             #'                        Automatically generated if none is provided."""
-    #elif algo == "stackedensemble":
-    #    return """#' @param x A vector containing the names or indices of the predictor variables to use in building the model.
-            #'        If x is missing,then all columns except y are used.
-            #' @param y The name of the response variable in the model.If the data does not contain a header, this is the column index
-            #'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
-            #'        categorical variable)."""
-            #' @param model_id Destination id for this model; auto-generated if not specified.
-            #' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters)."""
     elif algo == "word2vec":
         return None
     else:
