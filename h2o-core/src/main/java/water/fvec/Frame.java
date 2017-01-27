@@ -109,7 +109,9 @@ public class Frame extends Lockable<Frame> {
 
     // Require all Vecs already be installed in the K/V store
     for( Vec vec : vecs ) DKV.prefetch(vec._key);
-    for( Vec vec : vecs ) assert DKV.get(vec._key) != null : " null vec: "+vec._key;
+    for( Vec vec : vecs ) {
+      assert DKV.get(vec._key) != null : " null vec: "+vec._key;
+    }
 
     // Always require names
     if( names==null ) {         // Make default names, all known to be unique
@@ -817,6 +819,13 @@ public class Frame extends Lockable<Frame> {
     _names = ArrayUtils.remove(_names, idx);
     _keys = ArrayUtils.remove(_keys, idx);
     return v;
+  }
+
+  /**
+   * Remove all the vecs from frame.
+   */
+  public Vec[] removeAll() {
+    return remove(0, _names.length);
   }
 
   /** Remove given interval of columns from frame.  Motivated by R intervals.

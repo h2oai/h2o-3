@@ -85,6 +85,7 @@ stackedensemble.gaussian.test <- function() {
   print(perf_xrf_test)
   
   
+  print("StackedEnsemble 1 of 2")
   # Train a stacked ensemble using the GBM and GLM above
   stack <- h2o.stackedEnsemble(x = x, 
                                y = y, 
@@ -99,10 +100,38 @@ stackedensemble.gaussian.test <- function() {
   expect_equal(nrow(pred), nrow(test))
   expect_equal(ncol(pred), 1)
   
+  # And again
+  pred <- h2o.predict(stack, newdata = test)
+  expect_equal(nrow(pred), nrow(test))
+  expect_equal(ncol(pred), 1)
+  
   # Eval ensemble perf
   perf_stack_train <- h2o.performance(stack)
   perf_stack_test <- h2o.performance(stack, newdata = test)
   
+  # And again
+  perf_stack_train <- h2o.performance(stack)
+  perf_stack_test <- h2o.performance(stack, newdata = test)
+  
+  # And again:
+  print("StackedEnsemble 2 of 2")
+  stack <- h2o.stackedEnsemble(x = x, 
+                               y = y, 
+                               training_frame = train,
+                               validation_frame = test,  #also test that validation_frame is working
+                               model_id = "my_ensemble_gaussian", 
+                               selection_strategy = "choose_all",
+                               base_models = list(my_gbm@model_id, my_rf@model_id, my_xrf@model_id))
+  
+  pred <- h2o.predict(stack, newdata = test)
+  expect_equal(nrow(pred), nrow(test))
+  expect_equal(ncol(pred), 1)
+  
+  perf_stack_train <- h2o.performance(stack)
+  perf_stack_test <- h2o.performance(stack, newdata = test)
+  
+
+
   # Training RMSE for each base learner
   baselearner_best_rmse_train <- min(h2o.rmse(perf_gbm_train), h2o.rmse(perf_rf_train), h2o.rmse(perf_xrf_train))
   stack_rmse_train <- h2o.rmse(perf_stack_train)
