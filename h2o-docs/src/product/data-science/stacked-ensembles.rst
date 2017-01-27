@@ -8,6 +8,8 @@ Ensemble machine learning methods use multiple learning algorithms to obtain bet
 
 H2O's Stacked Ensemble method is supervised ensemble machine learning algorithm that finds the optimal combination of a collection of prediction algorithms using a process called stacking.  This method currently supports regression and binary classification, and `multiclass support <https://0xdata.atlassian.net/browse/PUBDEV-3960>`__ is planned for a future release.
 
+Native support for ensembles of H2O algorithms was added into core H2O in version 3.10.3.1.  A separate implementation, the **h2oEnsemble** R package, is also still `available <https://github.com/h2oai/h2o-3/tree/master/h2o-r/ensemble>`__, however for new projects we recommend using the native H2O version, documented below.
+
 
 Stacking / Super Learning
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -41,7 +43,6 @@ The steps below describe the individual tasks involved in training and testing a
 
    a. To generate ensemble predictions, first generate predictions from the base learners.
    b. Feed those predictions into the metalearner to generate the ensemble prediction.
-
 
 
 
@@ -321,14 +322,51 @@ Example
 
 
 
+FAQ
+~~~
+
+-  **How do I save ensemble models?**
+
+  Currently, there is no support for saving ensembles, but this will be addressed in the next release.  `Binary save/load <https://0xdata.atlassian.net/browse/PUBDEV-3970>`__ as as well as `MOJO support <https://0xdata.atlassian.net/browse/PUBDEV-3877>`__ is planned for Stacked Ensemble models.  (More accurately, you can currently save an ensemble as a binary model, but there may be issues when loading it back in.)
+
+
+-  **Will an stacked ensemble always perform better than a single model?**
+  
+  Hopefully, but it's not always the case.  That's why it always a good idea to check the performance of your stacked ensemble and compare it against the performance of the individual base learners.  
+
+
+-  **How do I improve the performance of an ensemble?**
+  
+  If you find that your ensemble is not performing better than the best base learner, then you can try a few different things.  First, look to see if there are base learners that are performing much worse than the other base learners (for example, a GLM).  If so, remove them from the ensemble and try again.  Second, you can try adding more models to the ensemble, especially models that add diversity to your set of base models.  Once `custom metalearner support <https://0xdata.atlassian.net/browse/PUBDEV-3743>`__ is added, you can try out different metalearners as well.
+
+
+-  **How does the algorithm handle missing values during training?**
+
+  This is handled by the base algorithms of the ensemble.  See the documentation for those algorithms to find out more information.
+
+-  **How does the algorithm handle missing values during testing?**
+
+  This is handled by the base algorithms of the ensemble.  See the documentation for those algorithms to find out more information.
+
+-  **What happens if the response has missing values?**
+
+  No errors will occur, but nothing will be learned from rows containing missing values in the response column.
+
+-  **What happens when you try to predict on a categorical level not seen during training?**
+
+  This is handled by the base algorithms of the ensemble.  See the documentation for those algorithms to find out more information.
+
+-  **How does the algorithm handle highly imbalanced data in a response
+   column?**
+
+  In the base learners, specify ``balance_classes``, ``class_sampling_factors`` and ``max_after_balance_size`` to control over/under-sampling.
+
 
 
 Additional Information
 ~~~~~~~~~~~~~~~~~~~~~~
 
-- An `Ensemble slidedeck <https://github.com/h2oai/h2o-tutorials/blob/master/tutorials/ensembles-stacking/H2O_World_2015_Ensembles.pdf>`__ from H2O World 2015 provides a summary of Stacked Ensembles. 
-
-- An `Ensemble Tutorial <http://learn.h2o.ai/content/tutorials/ensembles-stacking/index.html>`__ from H2O World 2015 provides information about the algorithm and the H2O implementation. 
+- An `Ensemble slidedeck <https://github.com/h2oai/h2o-meetups/blob/master/2017_01_05_H2O_Ensemble_New_Developments/h2o_ensemble_new_developments_jan2017.pdf>`__ from January 2017 provides a summary of the new Stacked Ensemble method in H2O, along with a comparison to the pre-existing **h2oEnsemble** R package. 
 
 - `Python Stacked Ensemble tests <https://github.com/h2oai/h2o-3/tree/master/h2o-py/tests/testdir_algos/stackedensemble>`__ are available in the H2O-3 GitHub repository.
 
