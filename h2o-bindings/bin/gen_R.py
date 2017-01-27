@@ -423,7 +423,8 @@ def help_example_for(algo):
         }"""
     if algo == "stackedensemble":
         return """
-        # See example R code here: http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html
+        # See example R code here: 
+        # http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html
         """        
 
 def get_extra_params_for(algo):
