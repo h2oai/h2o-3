@@ -262,7 +262,8 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
           throw new H2OIllegalArgumentException("Base models are inconsistent: they use different column lists.  Found: " + this.names + " and: " + aNames + ".");
 
         NonBlockingHashSet<String> anIgnoredColumns = new NonBlockingHashSet<>();
-        anIgnoredColumns.addAll(Arrays.asList(aModel._parms._ignored_columns));
+        if (null != aModel._parms._ignored_columns)
+          anIgnoredColumns.addAll(Arrays.asList(aModel._parms._ignored_columns));
         if (! anIgnoredColumns.equals(this.ignoredColumns))
           throw new H2OIllegalArgumentException("Base models are inconsistent: they use different ignored_column lists.  Found: " + this.ignoredColumns + " and: " + aModel._parms._ignored_columns + ".");
 
@@ -314,7 +315,8 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         this.names.addAll(Arrays.asList(aModel._output._names));
 
         this.ignoredColumns = new NonBlockingHashSet<>();
-        this.ignoredColumns.addAll(Arrays.asList(aModel._parms._ignored_columns));
+        if (null != aModel._parms._ignored_columns)
+          this.ignoredColumns.addAll(Arrays.asList(aModel._parms._ignored_columns));
 
         // If the client has set _ignored_columns for the StackedEnsemble make sure it's
         // consistent with the base_models:
