@@ -52,6 +52,9 @@ public class H2OSecurityManager {
             if (null != H2O.ARGS.internal_security_conf) {
                 this.sslSocketChannelFactory = new SSLSocketChannelFactory();
                 this.securityEnabled = true;
+                Log.info("H2O node running in encrypted mode using config file [" + H2O.ARGS.internal_security_conf + "]");
+            } else {
+                Log.info("H2O node running in unencrypted mode.");
             }
         } catch (SSLContextException e) {
             Log.err("Node initialized with SSL enabled but failed to create SSLContext. " +
