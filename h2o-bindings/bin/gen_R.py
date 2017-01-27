@@ -221,7 +221,7 @@ def help_preamble_for(algo):
         """
     if algo == "stackedensemble":
         return """
-            This function  creates a “Super Learner” (stacked ensemble) using the H2O base
+            Build a stacked ensemble (aka. Super Learner) using the H2O base
             learning algorithms specified by the user.
         """
     if algo == "deepwater":
@@ -425,12 +425,12 @@ def help_example_for(algo):
 def get_extra_params_for(algo):
     if algo == "glrm":
         return "training_frame, cols = NULL"
-    elif algo in ["deeplearning", "deepwater", "drf", "gbm", "glm", "naivebayes"]:
+    elif algo in ["deeplearning", "deepwater", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
         return "x, y, training_frame"
     elif algo == "svd":
         return "training_frame, x, destination_key"
-    elif algo == "stackedensemble":
-        return "x, y, training_frame"
+    #elif algo == "stackedensemble":
+    #    return "x, y, training_frame"
     elif algo == "word2vec":
         return "training_frame"
     else:
@@ -439,7 +439,7 @@ def get_extra_params_for(algo):
 def help_extra_params_for(algo):
     if algo == "glrm":
         return "#' @param cols (Optional) A vector containing the data columns on which k-means operates."
-    elif algo in ["deeplearning", "deepwater","drf", "gbm", "glm", "naivebayes"]:
+    elif algo in ["deeplearning", "deepwater","drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
         return """#' @param x A vector containing the names or indices of the predictor variables to use in building the model.
             #'        If x is missing,then all columns except y are used.
             #' @param y The name of the response variable in the model.If the data does not contain a header, this is the column index
@@ -449,12 +449,12 @@ def help_extra_params_for(algo):
         return """#' @param x A vector containing the \code{character} names of the predictors in the model.
             #' @param destination_key (Optional) The unique hex key assigned to the resulting model.
             #'                        Automatically generated if none is provided."""
-    elif algo == "stackedensemble":
-        return """#' @param x A vector containing the names or indices of the predictor variables to use in building the model.
+    #elif algo == "stackedensemble":
+    #    return """#' @param x A vector containing the names or indices of the predictor variables to use in building the model.
             #'        If x is missing,then all columns except y are used.
             #' @param y The name of the response variable in the model.If the data does not contain a header, this is the column index
             #'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
-            #'        categorical variable).
+            #'        categorical variable)."""
             #' @param model_id Destination id for this model; auto-generated if not specified.
             #' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters)."""
     elif algo == "word2vec":
