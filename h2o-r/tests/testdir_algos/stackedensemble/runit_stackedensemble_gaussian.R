@@ -137,7 +137,7 @@ stackedensemble.gaussian.test <- function() {
   stack_rmse_train <- h2o.rmse(perf_stack_train)
   print(sprintf("Best Base-learner Training RMSE:  %s", baselearner_best_rmse_train))
   print(sprintf("Ensemble Training RMSE:  %s", stack_rmse_train))
-  #expect_lte(stack_rmse_train, baselearner_best_rmse_train)  #Does not pass in this example, but this is ok
+  #expect_lt(stack_rmse_train, baselearner_best_rmse_train)  #Does not pass in this example, but this is ok
 
   # Check that stack perf is better (smaller) than the best (smaller) base learner perf:
   # Test RMSE for each base learner
@@ -145,7 +145,7 @@ stackedensemble.gaussian.test <- function() {
   stack_rmse_test <- h2o.rmse(perf_stack_test)
   print(sprintf("Best Base-learner Test RMSE:  %s", baselearner_best_rmse_test))
   print(sprintf("Ensemble Test RMSE:  %s", stack_rmse_test))
-  expect_lte(stack_rmse_test, baselearner_best_rmse_test)
+  expect_lt(stack_rmse_test, baselearner_best_rmse_test)
   
   # Check that passing `test` as a validation_frame
   # produces the same metrics as h2o.performance(stack, test)

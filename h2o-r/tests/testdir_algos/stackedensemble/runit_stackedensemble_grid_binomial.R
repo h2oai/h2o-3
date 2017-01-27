@@ -75,7 +75,7 @@ stackedensemble.binomial.grid.test <- function() {
   stack_auc_train <- h2o.auc(perf_stack_train)
   print(sprintf("Best Base-learner Training AUC:  %s", baselearner_best_auc_train))
   print(sprintf("Ensemble Training AUC:  %s", stack_auc_train))
-  #expect_gte(stack_auc_train, baselearner_best_auc_train)  #Does not pass in this example, but this is ok
+  #expect_gt(stack_auc_train, baselearner_best_auc_train)  #Does not pass in this example, but this is ok
 
   # Check that stack perf is better (bigger) than the best (biggest) base learner perf:
   # Test AUC for each base learner
@@ -83,7 +83,7 @@ stackedensemble.binomial.grid.test <- function() {
   stack_auc_test <- h2o.auc(perf_stack_test)
   print(sprintf("Best Base-learner Test AUC:  %s", baselearner_best_auc_test))
   print(sprintf("Ensemble Test AUC:  %s", stack_auc_test))
-  expect_gte(stack_auc_test, baselearner_best_auc_test)
+  expect_gt(stack_auc_test, baselearner_best_auc_test)
   
   # Check that passing `test` as a validation_frame
   # produces the same metrics as h2o.performance(stack, test)
