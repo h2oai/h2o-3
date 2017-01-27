@@ -57,7 +57,7 @@ Defining an H2O Stacked Ensemble Model
 
 -  **selection_strategy**: Specify the strategy for choosing which models to stack. Note that **choose_all** is currently the only selection strategy implemented. 
 
--  **base_models**: Specify a vector of model IDs that can be stacked together. Models must have been cross-validated using ``nfolds`` > 1, and they all must use the same cross-validation folds.  
+-  **base_models**: Specify a list of model IDs that can be stacked together. Models must have been cross-validated using ``nfolds`` > 1, they all must use the same cross-validation folds and ``keep_cross_validation_folds`` must be set to True.  
 
 Regarding the base models: One way to do guarantee identical folds across base models is to set **fold_assignment** = "Modulo" in all the base models.  Another way is to use **fold_assignment** = "Random" (the default) and then use same exact seed across the base learners.  The last way is to manually specify a fold column in the training data across the base learners.
 
