@@ -340,6 +340,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
         Timer kb_timer = new Timer();
         try {
+//          model.model_info()._booster.setParam("eta", effective_learning_rate(model));
           model.model_info()._booster.update(trainMat, tid);
         } catch (XGBoostError xgBoostError) {
           xgBoostError.printStackTrace();
@@ -388,6 +389,10 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       }
       return scored;
     }
+  }
+
+  private double effective_learning_rate(XGBoostModel model) {
+    return _parms._learn_rate * Math.pow(_parms._learn_rate_annealing, (model._output._ntrees-1));
   }
 
 
