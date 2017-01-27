@@ -93,7 +93,10 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     @property
     def base_models(self):
         """
-        List of models which we can stack together.  Which ones are chosen depends on the selection_strategy.
+        List of model ids which we can stack together.  Which ones are chosen depends on the selection_strategy
+        (currently, all models will be used since selection_strategy can only be set to choose_all).  Models must have
+        been cross-validated using nfolds > 1, fold_assignment equal to Modulo, and keep_cross_validation_folds must be
+        set to True
 
         Type: ``List[str]``  (default: ``[]``).
         """

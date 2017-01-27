@@ -14,8 +14,10 @@
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
 #' @param validation_frame Id of the validation data frame.
-#' @param base_models List of models which we can stack together.  Which ones are chosen depends on the selection_strategy. Defaults
-#'        to [].
+#' @param base_models List of model ids which we can stack together.  Which ones are chosen depends on the selection_strategy
+#'        (currently, all models will be used since selection_strategy can only be set to choose_all).  Models must have
+#'        been cross-validated using nfolds > 1, fold_assignment equal to Modulo, and keep_cross_validation_folds must
+#'        be set to True Defaults to [].
 #' @param selection_strategy Strategy for choosing which models to stack. Must be one of: "choose_all".
 #' @examples
 #' \donttest{
