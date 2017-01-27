@@ -66,7 +66,7 @@ public class CXIChunk extends Chunk {
       return nc;
     }
     int cnt = 0;
-    for(int off = getOff(id);(id = getId(off)) < to; off += _ridsz + _valsz) {
+    for(int off = findOffset(id);(id = getId(off)) < to; off += _ridsz + _valsz) {
       cnt++;
       assert id > prev:" id = " + id + ", prev = " + prev + ", from = " + from + ", to = " + to  + ", cnt = " + cnt;
       if(isSparseNA())
@@ -251,7 +251,7 @@ public class CXIChunk extends Chunk {
   // get id of nth (chunk-relative) stored element
   protected final int getId(int off){
     if(off == _mem.length) return _len;
-    if(off > _mem.length) throw new ArrayIndexOutOfBoundsException(off);
+    if(off > _mem.length) throw new ArrayIndexOutOfBoundsException(off + " > " + _mem.length);
     return _ridsz == 2
       ?UnsafeUtils.get2(_mem,off)&0xFFFF
       :UnsafeUtils.get4(_mem,off);

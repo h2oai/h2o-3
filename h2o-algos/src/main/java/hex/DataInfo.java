@@ -208,6 +208,7 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     _interactions=Model.InteractionPair.generatePairwiseInteractionsFromList(interactionIDs);
 
+
     // create dummy InteractionWrappedVecs and shove them onto the front
     if( _interactions!=null ) {
       _interactionVecs=new int[_interactions.length];
@@ -218,6 +219,11 @@ public class DataInfo extends Keyed<DataInfo> {
 
     _permutation = new int[train.numCols()];
     final VecAry tvecs = train.vecs();
+
+    if(offset != null)
+      _offsetId = train.find(offset);
+    if(weight != null)
+      _weightsId = train.find(weight);
 
     // Count categorical-vs-numerical
     final int n = tvecs._numCols-_responses - (offset != null?1:0) - (weight != null?1:0) - (fold != null?1:0);
@@ -396,9 +402,7 @@ public class DataInfo extends Keyed<DataInfo> {
       for (int i = 0; i < _fullCatOffsets.length; ++i)
         _fullCatOffsets[i] += i; // add for the skipped zeros.
     }
-    _offsetId = dinfo._offsetId;
-    _weightsId = dinfo._weightsId;
-    _foldId = dinfo._foldId;
+
     _valid = false;
     _interactions = null;
     ArrayList<Integer> interactionVecs = new ArrayList<>();
@@ -435,7 +439,9 @@ public class DataInfo extends Keyed<DataInfo> {
     _normMul = normMul;
     _normSub = normSub;
     _catNAFill = catModes;
-
+    _offsetId = dinfo._offsetId != -1?_adaptedFrame.find(dinfo._adaptedFrame.name(dinfo._offsetId)):-1;
+    _weightsId = dinfo._weightsId != -1?_adaptedFrame.find(dinfo._adaptedFrame.name(dinfo._weightsId)):-1;
+    _foldId = dinfo._foldId != -1?_adaptedFrame.find(dinfo._adaptedFrame.name(dinfo._weightsId)):-1;
   }
 
   public static int imputeCat(VecAry v) {return imputeCat(v,0);}

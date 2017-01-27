@@ -42,6 +42,8 @@ public class GLMTest  extends TestUtil {
     Log.info("removing vecs done");
     int p = m._output._dinfo._cats + m._output._dinfo._nums;
     int p2 = fr2.numCols() - (m._output._dinfo.hasWeights()?1:0)- (m._output._dinfo.hasOffset()?1:0);
+    if(p != p2)
+      System.out.println("haha");
     assert p == p2: p + " != " + p2;
     fr2.add(preds.names(),preds.vecs());
     // test score0

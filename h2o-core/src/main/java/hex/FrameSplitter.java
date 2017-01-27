@@ -177,10 +177,7 @@ public class FrameSplitter extends H2OCountedCompleter<FrameSplitter> {
       int startRow = coutidx > 0 ? 0 : _psrow; // where to start extracting
       int nrows = cs._len;
       // For each output chunk extract appropriate rows for partIdx-th part
-      for (int i=0; i<cs._len; i++) {
-        // WARNING: this implementation does not preserve co-location of chunks so we are forcing here network transfer!
-        ChunkSplitter.extractChunkPart(_srcVecs.chunkForChunkIdx(cinidx).getChunk(i), cs.getChunk(i), startRow, nrows, _fs);
-      }
+      ChunkSplitter.extractChunkPart(_srcVecs.chunkForChunkIdx(cinidx), cs, startRow, nrows);
     }
   }
   static final long[] partitione(long len, double[] ratio) {

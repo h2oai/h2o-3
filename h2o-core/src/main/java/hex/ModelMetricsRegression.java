@@ -143,16 +143,18 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
 
       if (m != null && m._parms._distribution == DistributionFamily.huber) {
         assert(_sumdeviance==0); // should not yet be computed
+        VecAry actual_and_weight = new VecAry();
         if (preds != null) {
           VecAry actual = adaptedFrame.vec(m._parms._response_column);
+          if(actual != null) actual_and_weight.append(actual);
           VecAry weight = adaptedFrame.vec(m._parms._weights_column);
-
+          if(weight != null)actual_and_weight.append(weight);
           //compute huber delta based on huber alpha quantile on absolute prediction error
           double huberDelta = computeHuberDelta(actual, preds.vecs(), weight, m._parms._huber_alpha);
           // make a deep copy of the model's current distribution state (huber delta)
           _dist = IcedUtils.deepCopy(m._dist);
           _dist.setHuberDelta(huberDelta);
-          meanResDeviance = new MeanResidualDeviance(_dist, new VecAry(preds.vecs()).append(actual).append(weight)).exec().meanResidualDeviance;
+          meanResDeviance = new MeanResidualDeviance(_dist, new VecAry(preds.vecs()).append(actual_and_weight)).exec().meanResidualDeviance;
         }
       } else {
         meanResDeviance = _sumdeviance / _wcount; //mean residual deviance

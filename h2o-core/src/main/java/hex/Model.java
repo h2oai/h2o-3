@@ -863,8 +863,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         } else {
           good++;      // Assumed compatible; not checking e.g. Strings vs UUID
         }
+        vvecs.append(vec);
       }
-      vvecs.append(vec);
     }
     if( good == convNaN )
       throw new IllegalArgumentException("Test/Validation dataset has no columns in common with the training set");

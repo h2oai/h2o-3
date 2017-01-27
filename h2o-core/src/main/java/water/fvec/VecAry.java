@@ -326,6 +326,7 @@ public final class VecAry extends Iced<VecAry> {
   }
 
   public VecAry append(VecAry apndee) {
+    if(apndee.isEmpty()) return this;
     if (!checkCompatible(apndee)) throw new IllegalArgumentException("Can not append incompatible vecs");
     if (_vecIds.length == 0) return replaceWith(apndee);
     if(_groupKey == null)_groupKey = apndee._groupKey;

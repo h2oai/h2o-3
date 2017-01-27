@@ -909,6 +909,7 @@ public class GLMBasicTestBinomial extends TestUtil {
           try {
             model = new GLM(params,Key.<GLMModel>make("prostate_model")).trainModel().get();
           } catch(Exception iae) {
+            iae.printStackTrace();
             assertTrue(iae.getMessage().contains("Test dataset is missing weights vector"));
           }
           params._valid = null;

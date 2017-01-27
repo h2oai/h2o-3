@@ -119,6 +119,9 @@ public class ChunkAry<C extends Chunk> extends Iced {
 
 
   ModifiedBlocks _modified;
+
+
+
   private class ModifiedBlocks {
     int [] _modified_cols_start = new int[1];
     int [] _modified_cols_end = new int[1];
@@ -448,6 +451,11 @@ public class ChunkAry<C extends Chunk> extends Iced {
   public void add2Chunk(int c, NewChunkAry nchks, int c1, int[] ids) {
     getChunk(c).add2Chunk(nchks.getChunkInflated(c1),ids);
   }
+
+  public void add2Chunk(int i, ChunkAry oc, int i1, int from, int to) {
+    getChunk(i).add2Chunk(oc.getChunkInflated(i1),from,to);
+  }
+
   public int cidx() {return _cidx;}
 
   public double[] getDoubles(int c, double[] vals, int from, int to) {

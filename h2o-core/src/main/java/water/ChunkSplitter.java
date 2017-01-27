@@ -3,6 +3,7 @@ package water;
 import java.util.Iterator;
 
 import water.fvec.Chunk;
+import water.fvec.ChunkAry;
 import water.fvec.NewChunk;
 import water.util.Log;
 
@@ -11,8 +12,9 @@ import water.util.Log;
  */
 public class ChunkSplitter {
   /** Extract portion of given chunk into given output chunk. */
-  public static void extractChunkPart(Chunk ic, Chunk oc, int startRow, int nrows, Futures fs) {
-    throw H2O.unimpl();
+  public static void extractChunkPart(ChunkAry ic, ChunkAry oc, int startRow, int nrows) {
+    for(int i = 0; i < ic._numCols; ++i)
+      ic.add2Chunk(i,oc,i,startRow, startRow + nrows);
 //    try {
 //      NewChunk dst = new NewChunk();
 //      dst._len = dst._sparseLen = 0;
