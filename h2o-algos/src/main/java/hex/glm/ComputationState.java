@@ -234,6 +234,7 @@ public final class ComputationState {
       case gaussian:
       case binomial:
       case quasibinomial:
+      case multinomial:
         return 2*likelihood();
       case poisson:
       case gamma:
