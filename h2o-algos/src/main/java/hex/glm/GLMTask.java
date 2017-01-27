@@ -91,6 +91,8 @@ public abstract class GLMTask  {
     }
     @Override public void reduce(GLMResDevTask gt) {_nobs += gt._nobs; _resDev += gt._resDev; _likelihood += gt._likelihood;}
     public double avgDev(){return _resDev/_nobs;}
+    public double dev(){return _resDev;}
+
   }
 
   static class GLMResDevTaskMultinomial extends FrameTask2<GLMResDevTaskMultinomial> {
@@ -127,6 +129,7 @@ public abstract class GLMTask  {
     @Override public void reduce(GLMResDevTaskMultinomial gt) {_nobs += gt._nobs; _likelihood += gt._likelihood;}
 
     public double avgDev(){return _likelihood*2/_nobs;}
+    public double dev(){return _likelihood*2;}
   }
 
  static class WeightedSDTask extends MRTask<WeightedSDTask> {
