@@ -37,6 +37,7 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "max_depth",
         "min_rows",
         "learn_rate",
+//        "learn_rate_annealing", //disabled for now
         "sample_rate",
         "col_sample_rate",
         "col_sample_rate_per_tree",
@@ -69,6 +70,9 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
 
     @API(help="Learning rate (from 0.0 to 1.0)", gridable = true)
     public double learn_rate;
+
+    @API(help="Scale the learning rate by this factor after each tree (e.g., 0.99 or 0.999) ", level = API.Level.secondary, gridable = true)
+    public double learn_rate_annealing;
 
     @API(help = "Row sample rate per tree (from 0.0 to 1.0)", gridable = true)
     public double sample_rate;
