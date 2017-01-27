@@ -140,7 +140,7 @@ public class DeepwaterCaffeModel implements BackendModel {
   public float[] predict(float[] data) {
     checkStarted();
     Cmd cmd = new Cmd();
-    cmd.type = Deepwater.Test;
+    cmd.type = Deepwater.Predict;
     if (data.length != _batch_size * _sizes[0])
       throw new RuntimeException();
     float[][] buffs = new float[][] {data};
@@ -170,6 +170,7 @@ public class DeepwaterCaffeModel implements BackendModel {
 
 //        String cmd = "python -u test.py";
     String opts = "-i --rm --user " + uid + ":" + gid + " -v " + pwd + ":" + pwd + " -w " + pwd;
+//    opts += " -v /home/danilo/h2o-docker/caffe:/h2o-docker/caffe";
     String s = "nvidia-docker run " + opts + " " + image + " python /h2o-docker/caffe/backend.py";
     ProcessBuilder pb = new ProcessBuilder(s.split(" "));
     pb.redirectError(ProcessBuilder.Redirect.INHERIT);

@@ -8,7 +8,7 @@ public interface Deepwater {
   // enum Type
   public static final int Create = 0;
   public static final int Train = 1;
-  public static final int Test = 2;
+  public static final int Predict = 2;
   public static final int SaveGraph = 3;
   public static final int Save = 4;
   public static final int Load = 5;
@@ -250,7 +250,7 @@ public interface Deepwater {
             switch (value) {
               case hex.genmodel.algos.deepwater.caffe.nano.Deepwater.Create:
               case hex.genmodel.algos.deepwater.caffe.nano.Deepwater.Train:
-              case hex.genmodel.algos.deepwater.caffe.nano.Deepwater.Test:
+              case hex.genmodel.algos.deepwater.caffe.nano.Deepwater.Predict:
               case hex.genmodel.algos.deepwater.caffe.nano.Deepwater.SaveGraph:
               case hex.genmodel.algos.deepwater.caffe.nano.Deepwater.Save:
               case hex.genmodel.algos.deepwater.caffe.nano.Deepwater.Load:
