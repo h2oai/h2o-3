@@ -229,7 +229,21 @@ public final class ComputationState {
 
   public void setActiveClass(int activeClass) {_activeClass = activeClass;}
 
-  public double deviance() {return 2*likelihood();}
+  public double deviance() {
+    switch (_parms._family) {
+      case gaussian:
+      case binomial:
+      case quasibinomial:
+      case multinomial:
+        return 2*likelihood();
+      case poisson:
+      case gamma:
+      case tweedie:
+        return likelihood();
+      default:
+        throw new RuntimeException("unknown family " + _parms._family);
+    }
+  }
 
   public static class GLMSubsetGinfo extends GLMGradientInfo {
     public final GLMGradientInfo _fullInfo;

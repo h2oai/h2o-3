@@ -15,6 +15,7 @@ import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
 import water.fvec.Frame;
+import water.fvec.InteractionWrappedVec;
 import water.fvec.Vec;
 import water.util.*;
 import water.util.ArrayUtils;
@@ -67,7 +68,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         rp._coefficients_std[i] = rp._coefficients[i];
         rp._coefficients[i] = _output._dinfo.denormalizeBeta(rp._coefficients_std[i]);
       }
-      rp._explained_deviance_train[i] = 1 - _output._training_metrics._nobs*sm.devianceTrain/((GLMMetrics)_output._training_metrics).null_deviance();
+      rp._explained_deviance_train[i] = 1 - (_output._training_metrics._nobs*sm.devianceTrain)/((GLMMetrics)_output._training_metrics).null_deviance();
       if (rp._explained_deviance_valid != null)
         rp._explained_deviance_valid[i] = 1 - _output._validation_metrics._nobs*sm.devianceTest/((GLMMetrics)_output._validation_metrics).null_deviance();
     }
@@ -796,7 +797,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial) {
       super(dinfo._weights, dinfo._offset, dinfo._fold);
       _dinfo = dinfo.clone();
-      _dinfo._adaptedFrame = new Frame(dinfo._adaptedFrame.names().clone(),dinfo._adaptedFrame.vecs().clone());
       _names = column_names;
       _domains = domains;
       _coefficient_names = coefficient_names;
@@ -820,14 +820,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public GLMOutput(GLM glm) {
       super(glm);
       _dinfo = glm._dinfo.clone();
-      _dinfo._adaptedFrame = new Frame(glm._dinfo._adaptedFrame.names().clone(),glm._dinfo._adaptedFrame.vecs().clone());
-      if(!glm.hasWeightCol())
-        _dinfo.dropWeights();
+      _dinfo._adaptedFrame = null;
       String[] cnames = glm._dinfo.coefNames();
-      String [] names = _dinfo._adaptedFrame._names;
-      String [][] domains = _dinfo._adaptedFrame.domains();
+      String [] names = glm._dinfo._adaptedFrame._names;
+      String [][] domains = glm._dinfo._adaptedFrame.domains();
       int id = glm._generatedWeights == null?-1:ArrayUtils.find(names, glm._generatedWeights);
       if(id >= 0) {
+        _dinfo._weights = false;
         String [] ns = new String[names.length-1];
         String[][] ds = new String[domains.length-1][];
         System.arraycopy(names,0,ns,0,id);
@@ -844,6 +843,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _binomial = glm._parms._family == Family.binomial;
       _nclasses = glm.nclasses();
       _multinomial = _nclasses > 2;
+
     }
 
     @Override
@@ -1196,7 +1196,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     final boolean computeMetrics = adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad();
     String [] domain = _output.nclasses()<=1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
-    return new GLMScore(j, this, _output._dinfo.scoringInfo(adaptFrm),domain,computeMetrics, generatePredictions);
+    return new GLMScore(j, this, _output._dinfo.scoringInfo(_output._names,adaptFrm),domain,computeMetrics, generatePredictions);
   }
   /** Score an already adapted frame.  Returns a new Frame with new result
    *  vectors, all in the DKV.  Caller responsible for deleting.  Input is
