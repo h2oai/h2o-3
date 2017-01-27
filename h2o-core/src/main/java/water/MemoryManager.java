@@ -256,8 +256,10 @@ abstract public class MemoryManager {
       catch( OutOfMemoryError e ) {
         // Do NOT log OutOfMemory, it is expected and unavoidable and handled
         // in most cases by spilling to disk.
-        if( Cleaner.isDiskFull() )
+        if( Cleaner.isDiskFull() ) {
+          Log.err("Disk full, space left = " + Cleaner.availableDiskSpace());
           UDPRebooted.suicide(UDPRebooted.T.oom, H2O.SELF);
+        }
       }
       set_goals("OOM",true, bytes); // Low memory; block for swapping
     }

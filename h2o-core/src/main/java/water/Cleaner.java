@@ -53,9 +53,13 @@ class Cleaner extends Thread {
     MemoryManager.set_goals("init",false);
   }
 
-  static boolean isDiskFull(){ // free disk space < 5K?
-    long space = H2O.getPM().getIce().getUsableSpace();
+  public static boolean isDiskFull() { // free disk space < 5K?
+    long space = availableDiskSpace();
     return space >= 0 && space < (5 << 10);
+  }
+
+  public static long availableDiskSpace() {
+    return H2O.getPM().getIce().getUsableSpace();
   }
 
   // Cleaner thread runs in a forever loop.  (This call cannot be synchronized,

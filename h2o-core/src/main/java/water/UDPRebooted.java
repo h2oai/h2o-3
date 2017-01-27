@@ -11,6 +11,8 @@ import water.util.Log;
  */
 
 public class UDPRebooted extends UDP {
+  public static boolean BIG_DEBUG = false;
+  
   public static enum T {
     none,
     reboot,
@@ -84,7 +86,8 @@ public class UDPRebooted extends UDP {
       Log.warn("Orderly shutdown should be handled via ShutdownTsk. Message is from outside of the cloud? Ignoring it.");
       return;
     case oom:      m = "Out of Memory, Heap Space exceeded, increase Heap Size,";                                break;
-    case error:    m = "Error leading to a cloud kill";                                                          break;
+    case error:    if (BIG_DEBUG) Thread.dumpStack();
+                   m = "Error leading to a cloud kill";                                                          break;
     case locked:   m = "Attempting to join an H2O cloud that is no longer accepting new H2O nodes";              break;
     case mismatch: m = "Attempting to join an H2O cloud with a different H2O version (is H2O already running?)"; break;
     default:       m = "Received kill " + cause;                                                                 break;
