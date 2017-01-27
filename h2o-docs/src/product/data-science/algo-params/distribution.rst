@@ -28,7 +28,7 @@ The following general guidelines apply when selecting a distribution:
  - A Bernoulli distribution is used for binary outcomes.
  - A Multinomial distribution can handle multiple discrete outcomes.
 
- For Regression Problems:
+ For Regression problems:
 
  - A Gaussian distribution is the function for continuous targets.
  - A Poisson distribution is used for estimating counts.

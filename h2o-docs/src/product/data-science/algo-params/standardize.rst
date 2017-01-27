@@ -2,7 +2,7 @@
 ---------------
 
 - Available in: Deep Learning, GLM, K-Means
-- Hyperparameter: no
+- Hyperparameter: yes
 
 Description
 ~~~~~~~~~~~

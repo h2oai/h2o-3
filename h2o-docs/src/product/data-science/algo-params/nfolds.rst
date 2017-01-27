@@ -52,7 +52,7 @@ Example
 
 	# set the number of folds for you n-fold cross validation:
 	folds <- 5
-	# folds <- 10
+	# folds <- 5
 
 	# train a gbm using the nfolds parameter:
 	cars_gbm <- h2o.gbm(x = predictors, y = response, training_frame = cars,
@@ -82,7 +82,7 @@ Example
 
 	# set the number of folds for you n-fold cross validation:
 	folds = 5
-	# folds = 10
+	# folds = 5
 
 	# initialize the estimator then train the model
 	cars_gbm = H2OGradientBoostingEstimator(nfolds = folds, seed = 1234)
@@ -90,3 +90,4 @@ Example
 
 	# print the auc for the cross-validated data
 	cars_gbm.auc(xval=True)
+	
