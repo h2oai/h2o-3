@@ -52,6 +52,7 @@ Collate:
          'deeplearning.R'
          'stackedensemble.R'
          'deepwater.R'
+         'xgboost.R'
          'randomforest.R'
          'naivebayes.R'
          'word2vec.R'
