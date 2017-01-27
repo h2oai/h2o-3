@@ -8,6 +8,7 @@ Description
 ~~~~~~~~~~~
 
 This option allows you to specify a dataframe,  where each row represents an initial cluster center. 
+
 **Notes**:
 
 - The user-specified points must have the same number of columns as the training observations. 

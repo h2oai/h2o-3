@@ -39,11 +39,11 @@ Defining a K-Means Model
 
 -  `score_each_iteration <algo-params/score_each_iteration.html>`__: (Optional) Specify whether to score during each iteration of the model training.
 
--  `k <algo-params/k.html>`__: Specify the number of clusters.
+-  `k <algo-params/k.html>`__: Specify the number of clusters (groups of data) in a dataset that are similar to one another.
 
 -  `estimate_k <algo-params/estimate_k.html>`__: Specify whether to estimate the number of clusters (<=k) iteratively (independent of the seed) and deterministically (beginning with ``k=1,2,3...``). If enabled, for each **k** that, the estimate will go up to **max_iteration**. This option is disabled by default.
 
--  `user_points <algo-params/user_points.html>`__: Specify a vector of initial cluster centers. The user-specified points must have the same number of columns as the training observations. The number of rows must equal the number of clusters.
+-  `user_points <algo-params/user_points.html>`__: Specify a dataframe, where each row represents an initial cluster center.
 
 -  `max_iterations <algo-params/max_iterations.html>`__: Specify the maximum number of training iterations. The range is 0 to 1e6.
 
@@ -66,8 +66,9 @@ Defining a K-Means Model
 
 - `categorical_encoding <algo-params/categorical_encoding.html>`__: Specify one of the following encoding schemes for handling categorical features:
 
-  - ``auto``: Allow the algorithm to decide (default)
-  - ``one_hot_internal``: On the fly N+1 new cols for categorical features with N levels (default)
+  - ``auto``: Allow the algorithm to decide (default). In K-Means, the algorithm will automatically perform ``enum`` encoding.
+  - ``enum``: 1 column per categorical feature
+  - ``one_hot_explicit``: N+1 new columns for categorical features with N levels
   - ``binary``: No more than 32 columns per categorical feature
   - ``eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
 
