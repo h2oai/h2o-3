@@ -41,6 +41,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public int _max_depth = 5; // Maximum tree depth. Grid Search, comma sep values:5,7
     public double _min_rows = 10;
     public double _learn_rate = 0.1;
+    public double _learn_rate_annealing = 1;
     public double _sample_rate = 1.0;
     public double _col_sample_rate = 1.0;
     public double _col_sample_rate_per_tree = 1.0; //fraction of columns to sample for each tree
