@@ -35,9 +35,15 @@
   }
 
   if (missing(h2oRestApiVersion))
-    sprintf("%s://%s:%s/%s", scheme, conn@ip, as.character(conn@port), urlSuffix)
+    if (is.na(conn@context_path))
+      sprintf("%s://%s:%s/%s", scheme, conn@ip, as.character(conn@port), urlSuffix)
+    else
+      sprintf("%s://%s:%s/%s/%s", scheme, conn@ip, as.character(conn@port), conn@context_path, urlSuffix)
   else
-    sprintf("%s://%s:%s/%s/%s", scheme, conn@ip, as.character(conn@port), h2oRestApiVersion, urlSuffix)
+    if (is.na(conn@context_path))
+      sprintf("%s://%s:%s/%s/%s", scheme, conn@ip, as.character(conn@port), h2oRestApiVersion, urlSuffix)
+    else
+      sprintf("%s://%s:%s/%s/%s/%s", scheme, conn@ip, as.character(conn@port), conn@context_path, h2oRestApiVersion, urlSuffix)
 }
 
 .h2o.doRawREST <- function(conn, h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, binary=FALSE, ...) {

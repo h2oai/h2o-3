@@ -42,5 +42,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from .cluster import H2OCluster
 from .server import H2OLocalServer
 from .connection import H2OConnection
+from .connection import H2OConnectionConf
 
-__all__ = ("H2OCluster", "H2OConnection", "H2OLocalServer")
+__all__ = ("H2OCluster", "H2OConnection", "H2OLocalServer", "H2OConnectionConf")
