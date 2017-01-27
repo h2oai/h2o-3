@@ -3,7 +3,7 @@
 #'
 # -------------------------- H2O Stacked Ensemble -------------------------- #
 #' 
-#' This function  creates a “Super Learner” (stacked ensemble) using the H2O base
+#' Build a stacked ensemble (aka. Super Learner) using the H2O base
 #' learning algorithms specified by the user.
 #' 
 #' @param x A vector containing the names or indices of the predictor variables to use in building the model.
@@ -11,8 +11,6 @@
 #' @param y The name of the response variable in the model.If the data does not contain a header, this is the column index
 #'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
 #'        categorical variable).
-#' @param model_id Destination id for this model; auto-generated if not specified.
-#' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
 #' @param validation_frame Id of the validation data frame.
