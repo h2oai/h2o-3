@@ -3,17 +3,18 @@ package hex.tree.xgboost;
 import hex.*;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.utils.DistributionFamily;
-import static hex.tree.xgboost.XGBoost.makeDataInfo;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
-
-import java.util.*;
-
 import water.util.Log;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import static hex.tree.xgboost.XGBoost.makeDataInfo;
 
 public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> {
 
@@ -89,9 +90,16 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
   }
 
-  public XGBoostModel(Key<XGBoostModel> selfKey, XGBoostParameters parms, XGBoostOutput output) {
+  public XGBoostModel(Key<XGBoostModel> selfKey, XGBoostParameters parms, XGBoostOutput output, Frame train, Frame valid) {
     super(selfKey,parms,output);
-    final DataInfo dinfo = makeDataInfo(parms.train(), parms.valid(), _parms, output.nclasses());
+
+    final DataInfo dinfo = makeDataInfo(train, valid, _parms, output.nclasses());
+    DKV.put(dinfo);
+    _output._names = dinfo._adaptedFrame.names();
+    _output._domains = dinfo._adaptedFrame.domains();
+    _output._origNames = parms._train.get().names();
+    _output._origDomains = parms._train.get().domains();
+
     DKV.put(dinfo);
     setDataInfoToOutput(dinfo);
     model_info = new XGBoostModelInfo(parms,output.nclasses());
