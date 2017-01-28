@@ -1,7 +1,6 @@
 package hex.genmodel;
 
 import hex.ModelCategory;
-import hex.genmodel.utils.GenmodelBitSet;
 import water.genmodel.IGeneratedModel;
 
 import java.awt.*;
@@ -515,7 +514,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   /** ??? */
   public String getHeader() { return null; }
 
-  // Helper for DeepWater
+  // Helper for DeepWater and XGBoost (models that require explicit one-hot encoding on the fly)
   static public void setInput(final double[] from, float[] to, int _nums, int _cats, int[] _catOffsets, double[] _normMul, double[] _normSub, boolean useAllFactorLevels) {
     float[] nums = new float[_nums]; // a bit wasteful - reallocated each time
     int[] cats = new int[_cats]; // a bit wasteful - reallocated each time
@@ -532,7 +531,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
           cats[i] = (_catOffsets[i + 1] - 1);
       }
     }
-    for (int i = _cats; i < _cats + _nums; ++i) {
+    for (int i = _cats; i < from.length; ++i) {
       double d = from[i];
       if (_normMul != null) d = (d - _normSub[i - _cats]) * _normMul[i - _cats];
       nums[i - _cats] = (float)d; //can be NaN for missing numerical data

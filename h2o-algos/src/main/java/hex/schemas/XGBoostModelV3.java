@@ -25,6 +25,6 @@ public class XGBoostModelV3 extends ModelSchemaV3<
   @Override public XGBoostModel createImpl() {
     XGBoostV3.XGBoostParametersV3 p = this.parameters;
     XGBoostModel.XGBoostParameters parms = p.createImpl();
-    return new XGBoostModel(model_id.key(), parms, new XGBoostOutput(null));
+    return new XGBoostModel(model_id.key(), parms, new XGBoostOutput(null), null, null);
   }
 }

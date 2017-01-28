@@ -561,8 +561,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     return preds;
   }
 
-  @Override public double[] score0(double[] data, double[] preds, double weight, double offset) {
-    assert(weight==1);
+  @Override public double[] score0(double[] data, double[] preds, double offset) {
     assert(offset==0);
     return score0(data, preds);
   }

@@ -1291,7 +1291,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             continue;
           }
           double offset = offsetChunk != null ? offsetChunk.atd(row) : 0;
-          double[] p = score0(chks, weight, offset, row, tmp, preds);
+          double[] p = score0(chks, offset, row, tmp, preds);
           if (_computeMetrics) {
             if (isSupervised()) {
               actual[0] = (float) responseChunk.atd(row);
@@ -1331,14 +1331,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  Default method is to just load the data into the tmp array, then call
    *  subclass scoring logic. */
   public double[] score0( Chunk chks[], int row_in_chunk, double[] tmp, double[] preds ) {
-    return score0(chks, 1, 0, row_in_chunk, tmp, preds);
+    return score0(chks, 0, row_in_chunk, tmp, preds);
   }
 
-  public double[] score0( Chunk chks[], double weight, double offset, int row_in_chunk, double[] tmp, double[] preds ) {
+  public double[] score0( Chunk chks[], double offset, int row_in_chunk, double[] tmp, double[] preds ) {
     assert(_output.nfeatures() == tmp.length);
     for( int i=0; i< tmp.length; i++ )
       tmp[i] = chks[i].atd(row_in_chunk);
-    double [] scored = score0(tmp, preds, weight, offset);
+    double [] scored = score0(tmp, preds, offset);
     if(isSupervised()) {
       // Correct probabilities obtained from training on oversampled data back to original distribution
       // C.f. http://gking.harvard.edu/files/0s.pdf Eq.(27)
@@ -1358,8 +1358,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   protected abstract double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]);
 
   /**Override scoring logic for models that handle weight/offset**/
-  protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/], double weight, double offset) {
-    assert (weight == 1 && offset == 0) : "Override this method for non-trivial weight/offset!";
+  protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/], double offset) {
+    assert (offset == 0) : "Override this method for non-trivial offset!";
     return score0(data, preds);
   }
   // Version where the user has just ponied-up an array of data to be scored.

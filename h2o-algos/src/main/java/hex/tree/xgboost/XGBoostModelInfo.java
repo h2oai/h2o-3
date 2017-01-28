@@ -26,7 +26,6 @@ final public class XGBoostModelInfo extends Iced {
 
   transient Booster _booster;  //pointer to C++ process
 
-  DataInfo _dataInfo;
   Key<DataInfo> _dataInfoKey;
 
   void nukeBackend() {
