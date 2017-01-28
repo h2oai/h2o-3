@@ -28,7 +28,7 @@
 h2o.stackedEnsemble <- function(x, y, training_frame,
                                 model_id = NULL,
                                 validation_frame = NULL,
-                                base_models = c(),
+                                base_models = list(),
                                 selection_strategy = c("choose_all")
                                 ) 
 {
