@@ -388,17 +388,6 @@ To check which version of H2O is installed in R, use
 - On Ubuntu, run: ``apt-get install libcurl4-openssl-dev``
 - On CentOs, run: ``yum install libcurl-devel``
 
-Ensembles
----------
-
-Ensemble machine learning methods use multiple learning algorithms to
-obtain better predictive performance.
-
--  `H2O Ensemble GitHub repository <https://github.com/h2oai/h2o-3/tree/master/h2o-r/ensemble>`_: Location for the H2O Ensemble R
-   package.
-
--  `Ensemble Documentation <http://docs.h2o.ai/h2o-tutorials/latest-stable/tutorials/ensembles-stacking/index.html>`_: This documentation provides more details on
-   the concepts behind ensembles and how to use them.
 
 
 API Users
