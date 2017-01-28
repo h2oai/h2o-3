@@ -88,13 +88,13 @@ stackedensemble.binomial.test <- function() {
   stack_auc_train <- h2o.auc(perf_stack_train)
   print(sprintf("Best Base-learner Training AUC:  %s", baselearner_best_auc_train))
   print(sprintf("Ensemble Training AUC:  %s", stack_auc_train))
-  expect_gt(stack_auc_train, baselearner_best_auc_train)
+  expect_equal(TRUE,stack_auc_train > baselearner_best_auc_train)
   # Test AUC
   baselearner_best_auc_test <- max(h2o.auc(perf_gbm_test), h2o.auc(perf_rf_test))
   stack_auc_test <- h2o.auc(perf_stack_test)
   print(sprintf("Best Base-learner Test AUC:  %s", baselearner_best_auc_test))
   print(sprintf("Ensemble Test AUC:  %s", stack_auc_test))
-  expect_gt(stack_auc_test, baselearner_best_auc_test)
+  expect_equal(TRUE, stack_auc_test> baselearner_best_auc_test)
   
   # Check that passing `test` as a validation_frame
   # produces the same metrics as h2o.performance(stack, test)
