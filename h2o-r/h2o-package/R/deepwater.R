@@ -75,7 +75,7 @@
 #' @param clip_gradient Clip gradients once their absolute value is larger than this value. Defaults to 10.
 #' @param network Network architecture. Must be one of: "auto", "user", "lenet", "alexnet", "vgg", "googlenet", "inception_bn",
 #'        "resnet". Defaults to auto.
-#' @param backend Deep Learning Backend. Must be one of: "mxnet", "caffe", "tensorflow". Defaults to mxnet.
+#' @param backend Deep Learning Backend. Must be one of: "auto", "mxnet", "caffe", "tensorflow". Defaults to mxnet.
 #' @param image_shape Width and height of image. Defaults to [0, 0].
 #' @param channels Number of (color) channels. Defaults to 3.
 #' @param sparse \code{Logical}. Sparse data handling (more efficient for data with lots of 0 values). Defaults to FALSE.
@@ -95,7 +95,7 @@
 #'        the path (URI or URL) to the images in the first column. If set to text, the H2OFrame must contain a string
 #'        column containing the text in the first column. If set to dataset, Deep Water behaves just like any other H2O
 #'        Model and builds a model on the provided H2OFrame (non-String columns). Must be one of: "auto", "image",
-#'        "dataset". Defaults to auto.
+#'        "text", "dataset". Defaults to auto.
 #' @export
 h2o.deepwater <- function(x, y, training_frame,
                           model_id = NULL,
@@ -141,7 +141,7 @@ h2o.deepwater <- function(x, y, training_frame,
                           mini_batch_size = 32,
                           clip_gradient = 10,
                           network = c("auto", "user", "lenet", "alexnet", "vgg", "googlenet", "inception_bn", "resnet"),
-                          backend = c("mxnet", "caffe", "tensorflow"),
+                          backend = c("auto", "mxnet", "caffe", "tensorflow"),
                           image_shape = c(0, 0),
                           channels = 3,
                           sparse = FALSE,
@@ -155,7 +155,7 @@ h2o.deepwater <- function(x, y, training_frame,
                           hidden = NULL,
                           input_dropout_ratio = 0,
                           hidden_dropout_ratios = NULL,
-                          problem_type = c("auto", "image", "dataset")
+                          problem_type = c("auto", "image", "text", "dataset")
                           ) 
 {
   #If x is missing, then assume user wants to use all columns as features.
