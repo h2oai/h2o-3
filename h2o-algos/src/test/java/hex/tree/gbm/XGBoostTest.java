@@ -361,9 +361,14 @@ public class XGBoostTest extends TestUtil {
     Frame testFrame = null;
     Frame preds = null;
     XGBoostModel model = null;
+    Scope.enter();
     try {
       // Parse frame into H2O
       tfr = parse_test_file("./smalldata/prostate/prostate.csv");
+
+      Scope.track(tfr.replace(1, tfr.vecs()[1].toCategoricalVec()));   // Convert CAPSULE to categorical
+      Scope.track(tfr.replace(3, tfr.vecs()[3].toCategoricalVec()));   // Convert RACE to categorical
+      DKV.put(tfr);
 
       // split into train/test
       SplitFrame sf = new SplitFrame(tfr, new double[] { 0.7, 0.3 }, null);
@@ -383,14 +388,17 @@ public class XGBoostTest extends TestUtil {
       parms._train = trainFrame._key;
       parms._valid = testFrame._key;
       parms._response_column = response;
+      parms._ignored_columns = new String[]{"ID"};
 
       model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
       Log.info(model);
 
       preds = model.score(testFrame);
+//      Assert.assertTrue(preds.anyVec().sigma() > 0);
       Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
 
     } finally {
+      Scope.exit();
       if (trainFrame!=null) trainFrame.remove();
       if (testFrame!=null) testFrame.remove();
       if (tfr!=null) tfr.remove();
