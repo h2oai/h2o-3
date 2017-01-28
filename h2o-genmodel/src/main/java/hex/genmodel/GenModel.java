@@ -522,7 +522,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
           cats[i] = (_catOffsets[i + 1] - 1);
       }
     }
-    for (int i = _cats; i < _cats + _nums; ++i) {
+    for (int i = _cats; i < from.length; ++i) {
       double d = from[i];
       if (_normMul != null) d = (d - _normSub[i - _cats]) * _normMul[i - _cats];
       nums[i - _cats] = (float)d; //can be NaN for missing numerical data

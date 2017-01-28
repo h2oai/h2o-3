@@ -10,9 +10,12 @@ import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import water.H2O;
 import water.Key;
+import water.MRTask;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
+import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
@@ -44,16 +47,13 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
    * @throws XGBoostError
    */
   public static DMatrix convertFrametoDMatrix(Frame f, String response, String weight, String fold, String[] featureMap) throws XGBoostError {
-    // one-hot encoding
-
-    // FIXME - use DataInfo for speedup
-
     FrameUtils.CategoricalOneHotEncoder enc = new FrameUtils.CategoricalOneHotEncoder(f, new String[]{response, weight, fold});
     Frame encoded = enc.exec().get();
-    long denseLen = encoded.numRows()*(encoded.numCols() - 1 /*response*/);
-    if (denseLen > (1<<28)) throw new IllegalArgumentException("Too many matrix elements.");
-    if (encoded.numRows() > (1<<28)) throw new IllegalArgumentException("Too many rows.");
+    Log.info(encoded.toTwoDimTable());
 
+    long dl = encoded.numRows()*(encoded.numCols() - 1 /*response*/);
+    if (dl > (1<<28)) throw new IllegalArgumentException("Too many matrix elements.");
+    if (encoded.numRows() > (1<<28)) throw new IllegalArgumentException("Too many rows.");
     if (featureMap!=null) {
       StringBuilder sb = new StringBuilder();
       for (int i = 0; i < encoded.numCols(); ++i) {
@@ -66,7 +66,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       featureMap[0] = sb.toString();
     }
 
-
     // convert to CSC sparse matrix
     // example matrix:
     // 1 0 2 0
@@ -76,8 +75,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 //    float[] data = new float[]     {1f,4f,3f, 1f, 2f,2f, 3f};      //non-zeros down each column
 //    int[] rowIndex = new int[]     {0,1,2,    2,  0, 2,  1};       //row index for each non-zero
     long[] colHeaders = new long[encoded.numCols() - 1 /*response*/ + 1 /*final offset*/];
-    float[] data   = new float[(int)denseLen];
-    int[] rowIndex = new int[(int)denseLen];
+    float[] data   = new float[(int)dl];
+    int[] rowIndex = new int[(int)dl];
 
     // extract predictors
     int nz=0;
@@ -294,10 +293,10 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       model.write_lock(_job);
       String[] featureMap = new String[]{""};
       try {
-        DMatrix trainMat = convertFrametoDMatrix(_parms._train.get(),
+        DMatrix trainMat = convertFrametoDMatrix( train(),
                 _parms._response_column, _parms._weights_column, _parms._fold_column, featureMap);
 
-        DMatrix validMat = _parms._valid != null ? convertFrametoDMatrix(_parms._valid.get(),
+        DMatrix validMat = valid() != null ? convertFrametoDMatrix(valid(),
                 _parms._response_column, _parms._weights_column, _parms._fold_column, featureMap) : null;
 
         OutputStream os;
@@ -317,9 +316,16 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         else
           watches.put("train", trainMat);
 
+        // create the backend
         model.model_info()._booster = ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, model.createParams(), 0, watches, null, null);
+
+        // train the model
         scoreAndBuildTrees(model, trainMat, validMat);
+
+        // final scoring
         doScoring(model, model.model_info()._booster, trainMat, validMat, true);
+
+        // save the model to DKV
         model.model_info().nativeToJava();
       } catch (XGBoostError xgBoostError) {
         xgBoostError.printStackTrace();
