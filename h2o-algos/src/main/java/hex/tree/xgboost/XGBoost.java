@@ -10,15 +10,11 @@ import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import water.H2O;
 import water.Key;
-import water.MRTask;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
-import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
-import water.util.FrameUtils;
 import water.util.Log;
 import water.util.Timer;
 
@@ -46,87 +42,122 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
    * @return DMatrix
    * @throws XGBoostError
    */
-  public static DMatrix convertFrametoDMatrix(Frame f, String response, String weight, String fold, String[] featureMap) throws XGBoostError {
-    FrameUtils.CategoricalOneHotEncoder enc = new FrameUtils.CategoricalOneHotEncoder(f, new String[]{response, weight, fold});
-    Frame encoded = enc.exec().get();
-    Log.info(encoded.toTwoDimTable());
+  public static DMatrix convertFrametoDMatrix(Key<DataInfo> dataInfoKey, Frame f, String response, String weight, String fold, String[] featureMap) throws XGBoostError {
 
-    long dl = encoded.numRows()*(encoded.numCols() - 1 /*response*/);
-    if (dl > (1<<28)) throw new IllegalArgumentException("Too many matrix elements.");
-    if (encoded.numRows() > (1<<28)) throw new IllegalArgumentException("Too many rows.");
+    DataInfo di = dataInfoKey.get();
+    // set the names for the (expanded) columns
     if (featureMap!=null) {
+      String[] coefnames = di.coefNames();
       StringBuilder sb = new StringBuilder();
-      for (int i = 0; i < encoded.numCols(); ++i) {
-        sb.append(i).append(" ").append(encoded.name(i)).append(" ");
-        if (encoded.vec(i).isBinary()) sb.append("i");
-        else if (encoded.vec(i).isInt()) sb.append("int");
-        else sb.append("q");
+      assert(coefnames.length == di.fullN());
+      for (int i = 0; i < di.fullN(); ++i) {
+        sb.append(i).append(" ").append(coefnames[i]).append(" ");
+        int catCols = di._catOffsets[di._catOffsets.length-1];
+        if (i < catCols)
+          sb.append("i");
+        else if (f.vec(i-catCols).isInt())
+          sb.append("int");
+        else
+          sb.append("q");
         sb.append("\n");
       }
       featureMap[0] = sb.toString();
     }
 
-    // convert to CSC sparse matrix
-    // example matrix:
     // 1 0 2 0
     // 4 0 0 3
     // 3 1 2 0
+
+    // CSC:
 //    long[] colHeaders = new long[] {0,        3,  4,     6,    7}; //offsets
 //    float[] data = new float[]     {1f,4f,3f, 1f, 2f,2f, 3f};      //non-zeros down each column
 //    int[] rowIndex = new int[]     {0,1,2,    2,  0, 2,  1};       //row index for each non-zero
-    long[] colHeaders = new long[encoded.numCols() - 1 /*response*/ + 1 /*final offset*/];
-    float[] data   = new float[(int)dl];
-    int[] rowIndex = new int[(int)dl];
+
+    // CSR:
+//    long[] rowHeaders = new long[] {0,      2,      4,         7}; //offsets
+//    float[] data = new float[]     {1f,2f,  4f,3f,  3f,1f,2f};     //non-zeros across each row
+//    int[] colIndex = new int[]     {0, 2,   0, 3,   0, 1, 2};      //col index for each non-zero
+
+    int nRows = (int)di._adaptedFrame.numRows();
+    long[] rowHeaders = new long[nRows+1];
+    int initial_size = 1<<20;
+    float[] data   = new float[initial_size];
+    int[] colIndex = new int[initial_size];
+
+    Vec.Reader w = weight == null ? null : di.getWeightsVec().new Reader();
+    Vec.Reader[] vecs = new Vec.Reader[di._adaptedFrame.numCols()];
+    for (int i=0; i<vecs.length; ++i) {
+      vecs[i] = di._adaptedFrame.vec(i).new Reader();
+    }
 
     // extract predictors
     int nz=0;
-    int col=0;
-    Vec.Reader w = weight == null ? null : encoded.vec(weight).new Reader();
-    int nRows = (int)encoded.numRows();
-    for (int i=0;i<encoded.numCols();++i) {
-      if (encoded.name(i).equals(response)) continue;
-      colHeaders[col] = nz;
-      Vec.Reader v = encoded.vec(i).new Reader();
-      int k=0;
-      for (int j=0; j<nRows; ++j) {
-        double val = v.at(j);
-        double wgt = w == null ? 1 : w.at(j);
-        if (wgt!=0) {
-          if (!Double.isNaN(val) && val!=0) {
-            data[nz] = (float)val;
-            rowIndex[nz] = k;
-            nz++;
-          }
-          k++;
+    int row=0;
+    rowHeaders[0] = 0;
+    for (int i=0;i<nRows;++i) {
+      if (w != null && w.at(i) == 0) continue;
+      int nzstart = nz;
+      // enlarge final data arrays by 2x if needed
+      while (data.length<nz+1+di._nums) {
+        data = Arrays.copyOf(data, data.length<<1);
+        colIndex = Arrays.copyOf(colIndex, colIndex.length<<1);
+      }
+      for (int j=0;j<di._cats;++j) {
+        data[nz] = 1; //one-hot encoding
+        colIndex[nz] = di.getCategoricalId(j, vecs[j].at8(i));
+        nz++;
+      }
+      for (int j=0;j<di._nums;++j) {
+        float val = (float)vecs[di._cats+j].at(i);
+        if (val != 0) {
+          data[nz] = val;
+          colIndex[nz] = di._catOffsets[di._catOffsets.length - 1] + j;
+          nz++;
         }
       }
-      col++;
+      if (nz==nzstart) {
+        // for the corner case where there are no categorical values, and all numerical values are 0, we need to
+        // assign a 0 value to any one column to have a consistent number of rows between the predictors and the special vecs (weight/response/etc.)
+        data[nz] = 0;
+        colIndex[nz] = 0;
+        nz++;
+      }
+      rowHeaders[++row] = nz;
     }
+
+    // extract weight vector
+    float[] weights = new float[row];
+    if (w!=null) {
+      int j=0;
+      for (int i=0;i<nRows;++i) {
+        if (w.at(i) == 0) continue;
+        weights[j++] = (float)w.at(i);
+      }
+      assert(j==row);
+    }
+
     // extract response vector
-    Vec.Reader respVec = encoded.vec(response).new Reader();
-    float[] resp = new float[nRows];
-    float[] weights = new float[nRows];
+    Vec.Reader respVec = di._adaptedFrame.lastVec().new Reader();
+    float[] resp = new float[row];
     int j=0;
     for (int i=0;i<nRows;++i) {
-      double wgt = w==null?1:w.at(i);
-      if (wgt!=0) {
-        resp[j] = (float) respVec.at(i);
-        weights[j] = (float)wgt;
-        j++;
-      }
+      if (w!=null && w.at(i) == 0) continue;
+      resp[j++] = (float)respVec.at(i);
     }
+    assert(j==row);
 
-    colHeaders[colHeaders.length-1] = nz;
     data = Arrays.copyOf(data, nz);
-    rowIndex = Arrays.copyOf(rowIndex, nz);
-    resp = Arrays.copyOf(resp, j);
-    weights = Arrays.copyOf(weights, j);
+    colIndex = Arrays.copyOf(colIndex, nz);
+    resp = Arrays.copyOf(resp, row);
+    weights = Arrays.copyOf(weights, row);
+    rowHeaders = Arrays.copyOf(rowHeaders, row+1);
 
-    DMatrix trainMat = new DMatrix(colHeaders, rowIndex, data, DMatrix.SparseType.CSC, 0);
+    DMatrix trainMat = new DMatrix(rowHeaders, colIndex, data, DMatrix.SparseType.CSR, 0);
     trainMat.setLabel(resp);
-    trainMat.setWeight(weights);
+    if (w!=null)
+      trainMat.setWeight(weights);
 //    trainMat.setGroup(null); //fold //FIXME - only needed if CV is internally done in XGBoost
-    encoded.remove();
+    assert trainMat.rowNum() == row;
     return trainMat;
   }
 
@@ -289,15 +320,15 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
 
     final void buildModel() {
-      XGBoostModel model = new XGBoostModel(_result,_parms,new XGBoostOutput(XGBoost.this));
+      XGBoostModel model = new XGBoostModel(_result,_parms,new XGBoostOutput(XGBoost.this),_train,_valid);
       model.write_lock(_job);
       String[] featureMap = new String[]{""};
       try {
-        DMatrix trainMat = convertFrametoDMatrix( train(),
-                _parms._response_column, _parms._weights_column, _parms._fold_column, featureMap);
+        DMatrix trainMat = convertFrametoDMatrix( model.model_info()._dataInfoKey, _train,
+            _parms._response_column, _parms._weights_column, _parms._fold_column, featureMap);
 
-        DMatrix validMat = valid() != null ? convertFrametoDMatrix(valid(),
-                _parms._response_column, _parms._weights_column, _parms._fold_column, featureMap) : null;
+        DMatrix validMat = _valid != null ? convertFrametoDMatrix(model.model_info()._dataInfoKey, _valid,
+            _parms._response_column, _parms._weights_column, _parms._fold_column, featureMap) : null;
 
         OutputStream os;
         try {

@@ -1,8 +1,10 @@
 package hex.tree.gbm;
 
 import hex.ModelMetricsBinomial;
+import hex.ModelMetricsMultinomial;
+import hex.ModelMetricsRegression;
 import hex.SplitFrame;
-import hex.VarImp;
+import hex.genmodel.utils.DistributionFamily;
 import hex.tree.xgboost.XGBoostModel;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
@@ -16,13 +18,13 @@ import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.util.Log;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
 
 public class XGBoostTest extends TestUtil {
 
@@ -173,90 +175,11 @@ public class XGBoostTest extends TestUtil {
   }
 
   @Test
-  public void H2OFrame() throws XGBoostError, IOException {
-    Frame tfr = null;
-    Frame trainFrame = null;
-    Frame testFrame = null;
-    try {
-      // Parse frame into H2O
-      tfr = parse_test_file("./smalldata/junit/weather.csv");
-      // remove columns correlated with the response
-      tfr.remove("RISK_MM").remove();
-      tfr.remove("EvapMM").remove();
-      DKV.put(tfr);
-
-      // split into train/test
-      SplitFrame sf = new SplitFrame(tfr, new double[] { 0.7, 0.3 }, null);
-      sf.exec().get();
-      Key[] ksplits = sf._destination_frames;
-      trainFrame = (Frame)ksplits[0].get();
-      testFrame = (Frame)ksplits[1].get();
-
-      // define special columns
-      String response = "RainTomorrow";
-      String weight = null;
-      String fold = null;
-
-      // create sparse DMatrices
-      String[] featureMap = new String[]{""};
-      DMatrix trainMat = hex.tree.xgboost.XGBoost.convertFrametoDMatrix(trainFrame, response, weight, fold, featureMap);
-      DMatrix testMat = hex.tree.xgboost.XGBoost.convertFrametoDMatrix(testFrame, response, weight, fold, null);
-
-      // set parameters
-      HashMap<String, Object> params = new HashMap<>();
-      params.put("eta", 0.1);
-      params.put("max_depth", 5);
-      params.put("silent", 0);
-      params.put("objective", "binary:logistic");
-
-      HashMap<String, DMatrix> watches = new HashMap<>();
-      watches.put("test", testMat);
-
-      Booster booster = XGBoost.train(trainMat, params, 0, watches, null, null);
-
-      OutputStream os = new FileOutputStream("featureMap.txt");
-      os.write(featureMap[0].getBytes());
-      os.close();
-
-      int ntree = 10;
-      for (int i = 0; i < ntree; ++i) {
-        // train
-        booster.update(trainMat, i);
-
-        // compute model metrics on test set
-        float[][] preds = booster.predict(testMat);
-        double[] dpreds = new double[preds.length];
-        for (int j = 0; j < dpreds.length; ++j)
-          dpreds[j] = preds[j][0];
-        Vec pred = Vec.makeVec(dpreds, Vec.newKey());
-        ModelMetricsBinomial mm = ModelMetricsBinomial.make(pred, testFrame.vec(response));
-        Log.info(mm);
-        pred.remove();
-
-        // compute variable importance
-        Map<String, Integer> varimp = booster.getFeatureScore("featureMap.txt");
-        float[] viFloat = new float[varimp.size()];
-        String[] names = new String[varimp.size()];
-        int j=0;
-        for (Map.Entry<String, Integer> it : varimp.entrySet()) {
-          viFloat[j] = it.getValue();
-          names[j] = it.getKey();
-          j++;
-        }
-        VarImp vi = new VarImp(viFloat, names);
-      }
-    } finally {
-      if (trainFrame!=null) trainFrame.remove();
-      if (testFrame!=null) testFrame.remove();
-      if (tfr!=null) tfr.remove();
-    }
-  }
-
-  @Test
   public void WeatherBinary() {
     Frame tfr = null;
     Frame trainFrame = null;
     Frame testFrame = null;
+    Frame preds = null;
     XGBoostModel model = null;
     try {
       // Parse frame into H2O
@@ -288,14 +211,15 @@ public class XGBoostTest extends TestUtil {
       model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
       Log.info(model);
 
-      // TODO - fix scoring and MOJO
-//      preds = model.score(testFrame);
-//      Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
+      preds = model.score(testFrame);
+      Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
+      Assert.assertTrue(preds.anyVec().sigma() > 0);
 
     } finally {
       if (trainFrame!=null) trainFrame.remove();
       if (testFrame!=null) testFrame.remove();
       if (tfr!=null) tfr.remove();
+      if (preds!=null) preds.remove();
       if (model!=null) model.delete();
     }
   }
@@ -308,8 +232,14 @@ public class XGBoostTest extends TestUtil {
     Frame preds = null;
     XGBoostModel model = null;
     try {
+      Scope.enter();
       // Parse frame into H2O
       tfr = parse_test_file("./smalldata/junit/weather.csv");
+      // define special columns
+      String response = "RainTomorrow";
+//      String weight = null;
+//      String fold = null;
+      Scope.track(tfr.replace(tfr.find(response), tfr.vecs()[tfr.find(response)].toCategoricalVec()));   // Convert CAPSULE to categorical
       // remove columns correlated with the response
       tfr.remove("RISK_MM").remove();
       tfr.remove("EvapMM").remove();
@@ -322,10 +252,6 @@ public class XGBoostTest extends TestUtil {
       trainFrame = (Frame)ksplits[0].get();
       testFrame = (Frame)ksplits[1].get();
 
-      // define special columns
-      String response = "RainTomorrow";
-//      String weight = null;
-//      String fold = null;
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._ntrees = 5;
@@ -338,11 +264,17 @@ public class XGBoostTest extends TestUtil {
       model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
       Log.info(model);
 
-      // TODO - fix scoring and MOJO
-//      preds = model.score(testFrame);
-//      Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
+      preds = model.score(testFrame);
+      Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
+      Assert.assertEquals(
+          ((ModelMetricsBinomial)model._output._validation_metrics).auc(),
+          ModelMetricsBinomial.make(preds.vec(2), testFrame.vec(response)).auc(),
+          1e-5
+      );
+      Assert.assertTrue(preds.anyVec().sigma() > 0);
 
     } finally {
+      Scope.exit();
       if (trainFrame!=null) trainFrame.remove();
       if (testFrame!=null) testFrame.remove();
       if (tfr!=null) tfr.remove();
@@ -394,8 +326,13 @@ public class XGBoostTest extends TestUtil {
       Log.info(model);
 
       preds = model.score(testFrame);
-//      Assert.assertTrue(preds.anyVec().sigma() > 0);
       Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
+      Assert.assertEquals(
+          ((ModelMetricsRegression)model._output._validation_metrics).mae(),
+          ModelMetricsRegression.make(preds.anyVec(), testFrame.vec(response), DistributionFamily.gaussian).mae(),
+          1e-5
+      );
+      Assert.assertTrue(preds.anyVec().sigma() > 0);
 
     } finally {
       Scope.exit();
@@ -443,9 +380,9 @@ public class XGBoostTest extends TestUtil {
       model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
       Log.info(model);
 
-      // TODO - fix scoring and MOJO
       preds = model.score(testFrame);
       Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
+      Assert.assertNotEquals(preds.anyVec().sigma(), 0);
 
     } finally {
       if (trainFrame!=null) trainFrame.remove();
@@ -462,6 +399,7 @@ public class XGBoostTest extends TestUtil {
   @Test
   public void MNIST() {
     Frame tfr = null;
+    Frame preds = null;
     XGBoostModel model = null;
     Scope.enter();
     try {
@@ -482,12 +420,17 @@ public class XGBoostTest extends TestUtil {
       model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
       Log.info(model);
 
-      // TODO - fix scoring and MOJO
-//      preds = model.score(testFrame);
-//      Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
-
+      preds = model.score(tfr);
+      Assert.assertTrue(model.testJavaScoring(tfr, preds, 1e-6));
+      preds.remove(0).remove();
+      Assert.assertEquals(
+          ((ModelMetricsMultinomial)model._output._training_metrics).logloss(),
+          ModelMetricsMultinomial.make(preds, tfr.vec(response), tfr.vec(response).domain()).logloss(),
+          1e-5
+      );
     } finally {
       if (tfr!=null) tfr.remove();
+      if (preds!=null) preds.remove();
       if (model!=null) model.delete();
       Scope.exit();
     }
