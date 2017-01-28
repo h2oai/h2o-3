@@ -92,20 +92,12 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   public XGBoostModel(Key<XGBoostModel> selfKey, XGBoostParameters parms, XGBoostOutput output, Frame train, Frame valid) {
     super(selfKey,parms,output);
-
     final DataInfo dinfo = makeDataInfo(train, valid, _parms, output.nclasses());
-    DKV.put(dinfo);
-    _output._names = dinfo._adaptedFrame.names();
-    _output._domains = dinfo._adaptedFrame.domains();
-    _output._origNames = parms._train.get().names();
-    _output._origDomains = parms._train.get().domains();
-
     DKV.put(dinfo);
     setDataInfoToOutput(dinfo);
     model_info = new XGBoostModelInfo(parms,output.nclasses());
     model_info._dataInfoKey = dinfo._key;
   }
-
 
   HashMap<String, Object> createParams() {
     XGBoostParameters p = _parms;
@@ -267,10 +259,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
 
   private void setDataInfoToOutput(DataInfo dinfo) {
-    if (dinfo == null) return;
-    // update the model's expected frame format - needed for train/test adaptation
-//    _output._names = dinfo._adaptedFrame.names();
-//    _output._domains = dinfo._adaptedFrame.domains();
+    _output._names = dinfo._adaptedFrame.names();
+    _output._domains = dinfo._adaptedFrame.domains();
+    _output._origNames = _parms._train.get().names();
+    _output._origDomains = _parms._train.get().domains();
     _output._nums = dinfo._nums;
     _output._cats = dinfo._cats;
     _output._catOffsets = dinfo._catOffsets;
