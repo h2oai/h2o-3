@@ -39,9 +39,8 @@ public class AstLevels extends AstPrimitive {
       if (f.vec(i).isCategorical())
         if (max < f.vec(i).domain().length) max = f.vec(i).domain().length;
 
-    final int rowLayout = Vec.ESPC.rowLayout(keys[0], new long[]{0, max});
     for (int i = 0; i < f.numCols(); ++i) {
-      AppendableVec v = new AppendableVec(keys[i], Vec.T_NUM);
+      AppendableVec v = new AppendableVec(keys[i], new long[]{0, max}, Vec.T_NUM);
       NewChunkAry nc = v.chunkForChunkIdx(0);
       String[] dom = f.vec(i).domain();
       int numToPad = dom == null ? max : max - dom.length;
@@ -49,7 +48,7 @@ public class AstLevels extends AstPrimitive {
         for (int j = 0; j < dom.length; ++j) nc.addNum(j);
       for (int j = 0; j < numToPad; ++j) nc.addNA(0);
       nc.close(fs);
-      vecs[i] = v.close(rowLayout, fs);
+      vecs[i] = v.close(fs);
       vecs[i].setDomain(0,dom);
     }
     fs.blockForPending();

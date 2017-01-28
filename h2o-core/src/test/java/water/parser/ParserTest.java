@@ -23,12 +23,13 @@ public class ParserTest extends TestUtil {
   private final double NaN = Double.NaN;
   private final char[] SEPARATORS = new char[] {',', ' '};
 
+  public static Key makeByteVec(String... data) { return makeByteVec(Key.make(),data);}
   // Make a ByteVec with the specific Chunks
-  public static Key makeByteVec(String... data) {
+  public static Key makeByteVec(Key keyName,String... data) {
     Futures fs = new Futures();
     long[] espc  = new long[data.length+1];
     for( int i = 0; i < data.length; ++i ) espc[i+1] = espc[i]+data[i].length();
-    Key k = Vec.newKey();
+    Key<Vec> k = Vec.newKey(keyName);
     ByteVec bv = new ByteVec(k,Vec.ESPC.rowLayout(k,espc));
     DKV.put(k,bv,fs);
     for( int i = 0; i < data.length; ++i ) {
@@ -132,7 +133,7 @@ public class ParserTest extends TestUtil {
     Key k1 = makeByteVec(sb1.toString());
     Key r1 = Key.make("r1");
     Frame fr = ParseDataset.parse(r1, k1);
-    Assert.assertTrue(fr.vec(0).get_type_str().equals("Enum"));
+    Assert.assertTrue(fr.vec(0).get_type_str().equals("[Enum]"));
     fr.delete();
   }
 
@@ -935,11 +936,11 @@ public class ParserTest extends TestUtil {
     final List<Integer> _nchks;
 
     MockStreamParseWriter(int chunkSize) {
-      super(null, 0, null, null, chunkSize, null);
+      super(0,chunkSize);
       _nchks = new LinkedList<>();
     }
     MockStreamParseWriter(MockStreamParseWriter prev) {
-      super(null, prev._cidx + 1, null, null, prev._chunkSize, null);
+      super(prev._cidx + 1, prev._chunkSize);
       _nchks = prev._nchks;
     }
     @Override public FVecParseWriter nextChunk() {

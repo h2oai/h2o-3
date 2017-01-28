@@ -48,7 +48,7 @@ public class AstLs extends AstPrimitive {
     String[] key_domain = domain.toArray(new String[domain.size()]);
     av.setDomain(0,key_domain);
     keys.close(fs);
-    Vec c0 = av.layout_and_close(fs);   // c0 is the row index vec
+    Vec c0 = av.close(fs);   // c0 is the row index vec
     fs.blockForPending();
     return new ValFrame(new Frame(Key.<Frame>make("h2o_ls"), new String[]{"key"}, new Vec[]{c0}));
   }

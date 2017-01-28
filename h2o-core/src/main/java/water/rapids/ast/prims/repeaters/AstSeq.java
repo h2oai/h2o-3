@@ -47,7 +47,7 @@ public class AstSeq extends AstPrimitive {
       for (int r = 0; r < len; r++) nc.addNum(from + r * by);
       // May need to adjust values = by > 0 ? min(values, to) : max(values, to)
       nc.close(fs);
-      Vec vec = av.layout_and_close(fs);
+      Vec vec = av.close(fs);
       fs.blockForPending();
       return new ValFrame(new Frame(vec));
     }

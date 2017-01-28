@@ -152,7 +152,7 @@ public class AstDdply extends AstPrimitive {
       Futures fs = new Futures();
       Vec[] vgrps = new Vec[_gss.size()];
       for (int i = 0; i < vgrps.length; i++)
-        vgrps[i] = _appendables[i].close(_appendables[i].compute_rowLayout(), fs);
+        vgrps[i] = _appendables[i].close(fs);
       fs.blockForPending();
       return vgrps;
     }

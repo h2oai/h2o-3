@@ -56,7 +56,7 @@ public class ShuffleSplitFrame {
       Vec[] nvecs = new Vec[ncols];
       AppendableVec av = mr.appendables()[i];
       av.setDomains(fr.domains());
-      frames[i] = new Frame(keys[i],fr.names(),av.layout_and_close(fs));
+      frames[i] = new Frame(keys[i],fr.names(),av.close(fs));
       DKV.put(frames[i],fs);
     }
     fs.blockForPending();

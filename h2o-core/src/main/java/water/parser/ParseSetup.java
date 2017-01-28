@@ -80,6 +80,11 @@ public class ParseSetup extends Iced {
     _errs = errs;
   }
 
+  public void validate(){
+    if(_number_columns != _column_types.length)
+      throw new IllegalStateException("number of columns must match number of types");
+  }
+
   /**
    * Create a ParseSetup with parameters from the client.
    *

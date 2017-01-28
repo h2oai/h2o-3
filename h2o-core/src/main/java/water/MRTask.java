@@ -229,9 +229,8 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   private Frame closeFrame(Key key, String[] names, String[][] domains, Futures fs) {
     if( _output_types == null ) return null;
     assert _appendables.length == 1:"OutputFrame should only be created if there is only one appendable vec (i.e. one espc)";
-    int rowLayout = _appendables[0].compute_rowLayout();
     _appendables[0].setDomains(domains);
-    return new Frame(key,names,_appendables[0].close(rowLayout,fs));
+    return new Frame(key,names,_appendables[0].close(fs));
   }
 
 

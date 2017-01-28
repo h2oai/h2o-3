@@ -260,9 +260,9 @@ public class WorkFlowTest extends TestUtil {
       }
 
       Vec[] vecs = new Vec[ncols];
-      final int rowLayout = avecs[0].compute_rowLayout();
+
       for( int c = 0; c < avecs.length; c++ )
-        vecs[c] = avecs[c].close(rowLayout,fs);
+        vecs[c] = avecs[c].close(fs);
       vecs[0].setDomain(0,_fr.vec(1).domain());
       vecs[1].setDomain(0,null);
       vecs[2].setDomain(0,new String[]{"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"});

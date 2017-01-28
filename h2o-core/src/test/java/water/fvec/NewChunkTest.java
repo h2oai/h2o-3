@@ -29,7 +29,7 @@ public class NewChunkTest extends TestUtil {
   private void post() {
     Futures fs = new Futures();
     nc.close(fs);
-    vec = av.layout_and_close(fs);
+    vec = av.close(fs);
     fs.blockForPending();
     assertTrue(DKV.get(vec._key)!=null); // the vec header is in DKV, chunk as well
     assertTrue(DKV.get(vec.chunkKey(0))!=null);

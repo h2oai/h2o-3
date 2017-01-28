@@ -1378,8 +1378,7 @@ public class ArrayUtils {
       NewChunkAry nc = vec.chunkForChunkIdx(0);
       for (double[] row : rows) nc.addNum(row[c]);
       nc.close(fs);
-      if( rowLayout== -1) rowLayout = vec.compute_rowLayout();
-      vecs[c] = vec.close(rowLayout,fs);
+      vecs[c] = vec.close(fs);
     }
     fs.blockForPending();
     Frame fr = new Frame(key, names, new VecAry(vecs));

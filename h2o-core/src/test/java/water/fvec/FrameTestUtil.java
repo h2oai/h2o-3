@@ -32,7 +32,7 @@ public class FrameTestUtil extends Frame {
         ncs.addStr(0,data[r++]);
       ncs.close(fs);
     }
-    Frame f = new Frame(Key.<Frame>make(fname),null,av.layout_and_close(fs));
+    Frame f = new Frame(Key.<Frame>make(fname),null,av.close(fs));
     DKV.put(f._key,f);
     return f;
   }
@@ -47,7 +47,7 @@ public class FrameTestUtil extends Frame {
         ncs.addNum(r++);
       ncs.close(fs);
     }
-    Frame f = new Frame(Key.<Frame>make(fname),null,av.layout_and_close(fs));
+    Frame f = new Frame(Key.<Frame>make(fname),null,av.close(fs));
     DKV.put(f._key,f);
     return f;
   }

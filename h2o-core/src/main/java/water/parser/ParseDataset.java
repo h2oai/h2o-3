@@ -283,7 +283,7 @@ public final class ParseDataset {
       }
 
       job.update(0, "Compressing data.");
-      fr = new Frame(job._result, setup._column_names, avs.closeAll());
+      fr = new Frame(job._result, setup._column_names, avs.close());
       fr.update(job);
       Log.trace("Done compressing data.");
       if (!setup.getParseType().isDomainProvided) {
@@ -311,7 +311,14 @@ public final class ParseDataset {
       }
     } else {                    // No categoricals case
       job.update(0,"Compressing data.");
-      fr = new Frame(job._result, setup._column_names,avs.closeAll());
+      VecAry vecs = new VecAry(avs.close());
+      String [] names = setup._column_names;
+      if(vecs.numCols() > names.length) { //
+        names = Arrays.copyOf(names,vecs.numCols());
+        for(int i = setup._column_names.length; i < names.length; ++i)
+          names[i] = Frame.defaultColName(i);
+      }
+      fr = new Frame(job._result, names,avs.close());
       Log.trace("Done closing all Vecs.");
     }
     // Check for job cancellation

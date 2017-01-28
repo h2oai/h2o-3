@@ -356,7 +356,7 @@ public class TestUtil extends Iced {
     NewChunkAry chunk = avec.chunkForChunkIdx(0);
     for( int r : rows ) chunk.addNum(r);
     chunk.close(fs);
-    Vec vec = avec.layout_and_close(fs);
+    Vec vec = avec.close(fs);
     fs.blockForPending();
     return new VecAry(vec);
   }
@@ -370,7 +370,7 @@ public class TestUtil extends Iced {
       for(int c = 0; c < vals[r].length; ++c)
         chunk.addNum(c,vals[r][c]);
     chunk.close(fs);
-    Vec vec = avec.layout_and_close(fs);
+    Vec vec = avec.close(fs);
     fs.blockForPending();
     return vec;
   }
@@ -385,7 +385,7 @@ public class TestUtil extends Iced {
       for(int c = 0; c < vals[r].length; ++c)
         chunk.addInteger(c,vals[r][c]);
     chunk.close(fs);
-    Vec vec = avec.layout_and_close(fs);
+    Vec vec = avec.close(fs);
     fs.blockForPending();
     return vec;
   }

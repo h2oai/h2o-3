@@ -942,7 +942,7 @@ public class Vec extends Keyed<Vec> {
   public static final int KEY_PREFIX_LEN = 4+4+1+1;
   /** Make a new Key that fits the requirements for a Vec key, based on the
    *  passed-in key.  Used to make Vecs that back over e.g. disk files. */
-  static Key<Vec> newKey(Key k) {
+  public static Key<Vec> newKey(Key k) {
     byte [] kb = k._kb;
     byte [] bits = MemoryManager.malloc1(kb.length + KEY_PREFIX_LEN);
     bits[0] = Key.VEC;
@@ -1521,5 +1521,5 @@ public class Vec extends Keyed<Vec> {
     public static void clear() { ESPCS.clear(); }
     @Override protected long checksum_impl() { throw H2O.fail(); }
   }
-  public Vec[] vecs() {return new Vec[]{this};}
+
 }

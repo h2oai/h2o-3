@@ -24,10 +24,20 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
   private final Vec.VectorGroup _vg;
   private long _errCnt;
 
+  protected FVecParseWriter(int cidx, int chunkSize){
+    _ctypes = null;           // Required not-null
+    _vecs = null;
+    _nvs = null;
+    _categoricals = null;
+    _nCols = 0;
+    _cidx = cidx;
+    _vg = null;
+    _chunkSize = chunkSize;
+  }
   public FVecParseWriter(Vec.VectorGroup vg, int cidx, Categorical[] categoricals, byte[] ctypes, int chunkSize, AppendableVec avs){
     _ctypes = ctypes;           // Required not-null
     _vecs = avs;
-    _nvs =  avs.chunkForChunkIdx(cidx);
+    _nvs = avs.chunkForChunkIdx(cidx);
     _categoricals = categoricals;
     _nCols = avs.numCols();
     _cidx = cidx;

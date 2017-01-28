@@ -18,7 +18,6 @@ public class AppendableVec extends Vec {
   // Temporary ESPC, for uses which do not know the number of Chunks up front.
 
   public long _tmp_espc[];
-  private int [] _blocks;
   // Allow Chunks to have their final Chunk index (set at closing) offset by
   // this much.  Used by the Parser to fold together multi-file AppendableVecs.
   public final int _chunkOff;
@@ -26,13 +25,13 @@ public class AppendableVec extends Vec {
 
   public AppendableVec( Key<Vec> key, byte... types ) { this(key, new long[4], types, 0); }
 
+  public AppendableVec( Key<Vec> key, long[] tmp_espc, byte... types){this(key,tmp_espc,types,0);}
   public AppendableVec( Key<Vec> key, long[] tmp_espc, byte [] types, int chunkOff) {
     super( key, -1/*no rowLayout yet*/, null, types );
     _tmp_espc = tmp_espc;
     _chunkOff = chunkOff;
-    _blocks = new int[]{Integer.MAX_VALUE};
   }
-  public AppendableVec setBlocks(int [] blocks){_blocks = blocks; return this;}
+
   // A NewVector chunk was "closed" - completed.  Add it's info to the roll-up.
   // This call is made in parallel across all node-local created chunks, but is
   // not called distributed.
@@ -42,14 +41,7 @@ public class AppendableVec extends Vec {
     // knows how many final Chunks there will be up front).  Other users are
     // encouraged to set a "large enough" espc - and a shared one at that - to
     // avoid these copies.
-    int off = 0;
-    for(int i = 0; i < _blocks.length; ++i) {
-      if(_blocks[i] == 1)
-        DKV.put(vecs()[i].chunkKey(cidx), db.getColChunk(off), fs);
-      else {
-        DKV.put(vecs()[i].chunkKey(cidx), db.subRange(off, Math.min(db.numCols(), off + _blocks[i])), fs);
-      }
-    }
+    DKV.put(chunkKey(cidx), db, fs);
     _numCols = Math.max(db.numCols(),_numCols);
     // Set the length into the temp ESPC at the Chunk index (accounting for _chunkOff)
     cidx -= _chunkOff;
@@ -59,29 +51,10 @@ public class AppendableVec extends Vec {
     return fs;
   }
 
-  public Vec[] closeAll() {
-    VectorGroup vg = group();
-    int idStart = vecId();
-    Futures fs = new Futures();
-    int row_layout = compute_rowLayout();
-    Vec [] res = new Vec[_blocks.length];
-    int sum = 0;
-    for(int i = 0; i < _blocks.length; ++i) {
-      int bsz = Math.min(_numCols-sum,_blocks[i]);
-      DKV.put(res[i] = new Vec(vg.vecKey(idStart + i), row_layout, domains() == null?null:Arrays.copyOfRange(domains(),sum,sum+bsz), Arrays.copyOfRange(_types,sum,sum+bsz)), fs);
-      sum += bsz;
-      _blocks[i] = bsz;
-    }
-    assert sum == _numCols;
-    fs.blockForPending();
-    return res;
-  }
-
   public static Vec[] closeAll(AppendableVec [] avs, Futures fs) {
     Vec [] res = new Vec[avs.length];
-    final int rowLayout = avs[0].compute_rowLayout();
     for(int i = 0; i < avs.length; ++i)
-      res[i] = avs[i].close(rowLayout,fs);
+      res[i] = avs[i].close(fs);
     return res;
   }
 
@@ -101,13 +74,14 @@ public class AppendableVec extends Vec {
         _tmp_espc[i] = e1[i];             // Only write if needed
   }
 
-
-  public Vec layout_and_close(Futures fs) { return close(compute_rowLayout(),fs); }
-
-  public int compute_rowLayout() {
+  private int compute_rowLayout(Futures fs) {
     int nchunk = _tmp_espc.length;
-    while( nchunk > 1 && _tmp_espc[nchunk-1] == 0 )
+    DKV.remove(chunkKey(nchunk),fs); // removeVecs potential trailing key
+    // Replacement plain Vec for AppendableVec.
+    while( nchunk > 1 && _tmp_espc[nchunk-1] == 0 ) {
       nchunk--;
+      DKV.remove(chunkKey(nchunk),fs); // removeVecs potential trailing key
+    }
     // Compute elems-per-chunk.
     // Roll-up elem counts, so espc[i] is the starting element# of chunk i.
     long espc[] = new long[nchunk+1]; // Shorter array
@@ -119,18 +93,19 @@ public class AppendableVec extends Vec {
     espc[nchunk]=x;             // Total element count in last
     return ESPC.rowLayout(_key,espc);
   }
+
+  public Vec close() {
+    Futures fs = new Futures();
+    Vec res = close(fs);
+    fs.blockForPending();;
+    return res;
+  }
   // "Close" out a NEW vector - rewrite it to a plain Vec that supports random
   // reads, plus computes rows-per-chunk, min/max/mean, etc.
-  public Vec close(int rowLayout, Futures fs) {
+  public Vec close(Futures fs) {
     // Compute #chunks
-    int nchunk = _tmp_espc.length;
-    DKV.remove(chunkKey(nchunk),fs); // removeVecs potential trailing key
-    // Replacement plain Vec for AppendableVec.
+    int rowLayout = compute_rowLayout(fs);
     Vec vec = new Vec(_key, rowLayout, domains(), _types);
-    while( nchunk > 1 && _tmp_espc[nchunk-1] == 0 ) {
-      nchunk--;
-      DKV.remove(chunkKey(nchunk),fs); // removeVecs potential trailing key
-    }
     DKV.put(_key,vec,fs);       // Inject the header into the K/V store
     return vec;
   }

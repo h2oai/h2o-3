@@ -310,17 +310,20 @@ public final class VecAry extends Iced<VecAry> {
       return fs;
     }
     ArrayUtils.IntAry vids = new ArrayUtils.IntAry();
+    ArrayUtils.IntAry colFilter = new ArrayUtils.IntAry();
     for(int i = 0; i < vecs.length; ++i){
       int from = _blockOffset[i];
       int to = _blockOffset[i+1];
       for(int x:_colFilter){
         if(from <= x && x < to)
           vids.add(x-from);
+        else
+          colFilter.add(x);
       }
-      if(vids.size() > 0) {
-        vecs[i].removeCols(fs, vids.toArray());
-        vids.clear();
-      }
+      vecs[i].removeCols(fs, vids.toArray());
+      _colFilter = colFilter.toArray();
+      colFilter.clear();
+      vids.clear();
     }
     return fs;
   }

@@ -692,7 +692,7 @@ public class Frame extends Lockable<Frame> {
         }
         nc.close(fs);
       }
-      Vec c0 = av.layout_and_close(fs);   // c0 is the row index vec
+      Vec c0 = av.close(fs);   // c0 is the row index vec
       fs.blockForPending();
       Frame ff = new Frame(new String[]{"rownames"}, c0);
       Frame fr2 = new Slice(c2, this).doAll(types(c2),ff).outputFrame(names(c2), domains(c2));

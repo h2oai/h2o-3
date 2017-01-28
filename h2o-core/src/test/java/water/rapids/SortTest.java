@@ -146,7 +146,7 @@ public class SortTest extends TestUtil {
     for( int i=0; i<nChunks; i++ )
       ncs[i].close(fs);
 
-    Vec vec0 = col0.layout_and_close(fs);
+    Vec vec0 = col0.close(fs);
     fs.blockForPending();
     Frame fr = new Frame(Key.<Frame>make("hex"), null, vec0);
     DKV.put(fr);

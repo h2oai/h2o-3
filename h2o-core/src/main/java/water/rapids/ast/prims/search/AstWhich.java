@@ -39,7 +39,7 @@ public class AstWhich extends AstPrimitive {
         if (f.vecs().at8(0,i) != 0)
           chunk.addNum(i);
       Futures fs = chunk.close(new Futures());
-      Vec vec = v.layout_and_close(fs);
+      Vec vec = v.close(fs);
       fs.blockForPending();
       return new ValFrame(new Frame(vec));
     }

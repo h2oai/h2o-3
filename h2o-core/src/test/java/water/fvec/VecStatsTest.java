@@ -23,7 +23,7 @@ public class VecStatsTest extends TestUtil {
           nc.addInteger(i,random.nextInt(1000));
       }
       nc.close(fs);
-      Vec vec2 = vec.layout_and_close(fs);
+      Vec vec2 = vec.close(fs);
       fs.blockForPending();
       frame = new Frame(Key.<Frame>make(), null, vec2);
 

@@ -316,8 +316,8 @@ public class GroupingBench extends TestUtil {
       ncs1[i].close(fs);
     }
 
-    Vec vec0 = col0.layout_and_close(fs);
-    Vec vec1 = col1.layout_and_close(fs);
+    Vec vec0 = col0.close(fs);
+    Vec vec1 = col1.close(fs);
     fs.blockForPending();
     Frame fr = new Frame(Key.<Frame>make("hex"), null, new Vec[]{vec0,vec1});
     DKV.put(fr);

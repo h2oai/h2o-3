@@ -80,7 +80,7 @@ public class ParserTest2 extends TestUtil {
     String[][] expectFalse = new String[][] { ar("'Tomass"  ,"test"  ,"first","line'"),
                                               ar("'Tomas''s","test2'","test2",null),
                                               ar("last","'line''s","trailing","piece'") };
-    Key k = ParserTest.makeByteVec(data);
+    Key k = ParserTest.makeByteVec(Key.make("testSingleQuotes_fr1"),data);
     ParseSetup gSetupF = ParseSetup.guessSetup(null, data[0].getBytes(), CSV_INFO, (byte)',', 4, false/*single quote*/, ParseSetup.NO_HEADER, null, null, null, null);
     gSetupF._column_types = ParseSetup.strToColumnTypes(new String[]{"Enum", "Enum", "Enum", "Enum"});
     Frame frF = ParseDataset.parse(Key.make(), new Key[]{k}, false, gSetupF);
@@ -90,9 +90,10 @@ public class ParserTest2 extends TestUtil {
                                              ar("Tomas''stest2","test2"),
                                              ar("last", "lines trailing piece") };
     ParseSetup gSetupT = ParseSetup.guessSetup(null, data[0].getBytes(), CSV_INFO, (byte)',', 2, true/*single quote*/, ParseSetup.NO_HEADER, null, null, null, null);
-    gSetupT._column_types = ParseSetup.strToColumnTypes(new String[]{"Enum", "Enum", "Enum", "Enum"});
+    gSetupT._column_types = ParseSetup.strToColumnTypes(new String[]{"Enum", "Enum"});
+    gSetupT.validate();
     Frame frT = ParseDataset.parse(Key.make(), new Key[]{k}, true, gSetupT);
-    //testParsed(frT,expectTrue);  // not currently passing
+//    testParsed(frT,expectTrue);  // not currently passing
     frT.delete();
   }
 

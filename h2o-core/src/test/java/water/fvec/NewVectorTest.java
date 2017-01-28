@@ -94,7 +94,7 @@ public class NewVectorTest extends TestUtil {
       int xs[] = new int[]{0,0,0,0}; // A 4-row chunk
       NewChunkAry nc = av.chunkForChunkIdx(0);
       nc.close(fs);
-      vec = av.layout_and_close(fs);
+      vec = av.close(fs);
       fs.blockForPending();
       assertEquals(nc.len(), vec.length());
       // Compression returns the expected constant-compression-type:

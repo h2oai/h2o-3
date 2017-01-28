@@ -177,8 +177,8 @@ public class WordCountTask extends MRTask<WordCountTask> {
     //finalize vectors
     wordNC.close(fs);
     cntNC.close(fs);
-    vecs[0] = wordAV.layout_and_close(fs);
-    vecs[1] = cntAV.layout_and_close(fs);
+    vecs[0] = wordAV.close(fs);
+    vecs[1] = cntAV.close(fs);
     fs.blockForPending();
 
     if(_fr != null && _fr._key != null) _wordCountKey = Key.make("wca_"+_fr._key.toString());
