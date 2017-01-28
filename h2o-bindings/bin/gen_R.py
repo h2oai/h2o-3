@@ -854,7 +854,7 @@ def indent(string, n):
     return " " * n + string
 
 def normalize_value(param, is_help = False):
-    if not(is_help) and param["type"][:4] == "enum":
+    if not(is_help) and param["type"][:4] == "enum":  
         return "c(%s)" % ", ".join('"%s"' % p for p in param["values"])
     if param["default_value"] is None:
         if param["type"] in ["short", "int", "long", "double"]:
@@ -862,7 +862,10 @@ def normalize_value(param, is_help = False):
         else:
             return "NULL"
     if not(is_help) and "[]" in param["type"]:
-        return "c(%s)" % ", ".join('%s' % p for p in param["default_value"])
+        if param["name"] == "base_models":
+            return "list()"
+        else:    
+            return "c(%s)" % ", ".join('%s' % p for p in param["default_value"])
     if param["type"] == "boolean":
         return str(param["default_value"]).upper()
     if param["type"] == "double":
