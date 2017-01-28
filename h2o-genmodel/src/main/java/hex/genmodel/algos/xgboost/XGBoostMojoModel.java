@@ -6,8 +6,6 @@ import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 
-import java.util.Arrays;
-
 
 /**
  * "Gradient Boosting Machine" MojoModel
@@ -75,7 +73,6 @@ public final class XGBoostMojoModel extends MojoModel {
     } else {
       preds[0] = out[0][0];
     }
-    System.out.println(Arrays.toString(floats) + " -> " + Arrays.toString(preds));
     return preds;
   }
 
