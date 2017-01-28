@@ -181,9 +181,15 @@ public class XGBoostTest extends TestUtil {
     Frame testFrame = null;
     Frame preds = null;
     XGBoostModel model = null;
+    Scope.enter();
     try {
       // Parse frame into H2O
       tfr = parse_test_file("./smalldata/junit/weather.csv");
+      // define special columns
+      String response = "RainTomorrow";
+//      String weight = null;
+//      String fold = null;
+      Scope.track(tfr.replace(tfr.find(response), tfr.vecs()[tfr.find(response)].toCategoricalVec()));
       // remove columns correlated with the response
       tfr.remove("RISK_MM").remove();
       tfr.remove("EvapMM").remove();
@@ -196,16 +202,11 @@ public class XGBoostTest extends TestUtil {
       trainFrame = (Frame)ksplits[0].get();
       testFrame = (Frame)ksplits[1].get();
 
-      // define special columns
-      String response = "RainTomorrow";
-      String weight = null;
-      String fold = null;
-
-
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._ntrees = 5;
       parms._max_depth = 5;
-      parms._train = tfr._key;
+      parms._train = trainFrame._key;
+      parms._valid = testFrame._key;
       parms._response_column = response;
 
       model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
@@ -213,9 +214,15 @@ public class XGBoostTest extends TestUtil {
 
       preds = model.score(testFrame);
       Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
+      Assert.assertEquals(
+          ((ModelMetricsBinomial)model._output._validation_metrics).auc(),
+          ModelMetricsBinomial.make(preds.vec(2), testFrame.vec(response)).auc(),
+          1e-5
+      );
       Assert.assertTrue(preds.anyVec().sigma() > 0);
 
     } finally {
+      Scope.exit();
       if (trainFrame!=null) trainFrame.remove();
       if (testFrame!=null) testFrame.remove();
       if (tfr!=null) tfr.remove();
@@ -239,7 +246,7 @@ public class XGBoostTest extends TestUtil {
       String response = "RainTomorrow";
 //      String weight = null;
 //      String fold = null;
-      Scope.track(tfr.replace(tfr.find(response), tfr.vecs()[tfr.find(response)].toCategoricalVec()));   // Convert CAPSULE to categorical
+      Scope.track(tfr.replace(tfr.find(response), tfr.vecs()[tfr.find(response)].toCategoricalVec()));
       // remove columns correlated with the response
       tfr.remove("RISK_MM").remove();
       tfr.remove("EvapMM").remove();
@@ -382,7 +389,7 @@ public class XGBoostTest extends TestUtil {
 
       preds = model.score(testFrame);
       Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
-      Assert.assertNotEquals(preds.anyVec().sigma(), 0);
+      Assert.assertTrue(preds.anyVec().sigma() > 0);
 
     } finally {
       if (trainFrame!=null) trainFrame.remove();
