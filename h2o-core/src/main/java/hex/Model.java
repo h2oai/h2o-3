@@ -1073,8 +1073,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   /** Allow subclasses to define their own BigScore class. */
-  protected BigScore makeBigScore(String[][] domains, String[] names , Frame adaptFrm, boolean computeMetrics, Job j) {
-    return new BigScore(domains[0],names.length,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, true /*make preds*/, j).doAll(names.length, Vec.T_NUM, adaptFrm);
+  protected BigScore makeBigScoreTask(String[][] domains, String[] names , Frame adaptFrm, boolean computeMetrics, boolean makePrediction, Job j) {
+    return new BigScore(domains[0],
+                        names != null ? names.length : 0,
+                        adaptFrm.means(),
+                        _output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,
+                        computeMetrics,
+                        makePrediction,
+                        j);
+        //.doAll(names.length, Vec.T_NUM, adaptFrm);
   }
 
   /** Score an already adapted frame.  Returns a new Frame with new result
@@ -1093,7 +1100,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     domains[0] = names.length == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
 
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = makeBigScore(domains, names, adaptFrm, computeMetrics, j).doAll(names.length, Vec.T_NUM, adaptFrm);
+    BigScore bs = makeBigScoreTask(domains, names, adaptFrm, computeMetrics, true, j).doAll(names.length, Vec.T_NUM, adaptFrm);
 
     if (computeMetrics)
       bs._mb.makeModelMetrics(this, fr, adaptFrm, bs.outputFrame());
@@ -1108,12 +1115,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   protected ModelMetrics.MetricBuilder scoreMetrics(Frame adaptFrm) {
     final boolean computeMetrics = (!isSupervised() || (adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad()));
     // Build up the names & domains.
-    String[] names = makeScoringNames();
-    String[][] domains = new String[names.length][];
-    domains[0] = names.length == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
+    //String[] names = makeScoringNames();
+    String[][] domains = new String[1][];
+    domains[0] = _output.nclasses() == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
 
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = makeBigScore(domains, names, adaptFrm, computeMetrics, null).doAll(names.length, Vec.T_NUM, adaptFrm);
+    BigScore bs = makeBigScoreTask(domains, null, adaptFrm, computeMetrics, false, null).doAll(adaptFrm);
     return bs._mb;
   }
 

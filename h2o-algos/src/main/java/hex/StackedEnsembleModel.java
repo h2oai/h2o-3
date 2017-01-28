@@ -93,7 +93,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       base.adaptTestForTrain(adaptedFrame, true, computeMetrics);
 
       // TODO: parallel scoring for the base_models
-      BigScore baseBs = (BigScore)base.makeBigScore(domains, names, adaptedFrame, computeMetrics, j).doAll(names.length, Vec.T_NUM, adaptedFrame);
+      BigScore baseBs = (BigScore) base.makeBigScoreTask(domains, names, adaptedFrame, computeMetrics, true, j).doAll(names.length, Vec.T_NUM, adaptedFrame);
       Frame basePreds = baseBs.outputFrame(Key.<Frame>make("preds_base_" + this._key.toString() + fr._key), names, domains);
       base_prediction_frames[baseIdx] = basePreds;
       StackedEnsemble.addModelPredictionsToLevelOneFrame(base, basePreds, levelOneFrame);
@@ -121,7 +121,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     String[][] metaDomains = new String[metaNames.length][];
     metaDomains[0] = metaNames.length == 1 ? null : !computeMetrics ? metalearner._output._domains[metalearner._output._domains.length-1] : levelOneAdapted.lastVec().domain();
 
-    BigScore metaBs = (BigScore)metalearner.makeBigScore(metaDomains, metaNames, levelOneAdapted, computeMetrics, j).
+    BigScore metaBs = (BigScore)metalearner.makeBigScoreTask(metaDomains, metaNames, levelOneAdapted, computeMetrics, true, j).
             doAll(metaNames.length, Vec.T_NUM, levelOneAdapted);
 
     if (computeMetrics) {
