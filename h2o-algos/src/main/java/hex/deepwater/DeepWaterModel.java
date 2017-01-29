@@ -532,13 +532,12 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     return preds;
   }
 
-  @Override public double[] score0(double[] data, double[] preds, double weight, double offset) {
-    assert(weight==1);
+  @Override public double[] score0(double[] data, double[] preds, double offset) {
     assert(offset==0);
     return score0(data, preds);
   }
 
-  @Override public double[] score0(Chunk chks[], double weight, double offset, int row_in_chunk, double[] tmp, double[] preds ) {
+  @Override public double[] score0(Chunk chks[], double offset, int row_in_chunk, double[] tmp, double[] preds ) {
     throw H2O.unimpl();
   }
 
