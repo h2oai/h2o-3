@@ -1013,8 +1013,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   private static ThreadLocal<double[]> _eta = new ThreadLocal<>();
 
-  @Override protected double[] score0(double[] data, double[] preds){return score0(data,preds,1,0);}
-  @Override protected double[] score0(double[] data, double[] preds, double w, double o) {
+  @Override protected double[] score0(double[] data, double[] preds){return score0(data,preds,0);}
+  @Override protected double[] score0(double[] data, double[] preds, double o) {
     if(_parms._family == Family.multinomial) {
       if(o != 0) throw H2O.unimpl("Offset is not implemented for multinomial.");
       double[] eta = _eta.get();

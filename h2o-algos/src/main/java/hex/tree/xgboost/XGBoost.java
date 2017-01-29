@@ -78,16 +78,16 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 //    float[] data = new float[]     {1f,2f,  4f,3f,  3f,1f,2f};     //non-zeros across each row
 //    int[] colIndex = new int[]     {0, 2,   0, 3,   0, 1, 2};      //col index for each non-zero
 
-    int nRows = (int)di._adaptedFrame.numRows();
+    int nRows = (int)f.numRows();
     long[] rowHeaders = new long[nRows+1];
     int initial_size = 1<<20;
     float[] data   = new float[initial_size];
     int[] colIndex = new int[initial_size];
 
-    Vec.Reader w = weight == null ? null : di.getWeightsVec().new Reader();
-    Vec.Reader[] vecs = new Vec.Reader[di._adaptedFrame.numCols()];
+    Vec.Reader w = weight == null ? null : f.vec(weight).new Reader();
+    Vec.Reader[] vecs = new Vec.Reader[f.numCols()];
     for (int i=0; i<vecs.length; ++i) {
-      vecs[i] = di._adaptedFrame.vec(i).new Reader();
+      vecs[i] = f.vec(i).new Reader();
     }
 
     // extract predictors
@@ -137,7 +137,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
 
     // extract response vector
-    Vec.Reader respVec = di._adaptedFrame.lastVec().new Reader();
+    Vec.Reader respVec = f.vec(response).new Reader();
     float[] resp = new float[row];
     int j=0;
     for (int i=0;i<nRows;++i) {
