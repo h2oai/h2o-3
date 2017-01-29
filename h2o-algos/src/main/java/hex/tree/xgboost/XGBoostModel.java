@@ -158,7 +158,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   @Override
   protected double[] score0(double[] data, double[] preds) {
-    return score0(data, preds, 1.0, 0.0);
+    return score0(data, preds, 0.0);
   }
 
 
@@ -172,8 +172,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   // For multinomial, we also need to transpose the data - which is slow
   private ModelMetrics makeMetrics(Booster booster, DMatrix data) throws XGBoostError {
     ModelMetrics[] mm = new ModelMetrics[1];
-    Frame pred = makePreds(booster, data, mm);
-    pred.remove();
+    makePreds(booster, data, mm).remove();
     return mm[0];
   }
 
@@ -181,12 +180,14 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     Frame predFrame;
     float[][] preds = booster.predict(data);
     Vec resp = Vec.makeVec(data.getLabel(), Vec.newKey());
+    float[] weights = data.getWeight();
     if (_output.nclasses()<=2) {
       double[] dpreds = new double[preds.length];
       for (int j = 0; j < dpreds.length; ++j)
         dpreds[j] = preds[j][0];
-//      for (int j = 0; j < dpreds.length; ++j)
-//        assert (data.getWeight()[j] == 1.0);
+      if (weights.length>0)
+        for (int j = 0; j < dpreds.length; ++j)
+          assert weights[j] == 1.0;
       Vec pred = Vec.makeVec(dpreds, Vec.newKey());
       if (_output.nclasses() == 1) {
         mm[0] = ModelMetricsRegression.make(pred, resp, DistributionFamily.gaussian);
@@ -251,9 +252,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
 
   @Override
-  public double[] score0(double[] data, double[] preds, double weight, double offset) {
+  public double[] score0(double[] data, double[] preds, double offset) {
     DataInfo di = model_info._dataInfoKey.get();
-    return XGBoostMojoModel.score0(data, offset, weight, preds,
+    return XGBoostMojoModel.score0(data, offset, preds,
             model_info._booster, di._nums, di._cats, di._catOffsets, di._useAllFactorLevels,
             _output.nclasses(), _output._priorClassDist, defaultThreshold());
   }
