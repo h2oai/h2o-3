@@ -54,29 +54,6 @@ final public class XGBoostModelInfo extends Iced {
     }
   }
 
-  void saveNativeState(String path) {
-    assert(_booster !=null);
-    try {
-      _booster.saveModel(path);
-    } catch (XGBoostError xgBoostError) {
-      xgBoostError.printStackTrace();
-    }
-  }
-
-  float[] predict(float[] data) {
-    try {
-      DMatrix dmat = new DMatrix(data, 1, data.length);
-      float[][] p = _booster.predict(dmat);
-      float[] preds = new float[p.length];
-      for (int j = 0; j < preds.length; ++j)
-        preds[j] = p[j][0];
-      return preds;
-    } catch (XGBoostError xgBoostError) {
-      xgBoostError.printStackTrace();
-    }
-    return null;
-  }
-
   @Override
   public int hashCode() {
     return Arrays.hashCode(_boosterBytes);
