@@ -25,6 +25,9 @@ import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.HashMap;
 
+import static hex.tree.SharedTree.createModelSummaryTable;
+import static hex.tree.SharedTree.createScoringHistoryTable;
+
 /** Gradient Boosted Trees
  *
  *  Based on "Elements of Statistical Learning, Second Edition, page 387"
@@ -53,7 +56,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       for (int i = 0; i < di.fullN(); ++i) {
         sb.append(i).append(" ").append(coefnames[i]).append(" ");
         int catCols = di._catOffsets[di._catOffsets.length-1];
-        if (i < catCols)
+        if (i < catCols || f.vec(i-catCols).isBinary())
           sb.append("i");
         else if (f.vec(i-catCols).isInt())
           sb.append("int");
@@ -98,18 +101,21 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       if (w != null && w.at(i) == 0) continue;
       int nzstart = nz;
       // enlarge final data arrays by 2x if needed
-      while (data.length<nz+1+di._nums) {
+      while (data.length<nz+di._cats+di._nums) {
+        Log.info("Enlarging sparse data structure from " + data.length + " bytes to " + (data.length<<1) + " bytes.");
         data = Arrays.copyOf(data, data.length<<1);
         colIndex = Arrays.copyOf(colIndex, colIndex.length<<1);
       }
       for (int j=0;j<di._cats;++j) {
-        data[nz] = 1; //one-hot encoding
-        colIndex[nz] = di.getCategoricalId(j, vecs[j].at8(i));
-        nz++;
+        if (!vecs[j].isNA(i)) {
+          data[nz] = 1; //one-hot encoding
+          colIndex[nz] = di.getCategoricalId(j, vecs[j].at8(i));
+          nz++;
+        }
       }
       for (int j=0;j<di._nums;++j) {
         float val = (float)vecs[di._cats+j].at(i);
-        if (val != 0) {
+        if (!Float.isNaN(val) && val != 0) {
           data[nz] = val;
           colIndex[nz] = di._catOffsets[di._catOffsets.length - 1] + j;
           nz++;
@@ -176,7 +182,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   public boolean isSupervised(){return true;}
 
   @Override protected int nModelsInParallel() {
-    return 1;
+    return 2;
   }
 
   /** Start the XGBoost training Job on an F/J thread. */
@@ -223,6 +229,10 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       if (hasOffsetCol()) {
         error("_offset_column", "Offset is not supported for XGBoost.");
       }
+    }
+
+    if (H2O.CLOUD.size()>1) {
+      throw new IllegalArgumentException("XGBoost is currently only supported in single-node mode.");
     }
 
     switch( _parms._distribution) {
@@ -330,9 +340,10 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         DMatrix validMat = _valid != null ? convertFrametoDMatrix(model.model_info()._dataInfoKey, _valid,
             _parms._response_column, _parms._weights_column, _parms._fold_column, featureMap) : null;
 
+        // For feature importances - write out column info
         OutputStream os;
         try {
-          os = new FileOutputStream("featureMap.txt");
+          os = new FileOutputStream("/tmp/featureMap.txt");
           os.write(featureMap[0].getBytes());
           os.close();
         } catch (FileNotFoundException e) {
@@ -419,9 +430,13 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         _timeLastScoreStart = now;
         model.doScoring(booster, trainMat, validMat);
         _timeLastScoreEnd = System.currentTimeMillis();
-        model.computeVarImp(booster.getFeatureScore("featureMap.txt"));
+        model.computeVarImp(booster.getFeatureScore("/tmp/featureMap.txt"));
+        XGBoostOutput out = model._output;
+        out._model_summary = createModelSummaryTable(out._ntrees, null);
+        out._scoring_history = createScoringHistoryTable(out, model._output._scored_train, out._scored_valid, _job, out._training_time_ms);
+        out._variable_importances = hex.ModelMetrics.calcVarImp(out._varimp);
         model.update(_job);
-//        Log.info(model);
+        Log.info(model);
         scored = true;
       }
       return scored;
@@ -431,7 +446,5 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   private double effective_learning_rate(XGBoostModel model) {
     return _parms._learn_rate * Math.pow(_parms._learn_rate_annealing, (model._output._ntrees-1));
   }
-
-
 
 }
