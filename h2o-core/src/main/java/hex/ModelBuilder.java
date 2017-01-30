@@ -462,7 +462,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
       // free resources as early as possible
       if (adaptFr != null) {
-        cvModel.cleanup_adapt(adaptFr, cvValid);
+        Model.cleanup_adapt(adaptFr, cvValid);
         DKV.remove(adaptFr._key,fs);
       }
       DKV.remove(cvModelBuilders[i]._parms._train,fs);
