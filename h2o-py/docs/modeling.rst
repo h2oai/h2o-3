@@ -49,6 +49,12 @@ Supervised
     :show-inheritance:
     :members:
 
+:mod:`H2OXGBoostEstimator`
+--------------------------
+.. autoclass:: h2o.estimators.xgboost.H2OXGBoostEstimator
+    :show-inheritance:
+    :members:
+
 
 Unsupervised
 ++++++++++++
