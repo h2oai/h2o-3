@@ -11,13 +11,12 @@ def h2oframes():
     Python API test: h2o.frames()
     """
     try:
-        h2o.remove_all()    # remove all objects first
         training_data = h2o.import_file(pyunit_utils.locate("smalldata/logreg/benign.csv"))
         arrestsH2O = h2o.upload_file(pyunit_utils.locate("smalldata/pca_test/USArrests.csv"))
         prostate = h2o.upload_file(pyunit_utils.locate("smalldata/prostate/prostate_cat.csv"))
         all_frames_summary = h2o.frames()
         assert_is_type(all_frames_summary, H2OResponse)
-        assert len(all_frames_summary['frames'])==3, "h2o.frames() command is not working.  It did not fetch all 3 " \
+        assert len(all_frames_summary['frames'])>=3, "h2o.frames() command is not working.  It did not fetch all 3 " \
                                                      "frame summaries."
         total_columns = training_data.ncol+arrestsH2O.ncol+prostate.ncol
         summary_total_columns = all_frames_summary['frames'][0]['columns']+all_frames_summary['frames'][1]['columns']\
