@@ -448,6 +448,7 @@ public class XGBoostTest extends TestUtil {
       parms._train = trainFrame._key;
       parms._valid = testFrame._key;
       parms._response_column = response;
+      parms._ignored_columns = new String[]{"ID"};
 
       model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
       Log.info(model);

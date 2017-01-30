@@ -1309,9 +1309,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       } finally {
         closeBigScorePredict();
       }
-
-
-      if ( _j != null) _j.update(1);
     }
     @Override public void reduce( BigScore bs ) { if(_mb != null )_mb.reduce(bs._mb); }
     @Override protected void postGlobal() { if(_mb != null)_mb.postGlobal(); }
