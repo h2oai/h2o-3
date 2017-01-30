@@ -2,8 +2,10 @@ package hex.schemas;
 
 import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.XGBoostOutput;
+import water.api.API;
 import water.api.schemas3.ModelOutputSchemaV3;
 import water.api.schemas3.ModelSchemaV3;
+import water.api.schemas3.TwoDimTableV3;
 
 public class XGBoostModelV3 extends ModelSchemaV3<
         XGBoostModel,
@@ -13,7 +15,10 @@ public class XGBoostModelV3 extends ModelSchemaV3<
         XGBoostOutput,
         XGBoostModelV3.XGBoostModelOutputV3> {
 
-  public static final class XGBoostModelOutputV3 extends ModelOutputSchemaV3<XGBoostOutput, XGBoostModelOutputV3> {}
+  public static final class XGBoostModelOutputV3 extends ModelOutputSchemaV3<XGBoostOutput, XGBoostModelOutputV3> {
+    @API(help="Variable Importances", direction=API.Direction.OUTPUT, level = API.Level.secondary)
+    TwoDimTableV3 variable_importances;
+  }
 
   public XGBoostV3.XGBoostParametersV3 createParametersSchema() { return new XGBoostV3.XGBoostParametersV3(); }
   public XGBoostModelOutputV3 createOutputSchema() { return new XGBoostModelOutputV3(); }
