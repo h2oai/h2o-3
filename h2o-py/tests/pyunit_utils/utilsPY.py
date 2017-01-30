@@ -2820,6 +2820,3 @@ def cannaryHDFSTest(hdfs_name_node, file_name):
             return True
         else:       # exception is caused by other reasons.
             return False
-
-
-
