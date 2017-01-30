@@ -35,6 +35,14 @@ import static hex.tree.SharedTree.createScoringHistoryTable;
 public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParameters,XGBoostOutput> {
   @Override public boolean haveMojo() { return true; }
 
+  static boolean haveBackend() {
+    return true;
+  }
+
+  @Override public BuilderVisibility builderVisibility() {
+    return haveBackend() ? BuilderVisibility.Stable : BuilderVisibility.Experimental;
+  }
+
   /**
    * convert an H2O Frame to a sparse DMatrix
    * @param f H2O Frame
