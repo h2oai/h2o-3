@@ -12,7 +12,7 @@ The speed, quality, ease-of-use, and model-deployment for the various cutting ed
 Requirements
 ------------
 
-The `Recommended Systems <http://www.h2o.ai/product/recommended-systems-for-h2o/>`_ PDF provides a basic overview of the operating systems, languages and APIs, Hadoop resource manager versions, cloud computing environments, browsers, and other resources recommended to run H2O. At a minimum, we recommend the following for compatibility with H2O:
+At a minimum, we recommend the following for compatibility with H2O:
 
 -  **Operating Systems**:
  
@@ -34,13 +34,13 @@ The `Recommended Systems <http://www.h2o.ai/product/recommended-systems-for-h2o/
    -  Python 2.7.x or 3.5.x 
 
 -  **Browser**: An internet browser is required to use H2O's web UI, Flow. Supported versions include the latest version of Chrome, Firefox, Safari, or Internet Explorer. 
--  **Hadoop**: Hadoop is not required to run H2O unless you want to deploy H2O on a Hadoop cluster. Supported versions are listed on the `Download page <http://www.h2o.ai/download/h2o/hadoop>`_ for Hadoop and include:
+-  **Hadoop**: Hadoop is not required to run H2O unless you want to deploy H2O on a Hadoop cluster. Supported versions are listed on the `Download page <http://www.h2o.ai/download/>`_ (when you select the Install on Hadoop tab) and include:
 
    -  Cloudera CDH 5.2 or later (5.3 is recommended)
    -  MapR 3.1.1 or later
    -  Hortonworks HDP 2.1 or later 
 
--  **Spark**: Version 1.4 or later. Spark is only required if you want to run
+-  **Spark**: Version 1.6 or 2.0. Spark is only required if you want to run
    `Sparkling Water <https://github.com/h2oai/sparkling-water>`__.
 
 
@@ -71,8 +71,7 @@ learn more:
    selecting a build under "Download H2O" (the "Bleeding Edge" build
    contains the latest changes, while the latest alpha release is a more
    stable build), then use the installation instruction tabs to install
-   H2O on your `client of choice <http://www.h2o.ai/download/h2o/choose>`_
-   (standalone, R, Python, Hadoop, or Maven).
+   H2O on your client of choice (standalone, R, Python, Hadoop, or Maven).
 
    For first-time users, we recommend downloading the latest alpha
    release and the default standalone option (the first tab) as the
@@ -88,13 +87,13 @@ learn more:
    -  `Kmeans <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/kmeans/kmeans.md>`_
    -  `Distributed Random Forest (DRF) <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/rf/rf.md>`_
 
--  :ref:`using-flow`: This document describes our new intuitive
+-  :ref:`using-flow`: This section describes our new intuitive
    web interface, Flow. This interface is similar to IPython notebooks,
    and allows you to create a visual workflow to share with others.
 
 -  `Launch from the command line <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/H2O-DevCmdLine.md>`_: This document describes some of the additional options that you can configure when launching H2O (for example, to specify a different directory for saved Flow data, to allocate more memory, or to use a flatfile for quick configuration of a cluster).
 
--  :ref:`Data_Science`: This document describes the science behind our algorithms and provides a detailed, per-algo view of each model type.
+-  :ref:`Data_Science`: This section describes the science behind our algorithms and provides a detailed, per-algo view of each model type.
 
 -  `GitHub Help <https://help.github.com/>`_: The GitHub Help system is a useful resource for becoming familiar with Git. 
 
@@ -229,12 +228,7 @@ Experienced Users
 If you've used previous versions of H2O, the following links will help
 guide you through the process of upgrading to H2O-3.
 
--  `Recommended Systems <http://www.h2o.ai/product/recommended-systems-for-h2o/>`_: This one-page PDF provides a basic overview of
-   the operating systems, languages and APIs, Hadoop resource manager
-   versions, cloud computing environments, browsers, and other resources
-   recommended to run H2O.
-
--  :ref:`migration`: This document provides a comprehensive guide to
+-  :ref:`migration`: This section provides a comprehensive guide to
    assist users in upgrading to H2O 3.0. It gives an overview of the
    changes to the algorithms and the web UI introduced in this version
    and describes the benefits of upgrading for users of R, APIs, and
@@ -300,7 +294,7 @@ Getting Started with Sparkling Water
 
 -  `Building Machine Learning Applications with Sparkling Water <http://docs.h2o.ai/h2o-tutorials/latest-stable/tutorials/sparkling-water/index.html>`_: This short tutorial describes project building and demonstrates the capabilities of Sparkling Water using Spark Shell to build a Deep Learning model.
 
--  `Sparkling Water FAQ <http://www.h2o.ai/product/faq/#SparklingH2O>`_: This FAQ provides answers to many common
+-  `Sparkling Water FAQ <https://github.com/h2oai/sparkling-water/blob/master/README.md#faq>`_: This FAQ provides answers to many common
    questions about Sparkling Water.
 
 -  `Connecting RStudio to Sparkling Water <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/Connecting_RStudio_to_Sparkling_Water.md>`_: This illustrated tutorial describes how to use RStudio to connect to Sparkling Water.
@@ -329,7 +323,7 @@ Sparkling Water Meetup Slide Decks
 PySparkling
 ~~~~~~~~~~~~
 
-**Note**: PySparkling requires Sparkling Water 1.5 or later.
+**Note**: PySparkling requires Sparkling Water 1.6 or later.
 
 H2O's PySparkling package is not available through ``pip``. (There is
 `another <https://pypi.python.org/pypi/pysparkling/>`__ similarly-named
@@ -339,14 +333,14 @@ package.) H2O's PySparkling package requires
 To install H2O's PySparkling package, use the egg file included in the
 distribution.
 
-1. Download `Spark 1.5.1 <https://spark.apache.org/downloads.html>`__.
+1. Download `Spark 1.6 <https://spark.apache.org/downloads.html>`__.
 2. Set the ``SPARK_HOME`` and ``MASTER`` variables as described on the
    `Downloads
-   page <http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.5/6/index.html>`__.
+   page <http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.6/6/index.html>`__.
 3. Download `Sparkling Water
-   1.5 <http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.5/6/index.html>`__
+   1.6 <http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.6/6/index.html>`__
 4. In the unpacked Sparkling Water directory, run the following command:
-   ``easy_install --upgrade sparkling-water-1.5.6/py/dist/pySparkling-1.5.6-py2.7.egg``
+   ``easy_install --upgrade sparkling-water-1.6/py/dist/pySparkling-1.6-py2.7.egg``
 
 
 
