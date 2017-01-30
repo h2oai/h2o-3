@@ -46,7 +46,6 @@ def h2ocreate_frame():
         print("Distribution: {0}".format(distribution))
 
         train = h2o.create_frame(**dataset_params)
-        return_type = "H2OFrame"
         assert_is_type(train, H2OFrame)
         assert train.ncol==dataset_params['cols'], "h2o.create_frame() create frame with wrong column number."
         assert train.nrow==dataset_params['rows'], "h2o.create_frame() create frame with wrong row number."

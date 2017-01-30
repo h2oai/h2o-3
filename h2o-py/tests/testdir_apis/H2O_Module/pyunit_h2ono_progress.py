@@ -8,7 +8,6 @@ try:
     from StringIO import StringIO
 except ImportError:
     from io import StringIO
-from h2o.utils.typechecks import assert_is_type
 
 def h2ono_progress():
     """

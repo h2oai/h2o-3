@@ -14,7 +14,6 @@ def h2oconnect():
     ipA = "127.0.0.1"
     portN = "54321"
     urlS = "http://127.0.0.1:54321"
-    return_type = "H2OConnection"
 
     try:
         connect_type=h2o.connect(ip = ipA, port = portN, verbose = True)
