@@ -3,7 +3,6 @@ import sys
 sys.path.insert(1,"../../../")
 from tests import pyunit_utils
 import h2o
-import urllib.parse
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 from h2o.utils.typechecks import assert_is_type
 from h2o.backend.connection import H2OResponse
