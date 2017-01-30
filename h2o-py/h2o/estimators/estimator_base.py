@@ -199,7 +199,9 @@ class H2OEstimator(ModelBase):
         parms["fold_column"] = fold_column
         parms["weights_column"] = weights_column
         parms["max_runtime_secs"] = max_runtime_secs
-        parms["model_id"] = model_id
+        # Overwrites the model_id parameter only if model_id is passed
+        if model_id is not None:
+            parms["model_id"] = model_id
 
         # Step 2
         is_auto_encoder = "autoencoder" in parms and parms["autoencoder"]

@@ -49,7 +49,7 @@ public class ModelAdaptTest extends TestUtil {
     // Response: merged test & train domains
     Assert.assertArrayEquals(adapt.vec("Response").domain(),new String[]{"X","Y","Z","W"});
 
-    am.cleanup_adapt( adapt, tst );
+    Model.cleanup_adapt(adapt, tst );
     tst.remove();
   }
 
@@ -74,7 +74,7 @@ public class ModelAdaptTest extends TestUtil {
     String[] warns = am.adaptTestForTrain(adapt,true, true);
     Assert.assertTrue(warns.length == 0); // No errors during adaption
 
-    am.cleanup_adapt( adapt, tst );
+    Model.cleanup_adapt(adapt, tst );
     tst.remove();
   }
 
@@ -99,7 +99,7 @@ public class ModelAdaptTest extends TestUtil {
     catch( IllegalArgumentException iae ) { saw_iae = true; }
     Assert.assertTrue(saw_iae);
 
-    am.cleanup_adapt( adapt, tst );
+    Model.cleanup_adapt(adapt, tst );
     tst.remove();
   }
 
