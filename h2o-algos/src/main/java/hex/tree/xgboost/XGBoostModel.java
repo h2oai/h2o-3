@@ -239,6 +239,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
 
   public void computeVarImp(Map<String,Integer> varimp) {
+    if (varimp.isEmpty()) return;
     // compute variable importance
     float[] viFloat = new float[varimp.size()];
     String[] names = new String[varimp.size()];
