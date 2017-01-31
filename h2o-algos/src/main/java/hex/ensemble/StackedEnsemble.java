@@ -40,6 +40,8 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
     };
   }
 
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
+
   @Override protected StackedEnsembleDriver trainModelImpl() { return _driver = new StackedEnsembleDriver(); }
 
   public static void addModelPredictionsToLevelOneFrame(Model aModel, Frame aModelsPredictions, Frame levelOneFrame) {
