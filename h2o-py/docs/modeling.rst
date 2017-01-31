@@ -76,6 +76,12 @@ Unsupervised
     :show-inheritance:
     :members:
 
+:mod:`H2OStackedEnsembleEstimator`
+----------------------------------
+.. autoclass:: h2o.estimators.stackedensemble.H2OStackedEnsembleEstimator
+    :show-inheritance:
+    :members:
+
 
 Miscellaneous
 +++++++++++++

@@ -2,7 +2,6 @@
 # -*- encoding: utf-8 -*-
 from __future__ import unicode_literals
 import bindings as bi
-import re
 import sys
 PY3 = sys.version_info[0] == 3
 str_type = str if PY3 else (str, unicode)
@@ -114,7 +113,6 @@ def gen_module(schema, algo):
     init_extra = init_extra_for(algo)
     class_extra = class_extra_for(algo)
     module_extra = module_extra_for(algo)
-    pattern = re.compile(r"[^a-z]+")
 
     param_names = []
     for param in schema["parameters"]:
@@ -240,6 +238,7 @@ def algo_to_classname(algo):
     if algo == "drf": return "H2ORandomForestEstimator"
     if algo == "svd": return "H2OSingularValueDecompositionEstimator"
     if algo == "pca": return "H2OPrincipalComponentAnalysisEstimator"
+    if algo == "stackedensemble": return "H2OStackedEnsembleEstimator"
     return "H2O" + algo.capitalize() + "Estimator"
 
 def extra_imports_for(algo):
@@ -277,6 +276,12 @@ def help_preamble_for(algo):
             Bayes classifier, every row in the training dataset that contains at least one NA will
             be skipped completely. If the test dataset has missing values, then those predictors
             are omitted in the probability calculation during prediction."""
+    if algo == "stackedensemble":
+        return """
+            Builds a stacked ensemble (aka "super learner") machine learning method that uses two
+            or more H2O learning algorithms to improve predictive performance. It is a loss-based
+            supervised learning method that finds the optimal combination of a collection of prediction
+            algorithms.This method supports regression and binary classification. """
 
 def help_epilogue_for(algo):
     if algo == "deeplearning":
@@ -290,6 +295,26 @@ def help_epilogue_for(algo):
                          >>> fr[4] = fr[4].asfactor()
                          >>> model = H2ODeepLearningEstimator()
                          >>> model.train(x=range(4), y=4, training_frame=fr)"""
+    if algo == "stackedensemble":
+        return """Examples
+                       --------
+                         >>> import h2o
+                         >>> h2o.init()
+                         >>> from h2o.estimators.random_forest import H2ORandomForestEstimator
+                         >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+                         >>> from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
+                         >>> col_types = ["numeric", "numeric", "numeric", "enum", "enum", "numeric", "numeric", "numeric", "numeric"]
+                         >>> dat = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv", destination_frame="prostate_hex", col_types= col_types)
+                         >>> train, test = dat.split_frame(ratios=[.8], seed=1)
+                         >>> x = ["CAPSULE","GLEASON","RACE","DPROS","DCAPS","PSA","VOL"]
+                         >>> y = "AGE"
+                         >>> my_gbm = H2OGradientBoostingEstimator()
+                         >>> my_gbm.train(x=x, y=y, training_frame=train)
+                         >>> my_rf = H2ORandomForestEstimator()
+                         >>> my_rf.train(x=x, y=y, training_frame=train)
+                         >>> stack = H2OStackedEnsembleEstimator(model_id="my_ensemble_guassian", training_frame=train, validation_frame=test, base_models=[my_gbm.model_id,  my_rf.model_id], selection_strategy="choose_all")
+                         >>> stack.train(x=x, y=y, training_frame=train, validation_frame=test)
+                         >>> stack.model_performance()"""
     if algo == "glm":
         return """
             A subclass of :class:`ModelBase` is returned. The specific subclass depends on the machine learning task
@@ -304,6 +329,8 @@ def init_extra_for(algo):
         return "if isinstance(self, H2OAutoEncoderEstimator): self._parms['autoencoder'] = True"
     if algo == "glrm":
         return """self._parms["_rest_version"] = 3"""
+    if algo == "stackedensemble":
+        return """self._parms["_rest_version"] = 99"""
 
 def class_extra_for(algo):
     if algo == "glm":
