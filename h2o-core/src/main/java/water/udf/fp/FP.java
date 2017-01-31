@@ -81,7 +81,7 @@ public class FP {
 
   @SuppressWarnings("unchecked")
   public static <T> Option<T> Option(T t) {
-    return t == null ? None : new Some(t);
+    return t == null ? (Option<T>)None : new Some(t);
   }
 
   @SuppressWarnings("unchecked")
