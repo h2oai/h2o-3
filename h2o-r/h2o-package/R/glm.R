@@ -358,6 +358,12 @@ res = .h2o.__remoteSend(method="GET", .h2o.__ComputeGram, X=h2o.getId(X),W=weigh
 h2o.getFrame(res$destination_frame$name)
 }
 
+#' S3 method to support \code{coef(model)} vis-a-vis other linear models in R
+#' @export
+coef.H2ORegressionModel <- function(h2o_model) {
+  h2o.coef(h2o_model)
+}
+
 ##' Start an H2O Generalized Linear Model Job
 ##'
 ##' Creates a background H2O GLM job.
