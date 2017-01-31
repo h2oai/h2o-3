@@ -23,7 +23,7 @@ class PythonTypeTranslatorForCheck(bi.TypeTranslator):
         self.make_array = lambda vtype: "[%s]" % vtype
         self.make_array2 = lambda vtype: "[[%s]]" % vtype
         self.make_map = lambda ktype, vtype: "{%s: %s}" % (ktype, vtype)
-        self.make_key = lambda itype, schema: "str"
+        self.make_key = lambda itype, schema: "H2OFrame" if schema == "Key<Frame>" else "str"
         self.make_enum = lambda schema, values: \
             "Enum(%s)" % ", ".join(stringify(v) for v in values) if values else schema
 
@@ -49,7 +49,7 @@ class PythonTypeTranslatorForDoc(bi.TypeTranslator):
         self.make_array = lambda vtype: "List[%s]" % vtype
         self.make_array2 = lambda vtype: "List[List[%s]]" % vtype
         self.make_map = lambda ktype, vtype: "Dict[%s, %s]" % (ktype, vtype)
-        self.make_key = lambda itype, schema: "str"
+        self.make_key = lambda itype, schema: "H2OFrame" if schema == "Key<Frame>" else "str"
         self.make_enum = lambda schema, values: \
             "Enum[%s]" % ", ".join(stringify(v) for v in values) if values else schema
 
@@ -204,10 +204,7 @@ def gen_module(schema, algo):
         yield ""
         yield "    @%s.setter" % pname
         yield "    def %s(self, %s):" % (pname, pname)
-        if pname in {"training_frame", "validation_frame", "user_x", "user_y", "user_points", "beta_constraints"}:
-            assert param["ptype"] == "str"
-            yield "        assert_is_type(%s, None, H2OFrame)" % pname
-        elif pname in {"initial_weights", "initial_biases"}:
+        if pname in {"initial_weights", "initial_biases"}:
             yield "        assert_is_type(%s, None, [H2OFrame, None])" % pname
         elif pname in {"alpha", "lambda_"} and ptype == "[numeric]":
             # For `alpha` and `lambda` the server reports type float[], while in practice simple floats are also ok
