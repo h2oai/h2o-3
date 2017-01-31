@@ -18,6 +18,8 @@ import water.util.ArrayUtils;
 import water.util.JCodeGen;
 import water.util.SBPrintStream;
 
+import java.util.Arrays;
+
 import static hex.genmodel.GenModel.Kmeans_preprocessData;
 
 public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
@@ -87,6 +89,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
           double tmp [] = new double[_output._names.length];
           double preds[] = new double[len];
           for(int row = 0; row < chks[0]._len; row++) {
+            Arrays.fill(preds,0);
             double p[] = score_indicator(chks, row, tmp, preds);
             for(int c = 0; c < preds.length; c++)
               chks[_output._names.length + c].set(row, p[c]);
@@ -115,7 +118,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     double[] clus = new double[1];
     score0(tmp, clus);   // this saves cluster number into clus[0]
 
-    assert preds != null && ArrayUtils.l2norm2(preds) == 0 : "preds must be a vector of all zeros";
+    assert preds != null && ArrayUtils.l2norm2(preds) == 0 : "preds must be a vector of all zeros, got " + Arrays.toString(preds);
     assert clus[0] >= 0 && clus[0] < preds.length : "Cluster number must be an integer in [0," + String.valueOf(preds.length) + ")";
     preds[(int)clus[0]] = 1;
     return preds;
