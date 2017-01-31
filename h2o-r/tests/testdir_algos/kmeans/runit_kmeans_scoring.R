@@ -1,18 +1,15 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
-prostate.hex = h2o.importFile( normalizePath("~/h2o-3/smalldata/prostate/prostate.csv"))
-iris.hex = h2o.importFile( normalizePath("~/h2o-3/smalldata/iris/iris2.csv"))
-
 # Test k-means clustering on iris and prostate
 test.km.scoring <- function() {
   
-  Log.info(paste0("Random seed used = ", seed))
   seed = .Random.seed[1]
+  Log.info(paste0("Random seed used = ", seed))
   
   k = 2
   Log.info("Importing iris dataset...\n")
-  iris.hex = h2o.upload( locate("smalldata/iris/iris2.csv"))
+  iris.hex = h2o.uploadFile( locate("smalldata/iris/iris2.csv"))
   
   Log.info("Take first numeric column and insert NAs...\n")
   iris2 = iris.hex[,2]
@@ -77,7 +74,6 @@ test.km.scoring <- function() {
   Log.info("Build K-means model with data with numerics and categoricals...\n")
   km_2 = h2o.kmeans(prostate.hex, k = k, validation_frame = prostate.hex, standardize = F, seed = seed)
   check_kmeans_metrics(km_2)
-  
   Log.info("Insert NAs into prostate dataset with numerics and categoricals...\n")
   prostate.hex = h2o.insertMissingValues(prostate.hex, fraction = 0.1, seed = seed)
   Log.info("Build K-means model with data with 10% missing values...\n")

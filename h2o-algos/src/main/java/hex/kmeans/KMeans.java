@@ -847,23 +847,6 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     }
   }
 
-//  /** To remove
-//   * Takes mean if NaN, standardize if requested.
-//   */
-//  private static double data(double d, int i, double[] means, double[] mults, int[] modes) {
-//    if(modes[i] == -1) {    // Mode = -1 for non-categorical cols
-//      if( Double.isNaN(d) )
-//        d = means[i];
-//      if( mults != null ) {
-//        d -= means[i];
-//        d *= mults[i];
-//      }
-//    } else {
-//      if( Double.isNaN(d) )
-//        d = modes[i];
-//    }
-//    return d;
-//  }
 
   /**
    * This helper creates a ModelMetricsClustering from a trained model
