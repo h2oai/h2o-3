@@ -406,8 +406,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
 
     for(int column = 0; column < center.length; column++) {
       float d = point[column];
-      if( Float.isNaN(d) ) {
-        pts--; continue; }
+      if( Float.isNaN(d) ) { pts--; continue; }
       if( modes[column] != -1 ) { // Categorical?
         if( d != center[column] ) {
           sqr += 1.0;           // Manhattan distance

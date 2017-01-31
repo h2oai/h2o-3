@@ -67,6 +67,7 @@ test.km.scoring <- function() {
   }
   
   Log.info("Build K-means model with the original prostate data...\n")
+  k = 5
   km_1 = h2o.kmeans(prostate.hex, k = k, validation_frame = prostate.hex, standardize = F, seed = seed)
   check_kmeans_metrics(km_1)
   
@@ -85,8 +86,6 @@ test.km.scoring <- function() {
   Log.info("Build K-means model with standardization turned on...\n")
   km_4 = h2o.kmeans(prostate.hex, k = k, validation_frame = prostate.hex, standardize = T, seed = seed)
   check_kmeans_metrics(km_4)
-  
-  Log.info("Build K-means model with ")
   
 }
 

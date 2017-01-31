@@ -1160,7 +1160,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       double[] preds = _mb._work;  // Sized for the union of test and train classes
       int len = chks[0]._len;
       for (int row = 0; row < len; row++) {
-        System.out.println("row " + row);
         double weight = weightsChunk!=null?weightsChunk.atd(row):1;
         if (weight == 0) {
           if (_makePreds) {

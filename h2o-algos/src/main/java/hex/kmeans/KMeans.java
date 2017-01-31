@@ -346,6 +346,10 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         } //k-finder
         vecs2[vecs2.length-1].remove();
 
+        // Create metrics by scoring on training set otherwise scores are based on last Lloyd iteration
+        model.score(_train).delete();
+        model._output._training_metrics = ModelMetrics.getFromDKV(model,_train);
+
         Log.info(model._output._model_summary);
         Log.info(model._output._scoring_history);
         Log.info(((ModelMetricsClustering)model._output._training_metrics).createCentroidStatsTable().toString());
@@ -354,8 +358,8 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         if (_valid != null) {
           model.score(_parms.valid()).delete(); //this appends a ModelMetrics on the validation set
           model._output._validation_metrics = ModelMetrics.getFromDKV(model,_parms.valid());
-          model.update(_job); // Update model in K/V store
         }
+        model.update(_job); // Update model in K/V store
       } finally {
         if( model != null ) model.unlock(_job);
         DKV.remove(bestOutputKey);
@@ -665,7 +669,6 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       double[] values = new double[N]; // Temp data to hold row as doubles
       ClusterDist cd = new ClusterDist();
       for( int row = 0; row < cs[0]._len; row++ ) {
-        System.out.println("LLoyd row " + row);
         double weight = _hasWeight ? cs[N].atd(row) : 1;
         if (weight == 0) continue; //skip holdout rows
         assert(weight == 1); //K-Means only works for weight 1 (or weight 0 for holdout)
