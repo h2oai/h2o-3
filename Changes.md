@@ -2,6 +2,15 @@
 
 ##H2O
 
+###Tverberg (3.10.3.2) - 1/31/2017
+
+<h4>        Bug
+</h4>
+<ul>
+<li> Hotfix: remove StackedEnsemble from Flow UI - right now only supported from Python and R interfaces
+</li>
+</ul>
+
 ###Tverberg (3.10.3.1) - 1/30/2017
 
 <h4>        Bug
