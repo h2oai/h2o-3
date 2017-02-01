@@ -241,6 +241,12 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         // store (possibly) rebalanced input train to pass it to nested SVD job
         Frame tranRebalanced = new Frame(_train);
 
+        if (!_parms._impute_missing) {    // added warning to user per request from Nidhi
+          _job.warn("_train: Dataset used may contain fewer number of rows due to removal of rows with " +
+                  "NA/missing values.  If this is not desirable, set impute_missing argument in pca call to " +
+                  "TRUE/True/true/... depending on the client language.");
+        }
+
         if(_parms._pca_method == PCAParameters.Method.GramSVD) {
           if (_wideDataset && (!_parms._impute_missing) && tranRebalanced.hasNAs()) {
             tinfo = new DataInfo(_train, _valid, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */ _parms._impute_missing, /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
@@ -281,9 +287,11 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           }
 
           // Cannot calculate SVD if all rows contain missing value(s) and hence were skipped
-          if(model._output._nobs == 0) {
-            error("_train", "Every row in _train contains at least one missing value. " +
-                    "Consider setting impute_missing = TRUE or using pca_method = 'GLRM' instead.");
+          // and if the user specify k to be higher than min(number of columns, number of rows)
+          if((model._output._nobs == 0) || (model._output._nobs < _parms._k )) {
+            error("_train", "Number of row in _train is less than k. " +
+                    "Consider setting impute_missing = TRUE or using pca_method = 'GLRM' instead or reducing the " +
+                    "value of parameter k.");
           }
           if (error_count() > 0) {
             throw new IllegalArgumentException("Found validation errors: " + validationErrors());
