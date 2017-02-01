@@ -51,7 +51,8 @@ public class DeepwaterCaffeModel implements BackendModel {
   private void checkStarted() {
     try {
       if (_process == null) {
-        startDocker("h2oai/deepwater");
+//        startDocker("h2oai/deepwater:cpu");
+        startDocker("h2oai/deepwater:gpu");
 //        startRegular();
 
         Cmd cmd = new Cmd();
@@ -67,7 +68,6 @@ public class DeepwaterCaffeModel implements BackendModel {
         // TODO
         // proto.randomSeed = 5;
 
-        System.out.println("send " + cmd.type);
         call(cmd);
       }
     } catch (IOException e) {
@@ -130,7 +130,7 @@ public class DeepwaterCaffeModel implements BackendModel {
     cmd.type = Deepwater.Train;
     if (data.length != _batch_size * _sizes[0])
       throw new RuntimeException();
-    if (label.length != _batch_size * _sizes[_sizes.length - 1])
+    if (label.length != _batch_size)
       throw new RuntimeException();
     float[][] buffs = new float[][] {data, label};
     copy(buffs, cmd);
@@ -146,7 +146,6 @@ public class DeepwaterCaffeModel implements BackendModel {
     float[][] buffs = new float[][] {data};
     copy(buffs, cmd);
     cmd = call(cmd);
-
     ByteBuffer buffer = _buffer.get();
     if (buffer == null || buffer.capacity() < cmd.data[0].length) {
       _buffer.set(buffer = ByteBuffer.allocateDirect(cmd.data[0].length));
@@ -168,9 +167,9 @@ public class DeepwaterCaffeModel implements BackendModel {
         Runtime.getRuntime().exec("id -g").getInputStream())).readLine());
     String pwd = System.getProperty("user.dir") + "/caffe";
 
-//        String cmd = "python -u test.py";
     String opts = "-i --rm --user " + uid + ":" + gid + " -v " + pwd + ":" + pwd + " -w " + pwd;
-//    opts += " -v /home/danilo/h2o-docker/caffe:/h2o-docker/caffe";
+//    String home = System.getProperty("user.home");
+//    opts += " -v " + home + "/h2o-docker/caffe:/h2o-docker/caffe";
     String s = "nvidia-docker run " + opts + " " + image + " python /h2o-docker/caffe/backend.py";
     ProcessBuilder pb = new ProcessBuilder(s.split(" "));
     pb.redirectError(ProcessBuilder.Redirect.INHERIT);
@@ -191,7 +190,6 @@ public class DeepwaterCaffeModel implements BackendModel {
   void close() {
     try {
       _process.waitFor();
-//      return _process.exitValue();
     } catch (InterruptedException ex) {
       // Ignore
     }
@@ -231,7 +229,7 @@ public class DeepwaterCaffeModel implements BackendModel {
       Cmd res = new Cmd();
       CodedInputByteBufferNano in = CodedInputByteBufferNano.newInstance(
           buffer.array(), 0, buffer.position());
-      cmd.mergeFrom(in);
+      res.mergeFrom(in);
       return res;
     } catch (IOException e) {
       throw new RuntimeException(e);
