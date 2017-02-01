@@ -232,6 +232,10 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
       Persist p = H2O.getPM().getPersistForURI(targetUri);
       OutputStream os = p.create(targetUri.toString(),mexport.force);
       model.writeAll(new AutoBuffer(os,true)).close();
+      OutputStream os2 = p.create(targetUri.toString() + ".json",mexport.force);
+      os2.write(model.writeJSON(new AutoBuffer()).buf());
+      OutputStream os3 = p.create(targetUri.toString() + ".train.json",mexport.force);
+      os3.write(model._parms._train.get().writeJSON(new AutoBuffer()).buf());
       // Send back
       mexport.dir = "file".equals(targetUri.getScheme()) ? new File(targetUri).getCanonicalPath() : targetUri.toString();
     } catch (IOException e) {
