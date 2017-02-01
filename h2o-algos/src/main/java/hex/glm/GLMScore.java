@@ -67,6 +67,7 @@ public class GLMScore extends MRTask<GLMScore> {
       _beta = beta;
     }
     _dinfo = dinfo;
+    _dinfo._valid = true; // marking dinfo as validation data set disables an assert on unseen levels (which should not happen in train)
     _defaultThreshold = m.defaultThreshold();
   }
 
