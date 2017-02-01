@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<body>
+<div>
+</div>
+</body>
+<script>
+console.log('window.location', window.location);
+console.log('window.location.href', window.location.href);
+console.log('window.location.search', window.location.search);
+
+const paramsString = window.location.search;
+const searchParams = new URLSearchParams(paramsString);
+const frame = searchParams.get('frame');
+console.log('frame from searchParams', frame);
+
+if (frame !== null) {
+  const div = document.querySelectorAll('div')[0];
+  div.innerHTML = `The h2o data frame from the Flow form is ${frame}`;
+}
+</script>
+</html>
