@@ -1185,6 +1185,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     String [] names = makeScoringNames();
     String [][] domains = new String[names.length][];
     GLMScore gs = makeScoringTask(adaptFrm,true,j);// doAll(names.length,Vec.T_NUM,adaptFrm);
+    assert gs._dinfo._valid:"_valid flag should be set on data info when doing scoring";
     gs.doAll(names.length,Vec.T_NUM,gs._dinfo._adaptedFrame);
     if (gs._computeMetrics)
       gs._mb.makeModelMetrics(this, fr, adaptFrm, gs.outputFrame());
