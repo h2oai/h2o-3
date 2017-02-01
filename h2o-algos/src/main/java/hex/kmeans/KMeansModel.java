@@ -178,9 +178,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
       // Predict function body: main work function is a utility in GenModel class.
       body.ip("preds[0] = KMeans_closest(")
           .pj(mname + "_CENTERS", "VALUES")
-          .p(", data, DOMAINS, ")
-          .pj(mname + "_MEANS", "VALUES").p(", ")
-          .pj(mname + "_MULTS", "VALUES").p(");").nl(); // at function level
+          .p(", data, DOMAINS); ").nl(); // at function level
     } else {
       fileCtx.add(new CodeGenerator() {
         @Override
@@ -193,7 +191,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
       // Predict function body: main work function is a utility in GenModel class.
       body.ip("preds[0] = KMeans_closest(")
           .pj(mname + "_CENTERS", "VALUES")
-          .p(",data, DOMAINS, null, null);").nl(); // at function level
+          .p(",data, DOMAINS);").nl(); // at function level
     }
   }
 
