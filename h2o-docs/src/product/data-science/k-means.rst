@@ -95,6 +95,34 @@ By default, the following output displays:
 
 K-Means randomly chooses starting points and converges to a local minimum of centroids. The number of clusters is arbitrary and should be thought of as a tuning parameter. The output is a matrix of the cluster assignments and the coordinates of the cluster centers in terms of the originally chosen attributes. Your cluster centers may differ slightly from run to run as this problem is Non-deterministic Polynomial-time (NP)-hard.
 
+Estimating `k` in K-Means
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The steps below describe the method that K-Means uses in order to estimate `k`.
+
+1. Beginning with one cluster, run K-Means to compute the centroid.
+2. Find variable with greatest range and split at the mean. 
+3. Run K-Means on the two resulting clusters. 
+4. Find the variable and cluster with the greatest range, and then split that cluster on the variable's mean. 
+5. Run K-Means again, and so on. 
+6. Continue running K-Means until a stopping criterion is met. 
+
+H2O uses proportional reduction in error (:math:`PRE`) to determine when to stop splitting. The :math:`PRE` value is calculated based on the sum of squares within (:math:`SSW`). 
+
+ :math:`PRE=\frac{(SSW\text{[after split]} - SSW\text{[before split]})} {SSW\text{[before split]}}`
+
+H2O stops splitting when :math:`PRE` falls below a :math:`threshold`, which is a function of the number of variables and the number of cases as described below:
+
+:math:`threshold` takes the smaller of these two values:
+
+ either 0.8
+
+  or
+
+ :math:`\big[0.02 + \frac{10}{number\_of\_training\_rows} + \frac{2.5}{number\_of\_model\_features^{2}}\big]`
+
+
+
 FAQ
 ~~~
 
@@ -207,3 +235,5 @@ Xiong, Hui, Junjie Wu, and Jian Chen. “K-means Clustering Versus
 Validation Measures: A Data- distribution Perspective.” Systems, Man,
 and Cybernetics, Part B: Cybernetics, IEEE Transactions on 39.2 (2009):
 318-331.
+
+`Hartigan, John A. Clustering Algorithms. New York: John Wiley & Sons, Inc., N.p., 1975. <http://people.inf.elte.hu/fekete/algoritmusok_msc/klaszterezes/John%20A.%20Hartigan-Clustering%20Algorithms-John%20Wiley%20&%20Sons%20(1975).pdf>`__
