@@ -1,6 +1,7 @@
 package water;
 
 import water.fvec.Vec;
+import water.network.SocketChannelFactory;
 
 import javax.print.DocFlavor;
 import java.io.IOException;
@@ -36,8 +37,8 @@ public class ExternalFrameUtils {
      * frames or write to H2O frames from non-H2O environment, such as Spark executor.
      */
     public static ByteChannel getConnection(String h2oNodeHostname, int h2oNodeApiPort) throws IOException{
-        return H2ONode.openChan(TCPReceiverThread.TCP_EXTERNAL, null, h2oNodeHostname, h2oNodeApiPort +1);
-
+        SocketChannelFactory socketFactory = SocketChannelFactory.instance(H2OSecurityManager.instance());
+        return H2ONode.openChan(TCPReceiverThread.TCP_EXTERNAL, socketFactory, h2oNodeHostname, h2oNodeApiPort +1);
     }
 
     public static ByteChannel getConnection(String ipPort) throws IOException{

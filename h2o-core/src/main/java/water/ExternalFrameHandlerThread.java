@@ -1,6 +1,7 @@
 package water;
 
 import java.io.IOException;
+import java.nio.channels.ByteChannel;
 import java.nio.channels.SocketChannel;
 
 /**
@@ -14,10 +15,10 @@ import java.nio.channels.SocketChannel;
  * that new bunch of requests or data is coming.</p>
  */
 class ExternalFrameHandlerThread extends Thread {
-    private SocketChannel _sock;
+    private ByteChannel _sock;
     private AutoBuffer _ab;
 
-    ExternalFrameHandlerThread(SocketChannel sock, AutoBuffer ab) {
+    ExternalFrameHandlerThread(ByteChannel sock, AutoBuffer ab) {
         super("TCP-"+sock);
         _sock = sock;
         _ab = ab;

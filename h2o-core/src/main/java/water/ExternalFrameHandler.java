@@ -2,6 +2,7 @@ package water;
 
 
 import java.io.IOException;
+import java.nio.channels.ByteChannel;
 import java.nio.channels.SocketChannel;
 
 /**
@@ -68,9 +69,9 @@ final class ExternalFrameHandler {
     static final byte DOWNLOAD_FRAME = 1;
 
     /**
-     * Method which receives the {@link SocketChannel} and {@link AutoBuffer} and dispatches the request for further processing
+     * Method which receives the {@link ByteChannel} and {@link AutoBuffer} and dispatches the request for further processing
      */
-    void process(SocketChannel sock, AutoBuffer ab) throws IOException {
+    void process(ByteChannel sock, AutoBuffer ab) throws IOException {
         int requestType = ab.get1();
         switch (requestType) {
             case CREATE_FRAME:
