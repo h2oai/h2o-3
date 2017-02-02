@@ -27,20 +27,20 @@ public class DeepwaterCaffeModel implements BackendModel {
   private Process _process;
   private static final ThreadLocal<ByteBuffer> _buffer = new ThreadLocal<>();
 
-  DeepwaterCaffeModel(int batch_size, int[] sizes, String[] types, double[] dropout_ratios) {
+  public DeepwaterCaffeModel(int batch_size, int[] sizes, String[] types, double[] dropout_ratios) {
     _batch_size = batch_size;
     _sizes = sizes;
     _types = types;
     _dropout_ratios = dropout_ratios;
   }
 
-  void learning_rate(float val) {
+  public void learning_rate(float val) {
     if (_process != null)
       throw new RuntimeException("Already started");
     _learning_rate = val;
   }
 
-  void momentum(float val) {
+  public void momentum(float val) {
     if (_process != null)
       throw new RuntimeException("Already started");
     _momentum = val;
@@ -75,11 +75,11 @@ public class DeepwaterCaffeModel implements BackendModel {
     }
   }
 
-  void start() {
+  public void start() {
     checkStarted();
   }
 
-  void saveModel(String model_path) {
+  public void saveModel(String model_path) {
     checkStarted();
     Cmd cmd = new Cmd();
     cmd.type = Deepwater.SaveGraph;
@@ -87,7 +87,7 @@ public class DeepwaterCaffeModel implements BackendModel {
     call(cmd);
   }
 
-  void saveParam(String param_path) {
+  public void saveParam(String param_path) {
     checkStarted();
     Cmd cmd = new Cmd();
     cmd.type = Deepwater.Save;
@@ -95,7 +95,7 @@ public class DeepwaterCaffeModel implements BackendModel {
     call(cmd);
   }
 
-  void loadParam(String param_path) {
+  public void loadParam(String param_path) {
     checkStarted();
     Cmd cmd = new Cmd();
     cmd.type = Deepwater.Load;
