@@ -258,4 +258,22 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
     return mexport;
   }
 
+  public ModelExportV3 exportModelDetails(int version, ModelExportV3 mexport){
+    Model model = getFromDKV("model_id", mexport.model_id.key());
+    try {
+      URI targetUri = FileUtils.getURI(mexport.dir); // Really file, not dir
+      Persist p = H2O.getPM().getPersistForURI(targetUri);
+      //Make model schema before exporting
+      ModelSchemaV3 modelSchema = (ModelSchemaV3)SchemaServer.schema(version, model).fillFromImpl(model);
+      //Output model details to JSON
+      OutputStream os = p.create(targetUri.toString(),mexport.force);
+      os.write(modelSchema.writeJSON(new AutoBuffer()).buf());
+      // Send back
+      mexport.dir = "file".equals(targetUri.getScheme()) ? new File(targetUri).getCanonicalPath() : targetUri.toString();
+    } catch (IOException e) {
+      throw new H2OIllegalArgumentException("dir", "exportModelDetails", e);
+    }
+    return mexport;
+  }
+
 }
