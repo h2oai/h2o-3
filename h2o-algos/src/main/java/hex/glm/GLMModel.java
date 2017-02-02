@@ -39,6 +39,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     _nullDOF = nobs - (parms._intercept?1:0);
   }
 
+  public void setVcov(double[][] inv) {_output._vcov = inv;}
+
   public static class RegularizationPath extends Iced {
     public double []   _lambdas;
     public double []   _explained_deviance_train;
@@ -745,6 +747,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double lambda_selected(){return _submodels[_selected_lambda_idx].lambda_value;}
     double[] _global_beta;
     private double[] _zvalues;
+    double [][] _vcov;
     private double _dispersion;
     private boolean _dispersionEstimated;
 
@@ -1000,36 +1003,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return super.checksum_impl();
   }
 
-  public double [] scoreRow(Row r, double o, double [] preds) {
-    if(_parms._family == Family.multinomial) {
-      double[] eta = _eta.get();
-      if(eta == null || eta.length != _output.nclasses()) _eta.set(eta = MemoryManager.malloc8d(_output.nclasses()));
-      final double[][] bm = _output._global_beta_multinomial;
-      double sumExp = 0;
-      double maxRow = 0;
-      for (int c = 0; c < bm.length; ++c) {
-        eta[c] = r.innerProduct(bm[c]) + o;
-        if(eta[c] > maxRow)
-          maxRow = eta[c];
-      }
-      for (int c = 0; c < bm.length; ++c)
-        sumExp += eta[c] = Math.exp(eta[c]-maxRow); // intercept
-      sumExp = 1.0 / sumExp;
-      for (int c = 0; c < bm.length; ++c)
-        preds[c + 1] = eta[c] * sumExp;
-      preds[0] = ArrayUtils.maxIndex(eta);
-    } else {
-      double mu = _parms.linkInv(r.innerProduct(beta()) + o);
-      if (_parms._family == Family.binomial) { // threshold for prediction
-        preds[0] = mu >= defaultThreshold()?1:0;
-        preds[1] = 1.0 - mu; // class 0
-        preds[2] = mu; // class 1
-      } else
-        preds[0] = mu;
-    }
-    return preds;
-  }
-
   private static ThreadLocal<double[]> _eta = new ThreadLocal<>();
 
   @Override protected double[] score0(double[] data, double[] preds){return score0(data,preds,1,0);}
@@ -1211,13 +1184,20 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics) {
     String [] names = makeScoringNames();
     String [][] domains = new String[names.length][];
-    GLMScore gs = makeScoringTask(adaptFrm,true,j).doAll(names.length,Vec.T_NUM,adaptFrm);
+    GLMScore gs = makeScoringTask(adaptFrm,true,j);// doAll(names.length,Vec.T_NUM,adaptFrm);
+    assert gs._dinfo._valid:"_valid flag should be set on data info when doing scoring";
+    gs.doAll(names.length,Vec.T_NUM,gs._dinfo._adaptedFrame);
     if (gs._computeMetrics)
       gs._mb.makeModelMetrics(this, fr, adaptFrm, gs.outputFrame());
     domains[0] = gs._domain;
     return gs.outputFrame(Key.<Frame>make(destination_key),names, domains);
   }
 
+  @Override public String [] makeScoringNames(){
+    String [] res = super.makeScoringNames();
+    if(_output._vcov != null) res = ArrayUtils.append(res,"StdErr");
+    return res;
+  }
   /** Score an already adapted frame.  Returns a MetricBuilder that can be used to make a model metrics.
    * @param adaptFrm Already adapted frame
    * @return MetricBuilder
