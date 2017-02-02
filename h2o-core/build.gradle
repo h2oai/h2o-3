@@ -42,6 +42,7 @@ dependencies {
   // compile 'net.java.dev.jets3t:jets3t:0.6.1'
 
   testCompile "junit:junit:${junitVersion}"
+  testCompile "org.mockito:mockito-core:2.6.2"
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"
