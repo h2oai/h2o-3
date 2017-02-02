@@ -180,3 +180,33 @@ h2o.saveMojo <- function(object, path="", force=FALSE) {
   res <- .h2o.__remoteSend(paste0("Models.mojo/",object@model_id),dir=path,force=force,h2oRestApiVersion=99)
   res$dir
 }
+
+#' Save an H2O Model Details
+#'
+#' Save Model Details of an H2O Model in JSON Format
+#'
+#' Model Details will download as a JSON file. In the case of existing files \code{force = TRUE}
+#' will overwrite the file. Otherwise, the operation will fail.
+#'
+#' @param object an \linkS4class{H2OModel} object.
+#' @param path string indicating the directory the model details will be written to.
+#' @param force logical, indicates how to deal with files that already exist.
+#' @examples
+#' \dontrun{
+#' # library(h2o)
+#' # h2o.init()
+#' # prostate.hex <- h2o.uploadFile(path = system.file("extdata", "prostate.csv", package="h2o"))
+#' # prostate.glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
+#' #                         training_frame = prostate.hex, family = "binomial", alpha = 0.5)
+#' # h2o.saveModelDetails(object = prostate.glm, path = "/Users/UserName/Desktop", force=TRUE)
+#' }
+#' @export
+h2o.saveModelDetails <- function(object, path="", force=FALSE) {
+  if(!is(object, "H2OModel")) stop("`object` must be an H2OModel object")
+  if(!is.character(path) || length(path) != 1L || is.na(path)) stop("`path` must be a character string")
+  if(!is.logical(force) || length(force) != 1L || is.na(force)) stop("`force` must be TRUE or FALSE")
+  path <- file.path(path, "/" ,object@model_id, ".json", fsep = "")
+  res <- .h2o.__remoteSend(paste0("Models/",object@model_id,"/json"),dir=path,force=force,h2oRestApiVersion=99)
+  res$dir
+}
+
