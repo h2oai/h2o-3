@@ -3,6 +3,15 @@ apply plugin: 'java'
 
 description = "H2O Application Assembly"
 
+// Exclude unwanted dependencies
+configurations {
+    compile.exclude module: 'junit'
+    compile.exclude module: 'mockito-all'
+    compile.exclude module: 'zookeeper'
+    compile.exclude module: "javax.mail.glassfish"
+}
+
+// Dependencies
 dependencies {
   compile project(":h2o-app")
   compile project(":h2o-persist-s3")
