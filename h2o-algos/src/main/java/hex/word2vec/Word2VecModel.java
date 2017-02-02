@@ -58,13 +58,17 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     return Arrays.copyOfRange(_output._vecs, wordIdx * _output._vecSize, (wordIdx + 1) * _output._vecSize);
   }
 
-  public Frame transform(Vec wordVec) {
+  public enum AggregateMethod { NONE, AVERAGE }
+
+  public Frame transform(Vec wordVec, AggregateMethod aggregateMethod) {
     if (wordVec.get_type() != Vec.T_STR) {
       throw new IllegalArgumentException("Expected a string vector, got " + wordVec.get_type_str() + " vector.");
     }
     byte[] types = new byte[_output._vecSize];
     Arrays.fill(types, Vec.T_NUM);
-    return new Word2VecTransformTask(this).doAll(types, wordVec).outputFrame(Key.<Frame>make(), null, null);
+    MRTask<?> transformTask = aggregateMethod == AggregateMethod.AVERAGE ?
+            new Word2VecAggregateTask(this) : new Word2VecTransformTask(this);
+    return transformTask.doAll(types, wordVec).outputFrame(Key.<Frame>make(), null, null);
   }
 
   private static class Word2VecTransformTask extends MRTask<Word2VecTransformTask> {
@@ -88,6 +92,66 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
               ncs[j].addNum(vs[j]);
         }
       }
+    }
+  }
+
+  private static class Word2VecAggregateTask extends MRTask<Word2VecAggregateTask> {
+    private Word2VecModel _model;
+    public Word2VecAggregateTask(Word2VecModel model) { _model = model; }
+    @Override
+    public void map(Chunk[] cs, NewChunk[] ncs) {
+      assert cs.length == 1;
+      Chunk chk = cs[0];
+      // skip words that belong to a sequence started in a previous chunk
+      int offset = 0;
+      if (chk.cidx() > 0) { // first chunk doesn't have an offset
+        int naPos = findNA(chk);
+        if (naPos < 0)
+          return; // chunk doesn't contain an end of sequence and should not be processed
+        offset = naPos + 1;
+      }
+      // process this chunk, if the last sequence is not terminated in this chunk, roll-over to the next chunk
+      float[] aggregated = new float[ncs.length];
+      int seqLength = 0;
+      boolean seqOpen = false;
+      BufferedString tmp = new BufferedString();
+      do {
+        for (int i = offset; i < chk._len; i++) {
+          if (chk.isNA(i)) {
+            writeAggregate(seqLength, aggregated, ncs);
+            Arrays.fill(aggregated, 0.0f);
+            seqLength = 0;
+            seqOpen = false;
+            if (chk != cs[0])
+              break; // we just closed a sequence that was left open in one of the previous chunks
+          } else {
+            BufferedString word = chk.atStr(tmp, i);
+            float[] vs = _model.transform(word);
+            if (vs != null) {
+              for (int j = 0; j < ncs.length; j++)
+                aggregated[j] += vs[j];
+              seqLength++;
+            }
+            seqOpen = true;
+          }
+        }
+        offset = 0;
+      } while (seqOpen && ((chk = chk.nextChunk()) != null));
+      // last sequence doesn't have to be terminated by NA
+      if (seqOpen)
+        writeAggregate(seqLength, aggregated, ncs);
+    }
+    private void writeAggregate(int seqLength, float[] aggregated, NewChunk[] ncs) {
+      if (seqLength == 0)
+        for (NewChunk nc : ncs) nc.addNA();
+      else
+        for (int j = 0; j < ncs.length; j++)
+          ncs[j].addNum(aggregated[j] / seqLength);
+    }
+    private int findNA(Chunk chk) {
+      for (int i = 0; i < chk._len; i++)
+        if (chk.isNA(i)) return i;
+      return -1;
     }
   }
 
