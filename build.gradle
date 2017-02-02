@@ -207,6 +207,7 @@ subprojects {
             logger.warn("The project $project needs CI for running tests! You can pass `-PdoCI=true` to force CI behaviour.")
             project.testMultiNode.enabled = project.ext.isCi
         }
+        // Analyze dependencies 
         //apply plugin: 'ca.cutterslade.analyze'
     }
 

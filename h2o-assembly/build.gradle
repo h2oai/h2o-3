@@ -8,10 +8,6 @@ configurations {
     compile.exclude module: 'junit'
     compile.exclude module: 'mockito-all'
     compile.exclude module: 'zookeeper'
-    //compile.exclude module: 'jersey-core'
-    //compile.exclude module: 'jersey-server'
-    //compile.exclude module: 'hadoop-mapreduce-client-app'
-    //compile.exclude module: 'hadoop-yarn-api'
     compile.exclude module: "javax.mail.glassfish"
 }
 
