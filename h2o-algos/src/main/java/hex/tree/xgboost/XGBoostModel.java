@@ -30,28 +30,52 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       depthwise, lossguide
     }
     public enum Booster {
-      gbtree, gblinear
+      gbtree, gblinear, dart
     }
     public enum MissingValuesHandling {
       MeanImputation, Skip
+    }
+    public enum DartSampleType {
+      uniform, weighted
+    }
+    public enum DartNormalizeType {
+      tree, forest
     }
 
     // H2O GBM options
     public boolean _quiet_mode = true;
     public MissingValuesHandling _missing_values_handling;
+
     public int _ntrees=50; // Number of trees in the final model. Grid Search, comma sep values:50,100,150,200
+    public int _n_estimators;
+
     public int _max_depth = 5; // Maximum tree depth. Grid Search, comma sep values:5,7
+
     public double _min_rows = 10;
+    public double _min_child_weight;
+
     public double _learn_rate = 0.1;
+    public double _eta;
+
     public double _learn_rate_annealing = 1;
+
     public double _sample_rate = 1.0;
+    public double _subsample;
+
     public double _col_sample_rate = 1.0;
+    public double _colsample_bylevel;
+
     public double _col_sample_rate_per_tree = 1.0; //fraction of columns to sample for each tree
+    public double _colsample_bytree;
+
     public float _max_abs_leafnode_pred = Float.MAX_VALUE;
+    public float _max_delta_step;
+
     public int _score_tree_interval = 0; // score every so many trees (no matter what)
     public int _initial_score_interval = 4000; //Adding this parameter to take away the hard coded value of 4000 for scoring the first  4 secs
     public int _score_interval = 4000; //Adding this parameter to take away the hard coded value of 4000 for scoring each iteration every 4 secs
     public float _min_split_improvement = 0;
+    public float _gamma;
 
     // LightGBM specific (only for grow_policy == lossguide)
     public int _max_bin = 255;
@@ -63,8 +87,15 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public TreeMethod _tree_method = TreeMethod.auto;
     public GrowPolicy _grow_policy = GrowPolicy.depthwise;
     public Booster _booster = Booster.gbtree;
-    public float _lambda = 1;
-    public float _alpha = 0;
+    public float _reg_lambda = 1;
+    public float _reg_alpha = 0;
+
+    // Dart specific (booster == dart)
+    public DartSampleType _sample_type = DartSampleType.uniform;
+    public DartNormalizeType _normalize_type = DartNormalizeType.tree;
+    public float _rate_drop = 0;
+    public boolean _one_drop = false;
+    public float _skip_drop = 0;
 
     public XGBoostParameters() {
       super();
@@ -105,13 +136,38 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
     // Common parameters with H2O GBM
     params.put("nround", p._ntrees);
-    params.put("eta", p._learn_rate);
+    if (p._eta != 0) {
+      Log.info("Using user-provided parameter eta instead of learn_rate.");
+      params.put("eta", p._eta);
+    } else {
+      params.put("eta", p._learn_rate);
+    }
     params.put("max_depth", p._max_depth);
     params.put("silent", p._quiet_mode);
-    params.put("subsample", p._sample_rate);
-    params.put("colsample_bytree", p._col_sample_rate_per_tree);
-    params.put("colsample_bylevel", p._col_sample_rate);
-    params.put("max_delta_step", p._max_abs_leafnode_pred);
+    if (p._subsample!=0) {
+      Log.info("Using user-provided parameter subsample instead of sample_rate.");
+      params.put("subsample", p._subsample);
+    } else {
+      params.put("subsample", p._sample_rate);
+    }
+    if (p._colsample_bytree!=0) {
+      Log.info("Using user-provided parameter colsample_bytree instead of col_sample_rate_per_tree.");
+      params.put("colsample_bytree", p._colsample_bytree);
+    } else {
+      params.put("colsample_bytree", p._col_sample_rate_per_tree);
+    }
+    if (p._colsample_bylevel!=0) {
+      Log.info("Using user-provided parameter colsample_bylevel instead of col_sample_rate.");
+      params.put("colsample_bylevel", p._colsample_bylevel);
+    } else {
+      params.put("colsample_bylevel", p._col_sample_rate);
+    }
+    if (p._max_delta_step!=0) {
+      Log.info("Using user-provided parameter max_delta_step instead of max_abs_leafnode_pred.");
+      params.put("max_delta_step", p._max_delta_step);
+    } else {
+      params.put("max_delta_step", p._max_abs_leafnode_pred);
+    }
     params.put("seed", (int)(p._seed % Integer.MAX_VALUE));
 
     // XGBoost specific options
@@ -124,10 +180,28 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("min_data_in_leaf", p._min_data_in_leaf);
     }
     params.put("booster", p._booster.toString());
-    params.put("min_child_weight", p._min_rows);
-    params.put("gamma", p._min_split_improvement);
-    params.put("lambda", p._lambda);
-    params.put("alpha", p._alpha);
+    if (p._booster== XGBoostParameters.Booster.dart) {
+      params.put("sample_type", p._sample_type.toString());
+      params.put("normalize_type", p._normalize_type.toString());
+      params.put("rate_drop", p._rate_drop);
+      params.put("one_drop", p._one_drop ? "1" : "0");
+      params.put("skip_drop", p._skip_drop);
+    }
+    if (p._min_child_weight!=0) {
+      Log.info("Using user-provided parameter min_child_weight instead of min_rows.");
+      params.put("min_child_weight", p._min_child_weight);
+    } else {
+      params.put("min_child_weight", p._min_rows);
+    }
+    if (p._gamma!=0) {
+      Log.info("Using user-provided parameter gamma instead of min_split_improvement.");
+      params.put("gamma", p._gamma);
+    } else {
+      params.put("gamma", p._min_split_improvement);
+    }
+
+    params.put("lambda", p._reg_lambda);
+    params.put("alpha", p._reg_alpha);
 
     if (_output.nclasses()==2) {
       params.put("objective", "binary:logistic");
