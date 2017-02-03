@@ -2,6 +2,15 @@
 
 ##H2O
 
+###Tverberg (3.10.3.4) - 2/3/2017
+
+<h2>        Bug
+</h2>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3965'>PUBDEV-3965</a>] -         Importing data in python returns error - TypeError: expected string or bytes-like object
+</li>
+</ul>
+
 ###Tverberg (3.10.3.3) - 2/2/2017
 
 <h4>        Bug
