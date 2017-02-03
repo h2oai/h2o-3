@@ -74,6 +74,7 @@ task upgradeOrInstallWheel(type: Exec) {
 }
 
 task generateProtoFiles(type: Exec) {
+    dependsOn installPythonDependencies
     dependsOn makeProtoOutputDir
     commandLine getOsSpecificCommandLine([
             "python", "-m", "grpc_tools.protoc",
