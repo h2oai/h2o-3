@@ -10,6 +10,7 @@ import water.H2O;
 import water.Iced;
 import water.Key;
 import water.exceptions.H2OIllegalArgumentException;
+import water.util.FileUtils;
 import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
@@ -22,7 +23,6 @@ import java.util.Arrays;
 
 import static hex.genmodel.algos.deepwater.DeepwaterMojoModel.createDeepWaterBackend;
 
-
 /**
  * This class contains the state of the Deep Learning model
  * This will be shared: one per node
@@ -30,7 +30,7 @@ import static hex.genmodel.algos.deepwater.DeepwaterMojoModel.createDeepWaterBac
 final public class DeepWaterModelInfo extends Iced {
   private int _classes;
   byte[] _network; // model definition (graph)
-  byte[] _modelparams; // internal state of native backend (weights/biases/helpers)
+  String _modelparams; // Path to internal state of native backend (weights/biases/helpers)
 
   private TwoDimTable summaryTable;
 
@@ -70,7 +70,7 @@ final public class DeepWaterModelInfo extends Iced {
 
   @Override
   public int hashCode() {
-    return Arrays.hashCode(_network) + Arrays.hashCode(_modelparams);
+    return Arrays.hashCode(_network) + _modelparams.hashCode();
   }
 
   // compute model size (number of model parameters required for making predictions)
@@ -78,7 +78,7 @@ final public class DeepWaterModelInfo extends Iced {
   public long size() {
     long res = 0;
     if (_network!=null) res+=_network.length;
-    if (_modelparams!=null) res+=_modelparams.length;
+    if (_modelparams!=null) res+=_modelparams.length();
     return res;
   }
 
@@ -266,16 +266,10 @@ final public class DeepWaterModelInfo extends Iced {
       } finally { if (file !=null) file.delete(); }
     }
     // always overwrite the parameters (weights/biases)
-    try {
-      file = new File(System.getProperty("java.io.tmpdir"), Key.make().toString());
-      _backend.saveParam(_model, file.toString());
-      FileInputStream is = new FileInputStream(file);
-      _modelparams = new byte[(int)file.length()];
-      is.read(_modelparams);
-      is.close();
-    } catch (IOException e) {
-      e.printStackTrace();
-    } finally { if (file !=null) file.delete(); }
+    file = new File(System.getProperty("java.io.tmpdir"), Key.make().toString());
+    _backend.saveParam(_model, file.toString());
+    _modelparams = file.getAbsolutePath();
+    file.deleteOnExit();
     long time = System.currentTimeMillis() - now;
     Log.info("Took: " + PrettyPrint.msecs(time, true));
   }
@@ -292,13 +286,13 @@ final public class DeepWaterModelInfo extends Iced {
    * @param network user-given network topology
    * @param parameters user-given network state (weights/biases)
    */
-  private void javaToNative(byte[] network, byte[] parameters) {
+  private void javaToNative(byte[] network, String parameters) {
     long now = System.currentTimeMillis();
     //existing state is fine
     if (_backend !=null
             // either not overwriting with user-given (new) state, or we already are in sync
             && (network == null || Arrays.equals(network,_network))
-            && (parameters == null || Arrays.equals(parameters,_modelparams))) {
+            && (parameters == null || (null != _modelparams && _modelparams.equals(parameters))) ) {
       Log.warn("No need to move the state from Java to native.");
       return;
     }
@@ -327,13 +321,14 @@ final public class DeepWaterModelInfo extends Iced {
     // always overwrite the parameters (weights/biases)
     try {
       file = new File(System.getProperty("java.io.tmpdir"), Key.make().toString());
-      FileOutputStream os = new FileOutputStream(file);
-      os.write(parameters);
-      os.close();
+      file.deleteOnExit();
+      if(!file.getAbsolutePath().equals(parameters)) {
+        org.apache.commons.io.FileUtils.copyFile(new File(parameters), file);
+      }
       _backend.loadParam(_model, file.toString());
     } catch (IOException e) {
       e.printStackTrace();
-    } finally { file.delete(); }
+    }
 
     long time = System.currentTimeMillis() - now;
     Log.info("Took: " + PrettyPrint.msecs(time, true));

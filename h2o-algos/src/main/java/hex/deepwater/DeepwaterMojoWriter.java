@@ -52,9 +52,9 @@ public class DeepwaterMojoWriter extends ModelMojoWriter<DeepWaterModel, DeepWat
     writekv("use_all_factor_levels", _output._useAllFactorLevels);
     writekv("gpu", _parms._gpu);
     writekv("device_id", _parms._device_id);
+    writekv("model_params", _model_info._modelparams);
 
     writeblob("model_network", _model_info._network);
-    writeblob("model_params", _model_info._modelparams);
     if (_parms._problem_type == DeepWaterParameters.ProblemType.image) {
       String meanImage = _parms._mean_image_file;
       if (meanImage != null && !meanImage.isEmpty() ) {
