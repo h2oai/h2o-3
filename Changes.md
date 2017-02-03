@@ -23,7 +23,7 @@
 <h4>        Bug
 </h4>
 <ul>
-<li> Hotfix: remove StackedEnsemble from Flow UI - right now only supported from Python and R interfaces
+<li> Hotfix: Remove StackedEnsemble from Flow UI. Training is only supported from Python and R interfaces. Viewing is supported in the Flow UI.
 </li>
 </ul>
 
