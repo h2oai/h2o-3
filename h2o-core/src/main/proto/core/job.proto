@@ -1,0 +1,47 @@
+
+syntax = "proto3";
+
+option java_package = "ai.h2o.api.protos.core";
+//option java_outer_classname = "JobProto";
+option java_multiple_files = true;
+
+package core;
+
+
+service Job {
+    rpc poll (JobId) returns (JobInfo);
+}
+
+
+message JobId {
+    string id = 1;
+}
+
+message JobInfo {
+
+    enum Status {
+        RUNNING = 0;
+        STOPPING = 1;
+        DONE = 2;
+        CANCELLED = 3;
+        FAILED = 4;
+    }
+
+    enum TargetType {
+        FRAME = 0;
+        MODEL = 1;
+    }
+
+    string id = 1;
+    Status status = 2;
+    float progress = 3;
+    string message = 4;
+    string target_id = 5;
+    TargetType target_type = 6;
+
+    int64 start_time = 7;
+    int64 duration = 8;
+    string exception = 9;
+    string stacktrace = 10;
+    repeated string warning = 11;
+}

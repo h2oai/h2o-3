@@ -1,4 +1,3 @@
-import org.apache.commons.io.output.ByteArrayOutputStream
 import org.apache.tools.ant.taskdefs.condition.Os
 import java.nio.file.FileSystems
 import java.nio.file.Files
@@ -8,17 +7,15 @@ import static java.nio.file.StandardCopyOption.*;
 
 defaultTasks 'build_python'
 description = "H2O Python Package"
+def protoDir = "${projectDir}/h2o/backend/proto/core"
 
 dependencies {
     compile project(":h2o-assembly")
 }
 
-def getOS() {
-    String os = [Os.FAMILY_WINDOWS, Os.FAMILY_MAC, Os.FAMILY_UNIX].find {String family -> Os.isFamily(family) }
-    return os
+def getOsSpecificCommandLine(args) {
+    return Os.isFamily(Os.FAMILY_WINDOWS) ? [ 'cmd', '/c' ] + args : args
 }
-
-def getOsSpecificCommandLine(args) { return Os.isFamily(Os.FAMILY_WINDOWS) ? [ 'cmd', '/c' ] + args : args }
 
 def bv = new H2OBuildVersion(rootDir, version)
 
@@ -28,10 +25,18 @@ ext {
 }
 
 task makeOutputDir(type: Exec) {
-    if(Os.isFamily(Os.FAMILY_WINDOWS)){
+    if (Os.isFamily(Os.FAMILY_WINDOWS)) {
         commandLine getOsSpecificCommandLine(['if not exist "build\\tmp" mkdir', 'build\\tmp'])
     } else {
         commandLine getOsSpecificCommandLine(['mkdir', '-p', 'build/tmp'])
+    }
+}
+
+task makeProtoOutputDir(type: Exec) {
+    if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+        commandLine getOsSpecificCommandLine(['mkdir', protoDir])
+    } else {
+        commandLine getOsSpecificCommandLine(['mkdir', '-p', protoDir])
     }
 }
 
@@ -53,6 +58,13 @@ task resetProjectVersion << {
     INIT.write(txt)
 }
 
+task installPythonDependencies(type: Exec) {
+    commandLine getOsSpecificCommandLine([
+            "pip", "install", "tabulate>=0.7.5", "requests>=2.10", "colorama>=0.3.7",
+            "future>=0.15.2", "grpcio-tools>=1.1.0"
+    ])
+}
+
 task upgradeOrInstallTabulate(type: Exec) {
     commandLine getOsSpecificCommandLine(["pip", "install", "tabulate", "--user", "--upgrade"])
 }
@@ -61,7 +73,24 @@ task upgradeOrInstallWheel(type: Exec) {
     commandLine getOsSpecificCommandLine(["pip", "install", "wheel", "--user", "--upgrade", "--ignore-installed"])
 }
 
-task buildDist(type: Exec, dependsOn: makeOutputDir) {
+task generateProtoFiles(type: Exec) {
+    dependsOn makeProtoOutputDir
+    commandLine getOsSpecificCommandLine([
+            "python", "-m", "grpc_tools.protoc",
+            "-I${rootDir}/h2o-core/src/main/proto/core",
+            "--python_out=${protoDir}",
+            "--grpc_python_out=${protoDir}",
+            // TODO: auto-detect the list of files and process them all at once
+            "${rootDir}/h2o-core/src/main/proto/core/job.proto"
+    ])
+}
+
+task buildDist(type: Exec) {
+    dependsOn installPythonDependencies
+    dependsOn setProjectVersion
+    dependsOn makeOutputDir
+    dependsOn generateProtoFiles
+
     doFirst {
         standardOutput = new FileOutputStream("build/tmp/h2o-py_buildDist.out")
     }
@@ -103,7 +132,6 @@ clean.dependsOn cleaner, cleanUpSmokeTest
 upgradeOrInstallWheel.dependsOn cleaner
 // buildDist.dependsOn upgradeOrInstallTabulate
 // buildDist.dependsOn upgradeOrInstallWheel
-buildDist.dependsOn setProjectVersion
 resetProjectVersion.dependsOn buildDist
 task build_python(dependsOn: resetProjectVersion)
 build.dependsOn build_python

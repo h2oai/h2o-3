@@ -2,14 +2,24 @@ package water;
 
 import com.brsanthu.googleanalytics.DefaultRequest;
 import com.brsanthu.googleanalytics.GoogleAnalytics;
-
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
-
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
 import org.reflections.Reflections;
+import water.UDPRebooted.ShutdownTsk;
+import water.api.RegisterGrpcApi;
+import water.api.RequestServer;
+import water.exceptions.H2OFailException;
+import water.exceptions.H2OIllegalArgumentException;
+import water.init.*;
+import water.nbhm.NonBlockingHashMap;
+import water.parser.ParserService;
+import water.persist.PersistManager;
+import water.util.*;
+import io.grpc.Server;
+import io.grpc.ServerBuilder;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,41 +27,11 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.net.Inet4Address;
-import java.net.Inet6Address;
-import java.net.InetAddress;
-import java.net.MulticastSocket;
-import java.net.NetworkInterface;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.net.*;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
-
-import water.UDPRebooted.ShutdownTsk;
-import water.api.RequestServer;
-import water.exceptions.H2OFailException;
-import water.exceptions.H2OIllegalArgumentException;
-import water.init.AbstractBuildVersion;
-import water.init.AbstractEmbeddedH2OConfig;
-import water.init.JarHash;
-import water.init.NetworkInit;
-import water.init.NodePersistentStorage;
-import water.nbhm.NonBlockingHashMap;
-import water.parser.ParserService;
-import water.persist.PersistManager;
-import water.util.GAUtils;
-import water.util.Log;
-import water.util.NetworkUtils;
-import water.util.OSUtils;
-import water.util.PrettyPrint;
 
 /**
 * Start point for creating or joining an <code>H2O</code> Cloud.
@@ -241,6 +221,9 @@ final public class H2O {
 
     /** -user_name=user_name; Set user name */
     public String user_name = System.getProperty("user.name");
+
+    /** -run_grpc; launch GRPC/Protobuf service on {@code port + 2} */
+    public boolean run_grpc = false;
 
     //-----------------------------------------------------------------------------------
     // Node configuration
@@ -447,6 +430,9 @@ final public class H2O {
       else if (s.matches("user_name")) {
         i = s.incrementAndCheck(i, args);
         ARGS.user_name = args[i];
+      }
+      else if (s.matches("run_grpc")) {
+        ARGS.run_grpc = true;
       }
       else if (s.matches("ice_root")) {
         i = s.incrementAndCheck(i, args);
@@ -1275,6 +1261,7 @@ final public class H2O {
 
   public static int H2O_PORT; // Both TCP & UDP cluster ports
   public static int API_PORT; // RequestServer and the API HTTP port
+  public static int GRPC_PORT; // GRPC/Protobuf interface port
 
   /**
    * @return String of the form ipaddress:port
@@ -1371,6 +1358,17 @@ final public class H2O {
   }
   public static JettyHTTPD getJetty() {
     return jetty;
+  }
+
+  private static Server netty;
+  public static Server getNetty(int port) {
+    if (netty == null) {
+      ServerBuilder sb = ServerBuilder.forPort(port);
+      RegisterGrpcApi.registerWithServer(sb);
+      netty = sb.build();
+      Log.info("Starting GRPC server on 127.0.0.1:" + port);
+    }
+    return netty;
   }
 
   /** If logging has not been setup yet, then Log.info will only print to
