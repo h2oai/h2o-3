@@ -1366,7 +1366,26 @@ final public class H2O {
       ServerBuilder sb = ServerBuilder.forPort(port);
       RegisterGrpcApi.registerWithServer(sb);
       netty = sb.build();
-      Log.info("Starting GRPC server on 127.0.0.1:" + port);
+      try {
+        Log.info("Starting GRPC server on 127.0.0.1:" + port);
+        netty.start();
+      } catch (IOException e) {
+        netty = null;
+        Log.err("Failed to start the GRPC server:");
+        Log.err(e);
+        throw H2O.fail();
+      }
+      Runtime.getRuntime().addShutdownHook(new Thread() {
+        @Override
+        public void run() {
+          if (netty != null) {
+            // Use stderr here since the logger may have been reset by its JVM shutdown hook.
+            System.err.println("*** shutting down gRPC server since JVM is shutting down");
+            netty.shutdown();
+            System.err.println("*** server shut down");
+          }
+        }
+      });
     }
     return netty;
   }
