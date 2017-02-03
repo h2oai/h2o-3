@@ -35,13 +35,15 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         // model specific
         "ntrees",
         "max_depth",
-        "min_rows",
-        "learn_rate",
+        "min_rows", "min_child_weight",
+        "learn_rate", "eta",
 //        "learn_rate_annealing", //disabled for now
-        "sample_rate",
-        "col_sample_rate",
-        "col_sample_rate_per_tree",
-        "max_abs_leafnode_pred",
+
+        "sample_rate", "subsample",
+        "col_sample_rate", "colsample_bylevel",
+        "col_sample_rate_per_tree", "colsample_bytree",
+        "max_abs_leafnode_pred", "max_delta_step",
+
         "score_tree_interval",
         "min_split_improvement",
 
@@ -55,36 +57,51 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "tree_method",
         "grow_policy",
         "booster",
-        "lambda",
-        "alpha"
+        "gamma",
+        "reg_lambda",
+        "reg_alpha"
     };
 
-    @API(help="Number of trees.", gridable = true)
+    @API(help="(same as n_estimators) Number of trees.", gridable = true)
     public int ntrees;
+    @API(help="(same as ntrees) Number of trees.", gridable = true)
+    public int n_estimators;
 
     @API(help="Maximum tree depth.", gridable = true)
     public int max_depth;
 
-    @API(help="Fewest allowed (weighted) observations in a leaf.", gridable = true)
+    @API(help="(same as min_child_weight) Fewest allowed (weighted) observations in a leaf.", gridable = true)
     public double min_rows;
+    @API(help="(same as min_rows) Fewest allowed (weighted) observations in a leaf.", gridable = true)
+    public double min_child_weight;
 
-    @API(help="Learning rate (from 0.0 to 1.0)", gridable = true)
+    @API(help="(same as eta) Learning rate (from 0.0 to 1.0)", gridable = true)
     public double learn_rate;
+    @API(help="(same as learn_rate) Learning rate (from 0.0 to 1.0)", gridable = true)
+    public double eta;
 
-    @API(help="Scale the learning rate by this factor after each tree (e.g., 0.99 or 0.999) ", level = API.Level.secondary, gridable = true)
-    public double learn_rate_annealing;
+//    @API(help="Scale the learning rate by this factor after each tree (e.g., 0.99 or 0.999) ", level = API.Level.secondary, gridable = true)
+//    public double learn_rate_annealing;
 
-    @API(help = "Row sample rate per tree (from 0.0 to 1.0)", gridable = true)
+    @API(help = "(same as subsample) Row sample rate per tree (from 0.0 to 1.0)", gridable = true)
     public double sample_rate;
+    @API(help = "(same as sample_rate) Row sample rate per tree (from 0.0 to 1.0)", gridable = true)
+    public double subsample;
 
-    @API(help="Column sample rate (from 0.0 to 1.0)", gridable = true)
+    @API(help="(same as colsample_bylevel) Column sample rate (from 0.0 to 1.0)", gridable = true)
     public double col_sample_rate;
+    @API(help="(same as col_sample_rate) Column sample rate (from 0.0 to 1.0)", gridable = true)
+    public double colsample_bylevel;
 
-    @API(help = "Column sample rate per tree (from 0.0 to 1.0)", level = API.Level.secondary, gridable = true)
+    @API(help = "(same as colsample_bytree) Column sample rate per tree (from 0.0 to 1.0)", level = API.Level.secondary, gridable = true)
     public double col_sample_rate_per_tree;
+    @API(help = "(same as col_sample_rate_per_tree) Column sample rate per tree (from 0.0 to 1.0)", level = API.Level.secondary, gridable = true)
+    public double colsample_bytree;
 
-    @API(help="Maximum absolute value of a leaf node prediction", level = API.Level.expert, gridable = true)
+    @API(help="(same as max_delta_step) Maximum absolute value of a leaf node prediction", level = API.Level.expert, gridable = true)
     public float max_abs_leafnode_pred;
+    @API(help="(same as max_abs_leafnode_pred) Maximum absolute value of a leaf node prediction", level = API.Level.expert, gridable = true)
+    public float max_delta_step;
 
     @API(help="Score the model after every so many trees. Disabled if set to 0.", level = API.Level.secondary, gridable = false)
     public int score_tree_interval;
@@ -92,8 +109,10 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
     @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)
     public long seed;
 
-    @API(help="Minimum relative improvement in squared error reduction for a split to happen", level = API.Level.secondary, gridable = true)
+    @API(help="(same as gamma) Minimum relative improvement in squared error reduction for a split to happen", level = API.Level.secondary, gridable = true)
     public float min_split_improvement;
+    @API(help="(same as min_split_improvement) Minimum relative improvement in squared error reduction for a split to happen", level = API.Level.secondary, gridable = true)
+    public float gamma;
 
     @API(help = "For tree_method=hist only: maximum number of bins", level = API.Level.expert, gridable = true)
     public int max_bin;
@@ -113,19 +132,34 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
     @API(help="Grow policy - depthwise is standard GBM, lossguide is LightGBM", values = { "depthwise", "lossguide"}, level = API.Level.secondary, gridable = true)
     public XGBoostParameters.GrowPolicy grow_policy;
 
-    @API(help="Booster type", values = { "gbtree", "gblinear"}, level = API.Level.expert, gridable = true)
+    @API(help="Booster type", values = { "gbtree", "gblinear", "dart"}, level = API.Level.expert, gridable = true)
     public XGBoostParameters.Booster booster;
 
     @API(help = "L2 regularization", level = API.Level.expert, gridable = true)
-    public float lambda;
+    public float reg_lambda;
 
     @API(help = "L1 regularization", level = API.Level.expert, gridable = true)
-    public float alpha;
+    public float reg_alpha;
 
     @API(help="Missing Value Handling", values = { "mean_imputation", "skip"}, level = API.Level.expert, gridable = true)
     public XGBoostParameters.MissingValuesHandling missing_values_handling;
 
     @API(help="Enable quiet mode", level = API.Level.expert, gridable = false)
     public boolean quiet_mode;
+
+    @API(help="For booster=dart only: sample_type", values = { "uniform", "weighted"}, level = API.Level.expert, gridable = true)
+    public XGBoostParameters.DartSampleType sample_type;
+
+    @API(help="For booster=dart only: normalize_type", values = { "tree", "forest"}, level = API.Level.expert, gridable = true)
+    public XGBoostParameters.DartNormalizeType normalize_type;
+
+    @API(help="For booster=dart only: rate_drop (0..1)", level = API.Level.expert, gridable = true)
+    public float rate_drop;
+
+    @API(help="For booster=dart only: one_drop", level = API.Level.expert, gridable = true)
+    public boolean one_drop;
+
+    @API(help="For booster=dart only: skip_drop (0..1)", level = API.Level.expert, gridable = true)
+    public float skip_drop;
   }
 }
