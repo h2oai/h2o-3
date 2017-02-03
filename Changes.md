@@ -2,6 +2,22 @@
 
 ##H2O
 
+###Tverberg (3.10.3.3) - 2/2/2017
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3835'>PUBDEV-3835</a>] -         Standard Errors in GLM: calculating and showing specifically when called
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3989'>PUBDEV-3989</a>] -         Decrease size of h2o.jar
+</li>
+</ul>
+
 ###Tverberg (3.10.3.2) - 1/31/2017
 
 <h4>        Bug
