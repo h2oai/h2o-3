@@ -33,7 +33,7 @@ class H2OXGBoostEstimator(H2OEstimator):
                       "col_sample_rate_per_tree", "colsample_bytree", "max_abs_leafnode_pred", "max_delta_step",
                       "score_tree_interval", "min_split_improvement", "max_bin", "num_leaves",
                       "min_sum_hessian_in_leaf", "min_data_in_leaf", "tree_method", "grow_policy", "booster", "gamma",
-                      "lambda_", "alpha"}
+                      "reg_lambda", "reg_alpha"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -712,33 +712,33 @@ class H2OXGBoostEstimator(H2OEstimator):
 
 
     @property
-    def lambda_(self):
+    def reg_lambda(self):
         """
         L2 regularization
 
         Type: ``float``  (default: ``1``).
         """
-        return self._parms.get("lambda")
+        return self._parms.get("reg_lambda")
 
-    @lambda_.setter
-    def lambda_(self, lambda_):
-        assert_is_type(lambda_, None, float)
-        self._parms["lambda"] = lambda_
+    @reg_lambda.setter
+    def reg_lambda(self, reg_lambda):
+        assert_is_type(reg_lambda, None, float)
+        self._parms["reg_lambda"] = reg_lambda
 
 
     @property
-    def alpha(self):
+    def reg_alpha(self):
         """
         L1 regularization
 
         Type: ``float``  (default: ``0``).
         """
-        return self._parms.get("alpha")
+        return self._parms.get("reg_alpha")
 
-    @alpha.setter
-    def alpha(self, alpha):
-        assert_is_type(alpha, None, float)
-        self._parms["alpha"] = alpha
+    @reg_alpha.setter
+    def reg_alpha(self, reg_alpha):
+        assert_is_type(reg_alpha, None, float)
+        self._parms["reg_alpha"] = reg_alpha
 
 
 
