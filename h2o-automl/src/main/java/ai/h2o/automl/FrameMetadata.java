@@ -14,8 +14,8 @@ import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.ast.prims.mungers.AstNaOmit;
 import water.util.ArrayUtils;
-import water.util.AtomicUtils;
 import water.util.Log;
+
 import java.util.*;
 
 import static ai.h2o.automl.utils.AutoMLUtils.intListToA;
@@ -429,7 +429,7 @@ public class FrameMetadata extends Iced {
   //TODO - AstMean signatures have changes, will have to modify when merge master
   public double rapidMean(Frame dr){
     //String y0 = String.format("(mean %s %s %s)",dr._key,1,0/1);
-    Val val = Rapids.exec("(mean " + dr._key + " true)");
+    Val val = Rapids.exec("(getrow (mean " + dr._key + " true 0))");
     double[] darray = val.getNums();
     double d = darray[0];
     return d;
@@ -743,7 +743,7 @@ public class FrameMetadata extends Iced {
       private double _mean;
 
       HistTask(DHistogram h, double mean) { _h = h; _mean=mean; }
-      @Override public void setupLocal() { _h._w = MemoryManager.malloc8d(_h._nbin); }
+      @Override public void setupLocal() { _h.init(); }
       @Override public void map( Chunk C ) {
         double min = _h.find_min();
         double max = _h.find_maxIn();
@@ -761,7 +761,7 @@ public class FrameMetadata extends Iced {
         _h.setMin(min); _h.setMaxIn(max);
         for(int b=0; b<bins.length; ++b)
           if( bins[b]!=0 )
-            AtomicUtils.DoubleArray.add(_h._w, b, bins[b]);
+            _h.addWAtomic(b, bins[b]);
       }
 
       @Override public void reduce(HistTask t) {
