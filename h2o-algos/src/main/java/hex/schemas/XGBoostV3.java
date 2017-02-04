@@ -136,10 +136,10 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
     public XGBoostParameters.Booster booster;
 
     @API(help = "L2 regularization", level = API.Level.expert, gridable = true)
-    public float reg_lambda;
+    public float lambda;
 
     @API(help = "L1 regularization", level = API.Level.expert, gridable = true)
-    public float reg_alpha;
+    public float alpha;
 
     @API(help="Missing Value Handling", values = { "mean_imputation", "skip"}, level = API.Level.expert, gridable = true)
     public XGBoostParameters.MissingValuesHandling missing_values_handling;
