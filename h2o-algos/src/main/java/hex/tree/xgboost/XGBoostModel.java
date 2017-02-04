@@ -87,8 +87,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public TreeMethod _tree_method = TreeMethod.auto;
     public GrowPolicy _grow_policy = GrowPolicy.depthwise;
     public Booster _booster = Booster.gbtree;
-    public float _reg_lambda = 1;
-    public float _reg_alpha = 0;
+    public float _lambda = 1;
+    public float _alpha = 0;
 
     // Dart specific (booster == dart)
     public DartSampleType _sample_type = DartSampleType.uniform;
@@ -187,6 +187,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("one_drop", p._one_drop ? "1" : "0");
       params.put("skip_drop", p._skip_drop);
     }
+    params.put("updater", "grow_gpu");
     if (p._min_child_weight!=0) {
       Log.info("Using user-provided parameter min_child_weight instead of min_rows.");
       params.put("min_child_weight", p._min_child_weight);
@@ -200,8 +201,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("gamma", p._min_split_improvement);
     }
 
-    params.put("lambda", p._reg_lambda);
-    params.put("alpha", p._reg_alpha);
+    params.put("lambda", p._lambda);
+    params.put("alpha", p._alpha);
 
     if (_output.nclasses()==2) {
       params.put("objective", "binary:logistic");
