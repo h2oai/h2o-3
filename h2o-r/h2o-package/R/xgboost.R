@@ -65,8 +65,8 @@
 #' @param booster Booster type Must be one of: "gbtree", "gblinear", "dart". Defaults to gbtree.
 #' @param gamma (same as min_split_improvement) Minimum relative improvement in squared error reduction for a split to happen
 #'        Defaults to 0.0.
-#' @param lambda L2 regularization Defaults to 1.0.
-#' @param alpha L1 regularization Defaults to 0.0.
+#' @param reg_lambda L2 regularization Defaults to 1.0.
+#' @param reg_alpha L1 regularization Defaults to 0.0.
 #' @export
 h2o.xgboost <- function(x, y, training_frame,
                         model_id = NULL,
@@ -111,8 +111,8 @@ h2o.xgboost <- function(x, y, training_frame,
                         grow_policy = c("depthwise", "lossguide"),
                         booster = c("gbtree", "gblinear", "dart"),
                         gamma = 0.0,
-                        lambda = 1.0,
-                        alpha = 0.0
+                        reg_lambda = 1.0,
+                        reg_alpha = 0.0
                         ) 
 {
   #If x is missing, then assume user wants to use all columns as features.
@@ -234,10 +234,10 @@ h2o.xgboost <- function(x, y, training_frame,
     parms$booster <- booster
   if (!missing(gamma))
     parms$gamma <- gamma
-  if (!missing(lambda))
-    parms$lambda <- lambda
-  if (!missing(alpha))
-    parms$alpha <- alpha
+  if (!missing(reg_lambda))
+    parms$reg_lambda <- reg_lambda
+  if (!missing(reg_alpha))
+    parms$reg_alpha <- reg_alpha
   # Error check and build model
   .h2o.modelJob('xgboost', parms, h2oRestApiVersion=3) 
 }
