@@ -4,6 +4,7 @@ import water.H2O;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.CategoricalWrappedVec;
+import water.fvec.ChunkAry;
 import water.fvec.Vec;
 
 /**
@@ -88,12 +89,13 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
   private double chunk_count_per_col_per_node_stddev;
 
   @Override
-  public void map(Chunk[] cs) {
+  public void map(ChunkAry csary) {
     chunk_counts = new long[chunkTypes.length];
     chunk_byte_sizes = new long[chunkTypes.length];
     byte_size_per_node = new long[H2O.CLOUD.size()];
     row_count_per_node = new long[H2O.CLOUD.size()];
     chunk_count_per_col_per_node = new long[H2O.CLOUD.size()];
+    Chunk [] cs = csary.getSparseChunks();
     for( Chunk c : cs ) {       // Can be a big loop, for high column counts
       // Pull out the class name; trim a trailing "Chunk"
       String cname = c.getClass().getSimpleName();

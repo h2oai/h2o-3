@@ -289,10 +289,8 @@ public class Vec extends Keyed<Vec> {
   /** Check that row-layouts are compatible. */
   boolean checkCompatible( Vec v ) {
     // Vecs are compatible iff they have same group and same espc (i.e. same length and same chunk-distribution)
-    boolean res =  (espc() == v.espc() || Arrays.equals(_espc, v._espc)) &&
-        (VectorGroup.sameGroup(this, v) || length() < 1e3);
     return (espc() == v.espc() || Arrays.equals(_espc, v._espc)) &&
-            (VectorGroup.sameGroup(this, v) || length() < 1e3);
+            (VectorGroup.sameGroup(this, v));
   }
 
   /** Default read/write behavior for Vecs.  File-backed Vecs are read-only. */
@@ -493,10 +491,14 @@ public class Vec extends Keyed<Vec> {
           if(v0.isHomedLocally(i)) {
             int len = (int)(espc[i+1] - espc[i]);
             Key k = v0.newChunkKey(i);
-            Chunk[] cs = new Chunk[d.length];
-            for(int j = 0; j < cs.length; ++j)
-              cs[j] = new C0DChunk(d[j],len);
-            if (k.home()) DKV.put(k, new DBlock.MultiChunkBlock(cs), _fs);
+            if(d.length == 1){
+              if (k.home()) DKV.put(k, new C0DChunk(d[0], len), _fs);
+            } else {
+              Chunk[] cs = new Chunk[d.length];
+              for (int j = 0; j < cs.length; ++j)
+                cs[j] = new C0DChunk(d[j], len);
+              if (k.home()) DKV.put(k, new DBlock.MultiChunkBlock(cs), _fs);
+            }
           }
         }
       }

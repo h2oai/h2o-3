@@ -40,7 +40,7 @@ public class PersistS3Test extends TestUtil {
     try {
       Key k = H2O.getPM().anyURIToKey(new URI("s3://h2o-public-test-data/smalldata/airlines/AirlinesTrain.csv.zip"));
       Frame fr = DKV.getGet(k);
-      FileVec v = (FileVec) fr.anyVec().vecs()[0];
+      FileVec v = (FileVec) fr.anyVec();
       // make sure we have some chunks
       int chunkSize = (int) (v.length() / 3);
       v.setChunkSize(fr, chunkSize);

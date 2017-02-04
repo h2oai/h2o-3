@@ -444,8 +444,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
       DKV.remove(cvModelBuilders[i]._parms._train,fs);
       DKV.remove(cvModelBuilders[i]._parms._valid,fs);
-      weights.removeVecs(2*i,2*i+1).remove();
     }
+    weights.remove();
     fs.blockForPending();
     return mbs;
   }

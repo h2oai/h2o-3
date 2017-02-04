@@ -5,6 +5,7 @@ import water.AutoBuffer;
 import water.H2O;
 import water.MemoryManager;
 import water.parser.BufferedString;
+import water.util.ArrayUtils;
 import water.util.PrettyPrint;
 import water.util.UnsafeUtils;
 
@@ -431,7 +432,6 @@ public class NewChunk extends Chunk {
     ++_len;
   }
 
-
   public void addNum (long val, int exp) {
     if( isUUID() || isString() ) {
       addNA();
@@ -456,7 +456,12 @@ public class NewChunk extends Chunk {
         _ms.set(_sparseLen, val);
         _xs.set(_sparseLen, exp);
         assert _id == null || _id.length == _ms.len() : "id.len = " + _id.length + ", ms.len = " + _ms.len() + ", old ms.len = " + len + ", sparseLen = " + slen;
-        if (_id != null) _id[_sparseLen] = _len;
+        if (_id != null) {
+          _id[_sparseLen] = _len;
+          if(_sparseLen > 0 && _id[_sparseLen-1] >= _id[_sparseLen])
+            System.out.println("haha");
+          assert _sparseLen == 0 || _id[_sparseLen-1] < _id[_sparseLen];
+        }
         _sparseLen++;
       }
       _len++;
@@ -574,11 +579,13 @@ public class NewChunk extends Chunk {
   public final boolean sparseNA() {return _id != null && _sparseNA;}
 
   public void addZeros(int n){
+    assert n >= 0;
     if(!sparseZero()) for(int i = 0; i < n; ++i)addNum(0,0);
     else _len += n;
   }
   
   public void addNAs(int n) {
+    assert n >= 0;
     if(!sparseNA())
       for (int i = 0; i <n; ++i) {
         addNA();
@@ -857,6 +864,7 @@ public class NewChunk extends Chunk {
     if(sparsity_type == Compress.NA && _missing != null)
       _missing.clear();
     set_sparseLen(num_noncompressibles);
+//    assert ArrayUtils.isIncreasing(Arrays.copyOf(_id,_sparseLen));
   }
 
   private boolean is_compressible(double d) {
@@ -880,10 +888,35 @@ public class NewChunk extends Chunk {
         BitSet missing = new BitSet();
         if(_sparseNA)
           missing.set(0,_len);
+        boolean first = true;
+        int err_i = -1;
         for (int i = 0; i < _sparseLen; ++i) {
           xs.set(_id[i], _xs.get(i));
           ms.set(_id[i], _ms.get(i));
+          if(first && ms._nzs != (i+1)){
+            System.out.println("gaga, i = " + i);
+            first = false;
+            err_i = i;
+          }
           missing.set(_id[i], _sparseNA || _missing == null?false:_missing.get(i));
+        }
+        if(!_sparseNA && ms._nzs != _ms._nzs){
+          System.out.println("haha");
+          xs = new Exponents(_len);
+          ms = new Mantissas(_len);
+          missing = new BitSet();
+          if(_sparseNA)
+            missing.set(0,_len);
+          for (int i = 0; i < _sparseLen; ++i) {
+            if(i == err_i)
+              System.out.println("gaga");
+            xs.set(_id[i], _xs.get(i));
+            ms.set(_id[i], _ms.get(i));
+            if(ms._nzs != (i+1)){
+              System.out.println("gaga");
+            }
+            missing.set(_id[i], _sparseNA || _missing == null?false:_missing.get(i));
+          }
         }
         assert _sparseNA || (ms._nzs == _ms._nzs):_ms._nzs + " != " + ms._nzs;
         ms._nzs = _ms._nzs;

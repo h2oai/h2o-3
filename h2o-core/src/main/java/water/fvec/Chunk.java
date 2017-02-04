@@ -113,6 +113,9 @@ public abstract class Chunk extends DBlock {
   public Chunk() {}
   private Chunk(byte [] bytes) {_mem = bytes;initFromBytes();}
 
+  @Override public Chunk [] chunks(){return new Chunk[]{this};}
+  @Override public int [] ids(){return null;}
+  public int sparseCols(){return 1;}
 
   /**
    * Sparse bulk interface, stream through the compressed values and extract them into dense double array.
@@ -402,5 +405,8 @@ public abstract class Chunk extends DBlock {
     return this;
   }
   @Override public ChunkAry chunkAry(VecAry v, int cidx){return new ChunkAry(v,cidx,this);}
-  @Override public DBlock setChunk(int c, Chunk chk){if(c != 0) throw new ArrayIndexOutOfBoundsException(c); return this;}
+  @Override public DBlock setChunk(int c, Chunk chk){
+    if(c != 0) throw new ArrayIndexOutOfBoundsException(c);
+    return chk;
+  }
 }

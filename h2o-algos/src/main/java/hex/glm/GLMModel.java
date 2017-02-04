@@ -1202,8 +1202,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
    * @return MetricBuilder
    */
   @Override
-  protected ModelMetrics.MetricBuilder scoreMetrics(Frame adaptFrm) {
-    return makeScoringTask(adaptFrm,false,null).doAll(adaptFrm)._mb;
+  protected ModelMetrics.MetricBuilder scoreMetrics(Frame adaptFrm) {;
+    GLMScore scr = makeScoringTask(adaptFrm,false,null).doAll(adaptFrm);
+    return scr._mb;
   }
 
 }

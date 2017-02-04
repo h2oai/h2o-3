@@ -17,6 +17,7 @@ import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.MathUtils;
 import water.util.MathUtils.BasicStats;
+import water.fvec.ChunkAry.SparseVec;
 
 import java.util.Arrays;
 
@@ -490,16 +491,16 @@ public abstract class GLMTask  {
 
     private final void computeCategoricalGrads(ChunkAry chks, double [] etas, double [] vals, int [] ids) {
       // categoricals
-      for(int cid = 0; cid < _dinfo._cats; ++cid){
-        Chunk c = chks.getChunk(cid);
-        if(c.isSparseZero()) {
-          int nvals = c.asSparseDoubles(vals,ids,_dinfo.catNAFill(cid));
+      for(SparseVec sv = chks.sparseVec(0); sv._colId < _dinfo._cats; sv = chks.next(sv)) {
+        int cid = sv.colId();
+        if(sv.isSparseZero()) {
+          int nvals = sv.getDoubles(vals,ids,_dinfo.catNAFill(cid));
           for(int i = 0; i < nvals; ++i){
             int id = _dinfo.getCategoricalId(cid,(int)vals[i]);
             if(id >=0) _gradient[id] += etas[ids[i]];
           }
         } else {
-          c.getIntegers(ids, 0, c._len,_dinfo.catNAFill(cid));
+          sv.getIntegers(ids,_dinfo.catNAFill(cid));
           for(int i = 0; i < ids.length; ++i){
             int id = _dinfo.getCategoricalId(cid,(int)ids[i]);
             if(id >=0) _gradient[id] += etas[i];
@@ -510,22 +511,22 @@ public abstract class GLMTask  {
 
     private final void computeNumericEtas(ChunkAry chks, double [] etas, double [] vals, int [] ids) {
       int numOff = _dinfo.numStart();
-      for(int cid = 0; cid < _dinfo._nums; ++cid){
+      for(SparseVec sv = chks.sparseVec(_dinfo._cats); sv._colId < _dinfo._cats + _dinfo._nums; sv = chks.next(sv)) {
+        int cid = sv.colId();
         double scale = _dinfo._normMul != null?_dinfo._normMul[cid]:1;
         double off = _dinfo._normSub != null?_dinfo._normSub[cid]:0;
         double NA = _dinfo._numMeans[cid];
-        Chunk c = chks.getChunk(cid+_dinfo._cats);
         double b = scale*_beta[numOff+cid];
-        if(c.isSparseZero()){
-          int nvals = c.asSparseDoubles(vals,ids,NA);
+        if(sv.isSparseZero()){
+          int nvals = sv.getDoubles(vals,ids,NA);
           for(int i = 0; i < nvals; ++i)
             etas[ids[i]] += vals[i] * b;
-        } else if(c.isSparseNA()){
-          int nvals = c.asSparseDoubles(vals,ids,NA);
+        } else if(sv.isSparseNA()){
+          int nvals = sv.getDoubles(vals,ids,NA);
           for(int i = 0; i < nvals; ++i)
             etas[ids[i]] += (vals[i] - off) * b;
         } else {
-          c.getDoubles(vals,0,vals.length,NA);
+          sv.getDoubles(vals,NA);
           for(int i = 0; i < vals.length; ++i)
             etas[i] += (vals[i] - off) * b;
         }
@@ -534,26 +535,26 @@ public abstract class GLMTask  {
 
     private final void computeNumericGrads(ChunkAry chks, double [] etas, double [] vals, int [] ids) {
       int numOff = _dinfo.numStart();
-      for(int cid = 0; cid < _dinfo._nums; ++cid){
+      for(SparseVec sv = chks.sparseVec(_dinfo._cats); sv._colId < _dinfo._cats+_dinfo._nums; sv = chks.next(sv)) {
+        int cid = sv.colId();
         double NA = _dinfo._numMeans[cid];
-        Chunk c = chks.getChunk(cid+_dinfo._cats);
         double scale = _dinfo._normMul == null?1:_dinfo._normMul[cid];
-        if(c.isSparseZero()){
+        if(sv.isSparseZero()){
           double g = 0;
-          int nVals = c.asSparseDoubles(vals,ids,NA);
+          int nVals = sv.getDoubles(vals,ids,NA);
           for(int i = 0; i < nVals; ++i)
             g += vals[i]*scale*etas[ids[i]];
           _gradient[numOff+cid] = g;
-        } else if(c.isSparseNA()){
+        } else if(sv.isSparseNA()){
           double off = _dinfo._normSub == null?0:_dinfo._normSub[cid];
           double g = 0;
-          int nVals = c.asSparseDoubles(vals,ids,NA);
+          int nVals = sv.getDoubles(vals,ids,NA);
           for(int i = 0; i < nVals; ++i)
             g += (vals[i]-off)*scale*etas[ids[i]];
           _gradient[numOff+cid] = g;
         } else {
           double off = _dinfo._normSub == null?0:_dinfo._normSub[cid];
-          c.getDoubles(vals,0,vals.length,NA);
+          sv.getDoubles(vals,NA);
           double g = 0;
           for(int i = 0; i < vals.length; ++i)
             g += (vals[i]-off)*scale*etas[i];

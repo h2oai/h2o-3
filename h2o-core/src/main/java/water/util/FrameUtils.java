@@ -226,11 +226,12 @@ public class FrameUtils {
   }
 
   public static double sparseRatio(Frame fr) {
-    double reg = 1.0/fr.numCols();
+    double reg = 1.0/(fr.numRows()*fr.numCols());
     double res = 0;
     VecAry vecs = fr.vecs();
+    RollupsAry rs = vecs.rollupStats();
     for(int c = 0; c < fr.numCols(); ++c)
-      res += vecs.sparseRatio(c);
+      res += rs.nzCnt(c);
     return res * reg;
   }
 

@@ -5,6 +5,7 @@ import water.fvec.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 
 /**
  * Created by tomasnykodym on 1/29/15.

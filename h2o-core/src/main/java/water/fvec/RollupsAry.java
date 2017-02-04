@@ -13,7 +13,9 @@ import java.util.Arrays;
 public class RollupsAry extends Iced {
   public int removedCnt() {return _removed.cardinality();}
 
-
+  public long nzCnt(int c) {
+    return getRollups(c)._nzCnt;
+  }
 
 
   private enum State {ready, computing, mutating};
@@ -69,7 +71,8 @@ public class RollupsAry extends Iced {
   public boolean isRemoved(int i){return _removed.contains(i);}
   public RollupStats getRollups(int i){
     if(isMutating(i)) throw new IllegalArgumentException("Can not access rollups while the vec is being mutated.");
-    if(isRemoved(i)) throw new IllegalArgumentException("Attempting to access rollups of a removed vec.");
+    if(isRemoved(i))
+      throw new IllegalArgumentException("Attempting to access rollups of a removed vec #" + i + ".");
     return _rs[i];
   }
 

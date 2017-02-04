@@ -1,6 +1,7 @@
 package water.fvec;
 
 import water.H2O;
+import water.util.ArrayUtils;
 import water.util.UnsafeUtils;
 
 import java.util.Iterator;
@@ -71,44 +72,65 @@ public class CXDChunk extends CXIChunk {
     return getId(off) == i && Double.isNaN(getFValue(off));
   }
 
+
   @Override public NewChunk add2Chunk(NewChunk nc, int from, int to) {
-    int prev = from -1;
-    int id;
-    for(int off = getOff(from); (id = getId(off)) < to; off += _ridsz + _valsz) {
-      if(id >= to) {
-        if(isSparseNA())
-          nc.addNAs(to-prev-1);
-        else
-          nc.addZeros(to-prev-1);
-        break;
-      }
+    if( from > to) throw new NegativeArraySizeException();
+    if(from == to)
+      return nc;
+    int prev = from-1;
+    int id = nextNZ(prev);
+    if(id == _len) {
+      nc.addZeros(to-from);
+      return nc;
+    }
+    int cnt = 0;
+    for(int off = findOffset(id);(id = getId(off)) < to; off += _ridsz + _valsz) {
+      cnt++;
+      assert id > prev:" id = " + id + ", prev = " + prev + ", from = " + from + ", to = " + to  + ", cnt = " + cnt;
       if(isSparseNA())
         nc.addNAs(id-prev-1);
       else
         nc.addZeros(id-prev-1);
       nc.addNum(getFValue(off));
+      prev = id;
     }
+    if(prev < to-1) {
+      if (isSparseNA())
+        nc.addNAs(to - prev - 1);
+      else
+        nc.addZeros(to - prev - 1);
+    }
+    assert nc._len > 0;
     return nc;
   }
-
   @Override public NewChunk add2Chunk(NewChunk nc, int [] rows) {
+    if (!ArrayUtils.isSorted(rows))
+      throw H2O.unimpl();
     int from = rows[0];
-    int to = rows[rows.length-1];
-    int prevK = -1;
-    int id;
+    int to = rows[rows.length - 1] + 1;
+    if (from == to)
+      return nc;
+    int prev = from - 1;
+    int id = nextNZ(prev);
+    if (id == _len) {
+      nc.addZeros(rows.length);
+      return nc;
+    }
     int k = 0;
-    for(int off = getOff(from); (id = getId(off)) < to; off += _ridsz + _valsz) {
-      while(k < rows.length && rows[k]< id)k++;
-      if(isSparseNA())
-        nc.addNAs(k-prevK-1);
+    int prevK = -1;
+    for (int off = findOffset(id); (id = getId(off)) < to; off += _ridsz + _valsz) {
+      while (k < rows.length && rows[k] < id) k++;
+      if (isSparseNA())
+        nc.addNAs(k - prevK - 1);
       else
-        nc.addZeros(k-prevK-1);
-      if(id == rows[k])
+        nc.addZeros(k - prevK - 1);
+      if (id == rows[k])
         nc.addNum(getFValue(off));
       prevK = k;
     }
     return nc;
   }
+
   public Iterator<Value> values(){
     return new SparseIterator(new Value(){
       @Override public final long asLong(){

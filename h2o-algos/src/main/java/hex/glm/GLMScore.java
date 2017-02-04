@@ -35,7 +35,7 @@ public class GLMScore extends MRTask<GLMScore> {
     _generatePredictions = generatePredictions;
   }
 
-  private void processRow(DataInfo.Row r, float [] res, double [] ps, NewChunk [] preds, int ncols) {
+  private void processRow(DataInfo.Row r, float [] res, double [] ps) {
     if(_dinfo._responses != 0)res[0] = (float) r.response[0];
     if (r.predictors_bad) {
       Arrays.fill(ps,Double.NaN);
@@ -46,11 +46,9 @@ public class GLMScore extends MRTask<GLMScore> {
       if (_computeMetrics && !r.response_bad)
         _mb.perRow(ps, res, r.weight, r.offset, _m);
     }
-    if (_generatePredictions)
-      for (int c = 0; c < ncols; c++)  // Output predictions; sized for train only (excludes extra test classes)
-        preds[c].addNum(ps[c]);
   }
-  public void map(ChunkAry chks, NewChunkAry preds) {
+
+  private void map2(ChunkAry chks, NewChunkAry preds){
     if (isCancelled() || _j != null && _j.stop_requested()) return;
     double[] ps;
     if (_computeMetrics) {
@@ -61,28 +59,34 @@ public class GLMScore extends MRTask<GLMScore> {
     float[] res = new float[1];
     final int nc = _m._output.nclasses();
     final int ncols = nc == 1 ? 1 : nc + 1; // Regression has 1 predict col; classification also has class distribution
-    // compute
-    if (_sparse) {
-      for (DataInfo.Row r : _dinfo.extractSparseRows(chks))
-        processRow(r,res,ps, (NewChunk[]) preds.getChunks(),ncols);
-    } else {
-      DataInfo.Row r = _dinfo.newDenseRow();
-      for (int rid = 0; rid < chks._len; ++rid) {
-        _dinfo.extractDenseRow(chks, rid, r);
-        processRow(r,res,ps,(NewChunk[]) preds.getChunks(),ncols);
+    DataInfo.Rows rows = _dinfo.rows(chks,_sparse);
+    for(int i = 0; i <chks._len; ++i){
+      processRow(rows.row(i), res, ps);
+      if(_generatePredictions){
+        for(int j = 0; j < ncols; j++)
+          preds.addNum(j,ps[j]);
       }
     }
     if (_j != null) _j.update(1);
   }
+  public void map(ChunkAry chks){
+    assert !_generatePredictions;
+    assert _computeMetrics;
+    map2(chks,null);
+  }
+  public void map(ChunkAry chks, NewChunkAry preds) {
+    assert _generatePredictions;
+    map2(chks,preds);
+  }
 
   @Override
   public void reduce(GLMScore bs) {
-    if (_mb != null) _mb.reduce(bs._mb);
+    if (_computeMetrics) _mb.reduce(bs._mb);
   }
 
   @Override
   protected void postGlobal() {
-    if (_mb != null) _mb.postGlobal();
+    if (_computeMetrics)_mb.postGlobal();
   }
 }
 

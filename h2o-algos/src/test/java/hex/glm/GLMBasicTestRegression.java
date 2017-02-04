@@ -10,6 +10,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
+import water.MRTask;
 import water.TestUtil;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
@@ -18,6 +19,7 @@ import water.parser.ParseDataset;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.Random;
 
 import water.fvec.*;
 import static org.junit.Assert.assertEquals;
@@ -71,6 +73,7 @@ public class GLMBasicTestRegression extends TestUtil {
     DKV.put(_upsampled._key, _upsampled);
     _prostateTrain = parse_test_file("smalldata/glm_test/prostate_cat_train.csv");
     _airlines = parse_test_file("smalldata/airlines/AirlinesTrain.csv.zip");
+
     VecAry v = _airlines.removeVecs("IsDepDelayed");
     VecAry v2 = v.makeCopy(null);
     _airlines.add("IsDepDelayed",v2);
@@ -724,6 +727,7 @@ public class GLMBasicTestRegression extends TestUtil {
     params._standardize = false;
     params._remove_collinear_columns = true;
     params._train = _airlines._key;
+
     params._response_column = "IsDepDelayed";
     params._ignored_columns = new String[]{"IsDepDelayed_REC"};
     try {

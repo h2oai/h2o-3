@@ -110,19 +110,44 @@ public class VecAryTest extends TestUtil {
     vecs3.remove();
   }
 
+  private VecAry tiny_data_1(int nchunks){
+    return new VecAry(TestUtil.vec(tiny_data)).rebalance(nchunks,true);
+  }
+  private VecAry tiny_data_2(int nchunks){
+    return new VecAry(TestUtil.vec(tiny_data_2)).rebalance(nchunks,true);
+  }
   @Test public void testReplace(){
-    Vec v0 = TestUtil.vec(tiny_data);
-    VecAry vecs0 = new VecAry(v0).rebalance(3,true);
+    VecAry vecs0 = tiny_data_1(3);
+    VecAry vecs1 = tiny_data_2(3);
+    VecAry vecs2 = getSingleVecs(vecs0);
+    VecAry vecs3 = getSingleVecs(vecs1);
+    testReplace(vecs0,vecs1);
+    testReplace(vecs2,vecs3);
+    vecs0 = tiny_data_1(3);
+    vecs1 = tiny_data_2(3);
+    vecs2 = getSingleVecs(vecs0);
+    vecs3 = getSingleVecs(vecs1);
+    testReplace(vecs0,vecs3);
+    testReplace(vecs2,vecs1);
+    vecs0 = tiny_data_1(3);
+    vecs1 = tiny_data_2(3);
+    vecs2 = getSingleVecs(vecs0);
+    vecs3 = getSingleVecs(vecs1);
+    testReplace(vecs2,vecs1);
+    testReplace(vecs0,vecs3);
+  }
+
+  private  void testReplace(VecAry vecs0, VecAry vecs1){
     double [] sums = new SumTsk().doAll(vecs0)._sums;
     vecs0.replace(1,vecs0.select(1));
     assertTrue(vecs0._colFilter == null);
-    Vec v1 = TestUtil.vec(tiny_data_2);
-    VecAry vecs1 = new VecAry(v1).align(vecs0,true);
+
     double [] sums1 = new SumTsk().doAll(vecs1)._sums;
     VecAry x = vecs0.replace(1,vecs1.select(1));
     double [] expected_sums = sums.clone();
     expected_sums[1] = sums1[1];
-    assertArrayEquals(expected_sums,new SumTsk().doAll(vecs0)._sums,0);
+    double [] actual_sums = new SumTsk().doAll(vecs0)._sums;
+    assertArrayEquals(expected_sums,actual_sums,0);
     vecs0.remove();
     vecs1.remove();
     // test x is still alive
@@ -264,12 +289,18 @@ public class VecAryTest extends TestUtil {
     vecs4.remove();
   }
 
-  @Test
-  public void testAppend() {
+
+  @Test public void testAppend(){
     Vec v0 = TestUtil.vec(tiny_data);
     VecAry vecs0 = new VecAry(v0).rebalance(3,true);
     Vec v1 = TestUtil.vec(tiny_data_2);
     VecAry vecs1 = new VecAry(v1).align(vecs0,true);
+    VecAry vecs2 = getSingleVecs(vecs0);
+    VecAry vecs3 = getSingleVecs(vecs1);
+    testAppend(vecs0,vecs1);
+    testAppend(vecs2,vecs3);
+  }
+  private void testAppend(VecAry vecs0, VecAry vecs1 ) {
     double [] mus0 = vecs0.means();
     double [] mus1 = vecs1.means();
     double [] sums0 = new SumTsk().doAll(vecs0)._sums;
@@ -357,5 +388,13 @@ public class VecAryTest extends TestUtil {
       System.out.println("parsed data into " + fr.numRows() + " x " + fr.numCols() + ", into " + fr.anyVec().nChunks() + " chunks and " + fr._vecs._vecIds.length + " vecs");
       fr.delete();
     }
+  }
+
+
+  private VecAry getSingleVecs(VecAry vecs){
+    VecAry singles = new VecAry();
+    for(VecAry v:vecs.singleVecs())
+      singles.append(v.makeCopy());
+    return singles;
   }
 }

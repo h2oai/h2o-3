@@ -1605,6 +1605,11 @@ public class ArrayUtils {
       if(ids[i-1] > ids[i]) return false;
     return true;
   }
+  public static boolean isIncreasing(int[] ids) {
+    for(int i = 1; i < ids.length; ++i)
+      if(ids[i-1] >= ids[i]) return false;
+    return true;
+  }
   public static int [] sorted(int[] ids) {
     Arrays.sort(ids);
     return ids;
@@ -1642,6 +1647,8 @@ public class ArrayUtils {
       res[colFilter[i]] = i;
     return res;
   }
+
+
 
   public static final class IntAry {
     public IntAry(int ...vals){_ary = vals; _sz = vals.length;}

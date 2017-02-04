@@ -1,6 +1,7 @@
 package water.fvec;
 
 import water.H2O;
+import water.util.ArrayUtils;
 import water.util.UnsafeUtils;
 
 import java.util.Arrays;
@@ -92,26 +93,36 @@ public class CXIChunk extends Chunk {
   }
 
   @Override public NewChunk add2Chunk(NewChunk nc, int [] rows) {
+    if(!ArrayUtils.isSorted(rows))
+      throw H2O.unimpl();
+    int expectedLen = nc.len() + rows.length;
     int from = rows[0];
-    int to = rows[rows.length-1];
-    int prevK = -1;
-    int id;
+    int prev = from-1;
+    int id = nextNZ(prev);
+    if(id == _len) {
+      nc.addZeros(rows.length);
+      return nc;
+    }
     int k = 0;
-    for(int off = getOff(from); (id = getId(off)) < to; off += _ridsz + _valsz) {
+    for(int off = findOffset(id);off < _mem.length && k < rows.length; off += _ridsz + _valsz) {
+      int kStart = k;
       while(k < rows.length && rows[k]< id)k++;
-      if(isSparseNA())
-        nc.addNAs(k-prevK-1);
-      else
-        nc.addZeros(k-prevK-1);
-      if(id == rows[k]){
+      if(isSparseNA()) nc.addNAs(k-kStart);
+      else nc.addZeros(k-kStart);
+      if(k < rows.length && id == rows[k]){
         long v = getIValue(off);
         if(!isSparseNA() && v == NAS[_valsz_log])
           nc.addNA();
         else
           nc.addNum(v,0);
+        k++;
       }
-      prevK = k;
     }
+    if(k < rows.length) {
+      if(isSparseNA()) nc.addNAs(rows.length-k);
+      else nc.addZeros(rows.length-k);
+    }
+    assert nc.len() == expectedLen:expectedLen + " != " + nc.len();
     return nc;
   }
 
@@ -251,7 +262,8 @@ public class CXIChunk extends Chunk {
   // get id of nth (chunk-relative) stored element
   protected final int getId(int off){
     if(off == _mem.length) return _len;
-    if(off > _mem.length) throw new ArrayIndexOutOfBoundsException(off + " > " + _mem.length);
+    if(off > _mem.length)
+      throw new ArrayIndexOutOfBoundsException(off + " > " + _mem.length);
     return _ridsz == 2
       ?UnsafeUtils.get2(_mem,off)&0xFFFF
       :UnsafeUtils.get4(_mem,off);

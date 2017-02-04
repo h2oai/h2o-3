@@ -447,7 +447,7 @@ public final class ParseDataset {
         if (!(chks.isString(i))) {
           for( int j = 0; j < chks._len; ++j){
             if( chks.isNA(j,i) )continue;
-            final int old = (int) chks.at4(j,i);
+            final int old = chks.at4(j,i);
             if(_parse2GlobalCatMaps[i] != null && _parse2GlobalCatMaps[i][old] < 0)
               throw new H2OParseException("Error in unifying categorical values. This is typically "
                   +"caused by unrecognized characters in the data.\n The problem categorical value "
