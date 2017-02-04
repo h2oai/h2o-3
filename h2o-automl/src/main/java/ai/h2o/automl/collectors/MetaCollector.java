@@ -123,19 +123,19 @@ public class MetaCollector {
 
     // TODO: move into DHistogram
     public double mean(int b ) {
-      double n = _h._w[b];
+      double n = _h.w(b);
       return n>0 ? _sums[b]/n : _h.binAt(b);
     }
 
     // TODO: move into DHistogram
     public double var (int b) { // sample variance
-      double n = _h._w[b];
+      double n = _h.w(b);
       if( n<=1 ) return 0;
       return Math.max(0, (_ssqs[b] - _sums[b]*_sums[b]/n)/(n-1));
     }
 
     protected void init() {
-      _h._w = MemoryManager.malloc8d(_h._nbin);
+      _h.init();
       _sums = MemoryManager.malloc8d(_h._nbin);
       _ssqs = MemoryManager.malloc8d(_h._nbin);
     }
@@ -166,7 +166,7 @@ public class MetaCollector {
       _h.setMin(min); _h.setMaxIn(max);
       for(int b=0; b<bins.length; ++b)
         if( bins[b]!=0 ) {
-          AtomicUtils.DoubleArray.add(_h._w, b, bins[b]);
+          _h.addWAtomic(b, bins[b]);
           AtomicUtils.DoubleArray.add(_sums, b, sums[b]);
           AtomicUtils.DoubleArray.add(_ssqs, b, ssqs[b]);
         }

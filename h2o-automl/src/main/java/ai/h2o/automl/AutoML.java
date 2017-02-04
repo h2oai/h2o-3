@@ -174,7 +174,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     ArrayList<String> fails = new ArrayList();
     ArrayList<String> dels = new ArrayList();
 
-    H2O.getPM().importFiles(importFiles.path, files, keys, fails, dels);
+    H2O.getPM().importFiles(importFiles.path, null, files, keys, fails, dels);
 
     importFiles.files = files.toArray(new String[0]);
     importFiles.destination_frames = keys.toArray(new String[0]);
@@ -257,7 +257,8 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     // TODO: add the models to the modellist so they get deleted
 
     // step 2 for AutoML phase 1: do a random hyperparameter search with GBM
-    Key<Grid> gridKey = Key.make("grid_0_" + this._key.toString());
+    // TODO: convert to using the REST API
+    Key<Grid> gridKey = Key.make("GBM_grid_0_" + this._key.toString());
 
     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria = buildSpec.build_control.stopping_criteria;
 
@@ -307,7 +308,9 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     gridJob.get(); // Hold out until Grid Search is done (or if the job times out)
 
 
-    this.job.update(1, "grid search complete");
+    this.job.update(1, "GBM grid search complete");
+
+    // StackedEnsembleParameters ensembleParameters = new StackedEnsembleParameters();
 
     Log.info("AutoML: build done");
     possiblyVerifyImmutability();

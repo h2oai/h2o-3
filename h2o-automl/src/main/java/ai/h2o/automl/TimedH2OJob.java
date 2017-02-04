@@ -40,7 +40,7 @@ public class TimedH2OJob extends H2OJob {
       _j._target.stop();
       Job j = _j._jobKey.get();
       j.update(1);
-//      j.stop();
+      j.stop();
     }
     @Override public boolean onExceptionalCompletion(Throwable t, CountedCompleter cc) {
       Log.info("Timed H2OJob finished exceptionally");
