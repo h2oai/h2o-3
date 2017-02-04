@@ -58,8 +58,8 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "grow_policy",
         "booster",
         "gamma",
-        "lambda",
-        "alpha"
+        "reg_lambda",
+        "reg_alpha"
     };
 
     @API(help="(same as n_estimators) Number of trees.", gridable = true)
@@ -136,10 +136,10 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
     public XGBoostParameters.Booster booster;
 
     @API(help = "L2 regularization", level = API.Level.expert, gridable = true)
-    public float lambda;
+    public float reg_lambda;
 
     @API(help = "L1 regularization", level = API.Level.expert, gridable = true)
-    public float alpha;
+    public float reg_alpha;
 
     @API(help="Missing Value Handling", values = { "mean_imputation", "skip"}, level = API.Level.expert, gridable = true)
     public XGBoostParameters.MissingValuesHandling missing_values_handling;
