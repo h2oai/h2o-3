@@ -1,0 +1,10 @@
+
+syntax = "proto3";
+
+package core;
+
+message empty {
+    // Empty message that can be reused for any RPC that takes / returns
+    // no values
+}
+

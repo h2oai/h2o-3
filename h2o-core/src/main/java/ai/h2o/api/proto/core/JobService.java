@@ -1,5 +1,8 @@
-package ai.h2o.api.protos.core;
+package ai.h2o.api.proto.core;
 
+import ai.h2o.api.protos.core.JobGrpc;
+import ai.h2o.api.protos.core.JobId;
+import ai.h2o.api.protos.core.JobInfo;
 import io.grpc.stub.StreamObserver;
 import water.*;
 
@@ -24,6 +27,19 @@ public class JobService extends JobGrpc.JobImplBase {
       throw new IllegalArgumentException("Id " + request.getId() + " references a " + iced.getClass() + " not a Job");
 
     water.Job job = (water.Job) iced;
+    responseObserver.onNext(collectJobInfo(job));
+    responseObserver.onCompleted();
+  }
+
+  @Override
+  public void cancel(JobId request, StreamObserver<JobInfo> responseObserver) {
+    Key<water.Job> key = Key.make(request.getId());
+    Job job = DKV.getGet(key);
+    if (job == null) {
+      throw new IllegalArgumentException("No job with key " + key);
+    }
+    job.stop(); // Request Job stop
+
     responseObserver.onNext(collectJobInfo(job));
     responseObserver.onCompleted();
   }

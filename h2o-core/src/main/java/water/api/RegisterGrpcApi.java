@@ -1,6 +1,6 @@
 package water.api;
 
-import ai.h2o.api.protos.core.JobService;
+import ai.h2o.api.proto.core.JobService;
 import io.grpc.ServerBuilder;
 
 

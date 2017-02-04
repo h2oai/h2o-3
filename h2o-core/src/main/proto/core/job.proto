@@ -1,6 +1,8 @@
 
 syntax = "proto3";
 
+// import "core/common.proto";
+
 option java_package = "ai.h2o.api.protos.core";
 //option java_outer_classname = "JobProto";
 option java_multiple_files = true;
@@ -10,6 +12,8 @@ package core;
 
 service Job {
     rpc poll (JobId) returns (JobInfo);
+
+    rpc cancel(JobId) returns (JobInfo);
 }
 
 
