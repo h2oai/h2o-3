@@ -58,8 +58,8 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "grow_policy",
         "booster",
         "gamma",
-        "reg_lambda",
-        "reg_alpha"
+        "lambda",
+        "alpha"
     };
 
     @API(help="(same as n_estimators) Number of trees.", gridable = true)
