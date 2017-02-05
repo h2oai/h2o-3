@@ -33,7 +33,7 @@ class H2OXGBoostEstimator(H2OEstimator):
                       "col_sample_rate_per_tree", "colsample_bytree", "max_abs_leafnode_pred", "max_delta_step",
                       "score_tree_interval", "min_split_improvement", "max_bin", "num_leaves",
                       "min_sum_hessian_in_leaf", "min_data_in_leaf", "tree_method", "grow_policy", "booster", "gamma",
-                      "reg_lambda", "reg_alpha"}
+                      "reg_lambda", "reg_alpha", "dmatrix_type"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -739,6 +739,21 @@ class H2OXGBoostEstimator(H2OEstimator):
     def reg_alpha(self, reg_alpha):
         assert_is_type(reg_alpha, None, float)
         self._parms["reg_alpha"] = reg_alpha
+
+
+    @property
+    def dmatrix_type(self):
+        """
+        Type of DMatrix. For sparse, NAs and 0 are treated equally.
+
+        One of: ``"auto"``, ``"dense"``, ``"sparse"``  (default: ``"auto"``).
+        """
+        return self._parms.get("dmatrix_type")
+
+    @dmatrix_type.setter
+    def dmatrix_type(self, dmatrix_type):
+        assert_is_type(dmatrix_type, None, Enum("auto", "dense", "sparse"))
+        self._parms["dmatrix_type"] = dmatrix_type
 
 
 
