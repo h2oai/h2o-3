@@ -50,6 +50,7 @@ echo "*  Activating Python virtualenv"
 echo "*********************************************"
 echo ""
 source $WORKSPACE/../h2o_venv/bin/activate
+pip install --upgrade pip
 
 # Use the Jenkins-user shared R library; already sync'd no need to sync again
 export R_LIBS_USER=${WORKSPACE}/../Rlibrary

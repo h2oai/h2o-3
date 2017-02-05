@@ -51,6 +51,9 @@ echo "*********************************************"
 echo ""
 virtualenv $WORKSPACE/h2o_venv --python=python2.7
 source $WORKSPACE/h2o_venv/bin/activate
+pip install --upgrade pip
+
+# This should be done in gradle...
 pip install numpy --upgrade
 pip install scipy --upgrade
 pip install -r h2o-py/requirements.txt
