@@ -515,7 +515,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   public String getHeader() { return null; }
 
   // Helper for DeepWater and XGBoost (models that require explicit one-hot encoding on the fly)
-  static public void setInput(final double[] from, float[] to, int _nums, int _cats, int[] _catOffsets, double[] _normMul, double[] _normSub, boolean useAllFactorLevels) {
+  static public void setInput(final double[] from, float[] to, int _nums, int _cats, int[] _catOffsets, double[] _normMul, double[] _normSub, boolean useAllFactorLevels, boolean replaceMissingWithZero) {
     float[] nums = new float[_nums]; // a bit wasteful - reallocated each time
     int[] cats = new int[_cats]; // a bit wasteful - reallocated each time
     for (int i = 0; i < _cats; ++i) {
@@ -541,7 +541,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     for (int i = 0; i < _cats; ++i)
       to[cats[i]] = 1f; // one-hot encode categoricals
     for (int i = 0; i < _nums; ++i)
-      to[_catOffsets[_cats] + i] = Double.isNaN(nums[i]) ? 0f : nums[i];
+      to[_catOffsets[_cats] + i] = Double.isNaN(nums[i]) ? (replaceMissingWithZero ? 0 : Float.NaN) : nums[i];
   }
 
   public static void img2pixels(BufferedImage img, int w, int h, int channels, float[] pixels, int start, float[] mean) throws IOException {
