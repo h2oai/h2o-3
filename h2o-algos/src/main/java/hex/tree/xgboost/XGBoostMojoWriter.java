@@ -27,5 +27,6 @@ public class XGBoostMojoWriter extends ModelMojoWriter<XGBoostModel, XGBoostMode
     writekv("cats", model._output._cats);
     writekv("cat_offsets", model._output._catOffsets);
     writekv("use_all_factor_levels", model._output._useAllFactorLevels);
+    writekv("sparse", model._output._sparse);
   }
 }

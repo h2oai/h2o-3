@@ -25,6 +25,7 @@ public class XGBoostMojoReader extends ModelMojoReader<XGBoostMojoModel> {
     _model._cats = readkv("cats");
     _model._catOffsets = readkv("cat_offsets");
     _model._useAllFactorLevels = readkv("use_all_factor_levels");
+    _model._sparse = readkv("sparse");
   }
 
   @Override

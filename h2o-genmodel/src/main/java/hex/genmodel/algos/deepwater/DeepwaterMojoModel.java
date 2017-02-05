@@ -52,7 +52,7 @@ public class DeepwaterMojoModel extends MojoModel {
     int cats = _catOffsets == null ? 0 : _catOffsets[_cats];
     if (_nums > 0) {
       floats = new float[_nums + cats]; //TODO: use thread-local storage
-      GenModel.setInput(doubles, floats, _nums, _cats, _catOffsets, _normMul, _normSub, _useAllFactorLevels);
+      GenModel.setInput(doubles, floats, _nums, _cats, _catOffsets, _normMul, _normSub, _useAllFactorLevels, true);
     } else {
       floats = new float[doubles.length];
       for (int i=0; i<floats.length; ++i) {

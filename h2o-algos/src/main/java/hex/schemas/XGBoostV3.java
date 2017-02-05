@@ -59,7 +59,8 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "booster",
         "gamma",
         "reg_lambda",
-        "reg_alpha"
+        "reg_alpha",
+        "dmatrix_type"
     };
 
     @API(help="(same as n_estimators) Number of trees.", gridable = true)
@@ -161,5 +162,8 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
 
     @API(help="For booster=dart only: skip_drop (0..1)", level = API.Level.expert, gridable = true)
     public float skip_drop;
+
+    @API(help="Type of DMatrix. For sparse, NAs and 0 are treated equally.", values = { "auto", "dense", "sparse" }, level = API.Level.secondary, gridable = true)
+    public XGBoostParameters.DMatrixType dmatrix_type;
   }
 }

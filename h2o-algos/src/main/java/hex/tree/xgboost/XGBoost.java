@@ -53,7 +53,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
    * @return DMatrix
    * @throws XGBoostError
    */
-  public static DMatrix convertFrametoDMatrix(Key<DataInfo> dataInfoKey, Frame f, String response, String weight, String fold, String[] featureMap) throws XGBoostError {
+  public static DMatrix convertFrametoDMatrix(Key<DataInfo> dataInfoKey, Frame f, String response, String weight, String fold, String[] featureMap, boolean sparse) throws XGBoostError {
 
     DataInfo di = dataInfoKey.get();
     // set the names for the (expanded) columns
@@ -75,103 +75,144 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       featureMap[0] = sb.toString();
     }
 
-    // 1 0 2 0
-    // 4 0 0 3
-    // 3 1 2 0
+    DMatrix trainMat;
+    int nz = 0;
+    int actualRows = 0;
+    int nRows = (int) f.numRows();
+    Vec.Reader w = weight == null ? null : f.vec(weight).new Reader();
+    Vec.Reader[] vecs = new Vec.Reader[f.numCols()];
+    for (int i = 0; i < vecs.length; ++i) {
+      vecs[i] = f.vec(i).new Reader();
+    }
 
-    // CSC:
+    if (sparse) {
+      Log.info("Treating matrix as sparse.");
+      // 1 0 2 0
+      // 4 0 0 3
+      // 3 1 2 0
+
+      // CSC:
 //    long[] colHeaders = new long[] {0,        3,  4,     6,    7}; //offsets
 //    float[] data = new float[]     {1f,4f,3f, 1f, 2f,2f, 3f};      //non-zeros down each column
 //    int[] rowIndex = new int[]     {0,1,2,    2,  0, 2,  1};       //row index for each non-zero
 
-    // CSR:
+      // CSR:
 //    long[] rowHeaders = new long[] {0,      2,      4,         7}; //offsets
 //    float[] data = new float[]     {1f,2f,  4f,3f,  3f,1f,2f};     //non-zeros across each row
 //    int[] colIndex = new int[]     {0, 2,   0, 3,   0, 1, 2};      //col index for each non-zero
 
-    int nRows = (int)f.numRows();
-    long[] rowHeaders = new long[nRows+1];
-    int initial_size = 1<<20;
-    float[] data   = new float[initial_size];
-    int[] colIndex = new int[initial_size];
+      long[] rowHeaders = new long[nRows + 1];
+      int initial_size = 1 << 20;
+      float[] data = new float[initial_size];
+      int[] colIndex = new int[initial_size];
 
-    Vec.Reader w = weight == null ? null : f.vec(weight).new Reader();
-    Vec.Reader[] vecs = new Vec.Reader[f.numCols()];
-    for (int i=0; i<vecs.length; ++i) {
-      vecs[i] = f.vec(i).new Reader();
-    }
-
-    // extract predictors
-    int nz=0;
-    int row=0;
-    rowHeaders[0] = 0;
-    for (int i=0;i<nRows;++i) {
-      if (w != null && w.at(i) == 0) continue;
-      int nzstart = nz;
-      // enlarge final data arrays by 2x if needed
-      while (data.length<nz+di._cats+di._nums) {
-        Log.info("Enlarging sparse data structure from " + data.length + " bytes to " + (data.length<<1) + " bytes.");
-        data = Arrays.copyOf(data, data.length<<1);
-        colIndex = Arrays.copyOf(colIndex, colIndex.length<<1);
-      }
-      for (int j=0;j<di._cats;++j) {
-        if (!vecs[j].isNA(i)) {
-          data[nz] = 1; //one-hot encoding
-          colIndex[nz] = di.getCategoricalId(j, vecs[j].at8(i));
+      // extract predictors
+      rowHeaders[0] = 0;
+      for (int i = 0; i < nRows; ++i) {
+        if (w != null && w.at(i) == 0) continue;
+        int nzstart = nz;
+        // enlarge final data arrays by 2x if needed
+        while (data.length < nz + di._cats + di._nums) {
+          Log.info("Enlarging sparse data structure from " + data.length + " bytes to " + (data.length << 1) + " bytes.");
+          data = Arrays.copyOf(data, data.length << 1);
+          colIndex = Arrays.copyOf(colIndex, colIndex.length << 1);
+        }
+        for (int j = 0; j < di._cats; ++j) {
+          if (!vecs[j].isNA(i)) {
+            data[nz] = 1; //one-hot encoding
+            colIndex[nz] = di.getCategoricalId(j, vecs[j].at8(i));
+            nz++;
+          } else {
+            // NA == 0 for sparse -> no need to fill
+//            data[nz] = 1; //one-hot encoding
+//            colIndex[nz] = di.getCategoricalId(j, Double.NaN); //Fill NA bucket
+//            nz++;
+          }
+        }
+        for (int j = 0; j < di._nums; ++j) {
+          float val = (float) vecs[di._cats + j].at(i);
+          if (!Float.isNaN(val) && val != 0) {
+            data[nz] = val;
+            colIndex[nz] = di._catOffsets[di._catOffsets.length - 1] + j;
+            nz++;
+          }
+        }
+        if (nz == nzstart) {
+          // for the corner case where there are no categorical values, and all numerical values are 0, we need to
+          // assign a 0 value to any one column to have a consistent number of rows between the predictors and the special vecs (weight/response/etc.)
+          data[nz] = 0;
+          colIndex[nz] = 0;
           nz++;
         }
+        rowHeaders[++actualRows] = nz;
       }
-      for (int j=0;j<di._nums;++j) {
-        float val = (float)vecs[di._cats+j].at(i);
-        if (!Float.isNaN(val) && val != 0) {
-          data[nz] = val;
-          colIndex[nz] = di._catOffsets[di._catOffsets.length - 1] + j;
-          nz++;
+      data = Arrays.copyOf(data, nz);
+      colIndex = Arrays.copyOf(colIndex, nz);
+      rowHeaders = Arrays.copyOf(rowHeaders, actualRows + 1);
+      trainMat = new DMatrix(rowHeaders, colIndex, data, DMatrix.SparseType.CSR, 0);
+    } else {
+      Log.info("Treating matrix as dense.");
+
+      // extract predictors
+      float[] data = new float[1<<20];
+      int cols = di.fullN();
+      int pos = 0;
+      for (int i = 0; i < nRows; ++i) {
+        if (w != null && w.at(i) == 0) continue;
+        // enlarge final data arrays by 2x if needed
+        while (data.length < (actualRows+1)*cols) {
+          Log.info("Enlarging dense data structure from " + data.length + " bytes to " + (data.length << 1) + " bytes.");
+          data = Arrays.copyOf(data, data.length << 1);
         }
+        for (int j = 0; j < di._cats; ++j) {
+          if (vecs[j].isNA(i)) {
+            data[pos + di.getCategoricalId(j, Double.NaN)] = 1; // fill NA bucket
+          } else {
+            data[pos + di.getCategoricalId(j, vecs[j].at8(i))] = 1;
+          }
+        }
+        for (int j = 0; j < di._nums; ++j) {
+          if (vecs[di._cats+j].isNA(i))
+            data[pos + di._catOffsets[di._catOffsets.length-1] + j] = Float.NaN;
+          else
+            data[pos + di._catOffsets[di._catOffsets.length-1] + j] = (float) vecs[di._cats + j].at(i);
+        }
+        assert di._catOffsets[di._catOffsets.length-1] + di._nums == cols;
+        pos += cols;
+        actualRows++;
       }
-      if (nz==nzstart) {
-        // for the corner case where there are no categorical values, and all numerical values are 0, we need to
-        // assign a 0 value to any one column to have a consistent number of rows between the predictors and the special vecs (weight/response/etc.)
-        data[nz] = 0;
-        colIndex[nz] = 0;
-        nz++;
-      }
-      rowHeaders[++row] = nz;
+      data = Arrays.copyOf(data, actualRows*cols);
+      trainMat = new DMatrix(data, actualRows, cols, Float.NaN);
     }
 
     // extract weight vector
-    float[] weights = new float[row];
-    if (w!=null) {
-      int j=0;
-      for (int i=0;i<nRows;++i) {
+    float[] weights = new float[actualRows];
+    if (w != null) {
+      int j = 0;
+      for (int i = 0; i < nRows; ++i) {
         if (w.at(i) == 0) continue;
-        weights[j++] = (float)w.at(i);
+        weights[j++] = (float) w.at(i);
       }
-      assert(j==row);
+      assert (j == actualRows);
     }
 
     // extract response vector
     Vec.Reader respVec = f.vec(response).new Reader();
-    float[] resp = new float[row];
-    int j=0;
-    for (int i=0;i<nRows;++i) {
-      if (w!=null && w.at(i) == 0) continue;
-      resp[j++] = (float)respVec.at(i);
+    float[] resp = new float[actualRows];
+    int j = 0;
+    for (int i = 0; i < nRows; ++i) {
+      if (w != null && w.at(i) == 0) continue;
+      resp[j++] = (float) respVec.at(i);
     }
-    assert(j==row);
+    assert (j == actualRows);
+    resp = Arrays.copyOf(resp, actualRows);
+    weights = Arrays.copyOf(weights, actualRows);
 
-    data = Arrays.copyOf(data, nz);
-    colIndex = Arrays.copyOf(colIndex, nz);
-    resp = Arrays.copyOf(resp, row);
-    weights = Arrays.copyOf(weights, row);
-    rowHeaders = Arrays.copyOf(rowHeaders, row+1);
-
-    DMatrix trainMat = new DMatrix(rowHeaders, colIndex, data, DMatrix.SparseType.CSR, 0);
     trainMat.setLabel(resp);
     if (w!=null)
       trainMat.setWeight(weights);
 //    trainMat.setGroup(null); //fold //FIXME - only needed if CV is internally done in XGBoost
-    assert trainMat.rowNum() == row;
+    assert trainMat.rowNum() == actualRows;
     return trainMat;
   }
 
@@ -341,12 +382,33 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       XGBoostModel model = new XGBoostModel(_result,_parms,new XGBoostOutput(XGBoost.this),_train,_valid);
       model.write_lock(_job);
       String[] featureMap = new String[]{""};
+
+      if (_parms._dmatrix_type == XGBoostModel.XGBoostParameters.DMatrixType.sparse) {
+        model._output._sparse = true;
+      } else if (_parms._dmatrix_type == XGBoostModel.XGBoostParameters.DMatrixType.dense) {
+        model._output._sparse = false;
+      } else {
+        float fillRatio = 0;
+        int col = 0;
+        for (int i = 0; i < _train.numCols(); ++i) {
+          if (_train.name(i).equals(_parms._response_column)) continue;
+          if (_train.name(i).equals(_parms._weights_column)) continue;
+          if (_train.name(i).equals(_parms._fold_column)) continue;
+          if (_train.name(i).equals(_parms._offset_column)) continue;
+          fillRatio += _train.vec(i).nzCnt() / _train.numRows();
+          col++;
+        }
+        fillRatio /= col;
+        Log.info("fill ratio: " + fillRatio);
+        model._output._sparse = fillRatio < 0.2 || ((_train.numRows() * (long) _train.numCols()) > Integer.MAX_VALUE);
+      }
+
       try {
         DMatrix trainMat = convertFrametoDMatrix( model.model_info()._dataInfoKey, _train,
-            _parms._response_column, _parms._weights_column, _parms._fold_column, featureMap);
+            _parms._response_column, _parms._weights_column, _parms._fold_column, featureMap, model._output._sparse);
 
         DMatrix validMat = _valid != null ? convertFrametoDMatrix(model.model_info()._dataInfoKey, _valid,
-            _parms._response_column, _parms._weights_column, _parms._fold_column, featureMap) : null;
+            _parms._response_column, _parms._weights_column, _parms._fold_column, featureMap, model._output._sparse) : null;
 
         // For feature importances - write out column info
         OutputStream os;
