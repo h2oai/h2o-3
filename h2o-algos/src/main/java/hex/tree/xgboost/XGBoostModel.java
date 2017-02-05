@@ -41,6 +41,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public enum DartNormalizeType {
       tree, forest
     }
+    public enum DMatrixType {
+      auto, dense, sparse
+    }
 
     // H2O GBM options
     public boolean _quiet_mode = true;
@@ -87,6 +90,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public TreeMethod _tree_method = TreeMethod.auto;
     public GrowPolicy _grow_policy = GrowPolicy.depthwise;
     public Booster _booster = Booster.gbtree;
+    public DMatrixType _dmatrix_type = DMatrixType.auto;
     public float _reg_lambda = 1;
     public float _reg_alpha = 0;
 
@@ -332,7 +336,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     DataInfo di = model_info._dataInfoKey.get();
     return XGBoostMojoModel.score0(data, offset, preds,
             model_info._booster, di._nums, di._cats, di._catOffsets, di._useAllFactorLevels,
-            _output.nclasses(), _output._priorClassDist, defaultThreshold());
+            _output.nclasses(), _output._priorClassDist, defaultThreshold(), _output._sparse);
   }
 
   private void setDataInfoToOutput(DataInfo dinfo) {

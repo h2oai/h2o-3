@@ -19,6 +19,7 @@ public class XGBoostOutput extends Model.Output {
   int _cats;
   int[] _catOffsets;
   boolean _useAllFactorLevels;
+  boolean _sparse;
 
   public int _ntrees;
   public ScoreKeeper[/*ntrees+1*/] _scored_train;
