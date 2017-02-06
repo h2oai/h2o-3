@@ -7,7 +7,7 @@ import static java.nio.file.StandardCopyOption.*;
 
 defaultTasks 'build_python'
 description = "H2O Python Package"
-def protoDir = "${projectDir}/h2o/backend/proto/core"
+GString protoDir = "${projectDir}/h2o/backend/proto"
 
 java.lang.String pythonexe = "python"
 java.lang.String pipexe = "pip"
@@ -81,7 +81,7 @@ task generateProtoFiles(type: Exec) {
     dependsOn makeProtoOutputDir
     commandLine getOsSpecificCommandLine([
             pythonexe, "-m", "grpc_tools.protoc",
-            "-I${rootDir}/h2o-core/src/main/proto/core",
+            "-I${rootDir}/h2o-core/src/main/proto",
             "--python_out=${protoDir}",
             "--grpc_python_out=${protoDir}",
             // TODO: auto-detect the list of files and process them all at once

@@ -1,15 +1,9 @@
 package ai.h2o.api.proto.core;
 
-import ai.h2o.api.protos.core.JobGrpc;
-import ai.h2o.api.protos.core.JobId;
-import ai.h2o.api.protos.core.JobInfo;
 import io.grpc.stub.StreamObserver;
 import water.*;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-
-import static ai.h2o.api.protos.core.JobInfo.Status.*;
+import static ai.h2o.api.proto.core.JobInfo.Status.*;
 
 
 /**
@@ -18,17 +12,25 @@ public class JobService extends JobGrpc.JobImplBase {
 
   @Override
   public void poll(JobId request, StreamObserver<JobInfo> responseObserver) {
-    water.Job job = resolveJob(request);
-    responseObserver.onNext(fillJobInfo(job));
-    responseObserver.onCompleted();
+    try {
+      water.Job job = resolveJob(request);
+      responseObserver.onNext(fillJobInfo(job));
+      responseObserver.onCompleted();
+    } catch (Throwable ex) {
+      GrpcCommon.sendError(ex, responseObserver, JobInfo.class);
+    }
   }
 
   @Override
   public void cancel(JobId request, StreamObserver<JobInfo> responseObserver) {
-    water.Job job = resolveJob(request);
-    job.stop();
-    responseObserver.onNext(fillJobInfo(job));
-    responseObserver.onCompleted();
+    try {
+      water.Job job = resolveJob(request);
+      job.stop();
+      responseObserver.onNext(fillJobInfo(job));
+      responseObserver.onCompleted();
+    } catch (Throwable ex) {
+      GrpcCommon.sendError(ex, responseObserver, JobInfo.class);
+    }
   }
 
 
@@ -67,11 +69,8 @@ public class JobService extends JobGrpc.JobImplBase {
 
     Throwable ex = job.ex();
     if (ex != null) {
-      StringWriter sw = new StringWriter();
-      ex.printStackTrace(new PrintWriter(sw));
       jb.setStatus(FAILED)
-        .setException(ex.toString())
-        .setStacktrace(sw.toString());
+        .setError(GrpcCommon.buildError(ex, 0));
     }
 
     if (job._result != null && !job.readyForView())
