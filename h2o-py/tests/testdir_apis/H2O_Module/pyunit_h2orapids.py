@@ -9,12 +9,8 @@ def h2orapids():
     """
     Python API test: h2o.rapids(expr)
     """
-    try:
-        rapidTime = h2o.rapids("(getTimeZone)")["string"]
-        print(str(rapidTime))
-    except Exception as e:
-        assert False, "h2o.rapids() command is not working."
-
+    rapidTime = h2o.rapids("(getTimeZone)")["string"]
+    print(str(rapidTime))
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(h2orapids)
