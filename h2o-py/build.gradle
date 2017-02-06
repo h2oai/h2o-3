@@ -75,13 +75,6 @@ task installPythonDependencies(type: Exec) {
     ])
 }
 
-task upgradeOrInstallTabulate(type: Exec) {
-    commandLine getOsSpecificCommandLine(["pip", "install", "tabulate", "--user", "--upgrade"])
-}
-
-task upgradeOrInstallWheel(type: Exec) {
-    commandLine getOsSpecificCommandLine(["pip", "install", "wheel", "--user", "--upgrade", "--ignore-installed"])
-}
 
 task generateProtoFiles(type: Exec) {
     dependsOn installPythonDependencies
@@ -106,7 +99,7 @@ task buildDist(type: Exec) {
     doFirst {
         standardOutput = new FileOutputStream("build/tmp/h2o-py_buildDist.out")
     }
-    commandLine getOsSpecificCommandLine(["python", "setup.py", "bdist_wheel"])
+    commandLine getOsSpecificCommandLine([pythonexe, "setup.py", "bdist_wheel"])
 }
 
 File testsPath = new File("./tests")
@@ -141,9 +134,6 @@ task cleaner << {
 }
 
 clean.dependsOn cleaner, cleanUpSmokeTest
-upgradeOrInstallWheel.dependsOn cleaner
-// buildDist.dependsOn upgradeOrInstallTabulate
-// buildDist.dependsOn upgradeOrInstallWheel
 resetProjectVersion.dependsOn buildDist
 task build_python(dependsOn: resetProjectVersion)
 build.dependsOn build_python
