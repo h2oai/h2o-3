@@ -124,8 +124,8 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     _last_heard_from = System.currentTimeMillis();
     _heartbeat = new HeartBeat();
 
-    _security = new H2OSecurityManager();
-    _socketFactory = new SocketChannelFactory(_security);
+    _security = H2OSecurityManager.instance();
+    _socketFactory = SocketChannelFactory.instance(_security);
   }
 
   // ---------------
@@ -322,12 +322,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     ByteBuffer bb = ByteBuffer.allocate(4).order(ByteOrder.nativeOrder());
     bb.put(tcpType).putChar((char) H2O.H2O_PORT).put((byte) 0xef).flip();
 
-    ByteChannel wrappedSocket;
-    if(socketFactory != null){
-      wrappedSocket = socketFactory.clientChannel(sock, isa.getHostName(), isa.getPort());
-    }else{
-      wrappedSocket = sock;
-    }
+    ByteChannel wrappedSocket = socketFactory.clientChannel(sock, isa.getHostName(), isa.getPort());
 
     while (bb.hasRemaining()) {  // Write out magic startup sequence
       wrappedSocket.write(bb);

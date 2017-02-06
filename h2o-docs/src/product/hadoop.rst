@@ -16,6 +16,7 @@ Currently supported versions:
 -  HDP 2.2
 -  HDP 2.3
 -  HDP 2.4
+-  HDP 2.5
 -  MapR 3.1
 -  MapR 4.0
 -  MapR 5.0

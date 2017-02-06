@@ -1,10 +1,4 @@
 # -*- encoding: utf-8 -*-
-"""
-A confusion matrix from H2O.
-
-:copyright: (c) 2016 H2O.ai
-:license:   Apache License Version 2.0 (see LICENSE for details)
-"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from h2o.two_dim_table import H2OTwoDimTable
@@ -65,18 +59,25 @@ class ConfusionMatrix(object):
         self.table = H2OTwoDimTable(row_header=row_header, col_header=col_header,
                                     table_header=table_header, cell_values=cell_values)
 
+
     def show(self):
+        """Print the confusion matrix into the console."""
         self.table.show()
+
 
     def __repr__(self):
         self.show()
         return ""
 
+
     def to_list(self):
+        """Convert this confusion matrix into a 2x2 plain list of values."""
         return [[int(self.table.cell_values[0][1]), int(self.table.cell_values[0][2])],
                 [int(self.table.cell_values[1][1]), int(self.table.cell_values[1][2])]]
 
+
     @staticmethod
     def read_cms(cms=None, domains=None):
+        """Read confusion matrices from the list of sources (?)."""
         assert_is_type(cms, [list])
         return [ConfusionMatrix(cm, domains) for cm in cms]

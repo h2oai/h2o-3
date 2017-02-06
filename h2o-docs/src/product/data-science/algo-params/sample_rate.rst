@@ -54,8 +54,8 @@ Example
 	                        validation_frame = valid, sample_rate =.7 , 
 	                        seed = 1234)
 
-	# print the value used and AUC for the validation data
-	print(h2o.auc(airlines.gbm, train = TRUE))
+	# print the AUC for the validation data
+	print(h2o.auc(airlines.gbm, valid = TRUE))
 
 
 	# Example of values to grid over for `sample_rate`

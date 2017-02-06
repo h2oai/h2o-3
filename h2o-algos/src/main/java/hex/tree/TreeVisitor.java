@@ -50,7 +50,6 @@ public abstract class TreeVisitor<T extends Exception> {
         else _gcmp.fill3(_ct._bits, _ts);
       }
     }
-
     // Compute the amount to skip.
     int lmask =  nodeType & 0x33;
     int rmask = (nodeType & 0xC0) >> 2;

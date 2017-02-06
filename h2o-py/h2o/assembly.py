@@ -1,10 +1,4 @@
 # -*- encoding: utf-8 -*-
-"""
-Assembly.
-
-:copyright: (c) 2016 H2O.ai
-:license:   Apache License Version 2.0 (see LICENSE for details)
-"""
 from __future__ import division, print_function, absolute_import, unicode_literals
 
 import uuid
@@ -16,10 +10,12 @@ from h2o.utils.shared_utils import urlopen, quoted
 
 
 class H2OAssembly(object):
-    """Extension class of Pipeline implementing additional methods:
+    """
+    Extension class of Pipeline implementing additional methods:
 
-      * to_pojo: Exports the assembly to a self-contained Java POJO used in a per-row, high-throughput environment.
-      * union: Combine two H2OAssembly objects, the resulting row from each H2OAssembly are joined with simple concatenation.
+      - to_pojo: Exports the assembly to a self-contained Java POJO used in a per-row, high-throughput environment.
+      - union: Combine two H2OAssembly objects, the resulting row from each H2OAssembly are joined with simple
+        concatenation.
     """
 
     # static properties pointing to H2OFrame methods
@@ -34,17 +30,14 @@ class H2OAssembly(object):
     greater_than = H2OFrame.__gt__
     greater_than_equal = H2OFrame.__ge__
 
+
     def __init__(self, steps):
-        """Build a new H2OAssembly.
+        """
+        Build a new H2OAssembly.
 
-        Parameters
-        ----------
-        steps : list
-          A list of steps that sequentially transforms the input data.
+        :param steps: A list of steps that sequentially transforms the input data.
 
-        Returns
-        -------
-          H2OFrame
+        :returns: H2OFrame
         """
         self.id = None
         self.steps = steps
@@ -52,9 +45,11 @@ class H2OAssembly(object):
         self.in_colnames = None
         self.out_colnames = None
 
+
     @property
     def names(self):
         return list(zip(*self.steps))[0][:-1]
+
 
     def to_pojo(self, pojo_name="", path="", get_jar=True):
         if pojo_name == "": pojo_name = "AssemblyPOJO_" + str(uuid.uuid4())
@@ -72,6 +67,7 @@ class H2OAssembly(object):
             with open(filename, "wb") as f:
                 f.write(response.read())
 
+
     # def union(self, assemblies):
     #   # fuse the assemblies onto this one, each is added to the end going left -> right
     #   # assemblies must be a list of namedtuples.
@@ -83,6 +79,7 @@ class H2OAssembly(object):
     #       raise ValueError("Assembly must be a namedtuple with fields ('assembly', 'x', 'params').")
     #     self.fuzed.append(i)
 
+
     def fit(self, fr, **fit_params):
         res = []
         for step in self.steps:
@@ -93,14 +90,16 @@ class H2OAssembly(object):
         return H2OFrame.get_frame(j["result"]["name"])
 
 
+
+
 class H2OCol(object):
-    """Wrapper class for H2OBinaryOp step's left/right args.
+    """
+    Wrapper class for H2OBinaryOp step's left/right args.
 
     Use if you want to signal that a column actually comes from the train to be fitted on.
     """
 
     def __init__(self, column):
         self.col = column
-
 
         # TODO: handle arbitrary (non H2OFrame) inputs -- sql, web, file, generated

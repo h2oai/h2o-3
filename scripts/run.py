@@ -1410,8 +1410,11 @@ class TestRunner(object):
         time.sleep(3)
         print("Checking cloud health...")
         for c in self.clouds:
-            self._h2o_exists_and_healthy(c.get_ip(), c.get_port())
-            print("Node {} healthy.".format(c))
+            if self._h2o_exists_and_healthy(c.get_ip(), c.get_port()):
+                print("Node {} healthy.".format(c))
+            else:
+                print("Node %r NOT HEALTHY" % c)
+                # should an exception be thrown?
 
     def stop_clouds(self):
         """
@@ -1882,6 +1885,8 @@ class TestRunner(object):
         """
         check if connection to h2o exists, and that h2o is healthy.
         """
+        if not port or int(port) <= 0:
+            return False
         h2o_okay = False
         try:
             http = requests.get("http://{}:{}/3/Cloud?skip_ticks=true".format(ip, port))

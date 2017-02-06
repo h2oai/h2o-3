@@ -1,3 +1,6 @@
+:tocdepth: 2
+
+
 The H2O Python Module
 =====================
 

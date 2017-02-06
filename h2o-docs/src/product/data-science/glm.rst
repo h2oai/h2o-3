@@ -103,7 +103,7 @@ Defining a GLM Model
 
 -  `lambda <algo-params/lambda.html>`__: Specify the regularization strength.
 
--  `lambda_search <algo-params/lambda_search.html>`__: Specify whether to enable lambda search, starting with lambda max. The given lambda is then interpreted as lambda min. 
+-  `lambda_search <algo-params/lambda_search.html>`__: Specify whether to enable lambda search, starting with lambda max. If you also specify a value for ``lambda_min_ratio``, then this value is interpreted as lambda min. If you do not specify a value for ``lambda_min_ratio``, then GLM will calculate the minimum lambda. 
 
 -  `early_stopping <algo-params/early_stopping.html>`__: Specify whether to stop early when there is no more relative improvement on the training  or validation set.
    
@@ -129,24 +129,23 @@ Defining a GLM Model
 
 -  `gradient_epsilon <algo-params/gradient_epsilon.html>`__: (For L-BFGS only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged.
 
--  `link <algo-params/link.html>`__: Specify a link function (Identity, Family_Default, Logit,
-   Log, Inverse, or Tweedie).
+-  `link <algo-params/link.html>`__: Specify a link function (Identity, Family_Default, Logit, Log, Inverse, or Tweedie).
 
    -  If the family is **Gaussian**, then **Identity**, **Log**, and **Inverse** are supported.
    -  If the family is **Binomial**, then **Logit** is supported.
    -  If the family is **Poisson**, then **Log** and **Identity** are supported.
    -  If the family is **Gamma**, then **Inverse**, **Log**, and **Identity** are supported.
    -  If the family is **Tweedie**, then only **Tweedie** is supported.
-   -  If the family is **Multinomial**, then only **Multinomial** (``family_default``) is supported.
+   -  If the family is **Multinomial**, then only **Family_Default** is supported. (This defaults to ``multinomial``.)
    -  If the family is **Quasibinomial**, then only **Logit** is supported.
 
--  `prior <algo-params/prior.html>`__: Specify prior probability for p(y==1). Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. 
+-  prior: Specify prior probability for p(y==1). Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. 
    
      **Note**: This is a simple method affecting only the intercept. You may want to use weights and offset for a better fit.
 
 -  `lambda_min_ratio <algo-params/lambda_min_ratio.html>`__: Specify the minimum lambda to use for lambda search (specified as a ratio of **lambda\_max**).
 
--  `beta_constraints <algo-params/beta_constraints.html>`__: Specify a dataset to use beta constraints. The selected frame is used to constraint the coefficient vector to provide upper and lower bounds. The dataset must contain a names column with valid coefficient names.
+-  beta_constraints: Specify a dataset to use beta constraints. The selected frame is used to constraint the coefficient vector to provide upper and lower bounds. The dataset must contain a names column with valid coefficient names.
 
 -  `max_active_predictors <algo-params/max_active_predictors.html>`__: Specify the maximum number of active
    predictors during computation. This value is used as a stopping
@@ -167,17 +166,227 @@ By default, the following output displays:
 -  Coefficients
 -  Coefficient magnitudes
 
+Classification and Regression
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+GLM can produce two categories of models: classication (binary classication only) and regression. Logistic regression is the GLM performing binary classication.
+
+The data type of the response column determines the model category. If the response is a categorical variable (also called a factor or an enum), then a classication model is created. If the response column data type is numeric (either integer or real), then a regression model is created.
+
 Handling of Categorical Variables
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+'''''''''''''''''''''''''''''''''
 
-GLM auto-expands categorical variables into one-hot encoded binary variables (i.e. if variable has levels "cat", "dog", "mouse", cat is encoded as 1,0,0, mouse is 0,1,0 and dog is 0,0,1). It is generally more efficient to let GLM perform auto-expansion instead of expanding data manually and it also adds the benefit of correct handling of different categorical mappings between different datasets as welll as handling of unseen categorical levels. Unlike binary numeric columns, auto-expanded variables are not standardized.
+If the response column is categorical, then a classication model is created. GLM only supports binary classication, so the response column can only have two levels. Categorical predictor columns may have more than two levels. We recommend letting GLM handle categorical columns, as it can take advantage of the categorical column for better performance and memory utilization.
 
-It is common to skip one of the levels during the one-hot encoding to prevent linear dependency between the variable and the intercept. H3O follows the convention of skipping the first level. This behavior can be controlled by setting use_all_factor_levels_flag (no level is going to be skipped if the flag is true). The default depends on regularization parameter - it is set to false if no regularization and to true otherwise. The reference level which is skipped is always the first level, you can change which level is the reference level by calling h2o.relevel function prior to building the model.
+We strongly recommend avoiding one-hot encoding categorical columns with any levels into many binary columns, as this is very inefficient. This is especially true for Python users who are used to expanding their categorical variables manually for other frameworks.
+
+Handling of Numeric Variables
+'''''''''''''''''''''''''''''
+
+When GLM performs regression (with factor columns), one category can be left out to avoid multicollinearity. If regularization is disabled (``lambda = 0``), then one category is left out. However, when using a the default lambda parameter, all categories are included.  
+
+The reason for the different behavior with regularization is that collinearity is not a problem with regularization. 
+And it’s better to leave regularization to find out which level to ignore (or how to distribute the coefficients between the levels).
+
+Family and Link Functions
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+GLM problems consist of three main components:
+
+- A random component :math:`f` for the dependent variable :math:`y`: The density function :math:`f(y;\theta,\phi)` has a probability distribution from the exponential family parametrized by :math:`\theta` and :math:`\phi`. This removes the restriction on the distribution of the error and allows for non-homogeneity of the variance with respect to the mean vector. 
+- A systematic component (linear model) :math:`\eta`: :math:`\eta = X\beta`, where :math:`X` is the matrix of all observation vectors :math:`x_i`.
+- A link function :math:`g`: :math:`E(y) = \mu = {g^-1}(\eta)` relates the expected value of the response :math:`\mu` to the linear component :math:`\eta`. The link function can be any monotonic differentiable function. This relaxes the constraints on the additivity of the covariates, and it allows the response to belong to a restricted range of values depending on the chosen transformation :math:`g`. 
+
+Accordingly, in order to specify a GLM problem, you must choose a family function :math:`f`, link function :math:`g`, and any parameters needed to train the model.
+
+Families
+''''''''
+
+The ``family`` option specifies a probability distribution from an exponential family. You can specify one of the following, based on the response column type:
+
+- ``gaussian``: The data must be numeric (Real or Int). This is the default family.
+- ``binomial``: The data must be categorical 2 levels/classes or binary (Enum or Int).
+- ``quasibinomial``: The data must be numeric.
+- ``multinomial``: The data can be categorical with more than two levels/classes (Enum).
+- ``poisson``: The data must be numeric and non-negative (Int).
+- ``gamma``: The data must be numeric and continuous and positive (Real or Int).
+- ``tweedie``: The data must be numeric and continuous (Real) and non-negative.
+
+**Note**: If your response column is binomial, then you must convert that column to a categorical (``.asfactor()`` in Python and ``as.factor()`` in R) and set ``family = binomial``. The following configurations can lead to unexpected results. 
+
+ - If you DO convert the response column to categorical and DO NOT to set ``family=binomial``, then you will receive an error message.
+ - If you DO NOT convert response column to categorical and DO NOT set the family, then GLM will assume the 0s and 1s are numbers and will provide a Gaussian solution to a regression problem.
+
+Linear Regression (Gaussian Family)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Linear regression corresponds to the Gaussian family model. The link function :math:`g` is the identity, and density :math:`f` corresponds to a normal distribution. It is the simplest example of a GLM but has many uses and several advantages over other families. Specifically, it is faster and requires more stable computations. Gaussian models the dependency between a response :math:`y` and a covariates vector :math:`x` as a linear function:
+
+.. math::
+
+ \hat {y} = {x^T}\beta + {\beta_0}
+
+The model is fitted by solving the least squares problem, which is equivalent to maximizing the liklihood for the Gaussian family.
+
+.. math::
+   
+ ^\text{max}_{\beta,\beta_0} - \dfrac {1} {2N} \sum_{i=1}^{N}(x_{i}^{T}\beta + \beta_0 - y_i)^2 - \lambda \Big( \alpha||\beta||_1 + \dfrac {1} {2}(1 - \alpha)||\beta||^2_2 \Big)
+
+The deviance is the sum of the squared prediction errors:
+
+.. math::
+
+ D = \sum_{i=1}^{N}(y_i - \hat {y}_i)^2
+
+Logistic Regression (Binomial Family)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Logistic regression is used for binary classification problems where the response is a categorical variable with two levels. It models the probability of an observation belonging to an output category given the data (for example, :math:`Pr(y=1|x)`). The canonical link for the binomial family is the logit function (also known as log odds). Its inverse is the logistic function, which takes any real number and projects it onto the [0,1] range as desired to model the probability of belonging to a class. The corresponding s-curve is below:
+
+.. figure:: ../images/scurve.png 
+   :width: 400px
+   :alt: S-curve
+
+The fitted model has the form:
+
+.. math::
+
+ \hat {y} = Pr(y=1|x) = \dfrac {e^{x{^T}\beta + {\beta_0}}} {1 + {e^{x{^T}\beta + {\beta_0}}}}
+
+This can alternatively be written as:
+
+.. math::
+
+ \text{log} \Big( \dfrac {\hat {y}} {1-\hat {y}} \Big) = \text{log} \Big( \dfrac {Pr(y=1|x)} {Pr(y=0|x)} \Big) = x^T\beta + \beta_0
+
+The model is fitted by maximizing the following penalized likelihood:
+
+.. math::
+
+ ^\text{max}_{\beta,\beta_0} \dfrac {1} {N} \sum_{i=1}^{N} \Big( y_i(x_{i}^{T}\beta + \beta_0) - \text{log} (1 + e^{x{^T_i}\beta + {\beta_0}} ) \Big)- \lambda \Big( \alpha||\beta||_1 + \dfrac {1} {2}(1 - \alpha)||\beta||^2_2 \Big)
+
+The corresponding deviance is equal to:
+
+.. math::
+
+ D = -2 \sum_{i=1}^{n} \big( y_i \text{log}(\hat {y}_i) + (1 - y_i) \text{log}(1 - \hat {y}_i) \big)
+
+Pseudo-Logistic Regression (Quasibinomial Family)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The quasibinomial family option works in the same way as the aforementioned binomial family. The difference is that binomial models only support 0/1 for the values of the target. A quasibinomial model supports "pseudo" logistic regression and allows for two arbitrary integer values (for example -4, 7). Additional information about the quasibinomial option can be found in the `"Estimating Effects on Rare Outcomes: Knowledge is Power" <http://biostats.bepress.com/ucbbiostat/paper310/>`__ paper.
+
+
+Multiclass Classification (Multinomial Family)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Multinomial family generalization of the binomial model is used for multi-class response variables. Similar to the binomail family, GLM models the conditional probability of observing class "c" given "x". A vector of coefficients exists for each of the output classes. (:math:`\beta` is a matrix.) The probabilities are defined as:
+
+.. math::
+
+ - \Big[ \dfrac {1} {N} \sum_{i=1}^N \sum_{k=1}^K \big( y_{i,k} (x^T_i \beta_k + \beta_{k0}) \big) - \text{log} \big( \sum_{k=1}^K e^{x{^T_i}\beta_k + {\beta_{k0}}} \big) \Big] + \lambda \Big[ \dfrac {(1-\alpha)} {2} ||\beta || ^2_F + \alpha \sum_{j=1}^P ||\beta_j ||_1 \Big]
+
+where :math:`\beta_c` is a vector of coefficients for class "c", and :math:`y_{i,k}` is the :math:`k\text{th}` element of the binary vector produced by expanding the response variable using one-hot encoding (i.e., :math:`y_{i,k} == 1` iff the response at the :math:`i\text{th}` observation is "k"; otherwise it is 0.)
+
+Poisson Models
+^^^^^^^^^^^^^^
+
+Poisson regression is typically used for datasets where the response represents counts, and the errors are assumed to have a Poisson distribution. In general, it can be applied to any data where the response is non-negative. It models the dependency between the response and covariates as:
+
+.. math::
+
+  \hat {y} = e^{x{^T}\beta + {\beta_{0}}}
+
+The model is fitted by maximizing the corresponding penalized likelihood:
+
+.. math::
+
+ ^\text{max}_{\beta,\beta_0} \dfrac {1} {N} \sum_{i=1}^{N} \Big( y_i(x_{i}^{T}\beta + \beta_0) - e^{x{^T_i}\beta + {\beta_0}} \Big)- \lambda \Big( \alpha||\beta||_1 + \dfrac {1} {2}(1 - \alpha)||\beta||^2_2 \Big)
+
+The corresponding deviance is equal to:
+
+.. math::
+
+ D = -2 \sum_{i=1}^{N} \big( y_i \text{log}(y_i / \hat {y}_i) - (y_i - \hat {y}_i) \big)
+
+Gamma Models
+^^^^^^^^^^^^
+
+The gamma distribution is useful for modeling a positive continuous response variable, where the conditional variance of the response grows with its mean, but the coefficientof variation of the response :math:`\sigma^2(y_i)/\mu_i` is constant. It is usually used with the log link :math:`g(\mu_i) = \text{log}(\mu_i)` or the inverse link :math:`g(\mu_i) = \dfrac {1} {\mu_i}`, which is equivalent to the canonical link. 
+
+The model is fitted by solving the following likelihood maximization:
+
+.. math::
+
+ ^\text{max}_{\beta,\beta_0} - \dfrac {1} {N} \sum_{i=1}^{N} \dfrac {y_i} {x{^T_i}\beta + \beta_0} + \text{log} \big( x{^T_i}\beta + \beta_0 \big ) - \lambda \Big( \alpha||\beta||_1 + \dfrac {1} {2}(1 - \alpha)||\beta||^2_2 \Big)
+
+The corresponding deviance is equal to:
+
+.. math::
+
+ D = 2 \sum_{i=1}^{N} - \text{log} \bigg (\dfrac {y_i} {\hat {y}_i} \bigg) + \dfrac {(y_i - \hat{y}_i)} {\hat {y}_i}
+
+Tweedie Models
+^^^^^^^^^^^^^^
+
+Tweedie distributions are a family of distributions that include gamma, normal, Poisson, and their combination. Tweedie distributions are especially useful for modeling positive continuous variables with exact zeros. The variance of the Tweedie distribution is proportional to the :math:`p\text{th}` power of the mean :math:`var(y_i) = \phi\mu{^p_i}`. 
+
+The Tweedie distribution is parametrized by variance power :math:`p`. It is defined for all :math:`p` values except in the (0,1) interval and has the following distributions as special cases:
+
+- :math:`p = 0`: Normal
+- :math:`p = 1`: Poisson
+- :math:`p \in (1,2)`: Compound Poisson, non-negative with mass at zero
+- :math:`p = 2`: Gamma
+- :math:`p = 3`: Gaussian
+- :math:`p > 2`: Stable, with support on the positive reals
+
+For :math:`p > 1`, the model likelood to maximize has the form:
+
+.. math::
+
+ ^\text{max}_{\beta,\beta_0} \sum_{i=1}^{N} \text{log} (a(y_i, \phi)) + \bigg( \dfrac {1} {\phi} \bigg(\dfrac {y_i\mu{^{1-p}_i}} {1-p} - \kappa(\mu_i, p) \bigg) \bigg) - \lambda \bigg ( \alpha || \beta ||_1 + \dfrac {1} {2} (1-\alpha) ||\beta||{^2_2} \bigg )
+
+where :math:`\kappa(\mu,p) = \mu^{2-p} / (2-p)` for :math:`p \neq 2` and :math:`\kappa(\mu,p) = \text{log} (\mu)` for :math:`p=2`, and where the function :math:`a(y_i,\phi)` is evaluated using series expansion because it does not have an analytical solution. The link function in the GLM representation of the Tweedie distribution defaults to :math:`g(\mu) = \mu^q = \eta = X\beta` with :math:`q=1-p`. The link power :math:`q` can be set to other values, including :math:`q=0`, which is interpreated as :math:`\text{log}(\mu)=\eta`. 
+
+The corresponding deviance when :math:`p \neq 1` and :math:`p \neq 2` is equal to:
+
+.. math::
+
+ D = -2 \sum_{i=1}^{N} y_i(y_i^{1-p} - \hat{y}_1^{1-p}) - \dfrac {(y_i^{2-p} - \hat{y}_i^{2-p})} {(2-p)}
+
+Links
+'''''
+
+As indicated previously, a link function :math:`g`: :math:`E(y) = \mu = {g^-1}(\eta)` relates the expected value of the response :math:`\mu` to the linear component :math:`\eta`. The link function can be any monotonic differentiable function. This relaxes the constraints on the additivity of the covariates, and it allows the response to belong to a restricted range of values depending on the chosen transformation :math:`g`.
+
+H2O's GLM supports the following link functions: Family_Default, Identity, Logit, Log, Inverse, and Tweedie.
+
+The following table describes the allowed Family/Link combinations.
+
++----------------+-------------------------------------------------------------+
+| **Family**     | **Link Function**                                           |
++----------------+----------------+----------+-------+-----+---------+---------+
+|                | Family_Default | Identity | Logit | Log | Inverse | Tweedie |
++----------------+----------------+----------+-------+-----+---------+---------+
+| Binomial       | X              |          | X     |     |         |         |
++----------------+----------------+----------+-------+-----+---------+---------+
+| Quasibinomial  | X              |          | X     |     |         |         |
++----------------+----------------+----------+-------+-----+---------+---------+
+| Multinomial    | X              |          |       |     |         |         |
++----------------+----------------+----------+-------+-----+---------+---------+
+| Gaussian       | X              | X        |       | X   | X       |         |
++----------------+----------------+----------+-------+-----+---------+---------+
+| Poisson        | X              | X        |       | X   |         |         |
++----------------+----------------+----------+-------+-----+---------+---------+
+| Gamma          | X              | X        |       | X   | X       |         |
++----------------+----------------+----------+-------+-----+---------+---------+
+| Tweedie        | X              |          |       |     |         | X       |
++----------------+----------------+----------+-------+-----+---------+---------+
 
 Regularization
 ~~~~~~~~~~~~~~
 
-Regularization is used to attempt to solve problems with overfitting that can occur in GLM. Penalties can be introduced to the model building process to avoid overfitting, to reduce variance of the prediction error, and to handle correlated predictors. The two most common penalized models are ridge regression and LASSO (least absolute shrinkage and selection operator).  The elastic net combines both penalties using both the ``alpha`` and ``lambda`` options (i.e., values greater than 0 for both).
+Regularization is used to attempt to solve problems with overfitting that can occur in GLM. Penalties can be introduced to the model building process to avoid overfitting, to reduce variance of the prediction error, and to handle correlated predictors. The two most common penalized models are ridge regression and LASSO (least absolute shrinkage and selection operator). The elastic net combines both penalties using both the ``alpha`` and ``lambda`` options (i.e., values greater than 0 for both).
 
 LASSO and Ridge Regression
 ''''''''''''''''''''''''''
@@ -218,14 +427,14 @@ The recommended way to find optimal regularization settings on H2O is to do a gr
 
 - **Lambda**
 
- The ``lambda`` parameter controls the amount of regularization applied. If ``lambda`` is 0.0, no regularization is applied, and the ``alpha parameter is ignored. The default value for ``lambda`` is calculated by H2O using a heuristic based on the training data. If you allow H2O to calculate the value for ``lambda``, you can see the chosen value in the model output. 
+ The ``lambda`` parameter controls the amount of regularization applied. If ``lambda`` is 0.0, no regularization is applied, and the ``alpha`` parameter is ignored. The default value for ``lambda`` is calculated by H2O using a heuristic based on the training data. If you allow H2O to calculate the value for ``lambda``, you can see the chosen value in the model output. 
 
 Lambda Search
 '''''''''''''
 
-If the ``lambda_search`` option is set, GLM will compute models for full regularization path similar to glmnet (see glmnet paper). Regularziation path starts at lambda max (highest lambda values which makes sense - i.e. lowest value driving all coefficients to zero) and goes down to lambda min on log scale, decreasing regularization strength at each step. The returned model will have coefficients corresponding to the “optimal” lambda value as decided during training.
+If the ``lambda_search`` option is set, GLM will compute models for full regularization path similar to glmnet. (See the `glmnet paper <https://core.ac.uk/download/pdf/6287975.pdf>`__.) Regularization path starts at lambda max (highest lambda values which makes sense - i.e. lowest value driving all coefficients to zero) and goes down to lambda min on log scale, decreasing regularization strength at each step. The returned model will have coefficients corresponding to the “optimal” lambda value as decided during training.
 
-When looking for a sparse solution (``alpha`` > 0), lambda search can also be used to effeciently handle very wide datasets because it can filter out inactive predictors (noise) and only build models for a small subset of predictors. A common use of lambda search is to run it on a dataset with many predictors but limit the number of active predictors to a relatively small value. 
+When looking for a sparse solution (``alpha`` > 0), lambda search can also be used to efficiently handle very wide datasets because it can filter out inactive predictors (noise) and only build models for a small subset of predictors. A possible use case for lambda search is to run it on a dataset with many predictors but limit the number of active predictors to a relatively small value. 
 
 Lambda search can be configured along with the following arguments:
 
@@ -249,9 +458,49 @@ It can sometimes be useful to see the coefficients for all lambda values or to o
 
 To extract the regularization path from R or python:
 
-- R: call h2o.getGLMFullRegularizationPath, takes the model as an argument
-- Python: H2OGeneralizedLinearEstimator.getGLMRegularizationPath (static method), takes the model as an argument
+- R: call h2o.getGLMFullRegularizationPath. This takes the model as an argument. An example is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/glm/runit_GLM_reg_path.R>`__.
+- Python: H2OGeneralizedLinearEstimator.getGLMRegularizationPath (static method). This takes the model as an argument. An example is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/glm/pyunit_glm_regularization_path.py>`__.
 
+Solvers
+~~~~~~~
+
+This section provides general guidelines for best performance from the GLM implementation details. The optimal solver depends on the data properties and prior information regarding the variables (if available). In general, the data are considered sparse if the ratio of zeros to non-zeros in the input matrix is greater than 10. The solution is sparse when only a subset of the original set of variables is intended to be kept in the model. In a dense solution, all predictors have non-zero coefficients in the final model.
+
+In GLM, you can specify one of the following solvers:
+
+- IRLSM: Iteratively Reweighted Least Squares Method (default)
+- L_BFGS: Limited-memory Broyden-Fletcher-Goldfarb-Shanno algorithm
+- AUTO: Sets the solver based on given data and parameters.
+- COORDINATE_DESCENT: Coordinate Decent (experimental)
+- COORDINATE_DESCENT_NAIVE: Coordinate Decent Naive (experimental)
+
+IRLSM and L-BFGS
+''''''''''''''''
+
+IRLSM (the default) uses a `Gram Matrix <https://en.wikipedia.org/wiki/Gramian_matrix>`__ approach, which is efficient for tall and narrow datasets and when running lambda search via a sparse solution. For wider and dense datasets (thousands of predictors and up), the L-BFGS solver scales better. If there are fewer than 500 predictors (or so) in the data, then use the default solver (IRLSM). For larger numbers of predictors, we recommend running IRLSM with a lambda search, and then comparing it to L-BFGS with just one :math:`\ell_2` penalty. For advanced users, we recommend the following general guidelines:
+
+- For a dense solution and a dense dataset, use IRLSM if there are fewer than 500 predictors in the data; otherwise, use L-BFGS. Set ``alpha=0`` to include :math:`\ell_2` regularization in the elastic net penalty term to avoid inducing sparsity in the model.
+
+- For a dense solution with a sparse dataset, use IRLSM if there are fewer than 2000 predictors in the data; otherwise, use L-BFGS. Set ``alpha=0``.
+
+- For a sparse solution with a dense dataset, use IRLSM with ``lambda_search=TRUE`` if fewer than 500 active predictors in the solution are expected; otherwise, use L-BFGS. Set ``alpha`` to be greater than 0 to add in an :math:`\ell_1` penalty to the elastic net regularization, which induces sparsity in the estimated coefficients.
+
+- For a sparse solution with a sparse dataset, use IRLSM with ``lambda_search=TRUE`` if you expect less than 5000 active predictors in the solution; otherwise, use L-BFGS. Set ``alpha`` to be greater than 0.
+
+If you are unsure whether the solution should be sparse or dense, try both along with a grid of alpha values. The optimal model can be picked based on its performance on the validation data (or alternatively, based on the performance in cross-validation when not enough data is available to have a separate validation dataset).
+
+Coordinate Descent
+''''''''''''''''''
+
+In addition to IRLSM and L-BFGS, H2O's GLM includes options for specifying Coordinate Descent. Cyclical Coordinate Descent is able to handle large datasets well and deals efficiently with sparse features. It can improve the performance when the data contains categorical variables with a large number of levels, as it is implemented to deal with such variables in a parallelized way. 
+
+**Note**: Both of these options are EXPERIMENTAL. 
+
+- Coordinate Descent is IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop. This version is faster when :math:`N > p` and :math:`p` ~ :math:`500`.
+- Coordinate Descent Naive is IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop.
+- Coordinate Descent provides much better results if lambda search is enabled. Also, with bounds, it tends to get higher accuracy.
+
+Both of the above method are explained in the `glmnet paper <https://core.ac.uk/download/pdf/6287975.pdf>`__. 
 
 Modifying or Creating Custom GLM Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -280,7 +529,7 @@ FAQ
 -  **What happens during prediction if the new sample has categorical
    levels not seen in training?** 
    
-  The value will be filled with either 0 or a special missing level (if trained with missing values, and ``missing\_value\_handling`` was set to **MeanImputation**).
+  The value will be filled with either 0 or a special missing level (if trained with missing values, and ``missing_value_handling`` was set to **MeanImputation**).
 
 -  **Does it matter if the data is sorted?**
 
@@ -327,19 +576,19 @@ FAQ
 
   GLM includes three convergence criteria outside of max iterations:
   	
-  	- beta epsilon: beta stops changing. This is used mostly with IRLSM. 
-  	- gradient epsilon: gradient is too small. Thi sis used mostly with L-BFGS.
-  	- objective epsilon: relative objective improvement is too small. This is used by all solvers.
+  	- ``beta_epsilon``: beta stops changing. This is used mostly with IRLSM. 
+  	- ``gradient_epsilon``: gradient is too small. This is used mostly with L-BFGS.
+  	- ``objective_epsilon``: relative objective improvement is too small. This is used by all solvers.
 
   The default values below are based on a heuristic:
 
-   - The default for beta epsilon is 1e-4.  
-   - The default for gradient epsilon is 1e-6 if there is no regularization (lambda = 0) or you are running with lambda search; 1e-4 otherwise.
-   - The default for objective epsilon is 1e-6 if lambda = 0; 1e-4 otherwise.
+   - The default for ``beta_epsilon`` is 1e-4.  
+   - The default for ``gradient_epsilon`` is 1e-6 if there is no regularization (``lambda = 0``) or you are running with ``lambda_search``; 1e-4 otherwise.
+   - The default for ``objective_epsilon`` is 1e-6 if ``lambda = 0``; 1e-4 otherwise.
 
-  The default for max iterations depends on the solver type and whether you run with lambda search:
+  The default for ``max_iterations`` depends on the solver type and whether you run with lambda search:
  
-   - for IRLSM, the default  is 50 if no lambda search; 10* number of lambdas otherwise 
+   - for IRLSM, the default is 50 if no lambda search; 10* number of lambdas otherwise 
    - for LBFGS, the default is number of classes (1 if not classification) * max(20, number of predictors /4 ) if no lambda search; it is number of classes * 100 * n-lambdas with lambda search.
    
   You will receive a warning if you reach the maximum number of iterations. In some cases, GLM  can end prematurely if it can not progress forward via line search. This typically happens when running a lambda search with IRLSM solver. Note that using CoordinateDescent solver fixes the issue.
@@ -461,3 +710,4 @@ Statistical Association 73.364 (April, 2012):
 Snee, Ronald D. “Validation of Regression Models: Methods and Examples.”
 Technometrics 19.4 (1977): 415-428.
 
+`Balzer, Laura B, and van der Laan, Mark J. "Estimating Effects on Rare Outcomes: Knowledge is Power." U.C. Berkeley Division of Biostatistics Working Paper Series (2013) <http://biostats.bepress.com/ucbbiostat/paper310/>`__.

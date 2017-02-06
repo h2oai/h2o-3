@@ -1,218 +1,147 @@
 package hex.word2vec;
 
-import water.H2O;
+import water.DKV;
+import water.Job;
+import water.Key;
 import water.MRTask;
-import water.fvec.CStrChunk;
-import water.fvec.Vec;
 import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.nbhm.NonBlockingHashMap;
 import water.parser.BufferedString;
-import water.util.Log;
 import hex.word2vec.Word2VecModel.*;
-import hex.word2vec.Word2Vec.*;
-import java.util.Random;
+import water.util.ArrayUtils;
+import water.util.IcedHashMap;
+import water.util.IcedHashMapGeneric;
+import water.util.IcedLong;
+
+import java.util.Iterator;
 
 public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
-  static final int MAX_SENTENCE_LEN = 1000;
-  static final int MIN_SENTENCE_LEN = 10;
-  static final int EXP_TABLE_SIZE = 1000;
-  static final int MAX_EXP = 6;
+  private static final int MAX_SENTENCE_LEN = 1000;
+  private static final int EXP_TABLE_SIZE = 1000;
+  private static final int MAX_EXP = 6;
+  private static final float[] _expTable = calcExpTable();
+  private static final float LEARNING_RATE_MIN_FACTOR = 0.0001F; // learning rate stops decreasing at (initLearningRate * this factor)
 
-  private Word2VecModelInfo _input;
-  Word2VecModelInfo _output;
-  Frame _vocab;
-  static NonBlockingHashMap<BufferedString,Integer> _vocabHM;
-  final WordModel _wordModel; final NormModel _normModel;
-  final int _vocabSize, _wordVecSize, _windowSize, _epochs, _negExCnt;
-  final float _initLearningRate, _sentSampleRate;
-  static float[] _syn0, _syn1, _expTable;
-  final int[]_unigramTable;
-  final int[][] _HBWTCode;
-  final int[][] _HBWTPoint;
-  int _chunkNodeCount = 1;
-  transient float _curLearningRate;
-  transient int _chkIdx =0;
-  transient Random _rand;
-  static transient long _seed;
+  // Job
+  private final Job<Word2VecModel> _job;
 
-  public WordVectorTrainer( Word2VecModelInfo input) {
+  // Params
+  private final int _wordVecSize, _windowSize, _epochs;
+  private final float _initLearningRate;
+  private final float _sentSampleRate;
+  private final long _vocabWordCount;
+
+  // Model IN
+  private final Key<Vocabulary> _vocabKey;
+  private final Key<WordCounts> _wordCountsKey;
+  private final Key<HBWTree> _treeKey;
+  private final long _prevTotalProcessedWords;
+
+  // Model IN & OUT
+  // _syn0 represents the matrix of synaptic weights connecting the input layer of the NN to the hidden layer,
+  // similarly _syn1 corresponds to the weight matrix of the synapses connecting the hidden layer to the output layer
+  // both matrices are represented in a 1D array, where M[i,j] == array[i * VEC_SIZE + j]
+  float[] _syn0, _syn1;
+  long _processedWords = 0L;
+
+  // Node-Local (Shared)
+  IcedLong _nodeProcessedWords; // mutable long, approximates the total number of words processed by this node
+  private transient IcedHashMapGeneric<BufferedString, Integer> _vocab;
+  private transient IcedHashMap<BufferedString, IcedLong> _wordCounts;
+  private transient int[][] _HBWTCode;
+  private transient int[][] _HBWTPoint;
+
+  private float _curLearningRate;
+  private long _seed = System.nanoTime();
+
+  public WordVectorTrainer(Job<Word2VecModel> job, Word2VecModelInfo input) {
     super(null);
-    _input=input;
-    _wordModel = input.getParams()._wordModel;
-    _normModel = input.getParams()._normModel;
-    _vocab = input.getParams()._vocabKey.get();
-    _vocabSize = (int)_vocab.numRows();
-    _wordVecSize = input.getParams()._vecSize;
-    _windowSize = input.getParams()._windowSize;
-    _syn0 = input._syn0; _syn1 = input._syn1;
-    _initLearningRate = input.getParams()._initLearningRate;
-    _sentSampleRate = input.getParams()._sentSampleRate;
-    _epochs = input.getParams()._epochs;
-    _seed = System.nanoTime();
-    assert(_output == null);
-    assert(_vocab.numRows() > 0);
+    _job = job;
 
-    if (input.getParams()._normModel == NormModel.NegSampling){
-      _negExCnt = input.getParams()._negSampleCnt;
-      _unigramTable = input._uniTable;
-      _HBWTCode = null;
-      _HBWTPoint = null;
-    } else { //HSM
-      _negExCnt = 0;
-      _unigramTable = null;
-      _HBWTCode = input._HBWTCode;
-      _HBWTPoint = input._HBWTPoint;
-    }
+    _treeKey = input._treeKey;
+    _vocabKey = input._vocabKey;
+    _wordCountsKey = input._wordCountsKey;
+
+    // Params
+    _wordVecSize = input.getParams()._vec_size;
+    _windowSize = input.getParams()._window_size;
+    _sentSampleRate = input.getParams()._sent_sample_rate;
+    _epochs = input.getParams()._epochs;
+    _initLearningRate = input.getParams()._init_learning_rate;
+
+    _vocabWordCount = input._vocabWordCount;
+    _prevTotalProcessedWords = input._totalProcessedWords;
+
+    _syn0 = input._syn0;
+    _syn1 = input._syn1;
+    _curLearningRate = calcLearningRate(_initLearningRate, _epochs, _prevTotalProcessedWords, _vocabWordCount);
   }
-  final public Word2VecModelInfo getModelInfo() { return _output; }
 
   @Override
   protected void setupLocal() {
-    _syn0 = _input._syn0;  _syn1 = _input._syn1;
-    _output = _input; //faster, good enough in this case (since the input was freshly deserialized by the Weaver)
-    _input = null;
-    _rand = new Random();
-    initExpTable();
-    buildVocabHashMap();
-    _curLearningRate = _output._curLearningRate;
-    _output.setLocallyProcessed(0);
-  }
-
-
-  private void buildVocabHashMap() {
-    Vec word = _vocab.vec(0);
-    _vocabHM = new NonBlockingHashMap<>((int)_vocab.numRows());
-    for(int i=0; i < _vocab.numRows(); i++) _vocabHM.put(word.atStr(new BufferedString(),i),i);
-  }
-
-  private void updateAlpha(int localWordCnt) {
-    _curLearningRate = _initLearningRate * (1 - (_output.getGloballyProcessed() + localWordCnt) / (float) (_epochs * _output._trainFrameSize + 1));
-    if (_curLearningRate < _initLearningRate * 0.0001F) _curLearningRate = _initLearningRate * 0.0001F;
-  }
-
-  /*
-   * All words in sentence should be in vocab
-   */
-  private int getSentence(int[] sentence, CStrChunk cs) {
-    Vec count = _vocab.vec(1);
-    BufferedString tmp = new BufferedString();
-    float ran;
-    int wIdx, sentIdx = 0;
-
-    int sentLen = (cs._len - 1 - _chkIdx);
-    if (sentLen >= MAX_SENTENCE_LEN) sentLen = MAX_SENTENCE_LEN;
-    else if (sentLen < MIN_SENTENCE_LEN) return 0;
-
-    for (; _chkIdx < cs._len; _chkIdx++) {
-      cs.atStr(tmp, _chkIdx);
-      if (!_vocabHM.containsKey(tmp)) continue; //not in vocab, skip
-      wIdx = _vocabHM.get(tmp);
-      if (_sentSampleRate > 0) {  // subsampling while creating a "_sentence"
-        // paper says: float ran = 1 - sqrt(sample / (vocab[word].cn / (float)trainWords));
-        ran = ((float) Math.sqrt(count.at8(wIdx) / (_sentSampleRate * _output._trainFrameSize)) + 1) * (_sentSampleRate * _output._trainFrameSize) / (float) count.at8(wIdx);
-        // paper says: ran > ....
-        if (ran < _rand.nextFloat()) continue;
-      }
-      sentence[sentIdx++] = wIdx;
-      if (sentIdx >= sentLen) break;
-    }
-
-    return sentLen;
+    _vocab = ((Vocabulary) DKV.getGet(_vocabKey))._data;
+    _wordCounts = ((WordCounts) DKV.getGet(_wordCountsKey))._data;
+    HBWTree t = DKV.getGet(_treeKey);
+    _HBWTCode = t._code;
+    _HBWTPoint = t._point;
+    _nodeProcessedWords = new IcedLong(0L);
   }
 
   // Precompute the exp() table
-  private void initExpTable() {
-    _expTable = new float[EXP_TABLE_SIZE];
-
+  private static float[] calcExpTable() {
+    float[] expTable = new float[EXP_TABLE_SIZE];
     for (int i = 0; i < EXP_TABLE_SIZE; i++) {
-      _expTable[i] = (float) Math.exp((i / (float) EXP_TABLE_SIZE * 2 - 1) * MAX_EXP);
-      _expTable[i] = _expTable[i] / (_expTable[i] + 1);  // Precompute f(x) = x / (x + 1)
+      expTable[i] = (float) Math.exp((i / (float) EXP_TABLE_SIZE * 2 - 1) * MAX_EXP);
+      expTable[i] = expTable[i] / (expTable[i] + 1);  // Precompute f(x) = x / (x + 1)
     }
+    return expTable;
   }
 
-  @Override public void map(Chunk cs[]) {
-    int wrdCnt=0, bagSize=0, sentLen, curWord, winSizeMod;
-    int winWordSentIdx, winWord;
-    final int winSize = _windowSize, vecSize = _wordVecSize;
-    float[] neu1 = new float[vecSize];
-    float[] neu1e = new float[vecSize];
-    int[] sentence = new int[MAX_SENTENCE_LEN];
+  @Override public void map(Chunk chk) {
+    final int winSize = _windowSize;
+    float[] neu1e = new float[_wordVecSize];
+    ChunkSentenceIterator sentIter = new ChunkSentenceIterator(chk);
 
-    //traverse all supplied string columns
-    for (Chunk chk: cs) if (chk instanceof CStrChunk) {
-      while ((sentLen = getSentence(sentence, (CStrChunk) chk)) > 0) {
-        for (int sentIdx = 0; sentIdx < sentLen; sentIdx++) {
-          if (wrdCnt % 10000 == 0) updateAlpha(wrdCnt);
-          curWord = sentence[sentIdx];
-          wrdCnt++;
-          if (_wordModel == WordModel.CBOW) {
-            for (int j = 0; j < vecSize; j++) neu1[j] = 0;
-            for (int j = 0; j < vecSize; j++) neu1e[j] = 0;
-            bagSize = 0;
+    int wordCount = 0;
+    while (sentIter.hasNext()) {
+      int sentLen = sentIter.nextLength();
+      int[] sentence = sentIter.next();
+      for (int sentIdx = 0; sentIdx < sentLen; sentIdx++) {
+        int curWord = sentence[sentIdx];
+
+        // for each item in the window (except curWord), update neu1 vals
+        int winSizeMod = cheapRandInt(winSize);
+        for (int winIdx = winSizeMod; winIdx < winSize * 2 + 1 - winSizeMod; winIdx++) {
+          if (winIdx != winSize) { // skips curWord in sentence
+            int winWordSentIdx = sentIdx - winSize + winIdx;
+            if (winWordSentIdx < 0 || winWordSentIdx >= sentLen) continue;
+            int winWord = sentence[winWordSentIdx];
+            skipGram(curWord, winWord, neu1e);
           }
+        } // end for each item in the window
 
-          // for each item in the window (except curWord), update neu1 vals
-          winSizeMod = cheapRandInt(winSize);
-          for (int winIdx = winSizeMod; winIdx < winSize * 2 + 1 - winSizeMod; winIdx++) {
-            if (winIdx != winSize) { // skips curWord in sentence
-              winWordSentIdx = sentIdx - winSize + winIdx;
-              if (winWordSentIdx < 0 || winWordSentIdx >= sentLen) continue;
-              winWord = sentence[winWordSentIdx];
-
-              if (_wordModel == WordModel.SkipGram)
-                skipGram(curWord, winWord, neu1e);
-              else { // CBOW
-                for (int j = 0; j < vecSize; j++) neu1[j] += _syn0[j + winWord * vecSize];
-                bagSize++;
-              }
-            }
-          } // end for each item in the window
-          if (_wordModel == WordModel.CBOW && bagSize > 0)
-            CBOW(curWord, sentence, sentIdx, sentLen, winSizeMod, bagSize, neu1, neu1e);
-        } // for each item in the sentence
-      } // while more sentences
-    }
-    _output.addLocallyProcessed(wrdCnt);
+        wordCount++;
+        // update learning rate
+        if (wordCount % 10000 == 0) {
+          _nodeProcessedWords._val += 10000;
+          long totalProcessedWordsEst = _prevTotalProcessedWords + _nodeProcessedWords._val;
+          _curLearningRate = calcLearningRate(_initLearningRate, _epochs, totalProcessedWordsEst, _vocabWordCount);
+        }
+      } // for each item in the sentence
+    } // while more sentences
+    _processedWords = wordCount;
+    _nodeProcessedWords._val += wordCount % 10000;
+    _job.update(1);
   }
 
-  @Override public void reduce (WordVectorTrainer other) {
-    if (other._output.getLocallyProcessed() > 0 //other task was active (its syn0 should be used for averaging)
-            && other._output != _output) //other task worked on a different syn0
-    {
-      // avoid adding remote model info to unprocessed local data
-      // (can happen if master node has no chunks)
-      if (_output.getLocallyProcessed() == 0) {
-        _output = other._output;
-        _chunkNodeCount = other._chunkNodeCount;
-      } else {
-        _output.add(other._output);
-        _chunkNodeCount += other._chunkNodeCount;
-      }
+  @Override public void reduce(WordVectorTrainer other) {
+    _processedWords += other._processedWords;
+    if (_syn0 != other._syn0) { // other task worked on a different syn0
+      float c = (float) other._processedWords / _processedWords;
+      ArrayUtils.add(1.0f - c, _syn0, c, other._syn0);
+      ArrayUtils.add(1.0f - c, _syn1, c, other._syn1);
+      // for diagnostics only
+      _nodeProcessedWords._val += other._nodeProcessedWords._val;
     }
-  }
-
-  @Override
-  protected void closeLocal() {
-    _vocab = null;
-  }
-
-  static long _lastWarn, _warnCount;
-  @Override protected void postGlobal(){
-    if (H2O.CLOUD.size() > 1) {
-      long now = System.currentTimeMillis();
-      if (_chunkNodeCount < H2O.CLOUD.size() && (now - _lastWarn > 5000) && _warnCount < 3) {
-        Log.warn(H2O.CLOUD.size() - _chunkNodeCount + " node(s) (out of " + H2O.CLOUD.size()
-                + ") are not contributing to model updates. Consider setting replicate_training_data to true or using a larger training dataset (or fewer H2O nodes).");
-        _lastWarn = now;
-        _warnCount++;
-      }
-    }
-    _output.div(_chunkNodeCount);
-    _output.addGloballyProcessed(_output.getLocallyProcessed());
-    _output.setLocallyProcessed(0);
-
-    assert(_input == null);
   }
 
   private void skipGram(int curWord, int winWord, float[] neu1e) {
@@ -220,111 +149,59 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
     final int l1 = winWord * vecSize;
     for (int i = 0; i < vecSize; i++) neu1e[i] = 0;
 
-    if (_normModel == NormModel.NegSampling)
-      negSamplingSG(curWord, l1, neu1e);
-    else // HSM
-      hierarchicalSoftmaxSG(curWord, l1, neu1e);
+    hierarchicalSoftmaxSG(curWord, l1, neu1e);
 
     // Learned weights input -> hidden
     for (int i = 0; i < vecSize; i++) _syn0[i + l1] += neu1e[i];
   }
 
-  private void CBOW(int curWord, int[] sentence, int sentIdx, int sentLen, int winSizeMod, int bagSize, float[] neu1, float[] neu1e) {
-    int winWordSentIdx, winWord;
-    final int vecSize = _wordVecSize, winSize = _windowSize;
-    final int curWinSize = _windowSize * 2 + 1 - winSize;
-
-    for (int i = 0; i < vecSize; i++) neu1[i] /= bagSize;
-    if (_normModel == NormModel.NegSampling)
-      negSamplingCBOW(curWord, neu1, neu1e);
-    else // HSM
-      hierarchicalSoftmaxCBOW(curWord, neu1, neu1e);
-
-    // hidden -> in
-    for (int winIdx = winSizeMod; winIdx < curWinSize; winIdx++) {
-      if (winIdx != winSize) {
-        winWordSentIdx = sentIdx - winSize + winIdx;
-        if (winWordSentIdx < 0 || winWordSentIdx >= sentLen) continue;
-        winWord = sentence[winWordSentIdx];
-        for (int i = 0; i < vecSize; i++) _syn0[i + winWord * vecSize] += neu1e[i];
-      }
-    }
-  }
-
-  private void negSamplingCBOW(final int curWord, final float[] neu1, final float[] neu1e) {
-    final int vecSize = _wordVecSize, negExCnt = _negExCnt, uTblSize = _unigramTable.length;
+  private void hierarchicalSoftmaxSG(final int targetWord, final int l1, float[] neu1e) {
+    final int vecSize = _wordVecSize, tWrdCodeLen = _HBWTCode[targetWord].length;
     final float alpha = _curLearningRate;
-    float gradient, f=0;
-    int targetWord, l2;
 
-    //handle current word
-    l2 = curWord * vecSize;
-    for (int i = 0; i < vecSize; i++) f += neu1[i] * _syn1[i + l2];
+    for (int i = 0; i < tWrdCodeLen; i++) {
+      int l2 = _HBWTPoint[targetWord][i] * vecSize;
 
-    if (f > MAX_EXP) gradient = 0;
-    else if (f < -MAX_EXP) gradient = alpha;
-    else gradient = (1 - _expTable[(int)((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))]) * alpha;
-
-    for (int i = 0; i < vecSize; i++) neu1e[i] += gradient * _syn1[i + l2];
-    for (int i = 0; i < vecSize; i++) _syn1[i + l2] += gradient * neu1[i];
-
-    //pick a negative samples from unigram table
-    for (int i = 1; i < negExCnt + 1; i++) {
-      f=0;
-      targetWord = _unigramTable[cheapRandInt(uTblSize)];
-      if (targetWord == curWord) continue;
-      l2 = targetWord * vecSize;
-
-      for (int j = 0; j < vecSize; j++) f += neu1[j] * _syn1[j + l2];
-
-      if (f > MAX_EXP) gradient = -alpha;
-      else if (f < -MAX_EXP) gradient = 0;
-      else gradient =  (-_expTable[(int)((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))]) * alpha;
-
-      for (int j = 0; j < vecSize; j++)  neu1e[j] += gradient * _syn1[j + l2];
-      for (int j = 0; j < vecSize; j++)  _syn1[j + l2] += gradient * neu1[j];
-    }
-  }
-
-  private void negSamplingSG(int curWord, int l1, float[] neu1e) {
-    final int vecSize = _wordVecSize, negExCnt = _negExCnt, uTblSize = _unigramTable.length;
-    final float alpha = _curLearningRate;
-    float gradient, f=0;
-    int targetWord, l2;
-
-    //handle current word
-    l2 = curWord * vecSize;
-    for (int i = 0; i < vecSize; i++) f += _syn0[i + l1] * _syn1[i + l2];
-    if (f > MAX_EXP) gradient = 0;
-    else if (f < -MAX_EXP) gradient = alpha;
-    else gradient = (1 - _expTable[(int)((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))]) * alpha;
-
-    for (int i = 0; i < vecSize; i++) neu1e[i] += gradient * _syn1[i + l2];
-    for (int i = 0; i < vecSize; i++) _syn1[i + l2] += gradient * _syn0[i + l1];
-
-    //pick a negative samples from unigram table
-    for (int i = 1; i < negExCnt + 1; i++) {
-      f=0;
-      targetWord = _unigramTable[cheapRandInt(uTblSize)];
-      if (targetWord == curWord) continue;
-      l2 = targetWord * vecSize;
-
+      float f = 0;
+      // Propagate hidden -> output (calc sigmoid)
       for (int j = 0; j < vecSize; j++) f += _syn0[j + l1] * _syn1[j + l2];
-      if (f > MAX_EXP) gradient = -alpha;
-      else if (f < -MAX_EXP) gradient = 0;
-      else gradient = ( -_expTable[(int)((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))]) * alpha;
 
+      if (f <= -MAX_EXP) continue;
+      else if (f >= MAX_EXP) continue;
+      else f = _expTable[(int) ((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))];
+
+      float gradient = (1 - _HBWTCode[targetWord][i] - f) * alpha;
+      // Propagate errors output -> hidden
       for (int j = 0; j < vecSize; j++) neu1e[j] += gradient * _syn1[j + l2];
+      // Learn weights hidden -> output
       for (int j = 0; j < vecSize; j++) _syn1[j + l2] += gradient * _syn0[j + l1];
     }
   }
 
   /**
-   * This is cheap and moderate in quality.
-   *
-   * @param max - Upper range limit.
-   * @return int between 0-(max-1).
+   * Calculates a new global learning rate for the next round
+   * of map/reduce calls.
+   * The learning rate is a coefficient that controls the amount that
+   * newly learned information affects current learned information.
    */
+  private static float calcLearningRate(float initLearningRate, int epochs, long totalProcessed, long vocabWordCount) {
+    float rate = initLearningRate * (1 - totalProcessed / (float) (epochs * vocabWordCount + 1));
+    if (rate < initLearningRate * LEARNING_RATE_MIN_FACTOR) rate = initLearningRate * LEARNING_RATE_MIN_FACTOR;
+    return rate;
+  }
+
+  public void updateModelInfo(Word2VecModelInfo modelInfo) {
+    modelInfo._syn0 = _syn0;
+    modelInfo._syn1 = _syn1;
+    modelInfo._totalProcessedWords += _processedWords;
+  }
+
+  /**
+    * This is cheap and moderate in quality.
+    *
+    * @param max - Upper range limit.
+    * @return int between 0-(max-1).
+    */
   private int cheapRandInt(int max) {
     _seed ^= ( _seed << 21);
     _seed ^= ( _seed >>> 35);
@@ -333,50 +210,55 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
     return r > 0 ? r : -r;
   }
 
-  private void hierarchicalSoftmaxCBOW(final int targetWord, float[] neu1, float[] neu1e) {
-    final int vecSize = _wordVecSize, tWrdCodeLen = _HBWTCode[targetWord].length;
-    final float alpha = _curLearningRate;
-    float gradient, f=0;
-    int l2;
+  private class ChunkSentenceIterator implements Iterator<int[]> {
 
-    for (int i = 0; i < tWrdCodeLen; i++, f=0) {
-      l2 = _HBWTPoint[targetWord][i] * vecSize;
+    private Chunk _chk;
+    private int _pos = 0;
 
-      // Propagate hidden -> output (calc sigmoid)
-      for (int j = 0; j < vecSize; j++) f += neu1[j] * _syn1[j + l2];
+    private int _len = -1;
+    private int[] _sent = new int[MAX_SENTENCE_LEN + 1];
 
-      if (f <= -MAX_EXP) continue;
-      else if (f >= MAX_EXP) continue;
-      else f = _expTable[(int) ((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))];
+    private ChunkSentenceIterator(Chunk chk) { _chk = chk; }
 
-      gradient = (1 - _HBWTCode[targetWord][i] - f) * alpha;
-      // Propagate errors output -> hidden
-      for (int j = 0; j < vecSize; j++) neu1e[j] += gradient * _syn1[j + l2];
-      // Learn weights hidden -> output
-      for (int j = 0; j < vecSize; j++) _syn1[j + l2] += gradient * neu1[j];
+    @Override
+    public boolean hasNext() {
+      return nextLength() >= 0;
     }
-  }
-  private void hierarchicalSoftmaxSG(final int targetWord, final int l1, float[] neu1e) {
-    final int vecSize = _wordVecSize, tWrdCodeLen = _HBWTCode[targetWord].length;
-    final float alpha = _curLearningRate;
-    float gradient, f=0;
-    int l2;
 
-    for (int i = 0; i < tWrdCodeLen; i++, f=0) {
-      l2 = _HBWTPoint[targetWord][i] * vecSize;
-
-      // Propagate hidden -> output (calc sigmoid)
-      for (int j = 0; j < vecSize; j++) f += _syn0[j + l1] * _syn1[j + l2];
-
-      if (f <= -MAX_EXP) continue;
-      else if (f >= MAX_EXP) continue;
-      else f = _expTable[(int) ((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))];
-
-      gradient = (1 - _HBWTCode[targetWord][i] - f) * alpha;
-      // Propagate errors output -> hidden
-      for (int j = 0; j < vecSize; j++) neu1e[j] += gradient * _syn1[j + l2];
-      // Learn weights hidden -> output
-      for (int j = 0; j < vecSize; j++) _syn1[j + l2] += gradient * _syn0[j + l1];
+    private int nextLength() {
+      if (_len >= 0)
+        return _len;
+      if (_pos >= _chk._len)
+        return -1;
+      _len = 0;
+      BufferedString tmp = new BufferedString();
+      for (; _pos < _chk._len && ! _chk.isNA(_pos) && _len < MAX_SENTENCE_LEN; _pos++) {
+        BufferedString str = _chk.atStr(tmp, _pos);
+        if (! _vocab.containsKey(str)) continue; // not in the vocab, skip
+        if (_sentSampleRate > 0) {  // sub-sampling while creating a sentence
+          long count = _wordCounts.get(str)._val;
+          float ran = (float) ((Math.sqrt(count / (_sentSampleRate * _vocabWordCount)) + 1) * (_sentSampleRate * _vocabWordCount) / count);
+          if (ran * 65536 < cheapRandInt(0xFFFF)) continue;
+        }
+        _sent[_len++] = _vocab.get(tmp);
+      }
+      _sent[_len] = -1;
+      _pos++;
+      return _len;
     }
+
+    @Override
+    public int[] next() {
+      if (hasNext()) {
+        _len = -1;
+        return _sent;
+      }
+      else
+        return null;
+    }
+
+    @Override
+    public void remove() { throw new UnsupportedOperationException("Remove is not supported"); } // should never be called
   }
+
 }

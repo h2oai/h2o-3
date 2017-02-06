@@ -41,6 +41,7 @@ should be added to the group automatically.
    
    starting-h2o
    aws
+   azure
    hadoop
    docker
 
@@ -98,6 +99,11 @@ should be added to the group automatically.
    :maxdepth: 2
 
    security
+
+.. toctree::
+   :maxdepth: 2
+
+   data-sources
    
 .. toctree::
    :maxdepth: 1

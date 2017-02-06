@@ -140,7 +140,7 @@ Defining a GBM Model
 
 - `categorical_encoding <algo-params/categorical_encoding.html>`__: Specify one of the following encoding schemes for handling categorical features:
 
-  - ``auto``: Allow the algorithm to decide (default)
+  - ``auto``: Allow the algorithm to decide (default). In GBM, the algorithm will automatically perform ``enum`` encoding.
   - ``enum``: 1 column per categorical feature
   - ``one_hot_explicit``: N+1 new columns for categorical features with N levels
   - ``binary``: No more than 32 columns per categorical feature
@@ -246,8 +246,8 @@ Defining a GBM Model
 -  `huber_alpha <algo-params/huber_alpha.html>`__: Specify the desired quantile for Huber/M-regression (the threshold between quadratic and linear loss). This value must be between 0 and 1.
 
 -  `checkpoint <algo-params/checkpoint.html>`__: Enter a model key associated with a
-   previously-trained model. Use this option to build a new model as a
-   continuation of a previously-generated model.
+   previously trained model. Use this option to build a new model as a
+   continuation of a previously generated model.
 
 -  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the
    cross-validation predictions.
@@ -367,6 +367,11 @@ have large outliers?**
 You can try adding a new predictor column which is either pre-binned
 (e.g. as a categorical - "small", "median", and "giant" values), or a
 log-transform - plus keep the old column.
+
+Parallel Performance in GBM
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+GBM's parallel performance is strongly determined by the ``max_depth``, ``nbins``, ``nbins_cats`` parameters along with the number of columns. Communication overhead grows with the number of leaf node split calculations in order to find the best column to split (and where to split). More nodes will create more communication overhead, and more nodes generally only help if the data is getting so large that the extra cores are needed to compute histograms.  In general, for datasets over 10GB, it makes sense to use 2 to 4 nodes; for datasets over 100GB, it makes sense to use over 10 nodes, and so on.  
 
 GBM Tuning Guide
 ~~~~~~~~~~~~~~~~

@@ -69,7 +69,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   }
 
   @Override public boolean havePojo() { return true; }
-  @Override public boolean haveMojo() { return false; }
+  @Override public boolean haveMojo() { return true; }
 
   private double _lambdaCVEstimate = Double.NaN; // lambda cross-validation estimate
   private boolean _doInit = true;  // flag setting whether or not to run init
@@ -535,6 +535,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
    */
   public final class GLMDriver extends Driver implements ProgressMonitor {
     private long _workPerIteration;
+    private transient double[][] _vcov;
 
 
     private void doCleanup() {
@@ -674,7 +675,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
                  ? new MoreThuente(_state.gslvr(),_state.beta(), _state.ginfo())
                  : new SimpleBacktrackingLS(_state.gslvr(),_state.beta().clone(), _state.l1pen(), _state.ginfo());
-
             if (!ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd))) {
               Log.info(LogMsg("Ls failed " + ls));
               return;
@@ -949,9 +949,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           se = ct._sumsqe / (_nobs - 1 - _state.activeData().fullN());
         }
         double [] zvalues = MemoryManager.malloc8d(_state.activeData().fullN()+1);
-        double [] gInvDiag = _chol.getInvDiag();
+        double [][] inv = _chol.getInv();
+        ArrayUtils.mult(inv,_parms._obj_reg*se);
+        _vcov = inv;
         for(int i = 0; i < zvalues.length; ++i)
-          zvalues[i] = beta[i]/Math.sqrt(_parms._obj_reg*gInvDiag[i]*se);
+          zvalues[i] = beta[i]/Math.sqrt(inv[i][i]);
         _model.setZValues(expandVec(zvalues,_state.activeData()._activeCols,_dinfo.fullN()+1,Double.NaN),se, seEst);
       }
     }
@@ -1102,6 +1104,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       else
         _model._output.pickBestModel();
       scoreAndUpdateModel();
+      if(_vcov != null) {
+        _model.setVcov(_vcov);
+        _model.update(_job._key);
+      }
       if(!(_parms)._lambda_search && _state._iter < _parms._max_iterations){
         _job.update(_workPerIteration*(_parms._max_iterations - _state._iter));
       }
@@ -1181,7 +1187,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     else if(_parms._lambda_search) { // lambda search prefers coordinate descent
       // l1 lambda search is better with coordinate descent!
       s = Solver.COORDINATE_DESCENT;
-    } else if(_state.activeBC().hasBounds()) {
+    } else if(_state.activeBC().hasBounds() && !_state.activeBC().hasProximalPenalty()) {
       s = Solver.COORDINATE_DESCENT;
     } else if(_parms._family == Family.multinomial && _parms._alpha[0] == 0)
       s = Solver.L_BFGS; // multinomial does better with lbfgs

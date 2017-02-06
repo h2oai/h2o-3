@@ -63,8 +63,8 @@ public class TestUtil extends Iced {
   // Stall test until we see at least X members of the Cloud
   protected static int getDefaultTimeForClouding() {
     return JACOCO_ENABLED
-           ? DEFAULT_TIME_FOR_CLOUDING * 10
-           : DEFAULT_TIME_FOR_CLOUDING;
+        ? DEFAULT_TIME_FOR_CLOUDING * 10
+        : DEFAULT_TIME_FOR_CLOUDING;
   }
 
   public static void stall_till_cloudsize(int x) {
@@ -136,15 +136,34 @@ public class TestUtil extends Iced {
   @Rule transient public TestRule runRule = new TestRule() {
     @Override public Statement apply(Statement base, Description description) {
       String testName = description.getClassName() + "#" + description.getMethodName();
-      if ((ignoreTestsNames != null && Arrays.asList(ignoreTestsNames).contains(testName)) ||
-              (doonlyTestsNames != null && !Arrays.asList(doonlyTestsNames).contains(testName))) {
+      boolean ignored = false;
+      if (ignoreTestsNames != null && ignoreTestsNames.length > 0) {
+        for (String tn : ignoreTestsNames) {
+          if (testName.startsWith(tn)) {
+            ignored = true;
+            break;
+          }
+        }
+      }
+      if (doonlyTestsNames != null && doonlyTestsNames.length > 0) {
+        ignored = true;
+        for (String tn : doonlyTestsNames) {
+          if (testName.startsWith(tn)) {
+            ignored = false;
+            break;
+          }
+        }
+      }
+      if (ignored) {
         // Ignored tests trump do-only tests
         Log.info("#### TEST " + testName + " IGNORED");
         return new Statement() {
           @Override
           public void evaluate() throws Throwable {}
         };
-      } else { return base; }
+      } else {
+        return base;
+      }
     }
   };
 
@@ -231,12 +250,12 @@ public class TestUtil extends Iced {
     assertTrue("File should exist: " + name, file.exists());
   }
 
-  private static void checkFile(String name, File file) {
+  public static void checkFile(String name, File file) {
     checkFileEntry(name, file);
     assertTrue("Expected a readable file: " + name, file.canRead());
   }
 
-  private static File[] checkFolder(String name, File folder) {
+  static File[] checkFolder(String name, File folder) {
     checkFileEntry(name, folder);
     assertTrue("Expected a folder: " + name, folder.isDirectory());
     File[] files = folder.listFiles();
@@ -271,7 +290,7 @@ public class TestUtil extends Iced {
 
     // create new parseSetup in order to store our na_string
     ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO,(byte) ',',true,
-            check_header,0,null,null,null,null,null));
+        check_header,0,null,null,null,null,null));
 
     // add the na_strings into p.
     if (na_string != null) {
@@ -332,7 +351,7 @@ public class TestUtil extends Iced {
 
     // create new parseSetup in order to store our na_string
     ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO,(byte) ',',true,
-            check_header,0,null,null,null,null,null));
+        check_header,0,null,null,null,null,null));
 
     // add the na_strings into p.
     if (na_string != null) {
@@ -482,7 +501,7 @@ public class TestUtil extends Iced {
     return r;
   }
 
-// Java7+  @SafeVarargs
+  // Java7+  @SafeVarargs
   public static <T> T[] aro(T ...a) { return a ;}
 
   // ==== Comparing Results ====
@@ -572,6 +591,20 @@ public class TestUtil extends Iced {
     return flipped;
   }
 
+  public static boolean[] checkEigvec(TwoDimTable expected, TwoDimTable actual, double threshold) {
+    int nfeat = actual.getRowDim();
+    int ncomp = actual.getColDim();
+    boolean[] flipped = new boolean[ncomp];
+
+    for(int j = 0; j < ncomp; j++) {
+      flipped[j] = Math.abs((double)expected.get(0,j) - (double)actual.get(0,j)) > threshold;
+      for(int i = 0; i < nfeat; i++) {
+        Assert.assertEquals((double) expected.get(i,j), flipped[j] ? -(double)actual.get(i,j) : (double)actual.get(i,j), threshold);
+      }
+    }
+    return flipped;
+  }
+
   public static boolean[] checkProjection(Frame expected, Frame actual, double threshold, boolean[] flipped) {
     assertEquals("Number of columns", expected.numCols(), actual.numCols());
     assertEquals("Number of columns in flipped", expected.numCols(), flipped.length);
@@ -583,7 +616,12 @@ public class TestUtil extends Iced {
       Vec.Reader vact = actual.vec(j).new Reader();
       Assert.assertEquals(vexp.length(), vact.length());
       for (int i = 0; i < nfeat; i++) {
+        if (vexp.isNA(i) || vact.isNA(i)) {
+          continue;
+        }
+        // only perform comparison when data is not NAN
         Assert.assertEquals(vexp.at8(i), flipped[j] ? -vact.at8(i) : vact.at8(i), threshold);
+
       }
     }
     return flipped;

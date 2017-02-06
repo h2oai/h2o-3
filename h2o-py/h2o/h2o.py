@@ -12,6 +12,7 @@ import os
 import warnings
 
 from h2o.backend import H2OConnection
+from h2o.backend import H2OConnectionConf
 from h2o.backend import H2OLocalServer
 from h2o.exceptions import H2OConnectionError, H2OValueError
 from h2o.utils.config import H2OConfigReader
@@ -27,6 +28,7 @@ from .estimators.glrm import H2OGeneralizedLowRankEstimator
 from .estimators.kmeans import H2OKMeansEstimator
 from .estimators.naive_bayes import H2ONaiveBayesEstimator
 from .estimators.random_forest import H2ORandomForestEstimator
+from .estimators.stackedensemble import H2OStackedEnsembleEstimator
 from .expr import ExprNode
 from .frame import H2OFrame
 from .grid.grid_search import H2OGridSearch
@@ -46,9 +48,8 @@ warnings.filterwarnings('ignore', category=DeprecationWarning, module='.*/IPytho
 
 h2oconn = None
 
-
 def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_certificates=None, auth=None,
-            proxy=None, cluster_id=None, cookies=None, verbose=True):
+            proxy=None, cluster_id=None, cookies=None, verbose=True, config=None):
     """
     Connect to an existing H2O server, remote or local.
 
@@ -67,18 +68,30 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
     :param cluster_id: Name of the H2O cluster to connect to. This option is used from Steam only.
     :param cookies: Cookie (or list of) to add to request
     :param verbose: Set to False to disable printing connection status messages.
+    :param connection_conf: Connection configuration object encapsulating connection parameters.
+    :returns: the new :class:`H2OConnection` object.
     """
     global h2oconn
-    h2oconn = H2OConnection.open(server=server, url=url, ip=ip, port=port, https=https, auth=auth,
-                                 verify_ssl_certificates=verify_ssl_certificates, proxy=proxy,
-                                 cluster_id=cluster_id, cookies=cookies, verbose=verbose)
-    if verbose:
-        h2oconn.cluster.show_status()
+    if config:
+        h2oconn = _connect_with_conf(config)
+    else:
+        h2oconn = H2OConnection.open(server=server, url=url, ip=ip, port=port, https=https,
+                                     auth=auth, verify_ssl_certificates=verify_ssl_certificates,
+                                     proxy=proxy, cluster_id=cluster_id, cookies=cookies,
+                                     verbose=verbose)
+        h2oconn.cluster.timezone = "UTC"
+        if verbose:
+            h2oconn.cluster.show_status()
     return h2oconn
 
 
 def api(endpoint, data=None, json=None, filename=None, save_to=None):
-    """Perform a REST API request to a previously connected server."""
+    """
+    Perform a REST API request to a previously connected server.
+
+    This function is mostly for internal purposes, but may occasionally be useful for direct access to
+    the backend H2O server. It has same parameters as :meth:`H2OConnection.request <h2o.backend.H2OConnection.request>`.
+    """
     # type checks are performed in H2OConnection class
     _check_connection()
     return h2oconn.request(endpoint, data=data, json=json, filename=filename, save_to=save_to)
@@ -86,11 +99,7 @@ def api(endpoint, data=None, json=None, filename=None, save_to=None):
 
 
 def connection():
-    """
-    Return current H2OConnection handler.
-
-    :returns H2OConnection:
-    """
+    """Return the current :class:`H2OConnection` handler."""
     return h2oconn
 
 
@@ -245,25 +254,31 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
                                      auth=auth, proxy=proxy, cluster_id=cluster_id, cookies=cookies, verbose=True)
     if check_version:
         version_check()
+    h2oconn.cluster.timezone = "UTC"
     h2oconn.cluster.show_status()
 
 
-def lazy_import(path):
+def lazy_import(path, pattern=None):
     """
     Import a single file or collection of files.
 
     :param path: A path to a data file (remote or local).
+    :param pattern: Character string containing a regular expression to match file(s) in the folder.
+    :returns: either a :class:`H2OFrame` with the content of the provided file, or a list of such frames if
+        importing multiple files.
     """
     assert_is_type(path, str, [str])
+    assert_is_type(pattern, str, None)
     if is_type(path, str):
-        return _import(path)
+        return _import(path, pattern)
     else:
-        return [_import(p)[0] for p in path]
+        return [_import(p, pattern)[0] for p in path]
 
 
-def _import(path):
+def _import(path, pattern):
     assert_is_type(path, str)
-    j = api("GET /3/ImportFiles", data={"path": path})
+    assert_is_type(pattern, str, None)
+    j = api("GET /3/ImportFiles", data={"path": path, "pattern": pattern})
     if j["fails"]: raise ValueError("ImportFiles of " + path + " failed on " + str(j["fails"]))
     return j["destination_frames"]
 
@@ -285,24 +300,24 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
     :param col_types: A list of types or a dictionary of column names to types to specify whether columns
         should be forced to a certain type upon import parsing. If a list, the types for elements that are
         one will be guessed. The possible types a column may have are:
-        * "unknown" - this will force the column to be parsed as all NA
-        * "uuid"    - the values in the column must be true UUID or will be parsed as NA
-        * "string"  - force the column to be parsed as a string
-        * "numeric" - force the column to be parsed as numeric. H2O will handle the compression of the numeric
-            data in the optimal manner.
-        * "enum"    - force the column to be parsed as a categorical column.
-        * "time"    - force the column to be parsed as a time column. H2O will attempt to parse the following
-            list of date time formats: (date) "yyyy-MM-dd", "yyyy MM dd", "dd-MMM-yy", "dd MMM yy", (time)
-            "HH:mm:ss", "HH:mm:ss:SSS", "HH:mm:ss:SSSnnnnnn", "HH.mm.ss" "HH.mm.ss.SSS", "HH.mm.ss.SSSnnnnnn".
-            Times can also contain "AM" or "PM".
+
+        - "unknown" - this will force the column to be parsed as all NA
+        - "uuid"    - the values in the column must be true UUID or will be parsed as NA
+        - "string"  - force the column to be parsed as a string
+        - "numeric" - force the column to be parsed as numeric. H2O will handle the compression of the numeric
+          data in the optimal manner.
+        - "enum"    - force the column to be parsed as a categorical column.
+        - "time"    - force the column to be parsed as a time column. H2O will attempt to parse the following
+          list of date time formats: (date) "yyyy-MM-dd", "yyyy MM dd", "dd-MMM-yy", "dd MMM yy", (time)
+          "HH:mm:ss", "HH:mm:ss:SSS", "HH:mm:ss:SSSnnnnnn", "HH.mm.ss" "HH.mm.ss.SSS", "HH.mm.ss.SSSnnnnnn".
+          Times can also contain "AM" or "PM".
     :param na_strings: A list of strings, or a list of lists of strings (one list per column), or a dictionary
         of column names to strings which are to be interpreted as missing values.
 
-    :returns: a new H2OFrame instance.
+    :returns: a new :class:`H2OFrame` instance.
 
-    Examples
-    --------
-      >> h2o.upload_file(path="/path/to/local/data", destination_frame="my_local_data")
+    :examples:
+        >>> frame = h2o.upload_file("/path/to/local/data")
     """
     coltype = U(None, "unknown", "uuid", "string", "float", "real", "double", "int", "numeric",
                 "categorical", "factor", "enum", "time")
@@ -321,15 +336,17 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
 
 
 def import_file(path=None, destination_frame=None, parse=True, header=0, sep=None, col_names=None, col_types=None,
-                na_strings=None):
+                na_strings=None, pattern=None):
     """
     Import a dataset that is already on the cluster.
 
     The path to the data must be a valid path for each node in the H2O cluster. If some node in the H2O cluster
     cannot see the file, then an exception will be thrown by the H2O cluster. Does a parallel/distributed
-    multi-threaded pull of the data. Also see :func:`upload_file`.
+    multi-threaded pull of the data. The main difference between this method and :func:`upload_file` is that
+    the latter works with local files, whereas this method imports remote files (i.e. files local to the server).
+    If you running H2O server on your own maching, then both methods behave the same.
 
-    :param path: a path / paths specifying the location of the data to import.
+    :param path: path(s) specifying the location of the data to import or a path to a directory of files to import
     :param destination_frame: The unique hex key assigned to the imported file. If none is given, a key will be
         automatically generated.
     :param parse: If True, the file should be parsed after import.
@@ -340,25 +357,36 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     :param col_types: A list of types or a dictionary of column names to types to specify whether columns
         should be forced to a certain type upon import parsing. If a list, the types for elements that are
         one will be guessed. The possible types a column may have are:
-        * "unknown" - this will force the column to be parsed as all NA
-        * "uuid"    - the values in the column must be true UUID or will be parsed as NA
-        * "string"  - force the column to be parsed as a string
-        * "numeric" - force the column to be parsed as numeric. H2O will handle the compression of the numeric
-            data in the optimal manner.
-        * "enum"    - force the column to be parsed as a categorical column.
-        * "time"    - force the column to be parsed as a time column. H2O will attempt to parse the following
-            list of date time formats: (date) "yyyy-MM-dd", "yyyy MM dd", "dd-MMM-yy", "dd MMM yy", (time)
-            "HH:mm:ss", "HH:mm:ss:SSS", "HH:mm:ss:SSSnnnnnn", "HH.mm.ss" "HH.mm.ss.SSS", "HH.mm.ss.SSSnnnnnn".
-            Times can also contain "AM" or "PM".
+
+        - "unknown" - this will force the column to be parsed as all NA
+        - "uuid"    - the values in the column must be true UUID or will be parsed as NA
+        - "string"  - force the column to be parsed as a string
+        - "numeric" - force the column to be parsed as numeric. H2O will handle the compression of the numeric
+          data in the optimal manner.
+        - "enum"    - force the column to be parsed as a categorical column.
+        - "time"    - force the column to be parsed as a time column. H2O will attempt to parse the following
+          list of date time formats: (date) "yyyy-MM-dd", "yyyy MM dd", "dd-MMM-yy", "dd MMM yy", (time)
+          "HH:mm:ss", "HH:mm:ss:SSS", "HH:mm:ss:SSSnnnnnn", "HH.mm.ss" "HH.mm.ss.SSS", "HH.mm.ss.SSSnnnnnn".
+          Times can also contain "AM" or "PM".
     :param na_strings: A list of strings, or a list of lists of strings (one list per column), or a dictionary
         of column names to strings which are to be interpreted as missing values.
+    :param pattern: Character string containing a regular expression to match file(s) in the folder if `path` is a
+        directory.
 
-    :returns: a new H2OFrame instance.
+    :returns: a new :class:`H2OFrame` instance.
+
+    :examples:
+        >>> # Single file import
+        >>> iris = import_file("h2o-3/smalldata/iris.csv")
+        >>> # Return all files in the folder iris/ matching the regex r"iris_.*\.csv"
+        >>> iris_pattern = h2o.import_file(path = "h2o-3/smalldata/iris",
+        ...                                pattern = "iris_.*\.csv")
     """
     coltype = U(None, "unknown", "uuid", "string", "float", "real", "double", "int", "numeric",
                 "categorical", "factor", "enum", "time")
     natype = U(str, [str])
     assert_is_type(path, str, [str])
+    assert_is_type(pattern, str, None)
     assert_is_type(destination_frame, str, None)
     assert_is_type(parse, bool)
     assert_is_type(header, -1, 0, 1)
@@ -372,9 +400,9 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
         raise H2OValueError("Paths relative to a current user (~) are not valid in the server environment. "
                             "Please use absolute paths if possible.")
     if not parse:
-        return lazy_import(path)
+        return lazy_import(path, pattern)
     else:
-        return H2OFrame()._import_parse(path, destination_frame, header, sep, col_names, col_types, na_strings)
+        return H2OFrame()._import_parse(path, pattern, destination_frame, header, sep, col_names, col_types, na_strings)
 
 
 def import_sql_table(connection_url, table, username, password, columns=None, optimize=True):
@@ -399,10 +427,9 @@ def import_sql_table(connection_url, table, username, password, columns=None, op
     :param password: password for SQL server
     :param optimize: optimize import of SQL table for faster imports. Experimental.
 
-    :returns: :class:`H2OFrame` containing data of specified SQL table
+    :returns: an :class:`H2OFrame` containing data of the specified SQL table.
 
-    Examples
-    --------
+    :examples:
         >>> conn_url = "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false"
         >>> table = "citibike20k"
         >>> username = "root"
@@ -442,15 +469,15 @@ def import_sql_select(connection_url, select_query, username, password, optimize
     :param password: password for SQL server
     :param optimize: optimize import of SQL table for faster imports. Experimental.
 
-    :returns: :class:`H2OFrame` containing data of specified SQL query
+    :returns: an :class:`H2OFrame` containing data of the specified SQL query.
 
-    Examples
-    --------
+    :examples:
         >>> conn_url = "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false"
         >>> select_query = "SELECT bikeid from citibike20k"
         >>> username = "root"
         >>> password = "abc123"
-        >>> my_citibike_data = h2o.import_sql_select(conn_url, select_query, username, password)
+        >>> my_citibike_data = h2o.import_sql_select(conn_url, select_query,
+        ...                                          username, password)
     """
     assert_is_type(connection_url, str)
     assert_is_type(select_query, str)
@@ -483,20 +510,22 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     :param column_types: A list of types or a dictionary of column names to types to specify whether columns
         should be forced to a certain type upon import parsing. If a list, the types for elements that are
         one will be guessed. The possible types a column may have are:
-        * "unknown" - this will force the column to be parsed as all NA
-        * "uuid"    - the values in the column must be true UUID or will be parsed as NA
-        * "string"  - force the column to be parsed as a string
-        * "numeric" - force the column to be parsed as numeric. H2O will handle the compression of the numeric
-            data in the optimal manner.
-        * "enum"    - force the column to be parsed as a categorical column.
-        * "time"    - force the column to be parsed as a time column. H2O will attempt to parse the following
-            list of date time formats: (date) "yyyy-MM-dd", "yyyy MM dd", "dd-MMM-yy", "dd MMM yy", (time)
-            "HH:mm:ss", "HH:mm:ss:SSS", "HH:mm:ss:SSSnnnnnn", "HH.mm.ss" "HH.mm.ss.SSS", "HH.mm.ss.SSSnnnnnn".
-            Times can also contain "AM" or "PM".
+
+        - "unknown" - this will force the column to be parsed as all NA
+        - "uuid"    - the values in the column must be true UUID or will be parsed as NA
+        - "string"  - force the column to be parsed as a string
+        - "numeric" - force the column to be parsed as numeric. H2O will handle the compression of the numeric
+          data in the optimal manner.
+        - "enum"    - force the column to be parsed as a categorical column.
+        - "time"    - force the column to be parsed as a time column. H2O will attempt to parse the following
+          list of date time formats: (date) "yyyy-MM-dd", "yyyy MM dd", "dd-MMM-yy", "dd MMM yy", (time)
+          "HH:mm:ss", "HH:mm:ss:SSS", "HH:mm:ss:SSSnnnnnn", "HH.mm.ss" "HH.mm.ss.SSS", "HH.mm.ss.SSSnnnnnn".
+          Times can also contain "AM" or "PM".
+
     :param na_strings: A list of strings, or a list of lists of strings (one list per column), or a dictionary
         of column names to strings which are to be interpreted as missing values.
 
-    :returns: a dictionary is returned containing all of the guesses made by the H2O backend.
+    :returns: a dictionary containing parse parameters guessed by the H2O backend.
     """
     coltype = U(None, "unknown", "uuid", "string", "float", "real", "double", "int", "numeric",
                 "categorical", "factor", "enum", "time")
@@ -610,7 +639,13 @@ def parse_raw(setup, id=None, first_line_is_header=0):
 
 
 def assign(data, xid):
-    """??."""
+    """
+    (internal) Assign new id to the frame.
+
+    :param data: an H2OFrame whose id should be changed
+    :param xid: new id for the frame.
+    :returns: the passed frame.
+    """
     assert_is_type(data, H2OFrame)
     assert_is_type(xid, str)
     assert_satisfies(xid, xid != data.frame_id)
@@ -620,8 +655,15 @@ def assign(data, xid):
     data._ex._children = None
     return data
 
+
 def deep_copy(data, xid):
-    """??."""
+    """
+    Create a deep clone of the frame ``data``.
+
+    :param data: an H2OFrame to be cloned
+    :param xid: (internal) id to be assigned to the new frame.
+    :returns: new :class:`H2OFrame` which is the clone of the passed frame.
+    """
     assert_is_type(data, H2OFrame)
     assert_is_type(xid, str)
     assert_satisfies(xid, xid != data.frame_id)
@@ -632,13 +674,14 @@ def deep_copy(data, xid):
     duplicate._ex._children = None
     return duplicate
 
+
 def get_model(model_id):
     """
-    Return the specified model.
+    Load a model from the server.
 
-    :param model_id: The model identification in h2o
+    :param model_id: The model identification in H2O
 
-    :returns: Subclass of H2OEstimator
+    :returns: Model object, a subclass of H2OEstimator
     """
     assert_is_type(model_id, str)
     model_json = api("GET /3/Models/%s" % model_id)["models"][0]
@@ -657,6 +700,7 @@ def get_model(model_id):
             m = H2OAutoEncoderEstimator()
         else:
             m = H2ODeepLearningEstimator()
+    elif algo == "stackedensemble": m = H2OStackedEnsembleEstimator()
     else:
         raise ValueError("Unknown algo type: " + algo)
     m._resolve_model(model_id, model_json)
@@ -669,7 +713,7 @@ def get_grid(grid_id):
 
     :param grid_id: The grid identification in h2o
 
-    :returns: H2OGridSearch instance
+    :returns: an :class:`H2OGridSearch` instance.
     """
     assert_is_type(grid_id, str)
     grid_json = api("GET /99/Grids/%s" % grid_id)
@@ -682,7 +726,11 @@ def get_grid(grid_id):
     hyper_params = {param: set() for param in gs.hyper_names}
     for param in gs.hyper_names:
         for model in models:
-            hyper_params[param].add(model.full_parameters[param]["actual_value"][0])
+            if isinstance(model.full_parameters[param]["actual_value"], list):
+                hyper_params[param].add(model.full_parameters[param]["actual_value"][0])
+            else:
+                hyper_params[param].add(model.full_parameters[param]["actual_value"])
+
     hyper_params = {str(param): list(vals) for param, vals in hyper_params.items()}
     gs.hyper_params = hyper_params
     gs.model = model.__class__()
@@ -693,6 +741,7 @@ def get_frame(frame_id):
     """
     Obtain a handle to the frame in H2O with the frame_id key.
 
+    :param str frame_id: id of the frame to retrieve.
     :returns: an :class:`H2OFrame` object
     """
     assert_is_type(frame_id, str)
@@ -767,7 +816,7 @@ def rapids(expr):
 
     :param expr: The rapids expression (ascii string).
 
-    :returns: The JSON response (as a python dictionary) of the Rapids execution
+    :returns: The JSON response (as a python dictionary) of the Rapids execution.
     """
     assert_is_type(expr, str)
     return ExprNode.rapids(expr)
@@ -778,18 +827,16 @@ def ls():
     return H2OFrame._expr(expr=ExprNode("ls")).as_data_frame(use_pandas=True)
 
 
-def frame(frame_id, exclude=""):
+def frame(frame_id):
     """
     Retrieve metadata for an id that points to a Frame.
 
     :param frame_id: the key of a Frame in H2O.
-    :param exclude: ?
 
     :returns: dict containing the frame meta-information.
     """
     assert_is_type(frame_id, str)
-    assert_is_type(exclude, str)
-    return api("GET /3/Frames/%s" % (frame_id + exclude))
+    return api("GET /3/Frames/%s" % frame_id)
 
 
 def frames():
@@ -884,7 +931,7 @@ def save_model(model, path="", force=False):
     :param path: a path to save the model at (hdfs, s3, local)
     :param force: if True overwrite destination directory in case it exists, or throw exception if set to False.
 
-    :returns str: the path of the saved model
+    :returns: the path of the saved model
     """
     assert_is_type(model, ModelBase)
     assert_is_type(path, str)
@@ -901,10 +948,9 @@ def load_model(path):
 
     :returns: an :class:`H2OEstimator` object
 
-    Examples
-    --------
-      >> path = h2o.save_mode(my_model,dir=my_path)
-      >> h2o.load_model(path)
+    :examples:
+        >>> path = h2o.save_mode(my_model, dir=my_path)
+        >>> h2o.load_model(path)
     """
     assert_is_type(path, str)
     res = api("POST /99/Models.bin/%s" % "", data={"dir": path})
@@ -922,8 +968,8 @@ def export_file(frame, path, force=False, parts=1):
         Convenient for large datasets that take too long to store in a single file.
         Use parts=-1 to instruct H2O to determine the optimal number of part files or
         specify your desired maximum number of part files. Path needs to be a directory
-        when exporting to multiple files.
-        Default is to export to a single file (parts=1).
+        when exporting to multiple files, also that directory must be empty.
+        Default is ``parts = 1``, which is to export to a single file.
     """
     assert_is_type(frame, H2OFrame)
     assert_is_type(path, str)
@@ -934,7 +980,7 @@ def export_file(frame, path, force=False, parts=1):
 
 
 def cluster():
-    """Return H2OCluster object describing the backend H2O cloud."""
+    """Return :class:`H2OCluster` object describing the backend H2O cloud."""
     return h2oconn.cluster if h2oconn else None
 
 
@@ -1003,6 +1049,10 @@ def create_frame(frame_id=None, rows=10000, cols=10, randomize=True,
     assert_is_type(seed, int, None)
     assert_is_type(seed_for_column_types, int, None)
     check_frame_id(frame_id)
+
+    if randomize and value:
+        raise H2OValueError("Cannot set data to a `value` if `randomize` is true")
+
     if (categorical_fraction or integer_fraction) and not randomize:
         raise H2OValueError("`randomize` should be True when either categorical or integer columns are used.")
 
@@ -1082,7 +1132,7 @@ def interaction(data, factors, pairwise, max_factors, min_occurrence, destinatio
     :param min_occurrence: Min. occurrence threshold for factor levels in pair-wise interaction terms
     :param destination_frame: a string indicating the destination key. If empty, this will be auto-generated by H2O.
 
-    :returns: H2OFrame
+    :returns: :class:`H2OFrame`
     """
     assert_is_type(data, H2OFrame)
     assert_is_type(factors, [str, int])
@@ -1116,7 +1166,7 @@ def as_list(data, use_pandas=True, header=True):
     :param use_pandas: If True, try to use pandas for reading in the data.
     :param header: If True, return column names as first element in list
 
-    :returns: List of list (Rows x Columns).
+    :returns: List of lists (Rows x Columns).
     """
     assert_is_type(data, H2OFrame)
     assert_is_type(use_pandas, bool)
@@ -1133,9 +1183,9 @@ def demo(funcname, interactive=True, echo=True, test=False):
     :param echo: If True, the python commands that are executed will be displayed.
     :param test: If True, `h2o.init()` will not be called (used for pyunit testing).
 
-    Example:
-    >>> import h2o
-    >>> h2o.demo("gbm")
+    :example:
+        >>> import h2o
+        >>> h2o.demo("gbm")
     """
     import h2o.demos as h2odemo
     assert_is_type(funcname, str)
@@ -1167,10 +1217,10 @@ def make_metrics(predicted, actual, domain=None, distribution=None):
     """
     Create Model Metrics from predicted and actual values in H2O.
 
-    :params H2OFrame predicted: an H2OFrame containing predictions.
-    :params H2OFrame actuals: an H2OFrame containing actual values.
-    :params domain: list of response factors for classification.
-    :params distribution: distribution for regression.
+    :param H2OFrame predicted: an H2OFrame containing predictions.
+    :param H2OFrame actuals: an H2OFrame containing actual values.
+    :param domain: list of response factors for classification.
+    :param distribution: distribution for regression.
     """
     assert_is_type(predicted, H2OFrame)
     assert_is_type(actual, H2OFrame)
@@ -1193,6 +1243,15 @@ def _check_connection():
     if not h2oconn or not h2oconn.cluster:
         raise H2OConnectionError("Not connected to a cluster. Did you run `h2o.connect()`?")
 
+def _connect_with_conf(conn_conf):
+    conf = conn_conf
+    if isinstance(conn_conf, dict):
+        conf = H2OConnectionConf(config=conn_conf)
+    assert_is_type(conf, H2OConnectionConf)
+
+    return connect(url = conf.url, verify_ssl_certificates = conf.verify_ssl_certificates,
+                   auth = conf.auth, proxy = conf.proxy, cluster_id = None,
+                   cookies = conf.cookies, verbose = conf.verbose)
 
 #-----------------------------------------------------------------------------------------------------------------------
 #  ALL DEPRECATED METHODS BELOW

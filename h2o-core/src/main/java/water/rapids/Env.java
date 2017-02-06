@@ -65,6 +65,10 @@ public class Env extends Iced {
     PRIMS.put(ast.str(), ast);
   }
 
+  static void init(AstPrimitive ast, String name) {
+    PRIMS.put(name, ast);
+  }
+
   static {
     // Constants
     CONSTS.put("FALSE", AstConst.FALSE);
@@ -104,6 +108,7 @@ public class Env extends Iced {
     init(new AstLog10());
     init(new AstNoOp());
     init(new AstNot());
+    init(new AstNot(), "!!");
     init(new AstRound());
     init(new AstSgn());
     init(new AstSignif());
@@ -254,11 +259,13 @@ public class Env extends Iced {
     init(new AstCountSubstringsWords());
     init(new AstEntropy());
     init(new AstLStrip());
+    init(new AstGrep());
     init(new AstReplaceAll());
     init(new AstReplaceFirst());
     init(new AstRStrip());
     init(new AstStrLength());
     init(new AstStrSplit());
+    init(new AstTokenize());
     init(new AstSubstring());
     init(new AstToLower());
     init(new AstToUpper());

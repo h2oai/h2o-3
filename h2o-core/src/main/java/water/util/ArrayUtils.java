@@ -163,6 +163,10 @@ public class ArrayUtils {
     for(int i = 0; i < a.length; i++ ) a[i] += b[i];
     return a;
   }
+  public static float[] add(float ca, float[] a, float cb, float[] b) {
+    for(int i = 0; i < a.length; i++ ) a[i] = (ca * a[i]) + (cb * b[i]);
+    return a;
+  }
   public static float[][] add(float[][] a, float[][] b) {
     for(int i = 0; i < a.length; i++ ) add(a[i],b[i]);
     return a;
@@ -266,6 +270,12 @@ public class ArrayUtils {
     for (int i=0; i<ds.length; i++) div(ds[i],n[i]);
     return ds;
   }
+
+  public static double[][] div(double[][] ds, double[] n) {
+    for (int i=0; i<ds.length; i++) div(ds[i],n[i]);
+    return ds;
+  }
+
   public static double[] div(double[] ds, long[] n) {
     for (int i=0; i<ds.length; i++) ds[i]/=n[i];
     return ds;
@@ -274,6 +284,12 @@ public class ArrayUtils {
     for (int i=0; i<ds.length; i++) ds[i]/=n[i];
     return ds;
   }
+
+  public static double[][] mult(double[][] ds, double[] n) {
+    for (int i=0; i<ds.length; i++) mult(ds[i],n[i]);
+    return ds;
+  }
+
   public static float[] mult(float[] nums, float n) {
 //    assert !Float.isInfinite(n) : "Trying to multiply " + Arrays.toString(nums) + " by  " + n; // Almost surely not what you want
     for (int i=0; i<nums.length; i++) nums[i] *= n;
@@ -1183,6 +1199,12 @@ public class ArrayUtils {
       res[i] = ary[idxs[i]];
     return res;
   }
+  public static int[] select(int[] ary, int[] idxs) {
+    int [] res = MemoryManager.malloc4(idxs.length);
+    for(int i = 0; i < res.length; ++i)
+      res[i] = ary[idxs[i]];
+    return res;
+  }
 
   public static double [] expandAndScatter(double [] ary, int N, int [] ids) {
     assert ary.length == ids.length:"ary.length = " + ary.length + " != " + ids.length + " = ids.length";
@@ -1614,4 +1636,9 @@ public class ArrayUtils {
     return res;
   }
 
+  public static boolean isSorted(int[] vals) {
+    for(int i = 1; i < vals.length; ++i)
+      if(vals[i-1] > vals[i]) return false;
+    return true;
+  }
 }

@@ -53,7 +53,8 @@ public class DeepWaterParameters extends Model.Parameters {
 
   public enum Backend {
     unknown,
-    mxnet, caffe, tensorflow
+    mxnet, caffe, tensorflow, // C++
+    xgrpc // anything that speaks grpc
   }
 
   public enum ProblemType {
@@ -90,7 +91,7 @@ public class DeepWaterParameters extends Model.Parameters {
   public boolean _use_all_factor_levels = true;
 
   public enum MissingValuesHandling {
-    Skip, MeanImputation
+    MeanImputation, Skip
   }
 
   public MissingValuesHandling _missing_values_handling = MissingValuesHandling.MeanImputation;
@@ -285,10 +286,10 @@ public class DeepWaterParameters extends Model.Parameters {
     if (_clip_gradient<=0)
       dl.error("_clip_gradient", "Clip gradient must be >= 0");
 
-    if (_hidden != null && _network_definition_file != null)
+    if (_hidden != null && _network_definition_file != null && !_network_definition_file.isEmpty())
       dl.error("_hidden", "Cannot provide hidden layers and a network definition file at the same time.");
 
-    if (_activation != null && _network_definition_file != null)
+    if (_activation != null && _network_definition_file != null && !_network_definition_file.isEmpty())
       dl.error("_activation", "Cannot provide activation functions and a network definition file at the same time.");
 
     if (_problem_type == ProblemType.image) {

@@ -78,7 +78,7 @@ public class AAA_PreCloudLock extends TestUtil {
       new PCAV3();
       new hex.schemas.SharedTreeModelV3();
       new hex.schemas.SharedTreeV3();
-      new hex.schemas.SynonymV3();
+      new hex.schemas.Word2VecSynonymsV3();
       new hex.schemas.TreeStatsV3();
       new hex.schemas.Word2VecModelV3();
       new hex.schemas.Word2VecV3();

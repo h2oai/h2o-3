@@ -15,8 +15,11 @@ import water.rapids.ast.params.AstNum;
 import water.rapids.ast.params.AstNumList;
 import water.rapids.ast.prims.mungers.AstColSlice;
 import water.rapids.vals.ValFrame;
+import water.util.ArrayUtils;
 
 import java.util.Arrays;
+
+import static water.rapids.ast.prims.assign.AstRecAsgnHelper.*;
 
 /**
  * Rectangular assign into a row and column slice.  The destination must
@@ -66,7 +69,7 @@ public class AstRectangleAssign extends AstPrimitive {
       if (rows.isEmpty()) rows = new AstNumList(0, dst.numRows()); // Empty rows is really: all rows
       switch (vsrc.type()) {
         case Val.NUM:
-          assign_frame_scalar(dst, cols, rows, vsrc.getNum(), env._ses);
+          assign_frame_scalar(dst, cols, rows, nanToNull(vsrc.getNum()), env._ses);
           break;
         case Val.STR:
           assign_frame_scalar(dst, cols, rows, vsrc.getStr(), env._ses);
@@ -81,7 +84,7 @@ public class AstRectangleAssign extends AstPrimitive {
       Frame rows = stk.track(asts[4].exec(env)).getFrame();
       switch (vsrc.type()) {
         case Val.NUM:
-          assign_frame_scalar(dst, cols, rows, vsrc.getNum(), env._ses);
+          assign_frame_scalar(dst, cols, rows, nanToNull(vsrc.getNum()), env._ses);
           break;
         case Val.STR:
           assign_frame_scalar(dst, cols, rows, vsrc.getStr(), env._ses);
@@ -196,66 +199,36 @@ public class AstRectangleAssign extends AstPrimitive {
     }
   }
 
-  // Assign a NON-STRING SCALAR over some dst rows; optimize for all rows
-  private void assign_frame_scalar(Frame dst, int[] cols, AstNumList rows, double src, Session ses) {
-
-    // Handle fast small case
+  // Assign a SCALAR over some dst rows; optimize for all rows
+  private void assign_frame_scalar(Frame dst, int[] cols, AstNumList rows, Object src, Session ses) {
     long nrows = rows.cnt();
-    if (nrows == 1) {
-      Vec[] vecs = ses.copyOnWrite(dst, cols);
-      long drow = (long) rows._bases[0];
-      for (int col : cols)
-        vecs[col].set(drow, src);
-      return;
-    }
 
-    // Bulk assign constant (probably zero) over a frame.  Directly set
+    // Bulk assign a numeric constant (probably zero) over a frame.  Directly set
     // columns: Copy-On-Write optimization happens here on the apply() exit.
-    if (dst.numRows() == nrows && rows.isDense()) {
+    // Note: this skips "scalar to Vec" compatibility check because the whole Vec is overwritten
+    if (dst.numRows() == nrows && rows.isDense() && (src instanceof Number)) {
       Vec anyVec = dst.anyVec();
       assert anyVec != null;  // if anyVec was null, then dst.numRows() would have been 0
-      Vec vsrc = anyVec.makeCon(src);
+      Vec vsrc = anyVec.makeCon((double) src);
       for (int col : cols)
         dst.replace(col, vsrc);
       if (dst._key != null) DKV.put(dst);
       return;
     }
 
-    // Handle large case
-    Vec[] vecs = ses.copyOnWrite(dst, cols);
-    Vec[] vecs2 = new Vec[cols.length]; // Just the selected columns get updated
-    for (int i = 0; i < cols.length; i++)
-      vecs2[i] = vecs[cols[i]];
-    rows.sort();                // Side-effect internal sort; needed for fast row lookup
-    new AssignFrameScalarTask(rows, src).doAll(vecs2);
-  }
-
-  private static class AssignFrameScalarTask extends RowSliceTask {
-    private double _src;
-    private AssignFrameScalarTask(AstNumList rows, double src) {
-      super(rows);
-      _src = src;
+    // Make sure the scalar value is compatible with the target vector
+    for (int col: cols) {
+      if (! isScalarCompatible(src, dst.vec(col))) {
+        throw new IllegalArgumentException("Cannot assign value " + src + " into a vector of type " + dst.vec(col).get_type_str() + ".");
+      }
     }
-    @Override
-    void mapChunkSlice(Chunk[] cs, int chkOffset) {
-      long start = cs[0].start();
-      for (int i = chkOffset; i < cs[0]._len; ++i)
-        if (_rows.has(start + i))
-          for (Chunk chk : cs)
-            chk.set(i, _src);
-    }
-  }
 
-  // Assign a STRING over some dst rows; optimize for all rows
-  private void assign_frame_scalar(Frame dst, int[] cols, AstNumList rows, String src, Session ses) {
-    // Check for needing to copy before updating
     // Handle fast small case
-    Vec[] dvecs = dst.vecs();
-    long nrows = rows.cnt();
-    if( nrows==1 ) {
-      long drow = (long)rows.expand()[0];
-      for( Vec vec : dvecs )
-        vec.set(drow, src);
+    if (nrows == 1) {
+      Vec[] vecs = ses.copyOnWrite(dst, cols);
+      long drow = (long) rows._bases[0];
+      for (int col : cols)
+        createValueSetter(vecs[col], src).setValue(vecs[col], drow);
       return;
     }
 
@@ -265,22 +238,37 @@ public class AstRectangleAssign extends AstPrimitive {
     for (int i = 0; i < cols.length; i++)
       vecs2[i] = vecs[cols[i]];
     rows.sort();                // Side-effect internal sort; needed for fast row lookup
-    new AssignFrameStringScalarTask(rows, src).doAll(vecs2);
+    AssignFrameScalarTask.doAssign(rows, vecs2, src);
   }
 
-  private static class AssignFrameStringScalarTask extends RowSliceTask {
-    private String _src;
-    private AssignFrameStringScalarTask(AstNumList rows, String src) {
+  private static class AssignFrameScalarTask extends RowSliceTask {
+
+    final ValueSetter[] _setters;
+
+    AssignFrameScalarTask(AstNumList rows, Vec[] vecs, Object value) {
       super(rows);
-      _src = src;
+      _setters = new ValueSetter[vecs.length];
+      for (int i = 0; i < _setters.length; i++)
+        _setters[i] = createValueSetter(vecs[i], value);
     }
+
     @Override
     void mapChunkSlice(Chunk[] cs, int chkOffset) {
       long start = cs[0].start();
       for (int i = chkOffset; i < cs[0]._len; ++i)
         if (_rows.has(start + i))
-          for (Chunk chk : cs)
-            chk.set(i, _src);
+          for (int col = 0; col < cs.length; col++)
+            _setters[col].setValue(cs[col], i);
+    }
+
+    /**
+     * Assigns a given value to a specified rows of given Vecs.
+     * @param rows row specification
+     * @param dst target Vecs
+     * @param src source Value
+     */
+    static void doAssign(AstNumList rows, Vec[] dst, Object src) {
+      new AssignFrameScalarTask(rows, dst, src).doAll(dst);
     }
   }
 
@@ -291,20 +279,27 @@ public class AstRectangleAssign extends AstPrimitive {
       return v.get_type() == Vec.T_NUM || v.get_type() == Vec.T_TIME;
     else if (scalar instanceof String) {
       if (v.get_type() == Vec.T_CAT) {
-        for (String f: v.domain()) if (f.equals(scalar)) return true;
-        return false;
+        return ArrayUtils.contains(v.domain(), (String) scalar);
       } else
         return v.get_type() == Vec.T_STR || (v.get_type() == Vec.T_UUID);
     } else
       return false;
   }
 
+  private static Double nanToNull(double value) {
+    return Double.isNaN(value) ? null : value;
+  }
+
   // Boolean assignment with a scalar
   private void assign_frame_scalar(Frame dst, int[] cols, Frame rows, Object src, Session ses) {
+    Vec bool = rows.vec(0);
+    if (dst.numRows() != rows.numRows()) {
+      throw new IllegalArgumentException("Frame " + dst._key + " has different number of rows than frame " + rows._key +
+              " (" + dst.numRows() + " vs " + rows.numRows() + ").");
+    }
     // Bulk assign a numeric constant over a frame. Directly set columns without checking target type
     // assuming the user just wants to overwrite everything: Copy-On-Write optimization happens here on the apply() exit.
     // Note: this skips "scalar to Vec" compatibility check because the whole Vec is overwritten
-    Vec bool = rows.vec(0);
     if (bool.isConst() && ((int) bool.min() == 1) && (src instanceof Number)) {
       Vec anyVec = dst.anyVec();
       assert anyVec != null;
@@ -332,11 +327,11 @@ public class AstRectangleAssign extends AstPrimitive {
 
   private static class ConditionalAssignTask extends MRTask<ConditionalAssignTask> {
 
-    final Chunk.ValueSetter[] _setters;
+    final ValueSetter[] _setters;
 
     ConditionalAssignTask(Vec[] vecs, Object value) {
-      _setters = new Chunk.ValueSetter[vecs.length];
-      for (int i = 0; i < _setters.length; i++) _setters[i] = Chunk.createValueSetter(vecs[i], value);
+      _setters = new ValueSetter[vecs.length];
+      for (int i = 0; i < _setters.length; i++) _setters[i] = AstRecAsgnHelper.createValueSetter(vecs[i], value);
     }
 
     @Override

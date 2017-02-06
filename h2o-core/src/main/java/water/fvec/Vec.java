@@ -155,6 +155,8 @@ import java.util.UUID;
  * @author Cliff Click
  */
 public class Vec extends Keyed<Vec> {
+  public interface Holder { Vec vec(); }
+  
   // Vec internal type: one of T_BAD, T_UUID, T_STR, T_NUM, T_CAT, T_TIME
   byte _type;                   // Vec Type
 
@@ -278,7 +280,7 @@ public class Vec extends Keyed<Vec> {
   private int chunkLen( int cidx ) { espc(); return (int) (_espc[cidx + 1] - _espc[cidx]); }
 
   /** Check that row-layouts are compatible. */
-  boolean isCompatibleWith(Vec v ) {
+  public boolean isCompatibleWith(Vec v) {
     // Vecs are compatible iff they have same group and same espc (i.e. same length and same chunk-distribution)
     return (espc() == v.espc() || Arrays.equals(_espc, v._espc)) &&
             (VectorGroup.sameGroup(this, v) || length() < 1e3);
@@ -312,7 +314,11 @@ public class Vec extends Keyed<Vec> {
   }
   /** Make a new zero-filled vector with the given row count. 
    *  @return New zero-filled vector with the given row count. */
-  public static Vec makeZero( long len ) { return makeCon(0d,len); }
+  public static Vec makeZero( long len ) { return makeZero(len, T_NUM); }
+
+  public static Vec makeZero(long len, byte typeCode) {
+    return makeCon(0.0, len, true, typeCode);
+  }
 
   /** Make a new constant vector with the given row count, and redistribute the data
    * evenly around the cluster.
@@ -338,15 +344,19 @@ public class Vec extends Keyed<Vec> {
   /** Make a new constant vector with the given row count. 
    *  @return New constant vector with the given row count. */
   public static Vec makeCon(double x, long len, boolean redistribute) {
+    return makeCon(x,len,redistribute, T_NUM);
+  }
+
+  public static Vec makeCon(double x, long len, boolean redistribute, byte typeCode) {
     int log_rows_per_chunk = FileVec.DFLT_LOG2_CHUNK_SIZE;
-    return makeCon(x, len, log_rows_per_chunk, redistribute, T_NUM);
+    return makeCon(x,len,log_rows_per_chunk,redistribute, typeCode);
   }
 
   /** Make a new constant vector with the given row count, and redistribute the data evenly
    *  around the cluster.
    *  @return New constant vector with the given row count. */
   public static Vec makeCon(double x, long len, int log_rows_per_chunk) {
-    return makeCon(x, len, log_rows_per_chunk, true, T_NUM);
+    return makeCon(x,len,log_rows_per_chunk,true);
   }
 
   /**
@@ -1106,7 +1116,7 @@ public class Vec extends Keyed<Vec> {
   }
 
   /** Set the element as missing the slow way.  */
-  final void setNA( long i ) {
+  public final void setNA( long i ) {
     Chunk ck = chunkForRow(i);
     ck.setNA_abs(i);
     postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();

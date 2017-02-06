@@ -91,6 +91,8 @@ public abstract class GLMTask  {
     }
     @Override public void reduce(GLMResDevTask gt) {_nobs += gt._nobs; _resDev += gt._resDev; _likelihood += gt._likelihood;}
     public double avgDev(){return _resDev/_nobs;}
+    public double dev(){return _resDev;}
+
   }
 
   static class GLMResDevTaskMultinomial extends FrameTask2<GLMResDevTaskMultinomial> {
@@ -127,6 +129,7 @@ public abstract class GLMTask  {
     @Override public void reduce(GLMResDevTaskMultinomial gt) {_nobs += gt._nobs; _likelihood += gt._likelihood;}
 
     public double avgDev(){return _likelihood*2/_nobs;}
+    public double dev(){return _likelihood*2;}
   }
 
  static class WeightedSDTask extends MRTask<WeightedSDTask> {
@@ -689,10 +692,11 @@ public abstract class GLMTask  {
     protected void computeGradientMultipliers(double[] es, double[] ys, double[] ws) {
       for(int i = 0; i < es.length; ++i) {
         if(Double.isNaN(ys[i]) || ws[i] == 0){es[i] = 0; continue;}
-        double e = es[i], y = 1 - 2*ys[i], w = ws[i];
-        double d = 1 + Math.exp(y*e);
-        _likelihood += w*Math.log(d);
-        es[i] = w*y*(1-1.0/d);
+        double e = es[i], w = ws[i];
+        double yr = ys[i];
+        double ym = 1.0 / (Math.exp(-e) + 1.0);
+        if(ym != yr) _likelihood += w*((MathUtils.y_log_y(yr, ym)) + MathUtils.y_log_y(1 - yr, 1 - ym));
+        es[i] = ws[i] * (ym - yr);
       }
     }
   }

@@ -449,8 +449,11 @@ h2o.interaction <- function(data, destination_frame, factors, pairwise, max_fact
   if(!is.numeric(min_occurrence)) stop("min_occurrence must be a numeric value")
 
   parms <- list()
-  if(missing(destination_frame) || !base::is.character(destination_frame) || !nzchar(destination_frame))
+  if(missing(destination_frame) || !base::is.character(destination_frame) || !nzchar(destination_frame)){
     parms$dest = .key.make(prefix = "interaction")
+  }else{
+    parms$dest <- destination_frame
+  }
   .key.validate(parms$dest)
   parms$source_frame <- h2o.getId(data)
   parms$factor_columns <- .collapse.char(factors)
@@ -1155,31 +1158,66 @@ NULL
 
   # This function is called with a huge variety of argument styles
   # Here's the breakdown:
-  #   Style          Type #args  Description
-  # df[]           - na na 2    both missing, identity with df
-  # df["colname"]  - c  na 2    single column by name, df$colname
-  # df[3]          - X  na 2    if ncol > 1 then column else row
-  # df[,]          - na na 3    both missing, identity with df
-  # df[2,]         - r  na 3    constant row, all cols
-  # df[1:150,]     - r  na 3    selection of rows, all cols
-  # df[,3]         - na c  3    constant column
-  # df[,1:10]      - na c  3    selection of columns
-  # df[,"colname"] - na c  3    single column by name
-  # df[2,"colname"]- r  c  3    row slice and column-by-name
-  # df[2,3]        - r  c  3    single element
-  # df[1:150,1:10] - r  c  3    rectangular slice
-  # df[a<b,]       - f  na 3    boolean row slice
-  # df[a<b,c]      - f  c  3    boolean row slice
-  is1by1 <- !missing(col) && !missing(row) && !is.H2OFrame(row) && length(col) == 1 && length(row) == 1
+  #   Style          Type  #args  Description
+  # df[]             - na na 2    both missing, identity with df
+  # df["colname"]    - c  na 2    single column by name, df$colname
+  # df[3]            - X  na 2    if ncol > 1 then column else row
+  # df[,]            - na na 3    both missing, identity with df
+  # df[2,]           - r  na 3    constant row, all cols
+  # df[1:150,]       - r  na 3    selection of rows, all cols
+  # df[,3]           - na c  3    constant column
+  # df[,1:10]        - na c  3    selection of columns
+  # df[,"colname"]   - na c  3    single column by name
+  # df[2,"colname"]  - r  c  3    row slice and column-by-name
+  # df[2,3]          - r  c  3    single element
+  # df[1:150,1:10]   - r  c  3    rectangular slice
+  # df[a<b,]         - f  na 3    boolean row slice
+  # df[a<b,c]        - f  c  3    boolean row slice
+  # df[1,-1]         - r  c  3    selection of first row minus the first column
+  # df[-1,-1]        - r  c  3    get rid of first row and first column
+  # df[-1,1]         - r  c  3    get rid of first row and keep first column
+  # df[-1:-20,-1:-3] - r  c  3    get rid of first 20 rows and first 3 columns
+  # df[-1:-20,1:3]   - r  c  3    get rid of first 20 rows and keep first 3 columns
+  # df[1:20,-1:-3]   - r  c  3    keep first 20 rows and remove first 3 columns
+
+  #Some type checking
+  if(!missing(col) && !(base::is.character(col)) && !(base::is.logical(col)) && !(base::is.numeric(col)) && !(is.h2o(col))){
+    stop(paste0("Column must be selected as an integer index, character, logical, or H2OFrame but got ", class(col)))
+  }
+  if(!missing(row) && !(base::is.character(row)) && !(base::is.logical(row)) && !(base::is.numeric(row))  && !(is.h2o(row))){
+    stop(paste0("Row must be selected as an integer index, character, logical, or H2OFrame but got ", class(row)))
+  }
+  # Boolean check for negative indexes
+  is_neg_idx <- !missing(col) && !missing(row) && !is.H2OFrame(row) && !is.H2OFrame(col) && ((is.numeric(col) && col <= 0) || (is.numeric(row) && row <= 0))
+  # Have a row & column selector with negative col or negative row indexes?
+  if(is_neg_idx){
+    if( is.logical(col) ) { # Columns by boolean choice
+      col <- which(col)     # Pick out all the TRUE columns by index
+    }else if (base::is.character(col)) {
+      idx <- match(col, colnames(data))
+      if (any(is.na(idx)))
+        stop(paste0("No column(s) '", paste(col[is.na(idx)], collapse=","), "' found in ",
+        paste(colnames(data), collapse = ",")))
+        col <- idx
+    }
+    idx <- .row.col.selector(col,envir=parent.frame())
+    data <- .newExpr("cols",data,idx) # Column selector
+    row <- .row.col.selector(substitute(row), row,envir=parent.frame())
+    data <- .newExpr("rows",data,row) # Row selector
+  }
+
+  is1by1 <- !missing(col) && !missing(row) && !is.H2OFrame(row) && length(col) == 1 && length(row) == 1 && !(is_neg_idx)
   if( nargs() == 2 &&   # Only row, no column; nargs==2 distinguishes "df[2,]" (row==2) from "df[2]" (col==2)
       # is.char tells cars["cylinders"], or if there are multiple columns.
       # Single column with numeric selector is row: car$cylinders[100]
-      (base::is.character(row) || ncol(data) > 1) ) {
+      (base::is.character(row) || ncol(data) > 1) && !(is_neg_idx)) {
     # Row is really column: cars[3] or cars["cylinders"] or cars$cylinders
     col <- row
     row <- NA
   }
-  if( !missing(col) ) {     # Have a column selector?
+
+  # Have a column selector?
+  if( !missing(col) && !(is_neg_idx)) {
     if( is.logical(col) ) { # Columns by boolean choice
       col <- which(col)     # Pick out all the TRUE columns by index
     } else if (base::is.character(col)) {
@@ -1192,12 +1230,14 @@ NULL
     idx <- .row.col.selector(col,envir=parent.frame()) # Generic R expression
     data <- .newExpr("cols",data,idx) # Column selector
   }
+
   # Have a row selector?
-  if( !missing(row) && (is.H2OFrame(row) || !is.na(row)) ) {
+  if( !missing(row) && (is.H2OFrame(row) || !is.na(row)) && !(is_neg_idx)) {
     if( !is.H2OFrame(row) )    # Generic R expression
       row <- .row.col.selector(substitute(row), row,envir=parent.frame())
     data <- .newExpr("rows",data,row) # Row selector
   }
+
   if( is1by1 ) .fetch.data(data,1L)[[1]]
   else         data
 }
@@ -1406,7 +1446,16 @@ names.H2OFrame <- function(x) .Primitive("names")(.fetch.data(x,1L))
 #' @param prefix for created names.
 #' @export
 colnames <- function(x, do.NULL=TRUE, prefix = "col") {
-  if( !is.H2OFrame(x) ) return(base::colnames(x,do.NULL,prefix))
+  if (is.data.frame(x)) {
+    # PUBDEV-3821 workaround for slow do.NULL=F
+    nm <- names(x)
+    if (do.NULL || !is.null(nm))
+      return(nm)
+    else
+      return(paste0(prefix, seq_along(x)))
+  }
+  if (!is.H2OFrame(x))
+    return(base::colnames(x,do.NULL=do.NULL,prefix=prefix))
   return(names.H2OFrame(x))
 }
 
@@ -1733,6 +1782,7 @@ str.H2OFrame <- function(object, ..., cols=FALSE) {
 #' for(i in 1:ncol(prostate.hex))
 #'    quantile(prostate.hex[,i])
 #' }
+#' @importFrom utils capture.output
 #' @export
 h2o.quantile <- function(x,
                      # AUTOGENERATED params
@@ -1784,6 +1834,7 @@ h2o.quantile <- function(x,
 }
 
 #' @rdname h2o.quantile
+#' @importFrom utils capture.output
 #' @export
 quantile.H2OFrame <- h2o.quantile
 
@@ -3757,6 +3808,18 @@ h2o.isax <- function(x, num_words, max_cardinality, optimize_card = FALSE){
 h2o.strsplit <- function(x, split) { .newExpr("strsplit", x, .quote(split)) }
 
 #'
+#' Tokenize String
+#'
+#' h2o.tokenize is similar to h2o.strsplit, the difference between them is that h2o.tokenize will store the tokenized
+#' text into a single column making it easier for additional processing (filtering stop words, word2vec algo, ...).
+#'
+#' @param x The column or columns whose strings to tokenize.
+#' @param split The regular expression to split on.
+#' @return An H2OFrame with a single column representing the tokenized Strings. Original rows of the input DF are separated by NA.
+#' @export
+h2o.tokenize <- function(x, split) { .newExpr("tokenize", x, .quote(split)) }
+
+#'
 #' To Lower
 #'
 #' @param x An H2OFrame object whose strings should be lower'd
@@ -3769,6 +3832,38 @@ h2o.tolower <- function(x) .newExpr("tolower", x)
 #' @param x An H2OFrame object whose strings should be upper'd
 #' @export
 h2o.toupper <- function(x) .newExpr("toupper", x)
+
+#'
+#' Searches for matches to argument `pattern` within each element
+#'  of a string column.
+#'
+#' This function has similar semantics as R's native grep function
+#' and it supports a subset of its parameters. Default behavior is
+#' to return indices of the elements matching the pattern. Parameter
+#' `output.logical` can be used to return a logical vector indicating
+#' if the element matches the pattern (1) or not (0).
+#'
+#' @param pattern A character string containing a regular expression.
+#' @param x An H2O frame that wraps a single string column.
+#' @param ignore.case If TRUE case is ignored during matching.
+#' @param invert Identify elements that do not match the pattern.
+#' @param output.logical If TRUE returns logical vector of indicators instead of list of matching positions
+#' @return H2OFrame holding the matching positions or a logical vector
+#' if `output.logical` is enabled.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' addresses <- as.h2o(c("2307", "Leghorn St", "Mountain View", "CA", "94043"))
+#' zip.codes <- addresses[h2o.grep("[0-9]{5}", addresses, output.logical = TRUE),]
+#' }
+#' @export
+h2o.grep <- function(pattern, x, ignore.case = FALSE, invert = FALSE, output.logical = FALSE) {
+  result <- .newExpr("grep", x, .quote(pattern), ignore.case, invert, output.logical)
+  if (! output.logical)
+    result <- result + 1 # R indices start at 1
+  result
+}
 
 #'
 #' String Substitute

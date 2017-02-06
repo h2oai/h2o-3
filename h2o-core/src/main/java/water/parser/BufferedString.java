@@ -34,8 +34,8 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
 
    public final AutoBuffer write_impl(AutoBuffer ab) {
      if( _buf == null ) return ab.putInt(-1);
-     ab.putInt(_buf.length);
-     return ab.putA1(_buf,_off,_len);
+     ab.putInt(_len);
+     return ab.putA1(_buf,_off,_off+_len);
    }
 
   public final BufferedString read_impl(AutoBuffer ab){
@@ -83,7 +83,7 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
   // TODO(Vlad): figure out what to do about the buffer being not UTF-8 (who guarantees?)
   @Override
   public String toString() {
-    return new String(_buf, Math.max(0, _off), Math.min(_buf.length, _len), Charsets.UTF_8);
+    return _buf == null ? null : new String(_buf, Math.max(0, _off), Math.min(_buf.length, _len), Charsets.UTF_8);
   }
 
   public String bytesToString() {

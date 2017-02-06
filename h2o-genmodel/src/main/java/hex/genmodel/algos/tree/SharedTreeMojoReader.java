@@ -20,10 +20,20 @@ public abstract class SharedTreeMojoReader<M extends SharedTreeMojoModel> extend
     _model._ntree_groups = readkv("n_trees");
     _model._ntrees_per_group = tpc;
     _model._compressed_trees = new byte[_model._ntree_groups * tpc][];
+    _model._mojo_version = readkv("mojo_version");
+
+    // In mojos v=1.0 this info wasn't saved.
+    if (!_model._mojo_version.equals(1.0)) {
+      _model._compressed_trees_aux = new byte[_model._ntree_groups * tpc][];
+    }
 
     for (int j = 0; j < _model._ntree_groups; j++)
-      for (int i = 0; i < tpc; i++)
+      for (int i = 0; i < tpc; i++) {
         _model._compressed_trees[_model.treeIndex(j, i)] = readblob(String.format("trees/t%02d_%03d.bin", i, j));
+        if (_model._compressed_trees_aux!=null) {
+          _model._compressed_trees_aux[_model.treeIndex(j, i)] = readblob(String.format("trees/t%02d_%03d_aux.bin", i, j));
+        }
+      }
   }
 
 }

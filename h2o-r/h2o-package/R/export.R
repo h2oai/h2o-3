@@ -135,10 +135,10 @@ h2o.downloadCSV <- function(data, filename) {
 #' # library(h2o)
 #' # h2o.init()
 #' # prostate.hex <- h2o.importFile(path = paste("https://raw.github.com",
-#' #   "h2oai/h2o-2/master/smalldata/logreg/prostate.csv", sep = "/"),
-#' #   destination_frame = "prostate.hex")
+#' #    "h2oai/h2o-2/master/smalldata/logreg/prostate.csv", sep = "/"),
+#' #    destination_frame = "prostate.hex")
 #' # prostate.glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
-#' #   training_frame = prostate.hex, family = "binomial", alpha = 0.5)
+#' #    training_frame = prostate.hex, family = "binomial", alpha = 0.5)
 #' # h2o.saveModel(object = prostate.glm, path = "/Users/UserName/Desktop", force=TRUE)
 #' }
 #' @export
@@ -148,5 +148,35 @@ h2o.saveModel <- function(object, path="", force=FALSE) {
   if(!is.logical(force) || length(force) != 1L || is.na(force)) stop("`force` must be TRUE or FALSE")
   path <- file.path(path, object@model_id)
   res <- .h2o.__remoteSend(paste0("Models.bin/",object@model_id),dir=path,force=force,h2oRestApiVersion=99)
+  res$dir
+}
+
+#' Save an H2O Model Object as Mojo to Disk
+#'
+#' Save an MOJO (Model Object, Optimized) to disk.
+#'
+#' MOJO will download as a zip file. In the case of existing files \code{force = TRUE}
+#' will overwrite the file. Otherwise, the operation will fail.
+#'
+#' @param object an \linkS4class{H2OModel} object.
+#' @param path string indicating the directory the model will be written to.
+#' @param force logical, indicates how to deal with files that already exist.
+#' @seealso \code{\link{h2o.saveModel}} for saving a model to disk as a binary object.
+#' @examples
+#' \dontrun{
+#' # library(h2o)
+#' # h2o.init()
+#' # prostate.hex <- h2o.uploadFile(path = system.file("extdata", "prostate.csv", package="h2o"))
+#' # prostate.glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
+#' #                         training_frame = prostate.hex, family = "binomial", alpha = 0.5)
+#' # h2o.saveMojo(object = prostate.glm, path = "/Users/UserName/Desktop", force=TRUE)
+#' }
+#' @export
+h2o.saveMojo <- function(object, path="", force=FALSE) {
+  if(!is(object, "H2OModel")) stop("`object` must be an H2OModel object")
+  if(!is.character(path) || length(path) != 1L || is.na(path)) stop("`path` must be a character string")
+  if(!is.logical(force) || length(force) != 1L || is.na(force)) stop("`force` must be TRUE or FALSE")
+  path <- file.path(path, "/" ,object@model_id, ".zip", fsep = "")
+  res <- .h2o.__remoteSend(paste0("Models.mojo/",object@model_id),dir=path,force=force,h2oRestApiVersion=99)
   res$dir
 }

@@ -6,7 +6,7 @@ import water.fvec.Frame;
 import water.parser.BufferedString;
 
 import java.io.IOException;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.ByteChannel;
 import java.util.UUID;
 
 import static water.ExternalFrameUtils.*;
@@ -21,7 +21,7 @@ final class ExternalFrameReaderBackend {
      * @param channel socket channel originating from non-h2o node
      * @param initAb {@link AutoBuffer} containing information necessary for preparing backend for reading
      */
-    static void handleReadingFromChunk(SocketChannel channel, AutoBuffer initAb) throws IOException {
+    static void handleReadingFromChunk(ByteChannel channel, AutoBuffer initAb) throws IOException {
         // receive required information
         String frameKey = initAb.getStr();
         int chunkIdx = initAb.getInt();
@@ -45,7 +45,7 @@ final class ExternalFrameReaderBackend {
                     ExternalFrameUtils.sendNA(ab, channel, expectedTypes[i]);
                 } else {
                     final Chunk chnk = chunks[selectedColumnIndices[i]];
-                    switch (expectedTypes[selectedColumnIndices[i]]) {
+                    switch (expectedTypes[i]) {
                         case EXPECTED_BOOL:
                             ExternalFrameUtils.sendBoolean(ab, channel, (byte)chnk.at8(rowIdx));
                             break;

@@ -4,8 +4,10 @@ import hex.DataInfo;
 import hex.ModelMetrics;
 import water.Job;
 import water.MRTask;
+import water.MemoryManager;
 import water.fvec.Chunk;
 import water.fvec.NewChunk;
+import water.util.ArrayUtils;
 import water.util.FrameUtils;
 
 import java.util.Arrays;
@@ -22,15 +24,80 @@ public class GLMScore extends MRTask<GLMScore> {
   final String[] _domain;
   final boolean _computeMetrics;
   final boolean _generatePredictions;
+  transient double [][] _vcov;
+  transient double [] _tmp;
+  transient double [] _eta;
+  final int _nclasses;
+  private final double []_beta;
+  private final double [][] _beta_multinomial;
+  private final double _defaultThreshold;
+
+
 
   public GLMScore(Job j, GLMModel m, DataInfo dinfo, String[] domain, boolean computeMetrics, boolean generatePredictions) {
     _j = j;
     _m = m;
-    _dinfo = dinfo;
     _computeMetrics = computeMetrics;
     _sparse = FrameUtils.sparseRatio(dinfo._adaptedFrame) < .5;
     _domain = domain;
     _generatePredictions = generatePredictions;
+    _m._parms = m._parms;
+    _nclasses = m._output.nclasses();
+    if(_m._parms._family == GLMModel.GLMParameters.Family.multinomial){
+      _beta = null;
+      _beta_multinomial = m._output._global_beta_multinomial;
+    } else {
+      double [] beta = m.beta();
+      int [] ids = new int[beta.length-1];
+      int k = 0;
+      for(int i = 0; i < beta.length-1; ++i){
+        if(beta[i] != 0) ids[k++] = i;
+      }
+      if(k < beta.length-1) {
+        ids = Arrays.copyOf(ids,k);
+        dinfo = dinfo.filterExpandedColumns(ids);
+        double [] beta2 = MemoryManager.malloc8d(ids.length+1);
+        int l = 0;
+        for(int x:ids)
+          beta2[l++] = beta[x];
+        beta2[l] = beta[beta.length-1];
+        beta = beta2;
+      }
+      _beta_multinomial = null;
+      _beta = beta;
+    }
+    _dinfo = dinfo;
+    _dinfo._valid = true; // marking dinfo as validation data set disables an assert on unseen levels (which should not happen in train)
+    _defaultThreshold = m.defaultThreshold();
+  }
+
+  public double [] scoreRow(DataInfo.Row r, double o, double [] preds) {
+    if(_m._parms._family == GLMModel.GLMParameters.Family.multinomial) {
+      double[] eta = _eta;
+      final double[][] bm = _beta_multinomial;
+      double sumExp = 0;
+      double maxRow = 0;
+      for (int c = 0; c < bm.length; ++c) {
+        eta[c] = r.innerProduct(bm[c]) + o;
+        if(eta[c] > maxRow)
+          maxRow = eta[c];
+      }
+      for (int c = 0; c < bm.length; ++c)
+        sumExp += eta[c] = Math.exp(eta[c]-maxRow); // intercept
+      sumExp = 1.0 / sumExp;
+      for (int c = 0; c < bm.length; ++c)
+        preds[c + 1] = eta[c] * sumExp;
+      preds[0] = ArrayUtils.maxIndex(eta);
+    } else {
+      double mu = _m._parms.linkInv(r.innerProduct(_beta) + o);
+      if (_m._parms._family == GLMModel.GLMParameters.Family.binomial) { // threshold for prediction
+        preds[0] = mu >= _defaultThreshold?1:0;
+        preds[1] = 1.0 - mu; // class 0
+        preds[2] = mu; // class 1
+      } else
+        preds[0] = mu;
+    }
+    return preds;
   }
 
   private void processRow(DataInfo.Row r, float [] res, double [] ps, NewChunk [] preds, int ncols) {
@@ -40,17 +107,32 @@ public class GLMScore extends MRTask<GLMScore> {
     } else if(r.weight == 0) {
       Arrays.fill(ps,0);
     } else {
-      _m.scoreRow(r, r.offset, ps);
+      scoreRow(r, r.offset, ps);
       if (_computeMetrics && !r.response_bad)
         _mb.perRow(ps, res, r.weight, r.offset, _m);
     }
-    if (_generatePredictions)
+    if (_generatePredictions) {
       for (int c = 0; c < ncols; c++)  // Output predictions; sized for train only (excludes extra test classes)
         preds[c].addNum(ps[c]);
+      if(_vcov != null) {
+        if(_m._output._dinfo._predictor_transform == DataInfo.TransformType.STANDARDIZE){
+          r.standardize(_m._output._dinfo._normSub,_m._output._dinfo._normMul);
+        }
+        preds[ncols].addNum(Math.sqrt(r.innerProduct(r.mtrxMul(_vcov, _tmp))));
+      }
+    }
   }
   public void map(Chunk[] chks, NewChunk[] preds) {
     if (isCancelled() || _j != null && _j.stop_requested()) return;
+    if(_m._parms._family == GLMModel.GLMParameters.Family.multinomial)
+      _eta = MemoryManager.malloc8d(_nclasses);
     double[] ps;
+    _vcov = _m._output._vcov;
+    if(_generatePredictions){
+      if(_vcov != null){
+        _tmp = MemoryManager.malloc8d(_vcov.length);
+      }
+    }
     if (_computeMetrics) {
       _mb = _m.makeMetricBuilder(_domain);
       ps = _mb._work;  // Sized for the union of test and train classes

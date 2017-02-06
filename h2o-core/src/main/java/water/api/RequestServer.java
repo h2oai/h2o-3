@@ -80,6 +80,11 @@ public class RequestServer extends HttpServlet {
   public static ArrayList<Route> routes() { return routesList; }
   public static Route lookupRoute(RequestUri uri) { return routesTree.lookup(uri, null); }
 
+  private static HttpLogFilter[] _filters=new HttpLogFilter[]{defaultFilter()};
+  public static void setFilters(HttpLogFilter... filters) {
+    _filters=filters;
+  }
+
   /**
    * Some HTTP response status codes
    */
@@ -187,6 +192,23 @@ public class RequestServer extends HttpServlet {
       routesList.add(route);
       return route;
     } catch (MalformedURLException e) {
+      throw H2O.fail(e.getMessage());
+    }
+  }
+
+  /**
+   * Register an HTTP request handler for the given URL pattern.
+   *
+   * @param method_uri combined method/url pattern of the endpoint, for
+   *                   example: {@code "GET /3/Jobs/{job_id}"}
+   * @param handler_clz class of the handler (should inherit from
+   *                    {@link RestApiHandler}).
+   */
+  public static Route registerEndpoint(String method_uri, Class<? extends RestApiHandler> handler_clz) {
+    try {
+      RestApiHandler handler = handler_clz.newInstance();
+      return registerEndpoint(handler.name(), method_uri, handler_clz, null, handler.help());
+    } catch (Exception e) {
       throw H2O.fail(e.getMessage());
     }
   }
@@ -457,25 +479,44 @@ public class RequestServer extends HttpServlet {
    * Log the request (unless it's an overly common one).
    */
   private static void maybeLogRequest(RequestUri uri, Properties header, Properties parms) {
+    for(HttpLogFilter f: _filters)
+      if( f.filter(uri,header,parms) ) return; // do not log anything if filtered
     String url = uri.getUrl();
-    if (url.endsWith(".css") ||
-        url.endsWith(".js") ||
-        url.endsWith(".png") ||
-        url.endsWith(".ico")) return;
-
-    String[] path = uri.getPath();
-    if (path[2].equals("Cloud") ||
-        path[2].equals("Jobs") && uri.isGetMethod() ||
-        path[2].equals("Log") ||
-        path[2].equals("Progress") ||
-        path[2].equals("Typeahead") ||
-        path[2].equals("WaterMeterCpuTicks")) return;
-
     Log.info(uri + ", parms: " + parms);
     GAUtils.logRequest(url, header);
   }
 
+  /**
+   * Create a new HttpLogFilter.
+   *
+   * Implement this interface to create new filters used by maybeLogRequest
+   */
+  public interface HttpLogFilter {
+    boolean filter(RequestUri uri, Properties header, Properties parms);
+  }
 
+  /**
+   * Provide the default filters for H2O's HTTP logging.
+   * @return an array of HttpLogFilter instances
+   */
+  public static HttpLogFilter defaultFilter() {
+    return new HttpLogFilter() { // this is much prettier with 1.8 lambdas
+      @Override public boolean filter(RequestUri uri, Properties header, Properties parms) {
+        String url = uri.getUrl();
+        if (url.endsWith(".css") ||
+          url.endsWith(".js")  ||
+          url.endsWith(".png") ||
+          url.endsWith(".ico")) return true;
+        String[] path = uri.getPath();
+        return path[2].equals("Cloud") ||
+          path[2].equals("Jobs") && uri.isGetMethod() ||
+          path[2].equals("Log") ||
+          path[2].equals("Progress") ||
+          path[2].equals("Typeahead") ||
+          path[2].equals("WaterMeterCpuTicks");
+      }
+    };
+  }
 
   //------ Lookup tree for Routes --------------------------------------------------------------------------------------
 

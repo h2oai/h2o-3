@@ -4,7 +4,7 @@ package water.rapids.ast.prims.math;
  */
 public class AstNot extends AstUniOp {
   public String str() {
-    return "!!";
+    return "not";
   }
 
   public double op(double d) {

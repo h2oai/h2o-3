@@ -6,6 +6,12 @@ Data Manipulation
 
 This section provides examples of common tasks performed when preparing data for machine learning. These examples are run on a local cluster.
 
+**Note**: The examples in this section include datasets that are pulled from GitHub and S3. Alternatively, you can run the following command from within the H2O repository on your local machine to retrieve all datasets in the smalldata folder:
+
+ ::
+  
+  ./gradlew syncSmalldata
+
 .. toctree::
    :maxdepth: 1
 

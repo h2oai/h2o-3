@@ -43,6 +43,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
                    data.frame(type = "list",      scalar = FALSE, row.names = "Key<Frame>[]", stringsAsFactors = FALSE),
                    data.frame(type = "character", scalar = TRUE,  row.names = "Key<Key>",     stringsAsFactors = FALSE),
                    data.frame(type = "H2OModel",  scalar = TRUE,  row.names = "Key<Model>",   stringsAsFactors = FALSE),
+                   data.frame(type = "list",      scalar = FALSE,  row.names = "Key<Model>[]", stringsAsFactors = FALSE),
                    data.frame(type = "numeric",   scalar = TRUE,  row.names = "int",          stringsAsFactors = FALSE),
                    data.frame(type = "numeric",   scalar = FALSE, row.names = "int[]",        stringsAsFactors = FALSE),
                    data.frame(type = "numeric",   scalar = TRUE,  row.names = "long",         stringsAsFactors = FALSE),
@@ -96,10 +97,8 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 #' Model Endpoint
 .h2o.__MODELS         <- "Models"
 
-#' Word To Vector Endpoints
-.h2o.__W2V            <- "Word2Vec"
-.h2o.__SYNONYMS       <- "Synonyms"
-.h2o.__TRANSFORM      <- "Transform"
+#' Word2Vec Endpoints
+.h2o.__W2V_SYNONYMS       <- "Word2VecSynonyms"
 
 #' Model Metrics Endpoint
 .h2o.__MODEL_METRICS <- function(model,data) {

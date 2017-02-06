@@ -14,7 +14,7 @@ This option specifies the relative change of the column sampling rate for every 
 - level 2: ``col_sample_rate`` * factor^2
 - level 3: ``col_sample_rate`` * factor^3
 
-*where factor is the ``col_sample_rate_change_per_level``
+where factor is the ``col_sample_rate_change_per_level``
 
 As indicated above, this option is multiplicative with ``col_sample_rate``. The effective sampling rate at a given level is:
 
@@ -65,8 +65,8 @@ Example
 	                        validation_frame = valid, col_sample_rate_change_per_level = .9 , 
 	                        seed = 1234)
 
-	# print the value used and AUC for the validation data
-	print(h2o.auc(airlines.gbm, train = TRUE))
+	# print the AUC for the validation data
+	print(h2o.auc(airlines.gbm, valid = TRUE))
 
 
 	# Example of values to grid over for `col_sample_rate_change_per_level`

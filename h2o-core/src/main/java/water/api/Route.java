@@ -1,16 +1,16 @@
 package water.api;
 
-import java.lang.reflect.Method;
-import java.util.Arrays;
-
 import water.H2O;
 import water.Iced;
 import water.util.MarkdownBuilder;
 
+import java.lang.reflect.Method;
+import java.util.Arrays;
+
 /**
 * Routing of an http request to a handler method, with path parameter parsing.
 */
-final public class Route extends Iced {
+public final class Route extends Iced {
   static final int MIN_VERSION = 1;
 
   // TODO: handlers are now stateless, so create a single instance and stash it here
@@ -44,7 +44,7 @@ final public class Route extends Iced {
                Class<? extends Handler> handler_class,
                String handler_method,
                HandlerFactory handler_factory) {
-    assert uri != null && handler_class != null && handler_method != null;
+    assert uri != null && handler_class != null;
     assert handler_factory != null : "handler_factory should not be null, caller has to pass it!";
     _uri = uri;
     _http_method = uri.getMethod();
@@ -52,7 +52,7 @@ final public class Route extends Iced {
     _summary = summary;
     _api_name = api_name;
     _handler_class = handler_class;
-    _handler_method = resolveMethod(handler_class, handler_method);
+    _handler_method = resolveMethod(handler_class, handler_method == null? "exec" : handler_method);
     _path_params = uri.getParamsList();
     _handler_factory = handler_factory;
     try {

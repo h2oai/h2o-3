@@ -116,12 +116,15 @@ public class main {
     EasyPredictModelWrapper model = new EasyPredictModelWrapper(rawModel);
     //
     // By default, unknown categorical levels throw PredictUnknownCategoricalLevelException.
-    // Optionally configure the wrapper to treat unknown categorical levels as N/A instead:
+    // Optionally configure the wrapper to treat unknown categorical levels as N/A instead
+    // and strings that cannot be converted to numbers also to N/As:
     //
     //     EasyPredictModelWrapper model = new EasyPredictModelWrapper(
-    //                                         new EasyPredictModelWrapper.Config()
-    //                                             .setModel(rawModel)
-    //                                             .setConvertUnknownCategoricalLevelsToNa(true));
+    //         new EasyPredictModelWrapper.Config()
+    //             .setModel(rawModel)
+    //             .setConvertUnknownCategoricalLevelsToNa(true)
+    //             .setConvertInvalidNumbersToNa(true)
+    //     );
 
     RowData row = new RowData();
      row.put("Year", "1987");
@@ -340,7 +343,7 @@ tree built in the model. Note that each tree file is saved as a binary file type
 
 <h5>Build and extract a model using R</h5>
 
-MOJOs are only supported for GBM and DRF models.
+MOJOs are only supported for GBM, DRF, and GLM models.
 
 <ol><li>Open a terminal window and start r.</li>
     <li>Run the following commands to build a simple GBM model.

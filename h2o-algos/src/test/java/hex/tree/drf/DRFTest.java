@@ -277,6 +277,22 @@ public class DRFTest extends TestUtil {
             s("0", "1"));
   }
 
+  @Test public void test30kUnseenLevels() throws Throwable {
+    basicDRFTestOOBE_Regression(
+            "./smalldata/gbm_test/30k_cattest.csv", "cat30k",
+            new PrepData() {
+              @Override
+              int prep(Frame fr) {
+                return fr.find("C3");
+              }
+            },
+            50, //ntrees
+            20, //bins
+            10, //min_rows
+            5, //max_depth
+            0.25040633586487);
+  }
+
   @Test public void testProstate() throws Throwable {
     basicDRFTestOOBE_Classification(
             "./smalldata/prostate/prostate.csv.zip", "prostate2.zip.hex",
@@ -333,6 +349,36 @@ public class DRFTest extends TestUtil {
             1,
             10,
             0.0);
+  }
+  @Test public void testAlphabetRegression2() throws Throwable {
+    basicDRFTestOOBE_Regression(
+            "./smalldata/gbm_test/alphabet_cattest.csv", "alphabetRegression2.hex",
+            new PrepData() {
+              @Override
+              int prep(Frame fr) {
+                return fr.find("y");
+              }
+            },
+            1,
+            26, // enough bins to resolve the alphabet
+            1,
+            1, // depth 1 is enough since nbins_cats == nbins == 26 (enough)
+            0.0);
+  }
+  @Test public void testAlphabetRegression3() throws Throwable {
+    basicDRFTestOOBE_Regression(
+            "./smalldata/gbm_test/alphabet_cattest.csv", "alphabetRegression3.hex",
+            new PrepData() {
+              @Override
+              int prep(Frame fr) {
+                return fr.find("y");
+              }
+            },
+            1,
+            25, // not enough bins to resolve the alphabet
+            1,
+            1, // depth 1 is not enough since nbins_cats == nbins < 26
+            0.24007225096411577);
   }
 
   @Ignore  //1-vs-5 node discrepancy (parsing into different number of chunks?)
@@ -420,6 +466,11 @@ public class DRFTest extends TestUtil {
       DRF job = new DRF(drf);
       // Get the model
       model = job.trainModel().get();
+
+//      StreamingSchema ss = new StreamingSchema(model.getMojo(), "model.zip");
+//      FileOutputStream fos = new FileOutputStream("model.zip");
+//      ss.getStreamWriter().writeTo(fos);
+
       Log.info(model._output);
       Assert.assertTrue(job.isStopped()); //HEX-1817
 
@@ -449,7 +500,7 @@ public class DRFTest extends TestUtil {
         Log.info("\nOOB Training CM:\n" + mm.cm().toASCII());
         Log.info("\nTraining CM:\n" + hex.ModelMetrics.getFromDKV(model, test).cm().toASCII());
       } else if (!classification) {
-        Assert.assertTrue("Expected: " + expMSE + ", Got: " + mm.mse(), expMSE == mm.mse());
+        Assert.assertTrue("Expected: " + expMSE + ", Got: " + mm.mse(), Math.abs(expMSE-mm.mse()) <= 1e-10*Math.abs(expMSE+mm.mse()));
         Log.info("\nOOB Training MSE: " + mm.mse());
         Log.info("\nTraining MSE: " + hex.ModelMetrics.getFromDKV(model, test).mse());
       }
@@ -741,7 +792,7 @@ public class DRFTest extends TestUtil {
       Log.info("trial: " + i + " -> MSE: " + mses[i]);
     }
     for (int i=0; i<mses.length; ++i) {
-      assertEquals(0.21270754031847988, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
+      assertEquals(0.20377446328850304, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
     }
   }
 

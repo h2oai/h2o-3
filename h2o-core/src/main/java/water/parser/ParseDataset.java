@@ -329,7 +329,6 @@ public final class ParseDataset {
 
     ParseWriter.ParseErr [] errs = ArrayUtils.append(setup._errs,mfpt._errors);
     if(errs.length > 0) {
-      String[] warns = new String[errs.length];
       // compute global line numbers for warnings/errs
       HashMap<String, Integer> fileChunkOffsets = new HashMap<>();
       for (int i = 0; i < mfpt._fileChunkOffsets.length; ++i)
@@ -342,18 +341,20 @@ public final class ParseDataset {
           errs[i]._lineNum = errs[i]._gLineNum - espc[espcOff];
         }
       }
-      SortedSet s = new TreeSet<>(new Comparator<ParseWriter.ParseErr>() {
+      SortedSet<ParseWriter.ParseErr> s = new TreeSet<>(new Comparator<ParseWriter.ParseErr>() {
         @Override
         public int compare(ParseWriter.ParseErr o1, ParseWriter.ParseErr o2) {
           long res = o1._gLineNum - o2._gLineNum;
+          if (res == 0) res = o1._byteOffset - o2._byteOffset;
           if (res == 0) return o1._err.compareTo(o2._err);
           return (int) res < 0 ? -1 : 1;
         }
       });
-      for(ParseWriter.ParseErr e:errs)s.add(e);
-      errs = (ParseWriter.ParseErr[]) s.toArray(new ParseWriter.ParseErr[s.size()]);
-      for (int i = 0; i < errs.length; ++i)
-        Log.warn(warns[i] = errs[i].toString());
+      Collections.addAll(s, errs);
+      String[] warns = new String[s.size()];
+      int i = 0;
+      for (ParseWriter.ParseErr err : s)
+        Log.warn(warns[i++] = err.toString());
       job.setWarnings(warns);
     }
     job.update(0,"Calculating data summary.");

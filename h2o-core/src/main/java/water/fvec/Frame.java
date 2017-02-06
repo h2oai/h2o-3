@@ -109,7 +109,9 @@ public class Frame extends Lockable<Frame> {
 
     // Require all Vecs already be installed in the K/V store
     for( Vec vec : vecs ) DKV.prefetch(vec._key);
-    for( Vec vec : vecs ) assert DKV.get(vec._key) != null : " null vec: "+vec._key;
+    for( Vec vec : vecs ) {
+      assert DKV.get(vec._key) != null : " null vec: "+vec._key;
+    }
 
     // Always require names
     if( names==null ) {         // Make default names, all known to be unique
@@ -368,7 +370,7 @@ public class Frame extends Lockable<Frame> {
   }
 
   /** Pair of (column name, Frame key). */
-  public static class VecSpecifier extends Iced {
+  public static class VecSpecifier extends Iced implements Vec.Holder {
     public Key<Frame> _frame;
     public String _column_name;
 
@@ -819,6 +821,13 @@ public class Frame extends Lockable<Frame> {
     return v;
   }
 
+  /**
+   * Remove all the vecs from frame.
+   */
+  public Vec[] removeAll() {
+    return remove(0, _names.length);
+  }
+
   /** Remove given interval of columns from frame.  Motivated by R intervals.
    *  @param startIdx - start index of column (inclusive)
    *  @param endIdx - end index of column (exclusive)
@@ -1118,6 +1127,7 @@ public class Frame extends Lockable<Frame> {
 
   public String toString(long off, int len) { return toTwoDimTable(off, len).toString(); }
   public String toString(long off, int len, boolean rollups) { return toTwoDimTable(off, len, rollups).toString(); }
+  public TwoDimTable toTwoDimTable() { return toTwoDimTable(0,10); }
   public TwoDimTable toTwoDimTable(long off, int len ) { return toTwoDimTable(off,len,true); }
   public TwoDimTable toTwoDimTable(long off, int len, boolean rollups ) {
     if( off > numRows() ) off = numRows();

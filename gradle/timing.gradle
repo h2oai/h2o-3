@@ -26,7 +26,9 @@ class TimingsListener implements TaskExecutionListener, BuildListener {
         def secs = (double)(clock.timeInMs / 1000.0)
         def timing = new Timing(secs, task.path)
         timings.add(timing)
-        task.project.logger.warn "${task.path} took ${secs} secs"
+        if (secs >= 1) {
+            task.project.logger.warn "${task.path} took ${secs} secs"
+        }
     }
 
     @Override
