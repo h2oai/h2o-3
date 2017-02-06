@@ -403,7 +403,7 @@ public class Vec extends Keyed<Vec> {
     for(Vec v:res)
       DKV.put(v,fs);
     fs.blockForPending();
-    System.out.println("made vecs " + Arrays.toString(res));
+//    System.out.println("made vecs " + Arrays.toString(res));
     return res;
   }
 

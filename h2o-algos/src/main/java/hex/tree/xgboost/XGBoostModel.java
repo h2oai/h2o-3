@@ -1,19 +1,23 @@
 package hex.tree.xgboost;
 
 import hex.*;
+import hex.genmodel.GenModel;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import water.*;
+import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.Log;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import static hex.tree.xgboost.XGBoost.convertFrametoDMatrix;
 import static hex.tree.xgboost.XGBoost.makeDataInfo;
 
 public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> {
@@ -257,10 +261,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   private Frame makePreds(Booster booster, DMatrix data, ModelMetrics[] mm) throws XGBoostError {
     Frame predFrame;
-    float[][] preds = booster.predict(data);
+    final float[][] preds = booster.predict(data);
     Vec resp = Vec.makeVec(data.getLabel(), Vec.newKey());
     float[] weights = data.getWeight();
-    if (_output.nclasses()<=2) {
+    if (_output.nclasses()==1) {
       double[] dpreds = new double[preds.length];
       for (int j = 0; j < dpreds.length; ++j)
         dpreds[j] = preds[j][0];
@@ -268,29 +272,66 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
         for (int j = 0; j < dpreds.length; ++j)
           assert weights[j] == 1.0;
       Vec pred = Vec.makeVec(dpreds, Vec.newKey());
-      if (_output.nclasses() == 1) {
-        mm[0] = ModelMetricsRegression.make(pred, resp, DistributionFamily.gaussian);
-      } else {
-        mm[0] = ModelMetricsBinomial.make(pred, resp);
-      }
+      mm[0] = ModelMetricsRegression.make(pred, resp, DistributionFamily.gaussian);
       predFrame = new Frame(Key.<Frame>make(), new Vec[]{pred}, true);
+    }
+    else if (_output.nclasses()==2) {
+      double[] dpreds = new double[preds.length];
+      for (int j = 0; j < dpreds.length; ++j)
+        dpreds[j] = preds[j][0];
+      if (weights.length>0)
+        for (int j = 0; j < dpreds.length; ++j)
+          assert weights[j] == 1.0;
+      Vec p1 = Vec.makeVec(dpreds, Vec.newKey());
+      Vec p0 = p1.makeCopy();
+      Vec label = p1.makeCon(0., Vec.T_CAT);
+      new MRTask() {
+        public void map(Chunk l, Chunk p0, Chunk p1) {
+          for (int i=0; i<l._len; ++i) {
+            double p = p1.atd(i);
+            p0.set(i, 1. - p);
+            double[] row = new double[]{0, 1-p, p};
+            l.set(i, hex.genmodel.GenModel.getPrediction(row, _output._priorClassDist, null, defaultThreshold()));
+          }
+        }
+      }.doAll(label,p0,p1);
+      mm[0] = ModelMetricsBinomial.make(p1, resp);
+      label.setDomain(new String[]{"N","Y"}); // ignored
+      predFrame = new Frame(Key.<Frame>make(), new Vec[]{label,p0,p1}, true);
     }
     else {
       // ugly: need to transpose the data to put it into a Frame to score -> could be sped up
-      double[][] dpreds = new double[_output.nclasses()][preds.length];
+      final double[][] dpreds = new double[_output.nclasses()][preds.length];
       for (int i = 0; i < dpreds.length; ++i) {
         for (int j = 0; j < dpreds[i].length; ++j) {
           dpreds[i][j] = preds[j][i];
         }
       }
-      Vec[] pred = new Vec[_output.nclasses()];
-      for (int i = 0; i < pred.length; ++i) {
-        pred[i] = Vec.makeVec(dpreds[i], Vec.newKey());
+      final Vec[] pred = new Vec[_output.nclasses()+1];
+      for (int i = 1; i < pred.length; ++i) {
+        pred[i].makeDoubles(dpreds[i - 1].length, dpreds[i - 1]); //FIXME
       }
+      pred[0] = pred[1].makeCon(0., Vec.T_CAT);
+
+      new MRTask() {
+        public void map(Chunk[] chk) {
+          for (int i=0; i<chk[0]._len; ++i) {
+            double[] row = new double[chk.length];
+            for (int j=1;j<row.length;++j) {
+              pred[j].set(chk[0].start() + i, preds[j][i]);
+              row[j] = chk[j].atd(i);
+            }
+            chk[0].set(i, hex.genmodel.GenModel.getPrediction(row, _output._priorClassDist, null, defaultThreshold()));
+          }
+        }
+      }.doAll(pred);
+
       predFrame = new Frame(Key.<Frame>make(),pred,true);
+      predFrame.remove(0);
       Scope.enter();
       mm[0] = ModelMetricsMultinomial.make(predFrame, resp, resp.toCategoricalVec().domain());
       Scope.exit();
+      predFrame = new Frame(Key.<Frame>make(),pred,true);
     }
     resp.remove();
     return predFrame;
@@ -357,4 +398,103 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       model_info()._dataInfoKey.get().remove(fs);
     return super.remove_impl(fs);
   }
+
+  @Override
+  public Frame score(Frame fr) {
+    Frame adaptFr = new Frame(fr);
+    boolean computeMetrics = (!isSupervised() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
+    String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
+    try {
+      DMatrix trainMat = convertFrametoDMatrix( model_info()._dataInfoKey, adaptFr,
+          _parms._response_column, _parms._weights_column, _parms._fold_column, null, _output._sparse);
+      ModelMetrics[] mm = new ModelMetrics[1];
+      Frame preds = makePreds(model_info()._booster, trainMat, mm);
+      return preds;
+    } catch (XGBoostError xgBoostError) {
+      xgBoostError.printStackTrace();
+    }
+    return null;
+  }
+
+  /*
+  @Override
+  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics) {
+    final boolean makeNative = model_info()._booster ==null;
+    if (makeNative) model_info().javaToNative();
+    // Build up the names & domains.
+    String[] names = makeScoringNames();
+    String[][] domains = new String[names.length][];
+    domains[0] = names.length == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
+    // Score the dataset, building the class distribution & predictions
+    BigScore bs = new XGBoostBigScore(domains[0],names.length,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, true, j).doAll(adaptFrm);
+    if (computeMetrics) bs._mb.makeModelMetrics(this, fr, adaptFrm, bs.outputFrame());
+    if (makeNative) model_info.nukeBackend();
+    return bs.outputFrame(null == destination_key ? Key.<Frame>make() : Key.<Frame>make(destination_key), names, domains);
+  }
+
+  class XGBoostBigScore extends BigScore {
+    Frame _predFrame; //OUTPUT
+    @Override public Frame outputFrame(Key<Frame> key, String [] names, String [][] domains){
+      _predFrame = new Frame(key, names, _predFrame.vecs());
+      if (domains!=null)
+        _predFrame.vec(0).setDomain(domains[0]); //only the label is ever categorical
+      if (_predFrame._key!=null)
+        DKV.put(_predFrame);
+      return _predFrame;
+    }
+    @Override public void map(Chunk[] chks, NewChunk[] cpreds) { }
+    @Override public void reduce( BigScore bs ) { }
+    @Override protected void setupLocal() {
+      DataInfo di = model_info()._dataInfoKey.get();
+      if (di != null) {
+        di = IcedUtils.deepCopy(di);
+        di._adaptedFrame = _fr; //dinfo logic on _adaptedFrame is what we'll need for extracting categorical info for scoring
+      }
+      _mb = makeMetricBuilder(_domain);
+      int cols = _output.nclasses() + (_output.isClassifier()?1:0);
+      if (_makePreds) {
+        Vec[] predVecs = new Vec[cols];
+        for (int i = 0; i < cols; ++i)
+          predVecs[i] = _fr.anyVec().makeZero();
+        _predFrame = new Frame(predVecs);
+      }
+      DMatrix trainMat;
+      try {
+        trainMat = convertFrametoDMatrix( model_info()._dataInfoKey, _fr,
+            _parms._response_column, _parms._weights_column, _parms._fold_column, null, _output._sparse);
+        ModelMetrics[] mm = new ModelMetrics[1];
+        Frame preds = makePreds(model_info()._booster, trainMat, mm);
+        if (_output.nclasses()>=2) {
+          if (_output.nclasses()==2)
+            preds.add("p0", preds.anyVec().makeCon(0., Vec.T_NUM));
+          preds.prepend("predict", preds.anyVec().makeCon(0., Vec.T_CAT));
+          double[] row = new double[preds.numCols()];
+          Vec.Writer predict = preds.anyVec().open();
+          for (int i = 0; i < preds.numRows(); ++i) { //rows
+            if (_output.nclasses()>2) {
+              for (int j = 0; j < row.length-1; ++j) { //cols
+                row[1+j] = preds.vec(j).at(i);
+              }
+            } else {
+              row[2] = preds.vec(0).at(i);
+              row[1] = 1 - row[2];
+            }
+//            if (_parms._balance_classes)
+//              GenModel.correctProbabilities(row, _output._priorClassDist, _output._modelClassDist);
+            predict.set(i, hex.genmodel.GenModel.getPrediction(row, _output._priorClassDist, null, defaultThreshold()));
+          }
+          predict.close();
+        }
+        _predFrame = new Frame(preds);
+        if ( _j != null) _j.update(_fr.anyVec().nChunks());
+      } catch (XGBoostError xgBoostError) {
+        xgBoostError.printStackTrace();
+      }
+
+    }
+    XGBoostBigScore(String[] domain, int ncols, double[] mean, boolean testHasWeights, boolean computeMetrics, boolean makePreds, Job j) {
+      super(domain, ncols, mean, testHasWeights, computeMetrics, makePreds, j);
+    }
+  }
+  */
 }
