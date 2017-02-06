@@ -18,36 +18,43 @@ public class JobService extends JobGrpc.JobImplBase {
 
   @Override
   public void poll(JobId request, StreamObserver<JobInfo> responseObserver) {
-    Key<water.Job> key = Key.make(request.getId());
-    Value val = DKV.get(key);
-    if (val == null)
-      throw new IllegalArgumentException("Job " + request.getId() + " is missing");
-    Iced iced = val.get();
-    if (!(iced instanceof water.Job))
-      throw new IllegalArgumentException("Id " + request.getId() + " references a " + iced.getClass() + " not a Job");
-
-    water.Job job = (water.Job) iced;
-    responseObserver.onNext(collectJobInfo(job));
+    water.Job job = resolveJob(request);
+    responseObserver.onNext(fillJobInfo(job));
     responseObserver.onCompleted();
   }
 
   @Override
   public void cancel(JobId request, StreamObserver<JobInfo> responseObserver) {
-    Key<water.Job> key = Key.make(request.getId());
-    Job job = DKV.getGet(key);
-    if (job == null) {
-      throw new IllegalArgumentException("No job with key " + key);
-    }
-    job.stop(); // Request Job stop
-
-    responseObserver.onNext(collectJobInfo(job));
+    water.Job job = resolveJob(request);
+    job.stop();
+    responseObserver.onNext(fillJobInfo(job));
     responseObserver.onCompleted();
   }
 
 
-  private JobInfo collectJobInfo(water.Job job) {
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // Private
+  //--------------------------------------------------------------------------------------------------------------------
+
+  private water.Job resolveJob(JobId request) {
+    String strId = request.getJobId();
+    Value val = DKV.get(Key.make(strId));
+    if (val == null) {
+      throw new IllegalArgumentException("Job " + strId + " not found in the DKV");
+    }
+    Iced iced = val.get();
+    if (iced instanceof Job) {
+      return (water.Job) iced;
+    } else {
+      throw new IllegalArgumentException("Id " + strId + " does not reference a Job but a " + iced.getClass());
+    }
+  }
+
+
+  private JobInfo fillJobInfo(water.Job job) {
     JobInfo.Builder jb = JobInfo.newBuilder();
-    jb.setId(job._key.toString())
+    jb.setJobId(job._key.toString())
       .setProgress(job.progress())
       .setMessage(job.progress_msg())
       .setDuration(job.msec());

@@ -18,7 +18,7 @@ service Job {
 
 
 message JobId {
-    string id = 1;
+    string job_id = 1;
 }
 
 message JobInfo {
@@ -36,7 +36,7 @@ message JobInfo {
         MODEL = 1;
     }
 
-    string id = 1;
+    string job_id = 1;
     Status status = 2;
     float progress = 3;
     string message = 4;
