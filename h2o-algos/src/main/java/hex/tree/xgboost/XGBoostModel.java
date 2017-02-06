@@ -300,39 +300,31 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       label.setDomain(new String[]{"N","Y"}); // ignored
       predFrame = new Frame(Key.<Frame>make(), new Vec[]{label,p0,p1}, true);
     }
-    else {
-      // ugly: need to transpose the data to put it into a Frame to score -> could be sped up
-      final double[][] dpreds = new double[_output.nclasses()][preds.length];
-      for (int i = 0; i < dpreds.length; ++i) {
-        for (int j = 0; j < dpreds[i].length; ++j) {
-          dpreds[i][j] = preds[j][i];
-        }
-      }
-      final Vec[] pred = new Vec[_output.nclasses()+1];
-      for (int i = 1; i < pred.length; ++i) {
-        pred[i].makeDoubles(dpreds[i - 1].length, dpreds[i - 1]); //FIXME
-      }
-      pred[0] = pred[1].makeCon(0., Vec.T_CAT);
 
-      new MRTask() {
-        public void map(Chunk[] chk) {
+    else {
+      String[] names = makeScoringNames();
+      String[][] domains = new String[names.length][];
+      domains[0] = _output.classNames();
+      Frame input = new Frame(resp); //has the right size
+      predFrame = new MRTask() {
+        public void map(Chunk[] chk, NewChunk[] nc) {
           for (int i=0; i<chk[0]._len; ++i) {
-            double[] row = new double[chk.length];
+            double[] row = new double[nc.length];
             for (int j=1;j<row.length;++j) {
-              pred[j].set(chk[0].start() + i, preds[j][i]);
-              row[j] = chk[j].atd(i);
+              double val = preds[i][j-1];
+              nc[j].addNum(val);
+              row[j] = val;
             }
-            chk[0].set(i, hex.genmodel.GenModel.getPrediction(row, _output._priorClassDist, null, defaultThreshold()));
+            nc[0].addNum(hex.genmodel.GenModel.getPrediction(row, _output._priorClassDist, null, defaultThreshold()));
           }
         }
-      }.doAll(pred);
+      }.doAll(_output.nclasses()+1, Vec.T_NUM, input).outputFrame(Key.<Frame>make(), names, domains);
 
-      predFrame = new Frame(Key.<Frame>make(),pred,true);
-      predFrame.remove(0);
+      Frame pp = new Frame(predFrame);
+      pp.remove(0);
       Scope.enter();
-      mm[0] = ModelMetricsMultinomial.make(predFrame, resp, resp.toCategoricalVec().domain());
+      mm[0] = ModelMetricsMultinomial.make(pp, resp, resp.toCategoricalVec().domain());
       Scope.exit();
-      predFrame = new Frame(Key.<Frame>make(),pred,true);
     }
     resp.remove();
     return predFrame;
