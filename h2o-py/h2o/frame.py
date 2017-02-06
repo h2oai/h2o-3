@@ -517,7 +517,7 @@ class H2OFrame(object):
 
 
     def _unop(self, op, rtype="real"):
-        for cname, ctype in self.types:
+        for cname, ctype in self.types.items():
             if ctype not in {"int", "real", "bool"}:
                 raise H2OTypeError("Function %s cannot be applied to %s column '%s'" % (op, ctype, cname))
         ret = H2OFrame._expr(expr=ExprNode(op, self), cache=self._ex._cache)
