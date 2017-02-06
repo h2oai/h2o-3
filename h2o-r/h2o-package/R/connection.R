@@ -67,7 +67,7 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
     #Read in config if available
     if(!(is.null(config_path))){
 
-      h2oconfig = .parse.h2oconfig(config_path)
+      h2oconfig = .parse.h2oconfig(config_path,print_path=TRUE)
 
       #Check for each `allowed_config_keys` in the config file and set to counterparts in `h2o.init()`
       if(strict_version_check != TRUE && "init.check_version" %in% colnames(h2oconfig)){
@@ -84,7 +84,7 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
       }
       if(is.na(cookies) && "init.cookies" %in% colnames(h2oconfig)){
         cookies = as.vector(trimws(strsplit(as.character(h2oconfig$init.cookies),";")[[1]]))
-    }
+      }
   }
 
   if(!is.character(ip) || length(ip) != 1L || is.na(ip) || !nzchar(ip))
