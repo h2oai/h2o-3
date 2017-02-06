@@ -195,7 +195,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("one_drop", p._one_drop ? "1" : "0");
       params.put("skip_drop", p._skip_drop);
     }
-    params.put("updater", "grow_gpu");
+    if (System.getenv("CUDA_PATH") != null)
+      params.put("updater", "grow_gpu");
     if (p._min_child_weight!=0) {
       Log.info("Using user-provided parameter min_child_weight instead of min_rows.");
       params.put("min_child_weight", p._min_child_weight);
