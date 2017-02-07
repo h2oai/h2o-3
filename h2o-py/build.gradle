@@ -7,7 +7,6 @@ import static java.nio.file.StandardCopyOption.*;
 
 defaultTasks 'build_python'
 description = "H2O Python Package"
-GString protoDir = "${projectDir}/h2o/backend/proto"
 
 java.lang.String pythonexe = "python"
 java.lang.String pipexe = "pip"
@@ -40,13 +39,6 @@ task makeOutputDir(type: Exec) {
     }
 }
 
-task makeProtoOutputDir(type: Exec) {
-    if (Os.isFamily(Os.FAMILY_WINDOWS)) {
-        commandLine getOsSpecificCommandLine(['mkdir', protoDir])
-    } else {
-        commandLine getOsSpecificCommandLine(['mkdir', '-p', protoDir])
-    }
-}
 
 task setProjectVersion << {
     File INIT = new File([T, "h2o", "__init__.py"].join(File.separator))
@@ -65,36 +57,24 @@ task resetProjectVersion << {
 }
 
 task installPythonDependencies(type: Exec) {
+    doFirst {
+        standardOutput = new FileOutputStream("build/tmp/h2o-py_installPythonDependencies.out")
+    }
     commandLine getOsSpecificCommandLine([
             pipexe, "install",
             "tabulate>=0.7.5",
             "requests>=2.10",
             "colorama>=0.3.7",
-            "future>=0.15.2",
-            "grpcio-tools>=1.1.0"
+            "future>=0.15.2"
     ])
 }
 
 
-task generateProtoFiles(type: Exec) {
-    dependsOn installPythonDependencies
-    dependsOn makeProtoOutputDir
-    commandLine getOsSpecificCommandLine([
-            pythonexe, "-m", "grpc_tools.protoc",
-            "-I${rootDir}/h2o-core/src/main/proto",
-            "--python_out=${protoDir}",
-            "--grpc_python_out=${protoDir}",
-            // TODO: auto-detect the list of files and process them all at once
-            "${rootDir}/h2o-core/src/main/proto/core/common.proto",
-            "${rootDir}/h2o-core/src/main/proto/core/job.proto"
-    ])
-}
 
 task buildDist(type: Exec) {
     dependsOn installPythonDependencies
     dependsOn setProjectVersion
     dependsOn makeOutputDir
-    dependsOn generateProtoFiles
 
     doFirst {
         standardOutput = new FileOutputStream("build/tmp/h2o-py_buildDist.out")

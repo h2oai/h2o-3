@@ -12,13 +12,19 @@ public abstract class AbstractH2OExtension {
 
   /**
    * Any up-front initialization that needs to happen before H2O is started.
-   * This is called in H2OApp before H2O.main() is called.
+   * This is called in {@code H2OApp} before {@code H2O.main()} is called.
    */
   public void init() {}
 
+
   /**
-   * Print stuff for
-   * java -jar h2o.jar -help
+   * Called during the start up process of {@code H2OApp}, after the local
+   * network connections are opened.
+   */
+  public void onLocalNodeStarted() {}
+
+  /**
+   * Print stuff (into System.out) for {@code java -jar h2o.jar -help}
    */
   public void printHelp() {}
 
@@ -51,7 +57,9 @@ public abstract class AbstractH2OExtension {
    *
    * @return build information.
    */
-  public abstract AbstractBuildVersion getBuildVersion();
+  public AbstractBuildVersion getBuildVersion() {
+    return AbstractBuildVersion.UNKNOWN_VERSION;
+  }
 
   /**
    * Print a short message when the extension finishes initializing.

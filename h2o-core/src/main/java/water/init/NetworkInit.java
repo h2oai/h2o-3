@@ -436,10 +436,6 @@ public class NetworkInit {
           H2O.getJetty().start(H2O.ARGS.web_ip, H2O.API_PORT);
         }
 
-        if (H2O.ARGS.run_grpc) {
-          H2O.GRPC_PORT = H2O.API_PORT + 2;
-          H2O.getNetty(H2O.GRPC_PORT);
-        }
         break;
       } catch (Exception e) {
         Log.trace("Cannot allocate API port " + H2O.API_PORT + " because of following exception: ", e);

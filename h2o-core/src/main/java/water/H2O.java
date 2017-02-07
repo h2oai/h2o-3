@@ -9,7 +9,6 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
 import org.reflections.Reflections;
 import water.UDPRebooted.ShutdownTsk;
-import water.api.RegisterGrpcApi;
 import water.api.RequestServer;
 import water.exceptions.H2OFailException;
 import water.exceptions.H2OIllegalArgumentException;
@@ -18,8 +17,6 @@ import water.nbhm.NonBlockingHashMap;
 import water.parser.ParserService;
 import water.persist.PersistManager;
 import water.util.*;
-import io.grpc.Server;
-import io.grpc.ServerBuilder;
 
 import java.io.File;
 import java.io.IOException;
@@ -222,8 +219,6 @@ final public class H2O {
     /** -user_name=user_name; Set user name */
     public String user_name = System.getProperty("user.name");
 
-    /** -run_grpc; launch GRPC/Protobuf service on {@code port + 2} */
-    public boolean run_grpc = false;
 
     //-----------------------------------------------------------------------------------
     // Node configuration
@@ -430,9 +425,6 @@ final public class H2O {
       else if (s.matches("user_name")) {
         i = s.incrementAndCheck(i, args);
         ARGS.user_name = args[i];
-      }
-      else if (s.matches("run_grpc")) {
-        ARGS.run_grpc = true;
       }
       else if (s.matches("ice_root")) {
         i = s.incrementAndCheck(i, args);
@@ -732,24 +724,10 @@ final public class H2O {
 
     // Disallow schemas whose parent is in another package because it takes ~4s to do the getSubTypesOf call.
     String[] packages = new String[]{"water", "hex"};
-
-    for (String pkg : packages) {
-      Reflections reflections = new Reflections(pkg);
-      for (Class registerClass : reflections.getSubTypesOf(water.AbstractH2OExtension.class)) {
-        if (!Modifier.isAbstract(registerClass.getModifiers())) {
-          try {
-            Object instance = registerClass.newInstance();
-            water.AbstractH2OExtension e = (water.AbstractH2OExtension) instance;
-            H2O.addExtension(e);
-          } catch (Exception e) {
-            throw H2O.fail(e.toString());
-          }
-        }
-      }
-    }
-
-    for (AbstractH2OExtension e : H2O.getExtensions()) {
+    ServiceLoader<AbstractH2OExtension> extensionsLoader = ServiceLoader.load(AbstractH2OExtension.class);
+    for (AbstractH2OExtension e : extensionsLoader) {
       e.init();
+      extensions.add(e);
     }
 
     extensionsRegistered = true;
@@ -1261,7 +1239,6 @@ final public class H2O {
 
   public static int H2O_PORT; // Both TCP & UDP cluster ports
   public static int API_PORT; // RequestServer and the API HTTP port
-  public static int GRPC_PORT; // GRPC/Protobuf interface port
 
   /**
    * @return String of the form ipaddress:port
@@ -1358,36 +1335,6 @@ final public class H2O {
   }
   public static JettyHTTPD getJetty() {
     return jetty;
-  }
-
-  private static Server netty;
-  public static Server getNetty(int port) {
-    if (netty == null) {
-      ServerBuilder sb = ServerBuilder.forPort(port);
-      RegisterGrpcApi.registerWithServer(sb);
-      netty = sb.build();
-      try {
-        Log.info("Starting GRPC server on 127.0.0.1:" + port);
-        netty.start();
-      } catch (IOException e) {
-        netty = null;
-        Log.err("Failed to start the GRPC server:");
-        Log.err(e);
-        throw H2O.fail();
-      }
-      Runtime.getRuntime().addShutdownHook(new Thread() {
-        @Override
-        public void run() {
-          if (netty != null) {
-            // Use stderr here since the logger may have been reset by its JVM shutdown hook.
-            System.err.println("*** shutting down gRPC server since JVM is shutting down");
-            netty.shutdown();
-            System.err.println("*** server shut down");
-          }
-        }
-      });
-    }
-    return netty;
   }
 
   /** If logging has not been setup yet, then Log.info will only print to
@@ -1883,6 +1830,11 @@ final public class H2O {
 
     // Start the local node.  Needed before starting logging.
     startLocalNode();
+
+    // Allow extensions to perform initialization that requires the network.
+    for (AbstractH2OExtension ext: extensions) {
+      ext.onLocalNodeStarted();
+    }
 
     try {
       String logDir = Log.getLogDir();

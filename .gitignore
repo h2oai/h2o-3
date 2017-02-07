@@ -82,7 +82,7 @@ make-java6.sh
 
 # Ignore generated code
 h2o-bindings/src-gen/
-h2o-core/proto-gen/
+h2o-grpc/proto-gen/
 h2o-3-DESCRIPTION
 gradle/buildnumber.properties
 *_pb2.py

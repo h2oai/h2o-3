@@ -1,5 +1,4 @@
 apply plugin: 'java'
-apply plugin: 'com.google.protobuf'
 
 //
 // H2O Core Module
@@ -19,10 +18,6 @@ dependencies {
   compile "org.eclipse.jetty.aggregate:jetty-servlet:8.1.17.v20150415"
   compile "org.eclipse.jetty:jetty-plus:8.1.17.v20150415"
   compile "com.github.rwl:jtransforms:2.4.0"
-  compile 'com.google.protobuf:protobuf-java:3.0.0'
-  compile "io.grpc:grpc-netty:${grpcVersion}"
-  compile "io.grpc:grpc-protobuf:${grpcVersion}"
-  compile "io.grpc:grpc-stub:${grpcVersion}"
 
   compile("log4j:log4j:1.2.15") { 
     exclude module: "activation" 
@@ -60,35 +55,6 @@ jar {
   manifest {
     attributes 'Main-Class': 'water.H2O'
   }
-}
-
-protobuf {
-  // Configure the protoc executable (for compiling the *.proto files)
-  protoc {
-    artifact = 'com.google.protobuf:protoc:3.0.2'
-  }
-
-  // Configure the codegen plugins
-  plugins {
-    grpc {
-      artifact = 'io.grpc:protoc-gen-grpc-java:1.0.3'
-    }
-  }
-
-  generateProtoTasks {
-    ofSourceSet('main').each { task ->
-      task.builtins {
-        java {}
-      }
-      task.plugins {
-        // Add grpc output without any option.  grpc must have been defined in the
-        // protobuf.plugins block.
-        grpc {}
-      }
-    }
-  }
-
-  generatedFilesBaseDir = "${projectDir}/proto-gen"
 }
 
 
@@ -148,12 +114,3 @@ clean.dependsOn cleanGeneratedProtoClasses
 clean.dependsOn cleanBuildVersionJava
 
 apply from: '../gradle/javaIgnoreSymbolFile.gradle'
-
-idea {
-  module {
-    sourceDirs += file("${protobuf.generatedFilesBaseDir}/main/java");
-    sourceDirs += file("${protobuf.generatedFilesBaseDir}/main/grpc");
-    sourceDirs += file("${protobuf.generatedFilesBaseDir}/main/python");
-  }
-}
-

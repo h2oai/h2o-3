@@ -19,6 +19,7 @@ include 'h2o-test-accuracy'
 include 'h2o-avro-parser'
 include 'h2o-orc-parser'
 include 'h2o-parquet-parser'
+include 'h2o-grpc'
 
 // Reconfigure scala projects to support cross compilation
 // The following code will create two projects for each included item:
