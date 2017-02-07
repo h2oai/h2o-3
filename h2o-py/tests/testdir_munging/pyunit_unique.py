@@ -16,7 +16,12 @@ def pyunit_unique():
     assert "Iris-virginica" in uniques[0], "Expected Iris-virginica to be in the set of unique species, but it wasn't"
     assert "Iris-versicolor" in uniques[0], "Expected Iris-versicolor to be in the set of unique species, but it wasn't"
 
-
+    fr = h2o.create_frame(rows=5, cols=1, time_fraction=1)
+    assert fr.type(0) == "time"
+    uf = fr.unique()
+    assert uf.type(0) == "time"
+    uf.refresh()
+    assert uf.type(0) == "time"
 
 
 
