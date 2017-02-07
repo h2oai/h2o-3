@@ -170,11 +170,19 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
                                     "Column means of training data");
           JCodeGen.toClassWithArray(out, null, mname + "_MULTS", _output._normMul,
                                     "Reciprocal of column standard deviations of training data");
+          JCodeGen.toClassWithArray(out, null, mname + "_MODES", _output._mode,
+                                    "Mode for categorical columns");
           JCodeGen.toClassWithArray(out, null, mname + "_CENTERS", _output._centers_std_raw,
                                     "Normalized cluster centers[K][features]");
         }
       });
 
+      // Predict function body: Standardize data first
+      body.ip("Kmeans_preprocessData(data,")
+              .pj(mname + "_MEANS", "VALUES,")
+              .pj(mname + "_MULTS", "VALUES,")
+              .pj(mname + "_MODES", "VALUES")
+              .p(");").nl();
       // Predict function body: main work function is a utility in GenModel class.
       body.ip("preds[0] = KMeans_closest(")
           .pj(mname + "_CENTERS", "VALUES")
