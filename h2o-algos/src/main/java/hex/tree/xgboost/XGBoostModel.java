@@ -1,7 +1,6 @@
 package hex.tree.xgboost;
 
 import hex.*;
-import hex.genmodel.GenModel;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import ml.dmlc.xgboost4j.java.Booster;
@@ -201,8 +200,17 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("one_drop", p._one_drop ? "1" : "0");
       params.put("skip_drop", p._skip_drop);
     }
-    if ( (p._backend == XGBoostParameters.Backend.auto || p._backend == XGBoostParameters.Backend.gpu) && hasGPU())
-      params.put("updater", "grow_gpu");
+    if ( p._backend == XGBoostParameters.Backend.auto || p._backend == XGBoostParameters.Backend.gpu ) {
+      if (XGBoost.hasGPU()) {
+        Log.info("Using GPU backend.");
+        params.put("updater", "grow_gpu");
+      } else {
+        Log.info("No GPU found. Using CPU backend.");
+      }
+    } else {
+      assert p._backend == XGBoostParameters.Backend.cpu;
+      Log.info("Using CPU backend.");
+    }
     if (p._min_child_weight!=0) {
       Log.info("Using user-provided parameter min_child_weight instead of min_rows.");
       params.put("min_child_weight", p._min_child_weight);
@@ -432,28 +440,5 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 //    }
 //    return null;
 //  }
-
-  // helper
-  private static boolean hasGPU() {
-    DMatrix trainMat = null;
-    try {
-      trainMat = new DMatrix(new float[]{1,2,1,2},2,2);
-      trainMat.setLabel(new float[]{1,0});
-    } catch (XGBoostError xgBoostError) {
-      xgBoostError.printStackTrace();
-    }
-
-    HashMap<String, Object> params = new HashMap<>();
-    params.put("updater", "grow_gpu");
-    params.put("silent", 1);
-    HashMap<String, DMatrix> watches = new HashMap<>();
-    watches.put("train", trainMat);
-    try {
-      ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, params, 1, watches, null, null);
-      return true;
-    } catch (XGBoostError xgBoostError) {
-      return false;
-    }
-  }
 
 }
