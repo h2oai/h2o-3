@@ -31,7 +31,12 @@ At a minimum, we recommend the following for compatibility with H2O:
 
    -  Scala 2.10 or later
    -  R version 3 or later
-   -  Python 2.7.x or 3.5.x 
+   -  Python 2.7.x or 3.5.x
+   -  Anaconda package for the H2O distribution. This can be installed using the following command:
+      
+      ::
+
+         conda install -c h2oai h2o=3.10.3.4
 
 -  **Browser**: An internet browser is required to use H2O's web UI, Flow. Supported versions include the latest version of Chrome, Firefox, Safari, or Internet Explorer. 
 -  **Hadoop**: Hadoop is not required to run H2O unless you want to deploy H2O on a Hadoop cluster. Supported versions are listed on the `Download page <http://www.h2o.ai/download/>`_ (when you select the Install on Hadoop tab) and include:
@@ -104,27 +109,27 @@ New users can follow the steps below to quickly get up and running with H2O dire
 
 1. In a terminal window, create a folder for the H2O repository. The example below creates a folder called "repos" on the desktop.
 
-::
+ ::
 
    user$ mkdir ~/Desktop/repos
    
 2. Change directories to that new folder, and then clone the repository. Notice that the prompt changes when you change directories.
 
-::
+ ::
 
     user$ cd ~/Desktop/repos
     repos user$ git clone https://github.com/h2oai/h2o-3.git
 
 3. After the repo is cloned, change directories to the **h2o** folder.
 
-::
+ ::
 
     repos user$ cd h2o-3
     h2o-3 user$
 
-4. Run the following command to retrieve sample datasets. These datasets are used throughout this User Guide as well as within the `Booklets <http://www.h2o.ai/resources/>`_. 
+4. Run the following command to retrieve sample datasets. These datasets are used throughout this User Guide and within the `Booklets <http://www.h2o.ai/resources/>`_. 
 
-::
+ ::
 
    h2o-3 user$ ./gradlew syncSmalldata
 
@@ -180,6 +185,7 @@ At this point, determine whether you want to complete this quick start in either
     [150 rows x 5 columns]
     >
 
+
    .. code-block:: python
 
     # Before starting Python, run the following commands to install dependencies.
@@ -198,6 +204,11 @@ At this point, determine whether you want to complete this quick start in either
 
     # Run the following command to initialize H2O on your local machine (single-node cluster).
     >>> h2o.init()
+
+    # If desired, run the GLM, GBM, or Deep Learning demo
+    >>> h2o.demo("glm")
+    >>> h2o.demo("gbm")
+    >>> h2o.demo("deeplearning")
 
     # Import the Iris (with headers) dataset.
     >>> path = "smalldata/iris/iris_wheader.csv"
