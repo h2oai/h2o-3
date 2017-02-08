@@ -1175,7 +1175,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             actual[0] = (float)responseChunk.atd(row);
           } else {
             for(int i = 0; i < actual.length; ++i)
-              actual[i] = (float)chks[i].atd(row);
+              actual[i] = (float)data(chks,row,i);
           }
           _mb.perRow(preds, actual, weight, offset, Model.this);
         }
@@ -1188,6 +1188,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     @Override public void reduce( BigScore bs ) { if(_mb != null )_mb.reduce(bs._mb); }
     @Override protected void postGlobal() { if(_mb != null)_mb.postGlobal(); }
+  }
+
+
+  // OVerride this if your model needs data preprocessing (on the fly standardization, NA handling)
+  protected double data(Chunk[] chks, int row, int col) {
+    return chks[col].atd(row);
   }
 
 

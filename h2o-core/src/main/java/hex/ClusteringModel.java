@@ -25,6 +25,7 @@ public abstract class ClusteringModel<M extends ClusteringModel<M,P,O>, P extend
     // For internal use only: means and 1/(std dev) of each training col
     public double[] _normSub;
     public double[] _normMul;
+    public int [] _mode;
 
     // Cluster size. Defined as the number of rows in each cluster.
     public long[/*k*/] _size;
