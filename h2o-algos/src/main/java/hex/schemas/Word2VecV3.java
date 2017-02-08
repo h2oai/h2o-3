@@ -3,6 +3,7 @@ package hex.schemas;
 import hex.word2vec.Word2Vec;
 import hex.word2vec.Word2VecModel.Word2VecParameters;
 import water.api.API;
+import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelParametersSchemaV3;
 
 public class Word2VecV3 extends ModelBuilderSchema<Word2Vec,Word2VecV3,Word2VecV3.Word2VecParametersV3> {
@@ -17,7 +18,8 @@ public class Word2VecV3 extends ModelBuilderSchema<Word2Vec,Word2VecV3,Word2VecV
             "window_size",
             "sent_sample_rate",
             "init_learning_rate",
-            "epochs"
+            "epochs",
+            "pre_trained"
     };
 
     /**
@@ -68,5 +70,11 @@ public class Word2VecV3 extends ModelBuilderSchema<Word2Vec,Word2VecV3,Word2VecV
      */
     @API(help="Use the Skip-Gram model", values = {"SkipGram"})
     public Word2Vec.WordModel word_model;
+
+    /**
+     *
+     */
+    @API(help="Id of a data frame that contains a pre-trained (external) word2vec model")
+    public KeyV3.FrameKeyV3 pre_trained;
   }
 }
