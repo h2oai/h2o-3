@@ -195,7 +195,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("one_drop", p._one_drop ? "1" : "0");
       params.put("skip_drop", p._skip_drop);
     }
-    if (System.getenv("CUDA_PATH") != null)
+    if (hasGPU())
       params.put("updater", "grow_gpu");
     if (p._min_child_weight!=0) {
       Log.info("Using user-provided parameter min_child_weight instead of min_rows.");
@@ -426,4 +426,28 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 //    }
 //    return null;
 //  }
+
+  // helper
+  private static boolean hasGPU() {
+    DMatrix trainMat = null;
+    try {
+      trainMat = new DMatrix(new float[]{1,2,1,2},2,2);
+      trainMat.setLabel(new float[]{1,0});
+    } catch (XGBoostError xgBoostError) {
+      xgBoostError.printStackTrace();
+    }
+
+    HashMap<String, Object> params = new HashMap<>();
+    params.put("updater", "grow_gpu");
+    params.put("silent", 1);
+    HashMap<String, DMatrix> watches = new HashMap<>();
+    watches.put("train", trainMat);
+    try {
+      ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, params, 1, watches, null, null);
+      return true;
+    } catch (XGBoostError xgBoostError) {
+      return false;
+    }
+  }
+
 }
