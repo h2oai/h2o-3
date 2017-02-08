@@ -48,6 +48,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public enum DMatrixType {
       auto, dense, sparse
     }
+    public enum Backend {
+      auto, gpu, cpu
+    }
 
     // H2O GBM options
     public boolean _quiet_mode = true;
@@ -104,6 +107,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public float _rate_drop = 0;
     public boolean _one_drop = false;
     public float _skip_drop = 0;
+
+
+    public Backend _backend = Backend.auto;
 
     public XGBoostParameters() {
       super();
@@ -195,7 +201,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("one_drop", p._one_drop ? "1" : "0");
       params.put("skip_drop", p._skip_drop);
     }
-    if (hasGPU())
+    if ( (p._backend == XGBoostParameters.Backend.auto || p._backend == XGBoostParameters.Backend.gpu) && hasGPU())
       params.put("updater", "grow_gpu");
     if (p._min_child_weight!=0) {
       Log.info("Using user-provided parameter min_child_weight instead of min_rows.");
