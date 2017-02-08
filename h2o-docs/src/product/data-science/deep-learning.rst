@@ -399,18 +399,15 @@ and testing sets:
 
 -  Model parameters (hidden)
 -  A chart of the variable importances
--  A graph of the scoring history (training MSE and validation MSE vs
-   epochs)
+-  A graph of the scoring history (training MSE and validation MSE vs epochs)
+-  Training and validation metrics confusion matrix
 -  Output (model category, weights, biases)
 -  Status of neuron layers (layer number, units, type, dropout, L1, L2,
    mean rate, rate RMS, momentum, mean weight, weight RMS, mean bias,
    bias RMS)
 -  Scoring history in tabular format
--  Training metrics (model name, model checksum name, frame name, frame
-   checksum name, description, model category, duration in ms, scoring
-   time, predictions, MSE, R2, logloss)
--  Top-K Hit Ratios (for multi-class classification)
--  Confusion matrix (for classification)
+-  Training and validation metrics (model name, model checksum name, frame name, frame checksum name, description, model category, duration in ms, scoring time, predictions, MSE, R2, logloss)
+-  Top-K Hit Ratios for training and validation (for multi-class classification)
 
 FAQ
 ~~~
