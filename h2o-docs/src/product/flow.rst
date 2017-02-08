@@ -1413,8 +1413,7 @@ while ``8`` was predicted correctly 822 times and ``0`` was predicted as
    :alt: Confusion Matrix example
 
 
-**ROC Curve**: (DL, GLM, DRF) Graph representing the ratio of true positives to false positives. To view a
-specific threshold, select a value from the drop-down **Threshold** list. To view any of the following details, select it from the drop-down **Criterion** list:
+**ROC Curve**: (DRF) A `ROC Curve <https://en.wikipedia.org/wiki/Receiver_operating_characteristic>`__  is a graph that represents the ratio of true positives to false positives. (For more information, refer to the Linear Digressions `podcast <http://lineardigressions.com/episodes/2017/1/29/rock-the-roc-curve>`__ describing ROC Curves.) To view a specific threshold, select a value from the drop-down **Threshold** list. To view any of the following details, select it from the drop-down **Criterion** list:
 
 -  Max f1
 -  Max f2
