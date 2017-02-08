@@ -60,7 +60,8 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "gamma",
         "reg_lambda",
         "reg_alpha",
-        "dmatrix_type"
+        "dmatrix_type",
+        "backend"
     };
 
     @API(help="(same as n_estimators) Number of trees.", gridable = true)
@@ -165,5 +166,8 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
 
     @API(help="Type of DMatrix. For sparse, NAs and 0 are treated equally.", values = { "auto", "dense", "sparse" }, level = API.Level.secondary, gridable = true)
     public XGBoostParameters.DMatrixType dmatrix_type;
+
+    @API(help="Backend. By default (auto), a GPU is used if available.", values = { "auto", "gpu", "cpu" }, level = API.Level.expert, gridable = true)
+    public XGBoostParameters.Backend backend;
   }
 }
