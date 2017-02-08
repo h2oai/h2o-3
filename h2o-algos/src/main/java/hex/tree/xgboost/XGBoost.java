@@ -283,6 +283,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     if (H2O.CLOUD.size()>1) {
       throw new IllegalArgumentException("XGBoost is currently only supported in single-node mode.");
     }
+    if ( _parms._backend == XGBoostModel.XGBoostParameters.Backend.gpu && !hasGPU()) {
+      error("_backend", "GPU backend is not functional. Check CUDA_PATH and/or GPU installation.");
+    }
 
     switch( _parms._distribution) {
     case bernoulli:
@@ -517,4 +520,26 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     return _parms._learn_rate * Math.pow(_parms._learn_rate_annealing, (model._output._ntrees-1));
   }
 
+  // helper
+  static boolean hasGPU() {
+    DMatrix trainMat = null;
+    try {
+      trainMat = new DMatrix(new float[]{1,2,1,2},2,2);
+      trainMat.setLabel(new float[]{1,0});
+    } catch (XGBoostError xgBoostError) {
+      xgBoostError.printStackTrace();
+    }
+
+    HashMap<String, Object> params = new HashMap<>();
+    params.put("updater", "grow_gpu");
+    params.put("silent", 1);
+    HashMap<String, DMatrix> watches = new HashMap<>();
+    watches.put("train", trainMat);
+    try {
+      ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, params, 1, watches, null, null);
+      return true;
+    } catch (XGBoostError xgBoostError) {
+      return false;
+    }
+  }
 }
