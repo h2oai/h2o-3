@@ -102,7 +102,7 @@ task deleteLegacyFlowBundleFromWebRoot(type: Delete) {
 
 task copyFlowBundleFromDrift() << {
   def f = new File('h2o-web/lib/h2o-flow/build/js/flow.js')
-  new URL('http://raw.githubusercontent.com/micahstubbs/drift/6b0b9b1e29f34e2f5407b5af924cfefd12e4d50f/build/flow.js').withInputStream{ i -> f.withOutputStream{ it << i }}
+  new URL('http://raw.githubusercontent.com/h2oai/drift/3ff2bf747eb348385f23ccddf520156e42cb45b5/build/flow.js').withInputStream{ i -> f.withOutputStream{ it << i }}
 }
 
 task copyFlowToWebRoot(type: Copy) {
