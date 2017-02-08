@@ -69,6 +69,8 @@
 #' @param reg_alpha L1 regularization Defaults to 0.0.
 #' @param dmatrix_type Type of DMatrix. For sparse, NAs and 0 are treated equally. Must be one of: "auto", "dense", "sparse".
 #'        Defaults to auto.
+#' @param backend Backend. By default (auto), a GPU is used if available. Must be one of: "auto", "gpu", "cpu". Defaults to
+#'        auto.
 #' @export
 h2o.xgboost <- function(x, y, training_frame,
                         model_id = NULL,
@@ -115,7 +117,8 @@ h2o.xgboost <- function(x, y, training_frame,
                         gamma = 0.0,
                         reg_lambda = 1.0,
                         reg_alpha = 0.0,
-                        dmatrix_type = c("auto", "dense", "sparse")
+                        dmatrix_type = c("auto", "dense", "sparse"),
+                        backend = c("auto", "gpu", "cpu")
                         ) 
 {
   #If x is missing, then assume user wants to use all columns as features.
@@ -243,6 +246,8 @@ h2o.xgboost <- function(x, y, training_frame,
     parms$reg_alpha <- reg_alpha
   if (!missing(dmatrix_type))
     parms$dmatrix_type <- dmatrix_type
+  if (!missing(backend))
+    parms$backend <- backend
   # Error check and build model
   .h2o.modelJob('xgboost', parms, h2oRestApiVersion=3) 
 }
