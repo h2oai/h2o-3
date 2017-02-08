@@ -147,15 +147,24 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
   }
 
   void buildModelOutput(Word2VecModelInfo modelInfo) {
-    final int vecSize = _parms._vec_size;
-
     IcedHashMapGeneric<BufferedString, Integer> vocab = ((Vocabulary) DKV.getGet(modelInfo._vocabKey))._data;
     BufferedString[] words = new BufferedString[vocab.size()];
     for (BufferedString str : vocab.keySet())
       words[vocab.get(str)] = str;
 
-    _output._vecSize = vecSize;
+    _output._vecSize = _parms._vec_size;
     _output._vecs = modelInfo._syn0;
+    _output._words = words;
+    _output._vocab = vocab;
+  }
+
+  void buildModelOutput(BufferedString[] words, float[] syn0) {
+    IcedHashMapGeneric<BufferedString, Integer> vocab = new IcedHashMapGeneric<>();
+    for (int i = 0; i < words.length; i++)
+      vocab.put(words[i], i);
+
+    _output._vecSize = _parms._vec_size;
+    _output._vecs = syn0;
     _output._words = words;
     _output._vocab = vocab;
   }
@@ -169,7 +178,9 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     public String algoName() { return "Word2Vec"; }
     public String fullName() { return "Word2Vec"; }
     public String javaName() { return Word2VecModel.class.getName(); }
-    @Override public long progressUnits() { return train().vec(0).nChunks() * _epochs; }
+    @Override public long progressUnits() {
+      return isPreTrained() ? _pre_trained.get().anyVec().nChunks() : train().vec(0).nChunks() * _epochs;
+    }
     static final int MAX_VEC_SIZE = 10000;
 
     public Word2Vec.WordModel _word_model = Word2Vec.WordModel.SkipGram;
@@ -180,6 +191,8 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     public int _epochs = 5;
     public float _init_learning_rate = 0.025f;
     public float _sent_sample_rate = 1e-3f;
+    public Key<Frame> _pre_trained;  // key of a frame that contains a pre-trained word2vec model
+    boolean isPreTrained() { return _pre_trained != null; }
     Vec trainVec() { return train().vec(0); }
   }
 

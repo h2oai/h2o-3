@@ -410,8 +410,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       if (b.error_count() > 0)
         throw new IllegalArgumentException(b.validationErrors());
       // Capture the data "shape" the model is valid on
-      _names = b._train.names();
-      _domains = b._train.domains();
+      _names = b._train != null ? b._train.names() : new String[0];
+      _domains = b._train != null ? b._train.domains() : new String[0][];
       _origNames = b._origNames;
       _origDomains = b._origDomains;
       _hasOffset = b.hasOffsetCol();

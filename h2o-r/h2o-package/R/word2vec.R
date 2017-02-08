@@ -16,8 +16,9 @@
 #'        will be randomly down-sampled; useful range is (0, 1e-5) Defaults to 0.001.
 #' @param init_learning_rate Set the starting learning rate Defaults to 0.025.
 #' @param epochs Number of training iterations to run Defaults to 5.
+#' @param pre_trained Id of a data frame that contains a pre-trained (external) word2vec model
 #' @export
-h2o.word2vec <- function(training_frame,
+h2o.word2vec <- function(training_frame = NULL,
                          model_id = NULL,
                          min_word_freq = 5,
                          word_model = c("SkipGram"),
@@ -26,18 +27,25 @@ h2o.word2vec <- function(training_frame,
                          window_size = 5,
                          sent_sample_rate = 0.001,
                          init_learning_rate = 0.025,
-                         epochs = 5
+                         epochs = 5,
+                         pre_trained = NULL
                          ) 
 {
 
-  # Required args: training_frame
-  if( missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
-  # Training_frame must be a key or an H2OFrame object
-  if (!is.H2OFrame(training_frame))
-     tryCatch(training_frame <- h2o.getFrame(training_frame),
-           error = function(err) {
-             stop("argument 'training_frame' must be a valid H2OFrame or key")
-           })
+  # training_frame is required if pre_trained frame is not specified
+  if( missing(pre_trained) && missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
+  # training_frame must be a key or an H2OFrame object
+  if (!missing(training_frame) && !is.H2OFrame(training_frame))
+    tryCatch(training_frame <- h2o.getFrame(training_frame),
+             error = function(err) {
+               stop("argument 'training_frame' must be a valid H2OFrame or key")
+             })
+  # pre_trained must be a key or an H2OFrame object
+  if (!missing(pre_trained) && !is.H2OFrame(pre_trained))
+    tryCatch(pre_trained <- h2o.getFrame(pre_trained),
+             error = function(err) {
+               stop("argument 'pre_trained' must be a valid H2OFrame or key")
+             })
   # Parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame
@@ -60,6 +68,8 @@ h2o.word2vec <- function(training_frame,
     parms$init_learning_rate <- init_learning_rate
   if (!missing(epochs))
     parms$epochs <- epochs
+  if (!missing(pre_trained))
+    parms$pre_trained <- pre_trained
   # Error check and build model
   .h2o.modelJob('word2vec', parms, h2oRestApiVersion=3) 
 }

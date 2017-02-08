@@ -3,6 +3,7 @@ package hex.word2vec;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.word2vec.Word2VecModel.*;
+import water.fvec.Frame;
 import water.util.Log;
 
 public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecParameters,Word2VecModel.Word2VecOutput> {
@@ -53,39 +54,52 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
     @Override public void computeImpl() {
       Word2VecModel model = null;
       try {
-        init(true);
+        init(! _parms.isPreTrained()); // expensive == true IFF the model is not pre-trained
 
         // The model to be built
         model = new Word2VecModel(_job._result, _parms, new Word2VecOutput(Word2Vec.this));
         model.delete_and_lock(_job);
 
-        Log.info("Word2Vec: Initializing model training.");
-        Word2VecModelInfo modelInfo = Word2VecModelInfo.createInitialModelInfo(_parms);
-
-        // main loop
-        Log.info("Word2Vec: Starting to train model, " + _parms._epochs + " epochs.");
-        long tstart = System.currentTimeMillis();
-        for (int i = 0; i < _parms._epochs; i++) {
-          long start = System.currentTimeMillis();
-          WordVectorTrainer trainer = new WordVectorTrainer(_job, modelInfo).doAll(_parms.trainVec());
-          long stop = System.currentTimeMillis();
-          long actProcessedWords = trainer._processedWords;
-          long estProcessedWords = trainer._nodeProcessedWords._val;
-          if (estProcessedWords < 0.95 * actProcessedWords)
-            Log.warn("Estimated number processed words " + estProcessedWords +
-                    " is significantly lower than actual number processed words " + actProcessedWords);
-          trainer.updateModelInfo(modelInfo);
-          model.update(_job); // Early version of model is visible
-          double duration = (stop - start) / 1000.0;
-          Log.info("Epoch " + i + " took "  + duration + "s; Words trained/s: " + actProcessedWords / duration);
-        }
-        long tstop  = System.currentTimeMillis();
-        Log.info("Total time: " + (tstop - tstart) / 1000.0);
-        Log.info("Finished training the Word2Vec model.");
-        model.buildModelOutput(modelInfo);
+        if (_parms.isPreTrained())
+          convertToModel(_parms._pre_trained.get(), model);
+        else
+          trainModel(model);
       } finally {
         if (model != null) model.unlock(_job);
       }
+    }
+    private void trainModel(Word2VecModel model) {
+      Log.info("Word2Vec: Initializing model training.");
+      Word2VecModelInfo modelInfo = Word2VecModelInfo.createInitialModelInfo(_parms);
+
+      // main loop
+      Log.info("Word2Vec: Starting to train model, " + _parms._epochs + " epochs.");
+      long tstart = System.currentTimeMillis();
+      for (int i = 0; i < _parms._epochs; i++) {
+        long start = System.currentTimeMillis();
+        WordVectorTrainer trainer = new WordVectorTrainer(_job, modelInfo).doAll(_parms.trainVec());
+        long stop = System.currentTimeMillis();
+        long actProcessedWords = trainer._processedWords;
+        long estProcessedWords = trainer._nodeProcessedWords._val;
+        if (estProcessedWords < 0.95 * actProcessedWords)
+          Log.warn("Estimated number processed words " + estProcessedWords +
+                  " is significantly lower than actual number processed words " + actProcessedWords);
+        trainer.updateModelInfo(modelInfo);
+        model.update(_job); // Early version of model is visible
+        double duration = (stop - start) / 1000.0;
+        Log.info("Epoch " + i + " took "  + duration + "s; Words trained/s: " + actProcessedWords / duration);
+      }
+      long tstop  = System.currentTimeMillis();
+      Log.info("Total time: " + (tstop - tstart) / 1000.0);
+      Log.info("Finished training the Word2Vec model.");
+      model.buildModelOutput(modelInfo);
+    }
+    private void convertToModel(Frame preTrained, Word2VecModel model) {
+      if (_parms._vec_size != preTrained.numCols() - 1) {
+        throw new IllegalStateException("Frame with pre-trained model doesn't conform to the specified vector length.");
+      }
+      WordVectorConverter result = new WordVectorConverter(_job, _parms._vec_size, (int) preTrained.numRows()).doAll(preTrained);
+      model.buildModelOutput(result._words, result._syn0);
     }
   }
 }

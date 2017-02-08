@@ -6,6 +6,7 @@ import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.util.Log;
 
@@ -59,6 +60,43 @@ public class Word2VecTest extends TestUtil {
           assertTrue(wv.vec(i).isNA(j)); // unseen & missing words
       }
 
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testW2V_pretrained() {
+    String[] words = new String[1000];
+    double[] v1 = new double[words.length];
+    double[] v2 = new double[words.length];
+    for (int i = 0; i < words.length; i++) {
+      words[i] = "word" + i;
+      v1[i] = i / (float) words.length;
+      v2[i] = 1 - v1[i];
+    }
+    Scope.enter();
+    Frame pretrained = new TestFrameBuilder()
+            .withName("w2v-pretrained")
+            .withColNames("Word", "V1", "V2")
+            .withVecTypes(Vec.T_STR, Vec.T_NUM, Vec.T_NUM)
+            .withDataForCol(0, words)
+            .withDataForCol(1, v1)
+            .withDataForCol(2, v2)
+            .withChunkLayout(100, 100, 20, 80, 100, 100, 100, 100, 100, 100, 100)
+            .build();
+    Scope.track(pretrained);
+    try {
+      Word2VecModel.Word2VecParameters p = new Word2VecModel.Word2VecParameters();
+      p._vec_size = 2;
+      p._pre_trained = pretrained._key;
+
+      Word2VecModel w2vm = (Word2VecModel) Scope.track_generic(new Word2Vec(p).trainModel().get());
+
+      for (int i = 0; i < words.length; i++) {
+        float[] wordVector = w2vm.transform(words[i]);
+        assertArrayEquals("wordvec " + i, new float[]{(float) v1[i], (float) v2[i]}, wordVector, 0.0001f);
+      }
     } finally {
       Scope.exit();
     }
