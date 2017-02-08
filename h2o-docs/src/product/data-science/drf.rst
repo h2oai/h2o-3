@@ -246,7 +246,7 @@ By default, the following output displays:
 
 -  Model parameters (hidden)
 -  A graph of the scoring history (number of trees vs. training MSE)
--  A graph of the ROC curve (TPR vs. FPR)
+-  A graph of the `ROC curve <https://en.wikipedia.org/wiki/Receiver_operating_characteristic>`__ (TPR vs. FPR)
 -  A graph of the variable importances
 -  Output (model category, validation metrics, initf)
 -  Model summary (number of trees, min. depth, max. depth, mean depth,
