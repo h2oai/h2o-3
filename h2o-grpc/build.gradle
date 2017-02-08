@@ -1,5 +1,8 @@
 import org.apache.tools.ant.taskdefs.condition.Os
 
+plugins {
+    id "com.google.protobuf" version "0.8.0"
+}
 
 apply plugin: 'java'
 apply plugin: 'com.google.protobuf'
@@ -116,3 +119,13 @@ idea {
     }
 }
 
+
+//----------------------------------------------------------------------------------------------------------------------
+// Clean up
+//----------------------------------------------------------------------------------------------------------------------
+
+task cleanGeneratedProtoClasses(type: Delete) {
+    delete protobuf.generatedFilesBaseDir
+}
+
+clean.dependsOn cleanGeneratedProtoClasses

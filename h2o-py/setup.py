@@ -91,5 +91,5 @@ setup(
     ]},
 
     # run-time dependencies
-    install_requires=["requests", "tabulate", "future", "colorama", "grpcio-tools"],
+    install_requires=["requests", "tabulate", "future", "colorama"],
 )

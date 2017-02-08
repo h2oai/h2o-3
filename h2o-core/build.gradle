@@ -106,11 +106,6 @@ task cleanBuildVersionJava(type: Delete) {
     delete buildVersionFile
 }
 
-task cleanGeneratedProtoClasses(type: Delete) {
-  delete protobuf.generatedFilesBaseDir
-}
-
-clean.dependsOn cleanGeneratedProtoClasses
 clean.dependsOn cleanBuildVersionJava
 
 apply from: '../gradle/javaIgnoreSymbolFile.gradle'
