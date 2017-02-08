@@ -14,7 +14,6 @@ configurations {
 // Dependencies
 dependencies {
   compile project(":h2o-app")
-  compile project(":h2o-grpc")
   compile project(":h2o-persist-s3")
   compile project(":h2o-persist-hdfs")
   if (project.hasProperty("doIncludeOrc") && project.doIncludeOrc == "true") {
@@ -52,14 +51,14 @@ artifacts {
 // project build directory
 //
 
-def assembly = "h2o-assembly.jar"
+def assembly = "main.jar"
 def allInOne = "h2o.jar"
 
 task copyJar(type: Copy) {
     from ("${project.buildDir}/libs"){
         include assembly
     }
-    into "${project.parent.buildDir}"
+    into "${project.parent.parent.buildDir}"
     rename { it.replace(assembly, allInOne) }
 }
 // Execute always copyJar

@@ -34,7 +34,7 @@ plugins {
 // files with the right settings.
 //
 // The top-level jar file that gets produced is empty and not usable
-// for anything.  Use the jar file produced by the h2o-assembly subproject.
+// for anything.  Use the jar file produced by the :h2o-assemblies:main subproject.
 //
 apply from: 'gradle/java.gradle'
 

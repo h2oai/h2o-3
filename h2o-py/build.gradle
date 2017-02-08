@@ -16,7 +16,7 @@ if (System.env.VIRTUAL_ENV) {
 }
 
 dependencies {
-    compile project(":h2o-assembly")
+    compile project(":h2o-assemblies:main")
 }
 
 static List<java.lang.String> getOsSpecificCommandLine(List<java.lang.String> args) {

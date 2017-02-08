@@ -57,7 +57,7 @@ jacocoTestReport {
     }
 
     // Collect class files
-    FileTree classLocation = fileTree(dir: "$rootDir", include: "**/build/libs/**/*.jar", excludes: ["build/", "h2o-assembly/"])
+    FileTree classLocation = fileTree(dir: "$rootDir", include: "**/build/libs/**/*.jar", excludes: ["build/", "h2o-assemblies/"])
     classDirectories = classLocation
     
     reports {
