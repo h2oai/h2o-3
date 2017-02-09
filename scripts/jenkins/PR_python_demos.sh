@@ -49,7 +49,6 @@ echo "*  Activating Python virtualenv"
 echo "*********************************************"
 echo ""
 source $WORKSPACE/../h2o_venv/bin/activate
-pip install --upgrade pip
 
 python --version
 

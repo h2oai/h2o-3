@@ -2,21 +2,14 @@ package water;
 
 import com.brsanthu.googleanalytics.DefaultRequest;
 import com.brsanthu.googleanalytics.GoogleAnalytics;
+
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
+
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
 import org.reflections.Reflections;
-import water.UDPRebooted.ShutdownTsk;
-import water.api.RequestServer;
-import water.exceptions.H2OFailException;
-import water.exceptions.H2OIllegalArgumentException;
-import water.init.*;
-import water.nbhm.NonBlockingHashMap;
-import water.parser.ParserService;
-import water.persist.PersistManager;
-import water.util.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,11 +17,41 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.net.*;
-import java.util.*;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.MulticastSocket;
+import java.net.NetworkInterface;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
+
+import water.UDPRebooted.ShutdownTsk;
+import water.api.RequestServer;
+import water.exceptions.H2OFailException;
+import water.exceptions.H2OIllegalArgumentException;
+import water.init.AbstractBuildVersion;
+import water.init.AbstractEmbeddedH2OConfig;
+import water.init.JarHash;
+import water.init.NetworkInit;
+import water.init.NodePersistentStorage;
+import water.nbhm.NonBlockingHashMap;
+import water.parser.ParserService;
+import water.persist.PersistManager;
+import water.util.GAUtils;
+import water.util.Log;
+import water.util.NetworkUtils;
+import water.util.OSUtils;
+import water.util.PrettyPrint;
 
 /**
 * Start point for creating or joining an <code>H2O</code> Cloud.
@@ -218,7 +241,6 @@ final public class H2O {
 
     /** -user_name=user_name; Set user name */
     public String user_name = System.getProperty("user.name");
-
 
     //-----------------------------------------------------------------------------------
     // Node configuration
@@ -724,10 +746,24 @@ final public class H2O {
 
     // Disallow schemas whose parent is in another package because it takes ~4s to do the getSubTypesOf call.
     String[] packages = new String[]{"water", "hex"};
-    ServiceLoader<AbstractH2OExtension> extensionsLoader = ServiceLoader.load(AbstractH2OExtension.class);
-    for (AbstractH2OExtension e : extensionsLoader) {
+
+    for (String pkg : packages) {
+      Reflections reflections = new Reflections(pkg);
+      for (Class registerClass : reflections.getSubTypesOf(water.AbstractH2OExtension.class)) {
+        if (!Modifier.isAbstract(registerClass.getModifiers())) {
+          try {
+            Object instance = registerClass.newInstance();
+            water.AbstractH2OExtension e = (water.AbstractH2OExtension) instance;
+            H2O.addExtension(e);
+          } catch (Exception e) {
+            throw H2O.fail(e.toString());
+          }
+        }
+      }
+    }
+
+    for (AbstractH2OExtension e : H2O.getExtensions()) {
       e.init();
-      extensions.add(e);
     }
 
     extensionsRegistered = true;
@@ -1830,11 +1866,6 @@ final public class H2O {
 
     // Start the local node.  Needed before starting logging.
     startLocalNode();
-
-    // Allow extensions to perform initialization that requires the network.
-    for (AbstractH2OExtension ext: extensions) {
-      ext.onLocalNodeStarted();
-    }
 
     try {
       String logDir = Log.getLogDir();
