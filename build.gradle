@@ -1,35 +1,16 @@
-//
-// The top-level h2o-3 project does not have any java pieces itself, but
-// apply from the standard java.gradle so that 'gradle idea' generates IDE
-// files with the right settings.
-//
-// The top-level jar file that gets produced is empty and not usable
-// for anything.  Use the jar file produced by the h2o-assembly subproject.
-//
-apply from: 'gradle/java.gradle'
-
-// For multiproject setup we have to apply release plugin here (we share same release number cross all modules)
-if (project.hasProperty("doRelease")) {
-    apply from: 'gradle/release.gradle'
-}
-
-// Print out time taken for each task so we find things that are slow.
-apply from: 'gradle/timing.gradle'
-
 // The build script settings to fetch plugins and put them on
 // classpath
 buildscript {
     repositories {
-        maven {
-            url 'https://plugins.gradle.org/m2/'
-        }
+        maven { url 'https://plugins.gradle.org/m2/' }
         mavenCentral()
         jcenter()
     }
 
+    //noinspection GroovyAssignabilityCheck
     dependencies {
         classpath 'org.ow2.asm:asm:5.1'
-        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.2'
+        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.3'
         classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.7.1'
         classpath 'com.github.townsfolk:gradle-release:1.2'
         classpath 'de.undercouch:gradle-download-task:2.1.0'
@@ -41,6 +22,28 @@ buildscript {
         classpath 'ca.cutterslade.gradle:gradle-dependency-analyze:1.1.0'
     }
 }
+
+plugins {
+    id "java"
+}
+
+//
+// The top-level h2o-3 project does not have any java pieces itself, but
+// apply from the standard java.gradle so that 'gradle idea' generates IDE
+// files with the right settings.
+//
+// The top-level jar file that gets produced is empty and not usable
+// for anything.  Use the jar file produced by the :h2o-assemblies:main subproject.
+//
+apply from: 'gradle/java.gradle'
+
+// For multiproject setup we have to apply release plugin here (we share same release number cross all modules)
+if (project.hasProperty("doRelease")) {
+    apply from: 'gradle/release.gradle'
+}
+
+// Print out time taken for each task so we find things that are slow.
+apply from: 'gradle/timing.gradle'
 
 //
 // Common configuration
@@ -107,10 +110,15 @@ ext {
 
     //
     // Versions of libraries shared cross all projects
+    // The version of protoc must match protobuf-java. If you don't depend on
+    // protobuf-java directly, you will be transitively depending on the
+    // protobuf-java version that grpc depends on.
     //
     junitVersion  = '4.12'
     jets3tVersion = '0.7.1'
     awsJavaSdkVersion = '1.8.3'
+    protocVersion = '3.0.2'
+    grpcVersion = '1.0.3'
 
     //
     // H2O's REST API version
@@ -237,7 +245,7 @@ subprojects {
 }
 
 task wrapper(type: Wrapper) {
-  gradleVersion = '2.9'
+  gradleVersion = '3.3'
 }
 
 //

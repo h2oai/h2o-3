@@ -1,3 +1,5 @@
+apply plugin: 'java'
+
 //
 // H2O Core Module
 //
@@ -15,7 +17,7 @@ dependencies {
   compile "ai.h2o:google-analytics-java:1.1.2-H2O-CUSTOM"
   compile "org.eclipse.jetty.aggregate:jetty-servlet:8.1.17.v20150415"
   compile "org.eclipse.jetty:jetty-plus:8.1.17.v20150415"
-  compile "com.github.rwl:jtransforms:2.4.0" 
+  compile "com.github.rwl:jtransforms:2.4.0"
 
   compile("log4j:log4j:1.2.15") { 
     exclude module: "activation" 
@@ -54,6 +56,7 @@ jar {
     attributes 'Main-Class': 'water.H2O'
   }
 }
+
 
 // Run a single small JVM under heavy memory load, and confirm spilling works
 task testOOM(type: Exec) {

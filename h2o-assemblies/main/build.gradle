@@ -13,14 +13,16 @@ configurations {
 
 // Dependencies
 dependencies {
-  compile project(":h2o-app")
-  compile project(":h2o-persist-s3")
-  compile project(":h2o-persist-hdfs")
-  if (project.hasProperty("doIncludeOrc") && project.doIncludeOrc == "true") {
-    compile project(":h2o-orc-parser")
-  }
-  compile project(":h2o-parquet-parser")
-  compile "org.slf4j:slf4j-log4j12:1.7.5"
+    compile project(":h2o-app")
+    compile project(":h2o-web")
+    compile project(":h2o-avro-parser")
+    compile project(":h2o-persist-s3")
+    compile project(":h2o-persist-hdfs")
+    if (project.hasProperty("doIncludeOrc") && project.doIncludeOrc == "true") {
+        compile project(":h2o-orc-parser")
+    }
+    compile project(":h2o-parquet-parser")
+    compile "org.slf4j:slf4j-log4j12:1.7.5"
 }
 
 shadowJar {
@@ -51,14 +53,14 @@ artifacts {
 // project build directory
 //
 
-def assembly = "h2o-assembly.jar"
+def assembly = "main.jar"
 def allInOne = "h2o.jar"
 
 task copyJar(type: Copy) {
     from ("${project.buildDir}/libs"){
         include assembly
     }
-    into "${project.parent.buildDir}"
+    into "${project.parent.parent.buildDir}"
     rename { it.replace(assembly, allInOne) }
 }
 // Execute always copyJar

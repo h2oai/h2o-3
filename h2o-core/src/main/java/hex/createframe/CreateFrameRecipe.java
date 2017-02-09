@@ -13,8 +13,8 @@ import java.util.Random;
  * Base class for all frame creation recipes.
  */
 public abstract class CreateFrameRecipe<T extends CreateFrameRecipe<T>> extends Iced<T> {
-  protected Key<Frame> dest;
-  protected long seed = -1;
+  public Key<Frame> dest;
+  public long seed = -1;
 
   //--------------------------------------------------------------------------------------------------------------------
   // Inheritance interface
