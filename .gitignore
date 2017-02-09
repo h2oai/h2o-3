@@ -75,25 +75,18 @@ target
 h2o-test-accuracy/testng.xml
 
 # stuff created by sphinx-build (python docs)
-./h2o-py/docs/docs/_static
-./h2o-py/docs/docs/_sources/
-./h2o-py/docs/docs/searchindex.js
-./h2o-py/docs/docs/search*
-./h2o-py/docs/docs/py-modindex.html
-./h2o-py/docs/docs/*html
-./h2o-py/docs/docs/*js
-./h2o-py/docs/docs/.buildinfo
-./h2o-py/docs/docs/.doctrees/
-./h2o-py/docs/docs/_modules/
-./h2o-py/docs/docs/objects.inv
+h2o-py/docs/_build/
 
 git_private_jenkins.sh
 make-java6.sh
 
 # Ignore generated code
-src-gen/
+h2o-bindings/src-gen/
+h2o-grpc/proto-gen/
 h2o-3-DESCRIPTION
 gradle/buildnumber.properties
+*_pb2.py
+*_pb2_grpc.py
 
 # Doc stuff
 .Rapp.history
