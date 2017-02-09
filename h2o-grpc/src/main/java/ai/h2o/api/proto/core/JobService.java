@@ -36,10 +36,10 @@ public class JobService extends JobGrpc.JobImplBase {
 
 
   //--------------------------------------------------------------------------------------------------------------------
-  // Private
+  // Helpers
   //--------------------------------------------------------------------------------------------------------------------
 
-  private water.Job resolveJob(JobId request) {
+  private static water.Job resolveJob(JobId request) {
     String strId = request.getJobId();
     Value val = DKV.get(Key.make(strId));
     if (val == null) {
@@ -54,7 +54,7 @@ public class JobService extends JobGrpc.JobImplBase {
   }
 
 
-  private JobInfo fillJobInfo(water.Job job) {
+  public static JobInfo fillJobInfo(water.Job job) {
     JobInfo.Builder jb = JobInfo.newBuilder();
     jb.setJobId(job._key.toString())
       .setProgress(job.progress())
