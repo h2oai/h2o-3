@@ -28,7 +28,7 @@ public class TimedH2OJob extends H2OJob {
     @Override public void compute2() {
       while( ((TimedH2ORunnable)_j._target).keepRunning()) {
         try {
-          Thread.sleep(Math.min(10,((TimedH2ORunnable)_j._target).timeRemaining()));
+          Thread.sleep(Math.min(10,((TimedH2ORunnable)_j._target).timeRemainingMs()));
         } catch (InterruptedException e) {
           e.printStackTrace();
         }
