@@ -3824,8 +3824,16 @@ h2o.isax <- function(x, num_words, max_cardinality, optimize_card = FALSE){
 #' String Split
 #'
 #' @param x The column whose strings must be split.
-#' @export
 #' @param split The pattern to split on.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' string_to_split <- as.h2o("Split at every character.")
+#' split_string <- h2o.strsplit(string_to_split,"")
+#' }
+#' @return An H2OFrame where each column is the outcome of the string split.
+#' @export
 h2o.strsplit <- function(x, split) { .newExpr("strsplit", x, .quote(split)) }
 
 #'
@@ -3836,21 +3844,44 @@ h2o.strsplit <- function(x, split) { .newExpr("strsplit", x, .quote(split)) }
 #'
 #' @param x The column or columns whose strings to tokenize.
 #' @param split The regular expression to split on.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' string_to_tokenize <- as.h2o("Split at every character and tokenize.")
+#' tokenize_string <- h2o.tokenize(as.character(string_to_tokenize),"")
+#' }
 #' @return An H2OFrame with a single column representing the tokenized Strings. Original rows of the input DF are separated by NA.
 #' @export
 h2o.tokenize <- function(x, split) { .newExpr("tokenize", x, .quote(split)) }
 
 #'
-#' To Lower
+#' Convert strings to lowercase
 #'
-#' @param x An H2OFrame object whose strings should be lower'd
+#' @param x An H2OFrame object whose strings should be lower cased
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' string_to_lower <- as.h2o("ABCDE")
+#' lowered_string <- h2o.tolower(string_to_lower)
+#' }
+#' @return An H2OFrame with all entries in lowercase format
 #' @export
 h2o.tolower <- function(x) .newExpr("tolower", x)
 
 #'
-#' To Upper
+#' Convert strings to uppercase
 #'
-#' @param x An H2OFrame object whose strings should be upper'd
+#' @param x An H2OFrame object whose strings should be upper cased
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' string_to_upper <- as.h2o("abcde")
+#' upper_string <- h2o.toupper(string_to_upper)
+#' }
+#' @return An H2OFrame with all entries in uppercase format
 #' @export
 h2o.toupper <- function(x) .newExpr("toupper", x)
 
@@ -3896,6 +3927,13 @@ h2o.grep <- function(pattern, x, ignore.case = FALSE, invert = FALSE, output.log
 #' @param replacement The replacement pattern.
 #' @param x The column on which to operate.
 #' @param ignore.case Case sensitive or not
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' string_to_sub <- as.h2o("r tutorial")
+#' sub_string <- h2o.sub("r ","H2O ",string_to_sub)
+#' }
 #' @export
 h2o.sub <- function(pattern,replacement,x,ignore.case=FALSE) .newExpr("replacefirst", x, .quote(pattern), .quote(replacement),ignore.case)
 
@@ -3909,6 +3947,13 @@ h2o.sub <- function(pattern,replacement,x,ignore.case=FALSE) .newExpr("replacefi
 #' @param replacement The replacement pattern.
 #' @param x The column on which to operate.
 #' @param ignore.case Case sensitive or not
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' string_to_gsub <- as.h2o("r tutorial")
+#' sub_string <- h2o.gsub("r ","H2O ",string_to_gsub)
+#' }
 #' @export
 h2o.gsub <- function(pattern,replacement,x,ignore.case=FALSE) .newExpr("replaceall", x, .quote(pattern), .quote(replacement),ignore.case)
 
@@ -3916,6 +3961,13 @@ h2o.gsub <- function(pattern,replacement,x,ignore.case=FALSE) .newExpr("replacea
 #' Trim Space
 #'
 #' @param x The column whose strings should be trimmed.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' string_to_trim <- as.h2o("r tutorial")
+#' trim_string <- h2o.trim(string_to_trim)
+#' }
 #' @export
 h2o.trim <- function(x) .newExpr("trim", x)
 
@@ -3923,6 +3975,13 @@ h2o.trim <- function(x) .newExpr("trim", x)
 #' String length
 #'
 #' @param x The column whose string lengths will be returned.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' string_to_nchar <- as.h2o("r tutorial")
+#' nchar_string <- h2o.nchar(string_to_nchar)
+#' }
 #' @export
 h2o.nchar <- function(x) .newExpr("strlen", x)
 
@@ -3938,7 +3997,14 @@ h2o.nchar <- function(x) .newExpr("strlen", x)
 #'
 #' @param x The column on which to operate.
 #' @param start The index of the first element to be included in the substring.
-#' @param stop Optional, The index of the last element to be included in the substring. 
+#' @param stop Optional, The index of the last element to be included in the substring.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' string_to_substring <- as.h2o("1234567890")
+#' substr <- h2o.substring(string_to_substring,2) #Get substring from second index onwards
+#' }
 #' @export
 h2o.substring <- function(x, start, stop="[]") .newExpr("substring", x, start-1, stop)
 
@@ -3954,18 +4020,32 @@ h2o.substr <- h2o.substring
 #'
 #' @param x   The column whose strings should be lstrip-ed.
 #' @param set string of characters to be removed
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' string_to_lstrip <- as.h2o("1234567890")
+#' lstrip_string <- h2o.lstrip(string_to_lstrip,"123") #Remove "123"
+#' }
 #' @export
 h2o.lstrip <- function(x, set = " ") .newExpr("lstrip", x, .quote(set))
 
 #'
 #' Strip set from right
 #'
-#' Return a copy of the target column with leading characters removed. The set argument
+#' Return a copy of the target column with trailing characters removed. The set argument
 #' is a string specifying the set of characters to be removed. If omitted, the set
 #' argument defaults to removing whitespace.
 #'
 #' @param x   The column whose strings should be rstrip-ed.
 #' @param set string of characters to be removed
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' string_to_rstrip <- as.h2o("1234567890")
+#' rstrip_string <- h2o.rstrip(string_to_rstrip,"890") #Remove "890"
+#' }
 #' @export
 h2o.rstrip <- function(x, set = " ") .newExpr("rstrip", x, .quote(set))
 
@@ -3976,6 +4056,13 @@ h2o.rstrip <- function(x, set = " ") .newExpr("rstrip", x, .quote(set))
 #' Return the Shannon entropy of a string column. If the string is empty, the entropy is 0.
 #'
 #' @param x   The column on which to calculate the entropy.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' buys <- as.h2o(c("no", "no", "yes", "yes", "yes", "no", "yes", "no", "yes", "yes","no"))
+#' buys_entropy <- h2o.entropy(buys)
+#' }
 #' @export
 h2o.entropy <- function(x) .newExpr("entropy", x)
 
