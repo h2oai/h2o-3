@@ -1203,7 +1203,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
    */
   @Override
   protected ModelMetrics.MetricBuilder scoreMetrics(Frame adaptFrm) {
-    return makeScoringTask(adaptFrm,false,null).doAll(adaptFrm)._mb;
+    GLMScore gs = makeScoringTask(adaptFrm,false,null);// doAll(names.length,Vec.T_NUM,adaptFrm);
+    assert gs._dinfo._valid:"_valid flag should be set on data info when doing scoring";
+    return gs.doAll(gs._dinfo._adaptedFrame)._mb;
   }
 
   @Override
