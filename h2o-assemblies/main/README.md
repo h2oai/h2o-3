@@ -7,6 +7,6 @@ with H<sub>2</sub>O.
 ## Building
 
 ```
-./gradlew :h2o-assembly:build
+./gradlew :h2o-assemblies:main:build
 ```
 
