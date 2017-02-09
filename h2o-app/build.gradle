@@ -4,10 +4,12 @@
 description = "H2O Application Runner"
 
 dependencies {
+  compile project(":h2o-web")
   compile project(":h2o-algos")
   compile project(":h2o-core")
   compile project(":h2o-genmodel")
-  // Note: orc parser is included at the assembly level for each
+  compile project(":h2o-avro-parser")
+  // Note: orc parser is included at the assembly level for each 
   // Hadoop distribution
 }
 

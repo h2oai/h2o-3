@@ -1,3 +1,4 @@
+import org.apache.commons.io.output.ByteArrayOutputStream
 import org.apache.tools.ant.taskdefs.condition.Os
 import java.nio.file.FileSystems
 import java.nio.file.Files
@@ -8,20 +9,16 @@ import static java.nio.file.StandardCopyOption.*;
 defaultTasks 'build_python'
 description = "H2O Python Package"
 
-java.lang.String pythonexe = "python"
-java.lang.String pipexe = "pip"
-if (System.env.VIRTUAL_ENV) {
-    pythonexe = "${System.env.VIRTUAL_ENV}/bin/python".toString()
-    pipexe = "${System.env.VIRTUAL_ENV}/bin/pip".toString()
-}
-
 dependencies {
-    compile project(":h2o-assemblies:main")
+    compile project(":h2o-assembly")
 }
 
-static List<java.lang.String> getOsSpecificCommandLine(List<java.lang.String> args) {
-    return Os.isFamily(Os.FAMILY_WINDOWS) ? [ 'cmd', '/c' ] + args : args
+def getOS() {
+    String os = [Os.FAMILY_WINDOWS, Os.FAMILY_MAC, Os.FAMILY_UNIX].find {String family -> Os.isFamily(family) }
+    return os
 }
+
+def getOsSpecificCommandLine(args) { return Os.isFamily(Os.FAMILY_WINDOWS) ? [ 'cmd', '/c' ] + args : args }
 
 def bv = new H2OBuildVersion(rootDir, version)
 
@@ -30,20 +27,19 @@ ext {
     T               = getProjectDir().toString()
 }
 
-
 task makeOutputDir(type: Exec) {
-    if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+    if(Os.isFamily(Os.FAMILY_WINDOWS)){
         commandLine getOsSpecificCommandLine(['if not exist "build\\tmp" mkdir', 'build\\tmp'])
     } else {
         commandLine getOsSpecificCommandLine(['mkdir', '-p', 'build/tmp'])
     }
 }
 
-
 task setProjectVersion << {
     File INIT = new File([T, "h2o", "__init__.py"].join(File.separator))
     println "    INIT.path = " + INIT.path
-    def txt = INIT.text
+    def txt=""
+    txt = INIT.text
     txt = txt.replaceAll("SUBST_PROJECT_VERSION", PROJECT_VERSION)
     INIT.write(txt)
 }
@@ -51,45 +47,35 @@ task setProjectVersion << {
 task resetProjectVersion << {
     File INIT = new File([T, "h2o", "__init__.py"].join(File.separator))
     println "    INIT.path = " + INIT.path
-    def txt = INIT.text
+    def txt=""
+    txt = INIT.text
     txt = txt.replaceAll(PROJECT_VERSION, "SUBST_PROJECT_VERSION")
     INIT.write(txt)
 }
 
-task installPythonDependencies(type: Exec) {
-    doFirst {
-        standardOutput = new FileOutputStream("build/tmp/h2o-py_installPythonDependencies.out")
-    }
-    commandLine getOsSpecificCommandLine([
-            pipexe, "install",
-            "tabulate>=0.7.5",
-            "requests>=2.10",
-            "colorama>=0.3.7",
-            "future>=0.15.2"
-    ])
+task upgradeOrInstallTabulate(type: Exec) {
+    commandLine getOsSpecificCommandLine(["pip", "install", "tabulate", "--user", "--upgrade"])
 }
 
+task upgradeOrInstallWheel(type: Exec) {
+    commandLine getOsSpecificCommandLine(["pip", "install", "wheel", "--user", "--upgrade", "--ignore-installed"])
+}
 
-
-task buildDist(type: Exec) {
-    dependsOn installPythonDependencies
-    dependsOn setProjectVersion
-    dependsOn makeOutputDir
-
+task buildDist(type: Exec, dependsOn: makeOutputDir) {
     doFirst {
         standardOutput = new FileOutputStream("build/tmp/h2o-py_buildDist.out")
     }
-    commandLine getOsSpecificCommandLine([pythonexe, "setup.py", "bdist_wheel"])
+    commandLine getOsSpecificCommandLine(["python", "setup.py", "bdist_wheel"])
 }
 
-File testsPath = new File("./tests")
+def testsPath = new File("./tests")
 
 task smokeTest(type: Exec) {
     dependsOn build
     println "PyUnit smoke test (run.py --wipeall --testsize s)..."
     workingDir testsPath
     commandLine 'pwd'
-	List<java.lang.String> args = [pythonexe, '../../scripts/run.py', '--wipeall', '--testsize', 's']
+	def args = ['python', '../../scripts/run.py', '--wipeall', '--testsize', 's']
     if (project.hasProperty("jacocoCoverage")) {
         args << '--jacoco'
     }
@@ -114,6 +100,10 @@ task cleaner << {
 }
 
 clean.dependsOn cleaner, cleanUpSmokeTest
+upgradeOrInstallWheel.dependsOn cleaner
+// buildDist.dependsOn upgradeOrInstallTabulate
+// buildDist.dependsOn upgradeOrInstallWheel
+buildDist.dependsOn setProjectVersion
 resetProjectVersion.dependsOn buildDist
 task build_python(dependsOn: resetProjectVersion)
 build.dependsOn build_python

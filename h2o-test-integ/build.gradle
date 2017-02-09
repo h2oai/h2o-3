@@ -1,7 +1,7 @@
 description = "H2O Integration Testing"
 
 dependencies {
-    compile project(":h2o-assemblies:main")
+    compile project(":h2o-assembly")
 }
 
 def runner = new File("$rootDir/scripts/run.py").canonicalPath
