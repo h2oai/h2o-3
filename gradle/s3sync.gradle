@@ -9,6 +9,7 @@ buildscript {
     }
     dependencies {
         classpath 'de.undercouch:gradle-download-task:3.2.0'
+        classpath 'joda-time:joda-time:2.3'
     }
 }
 
