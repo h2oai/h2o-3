@@ -1751,6 +1751,7 @@ final public class H2O {
     parseArguments(arguments);
 
     // Get ice path before loading Log or Persist class
+    long time1 = System.currentTimeMillis();
     String ice = DEFAULT_ICE_ROOT();
     if( ARGS.ice_root != null ) ice = ARGS.ice_root.replace("\\", "/");
     try {
@@ -1760,6 +1761,7 @@ final public class H2O {
     }
 
     // Always print version, whether asked-for or not!
+    long time2 = System.currentTimeMillis();
     printAndLogVersion(arguments);
     if( ARGS.version ) {
       Log.flushStdout();
@@ -1910,7 +1912,9 @@ final public class H2O {
 
     long time12 = System.currentTimeMillis();
     Log.debug("Timing within H2O.main():");
-    Log.debug("    Args parsing & validation: " + (time3 - time0) + "ms");
+    Log.debug("    Args parsing & validation: " + (time1 - time0) + "ms");
+    Log.debug("    Get ICE root: " + (time2 - time1) + "ms");
+    Log.debug("    Print log version: " + (time3 - time2) + "ms");
     Log.debug("    Register GA: " + (time4 - time3) + "ms");
     Log.debug("    Detect network address: " + (time5 - time4) + "ms");
     Log.debug("    Start local node: " + (time6 - time5) + "ms");
