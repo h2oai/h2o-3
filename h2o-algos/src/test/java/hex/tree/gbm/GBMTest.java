@@ -2978,7 +2978,7 @@ public class GBMTest extends TestUtil {
         double mae = ModelMetricsRegression.make(train_preds.vec(0), train.vec("y"), gaussian).mae();
         Log.info("Train MAE: " + mae);
         maes[i++] = mae;
-        if (nbins_cats >= 25) //even 25 can do a perfect job
+        if (nbins_cats >= 26) //only 26+ can do a perfect job
           Assert.assertEquals(mae, 0, 1e-8);
         else
           Assert.assertNotEquals(mae, 0, 1e-8);

@@ -290,7 +290,7 @@ public class DRFTest extends TestUtil {
             20, //bins
             10, //min_rows
             5, //max_depth
-            0.25040633586487);
+            0.25025065887562836);
   }
 
   @Test public void testProstate() throws Throwable {
@@ -378,7 +378,7 @@ public class DRFTest extends TestUtil {
             25, // not enough bins to resolve the alphabet
             1,
             1, // depth 1 is not enough since nbins_cats == nbins < 26
-            0.24007225096411577);
+            0.2390642390923518);
   }
 
   @Ignore  //1-vs-5 node discrepancy (parsing into different number of chunks?)
@@ -792,7 +792,7 @@ public class DRFTest extends TestUtil {
       Log.info("trial: " + i + " -> MSE: " + mses[i]);
     }
     for (int i=0; i<mses.length; ++i) {
-      assertEquals(0.20377446328850304, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
+      assertEquals(0.20349524993341098, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
     }
   }
 
