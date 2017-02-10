@@ -1,3 +1,4 @@
+pip
 colorama
 future
 requests
