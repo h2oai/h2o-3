@@ -35,7 +35,7 @@
 #'        weights are not allowed.
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
-#'        "Binary", "Eigen". Defaults to AUTO.
+#'        "Binary", "Eigen", "Integer", "SortByResponse". Defaults to AUTO.
 #' @param overwrite_with_best_model \code{Logical}. If enabled, override the final model with the best model found during training. Defaults to
 #'        TRUE.
 #' @param epochs How many times the dataset should be iterated (streamed), can be fractional. Defaults to 10.
@@ -113,7 +113,7 @@ h2o.deepwater <- function(x, y, training_frame,
                           offset_column = NULL,
                           weights_column = NULL,
                           score_each_iteration = FALSE,
-                          categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen"),
+                          categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "Integer", "SortByResponse"),
                           overwrite_with_best_model = TRUE,
                           epochs = 10,
                           train_samples_per_iteration = -2,

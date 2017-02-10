@@ -59,7 +59,7 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
       "histogram_type",
       "max_abs_leafnode_pred",
       "pred_noise_bandwidth",
-      "categorical_encoding",
+      "categorical_encoding"
 //      "use_new_histo_tsk",
 //      "col_block_sz",
 //      "min_threads",

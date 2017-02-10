@@ -17,6 +17,7 @@ import java.util.*;
 abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Iced {
 
   public ToEigenVec getToEigenVec() { return null; }
+  public boolean shouldReorder(Vec v) { return _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.SortByResponse; }
 
   transient private IcedHashMap<Key,String> _toDelete = new IcedHashMap<>();
   void cleanUp() { FrameUtils.cleanUp(_toDelete); }
@@ -959,7 +960,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       String[] skipCols = new String[]{_parms._weights_column, _parms._offset_column, _parms._fold_column, _parms._response_column};
       Frame newtrain = FrameUtils.categoricalEncoder(_train, skipCols, _parms._categorical_encoding, getToEigenVec());
       if (newtrain!=_train) {
-        assert(newtrain._key!=null);
+        assert (newtrain._key != null);
         _origNames = _train.names();
         _origDomains = _train.domains();
         _train = newtrain;
@@ -981,6 +982,36 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           _vresponse = _valid.vec(_parms._response_column);
         }
       }
+      Vec[] vecs = _train.vecs();
+      for (int j = 0; j < vecs.length; ++j) {
+        Vec v = vecs[j];
+        if (v == _response || v == _fold) continue;
+        if (v.isCategorical() && shouldReorder(v)) {
+          final int len = v.domain().length;
+          Log.info("Reordering categorical column " + _train.name(j) + " (" + len + " levels) based on the mean (weighted) response per level.");
+          VecUtils.MeanResponsePerLevelTask mrplt = new VecUtils.MeanResponsePerLevelTask(len).doAll(v,
+                  _parms._weights_column != null ? _train.vec(_parms._weights_column) : v.makeCon(1.0),
+                  _train.vec(_parms._response_column));
+          double[] meanWeightedResponse  = mrplt.meanWeightedResponse;
+//          for (int i=0;i<len;++i)
+//            Log.info(v.domain()[i] + " -> " + meanWeightedResponse[i]);
+
+          // Option 1: Order the categorical column by response to make better splits
+          int[] idx=new int[len];
+          for (int i=0;i<len;++i) idx[i] = i;
+          ArrayUtils.sort(idx, meanWeightedResponse);
+          int[] invIdx=new int[len];
+          for (int i=0;i<len;++i) invIdx[idx[i]] = i;
+          Vec vNew = new VecUtils.ReorderTask(invIdx).doAll(1, Vec.T_NUM, new Frame(v)).outputFrame().anyVec();
+          String[] newDomain = new String[len];
+          for (int i = 0; i < len; ++i) newDomain[i] = v.domain()[idx[i]];
+          vNew.setDomain(newDomain);
+//          for (int i=0;i<len;++i)
+//            Log.info(vNew.domain()[i] + " -> " + meanWeightedResponse[idx[i]]);
+          vecs[j] = vNew;
+        }
+      }
+      _train.restructure(_train.names(), vecs);
     }
     assert (!expensive || _valid==null || Arrays.equals(_train._names, _valid._names) || _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.Binary);
     if (_valid!=null && !Arrays.equals(_train._names, _valid._names) && _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.Binary) {

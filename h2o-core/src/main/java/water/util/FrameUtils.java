@@ -75,6 +75,7 @@ public class FrameUtils {
     switch (scheme) {
       case AUTO:
       case Enum:
+      case SortByResponse: //the work is done in ModelBuilder - the domain is all we need to change once, adaptTestTrain takes care of test set adaptation
       case OneHotInternal:
         return dataset; //leave as is - most algos do their own internal default handling of enums
       case OneHotExplicit:
@@ -83,6 +84,8 @@ public class FrameUtils {
         return new CategoricalBinaryEncoder(dataset, skipCols).exec().get();
       case Eigen:
         return new CategoricalEigenEncoder(tev, dataset, skipCols).exec().get();
+      case Integer:
+        return new CategoricalIntegerEncoder(dataset, skipCols).exec().get();
       default:
         throw H2O.unimpl();
     }
@@ -550,7 +553,63 @@ public class FrameUtils {
     }
   }
 
+  public static class CategoricalIntegerEncoder extends Iced {
+    final Frame _frame;
+    Job<Frame> _job;
+    final String[] _skipCols;
 
+    public CategoricalIntegerEncoder(Frame dataset, String[] skipCols) {
+      _frame = dataset;
+      _skipCols = skipCols;
+    }
+
+    /**
+     * Driver for CategoricalIntegerEncoder
+     */
+    class CategoricalIntegerEncoderDriver extends H2O.H2OCountedCompleter {
+      final Frame _frame;
+      final Key<Frame> _destKey;
+      final String[] _skipCols;
+      CategoricalIntegerEncoderDriver(Frame frame, Key<Frame> destKey, String[] skipCols) { _frame = frame; _destKey = destKey; _skipCols = skipCols; }
+
+      @Override public void compute2() {
+        Vec[] frameVecs = _frame.vecs();
+        Vec[] extraVecs = _skipCols==null?null:new Vec[_skipCols.length];
+        if (extraVecs!=null) {
+          for (int i = 0; i < extraVecs.length; ++i) {
+            Vec v = _frame.vec(_skipCols[i]); //can be null
+            if (v != null) extraVecs[i] = v;
+          }
+        }
+        Frame outputFrame = new Frame(_destKey);
+        for (int i = 0, j = 0; i < frameVecs.length; ++i) {
+          if (_skipCols!=null && ArrayUtils.find(_skipCols, _frame._names[i])>=0) continue;
+          int numCategories = frameVecs[i].cardinality(); // Returns -1 if non-categorical variable
+          if (numCategories > 0) {
+            outputFrame.add(_frame.name(i), frameVecs[i].toNumericVec());
+          } else
+            outputFrame.add(_frame.name(i), frameVecs[i].makeCopy());
+        }
+        if (_skipCols!=null) {
+          for (int i = 0; i < extraVecs.length; ++i) {
+            if (extraVecs[i] != null)
+              outputFrame.add(_skipCols[i], extraVecs[i].makeCopy());
+          }
+        }
+        DKV.put(outputFrame);
+        tryComplete();
+      }
+    }
+
+    public Job<Frame> exec() {
+      if (_frame == null)
+        throw new IllegalArgumentException("Frame doesn't exist.");
+      Key<Frame> destKey = Key.makeSystem(Key.make().toString());
+      _job = new Job<>(destKey, Frame.class.getName(), "CategoricalIntegerEncoder");
+      int workAmount = _frame.lastVec().nChunks();
+      return _job.start(new CategoricalIntegerEncoderDriver(_frame, destKey, _skipCols), workAmount);
+    }
+  }
   /**
    * Helper to convert a categorical variable into a "binary" encoding format. In this format each categorical value is
    * first assigned an integer value, then that integer is written in binary, and each bit column is converted into a
