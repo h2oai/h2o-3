@@ -403,7 +403,7 @@ setMethod("show", "H2OBinomialMetrics", function(object) {
     cm <- h2o.confusionMatrix(object)
     if( is.null(cm) ) print(NULL)
     else {
-      attr(cm, "header") <- "Confusion Matrix for F1-optimal threshold"
+      attr(cm, "header") <- "Confusion Matrix (vertical: actual; across: predicted) for F1-optimal threshold"
       print(cm)
       cat("\n")
     }
