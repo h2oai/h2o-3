@@ -26,7 +26,9 @@ public class ClusteringUtils {
         }
         TwoDimTable table = new TwoDimTable(name, null, rowHeaders, output._names, colTypes, colFormats, "Centroid");
 
-        for (int j=0; j<output._domains.length; ++j) {
+        // Internal weights/folds column is included in domain length
+        int domain_length = output.hasWeights()? output._domains.length - 1 : output._domains.length;
+        for (int j=0; j < domain_length; ++j) {
             boolean string = output._domains[j] != null;
             if (string) {
                 for (int i=0; i<output._centers_raw.length; ++i) {
