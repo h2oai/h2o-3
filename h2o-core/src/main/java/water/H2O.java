@@ -1724,6 +1724,7 @@ final public class H2O {
 
   // --------------------------------------------------------------------------
   public static void main( String[] args ) {
+    long time0 = System.currentTimeMillis();
 
    if (checkUnsupportedJava())
      throw new RuntimeException("Unsupported Java version");
@@ -1775,6 +1776,7 @@ final public class H2O {
     Log.info("User name: '" + H2O.ARGS.user_name + "'");
 
     // Register with GA or not
+    long time3 = System.currentTimeMillis();
     List<String> gaidList = JarHash.getResourcesList("gaid");
     if((new File(".h2o_no_collect")).exists()
             || (new File(System.getProperty("user.home")+File.separator+".h2o_no_collect")).exists()
@@ -1813,6 +1815,7 @@ final public class H2O {
     }
 
     // Epic Hunt for the correct self InetAddress
+    long time4 = System.currentTimeMillis();
     Log.info("IPv6 stack selected: " + IS_IPV6);
     SELF_ADDRESS = NetworkInit.findInetAddressForSelf();
     // Right now the global preference is to use IPv4 stack
@@ -1829,9 +1832,11 @@ final public class H2O {
     }
 
     // Start the local node.  Needed before starting logging.
+    long time5 = System.currentTimeMillis();
     startLocalNode();
 
     // Allow extensions to perform initialization that requires the network.
+    long time6 = System.currentTimeMillis();
     for (AbstractH2OExtension ext: extensions) {
       ext.onLocalNodeStarted();
     }
@@ -1847,6 +1852,7 @@ final public class H2O {
     Log.info("Cur dir: '" + System.getProperty("user.dir") + "'");
 
     //Print extra debug info now that logs are setup
+    long time7 = System.currentTimeMillis();
     RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();
     Log.debug("H2O launch parameters: "+ARGS.toString());
     Log.debug("Boot class path: "+ rtBean.getBootClassPath());
@@ -1854,6 +1860,7 @@ final public class H2O {
     Log.debug("Java library path: "+ rtBean.getLibraryPath());
 
     // Load up from disk and initialize the persistence layer
+    long time8 = System.currentTimeMillis();
     initializePersistence();
 
     // Initialize NPS
@@ -1879,11 +1886,13 @@ final public class H2O {
     }
 
     // Start network services, including heartbeats
+    long time9 = System.currentTimeMillis();
     startNetworkServices();   // start server services
     Log.trace("Network services started");
 
     // The "Cloud of size N formed" message printed out by doHeartbeat is the trigger
     // for users of H2O to know that it's OK to start sending REST API requests.
+    long time10 = System.currentTimeMillis();
     Paxos.doHeartbeat(SELF);
     assert SELF._heartbeat._cloud_hash != 0 || ARGS.client;
 
@@ -1892,11 +1901,25 @@ final public class H2O {
     // join an existing Cloud.
     new HeartBeatThread().start();
 
+    long time11 = System.currentTimeMillis();
     if (GA != null)
       startGAStartupReport();
 
     // Log registered parsers
     Log.info("Registered parsers: " + Arrays.toString(ParserService.INSTANCE.getAllProviderNames(true)));
+
+    long time12 = System.currentTimeMillis();
+    Log.debug("Timing within H2O.main():");
+    Log.debug("    Args parsing & validation: " + (time3 - time0) + "ms");
+    Log.debug("    Register GA: " + (time4 - time3) + "ms");
+    Log.debug("    Detect network address: " + (time5 - time4) + "ms");
+    Log.debug("    Start local node: " + (time6 - time5) + "ms");
+    Log.debug("    Extensions onLocalNodeStarted(): " + (time7 - time6) + "ms");
+    Log.debug("    RuntimeMxBean: " + (time8 - time7) + "ms");
+    Log.debug("    Initialize persistence layer: " + (time9 - time8) + "ms");
+    Log.debug("    Start network services: " + (time10 - time9) + "ms");
+    Log.debug("    Cloud up: " + (time11 - time10) + "ms");
+    Log.debug("    Start GA: " + (time12 - time11) + "ms");
   }
 
   // Die horribly
