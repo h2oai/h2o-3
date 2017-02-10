@@ -60,6 +60,8 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
    *  Validate K, max_iterations and the number of rows. */
   @Override public void init(boolean expensive) {
     super.init(expensive);
+    if(expensive)
+      if(_parms._fold_column != null) _train.remove(_parms._fold_column);
     if( _parms._max_iterations < 0 || _parms._max_iterations > 1e6)
       error("_max_iterations", " max_iterations must be between 0 and 1e6");
     if (_train == null) return;
@@ -252,6 +254,9 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         // Something goes wrong
         if( error_count() > 0 ) throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(KMeans.this);
         // The model to be built
+        // Set fold_column to null and will be added back into model parameter after
+        String fold_column = _parms._fold_column;
+        _parms._fold_column = null;
         model = new KMeansModel(dest(), _parms, new KMeansModel.KMeansOutput(KMeans.this));
         model.delete_and_lock(_job);
 
@@ -359,6 +364,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
           model.score(_parms.valid()).delete(); //this appends a ModelMetrics on the validation set
           model._output._validation_metrics = ModelMetrics.getFromDKV(model,_parms.valid());
         }
+        model._parms._fold_column = fold_column;
         model.update(_job); // Update model in K/V store
       } finally {
         if( model != null ) model.unlock(_job);
