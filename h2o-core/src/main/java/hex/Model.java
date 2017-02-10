@@ -129,7 +129,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       AUTO, Random, Modulo, Stratified
     }
     public enum CategoricalEncodingScheme {
-      AUTO, OneHotInternal, OneHotExplicit, Enum, Binary, Eigen
+      AUTO, OneHotInternal, OneHotExplicit, Enum, Binary, Eigen, Integer, SortByResponse
     }
     public long _seed = -1;
     public long getOrMakeRealSeed(){
@@ -939,8 +939,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               msgs.add("Test/Validation dataset column '" + names[i] + "' has levels not trained on: " + Arrays.toString(Arrays.copyOfRange(ds, domains[i].length, ds.length)));
             vec = evec;
           }
-        } else if( vec.isCategorical() ) {
-          throw new IllegalArgumentException("Test/Validation dataset has categorical column '" + names[i] + "' which is real-valued in the training data");
+        } else if(vec.isCategorical()) {
+          if (parms._categorical_encoding == Parameters.CategoricalEncodingScheme.Integer) {
+            Vec evec = vec.toNumericVec();
+            toDelete.put(evec._key, "categorically encoded vec");
+            vec = evec;
+          } else {
+            throw new IllegalArgumentException("Test/Validation dataset has categorical column '" + names[i] + "' which is real-valued in the training data");
+          }
         }
         good++;      // Assumed compatible; not checking e.g. Strings vs UUID
       }

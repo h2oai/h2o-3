@@ -126,7 +126,7 @@
 #' @param export_weights_and_biases \code{Logical}. Whether to export Neural Network weights and biases to H2O Frames. Defaults to FALSE.
 #' @param mini_batch_size Mini-batch size (smaller leads to better fit, larger can speed up and generalize better). Defaults to 1.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
-#'        "Binary", "Eigen". Defaults to AUTO.
+#'        "Binary", "Eigen", "Integer", "SortByResponse". Defaults to AUTO.
 #' @param elastic_averaging \code{Logical}. Elastic averaging between compute nodes can improve distributed model convergence.
 #'        #Experimental Defaults to FALSE.
 #' @param elastic_averaging_moving_rate Elastic averaging moving rate (only if elastic averaging is enabled). Defaults to 0.9.
@@ -223,7 +223,7 @@ h2o.deeplearning <- function(x, y, training_frame,
                              reproducible = FALSE,
                              export_weights_and_biases = FALSE,
                              mini_batch_size = 1,
-                             categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen"),
+                             categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "Integer", "SortByResponse"),
                              elastic_averaging = FALSE,
                              elastic_averaging_moving_rate = 0.9,
                              elastic_averaging_regularization = 0.001

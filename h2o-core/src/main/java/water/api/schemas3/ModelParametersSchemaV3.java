@@ -110,7 +110,7 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
   public Model.Parameters.FoldAssignmentScheme fold_assignment;
 
   @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,
-          values = {"AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen"},
+          values = {"AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "Integer", "SortByResponse"},
           help = "Encoding scheme for categorical features")
   public Model.Parameters.CategoricalEncodingScheme categorical_encoding;
 

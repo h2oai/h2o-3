@@ -7,7 +7,6 @@ import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
-import water.nbhm.NonBlockingHashMap;
 import water.nbhm.NonBlockingHashMapLong;
 import water.parser.BufferedString;
 import water.parser.Categorical;
@@ -585,4 +584,75 @@ public class VecUtils {
     }
     return (v._cids = j == res.length?res:Arrays.copyOf(res,j));
   }
+
+  /**
+   * Compute the mean (weighted) response per categorical level
+   * Skip NA values (those are already a separate bucket in the tree building histograms, for which this is designed)
+   */
+  public static class MeanResponsePerLevelTask extends MRTask<MeanResponsePerLevelTask> {
+    // OUTPUT
+    public double[] meanWeightedResponse;
+    public double meanOverallWeightedResponse;
+
+    // Internal
+    private double[] wcounts;
+    private int _len;
+    public MeanResponsePerLevelTask(int len) {
+      _len = len;
+    }
+    @Override
+    public void map(Chunk c, Chunk w, Chunk r) {
+      wcounts = new double[_len]; // no larger than 1M elements, so OK to replicate per thread (faster)
+      meanWeightedResponse = new double[_len];
+      for (int i=0; i<c._len; ++i) {
+        if (c.isNA(i)) continue;
+        int level = (int)c.at8(i);
+        if (w.isNA(i)) continue;
+        double weight = w.atd(i);
+        if (weight == 0) continue;
+        if (r.isNA(i)) continue;
+        double response = r.atd(i);
+        wcounts[level] += weight;
+        meanWeightedResponse[level] += weight*response;
+      }
+    }
+
+    @Override
+    public void reduce(MeanResponsePerLevelTask mrt) {
+      ArrayUtils.add(wcounts, mrt.wcounts);
+      ArrayUtils.add(meanWeightedResponse, mrt.meanWeightedResponse);
+      mrt.wcounts = null;
+      mrt.meanWeightedResponse = null;
+    }
+
+    @Override
+    protected void postGlobal() {
+      meanOverallWeightedResponse = 0;
+      double sum = 0;
+      for (int i = 0; i< meanWeightedResponse.length; ++i) {
+        if (wcounts[i] != 0) {
+          meanWeightedResponse[i] = meanWeightedResponse[i] / wcounts[i];
+          meanOverallWeightedResponse += meanWeightedResponse[i];
+          sum += wcounts[i];
+        }
+      }
+      meanOverallWeightedResponse /= sum;
+    }
+  }
+
+  /**
+   * Reorder an integer (such as Enum storage) Vec using an int -> int mapping
+   */
+  public static class ReorderTask extends MRTask<ReorderTask> {
+    private int[] _map;
+    public ReorderTask(int[] mapping) { _map = mapping; }
+    @Override
+    public void map(Chunk c, NewChunk nc) {
+      for (int i=0;i<c._len;++i) {
+        if (c.isNA(i)) nc.addNA();
+        else nc.addNum(_map[(int)c.at8(i)], 0);
+      }
+    }
+  }
+
 }

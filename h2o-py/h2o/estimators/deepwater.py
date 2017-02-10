@@ -316,14 +316,14 @@ class H2ODeepWaterEstimator(H2OEstimator):
         """
         Encoding scheme for categorical features
 
-        One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``
-        (default: ``"auto"``).
+        One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``,
+        ``"integer"``, ``"sort_by_response"``  (default: ``"auto"``).
         """
         return self._parms.get("categorical_encoding")
 
     @categorical_encoding.setter
     def categorical_encoding(self, categorical_encoding):
-        assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen"))
+        assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "integer", "sort_by_response"))
         self._parms["categorical_encoding"] = categorical_encoding
 
 

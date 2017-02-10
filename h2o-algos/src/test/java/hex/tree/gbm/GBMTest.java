@@ -2116,9 +2116,9 @@ public class GBMTest extends TestUtil {
     parms._ntrees = 1;
     GBM job = new GBM(parms);
     GBMModel gbm = job.trainModel().get();
+    Log.info(df.toTwoDimTable());
     Frame preds = gbm.score(df);
-    Log.info(df);
-    Log.info(preds);
+    Log.info(preds.toTwoDimTable());
     Assert.assertTrue(gbm.testJavaScoring(df,preds,1e-15));
     Assert.assertTrue(Math.abs(preds.vec(0).at(0) - 0) < 1e-6);
     Assert.assertTrue(Math.abs(preds.vec(0).at(1) - 0) < 1e-6);
@@ -2948,51 +2948,54 @@ public class GBMTest extends TestUtil {
   }
 
   @Test public void lowCardinality() throws IOException {
-    int[] vals = new int[]{2,10,20,25,26,27,100};
-    double[] maes = new double[vals.length];
-    int i=0;
-    for (int nbins_cats : vals) {
-      GBMModel model = null;
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
-      Frame train, train_preds=null;
-      Scope.enter();
-      train = parse_test_file("smalldata/gbm_test/alphabet_cattest.csv");
-      try {
-        parms._train = train._key;
-        parms._response_column = "y"; // Train on the outcome
-        parms._max_depth = 2;
-        parms._min_rows = 1;
-        parms._ntrees = 1;
-        parms._learn_rate = 1;
-        parms._nbins_cats = nbins_cats;
+    for (boolean sort_cats : new boolean[]{true, false}) {
+      int[] vals = new int[]{2,10,20,25,26,27,100};
+      double[] maes = new double[vals.length];
+      int i=0;
+      for (int nbins_cats : vals) {
+        GBMModel model = null;
+        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        Frame train, train_preds=null;
+        Scope.enter();
+        train = parse_test_file("smalldata/gbm_test/alphabet_cattest.csv");
+        try {
+          parms._train = train._key;
+          parms._response_column = "y"; // Train on the outcome
+          parms._max_depth = 2;
+          parms._min_rows = 1;
+          parms._ntrees = 1;
+          parms._learn_rate = 1;
+          parms._nbins_cats = nbins_cats;
+          if (sort_cats)
+            parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.SortByResponse;
 
-        GBM job = new GBM(parms);
-        model = job.trainModel().get();
-        StreamingSchema ss = new StreamingSchema(model.getMojo(), "model.zip");
-        FileOutputStream fos = new FileOutputStream("model.zip");
-        ss.getStreamWriter().writeTo(fos);
+          GBM job = new GBM(parms);
+          model = job.trainModel().get();
+          StreamingSchema ss = new StreamingSchema(model.getMojo(), "model.zip");
+          FileOutputStream fos = new FileOutputStream("model.zip");
+          ss.getStreamWriter().writeTo(fos);
 
-        train_preds = model.score(train);
-        Assert.assertTrue(model.testJavaScoring(train, train_preds, 1e-15));
+          train_preds = model.score(train);
+          Assert.assertTrue(model.testJavaScoring(train, train_preds, 1e-15));
 
-        double mae = ModelMetricsRegression.make(train_preds.vec(0), train.vec("y"), gaussian).mae();
-        Log.info("Train MAE: " + mae);
-        maes[i++] = mae;
-        if (nbins_cats >= 25) //even 25 can do a perfect job
-          Assert.assertEquals(mae, 0, 1e-8);
-        else
-          Assert.assertNotEquals(mae, 0, 1e-8);
-
-      } finally {
-        if( model != null ) model.delete();
-        if( train != null ) train.remove();
-        if( train_preds  != null ) train_preds .remove();
-        new File("model.zip").delete();
-        Scope.exit();
+          double mae = ModelMetricsRegression.make(train_preds.vec(0), train.vec("y"), gaussian).mae();
+          Log.info("Train MAE: " + mae);
+          maes[i++] = mae;
+          if (nbins_cats >= 25 || sort_cats)
+            Assert.assertEquals(0, mae, 1e-8); // sorting of categoricals is enough
+          else
+            Assert.assertTrue(mae > 0);
+        } finally {
+          if( model != null ) model.delete();
+          if( train != null ) train.remove();
+          if( train_preds  != null ) train_preds .remove();
+          new File("model.zip").delete();
+          Scope.exit();
+        }
       }
+      Log.info(Arrays.toString(vals));
+      Log.info(Arrays.toString(maes));
     }
-    Log.info(Arrays.toString(vals));
-    Log.info(Arrays.toString(maes));
   }
 
 }
