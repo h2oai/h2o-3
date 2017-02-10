@@ -10,16 +10,16 @@ buildscript {
     //noinspection GroovyAssignabilityCheck
     dependencies {
         classpath 'org.ow2.asm:asm:5.1'
-        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.3'
+        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.4'
         classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.7.1'
         classpath 'com.github.townsfolk:gradle-release:1.2'
-        classpath 'de.undercouch:gradle-download-task:2.1.0'
-        classpath 'joda-time:joda-time:2.3'
         classpath 'com.adaptc.gradle:nexus-workflow:0.6'
         classpath 'org.testng:testng:6.8'
         classpath "be.insaneprogramming.gradle:animalsniffer-gradle-plugin:+"
         classpath 'me.champeau.gradle:jmh-gradle-plugin:0.3.1'
-        classpath 'ca.cutterslade.gradle:gradle-dependency-analyze:1.1.0'
+        // Note: Analyze unused/undefined dependencies for each module - good for debugging
+        // However, later it should be enabled by default
+        //classpath 'ca.cutterslade.gradle:gradle-dependency-analyze:1.1.0'
     }
 }
 
@@ -131,8 +131,11 @@ ext {
 //
 allprojects {
     group = 'ai.h2o'
+    // By default inject debugging support
     apply plugin: 'project-report'
+    apply from: "$rootDir/gradle/debug.gradle"
 
+    // Support different IDEs
     apply plugin: 'idea'
     apply plugin: 'eclipse'
     apply from: "$rootDir/gradle/artifacts.gradle"

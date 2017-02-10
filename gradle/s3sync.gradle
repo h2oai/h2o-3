@@ -1,24 +1,23 @@
 //
 // Supports dataset synchronization with S3
 //
-import org.apache.tools.ant.taskdefs.condition.Os
+
 
 buildscript {
     repositories {
-        mavenCentral()
         jcenter()
     }
-    dependencies { //Gradle seems to require these dependencies be listed in build.gradle AND here
-        classpath 'de.undercouch:gradle-download-task:2.1.0'
-        classpath 'joda-time:joda-time:2.2'
+    dependencies {
+        classpath 'de.undercouch:gradle-download-task:3.2.0'
     }
 }
 
 // Shows download progress, nice for large file downloads
-apply plugin: 'de.undercouch.download'
-import de.undercouch.gradle.tasks.download.Download
+// We need to reference plugin class directly here: http://mrhaki.blogspot.com/2015/10/gradle-goodness-apply-external-script.html
+apply plugin: de.undercouch.gradle.tasks.download.DownloadTaskPlugin
 
-// Amazon timestamps are only easily read by Joda
+import org.apache.tools.ant.taskdefs.condition.Os
+import de.undercouch.gradle.tasks.download.Download
 import org.joda.time.format.ISODateTimeFormat
 
 import java.util.regex.Matcher
