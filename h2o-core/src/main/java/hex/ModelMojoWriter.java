@@ -3,7 +3,9 @@ package hex;
 import hex.genmodel.utils.StringEscapeUtils;
 import org.joda.time.DateTime;
 import water.H2O;
+import water.api.SchemaServer;
 import water.api.StreamWriter;
+import water.api.schemas3.ModelSchemaV3;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -158,6 +160,7 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
       writeModelData();
       writeModelInfo();
       writeDomains();
+      writeModelDetails();
       zos.close();
     } catch (IOException e) {
       e.printStackTrace();
@@ -250,4 +253,13 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
     }
   }
 
+  /** Create file that contains model details in JSON format.
+   * This information is pulled from the models schema.
+   */
+  private void writeModelDetails() throws IOException{
+    ModelSchemaV3 modelSchema = (ModelSchemaV3) SchemaServer.schema(-1, model).fillFromImpl(model);
+    startWritingTextFile("properties/modelDetails.json");
+    writeln(modelSchema.toJsonString());
+    finishWritingTextFile();
+  }
 }
