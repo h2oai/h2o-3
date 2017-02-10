@@ -657,48 +657,103 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public double classification_error() {
-    if (scoringInfo == null) return Double.NaN;
-    return last_scored().validation ? last_scored().scored_valid._classError : last_scored().scored_train._classError;
+    if (scoringInfo != null)
+      return last_scored().cross_validation ? last_scored().scored_xval._classError : last_scored().validation ? last_scored().scored_valid._classError : last_scored().scored_train._classError;
+
+    if (_output._training_metrics instanceof ModelMetricsBinomial) {
+      return _output._cross_validation_metrics != null ? ((ModelMetricsBinomial)_output._cross_validation_metrics)._auc.defaultErr() :
+                   _output._validation_metrics != null ? ((ModelMetricsBinomial)_output._validation_metrics)._auc.defaultErr() :
+                                                         ((ModelMetricsBinomial)_output._training_metrics)._auc.defaultErr();
+    } else if (_output._training_metrics instanceof ModelMetricsMultinomial) {
+      return _output._cross_validation_metrics != null ? ((ModelMetricsMultinomial)_output._cross_validation_metrics)._cm.err() :
+                   _output._validation_metrics != null ? ((ModelMetricsMultinomial)_output._validation_metrics)._cm.err() :
+                                                         ((ModelMetricsMultinomial)_output._training_metrics)._cm.err();
+    }
+    return Double.NaN;
   }
 
   public double mse() {
-    if (scoringInfo == null) return Double.NaN;
-    return last_scored().validation ? last_scored().scored_valid._mse : last_scored().scored_train._mse;
+    if (scoringInfo != null)
+      return last_scored().cross_validation ? last_scored().scored_xval._mse : last_scored().validation ? last_scored().scored_valid._mse : last_scored().scored_train._mse;
+    return _output._cross_validation_metrics != null ? _output._cross_validation_metrics.mse() : _output._validation_metrics != null ? _output._validation_metrics.mse() : _output._training_metrics.mse();
   }
 
   public double mae() {
-    if (scoringInfo == null) return Double.NaN;
-    return last_scored().validation ? last_scored().scored_valid._mae : last_scored().scored_train._mae;
+    if (scoringInfo != null)
+      return last_scored().cross_validation ? last_scored().scored_xval._mae : last_scored().validation ? last_scored().scored_valid._mae : last_scored().scored_train._mae;
+    return _output._cross_validation_metrics != null ? ((ModelMetricsRegression)_output._cross_validation_metrics).mae() :
+                 _output._validation_metrics != null ? ((ModelMetricsRegression)_output._validation_metrics).mae() :
+                                                       ((ModelMetricsRegression)_output._training_metrics).mae();
   }
 
   public double rmsle() {
-    if (scoringInfo == null) return Double.NaN;
-    return last_scored().validation ? last_scored().scored_valid._rmsle : last_scored().scored_train._rmsle;
+    if (scoringInfo != null)
+      return last_scored().cross_validation ? last_scored().scored_xval._rmsle : last_scored().validation ? last_scored().scored_valid._rmsle : last_scored().scored_train._rmsle;
+    return _output._cross_validation_metrics != null ? ((ModelMetricsRegression)_output._cross_validation_metrics).rmsle() :
+                 _output._validation_metrics != null ? ((ModelMetricsRegression)_output._validation_metrics).rmsle() :
+                                                       ((ModelMetricsRegression)_output._training_metrics).rmsle();
   }
 
   public double auc() {
-    if (scoringInfo == null) return Double.NaN;
-    return last_scored().validation ? last_scored().scored_valid._AUC : last_scored().scored_train._AUC;
+    if (scoringInfo != null)
+      return last_scored().cross_validation ? last_scored().scored_xval._AUC : last_scored().validation ? last_scored().scored_valid._AUC : last_scored().scored_train._AUC;
+    return _output._cross_validation_metrics != null ? ((ModelMetricsBinomial)_output._cross_validation_metrics)._auc._auc :
+                 _output._validation_metrics != null ? ((ModelMetricsBinomial)_output._validation_metrics)._auc._auc :
+                                                       ((ModelMetricsBinomial)_output._training_metrics)._auc._auc;
   }
 
   public double deviance() {
-    if (scoringInfo == null) return Double.NaN;
-    return last_scored().validation ? last_scored().scored_valid._mean_residual_deviance : last_scored().scored_train._mean_residual_deviance;
+    if (scoringInfo != null)
+      return last_scored().cross_validation ? last_scored().scored_xval._mean_residual_deviance: last_scored().validation ? last_scored().scored_valid._mean_residual_deviance : last_scored().scored_train._mean_residual_deviance;
+    return _output._cross_validation_metrics != null ? ((ModelMetricsRegression)_output._cross_validation_metrics).residual_deviance() :
+                 _output._validation_metrics != null ? ((ModelMetricsRegression)_output._validation_metrics).residual_deviance() :
+                                                       ((ModelMetricsRegression)_output._training_metrics).residual_deviance();
   }
 
   public double logloss() {
-    if (scoringInfo == null) return Double.NaN;
-    return last_scored().validation ? last_scored().scored_valid._logloss : last_scored().scored_train._logloss;
+    if (scoringInfo != null)
+      return last_scored().cross_validation ? last_scored().scored_xval._logloss : last_scored().validation ? last_scored().scored_valid._logloss : last_scored().scored_train._logloss;
+
+    if (_output._training_metrics instanceof ModelMetricsBinomial) {
+      return _output._cross_validation_metrics != null ? ((ModelMetricsBinomial)_output._cross_validation_metrics).logloss() :
+                   _output._validation_metrics != null ? ((ModelMetricsBinomial)_output._validation_metrics).logloss() :
+                                                         ((ModelMetricsBinomial)_output._training_metrics).logloss();
+    } else if (_output._training_metrics instanceof ModelMetricsMultinomial) {
+      return _output._cross_validation_metrics != null ? ((ModelMetricsMultinomial)_output._cross_validation_metrics).logloss() :
+                   _output._validation_metrics != null ? ((ModelMetricsMultinomial)_output._validation_metrics).logloss() :
+                                                         ((ModelMetricsMultinomial)_output._training_metrics).logloss();
+    }
+    return Double.NaN;
   }
 
   public double mean_per_class_error() {
-    if (scoringInfo == null) return Double.NaN;
-    return last_scored().validation ? last_scored().scored_valid._mean_per_class_error : last_scored().scored_train._mean_per_class_error;
+    if (scoringInfo != null)
+      return last_scored().cross_validation ? last_scored().scored_xval._mean_per_class_error : last_scored().validation ? last_scored().scored_valid._mean_per_class_error : last_scored().scored_train._mean_per_class_error;
+
+    if (_output._training_metrics instanceof ModelMetricsBinomial) {
+      return _output._cross_validation_metrics != null ? ((ModelMetricsBinomial)_output._cross_validation_metrics).mean_per_class_error():
+                   _output._validation_metrics != null ? ((ModelMetricsBinomial)_output._validation_metrics).mean_per_class_error() :
+                                                         ((ModelMetricsBinomial)_output._training_metrics).mean_per_class_error();
+    } else if (_output._training_metrics instanceof ModelMetricsMultinomial) {
+      return _output._cross_validation_metrics != null ? ((ModelMetricsMultinomial)_output._cross_validation_metrics).mean_per_class_error() :
+                   _output._validation_metrics != null ? ((ModelMetricsMultinomial)_output._validation_metrics).mean_per_class_error() :
+                                                         ((ModelMetricsMultinomial)_output._training_metrics).mean_per_class_error();
+    }
+    return Double.NaN;
   }
 
   public double lift_top_group() {
-    if (scoringInfo == null) return Double.NaN;
-    return last_scored().validation ? last_scored().scored_valid._lift : last_scored().scored_train._lift;
+    if (scoringInfo != null)
+      return last_scored().cross_validation ? last_scored().scored_xval._lift : last_scored().validation ? last_scored().scored_valid._lift : last_scored().scored_train._lift;
+
+    if (_output._training_metrics instanceof ModelMetricsBinomial) {
+      ModelMetrics mm = _output._cross_validation_metrics != null ? _output._cross_validation_metrics : _output._validation_metrics != null ? _output._validation_metrics : _output._training_metrics;
+      GainsLift gl = ((ModelMetricsBinomial)mm)._gainsLift;
+      if (gl != null && gl.response_rates != null && gl.response_rates.length > 0) {
+        return gl.response_rates[0] / gl.avg_response_rate;
+      }
+    }
+    return Double.NaN;
   }
 
 
