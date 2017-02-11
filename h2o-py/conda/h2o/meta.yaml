@@ -10,6 +10,7 @@ source:
 requirements:
   build:
     - python >=2.7,<3|>=3.5
+    - pip >= 9.0.1
     - setuptools
     - colorama >=0.3.7
     - future >=0.15.2
