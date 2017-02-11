@@ -10,7 +10,7 @@ import water.udf.DataColumn;
  * Created by vpatryshev on 2/10/17.
  */
 
-public class EnumColumn extends DataColumn<Integer> {
+public class EnumColumn extends Integers.Column {
   private final String[] domain;
   /**
    * deserialization :(
