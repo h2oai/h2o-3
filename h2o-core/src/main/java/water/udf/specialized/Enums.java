@@ -8,6 +8,7 @@ import water.udf.fp.Functions;
 
 import java.io.IOException;
 import java.util.List;
+import static water.udf.specialized.Integers.*;
 
 /**
  * Specialized factory for enums (aka Cats)
@@ -36,35 +37,9 @@ public class Enums extends DataColumns.BaseFactory<Integer, EnumColumn> {
     return enums(domain);
   }
 
-
-
-  public static class EnumChunk extends DataChunk<Integer> {
-
-    /**
-     * deserialization :(
-     */
-    EnumChunk() {}
-    
-    EnumChunk(Chunk c) { super(c); }
-    @Override
-    public Integer get(int idx) {
-      return c.isNA(idx) ? null : (int) c.at8(idx);
-    }
-
-    @Override
-    public void set(int idx, Integer value) {
-      if (value == null) c.setNA(idx);
-      else c.set(idx, value);
-    }
-
-    public void set(int idx, int value) {
-      c.set(idx, value);
-    }
-  }
-
   @Override
   public DataChunk<Integer> apply(final Chunk c) {
-    return new EnumChunk(c);
+    return new IntegerChunk(c);
   }
 
   public EnumColumn newColumn(long length, final Function<Long, Integer> f) throws IOException {
