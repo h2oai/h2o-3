@@ -89,6 +89,38 @@ public class Functions {
     return new StringSplitter(separator);
   }
 
+  static class OneHotEncoder implements Unfoldable<Integer, Integer> {
+    private String[] domain;
+    private int hashCode;
+    
+    OneHotEncoder(String[] domain) {
+      this.domain = domain;
+      hashCode = 911 + Arrays.hashCode(domain);
+    }
+
+    @Override
+    public int hashCode() {
+      return hashCode;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      return (obj instanceof OneHotEncoder) &&
+             Arrays.equals(domain, ((OneHotEncoder)obj).domain);
+    }
+
+    @Override
+    public List<Integer> apply(Integer cat) {
+      Integer[] bits = new Integer[domain.length];
+      if (cat >= 0 && cat < domain.length) bits[cat] = 1;
+      return Arrays.asList(bits);
+    }
+  }
+
+  public static Unfoldable<Integer, Integer> oneHotEncode(String[] domain) {
+    return new OneHotEncoder(domain);
+  }
+  
   public static int hashCode(Object x) {
     return x == null ? 0 : x.hashCode();
   }
