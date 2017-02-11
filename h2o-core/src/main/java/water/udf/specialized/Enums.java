@@ -6,13 +6,14 @@ import water.udf.*;
 import water.udf.fp.Function;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Specialized factory for enums (aka Cats)
  */
-public class Enums extends DataColumns.BaseFactory<Integer> {
-  private final String[] domain;
-
+public class Enums extends DataColumns.BaseFactory<Integer, EnumColumn> {
+  final String[] domain;
+  
   /**
    * deserialization :(
    */
@@ -29,6 +30,14 @@ public class Enums extends DataColumns.BaseFactory<Integer> {
   public static Enums enums(String[] domain) {
     return new Enums(domain);
   }
+
+  public static ColumnFactory<Integer, EnumColumn> enums1(String[] domain) {
+    ColumnFactory<Integer, EnumColumn> r = new Enums(domain);
+//    ColumnFactory<Integer, DataColumn<Integer>> r1 = r;
+    return r;
+  }
+
+
 
   public static class EnumChunk extends DataChunk<Integer> {
 
@@ -59,45 +68,16 @@ public class Enums extends DataColumns.BaseFactory<Integer> {
     return new EnumChunk(c);
   }
 
-  public DataColumn<Integer> newColumn(long length, final Function<Long, Integer> f) throws IOException {
+  public EnumColumn newColumn(long length, final Function<Long, Integer> f) throws IOException {
     return new TypedFrame.EnumFrame(length, f, domain).newColumn();
-  }
-
-  static class Column extends DataColumn<Integer> {
-    private final String[] domain;
-    /**
-     * deserialization :(
-     */
-    public Column() { domain = null; }
-    
-    Column(Vec v, Enums factory) { 
-      super(v, factory);
-      domain = factory.domain;
-      assert domain != null && domain.length > 0 : "Need a domain for enums";
-    }
-
-    @Override
-    public Integer get(long idx) {
-      return isNA(idx) ? null : (int) vec().at8(idx);
-    }
-
-    @Override
-    public void set(long idx, Integer value) {
-      if (value == null) vec().setNA(idx);
-      else vec().set(idx, value);
-    }
-
-    public void set(long idx, int value) {
-      vec().set(idx, value);
-    }
   }
   
   @Override
-  public DataColumn<Integer> newColumn(final Vec vec) {
+  public EnumColumn newColumn(final Vec vec) {
     if (vec.get_type() != Vec.T_CAT)
       throw new IllegalArgumentException("Expected type T_CAT, got " + vec.get_type_str());
     vec.setDomain(domain);
-    return new Column(vec, this);
+    return new EnumColumn(vec, this);
   }
 
 }
