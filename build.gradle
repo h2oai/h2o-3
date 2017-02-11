@@ -1,3 +1,5 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
 // The build script settings to fetch plugins and put them on
 // classpath
 buildscript {
@@ -117,13 +119,16 @@ ext {
     junitVersion  = '4.12'
     jets3tVersion = '0.7.1'
     awsJavaSdkVersion = '1.8.3'
-    protocVersion = '3.0.2'
-    grpcVersion = '1.0.3'
 
     //
     // H2O's REST API version
     //
     h2oRESTApiVersion = '3'
+
+    getOsSpecificCommandLine = { List<GString> args ->
+        return Os.isFamily(Os.FAMILY_WINDOWS) ? ['cmd', '/c'] + args : args
+    }
+
 }
 
 //

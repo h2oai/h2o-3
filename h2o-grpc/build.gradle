@@ -12,23 +12,29 @@ repositories {
 }
 
 def grpcVersion = '1.0.3'
+def protocVersion = '3.0.2'
 
 // Detect the correct version of python executable to use
 def pythonexe = "python"
-def pipexe = "pip"
 if (System.env.VIRTUAL_ENV) {
     pythonexe = "${System.env.VIRTUAL_ENV}/bin/python"
-    pipexe = "${System.env.VIRTUAL_ENV}/bin/pip"
 }
 
 
 dependencies {
     compile project(":h2o-core")
-    compile 'com.google.protobuf:protobuf-java:3.0.0'
+    compile "com.google.protobuf:protobuf-java:${protocVersion}"
     compile "io.grpc:grpc-netty:${grpcVersion}"
     compile "io.grpc:grpc-protobuf:${grpcVersion}"
     compile "io.grpc:grpc-stub:${grpcVersion}"
 }
+
+task verifyDependencies(type: Exec) {
+    commandLine getOsSpecificCommandLine([
+            pythonexe, "../h2o-py/scripts/verify_requirements.py", "--metayaml", "meta.yaml"
+    ])
+}
+
 
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -38,7 +44,7 @@ dependencies {
 protobuf {
     // Configure the protoc executable (for compiling the *.proto files)
     protoc {
-        artifact = 'com.google.protobuf:protoc:3.0.2'
+        artifact = "com.google.protobuf:protoc:${protocVersion}"
     }
 
     // Configure the codegen plugins
@@ -70,16 +76,6 @@ protobuf {
 //----------------------------------------------------------------------------------------------------------------------
 def pyProtoDir = "${projectDir}/proto-gen/main/python"
 
-static List<String> getOsSpecificCommandLine(List<String> args) {
-    return Os.isFamily(Os.FAMILY_WINDOWS) ? ['cmd', '/c'] + args : args
-}
-
-task installGrpciotoolsModule(type: Exec) {
-    doFirst {
-        standardOutput = new FileOutputStream("build/tmp/h2o-grpc_installGrpciotoolsModule.out")
-    }
-    commandLine getOsSpecificCommandLine([pipexe, "install", "grpcio-tools>=1.1.0"])
-}
 
 task makeProtoOutputDir(type: Exec) {
     if (Os.isFamily(Os.FAMILY_WINDOWS)) {
@@ -90,7 +86,6 @@ task makeProtoOutputDir(type: Exec) {
 }
 
 task generatePyProtoFiles(type: Exec) {
-    dependsOn installGrpciotoolsModule
     dependsOn makeProtoOutputDir
 
     commandLine getOsSpecificCommandLine([
@@ -104,6 +99,7 @@ task generatePyProtoFiles(type: Exec) {
     ])
 }
 
+build.dependsOn verifyDependencies
 build.dependsOn generatePyProtoFiles
 
 

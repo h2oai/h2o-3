@@ -19,9 +19,6 @@ dependencies {
     compile project(":h2o-assemblies:main")
 }
 
-static List<java.lang.String> getOsSpecificCommandLine(List<java.lang.String> args) {
-    return Os.isFamily(Os.FAMILY_WINDOWS) ? [ 'cmd', '/c' ] + args : args
-}
 
 def bv = new H2OBuildVersion(rootDir, version)
 
@@ -56,23 +53,16 @@ task resetProjectVersion << {
     INIT.write(txt)
 }
 
-task installPythonDependencies(type: Exec) {
-    doFirst {
-        standardOutput = new FileOutputStream("build/tmp/h2o-py_installPythonDependencies.out")
-    }
+task verifyDependencies(type: Exec) {
     commandLine getOsSpecificCommandLine([
-            pipexe, "install",
-            "tabulate>=0.7.5",
-            "requests>=2.10",
-            "colorama>=0.3.7",
-            "future>=0.15.2"
+            pythonexe, "scripts/verify_requirements.py", "--metayaml", "conda/h2o/meta.yaml"
     ])
 }
 
 
 
 task buildDist(type: Exec) {
-    dependsOn installPythonDependencies
+    dependsOn verifyDependencies
     dependsOn setProjectVersion
     dependsOn makeOutputDir
 
