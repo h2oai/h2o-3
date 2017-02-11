@@ -647,10 +647,10 @@ public class VecUtils {
     private int[] _map;
     public ReorderTask(int[] mapping) { _map = mapping; }
     @Override
-    public void map(Chunk c) {
+    public void map(Chunk c, NewChunk nc) {
       for (int i=0;i<c._len;++i) {
-        if (c.isNA(i)) continue; //NA stays NA
-        c.set(i, _map[(int)c.at8(i)]);
+        if (c.isNA(i)) nc.addNA();
+        else nc.addNum(_map[(int)c.at8(i)], 0);
       }
     }
   }

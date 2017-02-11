@@ -635,7 +635,7 @@ public class GBMTest extends TestUtil {
     System.out.println("MSEs End");
     System.out.flush();
     for( double mse : mses )
-      assertEquals(0.21694215729861027, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks), mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
+      assertEquals(0.21694084458594592, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks), mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
   }
 
   @Test public void testReprodubilityAirlineSingleNode() {
@@ -695,7 +695,7 @@ public class GBMTest extends TestUtil {
     for(double d:mses)
       System.out.println(d);
     for( double mse : mses )
-      assertEquals(0.21694215729861027, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
+      assertEquals(0.21694137560730298, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
   }
 
   // HEXDEV-223
@@ -2978,7 +2978,7 @@ public class GBMTest extends TestUtil {
         double mae = ModelMetricsRegression.make(train_preds.vec(0), train.vec("y"), gaussian).mae();
         Log.info("Train MAE: " + mae);
         maes[i++] = mae;
-        if (nbins_cats >= 26) //only 26+ can do a perfect job
+        if (nbins_cats > 2) //only 26+ can do a perfect job
           Assert.assertEquals(mae, 0, 1e-8);
         else
           Assert.assertNotEquals(mae, 0, 1e-8);
