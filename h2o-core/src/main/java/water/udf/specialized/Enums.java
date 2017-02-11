@@ -4,6 +4,7 @@ import water.fvec.Chunk;
 import water.fvec.Vec;
 import water.udf.*;
 import water.udf.fp.Function;
+import water.udf.fp.Functions;
 
 import java.io.IOException;
 import java.util.List;
@@ -31,10 +32,8 @@ public class Enums extends DataColumns.BaseFactory<Integer, EnumColumn> {
     return new Enums(domain);
   }
 
-  public static ColumnFactory<Integer, EnumColumn> enums1(String[] domain) {
-    ColumnFactory<Integer, EnumColumn> r = new Enums(domain);
-//    ColumnFactory<Integer, DataColumn<Integer>> r1 = r;
-    return r;
+  public static ColumnFactory<Integer, EnumColumn> enumsAlt(String[] domain) {
+    return enums(domain);
   }
 
 
@@ -70,6 +69,10 @@ public class Enums extends DataColumns.BaseFactory<Integer, EnumColumn> {
 
   public EnumColumn newColumn(long length, final Function<Long, Integer> f) throws IOException {
     return new TypedFrame.EnumFrame(length, f, domain).newColumn();
+  }
+
+  public EnumColumn newColumn(List<Integer> source) throws IOException {
+    return new TypedFrame.EnumFrame(source.size(), Functions.onList(source), domain).newColumn();
   }
   
   @Override

@@ -13,8 +13,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static water.udf.specialized.Enums.enums;
-
 /**
  * Single-column frame that knows its data type and can unfold
  */
@@ -63,7 +61,7 @@ public class UnfoldingFrame<DataType, ColumnType> extends Frame {
     public UnfoldingEnumFrame() {domain = null; }
     
     public UnfoldingEnumFrame(long length, Function<Long, List<Integer>> function, int width, String[] domain) {
-      super(Enums.enums1(domain), length, function, width);
+      super(Enums.enumsAlt(domain), length, function, width);
       this.domain = domain;
       assert domain != null : "An enum must have a domain";
       assert domain.length > 0 : "Domain cannot be empty";
