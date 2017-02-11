@@ -7,12 +7,14 @@ import water.udf.DataChunk;
 import water.udf.DataColumn;
 import water.udf.DataColumns;
 
+import java.io.IOException;
 import java.util.Date;
+import java.util.List;
 
 /**
  * Specialized factory for dates
  */
-public class Dates extends DataColumns.BaseFactory<Date> {
+public class Dates extends DataColumns.SimpleColumnFactory<Date> {
   public static final water.udf.specialized.Dates Dates = new Dates();
   
   public Dates() {
@@ -48,7 +50,7 @@ public class Dates extends DataColumns.BaseFactory<Date> {
 
   static class Column extends DataColumn<Date> {
     public Column() {}
-    public Column(Vec v, ColumnFactory<Date> factory) {
+    public Column(Vec v, Dates factory) {
       super(v, factory);
     }
     @Override

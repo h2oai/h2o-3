@@ -19,8 +19,16 @@ public class DataColumns {
     return Vec.makeCon(0.0, length, true, typeCode);
   }
 
-  public static abstract class BaseFactory<T>
-      implements ColumnFactory<T> {
+  public static abstract class SimpleColumnFactory<DataType> extends BaseFactory<DataType, DataColumn<DataType>> {
+    
+    protected SimpleColumnFactory(byte typeCode, String name) {
+      super(typeCode, name);
+    }
+  }
+  
+  public static abstract class 
+  BaseFactory<DataType, ColumnType extends DataColumn<DataType>>
+      implements ColumnFactory<DataType, ColumnType> {
     public final byte typeCode;
     public final String name;
     protected BaseFactory(byte typeCode, String name) {
@@ -40,23 +48,23 @@ public class DataColumns {
       return vec;
     }
 
-    public abstract DataChunk<T> apply(final Chunk c);
-    public abstract DataColumn<T> newColumn(Vec vec);
+    public abstract DataChunk<DataType> apply(final Chunk c);
+    public abstract ColumnType newColumn(Vec vec);
 
-    public DataColumn<T> newColumn(long length, final Function<Long, T> f) throws IOException {
-      return new TypedFrame<>(this, length, f).newColumn();
+    public ColumnType newColumn(long length, final Function<Long, DataType> f) throws IOException {
+      return new TypedFrame<DataType, ColumnType>(this, length, f).newColumn();
     }
 
-    public DataColumn<T> materialize(Column<T> xs) throws IOException {
+    public ColumnType materialize(Column<DataType> xs) throws IOException {
       return TypedFrame.forColumn(this, xs).newColumn();
     }
 
-    public DataColumn<T> newColumn(List<T> xs) throws IOException {
+    public ColumnType newColumn(List<DataType> xs) throws IOException {
       return newColumn(xs.size(), Functions.onList(xs));
     }
 
-    public DataColumn<T> constColumn(final T t, long length) throws IOException {
-      return newColumn(length, Functions.<Long, T>constant(t));
+    public DataColumn<DataType> constColumn(final DataType t, long length) throws IOException {
+      return newColumn(length, Functions.<Long, DataType>constant(t));
     }
 
     @Override public String toString() { return name; }

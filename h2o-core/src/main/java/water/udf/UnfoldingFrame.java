@@ -5,6 +5,8 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.udf.fp.Function;
+import water.udf.specialized.EnumColumn;
+import water.udf.specialized.Enums;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -16,10 +18,10 @@ import static water.udf.specialized.Enums.enums;
 /**
  * Single-column frame that knows its data type and can unfold
  */
-public class UnfoldingFrame<X> extends Frame {
-  protected final ColumnFactory<X> factory;
+public class UnfoldingFrame<DataType, ColumnType> extends Frame {
+  protected final ColumnFactory<DataType, ColumnType> factory;
   protected final long len;
-  protected final Function<Long, List<X>> function;
+  protected final Function<Long, List<DataType>> function;
   protected final int width;
 
   /** for deserialization (sigh) */
@@ -30,7 +32,7 @@ public class UnfoldingFrame<X> extends Frame {
     width = -1;
   }
   
-  public UnfoldingFrame(ColumnFactory<X> factory, long len, Function<Long, List<X>> function, int width) {
+  public UnfoldingFrame(ColumnFactory<DataType, ColumnType> factory, long len, Function<Long, List<DataType>> function, int width) {
     super();
     this.factory = factory;
     this.len = len;
@@ -40,8 +42,12 @@ public class UnfoldingFrame<X> extends Frame {
     assert width >= 0: "Multicolumn frame must have a nonnegative width, but found"+width;
   }
 
-  public static <X> UnfoldingFrame<X> unfoldingFrame(final ColumnFactory<X> factory, final Column<List<X>> master, int width) {
-    return new UnfoldingFrame<X>(factory, master.size(), master, width) {
+  public static 
+  <DataType, ColumnType> 
+  UnfoldingFrame<DataType, ColumnType> unfoldingFrame(
+      final ColumnFactory<DataType, ColumnType> factory, 
+      final Column<List<DataType>> master, int width) {
+    return new UnfoldingFrame<DataType, ColumnType>(factory, master.size(), master, width) {
       @Override protected Vec buildZeroVec() {
         Vec v0 = DataColumns.buildZeroVec(this.len, factory.typeCode());
         v0.align(master.vec());
@@ -50,21 +56,21 @@ public class UnfoldingFrame<X> extends Frame {
     };
   }
 
-  static class UnfoldingEnumFrame extends UnfoldingFrame<Integer> {
+  static class UnfoldingEnumFrame extends UnfoldingFrame<Integer, EnumColumn> {
     private final String[] domain;
     
     /** for deserialization */
     public UnfoldingEnumFrame() {domain = null; }
     
     public UnfoldingEnumFrame(long length, Function<Long, List<Integer>> function, int width, String[] domain) {
-      super(enums(domain), length, function, width);
+      super(Enums.enums1(domain), length, function, width);
       this.domain = domain;
       assert domain != null : "An enum must have a domain";
       assert domain.length > 0 : "Domain cannot be empty";
     }
   }
 
-  public static <X> UnfoldingEnumFrame UnfoldingEnumFrame(final Column<List<Integer>> master, int width, String[] domain) {
+  public static <DataType> UnfoldingEnumFrame UnfoldingEnumFrame(final Column<List<Integer>> master, int width, String[] domain) {
     return new UnfoldingEnumFrame(master.size(), master, width, domain) {
       @Override protected Vec buildZeroVec() {
         Vec v0 = DataColumns.buildZeroVec(this.len, Vec.T_CAT);
@@ -92,9 +98,9 @@ public class UnfoldingFrame<X> extends Frame {
         long start = cs[0].start();
         for (int r = 0; r < size; r++) {
           long i = r + start;
-          List<X> values = function.apply(i);
+          List<DataType> values = function.apply(i);
           for (int j = 0; j < cs.length; j++) {
-            DataChunk<X> tc = factory.apply(cs[j]);
+            DataChunk<DataType> tc = factory.apply(cs[j]);
             tc.set(r, j < values.size() ? values.get(j) : null);
           }          
         }
@@ -105,9 +111,9 @@ public class UnfoldingFrame<X> extends Frame {
     return Arrays.asList(mrTask._fr.vecs());
   }
 
-  public List<DataColumn<X>> materialize() throws IOException {
+  public List<ColumnType> materialize() throws IOException {
     List<Vec> vecs = makeVecs();
-    List<DataColumn<X>> result = new ArrayList<>(width);
+    List<ColumnType> result = new ArrayList<>(width);
 
     for (Vec vec : vecs) result.add(factory.newColumn(vec));
     return result;
