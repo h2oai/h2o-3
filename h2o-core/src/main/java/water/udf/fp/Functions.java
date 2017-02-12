@@ -1,5 +1,6 @@
 package water.udf.fp;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -111,9 +112,11 @@ public class Functions {
 
     @Override
     public List<Integer> apply(Integer cat) {
-      Integer[] bits = new Integer[domain.length];
-      if (cat >= 0 && cat < domain.length) bits[cat] = 1;
-      return Arrays.asList(bits);
+      List<Integer> bits = new ArrayList<>(domain.length);
+
+      for (int i = 0; i < domain.length; i++) bits.add(i == cat ? 1 : 0);
+      
+      return bits;
     }
   }
 
