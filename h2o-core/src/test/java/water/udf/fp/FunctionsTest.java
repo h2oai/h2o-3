@@ -1,5 +1,6 @@
 package water.udf.fp;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -7,6 +8,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.*;
+import static water.udf.fp.Functions.*;
 
 /**
  * Tests for Functions.
@@ -25,18 +27,18 @@ public class FunctionsTest {
       @Override public Long apply(Integer i) { return i-2L; }
     };
     
-    Function<Integer, String> h = Functions.compose(g, f);
-    Function<Integer, String> h1 = Functions.compose(g, f1);
+    Function<Integer, String> h = compose(g, f);
+    Function<Integer, String> h1 = compose(g, f1);
     
     assertFalse(h.equals(h1));
-    assertTrue(h.equals(Functions.compose(g, f)));
+    assertTrue(h.equals(compose(g, f)));
 
     assertEquals("zwei", h1.apply(4));
   }
 
   @Test
   public void testIdentity() throws Exception {
-    Function<Byte, Byte> b1 = Functions.identity();
+    Function<Byte, Byte> b1 = identity();
     assertEquals((byte)47, b1.apply((byte)47).byteValue());
   }
 
@@ -55,24 +57,38 @@ public class FunctionsTest {
       @Override public String apply(Integer i) { return "<<" + i + ">>"; }
     };
     
-    assertFalse(Functions.map(Collections.<Integer>emptyList(), f).iterator().hasNext());
-    assertEquals(Arrays.asList("<<2>>","<<3>>","<<5>>","<<7>>"), Functions.map(Arrays.asList(2,3,5,7), f));
+    assertFalse(map(Collections.<Integer>emptyList(), f).iterator().hasNext());
+    assertEquals(Arrays.asList("<<2>>","<<3>>","<<5>>","<<7>>"), map(Arrays.asList(2,3,5,7), f));
   }
 
   @Test
   public void testConstant() throws Exception {
-    Function<String, Integer> c = Functions.<String, Integer>constant(1001590);
+    Function<String, Integer> c = constant(1001590);
     assertEquals(1001590, c.apply("not my number").intValue());
   }
 
+  @SafeVarargs
+  private static <T> List<T> listOf(T... ss) {
+    return Arrays.asList(ss);
+  }
+  
   @Test
   public void testSplitBy() throws Exception {
-    assertEquals(Arrays.asList(""), Functions.splitBy(":").apply(""));
+    assertEquals(listOf(""), splitBy(":").apply(""));
     assertTrue(Functions.splitBy(":").apply(":").isEmpty());
-    assertEquals(Arrays.asList(" "), Functions.splitBy(":").apply(" :"));
-    assertEquals(Arrays.asList("", " "), Functions.splitBy(":").apply(": "));
+    assertEquals(listOf(" "), splitBy(":").apply(" :"));
+    assertEquals(listOf("", " "), splitBy(":").apply(": "));
   }
 
+  @Test
+  public void testOneHotEncode() throws Exception {
+    Unfoldable<Integer, Integer> sut = oneHotEncode(new String[]{"red", "white", "blue"});
+    assertEquals(listOf(1,0,0), sut.apply(0));
+    assertEquals(listOf(0,1,0), sut.apply(1));
+    assertEquals(listOf(0,0,1), sut.apply(2));
+    assertEquals(listOf(0,0,0), sut.apply(3));
+  }
+  
   @Test
   public void testHashCode() throws Exception {
     assertEquals(0, Functions.hashCode(null));
