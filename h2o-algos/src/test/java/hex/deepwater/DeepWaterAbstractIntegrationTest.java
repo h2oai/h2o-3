@@ -510,8 +510,9 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       ModelMetricsMultinomial mm2 = ModelMetricsMultinomial.make(pred, tr.vec(p._response_column));
       Log.info("Restored LL: " + mm2.logloss());
 
-      Assert.assertEquals(((ModelMetricsMultinomial) m1._output._training_metrics).logloss(), mm1.logloss(), 1e-5*mm1.logloss()); //make sure scoring is self-consistent
-      Assert.assertEquals(mm1.logloss(), mm2.logloss(), 1e-5*mm1.logloss());
+      double precision = 2e-5;
+      Assert.assertEquals(((ModelMetricsMultinomial) m1._output._training_metrics).logloss(), mm1.logloss(), precision*mm1.logloss()); //make sure scoring is self-consistent
+      Assert.assertEquals(mm1.logloss(), mm2.logloss(), precision*mm1.logloss());
 
     } finally {
       if (m1 !=null) m1.delete();
