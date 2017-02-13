@@ -21,14 +21,16 @@ public class H2OStarter {
     // Fire up the H2O Cluster
     H2O.main(args);
 
-    H2O.registerRestApis(relativeResourcePath);
-    if (finalizeRestRegistration) {
-      H2O.finalizeRegistration();
+    if (!H2O.ARGS.disable_web) {
+      H2O.registerRestApis(relativeResourcePath);
+      if (finalizeRestRegistration) {
+        H2O.finalizeRegistration();
+      }
     }
 
     long timeF = System.currentTimeMillis();
     Log.info("H2O started in " + (timeF - time0) + "ms");
-    if (! H2O.ARGS.disable_web) {
+    if (!H2O.ARGS.disable_web) {
       Log.info("");
       Log.info("Open H2O Flow in your web browser: " + H2O.getURL(H2O.getJetty().getScheme()));
       Log.info("");

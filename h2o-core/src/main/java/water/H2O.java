@@ -238,7 +238,7 @@ final public class H2O {
     /** -flow_dir=/path/to/dir; directory to save flows in */
     public String flow_dir;
 
-    /** -disable_web; disable web API port (used by Sparkling Water) */
+    /** -disable_web; disable Jetty and REST API interface */
     public boolean disable_web = false;
 
     /** -context_path=jetty_context_path; the context path for jetty */
@@ -1250,7 +1250,7 @@ final public class H2O {
    * @return String of the form ipaddress:port
    */
   public static String getIpPortString() {
-    return H2O.SELF_ADDRESS.getHostAddress() + ":" + H2O.API_PORT;
+    return H2O.ARGS.disable_web? "" : H2O.SELF_ADDRESS.getHostAddress() + ":" + H2O.API_PORT;
   }
 
   public static String getURL(String schema) {
@@ -1414,10 +1414,12 @@ final public class H2O {
                ? (", discovery address "+CLOUD_MULTICAST_GROUP+":"+CLOUD_MULTICAST_PORT)
                : ", static configuration based on -flatfile "+ARGS.flatfile));
 
-    Log.info("If you have trouble connecting, try SSH tunneling from your local machine (e.g., via port 55555):\n" +
-            "  1. Open a terminal and run 'ssh -L 55555:localhost:"
-            + API_PORT + " " + System.getProperty("user.name") + "@" + SELF_ADDRESS.getHostAddress() + "'\n" +
-            "  2. Point your browser to " + jetty.getScheme() + "://localhost:55555");
+    if (!H2O.ARGS.disable_web) {
+      Log.info("If you have trouble connecting, try SSH tunneling from your local machine (e.g., via port 55555):\n" +
+          "  1. Open a terminal and run 'ssh -L 55555:localhost:"
+          + API_PORT + " " + System.getProperty("user.name") + "@" + SELF_ADDRESS.getHostAddress() + "'\n" +
+          "  2. Point your browser to " + jetty.getScheme() + "://localhost:55555");
+    }
 
     // Create the starter Cloud with 1 member
     SELF._heartbeat._jar_md5 = JarHash.JARHASH;
@@ -1478,7 +1480,7 @@ final public class H2O {
   /** Start the web service; disallow future URL registration.
    *  Blocks until the server is up.  */
   static public void finalizeRegistration() {
-    if (_doneRequests) return;
+    if (_doneRequests || H2O.ARGS.disable_web) return;
     _doneRequests = true;
 
     water.api.SchemaServer.registerAllSchemasIfNecessary();
@@ -1774,7 +1776,10 @@ final public class H2O {
     }
 
     // Print help & exit
-    if( ARGS.help ) { printHelp(); exit(0); }
+    if (ARGS.help) {
+      printHelp();
+      exit(0);
+    }
 
     // Validate arguments
     validateArguments();
