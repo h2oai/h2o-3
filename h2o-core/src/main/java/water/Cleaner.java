@@ -3,6 +3,7 @@ package water;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
+
 import water.fvec.Chunk;
 import water.util.Log;
 import water.util.PrettyPrint;
@@ -265,7 +266,7 @@ class Cleaner extends Thread {
         Object p = val.rawPOJO();
         if( m != null ) len += val._max;
         if( p != null ) len += val._max;
-        if( m != null && p instanceof Chunk ) len -= val._max; // Do not double-count Chunks
+        if( m != null && p instanceof Chunk) len -= val._max; // Do not double-count Chunks
         if( len == 0 ) continue;
         cached += len; // Accumulate total amount of cached keys
 

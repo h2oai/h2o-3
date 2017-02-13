@@ -15,7 +15,7 @@ import water.rapids.ast.params.AstNum;
  * usual chunk-at retrieval with a "special" atd call.
  *
  * Overhead added per element fetch per chunk is another virtual call
- * per Op per element (per Chunk). As has been noted (see e.g. RollupStats),
+ * per Op per element (per ByteArraySupportedChunk). As has been noted (see e.g. RollupStats),
  * virtual calls are expensive, but the memory savings are substantial.
  *
  * AutoML can freely transform columns without ramification.
@@ -25,7 +25,7 @@ import water.rapids.ast.params.AstNum;
  *
  * A TransformWrappedVec is actually a function of one or more Vec instances.
  *
- * This class exists here so that Chunk and NewChunk don't need to become fully public
+ * This class exists here so that ByteArraySupportedChunk and NewChunk don't need to become fully public
  * (since java has no friends). Other packages (not just core H2O) depend on this class!
  *
  *
@@ -47,7 +47,7 @@ public class TransformWrappedVec extends WrappedVec {
 
   public Vec makeVec() {
     Vec v  = new MRTask() {
-      @Override public void map(Chunk c, NewChunk nc) {
+      @Override public void map(ChunkAry c, NewChunkAry nc) {
         for(int i=0;i<c._len;++i)
           nc.addNum(c.atd(i));
       }
@@ -76,7 +76,7 @@ public class TransformWrappedVec extends WrappedVec {
 
     TransformWrappedChunk(AstRoot fun, Vec transformWrappedVec, ChunkAry c) {
       // set all the chunk fields
-      _c = c; _len = (_c._len);
+      _c = c;
       _fun=fun;
       _asts = new AstRoot[1+_c._numCols];
       _asts[0]=_fun;
@@ -85,6 +85,11 @@ public class TransformWrappedVec extends WrappedVec {
       _env = new Env(null);
     }
 
+
+    @Override
+    public Chunk deepCopy() {
+      return add2Chunk(new NewChunk(Vec.T_NUM),0,_c._len).compress();
+    }
 
     // applies the function to a row of doubles
     @Override public double atd(int idx) {
@@ -109,7 +114,7 @@ public class TransformWrappedVec extends WrappedVec {
       return v;
     }
 
-
-    @Override protected final void initFromBytes () { throw water.H2O.fail(); }
+    @Override
+    public int len() {return _c._len;}
   }
 }

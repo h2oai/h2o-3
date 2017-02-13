@@ -4,8 +4,8 @@ import java.util.Arrays;
 import java.util.Random;
 
 import water.*;
-import water.fvec.C0DChunk;
 import water.fvec.Chunk;
+import water.fvec.C0DChunk;
 import water.fvec.ChunkAry;
 
 /**
@@ -30,7 +30,7 @@ import water.fvec.ChunkAry;
     double[] data = new double[_ncols];
     double [] preds = new double[_nclass+1];
     int ntrees = _trees.length;
-    Chunk weight = _st.hasWeightCol() ? _st.chk_weight(chks) : new C0DChunk(1, chks._len);
+    Chunk weight = _st.hasWeightCol() ? _st.chk_weight(chks) : C0DChunk.makeConstChunk(1);
     int oobt = _st.idx_oobt();
     Chunk resp = _st.chk_resp(chks);
     for( int tidx=0; tidx<ntrees; tidx++) { // tree

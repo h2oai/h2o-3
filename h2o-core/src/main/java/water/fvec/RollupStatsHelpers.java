@@ -35,13 +35,13 @@ public class RollupStatsHelpers {
     double M2 = 0; //variance of non-NA rows, will be 0 for all 0s of sparse chunks
 
     // loop over all values for dense chunks, but only the non-zeros for sparse chunks
-    for (int i = ca.nextNZ(-1,col); i < ca._len; i = ca.nextNZ(i,col)) {
-      if (hasNA && ca.isNA(i,col)) naCnt++;
+    for (Chunk.SparseNum sv = ca.sparseNum(col); sv.rowId()  < ca._len; sv.nextNZ()) {
+      if (sv.isNA()) naCnt++;
       else {
-        double x = ca.atd(i,col);
-        long l = hasFloat ? Double.doubleToRawLongBits(x) : ca.at8(i,col);
+        double x = sv.dval();
+        long l = sv._isLong ? Double.doubleToRawLongBits(x) : sv.lval();
         if (l != 0) // ignore 0s in checksum to be consistent with sparse chunks
-          checksum ^= (17 * (start + i)) ^ 23 * l;
+          checksum ^= (17 * (start + sv.rowId())) ^ 23 * l;
         if (x == Double.POSITIVE_INFINITY) pinfs++;
         else if (x == Double.NEGATIVE_INFINITY) ninfs++;
         else {
@@ -56,7 +56,6 @@ public class RollupStatsHelpers {
         }
       }
     }
-
     // write back local variables into members
     _rs._pinfs = pinfs;
     _rs._ninfs = ninfs;
@@ -87,7 +86,7 @@ public class RollupStatsHelpers {
     double M2 = 0; //variance of non-NA rows, will be 0 for all 0s of sparse chunks
 
     // loop over all values for dense chunks, but only the non-zeros for sparse chunks
-    int len = c._len;
+    int len = c._mem.length;
     for (int i=0; i < len; ++i){
       if (hasNA && c.isNA(i)) naCnt++;
       else {
@@ -143,7 +142,7 @@ public class RollupStatsHelpers {
     double M2 = 0; //variance of non-NA rows, will be 0 for all 0s of sparse chunks
 
     // loop over all values for dense chunks, but only the non-zeros for sparse chunks
-    int len = c._len;
+    int len = c._mem.length;
     for (int i=0; i < len; ++i){
       if (hasNA && c.isNA(i)) naCnt++;
       else {
@@ -197,7 +196,7 @@ public class RollupStatsHelpers {
     double M2 = 0; //variance of non-NA rows, will be 0 for all 0s of sparse chunks
 
     // loop over all values for dense chunks, but only the non-zeros for sparse chunks
-    int len = c._len;
+    int len = c._mem.length - C1SChunk._OFF;
     for (int i=0; i < len; ++i){
       if (hasNA && c.isNA(i)) naCnt++;
       else {
@@ -250,7 +249,7 @@ public class RollupStatsHelpers {
     double M2 = 0; //variance of non-NA rows, will be 0 for all 0s of sparse chunks
 
     // loop over all values for dense chunks, but only the non-zeros for sparse chunks
-    int len = c._len;
+    int len = c._mem.length >> 1;
     for (int i=0; i < len; ++i){
       if (hasNA && c.isNA(i)) naCnt++;
       else {
@@ -304,7 +303,7 @@ public class RollupStatsHelpers {
     double M2 = 0; //variance of non-NA rows, will be 0 for all 0s of sparse chunks
 
     // loop over all values for dense chunks, but only the non-zeros for sparse chunks
-    int len = c._len;
+    int len = (c._mem.length - C2SChunk._OFF) >> 1;
     for (int i=0; i < len; ++i){
       if (hasNA && c.isNA(i)) naCnt++;
       else {
@@ -357,7 +356,7 @@ public class RollupStatsHelpers {
     double M2 = 0; //variance of non-NA rows, will be 0 for all 0s of sparse chunks
 
     // loop over all values for dense chunks, but only the non-zeros for sparse chunks
-    int len = c._len;
+    int len = c._mem.length >> 2;
     for (int i=0; i < len; ++i){
       if (hasNA && c.isNA(i)) naCnt++;
       else {
@@ -411,7 +410,7 @@ public class RollupStatsHelpers {
     double M2 = 0; //variance of non-NA rows, will be 0 for all 0s of sparse chunks
 
     // loop over all values for dense chunks, but only the non-zeros for sparse chunks
-    int len = c._len;
+    int len = c._mem.length >> 2;
     for (int i=0; i < len; ++i){
       if (hasNA && c.isNA(i)) naCnt++;
       else {
@@ -462,7 +461,7 @@ public class RollupStatsHelpers {
     double M2 = 0; //variance of non-NA rows, will be 0 for all 0s of sparse chunks
 
     // loop over all values for dense chunks, but only the non-zeros for sparse chunks
-    int len = c._len;
+    int len = (c._mem.length - C4SChunk._OFF) >> 2;
     for (int i=0; i < len; ++i){
       if (hasNA && c.isNA(i)) naCnt++;
       else {
@@ -514,7 +513,7 @@ public class RollupStatsHelpers {
     double M2 = 0; //variance of non-NA rows, will be 0 for all 0s of sparse chunks
 
     // loop over all values for dense chunks, but only the non-zeros for sparse chunks
-    int len = c._len;
+    int len = c._mem.length >> 3;
     for (int i=0; i < len; ++i){
       if (hasNA && c.isNA(i)) naCnt++;
       else {
@@ -569,7 +568,7 @@ public class RollupStatsHelpers {
     double M2 = 0; //variance of non-NA rows, will be 0 for all 0s of sparse chunks
 
     // loop over all values for dense chunks, but only the non-zeros for sparse chunks
-    int len = c._len;
+    int len = c._mem.length >> 3;
     for (int i=0; i < len; ++i){
       if (hasNA && c.isNA(i)) naCnt++;
       else {

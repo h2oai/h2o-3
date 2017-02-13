@@ -2,7 +2,6 @@ package water.fvec;
 
 import org.junit.*;
 
-import water.AutoBuffer;
 import water.IcedUtils;
 import water.TestUtil;
 import water.parser.BufferedString;
@@ -24,7 +23,7 @@ public class CStrChunkTest extends TestUtil {
       for (BufferedString v : vals) nc.addStr(v);
       nc.addNA();
 
-      Chunk cc = nc.compress();
+      CStrChunk cc = (CStrChunk) nc.compress();
       Assert.assertEquals(vals.length + 1 + l, cc._len);
       Assert.assertTrue(cc instanceof CStrChunk);
       if (l==1) Assert.assertTrue(cc.isNA(0));
@@ -32,7 +31,7 @@ public class CStrChunkTest extends TestUtil {
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.atStr(tmpStr, l + i));
       Assert.assertTrue(cc.isNA(vals.length + l));
 
-      Chunk cc2 = IcedUtils.deepCopy(cc);
+      CStrChunk cc2 = IcedUtils.deepCopy(cc);
       Assert.assertEquals(vals.length + 1 + l, cc2._len);
       Assert.assertTrue(cc2 instanceof CStrChunk);
       if (l==1) Assert.assertTrue(cc2.isNA(0));
@@ -46,7 +45,7 @@ public class CStrChunkTest extends TestUtil {
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.atStr(tmpStr, l + i));
       Assert.assertTrue(nc.isNA(vals.length + l));
 
-      cc2 = nc.compress();
+      cc2 = (CStrChunk) nc.compress();
       Assert.assertEquals(vals.length + 1 + l, cc._len);
       Assert.assertTrue(cc2 instanceof CStrChunk);
       if (l==1) Assert.assertTrue(cc2.isNA(0));

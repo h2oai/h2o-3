@@ -41,7 +41,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
     private final Vec _vec;
     // fast lookups to save repeated calls to node.index() which calls
     // binarysearch within it.
-    private final int _chunkNode[]; // Chunk homenode index
+    private final int _chunkNode[]; // ByteArraySupportedChunk homenode index
     final int _msb;
     private final int _shift;
     private final long _base[]; // the col.min() of each column in the key
@@ -728,7 +728,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
           }
         }
       }
-      // tell remote node to fill up Chunk[/*batch*/][/*rows*/]
+      // tell remote node to fill up ByteArraySupportedChunk[/*batch*/][/*rows*/]
       // perNodeRows[node] has perNodeRows[node].length batches of row numbers to fetch
       _rows=null;
       _fr=null;

@@ -1,6 +1,7 @@
 package water;
 
 import water.api.schemas3.*;
+import water.fvec.ByteArraySupportedChunk;
 import water.nbhm.NonBlockingHashMap;
 import water.util.Log;
 
@@ -27,7 +28,7 @@ public class TypeMap {
     water.DTask.class.getName(),        // Needed for those first Tasks
     water.UDPClientEvent.ClientEvent.class.getName(), // Needed for client event broadcast
 
-    water.fvec.Chunk.class.getName(),   // parent of Chunk
+    ByteArraySupportedChunk.class.getName(),   // parent of ByteArraySupportedChunk
     water.fvec.C1NChunk.class.getName(),// used as constant in parser
     water.fvec.Frame.class.getName(),   // used in TypeaheadKeys & Exec2
     water.fvec.Vec.VectorGroup.class.getName(), // Used in TestUtil

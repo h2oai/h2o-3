@@ -12,10 +12,7 @@ import hex.tree.gbm.GBMModel;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
-import water.fvec.VecAry;
+import water.fvec.*;
 import water.rapids.ast.prims.advmath.AstKFold;
 import water.util.ArrayUtils;
 
@@ -113,12 +110,11 @@ public class XValPredictionsCheck extends TestUtil {
       else
         System.arraycopy(preds.vecs(ArrayUtils.range(1, nclass)), 0, vecs, 1, nclass);
       new MRTask() {
-        @Override public void map(Chunk[] cs) {
-          Chunk foldId = cs[0];
-          for(int r=0;r<cs[0]._len; ++r)
+        @Override public void map(ChunkAry cs) {
+          for(int r=0;r<cs._len; ++r)
             if( foldId.at8(r) != id[0] )
-              for(int i=1; i<cs.length;++i)
-                assert cs[i].atd(r)==0; // no prediction for this row!
+              for(int i=1; i<cs._numCols;++i)
+                assert cs.atd(r,i)==0; // no prediction for this row!
         }
       }.doAll(vecs);
       id[0]++;

@@ -1,7 +1,6 @@
 package water.rapids.ast.prims.mungers;
 
 import water.MRTask;
-import water.fvec.Chunk;
 import water.fvec.ChunkAry;
 import water.fvec.Frame;
 import water.fvec.Vec;

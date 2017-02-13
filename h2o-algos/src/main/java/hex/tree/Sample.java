@@ -1,7 +1,6 @@
 package hex.tree;
 
 import water.MRTask;
-import water.fvec.Chunk;
 import water.fvec.ChunkAry;
 import water.util.RandomUtils;
 
@@ -21,7 +20,7 @@ public class Sample extends MRTask<Sample> {
 
   @Override
   public void map(ChunkAry chks) {
-    // nids, Chunk ys
+    // nids, ByteArraySupportedChunk ys
     int nids = 0, ys = 1;
     Random rand = RandomUtils.getRNG(_tree._seed);
     for (int row = 0; row < chks._len; row++) {

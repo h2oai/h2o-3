@@ -3,9 +3,7 @@ package water.fvec;
 import water.Futures;
 
 import jsr166y.CountedCompleter;
-import jsr166y.ForkJoinTask;
 import water.*;
-import water.H2O.H2OCallback;
 import water.H2O.H2OCountedCompleter;
 import water.nbhm.NonBlockingHashMap;
 import water.parser.Categorical;
@@ -122,9 +120,9 @@ final class RollupStats extends Iced {
       int zs = ca._len -ca.sparseLenZero(col); // Easy zeros
       int nans = 0;
       // Hard-count sparse-but-zero (weird case of setting a zero over a non-zero)
-      for(int i = ca.nextNZ(-1,col); i< ca._len; i=ca.nextNZ(i,col) )
-        if( ca.isNA(i,col) ) nans++;
-        else if( ca.at8(i,col)==0 ) zs++;
+      for(Chunk.SparseNum sv = ca.sparseNum(col); sv.rowId() < ca._len; sv.nextNZ())
+        if( Double.isNaN(sv.dval()) ) nans++;
+        else if( sv.dval()==0 ) zs++;
       int os = ca._len -zs-nans;  // Ones
       _nzCnt += os;
       _naCnt += nans;
@@ -139,26 +137,25 @@ final class RollupStats extends Iced {
 
     // Walk the non-zeros
     if( isUUID ) {   // UUID columns do not compute min/max/mean/sigma
-      for(int i = ca.nextNZ(-1,col); i< ca._len; i=ca.nextNZ(i,col) ) {
-        if( ca.isNA(i,col) ) _naCnt++;
+      for (int i = 0; i < ca._len; ++i) {
+        if (ca.isNA(i, col)) _naCnt++;
         else {
-          long lo = ca.at16l(i,col), hi = ca.at16h(i,col);
+          long lo = ca.at16l(i, col), hi = ca.at16h(i, col);
           if (lo != 0 || hi != 0) _nzCnt++;
-          l = lo ^ 37*hi;
-        }
-        if(l != 0) // ignore 0s in checksum to be consistent with sparse chunks
-          checksum ^= (17 * (start+i)) ^ 23*l;
-      }
-
-    } else if( isString ) { // String columns do not compute min/max/mean/sigma
-      for (int i = ca.nextNZ(-1,col); i < ca._len; i = ca.nextNZ(i,col)) {
-        if (ca.isNA(i,col)) _naCnt++;
-        else {
-          _nzCnt++;
-          l = ca.atStr(tmpStr, i, col).hashCode();
+          l = lo ^ 37 * hi;
         }
         if (l != 0) // ignore 0s in checksum to be consistent with sparse chunks
-          checksum ^= (17 * (start + i)) ^ 23 * l;
+          checksum ^= (17 * (start + col)) ^ 23 * l;
+      }
+    } else if( isString ) { // String columns do not compute min/max/mean/sigma
+      for (Chunk.SparseString sv = ca.sparseStr(col); sv.rowId() < ca._len; sv.nextNZ()) {
+        if (sv.isNA()) _naCnt++;
+        else {
+          _nzCnt++;
+          l = sv.val().hashCode();
+        }
+        if (l != 0) // ignore 0s in checksum to be consistent with sparse chunks
+          checksum ^= (17 * (start + sv.rowId())) ^ 23 * l;
       }
     } else {
       checksum=new RollupStatsHelpers(this).numericChunkRollup(ca, col, checksum);
@@ -180,6 +177,8 @@ final class RollupStats extends Iced {
           _sigma += zeroM2 + delta*delta * _rows * zeros / (_rows + zeros); //this is the variance*(N-1), will do sqrt(_sigma/(N-1)) later in postGlobal
           _rows += zeros;
         }
+      } else if(ca.isSparseNA(col)){
+        _naCnt = ca._len - ca.sparseLenNA(col);
       }
     }
     _checksum = checksum;
@@ -283,8 +282,8 @@ final class RollupStats extends Iced {
       for(int c = 0; c < cs._numCols; ++c) {
         if(_nbins[c] == -1)continue;
         _bins[c] = MemoryManager.malloc8(_nbins[c]);
-        for( int i=cs.nextNZ(-1,c); i< cs._len; i=cs.nextNZ(i,c) ) {
-          double d = cs.atd(i,c);
+        for(Chunk.SparseNum sv = cs.sparseNum(c); sv.rowId() < cs._len; sv.nextNZ() ) {
+          double d = sv.dval();
           if( !Double.isNaN(d) ) _bins[c][idx(c,d)]++;
         }
         // Sparse?  We skipped all the zeros; do them now
@@ -422,6 +421,9 @@ final class RollupStats extends Iced {
         if(nbins[i] == -1) continue;
         RollupStats rs = rsa.getRollups(i);
         final long rows = vec.length() - rs._naCnt;
+        if(ArrayUtils.sum(histo._bins[i]) != rows){
+          System.out.println(ArrayUtils.sum(histo._bins[i]) + " != " + rows);
+        }
         assert ArrayUtils.sum(histo._bins[i]) == rows;
         rs._bins = histo._bins[i];
         // Compute percentiles from histogram

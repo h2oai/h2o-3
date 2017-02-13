@@ -17,15 +17,14 @@ public class C16ChunkTest extends TestUtil {
       for (long v : vals) nc.addUUID(v,v);
       nc.addNA();
 
-      Chunk cc = nc.compress();
-      Assert.assertEquals(vals.length + 1 + l, cc._len);
+      ByteArraySupportedChunk cc = (ByteArraySupportedChunk) nc.compress();
+      Assert.assertEquals(vals.length + 1 + l, cc.len());
       Assert.assertTrue(cc instanceof C16Chunk);
       if (l==1) Assert.assertTrue(cc.isNA(0));
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at16l(l + i));
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at16h(l + i));
       Assert.assertTrue(cc.isNA(vals.length + l));
-
-      nc = cc.inflate_impl(new NewChunk(Vec.T_UUID));
+      nc = cc.add2Chunk(new NewChunk(Vec.T_UUID),0,cc.len());
       nc.values(0, nc._len);
       Assert.assertEquals(vals.length + 1 + l, nc._len);
 
@@ -34,8 +33,8 @@ public class C16ChunkTest extends TestUtil {
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.at16h(l + i));
       Assert.assertTrue(nc.isNA(vals.length + l));
 
-      Chunk cc2 = nc.compress();
-      Assert.assertEquals(vals.length + 1 + l, cc._len);
+      ByteArraySupportedChunk cc2 = (ByteArraySupportedChunk) nc.compress();
+      Assert.assertEquals(vals.length + 1 + l, cc.len());
       Assert.assertTrue(cc2 instanceof C16Chunk);
       if (l==1) Assert.assertTrue(cc2.isNA(0));
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.at16l(l + i));

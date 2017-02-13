@@ -4,7 +4,6 @@ import water.MRTask;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.rapids.Env;
-import water.rapids.Val;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
@@ -68,22 +67,16 @@ public class AstToUpper extends AstPrimitive {
   private VecAry toUpperStringCol(VecAry vec) {
     return new MRTask() {
       @Override
-      public void map(Chunk chk, NewChunk newChk) {
-        if (chk instanceof C0DChunk) // all NAs
-          for (int i = 0; i < chk.len(); i++)
-            newChk.addNA();
-        else if (((CStrChunk) chk)._isAllASCII) { // fast-path operations
-          ((CStrChunk) chk).asciiToUpper(newChk);
-        } else { //UTF requires Java string methods for accuracy
-          BufferedString tmpStr = new BufferedString();
-          for (int i = 0; i < chk._len; i++) {
-            if (chk.isNA(i))
-              newChk.addNA();
-            else // Locale.ENGLISH to give the correct results for local insensitive strings
-              newChk.addStr(chk.atStr(tmpStr, i).toString().toUpperCase(Locale.ENGLISH));
-          }
+      public void map(ChunkAry chk, NewChunkAry newChk) {
+        BufferedString tmpStr = new BufferedString();
+        for (int i = 0; i < chk._len; i++) {
+          if (chk.isNA(i))
+            newChk.addNA(0);
+          else // Locale.ENGLISH to give the correct results for local insensitive strings
+            newChk.addStr(0,chk.atStr(tmpStr, i).toString().toUpperCase(Locale.ENGLISH));
         }
       }
+
     }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().vecs();
   }
 }

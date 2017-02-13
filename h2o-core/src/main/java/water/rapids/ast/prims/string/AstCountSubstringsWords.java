@@ -75,12 +75,10 @@ public class AstCountSubstringsWords extends AstPrimitive {
       }
 
       @Override
-      public void map(Chunk chk, NewChunk newChk) {
-        //pre-allocate since the size is known
-        newChk.alloc_doubles(chk._len);
+      public void map(ChunkAry chk, NewChunkAry newChk) {
         for (int i = 0; i < chk._len; i++)
           if (chk.isNA(i))
-            newChk.addNA();
+            newChk.addNA(0);
           else
             newChk.addNum(catCounts[(int) chk.atd(i)]);
       }
@@ -91,18 +89,14 @@ public class AstCountSubstringsWords extends AstPrimitive {
   private VecAry countSubstringsWordsStringCol(VecAry vec, final HashSet<String> words) {
     return new MRTask() {
       @Override
-      public void map(Chunk chk, NewChunk newChk) {
-        if (chk instanceof C0DChunk) //all NAs
-          newChk.addNAs(chk.len());
-        else { //UTF requires Java string methods
-          BufferedString tmpStr = new BufferedString();
-          for (int i = 0; i < chk._len; i++) {
-            if (chk.isNA(i))
-              newChk.addNA();
-            else {
-              String str = chk.atStr(tmpStr, i).toString();
-              newChk.addNum(calcCountSubstringsWords(str, words));
-            }
+      public void map(ChunkAry chk, NewChunkAry newChk) {
+        BufferedString tmpStr = new BufferedString();
+        for (int i = 0; i < chk._len; i++) {
+          if (chk.isNA(i))
+            newChk.addNA(0);
+          else {
+            String str = chk.atStr(tmpStr, i).toString();
+            newChk.addNum(calcCountSubstringsWords(str, words));
           }
         }
       }

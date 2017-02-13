@@ -84,7 +84,7 @@ public class NewVectorTest extends TestUtil {
              C8DChunk.class);
   }
 
-  // Testing writes to an existing Chunk causing inflation
+  // Testing writes to an existing ByteArraySupportedChunk causing inflation
   @Test public void testWrites() {
     Vec vec = null;
     try {

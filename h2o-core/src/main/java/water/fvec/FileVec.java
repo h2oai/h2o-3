@@ -21,9 +21,9 @@ public abstract class FileVec extends ByteVec {
 
     return p;
   }
-  /** Log-2 of Chunk size. */
+  /** Log-2 of ByteArraySupportedChunk size. */
   public static final int DFLT_LOG2_CHUNK_SIZE = 20/*1Meg*/+2/*4Meg*/;
-  /** Default Chunk size in bytes, useful when breaking up large arrays into
+  /** Default ByteArraySupportedChunk size in bytes, useful when breaking up large arrays into
    *  "bite-sized" chunks.  Bigger increases batch sizes, lowers overhead
    *  costs, lower increases fine-grained parallelism. */
   public static final int DFLT_CHUNK_SIZE = 1 << DFLT_LOG2_CHUNK_SIZE;
@@ -43,7 +43,7 @@ public abstract class FileVec extends ByteVec {
   }
 
   /**
-   * Chunk size must be positive, 1G or less, and a power of two.
+   * ByteArraySupportedChunk size must be positive, 1G or less, and a power of two.
    * Any values that aren't a power of two will be reduced to the
    * first power of two lower than the provided chunkSize.
    * <p>
@@ -67,8 +67,8 @@ public abstract class FileVec extends ByteVec {
     Futures fs = new Futures();
     Keyed.remove(_key, fs);
     fs.blockForPending();
-    if (chunkSize <= 0) throw new IllegalArgumentException("Chunk sizes must be > 0.");
-    if (chunkSize > (1<<30) ) throw new IllegalArgumentException("Chunk sizes must be < 1G.");
+    if (chunkSize <= 0) throw new IllegalArgumentException("ByteArraySupportedChunk sizes must be > 0.");
+    if (chunkSize > (1<<30) ) throw new IllegalArgumentException("ByteArraySupportedChunk sizes must be < 1G.");
     _chunkSize = chunkSize;
     //Now reset the chunk size on each node
     fs = new Futures();
@@ -115,7 +115,7 @@ public abstract class FileVec extends ByteVec {
 
   /** Convert a chunk-key to a file offset. Size 1-byte "rows", so this is a
    *  direct conversion.
-   *  @return The file offset corresponding to this Chunk index */
+   *  @return The file offset corresponding to this ByteArraySupportedChunk index */
   public static long chunkOffset ( Key ckey ) { return (long)chunkIdx(ckey)*((FileVec)Vec.getVecKey(ckey).get())._chunkSize; }
   // Reverse: convert a chunk-key into a cidx
   static int chunkIdx(Key ckey) { assert ckey._kb[0]==Key.CHK; return UnsafeUtils.get4(ckey._kb, 1 + 1 + 4); }
@@ -198,7 +198,7 @@ public abstract class FileVec extends ByteVec {
     else {
       // New Heuristic
       int minNumberRows = 10; // need at least 10 rows (lines) per chunk (core)
-      int perNodeChunkCountLimit = 1<<21; // don't create more than 2M Chunk POJOs per node
+      int perNodeChunkCountLimit = 1<<21; // don't create more than 2M ByteArraySupportedChunk POJOs per node
       int minParseChunkSize = 1<<12; // don't read less than this many bytes
       int maxParseChunkSize = Value.MAX-1; // don't read more than this many bytes per map() thread (needs to fit into a Value object)
       long chunkSize = Math.max((localParseSize / (4*cores))+1, minParseChunkSize); //lower hard limit
@@ -224,7 +224,7 @@ public abstract class FileVec extends ByteVec {
             chunkSize *= ratio; //need to bite off larger chunks
           }
           chunkSize = Math.min(maxParseChunkSize, chunkSize); // hard upper limit
-          // if we can read at least minNumberRows and we don't create too large Chunk POJOs, we're done
+          // if we can read at least minNumberRows and we don't create too large ByteArraySupportedChunk POJOs, we're done
           // else, fix it with a catch-all heuristic
           if (chunkSize <= minNumberRows * maxLineLength) {
             // might be more than default, if the max line length needs it, but no more than the size limit(s)

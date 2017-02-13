@@ -70,7 +70,7 @@ public class VecParquetReader implements Closeable {
   }
 
   /**
-   * @return the index of added Chunk record or null if finished
+   * @return the index of added ByteArraySupportedChunk record or null if finished
    * @throws IOException
    */
   public Integer read() throws IOException {

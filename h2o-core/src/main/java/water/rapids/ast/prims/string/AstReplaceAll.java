@@ -80,24 +80,16 @@ public class AstReplaceAll extends AstPrimitive {
     final boolean ignoreCase = ic;
     return new MRTask() {
       @Override
-      public void map(Chunk chk, NewChunk newChk) {
-        if (chk instanceof C0DChunk) // all NAs
-          for (int i = 0; i < chk.len(); i++)
-            newChk.addNA();
-        else {
-//        if (((CStrChunk)chk)._isAllASCII) { // fast-path operations
-//          ((CStrChunk) chk).asciiReplaceAll(newChk);
-//        } else { //UTF requires Java string methods for accuracy
-          BufferedString tmpStr = new BufferedString();
-          for (int i = 0; i < chk._len; i++) {
-            if (chk.isNA(i))
-              newChk.addNA();
-            else {
-              if (ignoreCase)
-                newChk.addStr(chk.atStr(tmpStr, i).toString().toLowerCase(Locale.ENGLISH).replaceAll(pattern, replacement));
-              else
-                newChk.addStr(chk.atStr(tmpStr, i).toString().replaceAll(pattern, replacement));
-            }
+      public void map(ChunkAry chk, NewChunkAry newChk) {
+        BufferedString tmpStr = new BufferedString();
+        for (int i = 0; i < chk._len; i++) {
+          if (chk.isNA(i))
+            newChk.addNA(0);
+          else {
+            if (ignoreCase)
+              newChk.addStr(0,chk.atStr(tmpStr, i).toString().toLowerCase(Locale.ENGLISH).replaceAll(pattern, replacement));
+            else
+              newChk.addStr(0,chk.atStr(tmpStr, i).toString().replaceAll(pattern, replacement));
           }
         }
       }

@@ -34,14 +34,14 @@ public class CBSChunkTest extends TestUtil {
       else
         nca.addNum(0,ls[i],xs[i]);
     NewChunk nc = nca.getChunkInflated(0);
-    Chunk cc = nc.compress();
+    CBSChunk cc = (CBSChunk) nc.compress();
     assertEquals(expNA, nc.naCnt());
     // Compress chunk
-    assert cc instanceof CBSChunk;
+
     Futures fs = new Futures();
     fs.blockForPending();
     Assert.assertTrue("Found chunk class " + cc.getClass() + " but expected " + CBSChunk.class, CBSChunk.class.isInstance(cc));
-    assertEquals(nc._len, cc._len);
+    assertEquals(nc._len, cc.len());
     assertEquals(expBpv, ((CBSChunk)cc).bpv());
     assertEquals(expGap, ((CBSChunk)cc).gap());
     assertEquals(expClen, cc._mem.length - CBSChunk._OFF);
@@ -97,8 +97,8 @@ public class CBSChunkTest extends TestUtil {
       for (int v : vals) nc.addNum(v);
       nc.addNA();
 
-      Chunk cc = nc.compress();
-      Assert.assertEquals(vals.length + 1 + l, cc._len);
+      CBSChunk cc = (CBSChunk) nc.compress();
+      Assert.assertEquals(vals.length + 1 + l, cc.len());
       Assert.assertTrue(cc instanceof CBSChunk);
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at8(l + i));
 
@@ -106,7 +106,7 @@ public class CBSChunkTest extends TestUtil {
 
 
       nc = new NewChunk(Vec.T_NUM);
-      cc.inflate_impl(nc);
+      cc.add2Chunk(nc,0,cc.len());
       nc.values(0, nc._len);
       Assert.assertEquals(vals.length+l+1, nc._sparseLen);
       Assert.assertEquals(vals.length+l+1, nc._len);
@@ -129,8 +129,8 @@ public class CBSChunkTest extends TestUtil {
         else Assert.assertTrue(cc.at8(i)==(int)densevals[i]);
       }
 
-      Chunk cc2 = nc.compress();
-      Assert.assertEquals(vals.length + 1 + l, cc._len);
+      CBSChunk cc2 = (CBSChunk) nc.compress();
+      Assert.assertEquals(vals.length + 1 + l, cc.len());
       Assert.assertTrue(cc2 instanceof CBSChunk);
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.at8(l + i));
 
@@ -167,7 +167,7 @@ public class CBSChunkTest extends TestUtil {
 
 
     NewChunk nc = new NewChunk(Vec.T_NUM);
-    cc.getChunk(0).inflate_impl(nc);
+    ((ByteArraySupportedChunk)cc.getChunk(0)).add2Chunk(nc,0,cc._len);
     nc.values(0, nc._len);
     Assert.assertEquals(vals.length, nc._sparseLen);
     Assert.assertEquals(vals.length, nc._len);
@@ -181,7 +181,7 @@ public class CBSChunkTest extends TestUtil {
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
 
 
-    Chunk cc2 = nc.compress();
+    CBSChunk cc2 = (CBSChunk) nc.compress();
     Assert.assertEquals(vals.length, cc._len);
     Assert.assertTrue(cc2 instanceof CBSChunk);
     for (int na : NAs) Assert.assertTrue(cc.isNA(na));
@@ -189,7 +189,7 @@ public class CBSChunkTest extends TestUtil {
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
 
 
-    Assert.assertTrue(Arrays.equals(cc.getChunk(0)._mem, cc2._mem));
+    Assert.assertTrue(Arrays.equals(cc.getChunk(0).asBytes(), cc2._mem));
     vec.remove();
   }
 

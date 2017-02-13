@@ -1,11 +1,6 @@
 package water;
 
-import java.util.Iterator;
-
-import water.fvec.Chunk;
 import water.fvec.ChunkAry;
-import water.fvec.NewChunk;
-import water.util.Log;
 
 /** Helper to provide access to package
  * hidden methods and attributes.

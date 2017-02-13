@@ -195,7 +195,7 @@ public class WorkFlowTest extends TestUtil {
       return doAll(new byte[]{Vec.T_NUM}, time).outputFrame(new String[]{"Days"}, null);
     }
 
-    @Override public void map(Chunk msec, NewChunk day) {
+    @Override public void map(ChunkAry msec, NewChunkAry day) {
       for( int i=0; i<msec._len; i++ ) {
         day.addNum(msec.at8(i)/(1000*60*60*24)); // Days since the Epoch
       }
@@ -214,14 +214,14 @@ public class WorkFlowTest extends TestUtil {
       _day0 = (int)vday.at8(0);
       _last_day = (int)vday.at8((int)vday.length()-1)+1;
     }
-    @Override public void map( Chunk chk[] ) {
-      Chunk day = chk[0];
-      Chunk sid = chk[1];
+    @Override public void map( ChunkAry chk ) {
+      int day = 0;
+      int sid = 1;
       _num_sid = _fr.vecs().cardinality(1);
-      int len = chk[0]._len;
+      int len = chk._len;
       _bikes = new int[idx(_last_day,0)];
       for( int i=0; i<len; i++ )
-        _bikes[idx(day.at8(i),sid.at8(i))]++;
+        _bikes[idx(chk.at8(i,day),chk.at8(i,sid))]++;
     }
     @Override public void reduce( CountBikes cb ) {
       water.util.ArrayUtils.add(_bikes,cb._bikes);

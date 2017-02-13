@@ -78,8 +78,8 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
     double[] data = new double[_ncols];
     double[] preds = new double[_nclasses+1];
     Chunk cresp = _st.chk_resp(chks);
-    Chunk weights = _st.hasWeightCol() ? _st.chk_weight(chks) : new C0DChunk(1, chks._len);
-    int   nrows = cresp._len;
+    Chunk weights = _st.hasWeightCol() ? _st.chk_weight(chks) : C0DChunk.makeConstChunk(1);
+    int   nrows = chks._len;
     int   [] oob = new int[2+Math.round((1f-_rate)*nrows*1.2f+0.5f)]; // preallocate
     int   [] soob = null;
 

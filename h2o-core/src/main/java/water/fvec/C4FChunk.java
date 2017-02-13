@@ -1,13 +1,16 @@
 package water.fvec;
 
-import water.*;
 import water.util.UnsafeUtils;
 
 /**
  * The empty-compression function, where data is in 'float's.
  */
-public class C4FChunk extends Chunk {
-  C4FChunk( byte[] bs ) { _mem=bs; _len = _mem.length>>2; }
+public class C4FChunk extends ByteArraySupportedChunk {
+  C4FChunk( byte[] bs ) { _mem=bs;  }
+  public int len(){return _mem.length >> 2;}
+
+
+
   @Override public final long at8(int i ) {
     float res = UnsafeUtils.get4f(_mem, i << 2);
     if( Float.isNaN(res) ) throw new IllegalArgumentException("at8_abs but value is missing");
@@ -53,9 +56,6 @@ public class C4FChunk extends Chunk {
   // 3.3333333e33
 //  public int pformat_len0() { return 14; }
 //  public String pformat0() { return "% 13.7e"; }
-  @Override public final void initFromBytes () {
-    _len = _mem.length>>2;
-    assert _mem.length == _len <<2;
-  }
+  @Override public final void initFromBytes () {}
   @Override public boolean hasFloat() {return true;}
 }

@@ -20,24 +20,23 @@ public class C1ChunkTest extends TestUtil {
       for (int v : vals) nc.addNum(v, 0);
       nc.addNA();
 
-      Chunk cc = nc.compress();
-      Assert.assertEquals(vals.length + 1 + l, cc._len);
-      Assert.assertTrue(cc instanceof C1Chunk);
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at8(l + i));
+      C1Chunk c1c = (C1Chunk) nc.compress();
+      Assert.assertEquals(vals.length + 1 + l, c1c._mem.length);
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], c1c.at8(l + i));
 
-      Assert.assertTrue(cc.isNA(vals.length + l));
+      Assert.assertTrue(c1c.isNA(vals.length + l));
 
-      double[] densevals = new double[cc.len()];
-      cc.getDoubles(densevals,0,cc.len());
+      double[] densevals = new double[c1c._mem.length];
+      c1c.getDoubles(densevals,0,c1c._mem.length);
       for (int i = 0; i < densevals.length; ++i) {
-        if (cc.isNA(i)) Assert.assertTrue(Double.isNaN(densevals[i]));
-        else Assert.assertTrue(cc.at8(i)==(int)densevals[i]);
+        if (c1c.isNA(i)) Assert.assertTrue(Double.isNaN(densevals[i]));
+        else Assert.assertTrue(c1c.at8(i)==(int)densevals[i]);
       }
 
       nc = new NewChunk(Vec.T_NUM);
-      cc.inflate_impl(nc);
+      c1c.add2Chunk(nc,0,c1c._mem.length);
       nc.values(0, nc._len);
-      if (l==1) Assert.assertTrue(cc.isNA(0));
+      if (l==1) Assert.assertTrue(c1c.isNA(0));
       Assert.assertEquals(vals.length+l+1, nc._sparseLen);
       Assert.assertEquals(vals.length+l+1, nc._len);
       Iterator<NewChunk.Value> it = nc.values(0, vals.length+1+l);
@@ -45,18 +44,17 @@ public class C1ChunkTest extends TestUtil {
       Assert.assertTrue(!it.hasNext());
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.at8(l + i));
 
-      Assert.assertTrue(cc.isNA(vals.length + l));
+      Assert.assertTrue(c1c.isNA(vals.length + l));
 
-      Chunk cc2 = nc.compress();
-      Assert.assertEquals(vals.length + 1 + l, cc._len);
-      Assert.assertTrue(cc2 instanceof C1Chunk);
+      C1Chunk cc2 = (C1Chunk) nc.compress();
+      Assert.assertEquals(vals.length + 1 + l, cc2._mem.length);
       if (l==1) Assert.assertTrue(cc2.isNA(0));
 
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.at8(l + i));
 
       Assert.assertTrue(cc2.isNA(vals.length + l));
 
-      Assert.assertTrue(Arrays.equals(cc._mem, cc2._mem));
+      Assert.assertTrue(Arrays.equals(c1c._mem, cc2._mem));
     }
   }
 
@@ -86,7 +84,7 @@ public class C1ChunkTest extends TestUtil {
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
 
     NewChunk nc = new NewChunk(Vec.T_NUM);
-    cc.getChunk(0).inflate_impl(nc);
+    cc.getChunk(0).add2Chunk(nc,0,vals.length);
     nc.values(0, nc._len);
     Assert.assertEquals(vals.length+1, nc._sparseLen);
     Assert.assertEquals(vals.length+1, nc._len);
@@ -100,15 +98,13 @@ public class C1ChunkTest extends TestUtil {
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
 
 
-    Chunk cc2 = nc.compress();
+    C1Chunk cc2 = (C1Chunk) nc.compress();
     Assert.assertEquals(vals.length+1, cc._len);
-    Assert.assertTrue(cc2 instanceof C1Chunk);
     for (int na : NAs) Assert.assertTrue(cc.isNA(na));
 
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
 
-
-    Assert.assertTrue(Arrays.equals(cc.getChunk(0)._mem, cc2._mem));
+    Assert.assertTrue(Arrays.equals(((ByteArraySupportedChunk)cc.getChunk(0))._mem, cc2._mem));
     vec.remove();
   }
 }

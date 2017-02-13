@@ -156,18 +156,18 @@ public class LinearAlgebraUtils {
       _ncolQ = ncolQ;
     }
 
-    @Override public void map(Chunk cs[]) {
-      assert (_ncolA + _ncolQ) == cs.length;
+    @Override public void map(ChunkAry cs) {
+      assert (_ncolA + _ncolQ) == cs._numCols;
       _atq = new double[_ncolExp][_ncolQ];
 
       for(int k = _ncolA; k < (_ncolA + _ncolQ); k++) {
         // Categorical columns
         int cidx;
         for(int p = 0; p < _ainfo._cats; p++) {
-          for(int row = 0; row < cs[0]._len; row++) {
-            if(cs[p].isNA(row) && _ainfo._skipMissing) continue;
-            double q = cs[k].atd(row);
-            double a = cs[p].atd(row);
+          for(int row = 0; row < cs._len; row++) {
+            if(cs.isNA(row,p) && _ainfo._skipMissing) continue;
+            double q = cs.atd(row,k);
+            double a = cs.atd(row,p);
 
             if (Double.isNaN(a)) {
               if (_ainfo._imputeMissing)
@@ -186,10 +186,10 @@ public class LinearAlgebraUtils {
         int pnum = 0;
         int pexp = _ainfo.numStart();
         for(int p = _ainfo._cats; p < _ncolA; p++) {
-          for(int row = 0; row  < cs[0]._len; row++) {
-            if(cs[p].isNA(row) && _ainfo._skipMissing) continue;
-            double q = cs[k].atd(row);
-            double a = cs[p].atd(row);
+          for(int row = 0; row  < cs._len; row++) {
+            if(cs.isNA(row,p) && _ainfo._skipMissing) continue;
+            double q = cs.atd(row,k);
+            double a = cs.atd(row,p);
             a = modifyNumeric(a, pnum, _ainfo);
             _atq[pexp][k-_ncolA] += q * a;
           }
@@ -375,13 +375,13 @@ public class LinearAlgebraUtils {
   static class ProjectOntoEigenVector extends MRTask<ProjectOntoEigenVector> {
     ProjectOntoEigenVector(double[] yCoord) { _yCoord = yCoord; }
     final double[] _yCoord; //projection
-    @Override public void map(Chunk[] cs, NewChunk[] nc) {
-      for (int i=0;i<cs[0]._len;++i) {
-        if (cs[0].isNA(i)) {
-          nc[0].addNA();
+    @Override public void map(ChunkAry cs, NewChunkAry nc) {
+      for (int i=0;i<cs._len;++i) {
+        if (cs.isNA(i)) {
+          nc.addNA(0);
         } else {
-          int which = (int) cs[0].at8(i);
-          nc[0].addNum((float)_yCoord[which]); //make it more reproducible by casting to float
+          int which = cs.at4(i);
+          nc.addNum((float)_yCoord[which]); //make it more reproducible by casting to float
         }
       }
     }

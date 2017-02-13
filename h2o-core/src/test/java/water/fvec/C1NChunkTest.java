@@ -14,8 +14,8 @@ public class C1NChunkTest extends TestUtil {
     int[] vals = new int[]{0,1,3,254};
     for (int v : vals) nc.addNum(v,0);
 
-    Chunk cc = nc.compress();
-    Assert.assertEquals(vals.length, cc._len);
+    ByteArraySupportedChunk cc = (ByteArraySupportedChunk) nc.compress();
+    Assert.assertEquals(vals.length, cc.len());
     Assert.assertTrue(cc instanceof C1NChunk);
     for (int i=0;i<vals.length;++i) Assert.assertEquals(vals[i], cc.at8(i));
     double[] densevals = new double[cc.len()];
@@ -25,14 +25,14 @@ public class C1NChunkTest extends TestUtil {
       else Assert.assertTrue(cc.at8(i)==(int)densevals[i]);
     }
 
-    nc = cc.inflate_impl(new NewChunk(Vec.T_NUM));
+    nc = cc.add2Chunk(new NewChunk(Vec.T_NUM),0,vals.length);
     nc.values(0, nc._len);
     Assert.assertEquals(vals.length, nc._len);
     Assert.assertEquals(vals.length, nc._sparseLen);
     for (int i=0;i<vals.length;++i) Assert.assertEquals(vals[i], nc.at8(i));
 
-    Chunk cc2 = nc.compress();
-    Assert.assertEquals(vals.length, cc._len);
+    ByteArraySupportedChunk cc2 = (ByteArraySupportedChunk) nc.compress();
+    Assert.assertEquals(vals.length, cc.len());
     Assert.assertTrue(cc2 instanceof C1NChunk);
     for (int i=0;i<vals.length;++i) Assert.assertEquals(vals[i], cc2.at8(i));
 

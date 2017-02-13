@@ -985,24 +985,24 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     return new MRTask() {
       @Override
-      public void map(Chunk[] cs, NewChunk[] nc) {
-        Chunk weight = weightIdx>=0 ? cs[weightIdx] : new C0DChunk(1, cs[0]._len);
-        Chunk response = cs[respIdx];
-        for (int i=0;i<cs[0]._len;++i) {
+      public void map(ChunkAry cs, NewChunkAry nc) {
+        Chunk weight = weightIdx>=0 ? cs.getChunk(weightIdx) : C0DChunk.makeConstChunk(1);
+        Chunk response = cs.getChunk(respIdx);
+        for (int i=0;i<cs._len;++i) {
           double w=weight.atd(i);
           double y=response.atd(i);
           if (_output.nclasses()==1) { //regression - deviance
-            double f=cs[0].atd(i);
+            double f=cs.atd(i,0);
             if (myDist!=null && myDist.distribution == DistributionFamily.huber) {
-              nc[0].addNum(myDist.deviance(w, y, f)); //use above custom huber delta for this dataset
+              nc.addNum(0,myDist.deviance(w, y, f)); //use above custom huber delta for this dataset
             }
             else {
-              nc[0].addNum(deviance(w, y, f));
+              nc.addNum(0,deviance(w, y, f));
             }
           } else {
             int iact=(int)y;
-            double err = iact < _output.nclasses() ? 1-cs[1+iact].atd(i) : 1;
-            nc[0].addNum(w*MathUtils.logloss(err));
+            double err = iact < _output.nclasses() ? 1-cs.atd(i,1+iact) : 1;
+            nc.addNum(0,w*MathUtils.logloss(err));
           }
         }
       }
@@ -1093,46 +1093,46 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       _hasWeights = testHasWeights;
     }
 
-    @Override public void map( Chunk chks[], NewChunk cpreds[] ) {
+    @Override public void map(ChunkAry chks, NewChunkAry cpreds ) {
       if (isCancelled() || _j != null && _j.stop_requested()) return;
-      Chunk weightsChunk = _hasWeights && _computeMetrics ? chks[_output.weightsIdx()] : null;
-      Chunk offsetChunk = _output.hasOffset() ? chks[_output.offsetIdx()] : null;
-      Chunk responseChunk = null;
+      Chunk weightsAChunk = _hasWeights && _computeMetrics ? chks.getChunk(_output.weightsIdx()) : null;
+      Chunk offsetAChunk = _output.hasOffset() ? chks.getChunk(_output.offsetIdx()) : null;
+      Chunk responseAChunk = null;
       double [] tmp = new double[_output.nfeatures()];
       float [] actual = null;
       _mb = Model.this.makeMetricBuilder(_domain);
       if (_computeMetrics) {
         if (isSupervised()) {
           actual = new float[1];
-          responseChunk = chks[_output.responseIdx()];
+          responseAChunk = chks.getChunk(_output.responseIdx());
         } else
-          actual = new float[chks.length];
+          actual = new float[chks._numCols];
       }
       double[] preds = _mb._work;  // Sized for the union of test and train classes
-      int len = chks[0]._len;
+      int len = chks._len;
       for (int row = 0; row < len; row++) {
-        double weight = weightsChunk!=null?weightsChunk.atd(row):1;
+        double weight = weightsAChunk !=null? weightsAChunk.atd(row):1;
         if (weight == 0) {
           if (_makePreds) {
             for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
-              cpreds[c].addNum(0);
+              cpreds.addInteger(c,0);
           }
           continue;
         }
-        double offset = offsetChunk!=null?offsetChunk.atd(row):0;
-        double [] p = score0(chks, weight, offset, row, tmp, preds);
+        double offset = offsetAChunk !=null? offsetAChunk.atd(row):0;
+        double [] p = score0(chks.getChunks(), weight, offset, row, tmp, preds);
         if (_computeMetrics) {
           if(isSupervised()) {
-            actual[0] = (float)responseChunk.atd(row);
+            actual[0] = (float) responseAChunk.atd(row);
           } else {
             for(int i = 0; i < actual.length; ++i)
-              actual[i] = (float)chks[i].atd(row);
+              actual[i] = (float)chks.getChunk(i).atd(row);
           }
           _mb.perRow(preds, actual, weight, offset, Model.this);
         }
         if (_makePreds) {
           for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
-            cpreds[c].addNum(p[c]);
+            cpreds.addNum(c,p[c]);
         }
       }
       if ( _j != null) _j.update(1);
@@ -1146,11 +1146,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  and expect the last Chunks are for the final distribution and prediction.
    *  Default method is to just load the data into the tmp array, then call
    *  subclass scoring logic. */
-  public double[] score0( Chunk chks[], int row_in_chunk, double[] tmp, double[] preds ) {
+  public double[] score0(Chunk chks[], int row_in_chunk, double[] tmp, double[] preds ) {
     return score0(chks, 1, 0, row_in_chunk, tmp, preds);
   }
 
-  public double[] score0( Chunk chks[], double weight, double offset, int row_in_chunk, double[] tmp, double[] preds ) {
+  public double[] score0(Chunk chks[], double weight, double offset, int row_in_chunk, double[] tmp, double[] preds ) {
     assert(_output.nfeatures() == tmp.length);
     for( int i=0; i< tmp.length; i++ )
       tmp[i] = chks[i].atd(row_in_chunk);

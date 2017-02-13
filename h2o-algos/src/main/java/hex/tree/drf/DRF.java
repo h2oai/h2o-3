@@ -9,10 +9,8 @@ import hex.tree.DTree.UndecidedNode;
 import water.Job;
 import water.Key;
 import water.MRTask;
-import water.fvec.C0DChunk;
-import water.fvec.Chunk;
-import water.fvec.ChunkAry;
-import water.fvec.Frame;
+import water.fvec.*;
+
 import java.util.Random;
 
 import static hex.genmodel.GenModel.getPrediction;
@@ -119,7 +117,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       new MRTask() {
         @Override public void map(ChunkAry chks) {
           Chunk cy = chk_resp(chks);
-          for (int i = 0; i < cy._len; i++) {
+          for (int i = 0; i < chks._len; i++) {
             if (cy.isNA(i)) continue;
             if (isClassifier()) {
               int cls = (int) cy.at8(i);
@@ -241,11 +239,11 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       CollectPreds(DTree trees[], int leafs[], double threshold) { _trees=trees; _threshold = threshold; }
       final boolean importance = true;
       @Override public void map( ChunkAry chks ) {
-        final Chunk    y       = importance ? chk_resp(chks) : null; // Response
+        final Chunk y       = importance ? chk_resp(chks) : null; // Response
         final double[] rpred   = importance ? new double[1+_nclass] : null; // Row prediction
         final double[] rowdata = importance ? new double[_ncols] : null; // Pre-allocated row data
 
-        final Chunk   weights  = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks._len); // Out-of-bag rows counter over all trees
+        final Chunk weights  = hasWeightCol() ? chk_weight(chks) : C0DChunk.makeConstChunk(1); // Out-of-bag rows counter over all trees
         // Iterate over all rows
         for( int row=0; row<chks._len; row++ ) {
           double weight = weights.atd(row);
@@ -321,7 +319,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
   // Read the 'tree' columns, do model-specific math and put the results in the
   // fs[] array, and return the sum.  Dividing any fs[] element by the sum
   // turns the results into a probability distribution.
-  @Override protected double score1( Chunk chks[], double weight, double offset, double fs[/*nclass*/], int row ) {
+  @Override protected double score1(Chunk chks[], double weight, double offset, double fs[/*nclass*/], int row ) {
     double sum = 0;
     if (_nclass > 2 || (_nclass == 2 && !_model.binomialOpt())) {
       for (int k = 0; k < _nclass; k++)

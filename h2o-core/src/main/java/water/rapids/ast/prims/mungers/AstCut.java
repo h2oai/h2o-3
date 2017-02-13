@@ -1,10 +1,7 @@
 package water.rapids.ast.prims.mungers;
 
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.rapids.*;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
@@ -81,7 +78,7 @@ public class AstCut extends AstPrimitive {
 
     Frame fr2 = new MRTask() {
       @Override
-      public void map(Chunk c, NewChunk nc) {
+      public void map(ChunkAry c, NewChunkAry nc) {
         int rows = c._len;
         for (int r = 0; r < rows; ++r) {
           double x = c.atd(r);

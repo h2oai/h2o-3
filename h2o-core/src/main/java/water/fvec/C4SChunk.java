@@ -1,6 +1,5 @@
 package water.fvec;
 
-import water.*;
 import water.util.PrettyPrint;
 import water.util.UnsafeUtils;
 
@@ -9,14 +8,14 @@ import java.util.Arrays;
 /**
  * The scale/bias function, where data is in SIGNED bytes before scaling.
  */
-public class C4SChunk extends Chunk {
+public class C4SChunk extends ByteArraySupportedChunk {
   static private final long _NA = Integer.MIN_VALUE;
   static protected final int _OFF=8+8;
   private transient double _scale;
   public double scale() { return _scale; }
   private transient long _bias;
   @Override public boolean hasFloat(){ return _scale != (long)_scale; }
-  C4SChunk( byte[] bs, long bias, double scale ) { _mem=bs; _len = ((_mem.length - _OFF) >> 2);
+  C4SChunk( byte[] bs, long bias, double scale ) { _mem=bs;
     _bias = bias; _scale = scale;
     UnsafeUtils.set8d(_mem,0,scale);
     UnsafeUtils.set8 (_mem,8,bias );
@@ -83,7 +82,6 @@ public class C4SChunk extends Chunk {
 //  public String pformat0() { return "% 10.4e"; }
   @Override public byte precision() { return (byte)Math.max(-Math.log10(_scale),0); }
   @Override public final void initFromBytes () {
-    _len = ((_mem.length-_OFF)>>2);
     _scale= UnsafeUtils.get8d(_mem,0);
     _bias = UnsafeUtils.get8 (_mem,8);
   }
@@ -116,4 +114,6 @@ public class C4SChunk extends Chunk {
     }
     return vals;
   }
+
+  public int len(){return (_mem.length - _OFF) >> 2;}
 }

@@ -4,7 +4,7 @@ import water.Iced;
 import water.MRTask;
 import water.Scope;
 import water.fvec.Chunk;
-import water.fvec.Vec;
+import water.fvec.ChunkAry;
 import water.fvec.VecAry;
 
 public class MeanResidualDeviance extends Iced {
@@ -54,17 +54,15 @@ public class MeanResidualDeviance extends Iced {
 
     MeanResidualBuilder(Distribution dist) { _dist = dist; }
 
-    @Override public void map( Chunk ca, Chunk cp) { map(ca,cp,null); }
-    @Override public void map( Chunk ca, Chunk cp, Chunk cw) {
+    @Override public void map(ChunkAry cs /*aactual predicted */ ) {
       _mean_residual_deviance=0;
       _wcount=0;
-      final int len = Math.min(ca._len, cp._len);
-      for( int i=0; i < len; i++ ) {
-        if (ca.isNA(i)) continue;
-        if (cp.isNA(i)) continue;
-        final double a = ca.atd(i);
-        final double pr = cp.atd(i);
-        final double w = cw!=null?cw.atd(i):1;
+      for( int i=0; i < cs._len; i++ ) {
+        if (cs.isNA(i,0)) continue;
+        if (cs.isNA(i,1)) continue;
+        final double a = cs.atd(i,0);
+        final double pr = cs.atd(i,1);
+        final double w = cs._numCols == 3?cs.atd(i,2):1;
         perRow(pr, a, w);
       }
     }

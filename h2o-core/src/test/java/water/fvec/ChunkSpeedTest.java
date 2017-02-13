@@ -1,7 +1,6 @@
 package water.fvec;
 
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
 import water.util.Log;
@@ -14,7 +13,7 @@ public class ChunkSpeedTest extends TestUtil {
   final int rows = 100000;
   final int rep = 10;
   final double[][] raw = new double[cols][rows];
-  Chunk[] chunks = new Chunk[cols];
+  Chunk[] AChunks = new Chunk[cols];
 
 
   @Test
@@ -25,8 +24,8 @@ public class ChunkSpeedTest extends TestUtil {
       }
     }
     for (int j = 0; j < cols; ++j) {
-      chunks[j] = new NewChunk(raw[j]).compress();
-      Log.info("Column " + j + " compressed into: " + chunks[j].getClass().toString());
+      AChunks[j] = new NewChunk(raw[j]).compress();
+      Log.info("Column " + j + " compressed into: " + AChunks[j].getClass().toString());
     }
     Log.info("COLS: " + cols);
     Log.info("ROWS: " + rows);
@@ -127,7 +126,7 @@ public class ChunkSpeedTest extends TestUtil {
   }
   double walkChunkBulk(final Chunk c, double [] vals) {
     double sum =0;
-    c.getDoubles(vals,0,c._len);
+    c.getDoubles(vals,0,vals.length);
     for (int i = 0; i < rows; ++i)
       sum += vals[i];
     return sum;
@@ -136,8 +135,8 @@ public class ChunkSpeedTest extends TestUtil {
   double walkChunkParts(final Chunk c, double [] vals) {
     double sum =0;
     int from = 0;
-    while(from != c._len) {
-      int to = Math.min(c._len,from+vals.length);
+    while(from != vals.length) {
+      int to = Math.min(vals.length,from+vals.length);
       int n = to - from;
       c.getDoubles(vals,from,to);
       for (int i = 0; i < n; ++i)
@@ -150,16 +149,16 @@ public class ChunkSpeedTest extends TestUtil {
   double loop() {
     double sum =0;
     for (int j=0; j<cols; ++j) {
-      sum += walkChunk(chunks[j]);
+      sum += walkChunk(AChunks[j]);
     }
     return sum;
   }
 
   double loop_bulk() {
     double sum =0;
-    double [] vals = new double[chunks[0]._len];
+    double [] vals = new double[rows];
     for (int j=0; j<cols; ++j) {
-      sum += walkChunkBulk(chunks[j],vals);
+      sum += walkChunkBulk(AChunks[j],vals);
     }
     return sum;
   }
@@ -168,7 +167,7 @@ public class ChunkSpeedTest extends TestUtil {
     double sum =0;
     double [] vals = new double[16];
     for (int j=0; j<cols; ++j) {
-      sum += walkChunkParts(chunks[j],vals);
+      sum += walkChunkParts(AChunks[j],vals);
     }
     return sum;
   }
@@ -182,7 +181,7 @@ public class ChunkSpeedTest extends TestUtil {
         start = System.currentTimeMillis();
       for (int j=0; j<cols; ++j) {
         for (int i = 0; i < rows; ++i) {
-          sum += chunks[j].atd(i);
+          sum += AChunks[j].atd(i);
         }
       }
     }
@@ -190,7 +189,7 @@ public class ChunkSpeedTest extends TestUtil {
     Log.info("Sum: " + sum);
     long siz = 0;
     for (int j=0; j<cols; ++j) {
-      siz += chunks[j].byteSize();
+      siz += AChunks[j].byteSize();
     }
     Log.info("Data size: " + PrettyPrint.bytes(siz));
     Log.info("Time for INLINE chunks atd(): " + PrettyPrint.msecs(done - start, true));
@@ -210,7 +209,7 @@ public class ChunkSpeedTest extends TestUtil {
     Log.info("Sum: " + sum);
     long siz = 0;
     for (int j=0; j<cols; ++j) {
-      siz += chunks[j].byteSize();
+      siz += AChunks[j].byteSize();
     }
     Log.info("Data size: " + PrettyPrint.bytes(siz));
     Log.info("Time for METHODS chunks atd(): " + PrettyPrint.msecs(done - start, true));
@@ -230,7 +229,7 @@ public class ChunkSpeedTest extends TestUtil {
     Log.info("Sum: " + sum);
     long siz = 0;
     for (int j=0; j<cols; ++j) {
-      siz += chunks[j].byteSize();
+      siz += AChunks[j].byteSize();
     }
     Log.info("Data size: " + PrettyPrint.bytes(siz));
     Log.info("Time for METHODS chunks getDoubles(): " + PrettyPrint.msecs(done - start, true));
@@ -249,7 +248,7 @@ public class ChunkSpeedTest extends TestUtil {
     Log.info("Sum: " + sum);
     long siz = 0;
     for (int j=0; j<cols; ++j) {
-      siz += chunks[j].byteSize();
+      siz += AChunks[j].byteSize();
     }
     Log.info("Data size: " + PrettyPrint.bytes(siz));
     Log.info("Time for METHODS chunks PARTS(): " + PrettyPrint.msecs(done - start, true));
@@ -264,7 +263,7 @@ public class ChunkSpeedTest extends TestUtil {
         start = System.currentTimeMillis();
       for (int i = 0; i < rows; ++i) {
         for (int j=0; j<cols; ++j) {
-          sum += chunks[j].atd(i);
+          sum += AChunks[j].atd(i);
         }
       }
     }
@@ -272,7 +271,7 @@ public class ChunkSpeedTest extends TestUtil {
     Log.info("Sum: " + sum);
     long siz = 0;
     for (int j=0; j<cols; ++j) {
-      siz += chunks[j].byteSize();
+      siz += AChunks[j].byteSize();
     }
     Log.info("Data size: " + PrettyPrint.bytes(siz));
     Log.info("Time for INVERTED INLINE chunks atd(): " + PrettyPrint.msecs(done - start, true));
@@ -293,10 +292,10 @@ public class ChunkSpeedTest extends TestUtil {
   static class SumTask extends MRTask<SumTask> {
     double _sum;
     @Override
-    public void map(Chunk[] cs) {
-      for (int col=0; col<cs.length; ++col) {
-        for (int row=0; row<cs[0]._len; ++row) {
-          _sum += cs[col].atd(row);
+    public void map(ChunkAry cs) {
+      for (int col=0; col<cs._numCols; ++col) {
+        for (int row=0; row<cs._len; ++row) {
+          _sum += cs.atd(row,col);
         }
       }
     }

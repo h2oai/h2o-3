@@ -3,12 +3,8 @@ package hex.tree;
 import hex.*;
 import hex.genmodel.GenModel;
 import hex.genmodel.utils.DistributionFamily;
-import water.Key;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
-import water.fvec.VecAry;
+import water.fvec.*;
 
 /** Score the tree columns, and produce a confusion matrix and AUC
  */
@@ -28,11 +24,12 @@ public class Score extends MRTask<Score> {
    */
   public Score(SharedTree bldr, boolean is_train, boolean oob, VecAry kresp, ModelCategory mcat, boolean computeGainsLift) { _bldr = bldr; _is_train = is_train; _oob = oob; _kresp = kresp; _mcat = mcat; _computeGainsLift = computeGainsLift; }
 
-  @Override public void map( Chunk chks[] ) {
+  @Override public void map( ChunkAry cs ) {
+    Chunk [] chks = cs.getChunks();
     Chunk ys = _bldr.chk_resp(chks);  // Response
     Model m = _bldr._model;
-    Chunk weightsChunk = m._output.hasWeights() ? chks[m._output.weightsIdx()] : null;
-    Chunk offsetChunk = m._output.hasOffset() ? chks[m._output.offsetIdx()] : null;
+    Chunk weightsAChunk = m._output.hasWeights() ? chks[m._output.weightsIdx()] : null;
+    Chunk offsetAChunk = m._output.hasOffset() ? chks[m._output.offsetIdx()] : null;
     final int nclass = _bldr.nclasses();
     // Because of adaption - the validation training set has at least as many
     // classes as the training set (it may have more).  The Confusion Matrix
@@ -51,13 +48,13 @@ public class Score extends MRTask<Score> {
 
     // Score all Rows
     float [] val= new float[1];
-    for( int row=0; row<ys._len; row++ ) {
+    for( int row=0; row<cs._len; row++ ) {
       if( ys.isNA(row) ) continue; // Ignore missing response vars only if it was actual NA
       // Ignore out-of-bag rows
       if( _oob && chks[oobColIdx].atd(row)==0 ) continue;
-      double weight = weightsChunk!=null?weightsChunk.atd(row):1;
+      double weight = weightsAChunk !=null? weightsAChunk.atd(row):1;
       if (weight == 0) continue; //ignore holdout rows
-      double offset = offsetChunk!=null?offsetChunk.atd(row):0;
+      double offset = offsetAChunk !=null? offsetAChunk.atd(row):0;
       if( _is_train ) // Passed in the model-specific columns
         _bldr.score2(chks, weight, offset, cdists, row); // Use the training data directly (per-row predictions already made)
       else            // Must score "the hard way"

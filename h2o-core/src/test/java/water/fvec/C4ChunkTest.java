@@ -19,8 +19,8 @@ public class C4ChunkTest extends TestUtil {
       for (int v : vals) nc.addNum(v, 0);
       nc.addNA(); //-2147483648
 
-      Chunk cc = nc.compress();
-      Assert.assertEquals(vals.length + 1 + l, cc._len);
+      ByteArraySupportedChunk cc = (ByteArraySupportedChunk) nc.compress();
+      Assert.assertEquals(vals.length + 1 + l, cc.len());
       Assert.assertTrue(cc instanceof C4Chunk);
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at8(l + i));
 
@@ -34,7 +34,7 @@ public class C4ChunkTest extends TestUtil {
       }
 
       nc = new NewChunk(Vec.T_NUM);
-      cc.inflate_impl(nc);
+      cc.add2Chunk(nc,0,cc.len());
       nc.values(0, nc._len);
       if (l==1) Assert.assertTrue(cc.isNA(0));
       Assert.assertEquals(vals.length+l+1, nc._sparseLen);
@@ -46,8 +46,8 @@ public class C4ChunkTest extends TestUtil {
 
       Assert.assertTrue(cc.isNA(vals.length + l));
 
-      Chunk cc2 = nc.compress();
-      Assert.assertEquals(vals.length + 1 + l, cc._len);
+      ByteArraySupportedChunk cc2 = (ByteArraySupportedChunk) nc.compress();
+      Assert.assertEquals(vals.length + 1 + l, cc.len());
       Assert.assertTrue(cc2 instanceof C4Chunk);
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.at8(l + i));
 
@@ -85,7 +85,7 @@ public class C4ChunkTest extends TestUtil {
 
 
     NewChunk nc = new NewChunk(Vec.T_NUM);
-    cc.getChunk(0).inflate_impl(nc);
+    cc.getChunk(0).add2Chunk(nc,0,cc._len);
     nc.values(0, nc._len);
     Assert.assertEquals(vals.length, nc._sparseLen);
     Assert.assertEquals(vals.length, nc._len);
@@ -99,7 +99,7 @@ public class C4ChunkTest extends TestUtil {
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
 
 
-    Chunk cc2 = nc.compress();
+    ByteArraySupportedChunk cc2 = (ByteArraySupportedChunk) nc.compress();
     Assert.assertEquals(vals.length, cc._len);
     Assert.assertTrue(cc2 instanceof C4Chunk);
     for (int na : NAs) Assert.assertTrue(cc.isNA(na));
@@ -107,7 +107,7 @@ public class C4ChunkTest extends TestUtil {
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
 
 
-    Assert.assertTrue(Arrays.equals(cc.getChunk(0)._mem, cc2._mem));
+    Assert.assertTrue(Arrays.equals(cc.getChunk(0).asBytes(), cc2._mem));
     vec.remove();
   }
 }

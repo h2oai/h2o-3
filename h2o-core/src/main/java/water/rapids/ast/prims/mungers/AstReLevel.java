@@ -1,10 +1,7 @@
 package water.rapids.ast.prims.mungers;
 
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.rapids.Env;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
@@ -50,11 +47,11 @@ public class AstReLevel extends AstPrimitive {
       if (i != idx) dom[j++] = srcDom[i];
     return new ValFrame(new MRTask() {
       @Override
-      public void map(Chunk c, NewChunk nc) {
+      public void map(ChunkAry c, NewChunkAry nc) {
         int[] vals = new int[c._len];
-        c.getIntegers(vals, 0, c._len, -1);
+        c.getIntegers(0,vals, 0, c._len, -1);
         for (int i = 0; i < vals.length; ++i)
-          if (vals[i] == -1) nc.addNA();
+          if (vals[i] == -1) nc.addNA(0);
           else if (vals[i] == idx)
             nc.addNum(0);
           else

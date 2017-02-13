@@ -6,7 +6,7 @@ import water.MemoryManager;
 /** A simple chunk for boolean values. In fact simple bit vector.
  *  Each boolean is represented by 2bits since we need to represent NA.
  */
-public class CBSChunk extends Chunk {
+public class CBSChunk extends ByteArraySupportedChunk {
   static protected final byte _NA  = 0x02; // Internal representation of NA
   static protected final int _OFF = 2;
   private transient byte _bpv;
@@ -28,12 +28,10 @@ public class CBSChunk extends Chunk {
       }
     }
     _mem = bytes;
-    _len = ((_mem.length - _OFF)*8 - _gap) / _bpv; // number of boolean items
   }
   public CBSChunk(byte[] bs, byte gap, byte bpv) {
     assert gap < 8; assert bpv == 1 || bpv == 2;
     _mem = bs; _gap = gap; _bpv = bpv;
-    _len = (((_mem.length - _OFF)*8 - _gap) / _bpv); // number of boolean items
   }
   @Override public long at8(int idx) {
     byte b = atb(idx);
@@ -113,10 +111,14 @@ public class CBSChunk extends Chunk {
   @Override double min() { return 0; }
   @Override double max() { return 1; }
 
+  @Override
+  public int len() {
+    return ((_mem.length - _OFF)*8 - _gap) / _bpv;
+  }
+
   @Override protected final void initFromBytes () {
     _gap   = _mem[0];
     _bpv   = _mem[1];
-    _len = (((_mem.length - _OFF)*8 - _gap) / _bpv);
   }
 
   @Override

@@ -8,7 +8,6 @@ import water.fvec.*;
 import water.util.ArrayUtils;
 
 import java.util.Arrays;
-import java.util.Collections;
 
 public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.AggregatorParameters,AggregatorModel.AggregatorOutput> {
 
@@ -245,7 +244,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
       _mapping = new GIDMapping();
       Exemplar[] es = new Exemplar[4];
       int assignmentChk = chks._numCols-1;
-      Chunk [] dataChks = new Chunk[assignmentChk];
+      Chunk[] dataChks = new Chunk[assignmentChk];
 
       for(int i = 0; i < assignmentChk; ++i)
         dataChks[i] = chks.getChunk(i);

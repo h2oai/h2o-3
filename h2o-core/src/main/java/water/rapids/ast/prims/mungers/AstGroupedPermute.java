@@ -2,12 +2,8 @@ package water.rapids.ast.prims.mungers;
 
 import water.H2O;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.rapids.Env;
-import water.rapids.Val;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstPrimitive;
@@ -76,11 +72,11 @@ public class AstGroupedPermute extends AstPrimitive {
     long s = System.currentTimeMillis();
     Frame res = new MRTask() {
       @Override
-      public void map(Chunk[] cs, NewChunk[] ncs) {
-        for (int i = 0; i < cs[0]._len; ++i)
-          for (double[] anAa : a[(int) cs[0].at8(i)])
+      public void map(ChunkAry cs, NewChunkAry ncs) {
+        for (int i = 0; i < cs._len; ++i)
+          for (double[] anAa : a[cs.at4(i,0)])
             for (int k = 0; k < anAa.length; ++k)
-              ncs[k].addNum(anAa[k]);
+              ncs.addNum(k,anAa[k]);
       }
     }.doAll(5, Vec.T_NUM, dVec).outputFrame(null, names, domains);
     Log.info("Elapsed time: " + (System.currentTimeMillis() - s) / 1000. + "s");
@@ -109,14 +105,14 @@ public class AstGroupedPermute extends AstPrimitive {
     }
 
     @Override
-    public void map(Chunk[] chks) {
+    public void map(ChunkAry chks) {
       String[] dom = _fr.vecs().domain(_permuteBy);
       IcedHashMap<Long, IcedHashMap<Long, double[]>[]> grps = new IcedHashMap<>();
-      for (int row = 0; row < chks[0]._len; ++row) {
-        long jid = chks[_gbCols[0]].at8(row);
-        long rid = chks[_permuteCol].at8(row);
-        double[] aci = new double[]{rid, chks[_amntCol].atd(row)};
-        int type = dom[(int) chks[_permuteBy].at8(row)].equals("D") ? 0 : 1;
+      for (int row = 0; row < chks._len; ++row) {
+        long jid = chks.at8(row,_gbCols[0]);
+        long rid = chks.at8(row,_permuteCol);
+        double[] aci = new double[]{rid, chks.atd(row,_amntCol)};
+        int type = dom[chks.at4(row,_permuteBy)].equals("D") ? 0 : 1;
         if (grps.containsKey(jid)) {
           IcedHashMap<Long, double[]>[] dcWork = grps.get(jid);
           if (dcWork[type].putIfAbsent(rid, aci) != null)

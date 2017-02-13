@@ -5,7 +5,6 @@ import water.MRTask;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.rapids.Env;
-import water.rapids.Val;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
@@ -89,20 +88,13 @@ public class AstRStrip extends AstPrimitive {
     final String charSet = set;
     return new MRTask() {
       @Override
-      public void map(Chunk chk, NewChunk newChk) {
-        if (chk instanceof C0DChunk) // all NAs
-          for (int i = 0; i < chk.len(); i++)
-            newChk.addNA();
-        else if (((CStrChunk) chk)._isAllASCII && StringUtils.isAsciiPrintable(charSet)) { // fast-path operations
-          ((CStrChunk) chk).asciiRStrip(newChk, charSet);
-        } else {
-          BufferedString tmpStr = new BufferedString();
-          for (int i = 0; i < chk.len(); i++) {
-            if (chk.isNA(i))
-              newChk.addNA();
-            else
-              newChk.addStr(StringUtils.stripEnd(chk.atStr(tmpStr, i).toString(), charSet));
-          }
+      public void map(ChunkAry chk, NewChunkAry newChk) {
+        BufferedString tmpStr = new BufferedString();
+        for (int i = 0; i < chk._len; i++) {
+          if (chk.isNA(i))
+            newChk.addNA(0);
+          else
+            newChk.addStr(0,StringUtils.stripEnd(chk.atStr(tmpStr, i).toString(), charSet));
         }
       }
     }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().vecs();

@@ -1085,7 +1085,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
     @Override public void map(ChunkAry cs) {
       assert (_ncolA + 2*_ncolX) == cs._numCols;
       double[] a = new double[_ncolA];
-      Chunk chkweight = _weightId >= 0 ? cs.getChunk(_weightId) : new C0DChunk(1, cs._len);
+      Chunk chkweight = _weightId >= 0 ? cs.getChunk(_weightId) : C0DChunk.makeConstChunk(1);
       Random rand = RandomUtils.getRNG(0);
       _loss = _xreg = 0;
 
@@ -1218,20 +1218,20 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       _normMul = normMul;
     }
 
-    private Chunk chk_xnew(Chunk[] chks, int c) {
-      return chks[_ncolA + _ncolX + c];
+    private Chunk chk_xnew(ChunkAry chks, int c) {
+      return chks.getChunk(_ncolA + _ncolX + c);
     }
 
-    @Override public void map(Chunk[] cs) {
-      assert (_ncolA + 2*_ncolX) == cs.length;
+    @Override public void map(ChunkAry cs) {
+      assert (_ncolA + 2*_ncolX) == cs._numCols;
       _ytnew = new double[_ytold.nfeatures()][_ncolX];
-      Chunk chkweight = _weightId >= 0 ? cs[_weightId]:new C0DChunk(1,cs[0]._len);
+      Chunk chkweight = _weightId >= 0 ? cs.getChunk(_weightId):C0DChunk.makeConstChunk(1);
 
       // Categorical columns
       for (int j = 0; j < _ncats; j++) {
         // Compute gradient of objective at column
-        for (int row = 0; row < cs[0]._len; row++) {
-          double a = cs[j].atd(row);
+        for (int row = 0; row < cs._len; row++) {
+          double a = cs.atd(row,j);
           if (Double.isNaN(a)) continue;   // Skip missing observations in column
           double cweight = chkweight.atd(row);
           assert !Double.isNaN(cweight) : "User-specified weight cannot be NaN";
@@ -1260,8 +1260,8 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         int yidx = _ytold.getNumCidx(js);
 
         // Compute gradient of objective at column
-        for (int row = 0; row < cs[0]._len; row++) {
-          double a = cs[j].atd(row);
+        for (int row = 0; row < cs._len; row++) {
+          double a = cs.atd(row,j);
           if (Double.isNaN(a)) continue;   // Skip missing observations in column
 
           // Additional user-specified weight on loss for this row
@@ -1343,24 +1343,24 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       _normMul = normMul;
     }
 
-    private Chunk chk_xnew(Chunk[] chks, int c) {
-      return chks[_ncolA + _ncolX + c];
+    private Chunk chk_xnew(ChunkAry chks, int c) {
+      return chks.getChunk(_ncolA + _ncolX + c);
     }
 
     @SuppressWarnings("ConstantConditions")  // The method is too complex
-    @Override public void map(Chunk[] cs) {
-      assert (_ncolA + 2*_ncolX) == cs.length;
-      Chunk chkweight = _weightId >= 0 ? cs[_weightId]:new C0DChunk(1,cs[0]._len);
+    @Override public void map(ChunkAry cs) {
+      assert (_ncolA + 2*_ncolX) == cs._numCols;
+      Chunk chkweight = _weightId >= 0 ? cs.getChunk(_weightId):C0DChunk.makeConstChunk(1);
       _loss = _xold_reg = 0;
 
-      for (int row = 0; row < cs[0]._len; row++) {
+      for (int row = 0; row < cs._len; row++) {
         // Additional user-specified weight on loss for this row
         double cweight = chkweight.atd(row);
         assert !Double.isNaN(cweight) : "User-specified weight cannot be NaN";
 
         // Categorical columns
         for (int j = 0; j < _ncats; j++) {
-          double a = cs[j].atd(row);
+          double a = cs.atd(row,j);
           if (Double.isNaN(a)) continue;   // Skip missing observations in row
 
           // Calculate x_i * Y_j where Y_j is sub-matrix corresponding to categorical col j
@@ -1376,7 +1376,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
 
         // Numeric columns
         for (int j = _ncats; j < _ncolA; j++) {
-          double a = cs[j].atd(row);
+          double a = cs.atd(row,j);
           if (Double.isNaN(a)) continue;   // Skip missing observations in row
 
           // Inner product x_i * y_j
@@ -1395,7 +1395,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
           for (int j = _ncolA; j < _ncolA+_ncolX; j++) {
             // double x = cs[j].atd(row);
             // _xold_reg += _parms.regularize_x(x);
-            xrow[idx] = cs[j].atd(row);
+            xrow[idx] = cs.atd(row,j);
             idx++;
           }
           assert idx == _ncolX;

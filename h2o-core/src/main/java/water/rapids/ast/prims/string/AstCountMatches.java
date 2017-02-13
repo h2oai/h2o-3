@@ -66,13 +66,13 @@ public class AstCountMatches extends AstPrimitive {
     final int[] matchCounts = countDomainMatches(vec.domain(), pattern);
     return new MRTask() {
       @Override
-      public void map(Chunk[] cs, NewChunk[] ncs) {
-        Chunk c = cs[0];
-        for (int i = 0; i < c._len; ++i) {
-          if (!c.isNA(i)) {
-            int idx = (int) c.at8(i);
-            ncs[0].addNum(matchCounts[idx]);
-          } else ncs[0].addNA();
+      public void map(ChunkAry cs, NewChunkAry ncs) {
+
+        for (int i = 0; i < cs._len; ++i) {
+          if (!cs.isNA(i)) {
+            int idx = cs.at4(i);
+            ncs.addInteger(0,matchCounts[idx]);
+          } else ncs.addNA(0);
         }
       }
     }.doAll(1, Vec.T_NUM, new Frame(vec)).outputFrame().vecs();
@@ -90,20 +90,15 @@ public class AstCountMatches extends AstPrimitive {
     final String[] pattern = pat;
     return new MRTask() {
       @Override
-      public void map(Chunk chk, NewChunk newChk) {
-        if (chk instanceof C0DChunk) // all NAs
-          for (int i = 0; i < chk.len(); i++)
-            newChk.addNA();
-        else {
-          BufferedString tmpStr = new BufferedString();
-          for (int i = 0; i < chk._len; ++i) {
-            if (chk.isNA(i)) newChk.addNA();
-            else {
-              int cnt = 0;
-              for (String aPattern : pattern)
-                cnt += StringUtils.countMatches(chk.atStr(tmpStr, i).toString(), aPattern);
-              newChk.addNum(cnt, 0);
-            }
+      public void map(ChunkAry chk, NewChunkAry newChk) {
+        BufferedString tmpStr = new BufferedString();
+        for (int i = 0; i < chk._len; ++i) {
+          if (chk.isNA(i)) newChk.addNA(0);
+          else {
+            int cnt = 0;
+            for (String aPattern : pattern)
+              cnt += StringUtils.countMatches(chk.atStr(tmpStr, i).toString(), aPattern);
+            newChk.addInteger(cnt, 0);
           }
         }
       }

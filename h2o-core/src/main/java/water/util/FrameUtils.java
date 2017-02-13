@@ -91,8 +91,8 @@ public class FrameUtils {
     }
     @Override public void map(ChunkAry c){
       final int off = (int)c._start;
-      for(int i = 0; i < c._len; i = c.nextNZ(i))
-        res[off+i] = c.atd(i);
+      for(Chunk.SparseNum sv = c.sparseNum(0); sv.rowId() < c._len; sv = sv.nextNZ())
+        res[off+sv.rowId()] = sv.dval();
     }
     @Override public void reduce(Vec2ArryTsk other){
       if(res != other.res) {
@@ -118,8 +118,8 @@ public class FrameUtils {
     }
     @Override public void map(ChunkAry c){
       final int off = (int)c._start;
-      for(int i = 0; i < c._len; i = c.nextNZ(i))
-        res[off+i] = (int)c.at8(i);
+      for(Chunk.SparseNum sv = c.sparseNum(0); sv.rowId() < c._len; sv = sv.nextNZ())
+        res[off+sv.rowId()] = (int)sv.dval();
     }
     @Override public void reduce(Vec2IntArryTsk other){
       if(res != other.res) {
@@ -213,14 +213,15 @@ public class FrameUtils {
    * @param chks
    * @return
    */
-  public static double sparseRatio(Chunk [] chks) {
+  public static double sparseRatio(ChunkAry chks) {
+
     double cnt = 0;
-    double reg = 1.0/chks.length;
-    for(Chunk c :chks)
-      if(c.isSparseNA()){
-        cnt += c.sparseLenNA()/(double)c._len;
-      } else if(c.isSparseZero()){
-        cnt += c.sparseLenZero()/(double)c._len;
+    double reg = 1.0/chks._numCols;
+    for(int c = 0; c < chks._numCols; ++c)
+      if(chks.isSparseNA(c)){
+        cnt += chks.sparseLenNA(c)/(double)chks._len;
+      } else if(chks.isSparseZero(c)){
+        cnt += chks.sparseLenZero(c)/(double)chks._len;
       } else cnt += 1;
     return cnt * reg;
   }
@@ -241,12 +242,12 @@ public class FrameUtils {
     public  double weightedMean() {
       return _wsum == 0 ? 0 : _wresponse / _wsum;
     }
-    @Override public void map(Chunk response, Chunk weight, Chunk offset) {
-      for (int i=0;i<response._len;++i) {
-        if (response.isNA(i)) continue;
-        double w = weight.atd(i);
+    @Override public void map(ChunkAry cs /* response, weight offset */ ) {
+      for (int i=0;i<cs._len;++i) {
+        if (cs.isNA(i,0)) continue;
+        double w = cs.atd(i,1);
         if (w == 0) continue;
-        _wresponse += w*(response.atd(i)-offset.atd(i));
+        _wresponse += w*(cs.atd(i,0)-cs.atd(i,2));
         _wsum += w;
       }
     }
@@ -450,15 +451,15 @@ public class FrameUtils {
         int[] _categorySizes;
         public OneHotConverter(int[] categorySizes) { _categorySizes = categorySizes; }
 
-        @Override public void map(Chunk[] cs, NewChunk[] ncs) {
+        @Override public void map(ChunkAry cs, NewChunkAry ncs) {
           int targetColOffset = 0;
-          for (int iCol = 0; iCol < cs.length; ++iCol) {
-            Chunk col = cs[iCol];
+          for (int iCol = 0; iCol < cs._numCols; ++iCol) {
+            Chunk col = cs.getChunk(iCol);
             int numTargetColumns = _categorySizes[iCol];
-            for (int iRow = 0; iRow < col._len; ++iRow) {
+            for (int iRow = 0; iRow < cs._len; ++iRow) {
               long val = col.isNA(iRow)? 0 : 1 + col.at8(iRow);
               for (int j = 0; j < numTargetColumns; ++j) {
-                ncs[targetColOffset + j].addNum(val==j ? 1 : 0, 0);
+                ncs.addNum(targetColOffset + j,val==j ? 1 : 0, 0);
               }
             }
             targetColOffset += numTargetColumns;
@@ -556,15 +557,15 @@ public class FrameUtils {
         int[] _categorySizes;
         public BinaryConverter(int[] categorySizes) { _categorySizes = categorySizes; }
 
-        @Override public void map(Chunk[] cs, NewChunk[] ncs) {
+        @Override public void map(ChunkAry cs, NewChunkAry ncs) {
           int targetColOffset = 0;
-          for (int iCol = 0; iCol < cs.length; ++iCol) {
-            Chunk col = cs[iCol];
+          for (int iCol = 0; iCol < cs._numCols; ++iCol) {
+            Chunk col = cs.getChunk(iCol);
             int numTargetColumns = _categorySizes[iCol];
-            for (int iRow = 0; iRow < col._len; ++iRow) {
+            for (int iRow = 0; iRow < cs._len; ++iRow) {
               long val = col.isNA(iRow)? 0 : 1 + col.at8(iRow);
               for (int j = 0; j < numTargetColumns; ++j) {
-                ncs[targetColOffset + j].addNum(val & 1, 0);
+                ncs.addNum(targetColOffset + j,val & 1, 0);
                 val >>>= 1;
               }
               assert val == 0 : "";

@@ -502,17 +502,17 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   protected int idx_nids(int c) { return idx_work(c) + _nclass; }
   protected int idx_oobt()      { return idx_nids(0) + _nclass; }
 
-  public Chunk chk_weight( Chunk chks[]      ) { return chks[idx_weight()]; }
-  public Chunk chk_weight( ChunkAry chks      ) { return chks.getChunk(idx_weight()); }
-  protected Chunk chk_offset( Chunk chks[]      ) { return chks[idx_offset()]; }
-  protected Chunk chk_offset( ChunkAry chks      ) { return chks.getChunk(idx_offset()); }
+  public Chunk chk_weight(Chunk chks[]      ) { return chks[idx_weight()]; }
+  public Chunk chk_weight(ChunkAry chks      ) { return chks.getChunk(idx_weight()); }
+  protected Chunk chk_offset(Chunk chks[]      ) { return chks[idx_offset()]; }
+  protected Chunk chk_offset(ChunkAry chks      ) { return chks.getChunk(idx_offset()); }
   public Chunk chk_resp(Chunk chks[]) { return chks[idx_resp()]; }
   public Chunk chk_resp(ChunkAry chks) { return chks.getChunk(idx_resp()); }
   public Chunk chk_tree(Chunk chks[], int c) { return chks[idx_tree(c)]; }
   public Chunk chk_tree(ChunkAry chks, int c) { return chks.getChunk(idx_tree(c)); }
-  protected Chunk chk_work( Chunk chks[], int c ) { return chks[idx_work(c)]; }
-  protected Chunk chk_work( ChunkAry chks, int c ) { return chks.getChunk(idx_work(c)); }
-  protected Chunk chk_nids( Chunk chks[], int c ) { return chks[idx_nids(c)]; }
+  protected Chunk chk_work(Chunk chks[], int c ) { return chks[idx_work(c)]; }
+  protected Chunk chk_work(ChunkAry chks, int c ) { return chks.getChunk(idx_work(c)); }
+  protected Chunk chk_nids(ChunkAry chks, int c ) { return chks.getChunk(idx_nids(c)); }
   protected Chunk chk_oobt(Chunk chks[])          { return chks[idx_oobt()]; }
 
 
@@ -536,7 +536,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   // Read the 'tree' columns, do model-specific math and put the results in the
   // fs[] array, and return the sum.  Dividing any fs[] element by the sum
   // turns the results into a probability distribution.
-  abstract protected double score1( Chunk chks[], double offset, double weight, double fs[/*nclass*/], int row );
+  abstract protected double score1(Chunk chks[], double offset, double weight, double fs[/*nclass*/], int row );
 
   // Call builder specific score code and then correct probabilities
   // if it is necessary.
@@ -846,13 +846,13 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         return -0.5*new Distribution(DistributionFamily.bernoulli).link(_num/_denom);
       else return _dist.link(_num / _denom);
     }
-    @Override public void map(Chunk response, Chunk weight, Chunk offset) {
-      for (int i=0;i<response._len;++i) {
-        if (response.isNA(i)) continue;
-        double w = weight.atd(i);
+    @Override public void map(ChunkAry cs /*response, Chunk weight, Chunk offset*/ ) {
+      for (int i=0;i<cs._len;++i) {
+        if (cs.isNA(i,0)) continue;
+        double w = cs.atd(i,1);
         if (w == 0) continue;
-        double y = response.atd(i);
-        double o = offset.atd(i);
+        double y = cs.atd(i,0);
+        double o = cs.atd(i,2);
         _num += _dist.initFNum(w,o,y);
         _denom += _dist.initFDenom(w,o,y);
       }

@@ -1,7 +1,6 @@
 package water;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.ArrayUtils;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -501,11 +500,11 @@ public class TestUtil extends Iced {
     final double _epsilon;
     Cmp1( double epsilon ) { _epsilon = epsilon; }
     boolean _unequal;
-    @Override public void map( Chunk chks[] ) {
-      for( int cols=0; cols<chks.length>>1; cols++ ) {
-        Chunk c0 = chks[cols                 ];
-        Chunk c1 = chks[cols+(chks.length>>1)];
-        for( int rows = 0; rows < chks[0]._len; rows++ ) {
+    @Override public void map( ChunkAry chks ) {
+      for( int cols=0; cols<chks._numCols>>1; cols++ ) {
+        Chunk c0 = chks.getChunk(cols);
+        Chunk c1 = chks.getChunk(cols+(chks._numCols>>1));
+        for( int rows = 0; rows < chks._len; rows++ ) {
           if (c0 instanceof C16Chunk && c1 instanceof C16Chunk) {
             if (! (c0.isNA(rows) && c1.isNA(rows))) {
               long lo0 = c0.at16l(rows), lo1 = c1.at16l(rows);

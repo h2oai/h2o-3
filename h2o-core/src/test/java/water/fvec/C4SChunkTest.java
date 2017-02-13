@@ -20,8 +20,8 @@ public class C4SChunkTest extends TestUtil {
       for (int i = 0; i < man.length; ++i) nc.addNum(man[i], exp[i]);
       nc.addNA();
 
-      Chunk cc = nc.compress();
-      Assert.assertEquals(man.length + 1 + l, cc._len);
+      ByteArraySupportedChunk cc = (ByteArraySupportedChunk) nc.compress();
+      Assert.assertEquals(man.length + 1 + l, cc.len());
       Assert.assertTrue(cc instanceof C4SChunk);
       if (l==1) {
         Assert.assertTrue(cc.isNA(0));
@@ -37,7 +37,7 @@ public class C4SChunkTest extends TestUtil {
         else Assert.assertTrue(cc.atd(i)==densevals[i]);
       }
 
-      nc = cc.inflate_impl(new NewChunk(Vec.T_NUM));
+      nc = cc.add2Chunk(new NewChunk(Vec.T_NUM),0,cc.len());
       nc.values(0, nc._len);
       Assert.assertEquals(man.length + 1 + l, nc._len);
       if (l==1) {
@@ -49,8 +49,8 @@ public class C4SChunkTest extends TestUtil {
       Assert.assertTrue(nc.isNA(man.length + l));
 
 
-      Chunk cc2 = nc.compress();
-      Assert.assertEquals(man.length + 1 + l, cc._len);
+      ByteArraySupportedChunk cc2 = (ByteArraySupportedChunk) nc.compress();
+      Assert.assertEquals(man.length + 1 + l, cc.len());
       if (l==1) {
         Assert.assertTrue(cc2.isNA(0));
 
@@ -77,8 +77,8 @@ public class C4SChunkTest extends TestUtil {
       for (int i = 0; i < man.length; ++i) nc.addNum(man[i], exp[i]);
       nc.addNA();
 
-      Chunk cc = nc.compress();
-      Assert.assertEquals(man.length + 1 + l, cc._len);
+      ByteArraySupportedChunk cc = (ByteArraySupportedChunk) nc.compress();
+      Assert.assertEquals(man.length + 1 + l, cc.len());
       Assert.assertTrue(cc instanceof C4SChunk);
       if (l==1) {
         Assert.assertTrue(cc.isNA(0));
@@ -90,7 +90,7 @@ public class C4SChunkTest extends TestUtil {
       Assert.assertTrue(cc.isNA(man.length + l));
 
 
-      nc = cc.inflate_impl(new NewChunk(Vec.T_NUM));
+      nc = cc.add2Chunk(new NewChunk(Vec.T_NUM),0,cc.len());
       nc.values(0, nc._len);
       Assert.assertEquals(man.length + 1 + l, nc._len);
       if (l==1) {
@@ -103,8 +103,8 @@ public class C4SChunkTest extends TestUtil {
       Assert.assertTrue(nc.isNA(man.length + l));
 
 
-      Chunk cc2 = nc.compress();
-      Assert.assertEquals(man.length + 1 + l, cc._len);
+      ByteArraySupportedChunk cc2 = (ByteArraySupportedChunk) nc.compress();
+      Assert.assertEquals(man.length + 1 + l, cc.len());
       if (l==1) {
         Assert.assertTrue(cc2.isNA(0));
 

@@ -1,10 +1,7 @@
 package water.rapids.ast.prims.search;
 
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.rapids.Env;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstPrimitive;
@@ -58,7 +55,7 @@ public class AstMatch extends AstPrimitive {
 
     Frame rez = new MRTask() {
       @Override
-      public void map(Chunk c, NewChunk n) {
+      public void map(ChunkAry c, NewChunkAry n) {
         String[] domain = _fr.vecs().domain(0);
         double x;
         int rows = c._len;

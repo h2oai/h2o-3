@@ -58,7 +58,7 @@ public class NewChunkTest extends TestUtil {
     for (int i = 0; i < 512; i++)
       nc.addUUID(i, i);
     assertFalse(nc.isSparseNA());
-    Chunk c = nc.compress();
+    ByteArraySupportedChunk c = (ByteArraySupportedChunk) nc.compress();
     assertEquals(128 + 512, c.len());
     for (int i = 0; i < 128; ++i)
       assertTrue(c.isNA(i));
@@ -195,15 +195,17 @@ public class NewChunkTest extends TestUtil {
     nc.addNum(Math.PI);
     nc.addZeros(N);
     nc.addNum(Math.E);
-    Chunk c = nc.compress();
+    int len = nc.len();
+    ByteArraySupportedChunk c = (ByteArraySupportedChunk) nc.compress();
+    ChunkAry ca = new ChunkAry(null,len,c);
     int i=0;
     for(;i<N;)     assertEquals(0,c.atd(i++),1e-16);
-    assertEquals(i,c.nextNZ(-1));
-    assertEquals(         Math.PI,c.atd(i++),1e-16);
+    Chunk.SparseNum sv = ca.sparseNum(0);
+    assertEquals(i,sv.rowId());
+    assertEquals(         Math.PI,sv.dval(),1e-16);
     for(;i<2*N+1;) assertEquals(0,c.atd(i++),1e-16);
-    assertEquals(i,c.nextNZ(c.nextNZ(-1)));
-    assertEquals(         Math.E,c.atd(i  ),1e-16);
-
+    assertEquals(i,sv.nextNZ().rowId());
+    assertEquals(         Math.E,sv.dval(),1e-16);
     nc = new NewChunk(Vec.T_NUM);
     nc.addNum(Math.PI);
     nc.addNum(Double.MAX_VALUE);
@@ -211,11 +213,14 @@ public class NewChunkTest extends TestUtil {
     nc.addZeros(5);
     nc.addNum(Math.E);
     nc.addZeros(1000000);
-    c = nc.compress();
-    assertEquals(0,c.nextNZ(-1));
-    assertEquals(1,c.nextNZ(0));
-    assertEquals(2,c.nextNZ(1));
-    assertEquals(8,c.nextNZ(2));
+    len = nc.len();
+    c = (ByteArraySupportedChunk) nc.compress();
+    ca = new ChunkAry(null,len,c);
+    sv = ca.sparseNum(0);
+    assertEquals(0,sv.rowId());
+    assertEquals(1,sv.nextNZ().rowId());
+    assertEquals(2,sv.nextNZ().rowId());
+    assertEquals(8,sv.nextNZ().rowId());
     assertEquals(c.atd(0), Math.PI,1e-16);
     assertEquals(c.atd(8), Math.E,1e-16);
 
@@ -235,9 +240,9 @@ public class NewChunkTest extends TestUtil {
       nc.addNum(rvals[off+j] = rnd.nextDouble());
     assertTrue(!nc.isSparseZero());
     nc.addNA();
-    c = nc.compress();
-    assertEquals(1546,c._len);
-    for(int j = 0; j < c._len-1; ++j)
+    c = (ByteArraySupportedChunk) nc.compress();
+    assertEquals(1546,c.len());
+    for(int j = 0; j < c.len()-1; ++j)
       assertEquals(rvals[j],c.atd(j),0);
 
     // test flip from dense -> sparseNA -> desne
@@ -256,16 +261,16 @@ public class NewChunkTest extends TestUtil {
       nc.addNum(rvals[off+j] = rnd.nextDouble());
     assertTrue(!nc.isSparseNA());
     nc.addNA();
-    c = nc.compress();
-    assertEquals(1546,c._len);
-    for(int j = 0; j < c._len-1; ++j)
+    c = (ByteArraySupportedChunk) nc.compress();
+    assertEquals(1546,c.len());
+    for(int j = 0; j < c.len()-1; ++j)
       if(Double.isNaN(rvals[j]))
         assertTrue(c.isNA(j));
       else
         assertEquals(rvals[j],c.atd(j),0);
   }
   /**
-   * Constant Double Chunk - C0DChunk
+   * Constant Double ByteArraySupportedChunk - C0DChunk
    */
   @Test public void testC0DChunk_regular() {
     try { pre();
@@ -352,7 +357,7 @@ public class NewChunkTest extends TestUtil {
   }
 
   /**
-   * Constant Long Chunk - C0LChunk
+   * Constant Long ByteArraySupportedChunk - C0LChunk
    */
   @Test public void testC0LChunk_zero() {
     try { pre();
@@ -461,9 +466,8 @@ public class NewChunkTest extends TestUtil {
       nc.addNA(0);
       nc.addZeros(0,2);
       assertTrue(nc.isSparseZero());
-      assertEquals(nc.getChunk(0).sparseLenZero(), 2);
-      assertEquals(nc.sparseLenZero(), 2);
-      assertEquals(nc.getChunk(0).sparseLenNA(), K);
+      assertEquals(2,nc.getChunk(0).len());
+      assertEquals(2,nc.sparseLenZero());
 
       for (int i = 0; i < K-5; i++) assertEquals(0, nc.atd(0), Math.ulp(0));
       assertEquals(extra, nc.atd(K-5), Math.ulp(extra));
@@ -493,9 +497,9 @@ public class NewChunkTest extends TestUtil {
       nc.addNAs(0,2);
       nc.addZeros(0,2);
       assertTrue(nc.isSparseNA());
-      assertEquals(nc.getChunk(0).sparseLenNA(), 3);
+      assertEquals(3,nc.getChunk(0).len(), 3);
       assertEquals(nc.sparseLenZero(), K);
-      assertEquals(nc.getChunk(0).sparseLenNA(), 3);
+      assertEquals(3,nc.getChunk(0).len());
 
       for (int i = 0; i < K - 5; i++) assertEquals(Double.NaN, nc.atd(i), Math.ulp(0));
       assertEquals(extra, nc.atd(K - 5), Math.ulp(extra));

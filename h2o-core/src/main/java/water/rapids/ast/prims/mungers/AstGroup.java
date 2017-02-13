@@ -420,7 +420,7 @@ public class AstGroup extends AstPrimitive {
 
     @Override
     public void map(ChunkAry cs) {
-      // Groups found in this Chunk
+      // Groups found in this ByteArraySupportedChunk
       IcedHashMap<G, String> gs = new IcedHashMap<>();
       G gWork = new G(_gbCols.length, _aggs); // Working Group
       G gOld;                   // Existing Group to be filled in

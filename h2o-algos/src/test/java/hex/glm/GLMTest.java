@@ -86,12 +86,12 @@ public class GLMTest  extends TestUtil {
         assertEquals("mismatch at row " + (rid) + ", p = " + j + ": " + outputs[j] + " != " + predictions[j] + ", predictions = " + Arrays.toString(predictions) + ", output = " + Arrays.toString(outputs), outputs[j], predictions[j], 1e-6);
     }
     @Override public void map(ChunkAry chkary) {
-      Chunk [] chks = chkary.getChunks();
+      Chunk[] chks = chkary.getChunks();
       int nout = _m._parms._family == Family.multinomial ? _m._output.nclasses() + 1 : _m._parms._family == Family.binomial ? 3 : 1;
       Chunk[] outputChks = Arrays.copyOfRange(chks, chks.length - nout, chks.length);
       chks = Arrays.copyOf(chks, chks.length - nout);
-      Chunk off = new C0DChunk(0, chks[0]._len);
-      Chunk w = new C0DChunk(1, chks[0]._len);
+      Chunk off = C0DChunk.makeConstChunk(0);
+      Chunk w = C0DChunk.makeConstChunk(1);
       double[] tmp = new double[_m._output._dinfo._cats + _m._output._dinfo._nums];
       double[] predictions = new double[nout];
       double[] outputs = new double[nout];
@@ -103,7 +103,7 @@ public class GLMTest  extends TestUtil {
         w = chks[chks.length - 1];
         chks = Arrays.copyOf(chks, chks.length - 1);
       }
-      for (int i = 0; i < chks[0]._len; ++i) {
+      for (int i = 0; i < chkary._len; ++i) {
         if (_weights || _offset)
           _m.score0(chks, w.atd(i), off.atd(i), i, tmp, predictions);
         else
@@ -470,8 +470,10 @@ public class GLMTest  extends TestUtil {
       assertEquals(0.6421113,gmt._likelihood/fr.numRows(),1e-8);
       System.out.println("likelihood = " + gmt._likelihood/fr.numRows());
       double [] g = gmt.gradient();
+      System.out.println("expected gradient = " + Arrays.toString(exp_grad));
+      System.out.println("actual   gradient = " + Arrays.toString(g));
       for(int i = 0; i < g.length; ++i)
-        assertEquals("Mismatch at coefficient '" + "' (" + i + ")",exp_grad[i], g[i], 1e-8);
+        assertEquals("Mismatch at coefficient (" + i + ")",exp_grad[i], g[i], 1e-8);
     } finally {
       if(origRes != null)origRes.remove();
       if (fr != null) fr.delete();
@@ -1438,16 +1440,14 @@ public class GLMTest  extends TestUtil {
       _m = m;
     }
 
-    public void map(Chunk[] chks) {
+    public void map(ChunkAry chks) {
       super.map(chks);
-
-      _val2 = (GLMMetricBuilder) _m.makeMetricBuilder(_fr.domain(chks.length-1));
+      _val2 = (GLMMetricBuilder) _m.makeMetricBuilder(_fr.domain(chks._numCols-1));
       double[] ds = new double[3];
-
       float[] actual = new float[1];
-      for (int i = 0; i < chks[0]._len; ++i) {
-        _m.score0(chks, i, null, ds);
-        actual[0] = (float) chks[chks.length - 1].atd(i);
+      for (int i = 0; i < chks._len; ++i) {
+        _m.score0(chks.getChunks(), i, null, ds);
+        actual[0] = (float) chks.atd(i,chks._numCols - 1);
         _val2.perRow(ds, actual, _m);
       }
     }

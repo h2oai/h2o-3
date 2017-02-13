@@ -3,7 +3,6 @@ package water.rapids.ast.prims.string;
 import water.MRTask;
 import water.fvec.*;
 import water.rapids.Env;
-import water.rapids.Val;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
@@ -85,13 +84,8 @@ public class AstTrim extends AstPrimitive {
   private VecAry trimStringCol(VecAry vec) {
     return new MRTask() {
       @Override
-      public void map(Chunk chk, NewChunk newChk) {
-        if (chk instanceof C0DChunk) // all NAs
-          for (int i = 0; i < chk.len(); i++)
-            newChk.addNA();
-          // Java String.trim() only operates on ASCII whitespace
-          // so UTF-8 safe methods are not needed here.
-        else ((CStrChunk) chk).asciiTrim(newChk);
+      public void map(ChunkAry chk, NewChunkAry newChk) {
+        ((CStrChunk) chk.getChunk(0)).asciiTrim((NewChunk)newChk.getChunk(0));
       }
     }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().vecs();
   }

@@ -69,7 +69,7 @@ public abstract class Parser extends Iced {
   protected Parser( ParseSetup setup, Key<Job> jobKey ) { _setup = setup;  CHAR_SEPARATOR = setup._separator; _jobKey = jobKey;}
   protected int fileHasHeader(byte[] bits, ParseSetup ps) { return ParseSetup.NO_HEADER; }
 
-  // Parse this one Chunk (in parallel with other Chunks)
+  // Parse this one ByteArraySupportedChunk (in parallel with other Chunks)
   protected abstract ParseWriter parseChunk(int cidx, final ParseReader din, final ParseWriter dout);
 
   ParseWriter streamParse( final InputStream is, final ParseWriter dout) throws IOException {
@@ -233,7 +233,7 @@ public abstract class Parser extends Iced {
     final transient InputStream _is;
     private byte[] _bits0 = new byte[bufSz];
     private byte[] _bits1 = new byte[bufSz];
-    private int _cidx0=-1, _cidx1=-1; // Chunk #s
+    private int _cidx0=-1, _cidx1=-1; // ByteArraySupportedChunk #s
     private int _coff0=-1, _coff1=-1; // Last used byte in a chunk
     private StreamData(InputStream is){_is = is;}
     long _gOff;

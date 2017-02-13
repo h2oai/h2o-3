@@ -56,12 +56,12 @@ public class WordCountTask extends MRTask<WordCountTask> {
    * its count increased instead.
    */
   @Override
-  public void map(Chunk cs[]) {
+  public void map(ChunkAry cs) {
     _vocabHM = VOCABHM;
 
-    for (Chunk chk : cs) if (chk instanceof CStrChunk) {
+    for (Chunk chk : cs.getChunks()) if (chk instanceof CStrChunk) {
       BufferedStringCount tmp = new BufferedStringCount();
-      for (int row = 0; row < chk._len; row++) {
+      for (int row = 0; row < cs._len; row++) {
         chk.atStr(tmp, row);
         BufferedStringCount tmp2 = VOCABHM.get(tmp);
         if (tmp2 == null) {

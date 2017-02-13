@@ -2,10 +2,7 @@ package water.rapids.ast.prims.advmath;
 
 import water.Key;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
-import water.fvec.VecAry;
+import water.fvec.*;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
@@ -169,10 +166,10 @@ public class AstCorrelation extends AstPrimitive {
     }
 
     @Override
-    public void map(Chunk cs[]) {
-      final int ncolsx = cs.length - 1;
-      final Chunk cy = cs[0];
-      final int len = cy._len;
+    public void map(ChunkAry cs) {
+      final int ncolsx = cs._numCols - 1;
+
+      final int len = cs._len;
       _cors = new double[ncolsx];
       _denom = new double[ncolsx];
       double sum;
@@ -182,23 +179,23 @@ public class AstCorrelation extends AstPrimitive {
         sum = 0;
         varx = 0;
         vary = 0;
-        final Chunk cx = cs[x + 1];
+        final Chunk cx = cs.getChunk(x + 1);
         final double xmean = _xmeans[x];
         for (int row = 0; row < len; row++) {
           if(_completeObs){
             //If mode is "complete.obs", then we omit rows with NA's
             //Checking for NA's and omitting any rows with an NA value.
             //This same check is done for the mean vector (See CorTaskMean)
-            if(!(cx.isNA(row)) && !(cy.isNA(row))){
+            if(!(cx.isNA(row)) && !(cs.isNA(row))){
               varx += (cx.atd(row) - xmean) * (cx.atd(row) - xmean); //Compute variance for x
-              vary += (cy.atd(row) - _ymean) * (cy.atd(row) - _ymean); //Compute variance for y
-              sum += (cx.atd(row) - xmean) * (cy.atd(row) - _ymean); //Compute sum of square
+              vary += (cs.atd(row) - _ymean) * (cs.atd(row) - _ymean); //Compute variance for y
+              sum += (cx.atd(row) - xmean) * (cs.atd(row) - _ymean); //Compute sum of square
             }
           }
           else {
             varx += (cx.atd(row) - xmean) * (cx.atd(row) - xmean); //Compute variance for x
-            vary += (cy.atd(row) - _ymean) * (cy.atd(row) - _ymean); //Compute variance for y
-            sum += (cx.atd(row) - xmean) * (cy.atd(row) - _ymean); //Compute sum of square
+            vary += (cs.atd(row) - _ymean) * (cs.atd(row) - _ymean); //Compute variance for y
+            sum += (cx.atd(row) - xmean) * (cs.atd(row) - _ymean); //Compute sum of square
           }
         }
         _cors[x] = sum;
@@ -226,7 +223,7 @@ public class AstCorrelation extends AstPrimitive {
     }
 
     @Override
-    public void map(Chunk cs[]) {
+    public void map(ChunkAry cs) {
       _xsum = new double[_ncolx];
       _ysum = new double[_ncoly];
 
@@ -235,7 +232,7 @@ public class AstCorrelation extends AstPrimitive {
 
       double xval, yval;
       boolean add;
-      int len = cs[0]._len;
+      int len = cs._len;
       for (int row = 0; row < len; row++) {
         add = true;
         //reset existing arrays to 0. Should save on GC.
@@ -243,7 +240,7 @@ public class AstCorrelation extends AstPrimitive {
         Arrays.fill(yvals, 0);
 
         for (int y = 0; y < _ncoly; y++) {
-          final Chunk cy = cs[y];
+          final Chunk cy = cs.getChunk(y);
           yval = cy.atd(row);
           //if any yval along a row is NA and _completeObs is true, discard the entire row
           if (Double.isNaN(yval) && _completeObs) {
@@ -255,7 +252,7 @@ public class AstCorrelation extends AstPrimitive {
         }
         if (add) {
           for (int x = 0; x < _ncolx; x++) {
-            final Chunk cx = cs[x + _ncoly];
+            final Chunk cx = cs.getChunk(x + _ncoly);
             xval = cx.atd(row);
             //if any yval along a row is NA and _completeObs is true, discard the entire row
             if (Double.isNaN(xval) && _completeObs) {

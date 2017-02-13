@@ -5,12 +5,10 @@ import water.H2O.FJWThr;
 import water.H2O.H2OCallback;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.*;
-import water.fvec.NewChunk.Value;
 import water.util.ArrayUtils;
 import water.util.Log;
 
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -218,7 +216,7 @@ public class DMatrix  {
     public GetNonZerosTsk(H2OCountedCompleter cmp){super(cmp);_maxsz = 10000000;}
     public GetNonZerosTsk(H2OCountedCompleter cmp, int maxsz){super(cmp); _maxsz = maxsz;}
 
-    @Override public void map(Chunk c){
+    @Override public void map(ChunkAry c){
       throw H2O.unimpl();
 //      int istart = (int)c.start();
 //      assert (c.start() + c._len) == (istart + c._len);
@@ -257,21 +255,17 @@ public class DMatrix  {
     }
 
     @Override public void setupLocal(){_fr.lastVec().preWriting();}
-    @Override public void map(Chunk [] chks) {
-      Chunk zChunk = chks[chks.length-1];
-      double [] res = MemoryManager.malloc8d(chks[0]._len);
+    @Override public void map(ChunkAry chks) {
+      int zAChunk = chks._numCols-1;
+      double [] res = MemoryManager.malloc8d(chks._len);
       for(int i = 0; i < _y.length; ++i) {
         final double yVal = _y[i];
-        final Chunk xChunk = chks[i];
-        for (int k = xChunk.nextNZ(-1); k < res.length; k = xChunk.nextNZ(k))
-          try { res[k] += yVal * xChunk.atd(k);} catch(Throwable t) {
-            t.printStackTrace();
-            throw new RuntimeException(t);
-          }
+        for (Chunk.SparseNum sv = chks.sparseNum(i); sv.rowId() < res.length; sv.nextNZ())
+          res[sv.rowId()] += yVal * sv.dval();
       }
       Chunk modChunk = new NewChunk(res).setSparseRatio(2).compress();
       if(_progressKey != null)
-        new UpdateProgress(modChunk.getBytes().length,modChunk.frozenType()).fork(_progressKey);
+        new UpdateProgress((int)modChunk.byteSize(),modChunk.frozenType()).fork(_progressKey);
 //      DKV.put(zChunk.vec().chunkKey(zChunk.cidx()),modChunk,_fs);
     }
     @Override public void closeLocal(){

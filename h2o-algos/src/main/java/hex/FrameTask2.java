@@ -5,7 +5,6 @@ import water.H2O.H2OCountedCompleter;
 import water.Job;
 import water.Key;
 import water.MRTask;
-import water.fvec.Chunk;
 import water.fvec.ChunkAry;
 import water.util.FrameUtils;
 

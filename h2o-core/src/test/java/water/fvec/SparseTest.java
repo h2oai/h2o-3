@@ -59,22 +59,16 @@ public class SparseTest extends TestUtil {
         assertEquals(Double.isNaN(vals[i]), c0.isNA(i));
         assertTrue(Double.isNaN(vals[i]) || vals[i] == c0.atd(i));
       }
-      int j = c0.nextNZ(-1);
+      Chunk.SparseNum sv = c0.sparseNum(0);
       // test skip cnt iteration
       for(int nz:nzs){
-        assertEquals(nz,j);
+        int j = sv.rowId();
+        assertEquals(nz,sv.rowId());
         assertEquals(Double.isNaN(vals[nz]),c0.isNA(j));
         assertTrue(Double.isNaN(vals[nz]) || vals[nz] == c0.atd(j));
-        j = c0.nextNZ(j);
+        sv.nextNZ();
       }
-      Iterator<CXIChunk.Value> it = ((CXIChunk)c0.getChunk(0)).values();
-      // test iterator
-      for(int nz:nzs){
-        CXIChunk.Value v = it.next();
-        assertEquals(nz,v.rowInChunk());
-        assertEquals(Double.isNaN(vals[nz]), v.isNA());
-        assertTrue(Double.isNaN(vals[nz]) || vals[nz] == v.asDouble());
-      }
+
       ChunkAry c1 = setAndClose(vals[length-1] = v1,length-1,c0,fs);
       assertTrue(class1.isAssignableFrom(c1.getClass()));
       // test sparse set
@@ -83,12 +77,13 @@ public class SparseTest extends TestUtil {
       assertTrue(Double.isNaN(v1) || v1 == c1.atd(length - 1));
       ChunkAry c2 = setAndClose(vals[0] = v2,0,c1,fs);
       assertTrue(class2.isAssignableFrom(c2.getClass()));
-      assertTrue(c2.nextNZ(-1) == 0);
+      sv = c2.sparseNum(0);
+      assertTrue(sv.rowId() == 0);
       assertEquals(vals.length,c2.sparseLenZero());
       for(int i = 0; i < vals.length; ++i){
         assertEquals(Double.isNaN(vals[i]),c2.isNA(i));
         assertTrue(Double.isNaN(vals[i]) || vals[i] == c2.atd(i));
-        assertTrue(c2.nextNZ(i) == i+1);
+        assertTrue(sv.nextNZ().rowId() == i+1);
       }
       fs.blockForPending();
     } finally {
@@ -97,7 +92,7 @@ public class SparseTest extends TestUtil {
   }
 
 
-  @Test public void testDouble() {runTest(new double [] {2.7182,3.14,42},Double.NaN,123.45,CXDChunk.class,CXDChunk.class,CUDChunk.class);}
+  @Test public void testDouble() {runTest(new double [] {2.7182,3.14,42},Double.NaN,123.45,CX8Chunk.class,CX8Chunk.class,CUDChunk.class);}
 
   @Test public void testBinary() {
     runTest(new double [] {1,1,1},1,1,CX0Chunk.class,CX0Chunk.class,CBSChunk.class);

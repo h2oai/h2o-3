@@ -46,7 +46,7 @@ public class CategoricalWrappedVec extends WrappedVec {
   }
 
   @Override public CategoricalWrappedChunk chunkIdx(int cidx) {
-    return new CategoricalWrappedChunk(masterVec().chunkForChunkIdx(cidx).getChunk(0), this);
+    return new CategoricalWrappedChunk(masterVec().chunkForChunkIdx(cidx), this);
   }
 
   /** Compute a mapping from the 'from' domain to the 'to' domain.  Strings in
@@ -142,22 +142,23 @@ public class CategoricalWrappedVec extends WrappedVec {
   }
 
   public static class CategoricalWrappedChunk extends Chunk {
-    public final transient Chunk _c;             // Test-set map
+    public final transient ChunkAry _c;             // Test-set map
     final transient int[] _map;
     final transient int   _p;
 
-    CategoricalWrappedChunk(Chunk c, CategoricalWrappedVec vec) {
-      _c  = c; _len = _c._len;
+
+    CategoricalWrappedChunk(ChunkAry c, CategoricalWrappedVec vec) {
+      _c  = c;
       _map = vec._map; _p = vec._p;
     }
 
     // Returns the mapped value.  {@code _map} covers all the values in the
-    // master Chunk, so no AIOOBE.  Missing values in the master Chunk return
+    // master ByteArraySupportedChunk, so no AIOOBE.  Missing values in the master ByteArraySupportedChunk return
     // the usual NaN.
     @Override public double atd(int idx) { return _c.isNA(idx) ? Double.NaN : at8(idx); }
 
     // Returns the mapped value.  {@code _map} covers all the values in the
-    // master Chunk, so no AIOOBE.  Missing values in the master Chunk throw
+    // master ByteArraySupportedChunk, so no AIOOBE.  Missing values in the master ByteArraySupportedChunk throw
     // the normal missing-value exception when loading from the master.
     @Override public long at8(int idx) {
       int at8 = (int)_c.at8(idx);
@@ -189,10 +190,18 @@ public class CategoricalWrappedVec extends WrappedVec {
       return v;
     }
 
+    @Override
+    public int len() {return _c._len;}
+
 
     public static AutoBuffer write_impl(CategoricalWrappedVec v,AutoBuffer bb) { throw water.H2O.fail(); }
-    @Override protected final void initFromBytes () { throw water.H2O.fail(); }
+
 
     @Override public boolean hasNA() { return false; }
+
+    @Override
+    public Chunk deepCopy() {
+      return add2Chunk(new NewChunk(Vec.T_NUM),0,_c._len).compress();
+    }
   }
 }

@@ -4,89 +4,210 @@ import org.junit.*;
 
 import water.TestUtil;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Random;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class CXIChunkTest extends TestUtil {
+
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
-  @Test
-  public void test_inflate_impl() {
-    for (int l=0; l<2; ++l) {
-      NewChunk nc = new NewChunk(Vec.T_NUM);
 
-      int[] vals = new int[]{0, 0, 0, Integer.MAX_VALUE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Integer.MIN_VALUE+1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-
-      if (l==1) nc.addNA();
-      for (int v : vals) nc.addNum(v, 0);
-      nc.addNA();
-      nc.addZeros(40000);
-      int pos1 = nc.len();
-      nc.addNum(123,0);
-      int maxLen = l == 0?65535-1:65535*2;
-      nc.addZeros(maxLen - nc._len - 1);
-      nc.addNum(456,0);
-      Chunk cc = nc.compress();
-      Assert.assertEquals(maxLen, cc._len);
-      Assert.assertEquals(((CXIChunk)cc)._ridsz,l == 0?2:4);
-      Assert.assertTrue(cc instanceof CXIChunk);
-      if (l==1) {
-        Assert.assertTrue(cc.isNA(0));
-
-      }
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at8(i + l));
-
-      Assert.assertTrue(cc.isNA(vals.length + l));
-
-      Assert.assertEquals(cc.at8(pos1),123);
-      Assert.assertEquals(cc.at8(maxLen-1),456);
-
-      double[] sparsevals = new double[cc.sparseLenZero()];
-      int[] sparseids = new int[cc.sparseLenZero()];
-      cc.asSparseDoubles(sparsevals, sparseids);
-      for (int i = 0; i < sparsevals.length; ++i) {
-        if (cc.isNA(sparseids[i])) Assert.assertTrue(Double.isNaN(sparsevals[i]));
-        else Assert.assertTrue(cc.at8(sparseids[i])==(int)sparsevals[i]);
-      }
-      double[] densevals = new double[cc.len()];
-      cc.getDoubles(densevals,0,cc.len());
-      for (int i = 0; i < densevals.length; ++i) {
-        if (cc.isNA(i)) Assert.assertTrue(Double.isNaN(densevals[i]));
-        else Assert.assertTrue(cc.at8(i)==(int)densevals[i]);
-      }
-
-      nc = new NewChunk(Vec.T_NUM);
-      cc.inflate_impl(nc);
-      Assert.assertEquals(maxLen, nc._len);
-      Assert.assertEquals(2+2+1+l, nc._sparseLen);
-      Iterator<NewChunk.Value> it = nc.values(0, vals.length+1+l);
-      if (l==1) Assert.assertTrue(it.next().rowId0() == 0);
-      Assert.assertTrue(it.next().rowId0() == 3+l);
-      Assert.assertTrue(it.next().rowId0() == 101+l);
-      Assert.assertTrue(it.next().rowId0() == vals.length+l);
-      Assert.assertTrue(!it.hasNext());
-      if (l==1) {
-        Assert.assertTrue(nc.isNA(0));
-      }
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.at8(l + i));
-
-      Assert.assertTrue(nc.isNA(vals.length + l));
-
-
-      Chunk cc2 = nc.compress();
-      Assert.assertEquals(maxLen, cc._len);
-      Assert.assertTrue(cc2 instanceof CXIChunk);
-      if (l==1) {
-        Assert.assertTrue(cc2.isNA(0));
-
-      }
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.at8(i + l));
-
-      Assert.assertTrue(cc2.isNA(vals.length + l));
-
-
-      Assert.assertTrue(Arrays.equals(cc._mem, cc2._mem));
+  @Test public void testNaSparseRead(){
+    double [] vals = new double[256];
+    Arrays.fill(vals,Double.NaN);
+    Random rnd = new Random(54321);
+    int [] ids = new int[vals.length>>4];
+    for(int i = 0; i < vals.length >> 4; ++i) {
+      int x = rnd.nextInt(vals.length);
+      while(!Double.isNaN(vals[x]))
+        x = rnd.nextInt(vals.length);
+      vals[ids[i] = x] = rnd.nextInt();
     }
+    Arrays.sort(ids);
+    NewChunk nc = new NewChunk(Vec.T_NUM);
+    for (double d : vals) nc.addNum(d);
+    CXIChunk cc = (CXIChunk) nc.compress();
+    assertEquals(vals.length>>4,cc.len());
+    for(int i = 0; i < vals.length; ++i){
+      if(Double.isNaN(vals[i])){
+        assertTrue(cc.isNA(i));
+        assertTrue(Double.isNaN(cc.atd(i)));
+      } else {
+        assertEquals(vals[i], cc.atd(i), 0);
+        assertEquals(vals[i], cc.at8(i), 0);
+        assertTrue(!cc.isNA(i));
+      }
+    }
+    int j = 0;
+    ChunkAry ca = new ChunkAry(vals.length,cc);
+    for(Chunk.SparseNum sv = ca.sparseNum(0); sv.rowId() < vals.length; sv = sv.nextNZ()){
+      assertEquals(ids[j],sv.rowId());
+      assertEquals(vals[ids[j++]],sv.dval(),0);
+    }
+    assertEquals(ids.length,j);
+    // test bulk sparse double access
+    int [] ids2 = new int[vals.length>>4];
+    double [] vals2 = new double[vals.length];
+    int x = ca.getSparseDoubles(0,vals2,ids2,Double.NaN);
+    assertEquals(x,ids2.length);
+    assertTrue(Arrays.equals(ids,ids2));
+    j = 0;
+    for(int i = 0; i < x; ++i)
+      assertEquals(vals[ids[j++]],vals2[i],0);
+    vals2 = ca.getDoubles(0,vals2,Double.NaN);
+    assertTrue(Arrays.equals(vals,vals2));
+  }
+
+  @Test public void testZeroSparseRead(){
+    double [] vals = new double[256];
+    Random rnd = new Random(54321);
+    int [] ids = new int[vals.length>>4];
+    for(int i = 0; i < vals.length >> 4; ++i) {
+      int x = rnd.nextInt(vals.length);
+      while(vals[x] != 0)
+        x = rnd.nextInt(vals.length);
+      vals[ids[i] = x] = rnd.nextInt();
+    }
+    Arrays.sort(ids);
+    NewChunk nc = new NewChunk(Vec.T_NUM);
+    for (double d : vals) nc.addNum(d);
+    CXIChunk cc = (CXIChunk) nc.compress();
+    assertEquals(vals.length>>4,cc.len());
+    for(int i = 0; i < vals.length; ++i){
+      assertEquals(vals[i],cc.atd(i),0);
+      assertEquals(vals[i],cc.at8(i),0);
+      assertTrue(!cc.isNA(i));
+    }
+    int j = 0;
+    ChunkAry ca = new ChunkAry(vals.length,cc);
+    for(Chunk.SparseNum sv = ca.sparseNum(0); sv.rowId() < vals.length; sv = sv.nextNZ()){
+      assertEquals(ids[j],sv.rowId());
+      assertEquals(vals[ids[j++]],sv.dval(),0);
+    }
+    assertEquals(ids.length,j);
+    // test bulk sparse double access
+    int [] ids2 = new int[vals.length>>4];
+    double [] vals2 = new double[vals.length];
+    int x = ca.getSparseDoubles(0,vals2,ids2,Double.NaN);
+    assertEquals(x,ids2.length);
+    assertTrue(Arrays.equals(ids,ids2));
+    j = 0;
+    for(int i = 0; i < x; ++i)
+      assertEquals(vals[ids[j++]],vals2[i],0);
+    vals2 = ca.getDoubles(0,vals2,Double.NaN);
+    assertTrue(Arrays.equals(vals,vals2));
+    int [] ivals = ca.getIntegers(0,new int[vals.length],Integer.MAX_VALUE);
+    for(int i =0; i < vals.length; ++i)
+      assertEquals(vals[i],ivals[i],0);
+  }
+
+  @Test
+  public void testAdd2Chunk(){
+    double [] vals = new double[256];
+    Random rnd = new Random(54321);
+    int [] ids = new int[vals.length>>4];
+    for(int i = 0; i < vals.length >> 4; ++i) {
+      int x = rnd.nextInt(vals.length);
+      while(vals[x] != 0)
+        x = rnd.nextInt(vals.length);
+      vals[ids[i] = x] = rnd.nextInt();
+    }
+    Arrays.sort(ids);
+    NewChunk nc = new NewChunk(Vec.T_NUM);
+    for (double d : vals) nc.addNum(d);
+    CXIChunk cc = (CXIChunk) nc.compress();
+    nc = new NewChunk(Vec.T_NUM);
+    int from = rnd.nextInt(vals.length-1);
+    int to = from + rnd.nextInt(vals.length-from);
+    cc.add2Chunk(nc,from,to);
+    Chunk c = cc.compress();
+    for(int i = from; i < to; ++i){
+      assertEquals(vals[i],c.atd(i),0);
+      assertEquals(vals[i],c.at8(i),0);
+      assertTrue(!c.isNA(i));
+    }
+
+    HashSet<Integer> selectedRows = new HashSet<>();
+    for(int i = 0; i < vals.length>>2; ++i){
+      int x = rnd.nextInt(vals.length);
+      while(selectedRows.contains(x))x = rnd.nextInt(vals.length);
+      selectedRows.add(x);
+    }
+    int [] selectedAry = new int[selectedRows.size()];
+    int j = 0;
+    for(int i:selectedRows)
+      selectedAry[j++] = i;
+    Arrays.sort(selectedAry);
+    nc = new NewChunk(Vec.T_NUM);
+    cc.add2Chunk(nc,selectedAry);
+    c = nc.compress();
+    j = 0;
+    for(int id:selectedAry)
+      assertEquals(cc.atd(id),c.atd(j++),0);
+    // inflate and compress again, should be identical
+    nc = cc.add2Chunk(new NewChunk(Vec.T_NUM),0,vals.length);
+    c = nc.compress();
+    assertArrayEquals(cc.asBytes(),c.asBytes());
+  }
+
+  @Test
+  public void testAdd2ChunkNaSparse(){
+    double [] vals = new double[256];
+    Arrays.fill(vals,Double.NaN);
+    Random rnd = new Random(54321);
+    int [] ids = new int[vals.length>>4];
+    for(int i = 0; i < vals.length >> 4; ++i) {
+      int x = rnd.nextInt(vals.length);
+      while(!Double.isNaN(vals[x]))
+        x = rnd.nextInt(vals.length);
+      vals[ids[i] = x] = rnd.nextInt();
+    }
+    Arrays.sort(ids);
+    NewChunk nc = new NewChunk(Vec.T_NUM);
+    for (double d : vals) nc.addNum(d);
+    CXIChunk cc = (CXIChunk) nc.compress();
+    nc = new NewChunk(Vec.T_NUM);
+    int from = rnd.nextInt(vals.length-1);
+    int to = from + rnd.nextInt(vals.length-from);
+    cc.add2Chunk(nc,from,to);
+    Chunk c = cc.compress();
+    for(int i = from; i < to; ++i){
+      if(Double.isNaN(vals[i])){
+        assertTrue(c.isNA(i));
+        assertTrue(Double.isNaN(c.atd(i)));
+      } else {
+        assertEquals(vals[i], c.atd(i), 0);
+        assertEquals(vals[i], c.at8(i), 0);
+        assertTrue(!c.isNA(i));
+      }
+    }
+
+    HashSet<Integer> selectedRows = new HashSet<>();
+    for(int i = 0; i < vals.length>>2; ++i){
+      int x = rnd.nextInt(vals.length);
+      while(selectedRows.contains(x))x = rnd.nextInt(vals.length);
+      selectedRows.add(x);
+    }
+    int [] selectedAry = new int[selectedRows.size()];
+    int j = 0;
+    for(int i:selectedRows)
+      selectedAry[j++] = i;
+    Arrays.sort(selectedAry);
+    nc = new NewChunk(Vec.T_NUM);
+    cc.add2Chunk(nc,selectedAry);
+    c = nc.compress();
+    j = 0;
+    for(int id:selectedAry) {
+      if(cc.isNA(id)) assertTrue(c.isNA(j++));
+      else assertEquals(cc.atd(id), c.atd(j++), 0);
+    }
+    // inflate and compress again, should be identical
+    nc = cc.add2Chunk(new NewChunk(Vec.T_NUM),0,vals.length);
+    c = nc.compress();
+    assertArrayEquals(cc.asBytes(),c.asBytes());
   }
 }

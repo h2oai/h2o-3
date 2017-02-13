@@ -77,9 +77,9 @@ public class AstDdply extends AstPrimitive {
     for (int gnum = 0; gnum < grps.length; gnum++) grps[gnum]._dss[0][0] = gnum;
 
     // Pass 2: Build all the groups, building 1 Vec per-group, with exactly the
-    // same Chunk layout, except each Chunk will be the filter rows numbers; a
-    // list of the Chunk-relative row-numbers for that group in an original
-    // data Chunk.  Each Vec will have a *different* number of rows.
+    // same ByteArraySupportedChunk layout, except each ByteArraySupportedChunk will be the filter rows numbers; a
+    // list of the ByteArraySupportedChunk-relative row-numbers for that group in an original
+    // data ByteArraySupportedChunk.  Each Vec will have a *different* number of rows.
     Vec[] vgrps = new BuildGroup(gbCols, gss).doAll(gss.size(), Vec.T_NUM, fr).close();
 
     // Pass 3: For each group, build a full frame for the group, run the
@@ -118,8 +118,8 @@ public class AstDdply extends AstPrimitive {
 
   // --------------------------------------------------------------------------
   // Build all the groups, building 1 Vec per-group, with exactly the same
-  // Chunk layout, except each Chunk will be the filter rows numbers; a list
-  // of the Chunk-relative row-numbers for that group in an original data Chunk.
+  // ByteArraySupportedChunk layout, except each ByteArraySupportedChunk will be the filter rows numbers; a list
+  // of the ByteArraySupportedChunk-relative row-numbers for that group in an original data ByteArraySupportedChunk.
   private static class BuildGroup extends MRTask<BuildGroup> {
     final IcedHashMap<AstGroup.G, String> _gss;
     final int[] _gbCols;

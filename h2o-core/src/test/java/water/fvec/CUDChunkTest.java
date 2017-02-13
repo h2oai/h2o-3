@@ -3,7 +3,6 @@ package water.fvec;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.AutoBuffer;
 import water.IcedUtils;
 import water.TestUtil;
 
@@ -38,17 +37,17 @@ public class CUDChunkTest extends TestUtil {
     for (double v : vals) nc.addNum(v);
     nc.addNA();
 
-    Chunk cc = nc.compress();
-    Assert.assertEquals(vals.length + 1, cc._len);
+    CUDChunk cc = (CUDChunk) nc.compress();
+    Assert.assertEquals(vals.length + 1, cc.len());
     Assert.assertTrue(cc instanceof CUDChunk);
     for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.atd(i), Math.ulp(vals[i]));
 
     Assert.assertTrue(cc.isNA(vals.length));
 
 
-    Chunk cc2 = IcedUtils.deepCopy(cc);
-    Assert.assertEquals(cc._len, cc2._len);
-    Assert.assertEquals(vals.length + 1, cc2._len);
+    CUDChunk cc2 = IcedUtils.deepCopy(cc);
+    Assert.assertEquals(cc._len, cc2.len());
+    Assert.assertEquals(vals.length + 1, cc2.len());
     Assert.assertTrue(cc2 instanceof CUDChunk);
     for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.atd(i), Math.ulp(vals[i]));
 
@@ -60,7 +59,7 @@ public class CUDChunkTest extends TestUtil {
     Assert.assertTrue(cc.atd(vals.length - 1) == a);
     vals[vals.length-1]=a;
 
-    nc = cc.inflate_impl(new NewChunk(Vec.T_NUM));
+    nc = cc.add2Chunk(new NewChunk(Vec.T_NUM),0,cc.len());
     nc.values(0, nc._len);
     Assert.assertEquals(vals.length + 1, nc._len);
     for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.atd(i), Math.ulp(vals[i]));
@@ -68,7 +67,7 @@ public class CUDChunkTest extends TestUtil {
     Assert.assertTrue(nc.isNA(vals.length));
 
 
-    cc2 = nc.compress();
+    cc2 = (CUDChunk) nc.compress();
     Assert.assertEquals(vals.length + 1, cc._len);
     Assert.assertTrue(cc2 instanceof CUDChunk);
     for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.atd(i), Math.ulp(vals[i]));

@@ -7,7 +7,6 @@ import hex.ModelMetrics;
 import hex.ModelMetricsUnsupervised;
 import water.*;
 import water.codegen.CodeGeneratorPipeline;
-import water.fvec.Chunk;
 import water.fvec.ChunkAry;
 import water.fvec.Frame;
 import water.util.JCodeGen;

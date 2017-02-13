@@ -5,8 +5,8 @@ import hex.ModelCategory;
 import hex.example.ExampleModel.ExampleOutput;
 import hex.example.ExampleModel.ExampleParameters;
 import water.MRTask;
-import water.Scope;
 import water.fvec.Chunk;
+import water.fvec.ChunkAry;
 import water.util.Log;
 
 import java.util.Arrays;
@@ -77,12 +77,12 @@ public class Example extends ModelBuilder<ExampleModel,ExampleParameters,Example
     // OUT
     double[] _maxs;
 
-    @Override public void map(Chunk[] cs) {
-      _maxs = new double[cs.length];
+    @Override public void map(ChunkAry cs) {
+      _maxs = new double[cs._numCols];
       Arrays.fill(_maxs,-Double.MAX_VALUE);
-      for( int col = 0; col < cs.length; col++ )
-        for( int row = 0; row < cs[col]._len; row++ )
-          _maxs[col] = Math.max(_maxs[col],cs[col].atd(row));
+      for( int col = 0; col < cs._numCols; col++ )
+        for( int row = 0; row < cs._len; row++ )
+          _maxs[col] = Math.max(_maxs[col],cs.atd(row,col));
     }
 
     @Override public void reduce(Max that) {

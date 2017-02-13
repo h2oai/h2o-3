@@ -2,6 +2,7 @@ package water.rapids.ast.prims.reducers;
 
 import water.MRTask;
 import water.fvec.Chunk;
+import water.fvec.ChunkAry;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.vals.ValNum;
@@ -42,14 +43,13 @@ public abstract class AstReducerOp extends AstPrimitive {
     double _d;
 
     @Override
-    public void map(Chunk chks[]) {
-      int rows = chks[0]._len;
-      for (int i = 0; i < chks.length; ++i) {
-        Chunk C = chks[i];
+    public void map(ChunkAry chks) {
+      int rows = chks._len;
+      for (int i = 0; i < chks._numCols; ++i) {
         if (!_fr.vecs().isNumeric(i)) throw new IllegalArgumentException("Numeric columns only");
         double sum = _d;
         for (int r = 0; r < rows; r++)
-          sum = op(sum, C.atd(r));
+          sum = op(sum, chks.atd(r,i));
         _d = sum;
         if (Double.isNaN(sum)) break; // Shortcut if the reduction is already NaN
       }
@@ -63,9 +63,9 @@ public abstract class AstReducerOp extends AstPrimitive {
 
 //  class NaRmRedOp extends MRTask<NaRmRedOp> {
 //    double _d;
-//    @Override public void map( Chunk chks[] ) {
+//    @Override public void map( ByteArraySupportedChunk chks[] ) {
 //      int rows = chks[0]._len;
-//      for( Chunk C : chks ) {
+//      for( ByteArraySupportedChunk C : chks ) {
 //        if( !C.vec().isNumeric() ) throw new IllegalArgumentException("Numeric columns only");
 //        double sum = _d;
 //        for( int r = 0; r < rows; r++ ) {

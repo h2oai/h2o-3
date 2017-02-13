@@ -61,22 +61,21 @@ public class AstStrSplit extends AstPrimitive {
     final String regex = splitRegEx;
     return new MRTask() {
       @Override
-      public void map(Chunk[] cs, NewChunk[] ncs) {
-        Chunk c = cs[0];
-        for (int i = 0; i < c._len; ++i) {
+      public void map(ChunkAry cs, NewChunkAry ncs) {
+        for (int i = 0; i < cs._len; ++i) {
           int cnt = 0;
-          if (!c.isNA(i)) {
-            int idx = (int) c.at8(i);
+          if (!cs.isNA(i)) {
+            int idx = cs.at4(i);
             String s = old_domains[idx];
             String[] ss = s.split(regex);
             for (String s1 : ss) {
               int n_idx = Arrays.asList(new_domains[cnt]).indexOf(s1);
-              if (n_idx == -1) ncs[cnt++].addNA();
-              else ncs[cnt++].addNum(n_idx);
+              if (n_idx == -1) ncs.addNA(cnt++);
+              else ncs.addInteger(cnt++,n_idx);
             }
           }
-          if (cnt < ncs.length)
-            for (; cnt < ncs.length; ++cnt) ncs[cnt].addNA();
+          if (cnt < ncs._numCols)
+            for (; cnt < ncs._numCols; ++cnt) ncs.addNA(cnt);
         }
       }
     }.doAll(new_domains.length, Vec.T_CAT, new Frame(vec)).outputFrame(null, null, new_domains).vecs();
@@ -121,24 +120,17 @@ public class AstStrSplit extends AstPrimitive {
     final int newColCnt = (new AstStrSplit.CountSplits(splitRegEx)).doAll(vec)._maxSplits;
     return new MRTask() {
       @Override
-      public void map(Chunk[] cs, NewChunk[] ncs) {
-        Chunk chk = cs[0];
-        if (chk instanceof C0DChunk) // all NAs
-          for (int row = 0; row < chk.len(); row++)
-            for (int col = 0; col < ncs.length; col++)
-              ncs[col].addNA();
-        else {
-          BufferedString tmpStr = new BufferedString();
-          for (int row = 0; row < chk._len; ++row) {
-            int col = 0;
-            if (!chk.isNA(row)) {
-              String[] ss = chk.atStr(tmpStr, row).toString().split(splitRegEx);
-              for (String s : ss) // distribute strings among new cols
-                ncs[col++].addStr(s);
-            }
-            if (col < ncs.length) // fill remaining cols w/ NA
-              for (; col < ncs.length; col++) ncs[col].addNA();
+      public void map(ChunkAry cs, NewChunkAry ncs) {
+        BufferedString tmpStr = new BufferedString();
+        for (int row = 0; row < cs._len; ++row) {
+          int col = 0;
+          if (!cs.isNA(row)) {
+            String[] ss = cs.atStr(tmpStr, row).toString().split(splitRegEx);
+            for (String s : ss) // distribute strings among new cols
+              ncs.addStr(col++,s);
           }
+          if (col < ncs._numCols) // fill remaining cols w/ NA
+            for (; col < ncs._numCols; col++) ncs.addNA(col);
         }
       }
     }.doAll(newColCnt, Vec.T_STR, new Frame(vec)).outputFrame().vecs();
@@ -159,7 +151,7 @@ public class AstStrSplit extends AstPrimitive {
     }
 
     @Override
-    public void map(Chunk chk) {
+    public void map(ChunkAry chk) {
       BufferedString tmpStr = new BufferedString();
       for (int row = 0; row < chk._len; row++) {
         if (!chk.isNA(row)) {

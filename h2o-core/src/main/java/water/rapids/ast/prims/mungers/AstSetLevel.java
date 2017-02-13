@@ -1,10 +1,7 @@
 package water.rapids.ast.prims.mungers;
 
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.rapids.Env;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
@@ -47,7 +44,7 @@ public class AstSetLevel extends AstPrimitive {
     // COW semantics
     Frame fr2 = new MRTask() {
       @Override
-      public void map(Chunk c, NewChunk nc) {
+      public void map(ChunkAry c, NewChunkAry nc) {
         for (int i = 0; i < c._len; ++i)
           nc.addNum(idx);
       }

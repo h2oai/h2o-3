@@ -74,9 +74,9 @@ public class EmptyChunkTest extends TestUtil {
 
     for (int i=0; i<numOfChunks; i++) {
       ChunkAry c = vec.chunkForChunkIdx(i);
-      Assert.assertEquals("Chunk index is wrong!", i, c._cidx);
-      Assert.assertEquals("Chunk len is wrong!", chunkLens[i], c._len);
-      Assert.assertEquals("Chunk start is wrong!", espc[i], c.start());
+      Assert.assertEquals("ByteArraySupportedChunk index is wrong!", i, c._cidx);
+      Assert.assertEquals("ByteArraySupportedChunk len is wrong!", chunkLens[i], c._len);
+      Assert.assertEquals("ByteArraySupportedChunk start is wrong!", espc[i], c.start());
     }
   }
 }

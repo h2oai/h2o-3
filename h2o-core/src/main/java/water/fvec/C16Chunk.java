@@ -1,12 +1,13 @@
 package water.fvec;
 
-import water.*;
 import water.util.UnsafeUtils;
 
-public class C16Chunk extends Chunk {
+public class C16Chunk extends ByteArraySupportedChunk {
   public static final long _LO_NA = Long.MIN_VALUE;
   public static final long _HI_NA = 0;
-  C16Chunk( byte[] bs ) { _mem=bs; _len = (_mem.length>>4); }
+  C16Chunk( byte[] bs ) { _mem=bs; }
+
+  public int len(){return _mem.length >> 4;}
   @Override public final long at8(int i ) { throw new IllegalArgumentException("at8_abs but 16-byte UUID");  }
   @Override public final double atd(int i ) { throw new IllegalArgumentException("atd but 16-byte UUID");  }
   @Override public final boolean isNA( int i ) { return UnsafeUtils.get8(_mem,(i<<4))==_LO_NA && UnsafeUtils.get8(_mem,(i<<4)+8)==_HI_NA; }
@@ -55,9 +56,6 @@ public class C16Chunk extends Chunk {
     return nc;
   }
 
-  @Override protected final void initFromBytes () {
-    _len = (_mem.length>>4);
-    assert _mem.length == _len <<4;
-  }
+  @Override protected final void initFromBytes () {}
 //  @Override protected int pformat_len0() { return 36; }
 }

@@ -74,14 +74,14 @@ public class VecUtils {
       }
 
       @Override
-      public void map(Chunk c, NewChunk nc) {
+      public void map(ChunkAry c, NewChunkAry nc) {
         BufferedString bs = new BufferedString();
-        for (int row = 0; row < c.len(); row++) {
+        for (int row = 0; row < c._len; row++) {
           if (c.isNA(row)) {
-            nc.addNA();
+            nc.addNA(0);
           } else {
             c.atStr(bs, row);
-            nc.addNum(lookupTable.get(bs.bytesToString()), 0);
+            nc.addNum(0,lookupTable.get(bs.bytesToString()), 0);
           }
         }
       }
@@ -165,27 +165,25 @@ public class VecUtils {
   public static VecAry stringToNumeric(VecAry src) {
     if(!src.isString()) throw new H2OIllegalArgumentException("stringToNumeric conversion only works on string columns");
     VecAry res = new MRTask() {
-      @Override public void map(Chunk chk, NewChunk newChk){
-        if (chk instanceof C0DChunk) { // all NAs
-          for (int i=0; i < chk._len; i++)
-            newChk.addNA();
-        } else {
-          BufferedString tmpStr = new BufferedString();
-          for (int i=0; i < chk._len; i++) {
-            if (!chk.isNA(i)) {
-              tmpStr = chk.atStr(tmpStr, i);
-              switch (tmpStr.getNumericType()) {
-                case BufferedString.NA:
-                  newChk.addNA(); break;
-                case BufferedString.INT:
-                  newChk.addNum(Long.parseLong(tmpStr.toString()),0); break;
-                case BufferedString.REAL:
-                  newChk.addNum(Double.parseDouble(tmpStr.toString())); break;
-                default:
-                  throw new H2OIllegalValueException("Received unexpected type when parsing a string to a number.", this);
-              }
-            } else newChk.addNA();
-          }
+      @Override public void map(ChunkAry chk, NewChunkAry newChk) {
+        BufferedString tmpStr = new BufferedString();
+        for (int i = 0; i < chk._len; i++) {
+          if (!chk.isNA(i)) {
+            tmpStr = chk.atStr(tmpStr, i);
+            switch (tmpStr.getNumericType()) {
+              case BufferedString.NA:
+                newChk.addNA(0);
+                break;
+              case BufferedString.INT:
+                newChk.addNum(Long.parseLong(tmpStr.toString()), 0);
+                break;
+              case BufferedString.REAL:
+                newChk.addNum(Double.parseDouble(tmpStr.toString()));
+                break;
+              default:
+                throw new H2OIllegalValueException("Received unexpected type when parsing a string to a number.", this);
+            }
+          } else newChk.addNA(0);
         }
       }
     }.doAll(Vec.T_NUM, src).outputFrame().vecs();
@@ -314,12 +312,12 @@ public class VecUtils {
   private static class Categorical2StrChkTask extends MRTask<Categorical2StrChkTask> {
     final String[] _domain;
     Categorical2StrChkTask(String[] domain) { _domain=domain; }
-    @Override public void map(Chunk c, NewChunk nc) {
+    @Override public void map(ChunkAry c, NewChunkAry nc) {
       for(int i=0;i<c._len;++i)
         if (!c.isNA(i))
-          nc.addStr(_domain == null ? "" + c.at8(i) : _domain[(int) c.at8(i)]);
+          nc.addStr(0,_domain == null ? "" + c.at8(i) : _domain[(int) c.at8(i)]);
         else
-          nc.addNA();
+          nc.addNA(0);
     }
   }
 
@@ -338,17 +336,12 @@ public class VecUtils {
           + " using numericToStringVec() ",src);
     Vec res = new MRTask() {
       @Override
-      public void map(Chunk chk, NewChunk newChk) {
-        if (chk instanceof C0DChunk) { // all NAs
-          for (int i=0; i < chk._len; i++)
-            newChk.addNA();
-        } else {
-          for (int i=0; i < chk._len; i++) {
-            if (!chk.isNA(i))
-              newChk.addStr(PrettyPrint.number(chk, chk.atd(i), 4));
-            else
-              newChk.addNA();
-          }
+      public void map(ChunkAry chk, NewChunkAry newChk) {
+        for (int i = 0; i < chk._len; i++) {
+          if (!chk.isNA(i))
+            newChk.addStr(0,PrettyPrint.number(chk.getChunk(0), chk.atd(i), 4));
+          else
+            newChk.addNA(0);
         }
       }
     }.doAll(Vec.T_STR, src).outputFrame().anyVec();
@@ -367,17 +360,12 @@ public class VecUtils {
   public static Vec UUIDToStringVec(Vec src) {
     if( !src.isUUID() ) throw new H2OIllegalArgumentException("UUIDToStringVec() conversion only works on UUID columns");
     Vec res = new MRTask() {
-      @Override public void map(Chunk chk, NewChunk newChk) {
-        if (chk instanceof C0DChunk) { // all NAs
-          for (int i=0; i < chk._len; i++)
-            newChk.addNA();
-        } else {
-          for (int i=0; i < chk._len; i++) {
-            if (!chk.isNA(i))
-              newChk.addStr(PrettyPrint.UUID(chk.at16l(i), chk.at16h(i)));
-            else
-              newChk.addNA();
-          }
+      @Override public void map(ChunkAry chk, NewChunkAry newChk) {
+        for (int i = 0; i < chk._len; i++) {
+          if (!chk.isNA(i))
+            newChk.addStr(0,PrettyPrint.UUID(chk.at16l(i), chk.at16h(i)));
+          else
+            newChk.addNA(0);
         }
       }
     }.doAll(Vec.T_STR,src).outputFrame().anyVec();
@@ -414,7 +402,7 @@ public class VecUtils {
   public static class CollectDomain extends MRTask<CollectDomain> {
     transient NonBlockingHashMapLong<String> _uniques;
     @Override protected void setupLocal() { _uniques = new NonBlockingHashMapLong<>(); }
-    @Override public void map(Chunk ys) {
+    @Override public void map(ChunkAry ys) {
       for( int row=0; row< ys._len; row++ )
         if( !ys.isNA(row) )
           _uniques.put(ys.at8(row), "");
@@ -463,13 +451,13 @@ public class VecUtils {
   public static class DomainDedupe extends MRTask<DomainDedupe> {
     private final HashMap<Integer, Integer> _oldToNewDomainIndex;
     public DomainDedupe(HashMap<Integer, Integer> oldToNewDomainIndex) {_oldToNewDomainIndex = oldToNewDomainIndex; }
-    @Override public void map(Chunk c, NewChunk nc) {
+    @Override public void map(ChunkAry c, NewChunkAry nc) {
       for( int row=0; row < c._len; row++) {
         if ( !c.isNA(row) ) {
           int oldDomain = (int) c.at8(row);
           nc.addNum(_oldToNewDomainIndex.get(oldDomain));
         } else {
-          nc.addNA();
+          nc.addNA(0);
         }
       }
     }
@@ -500,7 +488,7 @@ public class VecUtils {
     private long[] _d;
     public CollectDomainFast(int s) { _s=s; }
     @Override protected void setupLocal() { _u= MemoryManager.mallocZ(_s + 1); }
-    @Override public void map(Chunk ys) {
+    @Override public void map(ChunkAry ys) {
       for( int row=0; row< ys._len; row++ )
         if( !ys.isNA(row) )
           _u[(int)ys.at8(row)]=true;
@@ -540,9 +528,9 @@ public class VecUtils {
   private static class CPTask extends MRTask<CPTask> {
     private final long[] _domain;
     CPTask(long[] domain) { _domain = domain;}
-    @Override public void map(Chunk c, NewChunk nc) {
+    @Override public void map(ChunkAry c, NewChunkAry nc) {
       for(int i=0;i<c._len;++i) {
-        if( c.isNA(i) ) { nc.addNA(); continue; }
+        if( c.isNA(i) ) { nc.addNA(0); continue; }
         if( _domain == null )
           nc.addNum(c.at8(i));
         else {
@@ -568,9 +556,9 @@ public class VecUtils {
     }
 
     @Override
-    public void map(Chunk c) {
+    public void map(ChunkAry c) {
       BufferedString bs = new BufferedString();
-      for (int i = 0; i < c.len(); i++) {
+      for (int i = 0; i < c._len; i++) {
         if (!c.isNA(i)) {
           c.atStr(bs, i);
           _uniques.put(bs.bytesToString(), _placeHolder);

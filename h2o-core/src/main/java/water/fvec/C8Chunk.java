@@ -1,14 +1,14 @@
 package water.fvec;
 
-import water.*;
 import water.util.UnsafeUtils;
 
 /**
  * The empty-compression function, where data is in 'long's.
  */
-public class C8Chunk extends Chunk {
+public class C8Chunk extends ByteArraySupportedChunk {
   protected static final long _NA = Long.MIN_VALUE;
-  C8Chunk( byte[] bs ) { _mem=bs;_len = (_mem.length>>3); }
+  C8Chunk( byte[] bs ) { _mem=bs;}
+  public int len(){return _mem.length >> 3;}
   @Override public final long at8(int i ) {
     long res = UnsafeUtils.get8(_mem,i<<3);
     if( res == _NA ) throw new IllegalArgumentException("at8_abs but value is missing");
@@ -48,10 +48,7 @@ public class C8Chunk extends Chunk {
     return nc;
   }
 
-  @Override public final void initFromBytes () {
-    _len = (_mem.length>>3);
-    assert _mem.length == _len <<3;
-  }
+  @Override public final void initFromBytes () {}
   @Override
   public boolean hasFloat() {return false;}
 
@@ -84,6 +81,23 @@ public class C8Chunk extends Chunk {
       vals[j++] = res != _NA?res:Double.NaN;
     }
     return vals;
+  }
+
+  @Override
+  public SparseNum nextNZ(SparseNum sv) {
+    if (sv._off == -1) sv._off = 0;
+    if (sv._off == _mem.length) {
+      sv._id = sv._len;
+      sv._val = Double.NaN;
+      sv._isLong = false;
+    } else {
+      sv._lval = UnsafeUtils.get8(_mem, sv._off);
+      sv._val = sv._lval == C8Chunk._NA?Double.NaN:(double)sv._lval;
+      sv._isLong = true;
+      sv._off += 8;
+      sv._id++;
+    }
+    return sv;
   }
 
 }

@@ -1,10 +1,8 @@
 package hex;
 
 import hex.genmodel.utils.DistributionFamily;
-import water.AutoBuffer;
 import water.IcedUtils;
 import water.MRTask;
-import water.Scope;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.*;
 import water.util.ArrayUtils;
@@ -76,12 +74,13 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
     RegressionMetrics(DistributionFamily family) {
       _distribution = family ==null ? new Distribution(DistributionFamily.gaussian) : new Distribution(family);
     }
-    @Override public void map(Chunk[] chks) {
+    @Override public void map(ChunkAry cs) {
+      Chunk [] chks = cs.getChunks();
       _mb = new MetricBuilderRegression(_distribution);
       Chunk preds = chks[0];
       Chunk actuals = chks[1];
       double [] ds = new double[1];
-      for (int i=0;i<chks[0]._len;++i) {
+      for (int i=0;i<cs._len;++i) {
         ds[0] = preds.atd(i);
         _mb.perRow(ds, new float[]{(float)actuals.atd(i)}, null);
       }
@@ -168,9 +167,9 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
   public static double computeHuberDelta(VecAry actual, VecAry preds, VecAry weight, double huberAlpha) {
     VecAry absdiff = new MRTask() {
       @Override
-      public void map(Chunk[] cs, NewChunk[] nc) {
-        for (int i = 0; i < cs[0].len(); ++i)
-          nc[0].addNum(Math.abs(cs[0].atd(i) - cs[1].atd(i)));
+      public void map(ChunkAry cs, NewChunkAry nc) {
+        for (int i = 0; i < cs._len; ++i)
+          nc.addNum(0,Math.abs(cs.atd(i,0) - cs.atd(i,1)));
       }
     }.doAll(1, (byte) 3, new Frame(new String[]{"preds", "actual"},new VecAry(preds).append(actual))).outputFrame().vecs();
     // make a deep copy of the model's current distribution state (huber delta)

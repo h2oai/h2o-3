@@ -6,12 +6,14 @@ import water.parser.BufferedString;
 
 import java.util.HashMap;
 
-public class CStrChunk extends Chunk {
+public class CStrChunk extends ByteArraySupportedChunk {
   static final int NA = -1;
   static protected final int _OFF=4+1;
   private int _valstart;
   public boolean _isAllASCII = false;
+  int _len;
 
+  public int len(){return _len;}
   public CStrChunk() {}
   public CStrChunk(int sslen, byte[] ss, int sparseLen, int idxLen, int[] strIdx, boolean isAllASCII) {
     _valstart = _OFF + (idxLen<<2);
@@ -84,6 +86,7 @@ public class CStrChunk extends Chunk {
     return super.add2Chunk(nc,from,to);
   }
 
+  public NewChunk inflate_impl(NewChunk nc){return add2Chunk(nc,0,_len); }
   /**
    * Optimized toLower() method to operate across the entire CStrChunk buffer in one pass.
    * This method only changes the values of ASCII uppercase letters in the text.

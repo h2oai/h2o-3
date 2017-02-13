@@ -22,7 +22,7 @@ import java.util.Arrays;
  *  routinely.
  *
  *  <p>A Frame is a collection of named Vecs; a Vec is a collection of numbered
- *  {@link Chunk}s.  A Frame is small, cheaply and easily manipulated, it is
+ *  {@link ByteArraySupportedChunk}s.  A Frame is small, cheaply and easily manipulated, it is
  *  commonly passed-by-Value.  It exists on one node, and <em>may</em> be
  *  stored in the {@link DKV}.  Vecs, on the other hand, <em>must</em> be stored in the
  *  {@link DKV}, as they represent the shared common management state for a collection
@@ -36,7 +36,7 @@ import java.util.Arrays;
  *  reclaim it.  Such temp Frames usually have a {@code null} key.
  *
  *  <p>All the Vecs in a Frame belong to the same {@link Vec.VectorGroup} which
- *  then enforces {@link Chunk} row alignment across Vecs (or at least enforces
+ *  then enforces {@link ByteArraySupportedChunk} row alignment across Vecs (or at least enforces
  *  a low-cost access model).  Parallel and distributed execution touching all
  *  the data in a Frame relies on this alignment to get good performance.
  *
@@ -898,7 +898,7 @@ public class Frame extends Lockable<Frame> {
     final Vec v = new Vec(src.anyVec().group().addVec(),src.anyVec()._rowLayout,src.domains(),src.types());
     new MRTask() {
       @Override public void map(ChunkAry cs) {
-        Chunk [] chks = cs.getChunks().clone();
+        Chunk[] chks = cs.getChunks().clone();
         for(int i = 0; i < chks.length; ++i)
           chks[i] = chks[i].deepCopy();
         DKV.put(v.chunkKey(cs._cidx),new DBlock.MultiChunkBlock(chks),_fs);

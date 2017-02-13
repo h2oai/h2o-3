@@ -11,33 +11,33 @@ public class C0LChunkTest extends TestUtil {
   @Test
   public void test_inflate_impl() {
     final int K = 1<<18;
-    for (long l : new long[]{Long.MIN_VALUE+1, Long.MAX_VALUE, 23420384l, 0l, -23423423400023l /*, 8234234028823049934L this would overflow the double mantissa */}) {
+    for (long l : new long[]{Long.MIN_VALUE+1, Long.MAX_VALUE, 23420384l, -23423423400023l /*, 8234234028823049934L this would overflow the double mantissa */}) {
       NewChunk nc = new NewChunk(Vec.T_NUM);
       for (int i=0;i<K;++i) nc.addNum(l,0);
       Assert.assertEquals(K, nc._len);
       if (l != 0l) Assert.assertEquals(l == 0l ? 0 : K, nc._sparseLen); //special case for sparse length
 
       Chunk cc = nc.compress();
-      Assert.assertEquals(K, cc._len);
+
       Assert.assertTrue(cc instanceof C0LChunk);
       for (int i=0;i<K;++i) Assert.assertEquals(l, cc.at8(i));
 
-      double[] sparsevals = new double[cc.sparseLenZero()];
-      int[] sparseids = new int[cc.sparseLenZero()];
+      double[] sparsevals = new double[K];
+      int[] sparseids = new int[K];
       cc.asSparseDoubles(sparsevals, sparseids);
       for (int i = 0; i < sparsevals.length; ++i) {
         if (cc.isNA(sparseids[i])) Assert.assertTrue(Double.isNaN(sparsevals[i]));
         else Assert.assertTrue(cc.at8(sparseids[i])==sparsevals[i]);
       }
-      double[] densevals = new double[cc.len()];
-      cc.getDoubles(densevals,0,cc.len());
+      double[] densevals = new double[K];
+      cc.getDoubles(densevals,0,K);
       for (int i = 0; i < densevals.length; ++i) {
         if (cc.isNA(i)) Assert.assertTrue(Double.isNaN(densevals[i]));
         else Assert.assertTrue(cc.atd(i)==densevals[i]);
       }
 
       nc = new NewChunk(Vec.T_NUM);
-      cc.inflate_impl(nc);
+      cc.add2Chunk(nc,0,K);
       nc.values(0, nc._len);
       Assert.assertEquals(K, nc._len);
       Assert.assertEquals(l == 0 ? 0 : K, nc._sparseLen);
@@ -49,12 +49,9 @@ public class C0LChunkTest extends TestUtil {
       Assert.assertTrue(!it.hasNext());
       for (int i = 0; i < K; ++i) Assert.assertEquals(l, nc.at8(i));
 
-      Chunk cc2 = nc.compress();
-      Assert.assertEquals(K, cc2._len);
+      C0LChunk cc2 = (C0LChunk) nc.compress();
       Assert.assertTrue(cc2 instanceof C0LChunk);
       for (int i=0;i<K;++i) Assert.assertEquals(l, cc2.at8(i));
-
-      Assert.assertTrue(Arrays.equals(cc._mem, cc2._mem));
     }
   }
 }

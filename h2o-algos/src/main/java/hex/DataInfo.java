@@ -1095,14 +1095,15 @@ public class DataInfo extends Keyed<DataInfo> {
 //        }
 //        interactionOffset+=nextNumericIdx(cid);
 //      } else {
-        for (int r = chunks.nextNZ(-1,c); r < chunks._len; r = chunks.nextNZ(r,c)) {
-          if (chunks.atd(r,c) == 0) continue;
-          assert r > oldRow;
+        for (Chunk.SparseNum sv = chunks.sparseNum(c); sv.rowId() < chunks._len; sv.nextNZ()) {
+          int r = sv.rowId();
+          double d = sv.dval();
+          if(d == 0) continue;
+          assert sv.rowId() > oldRow;
           oldRow = r;Row row = rows[r];
           if (chunks.isNA(r,c) && _skipMissing)
             row.predictors_bad = true;
           if (row.predictors_bad) continue;
-          double d = chunks.atd(r,c);
           if (Double.isNaN(d))
             d = _numMeans[cid];
           if (_normMul != null)

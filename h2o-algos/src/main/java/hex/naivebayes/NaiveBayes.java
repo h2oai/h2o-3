@@ -6,6 +6,7 @@ import hex.naivebayes.NaiveBayesModel.NaiveBayesParameters;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
+import water.fvec.ChunkAry;
 import water.util.ArrayUtils;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
@@ -248,7 +249,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
       _npreds = dinfo._cats + dinfo._nums;
     }
 
-    @Override public void map(Chunk[] chks) {
+    @Override public void map(ChunkAry chks) {
       if( _jobKey.get().stop_requested() ) return;
       _nobs = 0;
       _rescnt = new int[_nrescat];
@@ -267,27 +268,27 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
         }
       }
 
-      Chunk res = chks[_dinfo.responseChunkId(0)]; //response
+      Chunk res = chks.getChunk(_dinfo.responseChunkId(0)); //response
       OUTER:
-      for(int row = 0; row < chks[0]._len; row++) {
-        if (_dinfo.weightChunkId() != -1 && chks[_dinfo.weightChunkId()].atd(row)==0) continue OUTER;
-        if (_dinfo.weightChunkId() != -1 && chks[_dinfo.weightChunkId()].atd(row)!=1) throw new IllegalArgumentException("Weights must be either 0 or 1 for Naive Bayes.");
+      for(int row = 0; row < chks._len; row++) {
+        if (_dinfo.weightChunkId() != -1 && chks.atd(row,_dinfo.weightChunkId())==0) continue OUTER;
+        if (_dinfo.weightChunkId() != -1 && chks.atd(row,_dinfo.weightChunkId())!=1) throw new IllegalArgumentException("Weights must be either 0 or 1 for Naive Bayes.");
         // Skip row if any entries in it are NA
-        for( Chunk chk : chks ) {
+        for( Chunk chk : chks.getChunks() ) {
           if(Double.isNaN(chk.atd(row))) continue OUTER;
         }
 
         // Record joint counts of categorical predictors and response
-        int rlevel = (int)res.atd(row);
+        int rlevel = res.at4(row);
         for(int col = 0; col < _dinfo._cats; col++) {
-          int plevel = (int)chks[col].atd(row);
+          int plevel = chks.at4(row,col);
           _jntcnt[col][rlevel][plevel]++;
         }
 
         // Record sum for each pair of numerical predictors and response
         for(int col = 0; col < _dinfo._nums; col++) {
           int cidx = _dinfo._cats + col;
-          double x = chks[cidx].atd(row);
+          double x = chks.atd(row,cidx);
           _jntsum[col][rlevel][0] += x;
           _jntsum[col][rlevel][1] += x*x;
         }

@@ -172,7 +172,7 @@ public class FrameSplitter extends H2OCountedCompleter<FrameSplitter> {
       _psrow = (int) (pnrows + espc[_pcidx+1]-espc[_pcidx]);
     }
     @Override public void map(ChunkAry cs) { // Output chunks
-      int coutidx = cs._cidx; // Index of output Chunk
+      int coutidx = cs._cidx; // Index of output ByteArraySupportedChunk
       int cinidx = _pcidx + coutidx;
       int startRow = coutidx > 0 ? 0 : _psrow; // where to start extracting
       int nrows = cs._len;

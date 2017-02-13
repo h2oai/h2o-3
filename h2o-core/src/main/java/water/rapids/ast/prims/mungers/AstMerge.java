@@ -385,7 +385,7 @@ public class AstMerge extends AstPrimitive {
 
     BufferedString _bs;
 
-    protected static void addElem(NewChunk nc, Chunk c, int row,BufferedString bs) {
+    protected static void addElem(NewChunk nc, Chunk c, int row, BufferedString bs) {
       if (c.isNA(row)) nc.addNA();
       else if (c instanceof CStrChunk) nc.addStr(c.atStr(bs, row));
       else if (c instanceof C16Chunk) nc.addUUID(c.at16l(row), c.at16h(row));

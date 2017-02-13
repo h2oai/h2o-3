@@ -3,10 +3,7 @@ package water.rapids.transforms;
 import hex.genmodel.GenMunger;
 import water.H2O;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.util.ArrayUtils;
 
 public class H2OScaler extends Transform<H2OScaler> {
@@ -31,14 +28,14 @@ public class H2OScaler extends Transform<H2OScaler> {
     final double[] fmeans = means;
     final double[] fmults = ArrayUtils.invert(sdevs);
     return new MRTask() {
-      @Override public void map(Chunk[] cs, NewChunk[] ncs) {
-        double[] in = new double[cs.length];
-        for(int row=0; row<cs[0]._len; row++) {
-          for(int col=0; col<cs.length; col++)
-            in[col] = cs[col].atd(row);
+      @Override public void map(ChunkAry cs, NewChunkAry ncs) {
+        double[] in = new double[cs._numCols];
+        for(int row=0; row<cs._len; row++) {
+          for(int col=0; col<cs._numCols; col++)
+            in[col] = cs.atd(row,col);
           GenMunger.scaleInPlace(fmeans, fmults, in);
-          for(int col=0; col<ncs.length; col++)
-            ncs[col].addNum(in[col]);
+          for(int col=0; col<ncs._numCols; col++)
+            ncs.addNum(col,in[col]);
         }
       }
     }.doAll(f.numCols(), Vec.T_NUM, f).outputFrame(f.names(), f.domains());

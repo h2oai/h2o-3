@@ -7,7 +7,6 @@ import water.fvec.*;
 import water.parser.BufferedString;
 import water.parser.ParseTime;
 import water.rapids.Env;
-import water.rapids.Val;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
@@ -56,7 +55,7 @@ public class AstAsDate extends AstPrimitive {
       }
 
       @Override
-      public void map(Chunk c, NewChunk nc) {
+      public void map(ChunkAry c, NewChunkAry nc) {
         //done on each node in lieu of rewriting DateTimeFormatter as Iced
         String date;
         BufferedString tmpStr = new BufferedString();
@@ -65,7 +64,7 @@ public class AstAsDate extends AstPrimitive {
             if (isStr) date = c.atStr(tmpStr, i).toString();
             else date = dom[(int) c.at8(i)];
             nc.addNum(DateTime.parse(date, _fmt).getMillis(), 0);
-          } else nc.addNA();
+          } else nc.addNA(0);
         }
       }
     }.doAll(1, Vec.T_NUM, fr).outputFrame(fr._names, null);

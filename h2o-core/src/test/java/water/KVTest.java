@@ -4,8 +4,8 @@ import static org.junit.Assert.*;
 import org.junit.*;
 
 import java.io.File;
-import water.fvec.Chunk;
-import water.fvec.Frame;
+import water.fvec.ByteArraySupportedChunk;
+import water.fvec.ChunkAry;
 import water.fvec.NFSFileVec;
 import water.util.UnsafeUtils;
 
@@ -143,9 +143,9 @@ public class KVTest extends TestUtil {
   public static class ByteHisto extends MRTask<ByteHisto> {
     int[] _x;
     // Count occurrences of bytes
-    @Override public void map( Chunk chk ) {
+    @Override public void map( ChunkAry chk ) {
       _x = new int[256];        // One-time set histogram array
-      byte[] bits = chk.getBytes(); // Raw file bytes
+      byte[] bits = chk.getChunk(0).asBytes(); // Raw file bytes
       for( byte b : bits ) // Compute local histogram
         _x[b&0xFF]++;
     }

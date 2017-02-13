@@ -8,7 +8,6 @@ import water.util.VecUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.TreeSet;
 
 
 /**
@@ -130,123 +129,54 @@ public final class VecAry extends Iced<VecAry> {
 
 
   public ChunkAry chunkForChunkIdx(int cidx) {
-    Vec [] vecs = fetchVecs();
+    Vec[] vecs = fetchVecs();
     if (_vecIds.length == 1) { // single vec
       DBlock db = vecs[0].chunkIdx(cidx);
-      if(db.sparseCols() == _numCols) // dense
-        return new ChunkAry(this, cidx, _colFilter == null?db.chunks():ArrayUtils.select(db.chunks(),_colFilter), null);
-      if(_colFilter == null)
-        return new ChunkAry(this, cidx,db.chunks(), db.ids());
-      // sparse and filtered, fall through to generic case
+      return new ChunkAry(this, cidx, _colFilter == null ? db.chunks() : ArrayUtils.select(db.chunks(), _colFilter));
     }
     if (_numCols == _vecIds.length && _colFilter == null) {  // all simple vecs
-      Chunk [] cs = new Chunk[_numCols];
-      for(int i = 0; i < vecs.length; ++i)
+      Chunk[] cs = new Chunk[_numCols];
+      for (int i = 0; i < vecs.length; ++i)
         cs[i] = (Chunk) vecs[i].chunkIdx(cidx);
       return new ChunkAry(this, cidx, cs);
     }
     DBlock dbs[] = new DBlock[_vecIds.length];
-    int sparseLen = 0;
-    for (int i = 0; i < dbs.length; ++i)
-      sparseLen += (dbs[i] = _vecs[i].chunkIdx(cidx)).sparseCols();
-    if(sparseLen == 0) return new ChunkAry(this,cidx, new Chunk[0], new int[0]);
-    if (sparseLen < (_numCols >> 2)) { // less than 25% non-zeros, treat sparse
-      Chunk[] cs = new Chunk[sparseLen];
-      int[] ids = new int[sparseLen];
-      if(_colFilter == null) {
-        int s = 0;
-        for (int i = 0; i < _vecIds.length; ++i) {
-          System.arraycopy(dbs[i].chunks(), 0, cs, s, dbs[i].sparseCols());
-          int [] ids2 = dbs[i].ids();
-          if(ids2 == null) ids2 = ArrayUtils.seq(0,dbs[i].sparseCols());
-          System.arraycopy(ids2, 0, ids, s, ids2.length);
-          int off = _blockOffset[i];
-          int from = s;
-          int to = (s += dbs[i].sparseCols());
-          for (int j = from; j < to; ++j)
-            ids[j] += off;
+    for (int i = 0; i < _vecIds.length; ++i)
+      dbs[i] = fetchVec(i).chunkIdx(cidx);
+    Chunk[] csall = new Chunk[_numCols];
+    if (_colFilter == null) {
+      int j = 0;
+      for (int i = 0; i < _vecIds.length; ++i) {
+        if (dbs[i] instanceof Chunk) {
+          csall[j++] = (Chunk) dbs[i];
+        } else {
+          Chunk[] chks = dbs[i].chunks();
+          System.arraycopy(chks, 0, csall, j, chks.length);
+          j += chks.length;
         }
-        return new ChunkAry(this, cidx, cs, ids);
-      } else {
-        int j = 0;
-        int lb = _numCols;
-        int ub = -1;
-        int blockId = -1;
-        int [] c_ids = null;
-        Chunk [] c_chks = null;
-        int k = 0;
-        for (int c : _colFilter) {
-          if (c < lb || c >= ub) {
-            k = 0;
-            blockId = getBlockId(c);
-            if(dbs[blockId] instanceof Chunk){
-              cs[j++] = (Chunk)dbs[blockId];
-              continue;
-            }
-            lb = _blockOffset[blockId];
-            ub = _blockOffset[blockId + 1];
-            c_ids = dbs[blockId].ids();
-            c_chks = dbs[blockId].chunks();
-          }
-          c -= lb;
-          int id = c;
-          if(c_ids != null){
-              if(c_ids[k] == c) id = k;
-              else if(c_ids[k] > c && (k == 0 || c_ids[k-1] < c))
-                id = -1;
-              else
-                id = Arrays.binarySearch(c_ids,c);
-            k = id+1;
-          }
-          if (id >= 0) {
-            ids[j] = c;
-            cs[j++] = c_chks[id];
-          }
-        }
-        if(j < sparseLen){
-          cs = Arrays.copyOf(cs,j);
-          ids = Arrays.copyOf(ids,j);
-        }
-        return new ChunkAry(this, cidx,cs, ids);
       }
-    } else { // dense
-      int s = 0;
-      Chunk[] csall = new Chunk[_numCols];
-      int len = (int)(chunk2StartElem(cidx+1) - chunk2StartElem(cidx));
-      if(_colFilter == null) {
-        int j = 0;
-        for (int i = 0; i < _vecIds.length; ++i) {
-          if (dbs[i] instanceof Chunk) {
-            csall[j++] = (Chunk) dbs[i];
-          } else {
-            System.arraycopy(((DBlock.MultiChunkBlock) dbs[i]).getDenseChunks(len,_numCols), 0, csall, j, dbs[i].numCols());
-            j += dbs[i].numCols();
-          }
-        }
-        return new ChunkAry(this, cidx, csall, null);
-      }
-      int lb = _numCols;
-      int ub = -1;
-      DBlock db = null;
-
-      for (int j = 0; j < _colFilter.length; ++j) {
-        int c = _colFilter[j];
-        if (c < lb || c >= ub) {
-          int blockId = getBlockId(c);
-          if(dbs[blockId] instanceof Chunk){
-            csall[j] = (Chunk)dbs[blockId];
-            continue;
-          }
-          lb = _blockOffset[blockId];
-          ub = _blockOffset[blockId + 1];
-          db = dbs[blockId];
-        }
-        csall[j] = db.getColChunk(c-lb);
-        csall[j]._len = len;
-      }
-      return new ChunkAry(this, cidx,csall, null);
+      return new ChunkAry(this, cidx, csall);
     }
+    int lb = _numCols;
+    int ub = -1;
+    DBlock db = null;
+    for (int j = 0; j < _colFilter.length; ++j) {
+      int c = _colFilter[j];
+      if (c < lb || c >= ub) {
+        int blockId = getBlockId(c);
+        if (dbs[blockId] instanceof Chunk) {
+          csall[j] = (Chunk) dbs[blockId];
+          continue;
+        }
+        lb = _blockOffset[blockId];
+        ub = _blockOffset[blockId + 1];
+        db = dbs[blockId];
+      }
+      csall[j] = db.getColChunk(c - lb);
+    }
+    return new ChunkAry(this, cidx, csall);
   }
+
 
 
 
@@ -1139,13 +1069,14 @@ public final class VecAry extends Iced<VecAry> {
    */
   public final class Writer implements java.io.Closeable {
     private ChunkAry _cache;
+    Futures _fs = new Futures();
     int _j;
-    ArrayList<Integer> _writtenChunks = new ArrayList<>();
     private ChunkAry chk(long i) {
       ChunkAry c = _cache;
-      if(c == null || c.start() < i || c.start() + c._len <= i) {
+      if(c == null || c.start() > i || c.start() + c._len <= i) {
+        if(_cache != null) _cache.close(_fs);
         _cache = chunkForRow(i);
-        _writtenChunks.add(_cache._cidx);
+
       }
       return _cache;
     }
@@ -1178,8 +1109,8 @@ public final class VecAry extends Iced<VecAry> {
       ck.set(ck.chunkRelativeOffset(i),j,str);
     }
     public Futures close(Futures fs) {
-      for(int i:_writtenChunks)
-        chunkForChunkIdx(i).close(fs);
+      fs.add(_fs);
+      if(_cache != null)_cache.close(_fs);
       return postWrite(fs);
     }
     public void close() { close(new Futures()).blockForPending(); }

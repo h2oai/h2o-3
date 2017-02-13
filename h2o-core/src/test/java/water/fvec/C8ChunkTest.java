@@ -21,8 +21,8 @@ public class C8ChunkTest extends TestUtil {
       for (long v : vals) nc.addNum(v, 0);
       nc.addNA(); //-9223372036854775808l
 
-      Chunk cc = nc.compress();
-      Assert.assertEquals(vals.length + 1 + l, cc._len);
+      ByteArraySupportedChunk cc = (ByteArraySupportedChunk) nc.compress();
+      Assert.assertEquals(vals.length + 1 + l, cc.len());
       assertTrue(cc instanceof C8Chunk);
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at8(l + i));
       assertTrue(cc.isNA(vals.length + l));
@@ -34,7 +34,7 @@ public class C8ChunkTest extends TestUtil {
       }
 
       nc = new NewChunk(Vec.T_NUM);
-      cc.inflate_impl(nc);
+      cc.add2Chunk(nc,0,cc.len());
       nc.values(0, nc._len);
       if (l==1) assertTrue(cc.isNA(0));
       Assert.assertEquals(vals.length+l+1, nc._sparseLen);
@@ -45,8 +45,8 @@ public class C8ChunkTest extends TestUtil {
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.at8(l + i));
       assertTrue(cc.isNA(vals.length + l));
 
-      Chunk cc2 = nc.compress();
-      Assert.assertEquals(vals.length + 1 + l, cc._len);
+      ByteArraySupportedChunk cc2 = (ByteArraySupportedChunk) nc.compress();
+      Assert.assertEquals(vals.length + 1 + l, cc.len());
       assertTrue(cc2 instanceof C8Chunk);
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.at8(l + i));
       assertTrue(cc2.isNA(vals.length + l));
@@ -92,13 +92,13 @@ public class C8ChunkTest extends TestUtil {
     for (int na : NAs) assertTrue(cc.isNA(na));
     for (int notna : notNAs) assertTrue(!cc.isNA(notna));
 
-    Chunk cc2 = nc.compress();
+    ByteArraySupportedChunk cc2 = (ByteArraySupportedChunk) nc.compress();
     Assert.assertEquals(vals.length, cc._len);
     assertTrue(cc2 instanceof C8Chunk);
     for (int na : NAs) assertTrue(cc.isNA(na));
     for (int notna : notNAs) assertTrue(!cc.isNA(notna));
 
-    assertTrue(Arrays.equals(cc.getChunk(0)._mem, cc2._mem));
+    assertTrue(Arrays.equals(cc.getChunk(0).asBytes(), cc2._mem));
     vec.remove();
   }
 }

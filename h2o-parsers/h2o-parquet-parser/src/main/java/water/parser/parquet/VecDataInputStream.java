@@ -2,7 +2,6 @@ package water.parser.parquet;
 
 import org.apache.hadoop.fs.PositionedReadable;
 import org.apache.hadoop.fs.Seekable;
-import water.fvec.Chunk;
 import water.fvec.ChunkAry;
 import water.fvec.Vec;
 

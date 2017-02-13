@@ -1,376 +1,156 @@
 package water.fvec;
 
-import water.H2O;
-import water.util.ArrayUtils;
-import water.util.UnsafeUtils;
-
-import java.util.Arrays;
-import java.util.Iterator;
-
 // Sparse chunk.
 public class CXIChunk extends Chunk {
-  protected transient int _valsz; // byte size of stored value
-  protected final int valsz() { return _valsz; }
-  private transient int _valsz_log; //
-  protected transient int _ridsz; // byte size of stored (chunk-relative) row nums
-  protected final int ridsz() { return _ridsz; }
-  protected transient int _sparseLen;
-  protected static final int _OFF = 6;
-  private transient int _lastOff = _OFF;
+  public final int _defaultVal;
+  int [] _ids;
+  // Sparse constructor
+  protected CXIChunk(int [] ids, int defaultVal){_ids = ids; _defaultVal = defaultVal;}
 
-  private static final long [] NAS = {C1Chunk._NA,C2Chunk._NA,C4Chunk._NA,C8Chunk._NA};
-
-  protected CXIChunk(int len, int valsz, byte [] buf){
-    assert (valsz == 0 || valsz == 1 || valsz == 2 || valsz == 4 || valsz == 8);
-    _len = len;
-    int log = 0;
-    while((1 << log) < valsz)++log;
-    assert valsz == 0 || (1 << log) == valsz;
-    _valsz = valsz;
-    _valsz_log = log;
-    _ridsz = (len >= 65535)?4:2;
-    UnsafeUtils.set4(buf, 0, len);
-    byte b = (byte) _ridsz;
-    buf[4] = b;
-    buf[5] = (byte) _valsz;
-    _mem = buf;
-    _sparseLen = (_mem.length - _OFF) / (_valsz+_ridsz);
-    assert (_mem.length - _OFF) % (_valsz+_ridsz) == 0:"unexpected mem buffer length: mem.length = " + _mem.length + ", off = " + _OFF + ", valSz = " + _valsz + "ridsz = " + _ridsz;
-  }
-
-  @Override public double [] getDoubles(double [] vals,int from, int to, double NA){
-    double fill = isSparseNA()?NA:0;
-    if(from == 0 && to == _len) {
-      Arrays.fill(vals,fill);
-      double [] svals = new double[_sparseLen];
-      int [] sids = new int[_sparseLen];
-      asSparseDoubles(svals,sids, NA);
-      for(int i = 0; i < sids.length && sids[i] < to; ++i)
-        vals[sids[i]] = svals[i];
-    } else {
-      for(int i = from; i < to; ++i)
-        vals[i-from] = fill;
-      for(int i= nextNZ(from-1); i < to; i = nextNZ(i))
-        vals[i-from] = atd(i);
+  @Override
+  public boolean isSparseZero(){return _defaultVal == 0;}
+  public boolean isSparseNA(){return _defaultVal == C4Chunk._NA;}
+  protected final int findId(int i){ // do binary search
+    int lb = 0; int ub = len();
+    while(lb < ub){
+      int mid = lb + ((ub - lb) >> 1);
+      int x = _ids[2*mid];
+      if(x == i) return mid;
+      if(x < i) lb = mid+1;
+      else ub = mid;
     }
-    return vals;
+    return -ub-1;
   }
-
-  @Override public NewChunk add2Chunk(NewChunk nc, int from, int to) {
-    if( from > to) throw new NegativeArraySizeException();
-    if(from == to)
-      return nc;
-    int prev = from-1;
-    int id = nextNZ(prev);
-    if(id == _len) {
-      nc.addZeros(to-from);
-      return nc;
+  @Override public final long at8(int idx){return at4(idx);}
+  @Override public final int at4(int idx) {
+    int id = findId(idx);
+    if(id < 0) {
+      if(_defaultVal == C4Chunk._NA) throw new RuntimeException("at4 but the value is missing!");
+      return _defaultVal;
     }
-    int cnt = 0;
-    for(int off = findOffset(id);(id = getId(off)) < to; off += _ridsz + _valsz) {
-      cnt++;
-      assert id > prev:" id = " + id + ", prev = " + prev + ", from = " + from + ", to = " + to  + ", cnt = " + cnt;
-      if(isSparseNA())
-        nc.addNAs(id-prev-1);
-      else
-        nc.addZeros(id-prev-1);
-      long v = getIValue(off);
-      if(!isSparseNA() && v == NAS[_valsz_log])
-        nc.addNA();
-      else
-        nc.addNum(v,0);
+    return _ids[2*id+1];
+  }
 
-      prev = id;
+  @Override public final double atd(int idx) {
+    int id = findId(idx);
+    if(id < 0) {
+      if(_defaultVal == C4Chunk._NA) return Double.NaN;
+      return _defaultVal;
     }
-    if(prev < to-1) {
-      if (isSparseNA())
-        nc.addNAs(to - prev - 1);
-      else
-        nc.addZeros(to - prev - 1);
-    }
-    assert nc._len > 0;
-    return nc;
+    return _ids[2*id+1];
   }
 
-  @Override public NewChunk add2Chunk(NewChunk nc, int [] rows) {
-    if(!ArrayUtils.isSorted(rows))
-      throw H2O.unimpl();
-    int expectedLen = nc.len() + rows.length;
-    int from = rows[0];
-    int prev = from-1;
-    int id = nextNZ(prev);
-    if(id == _len) {
-      nc.addZeros(rows.length);
-      return nc;
-    }
-    int k = 0;
-    for(int off = findOffset(id);off < _mem.length && k < rows.length; off += _ridsz + _valsz) {
-      int kStart = k;
-      while(k < rows.length && rows[k]< id)k++;
-      if(isSparseNA()) nc.addNAs(k-kStart);
-      else nc.addZeros(k-kStart);
-      if(k < rows.length && id == rows[k]){
-        long v = getIValue(off);
-        if(!isSparseNA() && v == NAS[_valsz_log])
-          nc.addNA();
-        else
-          nc.addNum(v,0);
-        k++;
-      }
-    }
-    if(k < rows.length) {
-      if(isSparseNA()) nc.addNAs(rows.length-k);
-      else nc.addZeros(rows.length-k);
-    }
-    assert nc.len() == expectedLen:expectedLen + " != " + nc.len();
-    return nc;
-  }
-
-  @Override public int asSparseDoubles(double [] vals, int[] ids, double NA) {
-    if(vals.length < _sparseLen)throw new IllegalArgumentException();
-    int off = _OFF;
-    final int inc = _valsz + _ridsz;
-    if(_ridsz == 2){
-      switch(_valsz){
-        case 1:
-          for (int i = 0; i < _sparseLen; ++i, off += inc) {
-            ids[i] = UnsafeUtils.get2(_mem,off) & 0xFFFF;
-            long v = _mem[off+2]&0xFF;
-            vals[i] = v == NAS[_valsz_log]?NA:v;
-          }
-          break;
-        case 2:
-          for (int i = 0; i < _sparseLen; ++i, off += inc) {
-            ids[i] = UnsafeUtils.get2(_mem,off) & 0xFFFF;
-            long v = UnsafeUtils.get2(_mem,off+2);
-            vals[i] = v == NAS[_valsz_log]?NA:v;
-          }
-          break;
-        case 4:
-          for (int i = 0; i < _sparseLen; ++i, off += inc) {
-            ids[i] = UnsafeUtils.get2(_mem,off) & 0xFFFF;
-            long v = UnsafeUtils.get4(_mem,off+2);
-            vals[i] = v == NAS[_valsz_log]?NA:v;
-          }
-          break;
-        case 8:
-          for (int i = 0; i < _sparseLen; ++i, off += inc) {
-            ids[i] = UnsafeUtils.get2(_mem,off) & 0xFFFF;
-            long v = UnsafeUtils.get8(_mem,off+2);
-            vals[i] = v == C8Chunk._NA?Double.NaN:v;
-          }
-          break;
-      }
-    } else if(_ridsz == 4){
-      switch(_valsz){
-        case 1:
-          for (int i = 0; i < _sparseLen; ++i, off += inc) {
-            ids[i] = UnsafeUtils.get4(_mem,off);
-            long v = _mem[off+4]&0xFF;
-            vals[i] = v == C1Chunk._NA?NA:v;
-          }
-          break;
-        case 2:
-          for (int i = 0; i < _sparseLen; ++i, off += inc) {
-            ids[i] = UnsafeUtils.get4(_mem,off);
-            long v = UnsafeUtils.get2(_mem,off+4);
-            vals[i] = v == C2Chunk._NA?NA:v;
-          }
-          break;
-        case 4:
-          for (int i = 0; i < _sparseLen; ++i, off += inc) {
-            ids[i] = UnsafeUtils.get4(_mem,off);
-            long v = UnsafeUtils.get4(_mem,off+4);
-            vals[i] = v == C4Chunk._NA?NA:v;
-          }
-          break;
-        case 8:
-          for (int i = 0; i < _sparseLen; ++i, off += inc) {
-            ids[i] = UnsafeUtils.get4(_mem,off);
-            long v = UnsafeUtils.get8(_mem,off+4);
-            vals[i] = v == C8Chunk._NA?NA:v;
-          }
-          break;
-      }
-    } else throw H2O.unimpl();
-    return isSparseNA() ? sparseLenNA() : sparseLenZero();
-  }
-
-  @Override public boolean isSparseZero() {return true;}
-  @Override public int sparseLenZero(){ return _sparseLen; }
-
-  protected final int nextNonSparseId(int rid){
-    final int off = rid == -1?_OFF:findOffset(rid);
-    int x = getId(off);
-    if(x > rid)return x;
-    if(off < _mem.length - _ridsz - _valsz)
-      return getId(off + _ridsz + _valsz);
-    return _len;
-  }
-
-  @Override public int nextNZ(int rid){
-    return isSparseZero()?nextNonSparseId(rid):rid+1;
-  }
-  @Override public int nextNNA(int rid){
-    return isSparseNA()?nextNonSparseId(rid):rid+1;
-  }
-  /** Fills in a provided (recycled/reused) temp array of the NZ indices, and
-   *  returns the count of them.  Array must be large enough. */
-  @Override public int nonzeros(int [] arr){
-    int off = _OFF;
-    final int inc = _valsz + _ridsz;
-    for(int i = 0; i < _sparseLen; ++i, off += inc) arr[i] = getId(off);
-    return _sparseLen;
-  }
-  
-  @Override protected boolean set_impl(int idx, long l)   { return false; }
-  @Override protected boolean set_impl(int idx, double d) { return false; }
-  @Override protected boolean set_impl(int idx, float f ) { return false; }
-  @Override protected boolean setNA_impl(int idx)         { return false; }
+  @Override public final boolean isNA( int i ) {return Double.isNaN(atd(i));}
 
   @Override
   public DVal getInflated(int i, DVal v) {
+    int x = findId(i);
     v._t = DVal.type.N;
-    if(v._missing = isNA(i)) return v;
-    v._m = at8(i);
     v._e = 0;
+    v._m = x < 0?0:1;
+    v._missing = x == C4Chunk._NA;
     return v;
   }
 
-  @Override public long at8(int idx) {
-    int off = findOffset(idx);
-    if(getId(off) != idx)return 0;
-    long v = getIValue(off);
-    if( v== NAS[_valsz_log])
-      throw new IllegalArgumentException("at8_abs but value is missing");
-    return v;
-  }
-  @Override public double atd(int idx) {
-    int off = findOffset(idx);
-    if(getId(off) != idx) return isSparseNA()?Double.NaN:0;
-    long v =  getIValue(off);
-    return (!isSparseNA() && v == NAS[_valsz_log])?Double.NaN:v;
-  }
+  @Override public boolean hasNA() { return true; }
 
-  @Override public boolean isNA( int i ) {
-    int off = findOffset(i);
-    return getId(off) == i && getIValue(off) == NAS[_valsz_log];
-  }
-
-
-
-  // get id of nth (chunk-relative) stored element
-  protected final int getId(int off){
-    if(off == _mem.length) return _len;
-    if(off > _mem.length)
-      throw new ArrayIndexOutOfBoundsException(off + " > " + _mem.length);
-    return _ridsz == 2
-      ?UnsafeUtils.get2(_mem,off)&0xFFFF
-      :UnsafeUtils.get4(_mem,off);
-  }
-  // get offset of nth (chunk-relative) stored element
-  protected int getOff(int n){return _OFF + (_ridsz + _valsz)*n;}
-  // extract integer value from an (byte)offset
-  protected double getFValue(int off){return getIValue(off);}
-  protected final long getIValue(int off){
-    switch(_valsz){
-      case 0: return 1;
-      case 1: return _mem[off+ _ridsz]&0xFF;
-      case 2: return UnsafeUtils.get2(_mem, off + _ridsz);
-      case 4: return UnsafeUtils.get4(_mem, off + _ridsz);
-      case 8: return UnsafeUtils.get8(_mem, off + _ridsz);
-      default:
-        throw H2O.fail();
-   } 
-  }
-
-  // find offset of the chunk-relative row id, or -1 if not stored (i.e. sparse zero)
-  protected final int findOffset(int idx) {
-    final byte [] mem = _mem;
-    if(idx >= _len)throw new IndexOutOfBoundsException();
-    if(idx <= getId(_OFF))  // easy cut off accessing the zeros prior first nz
-      return _OFF;
-    int last = mem.length - _ridsz - _valsz;
-    if(idx >= getId(last))  // easy cut off accessing of the tail zeros
-      return last;
-//    if(sparseLen == 0)return 0;
-    final int off = _lastOff;
-    int lastIdx = getId(off);
-    // check the last accessed elem + one after
-    if( idx == lastIdx ) return off;
-    if(idx > lastIdx){
-      // check the next one (no need to check bounds, already checked at the beginning)
-      final int nextOff = off + _ridsz + _valsz;
-      int nextId =  getId(nextOff);
-      if(idx < nextId) return off;
-      if(idx == nextId){
-        _lastOff = nextOff;
-        return nextOff;
-      }
-    }
-    // binary search
-    int lo=0, hi = _sparseLen;
-    while( lo+1 != hi ) {
-      int mid = (hi+lo)>>>1;
-      if( idx < getId(getOff(mid))) hi = mid;
-      else          lo = mid;
-    }
-    int y =  getOff(lo);
-    _lastOff = y;
-    return y;
-  }
-
-  @Override public final void initFromBytes () {
-    _len = (UnsafeUtils.get4(_mem,0));
-    _ridsz = _mem[4];
-    _valsz = _mem[5];
-    int x = _valsz;
-    int log = 0;
-    while(x > 1){
-      x = x >>> 1;
-      ++log;
-    }
-    _valsz_log = log;
-    _sparseLen = (_mem.length - _OFF) / (_valsz+_ridsz);
-    assert (_mem.length - _OFF) % (_valsz+_ridsz) == 0:"unexpected mem buffer length: meme.length = " + _mem.length + ", off = " + _OFF + ", valSz = " + _valsz + "ridsz = " + _ridsz;
-  }
-
-  public abstract  class Value {
-    protected int _off = 0;
-    public int rowInChunk(){return getId(_off);}
-    public abstract long asLong();
-    public abstract double asDouble();
-    public abstract boolean isNA();
-  }
-
-  public final class SparseIterator implements Iterator<Value> {
-    final Value _val;
-    public SparseIterator(Value v){_val = v;}
-    @Override public final boolean hasNext(){return _val._off < _mem.length - (_ridsz + _valsz);}
-    @Override public final Value next(){
-      if(_val._off == 0)_val._off = _OFF;
-      else _val._off += (_ridsz + _valsz);
-      return _val;
-    }
-    @Override public final void remove(){throw new UnsupportedOperationException();}
-  }
-  public Iterator<Value> values(){
-    return new SparseIterator(new Value(){
-      @Override public final long asLong(){
-        long v = getIValue(_off);
-        if(v == NAS[(_valsz >>> 1) - 1]) throw new IllegalArgumentException("at8_abs but value is missing");
-        return v;
-      }
-      @Override public final double asDouble() {
-      long v = getIValue(_off);
-      return (v == NAS[_valsz_log -1])?Double.NaN:v;
-      }
-      @Override public final boolean isNA(){
-        long v = getIValue(_off);
-        return (v == NAS[_valsz_log]);
-      }
-    });
-  }
   @Override
-  public boolean hasFloat() {return false;}
+  public Chunk deepCopy() {return new CXIChunk(_ids.clone(),_defaultVal);}
+
+  public final int len(){return _ids.length>>1;}
+
+  @Override public int asSparseDoubles(double [] vals, int[] ids, double NA) {
+    int len = _ids.length;
+    for(int i = 0; i < len; i+=2) {
+      ids[i>>1]  = _ids[i+0];
+      int val = _ids[i+1];
+      vals[i>>1] = (val == C4Chunk._NA)?Double.NaN:val;
+    }
+    return len >> 1;
+  }
+
+  public final SparseNum nextNZ(SparseNum sv) {
+    if (sv._off == -1) sv._off = 0;
+    if (sv._off == _ids.length) {
+      sv._id = sv._len;
+      sv._val = Double.NaN;
+    } else {
+      sv._id = _ids[sv._off++];
+      int val = _ids[sv._off++];
+      sv._val = (val == C4Chunk._NA) ? Double.NaN : val;
+    }
+    return sv;
+  }
+
+  @Override
+  NewChunk add2Chunk(NewChunk nc, int from, int to){
+    int prevId = from-1;
+    int x = from == 0?0:findId(from);
+    if(x < 0) x = -x-1;
+    int len = _ids.length  >> 1;
+    while(x < len){
+      int idx = _ids[2*x+0];
+      int val = _ids[2*x+1];
+      if(idx >= to)break;
+      if(_defaultVal == 0)
+        nc.addZeros(idx-prevId-1);
+      else {
+        assert _defaultVal == C4Chunk._NA;
+        nc.addNAs(idx-prevId-1);
+      }
+      nc.addNum(val,0);
+      prevId = idx;
+      x++;
+    }
+    if(_defaultVal == 0)
+      nc.addZeros(to-prevId-1);
+    else {
+      assert _defaultVal == C4Chunk._NA;
+      nc.addNAs(to-prevId-1);
+    }
+    return nc;
+  }
+
+  @Override
+  NewChunk add2Chunk(NewChunk nc, int [] ids){
+    int x = 0;
+    int k = 0;
+    int zeros = 0;
+    while(k < ids.length){
+      while(x < _ids.length && _ids[x] < ids[k])x+=2;
+      if(x == _ids.length){
+        if(_defaultVal == 0)
+          nc.addZeros(zeros + ids.length-k);
+        else {
+          assert _defaultVal == C4Chunk._NA;
+          nc.addNAs(zeros + ids.length-k);
+        }
+        return nc;
+      }
+      if(_ids[x] == ids[k]){
+        if(zeros > 0){
+          if(_defaultVal == 0)
+            nc.addZeros(zeros);
+          else {
+            assert _defaultVal == C4Chunk._NA;
+            nc.addNAs(zeros);
+          }
+          zeros = 0;
+        }
+        nc.addNum(_ids[x+1]);
+        x+=2;
+      } else
+        zeros++;
+      k++;
+    }
+    if(zeros > 0) {
+      if (_defaultVal == 0)
+        nc.addZeros(zeros);
+      else {
+        assert _defaultVal == C4Chunk._NA;
+        nc.addNAs(zeros);
+      }
+    }
+    return nc;
+  }
 }

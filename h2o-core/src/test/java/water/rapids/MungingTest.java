@@ -56,7 +56,7 @@ public class MungingTest extends TestUtil {
 
     // TO DO: this would be nice to see in chunk summary ...
     // for (int i=0; i<rightFrame.anyVec().nChunks(); i++) {
-    //   Log.info("Chunk " + i + " is on node " + rightFrame.anyVec().chunkKey(i).home_node().index());
+    //   Log.info("ByteArraySupportedChunk " + i + " is on node " + rightFrame.anyVec().chunkKey(i).home_node().index());
     // }
 
     // Frame fr1 = Merge.merge(leftFrame, rightFrame, new int[] {0,1}, new int[] {0,1}, false);  // 0==id, 1==date  (no dups)
@@ -137,7 +137,7 @@ public class MungingTest extends TestUtil {
 //
 //        final AGG[] _agg=agg;
 //        Frame f=new MRTask() {
-//            @Override public void map(Chunk[] c, NewChunk[] ncs) {
+//            @Override public void map(ByteArraySupportedChunk[] c, NewChunk[] ncs) {
 //                int start=(int)c[0].start();
 //                for( int i=0;i<c[0]._len;++i) {
 //                    G g = grps[i+start];

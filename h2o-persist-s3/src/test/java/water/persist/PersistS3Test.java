@@ -3,14 +3,9 @@ package water.persist;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
-import water.api.ImportFilesHandler;
-import water.fvec.Chunk;
-import water.fvec.FileVec;
-import water.fvec.Frame;
-import water.fvec.VecAry;
+import water.fvec.*;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 
 import static junit.framework.TestCase.assertEquals;
 
@@ -26,7 +21,7 @@ public class PersistS3Test extends TestUtil {
   private static class XORTask extends MRTask<XORTask> {
     long _res = 0;
 
-    @Override public void map(Chunk c) {
+    @Override public void map(ChunkAry c) {
       for(int i = 0; i < c._len; ++i)
         _res ^= c.at8(i);
     }

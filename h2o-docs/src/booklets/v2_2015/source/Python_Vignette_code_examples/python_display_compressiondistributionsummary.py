@@ -2,7 +2,7 @@ df.describe()
 
 # Rows: 100 Cols: 4
 # 
-# Chunk compression summary:
+# ByteArraySupportedChunk compression summary:
 # chunk_type     chunkname   count   count_%   size   size_%
 # ------------   ---------   -----   -------   ----   ------
 # 64-bit Reals    C8D        4       100      3.4 KB  100

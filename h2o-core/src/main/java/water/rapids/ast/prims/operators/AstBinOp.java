@@ -166,12 +166,10 @@ abstract public class AstBinOp extends AstPrimitive {
   private ValFrame scalar_op_frame(final double d, Frame fr) {
     Frame res = new MRTask() {
       @Override
-      public void map(Chunk[] chks, NewChunk[] cress) {
-        for (int c = 0; c < chks.length; c++) {
-          Chunk chk = chks[c];
-          NewChunk cres = cress[c];
-          for (int i = 0; i < chk._len; i++)
-            cres.addNum(op(d, chk.atd(i)));
+      public void map(ChunkAry chks, NewChunkAry cress) {
+        for (int c = 0; c < chks._numCols; c++) {
+          for (int i = 0; i < chks._len; i++)
+            cress.addNum(c,op(d, chks.atd(i,c)));
         }
       }
     }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame(fr._names, null);
@@ -184,12 +182,10 @@ abstract public class AstBinOp extends AstPrimitive {
   public ValFrame frame_op_scalar(Frame fr, final double d) {
     Frame res = new MRTask() {
       @Override
-      public void map(Chunk[] chks, NewChunk[] cress) {
-        for (int c = 0; c < chks.length; c++) {
-          Chunk chk = chks[c];
-          NewChunk cres = cress[c];
-          for (int i = 0; i < chk._len; i++)
-            cres.addNum(op(chk.atd(i), d));
+      public void map(ChunkAry chks, NewChunkAry cress) {
+        for (int c = 0; c < chks._numCols; c++) {
+          for (int i = 0; i < chks._len; i++)
+            cress.addNum(c,op(chks.atd(i,c), d));
         }
       }
     }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame(fr._names, null);
@@ -213,17 +209,16 @@ abstract public class AstBinOp extends AstPrimitive {
   private ValFrame frame_op_scalar(Frame fr, final String str) {
     Frame res = new MRTask() {
       @Override
-      public void map(Chunk[] chks, NewChunk[] cress) {
+      public void map(ChunkAry chks, NewChunkAry cress) {
         VecAry vecs = _fr.vecs();
         BufferedString vstr = new BufferedString();
-        for (int c = 0; c < chks.length; c++) {
-          Chunk chk = chks[c];
-          NewChunk cres = cress[c];
+        for (int c = 0; c < chks._numCols; c++) {
+
           // String Vectors: apply str_op as BufferedStrings to all elements
           if (vecs.isString(c)) {
             final BufferedString conStr = new BufferedString(str);
-            for (int i = 0; i < chk._len; i++)
-              cres.addNum(str_op(chk.atStr(vstr, i), conStr));
+            for (int i = 0; i < chks._len; i++)
+              cress.addNum(c,str_op(chks.atStr(vstr, i, c), conStr));
           } else if (vecs.isCategorical(c)) {
             // categorical Vectors: convert string to domain value; apply op (not
             // str_op).  Not sure what the "right" behavior here is, can
@@ -234,12 +229,12 @@ abstract public class AstBinOp extends AstPrimitive {
             // part of the categorical domain, the find op returns -1 which is never
             // equal to any categorical dense integer (which are always 0+).
             final double d = (double) ArrayUtils.find(vecs.domain(c), str);
-            for (int i = 0; i < chk._len; i++)
-              cres.addNum(op(chk.atd(i), d));
+            for (int i = 0; i < chks._len; i++)
+              cress.addNum(c,op(chks.atd(i,c), d));
           } else { // mixing string and numeric
             final double d = op(1, 2); // false or true only
-            for (int i = 0; i < chk._len; i++)
-              cres.addNum(d);
+            for (int i = 0; i < chks._len; i++)
+              cress.addNum(c,d);
           }
         }
       }
@@ -253,18 +248,16 @@ abstract public class AstBinOp extends AstPrimitive {
   private ValFrame scalar_op_frame(final String str, Frame fr) {
     Frame res = new MRTask() {
       @Override
-      public void map(Chunk[] chks, NewChunk[] cress) {
+      public void map(ChunkAry chks, NewChunkAry cress) {
         BufferedString vstr = new BufferedString();
         VecAry vecs = _fr.vecs();
-        for (int c = 0; c < chks.length; c++) {
-          Chunk chk = chks[c];
-          NewChunk cres = cress[c];
+        for (int c = 0; c < chks._numCols; c++) {
 
           // String Vectors: apply str_op as BufferedStrings to all elements
           if (vecs.isString(c)) {
             final BufferedString conStr = new BufferedString(str);
-            for (int i = 0; i < chk._len; i++)
-              cres.addNum(str_op(conStr, chk.atStr(vstr, i)));
+            for (int i = 0; i < chks._len; i++)
+              cress.addNum(c,str_op(conStr, chks.atStr(vstr, i, c)));
           } else if (vecs.isCategorical(c)) {
             // categorical Vectors: convert string to domain value; apply op (not
             // str_op).  Not sure what the "right" behavior here is, can
@@ -273,12 +266,12 @@ abstract public class AstBinOp extends AstPrimitive {
             // makes sense for EQ/NE, and is much faster when just comparing
             // doubles vs comparing strings.
             final double d = (double) ArrayUtils.find(vecs.domain(c), str);
-            for (int i = 0; i < chk._len; i++)
-              cres.addNum(op(d, chk.atd(i)));
+            for (int i = 0; i < chks._len; i++)
+              cress.addNum(c,op(d, chks.atd(i,c)));
           } else { // mixing string and numeric
             final double d = op(1, 2); // false or true only
-            for (int i = 0; i < chk._len; i++)
-              cres.addNum(d);
+            for (int i = 0; i < chks._len; i++)
+              cress.addNum(c,d);
           }
         }
       }
@@ -311,21 +304,21 @@ abstract public class AstBinOp extends AstPrimitive {
 
     Frame res = new MRTask() {
       @Override
-      public void map(Chunk[] chks, NewChunk[] cress) {
+      public void map(ChunkAry chks, NewChunkAry cress) {
         VecAry vecs = _fr.vecs();
         BufferedString lfstr = new BufferedString();
         BufferedString rtstr = new BufferedString();
-        assert (cress.length << 1) == chks.length;
-        for (int c = 0; c < cress.length; c++) {
-          Chunk clf = chks[c];
-          Chunk crt = chks[c + cress.length];
-          NewChunk cres = cress[c];
+        assert (cress._numCols*2) == chks._numCols;
+        for (int c = 0; c < cress._numCols; c++) {
+          int clf = c;//chks[c];
+          int crt = c + cress._numCols; // chks[c + cress.length];
+
           if (vecs.isString(c))
-            for (int i = 0; i < clf._len; i++)
-              cres.addNum(str_op(clf.atStr(lfstr, i), crt.atStr(rtstr, i)));
+            for (int i = 0; i < chks._len; i++)
+              cress.addNum(c,str_op(chks.atStr(lfstr, i, clf), chks.atStr(rtstr, i, crt)));
           else
-            for (int i = 0; i < clf._len; i++)
-              cres.addNum(op(clf.atd(i), crt.atd(i)));
+            for (int i = 0; i < chks._len; i++)
+              cress.addNum(c,op(chks.atd(i,clf), chks.atd(i,crt)));
         }
       }
     }.doAll(lf.numCols(), Vec.T_NUM, new Frame(lf).add(rt)).outputFrame(lf._names, null);
@@ -338,16 +331,15 @@ abstract public class AstBinOp extends AstPrimitive {
       rawRow[i] = row.vecs().isNumeric(i) ? row.vec(i).at(0) : Double.NaN; // is numeric, if not then NaN
     Frame res = new MRTask() {
       @Override
-      public void map(Chunk[] chks, NewChunk[] cress) {
+      public void map(ChunkAry chks, NewChunkAry cress) {
         VecAry vecs = _fr.vecs();
-        for (int c = 0; c < cress.length; c++) {
-          Chunk clf = chks[c];
-          NewChunk cres = cress[c];
-          for (int r = 0; r < clf._len; ++r) {
+        for (int c = 0; c < cress._numCols; c++) {
+          int clf = c;
+          for (int r = 0; r < chks._len; ++r) {
             if (vecs.isString(c))
-              cres.addNum(Double.NaN); // TODO: improve
+              cress.addNA(c); // TODO: improve
             else
-              cres.addNum(op(clf.atd(r), rawRow[c]));
+              cress.addNum(c,op(chks.atd(r,clf), rawRow[c]));
           }
         }
       }
@@ -368,14 +360,13 @@ abstract public class AstBinOp extends AstPrimitive {
     rt.add("", vec);
     Frame res = new MRTask() {
       @Override
-      public void map(Chunk[] chks, NewChunk[] cress) {
-        assert cress.length == chks.length - 1;
-        Chunk clf = chks[cress.length];
-        for (int c = 0; c < cress.length; c++) {
-          Chunk crt = chks[c];
-          NewChunk cres = cress[c];
-          for (int i = 0; i < clf._len; i++)
-            cres.addNum(op(clf.atd(i), crt.atd(i)));
+      public void map(ChunkAry chks, NewChunkAry cress) {
+        assert cress._numCols == chks._numCols - 1;
+        int clf = cress._numCols;
+        for (int c = 0; c < cress._numCols; c++) {
+          int crt = c;
+          for (int i = 0; i < chks._len; i++)
+            cress.addNum(c,op(chks.atd(i,clf), chks.atd(i,crt)));
         }
       }
     }.doAll(fr.numCols(), Vec.T_NUM, rt).outputFrame(fr._names, null);
@@ -388,14 +379,13 @@ abstract public class AstBinOp extends AstPrimitive {
     lf.add("", vec);
     Frame res = new MRTask() {
       @Override
-      public void map(Chunk[] chks, NewChunk[] cress) {
-        assert cress.length == chks.length - 1;
-        Chunk crt = chks[cress.length];
-        for (int c = 0; c < cress.length; c++) {
-          Chunk clf = chks[c];
-          NewChunk cres = cress[c];
-          for (int i = 0; i < clf._len; i++)
-            cres.addNum(op(clf.atd(i), crt.atd(i)));
+      public void map(ChunkAry chks, NewChunkAry cress) {
+        assert cress._numCols == chks._numCols - 1;
+        int crt = cress._numCols;
+        for (int c = 0; c < cress._numCols; c++) {
+          int clf = c;
+          for (int i = 0; i < chks._len; i++)
+            cress.addNum(c,op(chks.atd(i,clf), chks.atd(i,crt)));
         }
       }
     }.doAll(fr.numCols(), Vec.T_NUM, lf).outputFrame(fr._names, null);

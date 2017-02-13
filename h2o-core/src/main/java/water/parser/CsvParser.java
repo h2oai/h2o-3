@@ -21,7 +21,7 @@ class CsvParser extends Parser {
 
   CsvParser( ParseSetup ps, Key jobKey ) { super(ps, jobKey); }
 
-  // Parse this one Chunk (in parallel with other Chunks)
+  // Parse this one ByteArraySupportedChunk (in parallel with other Chunks)
   @SuppressWarnings("fallthrough")
   @Override public ParseWriter parseChunk(int cidx, final ParseReader din, final ParseWriter dout) {
     BufferedString str = new BufferedString();

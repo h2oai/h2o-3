@@ -90,7 +90,7 @@ public class ChunksizeTest extends TestUtil {
                 if (parseChunkCountPerNode < cores && oldheuristic==0) {
                   // only complain if we have at least 100k matrix entries per node - otherwise it's small data and fast enough anyway even with fewer chunks
                   if (numRows * numCols > 100000 * cloudSize
-                      && totalSize/cloudSize/numCols/(4*cores) > 1000 // Only complain about too few chunks if there's enough data to cut it into Chunk POJO of 1kB each, otherwise it's small data and we're fine with fewer chunks
+                      && totalSize/cloudSize/numCols/(4*cores) > 1000 // Only complain about too few chunks if there's enough data to cut it into ByteArraySupportedChunk POJO of 1kB each, otherwise it's small data and we're fine with fewer chunks
                       ) {
                     msg += "FEW ";
                     FileVec.calcOptimalChunkSize((long) totalSize, numCols, maxLineLength, cores, cloudSize, oldheuristic==1, true);

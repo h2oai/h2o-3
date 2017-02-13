@@ -3,6 +3,7 @@ package water;
 import static org.junit.Assert.*;
 import org.junit.*;
 import water.fvec.Chunk;
+import water.fvec.ChunkAry;
 import water.fvec.Frame;
 
 public class ClientTest extends TestUtil {
@@ -69,9 +70,9 @@ public class ClientTest extends TestUtil {
   public static class CalcSumsTask extends MRTask<CalcSumsTask> {
     long _nrows; // Rows used
     double _sumX,_sumY,_sumX2; // Sum of X's, Y's, X^2's
-    @Override public void map( Chunk xs, Chunk ys ) {
-      for( int i=0; i<xs._len; i++ ) {
-        double X = xs.atd(i);  double Y = ys.atd(i);
+    @Override public void map(ChunkAry cs ) {
+      for( int i=0; i<cs._len; i++ ) {
+        double X = cs.atd(i,0);  double Y = cs.atd(i,1);
         if( !Double.isNaN(X) && !Double.isNaN(Y)) {
           _sumX += X;    _sumY += Y;
           _sumX2+= X*X;  _nrows++;

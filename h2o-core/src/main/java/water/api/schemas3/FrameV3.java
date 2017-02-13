@@ -52,7 +52,7 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
   @API(help="Compatible models, if requested", direction=API.Direction.OUTPUT)
   public String[] compatible_models;
 
-  @API(help="Chunk summary", direction=API.Direction.OUTPUT)
+  @API(help="ByteArraySupportedChunk summary", direction=API.Direction.OUTPUT)
   public TwoDimTableV3 chunk_summary;
 
   @API(help="Distribution summary", direction=API.Direction.OUTPUT)

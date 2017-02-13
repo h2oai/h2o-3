@@ -2,10 +2,7 @@ package water.rapids.ast.prims.mungers;
 
 import water.H2O;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.ast.AstRoot;
@@ -44,12 +41,11 @@ public class AstIsNa extends AstPrimitive {
         Frame fr = val.getFrame();
         return new ValFrame(new MRTask() {
           @Override
-          public void map(Chunk cs[], NewChunk ncs[]) {
-            for (int col = 0; col < cs.length; col++) {
-              Chunk c = cs[col];
-              NewChunk nc = ncs[col];
-              for (int i = 0; i < c._len; i++)
-                nc.addNum(c.isNA(i) ? 1 : 0);
+          public void map(ChunkAry cs, NewChunkAry ncs) {
+            for (int col = 0; col < cs._numCols; col++) {
+              Chunk c = cs.getChunk(col);
+              for (int i = 0; i < cs._len; i++)
+                ncs.addInteger(col,c.isNA(i) ? 1 : 0);
             }
           }
         }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame());

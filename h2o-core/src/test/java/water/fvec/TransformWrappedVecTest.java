@@ -17,7 +17,7 @@ public class TransformWrappedVecTest extends TestUtil {
       AstRoot ast = Rapids.parse("{ x . (- 1 x) }");
       Vec iv = new TransformWrappedVec(v, ast);
       new MRTask() {
-        @Override public void map(Chunk c) {
+        @Override public void map(ChunkAry c) {
           for(int i=0;i<c._len;++i)
             if( c.atd(i)!=1 )
               throw new RuntimeException("moo");

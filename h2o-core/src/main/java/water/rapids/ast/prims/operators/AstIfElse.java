@@ -129,21 +129,19 @@ public class AstIfElse extends AstPrimitive {
     // Now pick from left-or-right in the new frame
     Frame res = new MRTask() {
       @Override
-      public void map(Chunk chks[], NewChunk nchks[]) {
-        assert nchks.length + (has_tfr ? nchks.length : 0) + (has_ffr ? nchks.length : 0) == chks.length;
-        for (int i = 0; i < nchks.length; i++) {
-          Chunk ctst = chks[i];
-          NewChunk res = nchks[i];
-          for (int row = 0; row < ctst._len; row++) {
+      public void map(ChunkAry chks, NewChunkAry nchks) {
+        assert nchks._numCols + (has_tfr ? nchks._numCols : 0) + (has_ffr ? nchks._numCols : 0) == chks._numCols;
+        for (int i = 0; i < nchks._numCols; i++) {
+          for (int row = 0; row < chks._len; row++) {
             double d;
-            if (ctst.isNA(row)) d = Double.NaN;
-            else if (ctst.atd(row) == 0) d = has_ffr
-                ? domainMap(chks[i + nchks.length + (has_tfr ? nchks.length : 0)].atd(row), maps[i])
+            if (chks.isNA(row,i)) d = Double.NaN;
+            else if (chks.atd(row,i) == 0) d = has_ffr
+                ? domainMap(chks.atd(row,i + nchks._numCols + (has_tfr ? nchks._numCols : 0)), maps[i])
                 : fs != null ? fsIntMap[i] : fd;
             else d = has_tfr
-                  ? domainMap(chks[i + nchks.length].atd(row), maps[i])
+                  ? domainMap(chks.atd(row,i + nchks._numCols), maps[i])
                   : ts != null ? tsIntMap[i] : td;
-            res.addNum(d);
+            nchks.addNum(i,d);
           }
         }
       }

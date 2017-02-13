@@ -18,12 +18,12 @@ public class UploadFileVec extends FileVec {
     DKV.put(chunkKey(_nchunks++),c,fs); // Write updated chunk back into K/V
   }
 
-  // Close, and possible replace the prior chunk with a new, larger Chunk
+  // Close, and possible replace the prior chunk with a new, larger ByteArraySupportedChunk
   public void close(C1NChunk c, int cidx, Futures fs) {
     assert _len==-1;            // Not closed
     DKV.put(chunkKey(cidx),c,fs); // Write updated chunk back into K/V
     long l = _nchunks-1L;
-    _len = l*_chunkSize +c._len;
+    _len = l*_chunkSize +c._mem.length;
   }
 
   private boolean checkMissing(int cidx, Value val) {

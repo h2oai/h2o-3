@@ -565,14 +565,14 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         names[i] = "reconstr_" + coefnames[i];
       }
       Frame f = new MRTask() {
-        @Override public void map( Chunk chks[], NewChunk recon[] ) {
+        @Override public void map(ChunkAry chks, NewChunkAry recon ) {
           double tmp [] = new double[_output._names.length];
           double preds[] = new double [len];
           final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
-          for( int row=0; row<chks[0]._len; row++ ) {
-            double p[] = score_autoencoder(chks, row, tmp, preds, neurons, true /*reconstruction*/, false /*reconstruction_error_per_feature*/);
+          for( int row=0; row<chks._len; row++ ) {
+            double p[] = score_autoencoder(chks.getChunks(), row, tmp, preds, neurons, true /*reconstruction*/, false /*reconstruction_error_per_feature*/);
             for( int c=0; c<len; c++ )
-              recon[c].addNum(p[c]);
+              recon.addNum(c,p[c]);
           }
         }
       }.doAll(len, Vec.T_NUM, adaptedFr).outputFrame();
@@ -738,16 +738,16 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     adaptTestForTrain(adaptFrm, true, false);
     final int outputcols = reconstruction_error_per_feature ? model_info.data_info.fullN() : 1;
     Frame mse = new MRTask() {
-      @Override public void map( Chunk chks[], NewChunk[] mse ) {
+      @Override public void map(ChunkAry chks, NewChunkAry mse ) {
         double tmp [] = new double[len];
         double out[] = new double[outputcols];
         final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
-        for( int row=0; row<chks[0]._len; row++ ) {
+        for( int row=0; row<chks._len; row++ ) {
           for( int i=0; i<len; i++ )
-            tmp[i] = chks[i].atd(row);
+            tmp[i] = chks.atd(row,i);
           score_autoencoder(tmp, out, neurons, false /*reconstruction*/, reconstruction_error_per_feature);
           for (int i=0; i<outputcols; ++i)
-            mse[i].addNum(out[i]);
+            mse.addNum(i,out[i]);
         }
       }
     }.doAll(outputcols, Vec.T_NUM, adaptFrm).outputFrame();

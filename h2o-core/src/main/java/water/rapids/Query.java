@@ -2,7 +2,6 @@ package water.rapids;
 
 import water.H2O;
 import water.MRTask;
-import water.fvec.Chunk;
 import water.fvec.ChunkAry;
 import water.util.AtomicUtils;
 

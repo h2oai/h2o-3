@@ -662,6 +662,11 @@ public class ArrayUtils {
       if( elem==ls[i] ) return i;
     return -1;
   }
+  public static int find(double[] ls, double elem) {
+    for(int i=0; i<ls.length; ++i )
+      if( elem==ls[i] ) return i;
+    return -1;
+  }
   public static int find(int[] ls, int elem) {
     for(int i=0; i<ls.length; ++i )
       if( elem==ls[i] ) return i;

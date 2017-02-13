@@ -217,13 +217,13 @@ public abstract class SharedTreeModel<
       }
     }
     Frame res = new MRTask() {
-      @Override public void map(Chunk chks[], NewChunk[] idx ) {
-        double input [] = new double[chks.length];
+      @Override public void map(ChunkAry chks, NewChunkAry idx ) {
+        double input [] = new double[chks._numCols];
         final String output[] = new String[outputcols];
 
-        for( int row=0; row<chks[0]._len; row++ ) {
-          for( int i=0; i<chks.length; i++ )
-            input[i] = chks[i].atd(row);
+        for( int row=0; row<chks._len; row++ ) {
+          for( int i=0; i<chks._numCols; i++ )
+            input[i] = chks.atd(row,i);
 
           int col=0;
           for( int tidx=0; tidx<_output._treeKeys.length; tidx++ ) {
@@ -237,7 +237,7 @@ public abstract class SharedTreeModel<
           }
           assert(col==outputcols);
           for (int i=0; i<outputcols; ++i)
-            idx[i].addStr(output[i]);
+            idx.addStr(i,output[i]);
         }
       }
     }.doAll(outputcols, Vec.T_STR, adaptFrm).outputFrame(destination_key, names, null);

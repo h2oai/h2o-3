@@ -57,7 +57,7 @@ public class FVecTest extends TestUtil {
   private static class ByteHisto extends MRTask<ByteHisto> {
     public int[] _x;
     // Count occurrences of bytes
-    @Override public void map( Chunk bv ) {
+    @Override public void map( ChunkAry bv ) {
       _x = new int[256];        // One-time set histogram array
       for( int i=0; i< bv._len; i++ )
         _x[(int)bv.atd(i)]++;
@@ -117,7 +117,7 @@ public class FVecTest extends TestUtil {
   }
 
   private static class TestNewVec extends MRTask<TestNewVec> {
-    @Override public void map( Chunk in, NewChunk out ) {
+    @Override public void map(ChunkAry in, NewChunkAry out ) {
       for( int i=0; i< in._len; i++ )
         out.addNum( in.at8(i)+(in.at8(i) >= ' ' ? 1 : 0),0);
     }
@@ -158,12 +158,12 @@ public class FVecTest extends TestUtil {
   // Sum each column independently
   private static class Sum extends MRTask<Sum> {
     double _sums[];
-    @Override public void map( Chunk[] bvs ) {
-      _sums = new double[bvs.length];
-      int len = bvs[0]._len;
+    @Override public void map( ChunkAry bvs ) {
+      _sums = new double[bvs._numCols];
+      int len = bvs._len;
       for( int i=0; i<len; i++ )
-        for( int j=0; j<bvs.length; j++ )
-          _sums[j] += bvs[j].atd(i);
+        for( int j=0; j<bvs._numCols; j++ )
+          _sums[j] += bvs.atd(i,j);
     }
     @Override public void reduce( Sum mrt ) { ArrayUtils.add(_sums, mrt._sums);  }
   }

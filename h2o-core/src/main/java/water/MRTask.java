@@ -41,8 +41,8 @@ import java.util.Arrays;
  * <p>
  * If <code>doAll</code> is called with Keys, then one <code>map</code> call is
  * made per Key, on the Key's home node.  If MRTask is invoked on a Frame (or
- * equivalently a Vec[]), then one <code>map</code> call is made per Chunk for
- * all Vecs at once, on the Chunk's home node.  In both modes,
+ * equivalently a Vec[]), then one <code>map</code> call is made per ByteArraySupportedChunk for
+ * all Vecs at once, on the ByteArraySupportedChunk's home node.  In both modes,
  * <code>reduce</code> is called between each pair of calls to
  * <code>map</code>.  </p>
  * <p>
@@ -235,46 +235,15 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
 
 
   public void map(ChunkAry cs){
-    if(cs._numCols == 1){
-      map(cs.getChunk(0));
-    } else if(cs._numCols == 2){
-      map(cs.getChunk(0),cs.getChunk(1));
-    } else if(cs._numCols == 3){
-      map(cs.getChunk(0),cs.getChunk(1), cs.getChunk(2));
-    }
-    map(cs.getChunks());
+    throw new RuntimeException("should've been overriden");
   }
-  public void map(Chunk c){}
-  public void map(Chunk c0, Chunk c1){}
-  public void map(Chunk [] cs){}
-  public void map(Chunk [] cs, NewChunk [] ncs){}
-  public void map(Chunk c0, Chunk c1, NewChunk nc){}
-  public void map(Chunk c0, Chunk c1, Chunk c2){}
-  public void map(Chunk c0, NewChunk nc){}
-
   public void map(ChunkAry cs, NewChunkAry ncs){
-    if(cs._numCols == 1){
-      Chunk c = cs.getChunk(0);
-      if(ncs._numCols == 1)
-        map(c,(NewChunk)ncs.getChunk(0));
-    } else if(cs._numCols == 2){
-      Chunk c0 = cs.getChunk(0);
-      Chunk c1 = cs.getChunk(1);
-      if(ncs._numCols == 1)
-        map(c0,c1,(NewChunk)ncs.getChunk(0));
-    }
-    map(cs.getChunks(),(NewChunk[])ncs.getChunks());
+    throw new RuntimeException("should've been overriden");
+  }
+  public void map(ChunkAry cs, NewChunkAry [] ncs){
+    throw new RuntimeException("should've been overriden");
   }
 
-  public void map(ChunkAry cs, NewChunkAry [] ncs){
-    NewChunk [] nary = new NewChunk[_output_types.length];
-    int off = 0;
-    for(int i = 0; i < ncs.length; ++i) {
-      System.arraycopy(ncs[i].getChunks(), 0, nary, off, ncs[i]._numCols);
-      off += ncs[i]._numCols;
-    }
-     map(cs.getChunks(),nary);
-  }
 
   /** Override with your map implementation.  Used when doAll is called with
    *  an array of Keys, and called once-per-Key on the Key's Home node */

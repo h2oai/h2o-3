@@ -7,10 +7,7 @@ import org.junit.Test;
 import water.Key;
 import water.MRTask;
 import water.TestUtil;
-import water.fvec.Chunk;
-import water.fvec.ChunkAry;
-import water.fvec.Frame;
-import water.fvec.Vec;
+import water.fvec.*;
 
 import java.util.Random;
 // data info tests with interactions
@@ -151,12 +148,12 @@ public class DataInfoTestAdapt extends TestUtil {
   private void checkFrame(final Frame checkMe, final Frame gold) {
     Vec[] vecs = new Vec[checkMe.numCols()+gold.numCols()];
     new MRTask() {
-      @Override public void map(Chunk[] cs) {
+      @Override public void map(ChunkAry cs) {
         int off=checkMe.numCols();
         for(int i=0;i<off;++i) {
-          for(int r=0;r<cs[0]._len;++r) {
-            double check = cs[i].atd(r);
-            double gold  = cs[i+off].atd(r);
+          for(int r=0;r<cs._len;++r) {
+            double check = cs.atd(r,i);
+            double gold  = cs.atd(r,i+off);
             if( Math.abs(check-gold) > 1e-12 )
               throw new RuntimeException("bonk");
           }

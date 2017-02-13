@@ -1,7 +1,6 @@
 package hex;
 
 import water.*;
-import water.fvec.Chunk;
 import water.fvec.ChunkAry;
 import water.fvec.NewChunk;
 import water.fvec.NewChunkAry;

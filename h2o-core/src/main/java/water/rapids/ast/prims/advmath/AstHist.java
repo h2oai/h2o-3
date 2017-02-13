@@ -6,7 +6,6 @@ import water.fvec.*;
 import water.nbhm.UtilUnsafe;
 import water.rapids.ast.prims.reducers.AstMad;
 import water.rapids.Env;
-import water.rapids.Val;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
@@ -185,7 +184,7 @@ public class AstHist extends AstPrimitive {
     }
 
     @Override
-    public void map(Chunk c) {
+    public void map(ChunkAry c) {
       for (int i = 0; i < c._len; ++i) {
         if (!c.isNA(i)) {
           double d = c.atd(i) - _mean;
@@ -227,7 +226,7 @@ public class AstHist extends AstPrimitive {
     }
 
     @Override
-    public void map(Chunk c) {
+    public void map(ChunkAry c) {
       for (int i = 0; i < c._len; ++i) {
         if (!c.isNA(i)) {
           double d = c.atd(i) - _mean;
@@ -294,7 +293,7 @@ public class AstHist extends AstPrimitive {
     }
 
     @Override
-    public void map(Chunk c) {
+    public void map(ChunkAry c) {
       // if _h==-1, then don't have fixed bin widths... must loop over bins to obtain the correct bin #
       for (int i = 0; i < c._len; ++i) {
         int x = 1;

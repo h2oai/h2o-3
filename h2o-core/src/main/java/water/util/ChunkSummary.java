@@ -2,10 +2,7 @@ package water.util;
 
 import water.H2O;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.CategoricalWrappedVec;
-import water.fvec.ChunkAry;
-import water.fvec.Vec;
+import water.fvec.*;
 
 /**
  * Simple summary of how many chunks of each type are in a Frame
@@ -16,11 +13,14 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
 
   // static list of chunks for which statistics are to be gathered
   final transient static String[] chunkTypes = new String[]{
+    "C0",
+    "Const1",
     "C0L",
     "C0D",
     "CBS",
     "CX0",                   // Sparser bitvector; popular so near head of list
     "CXI",                   // Sparse ints
+    "CXC",
     "C1",
     "C1N",
     "C1S",
@@ -30,11 +30,8 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     "C4S",
     "C4F",
     "C8",
-    "CNAXI",                    // NA sparse ints
     "C16",                      // UUID
     "CStr",                     // Strings
-    "CXD",                      // Sparse doubles
-    "CNAXD",                    // NA sparse doubles      
     "CUD",                      // Few Unique doubles
     "C8D",                      //leave this as last -> no compression
   };
@@ -95,15 +92,15 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     byte_size_per_node = new long[H2O.CLOUD.size()];
     row_count_per_node = new long[H2O.CLOUD.size()];
     chunk_count_per_col_per_node = new long[H2O.CLOUD.size()];
-    Chunk [] cs = csary.getSparseChunks();
+    Chunk[] cs = csary.getSparseChunks();
     for( Chunk c : cs ) {       // Can be a big loop, for high column counts
-      // Pull out the class name; trim a trailing "Chunk"
+      // Pull out the class name; trim a trailing "ByteArraySupportedChunk"
       String cname = c.getClass().getSimpleName();
       int nlen = cname.length();
       assert nlen > 5 && cname.charAt(nlen-5)=='C' && cname.charAt(nlen-1)=='k';
       String sname = cname.substring(0,nlen-5);
       if (sname.equals("CategoricalWrapped")) {
-        Chunk ec = ((CategoricalWrappedVec.CategoricalWrappedChunk)c)._c;
+        Chunk ec = ((CategoricalWrappedVec.CategoricalWrappedChunk)c)._c.getChunk(0);
         cname = ec.getClass().getSimpleName();
         nlen = cname.length();
         assert nlen > 5 && cname.charAt(nlen-5)=='C' && cname.charAt(nlen-1)=='k';
@@ -115,13 +112,13 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
         if( sname.equals(chunkTypes[j]) )
           break;
       if( j==chunkTypes.length )
-        throw H2O.fail("Unknown Chunk Type: " + sname);
+        throw H2O.fail("Unknown ByteArraySupportedChunk Type: " + sname);
       chunk_counts[j]++;
       chunk_byte_sizes[j] += c.byteSize();
       byte_size_per_node[H2O.SELF.index()] += c.byteSize();
     }
-    row_count_per_node[H2O.SELF.index()] += cs[0]._len;
-    total_row_count +=  cs[0]._len;
+    row_count_per_node[H2O.SELF.index()] += csary._len;
+    total_row_count +=  csary._len;
     chunk_count_per_col_per_node[H2O.SELF.index()]++;
     total_chunk_count_per_col++;
   }
@@ -154,7 +151,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     for (Vec v : _fr.vecs().vecs())
       check += v.nChunks();
 
-    // This doesn't always hold, FileVecs have File-based byte size, while Vecs have Chunk-based byte size.
+    // This doesn't always hold, FileVecs have File-based byte size, while Vecs have ByteArraySupportedChunk-based byte size.
 //    assert(total_chunk_byte_size == _fr.byteSize());
 
     double[] res=MathUtils.min_max_mean_stddev(byte_size_per_node);
@@ -179,11 +176,11 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
   String display(long val) { return String.format("%10s", val == 0 ? "  0  B" : PrettyPrint.bytes(val)); }
 
   public TwoDimTable toTwoDimTableChunkTypes() {
-    final String tableHeader = "Chunk compression summary";
+    final String tableHeader = "ByteArraySupportedChunk compression summary";
     int rows = 0;
     for (int j = 0; j < chunkTypes.length; ++j) if (chunk_counts != null && chunk_counts[j] > 0) rows++;
     final String[] rowHeaders = new String[rows];
-    final String[] colHeaders = new String[]{"Chunk Type", "Chunk Name", "Count", "Count Percentage", "Size", "Size Percentage"};
+    final String[] colHeaders = new String[]{"ByteArraySupportedChunk Type", "ByteArraySupportedChunk Name", "Count", "Count Percentage", "Size", "Size Percentage"};
     final String[] colTypes = new String[]{"string", "string", "int", "float", "string", "float"};
     final String[] colFormats = new String[]{"%8s", "%s", "%10d", "%10.3f %%", "%10s", "%10.3f %%"};
     final String colHeaderForRowHeaders = null;

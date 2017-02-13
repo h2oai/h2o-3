@@ -5,7 +5,8 @@ import org.junit.*;
 
 import java.util.concurrent.ExecutionException;
 import jsr166y.CountedCompleter;
-import water.fvec.Chunk;
+import water.fvec.ByteArraySupportedChunk;
+import water.fvec.ChunkAry;
 import water.fvec.FileVec;
 import water.fvec.Vec;
 
@@ -85,9 +86,9 @@ public class MRThrow extends TestUtil {
     int[] _x;
     ByteHistoThrow( H2ONode h2o ) { _throwAt = h2o; }
     // Count occurrences of bytes
-    @Override public void map( Chunk chk ) {
+    @Override public void map( ChunkAry chk ) {
       _x = new int[256];            // One-time set histogram array
-      byte[] bits = chk.getBytes(); // Raw file bytes
+      byte[] bits = chk.asBytes(); // Raw file bytes
       for( byte b : bits )          // Compute local histogram
         _x[b&0xFF]++;
       if( H2O.SELF.equals(_throwAt) )

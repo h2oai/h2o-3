@@ -1,16 +1,15 @@
 package water.fvec;
 
-import water.util.UnsafeUtils;
-
 /**
  * The empty-compression function, if all elements fit directly on UNSIGNED bytes.
  * Cannot store 0xFF, the value is a marker for N/A.
  */
-public final class C1Chunk extends Chunk {
+public final class C1Chunk extends ByteArraySupportedChunk {
   static protected final int _OFF = 0;
   static protected final long _NA = 0xFF;
-  C1Chunk(byte[] bs) { _mem=bs; _len = _mem.length; }
+  C1Chunk(byte[] bs) { _mem=bs;}
 
+  public int len(){return _mem.length;}
 
   @Override public final long at8(int i ) {
     long res = 0xFF&_mem[i+_OFF];
@@ -56,7 +55,7 @@ public final class C1Chunk extends Chunk {
     return nc;
   }
 
-  @Override public void initFromBytes(){_len = _mem.length;}
+  @Override public void initFromBytes(){}
 
   @Override
   public boolean hasFloat() {return false;}

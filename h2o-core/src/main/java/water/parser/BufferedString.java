@@ -21,6 +21,9 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
    private int _off;
    private int _len;
 
+  public boolean isMissing(){return _buf == null && _off == -1;}
+  public void setMissing(){_buf = null; _off = -1; _len = -1;}
+
    BufferedString(byte[] buf, int off, int len) { _buf = buf;  _off = off;  _len = len; }
    private BufferedString(byte[] buf) { this(buf,0,buf.length); }
    // Cloning constructing used during collecting unique categoricals

@@ -94,8 +94,8 @@ public class AstKFold extends AstPrimitive {
       //      can be made so that it is independent of the chunk distribution and the
       //      per chunk class distribution.
       //
-      //      Downside is this performs nfolds*nClass passes over each Chunk. For
-      //      "reasonable" classification problems, this could be 100 passes per Chunk.
+      //      Downside is this performs nfolds*nClass passes over each ByteArraySupportedChunk. For
+      //      "reasonable" classification problems, this could be 100 passes per ByteArraySupportedChunk.
       @Override
       public void map(ChunkAry y) {
         long start = y._start;

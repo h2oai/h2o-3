@@ -46,7 +46,6 @@ public class SubsetVec extends WrappedVec {
     final VecAry _masterVec;
     protected SubsetChunk(Chunk crows, SubsetVec vec, VecAry masterVec) {
       _masterVec = masterVec;
-      _len = crows._len;
       _crows  = crows;
     }
     @Override public double atd(int idx) {
@@ -72,9 +71,17 @@ public class SubsetVec extends WrappedVec {
       throw H2O.unimpl();
     }
 
+    @Override
+    public int len() {
+      return _crows.len();
+    }
+
     @Override public boolean hasFloat() { return false; }
 
+    @Override
+    public Chunk deepCopy() {
+      return this;
+    }
     public static AutoBuffer write_impl(SubsetChunk sc, AutoBuffer bb) { throw H2O.fail(); }
-    @Override protected final void initFromBytes () { throw H2O.fail(); }
   }
 }

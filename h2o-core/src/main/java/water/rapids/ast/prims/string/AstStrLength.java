@@ -4,7 +4,6 @@ import water.MRTask;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.rapids.Env;
-import water.rapids.Val;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
@@ -69,14 +68,12 @@ public class AstStrLength extends AstPrimitive {
       }
 
       @Override
-      public void map(Chunk chk, NewChunk newChk) {
-        // pre-allocate since the size is known
-        newChk.alloc_nums(chk._len);
+      public void map(ChunkAry chk, NewChunkAry newChk) {
         for (int i = 0; i < chk._len; i++)
           if (chk.isNA(i))
-            newChk.addNA();
+            newChk.addNA(0);
           else
-            newChk.addNum(catLengths[(int) chk.atd(i)], 0);
+            newChk.addNum(0,catLengths[(int) chk.atd(i)], 0);
       }
     }.doAll(1, Vec.T_NUM, new Frame(vec)).outputFrame().vecs();
     return res;
@@ -85,20 +82,14 @@ public class AstStrLength extends AstPrimitive {
   private VecAry lengthStringCol(VecAry vec) {
     return new MRTask() {
       @Override
-      public void map(Chunk chk, NewChunk newChk) {
-        if (chk instanceof C0DChunk) { // All NAs
-          for (int i = 0; i < chk._len; i++)
-            newChk.addNA();
-        } else if (((CStrChunk) chk)._isAllASCII) { // fast-path operations
-          ((CStrChunk) chk).asciiLength(newChk);
-        } else { //UTF requires Java string methods for accuracy
-          BufferedString tmpStr = new BufferedString();
-          for (int i = 0; i < chk._len; i++) {
-            if (chk.isNA(i)) newChk.addNA();
-            else newChk.addNum(chk.atStr(tmpStr, i).toString().length(), 0);
-          }
+      public void map(ChunkAry chk, NewChunkAry newChk) {
+        BufferedString tmpStr = new BufferedString();
+        for (int i = 0; i < chk._len; i++) {
+          if (chk.isNA(i)) newChk.addNA(0);
+          else newChk.addNum(0,chk.atStr(tmpStr, i).toString().length(), 0);
         }
       }
+
     }.doAll(new byte[]{Vec.T_NUM}, vec).outputFrame().vecs();
   }
 }

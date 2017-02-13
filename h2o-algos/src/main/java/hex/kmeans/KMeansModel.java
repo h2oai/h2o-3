@@ -12,7 +12,6 @@ import water.MRTask;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
-import water.fvec.Chunk;
 import water.fvec.ChunkAry;
 import water.fvec.Frame;
 import water.util.ArrayUtils;

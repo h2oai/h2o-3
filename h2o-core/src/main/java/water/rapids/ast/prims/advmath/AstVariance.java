@@ -2,10 +2,7 @@ package water.rapids.ast.prims.advmath;
 
 import water.Key;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
-import water.fvec.VecAry;
+import water.fvec.*;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
@@ -249,18 +246,17 @@ public class AstVariance extends AstPrimitive {
     }
 
     @Override
-    public void map(Chunk cs[]) {
-      final int ncolsx = cs.length - 1;
-      final Chunk cy = cs[0];
-      final int len = cy._len;
+    public void map(ChunkAry cs) {
+      final int ncolsx = cs._numCols - 1;
+      final int len = cs._len;
       _covs = new double[ncolsx];
       double sum;
       for (int x = 0; x < ncolsx; x++) {
         sum = 0;
-        final Chunk cx = cs[x + 1];
+        final Chunk cx = cs.getChunk(x + 1);
         final double xmean = _xmeans[x];
         for (int row = 0; row < len; row++)
-          sum += (cx.atd(row) - xmean) * (cy.atd(row) - _ymean);
+          sum += (cx.atd(row) - xmean) * (cs.atd(row) - _ymean);
         _covs[x] = sum;
       }
     }
@@ -282,7 +278,7 @@ public class AstVariance extends AstPrimitive {
     }
 
     @Override
-    public void map(Chunk cs[]) {
+    public void map(ChunkAry cs) {
       _xsum = new double[_ncolx];
       _ysum = new double[_ncoly];
 
@@ -291,7 +287,7 @@ public class AstVariance extends AstPrimitive {
 
       double xval, yval;
       boolean add;
-      int len = cs[0]._len;
+      int len = cs._len;
       for (int row = 0; row < len; row++) {
         add = true;
         //reset existing arrays to 0 rather than initializing new ones to save on garbage collection
@@ -299,7 +295,7 @@ public class AstVariance extends AstPrimitive {
         Arrays.fill(yvals, 0);
 
         for (int y = 0; y < _ncoly; y++) {
-          final Chunk cy = cs[y];
+          final Chunk cy = cs.getChunk(y);
           yval = cy.atd(row);
           //if any yval along a row is NA, discard the entire row
           if (Double.isNaN(yval)) {
@@ -311,7 +307,7 @@ public class AstVariance extends AstPrimitive {
         }
         if (add) {
           for (int x = 0; x < _ncolx; x++) {
-            final Chunk cx = cs[x + _ncoly];
+            final Chunk cx = cs.getChunk(x + _ncoly);
             xval = cx.atd(row);
             //if any xval along a row is NA, discard the entire row
             if (Double.isNaN(xval)) {
@@ -348,7 +344,7 @@ public class AstVariance extends AstPrimitive {
     }
 
     @Override
-    public void map(Chunk cs[]) {
+    public void map(ChunkAry cs) {
       int ncolx = _xmeans.length;
       int ncoly = _ymeans.length;
       double[] xvals = new double[ncolx];
@@ -357,7 +353,7 @@ public class AstVariance extends AstPrimitive {
       double[] _covs_y;
       double xval, yval, ymean;
       boolean add;
-      int len = cs[0]._len;
+      int len = cs._len;
       for (int row = 0; row < len; row++) {
         add = true;
         //reset existing arrays to 0 rather than initializing new ones to save on garbage collection
@@ -365,7 +361,7 @@ public class AstVariance extends AstPrimitive {
         Arrays.fill(yvals, 0);
 
         for (int y = 0; y < ncoly; y++) {
-          final Chunk cy = cs[y];
+          final Chunk cy = cs.getChunk(y);
           yval = cy.atd(row);
           //if any yval along a row is NA, discard the entire row
           if (Double.isNaN(yval)) {
@@ -376,7 +372,7 @@ public class AstVariance extends AstPrimitive {
         }
         if (add) {
           for (int x = 0; x < ncolx; x++) {
-            final Chunk cx = cs[x + ncoly];
+            final Chunk cx = cs.getChunk(x + ncoly);
             xval = cx.atd(row);
             //if any xval along a row is NA, discard the entire row
             if (Double.isNaN(xval)) {
@@ -410,20 +406,20 @@ public class AstVariance extends AstPrimitive {
     long _NACount;
 
     @Override
-    public void map(Chunk cs[]) {
-      int ncoly = cs.length;
+    public void map(ChunkAry cs) {
+      int ncoly = cs._numCols;
       _ysum = new double[ncoly];
 
       double[] yvals = new double[ncoly];
       double yval;
       boolean add;
-      int len = cs[0]._len;
+      int len = cs._len;
       for (int row = 0; row < len; row++) {
         add = true;
         Arrays.fill(yvals, 0);
 
         for (int y = 0; y < ncoly; y++) {
-          final Chunk cy = cs[y];
+          final Chunk cy = cs.getChunk(y);
           yval = cy.atd(row);
           //if any yval along a row is NA, discard the entire row
           if (Double.isNaN(yval)) {
@@ -455,21 +451,21 @@ public class AstVariance extends AstPrimitive {
     }
 
     @Override
-    public void map(Chunk cs[]) {
+    public void map(ChunkAry cs) {
       int ncoly = _ymeans.length;
       double[] yvals = new double[ncoly];
       _covs = new double[ncoly][ncoly];
       double[] _covs_y;
       double yval, ymean;
       boolean add;
-      int len = cs[0]._len;
+      int len = cs._len;
       for (int row = 0; row < len; row++) {
         add = true;
         //reset existing arrays to 0 rather than initializing new ones to save on garbage collection
         Arrays.fill(yvals, 0);
 
         for (int y = 0; y < ncoly; y++) {
-          final Chunk cy = cs[y];
+          final Chunk cy = cs.getChunk(y);
           yval = cy.atd(row);
           //if any yval along a row is NA, discard the entire row
           if (Double.isNaN(yval)) {

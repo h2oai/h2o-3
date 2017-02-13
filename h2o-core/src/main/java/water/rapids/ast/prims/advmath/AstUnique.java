@@ -2,12 +2,10 @@ package water.rapids.ast.prims.advmath;
 
 import water.DKV;
 import water.MRTask;
-import water.fvec.Chunk;
 import water.fvec.ChunkAry;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
-import water.rapids.Val;
 import water.rapids.ast.prims.mungers.AstGroup;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstPrimitive;

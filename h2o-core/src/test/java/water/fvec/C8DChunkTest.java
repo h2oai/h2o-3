@@ -19,8 +19,8 @@ public class C8DChunkTest extends TestUtil {
       for (double v : vals) nc.addNum(v);
       nc.addNA(); //-9223372036854775808l
 
-      Chunk cc = nc.compress();
-      Assert.assertEquals(vals.length + 1 + l, cc._len);
+      ByteArraySupportedChunk cc = (ByteArraySupportedChunk) nc.compress();
+      Assert.assertEquals(vals.length + 1 + l, cc.len());
       Assert.assertTrue(cc instanceof C8DChunk);
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.atd(l + i), Math.ulp(vals[i]));
       Assert.assertTrue(cc.isNA(vals.length + l));
@@ -31,14 +31,14 @@ public class C8DChunkTest extends TestUtil {
         else Assert.assertTrue(cc.atd(i)==densevals[i]);
       }
 
-      nc = cc.inflate_impl(new NewChunk(Vec.T_NUM));
+      nc = cc.add2Chunk(new NewChunk(Vec.T_NUM),0,cc.len());
       nc.values(0, nc._len);
       Assert.assertEquals(vals.length + 1 + l, nc._len);
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.atd(l + i), Math.ulp(vals[i]));
       Assert.assertTrue(nc.isNA(vals.length + l));
 
-      Chunk cc2 = nc.compress();
-      Assert.assertEquals(vals.length + 1 + l, cc._len);
+      ByteArraySupportedChunk cc2 = (ByteArraySupportedChunk) nc.compress();
+      Assert.assertEquals(vals.length + 1 + l, cc.len());
       Assert.assertTrue(cc2 instanceof C8DChunk);
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.atd(l + i), Math.ulp(vals[i]));
       Assert.assertTrue(cc2.isNA(vals.length + l));
@@ -71,7 +71,7 @@ public class C8DChunkTest extends TestUtil {
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
 
     NewChunk nc = new NewChunk(Vec.T_NUM);
-    cc.getChunk(0).inflate_impl(nc);
+    cc.getChunk(0).add2Chunk(nc,0,cc._len);
     nc.values(0, nc._len);
     Assert.assertEquals(vals.length, nc._sparseLen);
     Assert.assertEquals(vals.length, nc._len);
@@ -83,13 +83,13 @@ public class C8DChunkTest extends TestUtil {
     for (int na : NAs) Assert.assertTrue(cc.isNA(na));
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
 
-    Chunk cc2 = nc.compress();
+    ByteArraySupportedChunk cc2 = (ByteArraySupportedChunk) nc.compress();
     Assert.assertEquals(vals.length, cc._len);
     Assert.assertTrue(cc2 instanceof C8DChunk);
     for (int na : NAs) Assert.assertTrue(cc.isNA(na));
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
 
-    Assert.assertTrue(Arrays.equals(cc.getChunk(0)._mem, cc2._mem));
+    Assert.assertTrue(Arrays.equals(cc.getChunk(0).asBytes(), cc2._mem));
     vec.remove();
   }
 }

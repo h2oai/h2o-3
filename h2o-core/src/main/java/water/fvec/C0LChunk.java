@@ -1,23 +1,29 @@
 package water.fvec;
 
-import water.AutoBuffer;
 import water.util.UnsafeUtils;
-
-import java.util.Arrays;
 
 /**
  * The constant 'long' column.
  */
 public class C0LChunk extends Chunk {
-  protected static final int _OFF=8+4;
   private long _con;
-  public C0LChunk(long con, int len) { _mem=new byte[_OFF]; _len = len;
+
+  public static Chunk makeConstChunk(long con){
+    if(con == 0) return C0Chunk._instance;
+    if(con == 1) return Const1Chunk._instance;
+    return new C0LChunk(con);
+  }
+  private  C0LChunk(long con) {
+    assert con != 0:"should use C0Chunk instead";
+    assert con != 1:"should use Const1Chunk instead";
     _con = con;
-    UnsafeUtils.set8(_mem, 0, con);
-    UnsafeUtils.set4(_mem,8,len);
   }
   @Override public boolean hasFloat() { return false; }
   @Override public boolean hasNA() { return false; }
+
+  @Override
+  public Chunk deepCopy() {return this; /* no need to copy constant chunk */ }
+
   @Override public final long at8(int i ) { return _con; }
   @Override public final double atd(int i ) {return _con; }
   @Override public final boolean isNA( int i ) { return false; }
@@ -35,38 +41,29 @@ public class C0LChunk extends Chunk {
     return v;
   }
 
+  @Override
+  public int len() {return 0;}
+
   @Override protected boolean set_impl (int idx, String str) { return false; }
   @Override double min() { return _con; }
   @Override double max() { return _con; }
+
 
   @Override public NewChunk add2Chunk(NewChunk nc, int from, int to) {return add2Chunk(nc,to-from);}
   @Override public NewChunk add2Chunk(NewChunk nc, int[] rows) { return add2Chunk(nc,rows.length);}
   private NewChunk add2Chunk(NewChunk nc, int len){
     if(_con == 0) nc.addZeros(len);
-    else for(int i = 0; i < _len; ++i)
+    else for(int i = 0; i < len; ++i)
         nc.addNum(_con,0);
     return nc;
   }
 
-  @Override public final void initFromBytes () {
-    _con = UnsafeUtils.get8(_mem,0);
-    _len = (UnsafeUtils.get4(_mem,8));
-  }
-  @Override public boolean isSparseZero(){return _con == 0;}
-  @Override public int sparseLenZero(){return _con == 0?0: _len;}
-  @Override public int nextNZ(int rid){return _con == 0?_len:rid+1;}
-  @Override public int nonzeros(int [] arr) {
-    if (_con == 0) return 0;
-    for (int i = 0; i < _len; ++i) arr[i] = i;
-    return _len;
-  }
   @Override public int asSparseDoubles(double [] vals, int [] ids, double NA){
-    if(_con == 0) return 0;
-    for(int i = 0; i < _len; ++i) {
+    for(int i = 0; i < vals.length; ++i) {
       vals[i] = _con;
       ids[i] = i;
     }
-    return _len;
+    return vals.length;
   }
 
 

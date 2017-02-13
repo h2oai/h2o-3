@@ -153,7 +153,7 @@ public class AstImpute extends AstPrimitive {
         final boolean bfill = bfill0;
         throw H2O.unimpl("No ffill or bfill imputation supported");
 //        new MRTask() {
-//          @Override public void map(Chunk[] cs) {
+//          @Override public void map(ByteArraySupportedChunk[] cs) {
 //            int len=cs[0]._len; // end of this chk
 //            long start=cs[0].start();  // absolute beginning of chk s.t. start-1 bleeds into previous chk
 //            long absEnd = start+len;   // absolute end of the chk s.t. absEnd+1 bleeds into next chk

@@ -63,12 +63,11 @@ public class AstEntropy extends AstPrimitive {
       }
 
       @Override
-      public void map(Chunk chk, NewChunk newChk) {
+      public void map(ChunkAry chk, NewChunkAry newChk) {
         //pre-allocate since the size is known
-        newChk.alloc_doubles(chk._len);
         for (int i = 0; i < chk._len; i++)
           if (chk.isNA(i))
-            newChk.addNA();
+            newChk.addNA(0);
           else
             newChk.addNum(catEntropies[(int) chk.atd(i)]);
       }
@@ -78,20 +77,14 @@ public class AstEntropy extends AstPrimitive {
   private VecAry entropyStringCol(VecAry vec) {
     return new MRTask() {
       @Override
-      public void map(Chunk chk, NewChunk newChk) {
-        if (chk instanceof C0DChunk) //all NAs
-          newChk.addNAs(chk.len());
-        else if (((CStrChunk) chk)._isAllASCII) //fast-path operations
-          ((CStrChunk) chk).asciiEntropy(newChk);
-        else { //UTF requires Java string methods
-          BufferedString tmpStr = new BufferedString();
-          for (int i = 0; i < chk._len; i++) {
-            if (chk.isNA(i))
-              newChk.addNA();
-            else {
-              String str = chk.atStr(tmpStr, i).toString();
-              newChk.addNum(calcEntropy(str));
-            }
+      public void map(ChunkAry chk, NewChunkAry newChk) {
+        BufferedString tmpStr = new BufferedString();
+        for (int i = 0; i < chk._len; i++) {
+          if (chk.isNA(i))
+            newChk.addNA(0);
+          else {
+            String str = chk.atStr(tmpStr, i).toString();
+            newChk.addNum(calcEntropy(str));
           }
         }
       }

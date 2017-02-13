@@ -46,9 +46,9 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
 
   private static class SumWeights extends MRTask<SumWeights> {
     double sum;
-    @Override public void map(Chunk c, Chunk w) { for (int i=0;i<c.len();++i)
-      if (!c.isNA(i)) {
-        double wt = w.atd(i);
+    @Override public void map(ChunkAry cs) { for (int i = 0; i<cs._len; ++i)
+      if (!cs.isNA(i,0)) {
+        double wt = cs.atd(i,1);
 //          For now: let the user give small weights, results are probably not very good (same as for wtd.quantile in R)
 //          if (wt > 0 && wt < 1) throw new H2OIllegalArgumentException("Quantiles only accepts weights that are either 0 or >= 1.");
         sum += wt;
@@ -223,17 +223,17 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
     }
 
     @Override
-    public void map(Chunk chk, Chunk weight) {
+    public void map(ChunkAry chks) {
       _bins = new double[_nbins];
       _mins = new double[_nbins];
       _maxs = new double[_nbins];
       Arrays.fill(_mins, Double.MAX_VALUE);
       Arrays.fill(_maxs, -Double.MAX_VALUE);
       double d;
-      for (int row = 0; row < chk._len; row++) {
-        double w = weight.atd(row);
+      for (int row = 0; row < chks._len; row++) {
+        double w = chks._numCols == 2?chks.atd(row,1):1;
         if (w == 0) continue;
-        if (!Double.isNaN(d = chk.atd(row))) {  // na.rm=true
+        if (!Double.isNaN(d = chks.atd(row,0))) {  // na.rm=true
           double idx = (d - _lb) / _step;
           if (!(0.0 <= idx && idx < _bins.length)) continue;
           int i = (int) idx;
@@ -245,11 +245,6 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
           _bins[i] += w;               // Bump row counts by row weight
         }
       }
-    }
-
-    @Override
-    public void map(Chunk chk) {
-      map(chk, new C0DChunk(1, chk.len()));
     }
 
     @Override

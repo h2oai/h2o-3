@@ -4,9 +4,7 @@ import hex.DataInfo;
 import hex.ModelMetrics;
 import water.Job;
 import water.MRTask;
-import water.fvec.Chunk;
 import water.fvec.ChunkAry;
-import water.fvec.NewChunk;
 import water.fvec.NewChunkAry;
 import water.util.FrameUtils;
 

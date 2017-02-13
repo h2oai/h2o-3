@@ -18,7 +18,7 @@ public class AppendableVec extends Vec {
   // Temporary ESPC, for uses which do not know the number of Chunks up front.
 
   public long _tmp_espc[];
-  // Allow Chunks to have their final Chunk index (set at closing) offset by
+  // Allow Chunks to have their final ByteArraySupportedChunk index (set at closing) offset by
   // this much.  Used by the Parser to fold together multi-file AppendableVecs.
   public final int _chunkOff;
   private int _numCols;
@@ -43,7 +43,7 @@ public class AppendableVec extends Vec {
     // avoid these copies.
     DKV.put(chunkKey(cidx), db, fs);
     _numCols = Math.max(db.numCols(),_numCols);
-    // Set the length into the temp ESPC at the Chunk index (accounting for _chunkOff)
+    // Set the length into the temp ESPC at the ByteArraySupportedChunk index (accounting for _chunkOff)
     cidx -= _chunkOff;
     while( cidx >= _tmp_espc.length ) // should not happen if espcs are preallocated and shared!
       _tmp_espc = Arrays.copyOf(_tmp_espc, _tmp_espc.length<<1);
@@ -117,7 +117,7 @@ public class AppendableVec extends Vec {
     NewChunk [] ncs = new NewChunk[numCols()];
     for(int i = 0; i < ncs.length; ++i)
       ncs[i] = new NewChunk(_types[i]);
-    return new NewChunkAry(this,cidx,ncs,null);
+    return new NewChunkAry(this,cidx,ncs);
   }
   // None of these are supposed to be called while building the new vector
   @Override public DBlock chunkIdx( int cidx ) { throw H2O.fail(); }

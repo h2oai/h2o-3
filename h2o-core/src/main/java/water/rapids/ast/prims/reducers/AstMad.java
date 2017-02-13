@@ -49,7 +49,7 @@ public class AstMad extends AstPrimitive {
     final double median = AstMedian.median(f, cm);
     Frame abs_dev = new MRTask() {
       @Override
-      public void map(Chunk c, NewChunk nc) {
+      public void map(ChunkAry c, NewChunkAry nc) {
         for (int i = 0; i < c._len; ++i)
           nc.addNum(Math.abs(c.at8(i) - median));
       }

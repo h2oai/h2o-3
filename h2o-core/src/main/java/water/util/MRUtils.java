@@ -1,14 +1,10 @@
 package water.util;
 
 import water.*;
-import water.H2O.H2OCallback;
-import water.H2O.H2OCountedCompleter;
 import water.fvec.*;
-import water.nbhm.NonBlockingHashMap;
 
 import java.util.Arrays;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static water.util.RandomUtils.getRNG;
 
@@ -62,13 +58,13 @@ public class MRUtils {
   public static Frame shuffleFramePerChunk(Frame fr, final long seed) {
     return new MRTask() {
       @Override
-      public void map(Chunk[] cs, NewChunk[] ncs) {
-        int[] idx = new int[cs[0]._len];
+      public void map(ChunkAry cs, NewChunkAry ncs) {
+        int[] idx = new int[cs._len];
         for (int r=0; r<idx.length; ++r) idx[r] = r;
         ArrayUtils.shuffleArray(idx, getRNG(seed));
         for (long anIdx : idx) {
-          for (int i = 0; i < ncs.length; i++) {
-            ncs[i].addNum(cs[i].atd((int) anIdx));
+          for (int i = 0; i < ncs._len; i++) {
+            ncs.addNum(i,cs.atd(i,(int) anIdx));
           }
         }
       }
@@ -104,24 +100,19 @@ public class MRUtils {
       final double sum = ArrayUtils.sum(_ys);
       return ArrayUtils.div(Arrays.copyOf(_ys, _ys.length), sum);
     }
-    @Override public void map(Chunk ys) {
+
+    @Override public void map(ChunkAry ys) {
       _ys = new double[_nclass];
       for( int i=0; i<ys._len; i++ )
         if (!ys.isNA(i))
-          _ys[(int) ys.at8(i)]++;
-    }
-    @Override public void map(Chunk ys, Chunk ws) {
-      _ys = new double[_nclass];
-      for( int i=0; i<ys._len; i++ )
-        if (!ys.isNA(i))
-          _ys[(int) ys.at8(i)] += ws.atd(i);
+          _ys[ys.at4(i)] += ys._numCols == 2?ys.atd(i,1):1;
     }
     @Override public void reduce( ClassDist that ) { ArrayUtils.add(_ys,that._ys); }
   }
 
   public static class Dist extends MRTask<Dist> {
     private IcedHashMap<Double,Integer> _dist;
-    @Override public void map(Chunk ys) {
+    @Override public void map(ChunkAry ys) {
       _dist = new IcedHashMap<>();
       for( int row=0; row< ys._len; row++ )
         if( !ys.isNA(row) ) {

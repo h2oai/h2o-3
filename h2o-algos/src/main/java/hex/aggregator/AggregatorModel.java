@@ -6,8 +6,6 @@ import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.fvec.*;
 
-import java.util.Arrays;
-
 public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.AggregatorParameters,AggregatorModel.AggregatorOutput> implements Model.ExemplarMembers {
 
   @Override
@@ -102,9 +100,9 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
   public Frame scoreExemplarMembers(Key<Frame> destination_key, final int exemplarIdx) {
     VecAry booleanCol = new MRTask() {
       @Override
-      public void map(Chunk c, NewChunk nc) {
+      public void map(ChunkAry c, NewChunkAry nc) {
         for (int i=0;i<c._len;++i)
-          nc.addNum(c.at8(i)==_exemplars[exemplarIdx].gid ? 1 : 0,0);
+          nc.addNum(0,c.at8(i)==_exemplars[exemplarIdx].gid ? 1 : 0,0);
       }
     }.doAll(Vec.T_NUM, new Frame(_exemplar_assignment)).outputFrame().vecs();
 

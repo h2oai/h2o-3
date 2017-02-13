@@ -16,18 +16,18 @@ import java.util.UUID;
  *  display), and functions to directly load elements without further
  *  indirections.  The data is compressed, or backed by disk or both.
  *
- *  <p>A Vec is a collection of {@link Chunk}s, each of which holds between 1,000
- *  and 1,000,000 elements.  Operations on a Chunk are intended to be
+ *  <p>A Vec is a collection of {@link ByteArraySupportedChunk}s, each of which holds between 1,000
+ *  and 1,000,000 elements.  Operations on a ByteArraySupportedChunk are intended to be
  *  single-threaded; operations on a Vec are intended to be parallel and
- *  distributed on Chunk granularities, with each Chunk being manipulated by a
+ *  distributed on ByteArraySupportedChunk granularities, with each ByteArraySupportedChunk being manipulated by a
  *  separate CPU.  The standard Map/Reduce ({@link MRTask}) paradigm handles
- *  parallel and distributed Chunk access well.
+ *  parallel and distributed ByteArraySupportedChunk access well.
  *
  *  <p>Individual elements can be directly accessed like a (very large and
  *  distributed) array - however this is not the fastest way to access the
  *  data.  Direct access from Chunks is faster, avoiding several layers of
  *  indirection.  In particular accessing a random row from the Vec will force
- *  the containing Chunk data to be cached locally (and network traffic to
+ *  the containing ByteArraySupportedChunk data to be cached locally (and network traffic to
  *  bring it local); accessing all rows from a single machine will force all
  *  the Big Data to be pulled local typically resulting in swapping and very
  *  poor performance.  The main API is provided for ease of small-data
@@ -104,12 +104,12 @@ import java.util.UUID;
  *
  *  <p>Example: Impute (replace) missing values with the mean.  Note that the
  *  use of {@code vec.mean()} in the constructor uses (and computes) the
- *  general RollupStats before the MRTask starts.  Setting a value in the Chunk
+ *  general RollupStats before the MRTask starts.  Setting a value in the ByteArraySupportedChunk
  *  clears the RollupStats (since setting any value but the mean will change
  *  the mean); they will be recomputed at the next use after the MRTask.
  *  <pre>
  *    new MRTask{} { final double _mean = vec.mean();
- *      public void map( Chunk chk ) {
+ *      public void map( ByteArraySupportedChunk chk ) {
  *        for( int row=0; row &lt; chk._len; row++ )
  *          if( chk.isNA(row) ) chk.set(row,_mean);
  *      }
@@ -117,12 +117,12 @@ import java.util.UUID;
  *  </pre>
  *
  *  <p>Vecs have a {@link Vec.VectorGroup}.  Vecs in the same VectorGroup have the
- *  same Chunk and row alignment - that is, Chunks with the same index are
- *  homed to the same Node and have the same count of rows-per-Chunk.  {@link
+ *  same ByteArraySupportedChunk and row alignment - that is, Chunks with the same index are
+ *  homed to the same Node and have the same count of rows-per-ByteArraySupportedChunk.  {@link
  *  Frame}s are only composed of Vecs of the same VectorGroup (or very small
  *  Vecs) guaranteeing that all elements of each row are homed to the same Node
  *  and set of Chunks - such that a simple {@code for} loop over a set of
- *  Chunks all operates locally.  See the example in the {@link Chunk} class.
+ *  Chunks all operates locally.  See the example in the {@link ByteArraySupportedChunk} class.
  *
  *  <p>It is common and cheap to make new Vecs in the same VectorGroup as an
  *  existing Vec and initialized to e.g. zero.  Such Vecs are often used as
@@ -139,13 +139,13 @@ import java.util.UUID;
  *
  *  <p>Vec {@link Key}s have a special layout (enforced by the various Vec
  *  constructors) so there is a direct Key mapping from a Vec to a numbered
- *  Chunk and vice-versa.  This mapping is crucially used in all sorts of
+ *  ByteArraySupportedChunk and vice-versa.  This mapping is crucially used in all sorts of
  *  places, basically representing a global naming scheme across a Vec and the
  *  Chunks that make it up.  The basic layout created by {@link #newKey}:
  * <pre>
  *              byte:    0      1   2 3 4 5  6 7 8 9  10+
  *  Vec   Key layout: Key.VEC  -1   vec#grp    -1     normal Key bytes; often e.g. a function of original file name
- *  Chunk Key layout: Key.CHK  -1   vec#grp  chunk#   normal Key bytes; often e.g. a function of original file name
+ *  ByteArraySupportedChunk Key layout: Key.CHK  -1   vec#grp  chunk#   normal Key bytes; often e.g. a function of original file name
  *  RollupStats Key : Key.CHK  -1   vec#grp    -2     normal Key bytes; often e.g. a function of original file name
  *  Group Key layout: Key.GRP  -1     -1       -1     normal Key bytes; often e.g. a function of original file name
  *  ESPC  Key layout: Key.GRP  -1     -1       -2     normal Key bytes; often e.g. a function of original file name
@@ -163,8 +163,8 @@ public class Vec extends Keyed<Vec> {
   public int _rowLayout;
   // Carefully set in the constructor and read_impl to be pointer-equals to a
   // common copy one-per-node.  These arrays can get both *very* common
-  // (one-per-Vec at least, sometimes one-per-Chunk), and very large (one per
-  // Chunk, could run into the millions).
+  // (one-per-Vec at least, sometimes one-per-ByteArraySupportedChunk), and very large (one per
+  // ByteArraySupportedChunk, could run into the millions).
   private transient long _espc[];
 
   // String domain, only for Categorical columns
@@ -236,12 +236,12 @@ public class Vec extends Keyed<Vec> {
   public final boolean isTime   (int c){ return getType(c) ==T_TIME; }
   public final boolean isTime   (){ return isTime(0); }
 
-  /** Build a numeric-type Vec; the caller understands Chunk layout (via the
+  /** Build a numeric-type Vec; the caller understands ByteArraySupportedChunk layout (via the
    *  {@code espc} array).
    */
   public Vec( Key<Vec> key, int rowLayout, int numCols) { this(key, rowLayout, null, ArrayUtils.makeConst(numCols, T_NUM)); }
 
-  /** Main default constructor; the caller understands Chunk layout (via the
+  /** Main default constructor; the caller understands ByteArraySupportedChunk layout (via the
    *  {@code espc} array), plus categorical/factor the {@code domain} (or null for
    *  non-categoricals), and the Vec type. */
   public Vec( Key<Vec> key, int rowLayout, String[][] domains, byte [] types ) {
@@ -270,7 +270,7 @@ public class Vec extends Keyed<Vec> {
     return _espc[_espc.length-1];
   }
 
-  /** Number of chunks, returned as an {@code int} - Chunk count is limited by
+  /** Number of chunks, returned as an {@code int} - ByteArraySupportedChunk count is limited by
    *  the max size of a Java {@code long[]}.  Overridden by subclasses that
    *  compute chunks in an alternative way, such as file-backed Vecs.
    *  @return Number of chunks */
@@ -426,7 +426,7 @@ public class Vec extends Keyed<Vec> {
 
   public static Vec makeVec(double [] vals, Key<Vec> vecKey){
     Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey,new long[]{0,vals.length}),1);
-    NewChunkAry nc = new NewChunkAry(v,0,new NewChunk[]{new NewChunk(Vec.T_NUM)},null);
+    NewChunkAry nc = new NewChunkAry(v,0,new NewChunk[]{new NewChunk(Vec.T_NUM)});
     Futures fs = new Futures();
     for(double d:vals)
       nc.addNum(d);
@@ -439,7 +439,7 @@ public class Vec extends Keyed<Vec> {
   // allow missing (NaN) categorical values
   public static Vec makeVec(double [] vals, String [] domain, Key<Vec> vecKey){
     Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey, new long[]{0, vals.length}), new String[][]{domain}, new byte[]{Vec.T_CAT});
-    NewChunkAry nc = new NewChunkAry(v,0,new NewChunk[]{new NewChunk(Vec.T_NUM)},null);
+    NewChunkAry nc = new NewChunkAry(v,0,new NewChunk[]{new NewChunk(Vec.T_NUM)});
     Futures fs = new Futures();
     for(double d:vals)
       nc.addInteger(d);
@@ -451,7 +451,7 @@ public class Vec extends Keyed<Vec> {
   // Warning: longs are lossily converted to doubles in nc.addNum(d)
   public static Vec makeVec(long [] vals, Key<Vec> vecKey){
     Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey, new long[]{0, vals.length}),1);
-    NewChunkAry nc = new NewChunkAry(v,0,new NewChunk[]{new NewChunk(Vec.T_NUM)},null);
+    NewChunkAry nc = new NewChunkAry(v,0,new NewChunk[]{new NewChunk(Vec.T_NUM)});
     Futures fs = new Futures();
     for(long d:vals)
       nc.addInteger(d);
@@ -492,11 +492,11 @@ public class Vec extends Keyed<Vec> {
             int len = (int)(espc[i+1] - espc[i]);
             Key k = v0.newChunkKey(i);
             if(d.length == 1){
-              if (k.home()) DKV.put(k, new C0DChunk(d[0], len), _fs);
+              if (k.home()) DKV.put(k, C0DChunk.makeConstChunk(d[0]), _fs);
             } else {
               Chunk[] cs = new Chunk[d.length];
               for (int j = 0; j < cs.length; ++j)
-                cs[j] = new C0DChunk(d[j], len);
+                cs[j] = C0DChunk.makeConstChunk(d[j]);
               if (k.home()) DKV.put(k, new DBlock.MultiChunkBlock(cs), _fs);
             }
           }
@@ -520,16 +520,19 @@ public class Vec extends Keyed<Vec> {
     final Vec res = new Vec(key,_rowLayout,domains,types);
     new MRTask() {
       @Override protected void setupLocal() {
-      for(int i = 0; i < nchunks; ++i) {
-        if(res.isHomedLocally(i)){
-          Key k = res.newChunkKey(i);
-          Chunk [] cs = new Chunk[res.numCols()];
-          int len = (int)(_espc[i+1]-_espc[i]);
-          for(int j = 0; j < cs.length; ++j)
-            cs[j] = new C0LChunk(l, len);
-            DKV.put(k,new DBlock.MultiChunkBlock(cs), _fs);
+        for (int i = 0; i < nchunks; ++i) {
+          if (res.isHomedLocally(i)) {
+            Key k = res.newChunkKey(i);
+            if (res.numCols() == 1) {
+              DKV.put(k, C0LChunk.makeConstChunk(l), _fs);
+            } else {
+              Chunk[] cs = new Chunk[res.numCols()];
+              for (int j = 0; j < cs.length; ++j)
+                cs[j] = C0LChunk.makeConstChunk(l);
+              DKV.put(k, new DBlock.MultiChunkBlock(cs), _fs);
+            }
+          }
         }
-      }
       }
     }.doAllNodes();
     DKV.put(res);
@@ -863,7 +866,7 @@ public class Vec extends Keyed<Vec> {
 
 
 
-  // ======= Key and Chunk Management ======
+  // ======= Key and ByteArraySupportedChunk Management ======
 
   /** Convert a row# to a chunk#.  For constant-sized chunks this is a little
    *  shift-and-add math.  For variable-sized chunks this is a binary search,
@@ -887,8 +890,8 @@ public class Vec extends Keyed<Vec> {
 
 
 
-  /** Get a Vec Key from Chunk Key, without loading the Chunk.
-   *  @return the Vec Key for the Chunk Key */
+  /** Get a Vec Key from ByteArraySupportedChunk Key, without loading the ByteArraySupportedChunk.
+   *  @return the Vec Key for the ByteArraySupportedChunk Key */
   public static Key getVecKey( Key chk_key ) {
     assert chk_key._kb[0]==Key.CHK;
     byte [] bits = chk_key._kb.clone();
@@ -899,8 +902,8 @@ public class Vec extends Keyed<Vec> {
 
 
 
-  /** Get a Chunk Key from a chunk-index.  Basically the index-to-key map.
-   *  @return Chunk Key from a chunk-index */
+  /** Get a ByteArraySupportedChunk Key from a chunk-index.  Basically the index-to-key map.
+   *  @return ByteArraySupportedChunk Key from a chunk-index */
   protected Key chunkKey(int cidx ) {
     return chunkKey(_key,cidx);
   }
@@ -920,9 +923,9 @@ public class Vec extends Keyed<Vec> {
   // Filled in lazily and racily... but all writers write the exact identical Key
   public final Key rollupStatsKey() {return _rsKey;}
 
-  /** Get a Chunk's Value by index.  Basically the index-to-key map, plus the
+  /** Get a ByteArraySupportedChunk's Value by index.  Basically the index-to-key map, plus the
    *  {@code DKV.get()}.  Warning: this pulls the data locally; using this call
-   *  on every Chunk index on the same node will probably trigger an OOM!  */
+   *  on every ByteArraySupportedChunk index on the same node will probably trigger an OOM!  */
   public DBlock chunkIdx( int cidx ) {
     Value val = DKV.get(chunkKey(cidx));
     assert checkMissing(cidx,val) : "Missing chunk " + chunkKey(cidx);
@@ -939,7 +942,7 @@ public class Vec extends Keyed<Vec> {
    *  @return A new random Vec Key */
   public static Key<Vec> newKey(){return newKey(Key.make());}
 
-  /** Internally used to help build Vec and Chunk Keys; public to help
+  /** Internally used to help build Vec and ByteArraySupportedChunk Keys; public to help
    *  PersistNFS build file mappings.  Not intended as a public field. */
   public static final int KEY_PREFIX_LEN = 4+4+1+1;
   /** Make a new Key that fits the requirements for a Vec key, based on the
@@ -990,15 +993,15 @@ public class Vec extends Keyed<Vec> {
     return v==null ? new VectorGroup(gKey,1) : (VectorGroup)v.get();
   }
 
-  /** The Chunk for a chunk#.  Warning: this pulls the data locally; using this
-   *  call on every Chunk index on the same node will probably trigger an OOM!
-   *  @return Chunk for a chunk# */
+  /** The ByteArraySupportedChunk for a chunk#.  Warning: this pulls the data locally; using this
+   *  call on every ByteArraySupportedChunk index on the same node will probably trigger an OOM!
+   *  @return ByteArraySupportedChunk for a chunk# */
   public ChunkAry chunkForChunkIdx(int cidx) {
     return  chunkIdx(cidx).chunkAry(new VecAry(this),cidx);
   }
-  /** The Chunk for a row#.  Warning: this pulls the data locally; using this
-   *  call on every Chunk index on the same node will probably trigger an OOM!
-   *  @return Chunk for a row# */
+  /** The ByteArraySupportedChunk for a row#.  Warning: this pulls the data locally; using this
+   *  call on every ByteArraySupportedChunk index on the same node will probably trigger an OOM!
+   *  @return ByteArraySupportedChunk for a row# */
   public final ChunkAry chunkForRow(long i) { return chunkForChunkIdx(elem2ChunkIdx(i)); }
 
   // ======= Direct Data Accessors ======
@@ -1118,7 +1121,7 @@ public class Vec extends Keyed<Vec> {
       s += chunkKey(i).home_node()+":"+chunk2StartElem(i)+":";
       // CNC: Bad plan to load remote data during a toString... messes up debug printing
       // Stupidly chunkForChunkIdx loads all data locally
-      // s += chunkForChunkIdx(i).getClass().getSimpleName().replaceAll("Chunk","")+", ";
+      // s += chunkForChunkIdx(i).getClass().getSimpleName().replaceAll("ByteArraySupportedChunk","")+", ";
     }
     return s+"}]";
   }
@@ -1205,7 +1208,7 @@ public class Vec extends Keyed<Vec> {
   @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { 
     int ncs = nChunks();
     for( int i=0; i<ncs; i++ )
-      DKV.put(chunkKey(i),ab.get(Chunk.class),fs,true); // Push chunk remote; do not cache local
+      DKV.put(chunkKey(i),ab.get(ByteArraySupportedChunk.class),fs,true); // Push chunk remote; do not cache local
     return super.readAll_impl(ab,fs);
   }
 
@@ -1398,7 +1401,7 @@ public class Vec extends Keyed<Vec> {
   public static class ESPC extends Keyed<ESPC> {
     static private NonBlockingHashMap<Key,ESPC> ESPCS = new NonBlockingHashMap<>();
 
-    // Array of Row Layouts (Element Start Per Chunk) ever seen by this
+    // Array of Row Layouts (Element Start Per ByteArraySupportedChunk) ever seen by this
     // VectorGroup.  Shared here, amongst all Vecs using the same row layout
     // (instead of each of 1000's of Vecs having a copy, each of which is
     // nChunks long - could be millions).

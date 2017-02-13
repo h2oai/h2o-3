@@ -12,10 +12,7 @@ import org.apache.parquet.schema.Type;
 import water.Job;
 import water.Key;
 
-import water.fvec.ByteVec;
-import water.fvec.Chunk;
-import water.fvec.Vec;
-import water.fvec.VecAry;
+import water.fvec.*;
 import water.parser.*;
 import water.util.Log;
 
@@ -42,15 +39,15 @@ public class ParquetParser extends Parser {
       // TODO: Should we modify the interface to expose the underlying chunk for non-streaming parsers?
       throw new IllegalStateException("We only accept parser readers backed by a Vec (no streaming support!).");
     }
-    Chunk chunk = ((FVecParseReader) din).getChunk();
+    C1NChunk AChunk = ((FVecParseReader) din).getChunk();
     Vec vec = ((FVecParseReader) din).getVec().vecs()[0];
     long start = ((FVecParseReader) din).start();
     // extract metadata, we want to read only the row groups that have centers in this chunk
     ParquetMetadataConverter.MetadataFilter chunkFilter = ParquetMetadataConverter.range(
-            start, start + chunk.len());
+            start, start + AChunk.getBytes().length);
     ParquetMetadata metadata = VecParquetReader.readFooter(_metadata, chunkFilter);
     if (metadata.getBlocks().isEmpty()) {
-      Log.trace("Chunk #", cidx, " doesn't contain any Parquet block center.");
+      Log.trace("ByteArraySupportedChunk #", cidx, " doesn't contain any Parquet block center.");
       return dout;
     }
     Log.info("Processing ", metadata.getBlocks().size(), " blocks of chunk #", cidx);
@@ -138,7 +135,7 @@ public class ParquetParser extends Parser {
     for (BlockMetaData block : metadata.getBlocks()) {
       if (block.getRowCount() > Integer.MAX_VALUE) {
         throw new RuntimeException("Current implementation doesn't support Parquet files with blocks larger than " +
-                Integer.MAX_VALUE + " rows."); // because we map each block to a single H2O Chunk
+                Integer.MAX_VALUE + " rows."); // because we map each block to a single H2O ByteArraySupportedChunk
       }
     }
   }

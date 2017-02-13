@@ -235,20 +235,21 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
     }
 
     @Override
-    public void map(Chunk A, Chunk B) {
+    public void map(ChunkAry chks) {
+      int A = 0, B = 1;
       _unsortedMap = new IcedHashMap<>();
       // find unique interaction domain
       HashSet<Integer> restrictedA = _restrictedEnumA==null?null: new HashSet<Integer>(),
                        restrictedB = _restrictedEnumB==null?null: new HashSet<Integer>();
       if( restrictedA!=null ) for (int i: _restrictedEnumA) restrictedA.add(i);
       if( restrictedB!=null ) for (int i: _restrictedEnumB) restrictedB.add(i);
-      for (int r = 0; r < A._len; r++) {
-        int a = A.isNA(r) ? _missing : (int)A.at8(r);
+      for (int r = 0; r < chks._len; r++) {
+        int a = chks.isNA(r,A) ? _missing : (int)chks.at8(r,A);
         if( !_interactOnNA && a==_missing ) continue; // most readable way to express
         if( restrictedA!=null && !restrictedA.contains(a) ) continue; // not part of the limited set
         long ab;
         if (!_same) {
-          int b = B.isNA(r) ? _missing : (int)B.at8(r);
+          int b = chks.isNA(r,B) ? _missing : (int)chks.at8(r,B);
           if( !_interactOnNA && b==_missing ) continue;
           if( restrictedB!=null && !restrictedB.contains(b) ) continue; // not part of the limited set
 

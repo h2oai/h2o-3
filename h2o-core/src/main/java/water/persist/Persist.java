@@ -67,7 +67,7 @@ public abstract class Persist {
 
   static String getIceDirectory(Key key) {
     if( !key.isChunkKey() ) return "not_a_Chunk";
-    // Reverse Chunk key generation
+    // Reverse ByteArraySupportedChunk key generation
     return key2Str(key.getVecKey());
   }
 

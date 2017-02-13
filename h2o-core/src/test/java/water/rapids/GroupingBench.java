@@ -73,7 +73,7 @@ class MyCountRangeNoSpline extends MRTask<MyCountRangeNoSpline> {
         System.out.println("Constructor for MyCountRange");
         _max = max; _min = min;
     }
-    @Override public void map( Chunk chk ) {
+    @Override public void map( ChunkAry chk ) {
         _counts = new long[(int)(_max-_min+1)];
         int rows = chk._len;
         for (int r=0; r<rows; r++) _counts[(int)(chk.at8(r)-_min)]++;
@@ -93,7 +93,7 @@ class WriteOrder extends MRTask<WriteOrder> {
     final long _min;
     final long _max;
     WriteOrder(long[][] counts, long[] order, long min, long max) { _counts = counts; _order = order; _min = min; _max=max; }
-    @Override public void map( Chunk chk ) {
+    @Override public void map( ByteArraySupportedChunk chk ) {
         long myCounts[] = _counts[chk._cidx];
         for (int r=0; r<chk._len; r++) _order[ (int)(myCounts[(int)(chk.at8(r)-_min)]++) ] = r+chk._start;
     }
@@ -132,7 +132,7 @@ class WriteOrder extends MRTask<WriteOrder> {
             //_order[targetChunk][(int)(target - espc[targetChunk])] = r+(int)chk._start;
             //nanos[4] += System.nanoTime()-t0;
         }
-        //System.out.print("Chunk "+chk._cidx+": "); for (int i=0; i<5; i++) System.out.print(Math.round(nanos[i]/1e6)+" "); System.out.print("\n");  // print ms
+        //System.out.print("ByteArraySupportedChunk "+chk._cidx+": "); for (int i=0; i<5; i++) System.out.print(Math.round(nanos[i]/1e6)+" "); System.out.print("\n");  // print ms
     }
 }
 
@@ -156,7 +156,7 @@ public class GroupingBench extends TestUtil {
         System.out.println("\nFirst 30 of vec ...");
         System.out.println("There are "+vec.nChunks()+" chunks");
         for (int i=0; i<vec.nChunks(); i++) {
-            System.out.println("Chunk"+i+"is on"+vec.newChunkKey(i).home_node());
+            System.out.println("ByteArraySupportedChunk"+i+"is on"+vec.newChunkKey(i).home_node());
         }
 
         CreateFrame cf = new CreateFrame();

@@ -253,14 +253,14 @@ public class AstRectangleAssign extends AstPrimitive {
     // TODO: COW without materializing vec and depending on assign_frame_frame
     Frame src2 = new MRTask() {
       @Override
-      public void map(Chunk[] cs, NewChunk[] ncs) {
-        Chunk bool = cs[cs.length - 1];
-        for (int i = 0; i < cs[0]._len; ++i) {
+      public void map(ChunkAry cs, NewChunkAry ncs) {
+        int bool = cs._numCols - 1;
+        for (int i = 0; i < cs._len; ++i) {
           int nc = 0;
-          if (bool.at8(i) == 1)
-            for (int ignored : cols) ncs[nc++].addNum(src);
+          if (cs.at4(i,bool) == 1)
+            for (int ignored : cols) ncs.addNum(nc++,src);
           else
-            for (int c : cols) ncs[nc++].addNum(cs[c].atd(i));
+            for (int c : cols) ncs.addNum(nc++, cs.atd(i,c));
         }
       }
     }.doAll(cols.length, Vec.T_NUM, new Frame(dst).add(rows)).outputFrame();

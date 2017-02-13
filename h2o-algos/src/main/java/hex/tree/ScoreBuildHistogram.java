@@ -3,8 +3,8 @@ package hex.tree;
 import hex.genmodel.utils.DistributionFamily;
 import water.H2O.H2OCountedCompleter;
 import water.MRTask;
-import water.fvec.C0DChunk;
 import water.fvec.Chunk;
+import water.fvec.C0DChunk;
 import water.fvec.ChunkAry;
 import water.util.ArrayUtils;
 
@@ -99,7 +99,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
 
   @Override final public void map( ChunkAry chks ) {
 
-    final Chunk weight = _weightIdx>=0 ? chks.getChunk(_weightIdx) : new C0DChunk(1, chks._len);
+    final Chunk weight = _weightIdx>=0 ? chks.getChunk(_weightIdx) : C0DChunk.makeConstChunk(1);
 
     // Pass 1: Score a prior partially-built tree model, and make new Node
     // assignments to every row.  This involves pulling out the current
@@ -227,7 +227,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     for( int row=0; row<nnids.length; row++ )
       if( nnids[row] >= 0 )
         rows[nh[nnids[row]]++] = row;
-    // rows[] has Chunk-local ROW-numbers now, in-order, grouped by NID.
+    // rows[] has ByteArraySupportedChunk-local ROW-numbers now, in-order, grouped by NID.
     // nh[] lists the start of each new NID, and is indexed by NID+1.
     final DHistogram hcs[][] = _hcs;
     if( hcs.length==0 ) return; // Unlikely fast cutout

@@ -16,6 +16,6 @@ abstract class WrappedVec extends Vec {
   }
 
   public VecAry masterVec() { return _masterVec; }
-  // Map from chunk-index to Chunk.  These wrappers are making custom Chunks
+  // Map from chunk-index to ByteArraySupportedChunk.  These wrappers are making custom Chunks
   abstract public DBlock chunkIdx(int cidx);
 }

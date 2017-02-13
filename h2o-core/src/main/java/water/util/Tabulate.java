@@ -3,10 +3,7 @@ package water.util;
 import hex.Interaction;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
-import water.fvec.VecAry;
+import water.fvec.*;
 
 /**
  * Simple Co-Occurrence based tabulation of X vs Y, where X and Y are two Vecs in a given dataset
@@ -161,19 +158,15 @@ public class Tabulate extends Keyed<Tabulate> {
     }
 
     @Override
-    public void map(Chunk x, Chunk y) {
-      map(x,y,null);
-    }
-    @Override
-    public void map(Chunk x, Chunk y, Chunk w) {
-      for (int r=0; r<x.len(); ++r) {
-        int xbin = _sp.bin(0, x.atd(r));
-        int ybin = _sp.bin(1, y.atd(r));
-        double weight = w!=null?w.atd(r):1;
+    public void map(ChunkAry  cs /* x y w */) {
+      for (int r=0; r<cs._len; ++r) {
+        int xbin = _sp.bin(0, cs.atd(r,0));
+        int ybin = _sp.bin(1, cs.atd(r,1));
+        double weight = cs._numCols == 3?cs.atd(r,2):1;
         if (Double.isNaN(weight)) continue;
         AtomicUtils.DoubleArray.add(_sp._count_data[xbin], ybin, weight); //increment co-occurrence count by w
-        if (!y.isNA(r)) {
-          AtomicUtils.DoubleArray.add(_sp._response_data[xbin], 0, weight * y.atd(r)); //add to mean response for x
+        if (!cs.isNA(r,1)) {
+          AtomicUtils.DoubleArray.add(_sp._response_data[xbin], 0, weight * cs.atd(r,1)); //add to mean response for x
           AtomicUtils.DoubleArray.add(_sp._response_data[xbin], 1, weight); //increment total for x
         }
       }

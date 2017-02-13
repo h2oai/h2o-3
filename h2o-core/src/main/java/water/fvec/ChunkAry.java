@@ -6,8 +6,6 @@ import water.util.ArrayUtils;
 
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
 
 /**
  * Created by tomas on 10/5/16.
@@ -21,18 +19,23 @@ public class ChunkAry<C extends Chunk> extends Iced {
 
   private transient BitSet _changedColsBitset;
   C [] _cs;
-  int [] _ids;
 
+  ChunkAry(int len, Chunk c){
+    _cidx = 0;
+    _start = 0;
+    _len = len;
+    _numCols = 1;
+    _cs = (C[])new Chunk[]{c};
+    _vec = null;
+  }
   public ChunkAry(VecAry v,int cidx, C c){
     _vec = v;
     _cidx = cidx;
     _start = _vec.chunk2StartElem(cidx);
     _len = (int)(_vec.chunk2StartElem(cidx+1) - _start);
     _numCols = v.numCols();
-    _ids = null;
     _cs = (C[])new Chunk[]{c};
   }
-  public ChunkAry(VecAry v,int cidx, C... cs){this(v,cidx,cs,null);}
   public ChunkAry(int cidx, int len, C... cs){
     _vec = null;
     _cidx = cidx;
@@ -40,16 +43,14 @@ public class ChunkAry<C extends Chunk> extends Iced {
     _len = len;
     _numCols = cs.length;
     _cs = cs;
-    _ids = null;
   }
-  public ChunkAry(VecAry v,int cidx, C [] cs, int [] ids){
+  public ChunkAry(VecAry v,int cidx, C... cs){
     _vec = v;
     _cidx = cidx;
     _start = _vec.chunk2StartElem(cidx);
     _len = (int)(_vec.chunk2StartElem(cidx+1) - _start);
     _numCols = v.numCols();
     _cs = cs;
-    _ids = ids;
   }
 
   public ChunkAry nextChunk(){
@@ -65,104 +66,32 @@ public class ChunkAry<C extends Chunk> extends Iced {
 
   public Chunk[] getSparseChunks() {return _cs;}
 
-
-  public static final class SparseVec {
-    Chunk _c;
-    public int _colId;
-
-    public SparseVec(){}
-    public SparseVec(Chunk c, int col){
-      _c = c;
-      _colId = col;
-    }
-    public int colId(){return _colId;}
-    public int sparseLen(){return _c.sparseLenZero();}
-
-    public int getDoubles(double [] vals, int [] ids){
-      return getDoubles(vals,ids,Double.NaN);
-    }
-    public int getDoubles(double [] vals, int [] ids, double NA){
-      return _c.asSparseDoubles(vals,ids,NA);
-    }
-    public double[] getDoubles(double [] vals, double NA){
-      return _c.getDoubles(vals,0,vals.length,NA);
-    }
-    public boolean isSparseZero(){
-      return _c.isSparseZero();
-    }
-
-    public boolean isSparseNA() {
-      return _c.isSparseNA();
-    }
-
-    public int[] getIntegers(int[] vals, int i) {
-      _c.getIntegers(vals,0,vals.length,i);
-      return vals;
-    }
+  public int[] getIntegers(int i, int[] vals, int NA) {
+    return getIntegers(i,vals,0,_len,NA);
   }
-  boolean _dense;
-
-  public SparseVec sparseVec(int id){
-    return null;
+  public int[] getIntegers(int i, int[] vals, int from, int to, int NA) {
+    return _cs[i].getIntegers(vals,from,to, NA);
   }
 
-  public SparseVec next(SparseVec sv) {
-    if(sv._colId == _numCols) return sv;
-    if(sv._colId > _numCols) throw new IndexOutOfBoundsException(sv._colId + " > " + _numCols);
-    if(_dense){
-      if(++sv._colId < _cs.length)
-        sv._c = _cs[sv._colId];
-      else sv._c = null;
-      return sv;
-    }
-    int i = sv._colId;
-    while(i < _numCols){
-      int c = _vec.colFilter(sv._colId);
-      if (c < lb || ub <= c) {
-      }
-      c = c - lb;
-      Chunk chk = db.getColSparse(c, null);
-      if (chk != null) {
-        sv._c = chk;
-        sv._colId = i;
-        return sv;
-      }
-      i++;
-    }
-    sv._colId = i;
-    sv._c = null;
-    return sv;
-  }
 
-  public double[] getDoubles(int c, double [] vals){
-    return getDoubles(c,vals,0,_len,Double.NaN);
+
+  public double[] getDoubles(int c, double [] vals, double NA){
+    return getDoubles(c,vals,0,_len,NA);
   }
   public double[] getDoubles(int c, double [] vals, int from, int to){
     return getDoubles(c,vals,from,to,Double.NaN);
   }
+  public int getSparseDoubles(int c, double [] vals, int [] ids, double NA){
+    return _cs[c].asSparseDoubles(vals,ids,NA);
+  }
   public double[] getDoubles(int c, double [] vals, int from, int to, double NA){
-    if(_ids == null) return _cs[c].getDoubles(vals,from,to,NA);
-    int x = Arrays.binarySearch(_ids,c);
-    if(x >= 0) return _cs[x].getDoubles(vals,from,to,NA);
-    for(int i = from; i < to; i++)
-      vals[i] = 0;
-    return vals;
+    return _cs[c].getDoubles(vals,from,to,NA);
   }
 
-  public double min(int c){
-    if(_ids == null) return _cs[c].min();
-    int id = Arrays.binarySearch(_ids,c);
-    if(id < 0) return 0;
-    return _cs[id].min();
-  }
+  public double min(int c){return _cs[c].min();}
   public double min(){return min(0);}
-  public double max(int c){
-    if(_ids == null) return _cs[c].max();
-    if(_ids == null) return _cs[c].min();
-    int id = Arrays.binarySearch(_ids,c);
-    if(id < 0) return 0;
-    return _cs[id].max();
-  }
+  public double max(int c){ return _cs[c].max();}
+
   public double max(){return max(0);}
 
   public long start(){return _start;}
@@ -196,47 +125,23 @@ public class ChunkAry<C extends Chunk> extends Iced {
         db = DKV.getGet(k);
       }
       int id = i + _minModifiedCol;
-      if(_ids != null) id = Arrays.binarySearch(_ids,id);
       Chunk chk = _cs[id].compress();
       db = db.setChunk(j-lb,chk);
-      assert chk._len == _len:_len + " != " + chk._len;
+//      assert chk._len == _len:_len + " != " + chk._len;
     }
     if(vecId != -1) DKV.put(k,db);
     return fs;
   }
-  private boolean isSparse(){return _ids != null;}
-  public Chunk getChunk(int c){
-    int id = c;
-    if(_ids != null)id = Arrays.binarySearch(_ids,c);
-    if(id < 0) return new C0DChunk(0,_len);
-    return _cs[id];
-  }
+
+  public Chunk getChunk(int c){return _cs[c];}
   public void setChunk(int c, double [] ds){
     setChunk(c,(C)new NewChunk(ds).compress());
   }
-  public void setChunk(int c, Chunk chk){
-    if(_ids == null) {
-      _cs[c] = (C)chk;
-      return;
-    }
-    int id = Arrays.binarySearch(_ids,c);
-    if(id < 0) {
-      Chunk [] denseChks = new Chunk[_numCols];
-      int j = 0;
-      for(int i = 0; i < denseChks.length; ++i){
-        if(j < _ids.length && i == _ids[j]){
-          denseChks[i] = _cs[j++];
-        } else denseChks[i] = new C0DChunk(0,_len);
-      }
-      denseChks[c] = chk;
-      _cs = (C[])denseChks;
-      _ids = null;
-    } else _cs[id] = (C)chk;
-  }
+  public void setChunk(int c, Chunk chk){_cs[c] = (C)chk;}
   public NewChunk getChunkInflated(int c){
     Chunk chk = getChunk(c);
     if(!(chk instanceof NewChunk))
-      setChunk(c,chk.inflate_impl(new NewChunk(_vec.getType(c))));
+      setChunk(c,chk.add2Chunk(new NewChunk(_vec.getType(c)),0,_len));
     if(_cs.length == 0)
       System.out.println("haha");
     return (NewChunk) _cs[c];
@@ -245,8 +150,12 @@ public class ChunkAry<C extends Chunk> extends Iced {
 
   public Chunk[] getChunks(){return _cs;}
 
+  public int nextNZCol(int id){
+    return id+1;
+  }
 
   ModifiedBlocks _modified;
+
 
 
 
@@ -351,16 +260,24 @@ public class ChunkAry<C extends Chunk> extends Iced {
   public final double set(int i, double d){ set(i,0,d); return d; }
 
   public final void setAll(int c, double val){
-    _cs[c] = (C)new C0DChunk(val,_len);
+    if(val == 0) _cs[c] = (C)C0Chunk._instance;
+    else if(val == 1) _cs[c] = (C)Const1Chunk._instance;
+    else if( Double.isNaN(val)) _cs[c] = (C)CNAChunk._instance;
+    else  _cs[c] = (C)C0DChunk.makeConstChunk(val);
   }
+
   public final void set(int i, C ck){
     setWrite(i);
     _cs[i] = ck;
   }
+
+  private C inflate_impl(int j){
+    return (C)_cs[j].add2Chunk(new NewChunk(_vec.getType(j)),0,_len);
+  }
   public final double set(int i, int j, double d){
     setWrite(j);
     if(!_cs[j].set_impl(i,d)){
-      _cs[j] = (C)_cs[j].inflate_impl(new NewChunk(_vec.getType(j)));
+      _cs[j] = inflate_impl(j);
       _cs[j].set_impl(i,d);
     }
     return d;
@@ -368,34 +285,20 @@ public class ChunkAry<C extends Chunk> extends Iced {
 
   public long set(int i, int j, long l){
     setWrite(j);
-    int id = j;
-    if(_ids != null)
-      id = Arrays.binarySearch(_ids,j);
-    if( id < 0)
-      getChunkInflated(j).set_impl(i,l);
-    else if(!_cs[id].set_impl(i,l)){
-      _cs[id] = (C)_cs[id].inflate_impl(new NewChunk(_vec.getType(j)));
-      _cs[id].set_impl(i,l);
-      assert _cs[id].len() == _len;
+    if(!_cs[j].set_impl(i,l)){
+      _cs[j] = inflate_impl(j);
+      _cs[j].set_impl(i,l);
     }
     return l;
   }
 
   public boolean hasNA(){return hasNA(0);}
   public boolean hasNA(int c){
-    if(_ids != null){
-      c = Arrays.binarySearch(_ids,c);
-      if(c < 0) return false;
-    }
     return _cs[c].hasNA();
   }
 
   public final double atd(int i){ return atd(i,0);}
   public final double atd(int i, int j){
-    if(_ids != null){
-      j = Arrays.binarySearch(_ids,j);
-      if(j < 0) return 0;
-    }
     return _cs[j].atd(i);
   }
 
@@ -410,48 +313,28 @@ public class ChunkAry<C extends Chunk> extends Iced {
   public final long at16l(int i, int j){
     if(j < 0 || j > _numCols)
       throw new ArrayIndexOutOfBoundsException(j);
-    if(_ids != null){
-      j = Arrays.binarySearch(_ids,j);
-      if(j < 0) throw new IllegalArgumentException("not a UUId chunk"); // UUID chunks should not be 0-sparse
-    }
     return _cs[j].at16l(i);
   }
   public final long at16h(int i){ return at16h(i,0);}
   public final long at16h(int i, int j){
     if(j < 0 || j > _numCols)
       throw new ArrayIndexOutOfBoundsException(j);
-    if(_ids != null){
-      j = Arrays.binarySearch(_ids,j);
-      if(j < 0) throw new IllegalArgumentException("not a UUId chunk"); // UUID chunks should not be 0-sparse
-    }
     return _cs[j].at16h(i);
   }
 
 
   public boolean isNA(int i){ return isNA(i,0);}
   public boolean isNA(int i, int j){
-    if(_ids != null){
-      j = Arrays.binarySearch(_ids,j);
-      if(j < 0) return false;
-    }
     return _cs[j].isNA(i);
   }
 
   public long at8(int i){ return at8(i,0);}
   public long at8(int i, int j){
-    if(_ids != null){
-      j = Arrays.binarySearch(_ids,j);
-      if(j < 0) return 0;
-    }
     return _cs[j].at8(i);
   }
 
   public int at4(int i){ return at4(i,0);}
   public int at4(int i, int j){
-    if(_ids != null){
-      j = Arrays.binarySearch(_ids,j);
-      if(j < 0) return 0;
-    }
     return _cs[j].at4(i);
   }
 
@@ -459,57 +342,25 @@ public class ChunkAry<C extends Chunk> extends Iced {
     return atStr(str,i,0);
   }
   public BufferedString atStr(BufferedString str,int i, int j){
-    if(_ids != null){
-      j = Arrays.binarySearch(_ids,j);
-      if(j < 0) throw new ArrayIndexOutOfBoundsException(j);
-    }
     return _cs[j].atStr(str,i);
   }
 
   public String set(int i, int j, String str){
-    if(_ids != null){
-      j = Arrays.binarySearch(_ids,j);
-      if(j < 0) throw new ArrayIndexOutOfBoundsException(j);
-    }
     if(!_cs[j].set_impl(i,str))
-      (_cs[j] = (C)_cs[j].inflate_impl(new NewChunk(Vec.T_STR))).set_impl(i,str);
+      (_cs[j] = (C)_cs[j].add2Chunk(new NewChunk(Vec.T_STR),0,_len)).set_impl(i,str);
     return str;
   }
   public BufferedString set(int i, int j, BufferedString str){
-    if(_ids != null){
-      j = Arrays.binarySearch(_ids,j);
-      if(j < 0) throw new ArrayIndexOutOfBoundsException(j);
-    }
     if(!_cs[j].set_impl(i,str))
-      (_cs[j] = (C)_cs[j].inflate_impl(new NewChunk(Vec.T_STR))).set_impl(i,str);
+      (_cs[j] = (C)_cs[j].add2Chunk(new NewChunk(Vec.T_STR),0,_len)).set_impl(i,str);
     return str;
   }
 
-  private Chunk getOrMakeSparseChunk(int j){
-    int j2 = Arrays.binarySearch(_ids,j);
-    if(j2 > j) return _cs[j2];
-    j2 = -j2 - 1;
-    int n = _cs.length;
-    _cs = Arrays.copyOf(_cs,n+1);
-    _ids = Arrays.copyOf(_ids,n+1);
-    for(int i = n; i > j2; --i) {
-      _cs[i + 1] = _cs[i];
-      _ids[i+1] = _ids[i+1];
-    }
-    _ids[j2] = j;
-    return _cs[j2] = (C)new C0DChunk(0, _len);
-  }
-
   public void setNA(int i, int j){
-    Chunk c = _ids != null?getOrMakeSparseChunk(j):_cs[j];
-    c.setNA_impl(i);
+    _cs[j].setNA_impl(i);
   }
 
   public boolean hasFloat(int c) {
-    if(_ids != null){
-      int j = Arrays.binarySearch(_ids,c);
-      return j >= 0 && _cs[j].hasFloat();
-    }
     return _cs[c].hasFloat();
   }
   public boolean hasFloat() {
@@ -517,51 +368,37 @@ public class ChunkAry<C extends Chunk> extends Iced {
   }
 
 
+
   public int sparseLenZero(int c) {
-    if(_ids != null){
-      int j = Arrays.binarySearch(_ids,c);
-      return j >= 0?_cs[j].sparseLenZero():0;
-    }
-    return _cs[c].sparseLenZero();
+    return _cs[c].isSparseZero()?_cs[c].len():_len;
   }
   public int sparseLenZero(){return sparseLenZero(0);}
 
   public int sparseLenNA(int c) {
-    if(_ids != null){
-      int j = Arrays.binarySearch(_ids,c);
-      return j >= 0?_cs[j].sparseLenNA():0;
-    }
-    return _cs[c].sparseLenZero();
+    return _cs[c].isSparseNA()?_cs[c].len():_len;
   }
   public int sparseLenNA(){return sparseLenNA(0);}
 
 
   public boolean isSparseNA(int c){
-    if(_ids != null){
-      int j = Arrays.binarySearch(_ids,c);
-      return j >= 0?_cs[j].isSparseNA():false;
-    }
-    return _cs[c].isSparseZero();
+    return _cs[c].isSparseNA();
   }
   public boolean isSparseNA(){return isSparseNA(0);}
   public boolean isSparseZero(int c){
-    if(_ids != null){
-      int j = Arrays.binarySearch(_ids,c);
-      return j >= 0?_cs[j].isSparseZero():true;
-    }
     return _cs[c].isSparseZero();
   }
   public boolean isSparseZero(){return isSparseZero(0);}
 
-  public int nextNZ(int i) { return nextNZ(i,0);}
-  public int nextNZ(int i, int j) {
-    if(_ids != null){
-      j = Arrays.binarySearch(_ids,j);
-      if(j < 0) return _len;
-    }
-    return _cs[j].nextNZ(i);
+  private Chunk.SparseNum _sv;
+  public Chunk.SparseNum sparseNum(int c){
+    if(_sv == null) _sv = new Chunk.SparseNum(_len);
+    return _sv.setChunk(_cs[c]);
   }
-
+  private Chunk.SparseString _str;
+  public Chunk.SparseString sparseStr(int col) {
+    if(_str == null) _str = new Chunk.SparseString(_len);
+    return _str.setChunk(_cs[col]);
+  }
   public void add2Chunk(int srcCol, NewChunk nc, int from, int to) {
     _cs[srcCol].add2Chunk(nc,from,to);
   }
@@ -577,7 +414,7 @@ public class ChunkAry<C extends Chunk> extends Iced {
 
   public void setInflated(int i, int j, DVal v){
     if(!_cs[j].setInflated(i,v)){
-      _cs[j] = (C)_cs[j].inflate_impl(new NewChunk(_vec.getType(j)));
+      _cs[j] = inflate_impl(j);
       _cs[j].setInflated(i,v);
     }
   }
@@ -596,11 +433,12 @@ public class ChunkAry<C extends Chunk> extends Iced {
   public DBlock copyIntoNewBlock() {
     if(_cs.length == 1)
       return _cs[0].deepCopy();
-    Chunk [] cs = _cs.clone();
+    Chunk[] cs = _cs.clone();
     for(int i =0 ; i < cs.length; ++i)
       cs[i] = cs[i].deepCopy();
-    if(_ids != null) // sparse
-      throw H2O.unimpl();
     return new DBlock.MultiChunkBlock(cs);
   }
+
+
+
 }

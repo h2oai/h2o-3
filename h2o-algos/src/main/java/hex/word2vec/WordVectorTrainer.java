@@ -91,17 +91,17 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
   /*
    * All words in sentence should be in vocab
    */
-  private int getSentence(int[] sentence, CStrChunk cs) {
+  private int getSentence(int[] sentence, CStrChunk cs, int len) {
     VecAry count = _vocab.vec(1);
     BufferedString tmp = new BufferedString();
     float ran;
     int wIdx, sentIdx = 0;
 
-    int sentLen = (cs._len - 1 - _chkIdx);
+    int sentLen = (len - 1 - _chkIdx);
     if (sentLen >= MAX_SENTENCE_LEN) sentLen = MAX_SENTENCE_LEN;
     else if (sentLen < MIN_SENTENCE_LEN) return 0;
 
-    for (; _chkIdx < cs._len; _chkIdx++) {
+    for (; _chkIdx < len; _chkIdx++) {
       cs.atStr(tmp, _chkIdx);
       if (!_vocabHM.containsKey(tmp)) continue; //not in vocab, skip
       wIdx = _vocabHM.get(tmp);
@@ -128,7 +128,7 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
     }
   }
 
-  @Override public void map(Chunk cs[]) {
+  @Override public void map(ChunkAry cs) {
     int wrdCnt=0, bagSize=0, sentLen, curWord, winSizeMod;
     int winWordSentIdx, winWord;
     final int winSize = _windowSize, vecSize = _wordVecSize;
@@ -137,8 +137,8 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
     int[] sentence = new int[MAX_SENTENCE_LEN];
 
     //traverse all supplied string columns
-    for (Chunk chk: cs) if (chk instanceof CStrChunk) {
-      while ((sentLen = getSentence(sentence, (CStrChunk) chk)) > 0) {
+    for (Chunk chk: cs.getChunks()) if (chk instanceof CStrChunk) {
+      while ((sentLen = getSentence(sentence, (CStrChunk) chk,cs._len)) > 0) {
         for (int sentIdx = 0; sentIdx < sentLen; sentIdx++) {
           if (wrdCnt % 10000 == 0) updateAlpha(wrdCnt);
           curWord = sentence[sentIdx];

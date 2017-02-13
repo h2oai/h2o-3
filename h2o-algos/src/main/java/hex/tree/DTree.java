@@ -2,7 +2,6 @@ package hex.tree;
 
 import jsr166y.RecursiveAction;
 import water.*;
-import water.fvec.Chunk;
 import water.fvec.ChunkAry;
 import water.fvec.Frame;
 import water.util.*;

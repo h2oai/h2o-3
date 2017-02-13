@@ -632,7 +632,7 @@ public final class ParseDataset {
 //            for( Vec vec : _f.vecs() ) {
 //              Value val = Value.STORE_get(vec.chunkKey(fi)); // Local-get only
 //              if( val != null ) {
-//                nlines = ((Chunk)val.get())._len;
+//                nlines = ((ByteArraySupportedChunk)val.get())._len;
 //                break;
 //              }
 //            }
@@ -676,12 +676,12 @@ public final class ParseDataset {
     private final Key _cKey = Key.make();
     // Eagerly delete Big Data
     private final boolean _deleteOnDone;
-    // Mapping from Chunk# to node index holding the initial category mappings.
-    // It is either self for all the non-parallel parses, or the Chunk-home for parallel parses.
+    // Mapping from ByteArraySupportedChunk# to node index holding the initial category mappings.
+    // It is either self for all the non-parallel parses, or the ByteArraySupportedChunk-home for parallel parses.
     private int[] _chunk2ParseNodeMap;
     // Job Key, to unlock & removeVecs raw parsed data; to report progress
     private final Key<Job> _jobKey;
-    // A mapping of Key+ByteVec to rolling total Chunk counts.
+    // A mapping of Key+ByteVec to rolling total ByteArraySupportedChunk counts.
     private final int[]  _fileChunkOffsets;
 
     // OUTPUT fields:
@@ -695,7 +695,7 @@ public final class ParseDataset {
       _vecIdStart = _vg.reserveKeys(_reservedKeys = _parseSetup._parse_type.equals(SVMLight_INFO) ? 100000000 : setup._number_columns);
       _deleteOnDone = deleteOnDone;
       _jobKey = jobKey;
-      // A mapping of Key+ByteVec to rolling total Chunk counts.
+      // A mapping of Key+ByteVec to rolling total ByteArraySupportedChunk counts.
       _fileChunkOffsets = new int[fkeys.length];
       int len = 0;
       for( int i = 0; i < fkeys.length; ++i ) {
@@ -703,7 +703,7 @@ public final class ParseDataset {
         len += getByteVec(fkeys[i]).nChunks();
       }
 
-      // Mapping from Chunk# to cluster-node-number
+      // Mapping from ByteArraySupportedChunk# to cluster-node-number
       _chunk2ParseNodeMap = MemoryManager.malloc4(len);
       Arrays.fill(_chunk2ParseNodeMap, -1);
     }

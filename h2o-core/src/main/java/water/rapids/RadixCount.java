@@ -1,7 +1,6 @@
 package water.rapids;
 
 import water.*;
-import water.fvec.Chunk;
 import water.fvec.ChunkAry;
 
 class RadixCount extends MRTask<RadixCount> {

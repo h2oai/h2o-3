@@ -3,10 +3,7 @@ package hex;
 import hex.genmodel.GenModel;
 import water.MRTask;
 import water.exceptions.H2OIllegalArgumentException;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
-import water.fvec.VecAry;
+import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
 
@@ -105,11 +102,12 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     public BinomialMetrics(String[] domain) { this.domain = domain; }
     String[] domain;
     public MetricBuilderBinomial _mb;
-    @Override public void map(Chunk[] chks) {
+    @Override public void map(ChunkAry cs) {
+      Chunk [] chks = cs.getChunks();
       _mb = new MetricBuilderBinomial(domain);
       Chunk actuals = chks[1];
       double [] ds = new double[3];
-      for (int i=0;i<chks[0]._len;++i) {
+      for (int i=0;i<cs._len;++i) {
         ds[2] = chks[0].atd(i); //class 1 probs (user-given)
         ds[1] = 1-ds[2]; //class 0 probs
         ds[0] = GenModel.getPrediction(ds, null, ds, Double.NaN/*ignored - uses AUC's default threshold*/); //label

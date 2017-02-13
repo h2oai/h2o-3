@@ -50,9 +50,9 @@ public class MathUtils {
   }
 
   static public class ComputeAbsDiff extends MRTask<ComputeAbsDiff> {
-    @Override public void map(Chunk chks[], NewChunk nc[]) {
-      for (int i=0; i<chks[0].len(); ++i)
-        nc[0].addNum(Math.abs(chks[0].atd(i) - chks[1].atd(i)));
+    @Override public void map(ChunkAry chks, NewChunkAry nc) {
+      for (int i=0; i<chks._len; ++i)
+        nc.addNum(Math.abs(chks.atd(i,0) - chks.atd(i,1)));
     }
   }
 
@@ -538,12 +538,12 @@ public class MathUtils {
       initCheck(input, N, 1, 1);
       return new MRTask() {
         @Override
-        public void map(Chunk[] cs, NewChunk[] ncs) {
+        public void map(ChunkAry cs, NewChunkAry ncs) {
           double[] a = new double[N];
-          for (int row = 0; row < cs[0]._len; ++row) {
+          for (int row = 0; row < cs._len; ++row) {
             // fill 1D array
             for (int i = 0; i < N; ++i)
-              a[i] = cs[i].atd(row);
+              a[i] = cs.atd(row,i);
 
             // compute DCT for each row
             if (!inverse)
@@ -553,7 +553,7 @@ public class MathUtils {
 
             // write result to NewChunk
             for (int i = 0; i < N; ++i)
-              ncs[i].addNum(a[i]);
+              ncs.addNum(i,a[i]);
           }
         }
       }.doAll(input.numCols(), Vec.T_NUM, input).outputFrame();
@@ -572,13 +572,13 @@ public class MathUtils {
       initCheck(input, height, width, 1);
       return new MRTask() {
         @Override
-        public void map(Chunk[] cs, NewChunk[] ncs) {
+        public void map(ChunkAry cs, NewChunkAry ncs) {
           double[][] a = new double[height][width];
           // each row is a 2D sample
-          for (int row = 0; row < cs[0]._len; ++row) {
+          for (int row = 0; row < cs._len; ++row) {
             for (int i = 0; i < height; ++i)
               for (int j = 0; j < width; ++j)
-                a[i][j] = cs[i * width + j].atd(row);
+                a[i][j] = cs.atd(row,i * width + j);
 
             // compute 2D DCT
             if (!inverse)
@@ -589,8 +589,7 @@ public class MathUtils {
             // write result to NewChunk
             for (int i = 0; i < height; ++i)
               for (int j = 0; j < width; ++j)
-                ncs[i * width + j].addNum(a[i][j]);
-
+                ncs.addNum(i * width + j,a[i][j]);
           }
         }
       }.doAll(height * width, Vec.T_NUM, input).outputFrame();
@@ -610,15 +609,15 @@ public class MathUtils {
       initCheck(input, height, width, depth);
       return new MRTask() {
         @Override
-        public void map(Chunk[] cs, NewChunk[] ncs) {
+        public void map(ChunkAry cs, NewChunkAry ncs) {
           double[][][] a = new double[height][width][depth];
 
           // each row is a 3D sample
-          for (int row = 0; row < cs[0]._len; ++row) {
+          for (int row = 0; row < cs._len; ++row) {
             for (int i = 0; i < height; ++i)
               for (int j = 0; j < width; ++j)
                 for (int k = 0; k < depth; ++k)
-                  a[i][j][k] = cs[i*(width*depth) + j*depth + k].atd(row);
+                  a[i][j][k] = cs.atd(row,i*(width*depth) + j*depth + k);
 
             // compute 3D DCT
             if (!inverse)
@@ -630,7 +629,7 @@ public class MathUtils {
             for (int i = 0; i < height; ++i)
               for (int j = 0; j < width; ++j)
                 for (int k = 0; k < depth; ++k)
-                  ncs[i*(width*depth) + j*depth + k].addNum(a[i][j][k]);
+                  ncs.addNum(i*(width*depth) + j*depth + k, a[i][j][k]);
           }
         }
       }.doAll(height*width*depth, Vec.T_NUM, input).outputFrame();
@@ -639,10 +638,10 @@ public class MathUtils {
 
   public static class SquareError extends MRTask<SquareError> {
     public double _sum;
-    @Override public void map( Chunk resp, Chunk pred ) {
+    @Override public void map(ChunkAry cs /* resp pred */ ) {
       double sum = 0;
-      for( int i=0; i<resp._len; i++ ) {
-        double err = resp.atd(i)-pred.atd(i);
+      for( int i=0; i<cs._len; i++ ) {
+        double err = cs.atd(i,0)-cs.atd(i,1);
         sum += err*err;
       }
       _sum = sum;

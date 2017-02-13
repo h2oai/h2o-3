@@ -1,8 +1,9 @@
 package water;
 
 import org.junit.*;
-import water.fvec.Vec;
 import water.fvec.Chunk;
+import water.fvec.ChunkAry;
+import water.fvec.Vec;
 import water.util.PrettyPrint;
 
 public class MRTaskTest extends TestUtil {
@@ -49,7 +50,7 @@ public class MRTaskTest extends TestUtil {
   }
   private static MRTask manyMaps(Vec vec) {
     return new MRTask() { 
-      @Override public void map(Chunk cs[]) { }
+      @Override public void map(ChunkAry cs) { }
     }.profile().doAll(vec);
   }
 }

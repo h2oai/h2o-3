@@ -1,14 +1,14 @@
 package water.fvec;
 
-import water.*;
 import water.util.UnsafeUtils;
 
 /**
  * The empty-compression function, where data is in 'int's.
  */
-public class C4Chunk extends Chunk {
-  static protected final long _NA = Integer.MIN_VALUE;
-  C4Chunk( byte[] bs ) { _mem=bs; _len = (_mem.length>>2); }
+public class C4Chunk extends ByteArraySupportedChunk {
+  static protected final int _NA = Integer.MIN_VALUE;
+  public int len(){return _mem.length >> 2;}
+  C4Chunk( byte[] bs ) { _mem=bs; }
   @Override public final long at8(int i ) {
     long res = UnsafeUtils.get4(_mem,i<<2);
     if( res == _NA ) throw new IllegalArgumentException("at8_abs but value is missing");
@@ -53,10 +53,7 @@ public class C4Chunk extends Chunk {
     for( int i:rows) addVal(i,nc);
     return nc;
   }
-  @Override public final void initFromBytes () {
-    _len = (_mem.length>>2);
-    assert _mem.length == _len <<2;
-  }
+  @Override public final void initFromBytes () {}
   @Override public boolean hasFloat() {return false;}
 
 

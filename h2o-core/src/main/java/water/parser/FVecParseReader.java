@@ -1,9 +1,6 @@
 package water.parser;
 
-import water.fvec.Chunk;
-import water.fvec.ChunkAry;
-import water.fvec.Vec;
-import water.fvec.VecAry;
+import water.fvec.*;
 
 /**
  * Parser data in taking data from fluid vec chunk.
@@ -27,7 +24,7 @@ public class FVecParseReader implements ParseReader {
     if(_chk == null)
       return null;
     _goffset = _chk.start();
-    return _chk.getChunk(0).getBytes();
+    return getChunk().getBytes();
   }
   @Override public int  getChunkDataStart(int cidx) { return -1; }
   @Override public void setChunkDataStart(int cidx, int offset) { }
@@ -38,9 +35,10 @@ public class FVecParseReader implements ParseReader {
    * Exposes directly the underlying chunk. This function is safe to be used only
    * in implementations of Parsers that cannot be used in a streaming context.
    * Use with caution.
-   * @return underlying Chunk
+   * @return underlying ByteArraySupportedChunk
    */
-  public Chunk getChunk() { return _chk.getChunk(0); }
+
+  public C1NChunk getChunk() { return (C1NChunk) _chk.getChunk(0); }
   public VecAry getVec() { return _vec; }
   public long start() { return _chk._start; }
 }

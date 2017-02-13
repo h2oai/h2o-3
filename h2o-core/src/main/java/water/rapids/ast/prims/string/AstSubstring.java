@@ -91,23 +91,18 @@ public class AstSubstring extends AstPrimitive {
   private VecAry substringStringCol(VecAry vec, final int startIndex, final int endIndex) {
     return new MRTask() {
       @Override
-      public void map(Chunk chk, NewChunk newChk) {
-        if (chk instanceof C0DChunk) // all NAs
-          for (int i = 0; i < chk.len(); i++)
-            newChk.addNA();
-        else if (startIndex >= endIndex) {
-          for (int i = 0; i < chk.len(); i++)
-            newChk.addStr("");
-        } else if (((CStrChunk) chk)._isAllASCII) { // fast-path operations
-          ((CStrChunk) chk).asciiSubstring(newChk, startIndex, endIndex);
-        } else { //UTF requires Java string methods
+      public void map(ChunkAry chk, NewChunkAry newChk) {
+       if (startIndex >= endIndex) {
+         for (int i = 0; i < chk._len; i++)
+           newChk.addStr(0, "");
+       } else {
           BufferedString tmpStr = new BufferedString();
           for (int i = 0; i < chk._len; i++) {
             if (chk.isNA(i))
-              newChk.addNA();
+              newChk.addNA(0);
             else {
               String str = chk.atStr(tmpStr, i).toString();
-              newChk.addStr(str.substring(startIndex < str.length() ? startIndex : str.length(),
+              newChk.addStr(0,str.substring(startIndex < str.length() ? startIndex : str.length(),
                   endIndex < str.length() ? endIndex : str.length()));
             }
           }

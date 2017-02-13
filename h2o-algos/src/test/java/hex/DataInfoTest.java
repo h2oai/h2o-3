@@ -331,7 +331,7 @@ public class DataInfoTest extends TestUtil {
 //      );
 //      final DataInfo di=di0;
 //      new MRTask() {
-//        @Override public void map(Chunk[] cs) {
+//        @Override public void map(ByteArraySupportedChunk[] cs) {
 //          DataInfo.Row[] sparseRows = di.extractSparseRows(cs);
 //          for(int i=0;i<cs[0]._len;++i) {
 ////            di.extractDenseRow(cs, i, r);

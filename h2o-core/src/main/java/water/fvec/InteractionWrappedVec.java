@@ -103,12 +103,12 @@ public class InteractionWrappedVec extends WrappedVec {
     private final int _len;
     GetMeanTask(int len) { _len=len; }
 
-    @Override public void map(Chunk c) {
+    @Override public void map(ChunkAry c) {
       _d = new double[_len];
       _sigma = new double[_len];
-      InteractionWrappedChunk cc = (InteractionWrappedChunk)c;
-      Chunk lC = cc._c[0]; Chunk rC = cc._c[1];  // get the "left" chk and the "rite" chk
-      if( cc._c2IsCat ) { lC=rC; rC=cc._c[0]; }  // left is always cat
+      InteractionWrappedChunk cc = (InteractionWrappedChunk)c.getChunk(0);
+      Chunk lC = cc._c.getChunk(0); Chunk rC = cc._c.getChunk(1);  // get the "left" chk and the "rite" chk
+      if( cc._c2IsCat ) { lC=rC; rC=cc._c.getChunk(0);; }  // left is always cat
       long rows=0;
       for(int rid=0;rid<c._len;++rid) {
         if( lC.isNA(rid) || rC.isNA(rid) ) continue; // skipmissing
@@ -194,11 +194,11 @@ public class InteractionWrappedVec extends WrappedVec {
       _skipMissing = skipMissing;
     }
 
-    @Override public void map(Chunk[] c) {
+    @Override public void map(ChunkAry cs) {
       _perChkMap = new IcedHashMap<>();
       if( !_useAllLvls ) _perChkMapMissing = new IcedHashMap<>();
-      Chunk left = c[0];
-      Chunk rite = c[1];
+      Chunk left = cs.getChunk(0);
+      Chunk rite = cs.getChunk(1);
       String k;
       HashSet<String> A = _leftLimit == null ? null : new HashSet<String>();
       HashSet<String> B = _riteLimit == null ? null : new HashSet<String>();
@@ -207,7 +207,7 @@ public class InteractionWrappedVec extends WrappedVec {
       int lval,rval;
       String l,r;
       boolean leftIsNA, riteIsNA;
-      for (int i = 0; i < left._len; ++i)
+      for (int i = 0; i < cs._len; ++i)
         if( (!((leftIsNA=left.isNA(i)) | (riteIsNA=rite.isNA(i)))) ) {
           lval = (int)left.at8(i);
           rval = (int)rite.at8(i);
@@ -276,8 +276,7 @@ public class InteractionWrappedVec extends WrappedVec {
   }
 
   @Override public ChunkAry chunkForChunkIdx(int cidx) {
-    Chunk[] cs = _masterVecs.chunkForChunkIdx(cidx).getChunks();
-    return new ChunkAry(new VecAry(this),cidx,new InteractionWrappedChunk(this, cs));
+    return new ChunkAry(new VecAry(this),cidx,new InteractionWrappedChunk(this, _masterVecs.chunkForChunkIdx(cidx)));
   }
 
   @Override public Vec doCopy() {
@@ -312,16 +311,21 @@ public class InteractionWrappedVec extends WrappedVec {
   }
 
   public static class InteractionWrappedChunk extends Chunk {
-    public final transient Chunk _c[];
+    public final transient ChunkAry _c;
     public final boolean _c1IsCat; // left chunk is categorical
     public final boolean _c2IsCat; // rite chunk is categorical
     public final boolean _isCat;   // this vec is categorical
-    InteractionWrappedChunk(InteractionWrappedVec transformWrappedVec, Chunk[] c) {
+    InteractionWrappedChunk(InteractionWrappedVec transformWrappedVec, ChunkAry c) {
       // set all the chunk fields
       _c = c;
       _c1IsCat= transformWrappedVec._masterVec.isCategorical(0);
       _c2IsCat= transformWrappedVec._masterVec.isCategorical(1);
       _isCat = transformWrappedVec.isCategorical();
+    }
+
+    @Override
+    public Chunk deepCopy() {
+      return null;
     }
 
     @Override public double atd(int idx) {
@@ -340,7 +344,7 @@ public class InteractionWrappedVec extends WrappedVec {
       throw H2O.unimpl();
     }
     @Override public boolean isNA(int idx) {
-      return _c[0].isNA(idx) || _c[1].isNA(idx);
+      return _c.isNA(idx,0) || _c.isNA(idx,1);
     }
     // Returns true if the masterVec is missing, false otherwise
     @Override public boolean set_impl(int idx, long l)   { return false; }
@@ -353,6 +357,8 @@ public class InteractionWrappedVec extends WrappedVec {
       throw H2O.unimpl();
     }
 
-    @Override protected final void initFromBytes () { throw water.H2O.fail(); }
+    @Override
+    public int len() {return _c._len;}
+
   }
 }

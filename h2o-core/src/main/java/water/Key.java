@@ -25,13 +25,13 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
  * keys are generally limited to things kept internal to the H2O Cloud.  Keys
  * might be a high-count item, hence we care about the size.
  * <p>
- * System keys for {@link Job}, {@link Vec}, {@link Chunk} and {@link
+ * System keys for {@link Job}, {@link Vec}, {@link ByteArraySupportedChunk} and {@link
  * water.fvec.Vec.VectorGroup} have special initial bytes; Keys for these classes can be
  * determined without loading the underlying Value.  Layout for {@link Vec} and
- * {@link Chunk} is further restricted, so there is an efficient mapping
- * between a numbered Chunk and it's associated Vec.
+ * {@link ByteArraySupportedChunk} is further restricted, so there is an efficient mapping
+ * between a numbered ByteArraySupportedChunk and it's associated Vec.
  * <p>
- * System keys (other than the restricted Vec and Chunk keys) can have their
+ * System keys (other than the restricted Vec and ByteArraySupportedChunk keys) can have their
  * home node forced, by setting the desired home node in the first few Key
  * bytes.  Otherwise home nodes are selected by pseudo-random hash.  Selecting
  * a home node is sometimes useful for Keys with very high update rates coming
@@ -52,7 +52,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   static final byte BUILT_IN_KEY = 2;
   public static final byte JOB = 3;
   public static final byte VEC = 4; // Vec
-  public static final byte CHK = 5; // Chunk
+  public static final byte CHK = 5; // ByteArraySupportedChunk
   public static final byte GRP = 6; // Vec.VectorGroup
 
   public static final byte HIDDEN_USER_KEY = 31;
@@ -62,19 +62,19 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   // 0 - key type byte, one of VEC, CHK or GRP
   // 1 - homing byte, always -1/0xFF as these keys use the hash to figure their home out
   // 4 - Vector Group
-  // 4 - Chunk # for CHK, or 0xFFFFFFFF for VEC
+  // 4 - ByteArraySupportedChunk # for CHK, or 0xFFFFFFFF for VEC
   static final int VEC_PREFIX_LEN = 1+1+4+4;
 
   /** True is this is a {@link Vec} Key.
    *  @return True is this is a {@link Vec} Key */
   public final boolean isVec() { return _kb != null && _kb.length > 0 && _kb[0] == VEC; }
 
-  /** True is this is a {@link Chunk} Key.
-   *  @return True is this is a {@link Chunk} Key */
+  /** True is this is a {@link ByteArraySupportedChunk} Key.
+   *  @return True is this is a {@link ByteArraySupportedChunk} Key */
   public final boolean isChunkKey() { return _kb != null && _kb.length > 0 && _kb[0] == CHK; }
 
-  /** Returns the {@link Vec} Key from a {@link Chunk} Key.
-   *  @return Returns the {@link Vec} Key from a {@link Chunk} Key. */
+  /** Returns the {@link Vec} Key from a {@link ByteArraySupportedChunk} Key.
+   *  @return Returns the {@link Vec} Key from a {@link ByteArraySupportedChunk} Key. */
   public final Key getVecKey() { assert isChunkKey(); return water.fvec.Vec.getVecKey(this); }
 
   /** Convenience function to fetch key contents from the DKV.
@@ -118,10 +118,10 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
     // ByteVec would have first 64MB distributed around cloud randomly and then
     // go round-robin in 64MB chunks.
     if( _kb[0] == CHK ) {
-      // Homed Chunk?
+      // Homed ByteArraySupportedChunk?
       if( _kb[1] != -1 ) throw H2O.fail();
       // For round-robin on Chunks in the following pattern:
-      // 1 Chunk-per-node, until all nodes have 1 chunk (max parallelism).
+      // 1 ByteArraySupportedChunk-per-node, until all nodes have 1 chunk (max parallelism).
       // Then 2 chunks-per-node, once around, then 4, then 8, then 16.
       // Getting several chunks-in-a-row on a single Node means that stencil
       // calculations that step off the end of one chunk into the next won't
@@ -129,7 +129,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
       // exactly, then any stencil calc will double the cached volume of data
       // (every node will have it's own chunk, plus a cached next-chunk).
       // Above 16-chunks-in-a-row we hit diminishing returns.
-      int cidx = UnsafeUtils.get4(_kb, 1 + 1 + 4); // Chunk index
+      int cidx = UnsafeUtils.get4(_kb, 1 + 1 + 4); // ByteArraySupportedChunk index
       int x = cidx/hsz; // Multiples of cluster size
       // 0 -> 1st trip around the cluster;            nidx= (cidx- 0*hsz)>>0
       // 1,2 -> 2nd & 3rd trip; allocate in pairs:    nidx= (cidx- 1*hsz)>>1

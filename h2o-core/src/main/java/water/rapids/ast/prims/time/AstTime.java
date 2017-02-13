@@ -2,10 +2,7 @@ package water.rapids.ast.prims.time;
 
 import org.joda.time.MutableDateTime;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.parser.ParseTime;
 import water.rapids.Env;
 import water.rapids.Val;
@@ -54,7 +51,7 @@ public abstract class AstTime extends AstPrimitive {
         if (fr.numCols() > 1) throw water.H2O.unimpl();
         return new ValFrame(new MRTask() {
           @Override
-          public void map(Chunk chk, NewChunk cres) {
+          public void map(ChunkAry chk, NewChunkAry cres) {
             MutableDateTime mdt = new MutableDateTime(0, ParseTime.getTimezone());
             for (int i = 0; i < chk._len; i++)
               cres.addNum(chk.isNA(i) ? Double.NaN : op(mdt, chk.at8(i)));

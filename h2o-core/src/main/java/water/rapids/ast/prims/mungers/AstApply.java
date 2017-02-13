@@ -117,19 +117,19 @@ public class AstApply extends AstPrimitive {
 
     Frame res = new MRTask() {
       @Override
-      public void map(Chunk chks[], NewChunk[] nc) {
-        double ds[] = new double[chks.length]; // Working row
+      public void map(ChunkAry chks, NewChunkAry nc) {
+        double ds[] = new double[chks._numCols]; // Working row
         AstRoot[] asts = new AstRoot[]{fun, new AstRow(ds, names)}; // Arguments to be called; they are reused endlessly
         Session ses = new Session();                      // Session, again reused endlessly
         Env env = new Env(ses);
         env._scope = scope;                               // For proper namespace lookup
-        for (int row = 0; row < chks[0]._len; row++) {
-          for (int col = 0; col < chks.length; col++) // Fill the row
-            ds[col] = chks[col].atd(row);
+        for (int row = 0; row < chks._len; row++) {
+          for (int col = 0; col < chks._numCols; col++) // Fill the row
+            ds[col] = chks.atd(row,col);
           try (Env.StackHelp stk_inner = env.stk()) {
             double[] valRow = fun.apply(env, stk_inner, asts).getRow(); // Make the call per-row
-            for (int newCol = 0; newCol < nc.length; ++newCol)
-              nc[newCol].addNum(valRow[newCol]);
+            for (int newCol = 0; newCol < nc._numCols; ++newCol)
+              nc.addNum(newCol, valRow[newCol]);
           }
         }
         ses.end(null);        // Mostly for the sanity checks

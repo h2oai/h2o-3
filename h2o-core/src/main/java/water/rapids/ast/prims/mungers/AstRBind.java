@@ -87,7 +87,7 @@ public class AstRBind extends AstPrimitive {
       long[] espc2 = fr0.anyVec().espc();
       for (int j = 1; j < espc2.length; j++) // Roll up the row counts
         espc[coffset + j] = (roffset + espc2[j]);
-      coffset += espc2.length - 1; // Chunk offset
+      coffset += espc2.length - 1; // ByteArraySupportedChunk offset
     }
     if (zz != null) zz.remove();
 
@@ -230,7 +230,7 @@ public class AstRBind extends AstPrimitive {
 //    }
 //
 //    @Override
-//    public void map(Chunk cs) {
+//    public void map(ByteArraySupportedChunk cs) {
 //      int idx = _chunkOffset + cs.cidx();
 //      Key ckey = Vec.chunkKey(_v._key, idx);
 //      if (_cmap != null) {

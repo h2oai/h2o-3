@@ -2,10 +2,7 @@ package water.rapids.ast.prims.time;
 
 import org.joda.time.MutableDateTime;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
@@ -75,20 +72,19 @@ public class AstMktime extends AstPrimitive {
     // Convert whole column to epoch msec
     Frame fr2 = new MRTask() {
       @Override
-      public void map(Chunk chks[], NewChunk nchks[]) {
+      public void map(ChunkAry chks, NewChunkAry nchks) {
         MutableDateTime dt = new MutableDateTime(0);
-        NewChunk n = nchks[0];
-        int rlen = chks[0]._len;
+        int rlen = chks._len;
         for (int r = 0; r < rlen; r++) {
           dt.setDateTime(
-              (int) chks[0].at8(r),  // year
-              (int) chks[1].at8(r) + 1,// month
-              (int) chks[2].at8(r) + 1,// day
-              (int) chks[3].at8(r),  // hour
-              (int) chks[4].at8(r),  // minute
-              (int) chks[5].at8(r),  // second
-              (int) chks[6].at8(r)); // msec
-          n.addNum(dt.getMillis());
+              (int) chks.at8(r,0),  // year
+              (int) chks.at8(r,1) + 1,// month
+              (int) chks.at8(r,2) + 1,// day
+              (int) chks.at8(r,3),  // hour
+              (int) chks.at8(r,4),  // minute
+              (int) chks.at8(r,5),  // second
+              (int) chks.at8(r,6)); // msec
+          nchks.addNum(0,dt.getMillis());
         }
       }
     }.doAll(new byte[]{Vec.T_NUM}, vecs).outputFrame(new String[]{"msec"}, null);

@@ -21,7 +21,7 @@ public abstract class Keyed<T extends Keyed> extends Iced<T> {
   }
 
   /** Override to removeVecs subparts, but not self, of composite Keyed objects.
-   *  Examples include {@link Vec} (removing associated {@link Chunk} keys)
+   *  Examples include {@link Vec} (removing associated {@link ByteArraySupportedChunk} keys)
    *  and {@link Frame} (removing associated {@link Vec} keys.) */
   protected Futures remove_impl( Futures fs ) { return fs; }
 

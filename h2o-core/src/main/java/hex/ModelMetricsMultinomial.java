@@ -3,10 +3,7 @@ package hex;
 import hex.genmodel.GenModel;
 import water.MRTask;
 import water.exceptions.H2OIllegalArgumentException;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
-import water.fvec.VecAry;
+import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
 import water.util.TwoDimTable;
@@ -152,11 +149,12 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     public MultinomialMetrics(String[] domain) { this.domain = domain; }
     String[] domain;
     private MetricBuilderMultinomial _mb;
-    @Override public void map(Chunk[] chks) {
+    @Override public void map(ChunkAry cs) {
+      Chunk [] chks = cs.getChunks();
       _mb = new MetricBuilderMultinomial(domain.length, domain);
       Chunk actuals = chks[chks.length-1];
       double [] ds = new double[chks.length];
-      for (int i=0;i<chks[0]._len;++i) {
+      for (int i=0;i<cs._len;++i) {
         for (int c=1;c<chks.length;++c)
           ds[c] = chks[c-1].atd(i); //per-class probs - user-given
         ds[0] = GenModel.getPrediction(ds, null, ds, 0.5 /*ignored*/);

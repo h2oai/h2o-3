@@ -9,13 +9,15 @@ import java.util.Map;
 /**
  * The "few unique doubles"-compression function
  */
-public class CUDChunk extends Chunk {
+public class CUDChunk extends ByteArraySupportedChunk {
   public static int MAX_UNIQUES=256;
   public static int computeByteSize(int uniques, int len) {
     return 4 + 4 // _len + numUniques
             + (uniques << 3) //unique double values
             + (len << 1); //mapping of row -> unique value index (0...255)
   }
+  int _len;
+  public int len(){return _len;}
   int numUniques;
   CUDChunk() {}
   CUDChunk(byte[] bs, HashMap<Long,Byte> hs, int len) {

@@ -1,15 +1,15 @@
 package water.fvec;
 
-import water.*;
 import water.util.UnsafeUtils;
 
 /**
  * The empty-compression function, where data is in shorts.
  */
-public class C2Chunk extends Chunk {
+public class C2Chunk extends ByteArraySupportedChunk {
   static protected final long _NA = Short.MIN_VALUE;
   static protected final int _OFF=0;
-  C2Chunk( byte[] bs ) { _mem=bs; _len = _mem.length>>1; }
+  public int len(){return _mem.length >> 1;}
+  C2Chunk( byte[] bs ) { _mem=bs; }
   @Override public final long at8(int i ) {
     int res = UnsafeUtils.get2(_mem,(i<<1)+_OFF);
     if( res == _NA ) throw new IllegalArgumentException("at8_abs but value is missing");
@@ -51,7 +51,7 @@ public class C2Chunk extends Chunk {
     for( int i:rows) addVal(i,nc);
     return nc;
   }
-  @Override public final void initFromBytes () {_len = _mem.length>>1;}
+  @Override public final void initFromBytes () {}
   @Override
   public boolean hasFloat() {return false;}
 

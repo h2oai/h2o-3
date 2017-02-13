@@ -1,9 +1,5 @@
 package hex.glm;
 
-import hex.glm.GLMModel.GLMParameters;
-import water.MRTask;
-import water.fvec.Chunk;
-
 ///**
 // * Created by tomasnykodym on 9/12/14.
 // */
@@ -19,7 +15,7 @@ import water.fvec.Chunk;
 //    _rank = rank;
 //  }
 //  @Override
-//  public void map(Chunk actual, Chunk predict){
+//  public void map(ByteArraySupportedChunk actual, ByteArraySupportedChunk predict){
 //    GLMValidation val = new GLMValidation(null,_ymu,_params,_rank);
 //    for(int i = 0; i < actual._len; ++i) {
 //      double predicted = predict.atd(i);

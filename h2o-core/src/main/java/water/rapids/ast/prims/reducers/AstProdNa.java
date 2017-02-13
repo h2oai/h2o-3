@@ -1,10 +1,7 @@
 package water.rapids.ast.prims.reducers;
 
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
-import water.fvec.VecAry;
+import water.fvec.*;
 import water.rapids.Env;
 import water.rapids.vals.ValNum;
 import water.rapids.ast.AstPrimitive;
@@ -42,13 +39,13 @@ public class AstProdNa extends AstPrimitive {
     double _d;
 
     @Override
-    public void map(Chunk chks[]) {
-      int rows = chks[0]._len;
-      for (Chunk C : chks) {
+    public void map(ChunkAry chks) {
+      int rows = chks._len;
+      for (int c = 0; c < chks._len; ++c) {
         double prod = 1.;
         for (int r = 0; r < rows; r++) {
-          if (C.isNA(r)) continue;
-          prod *= C.atd(r);
+          if (chks.isNA(r,c)) continue;
+          prod *= chks.atd(r,c);
         }
         _d = prod;
         if (Double.isNaN(prod)) break;

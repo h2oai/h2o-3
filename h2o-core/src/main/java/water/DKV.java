@@ -1,5 +1,7 @@
 package water;
 
+import water.fvec.ByteArraySupportedChunk;
+
 /** A Distributed Key/Value Store.
  *  <p>
  *  Functions to Get and Put Values into the K/V store by Key.
@@ -43,7 +45,7 @@ package water;
  *  <p>
  *  Note that this class works on one Key at a time, and does not understand
  *  composite Key structures (such as a {@link water.fvec.Vec} Key and all its related
- *  {@link water.fvec.Chunk} Keys - instead it serves as the building block for such
+ *  {@link ByteArraySupportedChunk} Keys - instead it serves as the building block for such
  *  structures.
  *  <p>
  *  @author <a href="mailto:cliffc@h2o.ai"></a>

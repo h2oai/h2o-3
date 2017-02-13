@@ -58,12 +58,12 @@ package water;
  *         public static T readJSON_impl(Autobuffer ab, T t);
  *
  *     5) override serialization into array of bytes:
- *        useful for Freezable directly supported by byte array (e.g. for memory efficiency reason), @see Chunk
+ *        useful for Freezable directly supported by byte array (e.g. for memory efficiency reason), @see ByteArraySupportedChunk
  *
  *        provide @Override T byte [] asBytes()
  *
  *     6) override de-serialization from array of bytes containing exactly the bytes containing the freezable and nothing more:
- *        useful for Freezable directly supported by byte array (e.g. for memory efficiency reason), @see Chunk
+ *        useful for Freezable directly supported by byte array (e.g. for memory efficiency reason), @see ByteArraySupportedChunk
  *
  *        provide @Override T reloadFromBytes(byte [] ary)
  *
@@ -97,13 +97,13 @@ public interface Freezable<T extends Freezable> extends Cloneable {
    *  @return Small integer, unique per-type */
   int frozenType();
   /** Return serialized version of self as a byte array.
-   *  Useful for Freezables directly supported by byte array (@see Chunk)
+   *  Useful for Freezables directly supported by byte array (@see ByteArraySupportedChunk)
    *  In most cases, just use the Autobuffer version.
    *  @return serialized bytes */
   byte [] asBytes();
   /**
    * Replace yourself with deserialized version from the given bytes.
-   * Useful for Freezables directly supported by byte array (@see Chunk).
+   * Useful for Freezables directly supported by byte array (@see ByteArraySupportedChunk).
    * In most cases, just use the Autobuffer version.
    * @param ary byte array containing exactly (i.e. nothing else) the serialized version of the Freezable
    * @return this freshly reloaded from the given bytes.
