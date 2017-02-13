@@ -23,7 +23,6 @@ import water.util.IcedHashMapGeneric;
 import water.util.Log;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -74,6 +73,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private Job job;                  // the Job object for the build of this AutoML.  TODO: can we have > 1?
   private transient ArrayList<Job> jobs;
 
+  private String project;
+  private Leaderboard leaderboard;
+
   // check that we haven't messed up the original Frame
   private Vec[] originalTrainingFrameVecs;
   private String[] originalTrainingFrameNames;
@@ -118,6 +120,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       for (int i = 0; i < originalTrainingFrameVecs.length; i++)
         originalTrainingFrameChecksums[i] = originalTrainingFrameVecs[i].checksum();
     }
+
+    // TODO: allow the user to set the project via the buildspec
+    String[] path = this.origTrainingFrame._key.toString().split("/");
+    project = path[path.length - 1];
+    leaderboard = new Leaderboard(project);
 
     /*
     TODO
@@ -251,6 +258,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     Log.info(algoName + " hyperparameter search started");
     jobs.add(gridJob);
+
+    // TODO: change this to poll, so that we can update the AutoML Job's work.
     Grid grid = gridJob.get(); // Hold out until Grid Search is done (or if the job times out)
     Log.info(algoName + " hyperparameter search complete");
     try { jobs.remove(gridJob); } catch (NullPointerException npe) {} // stop() can null jobs; can't just do a pre-check, because there's a race
@@ -343,11 +352,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     this.job.update(1, "GBM" + " grid search complete");
 
     Grid gbmGrid = DKV.getGet(gbmJob._result);
+    leaderboard.addModels(gbmGrid.getModelKeys());
 
-    // TODO: Sort!
     Model m = gbmGrid.getModels()[0];
-    updateLeader(m);
-
     if (m._output.isClassifier() && ! m._output.isBinomialClassifier()) {
       // nada
       this.job.update(1, "Multinomial classifier: StackedEnsemble build skipped");
@@ -372,9 +379,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       jobs.remove(ensembleJob);
       this.job.update(1, "StackedEnsemble build complete");
       Log.info("StackedEnsemble build complete");
+      leaderboard.addModel(ensemble);
     }
 
     Log.info("AutoML: build done");
+
+    Log.info(leaderboard.toString("\n"));
+
     possiblyVerifyImmutability();
     // gather more data? build more models? start applying transforms? what next ...?
     stop();
@@ -422,19 +433,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
 
-  public Key<Model> getLeaderKey() {
-    final Value val = DKV.get(leader);
-    if (val == null) return null;
-    ModelLeader ml = val.get();
-    return ml._leader;
-  }
-
+  /**
+   * Delete the AutoML-related objects, but leave the grids and models that it built.
+   */
   public void delete() {
     //if (frameMetadata != null) frameMetadata.delete(); //TODO: We shouldn't have to worry about FrameMetadata being null
     AutoMLUtils.cleanup_adapt(trainingFrame, origTrainingFrame);
-    for (Model m : models()) m.delete();
-    DKV.remove(MODELLIST);
-    DKV.remove(leader);
+    leaderboard.delete();
     remove();
   }
 
@@ -442,7 +447,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
    * Same as delete() but also deletes all Objects made from this instance.
    */
   public void deleteWithChildren() {
-    delete();
+    leaderboard.deleteWithChildren();
+    delete(); // is it safe to do leaderboard.delete() now?
     if (gridKey != null) gridKey.remove();
 
     // If the Frame was made here (e.g. buildspec contained a path, then it will be deleted
@@ -452,7 +458,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (buildSpec.input_spec.validation_frame == null && buildSpec.input_spec.validation_path != null) {
       validationFrame.delete();
     }
-
   }
 
   private ModelBuilder selectInitial(FrameMetadata fm) {  // may use _isClassification so not static method
@@ -463,83 +468,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return mb;
   }
 
-  // track models built by automl
-  public final Key<Model> MODELLIST = make("AutoMLModelList" + make().toString(), (byte) 0, (byte) 2 /*builtin key*/, false);  // public for the test
-
-  class ModelList extends Keyed {
-    Key<Model>[] _models;
-
-    ModelList() {
-      super(MODELLIST);
-      _models = new Key[0];
-    }
-
-    @Override
-    protected long checksum_impl() {
-      throw H2O.fail("no such method for ModelList");
-    }
-  }
-
-  Model[] models() {
-    final Value val = DKV.get(MODELLIST);
-    if (val == null) return new Model[0];
-    ModelList ml = val.get();
-    Model[] models = new Model[ml._models.length];
-    int j = 0;
-    for (int i = 0; i < ml._models.length; i++) {
-      final Value model = DKV.get(ml._models[i]);
-      if (model != null) models[j++] = model.get();
-    }
-    assert j == models.length; // All models still exist
-    return models;
-  }
-
-  public final Key<Model> leader = make("AutoMLModelLeader" + make().toString(), (byte) 0, (byte) 2, false);
-
-  class ModelLeader extends Keyed {
-    Key<Model> _leader;
-
-    ModelLeader() {
-      super(leader);
-      _leader = null;
-    }
-
-    @Override
-    protected long checksum_impl() {
-      throw H2O.fail("no such method for ModelLeader");
-    }
-  }
-
-  Model leader() {
-    final Value val = DKV.get(leader);
-    if (val == null) return null;
-    ModelLeader ml = val.get();
-    final Value leaderModelKey = DKV.get(ml._leader);
-    assert null != leaderModelKey; // if the LEADER is in the DKV, then there better be a model!
-    return leaderModelKey.get();
-  }
-
-  private void updateLeader(Model m) {
-    Model leader = leader();
-    final Key leaderKey;
-    if (leader == null) leaderKey = m._key;
-    else {
-      // compare leader to m; get the key that minimizes this._loss
-      leaderKey = leader._key;
-    }
-
-    // update the leader if needed
-    if (leader == null || leaderKey.equals(leader._key)) {
-      new TAtomic<ModelLeader>() {
-        @Override
-        public ModelLeader atomic(ModelLeader old) {
-          if (old == null) old = new ModelLeader();
-          old._leader = leaderKey;
-          return old;
-        }
-      }.invoke(this.leader);
-    }
-  }
 
   // all model builds by AutoML call into this
   // TODO: who is the caller?!
@@ -561,19 +489,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
     if (null == jobs) throw new AutoMLDoneException();
     jobs.remove(j);
-    final Key<Model> modelKey = m._key;
-    new TAtomic<ModelList>() {
-      @Override
-      public ModelList atomic(ModelList old) {
-        if (old == null) old = new ModelList();
-        Key<Model>[] models = old._models;
-        old._models = Arrays.copyOf(models, models.length + 1);
-        old._models[models.length] = modelKey;
-        return old;
-      }
-    }.invoke(MODELLIST);
-
-    updateLeader(m);
+    leaderboard.addModel(m);
     return m;
   }
 
@@ -581,6 +497,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (null == this.job) return null;
     return DKV.getGet(this.job._key);
   }
+
+  public Leaderboard leaderboard() { return leaderboard; }
+
 
   // satisfy typing for job return type...
   public static class AutoMLKeyV3 extends KeyV3<Iced, AutoMLKeyV3, AutoML> {
