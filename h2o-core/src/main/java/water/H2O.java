@@ -303,6 +303,9 @@ final public class H2O {
 
     public boolean useUDP = false;
 
+    /** -nolatest Do not attempt to retrieve latest H2O version from S3 on startup */
+    public boolean noLatest = false;
+
     @Override public String toString() {
       StringBuilder result = new StringBuilder();
 
@@ -523,6 +526,9 @@ final public class H2O {
       else if (s.matches("internal_security_conf")) {
         i = s.incrementAndCheck(i, args);
         ARGS.internal_security_conf = args[i];
+      }
+      else if (s.matches("nolatest")) {
+        ARGS.noLatest = true;
       }
       else {
         parseFailed("Unknown argument (" + s + ")");
@@ -1340,8 +1346,8 @@ final public class H2O {
   /** If logging has not been setup yet, then Log.info will only print to
    *  stdout.  This allows for early processing of the '-version' option
    *  without unpacking the jar file and other startup stuff.  */
-  static void printAndLogVersion(String[] arguments) {
-    String latestVersion = ABV.getLatestH2OVersion();
+  private static void printAndLogVersion(String[] arguments) {
+    String latestVersion = ARGS.noLatest? "?" : ABV.getLatestH2OVersion();
     Log.init(ARGS.log_level, ARGS.quiet);
     Log.info("----- H2O started " + (ARGS.client?"(client)":"") + " -----");
     Log.info("Build git branch: " + ABV.branchName());
@@ -1412,7 +1418,6 @@ final public class H2O {
             "  1. Open a terminal and run 'ssh -L 55555:localhost:"
             + API_PORT + " " + System.getProperty("user.name") + "@" + SELF_ADDRESS.getHostAddress() + "'\n" +
             "  2. Point your browser to " + jetty.getScheme() + "://localhost:55555");
-
 
     // Create the starter Cloud with 1 member
     SELF._heartbeat._jar_md5 = JarHash.JARHASH;
@@ -1779,11 +1784,11 @@ final public class H2O {
 
     // Register with GA or not
     long time3 = System.currentTimeMillis();
-    List<String> gaidList = JarHash.getResourcesList("gaid");
+    List<String> gaidList;  // fetching this list takes ~100ms
     if((new File(".h2o_no_collect")).exists()
             || (new File(System.getProperty("user.home")+File.separator+".h2o_no_collect")).exists()
             || ARGS.ga_opt_out
-            || gaidList.contains("CRAN")
+            || (gaidList = JarHash.getResourcesList("gaid")).contains("CRAN")
             || H2O.ABV.projectVersion().split("\\.")[3].equals("99999")) { // dev build has minor version 99999
       GA = null;
       Log.info("Opted out of sending usage metrics.");
