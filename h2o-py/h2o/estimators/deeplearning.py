@@ -73,7 +73,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         Id of the training data frame (Not required, to allow initial validation of model parameters).
 
-        Type: ``str``.
+        Type: ``H2OFrame``.
         """
         return self._parms.get("training_frame")
 
@@ -88,7 +88,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         Id of the validation data frame.
 
-        Type: ``str``.
+        Type: ``H2OFrame``.
         """
         return self._parms.get("validation_frame")
 
@@ -772,7 +772,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         A list of H2OFrame ids to initialize the weight matrices of this model with.
 
-        Type: ``List[str]``.
+        Type: ``List[H2OFrame]``.
         """
         return self._parms.get("initial_weights")
 
@@ -787,7 +787,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         A list of H2OFrame ids to initialize the bias vectors of this model with.
 
-        Type: ``List[str]``.
+        Type: ``List[H2OFrame]``.
         """
         return self._parms.get("initial_biases")
 

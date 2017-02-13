@@ -6,7 +6,7 @@ include 'h2o-web'
 include 'h2o-app'
 include 'h2o-r'
 include 'h2o-py'
-include 'h2o-assembly'
+include 'h2o-assemblies:main'
 include 'h2o-persist-hdfs'
 include 'h2o-persist-s3'
 include 'h2o-docs'
@@ -19,6 +19,12 @@ include 'h2o-test-accuracy'
 include 'h2o-avro-parser'
 include 'h2o-orc-parser'
 include 'h2o-parquet-parser'
+
+// GRPC support
+if ("true".equals(System.getenv("H2O_BUILD_GRPC"))) { 
+    include 'h2o-assemblies:py2o'
+    include 'h2o-grpc'
+}
 
 // Reconfigure scala projects to support cross compilation
 // The following code will create two projects for each included item:

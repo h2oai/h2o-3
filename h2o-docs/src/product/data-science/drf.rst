@@ -202,8 +202,8 @@ Defining a DRF Model
    This option is disabled by default.
 
 -  `checkpoint <algo-params/checkpoint.html>`__: Enter a model key associated with a
-   previously-trained model. Use this option to build a new model as a
-   continuation of a previously-generated model.
+   previously trained model. Use this option to build a new model as a
+   continuation of a previously generated model.
 
 -  `col_sample_rate_change_per_level <algo-params/col_sample_rate_change_per_level.html>`__: This option specifies to change the column sampling rate as a function of the depth in the tree. For example:
 
@@ -233,7 +233,7 @@ Defining a DRF Model
 
 - `categorical_encoding <algo-params/categorical_encoding.html>`__: Specify one of the following encoding schemes for handling categorical features:
 
-  - ``auto``: Allow the algorithm to decide (default)
+  - ``auto``: Allow the algorithm to decide (default). In DRF, the algorithm will automatically perform ``enum`` encoding.
   - ``enum``: 1 column per categorical feature
   - ``one_hot_explicit``: N+1 new columns for categorical features with N levels
   - ``binary``: No more than 32 columns per categorical feature
@@ -246,7 +246,7 @@ By default, the following output displays:
 
 -  Model parameters (hidden)
 -  A graph of the scoring history (number of trees vs. training MSE)
--  A graph of the ROC curve (TPR vs. FPR)
+-  A graph of the `ROC curve <https://en.wikipedia.org/wiki/Receiver_operating_characteristic>`__ (TPR vs. FPR)
 -  A graph of the variable importances
 -  Output (model category, validation metrics, initf)
 -  Model summary (number of trees, min. depth, max. depth, mean depth,

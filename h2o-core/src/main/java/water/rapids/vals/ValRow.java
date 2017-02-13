@@ -22,6 +22,7 @@ public class ValRow extends Val {
   @Override public int type() { return ROW; }
   @Override public boolean isRow() { return true; }
   @Override public double[] getRow() { return _ds; }
+  @Override public double[] getNums() { return _ds; }
   @Override public String toString() { return Arrays.toString(_ds); }
 
   public String[] getNames() {

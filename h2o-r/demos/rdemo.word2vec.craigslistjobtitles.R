@@ -14,8 +14,8 @@ tokenize <- function(sentences, stop.words = STOP_WORDS) {
     # convert to lower case
     tokenized.lower <- h2o.tolower(tokenized)
     # remove short words (less than 2 characters)
-    tokenized.lenghts <- h2o.nchar(tokenized.lower)
-    tokenized.filtered <- tokenized.lower[is.na(tokenized.lenghts) || tokenized.lenghts >= 2,]
+    tokenized.lengths <- h2o.nchar(tokenized.lower)
+    tokenized.filtered <- tokenized.lower[is.na(tokenized.lengths) || tokenized.lengths >= 2,]
     # remove words that contain numbers
     tokenized.words <- tokenized.filtered[h2o.grep("[0-9]", tokenized.filtered, invert = TRUE, output.logical = TRUE),]
 

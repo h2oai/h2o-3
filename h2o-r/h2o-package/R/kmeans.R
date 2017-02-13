@@ -22,7 +22,9 @@
 #'        find up to k centroids. Defaults to 1.
 #' @param estimate_k \code{Logical}. Whether to estimate the number of clusters (<=k) iteratively and deterministically. Defaults
 #'        to FALSE.
-#' @param user_points User-specified points
+#' @param user_points This option allows you to specify a dataframe, where each row represents an initial cluster center. The user-
+#'        specified points must have the same number of columns as the training observations. The number of rows must
+#'        equal the number of clusters
 #' @param max_iterations Maximum training iterations (if estimate_k is enabled, then this is for each inner Lloyds iteration) Defaults
 #'        to 10.
 #' @param standardize \code{Logical}. Standardize columns before computing distances Defaults to TRUE.
@@ -125,26 +127,32 @@ h2o.kmeans <- function(training_frame, x,
   if (!missing(categorical_encoding))
     parms$categorical_encoding <- categorical_encoding
 
-  # Check if init is an acceptable set of user-specified starting points
-  if( is.data.frame(init) || is.matrix(init) || is.list(init) || is.H2OFrame(init) ) {
-  parms[["init"]] <- "User"
+  # Check if user_points is an acceptable set of user-specified starting points
+  if( is.data.frame(user_points) || is.matrix(user_points) || is.list(user_points) || is.H2OFrame(user_points) ) {
+    if ( length(init) > 1 || init == 'User') {
+      parms[["init"]] <- "User"
+    } else {
+      warning(paste0("Parameter init must equal 'User' when user_points is set. Ignoring init = '", init, "'. Setting init = 'User'."))
+    }
+
+    parms[["init"]] <- "User"
   # Convert user-specified starting points to H2OFrame
-  if( is.data.frame(init) || is.matrix(init) || is.list(init) ) {
-    if( !is.data.frame(init) && !is.matrix(init) ) init <- t(as.data.frame(init))
-    init <- as.h2o(init)
+  if( is.data.frame(user_points) || is.matrix(user_points) || is.list(user_points) ) {
+    if( !is.data.frame(user_points) && !is.matrix(user_points) ) user_points <- t(as.data.frame(user_points))
+    user_points <- as.h2o(user_points)
   }
-  parms[["user_points"]] <- init
+  parms[["user_points"]] <- user_points
   # Set k
-  if( !(missing(k)) && k!=as.integer(nrow(init)) ) {
+  if( !(missing(k)) && k!=as.integer(nrow(user_points)) ) {
     warning("Parameter k is not equal to the number of user-specified starting points. Ignoring k. Using specified starting points.")
   }
-  parms[["k"]] <- as.numeric(nrow(init))
-  }
-  else if ( is.character(init) ) { # Furthest, Random, PlusPlus
-  parms[["user_points"]] <- NULL
-  }
-  else{
-  stop ("argument init must be set to Furthest, Random, PlusPlus, or a valid set of user-defined starting points.")
+  parms[["k"]] <- as.numeric(nrow(user_points))
+
+  } else if ( is.character(init) ) { # Furthest, Random, PlusPlus{
+    parms[["user_points"]] <- NULL
+
+  } else{
+    stop ("argument init must be set to Furthest, Random, PlusPlus, or a valid set of user-defined starting points.")
   }
         
   # Error check and build model

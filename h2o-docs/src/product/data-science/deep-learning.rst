@@ -150,10 +150,12 @@ recommended, as model performance can vary greatly.
 
 -  **categorical_encoding**: Specify one of the following encoding schemes for handling categorical features:
 
-  - ``auto``: Allow the algorithm to decide
+  - ``auto``: Allow the algorithm to decide. In Deep Learning, the algorithm will perform ``one_hot_internal`` encoding if ``auto`` is specified. 
   - ``one_hot_internal``: On the fly N+1 new cols for categorical features with N levels (default)
   - ``binary``: No more than 32 columns per categorical feature
   - ``eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
+
+  **Note**: This value defaults to ``one_hot_internal``. Similarly, if ``auto`` is specified, then the algorithm performs ``one_hot_internal`` encoding. 
 
 -  **l1**: Specify the L1 regularization to add stability and improve
    generalization; sets the value of many weights to 0.
@@ -397,18 +399,15 @@ and testing sets:
 
 -  Model parameters (hidden)
 -  A chart of the variable importances
--  A graph of the scoring history (training MSE and validation MSE vs
-   epochs)
+-  A graph of the scoring history (training MSE and validation MSE vs epochs)
+-  Training and validation metrics confusion matrix
 -  Output (model category, weights, biases)
 -  Status of neuron layers (layer number, units, type, dropout, L1, L2,
    mean rate, rate RMS, momentum, mean weight, weight RMS, mean bias,
    bias RMS)
 -  Scoring history in tabular format
--  Training metrics (model name, model checksum name, frame name, frame
-   checksum name, description, model category, duration in ms, scoring
-   time, predictions, MSE, R2, logloss)
--  Top-K Hit Ratios (for multi-class classification)
--  Confusion matrix (for classification)
+-  Training and validation metrics (model name, model checksum name, frame name, frame checksum name, description, model category, duration in ms, scoring time, predictions, MSE, R2, logloss)
+-  Top-K Hit Ratios for training and validation (for multi-class classification)
 
 FAQ
 ~~~

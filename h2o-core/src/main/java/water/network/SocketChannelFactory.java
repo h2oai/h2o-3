@@ -13,26 +13,39 @@ import java.nio.channels.SocketChannel;
  */
 public class SocketChannelFactory {
 
+    private volatile static SocketChannelFactory INSTANCE;
+
     private H2OSecurityManager sm;
 
-    public SocketChannelFactory(H2OSecurityManager sm) {
+    private SocketChannelFactory(H2OSecurityManager sm) {
         this.sm = sm;
     }
 
     public ByteChannel serverChannel(ByteChannel channel) throws IOException {
-        if(sm.securityEnabled && !(channel instanceof SSLSocketChannel)) {
-            return sm.wrapServerChannel((SocketChannel)channel);
+        if (sm.securityEnabled && !(channel instanceof SSLSocketChannel)) {
+            return sm.wrapServerChannel((SocketChannel) channel);
         } else {
             return channel;
         }
     }
 
     public ByteChannel clientChannel(ByteChannel channel, String host, int port) throws IOException {
-        if(sm.securityEnabled && !(channel instanceof SSLSocketChannel)) {
-            return sm.wrapClientChannel((SocketChannel)channel, host, port);
+        if (sm.securityEnabled && !(channel instanceof SSLSocketChannel)) {
+            return sm.wrapClientChannel((SocketChannel) channel, host, port);
         } else {
             return channel;
         }
+    }
+
+    public static SocketChannelFactory instance(H2OSecurityManager sm) {
+        if (null == INSTANCE) {
+            synchronized (SocketChannelFactory.class) {
+                if (null == INSTANCE) {
+                    INSTANCE = new SocketChannelFactory(sm);
+                }
+            }
+        }
+        return INSTANCE;
     }
 
 }

@@ -535,6 +535,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
    */
   public final class GLMDriver extends Driver implements ProgressMonitor {
     private long _workPerIteration;
+    private transient double[][] _vcov;
 
 
     private void doCleanup() {
@@ -948,9 +949,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           se = ct._sumsqe / (_nobs - 1 - _state.activeData().fullN());
         }
         double [] zvalues = MemoryManager.malloc8d(_state.activeData().fullN()+1);
-        double [] gInvDiag = _chol.getInvDiag();
+        double [][] inv = _chol.getInv();
+        ArrayUtils.mult(inv,_parms._obj_reg*se);
+        _vcov = inv;
         for(int i = 0; i < zvalues.length; ++i)
-          zvalues[i] = beta[i]/Math.sqrt(_parms._obj_reg*gInvDiag[i]*se);
+          zvalues[i] = beta[i]/Math.sqrt(inv[i][i]);
         _model.setZValues(expandVec(zvalues,_state.activeData()._activeCols,_dinfo.fullN()+1,Double.NaN),se, seEst);
       }
     }
@@ -1101,6 +1104,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       else
         _model._output.pickBestModel();
       scoreAndUpdateModel();
+      if(_vcov != null) {
+        _model.setVcov(_vcov);
+        _model.update(_job._key);
+      }
       if(!(_parms)._lambda_search && _state._iter < _parms._max_iterations){
         _job.update(_workPerIteration*(_parms._max_iterations - _state._iter));
       }

@@ -2,6 +2,121 @@
 
 ##H2O
 
+###Tverberg (3.10.3.4) - 2/3/2017
+
+<h2>        Bug
+</h2>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3965'>PUBDEV-3965</a>] -         Importing data in python returns error - TypeError: expected string or bytes-like object
+</li>
+</ul>
+
+###Tverberg (3.10.3.3) - 2/2/2017
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3835'>PUBDEV-3835</a>] -         Standard Errors in GLM: calculating and showing specifically when called
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3989'>PUBDEV-3989</a>] -         Decrease size of h2o.jar
+</li>
+</ul>
+
+###Tverberg (3.10.3.2) - 1/31/2017
+
+<h4>        Bug
+</h4>
+<ul>
+<li> Hotfix: Remove StackedEnsemble from Flow UI. Training is only supported from Python and R interfaces. Viewing is supported in the Flow UI.
+</li>
+</ul>
+
+###Tverberg (3.10.3.1) - 1/30/2017
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2464'>PUBDEV-2464</a>] -         Using asfactor() in Python client cannot allocate to a variable
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3111'>PUBDEV-3111</a>] -         R API&#39;s h2o.interaction() does not use destination_frame argument
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3694'>PUBDEV-3694</a>] -         Errors with PCA on wide data for pca_method = GramSVD which is the default
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3742'>PUBDEV-3742</a>] -         StackedEnsemble should work for regression
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3865'>PUBDEV-3865</a>] -         h2o gbm : for an unseen categorical level, discrepancy in predictions when score using h2o vs pojo/mojo
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3883'>PUBDEV-3883</a>] -         Negative indexing for H2OFrame is buggy in R API
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3894'>PUBDEV-3894</a>] -         Relational operators don&#39;t work properly with time columns.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3966'>PUBDEV-3966</a>] -         java.lang.AssertionError when using h2o.makeGLMModel
+</li>
+</ul>
+
+<h4>        Story
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3739'>PUBDEV-3739</a>] -         StackedEnsemble: put ensemble creation into the back end
+</li>
+</ul>
+
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2058'>PUBDEV-2058</a>] -         Implement word2vec in h2o
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3635'>PUBDEV-3635</a>] -         Ability to Select Columns for PDP computation in Flow
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3881'>PUBDEV-3881</a>] -         Add PCA Estimator documentation to Python API Docs
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3902'>PUBDEV-3902</a>] -         Documentation: Add information about Azure support to H2O User Guide (Beta)
+</li>
+</ul>
+
+<h4>        Task
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3336'>PUBDEV-3336</a>] -         h2o.create_frame(): if randomize=True, `value` param cannot be used
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3740'>PUBDEV-3740</a>] -         REST: implement simple ensemble generation API
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3843'>PUBDEV-3843</a>] -         Modify R REST API to always return binary data
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3844'>PUBDEV-3844</a>] -         Safe GET calls for POJO/MOJO/genmodel
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3864'>PUBDEV-3864</a>] -         Import files by pattern
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3884'>PUBDEV-3884</a>] -         StackedEnsemble: Add to online documentation
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3940'>PUBDEV-3940</a>] -         Add Stacked Ensemble code examples to R docs
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3257'>PUBDEV-3257</a>] -         Documentation: As a K-Means user, I want to be able to better understand the parameters
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3741'>PUBDEV-3741</a>] -         StackedEnsemble: add tests in R and Python to ensure that a StackedEnsemble performs at least as well as the base_models
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3857'>PUBDEV-3857</a>] -         Clean up the generated Python docs
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3895'>PUBDEV-3895</a>] -         Filter H2OFrame on pandas dates and time (python)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3912'>PUBDEV-3912</a>] -         Provide way to specify context_path via Python/R h2o.init methods
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3933'>PUBDEV-3933</a>] -         Modify gen_R.py for Stacked Ensemble
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3972'>PUBDEV-3972</a>] -         Add Stacked Ensemble code examples to Python docstrings
+</li>
+</ul>
+
 ###Tutte (3.10.2.2) - 1/12/2017
 
 <h4>        Bug

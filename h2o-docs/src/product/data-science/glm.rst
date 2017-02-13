@@ -158,13 +158,15 @@ Interpreting a GLM Model
 
 By default, the following output displays:
 
--  A graph of the normalized coefficient magnitudes
--  Output (model category, model summary, scoring history, training
-   metrics, validation metrics, best lambda, threshold, residual
-   deviance, null deviance, residual degrees of freedom, null degrees of
-   freedom, AIC, AUC, binomial, rank)
+-  Model parameters (hidden)
+-  A bar chart representing the standardized coefficient magnitudes (blue for negative, orange for positive). Note that this only displays is standardization is enabled.
+-  A graph of the scoring history (objective vs. iteration)
+-  Output (model category, validation metrics, and standardized coefficients magnitude)
+-  GLM model summary (family, link, regularization, number of total predictors, number of active predictors, number of iterations, training frame)
+-  Scoring history in tabular form (timestamp, duration, iteration, log likelihood, objective)
+-  Training metrics (model, model checksum, frame, frame checksum, description, model category, scoring time, predictions, MSE, r2, residual deviance, null deviance, AIC, null degrees of freedom, residual degrees of freedom)  
 -  Coefficients
--  Coefficient magnitudes
+-  Standardized coefficient magnitudes (if standardization is enabled)
 
 Classification and Regression
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -458,8 +460,8 @@ It can sometimes be useful to see the coefficients for all lambda values or to o
 
 To extract the regularization path from R or python:
 
-- R: call h2o.getGLMFullRegularizationPath, takes the model as an argument
-- Python: H2OGeneralizedLinearEstimator.getGLMRegularizationPath (static method), takes the model as an argument
+- R: call h2o.getGLMFullRegularizationPath. This takes the model as an argument. An example is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/glm/runit_GLM_reg_path.R>`__.
+- Python: H2OGeneralizedLinearEstimator.getGLMRegularizationPath (static method). This takes the model as an argument. An example is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/glm/pyunit_glm_regularization_path.py>`__.
 
 Solvers
 ~~~~~~~

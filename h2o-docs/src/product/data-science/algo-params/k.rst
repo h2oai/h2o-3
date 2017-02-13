@@ -9,7 +9,7 @@ Description
 
 In K-Means, a "cluster" refers to groups of data in a dataset that are similar to one another. The K-Means algorithm finds clusters and cluster centers in a set of unlabled data.  
 
-This option specifies the maximum number of clusters that K-Means will form.  If ``estimate_k`` is disabled, the model will find :math:`k` centroids, otherwise it will find up to :math:`k` centroids. This value defaults to 1. 
+This option specifies the maximum number of clusters that K-Means will form.  If ``estimate_k`` is disabled, the model will find :math:`k` centroids, otherwise it will find up to :math:`k` centroids. This parameter is required and has no default value. 
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~

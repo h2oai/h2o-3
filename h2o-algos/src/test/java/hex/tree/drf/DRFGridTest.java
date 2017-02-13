@@ -59,10 +59,17 @@ public class DRFGridTest extends TestUtil {
 
       // Fire off a grid search
       DRFModel.DRFParameters params = new DRFModel.DRFParameters();
+      params._nfolds = 2;
       params._train = fr._key;
       params._response_column = "cylinders";
       // Get the Grid for this modeling class and frame
       Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
+      try {
+        Thread.sleep(500);
+      } catch(Exception e) {
+        System.out.println(e);
+      }
+      gs.stop();
       grid = (Grid<DRFModel.DRFParameters>) gs.get();
       // Make sure number of produced models match size of specified hyper space
       Assert.assertEquals("Size of grid should match to size of hyper space", hyperSpaceSize,

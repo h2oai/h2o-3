@@ -59,7 +59,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         """
         Id of the training data frame (Not required, to allow initial validation of model parameters).
 
-        Type: ``str``.
+        Type: ``H2OFrame``.
         """
         return self._parms.get("training_frame")
 
@@ -74,7 +74,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         """
         Id of the validation data frame.
 
-        Type: ``str``.
+        Type: ``H2OFrame``.
         """
         return self._parms.get("validation_frame")
 
@@ -618,7 +618,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         """
         beta constraints
 
-        Type: ``str``.
+        Type: ``H2OFrame``.
         """
         return self._parms.get("beta_constraints")
 

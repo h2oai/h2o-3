@@ -657,48 +657,114 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public double classification_error() {
-    if (scoringInfo == null) return Double.NaN;
-    return last_scored().validation ? last_scored().scored_valid._classError : last_scored().scored_train._classError;
+    if (scoringInfo != null)
+      return last_scored().cross_validation ? last_scored().scored_xval._classError : last_scored().validation ? last_scored().scored_valid._classError : last_scored().scored_train._classError;
+
+    ModelMetrics mm = _output._cross_validation_metrics != null ? _output._cross_validation_metrics : _output._validation_metrics != null ? _output._validation_metrics : _output._training_metrics;
+    if (mm == null) return Double.NaN;
+
+    if (mm instanceof ModelMetricsBinomial) {
+      return ((ModelMetricsBinomial)mm)._auc.defaultErr();
+    } else if (mm instanceof ModelMetricsMultinomial) {
+      return ((ModelMetricsMultinomial)mm)._cm.err();
+    }
+    return Double.NaN;
   }
 
   public double mse() {
-    if (scoringInfo == null) return Double.NaN;
-    return last_scored().validation ? last_scored().scored_valid._mse : last_scored().scored_train._mse;
+    if (scoringInfo != null)
+      return last_scored().cross_validation ? last_scored().scored_xval._mse : last_scored().validation ? last_scored().scored_valid._mse : last_scored().scored_train._mse;
+
+    ModelMetrics mm = _output._cross_validation_metrics != null ? _output._cross_validation_metrics : _output._validation_metrics != null ? _output._validation_metrics : _output._training_metrics;
+    if (mm == null) return Double.NaN;
+
+    return mm.mse();
   }
 
   public double mae() {
-    if (scoringInfo == null) return Double.NaN;
-    return last_scored().validation ? last_scored().scored_valid._mae : last_scored().scored_train._mae;
+    if (scoringInfo != null)
+      return last_scored().cross_validation ? last_scored().scored_xval._mae : last_scored().validation ? last_scored().scored_valid._mae : last_scored().scored_train._mae;
+
+    ModelMetrics mm = _output._cross_validation_metrics != null ? _output._cross_validation_metrics : _output._validation_metrics != null ? _output._validation_metrics : _output._training_metrics;
+    if (mm == null) return Double.NaN;
+
+    return ((ModelMetricsRegression)mm).mae();
   }
 
   public double rmsle() {
-    if (scoringInfo == null) return Double.NaN;
-    return last_scored().validation ? last_scored().scored_valid._rmsle : last_scored().scored_train._rmsle;
+    if (scoringInfo != null)
+      return last_scored().cross_validation ? last_scored().scored_xval._rmsle : last_scored().validation ? last_scored().scored_valid._rmsle : last_scored().scored_train._rmsle;
+
+    ModelMetrics mm = _output._cross_validation_metrics != null ? _output._cross_validation_metrics : _output._validation_metrics != null ? _output._validation_metrics : _output._training_metrics;
+    if (mm == null) return Double.NaN;
+
+    return ((ModelMetricsRegression)mm).rmsle();
   }
 
   public double auc() {
-    if (scoringInfo == null) return Double.NaN;
-    return last_scored().validation ? last_scored().scored_valid._AUC : last_scored().scored_train._AUC;
+    if (scoringInfo != null)
+      return last_scored().cross_validation ? last_scored().scored_xval._AUC : last_scored().validation ? last_scored().scored_valid._AUC : last_scored().scored_train._AUC;
+
+    ModelMetrics mm = _output._cross_validation_metrics != null ? _output._cross_validation_metrics : _output._validation_metrics != null ? _output._validation_metrics : _output._training_metrics;
+    if (mm == null) return Double.NaN;
+
+    return ((ModelMetricsBinomial)mm)._auc._auc;
   }
 
   public double deviance() {
-    if (scoringInfo == null) return Double.NaN;
-    return last_scored().validation ? last_scored().scored_valid._mean_residual_deviance : last_scored().scored_train._mean_residual_deviance;
+    if (scoringInfo != null)
+      return last_scored().cross_validation ? last_scored().scored_xval._mean_residual_deviance: last_scored().validation ? last_scored().scored_valid._mean_residual_deviance : last_scored().scored_train._mean_residual_deviance;
+
+    ModelMetrics mm = _output._cross_validation_metrics != null ? _output._cross_validation_metrics : _output._validation_metrics != null ? _output._validation_metrics : _output._training_metrics;
+    if (mm == null) return Double.NaN;
+
+    return ((ModelMetricsRegression)mm).residual_deviance();
   }
 
   public double logloss() {
-    if (scoringInfo == null) return Double.NaN;
-    return last_scored().validation ? last_scored().scored_valid._logloss : last_scored().scored_train._logloss;
+    if (scoringInfo != null)
+      return last_scored().cross_validation ? last_scored().scored_xval._logloss : last_scored().validation ? last_scored().scored_valid._logloss : last_scored().scored_train._logloss;
+
+    ModelMetrics mm = _output._cross_validation_metrics != null ? _output._cross_validation_metrics : _output._validation_metrics != null ? _output._validation_metrics : _output._training_metrics;
+    if (mm == null) return Double.NaN;
+
+    if (mm instanceof ModelMetricsBinomial) {
+      return ((ModelMetricsBinomial)mm).logloss();
+    } else if (mm instanceof ModelMetricsMultinomial) {
+      return ((ModelMetricsMultinomial)mm).logloss();
+    }
+    return Double.NaN;
   }
 
   public double mean_per_class_error() {
-    if (scoringInfo == null) return Double.NaN;
-    return last_scored().validation ? last_scored().scored_valid._mean_per_class_error : last_scored().scored_train._mean_per_class_error;
+    if (scoringInfo != null)
+      return last_scored().cross_validation ? last_scored().scored_xval._mean_per_class_error : last_scored().validation ? last_scored().scored_valid._mean_per_class_error : last_scored().scored_train._mean_per_class_error;
+
+    ModelMetrics mm = _output._cross_validation_metrics != null ? _output._cross_validation_metrics : _output._validation_metrics != null ? _output._validation_metrics : _output._training_metrics;
+    if (mm == null) return Double.NaN;
+
+    if (mm instanceof ModelMetricsBinomial) {
+      return ((ModelMetricsBinomial)mm).mean_per_class_error();
+    } else if (mm instanceof ModelMetricsMultinomial) {
+      return ((ModelMetricsMultinomial)mm).mean_per_class_error();
+    }
+    return Double.NaN;
   }
 
   public double lift_top_group() {
-    if (scoringInfo == null) return Double.NaN;
-    return last_scored().validation ? last_scored().scored_valid._lift : last_scored().scored_train._lift;
+    if (scoringInfo != null)
+      return last_scored().cross_validation ? last_scored().scored_xval._lift : last_scored().validation ? last_scored().scored_valid._lift : last_scored().scored_train._lift;
+
+    ModelMetrics mm = _output._cross_validation_metrics != null ? _output._cross_validation_metrics : _output._validation_metrics != null ? _output._validation_metrics : _output._training_metrics;
+    if (mm == null) return Double.NaN;
+
+    if (mm instanceof ModelMetricsBinomial) {
+      GainsLift gl = ((ModelMetricsBinomial)mm)._gainsLift;
+      if (gl != null && gl.response_rates != null && gl.response_rates.length > 0) {
+        return gl.response_rates[0] / gl.avg_response_rate;
+      }
+    }
+    return Double.NaN;
   }
 
 
@@ -1072,6 +1138,18 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return names;
   }
 
+  /** Allow subclasses to define their own BigScore class. */
+  protected BigScore makeBigScoreTask(String[][] domains, String[] names , Frame adaptFrm, boolean computeMetrics, boolean makePrediction, Job j) {
+    return new BigScore(domains[0],
+                        names != null ? names.length : 0,
+                        adaptFrm.means(),
+                        _output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,
+                        computeMetrics,
+                        makePrediction,
+                        j);
+        //.doAll(names.length, Vec.T_NUM, adaptFrm);
+  }
+
   /** Score an already adapted frame.  Returns a new Frame with new result
    *  vectors, all in the DKV.  Caller responsible for deleting.  Input is
    *  already adapted to the Model's domain, so the output is also.  Also
@@ -1086,8 +1164,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     String[] names = makeScoringNames();
     String[][] domains = new String[names.length][];
     domains[0] = names.length == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
+
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = new BigScore(domains[0],names.length,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, true /*make preds*/, j).doAll(names.length, Vec.T_NUM, adaptFrm);
+    BigScore bs = makeBigScoreTask(domains, names, adaptFrm, computeMetrics, true, j).doAll(names.length, Vec.T_NUM, adaptFrm);
+
     if (computeMetrics)
       bs._mb.makeModelMetrics(this, fr, adaptFrm, bs.outputFrame());
     return bs.outputFrame(Key.<Frame>make(destination_key), names, domains);
@@ -1101,9 +1181,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   protected ModelMetrics.MetricBuilder scoreMetrics(Frame adaptFrm) {
     final boolean computeMetrics = (!isSupervised() || (adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad()));
     // Build up the names & domains.
-    String [] domain = !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
+    //String[] names = makeScoringNames();
+    String[][] domains = new String[1][];
+    domains[0] = _output.nclasses() == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
+
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = new BigScore(domain,0,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, false /*no preds*/, null).doAll(adaptFrm);
+    BigScore bs = makeBigScoreTask(domains, null, adaptFrm, computeMetrics, false, null).doAll(adaptFrm);
     return bs._mb;
   }
 
@@ -1158,7 +1241,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             actual[0] = (float)responseChunk.atd(row);
           } else {
             for(int i = 0; i < actual.length; ++i)
-              actual[i] = (float)chks[i].atd(row);
+              actual[i] = (float)data(chks,row,i);
           }
           _mb.perRow(preds, actual, weight, offset, Model.this);
         }
@@ -1171,6 +1254,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     @Override public void reduce( BigScore bs ) { if(_mb != null )_mb.reduce(bs._mb); }
     @Override protected void postGlobal() { if(_mb != null)_mb.postGlobal(); }
+  }
+
+
+  // OVerride this if your model needs data preprocessing (on the fly standardization, NA handling)
+  protected double data(Chunk[] chks, int row, int col) {
+    return chks[col].atd(row);
   }
 
 

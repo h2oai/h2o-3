@@ -50,6 +50,7 @@ Collate:
          'pca.R'
          'svd.R'
          'deeplearning.R'
+         'stackedensemble.R'
          'deepwater.R'
          'randomforest.R'
          'naivebayes.R'

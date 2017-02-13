@@ -17,10 +17,12 @@ dependencies {
     compile 'com.squareup.okio:okio:1.8.0'
 
     testCompile project(":h2o-app")
+    testCompile project(":h2o-web")
+    testCompile project(":h2o-avro-parser")
     testCompile "junit:junit:${junitVersion}"
 
     // Generator dependencies
-    srcGenCompile project( path: ":h2o-assembly", configuration: "shadow")
+    srcGenCompile project(path: ":h2o-assemblies:main", configuration: "shadow")
 }
 
 // Configure idea import

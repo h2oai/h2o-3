@@ -34,5 +34,12 @@ public class RegisterV4Api extends AbstractRegister {
         "Return basic information about all models available to train."
     );
 
+
+    //------------ Frames ----------------------------------------------------------------------------------------------
+    registerEndpoint("POST /4/Frames/$simple", CreateFrameHandler.CreateSimpleFrame.class);
+
+
+    //------------ Jobs ------------------------------------------------------------------------------------------------
+    registerEndpoint("GET /4/jobs/{job_id}", JobsHandler.FetchJob.class);
   }
 }

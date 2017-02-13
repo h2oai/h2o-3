@@ -221,7 +221,7 @@ def help_preamble_for(algo):
         """
     if algo == "stackedensemble":
         return """
-            This function  creates a “Super Learner” (stacked ensemble) using the H2O base
+            Build a stacked ensemble (aka. Super Learner) using the H2O base
             learning algorithms specified by the user.
         """
     if algo == "deepwater":
@@ -421,16 +421,19 @@ def help_example_for(algo):
         australia.hex <- h2o.uploadFile(path = ausPath)
         h2o.svd(training_frame = australia.hex, nv = 8)
         }"""
+    if algo == "stackedensemble":
+        return """
+        # See example R code here: 
+        # http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html
+        """        
 
 def get_extra_params_for(algo):
     if algo == "glrm":
         return "training_frame, cols = NULL"
-    elif algo in ["deeplearning", "deepwater", "drf", "gbm", "glm", "naivebayes"]:
+    elif algo in ["deeplearning", "deepwater", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
         return "x, y, training_frame"
     elif algo == "svd":
         return "training_frame, x, destination_key"
-    elif algo == "stackedensemble":
-        return "x, y, training_frame, model_id"
     elif algo == "word2vec":
         return "training_frame"
     else:
@@ -439,7 +442,7 @@ def get_extra_params_for(algo):
 def help_extra_params_for(algo):
     if algo == "glrm":
         return "#' @param cols (Optional) A vector containing the data columns on which k-means operates."
-    elif algo in ["deeplearning", "deepwater","drf", "gbm", "glm", "naivebayes"]:
+    elif algo in ["deeplearning", "deepwater","drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
         return """#' @param x A vector containing the names or indices of the predictor variables to use in building the model.
             #'        If x is missing,then all columns except y are used.
             #' @param y The name of the response variable in the model.If the data does not contain a header, this is the column index
@@ -449,14 +452,6 @@ def help_extra_params_for(algo):
         return """#' @param x A vector containing the \code{character} names of the predictors in the model.
             #' @param destination_key (Optional) The unique hex key assigned to the resulting model.
             #'                        Automatically generated if none is provided."""
-    elif algo == "stackedensemble":
-        return """#' @param x A vector containing the names or indices of the predictor variables to use in building the model.
-            #'        If x is missing,then all columns except y are used.
-            #' @param y The name of the response variable in the model.If the data does not contain a header, this is the column index
-            #'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
-            #'        categorical variable).
-            #' @param model_id Destination id for this model; auto-generated if not specified.
-            #' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters)."""
     elif algo == "word2vec":
         return None
     else:
@@ -526,26 +521,32 @@ def help_extra_checks_for(algo):
         """
     if algo == "kmeans":
         return """
-  # Check if init is an acceptable set of user-specified starting points
-  if( is.data.frame(init) || is.matrix(init) || is.list(init) || is.H2OFrame(init) ) {
-  parms[["init"]] <- "User"
+  # Check if user_points is an acceptable set of user-specified starting points
+  if( is.data.frame(user_points) || is.matrix(user_points) || is.list(user_points) || is.H2OFrame(user_points) ) {
+    if ( length(init) > 1 || init == 'User') {
+      parms[["init"]] <- "User"
+    } else {
+      warning(paste0("Parameter init must equal 'User' when user_points is set. Ignoring init = '", init, "'. Setting init = 'User'."))
+    }
+
+    parms[["init"]] <- "User"
   # Convert user-specified starting points to H2OFrame
-  if( is.data.frame(init) || is.matrix(init) || is.list(init) ) {
-    if( !is.data.frame(init) && !is.matrix(init) ) init <- t(as.data.frame(init))
-    init <- as.h2o(init)
+  if( is.data.frame(user_points) || is.matrix(user_points) || is.list(user_points) ) {
+    if( !is.data.frame(user_points) && !is.matrix(user_points) ) user_points <- t(as.data.frame(user_points))
+    user_points <- as.h2o(user_points)
   }
-  parms[["user_points"]] <- init
+  parms[["user_points"]] <- user_points
   # Set k
-  if( !(missing(k)) && k!=as.integer(nrow(init)) ) {
+  if( !(missing(k)) && k!=as.integer(nrow(user_points)) ) {
     warning("Parameter k is not equal to the number of user-specified starting points. Ignoring k. Using specified starting points.")
   }
-  parms[["k"]] <- as.numeric(nrow(init))
-  }
-  else if ( is.character(init) ) { # Furthest, Random, PlusPlus
-  parms[["user_points"]] <- NULL
-  }
-  else{
-  stop ("argument init must be set to Furthest, Random, PlusPlus, or a valid set of user-defined starting points.")
+  parms[["k"]] <- as.numeric(nrow(user_points))
+
+  } else if ( is.character(init) ) { # Furthest, Random, PlusPlus{
+    parms[["user_points"]] <- NULL
+
+  } else{
+    stop ("argument init must be set to Furthest, Random, PlusPlus, or a valid set of user-defined starting points.")
   }
         """
 
@@ -853,7 +854,7 @@ def indent(string, n):
     return " " * n + string
 
 def normalize_value(param, is_help = False):
-    if not(is_help) and param["type"][:4] == "enum":
+    if not(is_help) and param["type"][:4] == "enum":  
         return "c(%s)" % ", ".join('"%s"' % p for p in param["values"])
     if param["default_value"] is None:
         if param["type"] in ["short", "int", "long", "double"]:
@@ -861,7 +862,10 @@ def normalize_value(param, is_help = False):
         else:
             return "NULL"
     if not(is_help) and "[]" in param["type"]:
-        return "c(%s)" % ", ".join('%s' % p for p in param["default_value"])
+        if param["name"] == "base_models":
+            return "list()"
+        else:    
+            return "c(%s)" % ", ".join('%s' % p for p in param["default_value"])
     if param["type"] == "boolean":
         return str(param["default_value"]).upper()
     if param["type"] == "double":

@@ -12,6 +12,7 @@ import os
 import warnings
 
 from h2o.backend import H2OConnection
+from h2o.backend import H2OConnectionConf
 from h2o.backend import H2OLocalServer
 from h2o.exceptions import H2OConnectionError, H2OValueError
 from h2o.utils.config import H2OConfigReader
@@ -27,6 +28,7 @@ from .estimators.glrm import H2OGeneralizedLowRankEstimator
 from .estimators.kmeans import H2OKMeansEstimator
 from .estimators.naive_bayes import H2ONaiveBayesEstimator
 from .estimators.random_forest import H2ORandomForestEstimator
+from .estimators.stackedensemble import H2OStackedEnsembleEstimator
 from .expr import ExprNode
 from .frame import H2OFrame
 from .grid.grid_search import H2OGridSearch
@@ -46,9 +48,8 @@ warnings.filterwarnings('ignore', category=DeprecationWarning, module='.*/IPytho
 
 h2oconn = None
 
-
 def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_certificates=None, auth=None,
-            proxy=None, cluster_id=None, cookies=None, verbose=True):
+            proxy=None, cluster_id=None, cookies=None, verbose=True, config=None):
     """
     Connect to an existing H2O server, remote or local.
 
@@ -67,15 +68,20 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
     :param cluster_id: Name of the H2O cluster to connect to. This option is used from Steam only.
     :param cookies: Cookie (or list of) to add to request
     :param verbose: Set to False to disable printing connection status messages.
+    :param connection_conf: Connection configuration object encapsulating connection parameters.
     :returns: the new :class:`H2OConnection` object.
     """
     global h2oconn
-    h2oconn = H2OConnection.open(server=server, url=url, ip=ip, port=port, https=https, auth=auth,
-                                 verify_ssl_certificates=verify_ssl_certificates, proxy=proxy,
-                                 cluster_id=cluster_id, cookies=cookies, verbose=verbose)
-    h2oconn.cluster.timezone = "UTC"
-    if verbose:
-        h2oconn.cluster.show_status()
+    if config:
+        h2oconn = _connect_with_conf(config)
+    else:
+        h2oconn = H2OConnection.open(server=server, url=url, ip=ip, port=port, https=https,
+                                     auth=auth, verify_ssl_certificates=verify_ssl_certificates,
+                                     proxy=proxy, cluster_id=cluster_id, cookies=cookies,
+                                     verbose=verbose)
+        h2oconn.cluster.timezone = "UTC"
+        if verbose:
+            h2oconn.cluster.show_status()
     return h2oconn
 
 
@@ -99,11 +105,11 @@ def connection():
 
 def version_check():
     """Used to verify that h2o-python module and the H2O server are compatible with each other."""
+    from .__init__ import __version__ as ver_pkg
     ci = h2oconn.cluster
     if not ci:
         raise H2OConnectionError("Connection not initialized. Did you run h2o.connect()?")
     ver_h2o = ci.version
-    from .__init__ import __version__ as ver_pkg
     if ver_pkg == "SUBST_PROJECT_VERSION": ver_pkg = "UNKNOWN"
     if str(ver_h2o) != str(ver_pkg):
         branch_name_h2o = ci.branch_name
@@ -694,6 +700,7 @@ def get_model(model_id):
             m = H2OAutoEncoderEstimator()
         else:
             m = H2ODeepLearningEstimator()
+    elif algo == "stackedensemble": m = H2OStackedEnsembleEstimator()
     else:
         raise ValueError("Unknown algo type: " + algo)
     m._resolve_model(model_id, model_json)
@@ -1236,6 +1243,15 @@ def _check_connection():
     if not h2oconn or not h2oconn.cluster:
         raise H2OConnectionError("Not connected to a cluster. Did you run `h2o.connect()`?")
 
+def _connect_with_conf(conn_conf):
+    conf = conn_conf
+    if isinstance(conn_conf, dict):
+        conf = H2OConnectionConf(config=conn_conf)
+    assert_is_type(conf, H2OConnectionConf)
+
+    return connect(url = conf.url, verify_ssl_certificates = conf.verify_ssl_certificates,
+                   auth = conf.auth, proxy = conf.proxy, cluster_id = None,
+                   cookies = conf.cookies, verbose = conf.verbose)
 
 #-----------------------------------------------------------------------------------------------------------------------
 #  ALL DEPRECATED METHODS BELOW

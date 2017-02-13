@@ -531,7 +531,7 @@ public final class Gram extends Iced<Gram> {
     public final double[][] _xx;
     protected final double[] _diag;
     private boolean _isSPD;
-    private final boolean _icptFirst;
+    private boolean _icptFirst;
 
     public Cholesky(double[][] xx, double[] diag) {
       _xx = xx;
@@ -545,6 +545,30 @@ public final class Gram extends Iced<Gram> {
       _icptFirst = icptFirst;
       _isSPD = true;
     }
+
+
+    public void solve(final double [][] ys){
+      RecursiveAction [] ras = new RecursiveAction[ys.length];
+      for(int i = 0; i < ras.length; ++i) {
+        final int fi = i;
+        ras[i] = new RecursiveAction() {
+          @Override
+          protected void compute() {
+            ys[fi][fi] = 1;
+            solve(ys[fi]);
+          }
+        };
+      }
+      ForkJoinTask.invokeAll(ras);
+    }
+    public double [][] getInv(){
+      double [][] res = new double[_xx[_xx.length-1].length][_xx[_xx.length-1].length];
+      for(int i = 0; i < res.length; ++i)
+        res[i][i] = 1;
+      solve(res);
+      return res;
+    }
+
     public double [] getInvDiag(){
       final double [] res = new double[_xx.length + _diag.length];
       RecursiveAction [] ras = new RecursiveAction[res.length];
@@ -863,16 +887,21 @@ public final class Gram extends Iced<Gram> {
     }
     @Override public void chunkDone(){
       if(_std) {
-        double r = 1.0 / _nobs;
-        _gram.mul(r);
+        if (_nobs > 0) {  // removing NA rows may produce _nobs=0
+          double r = 1.0 / _nobs;
+          _gram.mul(r);
+        }
       }
     }
     @Override public void reduce(GramTask gt){
       if(_std) {
-        double r1 = (double) _nobs / (_nobs + gt._nobs);
-        _gram.mul(r1);
-        double r2 = (double) gt._nobs / (_nobs + gt._nobs);
-        gt._gram.mul(r2);
+        if ((_nobs > 0) && (gt._nobs > 0)) {  // removing NA rows may produce _nobs=0
+          double r1 = (double) _nobs / (_nobs + gt._nobs);
+          _gram.mul(r1);
+
+          double r2 = (double) gt._nobs / (_nobs + gt._nobs);
+          gt._gram.mul(r2);
+        }
       }
       _gram.add(gt._gram);
       _nobs += gt._nobs;

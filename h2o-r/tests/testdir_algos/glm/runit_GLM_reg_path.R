@@ -31,6 +31,7 @@ test.glm_reg_path <- function() {
     m_net = glmnet(x=x,y=y,family='binomial')
     m = h2o.glm(training_frame=splits[[1]],validation_frame=splits[[2]],x=3:9,y=2,family='binomial',alpha=1,lambda_search = TRUE, solver='COORDINATE_DESCENT')
     regpath = h2o.getGLMFullRegularizationPath(m)
+    regpath$explained_deviance_train
     expect_false(is.null(regpath$explained_deviance_valid))
     n = min(length(m_net$lambda),dim(regpath$coefficients)[1])
     for(i in 1:n){
@@ -38,6 +39,20 @@ test.glm_reg_path <- function() {
           coefs_h2o = regpath$coefficients[i,]
           diff = max(abs((coefs_h2o[names(coefs_net)] - coefs_net)/max(1,coefs_net)))
           expect_false(diff > 1e-3)
+          model2 <- h2o.makeGLMModel(m,coefs_h2o)
+          perf1 = h2o.performance(model2,splits[[1]])
+          explained_dev_train = (1-perf1@metrics$residual_deviance/perf1@metrics$null_deviance)
+          print(c(explained_dev_train,regpath$explained_deviance_train[i]))
+          diff = abs(explained_dev_train - regpath$explained_deviance_train[i])
+          cat('diff = ',diff,'\n')
+          expect_false(diff > 1e-4)
+          perf2 = h2o.performance(model2,splits[[2]])
+          explained_dev_test = (1-perf2@metrics$residual_deviance/perf2@metrics$null_deviance)
+          expect_false(is.null(regpath$explained_deviance_valid))
+          diff = abs(explained_dev_test - regpath$explained_deviance_valid[i])
+          print(c(explained_dev_test,regpath$explained_deviance_valid[i]))
+          cat('diff2 = ',diff,'\n')
+          expect_false(diff > 1e-4)
     }
 }
 doTest("GLM Regularization Path extraction", test.glm_reg_path)

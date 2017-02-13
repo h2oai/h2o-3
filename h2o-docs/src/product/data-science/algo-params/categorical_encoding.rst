@@ -9,20 +9,22 @@ Description
 
 This option specifies the encoding scheme to use for handling categorical features. Available schemes include the following:
 
-**GBM/DRF**
+**GBM/DRF/K-Means**
 
-  - ``auto`` or ``AUTO``: Allow the algorithm to decide (default)
-  - ``enum`` or ``Enum``: 1 column per categorical feature
+  - ``auto`` or ``AUTO``: Allow the algorithm to decide (default). For GBM, DRF, and K-Means, the algorithm will perform Enum encoding when ``auto`` option is specified. 
+  - ``enum`` or ``Enum``: Leave the dataset as is, internally map the strings to integers, and use these integers to make splits - either via ordinal nature when ``nbins_cats`` is too small to resolve all levels or via bitsets that do a perfect group split.
   - ``one_hot_explicit`` or ``OneHotExplicit`` : N+1 new columns for categorical features with N levels
   - ``binary`` or ``Binary``: No more than 32 columns per categorical feature
   - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
 
-**Deep Learning/K-Means**
+**Deep Learning**
 
-  - ``auto`` or ``AUTO``:  Allow the algorithm to decide
-  - ``one_hot_internal`` or ``OneHotInternal``: On the fly N+1 new cols for categorical features with N levels (default)
+  - ``auto`` or ``AUTO``:  Allow the algorithm to decide. For Deep Learning, the algorithm will perform One Hot Internal encoding when ``auto`` is specified.
+  - ``one_hot_internal`` or ``OneHotInternal``: Leave the dataset as is. This internally expands each row via one-hot encoding on the fly. (default)
   - ``binary`` or ``Binary``: No more than 32 columns per categorical feature
   - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
+
+  **Note**: For Deep Learning, this value defaults to ``one_hot_internal``. Similarly, if ``auto`` is specified, then the algorithm performs ``one_hot_internal`` encoding. 
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~

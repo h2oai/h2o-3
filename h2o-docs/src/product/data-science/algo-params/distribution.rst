@@ -9,9 +9,11 @@ Description
 
 Unlike in GLM, where users specify both a distribution ``family`` and a ``link`` for the loss function, in GBM and Deep Learning, distributions and loss functions are tightly coupled. In these algorithms, a loss function is specified using the ``distribution`` parameter. When specifying the distribution, the loss function is automatically selected as well. For exponential families (such as Poisson, Gamma, and Tweedie), the canonical logarithmic link function is used.
 
-By default, the GBM/Deep Learning loss function method performs AUTO distribution. In this case, the algorithm will guess the model type based on the response column type (specified using ``y``). Certain cases can exist, however, in which the median starting value for this loss function can lead to poor results (for example, if the median is the lowest or highest value in a tree node). The ``distribution`` option allows you to specify a different method. Available methods include AUTO, bernoulli, multinomial, gaussian, poisson, gamma, laplace, quantile, huber, and tweedie.
+By default, the GBM/Deep Learning loss function method performs AUTO distribution. In this case, the algorithm will guess the model type based on the response column type (specified using ``y``). More specifically, if the response column type is numeric, AUTO defaults to "gaussian"; if categorical, AUTO defaults to bernoulli or multinomial depending on the number of response categories.
 
-- If the distribution is ``bernoulli``, the the response column must be 2-class categorical
+Certain cases can exist, however, in which the median starting value for this loss function can lead to poor results (for example, if the median is the lowest or highest value in a tree node). The ``distribution`` option allows you to specify a different method. Available methods include AUTO, bernoulli, multinomial, gaussian, poisson, gamma, laplace, quantile, huber, and tweedie.
+
+- If the distribution is ``bernoulli``, the response column must be 2-class categorical
 - If the distribution is ``multinomial``, the response column must be categorical.
 - If the distribution is ``gaussian``, the response column must be numeric.
 - If the distribution is ``poisson``, the response column must be numeric.
@@ -28,7 +30,7 @@ The following general guidelines apply when selecting a distribution:
  - A Bernoulli distribution is used for binary outcomes.
  - A Multinomial distribution can handle multiple discrete outcomes.
 
- For Regression Problems:
+ For Regression problems:
 
  - A Gaussian distribution is the function for continuous targets.
  - A Poisson distribution is used for estimating counts.

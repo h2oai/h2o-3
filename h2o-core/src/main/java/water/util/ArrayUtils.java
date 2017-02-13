@@ -1199,6 +1199,12 @@ public class ArrayUtils {
       res[i] = ary[idxs[i]];
     return res;
   }
+  public static int[] select(int[] ary, int[] idxs) {
+    int [] res = MemoryManager.malloc4(idxs.length);
+    for(int i = 0; i < res.length; ++i)
+      res[i] = ary[idxs[i]];
+    return res;
+  }
 
   public static double [] expandAndScatter(double [] ary, int N, int [] ids) {
     assert ary.length == ids.length:"ary.length = " + ary.length + " != " + ids.length + " = ids.length";
@@ -1630,4 +1636,9 @@ public class ArrayUtils {
     return res;
   }
 
+  public static boolean isSorted(int[] vals) {
+    for(int i = 1; i < vals.length; ++i)
+      if(vals[i-1] > vals[i]) return false;
+    return true;
+  }
 }
