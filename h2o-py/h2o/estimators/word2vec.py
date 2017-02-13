@@ -41,7 +41,7 @@ class H2OWord2vecEstimator(H2OEstimator):
         """
         Id of the training data frame (Not required, to allow initial validation of model parameters).
 
-        Type: ``str``.
+        Type: ``H2OFrame``.
         """
         return self._parms.get("training_frame")
 

@@ -33,7 +33,9 @@ public class KMeansV3 extends ClusteringModelBuilderSchema<KMeans,KMeansV3,KMean
     };
 
     // Input fields
-    @API(help = "User-specified points", required = false, level = API.Level.expert)
+    @API(help = "This option allows you to specify a dataframe, where each row represents an initial cluster center. " +
+            "The user-specified points must have the same number of columns as the training observations. " +
+            "The number of rows must equal the number of clusters", required = false, level = API.Level.expert)
     public KeyV3.FrameKeyV3 user_points;
 
     @API(help="Maximum training iterations (if estimate_k is enabled, then this is for each inner Lloyds iteration)", gridable = true)
