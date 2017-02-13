@@ -5,6 +5,7 @@ import ai.h2o.automl.utils.AutoMLUtils;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ScoreKeeper;
+import hex.StackedEnsembleModel;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria;
@@ -35,7 +36,7 @@ import static water.Key.make;
  * strategies of execution in an effort to discover an optimal supervised model for some
  * given (dataset, response, loss) combo.
  */
-public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
+public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   private final boolean verifyImmutability = true; // check that trainingFrame hasn't been messed with
 
@@ -62,14 +63,6 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     return frameMetadata;
   }
 
-  public long getTimeRemaining() {
-    return timeRemaining;
-  }
-
-  public long getTotalTime() {
-    return totalTime;
-  }
-
   private Frame trainingFrame;           // munged training frame: can add and remove Vecs, but not mutate Vec data in place
   private Frame validationFrame;         // optional validation frame
   private Vec responseVec;
@@ -77,8 +70,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
   private Key<Grid> gridKey;             // Grid key from GridSearch
   private boolean isClassification;
 
-  private long timeRemaining;
-  private long totalTime;
+  private long stopTimeMs;
   private Job job;                  // the Job object for the build of this AutoML.  TODO: can we have > 1?
   private transient ArrayList<Job> jobs;
 
@@ -174,7 +166,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     ArrayList<String> fails = new ArrayList();
     ArrayList<String> dels = new ArrayList();
 
-    H2O.getPM().importFiles(importFiles.path, ".*", files, keys, fails, dels);
+    H2O.getPM().importFiles(importFiles.path, null, files, keys, fails, dels);
 
     importFiles.files = files.toArray(new String[0]);
     importFiles.destination_frames = keys.toArray(new String[0]);
@@ -195,7 +187,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
   // used to launch the AutoML asynchronously
   @Override
   public void run() {
-    totalTime = System.currentTimeMillis() + Math.round(1000 * buildSpec.build_control.stopping_criteria.max_runtime_secs());
+    stopTimeMs = System.currentTimeMillis() + Math.round(1000 * buildSpec.build_control.stopping_criteria.max_runtime_secs());
     try {
       learn();
     } catch (AutoMLDoneException e) {
@@ -208,19 +200,61 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     if (null == jobs) return; // already stopped
     for (Job j : jobs) j.stop();
     for (Job j : jobs) j.get(); // Hold until they all completely stop.
-    totalTime = -1;
-    timeRemaining = -1;
     jobs = null;
+
+    // TODO: add a failsafe, if we haven't marked off as much work as we originally intended?
+    // If we don't, we end up with an exceptional completion.
+  }
+
+  public long getStopTimeMs() {
+    return stopTimeMs;
+  }
+
+  public long timeRemainingMs() {
+    long remaining = getStopTimeMs() - System.currentTimeMillis();
+    return Math.max(0, remaining);
   }
 
   @Override
   public boolean keepRunning() {
-    return (timeRemaining = totalTime - System.currentTimeMillis()) > 0;
+    return timeRemainingMs() > 0;
   }
 
-  @Override
-  public long timeRemaining() {
-    return timeRemaining;
+  /**
+   * Helper for hex.ModelBuilder.
+   * @return
+   */
+  public Job trainModel(String algoURLName, Model.Parameters parms) {
+    String algoName = ModelBuilder.algoName(algoURLName);
+    Key<Model> key = ModelBuilder.defaultKey(algoName);
+    Job job = new Job<>(key,ModelBuilder.javaName(algoURLName), algoName);
+
+    ModelBuilder builder = ModelBuilder.make(algoURLName, job, key);
+    builder._parms = parms;
+    builder.init(false);          // validate parameters
+
+    // TODO: handle error_count and messages
+
+    return builder.trainModel();
+  }
+
+  public Job hyperparameterSearch(String algoName, Model.Parameters baseParms, Map<String, Object[]> searchParms) {
+    Log.info("AutoML: starting " + algoName + " hyperparameter search");
+    HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria = (HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria)buildSpec.build_control.stopping_criteria.clone();
+    searchCriteria.set_max_runtime_secs(this.timeRemainingMs() / 1000.0);
+
+    Job<Grid> gridJob = GridSearch.startGridSearch(gridKey,
+            baseParms,
+            searchParms,
+            new GridSearch.SimpleParametersBuilderFactory(),
+            buildSpec.build_control.stopping_criteria);
+
+    Log.info(algoName + " hyperparameter search started");
+    jobs.add(gridJob);
+    Grid grid = gridJob.get(); // Hold out until Grid Search is done (or if the job times out)
+    Log.info(algoName + " hyperparameter search complete");
+    try { jobs.remove(gridJob); } catch (NullPointerException npe) {} // stop() can null jobs; can't just do a pre-check, because there's a race
+    return gridJob;
   }
 
   // manager thread:
@@ -236,7 +270,9 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
   //
   public void learn() {
 
-    // step 1: gather initial frame metadata and guess the problem type
+    ///////////////////////////////////////////////////////////
+    // gather initial frame metadata and guess the problem type
+    ///////////////////////////////////////////////////////////
 
     // TODO: Nishant says sometimes frameMetadata is null, so maybe we need to wait for it?
     // null FrameMetadata arises when delete() is called without waiting for start() to finish.
@@ -250,14 +286,19 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
 
     isClassification = frameMetadata.isClassification();
 
-    // step 2: build a fast RF
-    // ModelBuilder initModel = selectInitial(frameMetadata);
-    // Model m = build(initModel); // need to track this...
+    ///////////////////////////////////////////////////////////
+    // TODO: build a fast RF
+    ///////////////////////////////////////////////////////////
+
+
 
     // TODO: add the models to the modellist so they get deleted
 
-    // step 2 for AutoML phase 1: do a random hyperparameter search with GBM
-    Key<Grid> gridKey = Key.make("grid_0_" + this._key.toString());
+    ///////////////////////////////////////////////////////////
+    // do a random hyperparameter search with GBM
+    ///////////////////////////////////////////////////////////
+    // TODO: convert to using the REST API
+    Key<Grid> gridKey = Key.make("GBM_grid_0_" + this._key.toString());
 
     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria = buildSpec.build_control.stopping_criteria;
 
@@ -274,9 +315,13 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     gbmParameters._keep_cross_validation_predictions = true;
 
     gbmParameters._score_tree_interval = 5;
+
+    // TODO: wire through from buildSpec
     gbmParameters._stopping_metric = ScoreKeeper.StoppingMetric.AUTO;
-    gbmParameters._stopping_tolerance = 0.0;
+    gbmParameters._stopping_tolerance = 0.0001;
     gbmParameters._stopping_rounds = 3;
+    gbmParameters._max_runtime_secs = this.timeRemainingMs() / 1000;  // TODO: run for only part of the remaining time?
+    Log.info("About to run GBM for: " + gbmParameters._max_runtime_secs + "S");
     gbmParameters._histogram_type = SharedTreeModel.SharedTreeParameters.HistogramType.AUTO;
 
     Map<String, Object[]> searchParams = new HashMap<>();
@@ -294,20 +339,40 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
       searchParams.put("col_sample_rate_per_tree", new Double[]{0.4, 0.6, 0.8, 1.0});
 */
 
-    Log.info("AutoML: starting hyperparameter search");
-    Job<Grid> gridJob = GridSearch.startGridSearch(gridKey,
-            gbmParameters, // TODO
-            searchParams, // TODO
-            new GridSearch.SimpleParametersBuilderFactory<GBMModel.GBMParameters>(),
-            searchCriteria);
+    Job<Grid>gbmJob = hyperparameterSearch("GBM", gbmParameters, searchParams);
+    this.job.update(1, "GBM" + " grid search complete");
 
-    jobs.add(gridJob);
+    Grid gbmGrid = DKV.getGet(gbmJob._result);
+
+    // TODO: Sort!
+    Model m = gbmGrid.getModels()[0];
+    updateLeader(m);
+
+    if (m._output.isClassifier() && ! m._output.isBinomialClassifier()) {
+      // nada
+      this.job.update(1, "Multinomial classifier: StackedEnsemble build skipped");
+      Log.info("Multinomial classifier: StackedEnsemble build skipped");
+    } else {
+      ///////////////////////////////////////////////////////////
+      // stack all models
+      ///////////////////////////////////////////////////////////
+
+      StackedEnsembleModel.StackedEnsembleParameters stackedEnsembleParameters = new StackedEnsembleModel.StackedEnsembleParameters();
+      stackedEnsembleParameters._base_models = gbmJob.get().getModelKeys();
+      stackedEnsembleParameters._selection_strategy = StackedEnsembleModel.StackedEnsembleParameters.SelectionStrategy.choose_all;
+      stackedEnsembleParameters._train = trainingFrame._key;
+      if (null != validationFrame)
+        stackedEnsembleParameters._valid = validationFrame._key;
+      stackedEnsembleParameters._response_column = buildSpec.input_spec.response_column;
 
 
-    gridJob.get(); // Hold out until Grid Search is done (or if the job times out)
-
-
-    this.job.update(1, "grid search complete");
+      Job ensembleJob = trainModel("stackedensemble", stackedEnsembleParameters);
+      jobs.add(ensembleJob);
+      StackedEnsembleModel ensemble = (StackedEnsembleModel)ensembleJob.get();
+      jobs.remove(ensembleJob);
+      this.job.update(1, "StackedEnsemble build complete");
+      Log.info("StackedEnsemble build complete");
+    }
 
     Log.info("AutoML: build done");
     possiblyVerifyImmutability();
@@ -337,13 +402,15 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
   public static void startAutoML(AutoML aml) {
     // Currently AutoML can only run one job at a time
     if (aml.job == null || !aml.job.isRunning()) {
-      Job job = new TimedH2OJob(aml, aml._key).start();
+      Job job = new /* Timed */ H2OJob(aml, aml._key).start();
       aml.job = job;
-      job._max_runtime_msecs = Math.round(1000 * aml.buildSpec.build_control.stopping_criteria.max_runtime_secs());
-      job._work = 3;
-      aml.job.update(1, "data import complete");
+      // job._max_runtime_msecs = Math.round(1000 * aml.buildSpec.build_control.stopping_criteria.max_runtime_secs());
 
+      // job work: import/parse, GBM grid, StackedEnsemble
+      job._work = 3;
       DKV.put(aml);
+
+      job.update(1, "Data import and parse complete");
     }
   }
 
@@ -356,7 +423,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
 
 
   public Key<Model> getLeaderKey() {
-    final Value val = DKV.get(LEADER);
+    final Value val = DKV.get(leader);
     if (val == null) return null;
     ModelLeader ml = val.get();
     return ml._leader;
@@ -367,7 +434,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     AutoMLUtils.cleanup_adapt(trainingFrame, origTrainingFrame);
     for (Model m : models()) m.delete();
     DKV.remove(MODELLIST);
-    DKV.remove(LEADER);
+    DKV.remove(leader);
     remove();
   }
 
@@ -427,13 +494,13 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     return models;
   }
 
-  public final Key<Model> LEADER = make("AutoMLModelLeader" + make().toString(), (byte) 0, (byte) 2, false);
+  public final Key<Model> leader = make("AutoMLModelLeader" + make().toString(), (byte) 0, (byte) 2, false);
 
   class ModelLeader extends Keyed {
     Key<Model> _leader;
 
     ModelLeader() {
-      super(LEADER);
+      super(leader);
       _leader = null;
     }
 
@@ -444,7 +511,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
   }
 
   Model leader() {
-    final Value val = DKV.get(LEADER);
+    final Value val = DKV.get(leader);
     if (val == null) return null;
     ModelLeader ml = val.get();
     final Value leaderModelKey = DKV.get(ml._leader);
@@ -470,7 +537,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
           old._leader = leaderKey;
           return old;
         }
-      }.invoke(LEADER);
+      }.invoke(this.leader);
     }
   }
 

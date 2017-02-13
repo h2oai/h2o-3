@@ -14,8 +14,8 @@ import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.ast.prims.mungers.AstNaOmit;
 import water.util.ArrayUtils;
-import water.util.AtomicUtils;
 import water.util.Log;
+
 import java.util.*;
 
 import static ai.h2o.automl.utils.AutoMLUtils.intListToA;

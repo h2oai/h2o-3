@@ -28,7 +28,7 @@ public class TimedH2OJob extends H2OJob {
     @Override public void compute2() {
       while( ((TimedH2ORunnable)_j._target).keepRunning()) {
         try {
-          Thread.sleep(Math.min(10,((TimedH2ORunnable)_j._target).timeRemaining()));
+          Thread.sleep(Math.min(10,((TimedH2ORunnable)_j._target).timeRemainingMs()));
         } catch (InterruptedException e) {
           e.printStackTrace();
         }
@@ -40,7 +40,7 @@ public class TimedH2OJob extends H2OJob {
       _j._target.stop();
       Job j = _j._jobKey.get();
       j.update(1);
-//      j.stop();
+      j.stop();
     }
     @Override public boolean onExceptionalCompletion(Throwable t, CountedCompleter cc) {
       Log.info("Timed H2OJob finished exceptionally");

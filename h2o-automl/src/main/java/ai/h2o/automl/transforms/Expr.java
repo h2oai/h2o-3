@@ -1,6 +1,7 @@
 package ai.h2o.automl.transforms;
 
 import water.Key;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.TransformWrappedVec;
 import water.fvec.Vec;
 import water.rapids.Rapids;
@@ -143,7 +144,12 @@ public class Expr implements Cloneable {
 
   public TransformWrappedVec toWrappedVec() {
     // AstRoot fun = new AstExec(toRapids()).parse();
-    AstFunction fun = (AstFunction) Rapids.parse(toRapids());
+    AstRoot root = Rapids.parse(toRapids());
+
+    if (! (root instanceof AstPrimitive))
+      throw new H2OIllegalArgumentException("Internal error in transform engine", "Internal error in transform engine: expected the transform expression to parse as an AstPrimitive, but it's a: " + root.getClass() + ": " + toRapids());
+
+    AstPrimitive fun = (AstPrimitive)root;
     return new TransformWrappedVec(_anyVec.group().addVec(), _anyVec._rowLayout, fun, _vecs.toArray(new Key[_vecs.size()]));
   }
 
