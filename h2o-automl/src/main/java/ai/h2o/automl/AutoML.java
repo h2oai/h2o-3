@@ -174,7 +174,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     ArrayList<String> fails = new ArrayList();
     ArrayList<String> dels = new ArrayList();
 
-    H2O.getPM().importFiles(importFiles.path, files, keys, fails, dels);
+    H2O.getPM().importFiles(importFiles.path, ".*", files, keys, fails, dels);
 
     importFiles.files = files.toArray(new String[0]);
     importFiles.destination_frames = keys.toArray(new String[0]);

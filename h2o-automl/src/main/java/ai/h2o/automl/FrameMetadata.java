@@ -426,13 +426,17 @@ public class FrameMetadata extends Iced {
   }
 
   /** mean function from rapids */
-  //TODO - AstMean signatures have changes, will have to modify when merge master
-  public double rapidMean(Frame dr){
+  /** AstMean now accepts a flag to treat NAs as a 0 or ignore them completely */
+  public double rapidMean(Frame dr, boolean ignore_na) {
     //String y0 = String.format("(mean %s %s %s)",dr._key,1,0/1);
-    Val val = Rapids.exec("(mean " + dr._key + " true)");
-    double[] darray = val.getNums();
+    Val val = Rapids.exec("(mean " + dr._key + " " + ignore_na + " false)");
+    double[] darray = val.getRow();
     double d = darray[0];
     return d;
+  }
+  /** mean function with default of ignore_na = true */
+  public double rapidMean(Frame dr) {
+    return rapidMean(dr, true);
   }
 
   /** sd function from rapids */
@@ -743,7 +747,7 @@ public class FrameMetadata extends Iced {
       private double _mean;
 
       HistTask(DHistogram h, double mean) { _h = h; _mean=mean; }
-      @Override public void setupLocal() { _h._w = MemoryManager.malloc8d(_h._nbin); }
+      @Override public void setupLocal() { _h.init(); }
       @Override public void map( Chunk C ) {
         double min = _h.find_min();
         double max = _h.find_maxIn();
@@ -761,7 +765,7 @@ public class FrameMetadata extends Iced {
         _h.setMin(min); _h.setMaxIn(max);
         for(int b=0; b<bins.length; ++b)
           if( bins[b]!=0 )
-            AtomicUtils.DoubleArray.add(_h._w, b, bins[b]);
+            _h.addAtomic(b, bins[b], 0, 0);
       }
 
       @Override public void reduce(HistTask t) {

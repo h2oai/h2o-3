@@ -3,6 +3,9 @@ package ai.h2o.automl.transforms;
 import water.Key;
 import water.fvec.TransformWrappedVec;
 import water.fvec.Vec;
+import water.rapids.Rapids;
+import water.rapids.ast.AstFunction;
+import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 
 import java.util.ArrayList;
@@ -140,7 +143,7 @@ public class Expr implements Cloneable {
 
   public TransformWrappedVec toWrappedVec() {
     // AstRoot fun = new AstExec(toRapids()).parse();
-    AstRoot fun = new RapidsHack(toRapids()).parse();
+    AstFunction fun = (AstFunction) Rapids.parse(toRapids());
     return new TransformWrappedVec(_anyVec.group().addVec(), _anyVec._rowLayout, fun, _vecs.toArray(new Key[_vecs.size()]));
   }
 
