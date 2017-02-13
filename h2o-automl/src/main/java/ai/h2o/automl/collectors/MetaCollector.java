@@ -166,7 +166,13 @@ public class MetaCollector {
       _h.setMin(min); _h.setMaxIn(max);
       for(int b=0; b<bins.length; ++b)
         if( bins[b]!=0 ) {
+<<<<<<< HEAD
           _h.addWAtomic(b, bins[b]);
+||||||| merged common ancestors
+          AtomicUtils.DoubleArray.add(_h._w, b, bins[b]);
+=======
+          _h.addAtomic(b, bins[b], 0, 0);
+>>>>>>> Fixed some compatability issues that arose when updating h2o.
           AtomicUtils.DoubleArray.add(_sums, b, sums[b]);
           AtomicUtils.DoubleArray.add(_ssqs, b, ssqs[b]);
         }

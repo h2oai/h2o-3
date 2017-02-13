@@ -426,13 +426,17 @@ public class FrameMetadata extends Iced {
   }
 
   /** mean function from rapids */
-  //TODO - AstMean signatures have changes, will have to modify when merge master
-  public double rapidMean(Frame dr){
+  /** AstMean now accepts a flag to treat NAs as a 0 or ignore them completely */
+  public double rapidMean(Frame dr, boolean ignore_na) {
     //String y0 = String.format("(mean %s %s %s)",dr._key,1,0/1);
-    Val val = Rapids.exec("(getrow (mean " + dr._key + " true 0))");
-    double[] darray = val.getNums();
+    Val val = Rapids.exec("(mean " + dr._key + " " + ignore_na + " false)");
+    double[] darray = val.getRow();
     double d = darray[0];
     return d;
+  }
+  /** mean function with default of ignore_na = true */
+  public double rapidMean(Frame dr) {
+    return rapidMean(dr, true);
   }
 
   /** sd function from rapids */
