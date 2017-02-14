@@ -10,10 +10,7 @@ import water.TestUtil._
 import water.udf.MoreColumns._
 import water.udf.fp.PureFunctions._
 import water.udf.fp.{Function, Functions, PureFunctions}
-<<<<<<< 85655781cedcd9b05dd2bddf4d0686ef8806ba59
 import water.util.FileUtils._
-=======
->>>>>>> Checked that UDF-style OneHotEncoding does exactly the same as the one in FrameUtils.
 import water.{Test0, TestUtil}
 
 import scala.collection.JavaConverters._
