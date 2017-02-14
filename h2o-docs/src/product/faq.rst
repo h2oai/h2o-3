@@ -653,6 +653,36 @@ column indices must be >= 1, and the columns must be in ascending order.
 
 --------------
 
+**Does H2O provide native sparse support?**
+
+Sparse data is supported natively by loading a sparse matrix from an SVMLight file. In addition, H2O includes a direct conversion of a sparse matrix to an H2O Frame in Python via the ``h2o.H2OFrame()`` method and in R via the ``as.h2o()`` function. For sparse data, H2O writes a sparse matrix to SVMLight format and then loads it back in using ``h2o.import_file`` in Python or ``h2o.importFile`` with ``parse_type=SVMLight`` in R.
+
+In R, a sparse matrix is specified using ``Matrix::sparseMatrix`` along with the boolean flag, ``sparse=TRUE``. For example:
+
+  ::
+
+    data <- rep(0, 100)
+    data[(1:10)^2] <- 1:10 * pi
+    m <- matrix(data, ncol = 20, byrow = TRUE)
+    m <- Matrix::Matrix(m, sparse = TRUE)
+    h2o.matrix <- as.h2o(m, "sparse_matrix")
+
+In Python, a sparse matrix is specified using ``scipy.parse``. For example:
+
+  ::
+
+    import scipy.sparse as sp
+    A = sp.csr_matrix([[1, 2, 0, 5.5], [0, 0, 3, 6.7], [4, 0, 5, 0]])
+    fr = h2o.H2OFrame(A)
+    A = sp.lil_matrix((1000, 1000))
+    A.setdiag(10)
+    for i in range(999):
+        A[i, i + 1] = -3
+        A[i + 1, i] = -2
+    fr = h2o.H2OFrame(A)
+
+--------------
+
 **What date and time formats does H2O support?**
 
 H2O is set to auto-detect two major date/time formats. Because many date
