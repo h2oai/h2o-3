@@ -682,7 +682,7 @@ public class TestUtil extends Iced {
             }
           } else if((c0 instanceof C8Chunk) && (c1 instanceof C8Chunk)) {
             long d0 = c0.at8(rows), d1 = c1.at8(rows);
-            if (d0 != d1) {
+            if (!(Double.isNaN(d0) && Double.isNaN(d1)) && !(Math.abs(d0-d1)<=Math.abs(d0+d1)*_epsilon) ) {
               _unequal = true;
               return;
             }
