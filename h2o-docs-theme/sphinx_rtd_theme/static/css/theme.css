@@ -3777,7 +3777,7 @@ div[class^='highlight'] pre {
 
 .wy-side-nav-search {
   z-index: 200;
-  background-color: #fbe920;
+  background-color: #FFDF00;
   text-align: center;
   padding: 0.809em;
   display: block;
@@ -3873,7 +3873,7 @@ div[class^='highlight'] pre {
 
 .wy-nav-top {
   display: none;
-  background: #fbe920;
+  background: #FFDF00;
   color: #1d1d1d;
   padding: 0.4045em 0.809em;
   position: relative;
