@@ -2598,9 +2598,7 @@ def compare_frames(frame1, frame2, numElements, tol_time=0, tol_numeric=0, stric
         else:
             if str(c2_type) == 'enum':  # orc files do not have enum column type.  We convert it here
                 frame1[col_ind].asfactor()
-            else:
-                assert c1_type == c2_type, "failed column type check! frame1 col type: {0}, frame2 col type: " \
-                                           "{1}".format(c1_type, c2_type)
+
         # compare string
         if (str(c1_type) == 'string') or (str(c1_type) == 'enum'):
             compareOneStringColumn(frame1, frame2, col_ind, rows1, numElements)
