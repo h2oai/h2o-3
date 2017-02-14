@@ -2,6 +2,14 @@ package water.udf.specialized;
 
 import water.fvec.Vec;
 import water.udf.DataColumn;
+import water.udf.UnfoldingColumn;
+import water.udf.UnfoldingFrame;
+import water.udf.fp.PureFunctions;
+import water.util.FrameUtils;
+
+import java.util.ArrayList;
+
+import static water.udf.specialized.Integers.Integers;
 
 /**
  * Specialized class for enum columns. 
@@ -36,5 +44,21 @@ public class EnumColumn extends Integers.Column {
 
   public void set(long idx, int value) {
     vec().set(idx, value);
+  }
+  
+  public UnfoldingColumn<Integer, Integer> oneHotEncode() {
+    return new UnfoldingColumn<>(PureFunctions.oneHotEncode(domain), this, domain.length + 1);
+  }
+  
+  public UnfoldingFrame<Integer, DataColumn<Integer>> oneHotEncodedFrame(String colName) {
+    int width = domain.length + 1;
+    UnfoldingColumn<Integer, Integer> column = oneHotEncode();
+    UnfoldingFrame<Integer, DataColumn<Integer>> frame = new UnfoldingFrame<>(Integers, column.size(), column, width);
+    String prefix = frame.uniquify(colName);
+    ArrayList<String> colNames = new ArrayList<>(width);
+    for (String name : domain) colNames.add(FrameUtils.compoundName(prefix, name));
+    colNames.add(FrameUtils.compoundName(prefix, FrameUtils.SUFFIX_FOR_NA));
+    frame._names = colNames.toArray(new String[0]);
+    return frame;
   }
 }

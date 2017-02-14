@@ -83,10 +83,10 @@ public class FunctionsTest {
   @Test
   public void testOneHotEncode() throws Exception {
     Unfoldable<Integer, Integer> sut = oneHotEncode(new String[]{"red", "white", "blue"});
-    assertEquals(listOf(1,0,0), sut.apply(0));
-    assertEquals(listOf(0,1,0), sut.apply(1));
-    assertEquals(listOf(0,0,1), sut.apply(2));
-    assertEquals(listOf(0,0,0), sut.apply(3));
+    assertEquals(listOf(1,0,0,0), sut.apply(0));
+    assertEquals(listOf(0,1,0,0), sut.apply(1));
+    assertEquals(listOf(0,0,1,0), sut.apply(2));
+    assertEquals(listOf(0,0,0,1), sut.apply(null));
   }
   
   @Test

@@ -5,6 +5,7 @@ import org.junit.Test;
 import water.udf.fp.Function;
 import water.udf.fp.Functions;
 import water.udf.fp.PureFunctions;
+import water.udf.specialized.EnumColumn;
 import water.udf.specialized.Enums;
 
 import java.util.Arrays;
@@ -125,9 +126,9 @@ public class SerializabilityTest extends UdfTestBase {
         = new UnfoldingColumn<>(PureFunctions.splitBy(","), source1, 10);
     checkSerialization(ufc);
 
-    Column<Integer> source2 = willDrop(new Enums(new String[]{"red", "white", "blue"}).newColumn(Arrays.asList(0,1,1,0,2,2,1,2)));
+    EnumColumn source2 = willDrop(new Enums(new String[]{"red", "white", "blue"}).newColumn(Arrays.asList(0,1,1,0,2,2,1,2)));
 
-    Column<List<Integer>> ohe = new UnfoldingColumn<>(PureFunctions.oneHotEncode(new String[]{"red", "white", "blue"}), source2, 10);
+    Column<List<Integer>> ohe = source2.oneHotEncode();
     checkSerialization(ohe);
   }
 }

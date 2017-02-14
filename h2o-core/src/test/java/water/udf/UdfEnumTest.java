@@ -2,28 +2,21 @@ package water.udf;
 
 import org.junit.Test;
 import water.udf.fp.Function;
-import water.udf.fp.Predicate;
-import water.udf.fp.PureFunctions;
 import water.udf.specialized.EnumColumn;
 import water.udf.specialized.Enums;
-import water.udf.specialized.Integers;
-import water.util.StringUtils;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 
 import static org.junit.Assert.*;
-import static water.udf.specialized.Integers.Integers;
 
 /**
  * Test for UDF
  */
 public class UdfEnumTest extends UdfTestBase {
 
-  int requiredCloudSize() { return 3; }
+  int requiredCloudSize() { return 1; }
 
   final String[] domain = {"Red", "White", "Blue"};
   
@@ -69,23 +62,37 @@ public class UdfEnumTest extends UdfTestBase {
   }
 
   @Test
-  public void testOfOneHot() throws Exception {
-    EnumColumn x = generate(10);
+  public void testOfOneHotColumn() throws Exception {
+    EnumColumn x = generate(100);
+    x.set(42, null);
+    Column<List<Integer>> encodedColumn = x.oneHotEncode();
 
-    Column<List<Integer>> encodedColumn = new UnfoldingColumn<>(PureFunctions.oneHotEncode(domain), x, 3);
+    assertEquals(Arrays.asList(0,1,0,0), encodedColumn.apply(7));
+    final List<Integer> at42 = encodedColumn.apply(42);
+    assertEquals(Arrays.asList(0,0,0,1), at42);
+    
+  }
+  @Test
+  public void testOfOneHotFrame() throws Exception {
+    EnumColumn x = generate(100);
+    x.set(42, null);
 
-    assertEquals(Arrays.asList(0,1,0), encodedColumn.apply(7));
-    
-    UnfoldingFrame<Integer, DataColumn<Integer>> encodedFrame = new UnfoldingFrame<>(Integers, encodedColumn.size(), encodedColumn, 3);
-    
+    UnfoldingFrame<Integer, DataColumn<Integer>> encodedFrame = x.oneHotEncodedFrame("test");
+
+    assertArrayEquals(
+        new String[]{"test.Red","test.White","test.Blue","test.missing(NA)"},
+        encodedFrame.names());
+
     List<DataColumn<Integer>> columns = encodedFrame.materialize();
 
-    for (int i = 0; i < x.size(); i++) {
+      for (int i = 0; i < x.size(); i++) {
       for (int j = 0; j < 3; j++) {
-        int expected = i%3 == j ? 1 : 0;
+        int expected = (i != 42 && i%3 == j) ? 1 : 0;
         int actual = columns.get(j).get(i);
-        assertEquals(expected, actual);
+        assertEquals("column " + j + ", row " + i, expected, actual);
       }
+      boolean na = columns.get(3).get(i) == 1;
+      assertEquals(i == 42, na);
     }
   }
 
