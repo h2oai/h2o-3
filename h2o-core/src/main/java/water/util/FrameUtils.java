@@ -20,6 +20,12 @@ import java.util.Random;
 
 public class FrameUtils {
 
+  public static String SUFFIX_FOR_NA = "missing(NA)";
+  
+  public static String compoundName(String first, String second) {
+    return first + "." + second;
+  }
+
   /** Parse given file(s) into the form of single frame represented by the given key.
    *
    * @param okey  destination key for parsed frame
@@ -515,10 +521,10 @@ public class FrameUtils {
             
             // adding the regular category names
             for (int k=0;k<categorySizes[j]-1;++k)
-              catnames.add(_frame.name(i) + "." + _frame.vec(i).domain()[k]);
+              catnames.add(compoundName(_frame.name(i), _frame.vec(i).domain()[k]));
             
             // in the end adding an extra column for missing data
-            catnames.add(_frame.name(i) + ".missing(NA)");
+            catnames.add(compoundName(_frame.name(i), SUFFIX_FOR_NA));
             ++j;
           } else {
             outputFrame.add(_frame.name(i), frameVecs[i].makeCopy());

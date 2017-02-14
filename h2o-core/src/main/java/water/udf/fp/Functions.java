@@ -112,10 +112,10 @@ public class Functions {
 
     @Override
     public List<Integer> apply(Integer cat) {
-      List<Integer> bits = new ArrayList<>(domain.length);
+      List<Integer> bits = new ArrayList<>(domain.length+1);
 
-      for (int i = 0; i < domain.length; i++) bits.add(i == cat ? 1 : 0);
-      
+      for (int i = 0; i < domain.length; i++) bits.add(cat != null && cat == i ? 1 : 0);
+      bits.add(cat == null ? 1 : 0); 
       return bits;
     }
   }
