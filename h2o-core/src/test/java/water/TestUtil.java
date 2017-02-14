@@ -761,4 +761,14 @@ public class TestUtil extends Iced {
     }
   }
 
+  public class TrashCan {
+    Set<Lockable> trash = new HashSet<>();
+    public <T extends Lockable> T add(T item) {
+      trash.add(item);
+      return item;
+    }
+    public void dump() { for (Lockable item : trash) item.delete(); }
+  }
+
+
 }

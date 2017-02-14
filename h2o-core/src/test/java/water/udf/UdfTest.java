@@ -5,7 +5,6 @@ import org.junit.Test;
 import water.udf.fp.Function;
 import water.udf.fp.Predicate;
 import water.udf.fp.PureFunctions;
-import water.udf.specialized.Enums;
 import water.util.StringUtils;
 
 import java.io.File;
@@ -164,10 +163,13 @@ public class UdfTest extends UdfTestBase {
       Double expected = z2.apply(i);
       assertTrue(z2.isNA(i) == materialized.isNA(i));
       // the following exposes a problem. nulls being returned.
-      if (expected == null) assertTrue("At " + i + ":", materialized.isNA(i));
-      Double actual = materialized.apply(i);
-      
-      if (!z2.isNA(i)) assertEquals(expected, actual, 0.0001);
+      if (expected == null) {
+        assertTrue("At " + i + ":", materialized.isNA(i));
+      } else {
+        Double actual = materialized.apply(i);
+
+        if (!z2.isNA(i)) assertEquals(expected, actual, 0.0001);
+      }
     }
   }
 
@@ -350,18 +352,18 @@ public class UdfTest extends UdfTestBase {
     Column<String> source = willDrop(Strings.newColumn(lines));
     Column<List<String>> split = new UnfoldingColumn<>(PureFunctions.splitBy(","), source, 10);
     UnfoldingFrame<String, DataColumn<String>> frame = new UnfoldingFrame<>(Strings, split.size(), split, 11);
-    List<DataColumn<String>> columns = frame.materialize();
+    final MatrixFrame<DataColumn<String>> materialized = frame.materialize();
     
     for (int i = 0; i < lines.size(); i++) {
       List<String> fromColumns = new ArrayList<>(10);
       for (int j = 0; j < 10; j++) {
-        String value = columns.get(j).get(i);
+        String value = materialized.column(j).get(i);
         if (value != null) fromColumns.add(value);
       }
       String actual = StringUtils.join(" ", fromColumns);
       assertEquals(lines.get(i).replaceAll("\\,", " ").trim(), actual);
     }
     
-    assertTrue("Need to align the result", columns.get(5).isCompatibleWith(source));
+    assertTrue("Need to align the result", materialized.column(5).isCompatibleWith(source));
   }
 }

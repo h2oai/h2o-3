@@ -29,15 +29,6 @@ public class FrameUtilsEncoderTest extends TestUtil {
   @BeforeClass
   static public void setup() {  stall_till_cloudsize(1); }
 
-  class TrashCan {
-    Set<Lockable> trash = new HashSet<>();
-    <T extends Lockable> T add(T item) {
-      trash.add(item);
-      return item;
-    }
-    void dump() { for (Lockable item : trash) item.delete(); }
-  }
-
   @Test
   public void checkSettings() {
     assertEquals(catSizes.length, expBinarySizes.length);
