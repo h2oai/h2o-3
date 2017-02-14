@@ -381,9 +381,9 @@ h2o.clusterStatus <- function() {
   res <- .h2o.fromJSON(jsonlite::fromJSON(.h2o.doSafeGET(urlSuffix = .h2o.__CLOUD), simplifyDataFrame=FALSE))
 
   cat("Version:", res$version, "\n")
-  cat("Cloud name:", res$cloud_name, "\n")
-  cat("Cloud size:", res$cloud_size, "\n")
-  if(res$locked) cat("Cloud is locked\n\n") else cat("Accepting new members\n\n")
+  cat("Cluster name:", res$cloud_name, "\n")
+  cat("Cluster size:", res$cloud_size, "\n")
+  if(res$locked) cat("Cluster is locked\n\n") else cat("Accepting new members\n\n")
   if(is.null(res$nodes) || length(res$nodes) == 0L) stop("No nodes found")
 
   # Calculate how many seconds ago we last contacted cloud
