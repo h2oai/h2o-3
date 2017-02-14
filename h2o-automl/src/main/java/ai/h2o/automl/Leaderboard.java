@@ -15,63 +15,65 @@ import static water.Key.make;
 
 /**
  * Utility to track all the models built for a given dataset type.
+ * <p>
+ * Note that if a new Leaderboard is made for the same project it'll
+ * keep using the old model list, which allows us to run AutoML multiple
+ * times and keep adding to the leaderboard.
+ * <p>
  * TODO: make this robust against removal of models from the DKV.
  */
-public class Leaderboard extends Iced {
-  /** Identifier for the models that should be groupled together in the leaderboard (e.g., "airlines" and "iris"). */
+public class Leaderboard extends Keyed {
+  /**
+   * Identifier for the models that should be grouped together in the leaderboard
+   * (e.g., "airlines" and "iris").
+   */
   private final String project;
 
-  /** Key to the list of models which are stored in the DKV. */
-  private final Key<ModelList> modelListKey;
+  /**
+   * List of models for this leaderboard, sorted by metric so that the best is on top,
+   * according to the standard metric for the given model type.  NOTE: callers should
+   * access this through #models() to make sure they don't get a stale copy.
+   */
+  private Key<Model>[] models;
 
+  /**
+   * Metric used to sort this leaderboard.
+   */
+  private String metric;
+
+  /** HIDEME! */
   private Leaderboard() {
     throw new NotImplementedException();
   }
 
+  /**
+   *
+   */
   public Leaderboard(String project) {
+    super(make("AutoML_Leaderboard_" + project, (byte) 0, (byte) 2 /*builtin key*/, false));
     this.project = project;
-
-    // Note that if a new Leaderboard is made for the same project it'll keep using the old ModelList.
-    this.modelListKey = make("AutoML_Leaderboard_" + project, (byte) 0, (byte) 2 /*builtin key*/, false);  // public for the test
+    this.models = new Key[0];
+    DKV.put(this);
   }
 
   public String getProject() {
     return project;
   }
 
-  public ModelList modelList() {
-    return getGet(modelListKey);
-  }
-
-  /**
-   * List of models, sorted by metric so that the best is on top, according to the standard metric for the given model type.
-   */
-  private class ModelList extends Keyed {
-    Key<Model>[] _models;
-
-    ModelList() {
-      super(modelListKey);
-      _models = new Key[0];
-    }
-
-    @Override
-    protected long checksum_impl() {
-      throw H2O.fail("no such method for ModelList");
-    }
-  }
-
   public void addModels(final Key<Model>[] newModels) {
-    new TAtomic<ModelList>() {
+    if (null == this._key)
+      throw new H2OIllegalArgumentException("Can't add models to a Leaderboard which isn't in the DKV.");
+    new TAtomic<Leaderboard>() {
       @Override
-      public ModelList atomic(ModelList old) {
-        if (old == null) old = new ModelList();
+      public Leaderboard atomic(Leaderboard old) {
+        if (old == null) old = new Leaderboard();
 
-        Key<Model>[] oldModels = old._models;
-        old._models = new Key[oldModels.length + newModels.length];
-        System.arraycopy(oldModels, 0, old._models, 0, oldModels.length);
-        System.arraycopy(newModels, 0, old._models, oldModels.length, newModels.length);
+        Key<Model>[] oldModels = old.models;
+        old.models = new Key[oldModels.length + newModels.length];
+        System.arraycopy(oldModels, 0, old.models, 0, oldModels.length);
+        System.arraycopy(newModels, 0, old.models, oldModels.length, newModels.length);
 
-        Model m = DKV.getGet(old._models[0]);
+        Model m = DKV.getGet(old.models[0]);
 
         // Sort by metric.
         // TODO: allow the metric to be passed in.  Note that this assumes the validation (or training) frame is the same.
@@ -79,20 +81,20 @@ public class Leaderboard extends Iced {
         List<Key<Model>> newModelsSorted = null;
         try {
           if (m._output.isBinomialClassifier())
-            newModelsSorted = ModelMetrics.sortModelsByMetric("auc", true, Arrays.asList(old._models));
+            newModelsSorted = ModelMetrics.sortModelsByMetric("auc", true, Arrays.asList(old.models));
           else if (m._output.isClassifier())
-            newModelsSorted = ModelMetrics.sortModelsByMetric("mean_per_class_error", false, Arrays.asList(old._models));
+            newModelsSorted = ModelMetrics.sortModelsByMetric("mean_per_class_error", false, Arrays.asList(old.models));
           else if (m._output.isSupervised())
-            newModelsSorted = ModelMetrics.sortModelsByMetric("mean_residual_deviance", false, Arrays.asList(old._models));
+            newModelsSorted = ModelMetrics.sortModelsByMetric("mean_residual_deviance", false, Arrays.asList(old.models));
         }
         catch (H2OIllegalArgumentException e) {
           Log.warn("ModelMetrics.sortModelsByMetric failed: " + e);
           throw e;
         }
-        old._models = newModelsSorted.toArray(new Key[0]);
+        old.models = newModelsSorted.toArray(new Key[0]);
         return old;
-      }
-    }.invoke(modelListKey);
+      } // atomic
+    }.invoke(this._key);
   }
 
 
@@ -116,26 +118,38 @@ public class Leaderboard extends Iced {
     return models;
   }
 
-  public Model[] models() {
-    ModelList ml = getGet(modelListKey);
-    if (ml == null) return new Model[0];
+  /**
+   * @return list of keys of models sorted by the default metric for the model category, fetched from the DKV
+   */
+  public Key<Model>[] modelKeys() {
+    return ((Leaderboard)DKV.getGet(this._key)).models;
+  }
 
-    Model[] models = new Model[ml._models.length];
-    return modelsForModelKeys(ml._models, models);
+  /**
+   * @return list of models sorted by the default metric for the model category
+   */
+  public Model[] models() {
+    Key<Model>[] modelKeys = modelKeys();
+
+    if (modelKeys == null || 0 == modelKeys.length) return new Model[0];
+
+    Model[] models = new Model[modelKeys.length];
+    return modelsForModelKeys(modelKeys, models);
   }
 
   public Model leader() {
-    ModelList ml = getGet(modelListKey);
+    Key<Model>[] modelKeys = modelKeys();
 
-    if (null == ml) return null;
-    return getGet(ml._models[0]);
+    if (modelKeys == null || 0 == modelKeys.length) return null;
+
+    return modelKeys[0].get();
   }
 
   /**
    * Delete everything in the DKV that this points to.  We currently need to be able to call this after deleteWithChildren().
    */
   public void delete() {
-    DKV.remove(modelListKey);
+    remove();
   }
 
   public void deleteWithChildren() {
