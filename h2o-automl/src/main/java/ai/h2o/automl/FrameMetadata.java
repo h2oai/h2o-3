@@ -765,7 +765,7 @@ public class FrameMetadata extends Iced {
         _h.setMin(min); _h.setMaxIn(max);
         for(int b=0; b<bins.length; ++b)
           if( bins[b]!=0 )
-            _h.addAtomic(b, bins[b], 0, 0);
+            _h.addWAtomic(b, bins[b]);
       }
 
       @Override public void reduce(HistTask t) {
