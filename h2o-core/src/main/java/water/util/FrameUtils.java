@@ -204,9 +204,9 @@ public class FrameUtils {
     /**
      * Driver for MissingInserter
      */
-    class MissingInserterDriver extends H2O.H2OCountedCompleter {
+    class Driver extends H2O.H2OCountedCompleter {
       transient final Frame _frame;
-      MissingInserterDriver(Frame frame) {_frame = frame; }
+      Driver(Frame frame) {_frame = frame; }
       @Override
       public void compute2() {
         new MRTask() {
@@ -231,7 +231,7 @@ public class FrameUtils {
         throw new IllegalArgumentException("Invalid Frame key " + _dataset + " (Frame doesn't exist).");
       if (_fraction < 0 || _fraction > 1 ) throw new IllegalArgumentException("fraction must be between 0 and 1.");
       final Frame frame = DKV.getGet(_dataset);
-      MissingInserterDriver mid = new MissingInserterDriver(frame);
+      Driver mid = new Driver(frame);
       int work = frame.vecs()[0].nChunks();
       return _job.start(mid, work);
     }
@@ -455,24 +455,25 @@ public class FrameUtils {
     }
   }
 
-  public static class CategoricalOneHotEncoder extends Iced {
-    final Frame _frame;
-    Job<Frame> _job;
-    final String[] _skipCols;
+  public static class CategoricalOneHotEncoder extends CategoricalEncoder {
 
     public CategoricalOneHotEncoder(Frame dataset, String[] skipCols) {
-      _frame = dataset;
-      _skipCols = skipCols;
+      super(dataset, skipCols);
+    }
+
+    @Override
+    H2O.H2OCountedCompleter driver(Key<Frame> destKey) {
+      return new Driver(destKey);
     }
 
     /**
      * Driver for CategoricalOneHotEncoder
      */
-    class CategoricalOneHotEncoderDriver extends H2O.H2OCountedCompleter {
-      final Frame _frame;
+    class Driver extends H2O.H2OCountedCompleter {
       final Key<Frame> _destKey;
-      final String[] _skipCols;
-      CategoricalOneHotEncoderDriver(Frame frame, Key<Frame> destKey, String[] skipCols) { _frame = frame; _destKey = destKey; _skipCols = skipCols; }
+      Driver(Key<Frame> destKey) { 
+        _destKey = destKey;
+      }
 
       class OneHotConverter extends MRTask<OneHotConverter> {
         int[] _categorySizes;
@@ -496,32 +497,28 @@ public class FrameUtils {
 
       @Override public void compute2() {
         Vec[] frameVecs = _frame.vecs();
-        int numCategoricals = 0;
-        for (int i=0;i<frameVecs.length;++i)
-          if (frameVecs[i].isCategorical() && ArrayUtils.find(_skipCols, _frame._names[i])==-1)
-            numCategoricals++;
-
-        Vec[] extraVecs = new Vec[_skipCols.length];
-        for (int i=0; i< extraVecs.length; ++i) {
-          Vec v = _frame.vec(_skipCols[i]); //can be null
-          if (v!=null) extraVecs[i] = v;
-        }
+        int numCategoricals = numCategoricals();
 
         Frame categoricalFrame = new Frame();
         Frame outputFrame = new Frame(_destKey);
         int[] categorySizes = new int[numCategoricals];
         int numOutputColumns = 0;
         List<String> catnames= new ArrayList<>();
+        
         for (int i = 0, j = 0; i < frameVecs.length; ++i) {
-          if (ArrayUtils.find(_skipCols, _frame._names[i])>=0) continue;
+          if (skipThisColumn(i)) continue;
           int numCategories = frameVecs[i].cardinality(); // Returns -1 if non-categorical variable
           if (numCategories > 0) {
             categoricalFrame.add(_frame.name(i), frameVecs[i]);
             categorySizes[j] = numCategories + 1/* for NAs */;
             numOutputColumns += categorySizes[j];
-            catnames.add(_frame.name(i) + ".missing(NA)");
+            
+            // adding the regular category names
             for (int k=0;k<categorySizes[j]-1;++k)
               catnames.add(_frame.name(i) + "." + _frame.vec(i).domain()[k]);
+            
+            // in the end adding an extra column for missing data
+            catnames.add(_frame.name(i) + ".missing(NA)");
             ++j;
           } else {
             outputFrame.add(_frame.name(i), frameVecs[i].makeCopy());
@@ -531,22 +528,11 @@ public class FrameUtils {
         Frame binaryCols = mrtask.doAll(numOutputColumns, Vec.T_NUM, categoricalFrame).outputFrame();
         binaryCols._names = catnames.toArray(new String[0]);
         outputFrame.add(binaryCols);
-        for (int i=0;i<extraVecs.length;++i) {
-          if (extraVecs[i]!=null)
-            outputFrame.add(_skipCols[i], extraVecs[i].makeCopy());
-        }
+
+        addSkippedColumns(outputFrame);
         DKV.put(outputFrame);
         tryComplete();
       }
-    }
-
-    public Job<Frame> exec() {
-      if (_frame == null)
-        throw new IllegalArgumentException("Frame doesn't exist.");
-      Key<Frame> destKey = Key.makeSystem(Key.make().toString());
-      _job = new Job<>(destKey, Frame.class.getName(), "CategoricalOneHotEncoder");
-      int workAmount = _frame.lastVec().nChunks();
-      return _job.start(new CategoricalOneHotEncoderDriver(_frame, destKey, _skipCols), workAmount);
     }
   }
 
@@ -559,24 +545,23 @@ public class FrameUtils {
    * category is reserved for NAs.
    * See http://www.willmcginnis.com/2015/11/29/beyond-one-hot-an-exploration-of-categorical-variables/
    */
-  public static class CategoricalBinaryEncoder extends Iced {
-    final Frame _frame;
-    Job<Frame> _job;
-    final String[] _skipCols;
+  public static class CategoricalBinaryEncoder extends CategoricalEncoder {
 
     public CategoricalBinaryEncoder(Frame dataset, String[] skipCols) {
-      _frame = dataset;
-      _skipCols = skipCols;
+      super(dataset, skipCols);
+    }
+
+    @Override
+    H2O.H2OCountedCompleter driver(Key<Frame> destKey) {
+      return new Driver(destKey);
     }
 
     /**
      * Driver for CategoricalBinaryEncoder
      */
-    class CategoricalBinaryEncoderDriver extends H2O.H2OCountedCompleter {
-      final Frame _frame;
+    class Driver extends H2O.H2OCountedCompleter {
       final Key<Frame> _destKey;
-      final String[] _skipCols;
-      CategoricalBinaryEncoderDriver(Frame frame, Key<Frame> destKey, String[] skipCols) { _frame = frame; _destKey = destKey; _skipCols = skipCols; }
+      Driver(Key<Frame> destKey) { _destKey = destKey; }
 
       class BinaryConverter extends MRTask<BinaryConverter> {
         int[] _categorySizes;
@@ -602,25 +587,14 @@ public class FrameUtils {
 
       @Override public void compute2() {
         Vec[] frameVecs = _frame.vecs();
-        int numCategoricals = 0;
-        for (int i=0;i<frameVecs.length;++i)
-          if (frameVecs[i].isCategorical() && (_skipCols==null || ArrayUtils.find(_skipCols, _frame._names[i])==-1))
-            numCategoricals++;
-
-        Vec[] extraVecs = _skipCols==null?null:new Vec[_skipCols.length];
-        if (extraVecs!=null) {
-          for (int i = 0; i < extraVecs.length; ++i) {
-            Vec v = _frame.vec(_skipCols[i]); //can be null
-            if (v != null) extraVecs[i] = v;
-          }
-        }
+        int numCategoricals = numCategoricals();
 
         Frame categoricalFrame = new Frame();
         Frame outputFrame = new Frame(_destKey);
         int[] binaryCategorySizes = new int[numCategoricals];
         int numOutputColumns = 0;
         for (int i = 0, j = 0; i < frameVecs.length; ++i) {
-          if (_skipCols!=null && ArrayUtils.find(_skipCols, _frame._names[i])>=0) continue;
+          if (skipThisColumn(i)) continue;
           int numCategories = frameVecs[i].cardinality(); // Returns -1 if non-categorical variable
           if (numCategories > 0) {
             categoricalFrame.add(_frame.name(i), frameVecs[i]);
@@ -639,86 +613,101 @@ public class FrameUtils {
           }
         }
         outputFrame.add(binaryCols);
-        if (_skipCols!=null) {
-          for (int i = 0; i < extraVecs.length; ++i) {
-            if (extraVecs[i] != null)
-              outputFrame.add(_skipCols[i], extraVecs[i].makeCopy());
-          }
-        }
+
+        addSkippedColumns(outputFrame);
         DKV.put(outputFrame);
         tryComplete();
       }
     }
 
-    public Job<Frame> exec() {
-      if (_frame == null)
-        throw new IllegalArgumentException("Frame doesn't exist.");
-      Key<Frame> destKey = Key.makeSystem(Key.make().toString());
-      _job = new Job<>(destKey, Frame.class.getName(), "CategoricalBinaryEncoder");
-      int workAmount = _frame.lastVec().nChunks();
-      return _job.start(new CategoricalBinaryEncoderDriver(_frame, destKey, _skipCols), workAmount);
-    }
   }
 
+  static abstract class CategoricalEncoder extends Iced {
+    Job<Frame> _job;
+
+    Frame _frame;
+    String[] _skipCols;
+    CategoricalEncoder(Frame frame, String[] skipCols) {
+      _frame = frame; 
+      _skipCols = skipCols;
+      if (_frame == null)
+        throw new IllegalArgumentException("Frame doesn't exist.");
+    }
+    
+    int numCategoricals() {
+      Vec[] frameVecs = _frame.vecs();
+      int count = 0;
+      for (int i=0;i<frameVecs.length;++i)
+        if (frameVecs[i].isCategorical() && !skipThisColumn(i))
+          count++;
+      
+      return count;
+    }
+    
+    boolean skipThisColumn(int i) {
+      return _skipCols != null && 
+          ArrayUtils.find(_skipCols, _frame._names[i]) >= 0;
+    }
+
+    void addSkippedColumns(Frame outputFrame) {
+      if (_skipCols != null) {
+        for (String name : _skipCols) {
+          Vec skippedVec = _frame.vec(name);
+          if (skippedVec != null)
+            outputFrame.add(name, skippedVec.makeCopy());
+        }
+      }
+    }
+    
+    abstract H2O.H2OCountedCompleter driver(Key<Frame> destKey);
+
+    public Job<Frame> exec() {
+      Key<Frame> destKey = Key.makeSystem(Key.make().toString());
+      _job = new Job<>(destKey, Frame.class.getName(), getClass().getSimpleName());
+      int workAmount = _frame.lastVec().nChunks();
+      return _job.start(driver(destKey), workAmount);
+    }
+  }
+  
   /**
    * Helper to convert a categorical variable into the first eigenvector of the dummy-expanded matrix.
    */
-  public static class CategoricalEigenEncoder {
-    final Frame _frame;
-    Job<Frame> _job;
-    final String[] _skipCols;
+  public static class CategoricalEigenEncoder extends CategoricalEncoder {
     final ToEigenVec _tev;
 
     public CategoricalEigenEncoder(ToEigenVec tev, Frame dataset, String[] skipCols) {
-      _frame = dataset;
-      _skipCols = skipCols;
+      super(dataset, skipCols);
       _tev = tev;
+      assert _tev!=null : "Override toEigenVec for this Algo!";
+    }
+
+    H2O.H2OCountedCompleter driver(Key<Frame> destKey) {
+      return new Driver(destKey); 
     }
 
     /**
      * Driver for CategoricalEigenEncoder
      */
-    class CategoricalEigenEncoderDriver extends H2O.H2OCountedCompleter {
-      final Frame _frame;
+    class Driver extends H2O.H2OCountedCompleter {
       final Key<Frame> _destKey;
-      final String[] _skipCols;
-      final ToEigenVec _tev;
-      CategoricalEigenEncoderDriver(ToEigenVec tev, Frame frame, Key<Frame> destKey, String[] skipCols) {
-        _tev = tev; _frame = frame; _destKey = destKey; _skipCols = skipCols;
-        assert _tev!=null : "Override toEigenVec for this Algo!";
+      Driver(Key<Frame> destKey) {
+        _destKey = destKey;
       }
 
       @Override public void compute2() {
         Vec[] frameVecs = _frame.vecs();
-        Vec[] extraVecs = new Vec[_skipCols==null?0:_skipCols.length];
-        for (int i=0; i< extraVecs.length; ++i) {
-          Vec v = _skipCols==null||_skipCols.length<=i?null:_frame.vec(_skipCols[i]); //can be null
-          if (v!=null) extraVecs[i] = v;
-        }
         Frame outputFrame = new Frame(_destKey);
         for (int i = 0; i < frameVecs.length; ++i) {
-          if (_skipCols!=null && ArrayUtils.find(_skipCols, _frame._names[i])>=0) continue;
+          if (skipThisColumn(i)) continue;
           if (frameVecs[i].isCategorical())
             outputFrame.add(_frame.name(i) + ".Eigen", _tev.toEigenVec(frameVecs[i]));
           else
             outputFrame.add(_frame.name(i), frameVecs[i].makeCopy());
         }
-        for (int i=0;i<extraVecs.length;++i) {
-          if (extraVecs[i]!=null)
-            outputFrame.add(_skipCols[i], extraVecs[i].makeCopy());
-        }
+        addSkippedColumns(outputFrame);
         DKV.put(outputFrame);
         tryComplete();
       }
-    }
-
-    public Job<Frame> exec() {
-      if (_frame == null)
-        throw new IllegalArgumentException("Frame doesn't exist.");
-      Key<Frame> destKey = Key.makeSystem(Key.make().toString());
-      _job = new Job<>(destKey, Frame.class.getName(), "CategoricalEigenEncoder");
-      int workAmount = _frame.lastVec().nChunks();
-      return _job.start(new CategoricalEigenEncoderDriver(_tev, _frame, destKey, _skipCols), workAmount);
     }
   }
 
@@ -750,8 +739,7 @@ public class FrameUtils {
           @Override
           public void map(Chunk c) {
             for (int i=0;i<c._len;++i) {
-              if (c.isNA(i)) continue;
-              else c.set(i, fromTo[(int)c.at8(i)]);
+              if (!c.isNA(i)) c.set(i, fromTo[(int)c.at8(i)]);
             }
           }
         }.doAll(v);
