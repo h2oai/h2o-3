@@ -35,7 +35,7 @@ public class ParseTestMultiFileOrc extends TestUtil {
     }
 
     @BeforeClass
-    static public void setup() { TestUtil.stall_till_cloudsize(5); }
+    static public void setup() { TestUtil.stall_till_cloudsize(1); }
 
     @Test
     public void testParseMultiFileOrcs() {
