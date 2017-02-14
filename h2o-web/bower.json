@@ -24,7 +24,7 @@
     "tests"
   ],
   "dependencies": {
-    "h2o-flow": "h2oai/h2o-flow#82e48f3c779120c2e3a1bc45359bcefd4bd50aa9"
+    "h2o-flow": "h2oai/h2o-flow#d1fd4b8538f156f3cbb668eef049856ae6bc8e79"
   },
   "devDependencies": {}
 }
