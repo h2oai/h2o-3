@@ -56,7 +56,7 @@ H2O currently supports the following file types:
 
 - CSV (delimited) files
 - ORC
-- SVMLite
+- SVMLight
 - ARFF
 - XLS
 - XLSX
