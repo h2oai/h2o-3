@@ -31,6 +31,9 @@ def hdfs_orc_parser():
                   "skipped.".format("pyunit_INTERNAL_HDFS_timestamp_date_orc.py"))
             pass
         else:
+            origTZ = h2o.cluster().timezone
+            newZone = 'America/Los_Angeles'
+            h2o.cluster().timezone = newZone
             tol_time = 200              # comparing in ms or ns
             tol_numeric = 1e-5          # tolerance for comparing other numeric fields
             numElements2Compare = 100   # choose number of elements per column to compare.  Save test time.
@@ -52,6 +55,8 @@ def hdfs_orc_parser():
                 # compare the two frames
                 assert pyunit_utils.compare_frames(h2oOrc, h2oCsv, numElements2Compare, tol_time, tol_numeric), \
                     "H2O frame parsed from orc and csv files are different!"
+                
+            h2o.cluster().timezone=origTZ
     else:
         raise EnvironmentError
 
