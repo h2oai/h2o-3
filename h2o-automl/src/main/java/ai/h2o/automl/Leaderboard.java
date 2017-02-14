@@ -52,8 +52,13 @@ public class Leaderboard extends Keyed {
   public Leaderboard(String project) {
     super(make("AutoML_Leaderboard_" + project, (byte) 0, (byte) 2 /*builtin key*/, false));
     this.project = project;
-    this.models = new Key[0];
-    DKV.put(this);
+
+    Leaderboard old = DKV.getGet(this._key);
+
+    if (null == old) {
+      this.models = new Key[0];
+      DKV.put(this);
+    }
   }
 
   public String getProject() {
