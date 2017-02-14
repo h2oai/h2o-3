@@ -4,7 +4,6 @@ import water.api.AbstractRegister;
 import water.api.RequestServer;
 import water.automl.api.AutoMLBuilderHandler;
 import water.automl.api.AutoMLHandler;
-import water.automl.api.AutoMLJSONSchemaHandler;
 import water.util.Log;
 
 public class Register extends AbstractRegister{
@@ -16,12 +15,16 @@ public class Register extends AbstractRegister{
     RequestServer.registerEndpoint("automl_build",
             "POST /3/AutoMLBuilder", AutoMLBuilderHandler.class, "build",
             "Start an AutoML build process.");
-    RequestServer.registerEndpoint("automl_refresh",
-            "GET /3/AutoML/{automl_id}", AutoMLHandler.class, "refresh",
-            "Refresh the model key.");
+
+    RequestServer.registerEndpoint("fetch",
+            "GET /3/AutoML/{automl_id}", AutoMLHandler.class, "fetch",
+            "Fetch the specified AutoML object.");
+/*
     RequestServer.registerEndpoint("automl_schema",
+
             "GET /3/AutoMLJSONSchemaHandler", AutoMLJSONSchemaHandler.class, "getJSONSchema",
             "Get the json schema for the AutoML input fields.");
+*/
     Log.info("H2O AutoML extensions enabled.");
 
   }
