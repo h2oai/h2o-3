@@ -1017,7 +1017,8 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
   @Test public void MOJOTestNumericNonStandardized() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.AUTO, false, false);}
   @Test public void MOJOTestNumeric() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.AUTO, false, true);}
   @Test public void MOJOTestCatInternal() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.OneHotInternal, true, true);}
-  @Test public void MOJOTestCatExplicit() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.OneHotExplicit, true, true);}
+  @Test public void MOJOTestCatOneHotExplicit() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.OneHotExplicit, true, true);}
+//  @Test public void MOJOTestCatOneHot() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.OneHot, true, true);}
   @Test public void MOJOTestCatEigen() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.Eigen, true, true);}
   @Test public void MOJOTestCatBinary() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.Binary, true, true);}
 

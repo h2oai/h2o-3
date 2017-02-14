@@ -13,10 +13,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static water.udf.MatrixFrame.forColumns;
+
 /**
  * Single-column frame that knows its data type and can unfold
  */
-public class UnfoldingFrame<DataType, ColumnType> extends Frame {
+public class UnfoldingFrame<DataType, ColumnType extends DataColumn<DataType>> extends Frame {
   protected final ColumnFactory<DataType, ColumnType> factory;
   protected final long len;
   protected final Function<Long, List<DataType>> function;
@@ -41,7 +43,7 @@ public class UnfoldingFrame<DataType, ColumnType> extends Frame {
   }
 
   public static 
-  <DataType, ColumnType> 
+  <DataType, ColumnType extends DataColumn<DataType>> 
   UnfoldingFrame<DataType, ColumnType> unfoldingFrame(
       final ColumnFactory<DataType, ColumnType> factory, 
       final Column<List<DataType>> master, int width) {
@@ -109,12 +111,15 @@ public class UnfoldingFrame<DataType, ColumnType> extends Frame {
     return Arrays.asList(mrTask._fr.vecs());
   }
 
-  public List<ColumnType> materialize() throws IOException {
+  public MatrixFrame<ColumnType> materialize() throws IOException {
     List<Vec> vecs = makeVecs();
-    List<ColumnType> result = new ArrayList<>(width);
+    List<ColumnType> columns = new ArrayList<>(width);
 
-    for (Vec vec : vecs) result.add(factory.newColumn(vec));
-    return result;
+    for (Vec vec : vecs) columns.add(factory.newColumn(vec));
+    MatrixFrame<ColumnType> matrix = forColumns(columns);
+    matrix._names = _names;
+    
+    return matrix;
   }
   
 }

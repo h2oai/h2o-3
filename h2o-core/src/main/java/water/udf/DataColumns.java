@@ -52,11 +52,11 @@ public class DataColumns {
     public abstract ColumnType newColumn(Vec vec);
 
     public ColumnType newColumn(long length, final Function<Long, DataType> f) throws IOException {
-      return new TypedFrame<DataType, ColumnType>(this, length, f).newColumn();
+      return new SingleColumnFrame<>(this, length, f).newColumn();
     }
 
     public ColumnType materialize(Column<DataType> xs) throws IOException {
-      return TypedFrame.forColumn(this, xs).newColumn();
+      return SingleColumnFrame.forColumn(this, xs).newColumn();
     }
 
     public ColumnType newColumn(List<DataType> xs) throws IOException {
