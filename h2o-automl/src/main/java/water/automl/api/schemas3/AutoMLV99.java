@@ -6,7 +6,7 @@ import water.api.schemas3.KeyV3;
 import water.api.schemas3.SchemaV3;
 
 // TODO: this is about to change from SchemaV3 to RequestSchemaV3:
-public class AutoMLV3 extends SchemaV3<AutoML,AutoMLV3> {
+public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
   @API(help="The AutoML key",direction=API.Direction.INPUT)
   public AutoML.AutoMLKeyV3 automl_id;
 
@@ -14,7 +14,7 @@ public class AutoMLV3 extends SchemaV3<AutoML,AutoMLV3> {
   public KeyV3.ModelKeyV3   leader;
 
 
-  @Override public AutoMLV3 fillFromImpl(AutoML m) {
+  @Override public AutoMLV99 fillFromImpl(AutoML m) {
     super.fillFromImpl(m);
     if (null != m._key) {
       this.automl_id = new AutoML.AutoMLKeyV3(m._key);
