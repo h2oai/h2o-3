@@ -257,7 +257,7 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
    * This information is pulled from the models schema.
    */
   private void writeModelDetails() throws IOException{
-    ModelSchemaV3 modelSchema = (ModelSchemaV3) SchemaServer.schema(-1, model).fillFromImpl(model);
+    ModelSchemaV3 modelSchema = (ModelSchemaV3) SchemaServer.schema(3, model).fillFromImpl(model);
     startWritingTextFile("properties/modelDetails.json");
     writeln(modelSchema.toJsonString());
     finishWritingTextFile();

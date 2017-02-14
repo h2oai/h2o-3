@@ -83,6 +83,8 @@ public class TestUtil extends Iced {
     }
     H2O.waitForCloudSize(x, timeout);
     _initial_keycnt = H2O.store_size();
+    // Finalize registration of REST API to enable tests which are touching Schemas.
+    H2O.finalizeRegistration();
   }
 
   @AfterClass
