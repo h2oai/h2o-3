@@ -54,8 +54,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return validationFrame;
   }
 
-  public Vec getResponseVec() {
-    return responseVec;
+  public Vec getResponseColumn() {
+    return responseColumn;
   }
 
   public FrameMetadata getFrameMetadata() {
@@ -64,13 +64,17 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   private Frame trainingFrame;           // munged training frame: can add and remove Vecs, but not mutate Vec data in place
   private Frame validationFrame;         // optional validation frame
-  private Vec responseVec;
+  private Vec responseColumn;
   FrameMetadata frameMetadata;           // metadata for trainingFrame
+
+  // TODO: remove dead code
   private Key<Grid> gridKey;             // Grid key from GridSearch
   private boolean isClassification;
 
   private long stopTimeMs;
   private Job job;                  // the Job object for the build of this AutoML.  TODO: can we have > 1?
+
+  // TODO: make non-transient
   private transient ArrayList<Job> jobs;
 
   private String project;
@@ -87,6 +91,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     RF, GBM, GLM, GLRM, DL, KMEANS
   }  // consider EnumSet
 
+  public AutoML() {
+    super(null);
+  }
   // https://0xdata.atlassian.net/browse/STEAM-52  --more interesting user options
   public AutoML(Key<AutoML> key, AutoMLBuildSpec buildSpec) {
     super(key);
@@ -109,7 +116,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     this.trainingFrame = new Frame(origTrainingFrame);
     DKV.put(this.trainingFrame);
 
-    this.responseVec = trainingFrame.vec(buildSpec.input_spec.response_column);
+    this.responseColumn = trainingFrame.vec(buildSpec.input_spec.response_column);
 
     if (verifyImmutability) {
       // check that we haven't messed up the original Frame
