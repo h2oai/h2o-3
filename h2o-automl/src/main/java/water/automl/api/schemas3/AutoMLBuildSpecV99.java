@@ -10,7 +10,7 @@ import water.api.Schema;
 import water.api.schemas3.*;
 
 // TODO: this is about to change from SchemaV3 to RequestSchemaV3:
-public class AutoMLBuildSpecV3 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpecV3> {
+public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpecV99> {
 
   //////////////////////////////////////////////////////
   // Input and output classes used by the build process.
@@ -20,8 +20,8 @@ public class AutoMLBuildSpecV3 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpec
    * The specification of overall build parameters for the AutoML process.
    * TODO: this should have all the standard early-stopping functionality like Grid does.
    */
-  static final public class AutoMLBuildControlV3 extends Schema<AutoMLBuildSpec.AutoMLBuildControl, AutoMLBuildControlV3> {
-    public AutoMLBuildControlV3() {
+  static final public class AutoMLBuildControlV99 extends Schema<AutoMLBuildSpec.AutoMLBuildControl, AutoMLBuildControlV99> {
+    public AutoMLBuildControlV99() {
       super();
     }
 
@@ -30,7 +30,7 @@ public class AutoMLBuildSpecV3 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpec
 
     @API(help="stopping criteria for the search", direction=API.Direction.INPUT)
     public HyperSpaceSearchCriteriaV99.RandomDiscreteValueSearchCriteriaV99 stopping_criteria;
-  } // class AutoMLBuildControlV3
+  } // class AutoMLBuildControlV99
 
   /**
    * The specification of the datasets to be used for the AutoML process.
@@ -41,8 +41,8 @@ public class AutoMLBuildSpecV3 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpec
    * <p>
    * The user also specifies the response column and, optionally, an array of columns to ignore.
    */
-  static final public class AutoMLInputV3 extends Schema<AutoMLBuildSpec.AutoMLInput, AutoMLInputV3> {
-    public AutoMLInputV3() { super(); }
+  static final public class AutoMLInputV99 extends Schema<AutoMLBuildSpec.AutoMLInput, AutoMLInputV99> {
+    public AutoMLInputV99() { super(); }
 
     @API(help = "Path of training data to import and parse, in any form that H2O accepts, including local files or directories, s3, hdfs, etc.", direction=API.Direction.INPUT)
     public ImportFilesV3 training_path;
@@ -76,19 +76,19 @@ public class AutoMLBuildSpecV3 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpec
          required = false
       )
     public String[] ignored_columns;
-  } // class AutoMLInputV3
+  } // class AutoMLInputV99
 
-  static final public class AutoMLFeatureEngineeringV3 extends Schema<AutoMLBuildSpec.AutoMLFeatureEngineering, AutoMLFeatureEngineeringV3> {
-    public AutoMLFeatureEngineeringV3() {
+  static final public class AutoMLFeatureEngineeringV99 extends Schema<AutoMLBuildSpec.AutoMLFeatureEngineering, AutoMLFeatureEngineeringV99> {
+    public AutoMLFeatureEngineeringV99() {
       super();
     }
 
     @API(help="Try frame transformations", direction=API.Direction.INPUT)
     public boolean try_mutations;
-  } // class AutoMLFeatureEngineeringV3
+  } // class AutoMLFeatureEngineeringV99
 
-  static final public class AutoMLBuildModelsV3 extends Schema<AutoMLBuildSpec.AutoMLBuildModels, AutoMLBuildModelsV3> {
-    public AutoMLBuildModelsV3() {
+  static final public class AutoMLBuildModelsV99 extends Schema<AutoMLBuildSpec.AutoMLBuildModels, AutoMLBuildModelsV99> {
+    public AutoMLBuildModelsV99() {
       super();
     }
 
@@ -99,11 +99,11 @@ public class AutoMLBuildSpecV3 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpec
     public GridSearchSchema[] model_searches;
   } // class AutoMLBuildModels
 
-  static final public class AutoMLEnsembleParametersV3 extends Schema<AutoMLBuildSpec.AutoMLEnsembleParameters, AutoMLEnsembleParametersV3> {
-    public AutoMLEnsembleParametersV3() {
+  static final public class AutoMLEnsembleParametersV99 extends Schema<AutoMLBuildSpec.AutoMLEnsembleParameters, AutoMLEnsembleParametersV99> {
+    public AutoMLEnsembleParametersV99() {
       super();
     }
-  } // class AutoMLEnsembleParametersV3
+  } // class AutoMLEnsembleParametersV99
 
 
 
@@ -111,19 +111,19 @@ public class AutoMLBuildSpecV3 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpec
   // Input fields
 
   @API(help="Specification of overall controls for the AutoML build process", direction=API.Direction.INPUT)
-  public AutoMLBuildControlV3 build_control;
+  public AutoMLBuildControlV99 build_control;
 
   @API(help="Specification of the input data for the AutoML build process", direction=API.Direction.INPUT)
-  public AutoMLInputV3 input_spec;
+  public AutoMLInputV99 input_spec;
 
   @API(help="Specification of the feature engineering for the AutoML build process", direction=API.Direction.INPUT)
-  public AutoMLFeatureEngineeringV3 feature_engineering;
+  public AutoMLFeatureEngineeringV99 feature_engineering;
 
   @API(help="If present, specifies details of how to train models", direction=API.Direction.INPUT)
-  public AutoMLBuildModelsV3 build_models;
+  public AutoMLBuildModelsV99 build_models;
 
   @API(help="If present, AutoML should build ensembles; more control over the process is optional", direction=API.Direction.INPUT)
-  public AutoMLEnsembleParametersV3 ensemble_parameters;
+  public AutoMLEnsembleParametersV99 ensemble_parameters;
 
   ////////////////
   // Output fields
