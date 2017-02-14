@@ -21,6 +21,9 @@ public class CX0Chunk extends Chunk {
     return -ub-1;
   }
 
+  @Override public long byteSize(){
+    return super.byteSize() + 24 /* array overhead */ + _ids.length*4;
+  }
   @Override public final long at8(int idx) {return findId(idx) >= 0?(long)con():0;}
   @Override public final double atd(int idx) { return findId(idx) >= 0?con():0; }
   @Override public final boolean isNA( int i ) { return false; }
@@ -40,6 +43,7 @@ public class CX0Chunk extends Chunk {
 
   @Override
   public Chunk deepCopy() {return new CX0Chunk(_ids.clone());}
+
 
   public final int len(){return _ids.length;}
 

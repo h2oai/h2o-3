@@ -27,7 +27,7 @@ public class Const1Chunk extends Chunk  {
 
   @Override
   public long byteSize() {
-    return 0; // only 1 instance shared, size ~ 0
+    return 8; // only 1 instance shared, size ~ 0
   }
 
   @Override

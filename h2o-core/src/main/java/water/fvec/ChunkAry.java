@@ -151,7 +151,10 @@ public class ChunkAry<C extends Chunk> extends Iced {
   public Chunk[] getChunks(){return _cs;}
 
   public int nextNZCol(int id){
-    return id+1;
+    Chunk c = _cs[++id];
+    while(c.isSparseZero() && c.len() == 0 && ++id < _numCols)
+      c = _cs[id];
+    return id;
   }
 
   ModifiedBlocks _modified;

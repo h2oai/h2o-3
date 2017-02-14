@@ -61,7 +61,7 @@ public class OrcParserProvider extends ParserProvider {
     Object frameOrVec = DKV.getGet(inputs[0]);
 
     if (frameOrVec instanceof water.fvec.Frame)
-      f = (FileVec) ((Frame) frameOrVec).vec(0);
+      f = (FileVec) ((Frame) frameOrVec).vec(0).vecs()[0];
     else
       f = (FileVec) frameOrVec;
     return readSetup(f, requiredSetup.getColumnNames(), requiredSetup.getColumnTypes());

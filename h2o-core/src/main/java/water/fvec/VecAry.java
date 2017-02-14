@@ -688,10 +688,7 @@ public final class VecAry extends Iced<VecAry> {
     int off = c - _blockOffset[vecId];
     return fetchVec(vecId).ninfs(off);
   }
-
-
-  public double sigma() {return mean(0);}
-
+  public double sigma() {return sigma(0);}
   public double sigma(int c) {
     if (_colFilter != null) c = _colFilter[c];
     if(_vecIds.length == 1) return fetchVec(0).sigma(c);

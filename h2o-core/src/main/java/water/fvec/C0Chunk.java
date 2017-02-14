@@ -10,6 +10,10 @@ public class C0Chunk extends Chunk {
   public Chunk deepCopy() {return this; /* no need to copy constant chunk */}
 
   @Override
+  public boolean isSparseZero(){return true;}
+
+
+  @Override
   public double atd(int idx) {return 0;}
   @Override
   public long at8(int idx) {return 0;}
@@ -28,6 +32,29 @@ public class C0Chunk extends Chunk {
     v._e = 0;
     v._t = DVal.type.N;
     return v;
+  }
+
+  public final SparseNum nextNZ(SparseNum sv){
+    // no non-zeros here
+    sv._id = sv._len;
+    sv._val = Double.NaN;
+    return sv;
+  }
+
+  @Override
+  public final NewChunk add2Chunk(NewChunk nc, int from, int to){
+    nc.addZeros(to-from);
+    return nc;
+  }
+
+  @Override
+  public final NewChunk add2Chunk(NewChunk nc, int [] ids){
+    nc.addZeros(ids.length);
+    return nc;
+  }
+
+  @Override public int asSparseDoubles(double [] vals, int[] ids, double NA) {
+    return 0;
   }
 
   @Override

@@ -4,6 +4,9 @@ import water.H2O;
 import water.MRTask;
 import water.fvec.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Simple summary of how many chunks of each type are in a Frame
  */
@@ -11,54 +14,30 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
 
   ChunkSummary() {  super((byte)(Thread.currentThread() instanceof H2O.FJWThr ? currThrPriority()+1 : H2O.MIN_HI_PRIORITY - 2)); }
 
-  // static list of chunks for which statistics are to be gathered
-  final transient static String[] chunkTypes = new String[]{
-    "C0",
-    "Const1",
-    "C0L",
-    "C0D",
-    "CBS",
-    "CX0",                   // Sparser bitvector; popular so near head of list
-    "CXI",                   // Sparse ints
-    "CXC",
-    "C1",
-    "C1N",
-    "C1S",
-    "C2",
-    "C2S",
-    "C4",
-    "C4S",
-    "C4F",
-    "C8",
-    "C16",                      // UUID
-    "CStr",                     // Strings
-    "CUD",                      // Few Unique doubles
-    "C8D",                      //leave this as last -> no compression
+  public static final String[][] chunkTypes = new String[][]{
+    {"C0","All zeros"},
+    {"Const1","All ones"},
+    {"C0L","Constant long"},
+    {"C0D","Constant double"},
+    {"CBS","Binary"},
+    {"CX0","Sparse binary"},                  // Sparser bitvector; popular so near head of list
+    {"CXC","Sparse constant"},
+    {"CXI","Sparse integers"},                   // Sparse ints
+    {"C1","1-Byte Integers"},
+    {"C1N","1-Byte Integers (w/o NAs)"},
+    {"C1S","1-Byte Fractions"},
+    {"C2","2-Byte Integers"},
+    {"C2S","2-Byte Fractions"},
+    {"C4","4-Byte Integers"},
+    {"C4S","4-Byte Fractions"},
+    {"C4F","4-byte Reals"},
+    {"C8","8-byte Integers"},
+    {"C16","UUIDs"},
+    {"CStr","Strings"},
+    {"CUD","Unique Reals"},
+    {"C8D","8-byte Reals"},
   };
-  final transient static String[] chunkNames = new String[]{
-          "Constant Integers",
-          "Constant Reals",
-          "Bits",
-          "Zero Sparse Bits",
-          "Zero Sparse Integers",
-          "1-Byte Integers",
-          "1-Byte Integers (w/o NAs)",
-          "1-Byte Fractions",
-          "2-Byte Integers",
-          "2-Byte Fractions",
-          "4-Byte Integers",
-          "4-Byte Fractions",
-          "32-bit Reals",
-          "64-bit Integers",
-          "NA Sparse Integers",
-          "128-bit UUID",
-          "String",
-          "Zero Sparse Reals",
-          "NA Sparse Reals",
-          "Unique Reals",
-          "64-bit Reals",
-  };
-
+  
   // OUTPUT
   private long[] chunk_counts;
   private long total_chunk_count;
@@ -109,7 +88,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
       // Table lookup, roughly sorted by frequency
       int j;
       for( j = 0; j < chunkTypes.length; ++j )
-        if( sname.equals(chunkTypes[j]) )
+        if( sname.equals(chunkTypes[j][0]) )
           break;
       if( j==chunkTypes.length )
         throw H2O.fail("Unknown ByteArraySupportedChunk Type: " + sname);
@@ -176,11 +155,11 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
   String display(long val) { return String.format("%10s", val == 0 ? "  0  B" : PrettyPrint.bytes(val)); }
 
   public TwoDimTable toTwoDimTableChunkTypes() {
-    final String tableHeader = "ByteArraySupportedChunk compression summary";
+    final String tableHeader = "Chunk compression summary";
     int rows = 0;
     for (int j = 0; j < chunkTypes.length; ++j) if (chunk_counts != null && chunk_counts[j] > 0) rows++;
     final String[] rowHeaders = new String[rows];
-    final String[] colHeaders = new String[]{"ByteArraySupportedChunk Type", "ByteArraySupportedChunk Name", "Count", "Count Percentage", "Size", "Size Percentage"};
+    final String[] colHeaders = new String[]{"Chunk Type", "Chunk Name", "Count", "Count Percentage", "Size", "Size Percentage"};
     final String[] colTypes = new String[]{"string", "string", "int", "float", "string", "float"};
     final String[] colFormats = new String[]{"%8s", "%s", "%10d", "%10.3f %%", "%10s", "%10.3f %%"};
     final String colHeaderForRowHeaders = null;
@@ -189,8 +168,8 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     int row = 0;
     for (int j = 0; j < chunkTypes.length; ++j) {
       if (chunk_counts != null && chunk_counts[j] > 0) {
-        table.set(row, 0, chunkTypes[j]);
-        table.set(row, 1, chunkNames[j]);
+        table.set(row, 0, chunkTypes[j][0]);
+        table.set(row, 1, chunkTypes[j][1]);
         table.set(row, 2, chunk_counts[j]);
         table.set(row, 3, (float) chunk_counts[j] / total_chunk_count * 100.);
         table.set(row, 4, display(chunk_byte_sizes[j]));
