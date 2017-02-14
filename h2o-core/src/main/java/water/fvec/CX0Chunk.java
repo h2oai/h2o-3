@@ -22,7 +22,7 @@ public class CX0Chunk extends Chunk {
   }
 
   @Override public long byteSize(){
-    return super.byteSize() + 24 /* array overhead */ + _ids.length*4;
+    return super.byteSize() + 32 /* array ref + array overhead */ + _ids.length*4;
   }
   @Override public final long at8(int idx) {return findId(idx) >= 0?(long)con():0;}
   @Override public final double atd(int idx) { return findId(idx) >= 0?con():0; }

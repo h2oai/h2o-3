@@ -36,6 +36,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     {"CStr","Strings"},
     {"CUD","Unique Reals"},
     {"C8D","8-byte Reals"},
+    {"C2Row1","Sparse binary with <=2 1s"}
   };
   
   // OUTPUT

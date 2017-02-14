@@ -1143,9 +1143,11 @@ public class NewChunk extends ByteArraySupportedChunk {
         // TODO
       }
       if(sparse) { // Very sparse?
-
-        if(_naCnt == 0)
-          return new CX0Chunk(Arrays.copyOf(_id,_sparseLen));// No NAs, can store as sparse bitvector
+        if(_naCnt == 0) {
+          if(_sparseLen <= 2)
+            return new C2Row1Chunk(_id[0],_sparseLen == 2?_id[1]:-1);
+          return new CX0Chunk(Arrays.copyOf(_id, _sparseLen));// No NAs, can store as sparse bitvector
+        }
         // need CXI
         return new CXIChunk(bufS(),0);
       }

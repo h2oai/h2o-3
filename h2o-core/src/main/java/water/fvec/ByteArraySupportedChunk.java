@@ -138,7 +138,7 @@ public abstract class ByteArraySupportedChunk extends Chunk {
   /** In memory size in bytes of the compressed ByteArraySupportedChunk plus embedded array. */
   @Override
   public long byteSize() {
-    return super.byteSize() + _mem.length + 24; // approximate size is Chunk object overhead + data bytes + mem array header
+    return super.byteSize() + _mem.length + 32; // approximate size is Chunk object overhead + data bytes + mem array header + mem array reference
   }
 
   /** Custom serializers implemented by ByteArraySupportedChunk subclasses: the _mem field
