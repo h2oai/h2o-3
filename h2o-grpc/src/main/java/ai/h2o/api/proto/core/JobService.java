@@ -1,5 +1,6 @@
 package ai.h2o.api.proto.core;
 
+import ai.h2o.api.GrpcUtils;
 import io.grpc.stub.StreamObserver;
 import water.*;
 
@@ -17,7 +18,7 @@ public class JobService extends JobGrpc.JobImplBase {
       responseObserver.onNext(fillJobInfo(job));
       responseObserver.onCompleted();
     } catch (Throwable ex) {
-      GrpcCommon.sendError(ex, responseObserver, JobInfo.class);
+      GrpcUtils.sendError(ex, responseObserver, JobInfo.class);
     }
   }
 
@@ -29,7 +30,7 @@ public class JobService extends JobGrpc.JobImplBase {
       responseObserver.onNext(fillJobInfo(job));
       responseObserver.onCompleted();
     } catch (Throwable ex) {
-      GrpcCommon.sendError(ex, responseObserver, JobInfo.class);
+      GrpcUtils.sendError(ex, responseObserver, JobInfo.class);
     }
   }
 
@@ -70,7 +71,7 @@ public class JobService extends JobGrpc.JobImplBase {
     Throwable ex = job.ex();
     if (ex != null) {
       jb.setStatus(FAILED)
-        .setError(GrpcCommon.buildError(ex, 0));
+        .setError(GrpcUtils.buildError(ex, 0));
     }
 
     if (job._result != null && !job.readyForView())

@@ -1549,8 +1549,8 @@ final public class H2O {
   // Quick health check; no reason given for bad health
   public boolean healthy() {
     long now = System.currentTimeMillis();
-    for( H2ONode h2o : H2O.CLOUD.members() )
-      if( now - h2o._last_heard_from >= HeartBeatThread.TIMEOUT )
+    for (H2ONode node : H2O.CLOUD.members())
+      if (!node.isHealthy(now))
         return false;
     return true;
   }
