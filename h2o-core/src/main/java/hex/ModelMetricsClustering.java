@@ -146,6 +146,9 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
       for (int i = 0; i < mm._withinss.length; i++)
         mm._withinss[i] = _within_sumsqe[i];
 
+      long numRows = f.numRows();
+      if( m._parms._weights_column != null) numRows = _count;
+
       // Sum-of-square distance from grand mean
       if ( ((ClusteringParameters) clm._parms)._k == 1 )
         mm._totss = mm._tot_withinss;
@@ -153,7 +156,7 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
         mm._totss = 0;
         for (int i = 0; i < _colSum.length; i++) {
           if(((ClusteringOutput)clm._output)._mode[i] == -1)
-            mm._totss += _colSumSq[i] - (_colSum[i] * _colSum[i]) / f.numRows();
+            mm._totss += _colSumSq[i] - (_colSum[i] * _colSum[i]) / numRows;
           else
             mm._totss += _colSum[i]; // simply add x[i] != modes[i] for categoricals
         }
