@@ -2,6 +2,7 @@ package hex.word2vec;
 
 import hex.ModelCategory;
 import hex.ModelMetrics;
+import hex.ModelMojoWriter;
 import water.*;
 import water.fvec.*;
 import water.parser.BufferedString;
@@ -32,6 +33,11 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
   @Override
   protected double[] score0(double data[], double preds[]) {
     throw H2O.unimpl();
+  }
+
+  @Override
+  public ModelMojoWriter getMojo() {
+    return new Word2VecMojoWriter(this);
   }
 
   /**
