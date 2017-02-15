@@ -3,13 +3,14 @@ package water.parser;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.TestUtil;
-import water.util.Log;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Set;
 import java.util.TreeSet;
+
+import water.TestUtil;
+import water.util.Log;
 
 import static org.junit.Assert.assertEquals;
 import static water.parser.OrcTestUtils.compareOrcAndH2OFrame;
@@ -65,7 +66,7 @@ public class ParseTestOrc extends TestUtil {
     };
 
     @BeforeClass
-    static public void setup() { TestUtil.stall_till_cloudsize(1); }
+    static public void setup() { TestUtil.stall_till_cloudsize(5); }
 
     @BeforeClass
     static public void _preconditionJavaVersion() { // NOTE: the `_` force execution of this check after setup
