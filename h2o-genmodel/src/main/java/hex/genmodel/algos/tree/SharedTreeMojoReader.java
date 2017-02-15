@@ -2,6 +2,7 @@ package hex.genmodel.algos.tree;
 
 import hex.genmodel.ModelMojoReader;
 
+import java.io.File;
 import java.io.IOException;
 
 /**
@@ -29,6 +30,8 @@ public abstract class SharedTreeMojoReader<M extends SharedTreeMojoModel> extend
 
     for (int j = 0; j < _model._ntree_groups; j++)
       for (int i = 0; i < tpc; i++) {
+        File f = new File(String.format("trees/t%02d_%03d.bin", i, j));
+        if (!f.exists()) continue;
         _model._compressed_trees[_model.treeIndex(j, i)] = readblob(String.format("trees/t%02d_%03d.bin", i, j));
         if (_model._compressed_trees_aux!=null) {
           _model._compressed_trees_aux[_model.treeIndex(j, i)] = readblob(String.format("trees/t%02d_%03d_aux.bin", i, j));
