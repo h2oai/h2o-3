@@ -7,12 +7,18 @@ import water.api.schemas3.SchemaV3;
 
 // TODO: this is about to change from SchemaV3 to RequestSchemaV3:
 public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
-  @API(help="The AutoML key",direction=API.Direction.INPUT)
+  @API(help="The AutoML key", direction=API.Direction.INPUT)
   public AutoML.AutoMLKeyV3 automl_id;
 
-  @API(help="the leader model's key", direction=API.Direction.OUTPUT)
-  public KeyV3.ModelKeyV3   leader;
+  /**
+   * Identifier for models that should be grouped together in the leaderboard
+   * (e.g., "airlines" and "iris").
+   */
+  @API(help="Identifier for models that should be grouped together in the leaderboard", direction=API.Direction.INOUT)
+  public final String project;
 
+  @API(help="The leaderboard for this project, potentially including models from other AutoML runs", direction=API.Direction.OUTPUT)
+  public LeaderboardV99   leaderboard;
 
   @Override public AutoMLV99 fillFromImpl(AutoML m) {
     super.fillFromImpl(m);

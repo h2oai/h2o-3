@@ -20,17 +20,21 @@ import static water.Key.make;
  * keep using the old model list, which allows us to run AutoML multiple
  * times and keep adding to the leaderboard.
  * <p>
+ * The models are returned sorted by either an appropriate default metric
+ * for the model category (auc, mean per class error, or mean residual deviance),
+ * or by a metric that's set via #setMetricAndDirection.
+ * <p>
  * TODO: make this robust against removal of models from the DKV.
  */
 public class Leaderboard extends Keyed {
   /**
-   * Identifier for the models that should be grouped together in the leaderboard
+   * Identifier for models that should be grouped together in the leaderboard
    * (e.g., "airlines" and "iris").
    */
   private final String project;
 
   /**
-   * List of models for this leaderboard, sorted by metric so that the best is on top,
+   * List of models for this leaderboard, sorted by metric so that the best is first,
    * according to the standard metric for the given model type.  NOTE: callers should
    * access this through #models() to make sure they don't get a stale copy.
    */
@@ -40,6 +44,11 @@ public class Leaderboard extends Keyed {
    * Metric used to sort this leaderboard.
    */
   private String metric;
+
+  /**
+   * Metric direction used in the sort.
+   */
+  private boolean sortDecreasing;
 
   /** HIDEME! */
   private Leaderboard() {
@@ -65,9 +74,29 @@ public class Leaderboard extends Keyed {
     return project;
   }
 
+  public void setMetricAndDirection(String metric, boolean sortDecreasing){
+    this.metric = metric;
+    this.sortDecreasing = sortDecreasing;
+  }
+
+  public void setDefaultMetricAndDirection(Model m) {
+    if (m._output.isBinomialClassifier())
+      setMetricAndDirection("auc", true);
+    else if (m._output.isClassifier())
+      setMetricAndDirection("mean_per_class_error", false);
+    else if (m._output.isSupervised())
+      setMetricAndDirection("mean_residual_deviance", false);
+  }
+
   public void addModels(final Key<Model>[] newModels) {
     if (null == this._key)
       throw new H2OIllegalArgumentException("Can't add models to a Leaderboard which isn't in the DKV.");
+
+    if (this.metric == null) {
+      // lazily set to default for this model category
+      setDefaultMetricAndDirection(newModels[0].get());
+    }
+
     new TAtomic<Leaderboard>() {
       @Override
       public Leaderboard atomic(Leaderboard old) {
@@ -78,25 +107,16 @@ public class Leaderboard extends Keyed {
         System.arraycopy(oldModels, 0, old.models, 0, oldModels.length);
         System.arraycopy(newModels, 0, old.models, oldModels.length, newModels.length);
 
-        Model m = DKV.getGet(old.models[0]);
-
         // Sort by metric.
-        // TODO: allow the metric to be passed in.  Note that this assumes the validation (or training) frame is the same.
-        // If we want to train on different frames and then compare we need to score all the models and sort on the new metrics.
-        List<Key<Model>> newModelsSorted = null;
+        // TODO: If we want to train on different frames and then compare we need to score all the models and sort on the new metrics.
         try {
-          if (m._output.isBinomialClassifier())
-            newModelsSorted = ModelMetrics.sortModelsByMetric("auc", true, Arrays.asList(old.models));
-          else if (m._output.isClassifier())
-            newModelsSorted = ModelMetrics.sortModelsByMetric("mean_per_class_error", false, Arrays.asList(old.models));
-          else if (m._output.isSupervised())
-            newModelsSorted = ModelMetrics.sortModelsByMetric("mean_residual_deviance", false, Arrays.asList(old.models));
+          List<Key<Model>> newModelsSorted = ModelMetrics.sortModelsByMetric(metric, sortDecreasing, Arrays.asList(old.models));
+          old.models = newModelsSorted.toArray(new Key[0]);
         }
         catch (H2OIllegalArgumentException e) {
           Log.warn("ModelMetrics.sortModelsByMetric failed: " + e);
           throw e;
         }
-        old.models = newModelsSorted.toArray(new Key[0]);
         return old;
       } // atomic
     }.invoke(this._key);
@@ -131,10 +151,32 @@ public class Leaderboard extends Keyed {
   }
 
   /**
+   * @return list of keys of models sorted by the given metric , fetched from the DKV
+   */
+  public Key<Model>[] modelKeys(String metric, boolean sortDecreasing) {
+    Key<Model>[] models = modelKeys();
+    List<Key<Model>> newModelsSorted =
+            ModelMetrics.sortModelsByMetric(metric, sortDecreasing, Arrays.asList(models));
+    return newModelsSorted.toArray(new Key[0]);
+  }
+
+  /**
    * @return list of models sorted by the default metric for the model category
    */
   public Model[] models() {
     Key<Model>[] modelKeys = modelKeys();
+
+    if (modelKeys == null || 0 == modelKeys.length) return new Model[0];
+
+    Model[] models = new Model[modelKeys.length];
+    return modelsForModelKeys(modelKeys, models);
+  }
+
+  /**
+   * @return list of models sorted by the given metric
+   */
+  public Model[] models(String metric, boolean sortDecreasing) {
+    Key<Model>[] modelKeys = modelKeys(metric, sortDecreasing);
 
     if (modelKeys == null || 0 == modelKeys.length) return new Model[0];
 

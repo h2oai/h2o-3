@@ -77,7 +77,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   // TODO: make non-transient
   private transient ArrayList<Job> jobs;
 
+  /**
+   * Identifier for models that should be grouped together in the leaderboard
+   * (e.g., "airlines" and "iris").
+   */
   private String project;
+
   private Leaderboard leaderboard;
 
   // check that we haven't messed up the original Frame
@@ -370,6 +375,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       ///////////////////////////////////////////////////////////
       // stack all models
       ///////////////////////////////////////////////////////////
+
+      // TODO: Also stack models from other AutoML runs, by using the Leaderboard!
 
       StackedEnsembleModel.StackedEnsembleParameters stackedEnsembleParameters = new StackedEnsembleModel.StackedEnsembleParameters();
       stackedEnsembleParameters._base_models = gbmJob.get().getModelKeys();
