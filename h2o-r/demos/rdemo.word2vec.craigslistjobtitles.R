@@ -1,7 +1,7 @@
-job.titles.path = "https://raw.githubusercontent.com/h2oai/sparkling-water/rel-1.6/examples/smalldata/craigslistJobTitles.csv"
-
 library(h2o)
 h2o.init()
+
+job.titles.path = "https://raw.githubusercontent.com/h2oai/sparkling-water/rel-1.6/examples/smalldata/craigslistJobTitles.csv"
 
 job.titles <- h2o.importFile(job.titles.path, destination_frame = "jobtitles",
                              col.names = c("category", "jobtitle"), col.types = c("Enum", "String"), header = TRUE)
