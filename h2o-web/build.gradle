@@ -198,9 +198,10 @@ task deleteDocFiles(type: Delete) {
 
 installNpmPackages.dependsOn checkClientPrerequisites
 installBowerPackages.dependsOn installNpmPackages
-deleteLegacyFlowBundleFromWebRoot.dependsOn installBowerPackages
-copyFlowBundleFromDrift.dependsOn deleteLegacyFlowBundleFromWebRoot
-copyFlowToWebRoot.dependsOn copyFlowBundleFromDrift
+// deleteLegacyFlowBundleFromWebRoot.dependsOn installBowerPackages
+// copyFlowBundleFromDrift.dependsOn deleteLegacyFlowBundleFromWebRoot
+// copyFlowToWebRoot.dependsOn copyFlowBundleFromDrift
+copyFlowToWebRoot.dependsOn installBowerPackages
 
 compileHelpFiles.dependsOn installNpmPackages
 
