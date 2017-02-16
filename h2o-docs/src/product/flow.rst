@@ -538,8 +538,8 @@ Now that you are familiar with the cell modes, let's import some data.
 
 --------------
 
-Importing Data
---------------
+Data
+----
 
 If you don't have any data of your own to work with, you can find some
 example datasets at http://data.h2o.ai.
@@ -588,8 +588,8 @@ locations.
    :alt: Import Files - Results
 
 
-Uploading Data
-^^^^^^^^^^^^^^
+Uploading Files
+^^^^^^^^^^^^^^^
 
 To upload a local file, click the **Data** menu and select **Upload
 File...**. Click the **Choose File** button, select the file, click the
@@ -682,6 +682,24 @@ displays.
 
 Since we've submitted a couple of jobs (data import & parse) to H2O now,
 let's take a moment to learn more about jobs in H2O.
+
+--------------
+
+Imputing Data
+^^^^^^^^^^^^^
+
+To impute data in a dataset, click the **Data** menu and select **Impute..**. The **Impute** option allows you to perform in-place imputation by filling missing values with aggregates computed on the "na.rm’d" vector. Additionally, you can also perform imputation based on groupings of columns from within the dataset. These columns can be passed by index or by column name using the Group By option. Note that if a factor column is supplied, then the method must be Mode.
+
+The following options can be specified when imputing dataset:
+
+- **Frame**: The dataset containing the column to impute
+- **Column**: A specific column to impute. 
+- **Method**: The type of imputation to perform. Mean replaces NAs with the column mean; Median replaces NAs with the column median; Mode replaces with the most common factor (for factor columns only).
+- **Group By**: If the **Method** is either Mean or Mode, then choose the column or columns to group by. 
+- **Combine Method**: If the **Method** is Median, then choose how to combine quantiles on even sample sizes. Available **Combine Method** options include Interpolate, Average, Low, and High.
+
+.. figure:: images/Flow_impute.png
+   :alt: Flow - Impute data
 
 --------------
 
