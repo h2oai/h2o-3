@@ -26,12 +26,8 @@ public class Register extends AbstractRegister{
             "Return all the AutoML leaderboards.");
 
     RequestServer.registerEndpoint("fetch",
-            "GET /99/Leaderboards/{leaderboard_id}", LeaderboardsHandler.class, "fetch",
-            "Return the AutoML leaderboard, specified by ID.");
-
-    RequestServer.registerEndpoint("fetch",
-            "GET /99/Leaderboards/projects/{project}", LeaderboardsHandler.class, "fetch",
-            "Return the AutoML leaderboard, specified by project.");
+            "GET /99/Leaderboards/{project}", LeaderboardsHandler.class, "fetch",
+            "Return the AutoML leaderboard for the given project.");
 
     /*
     RequestServer.registerEndpoint("automl_schema",
