@@ -135,7 +135,20 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     // TODO: allow the user to set the project via the buildspec
     String[] path = this.origTrainingFrame._key.toString().split("/");
-    project = path[path.length - 1];
+    project = path[path.length - 1]
+      .replace(".hex", "")
+      .replace("CSV", "")
+      .replace("XLS", "")
+      .replace("XSLX", "")
+      .replace("SVMLight", "")
+      .replace("ARFF", "")
+      .replace("ORC", "")
+      .replace("csv", "")
+      .replace("xls", "")
+      .replace("xslx", "")
+      .replace("svmlight", "")
+      .replace("arff", "")
+      .replace("orc", "");
     leaderboard = new Leaderboard(project);
 
     /*
