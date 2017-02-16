@@ -818,7 +818,8 @@ public final class ParseDataset {
       try {
         switch( cpr ) {
         case NONE:
-          boolean disableParallelParse = (_keys.length > TOO_MANY_KEYS_COUNT) && (vec.nChunks() <= SMALL_FILE_NCHUNKS);
+          boolean disableParallelParse = (_keys.length > TOO_MANY_KEYS_COUNT) &&
+                  (vec.nChunks() <= SMALL_FILE_NCHUNKS) && _parseSetup._parse_type.isStreamParseSupported();
           if( _parseSetup._parse_type.isParallelParseSupported() && (! disableParallelParse)) {
             new DistributedParse(_vg, localSetup, _vecIdStart, chunkStartIdx, this, key, vec.nChunks()).dfork(vec).getResult(false);
             for( int i = 0; i < vec.nChunks(); ++i )

@@ -12,14 +12,22 @@ public class ParserInfo extends Iced<ParserInfo> {
   final int prior;
   /** Does this parser support parallel parse. */
   final boolean isParallelParseSupported;
+  /** Does this parser support stream parse. */
+  final boolean isStreamParseSupported;
   /** Does this parser need post update of vector categoricals. */
   final boolean isDomainProvided;
 
-  public ParserInfo(String name, int prior, boolean isParallelParseSupported, boolean isDomainProvided) {
+
+  public ParserInfo(String name, int prior, boolean isParallelParseSupported, boolean isStreamParseSupported,
+                    boolean isDomainProvided) {
     this.name = name;
     this.prior = prior;
     this.isParallelParseSupported = isParallelParseSupported;
+    this.isStreamParseSupported = isStreamParseSupported;
     this.isDomainProvided = isDomainProvided;
+  }
+  public ParserInfo(String name, int prior, boolean isParallelParseSupported, boolean isDomainProvided) {
+    this(name, prior, isParallelParseSupported, true, isDomainProvided);
   }
   public ParserInfo(String name, int prior, boolean isParallelParseSupported) {
     this(name, prior, isParallelParseSupported, false);
@@ -38,6 +46,11 @@ public class ParserInfo extends Iced<ParserInfo> {
   /** Does the parser support parallel parse? */
   public boolean isParallelParseSupported() {
     return isParallelParseSupported;
+  }
+
+  /** Does the parser support stream parse? */
+  public boolean isStreamParseSupported() {
+    return isStreamParseSupported;
   }
 
   @Override
