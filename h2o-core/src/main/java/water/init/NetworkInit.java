@@ -474,9 +474,12 @@ public class NetworkInit {
     String embeddedConfigFlatfile = null;
     AbstractEmbeddedH2OConfig ec = H2O.getEmbeddedH2OConfig();
     if (ec != null) {
-      if (!H2O.ARGS.disable_web) {
-        ec.notifyAboutEmbeddedWebServerIpPort(H2O.SELF_ADDRESS, H2O.API_PORT);
-      }
+      // TODO: replace this call with ec.notifyAboutH2oCommunicationChannel(H2O.SELF_ADDRESS, H2O.H2O_PORT)
+      //       As of right now, the function notifies about the H2O.API_PORT, and then the listener adds +1
+      //       to that in order to determine the H2O_PORT (which what it really cares about). Such
+      //       assumption is dangerous: we should be free of using independent API_PORT and H2O_PORT,
+      //       including the ability of not using any API_PORT at all...
+      ec.notifyAboutEmbeddedWebServerIpPort(H2O.SELF_ADDRESS, H2O.API_PORT);
       if (ec.providesFlatfile()) {
         try {
           embeddedConfigFlatfile = ec.fetchFlatfile();
