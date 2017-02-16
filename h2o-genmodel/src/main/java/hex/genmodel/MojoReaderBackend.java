@@ -10,4 +10,6 @@ public interface MojoReaderBackend {
   BufferedReader getTextFile(String filename) throws IOException;
 
   byte[] getBinaryFile(String filename) throws IOException;
+
+  boolean exists(String filename);
 }
