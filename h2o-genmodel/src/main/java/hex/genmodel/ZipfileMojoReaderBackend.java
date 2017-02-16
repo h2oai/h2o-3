@@ -30,4 +30,8 @@ class ZipfileMojoReaderBackend implements MojoReaderBackend {
     return out;
   }
 
+  @Override
+  public boolean exists(String filename) {
+    return zf.getEntry(filename) != null;
+  }
 }

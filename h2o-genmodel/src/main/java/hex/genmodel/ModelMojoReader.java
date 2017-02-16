@@ -83,6 +83,10 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     return _reader.getBinaryFile(name);
   }
 
+  protected boolean exists(String name) {
+    return _reader.exists(name);
+  }
+
   /**
    * Retrieve text previously saved using `startWritingTextFile` + `writeln` as an array of lines. Each line is
    * trimmed to remove the leading and trailing whitespace.
