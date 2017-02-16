@@ -704,13 +704,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * @param npredictors
    * @param expensive
    */
-  protected void ignoreInvalidColumns(int npredictors, boolean expensive){
-    // Drop invalid columns
-    new FilterCols(npredictors) {
-      @Override protected boolean filter(Vec v) {
-        return (v.max() > Float.MAX_VALUE ); }
-      }.doIt(_train,"Dropping columns with too large numeric values: ",expensive);
-  }
+  protected void ignoreInvalidColumns(int npredictors, boolean expensive){}
+
   /**
    * Override this method to call error() if the model is expected to not fit in memory, and say why
    */
@@ -1088,13 +1083,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   transient public HashSet<String> _removedCols = new HashSet<>();
-  abstract class FilterCols {
+  public abstract class FilterCols {
     final int _specialVecs; // special vecs to skip at the end
     public FilterCols(int n) {_specialVecs = n;}
 
     abstract protected boolean filter(Vec v);
 
-    void doIt( Frame f, String msg, boolean expensive ) {
+    public void doIt( Frame f, String msg, boolean expensive ) {
       List<Integer> rmcolsList = new ArrayList<>();
       for( int i = 0; i < f.vecs().length - _specialVecs; i++ )
         if( filter(f.vecs()[i]) ) rmcolsList.add(i);
