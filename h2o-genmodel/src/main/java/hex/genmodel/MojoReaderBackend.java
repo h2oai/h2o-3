@@ -11,5 +11,5 @@ public interface MojoReaderBackend {
 
   byte[] getBinaryFile(String filename) throws IOException;
 
-  boolean exists(String name);
+  boolean exists(String filename);
 }

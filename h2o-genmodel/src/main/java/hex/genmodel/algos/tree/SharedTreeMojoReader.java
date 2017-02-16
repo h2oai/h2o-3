@@ -2,7 +2,6 @@ package hex.genmodel.algos.tree;
 
 import hex.genmodel.ModelMojoReader;
 
-import java.io.File;
 import java.io.IOException;
 
 /**
