@@ -24,6 +24,11 @@ public class GlmMojoReaderTest {
       @Override public byte[] getBinaryFile(String filename) throws IOException {
         throw new UnsupportedOperationException("Not expected");
       }
+
+      @Override
+      public boolean exists(String name) {
+        throw new UnsupportedOperationException("Not expected");
+      }
     });
     assertTrue(model._useAllFactorLevels);
     assertEquals(1, model._cats);

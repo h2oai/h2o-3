@@ -404,25 +404,33 @@ public abstract class SharedTreeModel<
       fileCtx.add(new CodeGenerator() {
         @Override
         public void generate(JCodeSB out) {
-          // Generate a class implementing a tree
-          out.nl();
-          toJavaForestName(out.ip("class "), mname, treeIdx).p(" {").nl().ii(1);
-          out.ip("public static void score0(double[] fdata, double[] preds) {").nl().ii(1);
-          for (int c = 0; c < nclass; c++)
-            if (!(binomialOpt() && c == 1 && nclass == 2)) // Binomial optimization
-              toJavaTreeName(out.ip("preds[").p(nclass==1?0:c+1).p("] += "), mname, treeIdx, c).p(".score0(fdata);").nl();
-          out.di(1).ip("}").nl(); // end of function
-          out.di(1).ip("}").nl(); // end of forest class
-
-          // Generate the pre-tree classes afterwards
-          for (int c = 0; c < nclass; c++) {
-            if (!(binomialOpt() && c == 1 && nclass == 2)) { // Binomial optimization
-              String javaClassName = toJavaTreeName(new SB(), mname, treeIdx, c).toString();
-              CompressedTree ct = _output.ctree(treeIdx, c);
-              SB sb = new SB();
-              new TreeJCodeGen(SharedTreeModel.this, ct, sb, javaClassName, verboseCode).generate();
-              out.p(sb);
+          try {
+            // Generate a class implementing a tree
+            out.nl();
+            toJavaForestName(out.ip("class "), mname, treeIdx).p(" {").nl().ii(1);
+            out.ip("public static void score0(double[] fdata, double[] preds) {").nl().ii(1);
+            for (int c = 0; c < nclass; c++) {
+              if (_output._treeKeys[treeIdx][c] == null) continue;
+              if (!(binomialOpt() && c == 1 && nclass == 2)) // Binomial optimization
+                toJavaTreeName(out.ip("preds[").p(nclass == 1 ? 0 : c + 1).p("] += "), mname, treeIdx, c).p(".score0(fdata);").nl();
             }
+            out.di(1).ip("}").nl(); // end of function
+            out.di(1).ip("}").nl(); // end of forest class
+
+            // Generate the pre-tree classes afterwards
+            for (int c = 0; c < nclass; c++) {
+              if (_output._treeKeys[treeIdx][c] == null) continue;
+              if (!(binomialOpt() && c == 1 && nclass == 2)) { // Binomial optimization
+                String javaClassName = toJavaTreeName(new SB(), mname, treeIdx, c).toString();
+                CompressedTree ct = _output.ctree(treeIdx, c);
+                SB sb = new SB();
+                new TreeJCodeGen(SharedTreeModel.this, ct, sb, javaClassName, verboseCode).generate();
+                out.p(sb);
+              }
+            }
+          } catch (Throwable t) {
+            t.printStackTrace();
+            throw new IllegalArgumentException("Internal error creating the POJO.", t);
           }
         }
       });
