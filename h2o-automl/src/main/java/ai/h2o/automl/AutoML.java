@@ -22,9 +22,7 @@ import water.parser.ParseSetup;
 import water.util.IcedHashMapGeneric;
 import water.util.Log;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static water.Key.make;
 
@@ -270,7 +268,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return builder.trainModel();
   }
 
-  public Job hyperparameterSearch(String algoName, Model.Parameters baseParms, Map<String, Object[]> searchParms) {
+  public Job<Grid> hyperparameterSearch(String algoName, Model.Parameters baseParms, Map<String, Object[]> searchParms) {
     Log.info("AutoML: starting " + algoName + " hyperparameter search");
     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria = (HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria)buildSpec.build_control.stopping_criteria.clone();
     searchCriteria.set_max_runtime_secs(this.timeRemainingMs() / 1000.0);
@@ -291,48 +289,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return gridJob;
   }
 
-  // manager thread:
-  //  1. Do extremely cursory pass over data and gather only the most basic information.
-  //
-  //     During this pass, AutoML will learn how timely it will be to do more info
-  //     gathering on _fr. There's already a number of interesting stats available
-  //     thru the rollups, so no need to do too much too soon.
-  //
-  //  2. Build a very dumb RF (with stopping_rounds=1, stopping_tolerance=0.01)
-  //
-  //  3. TODO: refinement passes and strategy selection
-  //
-  public void learn() {
-
-    ///////////////////////////////////////////////////////////
-    // gather initial frame metadata and guess the problem type
-    ///////////////////////////////////////////////////////////
-
-    // TODO: Nishant says sometimes frameMetadata is null, so maybe we need to wait for it?
-    // null FrameMetadata arises when delete() is called without waiting for start() to finish.
-    frameMetadata = new FrameMetadata(trainingFrame,
-            trainingFrame.find(buildSpec.input_spec.response_column),
-            trainingFrame.toString()).computeFrameMetaPass1();
-
-    // TODO: update work
-    HashMap<String, Object> frameMeta = FrameMetadata.makeEmptyFrameMeta();
-    frameMetadata.fillSimpleMeta(frameMeta);
-
-    isClassification = frameMetadata.isClassification();
-
-    ///////////////////////////////////////////////////////////
-    // TODO: build a fast RF
-    ///////////////////////////////////////////////////////////
-
-
-
-    // TODO: add the models to the modellist so they get deleted
-
+  public Job<Grid> defaultSearchGBM() {
     ///////////////////////////////////////////////////////////
     // do a random hyperparameter search with GBM
     ///////////////////////////////////////////////////////////
     // TODO: convert to using the REST API
-    Key<Grid> gridKey = Key.make("GBM_grid_0_" + this._key.toString());
+    Key<Grid> gridKey = Key.make("GBM_grid_default_" + this._key.toString());
 
     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria = buildSpec.build_control.stopping_criteria;
 
@@ -374,10 +336,75 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 */
 
     Job<Grid>gbmJob = hyperparameterSearch("GBM", gbmParameters, searchParams);
-    this.job.update(1, "GBM" + " grid search complete");
+    return gbmJob;
+  }
+
+  Job<StackedEnsembleModel>stack(Key<Model>[]... modelKeyArrays) {
+    List<Key<Model>> allModelKeys = new ArrayList<>();
+    for (Key<Model>[] modelKeyArray : modelKeyArrays)
+      allModelKeys.addAll(Arrays.asList(modelKeyArray));
+
+    StackedEnsembleModel.StackedEnsembleParameters stackedEnsembleParameters = new StackedEnsembleModel.StackedEnsembleParameters();
+    stackedEnsembleParameters._base_models = allModelKeys.toArray(new Key[0]);
+    stackedEnsembleParameters._selection_strategy = StackedEnsembleModel.StackedEnsembleParameters.SelectionStrategy.choose_all;
+    stackedEnsembleParameters._train = trainingFrame._key;
+    if (null != validationFrame)
+      stackedEnsembleParameters._valid = validationFrame._key;
+    stackedEnsembleParameters._response_column = buildSpec.input_spec.response_column;
+
+    Job ensembleJob = trainModel("stackedensemble", stackedEnsembleParameters);
+    return ensembleJob;
+  }
+
+  // manager thread:
+  //  1. Do extremely cursory pass over data and gather only the most basic information.
+  //
+  //     During this pass, AutoML will learn how timely it will be to do more info
+  //     gathering on _fr. There's already a number of interesting stats available
+  //     thru the rollups, so no need to do too much too soon.
+  //
+  //  2. Build a very dumb RF (with stopping_rounds=1, stopping_tolerance=0.01)
+  //
+  //  3. TODO: refinement passes and strategy selection
+  //
+  public void learn() {
+
+    ///////////////////////////////////////////////////////////
+    // gather initial frame metadata and guess the problem type
+    ///////////////////////////////////////////////////////////
+
+    // TODO: Nishant says sometimes frameMetadata is null, so maybe we need to wait for it?
+    // null FrameMetadata arises when delete() is called without waiting for start() to finish.
+    frameMetadata = new FrameMetadata(trainingFrame,
+            trainingFrame.find(buildSpec.input_spec.response_column),
+            trainingFrame.toString()).computeFrameMetaPass1();
+
+    // TODO: update work
+    HashMap<String, Object> frameMeta = FrameMetadata.makeEmptyFrameMeta();
+    frameMetadata.fillSimpleMeta(frameMeta);
+
+    isClassification = frameMetadata.isClassification();
+
+    ///////////////////////////////////////////////////////////
+    // TODO: build a fast RF
+    ///////////////////////////////////////////////////////////
+
+
+    ///////////////////////////////////////////////////////////
+    // build GBMs with the default search parameters
+    ///////////////////////////////////////////////////////////
+
+    // TODO: poll gbmJob and this.job.update() instead of waiting
+    // in hyperparameterSearch until the end
+    Job<Grid>gbmJob = defaultSearchGBM();
 
     Grid gbmGrid = DKV.getGet(gbmJob._result);
     leaderboard.addModels(gbmGrid.getModelKeys());
+    this.job.update(1, "GBM" + " grid search complete");
+
+    ///////////////////////////////////////////////////////////
+    // (optionally) build StackedEnsemble
+    ///////////////////////////////////////////////////////////
 
     Model m = gbmGrid.getModels()[0];
     if (m._output.isClassifier() && ! m._output.isBinomialClassifier()) {
@@ -390,17 +417,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       ///////////////////////////////////////////////////////////
 
       // TODO: Also stack models from other AutoML runs, by using the Leaderboard!
-
-      StackedEnsembleModel.StackedEnsembleParameters stackedEnsembleParameters = new StackedEnsembleModel.StackedEnsembleParameters();
-      stackedEnsembleParameters._base_models = gbmJob.get().getModelKeys();
-      stackedEnsembleParameters._selection_strategy = StackedEnsembleModel.StackedEnsembleParameters.SelectionStrategy.choose_all;
-      stackedEnsembleParameters._train = trainingFrame._key;
-      if (null != validationFrame)
-        stackedEnsembleParameters._valid = validationFrame._key;
-      stackedEnsembleParameters._response_column = buildSpec.input_spec.response_column;
-
-
-      Job ensembleJob = trainModel("stackedensemble", stackedEnsembleParameters);
+      Job<StackedEnsembleModel>ensembleJob = stack(gbmJob.get().getModelKeys());
+      // TODO: poll
       jobs.add(ensembleJob);
       StackedEnsembleModel ensemble = (StackedEnsembleModel)ensembleJob.get();
       jobs.remove(ensembleJob);
