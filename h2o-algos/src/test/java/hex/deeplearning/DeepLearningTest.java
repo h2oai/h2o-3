@@ -137,9 +137,7 @@ public class DeepLearningTest extends TestUtil {
     }
   }
 
-  //Exception will be thrown because values are too large for model build. So, an exception should be expected.
-  @Test(expected=water.exceptions.H2OModelBuilderIllegalArgumentException.class)
-  public void testBadData() throws Throwable {
+  @Test public void testBadData() throws Throwable {
     basicDLTest_Classification(
         "./smalldata/junit/drf_infinities.csv", "infinitys.hex",
         new PrepData() {
