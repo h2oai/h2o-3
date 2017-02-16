@@ -637,7 +637,9 @@ class H2OConnection(backwards_compatible()):
         msg += "[%s] %s\n" % (time.strftime("%H:%M:%S"), endpoint)
         if params is not None: msg += "     params: {%s}\n" % ", ".join("%s:%s" % item for item in viewitems(params))
         if data is not None:   msg += "     body: {%s}\n" % ", ".join("%s:%s" % item for item in viewitems(data))
-        if json is not None:   msg += "     json: %s\n" % json.dumps(json)
+        if json is not None:
+            import json as j
+            msg += "     json: %s\n" % j.dumps(json)
         if files is not None:  msg += "     file: %s\n" % ", ".join(f.name for f in viewvalues(files))
         self._log_message(msg + "\n")
 
