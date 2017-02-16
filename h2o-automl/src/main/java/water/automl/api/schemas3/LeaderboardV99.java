@@ -30,6 +30,6 @@ public class LeaderboardV99 extends Schema<Leaderboard, LeaderboardV99> {
    * Metric direction used in the sort.
    */
   @API(help="Metric direction used in the sort", direction=API.Direction.INOUT)
-  public boolean sortDecreasing;
+  public boolean sort_decreasing;
 }
 

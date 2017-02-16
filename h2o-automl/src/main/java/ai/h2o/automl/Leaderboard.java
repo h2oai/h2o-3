@@ -4,6 +4,7 @@ import hex.Model;
 import hex.ModelMetrics;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import water.*;
+import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.Log;
 
@@ -48,7 +49,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
   /**
    * Metric direction used in the sort.
    */
-  private boolean sortDecreasing;
+  private boolean sort_decreasing;
 
   /** HIDEME! */
   private Leaderboard() {
@@ -59,7 +60,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
    *
    */
   public Leaderboard(String project) {
-    this._key = make("AutoML_Leaderboard_" + project, (byte) 0, (byte) 2 /*builtin key*/, false);
+    this._key = make(idForProject(project));
     this.project = project;
 
     Leaderboard old = DKV.getGet(this._key);
@@ -70,13 +71,25 @@ public class Leaderboard extends Keyed<Leaderboard> {
     }
   }
 
+  // satisfy typing for job return type...
+  public static class LeaderboardKeyV3 extends KeyV3<Iced, LeaderboardKeyV3, Leaderboard> {
+    public LeaderboardKeyV3() {
+    }
+
+    public LeaderboardKeyV3(Key<Leaderboard> key) {
+      super(key);
+    }
+  }
+
+  public static String idForProject(String project) { return "AutoML_Leaderboard_" + project; }
+
   public String getProject() {
     return project;
   }
 
   public void setMetricAndDirection(String metric, boolean sortDecreasing){
     this.metric = metric;
-    this.sortDecreasing = sortDecreasing;
+    this.sort_decreasing = sortDecreasing;
   }
 
   public void setDefaultMetricAndDirection(Model m) {
@@ -110,7 +123,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
         // Sort by metric.
         // TODO: If we want to train on different frames and then compare we need to score all the models and sort on the new metrics.
         try {
-          List<Key<Model>> newModelsSorted = ModelMetrics.sortModelsByMetric(metric, sortDecreasing, Arrays.asList(old.models));
+          List<Key<Model>> newModelsSorted = ModelMetrics.sortModelsByMetric(metric, sort_decreasing, Arrays.asList(old.models));
           old.models = newModelsSorted.toArray(new Key[0]);
         }
         catch (H2OIllegalArgumentException e) {
