@@ -26,7 +26,7 @@ import static water.Key.make;
  * <p>
  * TODO: make this robust against removal of models from the DKV.
  */
-public class Leaderboard extends Keyed {
+public class Leaderboard extends Keyed<Leaderboard> {
   /**
    * Identifier for models that should be grouped together in the leaderboard
    * (e.g., "airlines" and "iris").
@@ -59,7 +59,7 @@ public class Leaderboard extends Keyed {
    *
    */
   public Leaderboard(String project) {
-    super(make("AutoML_Leaderboard_" + project, (byte) 0, (byte) 2 /*builtin key*/, false));
+    this._key = make("AutoML_Leaderboard_" + project, (byte) 0, (byte) 2 /*builtin key*/, false);
     this.project = project;
 
     Leaderboard old = DKV.getGet(this._key);

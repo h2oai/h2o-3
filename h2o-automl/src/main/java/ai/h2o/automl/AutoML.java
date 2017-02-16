@@ -512,7 +512,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return DKV.getGet(this.job._key);
   }
 
-  public Leaderboard leaderboard() { return leaderboard; }
+  public Leaderboard leaderboard() { return leaderboard._key.get(); }
 
 
   // satisfy typing for job return type...
