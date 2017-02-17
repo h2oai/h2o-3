@@ -733,8 +733,7 @@ public class RequestServer extends HttpServlet {
 
       try {
         // Skip nodes that aren't healthy, since they are likely to cause the entire process to hang.
-        boolean healthy = (System.currentTimeMillis() - members[i]._last_heard_from) < HeartBeatThread.TIMEOUT;
-        if (healthy) {
+        if (members[i].isHealthy()) {
           GetLogsFromNode g = new GetLogsFromNode();
           g.nodeidx = i;
           g.doIt();

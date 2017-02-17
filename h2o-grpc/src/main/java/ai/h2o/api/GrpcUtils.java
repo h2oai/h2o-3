@@ -1,5 +1,6 @@
-package ai.h2o.api.proto.core;
+package ai.h2o.api;
 
+import ai.h2o.api.proto.core.Error;
 import com.google.protobuf.Message;
 import io.grpc.stub.StreamObserver;
 
@@ -8,7 +9,7 @@ import java.lang.reflect.Method;
 /**
  *
  */
-public abstract class GrpcCommon {
+public abstract class GrpcUtils {
 
   public static <T extends Message> void sendError(Throwable e, StreamObserver<T> responseObserver, Class<T> clz) {
     try {
