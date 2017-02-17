@@ -250,6 +250,34 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return timeRemainingMs() > 0;
   }
 
+  public void pollAndUpdateProgress(String name, long workContribution, Job parentJob, Job subJob) {
+    Log.info(name + " started");
+    jobs.add(subJob);
+
+    long lastWorkedSoFar = 0;
+    long cumulative = 0;
+    while (subJob.isRunning()) {
+      long workedSoFar = Math.round(subJob.progress() * workContribution);
+      cumulative += workedSoFar;
+
+      parentJob.update(Math.round(workedSoFar - lastWorkedSoFar), name);
+      try {
+        Thread.currentThread().sleep(1000);
+      }
+      catch (InterruptedException e) {
+        // keep going
+      }
+      lastWorkedSoFar = workedSoFar;
+    }
+
+    // add remaining work
+    parentJob.update(workContribution - lastWorkedSoFar);
+
+    Log.info(name + " complete");
+    try { jobs.remove(subJob); } catch (NullPointerException npe) {} // stop() can null jobs; can't just do a pre-check, because there's a race
+
+  }
+
   /**
    * Helper for hex.ModelBuilder.
    * @return
@@ -268,6 +296,14 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return builder.trainModel();
   }
 
+  /**
+   * Do a random hyperparameter search.  Caller must eventually do a <i>get()</i>
+   * on the returned Job to ensure that it's complete.
+   * @param algoName
+   * @param baseParms
+   * @param searchParms
+   * @return the started hyperparameter search job
+   */
   public Job<Grid> hyperparameterSearch(String algoName, Model.Parameters baseParms, Map<String, Object[]> searchParms) {
     Log.info("AutoML: starting " + algoName + " hyperparameter search");
     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria = (HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria)buildSpec.build_control.stopping_criteria.clone();
@@ -279,13 +315,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
             new GridSearch.SimpleParametersBuilderFactory(),
             buildSpec.build_control.stopping_criteria);
 
-    Log.info(algoName + " hyperparameter search started");
-    jobs.add(gridJob);
-
-    // TODO: change this to poll, so that we can update the AutoML Job's work.
-    Grid grid = gridJob.get(); // Hold out until Grid Search is done (or if the job times out)
-    Log.info(algoName + " hyperparameter search complete");
-    try { jobs.remove(gridJob); } catch (NullPointerException npe) {} // stop() can null jobs; can't just do a pre-check, because there's a race
     return gridJob;
   }
 
@@ -379,9 +408,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
             trainingFrame.find(buildSpec.input_spec.response_column),
             trainingFrame.toString()).computeFrameMetaPass1();
 
-    // TODO: update work
     HashMap<String, Object> frameMeta = FrameMetadata.makeEmptyFrameMeta();
     frameMetadata.fillSimpleMeta(frameMeta);
+
+    job.update(20, "Computed dataset metadata");
 
     isClassification = frameMetadata.isClassification();
 
@@ -394,13 +424,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // build GBMs with the default search parameters
     ///////////////////////////////////////////////////////////
 
-    // TODO: poll gbmJob and this.job.update() instead of waiting
-    // in hyperparameterSearch until the end
     Job<Grid>gbmJob = defaultSearchGBM();
+    pollAndUpdateProgress("GBM hyperparameter search", 900, this.job(), gbmJob);
 
     Grid gbmGrid = DKV.getGet(gbmJob._result);
     leaderboard.addModels(gbmGrid.getModelKeys());
-    this.job.update(1, "GBM" + " grid search complete");
 
     ///////////////////////////////////////////////////////////
     // (optionally) build StackedEnsemble
@@ -409,7 +437,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     Model m = gbmGrid.getModels()[0];
     if (m._output.isClassifier() && ! m._output.isBinomialClassifier()) {
       // nada
-      this.job.update(1, "Multinomial classifier: StackedEnsemble build skipped");
+      this.job.update(100, "Multinomial classifier: StackedEnsemble build skipped");
       Log.info("Multinomial classifier: StackedEnsemble build skipped");
     } else {
       ///////////////////////////////////////////////////////////
@@ -418,12 +446,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
       // TODO: Also stack models from other AutoML runs, by using the Leaderboard!
       Job<StackedEnsembleModel>ensembleJob = stack(gbmJob.get().getModelKeys());
-      // TODO: poll
-      jobs.add(ensembleJob);
+
+      pollAndUpdateProgress("StackedEnsemble build", 100, this.job(), ensembleJob);
+
       StackedEnsembleModel ensemble = (StackedEnsembleModel)ensembleJob.get();
-      jobs.remove(ensembleJob);
-      this.job.update(1, "StackedEnsemble build complete");
-      Log.info("StackedEnsemble build complete");
       leaderboard.addModel(ensemble);
     }
 
@@ -458,15 +484,16 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   public static void startAutoML(AutoML aml) {
     // Currently AutoML can only run one job at a time
     if (aml.job == null || !aml.job.isRunning()) {
-      Job job = new /* Timed */ H2OJob(aml, aml._key).start();
+      Job job = new /* Timed */ H2OJob(aml, aml._key, aml.timeRemainingMs()).start();
       aml.job = job;
       // job._max_runtime_msecs = Math.round(1000 * aml.buildSpec.build_control.stopping_criteria.max_runtime_secs());
 
-      // job work: import/parse, GBM grid, StackedEnsemble
-      job._work = 3;
+      // job work:
+      // import/parse (30), Frame metadata (20), GBM grid (900), StackedEnsemble (50)
+      job._work = 1000;
       DKV.put(aml);
 
-      job.update(1, "Data import and parse complete");
+      job.update(30, "Data import and parse complete");
     }
   }
 
