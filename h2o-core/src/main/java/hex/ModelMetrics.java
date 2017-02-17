@@ -291,8 +291,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   public boolean isForFrame(Frame f) { return _frame_checksum == f.checksum(); }
 
   public static ModelMetrics getFromDKV(Model model, Frame frame) {
-    Value v = DKV.get(buildKey(model, frame));
-    return null == v ? null : (ModelMetrics)v.get();
+    return DKV.getGet(buildKey(model, frame));
   }
 
   @Override protected long checksum_impl() { return _frame_checksum * 13 + _model_checksum * 17; }
