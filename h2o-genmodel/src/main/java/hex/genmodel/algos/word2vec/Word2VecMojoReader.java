@@ -22,7 +22,7 @@ public class Word2VecMojoReader extends ModelMojoReader<Word2VecMojoModel> {
       throw new IOException("Corrupted vector representation, unexpected size: " + rawVectors.length);
     ByteBuffer bb = ByteBuffer.wrap(rawVectors);
 
-    Iterator<String> vocabulary = readtext("vocabulary").iterator();
+    Iterator<String> vocabulary = readtext("vocabulary", true).iterator();
     while (vocabulary.hasNext()) {
       float[] vec = new float[vecSize];
       for (int i = 0; i < vecSize; i++)

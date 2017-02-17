@@ -1,11 +1,14 @@
 package hex;
 
+import hex.genmodel.utils.StringEscapeUtils;
 import org.joda.time.DateTime;
 import water.H2O;
 import water.api.StreamWriter;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.util.Arrays;
@@ -113,11 +116,16 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
     tmpname = filename;
   }
 
+  /** Write a single line of text to a previously opened text file, escape new line characters if enabled. */
+  protected final void writeln(String s, boolean escapeNewlines) {
+    assert tmpfile != null : "No text file is currently being written";
+    tmpfile.append(escapeNewlines ? StringEscapeUtils.escapeNewlines(s) : s);
+    tmpfile.append('\n');
+  }
+
   /** Write a single line of text to a previously opened text file. */
   protected final void writeln(String s) {
-    assert tmpfile != null : "No text file is currently being written";
-    tmpfile.append(s);
-    tmpfile.append('\n');
+    writeln(s, false);
   }
 
   /** Finish writing a text file. */
@@ -241,4 +249,5 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
       finishWritingTextFile();
     }
   }
+
 }

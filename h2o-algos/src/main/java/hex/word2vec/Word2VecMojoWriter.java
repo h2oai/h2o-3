@@ -31,7 +31,7 @@ public class Word2VecMojoWriter extends ModelMojoWriter<Word2VecModel, Word2VecM
     // Vocabulary
     startWritingTextFile("vocabulary");
     for (BufferedString word : model._output._words) {
-      writeln(word.toString()); // FIXME: escape new lines
+      writeln(word.toString(), true);
     }
     finishWritingTextFile();
 
