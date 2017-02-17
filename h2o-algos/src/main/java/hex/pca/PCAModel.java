@@ -202,9 +202,12 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     bodySb.i(1).p("}").nl();
 
     // Numeric columns
-    bodySb.i(1).p("for(int j = 0; j < ").p(nums).p("; j++) {").nl();
-    bodySb.i(2).p("preds[i] += (data[").pj(mname+"_PERMUTE", "VALUES").p("[j" + (cats > 0 ? "+" + cats : "") + "]]-").pj(mname+"_NORMSUB", "VALUES").p("[j])*").pj(mname+"_NORMMUL", "VALUES").p("[j]*").pj(mname+"_EIGVECS", "VALUES").p("[j" + (cats > 0 ? "+ nstart" : "") +"][i];").nl();
-    bodySb.i(1).p("}").nl();
+    if (_output._nnums > 0) {
+      bodySb.i(1).p("for(int j = 0; j < ").p(nums).p("; j++) {").nl();
+      bodySb.i(2).p("preds[i] += (data[").pj(mname + "_PERMUTE", "VALUES").p("[j" + (cats > 0 ? "+" + cats : "") + "]]-").pj(mname + "_NORMSUB", "VALUES").p("[j])*").pj(mname + "_NORMMUL", "VALUES").p("[j]*").pj(mname + "_EIGVECS", "VALUES").p("[j" + (cats > 0 ? "+ nstart" : "") + "][i];").nl();
+      bodySb.i(1).p("}").nl();
+    }
+
     bodySb.i().p("}").nl();
   }
 }
