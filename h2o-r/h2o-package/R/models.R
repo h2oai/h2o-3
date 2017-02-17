@@ -2259,7 +2259,7 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds=
       tbl <- data.frame(col1,col2,col3,col4)
       colnames(tbl) <- cnames
       rownames(tbl) <- rnames
-      header <-  "Confusion Matrix"
+      header <-  "Confusion Matrix (vertical: actual; across: predicted) "
       if(t %in% metrics_thresholds) {
         m <- metrics_list[which(t == metrics_thresholds)]
         if( length(m) > 1) m <- m[[1]]
