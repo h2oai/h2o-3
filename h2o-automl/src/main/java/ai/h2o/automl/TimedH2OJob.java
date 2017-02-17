@@ -9,10 +9,10 @@ import water.util.Log;
 public class TimedH2OJob extends H2OJob {
 
   public TimedH2OJob(TimedH2ORunnable runnable) {
-    super(runnable);
+    super(runnable, runnable.timeRemainingMs());
   }
   public TimedH2OJob(TimedH2ORunnable runnable, Key key) {
-    super(runnable, key);
+    super(runnable, key, runnable.timeRemainingMs());
   }
 
   public Job start() {
