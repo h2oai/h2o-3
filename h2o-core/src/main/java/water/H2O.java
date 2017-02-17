@@ -238,7 +238,7 @@ final public class H2O {
     /** -flow_dir=/path/to/dir; directory to save flows in */
     public String flow_dir;
 
-    /** -disable_web; disable web API port (used by Sparkling Water) */
+    /** -disable_web; disable Jetty and REST API interface */
     public boolean disable_web = false;
 
     /** -context_path=jetty_context_path; the context path for jetty */
@@ -302,6 +302,9 @@ final public class H2O {
     public boolean quiet = false;
 
     public boolean useUDP = false;
+
+    /** -no_latest_check Do not attempt to retrieve latest H2O version from S3 on startup */
+    public boolean noLatestCheck = false;
 
     @Override public String toString() {
       StringBuilder result = new StringBuilder();
@@ -523,6 +526,9 @@ final public class H2O {
       else if (s.matches("internal_security_conf")) {
         i = s.incrementAndCheck(i, args);
         ARGS.internal_security_conf = args[i];
+      }
+      else if (s.matches("no_latest_check")) {
+        ARGS.noLatestCheck = true;
       }
       else {
         parseFailed("Unknown argument (" + s + ")");
@@ -1244,7 +1250,7 @@ final public class H2O {
    * @return String of the form ipaddress:port
    */
   public static String getIpPortString() {
-    return H2O.SELF_ADDRESS.getHostAddress() + ":" + H2O.API_PORT;
+    return H2O.ARGS.disable_web? "" : H2O.SELF_ADDRESS.getHostAddress() + ":" + H2O.API_PORT;
   }
 
   public static String getURL(String schema) {
@@ -1340,8 +1346,8 @@ final public class H2O {
   /** If logging has not been setup yet, then Log.info will only print to
    *  stdout.  This allows for early processing of the '-version' option
    *  without unpacking the jar file and other startup stuff.  */
-  static void printAndLogVersion(String[] arguments) {
-    String latestVersion = ABV.getLatestH2OVersion();
+  private static void printAndLogVersion(String[] arguments) {
+    String latestVersion = ARGS.noLatestCheck ? "?" : ABV.getLatestH2OVersion();
     Log.init(ARGS.log_level, ARGS.quiet);
     Log.info("----- H2O started " + (ARGS.client?"(client)":"") + " -----");
     Log.info("Build git branch: " + ABV.branchName());
@@ -1408,11 +1414,12 @@ final public class H2O {
                ? (", discovery address "+CLOUD_MULTICAST_GROUP+":"+CLOUD_MULTICAST_PORT)
                : ", static configuration based on -flatfile "+ARGS.flatfile));
 
-    Log.info("If you have trouble connecting, try SSH tunneling from your local machine (e.g., via port 55555):\n" +
-            "  1. Open a terminal and run 'ssh -L 55555:localhost:"
-            + API_PORT + " " + System.getProperty("user.name") + "@" + SELF_ADDRESS.getHostAddress() + "'\n" +
-            "  2. Point your browser to " + jetty.getScheme() + "://localhost:55555");
-
+    if (!H2O.ARGS.disable_web) {
+      Log.info("If you have trouble connecting, try SSH tunneling from your local machine (e.g., via port 55555):\n" +
+          "  1. Open a terminal and run 'ssh -L 55555:localhost:"
+          + API_PORT + " " + System.getProperty("user.name") + "@" + SELF_ADDRESS.getHostAddress() + "'\n" +
+          "  2. Point your browser to " + jetty.getScheme() + "://localhost:55555");
+    }
 
     // Create the starter Cloud with 1 member
     SELF._heartbeat._jar_md5 = JarHash.JARHASH;
@@ -1473,7 +1480,7 @@ final public class H2O {
   /** Start the web service; disallow future URL registration.
    *  Blocks until the server is up.  */
   static public void finalizeRegistration() {
-    if (_doneRequests) return;
+    if (_doneRequests || H2O.ARGS.disable_web) return;
     _doneRequests = true;
 
     water.api.SchemaServer.registerAllSchemasIfNecessary();
@@ -1724,6 +1731,7 @@ final public class H2O {
 
   // --------------------------------------------------------------------------
   public static void main( String[] args ) {
+    long time0 = System.currentTimeMillis();
 
    if (checkUnsupportedJava())
      throw new RuntimeException("Unsupported Java version");
@@ -1750,6 +1758,7 @@ final public class H2O {
     parseArguments(arguments);
 
     // Get ice path before loading Log or Persist class
+    long time1 = System.currentTimeMillis();
     String ice = DEFAULT_ICE_ROOT();
     if( ARGS.ice_root != null ) ice = ARGS.ice_root.replace("\\", "/");
     try {
@@ -1759,6 +1768,7 @@ final public class H2O {
     }
 
     // Always print version, whether asked-for or not!
+    long time2 = System.currentTimeMillis();
     printAndLogVersion(arguments);
     if( ARGS.version ) {
       Log.flushStdout();
@@ -1766,7 +1776,10 @@ final public class H2O {
     }
 
     // Print help & exit
-    if( ARGS.help ) { printHelp(); exit(0); }
+    if (ARGS.help) {
+      printHelp();
+      exit(0);
+    }
 
     // Validate arguments
     validateArguments();
@@ -1775,11 +1788,12 @@ final public class H2O {
     Log.info("User name: '" + H2O.ARGS.user_name + "'");
 
     // Register with GA or not
-    List<String> gaidList = JarHash.getResourcesList("gaid");
+    long time3 = System.currentTimeMillis();
+    List<String> gaidList;  // fetching this list takes ~100ms
     if((new File(".h2o_no_collect")).exists()
             || (new File(System.getProperty("user.home")+File.separator+".h2o_no_collect")).exists()
             || ARGS.ga_opt_out
-            || gaidList.contains("CRAN")
+            || (gaidList = JarHash.getResourcesList("gaid")).contains("CRAN")
             || H2O.ABV.projectVersion().split("\\.")[3].equals("99999")) { // dev build has minor version 99999
       GA = null;
       Log.info("Opted out of sending usage metrics.");
@@ -1813,6 +1827,7 @@ final public class H2O {
     }
 
     // Epic Hunt for the correct self InetAddress
+    long time4 = System.currentTimeMillis();
     Log.info("IPv6 stack selected: " + IS_IPV6);
     SELF_ADDRESS = NetworkInit.findInetAddressForSelf();
     // Right now the global preference is to use IPv4 stack
@@ -1829,9 +1844,11 @@ final public class H2O {
     }
 
     // Start the local node.  Needed before starting logging.
+    long time5 = System.currentTimeMillis();
     startLocalNode();
 
     // Allow extensions to perform initialization that requires the network.
+    long time6 = System.currentTimeMillis();
     for (AbstractH2OExtension ext: extensions) {
       ext.onLocalNodeStarted();
     }
@@ -1847,6 +1864,7 @@ final public class H2O {
     Log.info("Cur dir: '" + System.getProperty("user.dir") + "'");
 
     //Print extra debug info now that logs are setup
+    long time7 = System.currentTimeMillis();
     RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();
     Log.debug("H2O launch parameters: "+ARGS.toString());
     Log.debug("Boot class path: "+ rtBean.getBootClassPath());
@@ -1854,6 +1872,7 @@ final public class H2O {
     Log.debug("Java library path: "+ rtBean.getLibraryPath());
 
     // Load up from disk and initialize the persistence layer
+    long time8 = System.currentTimeMillis();
     initializePersistence();
 
     // Initialize NPS
@@ -1879,11 +1898,13 @@ final public class H2O {
     }
 
     // Start network services, including heartbeats
+    long time9 = System.currentTimeMillis();
     startNetworkServices();   // start server services
     Log.trace("Network services started");
 
     // The "Cloud of size N formed" message printed out by doHeartbeat is the trigger
     // for users of H2O to know that it's OK to start sending REST API requests.
+    long time10 = System.currentTimeMillis();
     Paxos.doHeartbeat(SELF);
     assert SELF._heartbeat._cloud_hash != 0 || ARGS.client;
 
@@ -1892,11 +1913,27 @@ final public class H2O {
     // join an existing Cloud.
     new HeartBeatThread().start();
 
+    long time11 = System.currentTimeMillis();
     if (GA != null)
       startGAStartupReport();
 
     // Log registered parsers
     Log.info("Registered parsers: " + Arrays.toString(ParserService.INSTANCE.getAllProviderNames(true)));
+
+    long time12 = System.currentTimeMillis();
+    Log.debug("Timing within H2O.main():");
+    Log.debug("    Args parsing & validation: " + (time1 - time0) + "ms");
+    Log.debug("    Get ICE root: " + (time2 - time1) + "ms");
+    Log.debug("    Print log version: " + (time3 - time2) + "ms");
+    Log.debug("    Register GA: " + (time4 - time3) + "ms");
+    Log.debug("    Detect network address: " + (time5 - time4) + "ms");
+    Log.debug("    Start local node: " + (time6 - time5) + "ms");
+    Log.debug("    Extensions onLocalNodeStarted(): " + (time7 - time6) + "ms");
+    Log.debug("    RuntimeMxBean: " + (time8 - time7) + "ms");
+    Log.debug("    Initialize persistence layer: " + (time9 - time8) + "ms");
+    Log.debug("    Start network services: " + (time10 - time9) + "ms");
+    Log.debug("    Cloud up: " + (time11 - time10) + "ms");
+    Log.debug("    Start GA: " + (time12 - time11) + "ms");
   }
 
   // Die horribly
