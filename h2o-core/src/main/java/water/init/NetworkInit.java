@@ -392,7 +392,7 @@ public class NetworkInit {
     H2O.API_PORT = H2O.ARGS.port == 0 ? H2O.ARGS.baseport : H2O.ARGS.port;
 
     // Late instantiation of Jetty object, if needed.
-    if (H2O.getJetty() == null) {
+    if (H2O.getJetty() == null && !H2O.ARGS.disable_web) {
       H2O.setJetty(new JettyHTTPD());
     }
 
@@ -402,7 +402,7 @@ public class NetworkInit {
     // At this point we would like to allocate 2 consecutive ports
     //
     while (true) {
-      H2O.H2O_PORT = H2O.API_PORT+1;
+      H2O.H2O_PORT = H2O.API_PORT + 1;
       try {
         // kbn. seems like we need to set SO_REUSEADDR before binding?
         // http://www.javadocexamples.com/java/net/java.net.ServerSocket.html#setReuseAddress:boolean
@@ -431,12 +431,13 @@ public class NetworkInit {
         _tcpSocket.socket().bind(isa);
 
         // Warning: There is a ip:port race between socket close and starting Jetty
-        if (! H2O.ARGS.disable_web) {
+        if (!H2O.ARGS.disable_web) {
           apiSocket.close();
           H2O.getJetty().start(H2O.ARGS.web_ip, H2O.API_PORT);
         }
 
         break;
+
       } catch (Exception e) {
         Log.trace("Cannot allocate API port " + H2O.API_PORT + " because of following exception: ", e);
         if( apiSocket != null ) try { apiSocket.close(); } catch( IOException ohwell ) { Log.err(ohwell); }
@@ -460,15 +461,25 @@ public class NetworkInit {
     }
     boolean isIPv6 = H2O.SELF_ADDRESS instanceof Inet6Address; // Is IPv6 address was assigned to this node
     H2O.SELF = H2ONode.self(H2O.SELF_ADDRESS);
-    Log.info("Internal communication uses port: ", H2O.H2O_PORT, "\n" +
-             "Listening for HTTP and REST traffic on " + H2O.getURL(H2O.getJetty().getScheme()) + "/");
-    try { Log.debug("Interface MTU: ",  (NetworkInterface.getByInetAddress(H2O.SELF_ADDRESS)).getMTU());
-    } catch (SocketException se) { Log.debug("No MTU due to SocketException. "+se.toString()); }
+    if (!H2O.ARGS.disable_web) {
+      Log.info("Internal communication uses port: ", H2O.H2O_PORT, "\n" +
+          "Listening for HTTP and REST traffic on " + H2O.getURL(H2O.getJetty().getScheme()) + "/");
+    }
+    try {
+      Log.debug("Interface MTU: ", (NetworkInterface.getByInetAddress(H2O.SELF_ADDRESS)).getMTU());
+    } catch (SocketException se) {
+      Log.debug("No MTU due to SocketException. " + se.toString());
+    }
 
     String embeddedConfigFlatfile = null;
     AbstractEmbeddedH2OConfig ec = H2O.getEmbeddedH2OConfig();
     if (ec != null) {
-      ec.notifyAboutEmbeddedWebServerIpPort (H2O.SELF_ADDRESS, H2O.API_PORT);
+      // TODO: replace this call with ec.notifyAboutH2oCommunicationChannel(H2O.SELF_ADDRESS, H2O.H2O_PORT)
+      //       As of right now, the function notifies about the H2O.API_PORT, and then the listener adds +1
+      //       to that in order to determine the H2O_PORT (which what it really cares about). Such
+      //       assumption is dangerous: we should be free of using independent API_PORT and H2O_PORT,
+      //       including the ability of not using any API_PORT at all...
+      ec.notifyAboutEmbeddedWebServerIpPort(H2O.SELF_ADDRESS, H2O.API_PORT);
       if (ec.providesFlatfile()) {
         try {
           embeddedConfigFlatfile = ec.fetchFlatfile();
