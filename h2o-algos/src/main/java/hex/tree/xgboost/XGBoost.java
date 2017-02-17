@@ -478,7 +478,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         model._output._training_time_ms = ArrayUtils.copyAndFillOf(model._output._training_time_ms, model._output._ntrees+1, System.currentTimeMillis());
         if (stop_requested() && !timeout()) throw new Job.JobCancelledException();
         if (timeout()) { //stop after scoring
-          _job.update(_parms._ntrees); //mark progress as 100%
+          if (!scored) doScoring(model, model.model_info()._booster, trainMat, validMat, true);
+          _job.update(_parms._ntrees-model._output._ntrees); //finish
           break;
         }
       }
