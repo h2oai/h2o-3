@@ -333,6 +333,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (null != validationFrame)
       gbmParameters._valid = validationFrame._key;
     gbmParameters._response_column = buildSpec.input_spec.response_column;
+    gbmParameters._ignored_columns = buildSpec.input_spec.ignored_columns;
 
     // required for stacking:
     gbmParameters._nfolds = 5;

@@ -53,7 +53,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
   /** HIDEME! */
   private Leaderboard() {
-    throw new NotImplementedException();
+    throw new NotImplementedException(); // TODO: no, something else
   }
 
   /**
