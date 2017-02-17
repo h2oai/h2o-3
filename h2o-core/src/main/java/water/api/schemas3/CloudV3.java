@@ -36,7 +36,7 @@ public class CloudV3 extends RequestSchemaV3<Iced, CloudV3> {
 
   public CloudV3() {}
 
-  // This Schema has no inputs
+  // Input fields
   @API(help="skip_ticks", direction=API.Direction.INPUT)
   public boolean skip_ticks = false;
 
@@ -169,7 +169,7 @@ public class CloudV3 extends RequestSchemaV3<Iced, CloudV3> {
       // Basic system health
       this.h2o = h2o.toString();
       ip_port = h2o.getIpPortString();
-      healthy = (System.currentTimeMillis()-h2o._last_heard_from)<HeartBeatThread.TIMEOUT;
+      healthy = h2o.isHealthy();
       last_ping = h2o._last_heard_from;
       sys_load = hb._system_load_average;
       gflops = hb._gflops;

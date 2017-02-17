@@ -94,8 +94,10 @@ task generatePyProtoFiles(type: Exec) {
             "--python_out=${pyProtoDir}",
             "--grpc_python_out=${pyProtoDir}",
             // TODO: auto-detect the list of files and process them all at once
-            "${projectDir}/src/main/proto/core/common.proto",
-            "${projectDir}/src/main/proto/core/job.proto"
+            "${projectDir}/src/main/proto/common.proto",
+            "${projectDir}/src/main/proto/job.proto",
+            "${projectDir}/src/main/proto/cluster.proto",
+            "${projectDir}/src/main/proto/create_frame.proto",
     ])
 }
 
