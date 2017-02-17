@@ -165,8 +165,8 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
   @Ignore //too slow
   @Test public void convergenceGoogleNetGrayScale() { checkConvergence(1, DeepWaterParameters.Network.googlenet, 100); }
 
-  @Test public void convergenceLenetColor() { checkConvergence(3, lenet, 125); }
-  @Test public void convergenceLenetGrayScale() { checkConvergence(1, lenet, 100); }
+  @Test public void convergenceLenetColor() { checkConvergence(3, lenet, 200); }
+  @Test public void convergenceLenetGrayScale() { checkConvergence(1, lenet, 150); }
 
   @Ignore
   @Test public void convergenceVGGColor() { checkConvergence(3, DeepWaterParameters.Network.vgg, 50); }
@@ -686,7 +686,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       m = j.trainModel().get();
       Assert.assertTrue((m._output._training_metrics).rmse() < 5);
       preds = m.score(p._train.get());
-//      Assert.assertTrue(m.testJavaScoring(p._train.get(),preds,1e-3));
+      Assert.assertTrue(m.testJavaScoring(p._train.get(),preds,1e-3));
     } finally {
       if (tr!=null) tr.remove();
       if (m!=null) m.remove();
@@ -705,11 +705,11 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._train = (tr = parse_test_file("smalldata/deepwater/imagenet/binomial_image_urls.csv"))._key;
       p._response_column = "C2";
       p._balance_classes = true;
-      p._epochs = 5;
+      p._epochs = 10;
       p._seed = 1234;
       p._max_after_balance_size = 2f;
       p._class_sampling_factors = new float[]{3,5};
-      p._mini_batch_size = 16;
+      p._mini_batch_size = 32;
       DeepWater j = new DeepWater(p);
       m = j.trainModel().get();
       Assert.assertTrue((m._output._training_metrics).auc_obj()._auc > 0.85);
