@@ -222,9 +222,12 @@ public class SVDModel extends Model<SVDModel, SVDModel.SVDParameters, SVDModel.S
     bodySb.i(1).p("}").nl();
 
     // Numeric columns
-    bodySb.i(1).p("for(int j = 0; j < ").p(nums).p("; j++) {").nl();
-    bodySb.i(2).p("preds[i] += (data[PERMUTE[j" + (cats > 0 ? "+" + cats : "") + "]]-NORMSUB[j])*NORMMUL[j]*EIGVECS[j" + (cats > 0 ? "+ nstart" : "") +"][i];").nl();
-    bodySb.i(1).p("}").nl();
+    if (_output._nnums > 0) {
+      bodySb.i(1).p("for(int j = 0; j < ").p(nums).p("; j++) {").nl();
+      bodySb.i(2).p("preds[i] += (data[PERMUTE[j" + (cats > 0 ? "+" + cats : "") + "]]-NORMSUB[j])*NORMMUL[j]*EIGVECS[j" + (cats > 0 ? "+ nstart" : "") + "][i];").nl();
+      bodySb.i(1).p("}").nl();
+    }
+
     bodySb.i().p("}").nl();
   }
 }
