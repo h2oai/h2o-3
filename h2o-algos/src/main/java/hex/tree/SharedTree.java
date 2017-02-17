@@ -69,6 +69,15 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     return LinearAlgebraUtils.toEigen;
   }
 
+  @Override
+  protected void ignoreInvalidColumns(int npredictors, boolean expensive) {
+    // Drop invalid columns
+    new FilterCols(npredictors) {
+      @Override protected boolean filter(Vec v) {
+        return (v.max() > Float.MAX_VALUE ); }
+    }.doIt(_train,"Dropping columns with too large numeric values: ",expensive);
+  }
+
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
    *  and each subclass will start with "super.init();".  This call is made

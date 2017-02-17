@@ -154,8 +154,8 @@ public final class DHistogram extends Iced {
 
   static class StepOutOfRangeException extends RuntimeException {
 
-    public StepOutOfRangeException(double step, int xbins, double maxEx, double min) {
-      super("step=" + step + ", xbins = " + xbins + ", maxEx = " + maxEx + ", min = " + min);
+    public StepOutOfRangeException(String name, double step, int xbins, double maxEx, double min) {
+      super("column=" + name + " leads to invalid histogram(check numeric range) -> [max=" + maxEx + ", min = " + min + "], step= " + step + ", xbin= " + xbins);
     }
   }
   public DHistogram(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx,
@@ -190,7 +190,7 @@ public final class DHistogram extends Iced {
     } else {
       _step = xbins / (maxEx - min);              // Step size for linear interpolation, using mul instead of div
       if(_step <= 0 || Double.isInfinite(_step) || Double.isNaN(_step))
-        throw new StepOutOfRangeException(_step, xbins, maxEx, min);
+        throw new StepOutOfRangeException(name,_step, xbins, maxEx, min);
     }
     _nbin = (char) xbins;
     assert(_nbin>0);
