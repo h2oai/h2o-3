@@ -40,7 +40,7 @@ def imbalanced_gbm():
   print("")
   print("--------------------")
 
-  assert class_6_err_imbalanced >= 0.90*class_6_err_balanced, "balance_classes makes it at least 10% worse!"
+  assert class_6_err_imbalanced >= 0.90*class_6_err_balanced, "balance_classes makes it at least 10% worse: imbalanced %d, balanced %d" % (class_6_err_imbalanced, class_6_err_balanced)
 
 
 
