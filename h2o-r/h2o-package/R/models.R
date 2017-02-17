@@ -2902,7 +2902,7 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
 
   ## Change feature names to the original supplied, the following is okay because order is preserved
   pps <- res$partial_dependence_data
-  for(i in 1:length(pps)) if(!all(is.na( pps[[i]])) ) names(pps[[i]]) <- c(cols[i], "mean_response")
+  for(i in 1:length(pps)) if(!all(is.na( pps[[i]])) ) names(pps[[i]]) <- c(cols[i], "mean_response", "stddev_response")
 
   col_types = unlist(h2o.getTypes(data))
   col_names = names(data)
