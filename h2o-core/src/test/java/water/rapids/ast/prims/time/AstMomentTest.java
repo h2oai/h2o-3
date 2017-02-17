@@ -11,6 +11,7 @@ import water.parser.ParseTime;
 import water.rapids.Rapids;
 import water.rapids.Session;
 import water.rapids.Val;
+import water.util.Log;
 
 import java.util.Random;
 
@@ -264,7 +265,9 @@ public class AstMomentTest extends TestUtil {
    * supposed to create, even if the input frame has multiple chunks.
    */
   @Test public void testMultiChunkedFrame() {
-    Random rnd = new Random(123);
+    long seed = new Random().nextLong();
+    Log.info("In testMultiChunkedFrame: using seed " + seed);
+    Random rnd = new Random(seed);
     int N = 30000;
     long[] years = new long[N];
     long[] months = new long[N];
