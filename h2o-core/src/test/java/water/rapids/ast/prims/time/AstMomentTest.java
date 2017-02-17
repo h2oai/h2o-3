@@ -1,7 +1,5 @@
 package water.rapids.ast.prims.time;
 
-import org.joda.time.DateTimeZone;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Scope;
@@ -21,16 +19,8 @@ import static org.junit.Assert.*;
 /**
  */
 public class AstMomentTest extends TestUtil {
-  private static DateTimeZone _tz;
-
   @BeforeClass public static void setup() {
     stall_till_cloudsize(1);
-    _tz = ParseTime.getTimezone();
-    ParseTime.setTimezone("UTC");
-  }
-
-  @AfterClass public static void teardown() {
-    ParseTime.setTimezone(_tz.getID());
   }
 
 
@@ -309,6 +299,7 @@ public class AstMomentTest extends TestUtil {
       assertEquals(1, f1.numCols());
       assertEquals(N, f1.numRows());
 
+      ParseTime.setTimezone("UTC");  // having a global timezone setting is evil...
       Frame f1y = Rapids.exec("(year $f1)->$fy", s).getFrame();
       Frame f1m = Rapids.exec("(month $f1)->$fm", s).getFrame();
       Frame f1d = Rapids.exec("(day $f1)->$fd", s).getFrame();
