@@ -10,6 +10,7 @@ import hex.grid.Grid;
 import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria;
 import hex.tree.SharedTreeModel;
+import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBMModel;
 import water.*;
 import water.api.schemas3.ImportFilesV3;
@@ -282,9 +283,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
    * Helper for hex.ModelBuilder.
    * @return
    */
-  public Job trainModel(String algoURLName, Model.Parameters parms) {
+  public Job trainModel(Key<Model> key, String algoURLName, Model.Parameters parms) {
     String algoName = ModelBuilder.algoName(algoURLName);
-    Key<Model> key = ModelBuilder.defaultKey(algoName);
+    if (null == key) key = ModelBuilder.defaultKey(algoName);
     Job job = new Job<>(key,ModelBuilder.javaName(algoURLName), algoName);
 
     ModelBuilder builder = ModelBuilder.make(algoURLName, job, key);
@@ -317,6 +318,44 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     return gridJob;
   }
+
+
+  Job<DRFModel>defaultRandomForest() {
+    DRFModel.DRFParameters drfParameters = new DRFModel.DRFParameters();
+    drfParameters._train = trainingFrame._key;
+    if (null != validationFrame)
+      drfParameters._valid = validationFrame._key;
+    drfParameters._response_column = buildSpec.input_spec.response_column;
+    drfParameters._ignored_columns = buildSpec.input_spec.ignored_columns;
+
+    // required for stacking:
+    drfParameters._nfolds = 5;
+    drfParameters._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+    drfParameters._keep_cross_validation_predictions = true;
+
+    Job randomForestJob = trainModel(null, "drf", drfParameters);
+    return randomForestJob;
+  }
+
+
+  Job<DRFModel>defaultExtremelyRandomTrees() {
+    DRFModel.DRFParameters drfParameters = new DRFModel.DRFParameters();
+    drfParameters._train = trainingFrame._key;
+    if (null != validationFrame)
+      drfParameters._valid = validationFrame._key;
+    drfParameters._response_column = buildSpec.input_spec.response_column;
+    drfParameters._ignored_columns = buildSpec.input_spec.ignored_columns;
+    drfParameters._histogram_type = SharedTreeModel.SharedTreeParameters.HistogramType.Random;
+
+    // required for stacking:
+    drfParameters._nfolds = 5;
+    drfParameters._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+    drfParameters._keep_cross_validation_predictions = true;
+
+    Job randomForestJob = trainModel(ModelBuilder.defaultKey("XRT"), "drf", drfParameters);
+    return randomForestJob;
+  }
+
 
   public Job<Grid> defaultSearchGBM() {
     ///////////////////////////////////////////////////////////
@@ -382,7 +421,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       stackedEnsembleParameters._valid = validationFrame._key;
     stackedEnsembleParameters._response_column = buildSpec.input_spec.response_column;
 
-    Job ensembleJob = trainModel("stackedensemble", stackedEnsembleParameters);
+    Job ensembleJob = trainModel(null, "stackedensemble", stackedEnsembleParameters);
     return ensembleJob;
   }
 
@@ -417,8 +456,27 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     isClassification = frameMetadata.isClassification();
 
     ///////////////////////////////////////////////////////////
-    // TODO: build a fast RF
+    // build a fast RF with default settings...
     ///////////////////////////////////////////////////////////
+    Job<DRFModel>defaultRandomForestJob = defaultRandomForest();
+
+    pollAndUpdateProgress("Default Random Forest build", 50, this.job(), defaultRandomForestJob);
+
+    DRFModel defaultDRF = (DRFModel)defaultRandomForestJob.get();
+    leaderboard.addModel(defaultDRF);
+
+
+    ///////////////////////////////////////////////////////////
+    // ... and another with "XRT" / extratrees settings
+    ///////////////////////////////////////////////////////////
+    Job<DRFModel>defaultExtremelyRandomTreesJob = defaultExtremelyRandomTrees();
+
+    pollAndUpdateProgress("Default Extremely Random Trees (XRT) build", 50, this.job(), defaultExtremelyRandomTreesJob);
+
+    DRFModel defaultXRT = (DRFModel)defaultExtremelyRandomTreesJob.get();
+    leaderboard.addModel(defaultXRT);
+
+
 
 
     ///////////////////////////////////////////////////////////
@@ -426,7 +484,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     ///////////////////////////////////////////////////////////
 
     Job<Grid>gbmJob = defaultSearchGBM();
-    pollAndUpdateProgress("GBM hyperparameter search", 900, this.job(), gbmJob);
+    pollAndUpdateProgress("GBM hyperparameter search", 800, this.job(), gbmJob);
 
     Grid gbmGrid = DKV.getGet(gbmJob._result);
     leaderboard.addModels(gbmGrid.getModelKeys());
@@ -445,8 +503,20 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       // stack all models
       ///////////////////////////////////////////////////////////
 
-      // TODO: Also stack models from other AutoML runs, by using the Leaderboard!
-      Job<StackedEnsembleModel>ensembleJob = stack(gbmJob.get().getModelKeys());
+      // Also stack models from other AutoML runs, by using the Leaderboard! (but don't stack stacks)
+      Model[] all = leaderboard().models();
+      int nonEnsembleCount = 0;
+      for (Model aModel : all)
+        if (! (aModel instanceof StackedEnsembleModel))
+          nonEnsembleCount++;
+
+      Key<Model>[] notEnsembles = new Key[nonEnsembleCount];
+      int notEnsembleIndex = 0;
+      for (Model aModel : all)
+        if (! (aModel instanceof StackedEnsembleModel))
+          notEnsembles[notEnsembleIndex++] = aModel._key;
+
+      Job<StackedEnsembleModel>ensembleJob = stack(notEnsembles);
 
       pollAndUpdateProgress("StackedEnsemble build", 100, this.job(), ensembleJob);
 

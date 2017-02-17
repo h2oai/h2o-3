@@ -24,7 +24,7 @@ public class H2OJob {
   }
 
   public Job start() {
-    Job j = new Job<>(_key,_target.getClass().getName(), _target.getClass().getName());
+    Job j = new Job<>(_key,_target.getClass().getName(), _target.getClass().getSimpleName() + " build");
     j._max_runtime_msecs = _max_runtime_msecs;
     _jobKey=j._key;
     return j.start(new H2O.H2OCountedCompleter() {
