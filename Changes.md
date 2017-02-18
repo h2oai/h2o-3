@@ -27,6 +27,8 @@
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-683'>HEXDEV-683</a>] -         POJO doesn&#39;t include Forest classes
 </li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4044'>PUBDEV-4044</a>] -         moment producing wrong dates
+</li>
 </ul>
 
 ###Tverberg (3.10.3.4) - 2/3/2017
