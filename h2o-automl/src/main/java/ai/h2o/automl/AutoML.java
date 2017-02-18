@@ -287,8 +287,14 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     String algoName = ModelBuilder.algoName(algoURLName);
     if (null == key) key = ModelBuilder.defaultKey(algoName);
     Job job = new Job<>(key,ModelBuilder.javaName(algoURLName), algoName);
-
     ModelBuilder builder = ModelBuilder.make(algoURLName, job, key);
+
+    if (builder._parms._max_runtime_secs == 0)
+      builder._parms._max_runtime_secs = Math.round(timeRemainingMs() / 1000.0);
+    else
+      builder._parms._max_runtime_secs = Math.min(builder._parms._max_runtime_secs,
+                                         Math.round(timeRemainingMs() / 1000.0));
+
     builder._parms = parms;
     builder.init(false);          // validate parameters
 
@@ -308,13 +314,18 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   public Job<Grid> hyperparameterSearch(String algoName, Model.Parameters baseParms, Map<String, Object[]> searchParms) {
     Log.info("AutoML: starting " + algoName + " hyperparameter search");
     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria = (HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria)buildSpec.build_control.stopping_criteria.clone();
-    searchCriteria.set_max_runtime_secs(this.timeRemainingMs() / 1000.0);
+
+    if (searchCriteria.max_runtime_secs() == 0)
+      searchCriteria.set_max_runtime_secs(this.timeRemainingMs() / 1000.0);
+    else
+      searchCriteria.set_max_runtime_secs(Math.min(searchCriteria.max_runtime_secs(),
+                                                   this.timeRemainingMs() / 1000.0));
 
     Job<Grid> gridJob = GridSearch.startGridSearch(gridKey,
             baseParms,
             searchParms,
             new GridSearch.SimpleParametersBuilderFactory(),
-            buildSpec.build_control.stopping_criteria);
+            searchCriteria);
 
     return gridJob;
   }
