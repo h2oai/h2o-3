@@ -108,7 +108,7 @@ public class AstMoment extends AstBuiltin<AstMoment> {
     int[] cm = ArrayUtils.toPrimitive(chunksmap);
     Frame fr = new SetTimeTask(timeparts, cm)
         .doAll(Vec.T_TIME, vecs)
-        .outputFrame(Key.<Frame>make(), new String[]{"time"}, null);
+        .outputFrame(new String[]{"time"}, null);
 
     return new ValFrame(fr);
   }
@@ -142,6 +142,8 @@ public class AstMoment extends AstBuiltin<AstMoment> {
       assert chks.length == nVecs;
       Chronology chronology = ISOChronology.getInstanceUTC();
       int nChunkRows = chks[0]._len;
+      int[] tpl = new int[tp.length];
+      System.arraycopy(tp, 0, tpl, 0, tp.length);
 
       BYROW:
       for (int i = 0; i < nChunkRows; i++) {
@@ -151,10 +153,10 @@ public class AstMoment extends AstBuiltin<AstMoment> {
             nc.addNum(Double.NaN);
             continue BYROW;
           }
-          tp[cm[j]] = (int) d;
+          tpl[cm[j]] = (int) d;
         }
         try {
-          double millis = chronology.getDateTimeMillis(tp[0], tp[1], tp[2], tp[3], tp[4], tp[5], tp[6]);
+          double millis = chronology.getDateTimeMillis(tpl[0], tpl[1], tpl[2], tpl[3], tpl[4], tpl[5], tpl[6]);
           nc.addNum(millis);
         } catch (IllegalFieldValueException e) {
           nc.addNum(Double.NaN);
