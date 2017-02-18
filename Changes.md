@@ -2,6 +2,35 @@
 
 ##H2O
 
+###Tverberg (3.10.3.5) - 2/16/2017
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3848'>PUBDEV-3848</a>] -         GLM with interaction parameter and cross-validation cause Exception
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3916'>PUBDEV-3916</a>] -         pca: hangs on attached data
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3964'>PUBDEV-3964</a>] -         StepOutOfRangeException when building GBM model
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3976'>PUBDEV-3976</a>] -         py unique() returns frame of integers (since epoch) instead of frame of unique dates
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3979'>PUBDEV-3979</a>] -         py date comparisons don&#39;t work for rows &gt; 1
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3980'>PUBDEV-3980</a>] -         AstUnique drops column types
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4013'>PUBDEV-4013</a>] -         In R, the confusion matrix at the end doesn’t say: vertical: actual, across: predicted
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4014'>PUBDEV-4014</a>] -         AIOOB  in GLM with hex.DataInfo.getCategoricalId(DataInfo.java:952) is the error with 2 fold cross validation
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4036'>PUBDEV-4036</a>] -         Parse fails when trying to parse large number of Parquet files
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-683'>HEXDEV-683</a>] -         POJO doesn&#39;t include Forest classes
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4044'>PUBDEV-4044</a>] -         moment producing wrong dates
+</li>
+</ul>
+
 ###Tverberg (3.10.3.4) - 2/3/2017
 
 <h2>        Bug
