@@ -5,6 +5,8 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.DateTimeFormatterBuilder;
+
+import water.MRTask;
 import water.util.Log;
 
 import java.util.Iterator;
@@ -343,12 +345,18 @@ public abstract class ParseTime {
 
   private static DateTimeZone _timezone;
 
-  public static void setTimezone(String tz) {
+  public static void setTimezone(final String tz) {
     Set<String> idSet = DateTimeZone.getAvailableIDs();
-    if(idSet.contains(tz))
-      _timezone = DateTimeZone.forID(tz);
-    else
+    if (idSet.contains(tz)) {
+      new MRTask() {
+        @Override
+        protected void setupLocal() {
+          ParseTime._timezone = DateTimeZone.forID(tz);
+        }
+      }.doAllNodes();
+    } else {
       Log.err("Attempted to set unrecognized timezone: "+ tz);
+    }
   }
 
   public static DateTimeZone getTimezone() {
