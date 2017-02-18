@@ -13,7 +13,7 @@ def imbalanced_gbm():
   hh_imbalanced = H2OGradientBoostingEstimator(ntrees=10,
                                                nfolds=3,
                                                distribution="multinomial",
-                                               balance_classes=False)
+                                               balance_classes=False, seed=123456789)
   hh_imbalanced.train(x=list(range(54)), y=54, training_frame=covtype)
   hh_imbalanced_perf = hh_imbalanced.model_performance(covtype)
   hh_imbalanced_perf.show()
@@ -21,7 +21,7 @@ def imbalanced_gbm():
   hh_balanced = H2OGradientBoostingEstimator(ntrees=10,
                                              nfolds=3,
                                              distribution="multinomial",
-                                             balance_classes=True)
+                                             balance_classes=True, seed=123456789)
   hh_balanced.train(x=list(range(54)), y=54, training_frame=covtype)
   hh_balanced_perf = hh_balanced.model_performance(covtype)
   hh_balanced_perf.show()
