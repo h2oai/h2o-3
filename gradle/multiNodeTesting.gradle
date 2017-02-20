@@ -1,9 +1,7 @@
 // Actually run the tests by building a cluster of free-running JVMs first.
 task testSingleNode(type: Exec) {
     dependsOn jar, testJar
-    if (project.hasProperty("java6Convert")) {
-      environment "TEST_JAVA_HOME", System.getenv("JAVA_6_HOME")
-    }
+    
     environment "PROJECT_NAME", project.name
     environment "BUILD_DIR", project.buildDir
 
@@ -29,9 +27,7 @@ task testSingleNodeOneProc(type: Exec) {
 }
 task testMultiNode(type: Exec) {
     dependsOn jar, testJar
-    if (project.hasProperty("java6Convert")) {
-      environment "TEST_JAVA_HOME", System.getenv("JAVA_6_HOME")
-    }
+    
     environment "PROJECT_NAME", project.name
     environment "BUILD_DIR", project.buildDir
 
