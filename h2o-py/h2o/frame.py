@@ -2343,6 +2343,27 @@ class H2OFrame(object):
         if max_cardinality <= 0: raise H2OValueError("max_cardinality must be greater than 0")
         return H2OFrame._expr(expr=ExprNode("isax", self, num_words, max_cardinality, optimize_card))
 
+    def pivot(self, index, column, value):
+        """
+        Pivot the frame designated by the three columns: index, column, and value
+        Index is a column that will be the row label
+        Column is a column that contains categorical levels which will each be turned into a column
+        Value is a column associated with an index and column
+
+        :param index:
+        :param column:
+        :param value:
+        :return:
+        """
+        if index not in self.names:
+            raise H2OValueError("Index not in H2OFrame")
+        if column not in self.names:
+            raise H2OValueError("Column not in H2OFrame")
+        if value not in self.names:
+            raise H2OValueError("Value column not in H2OFrame")
+        if self.type(column) not in ["enum","time","int"]:
+            raise H2OValueError("'column' argument is not type enum, time or int")
+        return H2OFrame._expr(expr=ExprNode("pivot",self,index,column,value))
 
     def sub(self, pattern, replacement, ignore_case=False):
         """
