@@ -6,8 +6,10 @@ import org.junit.Test;
 import water.*;
 import water.fvec.*;
 import water.parser.ParseDataset;
+import water.util.FileUtils;
 import water.util.Log;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
+
 import java.util.HashSet;
 
 public class DeepLearningAutoEncoderTest extends TestUtil {
@@ -33,9 +35,9 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
 
     try {
 
-      NFSFileVec  nfs = NFSFileVec.make(find_test_file(PATH));
+      NFSFileVec  nfs = NFSFileVec.make(FileUtils.locateFile(PATH));
       train = ParseDataset.parse(Key.make("train.hex"), nfs._key);
-      NFSFileVec  nfs2 = NFSFileVec.make(find_test_file(PATH2));
+      NFSFileVec  nfs2 = NFSFileVec.make(FileUtils.locateFile(PATH2));
       test = ParseDataset.parse(Key.make("test.hex"), nfs2._key);
 
       for (float sparsity_beta : new float[]{0, 0.1f}) {

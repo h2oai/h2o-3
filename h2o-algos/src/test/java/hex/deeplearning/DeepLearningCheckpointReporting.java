@@ -13,6 +13,7 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
+import water.util.FileUtils;
 import water.util.TwoDimTable;
 
 import java.io.File;
@@ -24,7 +25,7 @@ public class DeepLearningCheckpointReporting extends TestUtil {
     Scope.enter();
     Frame frame = null;
     try {
-      File file = find_test_file("smalldata/logreg/prostate.csv");
+      File file = FileUtils.locateFile("smalldata/logreg/prostate.csv");
       NFSFileVec trainfv = NFSFileVec.make(file);
       frame = ParseDataset.parse(Key.make(), trainfv._key);
       DeepLearningParameters p = new DeepLearningParameters();

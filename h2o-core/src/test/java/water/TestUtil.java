@@ -1,6 +1,5 @@
 package water;
 
-import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -13,10 +12,8 @@ import water.parser.BufferedString;
 import water.parser.DefaultParserProviders;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
-import water.util.Log;
-import water.util.StringUtils;
+import water.util.*;
 import water.util.Timer;
-import water.util.TwoDimTable;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,9 +21,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @Ignore("Support for tests, but no actual tests here")
 public class TestUtil extends Iced {
@@ -192,28 +187,6 @@ public class TestUtil extends Iced {
 
   // ==== Data Frame Creation Utilities ====
 
-  /** Hunt for test files in likely places.  Null if cannot find.
-   *  @param fname Test filename
-   *  @return      Found file or null */
-  public static File find_test_file_static(String fname) {
-    // When run from eclipse, the working directory is different.
-    // Try pointing at another likely place
-    File file = new File(fname);
-    if( !file.exists() )
-      file = new File("target/" + fname);
-    if( !file.exists() )
-      file = new File("../" + fname);
-    if( !file.exists() )
-      file = new File("../../" + fname);
-    if( !file.exists() )
-      file = new File("../target/" + fname);
-    if( !file.exists() )
-      file = new File(StringUtils.expandPath(fname));
-    if( !file.exists() )
-      file = null;
-    return file;
-  }
-
   /** Compare 2 frames
    *  @param fr1 Frame
    *  @param fr2 Frame
@@ -238,29 +211,21 @@ public class TestUtil extends Iced {
     return isIdenticalUpToRelTolerance(fr1,fr2,0);
   }
 
-  /** Hunt for test files in likely places.  Null if cannot find.
-   *  @param fname Test filename
-   *  @return      Found file or null */
-  protected File find_test_file(String fname) {
-    return find_test_file_static(fname);
-  }
-
-  private static void checkFileEntry(String name, File file) {
-    assertNotNull("File not found: " + name, file);
-    assertTrue("File should exist: " + name, file.exists());
-  }
-
   public static void checkFile(String name, File file) {
-    checkFileEntry(name, file);
-    assertTrue("Expected a readable file: " + name, file.canRead());
+    try {
+      FileUtils.checkFile(file, name);
+    } catch (IOException ioe) {
+      fail(ioe.getMessage());
+    }
   }
 
-  static File[] checkFolder(String name, File folder) {
-    checkFileEntry(name, folder);
-    assertTrue("Expected a folder: " + name, folder.isDirectory());
-    File[] files = folder.listFiles();
-    assertNotNull("No files found in " + folder, files);
-    return files;
+  static File[] contentsOf(String name, File folder) {
+    try {
+      return FileUtils.contentsOf(folder, name);
+    } catch (IOException ioe) {
+      fail(ioe.getMessage());
+      return null;
+    }
   }
 
   /** Find & parse a CSV file.  NPE if file not found.
@@ -268,23 +233,25 @@ public class TestUtil extends Iced {
    *  @return      Frame or NPE */
   public static Frame parse_test_file( String fname ) { return parse_test_file(Key.make(),fname); }
   public static Frame parse_test_file( Key outputKey, String fname) {
-    File f = find_test_file_static(fname);
-    checkFile(fname, f);
-    NFSFileVec nfs = NFSFileVec.make(f);
+    NFSFileVec nfs = makeNfsFileVec(fname);
     return ParseDataset.parse(outputKey, nfs._key);
   }
 
+  static NFSFileVec makeNfsFileVec(String fname) {
+    File f = FileUtils.locateFile(fname);
+    checkFile(fname, f);
+    return NFSFileVec.make(f);
+  }
+
   protected Frame parse_test_file( Key outputKey, String fname , boolean guessSetup) {
-    File f = find_test_file(fname);
+    File f = FileUtils.locateFile(fname);
     checkFile(fname, f);
     NFSFileVec nfs = NFSFileVec.make(f);
     return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, ParseSetup.guessSetup(new Key[]{nfs._key},false,1));
   }
 
   protected Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types ) {
-    File f = find_test_file_static(fname);
-    checkFile(fname, f);
-    NFSFileVec nfs = NFSFileVec.make(f);
+    NFSFileVec nfs = makeNfsFileVec(fname);
 
     Key[] res = {nfs._key};
 
@@ -317,8 +284,8 @@ public class TestUtil extends Iced {
    *  @param fname Test filename
    *  @return      Frame or NPE */
   protected Frame parse_test_folder( String fname ) {
-    File folder = find_test_file(fname);
-    File[] files = checkFolder(fname, folder);
+    File folder = FileUtils.locateFile(fname);
+    File[] files = contentsOf(fname, folder);
     Arrays.sort(files);
     ArrayList<Key> keys = new ArrayList<>();
     for( File f : files )
@@ -338,8 +305,8 @@ public class TestUtil extends Iced {
    * @return
    */
   protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types ) {
-    File folder = find_test_file_static(fname);
-    File[] files = checkFolder(fname, folder);
+    File folder = FileUtils.locateFile(fname);
+    File[] files = contentsOf(fname, folder);
     Arrays.sort(files);
     ArrayList<Key> keys = new ArrayList<>();
     for( File f : files )
@@ -756,7 +723,7 @@ public class TestUtil extends Iced {
     public void done(Frame frame) {
       if (generatedFile != null) {
         generatedFile.deleteOnExit();
-        FileUtils.deleteQuietly(generatedFile);
+        org.apache.commons.io.FileUtils.deleteQuietly(generatedFile);
       }
     }
   }

@@ -9,6 +9,7 @@ import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
+import water.util.FileUtils;
 import water.util.FrameUtils;
 import water.util.Log;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
@@ -19,7 +20,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
 
   @Test
   public void run() {
-    NFSFileVec ff = NFSFileVec.make(find_test_file("smalldata/junit/weather.csv"));
+    NFSFileVec ff = NFSFileVec.make(FileUtils.locateFile("smalldata/junit/weather.csv"));
     Frame golden = ParseDataset.parse(Key.make("golden.hex"), ff._key);
 
     DeepLearningModel mymodel = null;
@@ -39,7 +40,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
       double[] numbers = new double[N];
       for (int repeat = 0; repeat < N; ++repeat) {
         try {
-          NFSFileVec file = NFSFileVec.make(find_test_file("smalldata/junit/weather.csv"));
+          NFSFileVec file = NFSFileVec.make(FileUtils.locateFile("smalldata/junit/weather.csv"));
           data = ParseDataset.parse(Key.make("data.hex"), file._key);
           Assert.assertTrue(TestUtil.isBitIdentical(data, golden)); //test parser consistency
 

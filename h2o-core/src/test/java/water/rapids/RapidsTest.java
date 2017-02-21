@@ -14,6 +14,7 @@ import water.rapids.ast.params.AstNumList;
 import water.rapids.ast.params.AstStr;
 import water.rapids.vals.ValFrame;
 import water.util.ArrayUtils;
+import water.util.FileUtils;
 import water.util.Log;
 
 import java.io.File;
@@ -461,7 +462,7 @@ public class RapidsTest extends TestUtil {
       parse_test_file(Key.make("weather.hex"),"smalldata/chicago/chicagoAllWeather.csv");
       parse_test_file(Key.make( "crimes.hex"),"smalldata/chicago/chicagoCrimes10k.csv.zip");
       String fname = "smalldata/chicago/chicagoCensus.csv";
-      File f = find_test_file(fname);
+      File f = FileUtils.locateFile(fname);
       assert f != null && f.exists():" file not found: " + fname;
       NFSFileVec nfs = NFSFileVec.make(f);
       ParseSetup ps = ParseSetup.guessSetup(new Key[]{nfs._key}, false, 1);

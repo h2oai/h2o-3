@@ -7,6 +7,7 @@ import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.parser.BufferedString;
+import static water.util.FileUtils.*;
 import water.util.IcedLong;
 
 import java.util.Map;
@@ -55,7 +56,7 @@ public class WordCountTaskTest extends TestUtil {
   @Test
   public void testWordCountText8() {
     String fName = "bigdata/laptop/text8.gz";
-    assumeThat("text8 data available", find_test_file_static(fName), is(notNullValue())); // only run if text8 is present
+    assumeThat("text8 data available", locateFile(fName), is(notNullValue())); // only run if text8 is present
     Frame fr = parse_test_file(fName, "NA", 0, new byte[]{Vec.T_STR});
     try {
       Map<BufferedString, IcedLong> counts = new WordCountTask().doAll(fr.vec(0))._counts;

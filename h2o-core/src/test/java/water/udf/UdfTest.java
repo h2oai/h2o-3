@@ -17,6 +17,7 @@ import static org.junit.Assert.*;
 import static water.udf.specialized.Dates.*;
 import static water.udf.specialized.Doubles.*;
 import static water.udf.specialized.Strings.*;
+import static water.util.FileUtils.*;
 /**
  * Test for UDF
  */
