@@ -269,7 +269,10 @@ final public class DeepWaterModelInfo extends Iced {
     try {
       file = new File(System.getProperty("java.io.tmpdir"), Key.make().toString());
       _backend.saveParam(_model, file.toString());
-      _modelparams = _backend.readParams(file);
+      FileInputStream is = new FileInputStream(file);
+      _modelparams = new byte[(int)file.length()];
+      is.read(_modelparams);
+      is.close();
     } catch (IOException e) {
       e.printStackTrace();
     } finally { if (file !=null) file.delete(); }
@@ -324,7 +327,9 @@ final public class DeepWaterModelInfo extends Iced {
     // always overwrite the parameters (weights/biases)
     try {
       file = new File(System.getProperty("java.io.tmpdir"), Key.make().toString());
-      _backend.writeParams(file, parameters);
+      FileOutputStream os = new FileOutputStream(file);
+      os.write(parameters);
+      os.close();
       _backend.loadParam(_model, file.toString());
     } catch (IOException e) {
       e.printStackTrace();

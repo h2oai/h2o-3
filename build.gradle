@@ -179,7 +179,7 @@ subprojects {
         maven {
           url "http://repository.mapr.com/maven/"
         }
-        mavenLocal()
+//        mavenLocal()
     }
 
     // Publish artifacts - we should filter subproject in future but now apply publisher plugin

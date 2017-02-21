@@ -280,7 +280,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
 
 
       BackendTrain backend = DeepwaterMojoModel.createDeepWaterBackend(getBackend().toString());
-      int h1 = Arrays.hashCode(m1.model_info()._modelparams);
+      int h1 = backend.paramHash(m1.model_info()._modelparams);
       m1.doScoring(tr,null,j1._key,m1.iterations,true);
       double l1 = m1.loss();
       // second model (different seed)
@@ -290,14 +290,14 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
 //      m2.doScoring(tr,null,j2._key,m2.iterations,true);
 //      double l2 = m2.loss();
 
-      int h2 = Arrays.hashCode(m2.model_info()._modelparams);
+      int h2 = backend.paramHash(m2.model_info()._modelparams);
       // turn the second model into the first model
       m2.removeNativeState();
       DeepWaterModelInfo mi = IcedUtils.deepCopy(m1.model_info());
       m2.set_model_info(mi);
       m2.doScoring(tr,null,j2._key,m2.iterations,true);
       double l3 = m2.loss();
-      int h3 = Arrays.hashCode(m2.model_info()._modelparams);
+      int h3 = backend.paramHash(m2.model_info()._modelparams);
 
       Log.info("Checking assertions for network: " + network);
       Assert.assertNotEquals(h1, h2);
@@ -376,7 +376,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
 
       int hashCodeNetwork = java.util.Arrays.hashCode(m.model_info()._network);
       BackendTrain backend = DeepwaterMojoModel.createDeepWaterBackend(getBackend().toString());
-      int hashCodeParams = Arrays.hashCode(m.model_info()._modelparams);
+      int hashCodeParams = backend.paramHash(m.model_info()._modelparams);
       Log.info("Hash code for original network: " + hashCodeNetwork);
       Log.info("Hash code for original parameters: " + hashCodeParams);
 
@@ -385,7 +385,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       m.model_info().javaToNative();
       m.model_info().nativeToJava();
       int hashCodeNetwork2 = java.util.Arrays.hashCode(m.model_info()._network);
-      int hashCodeParams2 = Arrays.hashCode(m.model_info()._modelparams);
+      int hashCodeParams2 = backend.paramHash(m.model_info()._modelparams);
       Log.info("Hash code for restored network: " + hashCodeNetwork2);
       Log.info("Hash code for restored parameters: " + hashCodeParams2);
       Assert.assertEquals(hashCodeNetwork, hashCodeNetwork2);
