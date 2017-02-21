@@ -291,7 +291,7 @@ class ScalaUdfTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
 
     assert(ss.size == split.size())
     
-    val frame: UnfoldingFrame[String] = new UnfoldingFrame[String](Strings, split.size, split, 11)
+    val frame = new UnfoldingFrame[String, DataColumn[String]](Strings, split.size, split, 11)
     
     val matrix: MatrixFrame[DataColumn[String]] = frame.materialize
 
