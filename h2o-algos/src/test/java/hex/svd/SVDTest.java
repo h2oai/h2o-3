@@ -2,6 +2,8 @@ package hex.svd;
 
 import hex.DataInfo;
 import hex.SplitFrame;
+import hex.pca.PCA;
+import hex.pca.PCAModel;
 import hex.svd.SVDModel.SVDParameters;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -12,6 +14,7 @@ import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.FrameUtils;
 import water.util.Log;
 
@@ -394,4 +397,42 @@ public class SVDTest extends TestUtil {
     SVD.updateIVVSum(res, v);
     Assert.assertArrayEquals(xvv, res);
   }
+
+  /* Make sure POJO works if the model is only built from categorical variables (no numeric columns) */
+  @Test public void testCatOnlyPUBDEV3988() throws InterruptedException, ExecutionException {
+    SVDModel model = null;
+    Frame train = null, score = null;
+    try {
+      train = parse_test_file(Key.make("prostate_cat.hex"), "smalldata/prostate/prostate_cat.csv");
+      for (int i = train.numCols() - 1; i > 0; i--) {
+        Vec v = train.vec(i);
+        if (v.get_type() != Vec.T_CAT) {
+          train.remove(i);
+          Vec.remove(v._key);
+        }
+      }
+      DKV.put(train);
+
+      SVDParameters parms = new SVDParameters();
+      parms._train = train._key;
+      parms._nv = 2;
+      parms._only_v = false;
+      parms._keep_u = true;
+      parms._svd_method = SVDParameters.Method.Randomized;
+      parms._impute_missing = true;
+      parms._max_iterations = 20;
+      parms._save_v_frame = false;
+
+      model = new SVD(parms).trainModel().get();
+      score = model.score(train);
+
+      // Build a POJO, check results with original SVD
+      Assert.assertTrue(model.testJavaScoring(train,score,TOLERANCE));
+    } finally {
+      if (train != null) train.delete();
+      if (score != null) score.delete();
+      if (model != null) model.delete();
+    }
+  }
+
 }
