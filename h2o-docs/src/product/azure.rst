@@ -10,7 +10,7 @@ This section describes the H2O Application for HDInsight on Microsoft Azure:
 H2O Artificial Intelligence for HDInsight
 -----------------------------------------
 
-The H2O Artificial Intelligence for HDInsight is an application you can install during the creation of a new HDInsight Cluster on Azure. This solution will install Sparkling Water on your spark cluster so you can exploit all the benefits from both Spark and H2O. 
+The H2O Artificial Intelligence for HDInsight is an application you can install during the creation of a new HDInsight cluster on Azure. This solution will install Sparkling Water on your Spark cluster, allowing you to exploit all the benefits from both Spark and H2O. 
 
 Create the H2O Artificial Intelligence for HDInsight
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -21,7 +21,7 @@ Follow the steps below to create a new H2O Artificial Intelligence for HDInsight
 
 2. Click the **Create** button, and follow the UI instructions. 
 
-   **Note** H2O for HDInsight is exclusively for Spark HDI clusters version 3.5 (HDI v3.5). 
+   **Note**: H2O for HDInsight is exclusively for Spark HDI clusters version 3.5 (HDI v3.5). 
 
    .. figure:: images/azure_select_h2o_hdinsight.png
       :alt: Select H2O Artificial Intelligence for HDInsight
@@ -46,37 +46,24 @@ Follow the steps below to create a new H2O Artificial Intelligence for HDInsight
 
 9. In Jupyter, you will see 3 folders: PySparkling Examples, PySpark Examples, and Scala Examples. Select PySparkling Examples.
 
-10. The first step when creating a new notebook is to configure the Spark environment. This information is included in the **4_sentiment_sparkling** example. Note that the configuration will vary based on whether your Spark environment is 2.0 or 1.6. 
-
-   **Spark 2.0**: For Spark 2.0, use the correct jar, and specify the IP address provided by the output of the first cell.
+10. The first step when creating a new notebook is to configure the Spark environment. This information is included in the **Sentiment_analysis_with_Sparkling_Water** example. When configuring the Spark environment, be sure to use the correct jar, and specify the IP address provided by the output of the first cell.
 
    .. figure:: images/azure_configure_spark_env.png
-      :alt: Configure a Spark environment - Spark 2.0
+      :alt: Configure a Spark environment
 
-   **Spark 1.6**: For Spark 1.6, use the correct Maven coordinates.
-
-   .. figure:: images/azure_configure_spark_env_1_6.png
-      :alt: Configure a Spark environment - Spark 1.6
-
-11. Add the Sparkling Water Egg file.
-
-   .. figure:: images/azure_sw_egg.png
-      :alt: Adding the Sparkling Water Egg file
-
-12. Start the H2O Cluster.
+11. Start the H2O Cluster.
 
    .. figure:: images/azure_start_h2o.png
       :alt: Start the H2O Cluster
 
 You are now ready to start building your H2O Models.
 
-**Note**: To connect to H2O FLOW, go to https://<ClusterName>-h2o.apps.azurehdinsight.net/ (Only available for Spark 2.0.) 
+**Note**: To connect to H2O Flow, go to https://<ClusterName>-h2o.apps.azurehdinsight.net/  
  
 
 H2O Artificial Intelligence for HDInsight Troubleshooting Tips
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Make sure that you added the correct Maven coordinates and Python egg file when configuring the Spark environment. 
-
+- If H2O Flow will not launch after the H2O cluster creation, clean your browser cache. 
 - Make sure that the cluster has enough resources to allocate to your Spark application. For more information about the cluster available resources, go to http://<ClusterName>.azurehdinsight.net.
 
