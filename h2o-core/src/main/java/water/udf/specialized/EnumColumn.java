@@ -25,10 +25,16 @@ public class EnumColumn extends Integers.Column {
    */
   public EnumColumn() { domain = null; }
 
-  EnumColumn(Vec v, Enums factory) {
+  private EnumColumn(Vec v, Enums factory) {
     super(v, factory);
+    if (factory.domain == null) throw new IllegalArgumentException("Domain missing");
     domain = factory.domain;
     assert domain != null && domain.length > 0 : "Need a domain for enums";
+  }
+  
+  public EnumColumn(Vec v) {
+    this(v, Enums.enums(v.domain()));
+    if (domain == null) throw new IllegalArgumentException("Domain missing");
   }
 
   @Override
@@ -51,6 +57,7 @@ public class EnumColumn extends Integers.Column {
   }
   
   public UnfoldingFrame<Integer, DataColumn<Integer>> oneHotEncodedFrame(String colName) {
+    if (domain == null) throw new IllegalArgumentException("Domain missing");
     int width = domain.length + 1;
     UnfoldingColumn<Integer, Integer> column = oneHotEncode();
     UnfoldingFrame<Integer, DataColumn<Integer>> frame = new UnfoldingFrame<>(Integers, column.size(), column, width);

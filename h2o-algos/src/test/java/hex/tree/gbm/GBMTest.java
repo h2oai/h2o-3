@@ -9,12 +9,14 @@ import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
 import water.api.StreamingSchema;
+import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
+import water.udf.specialized.Enums;
 import water.util.*;
 
 import java.io.File;
@@ -29,6 +31,7 @@ import java.util.TreeMap;
 import static hex.genmodel.utils.DistributionFamily.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static water.fvec.FVecTest.makeByteVec;
 
 public class GBMTest extends TestUtil {
@@ -36,6 +39,15 @@ public class GBMTest extends TestUtil {
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
   private abstract class PrepData { abstract int prep(Frame fr); }
+  
+  private PrepData havingResponse(final String colName, final String... namesToDrop) {
+    return new PrepData() { 
+      int prep(Frame fr ) { 
+        for (String name : namesToDrop) fr.remove(name).remove();
+        return fr.find(colName); 
+      }
+    };
+  }
 
   static final String ignored_aircols[] = new String[] { "DepTime", "ArrTime", "AirTime", "ArrDelay", "DepDelay", "TaxiIn", "TaxiOut", "Cancelled", "CancellationCode", "Diverted", "CarrierDelay", "WeatherDelay", "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsDepDelayed"};
 
@@ -78,22 +90,29 @@ public class GBMTest extends TestUtil {
     }
   }
 
+  @Test public void testOneHotViaUDF() {
+    for (DistributionFamily dist : Arrays.asList(AUTO, gaussian, poisson, gamma, tweedie)) {
+      oneHotConvertedGBM("./smalldata/junit/cars.csv", "economy (mpg)", dist);
+    }
+  }
+    
   @Test public void testBasicGBM() {
     // Regression tests
+    final PrepData forEconomy = havingResponse("economy (mpg)", "name");
     basicGBM("./smalldata/junit/cars.csv",
-            new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
+        forEconomy,
             false, gaussian);
 
     basicGBM("./smalldata/junit/cars.csv",
-            new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
+            forEconomy,
             false, DistributionFamily.poisson);
 
     basicGBM("./smalldata/junit/cars.csv",
-            new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
+            forEconomy,
             false, DistributionFamily.gamma);
 
     basicGBM("./smalldata/junit/cars.csv",
-            new PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
+        forEconomy,
             false, DistributionFamily.tweedie);
 
     // Classification tests
@@ -102,48 +121,35 @@ public class GBMTest extends TestUtil {
             },
             false, DistributionFamily.multinomial);
 
-    basicGBM("./smalldata/junit/test_tree_minmax.csv",
-            new PrepData() { int prep(Frame fr) { return fr.find("response"); }
-            },
+    basicGBM("./smalldata/junit/test_tree_minmax.csv", havingResponse("response"),
             false, DistributionFamily.bernoulli);
 
     basicGBM("./smalldata/logreg/prostate.csv",
-            new PrepData() { int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("CAPSULE"); }
-            },
+            havingResponse("CAPSULE"),
             false, DistributionFamily.bernoulli);
 
     basicGBM("./smalldata/logreg/prostate.csv",
-            new PrepData() { int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("CAPSULE"); }
-            },
+            havingResponse("CAPSULE"),
             false, DistributionFamily.multinomial);
 
     basicGBM("./smalldata/junit/cars.csv",
-            new PrepData() { int prep(Frame fr) { fr.remove("name").remove(); return fr.find("cylinders"); }
-            },
+            havingResponse("cylinders"),
             false, DistributionFamily.multinomial);
 
     basicGBM("./smalldata/gbm_test/alphabet_cattest.csv",
-            new PrepData() { int prep(Frame fr) { return fr.find("y"); }
-            },
+            havingResponse("y"),
             false, DistributionFamily.bernoulli);
 
 //    basicGBM("./smalldata/gbm_test/alphabet_cattest.csv",
-//            new PrepData() { int prep(Frame fr) { return fr.find("y"); }
-//            },
+//                        havingResponse("y",
 //            false, DistributionFamily.modified_huber);
 
     basicGBM("./smalldata/airlines/allyears2k_headers.zip",
-            new PrepData() { int prep(Frame fr) {
-              for( String s : ignored_aircols ) fr.remove(s).remove();
-              return fr.find("IsArrDelayed"); }
-            },
+            havingResponse("IsArrDelayed", ignored_aircols),
             false, DistributionFamily.bernoulli);
 //    // Bigger Tests
 //    basicGBM("../datasets/98LRN.CSV",
-//             new PrepData() { int prep(Frame fr ) {
-//               fr.remove("CONTROLN").remove();
-//               fr.remove("TARGET_D").remove();
-//               return fr.find("TARGET_B"); }});
+//                         havingResponse("TARGET_B", "CONTROLN", "TARGET_D"));
 
 //    basicGBM("../datasets/UCI/UCI-large/covtype/covtype.data",
 //             new PrepData() { int prep(Frame fr) { return fr.numCols()-1; } });
@@ -165,56 +171,87 @@ public class GBMTest extends TestUtil {
   }
 
   // ==========================================================================
-  public GBMModel.GBMOutput basicGBM(String fname, PrepData prep, boolean validation, DistributionFamily family) {
-    GBMModel gbm = null;
-    Frame fr = null, fr2= null, vfr=null;
+  public GBMModel.GBMOutput oneHotConvertedGBM(String fname, String responseColName, DistributionFamily family) {
     try {
       Scope.enter();
-      fr = parse_test_file(fname);
-      int idx = prep.prep(fr); // hack frame per-test
-      if (family == DistributionFamily.bernoulli || family == DistributionFamily.multinomial || family == DistributionFamily.modified_huber) {
-        if (!fr.vecs()[idx].isCategorical()) {
-          Scope.track(fr.replace(idx, fr.vecs()[idx].toCategoricalVec()));
-        }
-      }
-      DKV.put(fr);             // Update frame after hacking it
+      Frame fr0 = Scope.track(parse_test_file(fname));
+      Frame fr1 = Scope.track(Enums.oneHotEncoding(fr0, null));
+      
+      int idx = fr1.find(responseColName);
+      
+      return process(fr1, idx, true, family);
 
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
-      if( idx < 0 ) idx = ~idx;
-      parms._train = fr._key;
-      parms._response_column = fr._names[idx];
-      parms._ntrees = 5;
-      parms._distribution = family;
-      parms._max_depth = 4;
-      parms._min_rows = 1;
-      parms._nbins = 50;
-      parms._learn_rate = .2f;
-      parms._score_each_iteration = true;
-      if( validation ) {        // Make a validation frame that's a clone of the training data
-        vfr = new Frame(fr);
-        DKV.put(vfr);
-        parms._valid = vfr._key;
-      }
-
-      GBM job = new GBM(parms);
-      gbm = job.trainModel().get();
-
-      // Done building model; produce a score column with predictions
-      fr2 = gbm.score(fr);
-
-      // Build a POJO, validate same results
-      Assert.assertTrue(gbm.testJavaScoring(fr,fr2,1e-15));
-
-      Assert.assertTrue(job.isStopped()); //HEX-1817
-      return gbm._output;
-
-    } finally {
-      if( fr  != null ) fr .remove();
-      if( fr2 != null ) fr2.remove();
-      if( vfr != null ) vfr.remove();
-      if( gbm != null ) gbm.delete();
+    } catch (IOException ioe) {
+      fail("Oops, got an ioe while converting " + fname);
+      throw new RuntimeException(ioe);
+    } catch (H2OIllegalArgumentException hiae) {
+      fail("Could not categorize: " + hiae.getMessage() + ", family " + family);
+      throw hiae;
+    }
+    finally {
       Scope.exit();
     }
+  }
+
+  public GBMModel.GBMOutput basicGBM(String fname, PrepData prep, boolean validate, DistributionFamily family) {
+    try {
+      Scope.enter();
+      Frame fr = Scope.track(parse_test_file(fname));
+      int idx = prep.prep(fr); // hack frame per-test
+
+      return process(fr, idx, validate, family);
+
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  private Vec categorize(Frame f, int i) {
+    Vec v = f.vecs()[i];
+    if (v.get_type() == Vec.T_NUM && !v.isInt()) {
+      throw new H2OIllegalArgumentException("Cannot categorize vec#" + i + " (" + f.name(i) + "), since it's not integer");        }
+    return v.toCategoricalVec();
+  }
+  
+  private GBMModel.GBMOutput process(Frame fr, int responseColIndex, boolean validate, DistributionFamily family) {
+
+    if (family == DistributionFamily.bernoulli || family == DistributionFamily.multinomial || family == DistributionFamily.modified_huber) {
+      if (!fr.vecs()[responseColIndex].isCategorical()) {
+        final Vec categoricalVec = categorize(fr, responseColIndex);
+        Scope.track(fr.replace(responseColIndex, categoricalVec));
+      }
+    }
+    
+    DKV.put(fr);             // Update frame after hacking it
+
+    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    parms._train = fr._key;
+
+    parms._response_column = fr._names[responseColIndex];
+    parms._ntrees = 5;
+    parms._distribution = family;
+    parms._max_depth = 4;
+    parms._min_rows = 1;
+    parms._nbins = 50;
+    parms._learn_rate = .2f;
+    parms._score_each_iteration = true;
+    if( validate ) {        // Make a validation frame that's a clone of the training data
+      Frame vfr = Scope.track(new Frame(fr));
+      DKV.put(vfr);
+      parms._valid = vfr._key;
+    }
+
+    GBM job = new GBM(parms);
+    GBMModel gbm = Scope.track(job.trainModel().get());
+
+    // Done building model; produce a score column with predictions
+    Frame fr2 = Scope.track(gbm.score(fr));
+
+    // Build a POJO, validate same results
+    Assert.assertTrue(gbm.testJavaScoring(fr,fr2,1e-15));
+
+    Assert.assertTrue(job.isStopped()); //HEX-1817
+    return gbm._output;
   }
 
   // Test-on-Train.  Slow test, needed to build a good model.
@@ -375,51 +412,52 @@ public class GBMTest extends TestUtil {
     }
   }
 
+
   //  MSE generated by GBM with/without validation dataset should be same
   @Test public void testModelScoreKeeperEqualityOnProstateBernoulli() {
-    final PrepData prostatePrep = new PrepData() { @Override int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("CAPSULE"); } };
+    final PrepData prostatePrep =             havingResponse("CAPSULE", "ID");
     ScoreKeeper[] scoredWithoutVal = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, false, DistributionFamily.bernoulli)._scored_train;
     ScoreKeeper[] scoredWithVal    = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, true , DistributionFamily.bernoulli)._scored_valid;
     Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", scoredWithoutVal, scoredWithVal);
   }
 
   @Test public void testModelScoreKeeperEqualityOnProstateGaussian() {
-    final PrepData prostatePrep = new PrepData() { @Override int prep(Frame fr) { fr.remove("ID").remove(); return ~fr.find("CAPSULE"); } };
+    final PrepData prostatePrep =             havingResponse("CAPSULE", "ID");
     ScoreKeeper[] scoredWithoutVal = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, false, gaussian)._scored_train;
     ScoreKeeper[] scoredWithVal    = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, true , gaussian)._scored_valid;
     Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", scoredWithoutVal, scoredWithVal);
   }
 
   @Test public void testModelScoreKeeperEqualityOnProstateMultinomial() {
-    final PrepData prostatePrep = new PrepData() { @Override int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("RACE"); } };
+    final PrepData prostatePrep = havingResponse("RACE", "ID");
     ScoreKeeper[] scoredWithoutVal = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, false, DistributionFamily.multinomial)._scored_train;
     ScoreKeeper[] scoredWithVal    = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, true , DistributionFamily.multinomial)._scored_valid;
     Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", scoredWithoutVal, scoredWithVal);
   }
 
   @Test public void testModelScoreKeeperEqualityOnTitanicGaussian() {
-    final PrepData titanicPrep = new PrepData() { @Override int prep(Frame fr) { return fr.find("age"); } };
+    final PrepData titanicPrep = havingResponse("age");
     ScoreKeeper[] scoredWithoutVal = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, false, gaussian)._scored_train;
     ScoreKeeper[] scoredWithVal    = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, true , gaussian)._scored_valid;
     Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", scoredWithoutVal, scoredWithVal);
   }
 
   @Test public void testModelScoreKeeperEqualityOnTitanicBernoulli() {
-    final PrepData titanicPrep = new PrepData() { @Override int prep(Frame fr) { return fr.find("survived"); } };
+    final PrepData titanicPrep = havingResponse("survived");
     ScoreKeeper[] scoredWithoutVal = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, false, DistributionFamily.bernoulli)._scored_train;
     ScoreKeeper[] scoredWithVal    = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, true , DistributionFamily.bernoulli)._scored_valid;
     Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", scoredWithoutVal, scoredWithVal);
   }
 
   @Test public void testModelScoreKeeperEqualityOnTitanicMultinomial() {
-    final PrepData titanicPrep = new PrepData() { @Override int prep(Frame fr) { return fr.find("survived"); } };
+    final PrepData titanicPrep = havingResponse("survived");
     ScoreKeeper[] scoredWithoutVal = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, false, DistributionFamily.multinomial)._scored_train;
     ScoreKeeper[] scoredWithVal    = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, true , DistributionFamily.multinomial)._scored_valid;
     Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", scoredWithoutVal, scoredWithVal);
   }
 
   @Test public void testBigCat() {
-    final PrepData prep = new PrepData() { @Override int prep(Frame fr) { return fr.find("y"); } };
+    final PrepData prep = havingResponse("y");
     basicGBM("./smalldata/gbm_test/50_cattest_test.csv" , prep, false, DistributionFamily.bernoulli);
     basicGBM("./smalldata/gbm_test/50_cattest_train.csv", prep, false, DistributionFamily.bernoulli);
     basicGBM("./smalldata/gbm_test/swpreds_1000x3.csv", prep, false, DistributionFamily.bernoulli);
@@ -1492,7 +1530,7 @@ public class GBMTest extends TestUtil {
 
   @Test
   public void testStochasticGBM() {
-    Frame tfr = null, vfr = null;
+    Frame tfr = null;
     GBMModel gbm = null;
     float[] sample_rates = new float[]{0.2f, 0.4f, 0.6f, 0.8f, 1.0f};
     float[] col_sample_rates = new float[]{0.2f, 0.4f, 0.6f, 0.8f, 1.0f};
@@ -1522,7 +1560,6 @@ public class GBMTest extends TestUtil {
 
         } finally {
           if (tfr != null) tfr.remove();
-          if (vfr != null) vfr.remove();
           if (gbm != null) gbm.delete();
           Scope.exit();
         }
@@ -2718,6 +2755,7 @@ public class GBMTest extends TestUtil {
 
   @Test
   public void testCatEncoding() {
+    Scope.enter();
     for (Model.Parameters.CategoricalEncodingScheme c : Model.Parameters.CategoricalEncodingScheme.values()) {
       if (c == Model.Parameters.CategoricalEncodingScheme.OneHotInternal) continue;
       Frame tfr = null;
@@ -2742,6 +2780,7 @@ public class GBMTest extends TestUtil {
         if (fr2 != null) fr2.delete();
         if (gbm != null) gbm.deleteCrossValidationModels();
         if (gbm != null) gbm.delete();
+        Scope.exit();
       }
     }
   }

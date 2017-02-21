@@ -83,6 +83,17 @@ public class FrameUtils {
       case Enum:
       case OneHotInternal:
         return dataset; //leave as is - most algos do their own internal default handling of enums
+// Commented out until further notice.      
+//      case OneHot:
+//        dataset.checkVecs("Before OneHot");
+//        try {
+//          Frame res = Enums.oneHotEncoding(newDestKey(), dataset, skipCols);
+//          dataset.checkVecs("same frame, After OneHot");
+//          res.checkVecs("encoded frame, after OneHot");
+//          return res;
+//        } catch(IOException ioe) {
+//          throw new RuntimeException("OneHot encoding has a problem", ioe);
+//        }
       case OneHotExplicit:
         return new CategoricalOneHotEncoder(dataset, skipCols).exec().get();
       case Binary:
@@ -668,13 +679,20 @@ public class FrameUtils {
     abstract H2O.H2OCountedCompleter driver(Key<Frame> destKey);
 
     public Job<Frame> exec() {
-      Key<Frame> destKey = Key.makeSystem(Key.make().toString());
+      return exec(newFrameKey());
+    }
+
+    Job<Frame> exec(Key<Frame> destKey) {
       _job = new Job<>(destKey, Frame.class.getName(), getClass().getSimpleName());
       int workAmount = _frame.lastVec().nChunks();
       return _job.start(driver(destKey), workAmount);
     }
   }
-  
+
+  public static Key<Frame> newFrameKey() {
+    return Key.makeSystem(Key.make().toString());
+  }
+
   /**
    * Helper to convert a categorical variable into the first eigenvector of the dummy-expanded matrix.
    */
@@ -754,4 +772,38 @@ public class FrameUtils {
     }
   }
 
+  public static boolean equal(Chunk c1, Chunk c2) {
+    if (c1.len() != c2.len()) return false;
+    
+    for (int i = 0; i < c1.len(); i++) {
+      if (c1.at8(i) != c2.at8(i)) return false;
+    }
+    
+    return true;
+  }
+  
+  public static boolean equal(Vec v1, Vec v2) {
+    if (!v1.isCompatibleWith(v2)) return false;
+    for (int i = 0; i < v1.nChunks(); i++) {
+      if (!equal(v1.chunkForChunkIdx(i), v2.chunkForChunkIdx(i))) return false;
+    }
+    return true;
+  }
+  
+  public static boolean equal(Frame f1, Frame f2) {
+    if (f1 == f2) return true;
+    if (f1 == null || f2 == null) return false;
+    
+    if (!Arrays.equals(f1._names, f2._names)) return false;
+    
+    Vec[] vs1 = f1.vecs();
+    Vec[] vs2 = f2.vecs();
+    if (vs1.length != vs2.length) return false;
+    for (int i = 0; i < vs1.length; i++) {
+      Vec v1 = vs1[i];
+      Vec v2 = vs2[i];
+      if (!equal(v1, v2)) return false;
+    }
+    return true;
+  }
 }

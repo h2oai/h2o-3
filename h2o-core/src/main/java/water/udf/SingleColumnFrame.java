@@ -13,9 +13,9 @@ import static water.udf.DataColumns.*;
 import java.io.IOException;
 
 /**
- * Single column frame that knows its data type
+ * Single column frame that knows its data type and can materialize
  */
-public class TypedFrame<DataType, ColumnType extends DataColumn<DataType>> 
+public class SingleColumnFrame<DataType, ColumnType extends DataColumn<DataType>> 
     extends Frame {
   private final ColumnFactory<DataType, ColumnType> factory;
   private final long length;
@@ -25,13 +25,13 @@ public class TypedFrame<DataType, ColumnType extends DataColumn<DataType>>
   /**
    * deserialization :(
    */
-  public TypedFrame() {
+  public SingleColumnFrame() {
     factory = null;
     length = -1;
     function = null;
   }
   
-  public TypedFrame(BaseFactory<DataType, ColumnType> factory, long length, Function<Long, DataType> function) {
+  SingleColumnFrame(BaseFactory<DataType, ColumnType> factory, long length, Function<Long, DataType> function) {
     super();
     this.factory = factory;
     this.length = length;
@@ -39,16 +39,16 @@ public class TypedFrame<DataType, ColumnType extends DataColumn<DataType>>
   }
 
   public static 
-  <DataType, ColumnType extends DataColumn<DataType>> 
-  TypedFrame<DataType, ColumnType> forColumn(
+  <DataType, ColumnType extends DataColumn<DataType>>
+  SingleColumnFrame<DataType, ColumnType> forColumn(
       final BaseFactory<DataType, ColumnType> factory, 
       final Column<DataType> column) {
-    return new TypedFrame<DataType, ColumnType>(factory, column.size(), column) {
+    return new SingleColumnFrame<DataType, ColumnType>(factory, column.size(), column) {
       @Override protected Vec buildZeroVec() { return factory.buildZeroVec(column); }
     };
   }
   
-  public final static class EnumFrame extends TypedFrame<Integer, EnumColumn> {
+  public final static class EnumFrame extends SingleColumnFrame<Integer, EnumColumn> {
     private final String[] domain;
     
     public EnumFrame(long length, Function<Long, Integer> function, String[] domain) {
