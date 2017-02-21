@@ -2,11 +2,13 @@ package water.parser;
 
 import org.apache.commons.math3.analysis.function.Abs;
 
+import java.util.Arrays;
 import java.util.List;
 
 import water.Job;
 import water.Key;
 import water.fvec.ByteVec;
+import water.fvec.Vec;
 import water.util.Log;
 
 /**
@@ -21,7 +23,7 @@ public final class DefaultParserProviders {
   public static final ParserInfo ARFF_INFO = new ParserInfo("ARFF", 0, true);
   public static final ParserInfo XLS_INFO = new ParserInfo("XLS", 100, false);
   public static final ParserInfo XLSX_INFO = new ParserInfo("XLSX", 102, false);
-  public static final ParserInfo SVMLight_INFO = new ParserInfo("SVMLight", 1000, true);
+  public static final ParserInfo SVMLight_INFO = new SVMLighParserInfo();
   public static final ParserInfo CSV_INFO = new ParserInfo("CSV", Integer.MAX_VALUE, true);
   public static final ParserInfo GUESS_INFO = new ParserInfo("GUESS", -10000, false);
   /** Priority of non-core parsers should begin here.*/
@@ -67,6 +69,14 @@ public final class DefaultParserProviders {
     }
   }
 
+  public final static class SVMLighParserInfo extends ParserInfo{
+    public SVMLighParserInfo() {super("SVMLight", 1000, true, false);}
+    @Override public byte [] strToColumnTypes(int numcols,String [] strs){
+      byte [] res = new byte[numcols];
+      Arrays.fill(res,Vec.T_NUM);
+      return res;
+    }
+  }
   public final static class SVMLightParserProvider extends AbstractParserProvide {
 
     @Override

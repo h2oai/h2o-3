@@ -308,7 +308,9 @@ public class Vec extends Keyed<Vec> {
   }
 
   /** Get the column type. */
-  public String get_type_str(int c) { return TYPE_STR[getType(c)]; }
+  public String get_type_str(int c) {
+    return TYPE_STR[getType(c)];
+  }
   public String get_type_str() {
     String[] res = new String[_types.length];
     for (int i = 0; i < res.length; ++i)

@@ -44,7 +44,7 @@ public class SVMLightFVecParseWriter extends FVecParseWriter {
   private void addColumns(int newColCnt){
     int oldColCnt = _vecs.numCols();
     if(newColCnt > oldColCnt){
-      _nvs.addNumCols(newColCnt);
+      _nvs.addNumCols(newColCnt-oldColCnt,true);
       _nCols = newColCnt;
     }
   }

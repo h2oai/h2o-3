@@ -1051,6 +1051,20 @@ public final class VecAry extends Iced<VecAry> {
       return ck.isNA(ck.chunkRelativeOffset(i),j);
     }
     public final long length() { return VecAry.this.length(); }
+
+    public long at16l(long l, int c) {
+      ChunkAry ck = chk(l);
+      return ck.at16l(ck.chunkRelativeOffset(l),c);
+    }
+    public long at16h(long l, int c) {
+      ChunkAry ck = chk(l);
+      return ck.at16h(ck.chunkRelativeOffset(l),c);
+    }
+
+    public BufferedString atStr(BufferedString tmpStr, long l, int c) {
+      ChunkAry ck = chk(l);
+      return ck.atStr(tmpStr,ck.chunkRelativeOffset(l),c);
+    }
   }
 
   /** A more efficient way to write randomly to a Vec - still single-threaded,

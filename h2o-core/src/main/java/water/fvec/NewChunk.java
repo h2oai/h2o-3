@@ -12,8 +12,7 @@ import water.util.UnsafeUtils;
 import java.util.*;
 
 // An uncompressed chunk of data, supporting an append operation
-public class NewChunk extends ByteArraySupportedChunk {
-
+public class NewChunk extends Chunk {
   final byte _type;
 
   public void alloc_mantissa(int sparseLen) {_ms = new Mantissas(sparseLen);}
@@ -327,8 +326,7 @@ public class NewChunk extends ByteArraySupportedChunk {
     public final int rowId0(){return _gId;}
     public void add2Chunk(NewChunk c){add2Chunk_impl(c,_lId);}
   }
-
-  private transient BufferedString _bfstr = new BufferedString();
+//  private transient BufferedString _bfstr;// = new BufferedString();
 
   private void add2Chunk_impl(NewChunk c, int i) {
     if (isNA2(i)) {
@@ -346,8 +344,10 @@ public class NewChunk extends ByteArraySupportedChunk {
       while (nextNotNAIdx < _is.length && _is[nextNotNAIdx] == -1) nextNotNAIdx++;
       int slen = nextNotNAIdx < _is.length ? _is[nextNotNAIdx] - sidx : _sslen - sidx;
       // null-BufferedString represents NA value
-      BufferedString bStr = sidx == -1 ? null : _bfstr.set(_ss, sidx, slen);
-      c.addStr(bStr);
+//      BufferedString bStr = sidx == -1 ? null : _bfstr.set(_ss, sidx, slen);
+//      c.addStr(bStr);
+      //TODO
+      throw H2O.unimpl();
     } else
       throw new IllegalStateException();
   }
@@ -579,8 +579,12 @@ public class NewChunk extends ByteArraySupportedChunk {
 
   public void addZeros(int n){
     assert n >= 0;
-    if(!sparseZero()) for(int i = 0; i < n; ++i)addNum(0,0);
-    else _len += n;
+    if(n == 0) return;
+    int i = n+1;
+    while(--i > 0 && !sparseZero())
+      addNum(0, 0);
+    assert i >= 0;
+    _len += i;
   }
   
   public void addNAs(int n) {
@@ -958,6 +962,9 @@ public class NewChunk extends ByteArraySupportedChunk {
     _ss = null;
     return res;
   }
+
+  @Override
+  public Chunk deepCopy() {return null;}
 
   private static long leRange(long lemin, long lemax){
     if(lemin < 0 && lemax >= (Long.MAX_VALUE + lemin))
@@ -1586,7 +1593,6 @@ public class NewChunk extends ByteArraySupportedChunk {
     while( _ss[_is[i] + len] != 0 ) len++;
     return bStr.set(_ss, _is[i], len);
   }
-  @Override protected final void initFromBytes () {throw H2O.fail();}
 
   public static AutoBuffer write_impl(NewChunk nc,AutoBuffer bb) { throw H2O.fail(); }
   @Override public String toString() { return "NewChunk._sparseLen="+ _sparseLen; }

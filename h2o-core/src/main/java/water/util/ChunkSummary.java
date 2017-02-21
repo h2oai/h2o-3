@@ -16,6 +16,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
 
   public static final String[][] chunkTypes = new String[][]{
     {"C0","All zeros"},
+    {"CNA","All missing"},
     {"Const1","All ones"},
     {"C0L","Constant long"},
     {"C0D","Constant double"},

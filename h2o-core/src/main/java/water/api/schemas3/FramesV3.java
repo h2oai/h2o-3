@@ -76,7 +76,7 @@ public class FramesV3 extends RequestSchemaV3<Frames, FramesV3> {
 
       int i = 0;
       for (Frame frame : f.frames) {
-        this.frames[i++] = new FrameV3(frame, f.row_offset, f.row_count);
+        this.frames[i++] = new FrameV3(frame, f.row_offset, f.row_count,0,0);
       }
     }
     return this;

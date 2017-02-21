@@ -613,42 +613,20 @@ public final class ParseDataset {
   // --------------------------------------------------------------------------
   // Run once on all nodes; fill in missing zero chunks
   private static class SVFTask extends MRTask<SVFTask> {
-    private final Frame _f;
-    private SVFTask( Frame f ) { _f = f; }
+    private final Vec _v;
+    private SVFTask( Frame f ) { _v = f.vecs().vecs()[0]; }
     @Override public void setupLocal() {
-      throw H2O.unimpl();
-//      if( _f.numCols() == 0 ) return;
-//      Vec v0 = _f.anyVec();
-//      ArrayList<RecursiveAction> rs = new ArrayList<RecursiveAction>();
-//      for( int i = 0; i < v0.nChunks(); ++i ) {
-//        if( !v0.chunkKey(i).home() ) continue;
-//        final int fi = i;
-//        rs.add(new RecursiveAction() {
-//          @Override
-//          protected void compute() {
-//            // First find the nrows as the # rows of non-missing chunks; done on
-//            // locally-homed chunks only - to keep the data distribution.
-//            int nlines = 0;
-//            for( Vec vec : _f.vecs() ) {
-//              Value val = Value.STORE_get(vec.chunkKey(fi)); // Local-get only
-//              if( val != null ) {
-//                nlines = ((ByteArraySupportedChunk)val.get())._len;
-//                break;
-//              }
-//            }
-//            final int fnlines = nlines;
-//            // Now fill in appropriate-sized zero chunks
-//            for(int j = 0; j < _f.numCols(); ++j) {
-//              Vec vec = _f.vec(j);
-//              Key k = vec.chunkKey(fi);
-//              Value val = Value.STORE_get(k);   // Local-get only
-//              if( val == null )         // Missing?  Fill in w/zero chunk
-//                H2O.putIfMatch(k, new Value(k, new C0LChunk(0, fnlines)), null);
-//            }
-//          }
-//        });
-//      }
-//      ForkJoinTask.invokeAll(rs);
+      for(int i = 0; i < _v.nChunks(); ++i){
+        if(_v.isHomedLocally(i)){
+          DBlock db = _v.chunkIdx(i);
+          if(db.numCols() < _v.numCols()){
+            Chunk [] chks = Arrays.copyOf(db.chunks(), _v.numCols());
+            for(int j = db.numCols(); j < chks.length; ++j)
+              chks[i] = C0Chunk._instance;
+            DKV.put(_v.newChunkKey(i),new DBlock.MultiChunkBlock(chks),_fs);
+          }
+        }
+      }
     }
     @Override public void reduce( SVFTask drt ) {}
   }
@@ -939,12 +917,13 @@ public final class ParseDataset {
         if( _jobKey.get().stop_requested() ) throw new Job.JobCancelledException();
         final long [] espc = _espc;
         final byte[] ctypes = _setup._column_types; // SVMLight only uses numeric types, sparsely represented as a null
-        AppendableVec avs = new AppendableVec(_vg.vecKey(_vecIdStart),espc,ctypes, _startChunkIdx);
+        Parser p = _setup.parser(_jobKey);
+        AppendableVec avs = new AppendableVec(_vg.vecKey(_vecIdStart),espc,ctypes, _startChunkIdx).setSparse(p.isSparse());
         // Break out the input & output vectors before the parse loop
         FVecParseReader din = new FVecParseReader(in);
         FVecParseWriter dout;
         // Get a parser
-        Parser p = _setup.parser(_jobKey);
+
         switch(_setup._parse_type.name()) {
         case "ARFF":
         case "CSV":

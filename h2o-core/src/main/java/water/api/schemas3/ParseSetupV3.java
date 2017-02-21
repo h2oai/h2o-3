@@ -14,6 +14,9 @@ import static water.parser.DefaultParserProviders.GUESS_INFO;
 
 public class ParseSetupV3 extends RequestSchemaV3<ParseSetup, ParseSetupV3> {
 
+  public ParserInfo parserInfo() {
+    return parse_type != null ? ParserService.INSTANCE.getByName(parse_type).info() : GUESS_INFO;
+  }
   // Input fields
   @API(help="Source frames", required=true, direction=API.Direction.INOUT)
   public FrameKeyV3[] source_frames;

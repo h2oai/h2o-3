@@ -23,7 +23,7 @@ import java.util.Arrays;
  *  manage the M/R job computing the rollups.  Losers block for the same
  *  rollup.  Remote requests *always* forward to the Rollup Key's master.
  */
-final class RollupStats extends Iced {
+public final class RollupStats extends Iced {
   /** The count of missing elements.... or -2 if we have active writers and no
    *  rollup info can be computed (because the vector is being rapidly
    *  modified!), or -1 if rollups have not been computed since the last
@@ -76,7 +76,7 @@ final class RollupStats extends Iced {
 
 
   private RollupStats map( ChunkAry ca, int col ) {
-    _size = ca.byteSize();
+    _size = ca.getChunk(col).byteSize();
     boolean isUUID = ca._vec.isUUID(col);
     boolean isString = ca._vec.isString(col);
     BufferedString tmpStr = new BufferedString();
@@ -226,6 +226,20 @@ final class RollupStats extends Iced {
     return _maxs[_maxs.length-1];
   }
 
+  public long naCnt() {return _naCnt;}
+  public long nzCnt(int c) {return _nzCnt;}
+  public long pinfs() {return _pinfs;}
+  public long ninfs() {return _ninfs;}
+  public double[] mins() {return _mins;}
+  public double[] maxs() {return _maxs;}
+  public double mean() {return _mean;}
+  public double sigma() {return _sigma;}
+  public long[] lazy_bins() {return _bins;}
+  public double[] pctiles() {return _pctiles;}
+
+  public boolean isInt() {return _isInt;}
+
+
   private static class Roll extends MRTask<Roll> {
     final Key _rskey;
     RollupsAry _rs;
@@ -262,8 +276,8 @@ final class RollupStats extends Iced {
   private static NonBlockingHashMap<Key,RPC> _pendingRollups = new NonBlockingHashMap<>();
 
   // Histogram base & stride
-  double h_base() { return _mins[0]; }
-  double h_stride() { return h_stride(_bins.length); }
+  public double h_base() { return _mins[0]; }
+  public double h_stride() { return h_stride(_bins.length); }
   private double h_stride(int nbins) { return (_maxs[0]-_mins[0]+(_isInt?1:0))/nbins; }
 
   // Compute expensive histogram

@@ -19,11 +19,12 @@ class ParseHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ParseV3 parse(int version, ParseV3 parse) {
     ParserInfo parserInfo = ParserService.INSTANCE.getByName(parse.parse_type).info();
+
     ParseSetup setup = new ParseSetup(parserInfo,
                                       parse.separator, parse.single_quotes,
                                       parse.check_header, parse.number_columns,
                                       delNulls(parse.column_names),
-                                      ParseSetup.strToColumnTypes(parse.column_types),
+                                      parserInfo.strToColumnTypes(parse.number_columns,parse.column_types),
                                       parse.domains, parse.na_strings,
                                       null,
                                       new ParseWriter.ParseErr[0], parse.chunk_size);

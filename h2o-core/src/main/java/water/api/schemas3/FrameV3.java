@@ -1,5 +1,6 @@
 package water.api.schemas3;
 
+import jsr166y.RecursiveAction;
 import water.Futures;
 import water.Key;
 import water.MemoryManager;
@@ -134,54 +135,8 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
 
     transient VecAry _vec;
 
-    ColV3(String name, VecAry vec, long off, int len) {
+    ColV3(String name) {
       label=name;
-
-      missing_count = vec.naCnt();
-      zero_count = vec.length() - vec.nzCnt() - missing_count;
-      positive_infinity_count = vec.pinfs();
-      negative_infinity_count = vec.ninfs();
-      mins = vec.mins();
-      maxs = vec.maxs();
-      mean = vec.mean();
-      sigma = vec.sigma();
-      
-      // Histogram data is only computed on-demand.  By default here we do NOT
-      // compute it, but will return any prior computed & cached histogram.
-      histogram_bins  = vec.lazy_bins(0);
-      histogram_base  = histogram_bins ==null ? 0 : vec.base(0);
-      histogram_stride= histogram_bins ==null ? 0 : vec.stride(0);
-      percentiles     = histogram_bins ==null ? null : vec.pctiles(0);
-
-      type  = vec.isCategorical() ? "enum" : vec.isUUID(0) ? "uuid" : vec.isString() ? "string" : (vec.isInt() ? (vec.isTime(0) ? "time" : "int") : "real");
-      domain = vec.domain();
-      if (vec.isCategorical()) {
-        domain_cardinality = domain.length;
-      } else {
-        domain_cardinality = 0;
-      }
-
-      len = (int)Math.min(len,vec.length()-off);
-      if( vec.isUUID() ) {
-        string_data = new String[len];
-        for (int i = 0; i < len; i++)
-          string_data[i] = vec.isNA(off + i) ? null : PrettyPrint.UUID(vec.at16l(off + i), vec.at16h(off + i));
-        data = null;
-      } else if ( vec.isString() ) {
-        string_data = new String[len];
-        BufferedString tmpStr = new BufferedString();
-        for (int i = 0; i < len; i++)
-          string_data[i] = vec.isNA(off + i) ? null : vec.atStr(tmpStr,off + i).toString();
-        data = null;
-      } else {
-        data = MemoryManager.malloc8d(len);
-        for( int i=0; i<len; i++ )
-          data[i] = vec.at(off+i);
-        string_data = null;
-      }
-      _vec = vec;               // Better HTML display, not in the JSON
-      if (len > 0)  // len == 0 is presumed to be a header file
-        precision = vec.chunkForChunkIdx(0).precision();
     }
 
     public void clearBinsField() {
@@ -195,12 +150,10 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
   public FrameV3(Key<Frame> frame_id) { this.frame_id = new FrameKeyV3(frame_id); }
 
   public FrameV3(Frame fr) {
-    this(fr, 1, (int) fr.numRows(), 0, 0); // NOTE: possible row len truncation
+    this(fr, 1l, (int) fr.numRows(), 0, fr.numCols()); // NOTE: possible row len truncation
   }
 
-  public FrameV3(Frame f, long row_offset, int row_count) {
-    this(f, row_offset, row_count, 0, 0);
-  }
+
 
   public FrameV3(Frame f, long row_offset, int row_count, int column_offset, int column_count) {
     this.fillFromImpl(f, row_offset, row_count, column_offset, column_count);
@@ -217,6 +170,7 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
     row_count    = (int) Math.min(row_count, row_offset + f.numRows());
     column_count = Math.min(column_count, column_offset + f.numCols());
 
+
     this.frame_id = new FrameKeyV3(f._key);
     this.checksum = f.checksum();
     this.byte_size = f.byteSize();
@@ -225,6 +179,7 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
     this.rows = f.numRows();
     this.num_columns = f.numCols();
     this.row_count = row_count;
+
 
     this.total_column_count = f.numCols();
     this.column_offset = column_offset;
@@ -235,19 +190,60 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
     Futures fs = new Futures();
     // Compute rollups in parallel as needed, by starting all of them and using
     // them when filling in the ColV3 Schemas
-    vecs.startRollupStats(fs,false);
-    for( int i = 0; i < column_count; i++ )
-      columns[i] = new ColV3(f._names[column_offset + i], vecs.select(column_offset + i), this.row_offset, this.row_count);
-    fs.blockForPending();
+    RollupsAry rsa = vecs.rollupStats();
+    final int rcnt = row_count;
+    final long roff = row_offset;
+
+    VecAry.Reader rdr = vecs.new Reader();
+    for( int i = 0; i < column_count; i++ ) {
+      int c = column_offset+i;
+      RollupStats rs = rsa.getRollups(c);
+      columns[i] = new ColV3(f._names[c]);
+      columns[i].missing_count = rs.naCnt();
+      columns[i].zero_count = vecs.length() - rs.nzCnt(c) - columns[i].missing_count;
+      columns[i].positive_infinity_count = rs.pinfs();
+      columns[i].negative_infinity_count = rs.ninfs();
+      columns[i].mins = rs.mins();
+      columns[i].maxs = rs.maxs();
+      columns[i].mean = rs.mean();
+      columns[i].sigma = rs.sigma();
+      // Histogram data is only computed on-demand.  By default here we do NOT
+      // compute it, but will return any prior computed & cached histogram.
+      columns[i].histogram_bins  = rs.lazy_bins();
+      if(columns[i].histogram_bins != null) {
+        columns[i].histogram_base = rs.h_base();
+        columns[i].histogram_stride = rs.h_stride();
+        columns[i].percentiles = rs.pctiles();
+      }
+      byte t = vecs.getType(c);
+      if(t == Vec.T_NUM)
+        columns[i].type = rs.isInt()?"int":"real";
+      else
+        columns[i].type  = vecs.get_type_str(c);
+
+      int len = (int)Math.min(row_count,vecs.length()-row_offset);
+      if( vecs.isUUID(c) ) {
+        columns[i].string_data = new String[len];
+        for (int j = 0; j < len; j++)
+          columns[i].string_data[j] = rdr.isNA(row_offset+j,c) ? null : PrettyPrint.UUID(rdr.at16l(row_offset+j,c), rdr.at16h(row_offset+j,c));
+      } else if ( vecs.isString(c) ) {
+        columns[i].string_data = new String[len];
+        BufferedString tmpStr = new BufferedString();
+        for (int j = 0; j < len; j++)
+          columns[i].string_data[j] = rdr.isNA(row_offset+j,c) ? null : rdr.atStr(tmpStr,row_offset+j,c).toString();
+
+      } else {
+        columns[i].data = MemoryManager.malloc8d(len);
+        for( int j=0; j<len; j++ )
+          columns[i].data[j] = rdr.at(row_offset+j,c);
+      }
+    }
     this.is_text = f.numCols()==1 && vecs.vecs()[0] instanceof ByteVec;
     this.default_percentiles = Vec.PERCENTILES;
     ChunkSummary cs = FrameUtils.chunkSummary(f);
-
     this.chunk_summary = new TwoDimTableV3(cs.toTwoDimTableChunkTypes());
     this.distribution_summary = new TwoDimTableV3(cs.toTwoDimTableDistribution());
-
     this._fr = f;
-
     return this;
   }
 

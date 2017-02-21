@@ -53,11 +53,11 @@ public class NewChunkAry extends ChunkAry<NewChunk> {
 
   public int len(int c) {return _cs[c]._len;}
 
-  public void addNumCols(int n){
+  public void addNumCols(int n, boolean sparse){
     int oldN = _cs.length;
     _cs = Arrays.copyOf(_cs,oldN+n);
     for(int i = oldN; i < _cs.length; ++i)
-      _cs[i] = new NewChunk(Vec.T_NUM);
+      _cs[i] = new NewChunk(Vec.T_NUM,sparse); // assuming sparse
   }
 
   public void addVal(int i, DVal inflated) {

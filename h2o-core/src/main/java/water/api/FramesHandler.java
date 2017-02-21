@@ -229,12 +229,14 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
   }
 
   private FramesV3 doFetch(int version, FramesV3 s) {
+    System.out.println("row count (1) = " + s.row_count);
+    System.out.println("column count (1) = " + s.column_count);
     s.createAndFillImpl();
-
+    System.out.println("row count (2) = " + s.row_count);
+    System.out.println("column count (2) = " + s.column_count);
     Frame frame = getFromDKV("key", s.frame_id.key()); // safe
     s.frames = new FrameV3[1];
-    s.frames[0] = new FrameV3(frame, s.row_offset, s.row_count).fillFromImpl(frame, s.row_offset, s.row_count, s.column_offset, s.column_count);  // TODO: Refactor with FrameBaseV3
-
+    s.frames[0] = new FrameV3(frame, s.row_offset, s.row_count,s.column_offset, s.column_count);  // TODO: Refactor with FrameBaseV3
     if (s.find_compatible_models) {
       Model[] compatible = Frames.findCompatibleModels(frame, Models.fetchAll());
       s.compatible_models = new ModelSchemaV3[compatible.length];

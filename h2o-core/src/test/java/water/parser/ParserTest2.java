@@ -6,6 +6,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import water.Key;
 import water.TestUtil;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.fvec.VecAry;
@@ -40,6 +41,29 @@ public class ParserTest2 extends TestUtil {
     fr.delete();
   }
 
+  private static byte [] strToColumnTypes(String [] strs){
+    if (strs == null) return null;
+    byte[] types = new byte[strs.length];
+    for(int i=0; i< types.length;i++) {
+      switch (strs[i].toLowerCase()) {
+        case "unknown": types[i] = Vec.T_BAD;  break;
+        case "uuid":    types[i] = Vec.T_UUID; break;
+        case "string":  types[i] = Vec.T_STR;  break;
+        case "float":
+        case "real":
+        case "double":
+        case "int":
+        case "numeric": types[i] = Vec.T_NUM;  break;
+        case "categorical":
+        case "factor":
+        case "enum":    types[i] = Vec.T_CAT;  break;
+        case "time":    types[i] = Vec.T_TIME; break;
+        default:        types[i] = Vec.T_BAD;
+          throw new H2OIllegalArgumentException("Provided column type "+ strs[i] + " is unknown.  Cannot proceed with parse due to invalid argument.");
+      }
+    }
+    return types;
+  }
   @Test public void testNAs() {
     String [] data = new String[]{
       "'C1Chunk',C1SChunk, 'C2Chunk', 'C2SChunk',  'C4Chunk',  'C4FChunk',  'C8Chunk',  'C8DChunk',   'Categorical'\n"  +
@@ -57,7 +81,7 @@ public class ParserTest2 extends TestUtil {
     Key rkey = ParserTest.makeByteVec(data);
     ParseSetup ps = new ParseSetup(CSV_INFO, (byte)',', false, ParseSetup.HAS_HEADER, 9,
             new String[]{"'C1Chunk'","C1SChunk", "'C2Chunk'", "'C2SChunk'", "'C4Chunk'", "'C4FChunk'", "'C8Chunk'", "'C8DChunk'", "'Categorical'"},
-            ParseSetup.strToColumnTypes(new String[]{"Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Enum"}), null, null, null);
+            strToColumnTypes(new String[]{"Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Enum"}), null, null, null);
     Frame fr = ParseDataset.parse(Key.make("na_test.hex"), new Key[]{rkey}, true, ps);
     int nlines = (int)fr.numRows();
     Assert.assertEquals(9,nlines);
@@ -82,7 +106,7 @@ public class ParserTest2 extends TestUtil {
                                               ar("last","'line''s","trailing","piece'") };
     Key k = ParserTest.makeByteVec(Key.make("testSingleQuotes_fr1"),data);
     ParseSetup gSetupF = ParseSetup.guessSetup(null, data[0].getBytes(), CSV_INFO, (byte)',', 4, false/*single quote*/, ParseSetup.NO_HEADER, null, null, null, null);
-    gSetupF._column_types = ParseSetup.strToColumnTypes(new String[]{"Enum", "Enum", "Enum", "Enum"});
+    gSetupF._column_types = strToColumnTypes(new String[]{"Enum", "Enum", "Enum", "Enum"});
     Frame frF = ParseDataset.parse(Key.make(), new Key[]{k}, false, gSetupF);
     testParsed(frF,expectFalse);
 
@@ -90,7 +114,7 @@ public class ParserTest2 extends TestUtil {
                                              ar("Tomas''stest2","test2"),
                                              ar("last", "lines trailing piece") };
     ParseSetup gSetupT = ParseSetup.guessSetup(null, data[0].getBytes(), CSV_INFO, (byte)',', 2, true/*single quote*/, ParseSetup.NO_HEADER, null, null, null, null);
-    gSetupT._column_types = ParseSetup.strToColumnTypes(new String[]{"Enum", "Enum"});
+    gSetupT._column_types = strToColumnTypes(new String[]{"Enum", "Enum"});
     gSetupT.validate();
     Frame frT = ParseDataset.parse(Key.make(), new Key[]{k}, true, gSetupT);
 //    testParsed(frT,expectTrue);  // not currently passing

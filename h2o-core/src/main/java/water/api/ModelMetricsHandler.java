@@ -446,7 +446,7 @@ class ModelMetricsHandler extends Handler {
     if (null == mm.model_metrics || 0 == mm.model_metrics.length) {
       // There was no response in the test set -> cannot make a model_metrics object
     } else {
-      mm.model_metrics[0].predictions = new FrameV3(predictions, 0, 100); // TODO: Should call schema(version)
+      mm.model_metrics[0].predictions = new FrameV3(predictions, 0, 100,0,0); // TODO: Should call schema(version)
     }
     return mm;
   }

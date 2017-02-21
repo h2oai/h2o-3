@@ -1,6 +1,8 @@
 package water.parser;
 
 import water.Iced;
+import water.exceptions.H2OIllegalArgumentException;
+import water.fvec.Vec;
 
 /**
  * A lightweight handle with basic information about parser.
@@ -15,6 +17,31 @@ public class ParserInfo extends Iced<ParserInfo> {
   /** Does this parser need post update of vector categoricals. */
   final boolean isDomainProvided;
 
+  public byte[] strToColumnTypes(int numcols,String[] strs) {
+    if (strs == null) return null;
+    assert numcols == strs.length;
+    byte[] types = new byte[strs.length];
+    for(int i=0; i< types.length;i++) {
+      switch (strs[i].toLowerCase()) {
+        case "unknown": types[i] = Vec.T_BAD;  break;
+        case "uuid":    types[i] = Vec.T_UUID; break;
+        case "string":  types[i] = Vec.T_STR;  break;
+        case "float":
+        case "real":
+        case "double":
+        case "int":
+        case "numeric": types[i] = Vec.T_NUM;  break;
+        case "categorical":
+        case "factor":
+        case "enum":    types[i] = Vec.T_CAT;  break;
+        case "time":    types[i] = Vec.T_TIME; break;
+        default:        types[i] = Vec.T_BAD;
+          throw new H2OIllegalArgumentException("Provided column type "+ strs[i] + " is unknown.  Cannot proceed with parse due to invalid argument.");
+      }
+    }
+    return types;
+  }
+
   public ParserInfo(String name, int prior, boolean isParallelParseSupported, boolean isDomainProvided) {
     this.name = name;
     this.prior = prior;
@@ -24,6 +51,8 @@ public class ParserInfo extends Iced<ParserInfo> {
   public ParserInfo(String name, int prior, boolean isParallelParseSupported) {
     this(name, prior, isParallelParseSupported, false);
   }
+
+
 
   /** Get name for this parser */
   public String name() {

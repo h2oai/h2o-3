@@ -94,12 +94,12 @@ public class ParseSetup extends Iced {
    * @param ps Parse setup settings from client
    */
   public ParseSetup(ParseSetupV3 ps) {
-    this(ps.parse_type != null ? ParserService.INSTANCE.getByName(ps.parse_type).info() : GUESS_INFO,
+    this(ps.parserInfo(),
          ps.separator != 0 ? ps.separator : GUESS_SEP,
          ps.single_quotes,
          ps.check_header,
          GUESS_COL_CNT,
-         ps.column_names, strToColumnTypes(ps.column_types),
+         ps.column_names, ps.parserInfo().strToColumnTypes(ps.number_columns,ps.column_types),
          null, ps.na_strings,
          null,
          new ParseWriter.ParseErr[0],
@@ -152,29 +152,7 @@ public class ParseSetup extends Iced {
   }
   public byte[] getColumnTypes() { return _column_types; }
 
-  public static byte[] strToColumnTypes(String[] strs) {
-    if (strs == null) return null;
-    byte[] types = new byte[strs.length];
-    for(int i=0; i< types.length;i++) {
-      switch (strs[i].toLowerCase()) {
-      case "unknown": types[i] = Vec.T_BAD;  break;
-      case "uuid":    types[i] = Vec.T_UUID; break;
-      case "string":  types[i] = Vec.T_STR;  break;
-      case "float":
-      case "real":
-      case "double":
-      case "int":
-      case "numeric": types[i] = Vec.T_NUM;  break;
-      case "categorical":
-      case "factor":
-      case "enum":    types[i] = Vec.T_CAT;  break;
-      case "time":    types[i] = Vec.T_TIME; break;
-      default:        types[i] = Vec.T_BAD;
-        throw new H2OIllegalArgumentException("Provided column type "+ strs[i] + " is unknown.  Cannot proceed with parse due to invalid argument.");
-      }
-    }
-    return types;
-  }
+
 
   /** This is a single entry-point to create a parser.
    *

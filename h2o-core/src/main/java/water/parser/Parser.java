@@ -153,6 +153,8 @@ public abstract class Parser extends Iced {
     }
   }
 
+  public boolean isSparse() {return false;}
+
   private class StreamInfo {
     int _zidx;
     StreamParseWriter _nextChunk;

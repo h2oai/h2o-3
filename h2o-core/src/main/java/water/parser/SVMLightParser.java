@@ -39,7 +39,7 @@ class SVMLightParser extends Parser {
     } catch(IOException e) { throw new RuntimeException(e); }
     if (dout._ncols > 0 && dout._nlines > 0 && dout._nlines > dout._invalidLines)
       return new ParseSetup(SVMLight_INFO, ParseSetup.GUESS_SEP,
-            false,ParseSetup.NO_HEADER,dout._ncols,null,dout.guessTypes(),null,null,dout._data, dout.removeErrors());
+            false,ParseSetup.NO_HEADER,dout._ncols,null,new byte[0],null,null,dout._data, dout.removeErrors());
     else throw new ParseDataset.H2OParseException("Could not parse file as an SVMLight file.");
   }
 
@@ -50,6 +50,8 @@ class SVMLightParser extends Parser {
   }
 
   final boolean isWhitespace(byte c){return c == ' '  || c == '\t';}
+
+  @Override public boolean isSparse(){return true;}
 
   @SuppressWarnings("fallthrough")
   @Override public final ParseWriter parseChunk(int cidx, final ParseReader din, final ParseWriter dout) {
@@ -374,6 +376,6 @@ class SVMLightParser extends Parser {
         _data[_nlines][colIdx] = Double.toString(d);
     }
 
-    public byte[] guessTypes() { return col_types(_ncols); }
+    public byte[] guessTypes() { return new byte[0];}
   }
 }

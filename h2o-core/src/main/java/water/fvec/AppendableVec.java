@@ -23,6 +23,7 @@ public class AppendableVec extends Vec {
   public final int _chunkOff;
   private int _numCols;
 
+  private boolean _sparse = false;
   public AppendableVec( Key<Vec> key, byte... types ) { this(key, new long[4], types, 0); }
 
   public AppendableVec( Key<Vec> key, long[] tmp_espc, byte... types){this(key,tmp_espc,types,0);}
@@ -32,6 +33,7 @@ public class AppendableVec extends Vec {
     _chunkOff = chunkOff;
   }
 
+  public AppendableVec setSparse(boolean b){_sparse = b; return this;}
   // A NewVector chunk was "closed" - completed.  Add it's info to the roll-up.
   // This call is made in parallel across all node-local created chunks, but is
   // not called distributed.
@@ -116,7 +118,7 @@ public class AppendableVec extends Vec {
   @Override public NewChunkAry chunkForChunkIdx(int cidx) {
     NewChunk [] ncs = new NewChunk[numCols()];
     for(int i = 0; i < ncs.length; ++i)
-      ncs[i] = new NewChunk(_types[i]);
+      ncs[i] = new NewChunk(_types[i],_sparse);
     return new NewChunkAry(this,cidx,ncs);
   }
   // None of these are supposed to be called while building the new vector
