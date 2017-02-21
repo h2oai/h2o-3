@@ -24,9 +24,9 @@ public class SSLSocketChannelFactoryTest {
     public void shouldHandshake() throws IOException, SSLContextException, BrokenBarrierException, InterruptedException {
         SSLProperties props = new SSLProperties();
         props.put("h2o_ssl_protocol", SecurityUtils.defaultTLSVersion());
-        props.put("h2o_ssl_jks_internal", locateFile("src/test/resources/keystore.jks").getPath());
+        props.put("h2o_ssl_jks_internal", getFile("src/test/resources/keystore.jks").getPath());
         props.put("h2o_ssl_jks_password", "password");
-        props.put("h2o_ssl_jts", locateFile("src/test/resources/cacerts.jks").getPath());
+        props.put("h2o_ssl_jts", getFile("src/test/resources/cacerts.jks").getPath());
         props.put("h2o_ssl_jts_password", "password");
 
         final SSLSocketChannelFactory factory = new SSLSocketChannelFactory(props);

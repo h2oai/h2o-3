@@ -93,7 +93,7 @@ public class ParserTestARFF extends TestUtil {
    *  @param fname Test filename
    *  @return      Frame or NPE */
   private Frame parse_test_file_single_quotes( String fname ) {
-    NFSFileVec nfs = NFSFileVec.make(FileUtils.locateFile(fname));
+    NFSFileVec nfs = TestUtil.makeNfsFileVec(fname);
     return ParseDataset.parse(Key.make(), new Key[]{nfs._key}, true, true /*single quote*/, ParseSetup.GUESS_HEADER);
   }
 

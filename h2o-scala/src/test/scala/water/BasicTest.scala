@@ -9,8 +9,8 @@ class BasicTest extends TestUtil {
   @Test def testDataFrameLoadAPI(): Unit = {
     val filename1 = "../smalldata/iris/iris_wheader.csv"
     val filename2 = "../smalldata/iris/iris.csv"
-    val file1 = locateFile(filename1)
-    val file2 = locateFile(filename2)
+    val file1 = getFile(filename1)
+    val file2 = getFile(filename2)
     val uri1 = file1.toURI
     val uri2 = file2.toURI
     // Create frames

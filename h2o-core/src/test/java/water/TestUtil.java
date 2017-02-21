@@ -211,14 +211,6 @@ public class TestUtil extends Iced {
     return isIdenticalUpToRelTolerance(fr1,fr2,0);
   }
 
-  public static void checkFile(String name, File file) {
-    try {
-      FileUtils.checkFile(file, name);
-    } catch (IOException ioe) {
-      fail(ioe.getMessage());
-    }
-  }
-
   static File[] contentsOf(String name, File folder) {
     try {
       return FileUtils.contentsOf(folder, name);
@@ -231,22 +223,26 @@ public class TestUtil extends Iced {
   /** Find & parse a CSV file.  NPE if file not found.
    *  @param fname Test filename
    *  @return      Frame or NPE */
-  public static Frame parse_test_file( String fname ) { return parse_test_file(Key.make(),fname); }
+  public static Frame parse_test_file( String fname ) { 
+    return parse_test_file(Key.make(),fname); 
+  }
+
+  public static NFSFileVec makeNfsFileVec(String fname) {
+    try {
+      return NFSFileVec.make(fname);
+    } catch (IOException ioe) {
+      fail(ioe.getMessage());
+      return null;
+    }
+  }
+  
   public static Frame parse_test_file( Key outputKey, String fname) {
     NFSFileVec nfs = makeNfsFileVec(fname);
     return ParseDataset.parse(outputKey, nfs._key);
   }
 
-  static NFSFileVec makeNfsFileVec(String fname) {
-    File f = FileUtils.locateFile(fname);
-    checkFile(fname, f);
-    return NFSFileVec.make(f);
-  }
-
-  protected Frame parse_test_file( Key outputKey, String fname , boolean guessSetup) {
-    File f = FileUtils.locateFile(fname);
-    checkFile(fname, f);
-    NFSFileVec nfs = NFSFileVec.make(f);
+  protected Frame parse_test_file( Key outputKey, String fname, boolean guessSetup) {
+    NFSFileVec nfs = makeNfsFileVec(fname);
     return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, ParseSetup.guessSetup(new Key[]{nfs._key},false,1));
   }
 

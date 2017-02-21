@@ -13,8 +13,8 @@ public class RebalanceDatasetTest extends TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
   @Test public void testProstate(){
     NFSFileVec[] nfs = new NFSFileVec[]{
-            NFSFileVec.make(FileUtils.locateFile("smalldata/logreg/prostate.csv")),
-            NFSFileVec.make(FileUtils.locateFile("smalldata/covtype/covtype.20k.data"))};
+            TestUtil.makeNfsFileVec("smalldata/logreg/prostate.csv"),
+        TestUtil.makeNfsFileVec("smalldata/covtype/covtype.20k.data")};
             //NFSFileVec.make(find_test_file("bigdata/laptop/usecases/cup98VAL_z.csv"))};
     for (NFSFileVec fv : nfs) {
       Frame fr = ParseDataset.parse(Key.make(), fv._key);

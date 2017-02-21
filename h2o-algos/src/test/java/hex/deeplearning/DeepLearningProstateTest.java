@@ -49,9 +49,9 @@ public class DeepLearningProstateTest extends TestUtil {
         for (final int resp : responses[i]) {
           Frame frame=null, vframe=null;
           try {
-            NFSFileVec nfs = NFSFileVec.make(FileUtils.locateFile(dataset));
+            NFSFileVec nfs = TestUtil.makeNfsFileVec(dataset);
             frame = ParseDataset.parse(Key.make(), nfs._key);
-            NFSFileVec vnfs = NFSFileVec.make(FileUtils.locateFile(dataset));
+            NFSFileVec vnfs = TestUtil.makeNfsFileVec(dataset);
             vframe = ParseDataset.parse(Key.make(), vnfs._key);
             boolean classification = !(i == 0 && resp == 2);
             String respname = frame.name(resp);
