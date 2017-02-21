@@ -32,7 +32,7 @@ public class MungingTest extends TestUtil {
   }
   @Ignore @Test public void run2() throws Exception {
     System.out.println("Running run2 ...");
-    NFSFileVec nfs = NFSFileVec.make(FileUtils.locateFile("/home/mdowle/devtestdata/step1.csv"));
+    NFSFileVec nfs = TestUtil.makeNfsFileVec("/home/mdowle/devtestdata/step1.csv");
     Frame frame = ParseDataset.parse(Key.make(), nfs._key);  // look into parse() to manip column types
     System.out.println("Loaded file, now calling Query ...");
     // new RadixOrder(frame, true, new int[] {0,1});   // group by 0=id, 1=date   and sum 3 == quantity
@@ -43,7 +43,7 @@ public class MungingTest extends TestUtil {
   @Ignore @Test public void run3() throws Exception {
     System.out.println("Running run3 ...");
 
-    NFSFileVec nfs = NFSFileVec.make(FileUtils.locateFile("/home/mdowle/devtestdata/step1_subset.csv"));
+    NFSFileVec nfs = TestUtil.makeNfsFileVec("/home/mdowle/devtestdata/step1_subset.csv");
     //NFSFileVec nfs = NFSFileVec.make(find_test_file("/users/arno/devtestdata/step1_subset.csv"));
     Frame leftFrame = ParseDataset.parse(Key.make(), nfs._key);
 

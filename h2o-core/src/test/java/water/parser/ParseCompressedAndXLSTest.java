@@ -51,8 +51,7 @@ public class ParseCompressedAndXLSTest extends TestUtil {
   @Test public void  testXLSBadArgs(){
     Frame k1 = null;
     try {
-      File f = FileUtils.locateFile("smalldata/airlines/AirlinesTest.csv.zip");
-      NFSFileVec nfs = NFSFileVec.make(f);
+      NFSFileVec nfs = TestUtil.makeNfsFileVec("smalldata/airlines/AirlinesTest.csv.zip");
       byte[] ctypes = new byte[12];
       for(int i=0; i < 12; i++) ctypes[i] = Vec.T_NUM;
       ParseSetup setup = new ParseSetup(XLS_INFO,

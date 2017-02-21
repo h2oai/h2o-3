@@ -166,7 +166,7 @@ public class AccuracyTestingSuite {
 
     try {
       summaryLog.println("Reading test cases from: " + testCasesCSVPath);
-      File testCasesFile = locateFile(this.testCasesCSVPath);
+      File testCasesFile = getFile(testCasesCSVPath);
       testCaseEntries = Files.readAllLines(testCasesFile.toPath(), Charset.defaultCharset());
     }
     catch (Exception e) {

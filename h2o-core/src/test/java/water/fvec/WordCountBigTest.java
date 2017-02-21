@@ -9,8 +9,7 @@ public class WordCountBigTest extends WordCountTest {
   @Test public void testWordCountWiki() throws IOException {
     String best = "/home/0xdiag/datasets/wiki.xml";
     File file = FileUtils.locateFile(best);
-    if( file==null ) file = FileUtils.locateFile("../datasets/Wiki_20130805.xml");
-    if( file==null ) throw new FileNotFoundException(best);
+    if( file==null ) file = FileUtils.getFile("../datasets/Wiki_20130805.xml");
     doWordCount(file);
   }
 

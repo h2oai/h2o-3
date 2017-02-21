@@ -41,7 +41,7 @@ public class GlmMojoBench {
 
   @Setup
   public void setup() throws IOException {
-    File f = locateFile("smalldata/airlines/allyears2k.zip");
+    File f = getFile("smalldata/airlines/allyears2k.zip");
 
     mojo = (GlmMojoModel) loadMojo("airlines");
 

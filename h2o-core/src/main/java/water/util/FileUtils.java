@@ -2,6 +2,7 @@ package water.util;
 
 import org.eclipse.jetty.io.EofException;
 import water.Key;
+import water.fvec.NFSFileVec;
 
 import java.io.*;
 import java.net.URI;

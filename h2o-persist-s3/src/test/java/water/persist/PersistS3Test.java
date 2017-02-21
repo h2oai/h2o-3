@@ -43,7 +43,7 @@ public class PersistS3Test extends TestUtil {
       int chunkSize = (int) (v.length() / 3);
       v.setChunkSize(fr, chunkSize);
       long xor = new XORTask().doAll(v)._res;
-      Key k2 = H2O.getPM().anyURIToKey(new URI(FileUtils.locateFile("smalldata/airlines/AirlinesTrain.csv.zip").getAbsolutePath()));
+      Key k2 = H2O.getPM().anyURIToKey(new URI(FileUtils.getFile("smalldata/airlines/AirlinesTrain.csv.zip").getAbsolutePath()));
       FileVec v2 = DKV.getGet(k2);
       assertEquals(v2.length(), v.length());
       assertVecEquals(v, v2, 0);

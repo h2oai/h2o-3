@@ -42,7 +42,7 @@ public class GlmMultinomialMojoBench {
 
   @Setup
   public void setup() throws IOException {
-    File f = locateFile("smalldata/flow_examples/mnist/test.csv.gz");
+    File f = getFile("smalldata/flow_examples/mnist/test.csv.gz");
 
     mojo = (GlmMultinomialMojoModel) loadMojo("mnist");
 

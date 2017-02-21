@@ -197,8 +197,8 @@ public class ConfusionMatrixTest extends TestUtil {
 
   private void simpleCMTest(String f1, String f2, String[] expectedActualDomain, String[] expectedPredictDomain, String[] expectedDomain, double[][] expectedCM, boolean debug) {
     try {
-      Frame v1 = parseFrame(Key.make("v1.hex"), FileUtils.locateFile(f1));
-      Frame v2 = parseFrame(Key.make("v2.hex"), FileUtils.locateFile(f2));
+      Frame v1 = parseFrame(Key.make("v1.hex"), FileUtils.getFile(f1));
+      Frame v2 = parseFrame(Key.make("v2.hex"), FileUtils.getFile(f2));
       if (!v1.isCompatible(v2)) {
         Frame old = null;
         v2 = new Frame(v1.makeCompatible(old = v2));

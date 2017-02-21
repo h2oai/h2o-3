@@ -15,7 +15,7 @@ public class WordCountTest extends TestUtil {
 
   // ==========================================================================
   @Test public void testWordCount() throws IOException {
-    File file = FileUtils.locateFile("./smalldata/junit/cars.csv");
+    File file = FileUtils.getFile("./smalldata/junit/cars.csv");
     doWordCount(file);
   }
 

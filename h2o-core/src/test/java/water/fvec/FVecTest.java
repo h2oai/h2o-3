@@ -108,8 +108,7 @@ public class FVecTest extends TestUtil {
   // Test making a appendable vector from a plain vector
   @Test public void testNewVec() {
     // Make and insert a File8Vec to the global store
-    File file = FileUtils.locateFile("./smalldata/junit/cars.csv");
-    NFSFileVec nfs = NFSFileVec.make(file);
+    NFSFileVec nfs = TestUtil.makeNfsFileVec("./smalldata/junit/cars.csv");
     Vec res = new TestNewVec().doAll(new byte[]{Vec.T_NUM},nfs).outputFrame(new String[]{"v"},new String[][]{null}).anyVec();
     assertEquals(nfs.at8(0)+1,res.at8(0));
     assertEquals(nfs.at8(1)+1,res.at8(1));

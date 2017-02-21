@@ -101,7 +101,7 @@ public class GLRMTest extends TestUtil {
     Frame train;
     InputStream is;
     try {
-      is = new FileInputStream(FileUtils.locateFile("bigdata/laptop/census/ACS_13_5YR_DP02_cleaned.zip"));
+      is = new FileInputStream(FileUtils.getFile("bigdata/laptop/census/ACS_13_5YR_DP02_cleaned.zip"));
       UploadFileVec.ReadPutStats stats = new UploadFileVec.ReadPutStats();
       UploadFileVec.readPut("train",is,stats);
     } catch (Exception e) {

@@ -35,9 +35,9 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
 
     try {
 
-      NFSFileVec  nfs = NFSFileVec.make(FileUtils.locateFile(PATH));
+      NFSFileVec  nfs = TestUtil.makeNfsFileVec(PATH);
       train = ParseDataset.parse(Key.make("train.hex"), nfs._key);
-      NFSFileVec  nfs2 = NFSFileVec.make(FileUtils.locateFile(PATH2));
+      NFSFileVec  nfs2 = TestUtil.makeNfsFileVec(PATH2);
       test = ParseDataset.parse(Key.make("test.hex"), nfs2._key);
 
       for (float sparsity_beta : new float[]{0, 0.1f}) {

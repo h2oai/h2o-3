@@ -12,7 +12,7 @@ class FrameOpsTest extends TestUtil {
 
   @Test
   def testParserSetup(): Unit = {
-    val irisFile = FileUtils.locateFile("smalldata/iris/iris.csv")
+    val irisFile = FileUtils.getFile("smalldata/iris/iris.csv")
     val f1 = new H2OFrame(irisFile)
     // Default setup
     val parserSetup = H2OFrame.defaultParserSetup()
@@ -35,7 +35,7 @@ class FrameOpsTest extends TestUtil {
 
   @Test
   def testApplyMethod1(): Unit = {
-    val carsFile = FileUtils.locateFile("smalldata/junit/cars.csv")
+    val carsFile = FileUtils.getFile("smalldata/junit/cars.csv")
     val f1 = new H2OFrame(carsFile)
     val subframe = f1('name)
     try {

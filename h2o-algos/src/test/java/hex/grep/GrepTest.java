@@ -23,10 +23,8 @@ public class GrepTest extends TestUtil {
       //TODO: fix with original regex
       //String regex = "Iris-versicolor";
       String regex = "ver..c\\wl[ob]r";
-      File f = FileUtils.locateFile("smalldata/iris/iris_wheader.csv");
-      //String regex = "(?:(\\w)\\1){5}";
-      //File f = new File("bigdata/text8.txt");
-      NFSFileVec nfs = NFSFileVec.make(f);
+      NFSFileVec nfs = TestUtil.makeNfsFileVec("smalldata/iris/iris_wheader.csv");
+
       DKV.put(fr = new Frame(Key.<Frame>make(), new String[]{"text"}, new Vec[]{nfs}));
 //      long now = System.nanoTime();
       GrepModel.GrepParameters parms = new GrepModel.GrepParameters();

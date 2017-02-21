@@ -22,7 +22,7 @@ public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {
   public void run() {
     long seed = 0xDECAF;
 
-    NFSFileVec  nfs = NFSFileVec.make(FileUtils.locateFile(PATH));
+    NFSFileVec  nfs = TestUtil.makeNfsFileVec(PATH);
     Frame train = ParseDataset.parse(Key.make("train.hex"), nfs._key);
 
     DeepLearningParameters p = new DeepLearningParameters();

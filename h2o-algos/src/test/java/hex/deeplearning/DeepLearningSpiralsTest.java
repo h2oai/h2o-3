@@ -21,7 +21,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
 
   @Test public void run() {
     Scope.enter();
-    NFSFileVec  nfs = NFSFileVec.make(FileUtils.locateFile("smalldata/junit/two_spiral.csv"));
+    NFSFileVec  nfs = TestUtil.makeNfsFileVec("smalldata/junit/two_spiral.csv");
     Frame frame = ParseDataset.parse(Key.make(), nfs._key);
     Log.info(frame);
     int resp = frame.names().length-1;

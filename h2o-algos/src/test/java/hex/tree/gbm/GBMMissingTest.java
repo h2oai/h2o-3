@@ -41,7 +41,7 @@ public class GBMMissingTest extends TestUtil {
       double err=0;
       try {
         Scope.enter();
-        NFSFileVec  nfs = NFSFileVec.make(FileUtils.locateFile("smalldata/junit/weather.csv"));
+        NFSFileVec  nfs = TestUtil.makeNfsFileVec("smalldata/junit/weather.csv");
         data = ParseDataset.parse(Key.make("data.hex"), nfs._key);
         Log.info("FrameSplitting");
         // Create holdout test data on clean data (before adding missing values)
