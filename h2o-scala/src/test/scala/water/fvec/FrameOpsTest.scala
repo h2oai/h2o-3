@@ -1,6 +1,7 @@
 package water.fvec
 
 import org.junit.{Assert, Test, BeforeClass}
+import water.util.FileUtils
 import water.TestUtil
 import water.parser.ParseSetup
 
@@ -11,7 +12,7 @@ class FrameOpsTest extends TestUtil {
 
   @Test
   def testParserSetup(): Unit = {
-    val irisFile = find_test_file("smalldata/iris/iris.csv")
+    val irisFile = FileUtils.locateFile("smalldata/iris/iris.csv")
     val f1 = new H2OFrame(irisFile)
     // Default setup
     val parserSetup = H2OFrame.defaultParserSetup()
@@ -34,7 +35,7 @@ class FrameOpsTest extends TestUtil {
 
   @Test
   def testApplyMethod1(): Unit = {
-    val carsFile = find_test_file("smalldata/junit/cars.csv")
+    val carsFile = FileUtils.locateFile("smalldata/junit/cars.csv")
     val f1 = new H2OFrame(carsFile)
     val subframe = f1('name)
     try {

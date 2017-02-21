@@ -10,6 +10,7 @@ import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
+import water.util.FileUtils;
 import water.util.FrameUtils;
 import water.util.Log;
 
@@ -48,7 +49,7 @@ public class DeepLearningMissingTest extends TestUtil {
         double loss =0;
         try {
           Scope.enter();
-          NFSFileVec  nfs = NFSFileVec.make(find_test_file("smalldata/junit/weather.csv"));
+          NFSFileVec  nfs = NFSFileVec.make(FileUtils.locateFile("smalldata/junit/weather.csv"));
           data = ParseDataset.parse(Key.make("data.hex"), nfs._key);
           Log.info("FrameSplitting");
           // Create holdout test data on clean data (before adding missing values)

@@ -1,6 +1,7 @@
 package water;
 
 import java.util.UUID;
+import static water.util.FileUtils.*;
 
 public class AccuracyTestingUtil extends TestUtil {
     private static boolean _stall_called_before = false;
@@ -18,7 +19,7 @@ public class AccuracyTestingUtil extends TestUtil {
             if (H2O.getCloudSize() < x) {
                 // Leader node, where the tests execute from.
                 String cloudName = UUID.randomUUID().toString();
-                String[] args = new String[]{"-name",cloudName,"-ice_root",find_test_file_static(logDir + "/results").
+                String[] args = new String[]{"-name",cloudName,"-ice_root", locateFile(logDir + "/results").
                   toString()};
                 H2O.main(args);
 

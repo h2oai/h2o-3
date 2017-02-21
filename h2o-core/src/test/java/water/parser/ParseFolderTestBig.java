@@ -9,6 +9,7 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
+import water.util.FileUtils;
 
 public class ParseFolderTestBig extends TestUtil {
   @BeforeClass static public void setup() { stall_till_cloudsize(1); }
@@ -53,7 +54,7 @@ public class ParseFolderTestBig extends TestUtil {
     String fname = "bigdata/cust_K/1m.svm";
     Frame k1 = null;
     try {
-      File f = find_test_file(fname);
+      File f = FileUtils.locateFile(fname);
       assert f != null && f.exists():" file not found: " + fname;
       NFSFileVec nfs = NFSFileVec.make(f);
       Job<Frame> job = ParseDataset.parse(Key.make("BIGSVM.hex"),new Key[]{nfs._key},true,ParseSetup.guessSetup(new Key[]{nfs._key}, false, ParseSetup.GUESS_HEADER),false)._job;

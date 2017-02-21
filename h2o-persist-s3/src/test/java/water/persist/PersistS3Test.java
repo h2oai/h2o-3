@@ -3,13 +3,12 @@ package water.persist;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
-import water.api.ImportFilesHandler;
 import water.fvec.Chunk;
 import water.fvec.FileVec;
 import water.fvec.Frame;
+import water.util.FileUtils;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 
 import static junit.framework.TestCase.assertEquals;
 
@@ -44,7 +43,7 @@ public class PersistS3Test extends TestUtil {
       int chunkSize = (int) (v.length() / 3);
       v.setChunkSize(fr, chunkSize);
       long xor = new XORTask().doAll(v)._res;
-      Key k2 = H2O.getPM().anyURIToKey(new URI(find_test_file("smalldata/airlines/AirlinesTrain.csv.zip").getAbsolutePath()));
+      Key k2 = H2O.getPM().anyURIToKey(new URI(FileUtils.locateFile("smalldata/airlines/AirlinesTrain.csv.zip").getAbsolutePath()));
       FileVec v2 = DKV.getGet(k2);
       assertEquals(v2.length(), v.length());
       assertVecEquals(v, v2, 0);

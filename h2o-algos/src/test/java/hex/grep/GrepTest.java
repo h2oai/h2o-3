@@ -8,6 +8,7 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
+import water.util.FileUtils;
 
 import java.io.File;
 import static org.junit.Assert.*;
@@ -22,7 +23,7 @@ public class GrepTest extends TestUtil {
       //TODO: fix with original regex
       //String regex = "Iris-versicolor";
       String regex = "ver..c\\wl[ob]r";
-      File f = find_test_file("smalldata/iris/iris_wheader.csv");
+      File f = FileUtils.locateFile("smalldata/iris/iris_wheader.csv");
       //String regex = "(?:(\\w)\\1){5}";
       //File f = new File("bigdata/text8.txt");
       NFSFileVec nfs = NFSFileVec.make(f);

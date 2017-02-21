@@ -7,6 +7,7 @@ import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.util.FileIntegrityChecker;
+import water.util.FileUtils;
 
 public class ParseProgressTest extends TestUtil {
   // Attempt a multi-jvm parse of covtype.
@@ -15,7 +16,7 @@ public class ParseProgressTest extends TestUtil {
     String[] covtype_locations = new String[]{"../datasets/UCI/UCI-large/covtype/covtype.data", "../../datasets/UCI/UCI-large/covtype/covtype.data", "../datasets/UCI/UCI-large/covtype/covtype.data.gz",  "../demo/UCI-large/covtype/covtype.data", };
     File f = null;
     for( String covtype_location : covtype_locations ) {
-      f = find_test_file( covtype_location );
+      f = FileUtils.locateFile(covtype_location);
       if( f != null && f.exists() )
         break;
     }

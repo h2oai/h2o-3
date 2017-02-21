@@ -1,6 +1,7 @@
 package water;
 
 import org.testng.annotations.*;
+import water.util.FileUtils;
 import water.util.Log;
 
 import java.io.*;
@@ -9,6 +10,7 @@ import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.*;
+import static water.util.FileUtils.*;
 
 public class AccuracyTestingSuite {
   private String logDir;
@@ -40,8 +42,8 @@ public class AccuracyTestingSuite {
     this.logDir = logDir;
     File resultsDir = null, h2oLogsDir = null;
     try {
-      resultsDir = new File(AccuracyTestingUtil.find_test_file_static(logDir).getCanonicalFile().toString() + "/results");
-      h2oLogsDir = new File(AccuracyTestingUtil.find_test_file_static(logDir).getCanonicalFile().toString() + "/results/h2ologs");
+      resultsDir = new File(locateFile(logDir).getCanonicalFile().toString() + "/results");
+      h2oLogsDir = new File(locateFile(logDir).getCanonicalFile().toString() + "/results/h2ologs");
     } catch (IOException e) {
       System.out.println("Couldn't create directory.");
       e.printStackTrace();
@@ -54,7 +56,7 @@ public class AccuracyTestingSuite {
 
     File suiteSummary;
     try {
-      suiteSummary = new File(AccuracyTestingUtil.find_test_file_static(logDir).getCanonicalFile().toString() +
+      suiteSummary = new File(locateFile(logDir).getCanonicalFile().toString() +
                               "/results/accuracySuiteSummary.log");
       suiteSummary.createNewFile();
       summaryLog = new PrintStream(new FileOutputStream(suiteSummary, false));
@@ -83,7 +85,7 @@ public class AccuracyTestingSuite {
 
     // Data sets
     this.dataSetsCSVPath = dataSetsCSVPath;
-    File dataSetsFile = AccuracyTestingUtil.find_test_file_static(this.dataSetsCSVPath);
+    File dataSetsFile = locateFile(this.dataSetsCSVPath);
     try {
       dataSetsCSVRows = Files.readAllLines(dataSetsFile.toPath(), Charset.defaultCharset());
     } catch (IOException e) {
@@ -164,7 +166,7 @@ public class AccuracyTestingSuite {
 
     try {
       summaryLog.println("Reading test cases from: " + testCasesCSVPath);
-      File testCasesFile = AccuracyTestingUtil.find_test_file_static(this.testCasesCSVPath);
+      File testCasesFile = locateFile(this.testCasesCSVPath);
       testCaseEntries = Files.readAllLines(testCasesFile.toPath(), Charset.defaultCharset());
     }
     catch (Exception e) {
