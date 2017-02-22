@@ -238,17 +238,20 @@ public class TestUtil extends Iced {
   
   public static Frame parse_test_file( Key outputKey, String fname) {
     NFSFileVec nfs = makeNfsFileVec(fname);
+    assertNotNull(nfs);
     return ParseDataset.parse(outputKey, nfs._key);
   }
 
   protected Frame parse_test_file( Key outputKey, String fname, boolean guessSetup) {
     NFSFileVec nfs = makeNfsFileVec(fname);
+    assertNotNull(nfs);
     return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, ParseSetup.guessSetup(new Key[]{nfs._key},false,1));
   }
 
   protected Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types ) {
     NFSFileVec nfs = makeNfsFileVec(fname);
-
+    assertNotNull(nfs);
+    
     Key[] res = {nfs._key};
 
     // create new parseSetup in order to store our na_string
@@ -282,6 +285,7 @@ public class TestUtil extends Iced {
   protected Frame parse_test_folder( String fname ) {
     File folder = FileUtils.locateFile(fname);
     File[] files = contentsOf(fname, folder);
+    assertNotNull(files);
     Arrays.sort(files);
     ArrayList<Key> keys = new ArrayList<>();
     for( File f : files )
@@ -298,11 +302,12 @@ public class TestUtil extends Iced {
    *
    * @param fname name of folder
    * @param na_string string for NA in a column
-   * @return
+   * @return parsed frame
    */
   protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types ) {
     File folder = FileUtils.locateFile(fname);
     File[] files = contentsOf(fname, folder);
+    assertNotNull(files);
     Arrays.sort(files);
     ArrayList<Key> keys = new ArrayList<>();
     for( File f : files )
@@ -356,7 +361,7 @@ public class TestUtil extends Iced {
     chunk.close(0, fs);
     Vec vec = avec.layout_and_close(fs);
     fs.blockForPending();
-    return vec;
+    return Scope.track(vec);
   }
 
   /** A numeric Vec from an array of ints */

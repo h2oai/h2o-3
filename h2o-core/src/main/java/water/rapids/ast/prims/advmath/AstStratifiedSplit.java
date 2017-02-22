@@ -1,6 +1,5 @@
 package water.rapids.ast.prims.advmath;
 
-import org.apache.commons.lang.ArrayUtils;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -16,6 +15,10 @@ import java.util.*;
 import static water.util.RandomUtils.getRNG;
 
 public class AstStratifiedSplit extends AstPrimitive {
+
+  public static String TestTrainSplitColName = "test_train_split";
+  public static String[] SplittingDom = new String[]{"train", "test"};
+
   @Override
   public String[] args() {
     return new String[]{"ary", "test_frac", "seed"};
@@ -31,7 +34,6 @@ public class AstStratifiedSplit extends AstPrimitive {
     return "h2o.random_stratified_split";
   }
 
-  String[] SplittingDom = new String[]{"train", "test"};
 
   @Override
   public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
@@ -59,7 +61,7 @@ public class AstStratifiedSplit extends AstPrimitive {
     final Vec vec = sourceFrame.anyVec();
     Vec resVec = Vec.makeCon(0, vec == null ? 0 : vec.length());
     resVec.setDomain(splittingDom);
-    Frame result = new Frame(k1, new String[]{"test_train_split"}, new Vec[]{resVec});
+    Frame result = new Frame(k1, new String[]{TestTrainSplitColName}, new Vec[]{resVec});
     DKV.put(result);
     // create index frame
     ClassIdxTask finTask = new ClassIdxTask(nClass,classes).doAll(sourceFrame);
@@ -68,16 +70,16 @@ public class AstStratifiedSplit extends AstPrimitive {
     for (int classLabel = 0; classLabel < nClass; classLabel++) {
         // extract frame with index locations of the minority class
         // calculate target number of this class to go to test
-        long tnum = Math.max(Math.round(finTask._iarray[classLabel].size() * splittingFraction), 1);
+        long tnum = Math.max(Math.round(finTask.indexes[classLabel].size() * splittingFraction), 1);
 
         HashSet<Long> tmpIdxs = new HashSet<>();
         // randomly select the target number of indexes
         int generated = 0;
         int count = 0;
         while (generated < tnum) {
-          int i = (int) (getRNG(count+ randomizationSeed).nextDouble() * finTask._iarray[classLabel].size());
-          if (tmpIdxs.contains(finTask._iarray[classLabel].get(i))) { count+=1;continue; }
-          tmpIdxs.add(finTask._iarray[classLabel].get(i));
+          int i = (int) (getRNG(count+ randomizationSeed).nextDouble() * finTask.indexes[classLabel].size());
+          if (tmpIdxs.contains(finTask.indexes[classLabel].get(i))) { count+=1;continue; }
+          tmpIdxs.add(finTask.indexes[classLabel].get(i));
           generated += 1;
           count += 1;
         }
@@ -109,30 +111,33 @@ public class AstStratifiedSplit extends AstPrimitive {
   }
 
   public static class ClassIdxTask extends MRTask<AstStratifiedSplit.ClassIdxTask> {
-    LongAry[] _iarray;
+    LongAry[] indexes;
     int _nclasses;
-    ArrayList<Long> _classes;
+    HashMap<Long, Integer> classMap; // it's Iced's bug that it does not take Map, needs HashMap
+
     ClassIdxTask(int nclasses, long[] classes) {
+      classMap = new HashMap<>(classes.length);
+      for (int i = 0; i < classes.length; i++) {
+        classMap.put(classes[i], i);
+      }
       _nclasses = nclasses;
-      Long[] boxed = ArrayUtils.toObject(classes);
-      _classes = new ArrayList<>(Arrays.asList(boxed));
     }
 
     @Override
     public void map(Chunk[] ck) {
-      _iarray = new LongAry[_nclasses];
-      for (int i = 0; i < _nclasses; i++) { _iarray[i] = new LongAry(); }
+      indexes = new LongAry[_nclasses];
+      for (int i = 0; i < _nclasses; i++) { indexes[i] = new LongAry(); }
       for (int i = 0; i < ck[0].len(); i++) {
         long clas = ck[0].at8(i);
-        int clas_idx = _classes.indexOf(clas);
-        _iarray[clas_idx].add(ck[0].start() + i);
+        Integer clas_idx = classMap.get(clas);
+        if (clas_idx != null) indexes[clas_idx].add(ck[0].start() + i);
       }
     }
     @Override
     public void reduce(AstStratifiedSplit.ClassIdxTask c) {
-      for (int i = 0; i < c._iarray.length; i++) {
-        for (int j = 0; j < c._iarray[i].size(); j++) {
-          _iarray[i].add(c._iarray[i].get(j));
+      for (int i = 0; i < c.indexes.length; i++) {
+        for (int j = 0; j < c.indexes[i].size(); j++) {
+          indexes[i].add(c.indexes[i].get(j));
         }
       }
     }
