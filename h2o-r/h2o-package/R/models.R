@@ -2907,6 +2907,7 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
   col_types = unlist(h2o.getTypes(data))
   col_names = names(data)
   pp.plot <- function(pp) {
+    pp = pp[,1:2]
     if(!all(is.na(pp))) {
       type = col_types[which(col_names == names(pp)[1])]
       if(type == "enum") pp[,1] = as.factor( pp[,1])
