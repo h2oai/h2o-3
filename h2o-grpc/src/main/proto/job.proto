@@ -32,8 +32,9 @@ message JobInfo {
     }
 
     enum TargetType {
-        FRAME = 0;
-        MODEL = 1;
+        UNKNOWN = 0;
+        FRAME = 1;
+        MODEL = 2;
     }
 
     string job_id = 2;
