@@ -1,6 +1,7 @@
 package hex.genmodel;
 
 import hex.genmodel.utils.ParseUtils;
+import hex.genmodel.utils.StringEscapeUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -92,12 +93,22 @@ public abstract class ModelMojoReader<M extends MojoModel> {
    * trimmed to remove the leading and trailing whitespace.
    */
   protected Iterable<String> readtext(String name) throws IOException {
+    return readtext(name, false);
+  }
+
+  /**
+   * Retrieve text previously saved using `startWritingTextFile` + `writeln` as an array of lines. Each line is
+   * trimmed to remove the leading and trailing whitespace. Removes escaping of the new line characters in enabled.
+   */
+  protected Iterable<String> readtext(String name, boolean unescapeNewlines) throws IOException {
     BufferedReader br = _reader.getTextFile(name);
     String line;
     ArrayList<String> res = new ArrayList<>(50);
     while (true) {
       line = br.readLine();
       if (line == null) break;
+      if (unescapeNewlines)
+        line = StringEscapeUtils.unescapeNewlines(line);
       res.add(line.trim());
     }
     return res;

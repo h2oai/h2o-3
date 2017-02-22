@@ -50,6 +50,9 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
     // Do not remove String columns - these are the ones we need!
   }
 
+  @Override
+  public boolean haveMojo() { return true; }
+
   private class Word2VecDriver extends Driver {
     @Override public void computeImpl() {
       Word2VecModel model = null;
