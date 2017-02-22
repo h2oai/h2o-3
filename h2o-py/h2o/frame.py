@@ -1242,12 +1242,7 @@ class H2OFrame(object):
         This will create a multiline string, where each line will contain a separate row of frame's data, with
         individual values separated by commas.
         """
-        url = h2o.connection().make_url("DownloadDataset", 3) + "?frame_id={}&hex_string=false".format(self.frame_id)
-        # TODO: this should be moved into H2OConnection class
-        return requests.get(url, headers={'User-Agent': 'H2O Python client/' + sys.version.replace('\n', ''),
-                                  'Cookie': h2o.connection()._cookies},
-                            auth=h2o.connection()._auth,
-                            verify=h2o.connection()._verify_ssl_cert, stream=True).text
+        return h2o.api("GET /3/DownloadDataset", data={"frame_id": self.frame_id, "hex_string": False})
 
 
     def __getitem__(self, item):
