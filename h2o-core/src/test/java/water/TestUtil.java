@@ -1,5 +1,6 @@
 package water;
 
+import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -14,6 +15,7 @@ import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 import water.util.*;
 import water.util.Timer;
+import water.util.TwoDimTable;
 
 import java.io.File;
 import java.io.IOException;

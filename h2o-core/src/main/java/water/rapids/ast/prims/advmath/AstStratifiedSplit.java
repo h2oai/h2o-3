@@ -68,22 +68,22 @@ public class AstStratifiedSplit extends AstPrimitive {
     // loop through each class
     HashSet<Long> usedIdxs = new HashSet<>();
     for (int classLabel = 0; classLabel < nClass; classLabel++) {
-        // extract frame with index locations of the minority class
-        // calculate target number of this class to go to test
-        long tnum = Math.max(Math.round(finTask.indexes[classLabel].size() * splittingFraction), 1);
+      // extract frame with index locations of the minority class
+      // calculate target number of this class to go to test
+      long tnum = Math.max(Math.round(finTask.indexes[classLabel].size() * splittingFraction), 1);
 
-        HashSet<Long> tmpIdxs = new HashSet<>();
-        // randomly select the target number of indexes
-        int generated = 0;
-        int count = 0;
-        while (generated < tnum) {
-          int i = (int) (getRNG(count+ randomizationSeed).nextDouble() * finTask.indexes[classLabel].size());
-          if (tmpIdxs.contains(finTask.indexes[classLabel].get(i))) { count+=1;continue; }
-          tmpIdxs.add(finTask.indexes[classLabel].get(i));
-          generated += 1;
-          count += 1;
-        }
-        usedIdxs.addAll(tmpIdxs);
+      HashSet<Long> tmpIdxs = new HashSet<>();
+      // randomly select the target number of indexes
+      int generated = 0;
+      int count = 0;
+      while (generated < tnum) {
+        int i = (int) (getRNG(count+ randomizationSeed).nextDouble() * finTask.indexes[classLabel].size());
+        if (tmpIdxs.contains(finTask.indexes[classLabel].get(i))) { count+=1;continue; }
+        tmpIdxs.add(finTask.indexes[classLabel].get(i));
+        generated += 1;
+        count += 1;
+      }
+      usedIdxs.addAll(tmpIdxs);
     }
     new ClassAssignMRTask(usedIdxs).doAll(result.anyVec());
     return result;
@@ -95,18 +95,18 @@ public class AstStratifiedSplit extends AstPrimitive {
   }
 
   public static class ClassAssignMRTask extends MRTask<AstStratifiedSplit.ClassAssignMRTask> {
-     HashSet<Long> _idx;
-     ClassAssignMRTask(HashSet<Long> idx) {
-         _idx = idx;
-     }
-     @Override
-     public void map(Chunk ck) {
-       for (int i = 0; i<ck.len(); i++) {
-           if (_idx.contains(ck.start() + i)) {
-               ck.set(i,1.0);
-           }
-       }
-     }
+    HashSet<Long> _idx;
+    ClassAssignMRTask(HashSet<Long> idx) {
+      _idx = idx;
+    }
+    @Override
+    public void map(Chunk ck) {
+      for (int i = 0; i<ck.len(); i++) {
+        if (_idx.contains(ck.start() + i)) {
+          ck.set(i,1.0);
+        }
+      }
+    }
 
   }
 
