@@ -1,6 +1,5 @@
 from .transform_base import H2OTransformer
 import warnings
-from ..assembly import H2OCol
 
 
 class H2OScaler(H2OTransformer):
@@ -107,8 +106,8 @@ class H2OColSelect(H2OTransformer):
 
 
     def to_rest(self, step_name):
-        ast = self._dummy_frame()[self.cols]._ex._to_string()
-        return super(H2OColSelect, self).to_rest([step_name, "H2OColSelect", ast, False, "|"])
+        args = [step_name, "H2OColSelect", ("(cols_py dummy %r)" % self.cols), False, "|"]
+        return super(H2OColSelect, self).to_rest(args)
 
 
 
@@ -188,3 +187,17 @@ class H2OBinaryOp(H2OColOp):
     def _transform_helper(self, X, **params):
         if self.left is None: return self.fun(X[self.col], X[self.right.col] if self.right_is_col else self.right)
         return self.fun(X[self.left.col] if self.left_is_col else self.left, X[self.col])
+
+
+
+class H2OCol(object):
+    """
+    Wrapper class for H2OBinaryOp step's left/right args.
+
+    Use if you want to signal that a column actually comes from the train to be fitted on.
+    """
+
+    def __init__(self, column):
+        self.col = column
+
+        # TODO: handle arbitrary (non H2OFrame) inputs -- sql, web, file, generated
