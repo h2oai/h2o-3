@@ -177,13 +177,13 @@ class H2OWord2vecEstimator(H2OEstimator):
         """
         Id of a data frame that contains a pre-trained (external) word2vec model
 
-        Type: ``str``.
+        Type: ``H2OFrame``.
         """
         return self._parms.get("pre_trained")
 
     @pre_trained.setter
     def pre_trained(self, pre_trained):
-        assert_is_type(pre_trained, None, str)
+        assert_is_type(pre_trained, None, H2OFrame)
         self._parms["pre_trained"] = pre_trained
 
 
