@@ -1244,7 +1244,8 @@ class H2OFrame(object):
         """
         url = h2o.connection().make_url("DownloadDataset", 3) + "?frame_id={}&hex_string=false".format(self.frame_id)
         # TODO: this should be moved into H2OConnection class
-        return requests.get(url, headers={'User-Agent': 'H2O Python client/' + sys.version.replace('\n', '')},
+        return requests.get(url, headers={'User-Agent': 'H2O Python client/' + sys.version.replace('\n', ''),
+                                  'Cookie': h2o.connection()._cookies},
                             auth=h2o.connection()._auth,
                             verify=h2o.connection()._verify_ssl_cert, stream=True).text
 
