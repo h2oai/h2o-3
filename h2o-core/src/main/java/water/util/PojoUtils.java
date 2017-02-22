@@ -12,6 +12,7 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -444,6 +445,12 @@ public class PojoUtils {
 
       if (null == value) {
         f.set(o, null);
+        return;
+      }
+
+      if (List.class.isAssignableFrom(value.getClass()) && f.getType().isArray() && f.getType().getComponentType() == String.class) {
+        // convert ArrayList to array and try again
+        setField(o, fieldName, ((List)value).toArray(new String[0]));
         return;
       }
 
