@@ -22,7 +22,7 @@ import requests
 
 import h2o
 from h2o.display import H2ODisplay
-from h2o.exceptions import H2OValueError
+from h2o.exceptions import H2OTypeError, H2OValueError
 from h2o.expr import ExprNode
 from h2o.group_by import GroupBy
 from h2o.job import H2OJob
@@ -98,6 +98,7 @@ class H2OFrame(object):
 
         self._ex = ExprNode()
         self._ex._children = None
+        self._is_frame = True  # Indicate that this is an actual frame, allowing typechecks to be made
         if python_obj is not None:
             self._upload_python_object(python_obj, destination_frame, header, separator,
                                        column_names, column_types, na_strings)
@@ -516,11 +517,14 @@ class H2OFrame(object):
         return H2OFrame._expr(expr=ExprNode("not", self), cache=self._ex._cache)
 
 
-    def _unop(self, op):
+    def _unop(self, op, rtype="real"):
+        if self._is_frame:
+            for cname, ctype in self.types.items():
+                if ctype not in {"int", "real", "bool"}:
+                    raise H2OValueError("Function %s cannot be applied to %s column '%s'" % (op, ctype, cname))
         ret = H2OFrame._expr(expr=ExprNode(op, self), cache=self._ex._cache)
-        if ret._ex._cache._names is not None:
-            ret._ex._cache._names = ["%s(%s)" % (op, name) for name in ret._ex._cache._names]
-            ret._ex._cache._types = None
+        ret._ex._cache._names = ["%s(%s)" % (op, name) for name in self._ex._cache._names]
+        ret._ex._cache._types = {name: rtype for name in ret._ex._cache._names}
         return ret
 
 
@@ -749,7 +753,7 @@ class H2OFrame(object):
 
     def sign(self):
         """Return new H2OFrame equal to signs of the values in the frame: -1 , +1, or 0."""
-        return self._unop("sign")
+        return self._unop("sign", rtype="int")
 
 
     def sqrt(self):
@@ -766,7 +770,7 @@ class H2OFrame(object):
 
         :returns: new H2OFrame of truncated values of the original frame.
         """
-        return self._unop("trunc")
+        return self._unop("trunc", rtype="int")
 
 
     def ceil(self):
@@ -777,7 +781,7 @@ class H2OFrame(object):
 
         :returns: new H2OFrame of ceiling values of the original frame.
         """
-        return self._unop("ceiling")
+        return self._unop("ceiling", rtype="int")
 
 
     def floor(self):
@@ -788,7 +792,7 @@ class H2OFrame(object):
 
         :returns: new H2OFrame of floor values of the original frame.
         """
-        return self._unop("floor")
+        return self._unop("floor", rtype="int")
 
 
     def log(self):
@@ -1342,6 +1346,7 @@ class H2OFrame(object):
         fr._ex._cache.nrows = new_nrows
         fr._ex._cache.names = new_names
         fr._ex._cache.types = new_types
+        fr._is_frame = self._is_frame
         return fr
 
     def _compute_ncol_update(self, item):  # computes new ncol, names, and types
@@ -2821,7 +2826,7 @@ class H2OFrame(object):
 def _binop(lhs, op, rhs):
     assert_is_type(lhs, str, numeric, datetime.date, pandas_timestamp, numpy_datetime, H2OFrame)
     assert_is_type(rhs, str, numeric, datetime.date, pandas_timestamp, numpy_datetime, H2OFrame)
-    if isinstance(lhs, H2OFrame) and isinstance(rhs, H2OFrame):
+    if isinstance(lhs, H2OFrame) and isinstance(rhs, H2OFrame) and lhs._is_frame and rhs._is_frame:
         lrows, lcols = lhs.shape
         rrows, rcols = rhs.shape
         compatible = ((lcols == rcols and lrows == rrows) or

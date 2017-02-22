@@ -5,8 +5,10 @@ import uuid
 
 import h2o
 from h2o.frame import H2OFrame
+from h2o.transforms.transform_base import H2OTransformer
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import urlopen, quoted
+from h2o.utils.typechecks import assert_is_type
 
 
 class H2OAssembly(object):
@@ -35,10 +37,11 @@ class H2OAssembly(object):
         """
         Build a new H2OAssembly.
 
-        :param steps: A list of steps that sequentially transforms the input data.
-
-        :returns: H2OFrame
+        :param steps: A list of steps that sequentially transforms the input
+            data. Each step is a tuple ``(name, operation)``, where each
+            ``operation`` is an instance of an ``H2OTransformer`` class.
         """
+        assert_is_type(steps, [(str, H2OTransformer)])
         self.id = None
         self.steps = steps
         self.fuzed = []
@@ -52,7 +55,11 @@ class H2OAssembly(object):
 
 
     def to_pojo(self, pojo_name="", path="", get_jar=True):
-        if pojo_name == "": pojo_name = "AssemblyPOJO_" + str(uuid.uuid4())
+        assert_is_type(pojo_name, str)
+        assert_is_type(path, str)
+        assert_is_type(get_jar, bool)
+        if pojo_name == "":
+            pojo_name = "AssemblyPOJO_" + str(uuid.uuid4())
         java = h2o.api("GET /99/Assembly.java/%s/%s" % (self.id, pojo_name))
         file_path = path + "/" + pojo_name + ".java"
         if path == "":
@@ -80,26 +87,10 @@ class H2OAssembly(object):
     #     self.fuzed.append(i)
 
 
-    def fit(self, fr, **fit_params):
-        res = []
-        for step in self.steps:
-            res.append(step[1].to_rest(step[0]))
-        res = "[" + ",".join([quoted(r.replace('"', "'")) for r in res]) + "]"
-        j = h2o.api("POST /99/Assembly", data={"steps": res, "frame": fr.frame_id})
+    def fit(self, fr):
+        assert_is_type(fr, H2OFrame)
+        steps = "[%s]" % ",".join(quoted(step[1].to_rest(step[0]).replace('"', "'")) for step in self.steps)
+        j = h2o.api("POST /99/Assembly", data={"steps": steps, "frame": fr.frame_id})
         self.id = j["assembly"]["name"]
         return H2OFrame.get_frame(j["result"]["name"])
 
-
-
-
-class H2OCol(object):
-    """
-    Wrapper class for H2OBinaryOp step's left/right args.
-
-    Use if you want to signal that a column actually comes from the train to be fitted on.
-    """
-
-    def __init__(self, column):
-        self.col = column
-
-        # TODO: handle arbitrary (non H2OFrame) inputs -- sql, web, file, generated

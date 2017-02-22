@@ -78,7 +78,7 @@ class H2OTypeError(H2OSoftError, TypeError):
         var = self._var_name
         val = self._var_value
         atn = self._var_type_name
-        etn = self._exp_type_name
+        etn = self._exp_type_name or ""
         article = "an" if etn.lstrip("?")[0] in "aioeH" else "a"
         return "Argument `{var}` should be {an} {expected_type}, got {actual_type} {value}".\
                format(var=var, an=article, expected_type=etn, actual_type=atn, value=val)

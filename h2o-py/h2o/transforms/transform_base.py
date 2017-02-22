@@ -28,6 +28,7 @@ class H2OTransformer(object):
       - fit_transform
       - inverse_transform
       - export
+      - to_rest
     """
 
     # def __init__(self):
@@ -79,6 +80,7 @@ class H2OTransformer(object):
     @staticmethod
     def _dummy_frame():
         fr = H2OFrame._expr(expr.ExprNode())
+        fr._is_frame = False
         fr._ex._children = None
         fr._ex._cache.dummy_fill()
         return fr
