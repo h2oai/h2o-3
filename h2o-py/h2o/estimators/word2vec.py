@@ -24,7 +24,7 @@ class H2OWord2vecEstimator(H2OEstimator):
         super(H2OWord2vecEstimator, self).__init__()
         self._parms = {}
         names_list = {"model_id", "training_frame", "min_word_freq", "word_model", "norm_model", "vec_size",
-                      "window_size", "sent_sample_rate", "init_learning_rate", "epochs"}
+                      "window_size", "sent_sample_rate", "init_learning_rate", "epochs", "pre_trained"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -170,5 +170,20 @@ class H2OWord2vecEstimator(H2OEstimator):
     def epochs(self, epochs):
         assert_is_type(epochs, None, int)
         self._parms["epochs"] = epochs
+
+
+    @property
+    def pre_trained(self):
+        """
+        Id of a data frame that contains a pre-trained (external) word2vec model
+
+        Type: ``str``.
+        """
+        return self._parms.get("pre_trained")
+
+    @pre_trained.setter
+    def pre_trained(self, pre_trained):
+        assert_is_type(pre_trained, None, str)
+        self._parms["pre_trained"] = pre_trained
 
 
