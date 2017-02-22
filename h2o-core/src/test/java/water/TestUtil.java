@@ -1,6 +1,5 @@
 package water;
 
-import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Ignore;
