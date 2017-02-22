@@ -1,9 +1,6 @@
 package water.udf.fp;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Operations on functions
@@ -44,9 +41,9 @@ public class Functions {
     };
   }
 
-  public static <T> Function<Long, T> onList(final List<T> list) {
-    return new Function<Long, T>() {
-      public T apply(Long i) { return list.get(i.intValue()); }
+  public static <X> Function<Long, X> onList(final List<X> list) {
+    return new Function<Long, X>() {
+      public X apply(Long i) { return list.get(i.intValue()); }
     };
   }
   
@@ -120,6 +117,46 @@ public class Functions {
     }
   }
 
+  public static <X> Function<Integer, X> fromArray(final X[] array) {
+    return new Function<Integer, X>() {
+
+      @Override
+      public X apply(Integer i) {
+        return array[i];
+      }
+    };
+  }
+
+  public static Function<Integer, Integer> fromArray(final int[] array) {
+    return new Function<Integer, Integer>() {
+
+      @Override
+      public Integer apply(Integer i) {
+        return array[i];
+      }
+    };
+  }
+
+  public static <X> Function<Integer, X> fromCollection(final List<X> xs) {
+    return new Function<Integer, X>() {
+
+      @Override
+      public X apply(Integer i) {
+        return xs.get(i);
+      }
+    };
+  }
+
+  public static <X> Function<Integer, String> format(final String format) {
+    return new Function<Integer, String>() {
+
+      @Override
+      public String apply(Integer i) {
+        return String.format(format, i);
+      }
+    };
+  }
+  
   public static Unfoldable<Integer, Integer> oneHotEncode(String[] domain) {
     return new OneHotEncoder(domain);
   }

@@ -12,6 +12,8 @@ import water.parser.BufferedString;
 import water.parser.DefaultParserProviders;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
+import water.udf.fp.Function;
+import water.udf.fp.Functions;
 import water.util.*;
 import water.util.Timer;
 import water.util.TwoDimTable;
@@ -343,6 +345,23 @@ public class TestUtil extends Iced {
 
   }
 
+  public static Vec vec(int size, Function<Integer, Integer> generator) {
+    return vec(null, size, generator);
+  }
+  
+  public static Vec vec(String[] domain, int size, Function<Integer, Integer> generator) {
+    Key<Vec> k = Vec.VectorGroup.VG_LEN1.addVec();
+    Futures fs = new Futures();
+    AppendableVec avec = new AppendableVec(k,Vec.T_NUM);
+    avec.setDomain(domain);
+    NewChunk chunk = new NewChunk(avec, 0);
+    for (int i = 0; i < size; i++) chunk.addNum(generator.apply(i));
+    chunk.close(0, fs);
+    Vec vec = avec.layout_and_close(fs);
+    fs.blockForPending();
+    return Scope.track(vec);
+  }
+    
 
   /** A Numeric Vec from an array of ints
    *  @param rows Data
@@ -353,16 +372,7 @@ public class TestUtil extends Iced {
    *  @param rows Data
    *  @return The Vec  */
   public static Vec vec(String[] domain, int ...rows) {
-    Key<Vec> k = Vec.VectorGroup.VG_LEN1.addVec();
-    Futures fs = new Futures();
-    AppendableVec avec = new AppendableVec(k,Vec.T_NUM);
-    avec.setDomain(domain);
-    NewChunk chunk = new NewChunk(avec, 0);
-    for( int r : rows ) chunk.addNum(r);
-    chunk.close(0, fs);
-    Vec vec = avec.layout_and_close(fs);
-    fs.blockForPending();
-    return Scope.track(vec);
+    return vec(domain, rows.length, Functions.fromArray(rows));
   }
 
   /** A numeric Vec from an array of ints */
@@ -427,12 +437,17 @@ public class TestUtil extends Iced {
 
   /** A string Vec from an array of strings */
   public static Vec svec(String...rows) {
+    return svec(rows.length, Functions.fromArray(rows));
+  }
+
+  /** A string Vec from an array of strings */
+  public static Vec svec(int size, Function<Integer, String> generator) {
     Key<Vec> k = Vec.VectorGroup.VG_LEN1.addVec();
     Futures fs = new Futures();
     AppendableVec avec = new AppendableVec(k, Vec.T_STR);
     NewChunk chunk = new NewChunk(avec, 0);
-    for (String r : rows)
-      chunk.addStr(r);
+    for (int i = 0; i < size; i++)
+      chunk.addStr(generator.apply(i));
     chunk.close(0, fs);
     Vec vec = avec.layout_and_close(fs);
     fs.blockForPending();
@@ -452,7 +467,7 @@ public class TestUtil extends Iced {
     fs.blockForPending();
     return vec;
   }
-
+  
   // Shortcuts for initializing constant arrays
   public static String[]   ar (String ...a)   { return a; }
   public static String[][] ar (String[] ...a) { return a; }
