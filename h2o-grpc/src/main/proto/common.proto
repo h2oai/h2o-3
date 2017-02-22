@@ -13,8 +13,9 @@ message Empty {
 
 message Error {
     //
-    string message = 1;
-    string stacktrace = 2;
-    Error cause = 3;
+    string name = 1;
+    string message = 2;
+    string stacktrace = 3;
+    Error cause = 4;
 }
 

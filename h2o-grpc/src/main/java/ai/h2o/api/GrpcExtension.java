@@ -58,11 +58,11 @@ public class GrpcExtension extends AbstractH2OExtension {
       RegisterGrpcApi.registerWithServer(sb);
       netty = sb.build();
       try {
-        Log.info("Starting GRPC server on 127.0.0.1:" + grpcPort);
         netty.start();
+        Log.info("Started GRPC server on localhost:" + grpcPort);
       } catch (IOException e) {
         netty = null;
-        throw new RuntimeException("Failed to start the GRPC server on port " + grpcPort);
+        throw new RuntimeException("Failed to start the GRPC server on port " + grpcPort, e);
       }
       Runtime.getRuntime().addShutdownHook(new Thread() {
         @Override
