@@ -98,6 +98,7 @@ class H2OFrame(object):
 
         self._ex = ExprNode()
         self._ex._children = None
+        self._is_frame = True  # Indicate that this is an actual frame, allowing typechecks to be made
         if python_obj is not None:
             self._upload_python_object(python_obj, destination_frame, header, separator,
                                        column_names, column_types, na_strings)
@@ -517,9 +518,10 @@ class H2OFrame(object):
 
 
     def _unop(self, op, rtype="real"):
-        for cname, ctype in self.types.items():
-            if ctype not in {"int", "real", "bool"}:
-                raise H2OTypeError("Function %s cannot be applied to %s column '%s'" % (op, ctype, cname))
+        if self._is_frame:
+            for cname, ctype in self.types.items():
+                if ctype not in {"int", "real", "bool"}:
+                    raise H2OTypeError("Function %s cannot be applied to %s column '%s'" % (op, ctype, cname))
         ret = H2OFrame._expr(expr=ExprNode(op, self), cache=self._ex._cache)
         ret._ex._cache._names = ["%s(%s)" % (op, name) for name in self._ex._cache._names]
         ret._ex._cache._types = {name: rtype for name in ret._ex._cache._names}
@@ -1344,6 +1346,7 @@ class H2OFrame(object):
         fr._ex._cache.nrows = new_nrows
         fr._ex._cache.names = new_names
         fr._ex._cache.types = new_types
+        fr._is_frame = self._is_frame
         return fr
 
     def _compute_ncol_update(self, item):  # computes new ncol, names, and types
@@ -2823,7 +2826,7 @@ class H2OFrame(object):
 def _binop(lhs, op, rhs):
     assert_is_type(lhs, str, numeric, datetime.date, pandas_timestamp, numpy_datetime, H2OFrame)
     assert_is_type(rhs, str, numeric, datetime.date, pandas_timestamp, numpy_datetime, H2OFrame)
-    if isinstance(lhs, H2OFrame) and isinstance(rhs, H2OFrame):
+    if isinstance(lhs, H2OFrame) and isinstance(rhs, H2OFrame) and lhs._is_frame and rhs._is_frame:
         lrows, lcols = lhs.shape
         rrows, rcols = rhs.shape
         compatible = ((lcols == rcols and lrows == rrows) or
