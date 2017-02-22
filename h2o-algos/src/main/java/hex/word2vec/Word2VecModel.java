@@ -36,7 +36,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
   }
 
   @Override
-  public ModelMojoWriter getMojo() {
+  public Word2VecMojoWriter getMojo() {
     return new Word2VecMojoWriter(this);
   }
 
