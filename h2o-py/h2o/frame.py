@@ -521,7 +521,7 @@ class H2OFrame(object):
         if self._is_frame:
             for cname, ctype in self.types.items():
                 if ctype not in {"int", "real", "bool"}:
-                    raise H2OTypeError("Function %s cannot be applied to %s column '%s'" % (op, ctype, cname))
+                    raise H2OValueError("Function %s cannot be applied to %s column '%s'" % (op, ctype, cname))
         ret = H2OFrame._expr(expr=ExprNode(op, self), cache=self._ex._cache)
         ret._ex._cache._names = ["%s(%s)" % (op, name) for name in self._ex._cache._names]
         ret._ex._cache._types = {name: rtype for name in ret._ex._cache._names}
