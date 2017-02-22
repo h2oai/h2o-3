@@ -42,7 +42,7 @@ def pca_scoring_history_importance():
     # compare singular vectors
     pyunit_utils.assert_H2OTwoDimTable_equal(gramSVD._model_json["output"]["eigenvectors"],
                                            randomizedPCA._model_json["output"]["eigenvectors"],
-                                           randomizedPCA._model_json["output"]["names"], tolerance=1e-2,
+                                           randomizedPCA._model_json["output"]["names"], tolerance=5e-2,
                                            check_sign=True)
 
     # check PCA with PCA set to Power
