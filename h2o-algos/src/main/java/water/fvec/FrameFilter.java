@@ -10,15 +10,15 @@ import java.util.Arrays;
  * 
  * Created by vpatryshev on 2/21/17.
  */
-public abstract class FrameFilter<T> implements Serializable {
+public abstract class FrameFilter implements Serializable {
 
 
   public FrameFilter() {
   }
 
-  abstract boolean accept(Chunk c, int i);
+  public abstract boolean accept(Chunk c, int i);
   
-  Frame eval(Frame dataset, String signalColName) {
+  public Frame eval(Frame dataset, String signalColName) {
     final Vec signal = dataset.vec(signalColName);
     Key<Frame> destinationKey = Key.make();
     Vec flagCol = new MRTask() {
