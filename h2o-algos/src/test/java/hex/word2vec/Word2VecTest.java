@@ -8,6 +8,7 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+import water.parser.BufferedString;
 import water.util.Log;
 
 import java.util.*;
@@ -51,7 +52,7 @@ public class Word2VecTest extends TestUtil {
       assertEquals(new HashSet<>(Arrays.asList("b", "c")), hm.keySet());
 
       Vec testWordVec = Scope.track(svec("a", "b", "c", "Unseen", null));
-      Frame wv = Scope.track(w2vm.transform(testWordVec));
+      Frame wv = Scope.track(w2vm.transform(testWordVec, Word2VecModel.AggregateMethod.NONE));
       assertEquals(10, wv.numCols());
       for (int i = 0; i < 10; i++) {
         for (int j = 0; j < 3; j++)
@@ -127,6 +128,51 @@ public class Word2VecTest extends TestUtil {
     } finally {
       fr.remove();
       if( w2vm != null) w2vm.delete();
+    }
+  }
+
+  @Test
+  public void testTransformAggregate() {
+    Scope.enter();
+    try {
+      Vec v = Scope.track(svec("a", "b"));
+      Frame fr = Scope.track(new Frame(Key.<Frame>make(), new String[]{"Words"}, new Vec[]{v}));
+      DKV.put(fr);
+
+      // build an arbitrary w2v model & overwrite the learned vector with fixed values
+      Word2VecModel.Word2VecParameters p = new Word2VecModel.Word2VecParameters();
+      p._train = fr._key;
+      p._min_word_freq = 0;
+      p._epochs = 1;
+      p._vec_size = 2;
+      Word2VecModel w2vm = (Word2VecModel) Scope.track_generic(new Word2Vec(p).trainModel().get());
+      w2vm._output._vecs = new float[] {1.0f, 0.0f, 0.0f, 1.0f};
+      DKV.put(w2vm);
+
+      String[] sentences = {
+              "a", "b", null,
+              "a", "c", null,
+              "c", null,
+              "a", "a" /*chunk end*/, "a", "b", null,
+              "b" // no terminator at the end
+      };
+
+      Frame f = new TestFrameBuilder()
+              .withName("data")
+              .withColNames("Sentences")
+              .withVecTypes(Vec.T_STR)
+              .withDataForCol(0, sentences)
+              .withChunkLayout(10, 4)
+              .build();
+
+      Frame result = Scope.track(w2vm.transform(f.vec(0), Word2VecModel.AggregateMethod.AVERAGE));
+      Vec expectedAs = Scope.track(dvec(0.5, 1.0, Double.NaN, 0.75, 0.0));
+      Vec expectedBs = Scope.track(dvec(0.5, 0.0, Double.NaN, 0.25, 1.0));
+
+      assertVecEquals(expectedAs, result.vec(w2vm._output._vocab.get(new BufferedString("a"))), 0.0001);
+      assertVecEquals(expectedBs, result.vec(w2vm._output._vocab.get(new BufferedString("b"))), 0.0001);
+    } finally {
+      Scope.exit();
     }
   }
 
