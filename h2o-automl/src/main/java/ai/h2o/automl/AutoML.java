@@ -6,6 +6,8 @@ import hex.Model;
 import hex.ModelBuilder;
 import hex.ScoreKeeper;
 import hex.StackedEnsembleModel;
+import hex.deeplearning.DeepLearningModel;
+import hex.glm.GLMModel;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria;
@@ -136,18 +138,18 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     String[] path = this.origTrainingFrame._key.toString().split("/");
     project = path[path.length - 1]
       .replace(".hex", "")
-      .replace("CSV", "")
-      .replace("XLS", "")
-      .replace("XSLX", "")
-      .replace("SVMLight", "")
-      .replace("ARFF", "")
-      .replace("ORC", "")
-      .replace("csv", "")
-      .replace("xls", "")
-      .replace("xslx", "")
-      .replace("svmlight", "")
-      .replace("arff", "")
-      .replace("orc", "");
+      .replace(".CSV", "")
+      .replace(".XLS", "")
+      .replace(".XSLX", "")
+      .replace(".SVMLight", "")
+      .replace(".ARFF", "")
+      .replace(".ORC", "")
+      .replace(".csv", "")
+      .replace(".xls", "")
+      .replace(".xslx", "")
+      .replace(".svmlight", "")
+      .replace(".arff", "")
+      .replace(".orc", "");
     leaderboard = new Leaderboard(project);
 
     /*
@@ -252,6 +254,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   public void pollAndUpdateProgress(String name, long workContribution, Job parentJob, Job subJob) {
+    if (null == subJob) {
+      parentJob.update(workContribution, "SKIPPED: " + name);
+      return;
+    }
     Log.info(name + " started");
     jobs.add(subJob);
 
@@ -312,6 +318,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
    * @return the started hyperparameter search job
    */
   public Job<Grid> hyperparameterSearch(String algoName, Model.Parameters baseParms, Map<String, Object[]> searchParms) {
+    if (0.0 == baseParms._max_runtime_secs) {
+      Log.info("AutoML: out of time; skipping " + algoName + " hyperparameter search");
+      return null;
+    }
     Log.info("AutoML: starting " + algoName + " hyperparameter search");
     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria = (HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria)buildSpec.build_control.stopping_criteria.clone();
 
@@ -332,6 +342,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
 
   Job<DRFModel>defaultRandomForest() {
+    if (0.0 == timeRemainingMs()) {
+      Log.info("AutoML: out of time; skipping XRT");
+      return null;
+    }
+
     DRFModel.DRFParameters drfParameters = new DRFModel.DRFParameters();
     drfParameters._train = trainingFrame._key;
     if (null != validationFrame)
@@ -350,6 +365,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
 
   Job<DRFModel>defaultExtremelyRandomTrees() {
+    if (0.0 == timeRemainingMs()) {
+      Log.info("AutoML: out of time; skipping XRT");
+      return null;
+    }
+
     DRFModel.DRFParameters drfParameters = new DRFModel.DRFParameters();
     drfParameters._train = trainingFrame._key;
     if (null != validationFrame)
@@ -367,6 +387,49 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return randomForestJob;
   }
 
+
+  public Job<Grid> defaultSearchGLM() {
+    ///////////////////////////////////////////////////////////
+    // do a random hyperparameter search with GLM
+    ///////////////////////////////////////////////////////////
+    // TODO: convert to using the REST API
+    Key<Grid> gridKey = Key.make("GLM_grid_default_" + this._key.toString());
+
+    HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria = buildSpec.build_control.stopping_criteria;
+
+    // TODO: put this into a Provider, which can return multiple searches
+    GLMModel.GLMParameters glmParameters = new GLMModel.GLMParameters();
+    glmParameters._train = trainingFrame._key;
+    if (null != validationFrame)
+      glmParameters._valid = validationFrame._key;
+    glmParameters._response_column = buildSpec.input_spec.response_column;
+    glmParameters._ignored_columns = buildSpec.input_spec.ignored_columns;
+    glmParameters._lambda_search = true;
+
+    // required for stacking:
+    glmParameters._nfolds = 5;
+    glmParameters._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+    glmParameters._keep_cross_validation_predictions = true;
+
+
+    // TODO: wire through from buildSpec
+    glmParameters._stopping_metric = ScoreKeeper.StoppingMetric.AUTO;
+    glmParameters._stopping_tolerance = 0.0001;
+    glmParameters._stopping_rounds = 3;
+    glmParameters._max_runtime_secs = this.timeRemainingMs() / 1000;
+
+    glmParameters._family = getResponseColumn().isBinary() ? GLMModel.GLMParameters.Family.binomial :
+            getResponseColumn().isCategorical() ? GLMModel.GLMParameters.Family.multinomial :
+                    GLMModel.GLMParameters.Family.gaussian;  // TODO: other continuous distributions!
+
+    Map<String, Object[]> searchParams = new HashMap<>();
+    glmParameters._alpha = new double[] {0.0, 0.2, 0.4, 0.6, 0.8, 1.0};  // Note: standard GLM parameter is an array; don't use searchParams!
+    searchParams.put("_missing_values_handling", new DeepLearningModel.DeepLearningParameters.MissingValuesHandling[] {DeepLearningModel.DeepLearningParameters.MissingValuesHandling.MeanImputation, DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip});
+
+    Log.info("About to run GLM for: " + glmParameters._max_runtime_secs + "S");
+    Job<Grid>glmJob = hyperparameterSearch("GLM", glmParameters, searchParams);
+    return glmJob;
+  }
 
   public Job<Grid> defaultSearchGBM() {
     ///////////////////////////////////////////////////////////
@@ -396,8 +459,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     gbmParameters._stopping_metric = ScoreKeeper.StoppingMetric.AUTO;
     gbmParameters._stopping_tolerance = 0.0001;
     gbmParameters._stopping_rounds = 3;
-    gbmParameters._max_runtime_secs = this.timeRemainingMs() / 1000;  // TODO: run for only part of the remaining time?
-    Log.info("About to run GBM for: " + gbmParameters._max_runtime_secs + "S");
+    gbmParameters._max_runtime_secs = this.timeRemainingMs() / 1000;
     gbmParameters._histogram_type = SharedTreeModel.SharedTreeParameters.HistogramType.AUTO;
 
     Map<String, Object[]> searchParams = new HashMap<>();
@@ -415,6 +477,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       searchParams.put("col_sample_rate_per_tree", new Double[]{0.4, 0.6, 0.8, 1.0});
 */
 
+    Log.info("About to run GBM for: " + gbmParameters._max_runtime_secs + "S");
     Job<Grid>gbmJob = hyperparameterSearch("GBM", gbmParameters, searchParams);
     return gbmJob;
   }
@@ -488,17 +551,27 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     leaderboard.addModel(defaultXRT);
 
 
+    ///////////////////////////////////////////////////////////
+    // build GLMs with the default search parameters
+    ///////////////////////////////////////////////////////////
+    // TODO: run for only part of the remaining time?
+    Job<Grid>glmJob = defaultSearchGLM();
+    pollAndUpdateProgress("GLM hyperparameter search", 100, this.job(), glmJob);
+
+    Grid glmGrid = DKV.getGet(glmJob._result);
+    leaderboard.addModels(glmGrid.getModelKeys());
 
 
     ///////////////////////////////////////////////////////////
     // build GBMs with the default search parameters
     ///////////////////////////////////////////////////////////
-
+    // TODO: run for only part of the remaining time?
     Job<Grid>gbmJob = defaultSearchGBM();
-    pollAndUpdateProgress("GBM hyperparameter search", 800, this.job(), gbmJob);
+    pollAndUpdateProgress("GBM hyperparameter search", 700, this.job(), gbmJob);
 
     Grid gbmGrid = DKV.getGet(gbmJob._result);
     leaderboard.addModels(gbmGrid.getModelKeys());
+
 
     ///////////////////////////////////////////////////////////
     // (optionally) build StackedEnsemble
