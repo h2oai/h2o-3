@@ -20,7 +20,7 @@ import static water.util.RandomUtils.getRNG;
 public final class StratifiedSplit {
     private StratifiedSplit() {
     }
-    public static ValFrame get(Frame sourceFr, Vec stratCol, double testFrac, long seed) {
+    public static Frame get(Frame sourceFr, Vec stratCol, double testFrac, long seed) {
         if (!(stratCol.isCategorical() || (stratCol.isNumeric() && stratCol.isInt())))
             throw new IllegalArgumentException("stratification only applies to integer and categorical columns. Got: " +stratCol.get_type_str());
         final long[] classes = new VecUtils.CollectDomain().doAll(stratCol).domain();
@@ -60,7 +60,7 @@ public final class StratifiedSplit {
         }
         new ClassAssignMRTask(usedIdxs).doAll(result.anyVec());
         // clean up temp sourceFrames
-        return new ValFrame(result);
+        return result;
     }
     private static class ClassAssignMRTask extends MRTask<StratifiedSplit.ClassAssignMRTask> {
         HashSet<Long> _idx;
