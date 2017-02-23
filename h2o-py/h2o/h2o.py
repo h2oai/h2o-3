@@ -46,7 +46,7 @@ logging.basicConfig()
 warnings.filterwarnings('ignore', category=DeprecationWarning, module='.*/IPython/.*')
 
 
-h2oconn = None
+h2oconn = None  # type: H2OConnection
 
 def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_certificates=None, auth=None,
             proxy=None, cluster_id=None, cookies=None, verbose=True, config=None):
