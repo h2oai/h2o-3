@@ -2,6 +2,7 @@ package water.fvec;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.DKV;
 import water.Scope;
 import water.TestUtil;
 import water.parser.BufferedString;
@@ -17,37 +18,15 @@ import static org.junit.Assert.assertEquals;
  */
 public class FrameFilterTest extends TestUtil {
 
-  static class F1 extends FrameFilter {
-    public F1(Frame dataset, String signalColName) {
-      super(dataset, signalColName);
-    }
-
-    @Override
-    public boolean accept(Chunk c, int i) {
-      return c.at8(i) % 2 == 1;
-    }
-  }
-
   static boolean isSquare(long i) {
     int sqrt = (int) Math.sqrt(i);
     for (int j = sqrt - 1; j <= sqrt + 1; j++) if (j * j == i) return true;
     return false;
   }
-  
-  static class F2 extends FrameFilter {
-    public F2(Frame dataset, String signalColName) {
-      super(dataset, signalColName);
-    }
-
-    @Override
-    public boolean accept(Chunk c, int i) {
-      return isSquare(c.at8(i));
-    }
-  }
 
   @BeforeClass
   public static void setup() {
-    stall_till_cloudsize(3);
+    stall_till_cloudsize(2);
   }
 
   @Test
@@ -56,12 +35,15 @@ public class FrameFilterTest extends TestUtil {
     Vec v1 = vec(1, 2, 3, 4, 5);
     Vec v2 = svec("eins", "zwei", "drei", "vier", "fuenf");
     Vec v3 = svec("-1-", "-2-", "-3-", "-4-", "-5-");
-    Frame f = new Frame(v1, v2, v3);
-
-    FrameFilter sut1 = new F1(f, "C1");
-
-    Frame actual = Scope.track(sut1.eval());
-    assertArrayEquals(new String[]{"C2", "C3"}, actual.names());
+    Frame f = new Frame(v2, v3, v1);
+    FrameFilter sut1 = new FrameFilter(f, "C3") {
+      @Override
+      public boolean accept(Chunk c, int i) {
+        return c.at8(i) % 2 == 1;
+      }
+    };
+    Frame actual = sut1.eval();
+//    assertArrayEquals(new String[]{"C2", "C3"}, actual.names());
     Vec va0 = actual.vec(0);
     Vec va1 = actual.vec(1);
     assertEquals(3, va0.length());
@@ -69,6 +51,7 @@ public class FrameFilterTest extends TestUtil {
     BufferedString stupidBuffer = new BufferedString();
     assertEquals("eins", String.valueOf(va0.atStr(stupidBuffer, 0)));
     assertEquals("-3-", String.valueOf(va1.atStr(stupidBuffer, 1)));
+
     Scope.exit();
   }
 
@@ -81,9 +64,14 @@ public class FrameFilterTest extends TestUtil {
     Vec v3 = svec(size, Functions.format("<<%d>>"));
     Frame f = new Frame(v1, v2, v3);
 
-    FrameFilter sut = new F2(f, "C1");
+    FrameFilter sut = new FrameFilter(f, "C1") {
+      @Override
+      public boolean accept(Chunk c, int i) {
+        return isSquare(c.at8(i));
+      }
+    };
 
-    Frame actual = Scope.track(sut.eval());
+    Frame actual = sut.eval();
     assertArrayEquals(new String[]{"C2", "C3"}, actual.names());
     Vec va0 = actual.vec(0);
     Vec va1 = actual.vec(1);
@@ -97,6 +85,4 @@ public class FrameFilterTest extends TestUtil {
     }
     Scope.exit();
   }
-
-//  testWholeEnchilada
 }

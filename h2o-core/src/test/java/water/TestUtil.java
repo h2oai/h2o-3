@@ -359,7 +359,7 @@ public class TestUtil extends Iced {
     chunk.close(0, fs);
     Vec vec = avec.layout_and_close(fs);
     fs.blockForPending();
-    return Scope.track(vec);
+    return vec;
   }
     
 
