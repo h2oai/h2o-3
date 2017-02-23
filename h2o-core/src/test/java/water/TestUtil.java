@@ -386,7 +386,12 @@ public class TestUtil extends Iced {
   }
 
   public static Vec cvec(String[] domain, String ...rows) {
-    HashMap<String, Integer> domainMap = new HashMap<>(10);
+    return cvec(domain, rows.length, Functions.fromArray(rows));
+  }
+
+  /** A string Vec from an array of strings */
+  public static Vec cvec(String[] domain, int size, final Function<Integer, String> generator) {
+    final HashMap<String, Integer> domainMap = new HashMap<>(10);
     ArrayList<String> domainList = new ArrayList<>(10);
     if (domain != null) {
       int j = 0;
@@ -395,16 +400,20 @@ public class TestUtil extends Iced {
         domainList.add(s);
       }
     }
-    int[] irows = new int[rows.length];
-    for (int i = 0, j = 0; i < rows.length; i++) {
-      String s = rows[i];
+    for (int i = 0, j = 0; i < size; i++) {
+      String s = generator.apply(i);
       if (!domainMap.containsKey(s)) {
         domainMap.put(s, j++);
         domainList.add(s);
       }
-      irows[i] = domainMap.get(s);
     }
-    return vec(domainList.toArray(new String[]{}), irows);
+    return vec(domainList.toArray(new String[domainList.size()]), size, new Function<Integer, Integer>() {
+      @Override
+      public Integer apply(Integer i) {
+        return domainMap.get(generator.apply(i));
+      }
+    });
+
   }
 
   /** A numeric Vec from an array of doubles */
