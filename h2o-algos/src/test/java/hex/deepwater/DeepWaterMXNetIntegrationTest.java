@@ -8,6 +8,7 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import water.parser.BufferedString;
+import water.util.FileUtils;
 import water.util.StringUtils;
 
 import javax.imageio.ImageIO;
@@ -67,7 +68,7 @@ public class DeepWaterMXNetIntegrationTest extends DeepWaterAbstractIntegrationT
       float[] mean = backend.loadMeanImage(_model, extractFile(path, "mean_224.nd"));
 
       // Turn the image into a vector of the correct size
-      File imgFile = find_test_file("smalldata/deepwater/imagenet/test2.jpg");
+      File imgFile = FileUtils.getFile("smalldata/deepwater/imagenet/test2.jpg");
       BufferedImage img = ImageIO.read(imgFile);
       BufferedImage scaledImg = new BufferedImage(w, h, img.getType());
       Graphics2D g2d = scaledImg.createGraphics();

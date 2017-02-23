@@ -7,6 +7,7 @@ import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
+import water.util.FileUtils;
 
 public class ParseFolderTest extends TestUtil {
   @BeforeClass static public void setup() { stall_till_cloudsize(5); }
@@ -24,7 +25,7 @@ public class ParseFolderTest extends TestUtil {
   }
 
   @Test public void testSameFile() {
-    File f = find_test_file("smalldata/iris/iris_wheader.csv");
+    File f = FileUtils.locateFile("smalldata/iris/iris_wheader.csv");
     NFSFileVec nfs1 = NFSFileVec.make(f);
     NFSFileVec nfs2 = NFSFileVec.make(f);
     Frame fr = null;

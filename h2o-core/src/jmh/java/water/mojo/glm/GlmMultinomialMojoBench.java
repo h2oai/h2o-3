@@ -7,12 +7,13 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
+import water.util.FileUtils;
 
 import java.io.*;
 import java.util.concurrent.TimeUnit;
 
-import static water.TestUtil.find_test_file_static;
 import static water.mojo.glm.GlmMojoBenchHelper.*;
+import static water.util.FileUtils.*;
 
 /**
  * GLM MOJO scoring benchmark (multinomial)
@@ -41,7 +42,7 @@ public class GlmMultinomialMojoBench {
 
   @Setup
   public void setup() throws IOException {
-    File f = find_test_file_static("smalldata/flow_examples/mnist/test.csv.gz");
+    File f = getFile("smalldata/flow_examples/mnist/test.csv.gz");
 
     mojo = (GlmMultinomialMojoModel) loadMojo("mnist");
 

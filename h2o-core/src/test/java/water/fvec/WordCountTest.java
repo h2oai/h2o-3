@@ -8,13 +8,14 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLong;
 import water.*;
 import water.nbhm.NonBlockingHashMap;
+import water.util.FileUtils;
 
 public class WordCountTest extends TestUtil {
   @BeforeClass static public void setup() {  stall_till_cloudsize(1); }
 
   // ==========================================================================
   @Test public void testWordCount() throws IOException {
-    File file = find_test_file("./smalldata/junit/cars.csv");
+    File file = FileUtils.getFile("./smalldata/junit/cars.csv");
     doWordCount(file);
   }
 

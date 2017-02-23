@@ -2135,7 +2135,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel model = null;
     Scope.enter();
     try {
-      File file = find_test_file("bigdata/laptop/mnist/train.csv.gz");
+      File file = FileUtils.locateFile("bigdata/laptop/mnist/train.csv.gz");
       if (file != null) {
         NFSFileVec trainfv = NFSFileVec.make(file);
         train = ParseDataset.parse(Key.make(), trainfv._key);

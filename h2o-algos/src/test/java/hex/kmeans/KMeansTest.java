@@ -259,7 +259,7 @@ public class KMeansTest extends TestUtil {
   @Test @Ignore public void testCovtype() {
     Frame fr = null;
     try {
-      File f = find_test_file("../datasets/UCI/UCI-large/covtype/covtype.data");
+      File f = FileUtils.locateFile("../datasets/UCI/UCI-large/covtype/covtype.data");
       if( f==null ) return;     // Ignore if large file not found
       NFSFileVec nfs = NFSFileVec.make(f);
       fr = ParseDataset.parse(Key.make(), nfs._key);

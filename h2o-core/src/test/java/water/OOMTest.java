@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import org.junit.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import static water.util.FileUtils.*;
 import water.util.Log;
 
 @Ignore
@@ -93,8 +94,8 @@ public class OOMTest extends TestUtil {
   @Test @Ignore
   public void testParseMemoryStress() {
     // "bigdata directory is not always available"
-    if( find_test_file_static("bigdata/laptop/usecases/cup98LRN_z.csv") == null ) return;
-    if( find_test_file_static("bigdata/laptop/usecases/cup98VAL_z.csv") == null ) return;
+    if( locateFile("bigdata/laptop/usecases/cup98LRN_z.csv") == null ) return;
+    if( locateFile("bigdata/laptop/usecases/cup98VAL_z.csv") == null ) return;
     ArrayList<Frame> frames = new ArrayList<>();
     File ice = new File(water.H2O.ICE_ROOT.toString(),"ice" + water.H2O.API_PORT);
     String[] dirs = ice.list();

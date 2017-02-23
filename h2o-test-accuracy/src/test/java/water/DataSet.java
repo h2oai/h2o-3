@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 
 import water.fvec.Frame;
+import water.util.FileUtils;
+import static water.util.FileUtils.*;
 
 public class DataSet {
 
@@ -63,6 +65,6 @@ public class DataSet {
 		String[] uriTokens = uri.trim().split("/", -1);
 		String fileName = uriTokens[uriTokens.length - 1];
 
-		return AccuracyTestingUtil.find_test_file_static(filePath + fileName);
+		return locateFile(filePath + fileName);
 	}
 }
