@@ -1475,7 +1475,7 @@ public final class AutoBuffer {
     try {
       return new ObjectInputStream(new ByteArrayInputStream(bytes)).readObject();
     } catch (IOException e) {
-      String className = new String(bytes, 8, Math.min(40, 8+Math.max(3, bytes[7])));
+      String className = new String(bytes, 8, Math.min(40, Math.max(3, bytes[7])));
       throw Log.throwErr(new RuntimeException("Failed to deserialize " + className, e));
     } catch (ClassNotFoundException e) {
       throw Log.throwErr(e);
