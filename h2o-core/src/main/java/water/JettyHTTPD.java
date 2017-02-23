@@ -435,7 +435,9 @@ public class JettyHTTPD {
         String s = new H2OErrorV3().fillFromImpl(error).toJsonString();
         response.getWriter().write(s);
       }
-      catch (Exception ignore) {}
+      catch (Exception ignore) {
+        ignore.printStackTrace();
+      }
     }
     else { // make sure that no Exception is ever thrown out from the request
       H2OError error = new H2OError(e, uri);
@@ -457,7 +459,9 @@ public class JettyHTTPD {
         String s = new H2OErrorV3().fillFromImpl(error).toJsonString();
         response.getWriter().write(s);
       }
-      catch (Exception ignore) {}
+      catch (Exception ignore) {
+        ignore.printStackTrace();
+      }
     }
   }
 
