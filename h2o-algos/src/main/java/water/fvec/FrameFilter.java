@@ -1,7 +1,6 @@
 package water.fvec;
 
 import water.*;
-import water.parser.BufferedString;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -13,29 +12,25 @@ import java.util.Arrays;
  */
 public abstract class FrameFilter implements Serializable {
 
+  private Key<Frame> datasetKey;
+  private String signalColName;
+  private Key<Vec> signalKey;
 
-  private final Frame dataset;
-  private final String signalColName;
-  final Vec signal;
-
+  public FrameFilter() {}
+  
   public FrameFilter(Frame dataset, String signalColName) {
-    this.dataset = dataset;
+    this.datasetKey = dataset._key;
     this.signalColName = signalColName;
-    this.signal = dataset.vec(signalColName);
+    this.signalKey = dataset.vec(signalColName)._key;
   }
 
   public abstract boolean accept(Chunk c, int i);
-  
+
   public Frame eval() {
+    Frame dataset = DKV.getGet(datasetKey);
     Key<Frame> destinationKey = Key.make();
-    Vec flagCol = new MRTask() {
-      @Override
-      public void map(Chunk c, Chunk c2) {
-        for (int i=0;i<c.len();++i) {
-          if (accept(c, i)) c2.set(i, 1);
-        }
-      }
-    }.doAll(new Frame(new Vec[]{signal, signal.makeZero()}))._fr.vec(1);
+    Vec signal = DKV.getGet(signalKey);
+    Vec flagCol = new FrameFilterTask(this).doAll(new Frame(new Vec[]{signal, signal.makeZero()}))._fr.vec(1);
 
     Vec[] vecs = Arrays.copyOf(dataset.vecs(), dataset.vecs().length+1);
     vecs[vecs.length-1] = flagCol;
@@ -45,50 +40,5 @@ public abstract class FrameFilter implements Serializable {
     res.remove(signalColName);
     return res;
   }
-  /*extends H2O.H2OCountedCompleter<DatasetSplitter> {
-  private final Object columnName;
-  Predicate<T> predicate;
-
-  private Map<String, Frame> splits;
-  final Key<Job> jobKey;
-  private final Frame source;
-  private final Frame target;
-
-  public FrameFilter(Frame source, String columnName) {
-    jobKey = Key.make();
-    this.source = source;
-    this.columnName = columnName;
-    target = new Frame(source);
-  }
-
-  public void compute2() {
-    new FilterTask().doAll(target.types(), source); // complete the computation of thrown tasks
-  }
-  @Override public void onCompletion(CountedCompleter caller) {
-     target.update(jobKey).unlock(jobKey);
-  }
-
-  public Frame getResult() {
-    return target;
-  }
-
-  class FilterTask extends MRTask<FilterTask> {
-    FilterTask() {
-      super(FrameFilter.this);
-    }
-
-    @Override public void map(Chunk[] cs) { // Output chunks
-      int coutidx = cs[0].cidx(); // Index of output Chunk
-      int cinidx = _pcidx + coutidx;
-      int startRow = coutidx > 0 ? 0 : _psrow; // where to start extracting
-      int nrows = cs[0]._len;
-      // For each output chunk extract appropriate rows for partIdx-th part
-      for (int i=0; i<cs.length; i++) {
-        // WARNING: this implementation does not preserve co-location of chunks so we are forcing here network transfer!
-        ChunkSplitter.extractChunkPart(_srcVecs[i].chunkForChunkIdx(cinidx), cs[i], startRow, nrows, _fs);
-      }
-    }
-  }
 }
-*/  
-}
+

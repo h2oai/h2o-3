@@ -11,6 +11,7 @@ import water.util.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.*;
 
 import static water.rapids.ast.prims.advmath.AstStratifiedSplit.*;
@@ -19,7 +20,7 @@ import static water.rapids.ast.prims.advmath.AstStratifiedSplit.*;
  * 
  * Created by vpatryshev on 2/20/17.
  */
-public class Dataset {
+public class Dataset implements Serializable {
   Frame frame;
 
   private Dataset(Frame frame) {

@@ -2,7 +2,6 @@ package water.fvec;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.parser.BufferedString;
@@ -13,30 +12,55 @@ import static org.junit.Assert.assertEquals;
 
 /**
  * Test for FrameFilter
- * 
+ * <p>
  * Created by vpatryshev on 2/21/17.
  */
 public class FrameFilterTest extends TestUtil {
+
+  static class F1 extends FrameFilter {
+    public F1(Frame dataset, String signalColName) {
+      super(dataset, signalColName);
+    }
+
+    @Override
+    public boolean accept(Chunk c, int i) {
+      return c.at8(i) % 2 == 1;
+    }
+  }
+
+  static boolean isSquare(long i) {
+    int sqrt = (int) Math.sqrt(i);
+    for (int j = sqrt - 1; j <= sqrt + 1; j++) if (j * j == i) return true;
+    return false;
+  }
+  
+  static class F2 extends FrameFilter {
+    public F2(Frame dataset, String signalColName) {
+      super(dataset, signalColName);
+    }
+
+    @Override
+    public boolean accept(Chunk c, int i) {
+      return isSquare(c.at8(i));
+    }
+  }
+
   @BeforeClass
-  public static void setup() { stall_till_cloudsize(1); }
+  public static void setup() {
+    stall_till_cloudsize(3);
+  }
 
   @Test
   public void testSmallSet() throws Exception {
     Scope.enter();
-    Vec v1 = vec(1,2,3,4,5);
+    Vec v1 = vec(1, 2, 3, 4, 5);
     Vec v2 = svec("eins", "zwei", "drei", "vier", "fuenf");
     Vec v3 = svec("-1-", "-2-", "-3-", "-4-", "-5-");
     Frame f = new Frame(v1, v2, v3);
 
-    FrameFilter sut = new FrameFilter(f, "C1") {
+    FrameFilter sut1 = new F1(f, "C1");
 
-      @Override
-      public boolean accept(Chunk c, int i) {
-        return c.at8(i) % 2 == 1;
-      }
-    };
-
-    Frame actual = Scope.track(sut.eval());
+    Frame actual = Scope.track(sut1.eval());
     assertArrayEquals(new String[]{"C2", "C3"}, actual.names());
     Vec va0 = actual.vec(0);
     Vec va1 = actual.vec(1);
@@ -47,13 +71,7 @@ public class FrameFilterTest extends TestUtil {
     assertEquals("-3-", String.valueOf(va1.atStr(stupidBuffer, 1)));
     Scope.exit();
   }
-  
-  static boolean isSquare(long i) {
-    int sqrt = (int) Math.sqrt(i);
-    for (int j = sqrt-1; j <= sqrt+1; j++) if (j*j==i) return true;
-    return false;
-  }
-  
+
   @Test
   public void testLargeSet() throws Exception {
     Scope.enter();
@@ -63,13 +81,7 @@ public class FrameFilterTest extends TestUtil {
     Vec v3 = svec(size, Functions.format("<<%d>>"));
     Frame f = new Frame(v1, v2, v3);
 
-    FrameFilter sut = new FrameFilter(f, "C1") {
-
-      @Override
-      public boolean accept(Chunk c, int i) {
-        return isSquare(c.at8(i));
-      }
-    };
+    FrameFilter sut = new F2(f, "C1");
 
     Frame actual = Scope.track(sut.eval());
     assertArrayEquals(new String[]{"C2", "C3"}, actual.names());
@@ -79,9 +91,9 @@ public class FrameFilterTest extends TestUtil {
     assertEquals(1000, va1.length());
     BufferedString stupidBuffer = new BufferedString();
     for (int i = 0; i < 1000; i++) {
-      int i2 = i*i;
+      int i2 = i * i;
       assertEquals(i2, va0.at8(i));
-      assertEquals("<<"+i2+">>", String.valueOf(va1.atStr(stupidBuffer, i)));
+      assertEquals("<<" + i2 + ">>", String.valueOf(va1.atStr(stupidBuffer, i)));
     }
     Scope.exit();
   }
