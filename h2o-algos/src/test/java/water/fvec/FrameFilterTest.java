@@ -28,7 +28,7 @@ public class FrameFilterTest extends TestUtil {
     Vec v3 = svec("-1-", "-2-", "-3-", "-4-", "-5-");
     Frame f = new Frame(v1, v2, v3);
 
-    FrameFilter sut = new FrameFilter() {
+    FrameFilter sut = new FrameFilter(f, "C1") {
 
       @Override
       public boolean accept(Chunk c, int i) {
@@ -36,7 +36,7 @@ public class FrameFilterTest extends TestUtil {
       }
     };
 
-    Frame actual = Scope.track(sut.eval(f, "C1"));
+    Frame actual = Scope.track(sut.eval());
     assertArrayEquals(new String[]{"C2", "C3"}, actual.names());
     Vec va0 = actual.vec(0);
     Vec va1 = actual.vec(1);
@@ -63,7 +63,7 @@ public class FrameFilterTest extends TestUtil {
     Vec v3 = svec(size, Functions.format("<<%d>>"));
     Frame f = new Frame(v1, v2, v3);
 
-    FrameFilter sut = new FrameFilter() {
+    FrameFilter sut = new FrameFilter(f, "C1") {
 
       @Override
       public boolean accept(Chunk c, int i) {
@@ -71,7 +71,7 @@ public class FrameFilterTest extends TestUtil {
       }
     };
 
-    Frame actual = Scope.track(sut.eval(f, "C1"));
+    Frame actual = Scope.track(sut.eval());
     assertArrayEquals(new String[]{"C2", "C3"}, actual.names());
     Vec va0 = actual.vec(0);
     Vec va1 = actual.vec(1);

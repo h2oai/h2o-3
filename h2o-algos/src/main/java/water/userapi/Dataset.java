@@ -8,13 +8,10 @@ import water.parser.ParseDataset;
 import water.rapids.ast.prims.advmath.AstStratifiedSplit;
 import water.udf.specialized.Enums;
 import water.util.FileUtils;
-import water.util.RandomUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import static water.rapids.ast.prims.advmath.AstStratifiedSplit.*;
 /**
@@ -58,27 +55,38 @@ public class Dataset {
   }
   
   // the new vec is named (hard-coded so far) "test_train_split"
-  Dataset stratifiedSplit(String colName, Double ratio, long seed) {
-    return new Dataset(AstStratifiedSplit.split(frame, frame.vec(colName), ratio, seed, SplittingDom));
+  Dataset addSplittingColumn(String colName, Double ratio, long seed) {
+    final Frame splitter = Scope.track(AstStratifiedSplit.split(frame, frame.vec(colName), ratio, seed, SplittingDom));
+    Frame newFrame = Scope.track(frame.clone());
+    newFrame.add(splitter.names(), splitter.vecs());
+    return new Dataset(newFrame);
   }
 
-  public TrainAndValid stratifiedSplit(String colName, Double ratio) {
-    Dataset blend = stratifiedSplit(colName, ratio, System.currentTimeMillis());
+  TrainAndValid stratifiedSplit(String colName, Double ratio, long seed) {
+    Dataset blend = addSplittingColumn(colName, ratio, seed);
     Map<String, Frame> split = blend.splitBy(TestTrainSplitColName, SplittingDom);
     
     return new TrainAndValid(
         new Dataset(split.get(SplittingDom[0])),
         new Dataset(split.get(SplittingDom[1])));
   }
-
+  
+  public TrainAndValid stratifiedSplit(String colName, Double ratio) {
+    return stratifiedSplit(colName, ratio, System.currentTimeMillis());
+  }
+  
   private Frame select(final String what, String colname) {
-    final FrameFilter filter = new FrameFilter() {
+    
+    final int expected = Arrays.asList(frame.vec(colname).domain()).indexOf(what);
+    
+    final FrameFilter filter = new FrameFilter(frame, colname) {
+      
       public boolean accept(Chunk c, int i) {
-        String s = c.atStr(new BufferedString(), i).toString();
-        return what.equals(s);
+        long val = c.at8(i);
+        return expected == val;
       }
     };
-    return filter.eval(frame, colname);
+    return Scope.track(filter.eval());
   } 
   
   private Map<String, Frame> splitBy(String colname, String[] splittingDom) {

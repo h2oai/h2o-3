@@ -1,6 +1,7 @@
 package water.fvec;
 
 import water.*;
+import water.parser.BufferedString;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -13,13 +14,19 @@ import java.util.Arrays;
 public abstract class FrameFilter implements Serializable {
 
 
-  public FrameFilter() {
+  private final Frame dataset;
+  private final String signalColName;
+  final Vec signal;
+
+  public FrameFilter(Frame dataset, String signalColName) {
+    this.dataset = dataset;
+    this.signalColName = signalColName;
+    this.signal = dataset.vec(signalColName);
   }
 
   public abstract boolean accept(Chunk c, int i);
   
-  public Frame eval(Frame dataset, String signalColName) {
-    final Vec signal = dataset.vec(signalColName);
+  public Frame eval() {
     Key<Frame> destinationKey = Key.make();
     Vec flagCol = new MRTask() {
       @Override

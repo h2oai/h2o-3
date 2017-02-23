@@ -6,13 +6,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Scope;
 import water.TestUtil;
-import water.fvec.Frame;
 import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.udf.fp.Function;
-import water.udf.specialized.EnumColumn;
-import water.udf.specialized.Enums;
-import water.util.FrameUtils;
+import water.udf.fp.Functions;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -58,7 +55,7 @@ public class DatasetTest extends TestUtil {
   }
 
   private static int whichOne(int i) {
-    return i < 1000 ? 0 : i < 11000 ? 1 : 2;
+    return i%1000 < 20 ? 0 : i%1000 < 200 ? 1 : 2;
   }
   
   @Test
@@ -90,7 +87,70 @@ public class DatasetTest extends TestUtil {
   }
 
   @Test
-  public void testStratifiedSplit() throws Exception {
+  public void testAddSplittingColumn() throws Exception {
+    final String[] domain = {"red", "white", "blue"};
 
+    final int size = 1000000;
+    final Vec vec1 = cvec(domain, size, new Function<Integer, String>() {
+      @Override
+      public String apply(Integer i) {
+        return domain[whichOne(i)];
+      }
+    });
+
+    final Vec vec2 = vec(size, Functions.<Integer>identity());
+    
+    Dataset sut = Dataset.onVecs(
+        new HashMap<String, Vec>() {{
+          put("RGB", vec1); put("Ausweis", vec2);
+        }});
+
+    Dataset actual = sut.addSplittingColumn("RGB", 0.01, 7688714);
+
+    assertArrayEquals(new String[]{"RGB", "Ausweis", "test_train_split"}, actual.domain());
+
+    // it is hard to test specific values
+  }
+
+  @Test
+  public void testStratifiedSplit() throws Exception {
+    final String[] domain = {"red", "white", "blue"};
+
+    final int size = 1000000;
+    final Vec vec1 = cvec(domain, size, new Function<Integer, String>() {
+      @Override
+      public String apply(Integer i) {
+        return domain[whichOne(i)];
+      }
+    });
+
+    final Vec vec2 = vec(size, Functions.<Integer>identity());
+
+    Dataset sut = Dataset.onVecs(
+        new HashMap<String, Vec>() {{
+          put("RGB", vec1); put("Ausweis", vec2);
+        }});
+
+    Dataset.TrainAndValid actual = sut.stratifiedSplit("RGB", 0.01, 7688714);
+
+    final Dataset train = actual.train;
+    assertArrayEquals(new String[]{"RGB", "Ausweis"}, train.domain());
+
+    final Dataset valid = actual.valid;
+    assertArrayEquals(new String[]{"RGB", "Ausweis"}, valid.domain());
+
+    assertEquals(size, train.vec("Ausweis").length() + valid.vec("Ausweis").length());
+
+    assertEquals( 10000, valid.vec("Ausweis").length());
+    assertEquals(990000, train.vec("Ausweis").length());
+    
+    Vec trgb = train.vec("RGB");
+    
+    int[] counts = new int[]{0,0,0};
+    
+    for (int i = 0; i < 10000; i++) {
+      counts[(int)trgb.at8(i)]++;
+    }
+    assertArrayEquals(new int[]{218, 1858, 7924}, counts);
   }
 }
