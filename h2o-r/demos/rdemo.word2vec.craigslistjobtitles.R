@@ -50,7 +50,7 @@ data <- h2o.cbind(job.titles[valid.job.titles, "category"], job.title.vecs[valid
 data.split <- h2o.splitFrame(data, ratios = 0.8)
 
 print("Build a basic GBM model")
-gbm.model <- h2o.gbm(x = names(word.vectors), y = "category",
+gbm.model <- h2o.gbm(x = names(job.title.vecs), y = "category",
                      training_frame = data.split[[1]], validation_frame = data.split[[2]])
 
 print("Predict!")
