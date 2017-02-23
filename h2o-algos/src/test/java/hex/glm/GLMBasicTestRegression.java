@@ -5,13 +5,11 @@ import hex.deeplearning.DeepLearningModel;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Solver;
-import junit.framework.Assert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
-import water.MRTask;
 import water.TestUtil;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
@@ -19,10 +17,12 @@ import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
-import java.util.Random;
 
 import water.fvec.*;
+import static water.util.FileUtils.*;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -41,9 +41,9 @@ public class GLMBasicTestRegression extends TestUtil {
   static Frame _airlinesMM;
 
   @BeforeClass
-  public static void setup() {
+  public static void setup() throws IOException {
     stall_till_cloudsize(1);
-    File f = find_test_file_static("smalldata/glm_test/cancar_logIn.csv");
+    File f = getFile("smalldata/glm_test/cancar_logIn.csv");
     assert f.exists();
     NFSFileVec nfs = NFSFileVec.make(f);
     Key outputKey = Key.make("prostate_cat_train.hex");
@@ -52,22 +52,19 @@ public class GLMBasicTestRegression extends TestUtil {
     _canCarTrain.add("Class", (_class = _canCarTrain.remove("Class")).toCategoricalVec());
 
     DKV.put(_canCarTrain._key, _canCarTrain);
-    f = find_test_file_static("smalldata/glm_test/earinf.txt");
-    assert f.exists();
+    f = getFile("smalldata/glm_test/earinf.txt");
     nfs = NFSFileVec.make(f);
     outputKey = Key.make("earinf.hex");
     _earinf = ParseDataset.parse(outputKey, nfs._key);
     DKV.put(_earinf._key, _earinf);
 
-    f = find_test_file_static("smalldata/glm_test/weighted.csv");
-    assert f.exists();
+    f = getFile("smalldata/glm_test/weighted.csv");
     nfs = NFSFileVec.make(f);
     outputKey = Key.make("weighted.hex");
     _weighted = ParseDataset.parse(outputKey, nfs._key);
     DKV.put(_weighted._key, _weighted);
 
-    f = find_test_file_static("smalldata/glm_test/upsampled.csv");
-    assert f.exists();
+    f = getFile("smalldata/glm_test/upsampled.csv");
     nfs = NFSFileVec.make(f);
     outputKey = Key.make("upsampled.hex");
     _upsampled = ParseDataset.parse(outputKey, nfs._key);

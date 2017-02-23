@@ -5,8 +5,8 @@ import org.junit.*;
 
 import java.io.File;
 import water.fvec.Chunk;
-import water.fvec.Frame;
 import water.fvec.NFSFileVec;
+import water.util.FileUtils;
 import water.util.UnsafeUtils;
 
 public class KVTest extends TestUtil {
@@ -126,7 +126,7 @@ public class KVTest extends TestUtil {
     long start = System.currentTimeMillis();
     NFSFileVec nfs = null;
     try {
-      File file = find_test_file("build/h2o-core.jar");
+      File file = FileUtils.locateFile("build/h2o-core.jar");
       if( file == null ) return;  // Nothing to test
       // Return a Key mapping to a NFSFileVec over the file
       nfs = NFSFileVec.make(file);

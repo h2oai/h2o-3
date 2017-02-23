@@ -19,6 +19,7 @@ import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
+import water.util.FileUtils;
 import water.util.Log;
 import water.util.StringUtils;
 import water.util.TwoDimTable;
@@ -748,8 +749,8 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     DeepWaterModel m = null;
     try {
       DeepWaterParameters p = new DeepWaterParameters();
-      File file = find_test_file("bigdata/laptop/mnist/train.csv.gz");
-      File valid = find_test_file("bigdata/laptop/mnist/test.csv.gz");
+      File file = FileUtils.locateFile("bigdata/laptop/mnist/train.csv.gz");
+      File valid = FileUtils.locateFile("bigdata/laptop/mnist/test.csv.gz");
       if (file != null) {
         p._response_column = "C785";
         NFSFileVec trainfv = NFSFileVec.make(file);
@@ -788,8 +789,8 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     DeepWaterModel m = null;
     try {
       DeepWaterParameters p = new DeepWaterParameters();
-      File file = find_test_file("bigdata/laptop/mnist/train.csv.gz");
-      File valid = find_test_file("bigdata/laptop/mnist/test.csv.gz");
+      File file = FileUtils.locateFile("bigdata/laptop/mnist/train.csv.gz");
+      File valid = FileUtils.locateFile("bigdata/laptop/mnist/test.csv.gz");
       if (file != null) {
         p._response_column = "C785";
         NFSFileVec trainfv = NFSFileVec.make(file);
@@ -826,8 +827,8 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     DeepWaterModel m = null;
     try {
       DeepWaterParameters p = new DeepWaterParameters();
-      File file = find_test_file("bigdata/laptop/mnist/train.csv.gz");
-      File valid = find_test_file("bigdata/laptop/mnist/test.csv.gz");
+      File file = FileUtils.locateFile("bigdata/laptop/mnist/train.csv.gz");
+      File valid = FileUtils.locateFile("bigdata/laptop/mnist/test.csv.gz");
       if (file != null) {
         p._response_column = "C785";
         NFSFileVec trainfv = NFSFileVec.make(file);
@@ -869,7 +870,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     Frame[] splits = null;
     try {
       DeepWaterParameters p = new DeepWaterParameters();
-      File file = find_test_file("smalldata/airlines/allyears2k_headers.zip");
+      File file = FileUtils.locateFile("smalldata/airlines/allyears2k_headers.zip");
       if (file != null) {
         p._response_column = "IsDepDelayed";
         p._ignored_columns = new String[]{"DepTime","ArrTime","Cancelled","CancellationCode","Diverted","CarrierDelay","WeatherDelay","NASDelay","SecurityDelay","LateAircraftDelay","IsArrDelayed"};
@@ -1091,7 +1092,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     Scope.enter();
     Frame frame = null;
     try {
-      File file = find_test_file("smalldata/logreg/prostate.csv");
+      File file = FileUtils.locateFile("smalldata/logreg/prostate.csv");
       NFSFileVec trainfv = NFSFileVec.make(file);
       frame = ParseDataset.parse(Key.make(), trainfv._key);
       DeepWaterParameters p = new DeepWaterParameters();

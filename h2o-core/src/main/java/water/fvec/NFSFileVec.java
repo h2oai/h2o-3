@@ -1,9 +1,11 @@
 package water.fvec;
 
 import java.io.File;
+import java.io.IOException;
 
 import water.*;
 import water.persist.PersistNFS;
+import water.util.FileUtils;
 
 /** A NFS distributed file-backed Vector
  *  <p>
@@ -27,6 +29,11 @@ public class NFSFileVec extends FileVec {
     NFSFileVec nfs = make(f, fs);
     fs.blockForPending();
     return nfs;
+  }
+
+  public static NFSFileVec make(String fname) throws IOException {
+    File f = FileUtils.getFile(fname);
+    return NFSFileVec.make(f);
   }
 
   /** Make a new NFSFileVec key which holds the filename implicitly.  This name

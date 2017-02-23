@@ -10,6 +10,7 @@ import water.TestUtil._
 import water.udf.MoreColumns._
 import water.udf.fp.PureFunctions._
 import water.udf.fp.{Function, Functions, PureFunctions}
+import water.util.FileUtils._
 import water.{Test0, TestUtil}
 
 import scala.collection.JavaConverters._
@@ -21,8 +22,6 @@ import scala.language.postfixOps
   */
 class ScalaUdfTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
   val A_LOT: Int = 1 << 20
-
-  import UdfTestBase._
   
   override def beforeAll: Unit = stall_till_cloudsize(3)
 
@@ -249,7 +248,7 @@ class ScalaUdfTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
   }
 
   test("UnfoldingColumn") {
-    val file: File = UdfTestBase.getFile("smalldata/chicago/chicagoAllWeather.csv")
+    val file: File = getFile("smalldata/chicago/chicagoAllWeather.csv")
     val ss = Source.fromFile(file).getLines().toList
     
     val source: Column[lang.String] = willDrop(Strings.newColumn(ss))
