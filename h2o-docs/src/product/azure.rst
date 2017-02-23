@@ -7,15 +7,15 @@ This section describes the H2O Application for HDInsight on Microsoft Azure:
 
 **Note**: This feature is currently in Beta and should be used for testing purposes only. 
 
-H2O Artificial Intelligence for HDInsight
------------------------------------------
+H2O Artificial Intelligence for Azure HDInsight
+-----------------------------------------------
 
-The H2O Artificial Intelligence for HDInsight is an application you can install during the creation of a new HDInsight cluster on Azure. This solution will install Sparkling Water on your Spark cluster, allowing you to exploit all the benefits from both Spark and H2O. 
+The H2O Artificial Intelligence for Azure HDInsight is an application you can install during the creation of a new HDInsight cluster on Azure. This solution will install Sparkling Water on your Spark cluster, allowing you to exploit all the benefits from both Spark and H2O. 
 
-Create the H2O Artificial Intelligence for HDInsight
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Create the H2O AI for Azure HDInsight
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Follow the steps below to create a new H2O Artificial Intelligence for HDInsight. 
+Follow the steps below to create a new H2O Artificial Intelligence for Azure HDInsight. 
 
 1. In your Azure portal at `https://portal.azure.com <https://portal.azure.com>`__, search for H2O, and select **H2O Artificial Intelligence for HDInsight**.
 
@@ -63,8 +63,8 @@ You are now ready to start building your H2O Models.
 **Note**: To connect to H2O Flow, go to https://<ClusterName>-h2o.apps.azurehdinsight.net/  
  
 
-H2O Artificial Intelligence for HDInsight Troubleshooting Tips
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Troubleshooting Tips
+~~~~~~~~~~~~~~~~~~~~
 
 - If H2O Flow will not launch after the H2O cluster creation, clean your browser cache. 
 - Make sure that the cluster has enough resources to allocate to your Spark application. For more information about the cluster available resources, go to http://<ClusterName>.azurehdinsight.net.
