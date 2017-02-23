@@ -303,6 +303,7 @@ public class RequestServer extends HttpServlet {
       resp.writeTo(response.getOutputStream());
 
     } catch (IOException e) {
+      e.printStackTrace();
       JettyHTTPD.setResponseStatus(response, 500);
       Log.err(e);
       // Trying to send an error message or stack trace will produce another IOException...
