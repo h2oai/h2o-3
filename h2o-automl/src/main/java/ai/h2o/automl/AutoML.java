@@ -123,7 +123,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     DKV.put(this.trainingFrame);
 
     this.responseColumn = trainingFrame.vec(buildSpec.input_spec.response_column);
-
     if (verifyImmutability) {
       // check that we haven't messed up the original Frame
       originalTrainingFrameVecs = origTrainingFrame.vecs().clone();
@@ -151,6 +150,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       .replace(".arff", "")
       .replace(".orc", "");
     leaderboard = new Leaderboard(project);
+
+    // TODO: If the user hasn't supplied a validation_frame do a test/train split for them.
 
     /*
     TODO
