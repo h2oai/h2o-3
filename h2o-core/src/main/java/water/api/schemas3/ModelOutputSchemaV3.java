@@ -4,7 +4,6 @@ import hex.Model;
 import hex.ModelCategory;
 import water.Weaver;
 import water.api.API;
-import water.util.IcedHashMap;
 import water.util.IcedHashMapGeneric;
 import water.util.Log;
 

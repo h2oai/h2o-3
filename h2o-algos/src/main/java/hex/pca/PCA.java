@@ -27,8 +27,12 @@ import water.rapids.Rapids;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 
+import static hex.util.DimensionReductionUtils.createScoringHistoryTableDR;
+import static hex.util.DimensionReductionUtils.generateIPC;
 import static water.util.ArrayUtils.*;
 
 /**
@@ -127,25 +131,19 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
               colTypes, colFormats, "",
               new String[pca._output._eigenvectors_raw.length][], pca._output._eigenvectors_raw);
 
-      double[] vars = new double[pca._output._std_deviation.length];
-      for (int i = 0; i < vars.length; i++) {
-        vars[i] = pca._output._std_deviation[i] * pca._output._std_deviation[i];
-      }
-
       // Importance of principal components
-      double[] prop_var = new double[vars.length];    // Proportion of total variance
-      double[] cum_var = new double[vars.length];    // Cumulative proportion of total variance
-      for (int i = 0; i < vars.length; i++) {
-        prop_var[i] = vars[i] / pca._output._total_variance;
-        cum_var[i] = i == 0 ? prop_var[0] : cum_var[i-1] + prop_var[i];
-      }
+      double[] vars = new double[pca._output._std_deviation.length];
+      double[] prop_var = new double[pca._output._std_deviation.length];    // Proportion of total variance
+      double[] cum_var = new double[pca._output._std_deviation.length];    // Cumulative proportion of total variance
+      generateIPC(pca._output._std_deviation, pca._output._total_variance, vars, prop_var, cum_var);
       pca._output._importance = new TwoDimTable("Importance of components", null,
               new String[]{"Standard deviation", "Proportion of Variance", "Cumulative Proportion"},
-              colHeaders, colTypes, colFormats, "", new String[3][], new double[][]{pca._output._std_deviation, prop_var, cum_var});
+              colHeaders, colTypes, colFormats, "", new String[3][],
+              new double[][]{pca._output._std_deviation, prop_var, cum_var});
       pca._output._model_summary = pca._output._importance;
     }
 
-    protected void computeStatsFillModel(PCAModel pca, SVDModel svd) {
+    protected void computeStatsFillModel(PCAModel pca, SVDModel svd, Gram gram) {
       // Fill PCA model with additional info needed for scoring
       pca._output._normSub = svd._output._normSub;
       pca._output._normMul = svd._output._normMul;
@@ -158,11 +156,12 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       // Fill model with eigenvectors and standard deviations
       pca._output._std_deviation = mult(svd._output._d, 1.0 / Math.sqrt(svd._output._nobs - 1.0));
       pca._output._eigenvectors_raw = svd._output._v;
-      pca._output._total_variance = svd._output._total_variance;
+      // Since gram = X'X/n, but variance requires n-1 in denominator
+      pca._output._total_variance = gram.diagSum()*pca._output._nobs/(pca._output._nobs-1.0);
       buildTables(pca, svd._output._names_expanded);
     }
 
-    protected void computeStatsFillModel(PCAModel pca, GLRMModel glrm) {
+    protected void computeStatsFillModel(PCAModel pca, GLRMModel glrm, Gram gram) {
       assert glrm._parms._recover_svd;
 
       // Fill model with additional info needed for scoring
@@ -175,14 +174,16 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       pca._output._objective = glrm._output._objective;
 
       // Fill model with eigenvectors and standard deviations
+
       double dfcorr = 1.0 / Math.sqrt(_train.numRows() - 1.0);
       pca._output._std_deviation = new double[_parms._k];
       pca._output._eigenvectors_raw = glrm._output._eigenvectors_raw;
-      pca._output._total_variance = 0;
       for(int i = 0; i < glrm._output._singular_vals.length; i++) {
         pca._output._std_deviation[i] = dfcorr * glrm._output._singular_vals[i];
-        pca._output._total_variance += pca._output._std_deviation[i] * pca._output._std_deviation[i];
       }
+      pca._output._nobs = _train.numRows();
+      // Since gram = X'X/n, but variance requires n-1 in denominator
+      pca._output._total_variance = gram.diagSum()*pca._output._nobs/(pca._output._nobs-1.0);
       buildTables(pca, glrm._output._names_expanded);
     }
 
@@ -227,6 +228,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       PCAModel model = null;
       DataInfo dinfo = null, tinfo = null;
       DataInfo AE = null;
+      Gram gram = null;
 
       try {
         init(true);   // Initialize parameters
@@ -247,34 +249,38 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
                   "TRUE/True/true/... depending on the client language.");
         }
 
+        if (_wideDataset && (!_parms._impute_missing) && tranRebalanced.hasNAs()) { // remove NAs rows
+          tinfo = new DataInfo(_train, _valid, 0, _parms._use_all_factor_levels, _parms._transform,
+                  DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */
+                  _parms._impute_missing, /* missingBucket */ false, /* weights */ false,
+                    /* offset */ false, /* fold */ false, /* intercept */ false);
+          DKV.put(tinfo._key, tinfo);
+
+          DKV.put(tranRebalanced._key, tranRebalanced);
+          _train = Rapids.exec(String.format("(na.omit %s)", tranRebalanced._key)).getFrame(); // remove NA rows
+          DKV.remove(tranRebalanced._key);
+        }
+
+        dinfo = new DataInfo(_train, _valid, 0, _parms._use_all_factor_levels, _parms._transform,
+                DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */
+                _parms._impute_missing, /* missingBucket */ false, /* weights */ false,
+                  /* offset */ false, /* fold */ false, /* intercept */ false);
+        DKV.put(dinfo._key, dinfo);
+
         if(_parms._pca_method == PCAParameters.Method.GramSVD) {
-          if (_wideDataset && (!_parms._impute_missing) && tranRebalanced.hasNAs()) {
-            tinfo = new DataInfo(_train, _valid, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */ _parms._impute_missing, /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
-            DKV.put(tinfo._key, tinfo);
-
-            DKV.put(tranRebalanced._key, tranRebalanced);
-            _train = Rapids.exec(String.format("(na.omit %s)", tranRebalanced._key)).getFrame(); // remove NA rows
-            DKV.remove(tranRebalanced._key);
-          }
-
-          dinfo = new DataInfo(_train, _valid, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */ _parms._impute_missing, /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
-          DKV.put(dinfo._key, dinfo);
-
           // Calculate and save Gram matrix of training data
           // NOTE: Gram computes A'A/n where n = nrow(A) = number of rows in training set (excluding rows with NAs)
           _job.update(1, "Begin distributed calculation of Gram matrix");
-          Gram gram = null;
           OuterGramTask ogtsk = null;
           GramTask gtsk = null;
 
           if (_wideDataset) {
             if (!_parms._impute_missing && tranRebalanced.hasNAs()) {
-            // fixed the std and mean of dinfo to that of the frame before removing NA rows
-            dinfo._normMul = tinfo._normMul;
-            dinfo._numMeans = tinfo._numMeans;
-            dinfo._normSub = tinfo._normSub;
-          }
-
+              // fixed the std and mean of dinfo to that of the frame before removing NA rows
+              dinfo._normMul = tinfo._normMul;
+              dinfo._numMeans = tinfo._numMeans;
+              dinfo._normSub = tinfo._normSub;
+            }
             ogtsk = new OuterGramTask(_job._key, dinfo).doAll(dinfo._adaptedFrame);
 
             gram = ogtsk._gram;
@@ -330,6 +336,14 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           } else {
             computeStatsFillModel(model, dinfo, svdJ, gram, model._output._nobs);
           }
+          model._output._training_time_ms.add(System.currentTimeMillis());
+
+          // generate variables for scoring_history generation
+          LinkedHashMap<String, ArrayList> scoreTable = new LinkedHashMap<String, ArrayList>();
+          scoreTable.put("Timestamp", model._output._training_time_ms);
+          model._output._scoring_history = createScoringHistoryTableDR(scoreTable, "Scoring History for GramSVD",
+                  _job.start_time());
+        //  model._output._scoring_history.tableHeader = "Scoring history from GLRM";
 
         } else if(_parms._pca_method == PCAParameters.Method.Power ||
                 _parms._pca_method == PCAParameters.Method.Randomized) {
@@ -366,8 +380,10 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
           // Recover PCA results from SVD model
           _job.update(1, "Computing stats from SVD");
-          computeStatsFillModel(model, svd);
-
+          GramTask gtsk = new GramTask(_job._key, dinfo).doAll(dinfo._adaptedFrame);
+          gram = gtsk._gram;   // TODO: This ends up with all NaNs if training data has too many missing values
+          computeStatsFillModel(model, svd, gram);
+          model._output._scoring_history = svd._output._scoring_history;
         } else if(_parms._pca_method == PCAParameters.Method.GLRM) {
           GLRMModel.GLRMParameters parms = new GLRMModel.GLRMParameters();
           parms._train = _parms._train;
@@ -385,7 +401,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           parms._gamma_x = parms._gamma_y = 0;
           parms._regularization_x = GlrmRegularizer.None;
           parms._regularization_y = GlrmRegularizer.None;
-          parms._init = GlrmInitialization.PlusPlus;
+          parms._init = GlrmInitialization.SVD; // changed from PlusPlus to SVD.  Seems to give better result
 
           // Build an SVD model
           // Hack: we have to resort to unsafe type casts because _job is of Job<PCAModel> type, whereas a GLRM
@@ -399,7 +415,11 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
           // Recover PCA results from GLRM model
           _job.update(1, "Computing stats from GLRM decomposition");
-          computeStatsFillModel(model, glrm);
+          GramTask gtsk = new GramTask(_job._key, dinfo).doAll(dinfo._adaptedFrame);
+          gram = gtsk._gram;   // TODO: This ends up with all NaNs if training data has too many missing values
+          computeStatsFillModel(model, glrm, gram);
+          model._output._scoring_history = glrm._output._scoring_history;
+          model._output._scoring_history.setTableHeader("Scoring history from GLRM");
         }
         _job.update(1, "Scoring and computing metrics on training data");
         if (_parms._compute_metrics) {

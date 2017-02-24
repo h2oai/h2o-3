@@ -1,16 +1,14 @@
 package hex.svd;
 
-import hex.DataInfo;
-import hex.Model;
-import hex.ModelCategory;
-import hex.ModelMetrics;
-import hex.ModelMetricsUnsupervised;
+import hex.*;
 import water.*;
 import water.codegen.CodeGeneratorPipeline;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.JCodeGen;
 import water.util.SBPrintStream;
+
+import java.util.ArrayList;
 
 public class SVDModel extends Model<SVDModel, SVDModel.SVDParameters, SVDModel.SVDOutput> {
 
@@ -83,6 +81,12 @@ public class SVDModel extends Model<SVDModel, SVDModel.SVDParameters, SVDModel.S
 
     // Expanded column names of adapted training frame
     public String[] _names_expanded;
+
+    // variables for building up a scoring history
+    public ArrayList<Double> _history_average_SEE = new ArrayList<>();  // for randomized SVD
+    public ArrayList<Double> _history_err = new ArrayList<>();          // for power SVD method
+    public ArrayList<Double> _history_eigenVectorIndex = new ArrayList<>();     // store which eigenvector we are working on
+    public ArrayList<Long> _training_time_ms = new ArrayList<>();
 
     public SVDOutput(SVD b) { super(b); }
 

@@ -3,24 +3,34 @@ package hex.svd;
 import Jama.Matrix;
 import Jama.QRDecomposition;
 import Jama.SingularValueDecomposition;
-import hex.*;
+import hex.DataInfo;
 import hex.DataInfo.Row;
+import hex.FrameTask;
+import hex.ModelBuilder;
+import hex.ModelCategory;
 import hex.glrm.GLRMModel;
 import hex.gram.Gram;
 import hex.gram.Gram.GramTask;
 import hex.svd.SVDModel.SVDParameters;
 import hex.util.LinearAlgebraUtils;
-import hex.util.LinearAlgebraUtils.*;
+import hex.util.LinearAlgebraUtils.BMulInPlaceTask;
+import hex.util.LinearAlgebraUtils.BMulTask;
+import hex.util.LinearAlgebraUtils.SMulTask;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
-import water.util.*;
+import water.util.ArrayUtils;
+import water.util.PrettyPrint;
+import water.util.TwoDimTable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+
+import static hex.util.DimensionReductionUtils.createScoringHistoryTableDR;
 
 /**
  * Singular Value Decomposition
@@ -112,8 +122,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     SVDModel _model;
 
     // private double[] powerLoop(Gram gram) { return powerLoop(gram, ArrayUtils.gaussianVector(gram.fullN())); }
-    private double[] powerLoop(Gram gram, long seed) { return powerLoop(gram, ArrayUtils.gaussianVector(gram.fullN(), seed)); }
-    private double[] powerLoop(Gram gram, double[] vinit) {
+    private double[] powerLoop(Gram gram, long seed, SVDModel model) { return powerLoop(gram, ArrayUtils.gaussianVector(gram.fullN(), seed), model); }
+    private double[] powerLoop(Gram gram, double[] vinit, SVDModel model) {
       // TODO: What happens if Gram matrix is essentially zero? Numerical inaccuracies in PUBDEV-1161.
       assert vinit.length == gram.fullN();
 
@@ -122,6 +132,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       double err = 2 * TOLERANCE;
       double[] v = vinit.clone();
       double[] vnew = new double[v.length];
+      int eigIndex = model._output._iterations+1; // we start counting at 1 and not zero.
 
       // Update v_i <- (A'Av_{i-1})/||A'Av_{i-1}|| where A'A = Gram matrix of training frame
       while(iters < _parms._max_iterations && err > TOLERANCE) {
@@ -135,9 +146,14 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           diff = v[i] - vnew[i];  // Save error ||v_i - v_{i-1}||
           err += diff * diff;
           v[i] = vnew[i];         // Update v_i for next iteration
+
         }
         err = Math.sqrt(err);
         iters++;    // TODO: Should output vector of final iterations for each k
+        // store variables for scoring history
+        model._output._training_time_ms.add(System.currentTimeMillis());
+        model._output._history_err.add(err);
+        model._output._history_eigenVectorIndex.add((double) eigIndex);
       }
       return v;
     }
@@ -239,7 +255,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         model._output._iterations = 0;
         long qobs = dinfo._adaptedFrame.numRows() * _parms._nv;    // Number of observations in Q
         double qerr = 2 * TOLERANCE * qobs;   // Stop when average SSE between Q_j and Q_{j-2} below tolerance
-        while ((model._output._iterations < 10 || qerr / qobs > TOLERANCE) && model._output._iterations < _parms._max_iterations) {   // Run at least 10 iterations before tolerance cutoff
+        double average_SEE = qerr / qobs;
+
+        while ((model._output._iterations < 10 || average_SEE > TOLERANCE) && model._output._iterations < _parms._max_iterations) {   // Run at least 10 iterations before tolerance cutoff
           if(stop_requested()) break;
           _job.update(1, "Iteration " + String.valueOf(model._output._iterations+1) + " of randomized subspace iteration");
 
@@ -255,10 +273,18 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           BMulInPlaceTask tsk = new BMulInPlaceTask(dinfo, ArrayUtils.transpose(ysmall_q), _ncolExp);
           tsk.doAll(ayfrm);
           qerr = LinearAlgebraUtils.computeQ(_job._key, yinfo, yqfrm);
+          average_SEE = qerr/qobs;
           model._output._iterations++;
+
+          // store variables for scoring history
+          model._output._training_time_ms.add(System.currentTimeMillis());
+          model._output._history_average_SEE.add(average_SEE);
+
           model.update(_job);
         }
 
+        model._output._nobs = ybig.numRows(); // update nobs parameter
+        model.update(_job);
         // 4) Extract and save final Q_j from [A,Q] frame
         qfrm = ayqfrm.extractFrame(ncolA + _parms._nv, ayqfrm.numCols());
         qfrm = new Frame(Key.<Frame>make(), qfrm.names(), qfrm.vecs());
@@ -403,7 +429,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           _job.update(1, "Iteration 1 of power method");     // One unit of work
           // 1a) Initialize right singular vector v_1
           model._output._v = new double[_parms._nv][_ncolExp];  // Store V' for ease of use and transpose back at end
-          model._output._v[0] = powerLoop(gram, _parms._seed);
+          model._output._v[0] = powerLoop(gram, _parms._seed, model);
 
           // Keep track of I - \sum_i v_iv_i' where v_i = eigenvector i
           double[][] ivv_sum = new double[_ncolExp][_ncolExp];
@@ -430,7 +456,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             _job.update(1, "Iteration " + String.valueOf(k+1) + " of power method");   // One unit of work
 
             // 2) Iterate x_i <- (A_k'A_k/n)x_{i-1} until convergence and set v_k = x_i/||x_i||
-            model._output._v[k] = powerLoop(gram_update, _parms._seed);
+            model._output._v[k] = powerLoop(gram_update, _parms._seed, model);
 
             // 3) Residual data A_k = A - \sum_{i=1}^k \sigma_i u_iv_i' = A - \sum_{i=1}^k Av_iv_i' = A(I - \sum_{i=1}^k v_iv_i')
             // 3a) Compute \sigma_k = ||A_{k-1}v_k|| and u_k = A_{k-1}v_k/\sigma_k
@@ -458,9 +484,22 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             DivideU utsk = new DivideU(model._output._d);
             utsk.doAll(u);
           }
+          LinkedHashMap<String, ArrayList> scoreTable = new LinkedHashMap<String, ArrayList>();
+          scoreTable.put("Timestamp", model._output._training_time_ms);
+          scoreTable.put("err", model._output._history_err);
+          scoreTable.put("Principal Component #", model._output._history_eigenVectorIndex);
+          model._output._scoring_history = createScoringHistoryTableDR(scoreTable,
+                  "Scoring History from Power SVD", _job.start_time());
         } else if(_parms._svd_method == SVDParameters.Method.Randomized) {
           qfrm = randSubIter(dinfo, model);
           u = directSVD(dinfo, qfrm, model, u_name);
+          model._output._training_time_ms.add(System.currentTimeMillis());
+          model._output._history_average_SEE.add(model._output._history_average_SEE.get(model._output._history_average_SEE.size()-1)); // add last err back to it
+          LinkedHashMap<String, ArrayList> scoreTable = new LinkedHashMap<String, ArrayList>();
+          scoreTable.put("Timestamp", model._output._training_time_ms);
+          scoreTable.put("average SEE", model._output._history_average_SEE);
+          model._output._scoring_history = createScoringHistoryTableDR(scoreTable,
+                  "Scoring History from Randomized SVD", _job.start_time());
         } else
           error("_svd_method", "Unrecognized SVD method " + _parms._svd_method);
 
