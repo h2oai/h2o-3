@@ -534,22 +534,22 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // build a fast RF with default settings...
     ///////////////////////////////////////////////////////////
     Job<DRFModel>defaultRandomForestJob = defaultRandomForest();
-
-    pollAndUpdateProgress("Default Random Forest build", 50, this.job(), defaultRandomForestJob);
-
-    DRFModel defaultDRF = (DRFModel)defaultRandomForestJob.get();
-    leaderboard.addModel(defaultDRF);
+    if(defaultRandomForestJob != null) {
+      pollAndUpdateProgress("Default Random Forest build", 50, this.job(), defaultRandomForestJob);
+      DRFModel defaultDRF = (DRFModel) defaultRandomForestJob.get();
+      leaderboard.addModel(defaultDRF);
+    }
 
 
     ///////////////////////////////////////////////////////////
     // ... and another with "XRT" / extratrees settings
     ///////////////////////////////////////////////////////////
     Job<DRFModel>defaultExtremelyRandomTreesJob = defaultExtremelyRandomTrees();
-
-    pollAndUpdateProgress("Default Extremely Random Trees (XRT) build", 50, this.job(), defaultExtremelyRandomTreesJob);
-
-    DRFModel defaultXRT = (DRFModel)defaultExtremelyRandomTreesJob.get();
-    leaderboard.addModel(defaultXRT);
+    if(defaultExtremelyRandomTreesJob != null) {
+      pollAndUpdateProgress("Default Extremely Random Trees (XRT) build", 50, this.job(), defaultExtremelyRandomTreesJob);
+      DRFModel defaultXRT = (DRFModel) defaultExtremelyRandomTreesJob.get();
+      leaderboard.addModel(defaultXRT);
+    }
 
 
     ///////////////////////////////////////////////////////////
@@ -557,10 +557,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     ///////////////////////////////////////////////////////////
     // TODO: run for only part of the remaining time?
     Job<Grid>glmJob = defaultSearchGLM();
-    pollAndUpdateProgress("GLM hyperparameter search", 100, this.job(), glmJob);
-
-    Grid glmGrid = DKV.getGet(glmJob._result);
-    leaderboard.addModels(glmGrid.getModelKeys());
+    if(glmJob != null) {
+      pollAndUpdateProgress("GLM hyperparameter search", 100, this.job(), glmJob);
+      Grid glmGrid = glmJob.get();
+      leaderboard.addModels(glmGrid.getModelKeys());
+    }
 
 
     ///////////////////////////////////////////////////////////
@@ -568,54 +569,53 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     ///////////////////////////////////////////////////////////
     // TODO: run for only part of the remaining time?
     Job<Grid>gbmJob = defaultSearchGBM();
-    pollAndUpdateProgress("GBM hyperparameter search", 700, this.job(), gbmJob);
+    if(gbmJob != null) {
+      pollAndUpdateProgress("GBM hyperparameter search", 700, this.job(), gbmJob);
+      Grid gbmGrid = gbmJob.get();
+      leaderboard.addModels(gbmGrid.getModelKeys());
 
-    Grid gbmGrid = DKV.getGet(gbmJob._result);
-    leaderboard.addModels(gbmGrid.getModelKeys());
-
-
-    ///////////////////////////////////////////////////////////
-    // (optionally) build StackedEnsemble
-    ///////////////////////////////////////////////////////////
-
-    Model m = gbmGrid.getModels()[0];
-    if (m._output.isClassifier() && ! m._output.isBinomialClassifier()) {
-      // nada
-      this.job.update(100, "Multinomial classifier: StackedEnsemble build skipped");
-      Log.info("Multinomial classifier: StackedEnsemble build skipped");
-    } else {
       ///////////////////////////////////////////////////////////
-      // stack all models
+      // (optionally) build StackedEnsemble
       ///////////////////////////////////////////////////////////
+      Model m = gbmGrid.getModels()[0];
+      if (m._output.isClassifier() && !m._output.isBinomialClassifier()) {
+        // nada
+        this.job.update(100, "Multinomial classifier: StackedEnsemble build skipped");
+        Log.info("Multinomial classifier: StackedEnsemble build skipped");
+      } else {
+        ///////////////////////////////////////////////////////////
+        // stack all models
+        ///////////////////////////////////////////////////////////
 
-      // Also stack models from other AutoML runs, by using the Leaderboard! (but don't stack stacks)
-      Model[] all = leaderboard().models();
-      int nonEnsembleCount = 0;
-      for (Model aModel : all)
-        if (! (aModel instanceof StackedEnsembleModel))
-          nonEnsembleCount++;
+        // Also stack models from other AutoML runs, by using the Leaderboard! (but don't stack stacks)
+        Model[] all = leaderboard().models();
+        int nonEnsembleCount = 0;
+        for (Model aModel : all)
+          if (!(aModel instanceof StackedEnsembleModel))
+            nonEnsembleCount++;
 
-      Key<Model>[] notEnsembles = new Key[nonEnsembleCount];
-      int notEnsembleIndex = 0;
-      for (Model aModel : all)
-        if (! (aModel instanceof StackedEnsembleModel))
-          notEnsembles[notEnsembleIndex++] = aModel._key;
+        Key<Model>[] notEnsembles = new Key[nonEnsembleCount];
+        int notEnsembleIndex = 0;
+        for (Model aModel : all)
+          if (!(aModel instanceof StackedEnsembleModel))
+            notEnsembles[notEnsembleIndex++] = aModel._key;
 
-      Job<StackedEnsembleModel>ensembleJob = stack(notEnsembles);
+        Job<StackedEnsembleModel> ensembleJob = stack(notEnsembles);
 
-      pollAndUpdateProgress("StackedEnsemble build", 100, this.job(), ensembleJob);
+        pollAndUpdateProgress("StackedEnsemble build", 100, this.job(), ensembleJob);
 
-      StackedEnsembleModel ensemble = (StackedEnsembleModel)ensembleJob.get();
-      leaderboard.addModel(ensemble);
+        StackedEnsembleModel ensemble = (StackedEnsembleModel) ensembleJob.get();
+        leaderboard.addModel(ensemble);
+      }
+
+      Log.info("AutoML: build done");
+
+      Log.info(leaderboard.toString("\n"));
+
+      possiblyVerifyImmutability();
+      // gather more data? build more models? start applying transforms? what next ...?
+      stop();
     }
-
-    Log.info("AutoML: build done");
-
-    Log.info(leaderboard.toString("\n"));
-
-    possiblyVerifyImmutability();
-    // gather more data? build more models? start applying transforms? what next ...?
-    stop();
   }
 
   /**
