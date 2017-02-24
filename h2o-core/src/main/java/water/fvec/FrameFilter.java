@@ -1,6 +1,7 @@
 package water.fvec;
 
 import water.*;
+import water.util.FrameUtils;
 
 import java.util.Arrays;
 
@@ -13,32 +14,22 @@ public abstract class FrameFilter extends Iced<FrameFilter> {
 
   public abstract boolean accept(Chunk c, int i);
 
-  private Key<Frame> datasetKey;
+  private Key<Frame> frameKey;
   private String signalColName;
   private Key<Vec> signalKey;
 
   public FrameFilter() {}
   
-  public FrameFilter(Frame dataset, String signalColName) {
-    assert dataset.vec(signalColName) != null : "dataset should contain column " + signalColName;
-    if (dataset._key == null) saveDataset(dataset);
-    this.datasetKey = dataset._key;
+  public FrameFilter(Frame frame, String signalColName) {
+    assert frame.vec(signalColName) != null : "dataset should contain column " + signalColName;
+    this.frameKey = FrameUtils.save(frame);
     this.signalColName = signalColName;
-    this.signalKey = dataset.vec(signalColName)._key;
+    this.signalKey = frame.vec(signalColName)._key;
     assert signalKey != null : "signal vector shoul dbe in DKV";
   }
 
-  private void saveDataset(Frame dataset) {
-    dataset._key = Key.make();
-    DKV.put(dataset);
-    Scope.track(dataset);
-    for (Vec v : dataset.vecs()) {
-      if (DKV.get(v._key) == null) DKV.put(v);
-    }
-  }
-
   public Frame eval() {
-    Frame dataset = DKV.getGet(datasetKey);
+    Frame dataset = DKV.getGet(frameKey);
     Key<Frame> destinationKey = Key.make();
     Vec signal = DKV.getGet(signalKey);
     Vec flagCol = new MRTask() {

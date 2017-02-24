@@ -29,7 +29,7 @@ public class DatasetTest extends TestUtil {
 
   @BeforeClass
   static public void setup() throws IOException { 
-    stall_till_cloudsize(3);
+    stall_till_cloudsize(2);
     Writer fw = new FileWriter(testFile1);
     fw.write("A\tB\tC\na1\tb1\tc1\na2\tb2\tc2\n");
     fw.close();
@@ -116,7 +116,7 @@ public class DatasetTest extends TestUtil {
   public void testStratifiedSplit() throws Exception {
     final String[] domain = {"red", "white", "blue"};
 
-    final int size = 1000;
+    final int size = 1000000;
     final Vec vec1 = cvec(domain, size, new Function<Integer, String>() {
       @Override
       public String apply(Integer i) {
@@ -151,6 +151,6 @@ public class DatasetTest extends TestUtil {
     for (int i = 0; i < 10000; i++) {
       counts[(int)trgb.at8(i)]++;
     }
-    assertArrayEquals(new int[]{218, 1858, 7924}, counts);
+    assertArrayEquals(new int[]{200, 1802, 7998}, counts);
   }
 }

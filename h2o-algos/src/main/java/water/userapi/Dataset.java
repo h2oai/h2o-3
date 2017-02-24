@@ -1,13 +1,15 @@
 package water.userapi;
 
+import water.DKV;
+import water.Iced;
 import water.Key;
 import water.Scope;
 import water.fvec.*;
-import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.rapids.ast.prims.advmath.AstStratifiedSplit;
 import water.udf.specialized.Enums;
 import water.util.FileUtils;
+import water.util.FrameUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,11 +22,13 @@ import static water.rapids.ast.prims.advmath.AstStratifiedSplit.*;
  * 
  * Created by vpatryshev on 2/20/17.
  */
-public class Dataset implements Serializable {
-  Frame frame;
+public class Dataset  extends Iced<Dataset> {
+  private Key<Frame> frameKey;
 
-  private Dataset(Frame frame) {
-    this.frame = frame;
+  Dataset() {}
+  
+  Dataset(Frame frame) {
+    frameKey = FrameUtils.save(frame);
   }
 
   public static Dataset readFile(String path) {
@@ -47,9 +51,12 @@ public class Dataset implements Serializable {
         map.values().toArray(new Vec[map.size()])));
   }
   
+  private Frame frame() { return DKV.getGet(frameKey); }
+  
   public Dataset oneHotEncode(String... ignore) {
     try {
-      return new Dataset(Enums.oneHotEncoding(frame, ignore));
+      final Frame hotFrame = Enums.oneHotEncoding(frame(), ignore);
+      return new Dataset(hotFrame);
     } catch (IOException ioe) {
       throw new DataException("Failed to do oneHotEncoding", ioe);
     }
@@ -57,8 +64,10 @@ public class Dataset implements Serializable {
   
   // the new vec is named (hard-coded so far) "test_train_split"
   Dataset addSplittingColumn(String colName, Double ratio, long seed) {
+    Frame frame = frame();
     final Frame splitter = Scope.track(AstStratifiedSplit.split(frame, frame.vec(colName), ratio, seed, SplittingDom));
     Frame newFrame = Scope.track(frame.clone());
+    newFrame._key = null;
     newFrame.add(splitter.names(), splitter.vecs());
     return new Dataset(newFrame);
   }
@@ -77,8 +86,10 @@ public class Dataset implements Serializable {
   }
   
   private Frame select(final String what, String colname) {
-    
-    final int expected = Arrays.asList(frame.vec(colname).domain()).indexOf(what);
+    Frame frame = frame();
+    Vec vec = frame.vec(colname);
+    final String[] domain = vec.domain();
+    final int expected = Arrays.asList(domain).indexOf(what);
     
     final FrameFilter filter = new FrameFilter(frame, colname) {
       
@@ -97,26 +108,26 @@ public class Dataset implements Serializable {
   }
   
   public String[] domain() {
-    return frame.names();
+    return frame().names();
   }
   
   public Vec vec(String name) {
-    return frame.vec(name);
+    return frame().vec(name);
   }
 
   @Override
   public String toString() {
-    return "Dataset{frame=" + frame + '}';
+    return "Dataset{frame=" + frame() + '}';
   }
 
   @Override
   public boolean equals(Object o) {
-    return o instanceof Dataset && Objects.equals(frame, ((Dataset) o).frame);
+    return o instanceof Dataset && Objects.equals(frame(), ((Dataset) o).frame());
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(frame)*7+1;
+    return Objects.hashCode(frame())*7+1;
   }
 
   static class TrainAndValid {

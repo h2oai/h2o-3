@@ -1,7 +1,6 @@
 package water.udf.specialized;
 
 import com.google.common.collect.Sets;
-import water.Key;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -73,15 +72,9 @@ public class Enums extends DataColumns.BaseFactory<Integer, EnumColumn> {
     return plain.materialize();
   }
 
-  public static Frame oneHotEncoding(Key<Frame> destKey, Frame dataset, String[] skipCols) throws IOException {
-    return oneHotEncoding(dataset, skipCols, new Frame(destKey));
-  }  
-  
   public static Frame oneHotEncoding(Frame source, String[] skipCols) throws IOException {
-    return oneHotEncoding(FrameUtils.newFrameKey(), source, skipCols);
-  }
-
-  static Frame oneHotEncoding(Frame source, String[] skipCols, Frame target) throws IOException {
+    Frame target = new Frame();
+    FrameUtils.save(target);
     Set<String> skipit = (skipCols == null) ? Collections.<String>emptySet() : Sets.newHashSet(skipCols);
 
     for(String colName : source.names()) {

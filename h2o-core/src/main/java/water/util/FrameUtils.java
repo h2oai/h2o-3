@@ -128,6 +128,18 @@ public class FrameUtils {
     }
   }
 
+  public static Key<Frame> save(Frame frame) {
+    if (frame._key == null) {
+      frame._key = newFrameKey();
+      DKV.put(frame);
+      Scope.track(frame);
+      for (Vec v : frame.vecs()) {
+        if (DKV.get(v._key) == null) DKV.put(v);
+      }
+    }
+    return frame._key;
+  }
+
   private static class Vec2ArryTsk extends MRTask<Vec2ArryTsk> {
     final int N;
     public double [] res;
