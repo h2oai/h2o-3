@@ -10,7 +10,9 @@ import water.util.FrameUtils;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 
@@ -19,7 +21,7 @@ import static org.junit.Assert.*;
  */
 public class UdfEnumTest extends UdfTestBase {
 
-  int requiredCloudSize() { return 3; }
+  int requiredCloudSize() { return 2; }
 
   final String[] domain = {"Red", "White", "Blue"};
   
@@ -145,8 +147,17 @@ public class UdfEnumTest extends UdfTestBase {
     FrameUtils.CategoricalOneHotEncoder cohe = new FrameUtils.CategoricalOneHotEncoder(utilsFrame, null);
     Frame utilsEncodeFrame = trash.add(cohe.exec().get());
 
+    ourEncodedFrame.remove("plain");
+    
+    Set<String> expectedNames = new HashSet<>();
+    expectedNames.addAll(Arrays.asList(utilsEncodeFrame._names));
+//    expectedNames.add("plain");
+
+    Set<String> actualNames = new HashSet<>();
+    actualNames.addAll(Arrays.asList(ourEncodedFrame._names));
+    
     try {
-      assertArrayEquals(utilsEncodeFrame._names, ourEncodedFrame._names);
+      assertEquals(expectedNames, actualNames);
       assertTrue(FrameUtils.equal(utilsEncodeFrame, ourEncodedFrame));
     } finally {
       trash.dump();

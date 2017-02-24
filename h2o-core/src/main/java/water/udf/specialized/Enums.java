@@ -79,8 +79,9 @@ public class Enums extends DataColumns.BaseFactory<Integer, EnumColumn> {
 
     for(String colName : source.names()) {
       final Vec vec = source.vec(colName);
+      target.add(colName, vec);
       if (skipit.contains(colName) || !vec.isCategorical() || vec.domain() == null) {
-        target.add(colName, vec);
+        // do nothing, ok?
       } else {
         target.add(oneHotEncoding(colName, vec));
       }
