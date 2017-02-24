@@ -73,7 +73,10 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
     """
     global h2oconn
     if config:
-        h2oconn = _connect_with_conf(config)
+        if "connect_params" in config:
+            h2oconn = _connect_with_conf(config["connect_params"])
+        else:
+            h2oconn = _connect_with_conf(config)
     else:
         h2oconn = H2OConnection.open(server=server, url=url, ip=ip, port=port, https=https,
                                      auth=auth, verify_ssl_certificates=verify_ssl_certificates,
