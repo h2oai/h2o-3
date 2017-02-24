@@ -218,6 +218,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
      */
     public final void buildModel() {
       DeepLearningModel cp = null;
+      VecAry toDelete = new VecAry();
       if (_parms._checkpoint == null) {
         cp = new DeepLearningModel(dest(), _parms, new DeepLearningModel.DeepLearningModelOutput(DeepLearning.this), _train, _valid, nclasses());
         if (_parms._pretrained_autoencoder != null) {
@@ -249,8 +250,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         try {
           // PUBDEV-2513: Adapt _train and _valid (in-place) to match the frames that were used for the previous model
           // This can add or removeVecs dummy columns (can happen if the dataset is sparse and datasets have different non-const columns)
-          for (String st : previous.adaptTestForTrain(_train,true,false)) Log.warn(st);
-          for (String st : previous.adaptTestForTrain(_valid,true,false)) Log.warn(st);
+          for (String st : previous.adaptTestForTrain(_train,true,false,toDelete)) Log.warn(st);
+          for (String st : previous.adaptTestForTrain(_valid,true,false,toDelete)) Log.warn(st);
           dinfo = makeDataInfo(_train, _valid, _parms, nclasses());
           DKV.put(dinfo);
           cp = new DeepLearningModel(dest(), _parms, previous, false, dinfo);
@@ -320,6 +321,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         }
       } finally {
         Scope.exit(keep.toArray(new Key[keep.size()]));
+        toDelete.remove();
       }
     }
 

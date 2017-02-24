@@ -122,7 +122,7 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
         len += x;
       }
       for(int i = 0; i < chks._numCols; ++i)
-        chks.set(i,ncs[i]);
+        chks.set(i,ncs[i].compress());
     }
   }
 }

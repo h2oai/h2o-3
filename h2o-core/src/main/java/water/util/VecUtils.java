@@ -105,6 +105,7 @@ public class VecUtils {
   public static VecAry numericToCategorical(VecAry src) {
     if (src.isInt()) {
       int min = (int) src.min(), max = (int) src.max();
+      System.out.println("numcols = " + src.numCols() + "min = " + min + ", max = " + max);
       // try to do the fast domain collection
       long dom[] = (min >= 0 && max < Integer.MAX_VALUE - 4) ? new CollectDomainFast(max).doAll(src).domain() : new CollectDomain().doAll(src).domain();
       if (dom.length > Categorical.MAX_CATEGORICAL_COUNT)
@@ -491,7 +492,7 @@ public class VecUtils {
     @Override public void map(ChunkAry ys) {
       for( int row=0; row< ys._len; row++ )
         if( !ys.isNA(row) )
-          _u[(int)ys.at8(row)]=true;
+          _u[ys.at4(row)]=true;
     }
     @Override public void reduce(CollectDomainFast mrt) { if( _u != mrt._u ) ArrayUtils.or(_u, mrt._u);}
     @Override protected void postGlobal() {

@@ -36,7 +36,8 @@ public class GLMTest  extends TestUtil {
     Frame fr2 = new Frame(fr);
     Frame preds = Scope.track(m.score(fr2));
     Log.info("adapting");
-    m.adaptTestForTrain(fr2,true,false);
+    VecAry toDelete = new VecAry();
+    m.adaptTestForTrain(fr2,true,false,toDelete);
     Log.info("adapting done, removing vecs");
     fr2.removeVecs(fr2.numCols()-1); // removeVecs response
     Log.info("removing vecs done");
@@ -54,6 +55,7 @@ public class GLMTest  extends TestUtil {
       Assert.assertTrue(m.testJavaScoring(fr,preds,1e-15));
     Log.info("all done");
     Scope.exit();
+    toDelete.remove();
   }
 
 

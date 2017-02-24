@@ -165,7 +165,7 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
 
   public FrameV3 fillFromImpl(Frame f, long row_offset, int row_count, int column_offset, int column_count) {
     if( row_count == 0 ) row_count = 100;                                 // 100 rows by default
-    if( column_count == 0 ) column_count = f.numCols() - column_offset; // full width by default
+    if( column_count == 0 ) column_count = Math.min(1000,f.numCols() - column_offset); // full width  (up to 1k) by default
 
     row_count    = (int) Math.min(row_count, row_offset + f.numRows());
     column_count = Math.min(column_count, column_offset + f.numCols());

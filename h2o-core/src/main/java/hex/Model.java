@@ -42,7 +42,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public String[] _warnings = new String[0];
   public Distribution _dist;
   protected ScoringInfo[] scoringInfo;
-  public IcedHashMap<Key, String> _toDelete = new IcedHashMap<>();
 
 
   public interface DeepFeatures {
@@ -745,14 +744,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  Throws {@code IllegalArgumentException} if no columns are in common, or
    *  if any factor column has no levels in common.
    */
-  public String[] adaptTestForTrain(Frame test, boolean expensive, boolean computeMetrics) {
+  public String[] adaptTestForTrain(Frame test, boolean expensive, boolean computeMetrics, VecAry adaptedData) {
     return adaptTestForTrain(
             test,
             _output._origNames,
             _output._origDomains,
             _output._names,
             _output._domains,
-            _parms, expensive, computeMetrics, _output.interactions(), getToEigenVec(), _toDelete);
+            _parms, expensive, computeMetrics, _output.interactions(), getToEigenVec(), adaptedData);
   }
 
   /**
@@ -768,7 +767,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    */
   public static String[] adaptTestForTrain(Frame test, String[] origNames, String[][] origDomains, String[] names, String[][] domains,
                                            Parameters parms, boolean expensive, boolean computeMetrics, String[] interactions, ToEigenVec tev,
-                                           IcedHashMap<Key, String> toDelete) throws IllegalArgumentException {
+                                           VecAry adaptedData2Delete) throws IllegalArgumentException {
     if (test == null) return new String[0];
     // Fast path cutout: already compatible
     String[][] tdomains = test.domains();
@@ -800,82 +799,97 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // Build the validation set to be compatible with the training set.
     // Toss out extra columns, complain about missing ones, remap categoricals
     ArrayList<String> msgs = new ArrayList<>();
-    VecAry vvecs = new VecAry();
+
     int good = 0;               // Any matching column names, at all?
     int convNaN = 0;
+    int [] ids = test.find(names);
+    VecAry testVecs = new VecAry(test.vecs());
+    ArrayList<Double> cons = new ArrayList<>();
     for( int i=0; i<names.length; i++ ) {
-      VecAry vec = test.vec(names[i]); // Search in the given validation set
+
       // For supervised problems, if the test set has no response, then we don't fill that in with NAs.
       boolean isResponse = response != null && names[i].equals(response);
       boolean isWeights = weights != null && names[i].equals(weights);
       boolean isOffset = offset != null && names[i].equals(offset);
       boolean isFold = fold != null && names[i].equals(fold);
 
-      if(vec == null && isResponse && computeMetrics)
+      if(ids[i] == -1 && isResponse && computeMetrics)
         throw new IllegalArgumentException("Test/Validation dataset is missing response vector '" + response + "'");
-      if(vec == null && isOffset)
+      if(ids[i] == -1 && isOffset)
         throw new IllegalArgumentException("Test/Validation dataset is missing offset vector '" + offset + "'");
-      if(vec == null && isWeights && computeMetrics && expensive) {
-        vec = new VecAry(test.anyVec().makeCon(1));
+      if(ids[i] == -1 && isWeights && computeMetrics && expensive) {
+        ids[i] = testVecs._numCols + cons.size();
+        cons.add(1.0);
         msgs.add(H2O.technote(1, "Test/Validation dataset is missing the weights column '" + names[i] + "' (needed because a response was found and metrics are to be computed): substituting in a column of 1s"));
         //throw new IllegalArgumentException(H2O.technote(1, "Test dataset is missing weights vector '" + weights + "' (needed because a response was found and metrics are to be computed)."));
       }
-
       // If a training set column is missing in the validation set, complain and fill in with NAs.
-      if( vec == null ) {
+      if( ids[i] == -1 ) {
         String str = null;
         if( expensive ) {
           if (isFold) {
             str = "Test/Validation dataset is missing fold column '" + names[i] + "': substituting in a column of 0s";
-            vec = new VecAry(test.anyVec().makeCon(0));
+            ids[i] = testVecs._numCols + cons.size();
+            cons.add(0.0);
           } else {
             str = "Test/Validation dataset is missing training column '" + names[i] + "': substituting in a column of NAs";
-            vec = new VecAry(test.anyVec().makeCon(missing));
+            ids[i] = testVecs._numCols + cons.size();
+            cons.add(Double.NaN);
             convNaN++;
           }
-          vec.setDomain(0,domains[i]);
+          if(domains[i] != null)
+            testVecs.setDomain(ids[i],domains[i]);
         }
         msgs.add(str);
-      }
-      if( vec != null ) {          // I have a column with a matching name
+      } else  {          // I have a column with a matching name
         if( domains[i] != null ) { // Model expects an categorical
-          if (vec.isString())
-            vec = VecUtils.stringToCategorical(vec); //turn a String column into a categorical column (we don't delete the original vec here)
-          if( expensive && vec.domain() != domains[i] && !Arrays.equals(vec.domain(),domains[i]) ) { // Result needs to be the same categorical
+          if (expensive && testVecs.isString(ids[i])) {
+            VecAry evec = VecUtils.stringToCategorical(testVecs.select(ids[i]));
+            adaptedData2Delete.append(evec);
+            testVecs.replace(ids[i], evec); //turn a String column into a categorical column (we don't delete the original vec here)
+          }
+          if( expensive && !Arrays.deepEquals(testVecs.domain(ids[i]),domains[i]) ) { // Result needs to be the same categorical
             VecAry evec;
             try {
-              evec = vec.adaptTo(domains[i]); // Convert to categorical or throw IAE
+              evec = testVecs.select(ids[i]).adaptTo(domains[i]); // Convert to categorical or throw IAE
+              adaptedData2Delete.append(evec);
             } catch( NumberFormatException nfe ) {
               throw new IllegalArgumentException("Test/Validation dataset has a non-categorical column '"+names[i]+"' which is categorical in the training data");
             }
             String[] ds = evec.domain();
             assert ds != null && ds.length >= domains[i].length;
-            if( isResponse && vec.domain() != null && ds.length == domains[i].length+vec.domain().length )
+            if( isResponse && testVecs.domain(ids[i]) != null && ds.length == domains[i].length+testVecs.domain(ids[i]).length )
               throw new IllegalArgumentException("Test/Validation dataset has a categorical response column '"+names[i]+"' with no levels in common with the model");
             if (ds.length > domains[i].length)
               msgs.add("Test/Validation dataset column '" + names[i] + "' has levels not trained on: " + Arrays.toString(Arrays.copyOfRange(ds, domains[i].length, ds.length)));
-            vec = evec;  good++;
+            testVecs.replace(ids[i],evec);
+            good++;
           } else {
             good++;
           }
-        } else if( vec.isCategorical() ) {
+        } else if( testVecs.isCategorical(ids[i]) ) {
           throw new IllegalArgumentException("Test/Validation dataset has categorical column '"+names[i]+"' which is real-valued in the training data");
         } else {
           good++;      // Assumed compatible; not checking e.g. Strings vs UUID
         }
-        vvecs.append(vec);
       }
     }
     if( good == convNaN )
       throw new IllegalArgumentException("Test/Validation dataset has no columns in common with the training set");
+    if(cons.size() > 0){
+      double [] cary = new double[cons.size()];
+      for(int i = 0; i < cary.length; ++i )
+        cary[i] = cons.get(i);
+      VecAry consVecs = testVecs.makeCons(cary);
+      adaptedData2Delete.append(consVecs);
+      testVecs.append(consVecs);
+    }
     if( good == names.length || (response != null && test.find(response) == -1 && good == names.length - 1) )  // Only update if got something for all columns
-      test.restructure(names,vvecs);
-
+      test.restructure(names,testVecs.select(ids));
     if (expensive) {
       Frame updated = categoricalEncoder(test, new String[]{weights, offset, fold, response}, catEncoding, tev);
       if (updated!=test) {
         assert(updated._key!=test._key);
-        if (toDelete!=null) toDelete.put(updated._key, Arrays.toString(Thread.currentThread().getStackTrace()));
         test.restructure(updated.names(), updated.vecs());
       }
     }
@@ -921,15 +935,18 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics) throws IllegalArgumentException {
     Frame adaptFr = new Frame(fr);
     computeMetrics = computeMetrics && (!isSupervised() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
-    adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
-    Frame output = predictScoreImpl(fr, adaptFr, destination_key, j, computeMetrics); // Predict & Score
-    // Log modest confusion matrices
-    VecAry predicted = output.vecs(0); // Modeled/predicted response
-    String mdomain[] = predicted.domain(); // Domain of predictions (union of test and train)
+    VecAry toDelete = new VecAry();
+    Frame output = null;
+    try {
+      adaptTestForTrain(adaptFr, true, computeMetrics, toDelete);   // Adapt
+      output = predictScoreImpl(fr, adaptFr, destination_key, j, computeMetrics); // Predict & Score
+      // Log modest confusion matrices
+      VecAry predicted = output.vecs(0); // Modeled/predicted response
+      String mdomain[] = predicted.domain(); // Domain of predictions (union of test and train)
 
-    // Output is in the model's domain, but needs to be mapped to the scored
-    // dataset's domain.
-    if(_output.isClassifier() && computeMetrics) {
+      // Output is in the model's domain, but needs to be mapped to the scored
+      // dataset's domain.
+      if (_output.isClassifier() && computeMetrics) {
       /*
       if (false) {
         assert(mdomain != null); // label must be categorical
@@ -944,18 +961,20 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         }
       }
       */
-      VecAry actual = fr.vec(_output.responseName());
-      if( actual != null ) {  // Predict does not have an actual, scoring does
-        String sdomain[] = actual.domain(); // Scored/test domain; can be null
-        if (sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain, sdomain)) {
-          VecAry x = predicted.adaptTo(sdomain).append(output.vecs().selectRange(1,output.numCols())).makeCopy();
-          String [] names = output._names;
-          output.remove();
-          DKV.put(output = new Frame(output._key,names,x));
+        VecAry actual = fr.vec(_output.responseName());
+        if (actual != null) {  // Predict does not have an actual, scoring does
+          String sdomain[] = actual.domain(); // Scored/test domain; can be null
+          if (sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain, sdomain)) {
+            VecAry x = predicted.adaptTo(sdomain).append(output.vecs().selectRange(1, output.numCols())).makeCopy();
+            String[] names = output._names;
+            output.remove();
+            DKV.put(output = new Frame(output._key, names, x));
+          }
         }
       }
+    } finally {
+      toDelete.remove();
     }
-    cleanup_adapt(adaptFr, fr);
     return output;
   }
 
@@ -1009,18 +1028,18 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }.doAll(Vec.T_NUM, predictions).outputFrame(Key.<Frame>make(outputName), new String[]{"deviance"}, null);
   }
 
-  // Remove temp keys.  TODO: Really should use Scope but Scope does not
-  // currently allow nested-key-keepers.
-  static protected void cleanup_adapt( Frame adaptFr, Frame fr ) {
-    VecAry vecs = adaptFr.vecs();
-    VecAry toRem = new VecAry();
-    for( VecAry x:vecs.singleVecs() )
-      if( fr.find(x) == -1 ) //only delete vecs that aren't shared
-        toRem.append(x);
-    if(!toRem.isEmpty())
-      toRem.remove();
-    DKV.remove(adaptFr._key); //delete the frame header
-  }
+//  // Remove temp keys.  TODO: Really should use Scope but Scope does not
+//  // currently allow nested-key-keepers.
+//  static protected void cleanup_adapt( Frame adaptFr, Frame fr ) {
+//    VecAry vecs = adaptFr.vecs();
+//    VecAry toRem = new VecAry();
+//    for( VecAry x:vecs.singleVecs() )
+//      if( fr.find(x) == -1 ) //only delete vecs that aren't shared
+//        toRem.append(x);
+//    if(!toRem.isEmpty())
+//      toRem.remove();
+//    DKV.remove(adaptFr._key); //delete the frame header
+//  }
 
   protected String [] makeScoringNames(){
     final int nc = _output.nclasses();
@@ -1186,7 +1205,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     if (_output._model_metrics != null)
       for( Key k : _output._model_metrics )
         k.remove(fs);
-    cleanUp(_toDelete);
     return super.remove_impl(fs);
   }
 
@@ -1592,8 +1610,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     assert data.numRows() == model_predictions.numRows();
     final Frame fr = new Frame(data);
     boolean computeMetrics = data.vec(_output.responseName()) != null && !data.vec(_output.responseName()).isBad();
+    VecAry toDelete = new VecAry();
     try {
-      String[] warns = adaptTestForTrain(fr,true, computeMetrics);
+      String[] warns = adaptTestForTrain(fr,true, computeMetrics,toDelete);
       if( warns.length > 0 )
         System.err.println(Arrays.toString(warns));
 
@@ -1693,7 +1712,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       if (totalMiss != 0) System.err.println("Number of mismatches: " + totalMiss + (totalMiss > 20 ? " (only first 20 are shown)": ""));
       return totalMiss==0;
     } finally {
-      cleanup_adapt(fr, data);  // Remove temp keys.
+      toDelete.remove();
     }
   }
 

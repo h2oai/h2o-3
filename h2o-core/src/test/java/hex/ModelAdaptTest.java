@@ -37,21 +37,24 @@ public class ModelAdaptTest extends TestUtil {
     
     Frame tst = parse_test_file("smalldata/junit/mixcat_test.csv");
     Frame adapt = new Frame(tst);
-    String[] warns = am.adaptTestForTrain(adapt,true, true);
-    Assert.assertTrue(ArrayUtils.find(warns,"Test/Validation dataset column 'Feature_1' has levels not trained on: [D]")!= -1);
-    Assert.assertTrue(ArrayUtils.find(warns, "Test/Validation dataset is missing training column 'Const': substituting in a column of NAs") != -1);
-    Assert.assertTrue(ArrayUtils.find(warns, "Test/Validation dataset is missing training column 'Useless': substituting in a column of NAs") != -1);
-    Assert.assertTrue(ArrayUtils.find(warns, "Test/Validation dataset column 'Response' has levels not trained on: [W]") != -1);
-    // Feature_1: merged test & train domains
-    Assert.assertArrayEquals(adapt.vec("Feature_1").domain(),new String[]{"A","B","C","D"});
-    // Const: all NAs
-    Assert.assertTrue(adapt.vec("Const").isBad());
-    // Useless: all NAs
-    Assert.assertTrue(adapt.vec("Useless").isBad());
-    // Response: merged test & train domains
-    Assert.assertArrayEquals(adapt.vec("Response").domain(),new String[]{"X","Y","Z","W"});
-
-    Model.cleanup_adapt( adapt, tst );
+    VecAry toDelete = new VecAry();
+    try {
+      String[] warns = am.adaptTestForTrain(adapt, true, true, toDelete);
+      Assert.assertTrue(ArrayUtils.find(warns, "Test/Validation dataset column 'Feature_1' has levels not trained on: [D]") != -1);
+      Assert.assertTrue(ArrayUtils.find(warns, "Test/Validation dataset is missing training column 'Const': substituting in a column of NAs") != -1);
+      Assert.assertTrue(ArrayUtils.find(warns, "Test/Validation dataset is missing training column 'Useless': substituting in a column of NAs") != -1);
+      Assert.assertTrue(ArrayUtils.find(warns, "Test/Validation dataset column 'Response' has levels not trained on: [W]") != -1);
+      // Feature_1: merged test & train domains
+      Assert.assertArrayEquals(adapt.vec("Feature_1").domain(), new String[]{"A", "B", "C", "D"});
+      // Const: all NAs
+      Assert.assertTrue(adapt.vec("Const").isBad());
+      // Useless: all NAs
+      Assert.assertTrue(adapt.vec("Useless").isBad());
+      // Response: merged test & train domains
+      Assert.assertArrayEquals(adapt.vec("Response").domain(), new String[]{"X", "Y", "Z", "W"});
+    } finally{
+      toDelete.remove();
+    }
     tst.remove();
   }
 
@@ -73,10 +76,10 @@ public class ModelAdaptTest extends TestUtil {
     Frame tst = new Frame();
     tst.add("cat", new VecAry(cat.vecs()[0].makeCon(Double.NaN))); // All NAN/missing column
     Frame adapt = new Frame(tst);
-    String[] warns = am.adaptTestForTrain(adapt,true, true);
+    VecAry toDelete = new VecAry();
+    String[] warns = am.adaptTestForTrain(adapt,true, true,toDelete);
     Assert.assertTrue(warns.length == 0); // No errors during adaption
-
-    Model.cleanup_adapt( adapt, tst );
+    toDelete.remove();
     tst.remove();
   }
 
@@ -97,11 +100,15 @@ public class ModelAdaptTest extends TestUtil {
     tst.add("dog",vec(2, 3, 2, 3));
     Frame adapt = new Frame(tst);
     boolean saw_iae = false;
-    try { am.adaptTestForTrain(adapt, true, true); }
+    VecAry toDelete = new VecAry();
+    try { am.adaptTestForTrain(adapt, true, true,toDelete); }
     catch( IllegalArgumentException iae ) { saw_iae = true; }
+    finally{
+      toDelete.remove();
+    }
     Assert.assertTrue(saw_iae);
 
-    Model.cleanup_adapt( adapt, tst );
+
     tst.remove();
   }
 

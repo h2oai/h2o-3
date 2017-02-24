@@ -428,18 +428,22 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       Frame cvValid = cvModelBuilders[i].valid();
       Frame adaptFr = new Frame(cvValid);
       M cvModel = cvModelBuilders[i].dest().get();
-      cvModel.adaptTestForTrain(adaptFr, true, !isSupervised());
-      mbs[i] = cvModel.scoreMetrics(adaptFr);
-      if (nclasses() == 2 /* need holdout predictions for gains/lift table */ ||
-              _parms._keep_cross_validation_predictions ||
-              (_parms._distribution== DistributionFamily.huber /*need to compute quantiles on abs error of holdout predictions*/)) {
-        String predName = "prediction_" + cvModelBuilders[i]._result.toString();
-        cvModel.predictScoreImpl(cvValid, adaptFr, predName, _job, true);
-        DKV.put(cvModel);
+      VecAry toDelete = new VecAry();
+      try {
+        cvModel.adaptTestForTrain(adaptFr, true, !isSupervised(), toDelete);
+        mbs[i] = cvModel.scoreMetrics(adaptFr);
+        if (nclasses() == 2 /* need holdout predictions for gains/lift table */ ||
+            _parms._keep_cross_validation_predictions ||
+            (_parms._distribution == DistributionFamily.huber /*need to compute quantiles on abs error of holdout predictions*/)) {
+          String predName = "prediction_" + cvModelBuilders[i]._result.toString();
+          cvModel.predictScoreImpl(cvValid, adaptFr, predName, _job, true);
+          DKV.put(cvModel);
+        }
+      } finally{
+        toDelete.remove();
       }
       // free resources as early as possible
       if (adaptFr != null) {
-        Model.cleanup_adapt(adaptFr, cvValid);
         DKV.remove(adaptFr._key,fs);
       }
       DKV.remove(cvModelBuilders[i]._parms._train,fs);
@@ -918,8 +922,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (va != null) {
       if (va.numRows()==0) error("_validation_frame", "Validation frame must have > 0 rows.");
       _valid = new Frame(null /* not putting this into KV */, va._names.clone(), va.vecs().clone());
+      VecAry toDelete = new VecAry();
       try {
-        String[] msgs = Model.adaptTestForTrain(_valid, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec(), _toDelete);
+        String[] msgs = Model.adaptTestForTrain(_valid, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec(), toDelete);
         _vresponse = _valid.vec(_parms._response_column);
         if (_vresponse == null && _parms._response_column != null)
           error("_validation_frame", "Validation frame must have a response column '" + _parms._response_column + "'.");
@@ -931,6 +936,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         }
       } catch (IllegalArgumentException iae) {
         error("_valid", iae.getMessage());
+      } finally {
+        toDelete.remove();
       }
     } else {
       _valid = null;

@@ -230,8 +230,13 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
 
   @Override public Frame scoreReconstruction(Frame frame, Key<Frame> destination_key, boolean reverse_transform) {
     Frame adaptedFr = new Frame(frame);
-    adaptTestForTrain(adaptedFr, true, false);
-    return reconstruct(frame, adaptedFr, destination_key, true, reverse_transform);
+    VecAry toDelete = new VecAry();
+    try {
+      adaptTestForTrain(adaptedFr, true, false,toDelete);
+      return reconstruct(frame, adaptedFr, destination_key, true, reverse_transform);
+    } finally {
+      toDelete.remove();
+    }
   }
 
   /**
@@ -243,33 +248,37 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
   @Override public Frame scoreArchetypes(Frame frame, Key<Frame> destination_key, boolean reverse_transform) {
     int ncols = _output._names.length;
     Frame adaptedFr = new Frame(frame);
-    adaptTestForTrain(adaptedFr, true, false);
-    assert ncols == adaptedFr.numCols();
-    String[][] adaptedDomme = adaptedFr.domains();
-    double[][] proj = new double[_parms._k][_output._nnums + _output._ncats];
+    VecAry toDelete = new VecAry();
+    try {
+      adaptTestForTrain(adaptedFr, true, false, toDelete);
+      assert ncols == adaptedFr.numCols();
+      String[][] adaptedDomme = adaptedFr.domains();
+      double[][] proj = new double[_parms._k][_output._nnums + _output._ncats];
 
-    // Categorical columns
-    for (int d = 0; d < _output._ncats; d++) {
-      double[][] block = _output._archetypes_raw.getCatBlock(d);
-      for (int k = 0; k < _parms._k; k++)
-        proj[k][_output._permutation[d]] = _output._lossFunc[d].mimpute(block[k]);
-    }
-
-    // Numeric columns
-    for (int d = _output._ncats; d < (_output._ncats + _output._nnums); d++) {
-      int ds = d - _output._ncats;
-      for (int k = 0; k < _parms._k; k++) {
-        double num = _output._archetypes_raw.getNum(ds, k);
-        proj[k][_output._permutation[d]] = _output._lossFunc[d].impute(num);
-        if (reverse_transform)
-          proj[k][_output._permutation[d]] = proj[k][_output._permutation[d]] / _output._normMul[ds] + _output._normSub[ds];
+      // Categorical columns
+      for (int d = 0; d < _output._ncats; d++) {
+        double[][] block = _output._archetypes_raw.getCatBlock(d);
+        for (int k = 0; k < _parms._k; k++)
+          proj[k][_output._permutation[d]] = _output._lossFunc[d].mimpute(block[k]);
       }
-    }
 
-    // Convert projection of archetypes into a frame with correct domains
-    Frame f = ArrayUtils.frame((destination_key == null ? Key.<Frame>make() : destination_key), adaptedFr.names(), proj);
-    for(int i = 0; i < ncols; i++) f.vecs().setDomain(i,adaptedDomme[i]);
-    return f;
+      // Numeric columns
+      for (int d = _output._ncats; d < (_output._ncats + _output._nnums); d++) {
+        int ds = d - _output._ncats;
+        for (int k = 0; k < _parms._k; k++) {
+          double num = _output._archetypes_raw.getNum(ds, k);
+          proj[k][_output._permutation[d]] = _output._lossFunc[d].impute(num);
+          if (reverse_transform)
+            proj[k][_output._permutation[d]] = proj[k][_output._permutation[d]] / _output._normMul[ds] + _output._normSub[ds];
+        }
+      }
+      // Convert projection of archetypes into a frame with correct domains
+      Frame f = ArrayUtils.frame((destination_key == null ? Key.<Frame>make() : destination_key), adaptedFr.names(), proj);
+      for (int i = 0; i < ncols; i++) f.vecs().setDomain(i, adaptedDomme[i]);
+      return f;
+    } finally {
+      toDelete.remove();
+    }
   }
 
   private class GLRMScore extends MRTask<GLRMScore> {
@@ -364,17 +373,22 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     // Need [A,X] where A = adapted test frame, X = loading frame
     // Note: A is adapted to original training frame
     Frame adaptedFr = new Frame(frame);
-    adaptTestForTrain(adaptedFr, true, false);
-    assert ncols == adaptedFr.numCols();
+    VecAry toDelete = new VecAry();
+    try {
+      adaptTestForTrain(adaptedFr, true, false, toDelete);
+      assert ncols == adaptedFr.numCols();
 
-    // Append loading frame X for calculating XY
-    Frame fullFrm = new Frame(adaptedFr);
-    Frame loadingFrm = DKV.get(_output._representation_key).get();
-    fullFrm.add(loadingFrm);
+      // Append loading frame X for calculating XY
+      Frame fullFrm = new Frame(adaptedFr);
+      Frame loadingFrm = DKV.get(_output._representation_key).get();
+      fullFrm.add(loadingFrm);
 
-    GLRMScore gs = new GLRMScore(ncols, _parms._k, false).doAll(fullFrm);
-    ModelMetrics mm = gs._mb.makeModelMetrics(GLRMModel.this, adaptedFr, null, null);   // save error metrics based on imputed data
-    return (ModelMetricsGLRM) mm;
+      GLRMScore gs = new GLRMScore(ncols, _parms._k, false).doAll(fullFrm);
+      ModelMetrics mm = gs._mb.makeModelMetrics(GLRMModel.this, adaptedFr, null, null);   // save error metrics based on imputed data
+      return (ModelMetricsGLRM) mm;
+    } finally {
+      toDelete.remove();
+    }
   }
 
   @Override public ModelMetricsGLRM.GlrmModelMetricsBuilder makeMetricBuilder(String[] domain) {

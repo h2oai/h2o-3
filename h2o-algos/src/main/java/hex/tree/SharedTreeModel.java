@@ -200,63 +200,68 @@ public abstract class SharedTreeModel<
 
   public Frame scoreLeafNodeAssignment(Frame frame, Key destination_key) {
     Frame adaptFrm = new Frame(frame);
-    adaptTestForTrain(adaptFrm, true, false);
-    int classTrees = 0;
-    for (int i = 0; i < _output._treeKeys[0].length; ++i) {
-      if (_output._treeKeys[0][i] != null) classTrees++;
-    }
-    final int outputcols = _output._treeKeys.length * classTrees;
-    final String[] names = new String[outputcols];
-    int col = 0;
-    for (int tidx = 0; tidx < _output._treeKeys.length; tidx++) {
-      Key[] keys = _output._treeKeys[tidx];
-      for (int c = 0; c < keys.length; c++) {
-        if (keys[c] != null) {
-          names[col++] = "T" + (tidx + 1) + (keys.length == 1 ? "" : (".C" + (c + 1)));
+    VecAry toDelete = new VecAry();
+    try {
+      adaptTestForTrain(adaptFrm, true, false, toDelete);
+      int classTrees = 0;
+      for (int i = 0; i < _output._treeKeys[0].length; ++i) {
+        if (_output._treeKeys[0][i] != null) classTrees++;
+      }
+      final int outputcols = _output._treeKeys.length * classTrees;
+      final String[] names = new String[outputcols];
+      int col = 0;
+      for (int tidx = 0; tidx < _output._treeKeys.length; tidx++) {
+        Key[] keys = _output._treeKeys[tidx];
+        for (int c = 0; c < keys.length; c++) {
+          if (keys[c] != null) {
+            names[col++] = "T" + (tidx + 1) + (keys.length == 1 ? "" : (".C" + (c + 1)));
+          }
         }
       }
-    }
-    Frame res = new MRTask() {
-      @Override public void map(ChunkAry chks, NewChunkAry idx ) {
-        double input [] = new double[chks._numCols];
-        final String output[] = new String[outputcols];
+      Frame res = new MRTask() {
+        @Override
+        public void map(ChunkAry chks, NewChunkAry idx) {
+          double input[] = new double[chks._numCols];
+          final String output[] = new String[outputcols];
 
-        for( int row=0; row<chks._len; row++ ) {
-          for( int i=0; i<chks._numCols; i++ )
-            input[i] = chks.atd(row,i);
+          for (int row = 0; row < chks._len; row++) {
+            for (int i = 0; i < chks._numCols; i++)
+              input[i] = chks.atd(row, i);
 
-          int col=0;
-          for( int tidx=0; tidx<_output._treeKeys.length; tidx++ ) {
-            Key[] keys = _output._treeKeys[tidx];
-            for (Key key : keys) {
-              if (key != null) {
-                String pred = DKV.get(key).<CompressedTree>get().getDecisionPath(input);
-                output[col++] = pred;
+            int col = 0;
+            for (int tidx = 0; tidx < _output._treeKeys.length; tidx++) {
+              Key[] keys = _output._treeKeys[tidx];
+              for (Key key : keys) {
+                if (key != null) {
+                  String pred = DKV.get(key).<CompressedTree>get().getDecisionPath(input);
+                  output[col++] = pred;
+                }
               }
             }
+            assert (col == outputcols);
+            for (int i = 0; i < outputcols; ++i)
+              idx.addStr(i, output[i]);
           }
-          assert(col==outputcols);
-          for (int i=0; i<outputcols; ++i)
-            idx.addStr(i,output[i]);
+        }
+      }.doAll(outputcols, Vec.T_STR, adaptFrm).outputFrame(destination_key, names, null);
+      VecAry vv;
+      VecAry nvecs = new VecAry();
+      for (int c = 0; c < res.vecs().numCols(); ++c) {
+        vv = res.vec(c);
+        try {
+          nvecs.append(vv.toCategoricalVec());
+        } catch (Exception e) {
+          nvecs.remove();
+          throw e;
         }
       }
-    }.doAll(outputcols, Vec.T_STR, adaptFrm).outputFrame(destination_key, names, null);
-
-    VecAry vv;
-    VecAry nvecs = new VecAry();
-    for(int c=0;c<res.vecs().numCols();++c) {
-      vv = res.vec(c);
-      try {
-        nvecs.append(vv.toCategoricalVec());
-      } catch (Exception e) {
-        nvecs.remove();
-        throw e;
-      }
+      res.delete();
+      res = new Frame(destination_key, names, nvecs);
+      DKV.put(res);
+      return res;
+    } finally {
+      toDelete.remove();
     }
-    res.delete();
-    res = new Frame(destination_key, names, nvecs);
-    DKV.put(res);
-    return res;
   }
 
   @Override protected double[] score0(double data[], double[] preds, double weight, double offset) {

@@ -11,6 +11,7 @@ import water.api.FramesHandler.Frames;
 import water.api.schemas3.*;
 import water.exceptions.*;
 import water.fvec.Frame;
+import water.fvec.VecAry;
 import water.persist.Persist;
 import water.util.FileUtils;
 import water.util.JCodeGen;
@@ -73,11 +74,14 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
 
         if (frame_cols.containsAll(model_column_names)) {
           // See if adapt throws an exception or not.
+          VecAry toDelete = new VecAry();
           try {
-            if( model.adaptTestForTrain(new Frame(frame), false, false).length == 0 )
+            if( model.adaptTestForTrain(new Frame(frame), false, false, toDelete).length == 0 )
               compatible_frames.add(frame);
           } catch( IllegalArgumentException e ) {
             // skip
+          } finally {
+            toDelete.remove();
           }
         }
       }

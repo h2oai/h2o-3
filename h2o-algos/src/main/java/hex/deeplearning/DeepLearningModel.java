@@ -735,39 +735,45 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       throw new H2OIllegalArgumentException("Only for AutoEncoder Deep Learning model.", "");
     final int len = _output._names.length;
     Frame adaptFrm = new Frame(frame);
-    adaptTestForTrain(adaptFrm, true, false);
-    final int outputcols = reconstruction_error_per_feature ? model_info.data_info.fullN() : 1;
-    Frame mse = new MRTask() {
-      @Override public void map(ChunkAry chks, NewChunkAry mse ) {
-        double tmp [] = new double[len];
-        double out[] = new double[outputcols];
-        final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
-        for( int row=0; row<chks._len; row++ ) {
-          for( int i=0; i<len; i++ )
-            tmp[i] = chks.atd(row,i);
-          score_autoencoder(tmp, out, neurons, false /*reconstruction*/, reconstruction_error_per_feature);
-          for (int i=0; i<outputcols; ++i)
-            mse.addNum(i,out[i]);
+    VecAry toDelete = new VecAry();
+    try {
+      adaptTestForTrain(adaptFrm, true, false, toDelete);
+      final int outputcols = reconstruction_error_per_feature ? model_info.data_info.fullN() : 1;
+      Frame mse = new MRTask() {
+        @Override
+        public void map(ChunkAry chks, NewChunkAry mse) {
+          double tmp[] = new double[len];
+          double out[] = new double[outputcols];
+          final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
+          for (int row = 0; row < chks._len; row++) {
+            for (int i = 0; i < len; i++)
+              tmp[i] = chks.atd(row, i);
+            score_autoencoder(tmp, out, neurons, false /*reconstruction*/, reconstruction_error_per_feature);
+            for (int i = 0; i < outputcols; ++i)
+              mse.addNum(i, out[i]);
+          }
         }
-      }
-    }.doAll(outputcols, Vec.T_NUM, adaptFrm).outputFrame();
+      }.doAll(outputcols, Vec.T_NUM, adaptFrm).outputFrame();
 
-    String[] names;
-    if (reconstruction_error_per_feature) {
-      String[] coefnames = model_info().data_info().coefNames();
-      assert (outputcols == coefnames.length);
-      names = new String[outputcols];
-      for (int i = 0; i < names.length; ++i) {
-        names[i] = "reconstr_" + coefnames[i] + ".SE";
+      String[] names;
+      if (reconstruction_error_per_feature) {
+        String[] coefnames = model_info().data_info().coefNames();
+        assert (outputcols == coefnames.length);
+        names = new String[outputcols];
+        for (int i = 0; i < names.length; ++i) {
+          names[i] = "reconstr_" + coefnames[i] + ".SE";
+        }
+      } else {
+        names = new String[]{"Reconstruction.MSE"};
       }
-    } else {
-      names = new String[]{"Reconstruction.MSE"};
+
+      Frame res = new Frame(destination_key, names, mse.vecs());
+      DKV.put(res);
+      addModelMetrics(new ModelMetricsAutoEncoder(this, frame, res.numRows(), res.vecs().mean() /*mean MSE*/));
+      return res;
+    } finally {
+      toDelete.remove();
     }
-
-    Frame res = new Frame(destination_key, names, mse.vecs());
-    DKV.put(res);
-    addModelMetrics(new ModelMetricsAutoEncoder(this, frame, res.numRows(), res.vecs().mean() /*mean MSE*/));
-    return res;
   }
 
    /**
@@ -800,36 +806,42 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     if (vecs == null) throw new IllegalArgumentException("Cannot create deep features from a frame with no columns.");
 
     Scope.enter();
-    adaptTestForTrain(adaptFrm, true, false);
-    String [] names = new String[features];
-    for (int j=0; j<features; ++j)
-      names[j] = "DF.L"+(layer+1)+".C" + (j+1);
-    adaptFrm.add(names, vecs);
-    final int mb=0;
-    final int n=1;
-    new MRTask() {
-      @Override public void map( ChunkAry chks ) {
-        if (isCancelled() || job !=null && job.stop_requested()) return;
-        double tmp [] = new double[len];
-        final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
-        for( int row=0; row<chks._len; row++ ) {
-          for( int i=0; i<len; i++ )
-            tmp[i] = chks.atd(row,i);
-          ((Neurons.Input)neurons[0]).setInput(-1, tmp, mb); //FIXME: No weights yet
-          DeepLearningTask.fpropMiniBatch(-1, neurons, model_info, null, false, null, null /*no offset*/, n);
-          double[] out = neurons[layer+1]._a[mb].raw(); //extract the layer-th hidden feature
-          for( int c=0; c<features; c++ )
-            chks.set(row,_output._names.length+c,out[c]);
+    VecAry toDelete = new VecAry();
+    try {
+      adaptTestForTrain(adaptFrm, true, false, toDelete);
+      String[] names = new String[features];
+      for (int j = 0; j < features; ++j)
+        names[j] = "DF.L" + (layer + 1) + ".C" + (j + 1);
+      adaptFrm.add(names, vecs);
+      final int mb = 0;
+      final int n = 1;
+      new MRTask() {
+        @Override
+        public void map(ChunkAry chks) {
+          if (isCancelled() || job != null && job.stop_requested()) return;
+          double tmp[] = new double[len];
+          final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
+          for (int row = 0; row < chks._len; row++) {
+            for (int i = 0; i < len; i++)
+              tmp[i] = chks.atd(row, i);
+            ((Neurons.Input) neurons[0]).setInput(-1, tmp, mb); //FIXME: No weights yet
+            DeepLearningTask.fpropMiniBatch(-1, neurons, model_info, null, false, null, null /*no offset*/, n);
+            double[] out = neurons[layer + 1]._a[mb].raw(); //extract the layer-th hidden feature
+            for (int c = 0; c < features; c++)
+              chks.set(row, _output._names.length + c, out[c]);
+          }
+          if (job != null) job.update(1);
         }
-        if (job != null) job.update(1);
-      }
-    }.doAll(adaptFrm);
+      }.doAll(adaptFrm);
 
-    // Return just the output columns
-    int x=_output._names.length, y=adaptFrm.numCols();
-    Frame ret = adaptFrm.extractFrame(x, y);
-    Scope.exit();
-    return ret;
+      // Return just the output columns
+      int x = _output._names.length, y = adaptFrm.numCols();
+      Frame ret = adaptFrm.extractFrame(x, y);
+      return ret;
+    } finally {
+      Scope.exit();
+      toDelete.remove();
+    }
   }
 
 

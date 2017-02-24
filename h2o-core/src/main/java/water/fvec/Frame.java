@@ -12,6 +12,8 @@ import water.util.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.TreeMap;
 
 /** A collection of named {@link Vec}s, essentially an R-like Distributed Data Frame.
  *
@@ -61,6 +63,23 @@ import java.util.Arrays;
 public class Frame extends Lockable<Frame> {
   /** Vec names */
   public String[] _names;
+  private int [] _sorted_ids;
+
+  protected int [] nameSortedIds(){
+    if(_sorted_ids != null)
+      return _sorted_ids;
+    TreeMap<String,Integer> map = new TreeMap<>();
+    int [] sorted_ids = new int[_names.length];
+    for(int i = 0; i < _names.length; ++i)
+      map.put(_names[i],i);
+    int j = 0;
+    for(Map.Entry<String,Integer> e:map.entrySet())
+      sorted_ids[j++] = e.getValue();
+    for(int i = 1; i < sorted_ids.length; ++i)
+      assert _names[sorted_ids[i]].compareTo(_names[sorted_ids[i-1]]) > 0;
+    return _sorted_ids = sorted_ids;
+  }
+
   private boolean _lastNameBig; // Last name is "Cxxx" and has largest number
   protected VecAry _vecs; // The Vectors (transient to avoid network traffic)
 
@@ -260,11 +279,19 @@ public class Frame extends Lockable<Frame> {
    *  @return the column index with a matching name, or -1 if missing */
   public int find( String name ) {
     if( name == null ) return -1;
-    assert _names != null;
-    // TODO: add a hashtable: O(n) is just stupid.
-    for( int i=0; i<_names.length; i++ )
-      if( name.equals(_names[i]) )
-        return i;
+    int [] sorted_ids = nameSortedIds();
+    int lb = 0, ub = _names.length;
+    while(ub > lb){
+      int mid = lb + ((ub - lb) >> 1);
+      int x = sorted_ids[mid];
+      int c = name.compareTo(_names[x]);
+      if(c == 0) return x;
+      if(c > 0){
+        lb = mid+1;
+      } else {
+        ub = mid;
+      }
+    }
     return -1;
   }
 
@@ -282,6 +309,9 @@ public class Frame extends Lockable<Frame> {
   /** Bulk {@link #find(String)} api
    *  @return An array of column indices matching the {@code names} array */
   public int[] find(String[] names) {
+    int [] sorted_ids = nameSortedIds();
+    for(int i = 1; i < sorted_ids.length; ++i)
+      assert _names[sorted_ids[i]].compareTo(_names[sorted_ids[i-1]]) > 0;
     if( names == null ) return null;
     int[] res = new int[names.length];
     for(int i = 0; i < names.length; ++i)
@@ -442,6 +472,7 @@ public class Frame extends Lockable<Frame> {
       tmpnam[ncols+i] = tmpnames[i];
     _vecs.append(vecs);
     _names = tmpnam;
+    _sorted_ids = null;
   }
 
   /** Append a named Vec to the Frame.  Names are forced unique, by appending a
@@ -453,6 +484,7 @@ public class Frame extends Lockable<Frame> {
     String[] names = Arrays.copyOf(_names,ncols+1);  names[ncols] = name;
     _names = names;
     _vecs.append(vec);
+    _sorted_ids = null;
     return vec;
   }
 
@@ -471,6 +503,7 @@ public class Frame extends Lockable<Frame> {
     if (_names != null)
       System.arraycopy(_names, 0, _names2, 1, len);
     _names = _names2;
+    _sorted_ids = null;
     return this;
   }
 
@@ -481,6 +514,7 @@ public class Frame extends Lockable<Frame> {
     if( lo==hi ) return;
     _vecs.swap(lo,hi);
     String n=_names[lo]; _names[lo] = _names[hi]; _names[hi] = n;
+    _sorted_ids = null;
   }
 
   /** move the provided columns to be first, in-place. For Merge currently since method='hash' was coded like that */
@@ -495,6 +529,7 @@ public class Frame extends Lockable<Frame> {
     }
     _names = names;
     _vecs.moveFirst(cols);
+    _sorted_ids = null;
   }
 
 
@@ -545,6 +580,7 @@ public class Frame extends Lockable<Frame> {
     int [] idxs = new int[names.length];
     int j = 0;
     for(int i = 0; i < names.length; ++i) {
+      if(names[i].length() == 0) continue;
       int x = find(names[i]);
       if(x != -1)idxs[j++] = x;
     }
@@ -565,6 +601,17 @@ public class Frame extends Lockable<Frame> {
       else names[k++] = _names[i];
     _names = names;
     assert _names.length == _vecs._numCols;
+    if(_sorted_ids != null){ // update sorted ids
+      int rem = 0;
+      for(int i = 0; i < _sorted_ids.length; ++i){
+        if(Arrays.binarySearch(idxs,_sorted_ids[i]) >= 0){
+          rem++;
+        } else if(rem > 0){
+          _sorted_ids[i-rem] = _sorted_ids[i];
+        }
+      }
+      _sorted_ids = Arrays.copyOf(_sorted_ids,_sorted_ids.length-rem);
+    }
     return res;
   }
 
@@ -579,6 +626,8 @@ public class Frame extends Lockable<Frame> {
   public void restructure( String[] names, VecAry vecs) {
     // Make empty to dodge asserts, then "add()" them all which will check for
     // compatible Vecs & names.
+    if(_sorted_ids != null && !Arrays.deepEquals(_names,names))
+      _sorted_ids = null;
     _names = names;
     _vecs = vecs;
   }
