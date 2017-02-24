@@ -607,15 +607,14 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         StackedEnsembleModel ensemble = (StackedEnsembleModel) ensembleJob.get();
         leaderboard.addModel(ensemble);
       }
-
-      Log.info("AutoML: build done");
-
-      Log.info(leaderboard.toString("\n"));
-
-      possiblyVerifyImmutability();
-      // gather more data? build more models? start applying transforms? what next ...?
-      stop();
     }
+    Log.info("AutoML: build done");
+
+    Log.info(leaderboard.toString("\n"));
+
+    possiblyVerifyImmutability();
+    // gather more data? build more models? start applying transforms? what next ...?
+    stop();
   }
 
   /**
