@@ -75,12 +75,12 @@ public class DatasetTest extends TestUtil {
     
     Dataset actual = sut.oneHotEncode();
     
-    assertArrayEquals(new String[]{"RGB.red", "RGB.white", "RGB.blue", "RGB.missing(NA)"}, actual.domain());
+    assertArrayEquals(new String[]{"RGB", "RGB.red", "RGB.white", "RGB.blue", "RGB.missing(NA)"}, actual.domain());
     
     for (int i = 0; i < size; i++) {
-      for (int j = 0; j < 3; j++) {
+      for (int j = 1; j < 4; j++) {
         assertEquals("@(" + i + "," + j + ")", 
-            j == whichOne(i) ? 1 : 0,
+            (j-1) == whichOne(i) ? 1 : 0,
             actual.vec(actual.domain()[j]).at8(i));
       }
     }
@@ -164,7 +164,7 @@ public class DatasetTest extends TestUtil {
     String[] categories = sut.domainOf("COMMUNITY AREA NAME");
     assertEquals(78, categories.length);
     Dataset oneHot = sut.oneHotEncode();
-    assertEquals(87, oneHot.domain().length);
+    assertEquals(88, oneHot.domain().length);
   }
   
   @Test
@@ -173,16 +173,17 @@ public class DatasetTest extends TestUtil {
     Dataset sut = Dataset.readFile(path);
 
     final int expectedSize = 20000;
-    final double ratio = 0.01;
+    final double ratio = 0.25;
     final int expectedValidSize = (int)(expectedSize * ratio);
     final int expectedTrainSize = expectedSize - expectedValidSize;
+    sut.removeColumn("start station name", "end station name");
     assertEquals(expectedSize, sut.length());
     sut.makeCategorical("gender");
     String[] categories = sut.domainOf("gender");
     assertEquals(3, categories.length);
-    Dataset oneHot = sut.oneHotEncode("start station name", "end station name");
+    Dataset oneHot = sut.oneHotEncode();
     assertEquals(20, oneHot.domain().length);
-    Dataset.TrainAndValid tav = oneHot.stratifiedSplit("gender.1", ratio, 55555);
+    Dataset.TrainAndValid tav = oneHot.stratifiedSplit("gender", ratio, 55555);
     assertEquals(expectedTrainSize, tav.train.length());
     assertEquals(expectedValidSize, tav.valid.length());
   }

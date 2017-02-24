@@ -66,7 +66,9 @@ public class Dataset  extends Iced<Dataset> {
   // the new vec is named (hard-coded so far) "test_train_split"
   Dataset addSplittingColumn(String colName, Double ratio, long seed) {
     Frame frame = frame();
-    final Frame splitter = Scope.track(AstStratifiedSplit.split(frame.vec(colName), ratio, seed, SplittingDom));
+    final Vec vec = frame.vec(colName);
+    assert vec != null : "Column " + colName + " missing in frame " + frame;
+    final Frame splitter = Scope.track(AstStratifiedSplit.split(vec, ratio, seed, SplittingDom));
     Frame newFrame = Scope.track(frame.clone());
 
 // the following lines are good for checking if we have what we want
@@ -146,9 +148,7 @@ public class Dataset  extends Iced<Dataset> {
 
   public void renameColumns(String... newName) {
     Frame frame = frame();
-    for (int i = 0; i < Math.min(frame.numCols(), newName.length); i++) {
-      frame._names[i] = newName[i];
-    }
+    System.arraycopy(newName, 0, frame._names, 0, Math.min(frame.numCols(), newName.length));
   }
 
   public void makeCategorical(String colName) {
@@ -170,6 +170,15 @@ public class Dataset  extends Iced<Dataset> {
     Frame f = frame();
     Vec v = f == null ? null : f.anyVec();
     return v == null ? 0 : v.length();
+  }
+
+  public void removeColumn(String... names) {
+    Frame f = frame();
+    for (String name : names) {
+      Vec v = f.remove(name);
+      v.remove();
+      Scope.untrack(v._key);
+    }
   }
 
   static class TrainAndValid {
