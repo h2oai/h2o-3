@@ -1,8 +1,8 @@
 package water.udf
 
 import java.io.File
+import java.lang
 import java.util.{Date, GregorianCalendar}
-import java.{lang, util}
 
 import org.junit.{Assert, BeforeClass, Test}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
@@ -10,7 +10,10 @@ import water.TestUtil._
 import water.udf.MoreColumns._
 import water.udf.fp.PureFunctions._
 import water.udf.fp.{Function, Functions, PureFunctions}
+<<<<<<< db1d04688e6cb3f33e5cef09427efdf131f4634c
 import water.util.FileUtils._
+=======
+>>>>>>> Checked that UDF-style OneHotEncoding does exactly the same as the one in FrameUtils.
 import water.{Test0, TestUtil}
 
 import scala.collection.JavaConverters._
@@ -293,16 +296,16 @@ class ScalaUdfTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
     
     val frame = new UnfoldingFrame[String, DataColumn[String]](Strings, split.size, split, 11)
     
-    val columns: util.List[DataColumn[lang.String]] = frame.materialize
+    val matrix: MatrixFrame[DataColumn[String]] = frame.materialize
 
     {
       for {i <- ss.indices} {
-        val fromColumns = (0 until 10) map (columns.get(_).get(i))
+        val fromColumns = (0 until 10) map (matrix.column(_).get(i))
         val actual = fromColumns filter (null !=) mkString " "
         assert(ss(i).replaceAll(",", " ").trim == actual)
       }
     }
-    assert(columns.get(5).isCompatibleWith(source), "Need until align the result")
+    assert(matrix.column(5).isCompatibleWith(source), "Need until align the result")
   }
 
   @Test def testSomethingElse(): Unit = {

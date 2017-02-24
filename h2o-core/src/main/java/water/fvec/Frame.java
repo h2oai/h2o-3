@@ -1588,4 +1588,11 @@ public class Frame extends Lockable<Frame> {
   /** Sort rows of a frame, using the set of columns as keys.
    *  @return Copy of frame, sorted */
   public Frame sort( int[] cols ) { return Merge.sort(this,cols); }
+
+  public void checkVecs(String message) {
+    for (Vec vec : vecs()) if (DKV.get(vec._key)== null) {
+      throw new IllegalStateException(message + ": very bad vec " + vec + ", total disaster.");
+    }
+  }
+
 }
