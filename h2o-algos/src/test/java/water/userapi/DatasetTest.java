@@ -153,4 +153,37 @@ public class DatasetTest extends TestUtil {
     }
     assertArrayEquals(new int[]{200, 1802, 7998}, counts);
   }
+  
+  @Test
+  public void testEndToEndInChicago() {
+    String path = "smalldata/chicago/chicagoCensus.csv";
+    Dataset sut = Dataset.readFile(path);
+    String[] expectedDom = "Community Area Number,COMMUNITY AREA NAME,PERCENT OF HOUSING CROWDED,PERCENT HOUSEHOLDS BELOW POVERTY,PERCENT AGED 16+ UNEMPLOYED,PERCENT AGED 25+ WITHOUT HIGH SCHOOL DIPLOMA,PERCENT AGED UNDER 18 OR OVER 64,PER CAPITA INCOME ,HARDSHIP INDEX".split(",");
+    assertArrayEquals(expectedDom, sut.domain());
+    sut.makeCategorical("COMMUNITY AREA NAME");
+    String[] categories = sut.domainOf("COMMUNITY AREA NAME");
+    assertEquals(78, categories.length);
+    Dataset oneHot = sut.oneHotEncode();
+    assertEquals(87, oneHot.domain().length);
+  }
+  
+  @Test
+  public void testEndToEndCitibike() {
+    String path = "smalldata/demos/citibike_20k.csv";
+    Dataset sut = Dataset.readFile(path);
+
+    final int expectedSize = 20000;
+    final double ratio = 0.01;
+    final int expectedValidSize = (int)(expectedSize * ratio);
+    final int expectedTrainSize = expectedSize - expectedValidSize;
+    assertEquals(expectedSize, sut.length());
+    sut.makeCategorical("gender");
+    String[] categories = sut.domainOf("gender");
+    assertEquals(3, categories.length);
+    Dataset oneHot = sut.oneHotEncode("start station name", "end station name");
+    assertEquals(20, oneHot.domain().length);
+    Dataset.TrainAndValid tav = oneHot.stratifiedSplit("gender.1", ratio, 55555);
+    assertEquals(expectedTrainSize, tav.train.length());
+    assertEquals(expectedValidSize, tav.valid.length());
+  }
 }

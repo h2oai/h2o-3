@@ -75,13 +75,13 @@ public class StratifiedSplitTest extends TestUtil {
         f = frame(f);
         fanimal = frame(fanimal);
 
-        Frame fr1 = Scope.track(AstStratifiedSplit.split(f, f.anyVec(), OneThird, 123, new String[]{"hay", "straw"}));
+        Frame fr1 = Scope.track(AstStratifiedSplit.split(f.anyVec(), OneThird, 123, new String[]{"hay", "straw"}));
         Assert.assertEquals(fr1.vec(0).at8(0),1);  // minority class should be in the test split
         Assert.assertEquals(fr1.vec(0).at8(11),0);  // minority class should be in the train split
         Assert.assertEquals(fr1.vec(0).mean(),OneThird,1e-5);  // minority class should be in the train split
         //test categorical
 
-        Frame fr2 = Scope.track(AstStratifiedSplit.split(fanimal, fanimal.anyVec(), 0.3333333, 123, new String[]{"cats", "dogs"}));
+        Frame fr2 = Scope.track(AstStratifiedSplit.split(fanimal.anyVec(), 0.3333333, 123, new String[]{"cats", "dogs"}));
         Assert.assertEquals(fr2.vec(0).at8(0),1);  // minority class should be in the test split
         Assert.assertEquals(fr2.vec(0).at8(11),0);  // minority class should be in the test split
         Assert.assertEquals(fr2.vec(0).mean(),OneThird,1e-5);  // minority class should be in the test split

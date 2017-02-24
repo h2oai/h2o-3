@@ -10,6 +10,7 @@ import water.rapids.ast.prims.advmath.AstStratifiedSplit;
 import water.udf.specialized.Enums;
 import water.util.FileUtils;
 import water.util.FrameUtils;
+import water.util.VecUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,7 +33,7 @@ public class Dataset  extends Iced<Dataset> {
   }
 
   public static Dataset readFile(String path) {
-    return read(FileUtils.locateFile(path));
+    return read(FileUtils.locateFile(path.trim()));
   }
   
   public static Dataset read(File file) {
@@ -65,8 +66,17 @@ public class Dataset  extends Iced<Dataset> {
   // the new vec is named (hard-coded so far) "test_train_split"
   Dataset addSplittingColumn(String colName, Double ratio, long seed) {
     Frame frame = frame();
-    final Frame splitter = Scope.track(AstStratifiedSplit.split(frame, frame.vec(colName), ratio, seed, SplittingDom));
+    final Frame splitter = Scope.track(AstStratifiedSplit.split(frame.vec(colName), ratio, seed, SplittingDom));
     Frame newFrame = Scope.track(frame.clone());
+
+// the following lines are good for checking if we have what we want
+//    Vec v0 = splitter.vec(0);
+//    int[] counters = new int[v0.domain().length];
+//    for (int i = 0; i < v0.length(); i++) {
+//      long x = v0.at8(i);
+//      counters[(int)x]++;
+//    }
+
     newFrame._key = null;
     newFrame.add(splitter.names(), splitter.vecs());
     return new Dataset(newFrame);
@@ -128,6 +138,38 @@ public class Dataset  extends Iced<Dataset> {
   @Override
   public int hashCode() {
     return Objects.hashCode(frame())*7+1;
+  }
+
+  public Vec dropColumn(int i) {
+    return frame().remove(i);
+  }
+
+  public void renameColumns(String... newName) {
+    Frame frame = frame();
+    for (int i = 0; i < Math.min(frame.numCols(), newName.length); i++) {
+      frame._names[i] = newName[i];
+    }
+  }
+
+  public void makeCategorical(String colName) {
+    Frame frame = frame();
+    Vec srcCol = frame.remove(colName);
+    byte type = srcCol.get_type();
+    Vec categorical = 
+        type == Vec.T_STR ? VecUtils.stringToCategorical(srcCol) :
+        type == Vec.T_NUM ? VecUtils.numericToCategorical(srcCol) : srcCol;
+    frame.add(colName, Scope.track(categorical));
+    srcCol.remove();
+  }
+
+  public String[] domainOf(String colName) {
+    return frame().vec(colName).domain();
+  }
+
+  public long length() {
+    Frame f = frame();
+    Vec v = f == null ? null : f.anyVec();
+    return v == null ? 0 : v.length();
   }
 
   static class TrainAndValid {

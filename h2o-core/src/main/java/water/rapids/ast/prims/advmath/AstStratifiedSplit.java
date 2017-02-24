@@ -45,41 +45,42 @@ public class AstStratifiedSplit extends AstPrimitive {
     Vec stratifyingColumn = fr.anyVec();
     if (fr.numCols() != 1)
       throw new IllegalArgumentException("Must give a single column to stratify against. Got: " + fr.numCols() + " columns.");
-    Frame result = split(fr, stratifyingColumn, testFrac, seed, SplittingDom);
+    Frame result = split(stratifyingColumn, testFrac, seed, SplittingDom);
     // clean up temp frames
     fr.delete();
     return new ValFrame(result);
   }
 
-  public static Frame split(Frame sourceFrame, Vec stratifyingColumn, double splittingFraction, long randomizationSeed, String[] splittingDom) {
+  public static Frame split(Vec stratifyingColumn, double splittingFraction, long randomizationSeed, String[] splittingDom) {
     checkIfCanStratifyBy(stratifyingColumn);
     randomizationSeed = randomizationSeed == -1 ? new Random().nextLong() : randomizationSeed;
     final long[] classes = new VecUtils.CollectDomain().doAll(stratifyingColumn).domain();
     final int nClass = stratifyingColumn.isNumeric() ? classes.length : stratifyingColumn.domain().length;
     // create frame with all 0s (default is train)
     Key<Frame> k1 = Key.make();
-    final Vec vec = sourceFrame.anyVec();
-    Vec resVec = Vec.makeCon(0, vec == null ? 0 : vec.length());
+    Vec resVec = Vec.makeCon(0, stratifyingColumn.length());
     resVec.setDomain(splittingDom);
     Frame result = new Frame(k1, new String[]{TestTrainSplitColName}, new Vec[]{resVec});
     DKV.put(result);
     // create index frame
-    ClassIdxTask finTask = new ClassIdxTask(nClass,classes).doAll(sourceFrame);
+    ClassIdxTask finTask = new ClassIdxTask(nClass,classes).doAll(new Frame(stratifyingColumn));
     // loop through each class
     HashSet<Long> usedIdxs = new HashSet<>();
     for (int classLabel = 0; classLabel < nClass; classLabel++) {
       // extract frame with index locations of the minority class
       // calculate target number of this class to go to test
-      long tnum = Math.max(Math.round(finTask.indexes[classLabel].size() * splittingFraction), 1);
+      final LongAry index = finTask.indexes[classLabel];
+      long tnum = Math.max(Math.round(index.size() * splittingFraction), 1);
 
       HashSet<Long> tmpIdxs = new HashSet<>();
       // randomly select the target number of indexes
       int generated = 0;
       int count = 0;
       while (generated < tnum) {
-        int i = (int) (getRNG(count+ randomizationSeed).nextDouble() * finTask.indexes[classLabel].size());
-        if (tmpIdxs.contains(finTask.indexes[classLabel].get(i))) { count+=1;continue; }
-        tmpIdxs.add(finTask.indexes[classLabel].get(i));
+        int i = (int) (getRNG(count+ randomizationSeed).nextDouble() * index.size());
+        
+        if (tmpIdxs.contains(index.get(i))) { count+=1;continue; }
+        tmpIdxs.add(index.get(i));
         generated += 1;
         count += 1;
       }
