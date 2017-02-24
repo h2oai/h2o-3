@@ -1472,18 +1472,22 @@ public final class AutoBuffer {
   }
 
   public static Object javaSerializeReadPojo(byte [] bytes) {
-    assert bytes != null : "pojo bytes can't be null";
-    assert bytes.length > 10 : "pojo bytes array too small: " + bytes.length;
-    
     try {
       return new ObjectInputStream(new ByteArrayInputStream(bytes)).readObject();
     } catch (IOException e) {
-      int nameSize = Math.min(40, Math.max(3, bytes[7]));
-      String className = new String(bytes, 8, Math.min(nameSize, bytes.length - 8));
+      String className = nameOfClass(bytes);
       throw Log.throwErr(new RuntimeException("Failed to deserialize " + className, e));
     } catch (ClassNotFoundException e) {
       throw Log.throwErr(e);
     }
+  }
+
+  static String nameOfClass(byte[] bytes) {
+    assert bytes != null : "pojo bytes can't be null";
+    assert bytes.length > 10 : "pojo bytes array too small: " + bytes.length;
+
+    int nameSize = Math.min(40, Math.max(3, bytes[7]));
+    return new String(bytes, 8, Math.min(nameSize, bytes.length - 8));
   }
   // ==========================================================================
   // Java Serializable objects
