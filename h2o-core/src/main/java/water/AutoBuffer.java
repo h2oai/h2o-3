@@ -40,6 +40,8 @@ public final class AutoBuffer {
   // The direct ByteBuffer for schlorping data about.
   // Set to null to indicate the AutoBuffer is closed.
   ByteBuffer _bb;
+  public String sourceName = "???";
+
   public boolean isClosed() { return _bb == null ; }
 
   // The ByteChannel for moving data in or out.  Could be a SocketChannel (for
@@ -614,7 +616,7 @@ public final class AutoBuffer {
     long ns = System.nanoTime();
     while( _bb.position() < sz ) { // Read until we got enuf
       try {
-        int res = _is == null ? _chan.read(_bb) : _is.read(_bb.array(),_bb.position(),_bb.remaining()); // Read more
+        int res = readAnInt(); // Read more
         // Readers are supposed to be strongly typed and read the exact expected bytes.
         // However, if a TCP connection fails mid-read we'll get a short-read.
         // This is indistinguishable from a mis-alignment between the writer and reader!
@@ -637,6 +639,19 @@ public final class AutoBuffer {
     //for( int i=0; i < _bb.limit(); i++ ) if( _bb.get(i)==0 ) _zeros++;
     _firstPage = false;         // First page of data is gone gone gone
     return _bb;
+  }
+
+  private int readAnInt() throws IOException {
+    if (_is == null) return _chan.read(_bb);
+
+    final byte[] array = _bb.array();
+    final int position = _bb.position();
+    final int remaining = _bb.remaining();
+    try {
+      return _is.read(array, position, remaining);
+    } catch (IOException ioe) {
+      throw new IOException("Failed reading " + remaining + " bytes into buffer[" + array.length + "] at " + position + " from " + sourceName + " " + _is, ioe);
+    }
   }
 
   /** Put as needed to keep from overflowing the ByteBuffer. */
