@@ -16,7 +16,6 @@ public class DeepWaterCaffeIntegrationTest extends DeepWaterAbstractIntegrationT
   DeepWaterParameters.Backend getBackend() { return DeepWaterParameters.Backend.caffe; }
 
 
-  @Ignore
   @Test
   public void run() throws Exception {
     /*
@@ -64,9 +63,11 @@ public class DeepWaterCaffeIntegrationTest extends DeepWaterAbstractIntegrationT
     final int batch = 256;
     DeepwaterCaffeModel model = new DeepwaterCaffeModel(
         batch,
-        new int[] {PIXELS, 1024, 1024, 2048, 10},
+        new int[] {PIXELS, 4024, 4024, 4048, 10},
         new String[] {"data", "relu", "relu", "relu", "loss"},
-        new double[] {.9, .5, .5, .5, 0.}
+        new double[] {.9, .5, .5, .5, 0.},
+        1234,
+        false // GPU
     );
     model.learning_rate(.01f);
     model.momentum(.9f);
@@ -79,7 +80,7 @@ public class DeepWaterCaffeIntegrationTest extends DeepWaterAbstractIntegrationT
 
     float[] ps = new float[batch * PIXELS];
     float[] ls = new float[batch];
-    for (int iter = 0; iter < 1000; iter++) {
+    for (int iter = 0; iter < 10; iter++) {
       for (int b = 0; b < batch; b++) {
         for (int i = 0; i < PIXELS; i++)
           ps[b * PIXELS + i] = (rawI[b][i] & 0xff) * 0.00390625f;

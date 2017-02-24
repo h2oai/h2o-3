@@ -245,6 +245,12 @@ final public class DeepWaterModelInfo extends Iced {
       throw new RuntimeException("Unable to initialize the native Deep Learning backend: " + t.getMessage());
     }
   }
+  String getBasePath() {
+//    if (_backend instanceof DeepwaterCaffeBackend)
+//      return System.getProperty("user.dir") + "/caffe/";
+//    else
+      return System.getProperty("java.io.tmpdir");
+  }
 
   void nativeToJava() {
     if (_backend ==null) return;
@@ -254,7 +260,7 @@ final public class DeepWaterModelInfo extends Iced {
     // only overwrite the network definition if it's null
     if (_network==null) {
       try {
-        file = new File(System.getProperty("java.io.tmpdir"), Key.make().toString());
+        file = new File(getBasePath(), Key.make().toString());
         _backend.saveModel(_model, file.toString());
         FileInputStream is = new FileInputStream(file);
         _network = new byte[(int)file.length()];
@@ -266,7 +272,7 @@ final public class DeepWaterModelInfo extends Iced {
     }
     // always overwrite the parameters (weights/biases)
     try {
-      file = new File(System.getProperty("java.io.tmpdir"), Key.make().toString());
+      file = new File(getBasePath(), Key.make().toString());
       _backend.saveParam(_model, file.toString());
       FileInputStream is = new FileInputStream(file);
       _modelparams = new byte[(int)file.length()];
@@ -314,7 +320,7 @@ final public class DeepWaterModelInfo extends Iced {
     File file = null;
     // only overwrite the network definition if it's null
     try {
-      file = new File(System.getProperty("java.io.tmpdir"), Key.make().toString() + ".json");
+      file = new File(getBasePath(), Key.make().toString() + ".json");
       FileOutputStream os = new FileOutputStream(file);
       os.write(network);
       os.close();
@@ -325,7 +331,7 @@ final public class DeepWaterModelInfo extends Iced {
     } finally { file.delete(); }
     // always overwrite the parameters (weights/biases)
     try {
-      file = new File(System.getProperty("java.io.tmpdir"), Key.make().toString());
+      file = new File(getBasePath(), Key.make().toString());
       FileOutputStream os = new FileOutputStream(file);
       os.write(parameters);
       os.close();

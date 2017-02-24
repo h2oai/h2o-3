@@ -673,6 +673,9 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       DKV.put(tr);
       p._seed = 1234;
       p._epochs = 1000;
+      p._hidden = new int[]{200,200};
+      p._hidden_dropout_ratios = new double[]{0.1,0.2};
+      p._input_dropout_ratio = 0.4;
       DeepWater j = new DeepWater(p);
       m = j.trainModel().get();
       Assert.assertTrue((m._output._training_metrics).rmse() < 5);

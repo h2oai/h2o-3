@@ -50,6 +50,9 @@ public interface Deepwater {
     // optional int64 random_seed = 104;
     public long randomSeed;
 
+    // optional bool use_gpu = 105;
+    public boolean useGpu;
+
     // optional int32 batch_size = 200;
     public int batchSize;
 
@@ -79,6 +82,7 @@ public interface Deepwater {
       learningRate = 0F;
       momentum = 0F;
       randomSeed = 0L;
+      useGpu = false;
       batchSize = 0;
       sizes = com.google.protobuf.nano.WireFormatNano.EMPTY_INT_ARRAY;
       types = com.google.protobuf.nano.WireFormatNano.EMPTY_STRING_ARRAY;
@@ -111,6 +115,9 @@ public interface Deepwater {
       }
       if (this.randomSeed != 0L) {
         output.writeInt64(104, this.randomSeed);
+      }
+      if (this.useGpu != false) {
+        output.writeBool(105, this.useGpu);
       }
       if (this.batchSize != 0) {
         output.writeInt32(200, this.batchSize);
@@ -175,6 +182,10 @@ public interface Deepwater {
       if (this.randomSeed != 0L) {
         size += com.google.protobuf.nano.CodedOutputByteBufferNano
             .computeInt64Size(104, this.randomSeed);
+      }
+      if (this.useGpu != false) {
+        size += com.google.protobuf.nano.CodedOutputByteBufferNano
+            .computeBoolSize(105, this.useGpu);
       }
       if (this.batchSize != 0) {
         size += com.google.protobuf.nano.CodedOutputByteBufferNano
@@ -279,6 +290,10 @@ public interface Deepwater {
           }
           case 832: {
             this.randomSeed = input.readInt64();
+            break;
+          }
+          case 840: {
+            this.useGpu = input.readBool();
             break;
           }
           case 1600: {

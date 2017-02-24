@@ -23,15 +23,19 @@ public class DeepwaterCaffeModel implements BackendModel {
   private double[] _dropout_ratios;
   private float _learning_rate;
   private float _momentum;
+  private long _seed;
+  private boolean _useGPU;
 
   private Process _process;
   private static final ThreadLocal<ByteBuffer> _buffer = new ThreadLocal<>();
 
-  public DeepwaterCaffeModel(int batch_size, int[] sizes, String[] types, double[] dropout_ratios) {
+  public DeepwaterCaffeModel(int batch_size, int[] sizes, String[] types, double[] dropout_ratios, long seed, boolean useGPU) {
     _batch_size = batch_size;
     _sizes = sizes;
     _types = types;
     _dropout_ratios = dropout_ratios;
+    _seed = seed;
+    _useGPU = useGPU;
   }
 
   public void learning_rate(float val) {
@@ -65,9 +69,8 @@ public class DeepwaterCaffeModel implements BackendModel {
         cmd.dropoutRatios = _dropout_ratios;
         cmd.learningRate = _learning_rate;
         cmd.momentum = _momentum;
-        // TODO
-        // proto.randomSeed = 5;
-
+        cmd.randomSeed = _seed;
+        cmd.useGpu = _useGPU;
         call(cmd);
       }
     } catch (IOException e) {
@@ -167,9 +170,12 @@ public class DeepwaterCaffeModel implements BackendModel {
         Runtime.getRuntime().exec("id -g").getInputStream())).readLine());
     String pwd = System.getProperty("user.dir") + "/caffe";
 
-    String opts = "-i --rm --user " + uid + ":" + gid + " -v " + pwd + ":" + pwd + " -w " + pwd;
-//    String home = System.getProperty("user.home");
-//    opts += " -v " + home + "/h2o-docker/caffe:/h2o-docker/caffe";
+//    String opts = "-i --rm --user " + uid + ":" + gid + " -v " + pwd + ":" + pwd + " -w " + pwd;
+    String opts = "-i --user " + uid + ":" + gid + " -v " + pwd + ":" + pwd + " -w " + pwd;
+    String home = System.getProperty("user.home");
+    opts += " -v " + home + "/h2o-docker/caffe:/h2o-docker/caffe";
+    String tmp = System.getProperty("java.io.tmpdir");
+    opts += " -v " + tmp + ":" + tmp;
     String s = "nvidia-docker run " + opts + " " + image + " python /h2o-docker/caffe/backend.py";
     ProcessBuilder pb = new ProcessBuilder(s.split(" "));
     pb.redirectError(ProcessBuilder.Redirect.INHERIT);

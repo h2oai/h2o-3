@@ -1,7 +1,5 @@
 package hex.genmodel.algos.deepwater.caffe;
 
-import java.util.Arrays;
-
 import deepwater.backends.BackendModel;
 import deepwater.backends.BackendParams;
 import deepwater.backends.BackendTrain;
@@ -24,14 +22,28 @@ public class DeepwaterCaffeBackend implements BackendTrain {
       // TODO: add non-MLP Models such as lenet, inception_bn, etc.
       int[] hidden = (int[]) bparms.get("hidden");
       int[] sizes = new int[hidden.length + 2];
-      sizes[0] = 0;  // ?
+      sizes[0] = dataset.getWidth();
       System.arraycopy(hidden, 0, sizes, 1, hidden.length);
       sizes[sizes.length - 1] = num_classes;
+      System.err.println("Ignoring device_id");
+      double[] hdr = new double[sizes.length];
+      if (bparms.get("input_dropout_ratio") != null)
+        hdr[0] = (double)bparms.get("input_dropout_ratio");
+      double[] bphdr = (double[])bparms.get("hidden_dropout_ratios");
+      if (bphdr != null)
+        System.arraycopy(bphdr, 0, hdr, 1, bphdr.length);
+      String[] layers = new String[sizes.length];
+      System.arraycopy(bparms.get("activations"), 0, layers, 1, hidden.length);
+      layers[0] = "data";
+      layers[layers.length - 1] = "loss";
+
       return new DeepwaterCaffeModel(
           (Integer) bparms.get("mini_batch_size"),
           sizes,
-          (String[]) bparms.get("activations"),
-          (double[]) bparms.get("hidden_dropout_ratios")
+          layers,
+          hdr,
+          opts.getSeed(),
+          opts.useGPU()
       );
     } else throw new UnsupportedOperationException("Only MLP is supported for now for Caffe.");
   }
