@@ -301,8 +301,6 @@ class H2OFrame(object):
         raise H2OValueError("Column '%r' does not exist in the frame" % col)
 
 
-
-
     def _import_parse(self, path, pattern, destination_frame, header, separator, column_names, column_types, na_strings):
         if is_type(path, str) and "://" not in path:
             path = os.path.abspath(path)
@@ -2497,7 +2495,7 @@ class H2OFrame(object):
         Conduct a diff-1 transform on a numeric frame column.
 
         :returns: an H2OFrame where each element is equal to the corresponding element in the source
-        frame minus the previous-row element in the same frame.
+            frame minus the previous-row element in the same frame.
         """
         fr = H2OFrame._expr(expr=ExprNode("difflag1", self), cache=self._ex._cache)
         return fr
