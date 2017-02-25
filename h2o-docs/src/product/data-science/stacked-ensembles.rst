@@ -208,6 +208,7 @@ Example
     from h2o.estimators.random_forest import H2ORandomForestEstimator
     from h2o.estimators.gbm import H2OGradientBoostingEstimator
     from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
+    from h2o.grid.grid_search import H2OGridSearch
     from __future__ import print_function
     
 
@@ -273,8 +274,8 @@ Example
     perf_stack_test = ensemble.model_performance(test)
     
     # Compare to base learner performance on the test set
-    perf_gbm_test = my_gbm.performance(test)
-    perf_rf_test = my_rf.performance(test)
+    perf_gbm_test = my_gbm.model_performance(test)
+    perf_rf_test = my_rf.model_performance(test)
     baselearner_best_auc_test = max(perf_gbm_test.auc(), perf_rf_test.auc())
     stack_auc_test = perf_stack_test.auc()
     print("Best Base-learner Test AUC:  {0}".format(baselearner_best_auc_test))
