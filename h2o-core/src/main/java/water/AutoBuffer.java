@@ -1483,8 +1483,8 @@ public final class AutoBuffer {
   }
 
   static String nameOfClass(byte[] bytes) {
-    assert bytes != null : "pojo bytes can't be null";
-    assert bytes.length > 10 : "pojo bytes array too small: " + bytes.length;
+    if (bytes == null) return "(null)";
+    if (bytes.length < 11) return "(no name)";
 
     int nameSize = Math.min(40, Math.max(3, bytes[7]));
     return new String(bytes, 8, Math.min(nameSize, bytes.length - 8));

@@ -564,18 +564,8 @@ public class AutoBufferTest {
     assertEquals("wat", AutoBuffer.nameOfClass(bytes));
     bytes[7] = -10;
     assertEquals("wat", AutoBuffer.nameOfClass(bytes));
-    try {
-      AutoBuffer.nameOfClass(null);
-      fail("Must throw an error");
-    } catch (Throwable t) {
-      System.out.println("as designed");
-    }
-    try {
-      AutoBuffer.nameOfClass(new byte[]{0,0,0,0,0});
-      fail("Must throw an error");
-    } catch (Throwable t) {
-      System.out.println("as designed");
-    }
+    assertEquals("(null)", AutoBuffer.nameOfClass(null));
+    assertEquals("(no name)", AutoBuffer.nameOfClass(new byte[]{0,0,0,0,0}));
   }
 
   @Test
