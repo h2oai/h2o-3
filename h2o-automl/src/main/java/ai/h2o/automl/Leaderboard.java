@@ -2,7 +2,6 @@ package ai.h2o.automl;
 
 import hex.Model;
 import hex.ModelMetrics;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import water.*;
 import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
@@ -53,7 +52,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
   /** HIDEME! */
   private Leaderboard() {
-    throw new NotImplementedException(); // TODO: no, something else
+    throw new UnsupportedOperationException("Do not call the default constructor Leaderboard().");
   }
 
   /**
