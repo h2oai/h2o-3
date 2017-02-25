@@ -5,29 +5,29 @@ import java.{lang, util}
 
 import water.udf.DataColumns._
 import water.udf.fp.{Function => UFunction, Functions}
-import water.udf.specialized.{Dates, Doubles, Enums, Strings}
+import water.udf.specialized._
 import water.udf.{fp => F}
 
 import scala.collection.JavaConverters._
 
-trait ScalaFactory[JavaType,ScalaType] extends Serializable { self: BaseFactory[JavaType] =>
+trait ScalaFactory[JavaType, ScalaType, ColType <: DataColumn[JavaType]] extends Serializable { self: BaseFactory[JavaType,ColType] =>
 
   import collection.JavaConverters._
 
   def conv(x:ScalaType): JavaType
 
-  def newColumn[U](xs: Iterable[ScalaType]): DataColumn[JavaType] = {
+  def newColumn[U](xs: Iterable[ScalaType]): ColType = {
     val jl: util.List[JavaType] = xs.toList.map(conv).asJava
     val listFunction: fp.Function[lang.Long, JavaType] = Functions.onList(jl)
     self.newColumn(xs.size, listFunction)
   }
 
-  def newColumn[U](xs: Iterator[ScalaType]): DataColumn[JavaType] = {
+  def newColumn[U](xs: Iterator[ScalaType]): ColType = {
     self.newColumn(xs.size, Functions.onList(xs.toList.map(conv).asJava))
   }
 }
 
-class ScalaDoubles extends Doubles with ScalaFactory[java.lang.Double, Double] {
+class ScalaDoubles extends Doubles with ScalaFactory[java.lang.Double, Double, DataColumn[java.lang.Double]] {
   def newColumn(size: Long, f: Long => Double) = super.newColumn(size, ff1LD(f))
   def newColumnOpt(size: Long, f: Long => Option[Double]) = super.newColumn(size, ff1LDO(f))
   override def conv(x: Double): lang.Double = x
@@ -91,19 +91,19 @@ object MoreColumns extends DataColumns {
   }
   
 
-  object Dates extends Dates with ScalaFactory[Date, Date] {
+  object Dates extends Dates with ScalaFactory[Date, Date, DataColumn[Date]] {
     def newColumn(size: Long, f: Long => Date) = super.newColumn(size, ff1L(f))
     def newColumnOpt(size: Long, f: Long => Option[Date]) = super.newColumn(size, ff1LO(f))
     override def conv(x: Date): Date = x
   }
 
-  object Strings extends Strings with ScalaFactory[String, String] {
+  object Strings extends Strings with ScalaFactory[String, String, DataColumn[String]] {
     def newColumn(size: Long, f: Long => String) = super.newColumn(size, ff1LS(f))
     def newColumnOpt(size: Long, f: Long => Option[String]) = super.newColumn(size, ff1LO(f))
     override def conv(x: String): String = x
   }
 
-  class ScalaEnums(domain: Iterable[String]) extends Enums(domain.toArray) with ScalaFactory[java.lang.Integer, Integer] {
+  class ScalaEnums(domain: Iterable[String]) extends Enums(domain.toArray) with ScalaFactory[java.lang.Integer, Integer, EnumColumn] {
     def newColumn(size: Long, f: Long => Integer) = super.newColumn(size, ff1LI(f))
     def newColumnOpt(size: Long, f: Long => Option[Integer]) = super.newColumn(size, ff1LO(f))
     override def conv(x: Integer): java.lang.Integer = x

@@ -12,8 +12,11 @@ import water.parser.BufferedString;
 import water.parser.DefaultParserProviders;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
+import water.udf.fp.Function;
+import water.udf.fp.Functions;
 import water.util.*;
 import water.util.Timer;
+import water.util.TwoDimTable;
 
 import java.io.File;
 import java.io.IOException;
@@ -223,8 +226,8 @@ public class TestUtil extends Iced {
   /** Find & parse a CSV file.  NPE if file not found.
    *  @param fname Test filename
    *  @return      Frame or NPE */
-  public static Frame parse_test_file( String fname ) { 
-    return parse_test_file(Key.make(),fname); 
+  public static Frame parse_test_file( String fname ) {
+    return parse_test_file(Key.make(),fname);
   }
 
   public static NFSFileVec makeNfsFileVec(String fname) {
@@ -235,19 +238,22 @@ public class TestUtil extends Iced {
       return null;
     }
   }
-  
+
   public static Frame parse_test_file( Key outputKey, String fname) {
     NFSFileVec nfs = makeNfsFileVec(fname);
+    assertNotNull(nfs);
     return ParseDataset.parse(outputKey, nfs._key);
   }
 
   protected Frame parse_test_file( Key outputKey, String fname, boolean guessSetup) {
     NFSFileVec nfs = makeNfsFileVec(fname);
+    assertNotNull(nfs);
     return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, ParseSetup.guessSetup(new Key[]{nfs._key},false,1));
   }
 
   protected Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types ) {
     NFSFileVec nfs = makeNfsFileVec(fname);
+    assertNotNull(nfs);
 
     Key[] res = {nfs._key};
 
@@ -282,6 +288,7 @@ public class TestUtil extends Iced {
   protected Frame parse_test_folder( String fname ) {
     File folder = FileUtils.locateFile(fname);
     File[] files = contentsOf(fname, folder);
+    assertNotNull(files);
     Arrays.sort(files);
     ArrayList<Key> keys = new ArrayList<>();
     for( File f : files )
@@ -298,11 +305,12 @@ public class TestUtil extends Iced {
    *
    * @param fname name of folder
    * @param na_string string for NA in a column
-   * @return
+   * @return parsed frame
    */
   protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types ) {
     File folder = FileUtils.locateFile(fname);
     File[] files = contentsOf(fname, folder);
+    assertNotNull(files);
     Arrays.sort(files);
     ArrayList<Key> keys = new ArrayList<>();
     for( File f : files )
@@ -337,6 +345,23 @@ public class TestUtil extends Iced {
 
   }
 
+  public static Vec vec(int size, Function<Integer, Integer> generator) {
+    return vec(null, size, generator);
+  }
+
+  public static Vec vec(String[] domain, int size, Function<Integer, Integer> generator) {
+    Key<Vec> k = Vec.VectorGroup.VG_LEN1.addVec();
+    Futures fs = new Futures();
+    AppendableVec avec = new AppendableVec(k,Vec.T_NUM);
+    avec.setDomain(domain);
+    NewChunk chunk = new NewChunk(avec, 0);
+    for (int i = 0; i < size; i++) chunk.addNum(generator.apply(i));
+    chunk.close(0, fs);
+    Vec vec = avec.layout_and_close(fs);
+    fs.blockForPending();
+    return vec;
+  }
+
 
   /** A Numeric Vec from an array of ints
    *  @param rows Data
@@ -347,16 +372,7 @@ public class TestUtil extends Iced {
    *  @param rows Data
    *  @return The Vec  */
   public static Vec vec(String[] domain, int ...rows) {
-    Key<Vec> k = Vec.VectorGroup.VG_LEN1.addVec();
-    Futures fs = new Futures();
-    AppendableVec avec = new AppendableVec(k,Vec.T_NUM);
-    avec.setDomain(domain);
-    NewChunk chunk = new NewChunk(avec, 0);
-    for( int r : rows ) chunk.addNum(r);
-    chunk.close(0, fs);
-    Vec vec = avec.layout_and_close(fs);
-    fs.blockForPending();
-    return vec;
+    return vec(domain, rows.length, Functions.fromArray(rows));
   }
 
   /** A numeric Vec from an array of ints */
@@ -370,7 +386,12 @@ public class TestUtil extends Iced {
   }
 
   public static Vec cvec(String[] domain, String ...rows) {
-    HashMap<String, Integer> domainMap = new HashMap<>(10);
+    return cvec(domain, rows.length, Functions.fromArray(rows));
+  }
+
+  /** A string Vec from an array of strings */
+  public static Vec cvec(String[] domain, int size, final Function<Integer, String> generator) {
+    final HashMap<String, Integer> domainMap = new HashMap<>(10);
     ArrayList<String> domainList = new ArrayList<>(10);
     if (domain != null) {
       int j = 0;
@@ -379,16 +400,20 @@ public class TestUtil extends Iced {
         domainList.add(s);
       }
     }
-    int[] irows = new int[rows.length];
-    for (int i = 0, j = 0; i < rows.length; i++) {
-      String s = rows[i];
+    for (int i = 0, j = 0; i < size; i++) {
+      String s = generator.apply(i);
       if (!domainMap.containsKey(s)) {
         domainMap.put(s, j++);
         domainList.add(s);
       }
-      irows[i] = domainMap.get(s);
     }
-    return vec(domainList.toArray(new String[]{}), irows);
+    return vec(domainList.toArray(new String[domainList.size()]), size, new Function<Integer, Integer>() {
+      @Override
+      public Integer apply(Integer i) {
+        return domainMap.get(generator.apply(i));
+      }
+    });
+
   }
 
   /** A numeric Vec from an array of doubles */
@@ -421,12 +446,17 @@ public class TestUtil extends Iced {
 
   /** A string Vec from an array of strings */
   public static Vec svec(String...rows) {
+    return svec(rows.length, Functions.fromArray(rows));
+  }
+
+  /** A string Vec from an array of strings */
+  public static Vec svec(int size, Function<Integer, String> generator) {
     Key<Vec> k = Vec.VectorGroup.VG_LEN1.addVec();
     Futures fs = new Futures();
     AppendableVec avec = new AppendableVec(k, Vec.T_STR);
     NewChunk chunk = new NewChunk(avec, 0);
-    for (String r : rows)
-      chunk.addStr(r);
+    for (int i = 0; i < size; i++)
+      chunk.addStr(generator.apply(i));
     chunk.close(0, fs);
     Vec vec = avec.layout_and_close(fs);
     fs.blockForPending();
@@ -522,7 +552,7 @@ public class TestUtil extends Iced {
   public static void checkIcedArrays(IcedWrapper[][] expected, IcedWrapper[][] actual, double threshold) {
     for(int i = 0; i < actual.length; i++)
       for (int j = 0; j < actual[0].length; j++)
-      Assert.assertEquals(expected[i][j].d, actual[i][j].d, threshold);
+        Assert.assertEquals(expected[i][j].d, actual[i][j].d, threshold);
   }
 
   public static boolean[] checkEigvec(double[][] expected, double[][] actual, double threshold) {
@@ -624,37 +654,29 @@ public class TestUtil extends Iced {
         Chunk c0 = chks[cols                 ];
         Chunk c1 = chks[cols+(chks.length>>1)];
         for( int rows = 0; rows < chks[0]._len; rows++ ) {
-          if (c0.isNA(rows) != c1.isNA(rows)) {
-            _unequal = true;
-            return;
-          } else if (!(c0.isNA(rows) && c1.isNA(rows))) {
-            if (c0 instanceof C16Chunk && c1 instanceof C16Chunk) {
+          if (c0 instanceof C16Chunk && c1 instanceof C16Chunk) {
+            if (! (c0.isNA(rows) && c1.isNA(rows))) {
               long lo0 = c0.at16l(rows), lo1 = c1.at16l(rows);
               long hi0 = c0.at16h(rows), hi1 = c1.at16h(rows);
               if (lo0 != lo1 || hi0 != hi1) {
                 _unequal = true;
                 return;
               }
-            } else if (c0 instanceof CStrChunk && c1 instanceof CStrChunk) {
+            }
+          } else if (c0 instanceof CStrChunk && c1 instanceof CStrChunk) {
+            if (!(c0.isNA(rows) && c1.isNA(rows))) {
               BufferedString s0 = new BufferedString(), s1 = new BufferedString();
-              c0.atStr(s0, rows);
-              c1.atStr(s1, rows);
+              c0.atStr(s0, rows); c1.atStr(s1, rows);
               if (s0.compareTo(s1) != 0) {
                 _unequal = true;
                 return;
               }
-            } else if ((c0 instanceof C8Chunk) && (c1 instanceof C8Chunk)) {
-              long d0 = c0.at8(rows), d1 = c1.at8(rows);
-              if (d0 != d1) {
-                _unequal = true;
-                return;
-              }
-            } else {
-              double d0 = c0.atd(rows), d1 = c1.atd(rows);
-              if (!(Math.abs(d0 - d1) <= Math.abs(d0 + d1) * _epsilon)) {
-                _unequal = true;
-                return;
-              }
+            }
+          }else {
+            double d0 = c0.atd(rows), d1 = c1.atd(rows);
+            if (!(Double.isNaN(d0) && Double.isNaN(d1)) && !(Math.abs(d0-d1)<=Math.abs(d0+d1)*_epsilon) ) {
+              _unequal = true;
+              return;
             }
           }
         }
@@ -731,5 +753,15 @@ public class TestUtil extends Iced {
       }
     }
   }
+
+  public class TrashCan {
+    Set<Lockable> trash = new HashSet<>();
+    public <T extends Lockable> T add(T item) {
+      trash.add(item);
+      return item;
+    }
+    public void dump() { for (Lockable item : trash) item.delete(); }
+  }
+
 
 }
