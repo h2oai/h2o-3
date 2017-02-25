@@ -819,7 +819,7 @@ class ModelBase(backwards_compatible()):
         if not server: plt.show()
 
 
-    def partial_plot(self, data, cols, destination_key=None, nbins=20, plot=True, figsize=(7, 10), server=False):
+    def partial_plot(self, data, cols, destination_key=None, nbins=20, plot=True, plot_stddev = True, figsize=(7, 10), server=False):
         """
         Create partial dependence plot which gives a graphical depiction of the marginal effect of a variable on the
         response. The effect of a variable is measured in change in the mean response.
@@ -829,6 +829,7 @@ class ModelBase(backwards_compatible()):
         :param destination_key: An key reference to the created partial dependence tables in H2O.
         :param nbins: Number of bins used. For categorical columns make sure the number of bins exceed the level count.
         :param plot: A boolean specifying whether to plot partial dependence table.
+        :param plot_stddev: A boolean specifying whether to add std err to partial dependence plot.
         :param figsize: Dimension/size of the returning plots, adjust to fit your output cells.
         :param server: ?
         :returns: Plot and list of calculated mean response tables for each feature requested.
@@ -869,17 +870,29 @@ class ModelBase(backwards_compatible()):
                 # Check weather column was categorical or numeric
                 col = cols[i]
                 cat = data[col].isfactor()[0]
+                upper = [a + b for a, b in zip(pp[1], pp[2]) ]
+                lower = [a - b for a, b in zip(pp[1], pp[2]) ]
                 if cat:
                     labels = pp[0]
                     x = range(len(labels))
                     y = pp[1]
-                    axs[i, 0].plot(x, y, "o")
+                    axs[i, 0].plot(x, y, "ro")
+                    if plot_stddev:
+                        axs[i, 0].plot(x, lower, 'b--')
+                        axs[i, 0].plot(x, upper, 'b--')
+                    axs[i, 0].set_ylim(min(lower) - 0.1*abs(min(lower)), max(upper) + 0.1*abs(max(upper)))
                     axs[i, 0].set_xticks(x)
                     axs[i, 0].set_xticklabels(labels)
                     axs[i, 0].margins(0.2)
                 else:
-                    axs[i, 0].plot(pp[0], pp[1])
-                    axs[i, 0].set_xlim(min(pp[0]), max(pp[0]))
+                    x = pp[0]
+                    y = pp[1]
+                    axs[i, 0].plot(x, y, "r-")
+                    if plot_stddev:
+                        axs[i, 0].plot(x, lower, 'b--')
+                        axs[i, 0].plot(x, upper, 'b--')
+                    axs[i, 0].set_xlim(min(x), max(x))
+                    axs[i, 0].set_ylim(min(lower) - 0.1*abs(min(lower)), max(upper) + 0.1*abs(max(upper)))
 
                 axs[i, 0].set_title("Partial Dependence Plot For {}".format(col))
                 axs[i, 0].set_xlabel(pp.col_header[0])
