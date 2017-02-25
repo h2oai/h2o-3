@@ -29,7 +29,7 @@ public class DatasetTest extends TestUtil {
 
   @BeforeClass
   static public void setup() throws IOException { 
-    stall_till_cloudsize(2);
+    stall_till_cloudsize(1);
     Writer fw = new FileWriter(testFile1);
     fw.write("A\tB\tC\na1\tb1\tc1\na2\tb2\tc2\n");
     fw.close();
