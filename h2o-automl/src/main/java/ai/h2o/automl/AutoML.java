@@ -18,6 +18,7 @@ import water.*;
 import water.api.schemas3.ImportFilesV3;
 import water.api.schemas3.KeyV3;
 import water.exceptions.H2OAbstractRuntimeException;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
@@ -115,7 +116,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       this.validationFrame = importParseFrame(buildSpec.input_spec.validation_path, buildSpec.input_spec.parse_setup);
 
     if (null == this.origTrainingFrame)
-      throw new IllegalArgumentException("No training frame; user specified training_path: " +
+      throw new H2OIllegalArgumentException("No training frame; user specified training_path: " +
               buildSpec.input_spec.training_path +
               " and training_frame: " + buildSpec.input_spec.training_frame);
 
@@ -181,7 +182,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     AutoML autoML = new AutoML(key, buildSpec);
 
     if (null == autoML.trainingFrame)
-      throw new IllegalArgumentException("No training data has been specified, either as a path or a key.");
+      throw new H2OIllegalArgumentException("No training data has been specified, either as a path or a key.");
 
     /*
       TODO: joins
@@ -534,8 +535,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // build a fast RF with default settings...
     ///////////////////////////////////////////////////////////
     Job<DRFModel>defaultRandomForestJob = defaultRandomForest();
+    pollAndUpdateProgress("Default Random Forest build", 50, this.job(), defaultRandomForestJob);
     if(defaultRandomForestJob != null) {
-      pollAndUpdateProgress("Default Random Forest build", 50, this.job(), defaultRandomForestJob);
       DRFModel defaultDRF = (DRFModel) defaultRandomForestJob.get();
       leaderboard.addModel(defaultDRF);
     }
@@ -545,8 +546,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // ... and another with "XRT" / extratrees settings
     ///////////////////////////////////////////////////////////
     Job<DRFModel>defaultExtremelyRandomTreesJob = defaultExtremelyRandomTrees();
+    pollAndUpdateProgress("Default Extremely Random Trees (XRT) build", 50, this.job(), defaultExtremelyRandomTreesJob);
     if(defaultExtremelyRandomTreesJob != null) {
-      pollAndUpdateProgress("Default Extremely Random Trees (XRT) build", 50, this.job(), defaultExtremelyRandomTreesJob);
       DRFModel defaultXRT = (DRFModel) defaultExtremelyRandomTreesJob.get();
       leaderboard.addModel(defaultXRT);
     }
@@ -557,8 +558,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     ///////////////////////////////////////////////////////////
     // TODO: run for only part of the remaining time?
     Job<Grid>glmJob = defaultSearchGLM();
+    pollAndUpdateProgress("GLM hyperparameter search", 100, this.job(), glmJob);
     if(glmJob != null) {
-      pollAndUpdateProgress("GLM hyperparameter search", 100, this.job(), glmJob);
       Grid glmGrid = glmJob.get();
       leaderboard.addModels(glmGrid.getModelKeys());
     }
@@ -569,15 +570,22 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     ///////////////////////////////////////////////////////////
     // TODO: run for only part of the remaining time?
     Job<Grid>gbmJob = defaultSearchGBM();
+    pollAndUpdateProgress("GBM hyperparameter search", 700, this.job(), gbmJob);
     if(gbmJob != null) {
-      pollAndUpdateProgress("GBM hyperparameter search", 700, this.job(), gbmJob);
       Grid gbmGrid = gbmJob.get();
       leaderboard.addModels(gbmGrid.getModelKeys());
+    }
 
-      ///////////////////////////////////////////////////////////
-      // (optionally) build StackedEnsemble
-      ///////////////////////////////////////////////////////////
-      Model m = gbmGrid.getModels()[0];
+    ///////////////////////////////////////////////////////////
+    // (optionally) build StackedEnsemble
+    ///////////////////////////////////////////////////////////
+    Model[] allModels = leaderboard().models();
+
+    if (allModels.length == 0){
+      this.job.update(100, "No models built: StackedEnsemble build skipped");
+      Log.info("No models were built, due to timeouts.");
+    } else {
+      Model m = allModels[0];
       if (m._output.isClassifier() && !m._output.isBinomialClassifier()) {
         // nada
         this.job.update(100, "Multinomial classifier: StackedEnsemble build skipped");
@@ -588,15 +596,14 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         ///////////////////////////////////////////////////////////
 
         // Also stack models from other AutoML runs, by using the Leaderboard! (but don't stack stacks)
-        Model[] all = leaderboard().models();
         int nonEnsembleCount = 0;
-        for (Model aModel : all)
+        for (Model aModel : allModels)
           if (!(aModel instanceof StackedEnsembleModel))
             nonEnsembleCount++;
 
         Key<Model>[] notEnsembles = new Key[nonEnsembleCount];
         int notEnsembleIndex = 0;
-        for (Model aModel : all)
+        for (Model aModel : allModels)
           if (!(aModel instanceof StackedEnsembleModel))
             notEnsembles[notEnsembleIndex++] = aModel._key;
 
@@ -609,7 +616,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       }
     }
     Log.info("AutoML: build done");
-
     Log.info(leaderboard.toString("\n"));
 
     possiblyVerifyImmutability();
