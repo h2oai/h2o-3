@@ -283,9 +283,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       double[] dpreds = new double[preds.length];
       for (int j = 0; j < dpreds.length; ++j)
         dpreds[j] = preds[j][0];
-      if (weights.length>0)
-        for (int j = 0; j < dpreds.length; ++j)
-          assert weights[j] == 1.0;
+//      if (weights.length>0)
+//        for (int j = 0; j < dpreds.length; ++j)
+//          assert weights[j] == 1.0;
       Vec pred = Vec.makeVec(dpreds, Vec.newKey());
       mm[0] = ModelMetricsRegression.make(pred, resp, DistributionFamily.gaussian);
       predFrame = new Frame(destinationKey, new Vec[]{pred}, true);

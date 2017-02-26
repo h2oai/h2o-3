@@ -12,6 +12,7 @@ import ml.dmlc.xgboost4j.java.XGBoost;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
@@ -503,6 +504,43 @@ public class XGBoostTest extends TestUtil {
       Assert.assertEquals(
           ((ModelMetricsMultinomial)model._output._training_metrics).logloss(),
           ModelMetricsMultinomial.make(preds, tfr.vec(response), tfr.vec(response).domain()).logloss(),
+          1e-5
+      );
+    } finally {
+      if (tfr!=null) tfr.remove();
+      if (preds!=null) preds.remove();
+      if (model!=null) model.delete();
+      Scope.exit();
+    }
+  }
+
+  @Ignore
+  @Test
+  public void testCSC() {
+    Frame tfr = null;
+    Frame preds = null;
+    XGBoostModel model = null;
+    Scope.enter();
+    try {
+      // Parse frame into H2O
+      tfr = parse_test_file("csc.csv");
+      String response = "response";
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._ntrees = 3;
+      parms._max_depth = 3;
+      parms._train = tfr._key;
+      parms._response_column = response;
+
+      model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Log.info(model);
+
+      preds = model.score(tfr);
+      Assert.assertTrue(model.testJavaScoring(tfr, preds, 1e-6));
+      Assert.assertTrue(preds.vec(2).sigma() > 0);
+      Assert.assertEquals(
+          ((ModelMetricsBinomial)model._output._training_metrics).logloss(),
+          ModelMetricsBinomial.make(preds.vec(2), tfr.vec(response), tfr.vec(response).domain()).logloss(),
           1e-5
       );
     } finally {
