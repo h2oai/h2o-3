@@ -117,7 +117,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           col[i] = new ArrayList<>(Math.min(nRows, 10000));
         }
 
-        // collect
+        // collect non-zeros
+        int nzCount=0;
         for (int i=0;i<nCols;++i) { //TODO: parallelize over columns
           Vec v = f.vec(i);
           for (int c=0;c<v.nChunks();++c) {
@@ -128,34 +129,29 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
               SparseItem item = new SparseItem();
               int localIdx = nnz[k];
               item.pos = (int)ck.start() + localIdx;
+              // both 0 and NA are omitted in the sparse DMatrix
               if (w != null && w.at(item.pos) == 0) continue;
               if (ck.isNA(localIdx)) continue;
               item.val = ck.atd(localIdx);
               col[i].add(item);
+              nzCount++;
             }
           }
         }
-
         long[] colHeaders = new long[nCols + 1];
-        int initial_size = 1 << 20;
-        float[] data = new float[initial_size];
-        int[] rowIndex = new int[initial_size];
+        float[] data = new float[nzCount];
+        int[] rowIndex = new int[nzCount];
         // fill data for DMatrix
         for (int i=0;i<nCols;++i) { //TODO: parallelize over columns
-          while (data.length < nz + col[i].size()) {
-            Log.info("Enlarging sparse data structure from " + data.length + " bytes to " + (data.length << 1) + " bytes.");
-            rowIndex = Arrays.copyOf(rowIndex, rowIndex.length << 1);
-            data = Arrays.copyOf(data, data.length << 1);
-          }
+          List sparseCol = col[i];
           colHeaders[i] = nz;
-          List l = col[i];
-          for (int j=0;j<l.size();++j) {
-            SparseItem si = (SparseItem)l.get(j);
+          for (int j=0;j<sparseCol.size();++j) {
+            SparseItem si = (SparseItem)sparseCol.get(j);
             rowIndex[nz] = si.pos;
             data[nz] = (float)si.val;
             assert(si.val != 0);
             assert(!Double.isNaN(si.val));
-            assert(w.at(si.pos) != 0);
+            assert(w == null || w.at(si.pos) != 0);
             nz++;
           }
         }
@@ -163,7 +159,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         data = Arrays.copyOf(data, nz);
         rowIndex = Arrays.copyOf(rowIndex, nz);
         actualRows = countUnique(rowIndex);
-        trainMat = new DMatrix(colHeaders, rowIndex, data, DMatrix.SparseType.CSC, 0);
+        trainMat = new DMatrix(colHeaders, rowIndex, data, DMatrix.SparseType.CSC, actualRows);
+        assert trainMat.rowNum() == actualRows;
       } else {
 
         // CSR:
@@ -219,7 +216,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         data = Arrays.copyOf(data, nz);
         colIndex = Arrays.copyOf(colIndex, nz);
         rowHeaders = Arrays.copyOf(rowHeaders, actualRows + 1);
-        trainMat = new DMatrix(rowHeaders, colIndex, data, DMatrix.SparseType.CSR, 0);
+        trainMat = new DMatrix(rowHeaders, colIndex, data, DMatrix.SparseType.CSR, di.fullN());
+        assert trainMat.rowNum() == actualRows;
       }
     } else {
       Log.info("Treating matrix as dense.");
@@ -254,6 +252,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       }
       data = Arrays.copyOf(data, actualRows*cols);
       trainMat = new DMatrix(data, actualRows, cols, Float.NaN);
+      assert trainMat.rowNum() == actualRows;
     }
 
     // extract weight vector
@@ -283,7 +282,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     if (w!=null)
       trainMat.setWeight(weights);
 //    trainMat.setGroup(null); //fold //FIXME - only needed if CV is internally done in XGBoost
-    assert trainMat.rowNum() == actualRows;
     return trainMat;
   }
 
