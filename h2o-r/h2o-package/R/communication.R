@@ -136,9 +136,6 @@
 
   tmp <- NULL
   header <- c('Connection' = 'close')
-  if (!is.na(conn@cluster_id)) {
-    header['X-Cluster'] = conn@cluster_id
-  }
 
   if(!is.na(conn@cookies)) {
     header['Cookie'] = paste0(conn@cookies, collapse=';')

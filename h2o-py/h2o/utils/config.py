@@ -34,7 +34,7 @@ class H2OConfigReader(object):
     #-------------------------------------------------------------------------------------------------------------------
 
     _allowed_config_keys = {
-        "init.check_version", "init.proxy", "init.url", "init.cluster_id", "init.verify_ssl_certificates",
+        "init.check_version", "init.proxy", "init.url", "init.verify_ssl_certificates",
         "init.cookies", "general.allow_breaking_changes"
     }
 
