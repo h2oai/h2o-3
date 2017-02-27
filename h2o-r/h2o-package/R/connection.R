@@ -25,7 +25,6 @@
 #' @param insecure (Optional) Set this to TRUE to disable SSL certificate checking.
 #' @param username (Optional) Username to login with.
 #' @param password (Optional) Password to login with.
-#' @param cluster_id (Optional) Cluster to login to. Used for Steam connections.
 #' @param cookies (Optional) Vector(or list) of cookies to add to request.
 #' @param context_path (Optional) The last part of connection URL: http://<ip>:<port>/<context_path>
 #' @return this method will load it and return a \code{H2OConnection} object containing the IP address and port number of the H2O server.
@@ -57,7 +56,7 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
                      max_mem_size = NULL, min_mem_size = NULL,
                      ice_root = tempdir(), strict_version_check = TRUE, proxy = NA_character_,
                      https = FALSE, insecure = FALSE, username = NA_character_, password = NA_character_,
-                     cluster_id = NA_integer_, cookies = NA_character_, context_path = NA_character_) {
+                     cookies = NA_character_, context_path = NA_character_) {
 
     # Check for .h2oconfig file
     # Find .h2oconfig file starting from currenting directory and going
@@ -75,9 +74,6 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
       }
       if(is.na(proxy) && "init.proxy" %in% colnames(h2oconfig)){
         proxy = trimws(as.character(h2oconfig$init.proxy))
-      }
-      if(is.na(cluster_id) && "init.cluster_id" %in% colnames(h2oconfig)){
-        cluster_id = as.numeric(as.character(h2oconfig$init.cluster_id))
       }
       if(insecure == FALSE && "init.verify_ssl_certificates" %in% colnames(h2oconfig)){
         insecure = as.logical(trimws(toupper(as.character(h2oconfig$init.verify_ssl_certificates))))
@@ -135,9 +131,6 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
     stop("`password` must be a character string or NA_character_")
   if (is.na(username) != is.na(password))
     stop("Must provide both `username` and `password`")
-  if (!is.na(cluster_id) &&
-      (!is.numeric(cluster_id) || cluster_id < 0))
-    stop("`cluster_id` must be an integer value greater than 0")
   if (!is.na(cookies) && (!is.vector(cookies)))
     stop("`cookies` must be a vector of cookie values")
   if(!is.character(context_path) || !nzchar(context_path))
@@ -157,7 +150,7 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
 
   warnNthreads <- FALSE
   tmpConn <- new("H2OConnection", ip = ip, port = port, proxy = proxy, https = https, insecure = insecure,
-    username = username, password = password, cluster_id = cluster_id, cookies = cookies, context_path = context_path)
+    username = username, password = password,cookies = cookies, context_path = context_path)
   if (!h2o.clusterIsUp(tmpConn)) {
     if (!startH2O)
       stop("Cannot connect to H2O server. Please check that H2O is running at ", h2o.getBaseURL(tmpConn))
@@ -198,7 +191,7 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
   }
 
   conn <- new("H2OConnection", ip = ip, port = port, proxy = proxy, https = https, insecure = insecure,
-    username = username, password = password, cluster_id = cluster_id, cookies = cookies, context_path = context_path)
+    username = username, password = password,cookies = cookies, context_path = context_path)
   assign("SERVER", conn, .pkg.env)
   cat(" Connection successful!\n\n")
   .h2o.jar.env$port <- port #Ensure right port is called when quitting R

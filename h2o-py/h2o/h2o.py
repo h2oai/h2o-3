@@ -49,7 +49,7 @@ warnings.filterwarnings('ignore', category=DeprecationWarning, module='.*/IPytho
 h2oconn = None  # type: H2OConnection
 
 def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_certificates=None, auth=None,
-            proxy=None, cluster_id=None, cookies=None, verbose=True, config=None):
+            proxy=None,cookies=None, verbose=True, config=None):
     """
     Connect to an existing H2O server, remote or local.
 
@@ -65,7 +65,6 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
     :param auth: Either a (username, password) pair for basic authentication, or one of the requests.auth
                  authenticator objects.
     :param proxy: Proxy server address.
-    :param cluster_id: Name of the H2O cluster to connect to. This option is used from Steam only.
     :param cookies: Cookie (or list of) to add to request
     :param verbose: Set to False to disable printing connection status messages.
     :param connection_conf: Connection configuration object encapsulating connection parameters.
@@ -80,7 +79,7 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
     else:
         h2oconn = H2OConnection.open(server=server, url=url, ip=ip, port=port, https=https,
                                      auth=auth, verify_ssl_certificates=verify_ssl_certificates,
-                                     proxy=proxy, cluster_id=cluster_id, cookies=cookies,
+                                     proxy=proxy,cookies=cookies,
                                      verbose=verbose)
         h2oconn.cluster.timezone = "UTC"
         if verbose:
@@ -140,7 +139,7 @@ def version_check():
               "version from http://h2o.ai/download/".format(ci.build_age))
 
 
-def init(url=None, ip=None, port=None, https=None, insecure=None, username=None, password=None, cluster_id=None,
+def init(url=None, ip=None, port=None, https=None, insecure=None, username=None, password=None,
          cookies=None, proxy=None, start_h2o=True, nthreads=-1, ice_root=None, enable_assertions=True,
          max_mem_size=None, min_mem_size=None, strict_version_check=None, **kwargs):
     """
@@ -153,7 +152,6 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     :param insecure: When using https, setting this to True will disable SSL certificates verification.
     :param username: Username and
     :param password: Password for basic authentication.
-    :param cluster_id: Name of the H2O cluster to connect to. This option is used from Steam only.
     :param cookies: Cookie (or list of) to add to each request.
     :param proxy: Proxy server address.
     :param start_h2o: If False, do not attempt to start an h2o server when connection to an existing one failed.
@@ -173,7 +171,6 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     assert_is_type(insecure, bool, None)
     assert_is_type(username, str, None)
     assert_is_type(password, str, None)
-    assert_is_type(cluster_id, int, None)
     assert_is_type(cookies, str, [str], None)
     assert_is_type(proxy, {str: str}, None)
     assert_is_type(start_h2o, bool, None)
@@ -219,8 +216,6 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
         url = config["init.url"]
     if proxy is None and "init.proxy" in config:
         proxy = config["init.proxy"]
-    if cluster_id is None and "init.cluster_id" in config:
-        cluster_id = int(config["init.cluster_id"])
     if cookies is None and "init.cookies" in config:
         cookies = config["init.cookies"].split(";")
     if strict_version_check is None:
@@ -243,7 +238,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     try:
         h2oconn = H2OConnection.open(url=url, ip=ip, port=port, https=https,
                                      verify_ssl_certificates=verify_ssl_certificates,
-                                     auth=auth, proxy=proxy, cluster_id=cluster_id, cookies=cookies, verbose=True,
+                                     auth=auth, proxy=proxy,cookies=cookies, verbose=True,
                                      _msgs=("Checking whether there is an H2O instance running at {url}",
                                             "connected.", "not found."))
     except H2OConnectionError:
@@ -254,7 +249,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
         hs = H2OLocalServer.start(nthreads=nthreads, enable_assertions=enable_assertions, max_mem_size=mmax,
                                   min_mem_size=mmin, ice_root=ice_root, port=port)
         h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=not insecure,
-                                     auth=auth, proxy=proxy, cluster_id=cluster_id, cookies=cookies, verbose=True)
+                                     auth=auth, proxy=proxy,cookies=cookies, verbose=True)
     if check_version:
         version_check()
     h2oconn.cluster.timezone = "UTC"
@@ -1253,8 +1248,7 @@ def _connect_with_conf(conn_conf):
     assert_is_type(conf, H2OConnectionConf)
 
     return connect(url = conf.url, verify_ssl_certificates = conf.verify_ssl_certificates,
-                   auth = conf.auth, proxy = conf.proxy, cluster_id = None,
-                   cookies = conf.cookies, verbose = conf.verbose)
+                   auth = conf.auth, proxy = conf.proxy,cookies = conf.cookies, verbose = conf.verbose)
 
 #-----------------------------------------------------------------------------------------------------------------------
 #  ALL DEPRECATED METHODS BELOW
