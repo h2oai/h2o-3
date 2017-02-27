@@ -14,9 +14,9 @@ class GradientBoosting {
   
   /*private*/ final GBMModel.GBMParameters params = new GBMModel.GBMParameters();
   
-  GradientBoosting(Dataset.TrainAndValid split) {
-    params._train = split.train.frame()._key;
-    params._valid = split.valid.frame()._key;
+  GradientBoosting(TrainAndValid split) {
+    params._train = split.train._key;
+    params._valid = split.valid._key;
   }
 
   public volatile GBM trainingJob = null;

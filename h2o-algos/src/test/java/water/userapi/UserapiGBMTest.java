@@ -49,10 +49,6 @@ public class UserapiGBMTest extends TestUtil {
 
   private abstract class PrepData {
     abstract int prep(Frame fr);
-
-    int prep(Dataset d) {
-      return prep(d.frame());
-    }
   }
 
   static final String ignored_aircols[] = new String[]{"DepTime", "ArrTime", "AirTime", "ArrDelay", "DepDelay", "TaxiIn", "TaxiOut", "Cancelled", "CancellationCode", "Diverted", "CarrierDelay", "WeatherDelay", "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsDepDelayed"};
@@ -1670,8 +1666,8 @@ public class UserapiGBMTest extends TestUtil {
 
   @Test
   public void testStochasticGBMHoldout() {
-    Dataset in = Dataset.readFile("./smalldata/gbm_test/ecology_model.csv");
-    Dataset.TrainAndValid split = in.stratifiedSplit("Method", 0.5);
+    Frame in = ETL.readFile("./smalldata/gbm_test/ecology_model.csv");
+    TrainAndValid split = ETL.stratifiedSplit(in, "Method", 0.5);
 
     double[] sample_rates = new double[]{0.2f, 0.4f, 0.8f, 1.0f};
     double[] col_sample_rates = new double[]{0.4f, 0.8f, 1.0f};
@@ -1920,9 +1916,9 @@ public class UserapiGBMTest extends TestUtil {
   @Test
   public void minSplitImprovement() {
     String resp = "C55";
-      Dataset in = Dataset.readFile("smalldata/covtype/covtype.20k.data");
-      in.makeCategorical(resp);
-      Dataset.TrainAndValid split = in.stratifiedSplit(resp, 0.5);
+      Frame frame = ETL.readFile("smalldata/covtype/covtype.20k.data");
+      ETL.makeCategorical(frame, resp);
+      TrainAndValid split = ETL.stratifiedSplit(frame, resp, 0.5);
 
     GradientBoosting gb = 
       gb = new GradientBoosting(split)
@@ -1932,9 +1928,6 @@ public class UserapiGBMTest extends TestUtil {
           .maxDepth(5);
     
     gb.scoreTreeInterval(gb.nTrees());
-    
-      Frame tfr = in.frame();
-
 
 //      DKV.put(tfr);
       double[] msi = new double[]{0, 1e-1};
