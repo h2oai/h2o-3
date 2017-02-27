@@ -23,7 +23,8 @@
 
     #Allowed config keys
     allowed_config_keys = c("init.check_version", "init.proxy","init.cluster_id",
-    "init.verify_ssl_certificates","init.cookies","general.allow_breaking_changes")
+    "init.verify_ssl_certificates","init.cookies","general.allow_breaking_changes",
+    "init.username","init.password")
 
     #Read in config line by line
     connection <- file(h2oconfig_filename)
