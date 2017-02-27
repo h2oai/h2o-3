@@ -11,6 +11,9 @@ check.deeplearning_multi <- function() {
 
   hh <- h2o.deepwater(x=c("CAPSULE","AGE","RACE","DPROS","DCAPS","PSA","VOL"),y="GLEASON",training_frame=prostate[1:300,],validation_frame=prostate[301:380,], epochs=100)
   print(hh)
+
+  df <- h2o.deepfeatures(hh, prostate[1:10,],"fc3_output")
+  print(df)
 }
 
 doTest("Deep Water MultiClass Test", check.deeplearning_multi)
