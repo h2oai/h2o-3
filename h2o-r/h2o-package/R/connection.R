@@ -70,7 +70,7 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
       h2oconfig = .parse.h2oconfig(config_path,print_path=TRUE)
 
       #Check for each `allowed_config_keys` in the config file and set to counterparts in `h2o.init()`
-      if(strict_version_check != TRUE && "init.check_version" %in% colnames(h2oconfig)){
+      if(strict_version_check == TRUE && "init.check_version" %in% colnames(h2oconfig)){
         strict_version_check = as.logical(trimws(toupper(as.character(h2oconfig$init.check_version))))
       }
       if(is.na(proxy) && "init.proxy" %in% colnames(h2oconfig)){
