@@ -94,6 +94,34 @@ test.config <- function() {
     config = .parse.h2oconfig(h2oconfig_filename)
     expect_equal(config,data.frame(general.allow_breaking_changes = as.factor("True"),init.cluster_id = as.factor("3")))
 
+    #Create tmp config
+    writeLines(c("[init]
+    username = name
+    password = password"),fileConn)
+    #Parse config and check if correct
+    config = .parse.h2oconfig(h2oconfig_filename)
+    expect_equal(config,data.frame(init.username = "name" ,init.password = "password"))
+
+    #Create tmp config
+    writeLines(c("[general]
+    allow_breaking_changes = True
+    [init]
+    username = name
+    [init]
+    password = password"),fileConn)
+    #Parse config and check if correct
+    config = .parse.h2oconfig(h2oconfig_filename)
+    expect_equal(config,data.frame(general.allow_breaking_changes = as.factor("True"),init.username = "name" ,init.password = "password"))
+
+    #Create tmp config
+    writeLines(c("
+    general.allow_breaking_changes = True
+    init.username = name
+    init.password = password"),fileConn)
+    #Parse config and check if correct
+    config = .parse.h2oconfig(h2oconfig_filename)
+    expect_equal(config,data.frame(general.allow_breaking_changes = as.factor("True"),init.username = "name" ,init.password = "password"))
+
     #Delete tmp directory
     on.exit(unlink(dir,recursive=TRUE))
 }
