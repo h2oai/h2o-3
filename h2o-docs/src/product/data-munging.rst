@@ -15,8 +15,9 @@ This section provides examples of common tasks performed when preparing data for
 .. toctree::
    :maxdepth: 1
 
-   data-munging/importing-data
    data-munging/uploading-data
+   data-munging/importing-data
+   data-munging/importing-files
    data-munging/merging-data
    data-munging/combining-rows
    data-munging/combining-columns
