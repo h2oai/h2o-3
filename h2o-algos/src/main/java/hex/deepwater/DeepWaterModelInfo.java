@@ -73,6 +73,11 @@ final public class DeepWaterModelInfo extends Iced {
     assert(_model!=null);
     return _backend.extractLayer(_model, layer, data);
   }
+  String listAllLayers() {
+    assert(_backend !=null);
+    assert(_model!=null);
+    return _backend.listAllLayers(_model);
+  }
 
   @Override
   public int hashCode() {

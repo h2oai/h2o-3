@@ -643,7 +643,9 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
         }
         float[] data = iter.getData();
         float[] predFloats = model_info().extractLayer(layer, data); //just to see how big this gets
-        if (predFloats.length == 0) return null;
+        if (predFloats.length == 0) {
+          throw new IllegalArgumentException(model_info().listAllLayers());
+        }
         cols = predFloats.length;
         assert (cols % batch_size == 0);
         cols /= batch_size;

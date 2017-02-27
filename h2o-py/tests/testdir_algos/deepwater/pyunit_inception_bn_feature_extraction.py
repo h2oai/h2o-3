@@ -37,15 +37,18 @@ def deepwater_inception_bn_feature_extraction():
 
   ## Extract deep features from final layer before going into Softmax.
   extracted_features = model.deepfeatures(frame, "global_pool_output")
-  print(extracted_features.ncol)
-  print(extracted_features.head(1,1024))
+  extracted_features2 = model.deepfeatures(frame, "conv_5b_double_3x3_1_output")
 
-  ## Cleanup
+  ## Cleanup (first)
   os.remove("model.json")
   os.remove("model.params")
   os.remove("mean_224.nd")
 
+  print(extracted_features.ncol)
   assert extracted_features.ncol == 1024
+
+  print(extracted_features2.ncol)
+  assert extracted_features2.ncol == 10976
 
 if __name__ == "__main__":
   pyunit_utils.standalone_test(deepwater_inception_bn_feature_extraction)

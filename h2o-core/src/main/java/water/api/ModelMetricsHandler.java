@@ -351,9 +351,17 @@ class ModelMetricsHandler extends Handler {
           parms._model.score(parms._frame, parms._predictions_name, j, true);
         }
         else if (s.deep_features_hidden_layer_name != null){
-          Frame predictions = ((Model.DeepFeatures) parms._model).scoreDeepFeatures(parms._frame, s.deep_features_hidden_layer_name, j);
-          predictions = new Frame(Key.<Frame>make(parms._predictions_name), predictions.names(), predictions.vecs());
-          DKV.put(predictions._key, predictions);
+          Frame predictions = null;
+          try {
+            predictions = ((Model.DeepFeatures) parms._model).scoreDeepFeatures(parms._frame, s.deep_features_hidden_layer_name, j);
+          } catch(IllegalArgumentException e) {
+            Log.warn(e.getMessage());
+            throw e;
+          }
+          if (predictions!=null) {
+            predictions = new Frame(Key.<Frame>make(parms._predictions_name), predictions.names(), predictions.vecs());
+            DKV.put(predictions._key, predictions);
+          }
         }
         else {
           Frame predictions = ((Model.DeepFeatures) parms._model).scoreDeepFeatures(parms._frame, s.deep_features_hidden_layer, j);
