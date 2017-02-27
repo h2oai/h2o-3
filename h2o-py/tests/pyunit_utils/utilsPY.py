@@ -2885,3 +2885,23 @@ def cannaryHDFSTest(hdfs_name_node, file_name):
             return True
         else:       # exception is caused by other reasons.
             return False
+
+def extract_scoring_history_field(aModel, fieldOfInterest):
+    """
+    Given a fieldOfInterest that are found in the model scoring history, this function will extract the list
+    of field values for you from the model.
+
+    :param aModel: H2O model where you want to extract a list of fields from the scoring history
+    :param fieldOfInterest: string representing a field of interest.
+    :return: List of field values or None if it cannot be found
+    """
+
+    allFields = aModel._model_json["output"]["scoring_history"]._col_header
+    if fieldOfInterest in allFields:
+        cellValues = []
+        fieldIndex = allFields.index(fieldOfInterest)
+        for eachCell in aModel._model_json["output"]["scoring_history"].cell_values:
+            cellValues.append(eachCell[fieldIndex])
+        return cellValues
+    else:
+        return None
