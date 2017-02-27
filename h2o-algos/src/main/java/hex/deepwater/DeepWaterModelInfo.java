@@ -68,6 +68,12 @@ final public class DeepWaterModelInfo extends Iced {
     return _backend.predict(_model, data);
   }
 
+  float[] extractLayer(String layer, float[] data) {
+    assert(_backend !=null);
+    assert(_model!=null);
+    return _backend.extractLayer(_model, layer, data);
+  }
+
   @Override
   public int hashCode() {
     return Arrays.hashCode(_network) + Arrays.hashCode(_modelparams);
@@ -263,16 +269,22 @@ final public class DeepWaterModelInfo extends Iced {
         is.close();
       } catch (IOException e) {
         e.printStackTrace();
-      } finally { if (file !=null) file.delete(); }
+      } finally {
+        if (file != null)
+          _backend.deleteSavedModel(file.toString());
+      }
     }
     // always overwrite the parameters (weights/biases)
     try {
       file = new File(System.getProperty("java.io.tmpdir"), Key.make().toString());
       _backend.saveParam(_model, file.toString());
-      _modelparams = _backend.readParams(file);
+      _modelparams = _backend.readBytes(file);
     } catch (IOException e) {
       e.printStackTrace();
-    } finally { if (file !=null) file.delete(); }
+    } finally {
+      if (file !=null)
+        _backend.deleteSavedParam(file.toString());
+    }
     long time = System.currentTimeMillis() - now;
     Log.info("Took: " + PrettyPrint.msecs(time, true));
   }
@@ -324,7 +336,7 @@ final public class DeepWaterModelInfo extends Iced {
     // always overwrite the parameters (weights/biases)
     try {
       file = new File(System.getProperty("java.io.tmpdir"), Key.make().toString());
-      _backend.writeParams(file, parameters);
+      _backend.writeBytes(file, parameters);
       _backend.loadParam(_model, file.toString());
     } catch (IOException e) {
       e.printStackTrace();

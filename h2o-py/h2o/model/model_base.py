@@ -172,8 +172,12 @@ class ModelBase(backwards_compatible()):
         :param layer: 0 index hidden layer
         """
         if test_data is None: raise ValueError("Must specify test data")
-        j = H2OJob(h2o.api("POST /4/Predictions/models/%s/frames/%s" % (self._id, test_data.frame_id),
-                           data={"deep_features_hidden_layer": layer}), "deepfeatures")
+	if layer.isdigit():
+		j = H2OJob(h2o.api("POST /4/Predictions/models/%s/frames/%s" % (self._id, test_data.frame_id),
+				   data={"deep_features_hidden_layer": layer}), "deepfeatures")
+	else:
+		j = H2OJob(h2o.api("POST /4/Predictions/models/%s/frames/%s" % (self._id, test_data.frame_id),
+				   data={"deep_features_hidden_layer_name": layer}), "deepfeatures")
         j.poll()
         return h2o.get_frame(j.dest_key)
 

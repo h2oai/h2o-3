@@ -630,6 +630,40 @@ def help_afterword_for(algo):
                    return(TRUE)
                 }
             }
+
+            #' Feature Generation via H2O Deep Water Model
+            #'
+            #' Extract the non-linear feature from an H2O data set using an H2O Deep Water
+            #' model.
+            #' @param object An \linkS4class{H2OModel} object that represents the Deep
+            #' Water model to be used for feature extraction.
+            #' @param data An H2OFrame object.
+            #' @param layer Name of the hidden layer (symbol) to extract.
+            #' @return Returns an H2OFrame object with as many features as the
+            #'         (flattened) number of neurons in the hidden layer of the specified index.
+            #' @seealso \code{link{h2o.deepwater}} for making Deep Water models.
+            #' @examples
+            #' \donttest{
+            #' library(h2o)
+            #' h2o.init()
+            #' prosPath = system.file("extdata", "prostate.csv", package = "h2o")
+            #' prostate.hex = h2o.importFile(path = prosPath)
+            #' prostate.dl = h2o.deepwater(x = 3:9, y = 2, backend="mxnet", training_frame = prostate.hex,
+            #'                                hidden = c(100, 200), epochs = 5)
+            #' prostate.deepfeatures_layer1 = h2o.deepfeatures(prostate.dl, prostate.hex, layer = "fc1_w") # mxnet-specific naming convention
+            #' prostate.deepfeatures_layer2 = h2o.deepfeatures(prostate.dl, prostate.hex, layer = "fc2_w")
+            #' head(prostate.deepfeatures_layer1)
+            #' head(prostate.deepfeatures_layer2)
+            #' }
+            #' @export
+            h2o.deepfeatures <- function(object, data, layer = NULL) {
+              url <- paste0('Predictions/models/', object@model_id, '/frames/', h2o.getId(data))
+              res <- .h2o.__remoteSend(url, method = "POST", deep_features_hidden_layer_name=layer, h2oRestApiVersion = 4)
+              job_key <- res$key$name
+              dest_key <- res$dest$name
+              .h2o.__waitOnJob(job_key)
+              h2o.getFrame(dest_key)
+            }
         """
     if algo == "glm":
         return """

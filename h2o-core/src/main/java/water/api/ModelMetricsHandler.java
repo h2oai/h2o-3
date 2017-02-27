@@ -21,6 +21,7 @@ class ModelMetricsHandler extends Handler {
     public boolean _reconstruction_error;
     public boolean _reconstruction_error_per_feature;
     public int _deep_features_hidden_layer = -1;
+    public String _deep_features_hidden_layer_name = null;
     public boolean _reconstruct_train;
     public boolean _project_archetypes;
     public boolean _reverse_transform;
@@ -102,6 +103,9 @@ class ModelMetricsHandler extends Handler {
     @API(help = "Extract Deep Features for given hidden layer (optional, only for Deep Learning models)", json = false)
     public int deep_features_hidden_layer;
 
+    @API(help = "Extract Deep Features for given hidden layer by name (optional, only for Deep Water models)", json = false)
+    public String deep_features_hidden_layer_name;
+
     @API(help = "Reconstruct original training frame (optional, only for GLRM models)", json = false)
     public boolean reconstruct_train;
 
@@ -132,6 +136,7 @@ class ModelMetricsHandler extends Handler {
       mml._reconstruction_error = this.reconstruction_error;
       mml._reconstruction_error_per_feature = this.reconstruction_error_per_feature;
       mml._deep_features_hidden_layer = this.deep_features_hidden_layer;
+      mml._deep_features_hidden_layer_name = this.deep_features_hidden_layer_name;
       mml._reconstruct_train = this.reconstruct_train;
       mml._project_archetypes = this.project_archetypes;
       mml._reverse_transform = this.reverse_transform;
@@ -159,6 +164,7 @@ class ModelMetricsHandler extends Handler {
       this.reconstruction_error = mml._reconstruction_error;
       this.reconstruction_error_per_feature = mml._reconstruction_error_per_feature;
       this.deep_features_hidden_layer = mml._deep_features_hidden_layer;
+      this.deep_features_hidden_layer_name = mml._deep_features_hidden_layer_name;
       this.reconstruct_train = mml._reconstruct_train;
       this.project_archetypes = mml._project_archetypes;
       this.reverse_transform = mml._reverse_transform;
@@ -323,7 +329,7 @@ class ModelMetricsHandler extends Handler {
     //predict2 does not return modelmetrics, so cannot handle deeplearning: reconstruction_error (anomaly) or GLRM: reconstruct and archetypes
     //predict2 can handle deeplearning: deepfeatures and predict
 
-    if (s.deep_features_hidden_layer > 0) {
+    if (s.deep_features_hidden_layer > 0 || s.deep_features_hidden_layer_name != null) {
       if (null == parms._predictions_name)
         parms._predictions_name = "deep_features" + Key.make().toString().substring(0, 5) + "_" +
                 parms._model._key.toString() + "_on_" + parms._frame._key.toString();
@@ -341,9 +347,15 @@ class ModelMetricsHandler extends Handler {
     H2O.H2OCountedCompleter work = new H2O.H2OCountedCompleter() {
       @Override
       public void compute2() {
-        if (s.deep_features_hidden_layer < 0) {
+        if (s.deep_features_hidden_layer < 0 && s.deep_features_hidden_layer_name == null) {
           parms._model.score(parms._frame, parms._predictions_name, j, true);
-        } else {
+        }
+        else if (s.deep_features_hidden_layer_name != null){
+          Frame predictions = ((Model.DeepFeatures) parms._model).scoreDeepFeatures(parms._frame, s.deep_features_hidden_layer_name, j);
+          predictions = new Frame(Key.<Frame>make(parms._predictions_name), predictions.names(), predictions.vecs());
+          DKV.put(predictions._key, predictions);
+        }
+        else {
           Frame predictions = ((Model.DeepFeatures) parms._model).scoreDeepFeatures(parms._frame, s.deep_features_hidden_layer, j);
           predictions = new Frame(Key.<Frame>make(parms._predictions_name), predictions.names(), predictions.vecs());
           DKV.put(predictions._key, predictions);
