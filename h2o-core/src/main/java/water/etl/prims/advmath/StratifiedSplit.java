@@ -8,7 +8,6 @@ import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.rapids.vals.ValFrame;
 import water.util.VecUtils;
 
 import java.util.ArrayList;
