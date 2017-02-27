@@ -9,6 +9,7 @@ import water.MemoryManager;
 import water.fvec.Chunk;
 import water.util.ArrayUtils;
 import water.util.AtomicUtils;
+import water.util.Log;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -97,7 +98,11 @@ public class MetaCollector {
     public DynamicHisto(DHistogram h) { _h=h; }
     DynamicHisto(String name, final int nbins, int nbins_cats, byte isInt,
                         double min, double max) {
-      _h = makeDHistogram(name, nbins, nbins_cats, isInt, min, max);
+      if(!(Double.isNaN(min)) && !(Double.isNaN(max))) { //If both are NaN then we don't need a histogram
+        _h = makeDHistogram(name, nbins, nbins_cats, isInt, min, max);
+      }else{
+        Log.info("Ignoring all NaN column -> "+ name);
+      }
     }
 
     private static class SharedTreeParameters extends SharedTreeModel.SharedTreeParameters {

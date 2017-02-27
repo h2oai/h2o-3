@@ -701,7 +701,9 @@ public class FrameMetadata extends Iced {
       }
 
       int nbins = (int) Math.ceil(1 + log2(v.length()));  // Sturges nbins
-      _colMeta._histo = MetaCollector.DynamicHisto.makeDHistogram(colname, nbins, nbins, (byte) (v.isCategorical() ? 2 : (v.isInt() ? 1 : 0)), v.min(), v.max());
+      if(!(_colMeta._ignored)) {
+        _colMeta._histo = MetaCollector.DynamicHisto.makeDHistogram(colname, nbins, nbins, (byte) (v.isCategorical() ? 2 : (v.isInt() ? 1 : 0)), v.min(), v.max());
+      }
 
       //skewness, kurtosis using rapids call
       Key<Frame> key = Key.make("keyW");
@@ -730,14 +732,16 @@ public class FrameMetadata extends Iced {
 
     @Override public void compute2() {
       long start = System.currentTimeMillis();
-      HistTask  t = new HistTask(_colMeta._histo, _mean).doAll(_colMeta._v);
-      _elapsed = System.currentTimeMillis() - start;
-      _colMeta._thirdMoment = t._thirdMoment / ((_colMeta._v.length() - _colMeta._v.naCnt())-1);
-      _colMeta._fourthMoment = t._fourthMoment / ((_colMeta._v.length() - _colMeta._v.naCnt())-1);
-      _colMeta._MRTaskMillis = _elapsed;
-      //_colMeta._skew = _colMeta._thirdMoment / Math.sqrt(_colMeta._variance*_colMeta._variance*_colMeta._variance);
-      //_colMeta._kurtosis = _colMeta._fourthMoment / (_colMeta._variance * _colMeta._variance);
-      tryComplete();
+      if (!(_colMeta._ignored)) {
+        HistTask t = new HistTask(_colMeta._histo, _mean).doAll(_colMeta._v);
+        _elapsed = System.currentTimeMillis() - start;
+        _colMeta._thirdMoment = t._thirdMoment / ((_colMeta._v.length() - _colMeta._v.naCnt()) - 1);
+        _colMeta._fourthMoment = t._fourthMoment / ((_colMeta._v.length() - _colMeta._v.naCnt()) - 1);
+        _colMeta._MRTaskMillis = _elapsed;
+        //_colMeta._skew = _colMeta._thirdMoment / Math.sqrt(_colMeta._variance*_colMeta._variance*_colMeta._variance);
+        //_colMeta._kurtosis = _colMeta._fourthMoment / (_colMeta._variance * _colMeta._variance);
+        tryComplete();
+      }
     }
 
     private static class HistTask extends MRTask<HistTask> {
