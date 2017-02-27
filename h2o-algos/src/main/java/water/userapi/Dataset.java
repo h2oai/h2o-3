@@ -23,7 +23,8 @@ import static water.rapids.ast.prims.advmath.AstStratifiedSplit.*;
  * 
  * Created by vpatryshev on 2/20/17.
  */
-public class Dataset  extends Iced<Dataset> {
+public class Dataset extends Iced<Dataset> 
+ {
   private Key<Frame> frameKey;
 
   Dataset() {}
@@ -89,8 +90,8 @@ public class Dataset  extends Iced<Dataset> {
     Map<String, Frame> split = blend.splitBy(TestTrainSplitColName, SplittingDom);
     
     return new TrainAndValid(
-        new Dataset(split.get(SplittingDom[0])),
-        new Dataset(split.get(SplittingDom[1])));
+        split.get(SplittingDom[0]),
+        split.get(SplittingDom[1]));
   }
   
   public TrainAndValid stratifiedSplit(String colName, Double ratio) {
@@ -181,38 +182,4 @@ public class Dataset  extends Iced<Dataset> {
     }
   }
 
-  static class TrainAndValid {
-    final Dataset train;
-    final Dataset valid;
-    
-    public TrainAndValid(Dataset train, Dataset valid) {
-      this.train = train;
-      this.valid = valid;
-    }
-    
-    
-    
-    @Override
-    public boolean equals(Object o) {
-      if (!(o instanceof TrainAndValid)) return false;
-
-      TrainAndValid that = (TrainAndValid) o;
-
-      return Objects.equals(train, that.train) && 
-             Objects.equals(valid, that.valid);
-    }
-
-    @Override
-    public int hashCode() {
-      return 31 * Objects.hashCode(train) + Objects.hashCode(valid);
-    }
-
-    @Override
-    public String toString() {
-      return "TrainAndValid{" +
-          "train=" + train +
-          ", valid=" + valid +
-          '}';
-    }
-  }
-}
+ }

@@ -49,10 +49,6 @@ public class UserapiGBMTest extends TestUtil {
 
   private abstract class PrepData {
     abstract int prep(Frame fr);
-
-    int prep(Dataset d) {
-      return prep(d.frame());
-    }
   }
 
   static final String ignored_aircols[] = new String[]{"DepTime", "ArrTime", "AirTime", "ArrDelay", "DepDelay", "TaxiIn", "TaxiOut", "Cancelled", "CancellationCode", "Diverted", "CarrierDelay", "WeatherDelay", "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsDepDelayed"};
@@ -1670,8 +1666,8 @@ public class UserapiGBMTest extends TestUtil {
 
   @Test
   public void testStochasticGBMHoldout() {
-    Dataset in = Dataset.readFile("./smalldata/gbm_test/ecology_model.csv");
-    Dataset.TrainAndValid split = in.stratifiedSplit("Method", 0.5);
+    Frame in = ETL.readFile("./smalldata/gbm_test/ecology_model.csv");
+    TrainAndValid split = ETL.stratifiedSplit(in, "Method", 0.5);
 
     double[] sample_rates = new double[]{0.2f, 0.4f, 0.8f, 1.0f};
     double[] col_sample_rates = new double[]{0.4f, 0.8f, 1.0f};
@@ -1920,9 +1916,9 @@ public class UserapiGBMTest extends TestUtil {
   @Test
   public void minSplitImprovement() {
     String resp = "C55";
-      Dataset in = Dataset.readFile("smalldata/covtype/covtype.20k.data");
-      in.makeCategorical(resp);
-      Dataset.TrainAndValid split = in.stratifiedSplit(resp, 0.5);
+      Frame frame = ETL.readFile("smalldata/covtype/covtype.20k.data");
+      ETL.makeCategorical(frame, resp);
+      TrainAndValid split = ETL.stratifiedSplit(frame, resp, 0.5);
 
     GradientBoosting gb = 
       gb = new GradientBoosting(split)
@@ -1932,23 +1928,15 @@ public class UserapiGBMTest extends TestUtil {
           .maxDepth(5);
     
     gb.scoreTreeInterval(gb.nTrees());
-    
-      Frame tfr = in.frame();
-
 
 //      DKV.put(tfr);
       double[] msi = new double[]{0, 1e-1};
       final int N = msi.length;
       double[] loglosses = new double[N];
       for (int i = 0; i < N; ++i) {
-        GBMModel.GBMParameters parms = gb.params;
+        gb.minSplitImprovement(msi[i]);
 
-        // Load data, hack frames
-        parms._min_split_improvement = msi[i];
-
-        GBM job = new GBM(parms);
-        GBMModel gbm = job.trainModel().get();
-        loglosses[i] = gbm._output._scored_valid[gbm._output._scored_valid.length - 1]._logloss;
+        loglosses[i] = gb.logLoss();
       }
       for (int i = 0; i < msi.length; ++i) {
         Log.info("min_split_improvement: " + msi[i] + " -> validation logloss: " + loglosses[i]);
@@ -1964,8 +1952,8 @@ public class UserapiGBMTest extends TestUtil {
     Key[] ksplits = null;
     GBMModel gbm = null;
     try {
-      Scope.enter();
       String resp = "C55";
+      tfr = parse_test_file("smalldata/covtype/covtype.20k.data");
       Scope.track(tfr.replace(resp, tfr.vec(resp).toCategoricalVec()));
       DKV.put(tfr);
       SplitFrame sf = new SplitFrame(tfr, new double[]{0.5, 0.5}, new Key[]{Key.make("train.hex"), Key.make("valid.hex")});
@@ -1998,12 +1986,13 @@ public class UserapiGBMTest extends TestUtil {
       }
       int idx = ArrayUtils.minIndex(loglosses);
       Log.info("Optimal randomization: " + histoType[idx]);
-      assertTrue(4 == idx);
+      assertEquals("We got this: " + Arrays.toString(loglosses) + " for " + Arrays.toString(histoType), 4, idx);
     } finally {
       if (tfr != null) tfr.delete();
-      if (ksplits[0] != null) ksplits[0].remove();
-      if (ksplits[1] != null) ksplits[1].remove();
-      Scope.exit();
+      if (ksplits != null) {
+        if (ksplits[0] != null) ksplits[0].remove();
+        if (ksplits[1] != null) ksplits[1].remove();
+      }
     }
   }
 

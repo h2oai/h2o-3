@@ -18,14 +18,15 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.HashMap;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
- * Test suite for Dataset functionality in UserAPI.
+ * Test suite for Frame functionality in UserAPI.
  * 
  * Created by vpatryshev on 2/22/17.
  */
-public class DatasetTest extends TestUtil {
+public class ETLTest extends TestUtil {
   static File testFile1 = new File("DatasetTest.1.tmp");
 
   @BeforeClass
@@ -45,12 +46,12 @@ public class DatasetTest extends TestUtil {
 
   @Test(expected=DataException.class)
   public void testNoReadFile() throws Exception {
-      Dataset.read(new File("c:/System.ini"));
+      ETL.read(new File("c:/System.ini"));
   }
 
   @Test
   public void testRead() throws Exception {
-    Dataset sut = Dataset.read(testFile1);
+    Frame sut = ETL.read(testFile1);
     Vec v1 = sut.vec("C2");
     assertEquals("b1", String.valueOf(v1.atStr(new BufferedString(), 1)));
   }
@@ -72,17 +73,17 @@ public class DatasetTest extends TestUtil {
       }
     });
 
-    Dataset sut = Dataset.onVecs(new HashMap<String, Vec>() {{put("RGB", vec1);}});
+    Frame sut = ETL.onVecs(new HashMap<String, Vec>() {{put("RGB", vec1);}});
     
-    Dataset actual = sut.oneHotEncode();
+    Frame actual = ETL.oneHotEncode(sut);
     
-    assertArrayEquals(new String[]{"RGB", "RGB.red", "RGB.white", "RGB.blue", "RGB.missing(NA)"}, actual.domain());
+    assertArrayEquals(new String[]{"RGB", "RGB.red", "RGB.white", "RGB.blue", "RGB.missing(NA)"}, actual.names());
     
     for (int i = 0; i < size; i++) {
       for (int j = 1; j < 4; j++) {
         assertEquals("@(" + i + "," + j + ")", 
             (j-1) == whichOne(i) ? 1 : 0,
-            actual.vec(actual.domain()[j]).at8(i));
+            actual.vec(actual.names()[j]).at8(i));
       }
     }
     
@@ -101,14 +102,14 @@ public class DatasetTest extends TestUtil {
 
     final Vec vec2 = vec(size, Functions.<Integer>identity());
     
-    Dataset sut = Dataset.onVecs(
+    Frame sut = ETL.onVecs(
         new HashMap<String, Vec>() {{
           put("RGB", vec1); put("Ausweis", vec2);
         }});
 
-    Dataset actual = sut.addSplittingColumn("RGB", 0.01, 7688714);
+    Frame actual = ETL.addSplittingColumn(sut, "RGB", 0.01, 7688714);
 
-    assertArrayEquals(new String[]{"RGB", "Ausweis", "test_train_split"}, actual.domain());
+    assertArrayEquals(new String[]{"RGB", "Ausweis", "test_train_split"}, actual.names());
 
     // it is hard to test specific values
   }
@@ -127,12 +128,12 @@ public class DatasetTest extends TestUtil {
 
     final Vec vec2 = vec(size, Functions.<Integer>identity());
 
-    Dataset sut = Dataset.onVecs(
+    Frame sut = ETL.onVecs(
         new HashMap<String, Vec>() {{
           put("RGB", vec1); put("Ausweis", vec2);
         }});
 
-    TrainAndValid actual = sut.stratifiedSplit("RGB", 0.01, 7688714);
+    TrainAndValid actual = ETL.stratifiedSplit(sut, "RGB", 0.01, 7688714);
 
     final Frame train = actual.train;
     assertArrayEquals(new String[]{"RGB", "Ausweis"}, train.names());
@@ -158,33 +159,33 @@ public class DatasetTest extends TestUtil {
   @Test
   public void testEndToEndInChicago() {
     String path = "smalldata/chicago/chicagoCensus.csv";
-    Dataset sut = Dataset.readFile(path);
+    Frame sut = ETL.readFile(path);
     String[] expectedDom = "Community Area Number,COMMUNITY AREA NAME,PERCENT OF HOUSING CROWDED,PERCENT HOUSEHOLDS BELOW POVERTY,PERCENT AGED 16+ UNEMPLOYED,PERCENT AGED 25+ WITHOUT HIGH SCHOOL DIPLOMA,PERCENT AGED UNDER 18 OR OVER 64,PER CAPITA INCOME ,HARDSHIP INDEX".split(",");
-    assertArrayEquals(expectedDom, sut.domain());
-    sut.makeCategorical("COMMUNITY AREA NAME");
-    String[] categories = sut.domainOf("COMMUNITY AREA NAME");
+    assertArrayEquals(expectedDom, sut.names());
+    ETL.makeCategorical(sut, "COMMUNITY AREA NAME");
+    String[] categories = ETL.domainOf(sut, "COMMUNITY AREA NAME");
     assertEquals(78, categories.length);
-    Dataset oneHot = sut.oneHotEncode();
-    assertEquals(88, oneHot.domain().length);
+    Frame oneHot = ETL.oneHotEncode(sut);
+    assertEquals(88, oneHot.names().length);
   }
   
   @Test
   public void testEndToEndCitibike() {
     String path = "smalldata/demos/citibike_20k.csv";
-    Dataset sut = Dataset.readFile(path);
+    Frame sut = ETL.readFile(path);
 
     final int expectedSize = 20000;
     final double ratio = 0.25;
     final int expectedValidSize = (int)(expectedSize * ratio);
     final int expectedTrainSize = expectedSize - expectedValidSize;
-    sut.removeColumn("start station name", "end station name");
-    assertEquals(expectedSize, sut.length());
-    sut.makeCategorical("gender");
-    String[] categories = sut.domainOf("gender");
+    ETL.removeColumn(sut, "start station name", "end station name");
+    assertEquals(expectedSize, ETL.length(sut));
+    ETL.makeCategorical(sut, "gender");
+    String[] categories = ETL.domainOf(sut, "gender");
     assertEquals(3, categories.length);
-    Dataset oneHot = sut.oneHotEncode();
-    assertEquals(20, oneHot.domain().length);
-    TrainAndValid tav = oneHot.stratifiedSplit("gender", ratio, 55555);
+    Frame oneHot = ETL.oneHotEncode(sut);
+    assertEquals(20, oneHot.names().length);
+    TrainAndValid tav = ETL.stratifiedSplit(oneHot, "gender", ratio, 55555);
     assertEquals(expectedTrainSize, ETL.length(tav.train));
     assertEquals(expectedValidSize, ETL.length(tav.valid));
   }

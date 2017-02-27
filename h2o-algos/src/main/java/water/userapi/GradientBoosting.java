@@ -14,9 +14,9 @@ class GradientBoosting {
   
   /*private*/ final GBMModel.GBMParameters params = new GBMModel.GBMParameters();
   
-  GradientBoosting(Dataset.TrainAndValid split) {
-    params._train = split.train.frame()._key;
-    params._valid = split.valid.frame()._key;
+  GradientBoosting(TrainAndValid split) {
+    params._train = split.train._key;
+    params._valid = split.valid._key;
   }
 
   public volatile GBM trainingJob = null;
@@ -29,13 +29,17 @@ class GradientBoosting {
   volatile private GBMModel model = null;
 
   // Build a first model; all remaining models should be equal
-  private GBMModel model() {
+  public GBMModel model() {
     if (model == null) model = Scope.track(trainingJob().trainModel().get());
     return model;
   }
+
+  public GBMModel.GBMOutput output() {
+    return model()._output;
+  }
   
   public ModelMetricsRegression metrics() {
-    return (ModelMetricsRegression) model()._output._validation_metrics;
+    return (ModelMetricsRegression) output()._validation_metrics;
   }
 
   public GradientBoosting responseColumn(String rc) {
@@ -90,5 +94,14 @@ class GradientBoosting {
   public GradientBoosting scoreTreeInterval(int i) {
     params._score_tree_interval = i;
     return this;
+  }
+
+  public GradientBoosting minSplitImprovement(double v) {
+    params._min_split_improvement = v;
+    return this;
+  }
+  
+  public double logLoss() {
+    return output()._scored_valid[output()._scored_valid.length - 1]._logloss;  
   }
 }
