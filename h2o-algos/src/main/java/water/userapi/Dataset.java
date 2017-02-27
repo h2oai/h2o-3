@@ -52,7 +52,7 @@ public class Dataset  extends Iced<Dataset> {
         map.values().toArray(new Vec[map.size()])));
   }
   
-  private Frame frame() { return DKV.getGet(frameKey); }
+  public Frame frame() { return DKV.getGet(frameKey); }
   
   public Dataset oneHotEncode(String... ignore) {
     try {
@@ -153,12 +153,12 @@ public class Dataset  extends Iced<Dataset> {
 
   public void makeCategorical(String colName) {
     Frame frame = frame();
-    Vec srcCol = frame.remove(colName);
+    Vec srcCol = frame.vec(colName);
     byte type = srcCol.get_type();
     Vec categorical = 
         type == Vec.T_STR ? VecUtils.stringToCategorical(srcCol) :
         type == Vec.T_NUM ? VecUtils.numericToCategorical(srcCol) : srcCol;
-    frame.add(colName, Scope.track(categorical));
+    frame.replace(colName, Scope.track(categorical));
     srcCol.remove();
   }
 
@@ -189,6 +189,8 @@ public class Dataset  extends Iced<Dataset> {
       this.train = train;
       this.valid = valid;
     }
+    
+    
     
     @Override
     public boolean equals(Object o) {
