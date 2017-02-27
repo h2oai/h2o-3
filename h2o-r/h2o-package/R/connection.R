@@ -85,6 +85,12 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
       if(is.na(cookies) && "init.cookies" %in% colnames(h2oconfig)){
         cookies = as.vector(trimws(strsplit(as.character(h2oconfig$init.cookies),";")[[1]]))
       }
+      if(is.na(username) && "init.username" %in% colnames(h2oconfig)){
+        username = trimws(as.character(h2oconfig$init.username))
+      }
+      if(is.na(password) && "init.password" %in% colnames(h2oconfig)){
+        password = trimws(as.character(h2oconfig$init.password))
+      }
   }
 
   if(!is.character(ip) || length(ip) != 1L || is.na(ip) || !nzchar(ip))
