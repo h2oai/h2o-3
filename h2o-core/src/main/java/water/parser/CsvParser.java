@@ -119,15 +119,11 @@ MAIN_LOOP:
             assert str.getBuffer() != bits;
             str.addBuff(bits);
           }
-          if( _setup._na_strings != null
-                  && _setup._na_strings.length > colIdx
-                  && _setup._na_strings[colIdx] != null) {
-            for (String s : _setup._na_strings[colIdx]) {
-              if (str.equals(s)) {
-                isNa = true;
-                break;
-              }
-            }
+          if( !isNa &&
+              _setup._na_strings != null &&
+              _setup._na_strings.length > colIdx &&
+              str.isOneOf(_setup._na_strings[colIdx])) {
+            isNa = true;
           }
           if (!isNa) {
             dout.addStrCol(colIdx, str);
