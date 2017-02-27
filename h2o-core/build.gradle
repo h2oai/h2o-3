@@ -63,7 +63,7 @@ task testOOM(type: Exec) {
     dependsOn cpLibs, jar, testJar
     String iceRoot = project.projectDir.toString() + File.separator + "OOMsandbox" + File.separator + "iceRoot"
             commandLine 'java', '-ea', '-Xmx1500m', '-Xms1500m', '-XX:+PrintGC', '-Dai.h2o.cleaner', '-cp',
-            'build/libs/h2o-core.jar'+File.pathSeparator+'build/libs/h2o-core-test.jar'+File.pathSeparator+'../lib/*',
+            'build/libs/h2o-core.jar'+File.pathSeparator+'build/libs/h2o-core-test.jar'+File.pathSeparator+'../lib/*'+File.pathSeparator+'../h2o-genmodel/build/libs/h2o-genmodel.jar',
             'water.OOMTest', '-ice_root', iceRoot
     // This is first action for Exec task
     doFirst {
