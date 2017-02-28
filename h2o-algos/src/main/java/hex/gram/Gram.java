@@ -758,6 +758,34 @@ public final class Gram extends Iced<Gram> {
     }
   }
 
+  /*
+  This method will not allocate the extra memory and hence is considered for lowMemory systems.
+  However, need to consider case when you have categoricals!  Make them part of the matrix
+  in the multiplication process.
+   */
+  public void mul(double [] x, double [] res, boolean saveMemory){
+    if (saveMemory) {
+      int colSize = fullN();        // actual gram matrix size
+      int offsetForCat = colSize-_xx.length; // offset for categorical columns
+
+      for (int rowIndex = 0; rowIndex < colSize; rowIndex++) {
+        double d = 0;
+        for (int colIndex = 0; colIndex < rowIndex; colIndex++) {   // below diagonal
+          d += rowIndex>=offsetForCat?_xx[rowIndex-offsetForCat][colIndex] * x[colIndex]:0.0;
+        }
+        // on diagonal
+        d+= (rowIndex>=offsetForCat)?_xx[rowIndex-offsetForCat][rowIndex]*x[rowIndex]:_diag[rowIndex]*x[rowIndex];
+
+        for (int colIndex = rowIndex+1; colIndex < colSize; colIndex++) {   // above diagonal
+          d += (rowIndex<offsetForCat)?((colIndex<offsetForCat)?0:_xx[colIndex-offsetForCat][rowIndex]*x[colIndex]):
+                  _xx[colIndex-offsetForCat][rowIndex]*x[colIndex];
+        }
+        res[rowIndex] = d;
+      }
+    } else {
+      mul(x, res);  // call original implementation if preferred
+    }
+  }
 
   /**
    * Task to compute outer product of a matrix normalized by the number of observations (not counting rows with NAs).
