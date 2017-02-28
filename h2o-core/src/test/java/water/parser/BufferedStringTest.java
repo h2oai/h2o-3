@@ -6,6 +6,10 @@ import water.AutoBuffer;
 import water.Paxos;
 import water.TestUtil;
 
+import java.util.Arrays;
+
+import static java.util.Arrays.*;
+
 import static org.junit.Assert.*;
 
 /**
@@ -167,9 +171,13 @@ public class BufferedStringTest {
 
   @Test
   public void testGetBuffer() throws Exception {
-    final String source = "this is not a string\u00f0";
+    final String source = "not a string\u00f0";
     BufferedString sut = new BufferedString(source);
-    assertArrayEquals(source.getBytes(), sut.getBuffer());
+    final byte[] expected = source.getBytes();
+    final byte[] actual = sut.getBuffer();
+    assertArrayEquals("Failed. expected " + Arrays.toString(expected) + 
+                      ", got " + Arrays.toString(actual), 
+        expected, actual);
   }
 
   @Test

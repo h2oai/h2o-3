@@ -103,7 +103,8 @@ public class CStrChunkTest extends TestUtil {
     Assert.assertTrue("first 100 entries are NA",c.isNA(0) && c.isNA(99));
     Assert.assertTrue("Sparse string has values",c.atStr(new BufferedString(),100).sameString("foo"));
     Assert.assertTrue("NA",c.isNA(101));
-    Assert.assertTrue("Sparse string has values",c.atStr(new BufferedString(),102).sameString("bar"));
+    final BufferedString bufferedString = c.atStr(new BufferedString(), 102);
+    Assert.assertTrue("Sparse string has values: expected `bar`, got " + bufferedString, bufferedString.sameString("bar"));
   }
 }
 
