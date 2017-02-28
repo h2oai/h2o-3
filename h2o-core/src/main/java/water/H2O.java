@@ -285,7 +285,7 @@ final public class H2O {
     /** -internal_security_conf path (absolute or relative) to a file containing all internal security related configurations */
     public String internal_security_conf = null;
 
-    /** -internal_security_enabled is a boolean that indicates if the cluster is secure or not*/
+    /** -internal_security_enabled is a boolean that indicates if internal communication paths are secured*/
     public boolean internal_security_enabled = false;
 
     //-----------------------------------------------------------------------------------
