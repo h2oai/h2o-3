@@ -723,7 +723,7 @@ The user can also manually generate keystore/truststore and properties file as d
 
 ::
 
-  hadoop jar h2odriver.jar -nodes 4 -mapperXmx 6g -output hdfsOutputDirName -internal_security security.properties
+  hadoop jar h2odriver.jar -nodes 4 -mapperXmx 6g -output hdfsOutputDirName -internal_security_conf security.properties
 
 
 Standalone/AWS
@@ -742,16 +742,16 @@ In this case, the user has to generate the keystores, truststores, and propertie
     h2o_ssl_jts_internal=truststore.jks
     h2o_ssl_jts_password=password
 
-3. To start an SSL-enabled node, pass the location to the properties file using the ``-internal_security`` flag
+3. To start an SSL-enabled node, pass the location to the properties file using the ``-internal_security_conf`` flag
 
  ::
 
-  java -jar h2o.jar -internal_security security.properties
+  java -jar h2o.jar -internal_security_conf security.properties
 
 Configuration
 ~~~~~~~~~~~~~
 
-To enable this feature, set the ``-internal_security`` parameter when starting an H2O node, and point that to a configuration file (key=value format) that contains the following values:
+To enable this feature, set the ``-internal_security_conf`` parameter when starting an H2O node, and point that to a configuration file (key=value format) that contains the following values:
 
 - ``h2o_ssl_jks_internal`` (required): The path (absolute or relative) to the key-store file used for internal SSL communication
 - ``h2o_ssl_jks_password`` (required): The password for the internal key-store
