@@ -67,7 +67,7 @@ public class DeepWaterCaffeIntegrationTest extends DeepWaterAbstractIntegrationT
         new String[] {"data", "relu", "relu", "relu", "loss"},
         new double[] {.9, .5, .5, .5, 0.},
         1234,
-        false // GPU
+        true // GPU
     );
     model.learning_rate(.01f);
     model.momentum(.9f);
