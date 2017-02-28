@@ -6,8 +6,8 @@ import water.fvec.Vec;
 
 public final class Mungers{
     private Mungers() {}
-    public static Frame OneHotEncode(Frame fr) {
-        return fr;
+    public static Frame OneHotEncoder(Frame fr, String col) {
+        return OneHotEncoder.get(fr,col);
     }
     /** Return the same frame with a selection of rows according to a boolean vec
      *

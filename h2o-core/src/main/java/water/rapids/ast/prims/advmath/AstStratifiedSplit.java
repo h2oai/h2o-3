@@ -30,11 +30,10 @@ public class AstStratifiedSplit extends AstPrimitive {
   public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
 
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    Vec stratVec = fr.anyVec();
     final double testFrac = asts[2].exec(env).getNum();
     long seed = (long) asts[3].exec(env).getNum();
     seed = seed == -1 ? new Random().nextLong() : seed;
-    ValFrame res = new ValFrame(AdvMath.StratifiedSplit(fr,stratVec,testFrac,seed));
+    ValFrame res = new ValFrame(AdvMath.StratifiedSplit(fr,fr.names()[0],testFrac,seed));
     return res;
   }
 }

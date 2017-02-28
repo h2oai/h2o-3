@@ -19,7 +19,8 @@ import static water.util.RandomUtils.getRNG;
 public final class StratifiedSplit {
     private StratifiedSplit() {
     }
-    public static Frame get(Frame sourceFr, Vec stratCol, double testFrac, long seed) {
+    public static Frame get(Frame sourceFr, String stratColName, double testFrac, long seed) {
+        Vec stratCol = sourceFr.vec(stratColName);
         if (!(stratCol.isCategorical() || (stratCol.isNumeric() && stratCol.isInt())))
             throw new IllegalArgumentException("stratification only applies to integer and categorical columns. Got: " +stratCol.get_type_str());
         final long[] classes = new VecUtils.CollectDomain().doAll(stratCol).domain();

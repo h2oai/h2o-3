@@ -6,7 +6,7 @@ import org.junit.Test;
 import water.Key;
 import water.TestUtil;
 import static water.etl.prims.advmath.AdvMath.StratifiedSplit;
-import static water.etl.prims.mungers.Mungers.OneHotEncode;
+import static water.etl.prims.mungers.Mungers.OneHotEncoder;
 import static water.etl.prims.mungers.Mungers.Rows;
 
 import static water.etl.prims.operators.Operators.Eq;
@@ -27,8 +27,8 @@ public class EtlTest extends TestUtil {
     @Test
     public void TestETL() {
         Frame fr = parse_test_file(Key.<Frame>make(), "path_to_file");
-        Frame frOH = OneHotEncode(fr);
-        Frame trainTestCol = StratifiedSplit(fr,fr.vec("response"),0.2,123);
+        Frame frOH = OneHotEncoder(fr, "cat_col");
+        Frame trainTestCol = StratifiedSplit(fr,"response",0.2,123);
         Frame train = Rows(frOH, Eq(trainTestCol,"train"));
         Frame test = Rows(frOH, Eq(trainTestCol,"test"));
 
