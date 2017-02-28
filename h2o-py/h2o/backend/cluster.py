@@ -116,6 +116,10 @@ class H2OCluster(object):
     def version(self):
         return self._props["version"]
 
+    @property
+    def internal_security_enabled(self):
+        return self._props["internal_security_enabled"]
+
 
     def shutdown(self, prompt=False):
         """
@@ -183,6 +187,7 @@ class H2OCluster(object):
             ["H2O cluster status:",        status],
             ["H2O connection url:",        h2o.connection().base_url],
             ["H2O connection proxy:",      h2o.connection().proxy],
+            ["H2O internal security:",     self.internal_security_enabled],
             ["Python version:",            "%d.%d.%d %s" % tuple(sys.version_info[:4])],
         ])
 
@@ -239,4 +244,4 @@ class H2OCluster(object):
 
 _cloud_v3_valid_keys = {"is_client", "build_number", "cloud_name", "locked", "node_idx", "consensus", "branch_name",
                         "version", "cloud_uptime_millis", "cloud_healthy", "bad_nodes", "cloud_size", "skip_ticks",
-                        "nodes", "build_age", "build_too_old"}
+                        "nodes", "build_age", "build_too_old", "internal_security_enabled"}

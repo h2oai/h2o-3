@@ -219,7 +219,6 @@ final public class H2O {
     /** -user_name=user_name; Set user name */
     public String user_name = System.getProperty("user.name");
 
-
     //-----------------------------------------------------------------------------------
     // Node configuration
     //-----------------------------------------------------------------------------------
@@ -285,6 +284,9 @@ final public class H2O {
 
     /** -internal_security_conf path (absolute or relative) to a file containing all internal security related configurations */
     public String internal_security_conf = null;
+
+    /** -internal_security_enabled is a boolean that indicates if the cluster is secure or not*/
+    public boolean internal_security_enabled = false;
 
     //-----------------------------------------------------------------------------------
     // Debugging

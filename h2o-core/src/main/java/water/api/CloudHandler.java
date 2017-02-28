@@ -4,6 +4,7 @@ import java.util.Date;
 
 import water.H2O;
 import water.H2ONode;
+import water.H2OSecurityManager;
 import water.Paxos;
 import water.api.schemas3.CloudV3;
 import water.util.PrettyPrint;
@@ -30,6 +31,7 @@ class CloudHandler extends Handler {
     cloud.cloud_uptime_millis = System.currentTimeMillis() - H2O.START_TIME_MILLIS.get();
     cloud.consensus = Paxos._commonKnowledge;
     cloud.locked = Paxos._cloudLocked;
+    cloud.internal_security_enabled = H2OSecurityManager.instance().securityEnabled;
 
     // Fetch and calculate cloud metrics from individual node metrics.
     H2ONode[] members = H2O.CLOUD.members();

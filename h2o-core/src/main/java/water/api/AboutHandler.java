@@ -1,6 +1,7 @@
 package water.api;
 
 import water.H2O;
+import water.H2OSecurityManager;
 import water.api.schemas3.AboutEntryV3;
 import water.api.schemas3.AboutV3;
 import water.util.PrettyPrint;
@@ -20,6 +21,7 @@ public class AboutHandler extends Handler {
     entries.add(new AboutEntryV3("Build age",             PrettyPrint.toAge(H2O.ABV.compiledOnDate(), new Date())));
     entries.add(new AboutEntryV3("Built by",              H2O.ABV.compiledBy()));
     entries.add(new AboutEntryV3("Built on",              H2O.ABV.compiledOn()));
+    entries.add(new AboutEntryV3("Internal Security", H2OSecurityManager.instance().securityEnabled ? "Enabled": "Disabled"));
 
     if (H2O.ABV.isTooOld()) {
       String latestH2OVersion = H2O.ABV.getLatestH2OVersion();
