@@ -17,21 +17,24 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-
+import static water.userapi.Etl.*;
+import static water.userapi.Etl.Load.*;
+import static water.userapi.Etl.Transform.*;
 /**
  * Test suite for Frame functionality in UserAPI.
  * 
  * Created by vpatryshev on 2/22/17.
  */
-public class ETLTest extends TestUtil {
+public class EtlTest extends TestUtil {
   static File testFile1 = new File("DatasetTest.1.tmp");
 
   @BeforeClass
   static public void setup() throws IOException { 
-    stall_till_cloudsize(2);
+    stall_till_cloudsize(1);
     Writer fw = new FileWriter(testFile1);
     fw.write("A\tB\tC\na1\tb1\tc1\na2\tb2\tc2\n");
     fw.close();
@@ -46,12 +49,12 @@ public class ETLTest extends TestUtil {
 
   @Test(expected=DataException.class)
   public void testNoReadFile() throws Exception {
-      ETL.read(new File("c:/System.ini"));
+      readFile(new File("c:/System.ini"));
   }
 
   @Test
   public void testRead() throws Exception {
-    Frame sut = ETL.read(testFile1);
+    Frame sut = readFile(testFile1);
     Vec v1 = sut.vec("C2");
     assertEquals("b1", String.valueOf(v1.atStr(new BufferedString(), 1)));
   }
@@ -73,9 +76,9 @@ public class ETLTest extends TestUtil {
       }
     });
 
-    Frame sut = ETL.onVecs(new HashMap<String, Vec>() {{put("RGB", vec1);}});
+    Frame sut = createFrame(new HashMap<String, Vec>() {{put("RGB", vec1);}});
     
-    Frame actual = ETL.oneHotEncode(sut);
+    Frame actual = oneHotEncode(sut);
     
     assertArrayEquals(new String[]{"RGB", "RGB.red", "RGB.white", "RGB.blue", "RGB.missing(NA)"}, actual.names());
     
@@ -86,7 +89,6 @@ public class ETLTest extends TestUtil {
             actual.vec(actual.names()[j]).at8(i));
       }
     }
-    
   }
 
   @Test
@@ -102,14 +104,14 @@ public class ETLTest extends TestUtil {
 
     final Vec vec2 = vec(size, Functions.<Integer>identity());
     
-    Frame sut = ETL.onVecs(
+    Frame sut = createFrame(
         new HashMap<String, Vec>() {{
           put("RGB", vec1); put("Ausweis", vec2);
         }});
 
-    Frame actual = ETL.addSplittingColumn(sut, "RGB", 0.01, 7688714);
+    Frame actual = stratifiedSplitColumn(sut, "RGB", 0.01, 7688714);
 
-    assertArrayEquals(new String[]{"RGB", "Ausweis", "test_train_split"}, actual.names());
+    assertArrayEquals(new String[]{"Ausweis", "RGB", "testSplitCol"}, actual.names());
 
     // it is hard to test specific values
   }
@@ -128,17 +130,17 @@ public class ETLTest extends TestUtil {
 
     final Vec vec2 = vec(size, Functions.<Integer>identity());
 
-    Frame sut = ETL.onVecs(
+    Frame sut = createFrame(
         new HashMap<String, Vec>() {{
           put("RGB", vec1); put("Ausweis", vec2);
         }});
 
-    TrainAndValid actual = ETL.stratifiedSplit(sut, "RGB", 0.01, 7688714);
+    Map<String, Frame> actual = null; //Extract.stratifiedSplit(sut, "RGB", 0.01, 7688714);
 
-    final Frame train = actual.train;
+    final Frame train = actual.get("train");
     assertArrayEquals(new String[]{"RGB", "Ausweis"}, train.names());
 
-    final Frame valid = actual.valid;
+    final Frame valid = actual.get("valid");
     assertArrayEquals(new String[]{"RGB", "Ausweis"}, valid.names());
 
     assertEquals(size, train.vec("Ausweis").length() + valid.vec("Ausweis").length());
@@ -157,36 +159,46 @@ public class ETLTest extends TestUtil {
   }
   
   @Test
-  public void testEndToEndInChicago() {
+  public void testEndToEndInChicago() throws IOException {
     String path = "smalldata/chicago/chicagoCensus.csv";
-    Frame sut = ETL.readFile(path);
+    Frame sut = readFile(path);
     String[] expectedDom = "Community Area Number,COMMUNITY AREA NAME,PERCENT OF HOUSING CROWDED,PERCENT HOUSEHOLDS BELOW POVERTY,PERCENT AGED 16+ UNEMPLOYED,PERCENT AGED 25+ WITHOUT HIGH SCHOOL DIPLOMA,PERCENT AGED UNDER 18 OR OVER 64,PER CAPITA INCOME ,HARDSHIP INDEX".split(",");
     assertArrayEquals(expectedDom, sut.names());
-    ETL.makeCategorical(sut, "COMMUNITY AREA NAME");
-    String[] categories = ETL.domainOf(sut, "COMMUNITY AREA NAME");
+    makeCategorical(sut, "COMMUNITY AREA NAME");
+    String[] categories = domainOf(sut, "COMMUNITY AREA NAME");
     assertEquals(78, categories.length);
-    Frame oneHot = ETL.oneHotEncode(sut);
+    Frame oneHot = oneHotEncode(sut);
     assertEquals(88, oneHot.names().length);
   }
   
   @Test
-  public void testEndToEndCitibike() {
+  public void testEndToEndCitibike() throws IOException, InterruptedException {
     String path = "smalldata/demos/citibike_20k.csv";
-    Frame sut = ETL.readFile(path);
+    Frame inputFrame = Load.readFile(path);
 
     final int expectedSize = 20000;
     final double ratio = 0.25;
     final int expectedValidSize = (int)(expectedSize * ratio);
     final int expectedTrainSize = expectedSize - expectedValidSize;
-    ETL.removeColumn(sut, "start station name", "end station name");
-    assertEquals(expectedSize, ETL.length(sut));
-    ETL.makeCategorical(sut, "gender");
-    String[] categories = ETL.domainOf(sut, "gender");
-    assertEquals(3, categories.length);
-    Frame oneHot = ETL.oneHotEncode(sut);
-    assertEquals(20, oneHot.names().length);
-    TrainAndValid tav = ETL.stratifiedSplit(oneHot, "gender", ratio, 55555);
-    assertEquals(expectedTrainSize, ETL.length(tav.train));
-    assertEquals(expectedValidSize, ETL.length(tav.valid));
+    System.out.println(inputFrame.toString(0, 10));
+    // Drop useless columns
+    Frame frame1 = Transform.dropColumn(inputFrame, "start station name", "end station name");
+    assertEquals(expectedSize, numRows(frame1));
+    System.out.println("Step 1\n" + frame1.toString(0, 10));
+
+    Frame frame2 = Transform.makeCategorical(frame1, "gender");
+    System.out.println("Step 2\n" + frame2.toString(0, 10));
+
+    Frame frame3 = Transform.oneHotEncode(frame2);
+    System.out.println("Step 3\n" + frame3.toString(0, 10));
+
+    Frame stratifiedSplitColumn = Transform.stratifiedSplitColumn(frame3, "gender", ratio, 42);
+    System.out.println("Step 4\n" + stratifiedSplitColumn.toString(0, 10));
+
+    Map<String, Frame> frame5 = Extract.splitByColumn(frame3, stratifiedSplitColumn);
+    assertEquals(expectedTrainSize, numRows(frame5.get("train")));
+    System.out.println("Step 5 - train part\n" + frame5.get("train").toString(0, 10));
+    assertEquals(expectedValidSize, numRows(frame5.get("test")));
+    System.out.println("Step 5 - test part\n" + frame5.get("test").toString(0, 10));
   }
 }

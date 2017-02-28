@@ -40,31 +40,40 @@ public class AstStratifiedSplit extends AstPrimitive {
     Frame origfr = stk.track(asts[1].exec(env)).getFrame();
     final double testFrac = asts[2].exec(env).getNum();
     long seed = (long) asts[3].exec(env).getNum();
-    Key<Frame> inputFrKey = Key.make();
-    Frame fr = origfr.deepCopy(inputFrKey.toString());
-    Vec stratifyingColumn = fr.anyVec();
+    //FIXME: WHY DEEP COPY?
+    //Key<Frame> inputFrKey = Key.make();
+    //Frame fr = origfr.deepCopy(inputFrKey.toString());
+    Frame fr = origfr;
+    // It is just a single column
     if (fr.numCols() != 1)
       throw new IllegalArgumentException("Must give a single column to stratify against. Got: " + fr.numCols() + " columns.");
-    Frame result = split(stratifyingColumn, testFrac, seed, SplittingDom);
-    // clean up temp frames
-    fr.delete();
+    Vec stratifyingColumn = fr.anyVec();
+    Frame result = new Frame(Key.<Frame>make(),
+                             new String[] {TestTrainSplitColName},
+                             new Vec[] { split(stratifyingColumn, testFrac, seed, SplittingDom)}
+                             );
+    //FIXME WHY? clean up temp frames
+    //fr.delete();
     return new ValFrame(result);
   }
 
-  public static Frame split(Vec stratifyingColumn, double splittingFraction, long randomizationSeed, String[] splittingDom) {
+  public static Vec split(Vec stratifyingColumn, double splittingFraction, long randomizationSeed, String[] splittingDom) {
     checkIfCanStratifyBy(stratifyingColumn);
     randomizationSeed = randomizationSeed == -1 ? new Random().nextLong() : randomizationSeed;
+    // Collect input vector domain
     final long[] classes = new VecUtils.CollectDomain().doAll(stratifyingColumn).domain();
+    // Number of output classes
     final int nClass = stratifyingColumn.isNumeric() ? classes.length : stratifyingColumn.domain().length;
-    // create frame with all 0s (default is train)
-    Key<Frame> k1 = Key.make();
-    Vec resVec = Vec.makeCon(0, stratifyingColumn.length());
-    resVec.setDomain(splittingDom);
-    Frame result = new Frame(k1, new String[]{TestTrainSplitColName}, new Vec[]{resVec});
-    DKV.put(result);
-    // create index frame
-    ClassIdxTask finTask = new ClassIdxTask(nClass,classes).doAll(new Frame(stratifyingColumn));
-    // loop through each class
+    
+    // Make a new column based on input column - this needs to follow layout of input vector!
+    // Save vector into DKV
+    Vec outputVec = stratifyingColumn.makeCon(0.0, Vec.T_CAT);
+    outputVec.setDomain(splittingDom);
+    DKV.put(outputVec);
+
+    // Collect index frame
+    ClassIdxTask finTask = new ClassIdxTask(nClass,classes).doAll(stratifyingColumn);
+    // Loop through each class in the input column
     HashSet<Long> usedIdxs = new HashSet<>();
     for (int classLabel = 0; classLabel < nClass; classLabel++) {
       // extract frame with index locations of the minority class
@@ -86,8 +95,9 @@ public class AstStratifiedSplit extends AstPrimitive {
       }
       usedIdxs.addAll(tmpIdxs);
     }
-    new ClassAssignMRTask(usedIdxs).doAll(result.anyVec());
-    return result;
+    // Update class assignments
+    new ClassAssignMRTask(usedIdxs).doAll(outputVec);
+    return outputVec;
   }
 
   static void checkIfCanStratifyBy(Vec vec) {
