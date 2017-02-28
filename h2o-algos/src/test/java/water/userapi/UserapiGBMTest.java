@@ -1986,7 +1986,7 @@ public class UserapiGBMTest extends TestUtil {
       }
       int idx = ArrayUtils.minIndex(loglosses);
       Log.info("Optimal randomization: " + histoType[idx]);
-      assertTrue(4 == idx);
+      assertEquals("We got this: " + Arrays.toString(loglosses) + " for " + Arrays.toString(histoType), 4, idx);
     } finally {
       if (tfr != null) tfr.delete();
       if (ksplits != null) {
