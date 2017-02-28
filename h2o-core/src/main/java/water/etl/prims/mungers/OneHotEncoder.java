@@ -15,7 +15,7 @@ public final class OneHotEncoder {
     Frame oneVec = new Frame(Vec.makeCon(1.0, fr.anyVec().length()));
     oneVec.setNames(new String[]{"h2o_ones"});
     fr.add(oneVec);
-    Frame sumVec = CumSum.get(new Frame(oneVec),1.0);
+    Frame sumVec = CumSum.get(new Frame(oneVec),0.0);
     sumVec.setNames(new String[]{"h2o_cumsum_tmp"});
     fr.add(sumVec);
     Frame pivoted = Pivot.get(fr,"h2o_cumsum_tmp",col,"h2o_ones");

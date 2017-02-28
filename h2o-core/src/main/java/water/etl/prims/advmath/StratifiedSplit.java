@@ -37,7 +37,7 @@ public final class StratifiedSplit {
         Frame result = new Frame(k1, new String[]{"test_train_split"}, new Vec[]{resVec});
         DKV.put(result);
         // create index sourceFrame
-        ClassIdxTask finTask = new ClassIdxTask(nClass,classes).doAll(sourceFr);
+        ClassIdxTask finTask = new ClassIdxTask(nClass,classes).doAll(stratCol);
         // loop through each class
         HashSet<Long> usedIdxs = new HashSet<>();
         for (int classLabel = 0; classLabel < nClass; classLabel++) {
@@ -89,13 +89,13 @@ public final class StratifiedSplit {
         }
 
         @Override
-        public void map(Chunk[] ck) {
+        public void map(Chunk ck) {
             _iarray = new LongAry[_nclasses];
             for (int i = 0; i < _nclasses; i++) { _iarray[i] = new LongAry(); }
-            for (int i = 0; i < ck[0].len(); i++) {
-                long clas = ck[0].at8(i);
+            for (int i = 0; i < ck.len(); i++) {
+                long clas = ck.at8(i);
                 int clas_idx = _classes.indexOf(clas);
-                _iarray[clas_idx].add(ck[0].start() + i);
+                    _iarray[clas_idx].add(ck.start() + i);
             }
         }
         @Override

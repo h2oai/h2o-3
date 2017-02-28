@@ -1,5 +1,6 @@
 package water.etl.prims.reducers;
 
+import water.Iced;
 import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
@@ -10,7 +11,7 @@ import water.util.ArrayUtils;
 
 import java.util.Arrays;
 
-public abstract class Cumu {
+public abstract class Cumu extends Iced<Cumu> {
 
   public abstract double op(double l, double r);
 
