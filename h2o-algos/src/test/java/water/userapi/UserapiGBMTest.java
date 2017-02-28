@@ -1934,14 +1934,9 @@ public class UserapiGBMTest extends TestUtil {
       final int N = msi.length;
       double[] loglosses = new double[N];
       for (int i = 0; i < N; ++i) {
-        GBMModel.GBMParameters parms = gb.params;
+        gb.minSplitImprovement(msi[i]);
 
-        // Load data, hack frames
-        parms._min_split_improvement = msi[i];
-
-        GBM job = new GBM(parms);
-        GBMModel gbm = job.trainModel().get();
-        loglosses[i] = gbm._output._scored_valid[gbm._output._scored_valid.length - 1]._logloss;
+        loglosses[i] = gb.logLoss();
       }
       for (int i = 0; i < msi.length; ++i) {
         Log.info("min_split_improvement: " + msi[i] + " -> validation logloss: " + loglosses[i]);
@@ -1957,8 +1952,8 @@ public class UserapiGBMTest extends TestUtil {
     Key[] ksplits = null;
     GBMModel gbm = null;
     try {
-      Scope.enter();
       String resp = "C55";
+      tfr = parse_test_file("smalldata/covtype/covtype.20k.data");
       Scope.track(tfr.replace(resp, tfr.vec(resp).toCategoricalVec()));
       DKV.put(tfr);
       SplitFrame sf = new SplitFrame(tfr, new double[]{0.5, 0.5}, new Key[]{Key.make("train.hex"), Key.make("valid.hex")});
@@ -1994,9 +1989,10 @@ public class UserapiGBMTest extends TestUtil {
       assertTrue(4 == idx);
     } finally {
       if (tfr != null) tfr.delete();
-      if (ksplits[0] != null) ksplits[0].remove();
-      if (ksplits[1] != null) ksplits[1].remove();
-      Scope.exit();
+      if (ksplits != null) {
+        if (ksplits[0] != null) ksplits[0].remove();
+        if (ksplits[1] != null) ksplits[1].remove();
+      }
     }
   }
 
