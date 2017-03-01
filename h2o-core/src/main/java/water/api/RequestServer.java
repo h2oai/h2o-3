@@ -741,11 +741,11 @@ public class RequestServer extends HttpServlet {
           g.doIt();
           bytes = g.bytes;
         } else {
-          bytes = "Node not healthy".getBytes();
+          bytes = StringUtils.bytesOf("Node not healthy");
         }
       }
       catch (Exception e) {
-        bytes = e.toString().getBytes();
+        bytes = StringUtils.toBytes(e);
       }
       perNodeZipByteArray[i] = bytes;
     }
@@ -759,7 +759,7 @@ public class RequestServer extends HttpServlet {
         bytes = g.bytes;
       }
       catch (Exception e) {
-        bytes = e.toString().getBytes();
+        bytes = StringUtils.toBytes(e);
       }
       clientNodeByteArray = bytes;
     }
@@ -770,7 +770,7 @@ public class RequestServer extends HttpServlet {
       finalZipByteArray = zipLogs(perNodeZipByteArray, clientNodeByteArray, outputFileStem);
     }
     catch (Exception e) {
-      finalZipByteArray = e.toString().getBytes();
+      finalZipByteArray = StringUtils.toBytes(e);
     }
 
     NanoResponse res = new NanoResponse(HTTP_OK, MIME_DEFAULT_BINARY, new ByteArrayInputStream(finalZipByteArray));

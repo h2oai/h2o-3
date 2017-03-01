@@ -1474,7 +1474,7 @@ public class Frame extends Lockable<Frame> {
           sb.append(',').append('"').append(names[i]).append('"');
         sb.append('\n');
       }
-      _line = sb.toString().getBytes();
+      _line = StringUtils.bytesOf(sb);
       _chkRow = -1; // first process the header line
       _curChks = chks;
     }
@@ -1513,7 +1513,7 @@ public class Frame extends Lockable<Frame> {
         }
       }
       sb.append('\n');
-      return sb.toString().getBytes();
+      return StringUtils.bytesOf(sb);
     }
 
     @Override public int available() throws IOException {

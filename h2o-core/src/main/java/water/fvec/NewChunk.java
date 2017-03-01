@@ -7,6 +7,7 @@ import water.H2O;
 import water.MemoryManager;
 import water.parser.BufferedString;
 import water.util.PrettyPrint;
+import water.util.StringUtils;
 import water.util.UnsafeUtils;
 
 import java.util.*;
@@ -576,7 +577,7 @@ public class NewChunk extends Chunk {
   }
 
   private void append_ss(String str) {
-    byte[] bytes = str == null ? new byte[0] : str.getBytes(Charsets.UTF_8);
+    byte[] bytes = str == null ? new byte[0] : StringUtils.bytesOf(str);
 
     // Allocate memory if necessary
     if (_ss == null)

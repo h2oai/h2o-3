@@ -24,6 +24,7 @@ import water.exceptions.H2OAbstractRuntimeException;
 import water.exceptions.H2OFailException;
 import water.util.HttpResponseStatus;
 import water.util.Log;
+import water.util.StringUtils;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -392,7 +393,7 @@ public class JettyHTTPD {
     }
 
     boundaryString = ct.substring(idx + "boundary=".length());
-    byte[] boundary = boundaryString.getBytes();
+    byte[] boundary = StringUtils.bytesOf(boundaryString);
 
     // Consume headers of the mime part.
     InputStream is = request.getInputStream();
@@ -405,7 +406,7 @@ public class JettyHTTPD {
   }
 
   public static boolean validKeyName(String name) {
-    byte[] arr = name.getBytes();
+    byte[] arr = StringUtils.bytesOf(name);
     for (byte b : arr) {
       if (b == '"') return false;
       if (b == '\\') return false;
