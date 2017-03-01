@@ -74,7 +74,21 @@ public class ETL {
     return newFrame;
   }
 
-  private static Frame select(Frame frame, final String what, String colname) {
+  /**
+   * From a given frame, select, into a new frame only those rows
+   * that satisfy the following condition:
+   * The value of a categorical column named `colname` matches
+   * the domain value named `what`.
+   * E.g. if the domain is String[]{"red", "white", "blue"},
+   * and `what`="white",
+   * only those rows are accepted where the vec value == 1.
+   * 
+   * @param frame source frame
+   * @param what domain value to select
+   * @param colname categorical column which we filter
+   * @return a new frame with rows selected from the original frame
+   */
+  private static Frame selectCategory(Frame frame, final String what, String colname) {
     Vec vec = frame.vec(colname);
     final String[] domain = vec.domain();
     final int expected = Arrays.asList(domain).indexOf(what);
@@ -91,7 +105,7 @@ public class ETL {
 
   private static Map<String, Frame> splitBy(Frame frame, String colname, String[] splittingDom) {
     Map<String, Frame> m = new HashMap<>(splittingDom.length);
-    for (String val : splittingDom) m.put(val, select(frame, val, colname));
+    for (String val : splittingDom) m.put(val, selectCategory(frame, val, colname));
     return m;
   }
 
