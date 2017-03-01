@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static water.rapids.ast.prims.advmath.AstStratifiedSplit.SplittingDom;
+import static water.rapids.ast.prims.advmath.AstStratifiedSplit.split;
 
 /**
  * ETL library for User API.
@@ -133,7 +134,7 @@ public class Etl {
       final Vec vec = frame.vec(colName);
       assert vec != null : "Column " + colName + " missing in frame " + frame;
       final Vec splitDefVec = Scope.track(AstStratifiedSplit.split(vec, ratio, seed, SplittingDom));
-      Frame result = new Frame(new String[] {"stratified_split_column"}, new Vec[] {vec});
+      Frame result = new Frame(new String[] {"stratified_split_column"}, new Vec[] {splitDefVec});
 
       return result;
     }
@@ -218,8 +219,8 @@ public class Etl {
       assert splitFrame.numCols() == 1 : "Split frame should contain a single column!";
       assert splitFrame.lastVec().isCategorical() : "Split frame column has to be categorical!";
       
-      String[] splitColDomain = frame.lastVec().domain();
-      String splitColName = frame.name(0);
+      String[] splitColDomain = splitFrame.lastVec().domain();
+      String splitColName = splitFrame.name(0);
       Frame temp = frame.add(splitFrame);
       Map<String, Frame> m = new HashMap<>(splitColDomain.length);
       for (String val : splitColDomain)
