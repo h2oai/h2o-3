@@ -218,6 +218,8 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
         proxy = config["init.proxy"]
     if cookies is None and "init.cookies" in config:
         cookies = config["init.cookies"].split(";")
+    if auth is None and "init.username" in config and "init.password" in config:
+        auth = (config["init.username"], config["init.password"])
     if strict_version_check is None:
         if "init.check_version" in config:
             check_version = config["init.check_version"].lower() != "false"
