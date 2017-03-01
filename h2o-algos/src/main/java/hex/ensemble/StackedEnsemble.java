@@ -82,7 +82,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         StackedEnsemble.addModelPredictionsToLevelOneFrame(aModel, aModelsPredictions, levelOneFrame);
       } // for all base_models
 
-      levelOneFrame.add(_model.responseColumn, _model.commonTrainingFrame.vec(_model.responseColumn));
+      levelOneFrame.add(_model.responseColumn, _model._parms.train().vec(_model.responseColumn));
 
       // TODO: what if we're running multiple in parallel and have a name collision?
 
