@@ -23,8 +23,7 @@ import static hex.Model.Parameters.FoldAssignmentScheme.Modulo;
 public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnsembleModel.StackedEnsembleParameters,StackedEnsembleModel.StackedEnsembleOutput> {
 
   public ModelCategory modelCategory;
-  public Frame commonTrainingFrame = null;
-  public long commonTrainingFrameChecksum = -1;
+  public long trainingFrameChecksum = -1;
 
   public String responseColumn = null;
   private NonBlockingHashSet<String> names = null;  // keep columns as a set for easier comparison
@@ -238,7 +237,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
     Model aModel = null;
     boolean beenHere = false;
-    long ensembleTrainingChecksum = _parms._train.get().checksum();
+    trainingFrameChecksum = _parms.train().checksum();
 
     for (Key<Model> k : _parms._base_models) {
       aModel = DKV.getGet(k);
@@ -256,8 +255,8 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
           throw new H2OIllegalArgumentException("Base models are inconsistent: there is a mix of different categories of models: " + Arrays.toString(_parms._base_models));
 
         Frame aTrainingFrame = aModel._parms.train();
-        if (commonTrainingFrameChecksum != aTrainingFrame.checksum())
-          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different training frames.  Found checksums: " + commonTrainingFrameChecksum + " and: " + aTrainingFrame.checksum() + ".");
+        if (trainingFrameChecksum != aTrainingFrame.checksum())
+          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different training frames.  Found checksums: " + trainingFrameChecksum + " and: " + aTrainingFrame.checksum() + ".");
 
         NonBlockingHashSet<String> aNames = new NonBlockingHashSet<>();
         aNames.addAll(Arrays.asList(aModel._output._names));
@@ -306,11 +305,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         this.modelCategory = aModel._output.getModelCategory();
         this._dist = new Distribution(distributionFamily(aModel));
         _output._domains = Arrays.copyOf(aModel._output._domains, aModel._output._domains.length);
-        commonTrainingFrame = aModel._parms.train();
-        commonTrainingFrameChecksum = commonTrainingFrame.checksum();
-
-        if (commonTrainingFrameChecksum != ensembleTrainingChecksum)
-          throw  new H2OIllegalArgumentException("StackedModel training_frame must match the training_frame of each base model.  Found checksums: " + commonTrainingFrameChecksum + " and: " + ensembleTrainingChecksum);
 
         // TODO: set _parms._train to aModel._parms.train()
 
