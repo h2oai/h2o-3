@@ -141,6 +141,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._response_column = "C2";
       p._network = network;
       p._learning_rate = 1e-4;
+      p._momentum_start = 0.9;
       p._epochs = epochs;
       p._channels = channels;
       p._problem_type = DeepWaterParameters.ProblemType.image;
@@ -165,8 +166,8 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
   @Ignore //too slow
   @Test public void convergenceGoogleNetGrayScale() { checkConvergence(1, DeepWaterParameters.Network.googlenet, 100); }
 
-  @Test public void convergenceLenetColor() { checkConvergence(3, lenet, 200); }
-  @Test public void convergenceLenetGrayScale() { checkConvergence(1, lenet, 150); }
+  @Test public void convergenceLenetColor() { checkConvergence(3, lenet, 300); }
+  @Test public void convergenceLenetGrayScale() { checkConvergence(1, lenet, 200); }
 
   @Ignore
   @Test public void convergenceVGGColor() { checkConvergence(3, DeepWaterParameters.Network.vgg, 50); }
@@ -682,6 +683,8 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       DKV.put(tr);
       p._seed = 1234;
       p._epochs = 1000;
+      p._learning_rate = 5e-7;
+      p._momentum_start = 0.9;
       DeepWater j = new DeepWater(p);
       m = j.trainModel().get();
       Assert.assertTrue((m._output._training_metrics).rmse() < 5);
@@ -705,7 +708,8 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._train = (tr = parse_test_file("smalldata/deepwater/imagenet/binomial_image_urls.csv"))._key;
       p._response_column = "C2";
       p._balance_classes = true;
-      p._epochs = 10;
+      p._learning_rate = 0.0001;
+      p._epochs = 12;
       p._seed = 1234;
       p._max_after_balance_size = 2f;
       p._class_sampling_factors = new float[]{3,5};
@@ -722,7 +726,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     }
   }
 
-  @Test
+@Test
   public void categorical() {
     Frame tr = null;
     DeepWaterModel m = null;
