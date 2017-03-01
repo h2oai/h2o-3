@@ -10,7 +10,7 @@ import static water.etl.prims.advmath.AdvMath.StratifiedSplit;
 import static water.etl.prims.mungers.Mungers.OneHotEncoder;
 import static water.etl.prims.operators.Operators.Eq;
 import water.fvec.Frame;
-
+import water.Scope;
 
 public class EtlTest extends TestUtil {
 
