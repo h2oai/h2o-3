@@ -173,7 +173,7 @@ public class BufferedStringTest {
   public void testGetBuffer() throws Exception {
     final String source = "not a string\u00f0";
     BufferedString sut = new BufferedString(source);
-    final byte[] expected = source.getBytes();
+    final byte[] expected = source.getBytes("UTF8");
     final byte[] actual = sut.getBuffer();
     assertArrayEquals("Failed. expected " + Arrays.toString(expected) + 
                       ", got " + Arrays.toString(actual), 
