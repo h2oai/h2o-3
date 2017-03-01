@@ -21,7 +21,7 @@ def pca_car():
 
     h2o.remove(carPCA)
 
-  assert (max(run_time_c)) < 1000, "PCA runs for car.arff.txt take too much time!"
+  assert (max(run_time_c)) < 60000, "PCA runs for car.arff.txt take too much time!"
 
 if __name__ == "__main__":
   pyunit_utils.standalone_test(pca_car)
