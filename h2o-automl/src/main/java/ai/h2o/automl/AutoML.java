@@ -2,10 +2,7 @@ package ai.h2o.automl;
 
 import ai.h2o.automl.strategies.initial.InitModel;
 import ai.h2o.automl.utils.AutoMLUtils;
-import hex.Model;
-import hex.ModelBuilder;
-import hex.ScoreKeeper;
-import hex.StackedEnsembleModel;
+import hex.*;
 import hex.deeplearning.DeepLearningModel;
 import hex.glm.GLMModel;
 import hex.grid.Grid;
@@ -43,6 +40,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   private AutoMLBuildSpec buildSpec;     // all parameters for doing this AutoML build
   private Frame origTrainingFrame;       // untouched original training frame
+  private boolean didValidationSplit = false;
 
   public AutoMLBuildSpec getBuildSpec() {
     return buildSpec;
@@ -76,8 +74,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private long stopTimeMs;
   private Job job;                  // the Job object for the build of this AutoML.  TODO: can we have > 1?
 
-  // TODO: make non-transient
   private transient ArrayList<Job> jobs;
+  private transient ArrayList<Frame> tempFrames;
 
   /**
    * Identifier for models that should be grouped together in the leaderboard
@@ -107,32 +105,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     this.buildSpec = buildSpec;
 
-    this.origTrainingFrame = DKV.getGet(buildSpec.input_spec.training_frame);
-    this.validationFrame = DKV.getGet(buildSpec.input_spec.validation_frame);
-
-    if (null == buildSpec.input_spec.training_frame && null != buildSpec.input_spec.training_path)
-      this.origTrainingFrame = importParseFrame(buildSpec.input_spec.training_path, buildSpec.input_spec.parse_setup);
-    if (null == buildSpec.input_spec.validation_frame && null != buildSpec.input_spec.validation_path)
-      this.validationFrame = importParseFrame(buildSpec.input_spec.validation_path, buildSpec.input_spec.parse_setup);
-
-    if (null == this.origTrainingFrame)
-      throw new H2OIllegalArgumentException("No training frame; user specified training_path: " +
-              buildSpec.input_spec.training_path +
-              " and training_frame: " + buildSpec.input_spec.training_frame);
-
-    this.trainingFrame = new Frame(origTrainingFrame);
-    DKV.put(this.trainingFrame);
-
-    this.responseColumn = trainingFrame.vec(buildSpec.input_spec.response_column);
-    if (verifyImmutability) {
-      // check that we haven't messed up the original Frame
-      originalTrainingFrameVecs = origTrainingFrame.vecs().clone();
-      originalTrainingFrameNames = origTrainingFrame.names().clone();
-      originalTrainingFrameChecksums = new long[originalTrainingFrameVecs.length];
-
-      for (int i = 0; i < originalTrainingFrameVecs.length; i++)
-        originalTrainingFrameChecksums[i] = originalTrainingFrameVecs[i].checksum();
-    }
+    handleDatafileParameters(buildSpec);
 
     // TODO: allow the user to set the project via the buildspec
     String[] path = this.origTrainingFrame._key.toString().split("/");
@@ -152,8 +125,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       .replace(".orc", "");
     leaderboard = new Leaderboard(project);
 
-    // TODO: If the user hasn't supplied a validation_frame do a test/train split for them.
-
     /*
     TODO
     if( excludeAlgos!=null ) {
@@ -165,15 +136,50 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     */
 
     this.jobs = new ArrayList<>();
+    this.tempFrames = new ArrayList<>();
   }
 
-/*
-  public AutoML(Key<AutoML> key, String datasetName, Frame fr, Frame[] relations, String responseName, String loss, long maxTime,
 
-                double minAccuracy, boolean ensemble, algo[] excludeAlgos, boolean tryMutations ) {
-    this(key,datasetName,fr,relations,fr.find(responseName),loss,maxTime,minAccuracy,ensemble,excludeAlgos,tryMutations);
+  private void handleDatafileParameters(AutoMLBuildSpec buildSpec) {
+    this.origTrainingFrame = DKV.getGet(buildSpec.input_spec.training_frame);
+    this.validationFrame = DKV.getGet(buildSpec.input_spec.validation_frame);
+
+    if (null == buildSpec.input_spec.training_frame && null != buildSpec.input_spec.training_path)
+      this.origTrainingFrame = importParseFrame(buildSpec.input_spec.training_path, buildSpec.input_spec.parse_setup);
+    if (null == buildSpec.input_spec.validation_frame && null != buildSpec.input_spec.validation_path)
+      this.validationFrame = importParseFrame(buildSpec.input_spec.validation_path, buildSpec.input_spec.parse_setup);
+
+    if (null == this.origTrainingFrame)
+      throw new H2OIllegalArgumentException("No training frame; user specified training_path: " +
+              buildSpec.input_spec.training_path +
+              " and training_frame: " + buildSpec.input_spec.training_frame);
+
+    if (null != this.validationFrame) {
+      // don't need to split off a validation_frame ourselves
+      this.trainingFrame = new Frame(origTrainingFrame);
+      DKV.put(this.trainingFrame);
+    } else {
+      // TODO: should the size of the splits adapt to origTrainingFrame.numRows()?
+      SplitFrame sf = new SplitFrame(origTrainingFrame, new double[] { 0.7, 0.3 },new Key[] { Key.make("training_" + origTrainingFrame._key), Key.make("validation_" + origTrainingFrame._key)});
+      sf.exec().get();
+
+      this.trainingFrame = sf._destination_frames[0].get();
+      this.validationFrame = sf._destination_frames[1].get();
+      this.didValidationSplit = true;
+      Log.info("Automatically split the data into training and validation datasets.");
+    }
+    this.responseColumn = trainingFrame.vec(buildSpec.input_spec.response_column);
+    if (verifyImmutability) {
+      // check that we haven't messed up the original Frame
+      originalTrainingFrameVecs = origTrainingFrame.vecs().clone();
+      originalTrainingFrameNames = origTrainingFrame.names().clone();
+      originalTrainingFrameChecksums = new long[originalTrainingFrameVecs.length];
+
+      for (int i = 0; i < originalTrainingFrameVecs.length; i++)
+        originalTrainingFrameChecksums[i] = originalTrainingFrameVecs[i].checksum();
+    }
   }
-  */
+
 
   public static AutoML makeAutoML(Key<AutoML> key, AutoMLBuildSpec buildSpec) {
     // if (buildSpec.input_spec.parse_setup == null)
@@ -232,6 +238,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   @Override
   public void stop() {
+    for (Frame f : tempFrames) f.delete();
+    tempFrames = null;
+
     if (null == jobs) return; // already stopped
     for (Job j : jobs) j.stop();
     for (Job j : jobs) j.get(); // Hold until they all completely stop.
