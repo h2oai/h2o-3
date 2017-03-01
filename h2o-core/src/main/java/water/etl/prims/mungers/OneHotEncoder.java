@@ -6,6 +6,9 @@ import water.fvec.Vec;
 import water.MRTask;
 import water.fvec.Chunk;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Created by markc on 2/27/17.
  */
@@ -33,7 +36,9 @@ public final class OneHotEncoder {
     }.doAll(pivoted);
     fr.remove("h2o_cumsum_tmp");
     fr.remove("h2o_ones");
-    fr.add(pivoted);
-    return fr;
+    String[] newNames = pivoted.names();
+    for (int i = 0; i < newNames.length; i++) {newNames[i] = col + "." + pivoted.names()[i];}
+    pivoted.setNames(newNames);
+    return pivoted;
   }
 }

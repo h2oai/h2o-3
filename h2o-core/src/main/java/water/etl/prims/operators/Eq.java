@@ -10,47 +10,48 @@ import water.util.MathUtils;
 import water.util.StringUtils;
 
 public final class Eq {
-    private Eq() {}
-    public static Frame get(Frame fr, final double d) {
+  private Eq() {}
+  public static Frame get(Frame fr, final double d) {
 
-            return new MRTask() {
-                @Override
-                public void map(Chunk[] chks, NewChunk[] cress) {
-                    for (int c = 0; c < chks.length; c++) {
-                        Chunk chk = chks[c];
-                        NewChunk cres = cress[c];
-                        BufferedString bStr = new BufferedString();
-                        if (chk.vec().isString())
-                            for (int i = 0; i < chk._len; i++)
-                                cres.addNum(str_op(chk.atStr(bStr, i), Double.isNaN(d) ? null : new BufferedString(String.valueOf(d))));
-                        else if (!chk.vec().isNumeric()) cres.addZeros(chk._len);
-                        else
-                            for (int i = 0; i < chk._len; i++)
-                                cres.addNum(op(chk.atd(i), d));
-                    }
-                }
-            }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame();
+    return new MRTask() {
+      @Override
+      public void map(Chunk[] chks, NewChunk[] cress) {
+        for (int c = 0; c < chks.length; c++) {
+          Chunk chk = chks[c];
+          NewChunk cres = cress[c];
+          BufferedString bStr = new BufferedString();
+          if (chk.vec().isString())
+            for (int i = 0; i < chk._len; i++)
+              cres.addNum(str_op(chk.atStr(bStr, i), Double.isNaN(d) ? null : new BufferedString(String.valueOf(d))));
+          else if (!chk.vec().isNumeric()) cres.addZeros(chk._len);
+          else
+            for (int i = 0; i < chk._len; i++)
+              cres.addNum(op(chk.atd(i), d));
+        }
+      }
+    }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame();
 
-    }
+  }
 
     public static Frame get(Frame fr, final String s) {
 
-        return new MRTask() {
-            @Override
-            public void map(Chunk[] chks, NewChunk[] cress) {
-                for (int c = 0; c < chks.length; c++) {
-                    Chunk chk = chks[c];
-                    NewChunk cres = cress[c];
-                    BufferedString bStr = new BufferedString();
-                    if (chk.vec().isString())
-                        for (int i = 0; i < chk._len; i++)
-                            cres.addNum(str_op(chk.atStr(bStr, i), new BufferedString(s)));
-                    else if (!chk.vec().isNumeric()) cres.addZeros(chk._len);
-                    else
-                        for (int i = 0; i < chk._len; i++)
-                            cres.addNum(op(chk.atd(i), Double.valueOf(s)));
-                }
-            }
+      return new MRTask() {
+        @Override
+        public void map(Chunk[] chks, NewChunk[] cress) {
+          for (int c = 0; c < chks.length; c++) {
+            Chunk chk = chks[c];
+            NewChunk cres = cress[c];
+            BufferedString bStr = new BufferedString();
+            if (chk.vec().isString() || chk.vec().isCategorical())
+              for (int i = 0; i < chk._len; i++)
+                cres.addNum(str_op(new BufferedString(chk.vec().domain()[(int)chk.at8(i)]), new BufferedString(s)));
+                //cres.addNum(str_op(chk.atStr(bStr, i), new BufferedString(s)));
+                else if (!chk.vec().isNumeric()) cres.addZeros(chk._len);
+                else
+                  for (int i = 0; i < chk._len; i++)
+                    cres.addNum(op(chk.atd(i), Double.valueOf(s)));
+              }
+          }
         }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame();
 
     }
@@ -60,9 +61,9 @@ public final class Eq {
     }
 
     private static double str_op(BufferedString l, BufferedString r) {
-        if (StringUtils.isNullOrEmpty(l))
-            return StringUtils.isNullOrEmpty(r) ? 1 : 0;
-        else
-            return l.equals(r) ? 1 : 0;
+      if (StringUtils.isNullOrEmpty(l))
+        return StringUtils.isNullOrEmpty(r) ? 1 : 0;
+      else
+        return l.equals(r) ? 1 : 0;
     }
 }

@@ -32,7 +32,8 @@ public final class StratifiedSplit {
         String[] dom = new String[]{"train", "test"};
         // create sourceFrame with all 0s (default is train)
         Key<Frame> k1 = Key.make();
-        Vec resVec = Vec.makeCon(0,sourceFr.anyVec().length());
+        //Vec resVec = Vec.makeCon(0,sourceFr.anyVec().length());
+        Vec resVec = stratCol.makeCon(0);
         resVec.setDomain(new String[]{"train","test"});
         Frame result = new Frame(k1, new String[]{"test_train_split"}, new Vec[]{resVec});
         DKV.put(result);

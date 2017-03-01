@@ -30,13 +30,22 @@ public class EtlTest extends TestUtil {
         Frame fr = parse_test_file(Key.<Frame>make(), "smalldata/airlines/AirlinesTest.csv.zip");
         Frame frOH = OneHotEncoder(fr, "Origin");
         Frame trainTestCol = StratifiedSplit(fr,"IsDepDelayed",0.2,123);
-        Frame train = Rows(frOH, Eq(trainTestCol,"train"));
-        Frame test = Rows(frOH, Eq(trainTestCol,"test"));
-        train.delete();
-        test.delete();
+        Frame train = frOH.deepSlice(Eq(trainTestCol,"train"),null);
+        Frame test = frOH.deepSlice(Eq(trainTestCol,"test"),null);
+      // Print out frames
+        System.out.println(fr.toString(0L,10));
+        System.out.println(train.toString(0L,10));
+        System.out.println(test.toString(0L,10));
+        System.out.println("fr: "+fr._key.toString());
+        System.out.println("frOH: "+frOH._key.toString());
+        System.out.println("trainTestCol: "+trainTestCol._key.toString());
+        //System.out.println("train: "+train._key.toString());
+        //System.out.println("test: "+test._key.toString());
         fr.delete();
         frOH.delete();
         trainTestCol.delete();
+        train.delete();
+        test.delete();
 
 
     }
