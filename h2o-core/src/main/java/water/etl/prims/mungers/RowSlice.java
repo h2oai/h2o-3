@@ -14,8 +14,9 @@ import java.util.BitSet;
  * Created by markc on 2/28/17.
  */
 public final class RowSlice {
+ /*
   private RowSlice() {}
- /* public static Frame get(Frame fr, )
+  public static Frame get(Frame fr, )
   Frame fr = stk.track(asts[1].exec(env)).getFrame();
   Frame returningFrame;
   long nrows = fr.numRows();

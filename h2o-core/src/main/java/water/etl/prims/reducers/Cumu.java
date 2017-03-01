@@ -65,12 +65,12 @@ public abstract class Cumu extends Iced<Cumu> {
             }
           }
         }.doAll(fr2);
-        return new Frame(fr2);
+        return fr2;
 
       } else {
         CumuTaskAxis1 t = new CumuTaskAxis1(init());
         Frame fr2 = t.doAll(f.numCols(), Vec.T_NUM, f).outputFrame(null, f.names(), null);
-        return new Frame(fr2);
+        return fr2;
       }
     }
   }

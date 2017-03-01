@@ -36,7 +36,7 @@ public final class StratifiedSplit {
         Vec resVec = stratCol.makeCon(0);
         resVec.setDomain(new String[]{"train","test"});
         Frame result = new Frame(k1, new String[]{"test_train_split"}, new Vec[]{resVec});
-        DKV.put(result);
+        //DKV.put(result);
         // create index sourceFrame
         ClassIdxTask finTask = new ClassIdxTask(nClass,classes).doAll(stratCol);
         // loop through each class

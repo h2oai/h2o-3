@@ -15,30 +15,40 @@ import java.util.List;
 public final class OneHotEncoder {
   private OneHotEncoder() { }
   public static Frame get(Frame fr, String col) {
-    Frame oneVec = new Frame(Vec.makeCon(1.0, fr.anyVec().length()));
-    oneVec.setNames(new String[]{"h2o_ones"});
-    fr.add(oneVec);
-    Frame sumVec = CumSum.get(new Frame(oneVec),0.0);
-    sumVec.setNames(new String[]{"h2o_cumsum_tmp"});
-    fr.add(sumVec);
-    Frame pivoted = Pivot.get(fr,"h2o_cumsum_tmp",col,"h2o_ones");
-    new MRTask() {
-      @Override
-      public void map(Chunk[] cs) {
-        for (int i = 0; i < cs.length; i++) {
-          for (int j = 0; j < cs[0].len(); j++) {
-            if (Double.isNaN(cs[i].atd(j))) {
-              cs[i].set(j, 0.0);
+    fr.write_lock();
+    try {
+      Frame oneVec = new Frame(fr.vec(0).makeCon(1.0));
+      oneVec.setNames(new String[]{"h2o_ones"});
+      fr.add(oneVec);
+      Frame sumVec = CumSum.get(oneVec, 0.0);
+      sumVec.setNames(new String[]{"h2o_cumsum_tmp"});
+      fr.add(sumVec);
+      Frame pivoted = Pivot.get(fr, "h2o_cumsum_tmp", col, "h2o_ones");
+      new MRTask() {
+        @Override
+        public void map(Chunk[] cs) {
+          for (int i = 0; i < cs.length; i++) {
+            for (int j = 0; j < cs[0].len(); j++) {
+              if (Double.isNaN(cs[i].atd(j))) {
+                cs[i].set(j, 0.0);
+              }
             }
           }
         }
+      }.doAll(pivoted);
+      fr.remove("h2o_cumsum_tmp");
+      fr.remove("h2o_ones");
+      fr.update();
+      String[] newNames = pivoted.names();
+      for (int i = 0; i < newNames.length; i++) {
+        newNames[i] = col + "." + pivoted.names()[i];
       }
-    }.doAll(pivoted);
-    fr.remove("h2o_cumsum_tmp");
-    fr.remove("h2o_ones");
-    String[] newNames = pivoted.names();
-    for (int i = 0; i < newNames.length; i++) {newNames[i] = col + "." + pivoted.names()[i];}
-    pivoted.setNames(newNames);
-    return pivoted;
+      pivoted.setNames(newNames);
+      oneVec.delete();
+      sumVec.delete();
+      return pivoted;
+    } finally {
+      fr.unlock();
+    }
   }
 }

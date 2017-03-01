@@ -37,6 +37,7 @@ public class AstRowSlice extends AstPrimitive {
   @Override
   public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    /*
     Frame returningFrame;
     long nrows = fr.numRows();
     if (asts[2] instanceof AstNumList) {
@@ -108,6 +109,8 @@ public class AstRowSlice extends AstPrimitive {
     } else
       throw new IllegalArgumentException("Row slicing requires a number-list as the last argument, but found a " + asts[2].getClass());
     return new ValFrame(returningFrame);
+      */
+    return new ValFrame(fr);
   }
 }
 
