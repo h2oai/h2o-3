@@ -19,9 +19,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     Builds a stacked ensemble (aka "super learner") machine learning method that uses two
     or more H2O learning algorithms to improve predictive performance. It is a loss-based
     supervised learning method that finds the optimal combination of a collection of prediction
-    algorithms. This method supports regression and binary classification.
-
-    Docs: http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html
+    algorithms.This method supports regression and binary classification.
 
     Examples
     --------
