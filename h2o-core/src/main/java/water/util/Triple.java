@@ -18,8 +18,8 @@ public class Triple<V> {
     if (!(o instanceof Triple)) return false;
     Triple<?> triple = (Triple<?>) o;
     return Objects.equals(v1, triple.v1) &&
-        Objects.equals(v2, triple.v2) &&
-        Objects.equals(v3, triple.v3);
+           Objects.equals(v2, triple.v2) &&
+           Objects.equals(v3, triple.v3);
   }
 
   @Override

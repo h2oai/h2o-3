@@ -17,9 +17,13 @@ public class Pair<X, Y> {
   public X _1() { return x; }
   public Y _2() { return y; }
   
+  @SuppressWarnings("unchecked")
   @Override
   public boolean equals(Object o) {
-    return Objects.equals(this, o);
+    if (this == o) return true;
+    if (!(o instanceof Pair)) return false;
+    Pair<X, Y> q = (Pair<X,Y>) o;
+    return Objects.equals(x, q._1()) && Objects.equals(y, q._2());
   }
 
   @Override
