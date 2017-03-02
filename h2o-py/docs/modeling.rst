@@ -83,7 +83,6 @@ Unsupervised
     :members:
 
 
-
 Miscellaneous
 +++++++++++++
 
