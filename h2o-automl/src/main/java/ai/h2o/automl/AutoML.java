@@ -304,6 +304,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   }
 
+  private int individualModelsTrained = 0;
   /**
    * Helper for hex.ModelBuilder.
    * @return
@@ -319,6 +320,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     else
       builder._parms._max_runtime_secs = Math.min(builder._parms._max_runtime_secs,
                                          Math.round(timeRemainingMs() / 1000.0));
+
+    // If we have set a seed for the search and not for the individual model params
+    // then use a sequence starting with the same seed given for the model build.
+    // Don't use the same exact seed so that, e.g., if we build two GBMs they don't
+    // do the same row and column sampling.
+    if (parms._seed == -1 && buildSpec.build_control.stopping_criteria.seed() != -1)
+      parms._seed = buildSpec.build_control.stopping_criteria.seed() + individualModelsTrained++;
 
     builder._parms = parms;
     builder.init(false);          // validate parameters
@@ -349,6 +357,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     else
       searchCriteria.set_max_runtime_secs(Math.min(searchCriteria.max_runtime_secs(),
                                                    this.timeRemainingMs() / 1000.0));
+
+    // NOTE:
+    // Random Hyperparameter Search soon will match the logic used in #trainModel():
+    // If we have set a seed for the search and not for the individual model params
+    // then use a sequence starting with the same seed given for the model build.
+    // Don't use the same exact seed so that, e.g., if we build two GBMs they don't
+    // do the same row and column sampling.
 
     Job<Grid> gridJob = GridSearch.startGridSearch(gridKey,
             baseParms,
