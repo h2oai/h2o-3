@@ -20,6 +20,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
   }
 
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; }
+  @Override public boolean isSupervised() { return false; }
 
   public static class Exemplar extends Iced<Exemplar> {
     Exemplar(double[] d, long id) { data=d; gid=id; _cnt=1; }

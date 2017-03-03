@@ -557,7 +557,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
   protected boolean logMe() { return true; }
 
-  public boolean isSupervised(){return false;}
+  abstract public boolean isSupervised();
 
   protected transient Vec _response; // Handy response column
   protected transient Vec _vresponse; // Handy response column
