@@ -140,7 +140,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
       p._response_column = "C2";
       p._network = network;
-      p._learning_rate = 1e-4;
+      p._learning_rate = 1e-5;
       p._momentum_start = 0.9;
       p._epochs = epochs;
       p._channels = channels;
@@ -166,8 +166,8 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
   @Ignore //too slow
   @Test public void convergenceGoogleNetGrayScale() { checkConvergence(1, DeepWaterParameters.Network.googlenet, 100); }
 
-  @Test public void convergenceLenetColor() { checkConvergence(3, lenet, 300); }
-  @Test public void convergenceLenetGrayScale() { checkConvergence(1, lenet, 200); }
+  @Test public void convergenceLenetColor() { checkConvergence(3, lenet, 400); }
+  @Test public void convergenceLenetGrayScale() { checkConvergence(1, lenet, 300); }
 
   @Ignore
   @Test public void convergenceVGGColor() { checkConvergence(3, DeepWaterParameters.Network.vgg, 50); }
