@@ -5,7 +5,6 @@ import hex.ModelCategory;
 import hex.example.ExampleModel.ExampleOutput;
 import hex.example.ExampleModel.ExampleParameters;
 import water.MRTask;
-import water.Scope;
 import water.fvec.Chunk;
 import water.util.Log;
 
@@ -17,6 +16,8 @@ import java.util.Arrays;
 public class Example extends ModelBuilder<ExampleModel,ExampleParameters,ExampleOutput> {
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ ModelCategory.Unknown, }; }
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
+  @Override public boolean isSupervised() { return false; }
+
   // Called from Nano thread; start the Example Job on a F/J thread
   public Example( ExampleModel.ExampleParameters parms ) { super(parms); init(false); }
   @Override protected ExampleDriver trainModelImpl() { return new ExampleDriver(); }

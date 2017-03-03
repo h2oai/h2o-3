@@ -21,6 +21,8 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
   @Override protected GrepDriver trainModelImpl() { return new GrepDriver(); }
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ModelCategory.Unknown}; }
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
+  @Override public boolean isSupervised() { return false; }
+
   Pattern _pattern = null;
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
