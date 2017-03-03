@@ -2905,3 +2905,25 @@ def extract_scoring_history_field(aModel, fieldOfInterest):
         return cellValues
     else:
         return None
+
+
+def model_run_time_sorted_by_time(model_list):
+    """
+    This function is written to sort the metrics that we care in the order of when the model was built.  The
+    oldest model metric will be the first element.
+
+    :param model_list: list of models built sequentially that contains metric of interest among other fields
+    :return: model run time in secs sorted by order of building
+    """
+
+    model_num = len(model_list)
+
+    model_runtime_sec_list = [None] * model_num
+
+
+    for index in range(model_num):
+        model_index = int(model_list[index]._id.split('_')[-1])
+        model_runtime_sec_list[model_index] = \
+            (model_list[index]._model_json["output"]["run_time"]/1000.0)
+
+    return model_runtime_sec_list
