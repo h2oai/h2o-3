@@ -23,6 +23,7 @@ import water.parser.ParseSetup;
 import water.util.IcedHashMapGeneric;
 import water.util.Log;
 
+import java.io.File;
 import java.util.*;
 
 import static water.Key.make;
@@ -159,8 +160,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       this.trainingFrame = new Frame(origTrainingFrame);
       DKV.put(this.trainingFrame);
     } else {
-      // TODO: should the size of the splits adapt to origTrainingFrame.numRows()?
-      SplitFrame sf = new SplitFrame(origTrainingFrame, new double[] { 0.7, 0.3 },new Key[] { Key.make("training_" + origTrainingFrame._key), Key.make("validation_" + origTrainingFrame._key)});
+      // TODO: should the size of the ˇsplits adapt to origTrainingFrame.numRows()?
+      SplitFrame sf = new SplitFrame(origTrainingFrame,
+                                     new double[] { 0.7, 0.3 },
+                                     new Key[] { Key.make("training_" + origTrainingFrame._key),
+                                                 Key.make("validation_" + origTrainingFrame._key)});
       sf.exec().get();
 
       this.trainingFrame = sf._destination_frames[0].get();
@@ -215,6 +219,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     importFiles.dels = dels.toArray(new String[0]);
 
     String datasetName = importFiles.path.split("\\.(?=[^\\.]+$)")[0];
+    String separatorRegex = (File.separator.equals("/") ? "/" : "\\");
+    String[] pathPieces = datasetName.split(separatorRegex);
+    datasetName = pathPieces[pathPieces.length - 1];
+
     Key[] realKeys = new Key[keys.size()];
     for (int i = 0; i < keys.size(); i++)
       realKeys[i] = make(keys.get(i));
