@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Random;
 
 public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends ModelBuilder<M,P,O> {
+  public boolean shouldReorder(Vec v) { return true || v.cardinality() < 0.4*_parms._nbins_cats; }
   final protected static boolean DEV_DEBUG = false;
   protected int _mtry;
   protected int _mtry_per_tree;
