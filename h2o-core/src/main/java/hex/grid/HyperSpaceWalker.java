@@ -9,6 +9,9 @@ import water.util.PojoUtils;
 
 import java.util.*;
 
+import static java.lang.StrictMath.floor;
+import static java.lang.StrictMath.min;
+
 public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSpaceSearchCriteria> {
 
   interface HyperSpaceIterator<MP extends Model.Parameters> {
@@ -346,6 +349,17 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
             MP commonModelParams = (MP) _params.clone();
             // Fill model parameters
             MP params = getModelParams(commonModelParams, hypers);
+            // add max_runtime_secs in search criteria into params if applicable
+            if (_search_criteria != null && _search_criteria.strategy() == HyperSpaceSearchCriteria.Strategy.RandomDiscrete) {
+              double timeleft = this.time_remaining_secs();
+              if (timeleft > 0)  {
+                if (params._max_runtime_secs > 0) {
+                  params._max_runtime_secs = (long) floor(min(params._max_runtime_secs, timeleft));
+                } else {
+                  params._max_runtime_secs = (long) floor(timeleft);
+                }
+              }
+            }
             // We have another model parameters
             return params;
           } else {
