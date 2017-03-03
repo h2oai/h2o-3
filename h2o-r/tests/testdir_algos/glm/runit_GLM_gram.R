@@ -9,7 +9,7 @@ test.GLM.nonnegative <- function() {
   w = p[,3]*p[,2]
   names(w) <- c("w")
   X = h2o.cbind(df[x],w)
-  gfr = h2o.computeGram(X=X,weights="w",skip_missing=TRUE,standardize=TRUE)
+  gfr = h2o.computeGram(X=X,weights="w",skip_missing=TRUE,standardize=FALSE)
   gm = as.matrix(gfr)
   rownames(gm) <- colnames(gm)
   h2o.rm(h2o.getId(gfr))
