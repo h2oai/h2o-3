@@ -7,10 +7,14 @@ check.deeplearning_imbalanced <- function() {
   Log.info("Test checks if Deep Learning works fine with an imbalanced dataset")
   
   covtype <- h2o.uploadFile(locate("smalldata/covtype/covtype.20k.data"))
+  Log.info("..file uploaded..")
   covtype[,55] <- as.factor(covtype[,55])
+  Log.info("..factored..")
   hh_imbalanced<-h2o.deeplearning(x=c(1:54),y=55,l1=1e-5,epochs=1,training_frame=covtype,balance_classes=F,reproducible=T, seed=12345)
+  Log.info("hh_imbalanced:")
   print(hh_imbalanced)
   hh_balanced<-h2o.deeplearning(x=c(1:54),y=55,l1=1e-5,epochs=1,training_frame=covtype,balance_classes=T,reproducible=T, seed=12345)
+  Log.info("hh_balanced:")
   print(hh_balanced)
 
   #compare overall logloss
@@ -30,6 +34,8 @@ check.deeplearning_imbalanced <- function() {
       print(class_6_err_balanced)
       print("")
       print("--------------------")
+  } else {
+      print("Success.")
   }
   checkTrue(class_6_err_imbalanced >= class_6_err_balanced, "balance_classes makes it worse!")
 

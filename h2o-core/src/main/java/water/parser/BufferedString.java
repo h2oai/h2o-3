@@ -61,6 +61,7 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
      return hash;
    }
 
+  // TODO(vlad): make sure that this method is not as destructive as it now is (see tests) 
    void addChar() {
      _len++;
    }
@@ -150,17 +151,24 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
       for (int i = 0; i < _len; ++i)
         if (_buf[_off + i] != str._buf[str._off + i]) return false;
       return true;
-    } // FIXME: Called in NA_String detection during CsvParser, UTF-8 sensitive
-     else if (o instanceof String) {
-      String str = (String) o;
-      if (str.length() != _len) return false;
-      for (int i = 0; i < _len; ++i)
-        if (_buf[_off + i] != str.charAt(i)) return false;
-      return true;
     }
-    return false; //FIXME find out if this is required for some case or if an exception can be thrown
+    return false;
+  }
+  
+  public boolean sameString(String str) {
+      if (str == null || str.length() != _len) return false;
+      for (int i = 0; i < _len; ++i)
+        if ((0xFF&_buf[_off + i]) != str.charAt(i)) return false;
+      return true;
   }
 
+  public boolean isOneOf(String[] samples) {
+    if (samples != null) {
+      for (String sample : samples) if (sameString(sample)) return true;
+    }
+    return false;
+  }
+  
   // Thou Shalt Not use accessors in performance critical code - because it
   // obfuscates the code's cost model.  All file-local uses of the accessors
   // has been stripped, please do not re-insert them.  In particular, the
