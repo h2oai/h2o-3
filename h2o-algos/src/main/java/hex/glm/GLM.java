@@ -943,13 +943,30 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         double se = 1;
         boolean seEst = false;
         double [] beta = _state.beta();
+
         if(_parms._family != Family.binomial && _parms._family != Family.poisson) {
           seEst = true;
           ComputeSETsk ct = new ComputeSETsk(null, _state.activeData(), _job._key, beta, _parms).doAll(_state.activeData()._adaptedFrame);
           se = ct._sumsqe / (_nobs - 1 - _state.activeData().fullN());
         }
         double [] zvalues = MemoryManager.malloc8d(_state.activeData().fullN()+1);
-        double [][] inv = _chol.getInv();
+        Cholesky chol = _chol;
+        if(_parms._standardize){ // compute non-standardized t(X)%*%W%*%X
+          DataInfo activeData = _state.activeData();
+          double [] beta_nostd = activeData.denormalizeBeta(beta);
+          int [] ids = new int[activeData.fullN()];
+          int j = 0;
+          for(int i = 0; i < activeData.fullN(); ++i)
+            if(beta[i] != 0)
+              ids[j++] = i;
+          activeData = activeData.filterExpandedColumns(Arrays.copyOf(ids,j));
+          activeData.setPredictorTransform(DataInfo.TransformType.NONE);
+          Gram g = new GLMIterationTask(_job._key,activeData,new GLMWeightsFun(_parms),beta_nostd).doAll(activeData._adaptedFrame)._gram;
+          g.mul(_parms._obj_reg);
+          chol = g.cholesky(null);
+          beta = beta_nostd;
+        }
+        double [][] inv = chol.getInv();
         ArrayUtils.mult(inv,_parms._obj_reg*se);
         _vcov = inv;
         for(int i = 0; i < zvalues.length; ++i)
