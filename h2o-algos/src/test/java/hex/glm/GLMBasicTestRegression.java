@@ -766,7 +766,7 @@ public class GLMBasicTestRegression extends TestUtil {
     }
 
     // Airlines (has collinear columns)
-    params._standardize = false;
+    params._standardize = true;
     params._remove_collinear_columns = true;
     params._train = _airlines._key;
     params._response_column = "IsDepDelayed";

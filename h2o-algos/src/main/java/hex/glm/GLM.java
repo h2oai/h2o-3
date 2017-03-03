@@ -954,14 +954,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if(_parms._standardize){ // compute non-standardized t(X)%*%W%*%X
           DataInfo activeData = _state.activeData();
           double [] beta_nostd = activeData.denormalizeBeta(beta);
-          int [] ids = new int[activeData.fullN()];
-          int j = 0;
-          for(int i = 0; i < activeData.fullN(); ++i)
-            if(beta[i] != 0)
-              ids[j++] = i;
-          activeData = activeData.filterExpandedColumns(Arrays.copyOf(ids,j));
+          DataInfo.TransformType transform = activeData._predictor_transform;
           activeData.setPredictorTransform(DataInfo.TransformType.NONE);
           Gram g = new GLMIterationTask(_job._key,activeData,new GLMWeightsFun(_parms),beta_nostd).doAll(activeData._adaptedFrame)._gram;
+          activeData.setPredictorTransform(transform); // just in case, restore the trasnform
           g.mul(_parms._obj_reg);
           chol = g.cholesky(null);
           beta = beta_nostd;
