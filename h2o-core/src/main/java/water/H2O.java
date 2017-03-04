@@ -7,9 +7,11 @@ import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
-import org.reflections.Reflections;
+
 import water.UDPRebooted.ShutdownTsk;
+import water.api.RestApiExtension;
 import water.api.RequestServer;
+import water.api.SchemaServer;
 import water.exceptions.H2OFailException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.init.*;
@@ -23,7 +25,6 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -782,7 +783,7 @@ final public class H2O {
   /**
    * Register H2O extensions.
    * <p/>
-   * Use reflection to find all classes that inherit from water.AbstractH2OExtension
+   * Use SPI to find all classes that extends water.AbstractH2OExtension
    * and call H2O.addExtension() for each.
    */
   public static void registerExtensions() {
@@ -791,15 +792,13 @@ final public class H2O {
     }
 
     long before = System.currentTimeMillis();
-
-    // Disallow schemas whose parent is in another package because it takes ~4s to do the getSubTypesOf call.
-    String[] packages = new String[]{"water", "hex"};
     ServiceLoader<AbstractH2OExtension> extensionsLoader = ServiceLoader.load(AbstractH2OExtension.class);
-    for (AbstractH2OExtension e : extensionsLoader) {
-      e.init();
-      extensions.add(e);
+    for (AbstractH2OExtension ext : extensionsLoader) {
+      if (ext.isEnabled()) {
+        ext.init();
+        addExtension(ext);
+      }
     }
-
     extensionsRegistered = true;
 
     registerExtensionsMillis = System.currentTimeMillis() - before;
@@ -834,40 +833,39 @@ final public class H2O {
     }
 
     // Log extension registrations here so the message is grouped in the right spot.
+    List<String> registeredH2OExts = new ArrayList<>();
     for (AbstractH2OExtension e : H2O.getExtensions()) {
       e.printInitialized();
+      registeredH2OExts.add(e.getExtensionName());
     }
-    Log.info("Registered " + H2O.getExtensions().size() + " extensions in: " + registerExtensionsMillis + "mS");
+    Log.info("Registered " + H2O.getExtensions().size() + " extensions in: " + registerExtensionsMillis + "ms");
+    Log.info("Registered H2O extensions: " + Arrays.toString(registeredH2OExts.toArray()));
 
     long before = System.currentTimeMillis();
-
-    // Disallow schemas whose parent is in another package because it takes ~4s to do the getSubTypesOf call.
-    String[] packages = new String[] { "water", "hex" };
-
-    for (String pkg : packages) {
-      Reflections reflections = new Reflections(pkg);
-      Log.debug("Registering REST APIs for package: " + pkg);
-      for (Class registerClass : reflections.getSubTypesOf(water.api.AbstractRegister.class)) {
-        if (!Modifier.isAbstract(registerClass.getModifiers())) {
-          try {
-            Log.debug("Found REST API registration for class: " + registerClass.getName());
-            Object instance = registerClass.newInstance();
-            water.api.AbstractRegister r = (water.api.AbstractRegister) instance;
-            r.register(relativeResourcePath);
-          }
-          catch (Exception e) {
-            throw H2O.fail(e.toString());
-          }
-        }
+    RequestServer.DummyRestApiContext dummyRestApiContext = new RequestServer.DummyRestApiContext();
+    ServiceLoader<RestApiExtension> restApiExtensionLoader = ServiceLoader.load(RestApiExtension.class);
+    List<String> registeredRestApiExts = new ArrayList<>();
+    for (RestApiExtension r : restApiExtensionLoader) {
+      try {
+        r.register(relativeResourcePath);
+        r.registerEndPoints(dummyRestApiContext);
+        r.registerSchemas(dummyRestApiContext);
+        registeredRestApiExts.add(r.getName());
+      } catch (Exception e) {
+        Log.info("Cannot register extension: " + r + ". Skipping it...");
       }
     }
-
+    
     apisRegistered = true;
 
     long registerApisMillis = System.currentTimeMillis() - before;
-    Log.info("Registered: " + RequestServer.numRoutes() + " REST APIs in: " + registerApisMillis + "mS");
-  }
+    Log.info("Registered: " + RequestServer.numRoutes() + " REST APIs in: " + registerApisMillis + "ms");
+    Log.info("Registered REST API extensions: " + Arrays.toString(registeredRestApiExts.toArray()));
 
+    // Register all schemas
+    SchemaServer.registerAllSchemasIfNecessary(dummyRestApiContext.getAllSchemas());
+  }
+  
   //-------------------------------------------------------------------------------------------------------------------
 
   public static class AboutEntry {
@@ -1612,13 +1610,9 @@ final public class H2O {
 
   }
 
-  // Callbacks to add new Requests & menu items
-  static private volatile boolean _doneRequests;
-
   static public void register(
       String method_url, Class<? extends water.api.Handler> hclass, String method, String apiName, String summary
   ) {
-    if (_doneRequests) throw new IllegalArgumentException("Cannot add more Requests once the list is finalized");
     RequestServer.registerEndpoint(apiName, method_url, hclass, method, summary);
   }
 
@@ -1627,13 +1621,22 @@ final public class H2O {
   }
 
   /** Start the web service; disallow future URL registration.
-   *  Blocks until the server is up.  */
+   *  Blocks until the server is up.
+   *
+   *  @deprecated use starServingRestApi
+   */
+  @Deprecated
   static public void finalizeRegistration() {
-    if (_doneRequests || H2O.ARGS.disable_web) return;
-    _doneRequests = true;
+    startServingRestApi();
+  }
 
-    water.api.SchemaServer.registerAllSchemasIfNecessary();
-    jetty.acceptRequests();
+  /**
+   * This switch Jetty into accepting mode.
+   */
+  static public void startServingRestApi() {
+    if (!H2O.ARGS.disable_web) {
+      jetty.acceptRequests();
+    }
   }
 
   // --------------------------------------------------------------------------
@@ -1908,7 +1911,7 @@ final public class H2O {
 
   // --------------------------------------------------------------------------
   public static void main( String[] args ) {
-    long time0 = System.currentTimeMillis();
+   long time0 = System.currentTimeMillis();
 
    if (checkUnsupportedJava())
      throw new RuntimeException("Unsupported Java version");

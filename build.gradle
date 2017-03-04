@@ -19,6 +19,7 @@ buildscript {
         classpath 'org.testng:testng:6.8'
         classpath "be.insaneprogramming.gradle:animalsniffer-gradle-plugin:+"
         classpath 'me.champeau.gradle:jmh-gradle-plugin:0.3.1'
+        classpath 'net.ltgt.gradle:gradle-apt-plugin:0.10'
         // Note: Analyze unused/undefined dependencies for each module - good for debugging
         // However, later it should be enabled by default
         //classpath 'ca.cutterslade.gradle:gradle-dependency-analyze:1.1.0'
@@ -112,6 +113,15 @@ ext {
     // Projects with micro-benchmarks
     ubenchProjects = [
       project(':h2o-core')
+    ]
+    
+    // Apt required
+    // Only Java projects which needs to register core/rest/schema extensions
+    aptProjects = [
+      project(':h2o-core'),
+      project(':h2o-algos'),
+      project(':h2o-app'),
+      project(':h2o-automl')
     ]
 
     //
@@ -227,6 +237,11 @@ subprojects {
         }
         // Analyze dependencies 
         //apply plugin: 'ca.cutterslade.analyze'
+        
+        // Apt preprocessor
+        if (project in aptProjects) {
+            apply from: "$rootDir/gradle/apt.gradle"
+        }
     }
 
     // Configure Scala projects

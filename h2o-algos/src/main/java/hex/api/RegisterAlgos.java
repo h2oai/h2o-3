@@ -6,7 +6,7 @@ import water.api.GridSearchHandler;
 
 public class RegisterAlgos extends water.api.AbstractRegister {
   // Register the algorithms and their builder handlers:
-  @Override public void register(String relativeResourcePath) throws ClassNotFoundException {
+  @Override public void register(String relativeResourcePath) {
     // List of algorithms
     ModelBuilder[] algos = new ModelBuilder[]{
       new hex.deeplearning.DeepLearning(true),
@@ -66,5 +66,10 @@ public class RegisterAlgos extends water.api.AbstractRegister {
 
     H2O.register("POST /3/DataInfoFrame",MakeGLMModelHandler.class, "getDataInfoFrame", "glm_datainfo_frame",
         "Test only");
+  }
+
+  @Override
+  public String getName() {
+    return "Algos";
   }
 }
