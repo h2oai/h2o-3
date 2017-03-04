@@ -1,6 +1,11 @@
 package water.api;
 
-import org.reflections.Reflections;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 import water.H2O;
 import water.Iced;
 import water.exceptions.H2OIllegalArgumentException;
@@ -8,13 +13,6 @@ import water.exceptions.H2ONotFoundArgumentException;
 import water.util.Log;
 import water.util.Pair;
 import water.util.ReflectionUtils;
-
-import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  *
@@ -71,7 +69,10 @@ public class SchemaServer {
 
   public static void checkIfRegistered(Schema schema) {
     if (schemas_registered && !schema_to_iced.containsKey(schema.getSchemaName()))
-      throw H2O.fail("Schema " + schema.getSchemaName() + " was instantiated before it was registered...");
+      throw H2O.fail("Schema " + schema.getSchemaName() + " was instantiated before it was registered...\n"
+                     + "Did you forget to add an entry into your META-INF/services/water.api.Schema file, or\n"
+                     + "annotate your '" + schema.getSchemaName() + "' by annotation @AutoService(water.api.Schema.class)\n"
+                     + "if you are using auto-service?");
   }
 
 
@@ -80,7 +81,8 @@ public class SchemaServer {
    * @throws water.exceptions.H2OFailException if there is a name collision, if the type parameters are bad, or if
    *         the version is bad
    */
-  private static void register(Class<? extends Schema> clz) {
+  private static void register(Schema schema) {
+    Class clz = schema.getClass();
     synchronized(clz) {
       String clzname = clz.getSimpleName();
 
@@ -136,10 +138,8 @@ public class SchemaServer {
 
       // Check that it is possible to create a schema object
       try {
-        Schema s = clz.newInstance();
-
         // Validate the fields:
-        SchemaMetadata meta = new SchemaMetadata(s);
+        SchemaMetadata meta = new SchemaMetadata(schema);
         for (SchemaMetadata.FieldMetadata field_meta : meta.fields) {
           String name = field_meta.name;
 
@@ -188,34 +188,15 @@ public class SchemaServer {
   /**
    * Find all schemas using reflection and register them.
    */
-  synchronized static public void registerAllSchemasIfNecessary() {
+  synchronized static public void registerAllSchemasIfNecessary(Schema ... schemas) {
     if (schemas_registered) return;
     long startTime = System.currentTimeMillis();
-
-    // Scanning all classes (i.e. calling new Reflections("")) is prohibitively expensive -- it adds over 2s to the
-    // startup time. Instead we just assume that all schemas live in one of the packages below, and scan just those.
-    Reflections[] reflList = new Reflections[]{
-          new Reflections("water"),
-          new Reflections("hex"),
-          new Reflections("ai.h2o"),
-    };
-    registerSchemasOfClass(Schema.class, reflList);
-
+    for (Schema schema : schemas) {
+      register(schema);
+    }
+        
     Log.info("Registered: " + schemas().size() + " schemas in " + (System.currentTimeMillis() - startTime) + "ms");
     schemas_registered = true;
-  }
-
-  /**
-   * Schema registration helper, that looks schemas up recursively.
-   */
-  static private void registerSchemasOfClass(Class<? extends Schema> clz, Reflections[] reflList) {
-    if (!Modifier.isAbstract(clz.getModifiers())) {
-      register(clz);
-    }
-    for (Reflections refl : reflList)
-      for (Class<? extends Schema> schema_class : refl.getSubTypesOf(clz)) {
-        registerSchemasOfClass(schema_class, reflList);
-      }
   }
 
   /**
@@ -233,7 +214,8 @@ public class SchemaServer {
     Class<? extends Schema> clz = schemas.get(name);
     if (clz == null)
       throw new H2ONotFoundArgumentException("Failed to find schema for schema_name: " + name,
-          "Failed to find schema for schema_name: " + name);
+          "Failed to find schema for schema_name: " + name + "\n" +
+          "Did you forget to add an entry into META-INF/services/water.api.Schema?");
     return clz;
   }
 
@@ -295,7 +277,8 @@ public class SchemaServer {
 
     if (clz == null)
       throw new H2ONotFoundArgumentException("Failed to find schema for version: " + version + " and type: " + type,
-          "Failed to find schema for version: " + version + " and type: " + type);
+          "Failed to find schema for version: " + version + " and type: " + type + "\n" +
+          "Did you forget to add an entry into META-INF/services/water.api.Schema?");
     return Schema.newInstance(clz);
   }
 

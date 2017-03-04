@@ -67,4 +67,9 @@ public abstract class AbstractH2OExtension {
   public void printInitialized() {
     Log.info(getExtensionName() + " extension initialized");
   }
+
+  /** Is this extension enabled? */
+  public boolean isEnabled() {
+    return true;
+  }
 }

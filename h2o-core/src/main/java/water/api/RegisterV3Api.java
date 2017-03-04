@@ -437,4 +437,9 @@ public class RegisterV3Api extends AbstractRegister {
         "GET /3/SteamMetrics", SteamMetricsHandler.class, "fetch",
         "Get metrics for Steam from H2O.");
   }
+
+  @Override
+  public String getName() {
+    return "Core V3";
+  }
 }

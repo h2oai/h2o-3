@@ -7,8 +7,8 @@ import water.automl.api.AutoMLHandler;
 import water.automl.api.LeaderboardsHandler;
 import water.util.Log;
 
-public class Register extends AbstractRegister{
-  @Override public void register(String relativeResourcePath) throws ClassNotFoundException {
+public class RegisterRestApi extends AbstractRegister {
+  @Override public void register(String relativeResourcePath) {
     RequestServer.registerEndpoint("automl_build",
             "POST /99/AutoMLBuilder", AutoMLBuilderHandler.class, "build",
             "Start an AutoML build process.");
@@ -28,8 +28,10 @@ public class Register extends AbstractRegister{
     RequestServer.registerEndpoint("leaderboard",
             "GET /99/Leaderboards/{project}", LeaderboardsHandler.class, "fetch",
             "Return the AutoML leaderboard for the given project.");
+  }
 
-    Log.info("H2O AutoML extensions enabled.");
-
+  @Override
+  public String getName() {
+    return "AutoML";
   }
 }
