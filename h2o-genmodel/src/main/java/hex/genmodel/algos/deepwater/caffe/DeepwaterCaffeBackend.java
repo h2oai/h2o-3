@@ -78,10 +78,10 @@ public class DeepwaterCaffeBackend implements BackendTrain {
 
   @Override
   public void setParameter(BackendModel m, String name, float value) {
-    if (name.equals("learning_rate"))
-      ((DeepwaterCaffeModel) m).learning_rate(value);
-    else if (name.equals("momentum"))
-      ((DeepwaterCaffeModel) m).momentum(value);
+//    if (name.equals("learning_rate"))
+//      ((DeepwaterCaffeModel) m).learning_rate(value);
+//    else if (name.equals("momentum"))
+//      ((DeepwaterCaffeModel) m).momentum(value);
   }
 
   // given a mini-batch worth of data and labels, train

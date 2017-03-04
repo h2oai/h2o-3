@@ -187,6 +187,17 @@ public class DeepwaterCaffeModel implements BackendModel {
         Runtime.getRuntime().exec("id -g").getInputStream())).readLine());
     String pwd = System.getProperty("user.dir") + "/caffe";
 
+    /*
+    // nuke all existing docker images! CAREFUL
+    ProcessBuilder pb = new ProcessBuilder("bash", "-c", "'docker stop $(docker ps -a -q)'");
+    pb.redirectError(ProcessBuilder.Redirect.INHERIT);
+    _process = pb.start();
+    try {
+      _process.waitFor();
+    } catch (InterruptedException e) { // Ignore
+    }
+    */
+
     // Update image first
     String s = "docker pull " + image;
     ProcessBuilder pb = new ProcessBuilder(s.split(" "));
