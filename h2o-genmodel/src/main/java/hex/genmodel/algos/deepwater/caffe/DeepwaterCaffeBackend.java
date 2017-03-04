@@ -6,6 +6,11 @@ import deepwater.backends.BackendTrain;
 import deepwater.backends.RuntimeOptions;
 import deepwater.datasets.ImageDataSet;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
 /**
  * This backend forward requests to a docker images running the python
  * Caffe interface. C.f h20-docker/caffe for more information.
@@ -91,15 +96,44 @@ public class DeepwaterCaffeBackend implements BackendTrain {
     return null; //return value is always ignored
   }
 
-  @Override
-  public float[] predict(BackendModel m, float[] data, float[] label) {
-    throw new UnsupportedOperationException();
-  }
-
   // return predictions (num_classes logits (softmax outputs) x mini_batch)
   @Override
   public float[/*mini_batch * num_classes*/] predict(BackendModel m, float[/*mini_batch * input_neurons*/] data) {
     // new float[cm.mini_batch_size * cm.num_classes];
     return ((DeepwaterCaffeModel) m).predict(data);
+  }
+
+  @Override
+  public void deleteSavedModel(String model_path) {
+
+  }
+
+  @Override
+  public void deleteSavedParam(String param_path) {
+
+  }
+
+  @Override
+  public String listAllLayers(BackendModel m) {
+    return null;
+  }
+
+  @Override
+  public float[] extractLayer(BackendModel m, String name, float[] data) {
+    return new float[0];
+  }
+
+  public void writeBytes(File file, byte[] payload) throws IOException {
+    FileOutputStream os = new FileOutputStream(file.toString());
+    os.write(payload);
+    os.close();
+  }
+
+  public byte[] readBytes(File file) throws IOException {
+    FileInputStream is = new FileInputStream(file);
+    byte[] params = new byte[(int)file.length()];
+    is.read(params);
+    is.close();
+    return params;
   }
 }
