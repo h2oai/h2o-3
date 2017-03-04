@@ -30,5 +30,7 @@ dependencies {
     compile('org.apache.hadoop:hadoop-client:' + hadoopMavenArtifactVersion)
   }
   compile project(':h2o-app')
+  compile project(":h2o-web")
+  compile project(":h2o-avro-parser")
 }
 

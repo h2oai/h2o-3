@@ -1,42 +1,20 @@
 package water.init;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.DatagramPacket;
-import java.net.Inet4Address;
-import java.net.Inet6Address;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.MulticastSocket;
-import java.net.NetworkInterface;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
-import java.nio.channels.DatagramChannel;
-import java.nio.channels.ServerSocketChannel;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import water.H2O;
 import water.H2ONode;
 import water.JettyHTTPD;
-import water.Paxos;
 import water.util.Log;
 import water.util.NetworkUtils;
 import water.util.OSUtils;
+
+import java.io.*;
+import java.net.*;
+import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
+import java.nio.channels.ServerSocketChannel;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Data structure for holding network info specified by the user on the command line.
@@ -457,6 +435,7 @@ public class NetworkInit {
           apiSocket.close();
           H2O.getJetty().start(H2O.ARGS.web_ip, H2O.API_PORT);
         }
+
         break;
       } catch (Exception e) {
         Log.trace("Cannot allocate API port " + H2O.API_PORT + " because of following exception: ", e);

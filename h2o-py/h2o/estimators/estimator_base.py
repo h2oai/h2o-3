@@ -85,7 +85,8 @@ class H2OEstimator(ModelBase):
 
 
     def train(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None,
-              weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None):
+              weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None,
+              model_id=None):
         """
         Train the H2O model.
 
@@ -109,6 +110,7 @@ class H2OEstimator(ModelBase):
         assert_is_type(fold_column, None, int, str)
         assert_is_type(weights_column, None, int, str)
         assert_is_type(max_runtime_secs, None, numeric)
+        assert_is_type(model_id, None, str)
         algo = self.algo
         parms = self._parms.copy()
         if "__class__" in parms:  # FIXME: hackt for PY3
@@ -163,6 +165,9 @@ class H2OEstimator(ModelBase):
         parms["fold_column"] = fold_column
         parms["weights_column"] = weights_column
         parms["max_runtime_secs"] = max_runtime_secs
+        # Overwrites the model_id parameter only if model_id is passed
+        if model_id is not None:
+            parms["model_id"] = model_id
 
         # Step 2
         is_auto_encoder = "autoencoder" in parms and parms["autoencoder"]

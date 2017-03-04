@@ -28,6 +28,7 @@ from .estimators.glrm import H2OGeneralizedLowRankEstimator
 from .estimators.kmeans import H2OKMeansEstimator
 from .estimators.naive_bayes import H2ONaiveBayesEstimator
 from .estimators.random_forest import H2ORandomForestEstimator
+from .estimators.stackedensemble import H2OStackedEnsembleEstimator
 from .expr import ExprNode
 from .frame import H2OFrame
 from .grid.grid_search import H2OGridSearch
@@ -104,11 +105,11 @@ def connection():
 
 def version_check():
     """Used to verify that h2o-python module and the H2O server are compatible with each other."""
+    from .__init__ import __version__ as ver_pkg
     ci = h2oconn.cluster
     if not ci:
         raise H2OConnectionError("Connection not initialized. Did you run h2o.connect()?")
     ver_h2o = ci.version
-    from .__init__ import __version__ as ver_pkg
     if ver_pkg == "SUBST_PROJECT_VERSION": ver_pkg = "UNKNOWN"
     if str(ver_h2o) != str(ver_pkg):
         branch_name_h2o = ci.branch_name
@@ -699,6 +700,7 @@ def get_model(model_id):
             m = H2OAutoEncoderEstimator()
         else:
             m = H2ODeepLearningEstimator()
+    elif algo == "stackedensemble": m = H2OStackedEnsembleEstimator()
     else:
         raise ValueError("Unknown algo type: " + algo)
     m._resolve_model(model_id, model_json)

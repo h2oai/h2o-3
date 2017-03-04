@@ -21,9 +21,9 @@ sourceSets {
 
 // Activate Zinc compiler and configure scalac
 tasks.withType(ScalaCompile) {
-    scalaCompileOptions.useCompileDaemon = false
-    scalaCompileOptions.useAnt = false
-    scalaCompileOptions.additionalParameters = ['-target:jvm-1.6']
+	configure(scalaCompileOptions.forkOptions) {
+        jvmArgs = ['-XX:MaxPermSize=256m']
+    }
 }
 
 // Create jar

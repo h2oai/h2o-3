@@ -80,6 +80,7 @@ GLM Hyperparameters
 -  ``alpha``
 -  ``lambda``
 -  ``missing_values_handling``
+-  ``standardize``
 
 GLRM Hyperparameters
 ~~~~~~~~~~~~~~~~~~~~

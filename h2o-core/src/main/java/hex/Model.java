@@ -46,7 +46,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public interface DeepFeatures {
     Frame scoreAutoEncoder(Frame frame, Key destination_key, boolean reconstruction_error_per_feature);
     Frame scoreDeepFeatures(Frame frame, final int layer);
-    Frame scoreDeepFeatures(Frame frame, final int layer, final Job j);
+    Frame scoreDeepFeatures(Frame frame, final int layer, final Job j); //for Deep Learning
+    Frame scoreDeepFeatures(Frame frame, final String layer, final Job j); //for Deep Water
   }
 
   public interface GLRMArchetypes {
@@ -1072,6 +1073,18 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return names;
   }
 
+  /** Allow subclasses to define their own BigScore class. */
+  protected BigScore makeBigScoreTask(String[][] domains, String[] names , Frame adaptFrm, boolean computeMetrics, boolean makePrediction, Job j) {
+    return new BigScore(domains[0],
+                        names != null ? names.length : 0,
+                        adaptFrm.means(),
+                        _output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,
+                        computeMetrics,
+                        makePrediction,
+                        j);
+        //.doAll(names.length, Vec.T_NUM, adaptFrm);
+  }
+
   /** Score an already adapted frame.  Returns a new Frame with new result
    *  vectors, all in the DKV.  Caller responsible for deleting.  Input is
    *  already adapted to the Model's domain, so the output is also.  Also
@@ -1086,8 +1099,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     String[] names = makeScoringNames();
     String[][] domains = new String[names.length][];
     domains[0] = names.length == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
+
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = new BigScore(domains[0],names.length,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, true /*make preds*/, j).doAll(names.length, Vec.T_NUM, adaptFrm);
+    BigScore bs = makeBigScoreTask(domains, names, adaptFrm, computeMetrics, true, j).doAll(names.length, Vec.T_NUM, adaptFrm);
+
     if (computeMetrics)
       bs._mb.makeModelMetrics(this, fr, adaptFrm, bs.outputFrame());
     return bs.outputFrame(Key.<Frame>make(destination_key), names, domains);
@@ -1101,9 +1116,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   protected ModelMetrics.MetricBuilder scoreMetrics(Frame adaptFrm) {
     final boolean computeMetrics = (!isSupervised() || (adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad()));
     // Build up the names & domains.
-    String [] domain = !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
+    //String[] names = makeScoringNames();
+    String[][] domains = new String[1][];
+    domains[0] = _output.nclasses() == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
+
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = new BigScore(domain,0,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, false /*no preds*/, null).doAll(adaptFrm);
+    BigScore bs = makeBigScoreTask(domains, null, adaptFrm, computeMetrics, false, null).doAll(adaptFrm);
     return bs._mb;
   }
 
@@ -1158,7 +1176,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             actual[0] = (float)responseChunk.atd(row);
           } else {
             for(int i = 0; i < actual.length; ++i)
-              actual[i] = (float)chks[i].atd(row);
+              actual[i] = (float)data(chks,row,i);
           }
           _mb.perRow(preds, actual, weight, offset, Model.this);
         }
@@ -1171,6 +1189,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     @Override public void reduce( BigScore bs ) { if(_mb != null )_mb.reduce(bs._mb); }
     @Override protected void postGlobal() { if(_mb != null)_mb.postGlobal(); }
+  }
+
+
+  // OVerride this if your model needs data preprocessing (on the fly standardization, NA handling)
+  protected double data(Chunk[] chks, int row, int col) {
+    return chks[col].atd(row);
   }
 
 

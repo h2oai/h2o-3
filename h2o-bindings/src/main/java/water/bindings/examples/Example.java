@@ -170,7 +170,7 @@ public class Example {
                                                                               trainingFrame.name,
                                                                               "predictions",
                                                                               null,
-                                                                              false, false, -1, false, false, false, false, -1, false, null).execute().body();
+                                                                              false, false, -1, null, false, false, false, false, -1, false, null).execute().body();
             System.out.println("predictions: " + predictions);
 
         }

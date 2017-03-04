@@ -35,4 +35,4 @@ Specifically, if there are no NAs in the training data, then NAs in the test dat
 
 - **What happens when you try to predict on a categorical level not seen during training?**
 
- Unseen categorical levels follow the majority path for each node. The tree structure remembers for each split whether the left or right side had more observations going down that path during training.
+ Unseen categorical levels are turned into NAs, and thus follow the same behavior as an NA. If there are no NAs in the training data, then unseen categorical levels in the test data follow the majority direction (the direction with the most observations). If there are NAs in the training data, then unseen categorical levels in the test data follow the direction that is optimal for the NAs of the training data.

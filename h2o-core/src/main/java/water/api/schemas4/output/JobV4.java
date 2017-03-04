@@ -1,10 +1,8 @@
 package water.api.schemas4.output;
 
 import water.Job;
-import water.Keyed;
 import water.TypeMap;
 import water.api.API;
-import water.api.schemas3.KeyV3;
 import water.api.schemas4.OutputSchemaV4;
 
 import java.io.PrintWriter;
@@ -14,10 +12,8 @@ import java.io.StringWriter;
 /** Schema for a single Job. */
 public class JobV4 extends OutputSchemaV4<Job<?>, JobV4> {
 
-  // TODO: replace all KeyV3's with KeyV4's
-
-  @API(help="Job key")
-  public KeyV3.JobKeyV3 key;
+  @API(help="Job id")
+  public String job_id;
 
   @API(help="Job status", values={"RUNNING", "DONE", "STOPPING", "CANCELLED", "FAILED"})
   public Status status;
@@ -34,17 +30,17 @@ public class JobV4 extends OutputSchemaV4<Job<?>, JobV4> {
   @API(help="Runtime in milliseconds")
   public long duration;
 
-  @API(help="Key of the target object (being created by this Job)")
-  public KeyV3 dest;
+  @API(help="Id of the target object (being created by this Job)")
+  public String target_id;
+
+  @API(help="Type of the target: Frame, Model, etc.")
+  public String target_type;
 
   @API(help="Exception message, if an exception occurred")
   public String exception;
 
   @API(help="Stacktrace")
   public String stacktrace;
-
-  @API(help="ready for view")
-  public boolean ready_for_view;
 
   public enum Status {
     RUNNING, DONE, STOPPING, CANCELLED, FAILED
@@ -54,11 +50,10 @@ public class JobV4 extends OutputSchemaV4<Job<?>, JobV4> {
   @Override public JobV4 fillFromImpl(Job<?> job) {
     if (job == null) return this;
 
-    key = new KeyV3.JobKeyV3(job._key);
+    job_id = job._key.toString();
     progress = job.progress();
     progress_msg = job.progress_msg();
     duration = job.msec();
-    ready_for_view = job.readyForView();
 
     if (job.isRunning()) {
       status = job.stop_requested()? Status.STOPPING : Status.RUNNING;
@@ -74,8 +69,9 @@ public class JobV4 extends OutputSchemaV4<Job<?>, JobV4> {
       stacktrace = sw.toString();
     }
 
-    Keyed dest_type = (Keyed) TypeMap.theFreezable(job._typeid);
-    dest = job._result == null ? null : KeyV3.make(dest_type.makeSchema(), job._result);
+    target_id = job._result == null || !job.readyForView()? null : job._result.toString();
+    target_type = TypeMap.theFreezable(job._typeid).getClass().getSimpleName();
+
     return this;
   }
 

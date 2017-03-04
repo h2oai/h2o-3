@@ -12,85 +12,62 @@ classification problems.
 Defining a Naïve Bayes Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  **model\_id**: (Optional) Specify a custom name for the model to use as
+-  `model_id <algo-params/model_id.html>`__: (Optional) Specify a custom name for the model to use as
    a reference. By default, H2O automatically generates a destination
    key.
 
--  **training\_frame**: (Required) Specify the dataset used to build the
+-  `training_frame <algo-params/training_frame.html>`__: (Required) Specify the dataset used to build the
    model. **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
 
--  **validation\_frame**: (Optional) Specify the dataset used to evaluate
+-  `validation_frame <algo-params/validation_frame.html>`__: (Optional) Specify the dataset used to evaluate
    the accuracy of the model.
 
--  **response\_column**: (Required) Specify the column to use as the
+-  `y <algo-params/y.html>`__: (Required) Specify the column to use as the
    independent variable. The data must be categorical and must contain
    at least two unique categorical levels.
 
--  **nfolds**: Specify the number of folds for cross-validation.
+-  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation.
 
--  **seed**: Specify the random number generator (RNG) seed for
+-  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for
    algorithm components dependent on randomization. The seed is
    consistent for each H2O instance so that you can create models with
    the same starting conditions in alternative configurations.
 
--  **fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold\_column** is not specified) Specify the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__, or Stratified (which will stratify the folds based on the response variable for classification problems).
+-  `fold_assignment <algo-params/fold_assignment.html>`__: (Applicable only if a value for ``nfold`` is specified and ``fold_column`` is not specified.) Specify the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__, or Stratified (which will stratify the folds based on the response variable for classification problems).
 
--  **fold_column**: Specify the column that contains the cross-validation fold index assignment per observation.
+-  `fold_column <algo-params/fold_column.html>`__: Specify the column that contains the cross-validation fold index assignment per observation.
 
--  **keep_cross_validation_predictions**: Enable this option to keep the cross-validation predictions.
+-  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the cross-validation predictions.
 
--  **keep_cross_validation_fold_assignment**: Enable this option to preserve the cross-validation fold assignment. 
+-  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment. 
 
--  **ignored\_columns**: (Optional) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column
-   name to add it to the list of columns excluded from the model. To add
-   all columns, click the **All** button. To remove a column from the
-   list of ignored columns, click the X next to the column name. To
-   remove all columns from the list of ignored columns, click the
-   **None** button. To search for a specific column, type the column
-   name in the **Search** field above the column list. To only show
-   columns with a specific percentage of missing values, specify the
-   percentage in the **Only show columns with more than 0% missing
-   values** field. To change the selections for the hidden columns, use
-   the **Select Visible** or **Deselect Visible** buttons.
+-  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
 
--  **ignore\_const\_cols**: Specify whether to ignore constant
-   training columns, since no information can be gained from them. This
-   option is enabled by default.
+-  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Specify whether to ignore constant training columns, since no information can be gained from them. This option is enabled by default.
 
--  **score\_each\_iteration**: (Optional) Specify whether to score
-   during each iteration of the model training.
+-  `score_each_iteration <algo-params/score_each_iteration.html>`__: (Optional) Specify whether to score during each iteration of the model training.
 
--  **balance_classes**: Specify whether to oversample the minority classes to balance the class distribution. This option is not enabled by default and can increase the data frame size. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **max_after_balance_size** parameter.
+-  `balance_classes <algo-params/balance_classes.html>`__: Specify whether to oversample the minority classes to balance the class distribution. This option is not enabled by default and can increase the data frame size. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **max_after_balance_size** parameter.
 
--  **class_sampling_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these
-   ratios are automatically computed during training to obtain the class balance.
+-  `class_sampling_factors <algo-params/class_sampling_factors.html>`__: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance.
 
--  **max_after_balance_size**: Specify the maximum relative size of the training data after balancing class counts (**balance_classes** must be enabled). The value can be less than 1.0.
+-  `max_after_balance_size <algo-params/max_after_balance_size.html>`__: Specify the maximum relative size of the training data after balancing class counts (**balance_classes** must be enabled). The value can be less than 1.0.
 
--  **max\_hit\_ratio\_k**: Specify the maximum number (top K) of
-   predictions to use for hit ratio computation. Applicable to
-   multi-class only. To disable, enter 0.
+-  `max_hit_ratio_k <algo-params/max_hit_ratio_k.html>`__: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter 0.
 
--  **laplace**: Specify the Laplace smoothing parameter. The value must
-   be an integer >= 0.
+-  `laplace <algo-params/laplace.html>`__: Specify the Laplace smoothing parameter. The value must be an integer >= 0.
 
--  **min\_sdev**: Specify the minimum standard deviation to use for
-   observations without enough data. The value must be at least 1e-10.
+-  `min_sdev <algo-params/min_sdev.html>`__: Specify the minimum standard deviation to use for observations without enough data. The value must be at least 1e-10.
 
--  **eps\_sdev**: Specify the threshold for standard deviation. The
-   value must be positive. If this threshold is not met, the
-   **min\_sdev** value is used.
+-  `eps_sdev <algo-params/eps_sdev.html>`__: Specify the threshold for standard deviation. The value must be positive. If this threshold is not met, the ``min_sdev`` value is used.
 
--  **min\_prob**: Specify the minimum probability to use for
-   observations without enough data.
+-  `min_prob <algo-params/min_prob.html>`__: Specify the minimum probability to use for observations without enough data.
 
--  **eps\_prob**: Specify the threshold for standard deviation. If this
-   threshold is not met, the **min\_sdev** value is used.
+-  `eps_prob <algo-params/eps_prob.html>`__: Specify the threshold for standard deviation. If this threshold is not met, the ``min_sdev`` value is used.
 
--  **compute\_metrics**: Enable this option to compute metrics on training data. The Naïve Bayes classifier assumes independence between predictor variables conditional on the response, and a Gaussian distribution of numeric predictors with mean and standard deviation computed from the training dataset. When building a Naïve Bayes classifier, every row in the training dataset that contains at least one NA will be skipped completely. If the test dataset has missing values, then those predictors are omitted in the probability calculation during prediction.
+-  `compute_metrics <algo-params/compute_metrics.html>`__: Enable this option to compute metrics on training data. The Naïve Bayes classifier assumes independence between predictor variables conditional on the response, and a Gaussian distribution of numeric predictors with mean and standard deviation computed from the training dataset. When building a Naïve Bayes classifier, every row in the training dataset that contains at least one NA will be skipped completely. If the test dataset has missing values, then those predictors are omitted in the probability calculation during prediction.
 
--  **max\_runtime\_secs**: Maximum allowed runtime in seconds for model
-   training. Use 0 to disable.
+-  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
 Interpreting a Naïve Bayes Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

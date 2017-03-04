@@ -172,8 +172,12 @@ class ModelBase(backwards_compatible()):
         :param layer: 0 index hidden layer
         """
         if test_data is None: raise ValueError("Must specify test data")
-        j = H2OJob(h2o.api("POST /4/Predictions/models/%s/frames/%s" % (self._id, test_data.frame_id),
-                           data={"deep_features_hidden_layer": layer}), "deepfeatures")
+        if layer.isdigit():
+            j = H2OJob(h2o.api("POST /4/Predictions/models/%s/frames/%s" % (self._id, test_data.frame_id),
+                               data={"deep_features_hidden_layer": layer}), "deepfeatures")
+        else:
+            j = H2OJob(h2o.api("POST /4/Predictions/models/%s/frames/%s" % (self._id, test_data.frame_id),
+                               data={"deep_features_hidden_layer_name": layer}), "deepfeatures")
         j.poll()
         return h2o.get_frame(j.dest_key)
 
@@ -673,6 +677,14 @@ class ModelBase(backwards_compatible()):
         m = {}
         for k, v in viewitems(tm): m[k] = None if v is None else v.gini()
         return list(m.values())[0] if len(m) == 1 else m
+
+
+    def metalearner(self):
+        """Print the metalearner for the model, if any.  Currently only used by H2OStackedEnsembleEstimator."""
+        model = self._model_json["output"]
+        if "metalearner" in model and model["metalearner"] is not None:
+            return model["metalearner"]
+        print("No metalearner for this model")
 
 
     def download_pojo(self, path="", get_genmodel_jar=False):

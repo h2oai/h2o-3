@@ -243,6 +243,8 @@ def endpoints(raw=False):
             mm = classname_pattern.match(path)
             assert mm, "Cannot determine class name in URL " + path
             e["class_name"] = mm.group(1)
+            if e["class_name"].islower():
+                e["class_name"] = e["class_name"].capitalize()
 
             # Resolve input/output schemas into actual objects
             assert e["input_schema"] in schmap, "Encountered unknown schema %s in %s" % (e["input_schema"], path)
@@ -353,11 +355,11 @@ def schemas_map(add_generics=False):
     # Add information about the generics. This is rather hacky at the moment.
     if add_generics:
         for base, generics in [
-                # Note: derived classes must come before base classes here
-                ("SharedTreeModelV3", [("P", "ModelParametersSchemaV3"), ("O", "ModelOutputSchemaV3")]),
-                ("ModelSchemaV3", [("P", "ModelParametersSchemaV3"), ("O", "ModelOutputSchemaV3")]),
-                ("SharedTreeV3", [("P", "ModelParametersSchemaV3")]),
-                ("ModelBuilderSchema", [("P", "ModelParametersSchemaV3")]),
+            # Note: derived classes must come before base classes here
+            ("SharedTreeModelV3", [("P", "ModelParametersSchemaV3"), ("O", "ModelOutputSchemaV3")]),
+            ("ModelSchemaV3", [("P", "ModelParametersSchemaV3"), ("O", "ModelOutputSchemaV3")]),
+            ("SharedTreeV3", [("P", "ModelParametersSchemaV3")]),
+            ("ModelBuilderSchema", [("P", "ModelParametersSchemaV3")]),
         ]:
             # Write the generic information about the base class
             schema = m[base]

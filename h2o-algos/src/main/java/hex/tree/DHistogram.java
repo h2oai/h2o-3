@@ -1,12 +1,14 @@
 package hex.tree;
 
-import com.google.common.util.concurrent.AtomicDouble;
 import sun.misc.Unsafe;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.nbhm.UtilUnsafe;
-import water.util.*;
+import water.util.ArrayUtils;
+import water.util.AtomicUtils;
+import water.util.Log;
+import water.util.RandomUtils;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -53,6 +55,9 @@ public final class DHistogram extends Iced {
   public double wY(int i){ return _vals[3*i+1];}
   public double wYY(int i){return _vals[3*i+2];}
 
+  public void addWAtomic(int i, double wDelta) {  // used by AutoML
+    AtomicUtils.DoubleArray.add(_vals, 3*i+0, wDelta);
+  }
 
   public void addNasAtomic(double y, double wy, double wyy) {
     AtomicUtils.DoubleArray.add(_vals,3*_nbin+0,y);

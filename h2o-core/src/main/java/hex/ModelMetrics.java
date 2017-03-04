@@ -3,6 +3,7 @@ package hex;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
+import water.util.PojoUtils;
 import water.util.TwoDimTable;
 
 import java.lang.reflect.Method;
@@ -34,7 +35,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   public ModelMetrics(Model model, Frame frame, long nobs, double MSE, String desc) {
     super(buildKey(model, frame));
     _description = desc;
-    // Do not cache fields now
+
     _modelKey = model == null ? null : model._key;
     _frameKey = frame == null ? null : frame._key;
     _model_category = model == null ? null : model._output.getModelCategory();
@@ -43,6 +44,32 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     _MSE = MSE;
     _nobs = nobs;
     _scoring_time = System.currentTimeMillis();
+  }
+
+  private void setModelAndFrameFields(Model model, Frame frame) {
+    PojoUtils.setField(this, "_modelKey", model == null ? null : model._key);
+    PojoUtils.setField(this, "_frameKey", frame == null ? null : frame._key);
+    PojoUtils.setField(this, "_model_category", model == null ? null : model._output.getModelCategory());
+    PojoUtils.setField(this, "_model_checksum", model == null ? 0 : model.checksum());
+    try {
+      PojoUtils.setField(this, "_frame_checksum", frame.checksum());
+    }
+    catch (Throwable t) { }
+  }
+
+  /**
+   * Utility used by code which creates metrics on a different frame and model than
+   * the ones that we want the metrics object to be accessible for.  An example is
+   * StackedEnsembleModel, which computes the metrics with a metalearner model.
+   * @param model
+   * @param frame
+   * @return
+   */
+  public ModelMetrics deepCloneWithDifferentModelAndFrame(Model model, Frame frame) {
+    ModelMetrics m = this.clone();
+    m._key = buildKey(model, frame);
+    m.setModelAndFrameFields(model, frame);
+    return m;
   }
 
   public long residual_degrees_of_freedom(){throw new UnsupportedOperationException("residual degrees of freedom is not supported for this metric class");}

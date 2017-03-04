@@ -67,7 +67,7 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
     #Read in config if available
     if(!(is.null(config_path))){
 
-      h2oconfig = .parse.h2oconfig(config_path)
+      h2oconfig = .parse.h2oconfig(config_path,print_path=TRUE)
 
       #Check for each `allowed_config_keys` in the config file and set to counterparts in `h2o.init()`
       if(strict_version_check != TRUE && "init.check_version" %in% colnames(h2oconfig)){
@@ -84,7 +84,7 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
       }
       if(is.na(cookies) && "init.cookies" %in% colnames(h2oconfig)){
         cookies = as.vector(trimws(strsplit(as.character(h2oconfig$init.cookies),";")[[1]]))
-    }
+      }
   }
 
   if(!is.character(ip) || length(ip) != 1L || is.na(ip) || !nzchar(ip))
@@ -253,18 +253,18 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
 #' @return an instance of \code{H2OConnection} object representing a connection to the running H2O instance.
 #' @examples
 #' \dontrun{
+#' library(h2o)
 #' # Try to connect to a H2O instance running at http://localhost:54321/cluster_X
 #' # If not found, start a local H2O instance from R with the default settings.
-#' h2o.connect(ip = "localhost", port = 54321, context_path = "cluster_X")
+#' #h2o.connect(ip = "localhost", port = 54321, context_path = "cluster_X")
 #' # Or
-#' config = list(ip = "localhost", port = 54321, context_path = "cluster_X")
-#' h2o.connect(config = config)
+#' #config = list(ip = "localhost", port = 54321, context_path = "cluster_X")
+#' #h2o.connect(config = config)
 #'
 #' # Skip strict version check during connecting to the instance
-#' h2o.connect(config = c(strict_version_check = FALSE, config))
+#' #h2o.connect(config = c(strict_version_check = FALSE, config))
 #' }
 #' @export
-
 h2o.connect <- function(ip = "localhost", port = 54321, strict_version_check = TRUE,
                         proxy = NA_character_ , https = FALSE, insecure = FALSE,
                         username = NA_character_, password = NA_character_,

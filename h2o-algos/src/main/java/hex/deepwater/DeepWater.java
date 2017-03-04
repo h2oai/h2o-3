@@ -333,6 +333,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
 
         //main loop
         for(;;) {
+          if (mp._epochs==0) break;
           model.iterations++;
           model.set_model_info(mp._epochs == 0 ? model.model_info() : H2O.CLOUD.size() > 1 && mp._replicate_training_data ? (mp._single_node_mode ?
                   new DeepWaterTask2(_job._key, train, model.model_info(), rowFraction(train, mp, model), model.iterations).doAll(Key.make(H2O.SELF)).model_info() :  // replicated data + single node mode

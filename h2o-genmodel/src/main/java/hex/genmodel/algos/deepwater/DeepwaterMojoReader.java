@@ -86,9 +86,7 @@ public class DeepwaterMojoReader extends ModelMojoReader<DeepwaterMojoModel> {
 
     file = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
     try {
-      FileOutputStream os = new FileOutputStream(file.toString());
-      os.write(_model._parameters);
-      os.close();
+      _model._backend.writeBytes(file, _model._parameters);
     } catch (IOException e) {
       e.printStackTrace();
     }

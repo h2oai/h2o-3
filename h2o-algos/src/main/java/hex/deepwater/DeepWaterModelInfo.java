@@ -67,6 +67,17 @@ final public class DeepWaterModelInfo extends Iced {
     return _backend.predict(_model, data);
   }
 
+  float[] extractLayer(String layer, float[] data) {
+    assert(_backend !=null);
+    assert(_model!=null);
+    return _backend.extractLayer(_model, layer, data);
+  }
+  String listAllLayers() {
+    assert(_backend !=null);
+    assert(_model!=null);
+    return _backend.listAllLayers(_model);
+  }
+
   @Override
   public int hashCode() {
     return Arrays.hashCode(_network) + Arrays.hashCode(_modelparams);
@@ -268,19 +279,22 @@ final public class DeepWaterModelInfo extends Iced {
         is.close();
       } catch (IOException e) {
         e.printStackTrace();
-      } finally { if (file !=null) file.delete(); }
+      } finally {
+        if (file != null)
+          _backend.deleteSavedModel(file.toString());
+      }
     }
     // always overwrite the parameters (weights/biases)
     try {
       file = new File(getBasePath(), Key.make().toString());
       _backend.saveParam(_model, file.toString());
-      FileInputStream is = new FileInputStream(file);
-      _modelparams = new byte[(int)file.length()];
-      is.read(_modelparams);
-      is.close();
+      _modelparams = _backend.readBytes(file);
     } catch (IOException e) {
       e.printStackTrace();
-    } finally { if (file !=null) file.delete(); }
+    } finally {
+      if (file !=null)
+        _backend.deleteSavedParam(file.toString());
+    }
     long time = System.currentTimeMillis() - now;
     Log.info("Took: " + PrettyPrint.msecs(time, true));
   }
@@ -328,17 +342,15 @@ final public class DeepWaterModelInfo extends Iced {
       _model = _backend.buildNet(getImageDataSet(), getRuntimeOptions(), getBackendParams(), _classes, file.toString()); //randomizing initial state
     } catch (IOException e) {
       e.printStackTrace();
-    } finally { file.delete(); }
+    } finally { if (file!=null) file.delete(); }
     // always overwrite the parameters (weights/biases)
     try {
-      file = new File(getBasePath(), Key.make().toString());
-      FileOutputStream os = new FileOutputStream(file);
-      os.write(parameters);
-      os.close();
+      file = new File(System.getProperty("java.io.tmpdir"), Key.make().toString());
+      _backend.writeBytes(file, parameters);
       _backend.loadParam(_model, file.toString());
     } catch (IOException e) {
       e.printStackTrace();
-    } finally { file.delete(); }
+    } finally { if (file!=null) file.delete(); }
 
     long time = System.currentTimeMillis() - now;
     Log.info("Took: " + PrettyPrint.msecs(time, true));

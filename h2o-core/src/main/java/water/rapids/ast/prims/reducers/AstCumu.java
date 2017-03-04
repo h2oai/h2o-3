@@ -1,6 +1,7 @@
 package water.rapids.ast.prims.reducers;
 
 import water.H2O;
+import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -62,7 +63,8 @@ public abstract class AstCumu extends AstPrimitive {
             }
           }
         }.doAll(cumuVec);
-        return new ValFrame(new Frame(cumuVec));
+        Key<Frame> k = Key.make();
+        return new ValFrame(new Frame(k, null, new Vec[]{cumuVec}));
       } else {
         return new ValFrame(new Frame(f));
       }
