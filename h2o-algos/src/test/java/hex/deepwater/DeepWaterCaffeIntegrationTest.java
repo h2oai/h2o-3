@@ -87,7 +87,7 @@ public class DeepWaterCaffeIntegrationTest extends DeepWaterAbstractIntegrationT
         ls[b] = rawL[b];
       }
       model.train(ps, ls);
-//      model.predict(ps);
+      model.predict(ps);
     }
 
     model.saveModel("graph");

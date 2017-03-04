@@ -17,7 +17,7 @@ public class DeepwaterCaffeBackend implements BackendTrain {
   }
 
   @Override
-  public BackendModel buildNet(ImageDataSet dataset, RuntimeOptions opts, BackendParams bparms, int num_classes, String name /*ignored for now*/) {
+  public BackendModel buildNet(ImageDataSet dataset, RuntimeOptions opts, BackendParams bparms, int num_classes, String name) {
     if (name.equals("MLP")) {
       // TODO: add non-MLP Models such as lenet, inception_bn, etc.
       int[] hidden = (int[]) bparms.get("hidden");

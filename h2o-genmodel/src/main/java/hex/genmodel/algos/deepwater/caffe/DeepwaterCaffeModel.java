@@ -25,6 +25,7 @@ public class DeepwaterCaffeModel implements BackendModel {
   private float _momentum;
   private long _seed;
   private boolean _useGPU;
+  private boolean _useDocker = true;
 
   private Process _process;
   private static final ThreadLocal<ByteBuffer> _buffer = new ThreadLocal<>();
@@ -53,28 +54,43 @@ public class DeepwaterCaffeModel implements BackendModel {
   //
 
   private void checkStarted() {
-    try {
-      if (_process == null) {
-//        startDocker("h2oai/deepwater:cpu");
-        startDocker("h2oai/deepwater:gpu");
-//        startRegular();
-
-        Cmd cmd = new Cmd();
-        cmd.type = Deepwater.Create;
-        // proto.graph = _graph;  // TODO
-        cmd.batchSize = _batch_size;
-        cmd.solverType = "SGD";
-        cmd.sizes = _sizes;
-        cmd.types = _types;
-        cmd.dropoutRatios = _dropout_ratios;
-        cmd.learningRate = _learning_rate;
-        cmd.momentum = _momentum;
-        cmd.randomSeed = _seed;
-        cmd.useGpu = _useGPU;
-        call(cmd);
+    if (_process == null) {
+      if (_useDocker) {
+        boolean ok = false;
+        try {
+          startDocker("h2oai/deepwater:gpu", true);
+          ok = true;
+        } catch (IOException e) {
+          // Ignore, retry CPU
+        }
+        if (!ok) {
+          try {
+            startDocker("h2oai/deepwater:cpu", false);
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        }
+      } else {
+        try {
+          startRegular();
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
       }
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+
+      Cmd cmd = new Cmd();
+      cmd.type = Deepwater.Create;
+      // proto.graph = _graph;  // TODO
+      cmd.batchSize = _batch_size;
+      cmd.solverType = "SGD";
+      cmd.sizes = _sizes;
+      cmd.types = _types;
+      cmd.dropoutRatios = _dropout_ratios;
+      cmd.learningRate = _learning_rate;
+      cmd.momentum = _momentum;
+      cmd.randomSeed = _seed;
+      cmd.useGpu = _useGPU;
+      call(cmd);
     }
   }
 
@@ -163,21 +179,32 @@ public class DeepwaterCaffeModel implements BackendModel {
 
   //
 
-  private void startDocker(String image) throws IOException {
+  private void startDocker(String image, boolean gpu) throws IOException {
+    String home = System.getProperty("user.home");
     int uid = Integer.parseInt(new BufferedReader(new InputStreamReader(
         Runtime.getRuntime().exec("id -u").getInputStream())).readLine());
     int gid = Integer.parseInt(new BufferedReader(new InputStreamReader(
         Runtime.getRuntime().exec("id -g").getInputStream())).readLine());
     String pwd = System.getProperty("user.dir") + "/caffe";
 
-//    String opts = "-i --rm --user " + uid + ":" + gid + " -v " + pwd + ":" + pwd + " -w " + pwd;
-    String opts = "-i --user " + uid + ":" + gid + " -v " + pwd + ":" + pwd + " -w " + pwd;
-    String home = System.getProperty("user.home");
+    // Update image first
+    String s = "docker pull " + image;
+    ProcessBuilder pb = new ProcessBuilder(s.split(" "));
+    pb.redirectError(ProcessBuilder.Redirect.INHERIT);
+    _process = pb.start();
+    try {
+      _process.waitFor();
+    } catch (InterruptedException e) { // Ignore
+    }
+
+    // Launch it
+    String opts = "-i --rm --user " + uid + ":" + gid + " -v " + pwd + ":" + pwd + " -w " + pwd;
     opts += " -v " + home + "/h2o-docker/caffe:/h2o-docker/caffe";
     String tmp = System.getProperty("java.io.tmpdir");
     opts += " -v " + tmp + ":" + tmp;
-    String s = "nvidia-docker run " + opts + " " + image + " python /h2o-docker/caffe/backend.py";
-    ProcessBuilder pb = new ProcessBuilder(s.split(" "));
+    s = gpu ? "nvidia-docker" : "docker";
+    s += " run " + opts + " " + image + " python /h2o-docker/caffe/backend.py";
+    pb = new ProcessBuilder(s.split(" "));
     pb.redirectError(ProcessBuilder.Redirect.INHERIT);
     _process = pb.start();
   }
@@ -194,6 +221,7 @@ public class DeepwaterCaffeModel implements BackendModel {
   }
 
   void close() {
+    _process.destroy();
     try {
       _process.waitFor();
     } catch (InterruptedException ex) {
