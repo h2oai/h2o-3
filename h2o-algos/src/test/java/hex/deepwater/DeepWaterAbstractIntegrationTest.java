@@ -9,7 +9,6 @@ import hex.FrameSplitter;
 import hex.Model;
 import hex.ModelMetricsBinomial;
 import hex.ModelMetricsMultinomial;
-import hex.genmodel.algos.deepwater.DeepwaterMojoModel;
 import hex.splitframe.ShuffleSplitFrame;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -84,7 +83,6 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._learning_rate = 1e-3;
       p._epochs = 3;
       p._train_samples_per_iteration = samples;
-      p._mini_batch_size = 16;
       m = new DeepWater(p).trainModel().get();
       Assert.assertEquals(expected,m.iterations);
     } finally {
@@ -94,7 +92,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
   }
 
   @Test public void trainSamplesPerIteration0() { trainSamplesPerIteration(0,3); }
-  @Test public void trainSamplesPerIteration_auto() { trainSamplesPerIteration(-2,2); }
+  @Test public void trainSamplesPerIteration_auto() { trainSamplesPerIteration(-2,1); }
   @Test public void trainSamplesPerIteration_neg1() { trainSamplesPerIteration(-1,3); }
   @Test public void trainSamplesPerIteration_32() { trainSamplesPerIteration(32,26); }
   @Test public void trainSamplesPerIteration_1000() { trainSamplesPerIteration(1000,1); }
@@ -140,8 +138,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
       p._response_column = "C2";
       p._network = network;
-      p._learning_rate = 1e-5;
-      p._momentum_start = 0.9;
+      p._learning_rate = 1e-3;
       p._epochs = epochs;
       p._channels = channels;
       p._problem_type = DeepWaterParameters.ProblemType.image;
@@ -156,18 +153,16 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     }
   }
 
-  @Ignore // doesn't converge even on MXNet
-  @Test public void convergenceInceptionColor() { checkConvergence(3, DeepWaterParameters.Network.inception_bn, 30); }
-  @Ignore // doesn't converge even on MXNet
-  @Test public void convergenceInceptionGrayScale() { checkConvergence(1, DeepWaterParameters.Network.inception_bn, 30); }
+  @Test public void convergenceInceptionColor() { checkConvergence(3, inception_bn, 30); }
+  @Test public void convergenceInceptionGrayScale() { checkConvergence(1, inception_bn, 30); }
 
   @Ignore //too slow
   @Test public void convergenceGoogleNetColor() { checkConvergence(3, DeepWaterParameters.Network.googlenet, 150); }
   @Ignore //too slow
   @Test public void convergenceGoogleNetGrayScale() { checkConvergence(1, DeepWaterParameters.Network.googlenet, 100); }
 
-  @Test public void convergenceLenetColor() { checkConvergence(3, lenet, 400); }
-  @Test public void convergenceLenetGrayScale() { checkConvergence(1, lenet, 300); }
+  @Test public void convergenceLenetColor() { checkConvergence(3, lenet, 125); }
+  @Test public void convergenceLenetGrayScale() { checkConvergence(1, lenet, 50); }
 
   @Ignore
   @Test public void convergenceVGGColor() { checkConvergence(3, DeepWaterParameters.Network.vgg, 50); }
@@ -175,14 +170,14 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
   @Test public void convergenceVGGGrayScale() { checkConvergence(1, DeepWaterParameters.Network.vgg, 50); }
 
   @Ignore
-  @Test public void convergenceResnetColor() { checkConvergence(3, DeepWaterParameters.Network.resnet, 50); }
+  @Test public void convergenceResnetColor() { checkConvergence(3, resnet, 50); }
   @Ignore
-  @Test public void convergenceResnetGrayScale() { checkConvergence(1, DeepWaterParameters.Network.resnet, 50); }
+  @Test public void convergenceResnetGrayScale() { checkConvergence(1, resnet, 50); }
 
   @Ignore
-  @Test public void convergenceAlexnetColor() { checkConvergence(3, DeepWaterParameters.Network.alexnet, 50); }
+  @Test public void convergenceAlexnetColor() { checkConvergence(3, alexnet, 50); }
   @Ignore
-  @Test public void convergenceAlexnetGrayScale() { checkConvergence(1, DeepWaterParameters.Network.alexnet, 50); }
+  @Test public void convergenceAlexnetGrayScale() { checkConvergence(1, alexnet, 50); }
 
   //FIXME
   @Ignore
@@ -251,11 +246,11 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     }
   }
 
-  @Test public void settingModelInfoAlexnet() { settingModelInfo(DeepWaterParameters.Network.alexnet); }
+  @Test public void settingModelInfoAlexnet() { settingModelInfo(alexnet); }
   @Test public void settingModelInfoLenet() { settingModelInfo(lenet); }
   @Test public void settingModelInfoVGG() { settingModelInfo(DeepWaterParameters.Network.vgg); }
-  @Test public void settingModelInfoInception() { settingModelInfo(DeepWaterParameters.Network.inception_bn); }
-  @Test public void settingModelInfoResnet() { settingModelInfo(DeepWaterParameters.Network.resnet); }
+  @Test public void settingModelInfoInception() { settingModelInfo(inception_bn); }
+  @Test public void settingModelInfoResnet() { settingModelInfo(resnet); }
 
   void settingModelInfo(DeepWaterParameters.Network network) {
     DeepWaterModel m1 = null;
@@ -278,20 +273,18 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       // first model
       Job j1 = new DeepWater(p).trainModel();
       m1 = (DeepWaterModel)j1.get();
-
-
-      BackendTrain backend = DeepwaterMojoModel.createDeepWaterBackend(getBackend().toString());
       int h1 = Arrays.hashCode(m1.model_info()._modelparams);
       m1.doScoring(tr,null,j1._key,m1.iterations,true);
       double l1 = m1.loss();
+
       // second model (different seed)
       p._seed = 4321;
       Job j2 = new DeepWater(p).trainModel();
       m2 = (DeepWaterModel)j2.get();
 //      m2.doScoring(tr,null,j2._key,m2.iterations,true);
 //      double l2 = m2.loss();
-
       int h2 = Arrays.hashCode(m2.model_info()._modelparams);
+
       // turn the second model into the first model
       m2.removeNativeState();
       DeepWaterModelInfo mi = IcedUtils.deepCopy(m1.model_info());
@@ -303,7 +296,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       Log.info("Checking assertions for network: " + network);
       Assert.assertNotEquals(h1, h2);
       Assert.assertEquals(h1, h3);
-      Assert.assertEquals(l1, l3, 5e-4*l1);
+      Assert.assertEquals(l1, l3, 1e-5*l1);
     } finally {
       if (m1!=null) m1.delete();
       if (m2!=null) m2.delete();
@@ -349,11 +342,11 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       deepWaterLoadSaveTest(network);
     }
   }
-  @Test public void deepWaterLoadSaveTestAlexnet() { deepWaterLoadSaveTest(DeepWaterParameters.Network.alexnet); }
+  @Test public void deepWaterLoadSaveTestAlexnet() { deepWaterLoadSaveTest(alexnet); }
   @Test public void deepWaterLoadSaveTestLenet() { deepWaterLoadSaveTest(lenet); }
   @Test public void deepWaterLoadSaveTestVGG() { deepWaterLoadSaveTest(DeepWaterParameters.Network.vgg); }
-  @Test public void deepWaterLoadSaveTestInception() { deepWaterLoadSaveTest(DeepWaterParameters.Network.inception_bn); }
-  @Test public void deepWaterLoadSaveTestResnet() { deepWaterLoadSaveTest(DeepWaterParameters.Network.resnet); }
+  @Test public void deepWaterLoadSaveTestInception() { deepWaterLoadSaveTest(inception_bn); }
+  @Test public void deepWaterLoadSaveTestResnet() { deepWaterLoadSaveTest(resnet); }
 
   void deepWaterLoadSaveTest(DeepWaterParameters.Network network) {
     DeepWaterModel m = null;
@@ -364,7 +357,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
       p._response_column = "C2";
       p._network = network;
-      p._mini_batch_size = 1;
+      p._mini_batch_size = 2;
       p._epochs = 0.01;
       p._seed = 1234;
       p._score_training_samples = 0;
@@ -376,8 +369,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       Assert.assertTrue(m.model_info()._backend ==null);
 
       int hashCodeNetwork = java.util.Arrays.hashCode(m.model_info()._network);
-      BackendTrain backend = DeepwaterMojoModel.createDeepWaterBackend(getBackend().toString());
-      int hashCodeParams = Arrays.hashCode(m.model_info()._modelparams);
+      int hashCodeParams = java.util.Arrays.hashCode(m.model_info()._modelparams);
       Log.info("Hash code for original network: " + hashCodeNetwork);
       Log.info("Hash code for original parameters: " + hashCodeParams);
 
@@ -386,7 +378,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       m.model_info().javaToNative();
       m.model_info().nativeToJava();
       int hashCodeNetwork2 = java.util.Arrays.hashCode(m.model_info()._network);
-      int hashCodeParams2 = Arrays.hashCode(m.model_info()._modelparams);
+      int hashCodeParams2 = java.util.Arrays.hashCode(m.model_info()._modelparams);
       Log.info("Hash code for restored network: " + hashCodeNetwork2);
       Log.info("Hash code for restored parameters: " + hashCodeParams2);
       Assert.assertEquals(hashCodeNetwork, hashCodeNetwork2);
@@ -462,11 +454,11 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     }
   }
 
-  @Test public void restoreStateAlexnet() { restoreState(DeepWaterParameters.Network.alexnet); }
+  @Test public void restoreStateAlexnet() { restoreState(alexnet); }
   @Test public void restoreStateLenet() { restoreState(lenet); }
   @Test public void restoreStateVGG() { restoreState(DeepWaterParameters.Network.vgg); }
-  @Test public void restoreStateInception() { restoreState(DeepWaterParameters.Network.inception_bn); }
-  @Test public void restoreStateResnet() { restoreState(DeepWaterParameters.Network.resnet); }
+  @Test public void restoreStateInception() { restoreState(inception_bn); }
+  @Test public void restoreStateResnet() { restoreState(resnet); }
 
   public void restoreState(DeepWaterParameters.Network network) {
     DeepWaterModel m1 = null;
@@ -511,7 +503,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       ModelMetricsMultinomial mm2 = ModelMetricsMultinomial.make(pred, tr.vec(p._response_column));
       Log.info("Restored LL: " + mm2.logloss());
 
-      double precision = 5e-4;
+      double precision = 1e-5;
       Assert.assertEquals(((ModelMetricsMultinomial) m1._output._training_metrics).logloss(), mm1.logloss(), precision*mm1.logloss()); //make sure scoring is self-consistent
       Assert.assertEquals(mm1.logloss(), mm2.logloss(), precision*mm1.logloss());
 
@@ -683,8 +675,6 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       DKV.put(tr);
       p._seed = 1234;
       p._epochs = 1000;
-      p._learning_rate = 5e-7;
-      p._momentum_start = 0.9;
       DeepWater j = new DeepWater(p);
       m = j.trainModel().get();
       Assert.assertTrue((m._output._training_metrics).rmse() < 5);
@@ -708,17 +698,15 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._train = (tr = parse_test_file("smalldata/deepwater/imagenet/binomial_image_urls.csv"))._key;
       p._response_column = "C2";
       p._balance_classes = true;
-      p._learning_rate = 0.0001;
-      p._epochs = 12;
+      p._epochs = 1;
       p._seed = 1234;
       p._max_after_balance_size = 2f;
       p._class_sampling_factors = new float[]{3,5};
-      p._mini_batch_size = 32;
       DeepWater j = new DeepWater(p);
       m = j.trainModel().get();
       Assert.assertTrue((m._output._training_metrics).auc_obj()._auc > 0.85);
       preds = m.score(p._train.get());
-      Assert.assertTrue(m.testJavaScoring(p._train.get(),preds,1e-3,2e-5,1));
+      Assert.assertTrue(m.testJavaScoring(p._train.get(),preds,1e-3,1e-5,1));
     } finally {
       if (tr!=null) tr.remove();
       if (preds!=null) preds.remove();
@@ -726,7 +714,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     }
   }
 
-@Test
+  @Test
   public void categorical() {
     Frame tr = null;
     DeepWaterModel m = null;
