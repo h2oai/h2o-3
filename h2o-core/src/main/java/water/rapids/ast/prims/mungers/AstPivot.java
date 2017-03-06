@@ -44,23 +44,24 @@ public class AstPivot extends AstPrimitive {
     Frame res = new Frame(Key.<Frame>make());
     res.add(indexSetFr);
     DKV.put(indexSetFr);
-    for (String c: column_set) {
-      String rapidsString1 = String.format("(cols (rows " + fr._key + " (== (cols " + fr._key + " " + colIdx + ") '" + c + "')) [%d, %d])",
-              indexIdx,
-              valueIdx);
-      Frame frTmp = Rapids.exec(rapidsString1).getFrame();
-      frTmp._key = Key.<Frame>make();
-      DKV.put(frTmp);
-      String rapidsString2 = String.format("(cols (merge " + indexSetFr._key + " " + frTmp._key + " True False [0] [0] 'auto') 1)");
-      Frame joinedOnAllIdx = Rapids.exec(rapidsString2).getFrame();
-      joinedOnAllIdx.setNames(new String[]{c});
-      res.add(joinedOnAllIdx);
-      frTmp.delete();
-
+    try {
+      for (String c: column_set) {
+        String rapidsString1 = String.format("(cols (rows " + fr._key + " (== (cols " + fr._key + " " + colIdx + ") '" + c + "')) [%d, %d])",
+          indexIdx,
+          valueIdx);
+        Frame frTmp = Rapids.exec(rapidsString1).getFrame();
+        frTmp._key = Key.<Frame>make();
+        DKV.put(frTmp);
+        String rapidsString2 = String.format("(cols (merge " + indexSetFr._key + " " + frTmp._key + " True False [0] [0] 'auto') 1)");
+        Frame joinedOnAllIdx = Rapids.exec(rapidsString2).getFrame();
+        joinedOnAllIdx.setNames(new String[]{c});
+        res.add(joinedOnAllIdx);
+        frTmp.delete();
+      }
+    } finally {
+      DKV.remove(indexSetFr._key);
+      DKV.remove(k1);
     }
-    DKV.remove(indexSetFr._key);
-    DKV.remove(k1);
-
     return new ValFrame(res);
 
   }
