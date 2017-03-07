@@ -51,6 +51,9 @@ def test1():
 
     compare_frames(expectedFactoredFrame, factoredFrame)
 
+    refactoredFrame = expectedFactoredFrame.asfactor()
+    factoredAfterOp = H2OFrame.get_frame(refactoredFrame.frame_id)
+    compare_frames(expectedFactoredFrame, factoredAfterOp)
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test1)

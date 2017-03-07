@@ -2083,7 +2083,7 @@ class H2OFrame(object):
         
         for colname in self.names:
             t = self.types[colname]
-            if t not in {"int", "string"}: raise H2OValueError("Only 'int' or 'string' are allowed for asfactor(), got %s:%s " % (colname, t))
+            if t not in {"int", "string", "enum"}: raise H2OValueError("Only 'int' or 'string' are allowed for asfactor(), got %s:%s " % (colname, t))
 
         fr = H2OFrame._expr(expr=ExprNode("as.factor", self), cache=self._ex._cache)
         if fr._ex._cache.types_valid():
