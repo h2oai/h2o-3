@@ -16,9 +16,9 @@ def compare_frames(expected, actual):
         t2 = actual.types[colname]
         assert t1 == t2, ("Bad types %s: expected %s, got %s" %(colname, t1, t2))
         col1 = expected[colname]
-        s1 = h2o.as_list(col1)
+        s1 = str(h2o.as_list(col1))
         col2 = actual[colname] 
-        s2 = h2o.as_list(col2)
+        s2 = str(h2o.as_list(col2))
         assert s1 == s2, ("bad values: expected[%d] = %r, actual[%d] = %r"
                           % (i, s1, i, s2))
 
