@@ -26,10 +26,10 @@ def test1():
     badFrame = H2OFrame({"one": [4, 6, 1], "two": ["a", "b", "cde"], "three": [0, 5.2, 14]})
     badClone = H2OFrame({"one": [4, 6, 1], "two": ["a", "b", "cde"], "three": [0, 5.2, 14]})
     compare_frames(badFrame, badClone)
-
+    
     try:
       badFrame.asfactor()
-      assert false, "The frame contaied a real number, an error should be thrown"
+      assert False, "The frame contaied a real number, an error should be thrown"
     except H2OValueError: # as designed
       pass
         
