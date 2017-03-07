@@ -9,7 +9,7 @@ and Grep as examples.
 
 To learn more about performance characteristics when implementing new
 algorithms, refer to Cliff's `KV Store
-Guide <http://0xdata.com/blog/2014/05/kv-store-memory-analytics-part-2-2/>`__.
+Guide <http://blog.h2o.ai/2014/05/kv-store-memory-analytics-part-2-2/>`__.
 
 --------------
 
