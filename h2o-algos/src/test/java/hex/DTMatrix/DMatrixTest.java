@@ -74,7 +74,7 @@ public class DMatrixTest extends TestUtil {
             Assert.assertEquals(train.numRows(), tTrain.numCols());
 
             // check some elements
-            Assert.assertTrue(abs(train.vec(2).at(8)-tTrain.vec(8).at(2)) < 1e-10);
+            Assert.assertEquals(train.vec(2).at(8),tTrain.vec(8).at(2),1e-10);
             Assert.assertTrue(abs(train.vec(4).at(18)-tTrain.vec(18).at(4)) < 1e-10);
 
         } finally {
