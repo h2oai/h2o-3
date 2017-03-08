@@ -1536,8 +1536,6 @@ final public class H2O {
 
   public final int size() { return _memary.length; }
   final H2ONode leader() {
-//    assert _memary != null;
-//    assert _memary.length > 0;
     return _memary[0]; 
   }
 
