@@ -41,14 +41,7 @@ public final class C8DVolatileChunk extends Chunk {
   }
   public boolean isVolatile() {return true;}
   @Override boolean setNA_impl(int idx) { UnsafeUtils.set8d(_mem,(idx<<3),Double.NaN); return true; }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    //nothing to inflate - just copy
-    nc.alloc_doubles(_len);
-    for( int i=0; i< _len; i++ )
-      nc.doubles()[i] = _ds[i];
-    nc.set_sparseLen(nc.set_len(_len));
-    return nc;
-  }
+
   @Override public final void initFromBytes () {
     _len = _mem.length >> 3;
     _ds = MemoryManager.malloc8d(_len);
@@ -73,29 +66,15 @@ public final class C8DVolatileChunk extends Chunk {
   }
 
   @Override
-  public double [] getDoubles(double [] vals, int from, int to){
-    System.arraycopy(_ds, from, vals, from, to-from);
-    return vals;
+  public <T extends ChunkVisitor> T processRows(T v, int from, int to) {
+    for(int i = from; i < to; i++) v.addValue(_ds[i]);
+    return v;
   }
 
-  /**
-   * Dense bulk interface, fetch values from the given range
-   * @param vals
-   * @param from
-   * @param to
-   */
   @Override
-  public double [] getDoubles(double [] vals, int from, int to, double NA){
-    throw H2O.unimpl();
-  }
-  /**
-   * Dense bulk interface, fetch values from the given ids
-   * @param vals
-   * @param ids
-   */
-  @Override
-  public double [] getDoubles(double [] vals, int [] ids){
-    throw H2O.unimpl();
+  public <T extends ChunkVisitor> T processRows(T v, int[] ids) {
+    for(int i:ids) v.addValue(_ds[i]);
+    return v;
   }
 
 }

@@ -90,41 +90,30 @@ public class DMatrix  {
       final Frame tgt = _tgt;
       final long [] espc = tgt.anyVec().espc();
       final int colStart = (int)chks[0].start();
-//      addToPendingCount(espc.length - 2);
       for (int i = 0; i < espc.length - 1; ++i) {
         final int fi = i;
-//        new CountedCompleter(this) {
-//          @Override
-//          public void compute() {
         final NewChunk[] tgtChunks = new NewChunk[chks[0]._len];
         for (int j = 0; j < tgtChunks.length; ++j)
           tgtChunks[j] = new NewChunk(tgt.vec(j + colStart), fi);
         for (int c = ((int) espc[fi]); c < (int) espc[fi + 1]; ++c) {
-          NewChunk nc = chks[c].inflate();
-          if (nc.isSparseNA()) nc.cancel_sparse(); //what is the better fix?
-          Iterator<Value> it = nc.values();
-          while (it.hasNext()) {
-            Value v = it.next();
-            NewChunk t = tgtChunks[v.rowId0()];
-            t.addZeros(c - (int) espc[fi] - t.len());
-            v.add2Chunk(t);
-          }
+          Chunk nc = chks[c];
+          if(nc.isSparseZero()) {
+            for (int k = nc.nextNZ(-1); k < nc._len; k = nc.nextNZ(k)) {
+              tgtChunks[k].addZeros((int) (c - espc[fi]) - tgtChunks[k]._len);
+              nc.extractRows(tgtChunks[k], k);
+            }
+          } else
+            for(int k = 0; k < nc._len; k++) {
+              tgtChunks[k].addZeros((int) (c - espc[fi]) - tgtChunks[k]._len);
+              nc.extractRows(tgtChunks[k], k);
+            }
         }
-//            addToPendingCount(tgtChunks.length - 1);
         for (int j = 0; j < tgtChunks.length; ++j) { // finalize the target chunks and close them
           final int fj = j;
-//              new CountedCompleter(this) {
-//                @Override
-//                public void compute() {
           tgtChunks[fj].addZeros((int) (espc[fi + 1] - espc[fi]) - tgtChunks[fj]._len);
           tgtChunks[fj].close(_fs);
           tgtChunks[fj] = null;
-//                  tryComplete();
         }
-//              }.fork();
-//            }
-//          }
-//        }.fork();
       }
     }
   }

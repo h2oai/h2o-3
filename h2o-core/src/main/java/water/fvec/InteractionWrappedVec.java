@@ -342,18 +342,20 @@ public class InteractionWrappedVec extends WrappedVec {
     @Override public boolean set_impl(int idx, double d) { return false; }
     @Override public boolean set_impl(int idx, float f)  { return false; }
     @Override public boolean setNA_impl(int idx)         { return false; }
-    @Override public NewChunk inflate_impl(NewChunk nc) {
-      nc.set_sparseLen(nc.set_len(0));
-      if( _vec.isCategorical() )
-        for(int i=0;i<_len;++i)
-          if( isNA(i) ) nc.addNA();
-          else          nc.addNum(at8(i),0);
-      else
-        for( int i=0; i< _len; i++ )
-          if( isNA(i) ) nc.addNA();
-          else          nc.addNum(atd(i));
+
+    @Override public ChunkVisitor processRows(ChunkVisitor nc, int from, int to){
+      for(int i = from; i < to; i++)
+        nc.addValue(atd(i));
       return nc;
     }
+
+    @Override public ChunkVisitor processRows(ChunkVisitor nc, int... rows){
+      for(int i:rows)
+        nc.addValue(atd(i));
+      return nc;
+    }
+
+
     @Override protected final void initFromBytes () { throw water.H2O.fail(); }
   }
 }

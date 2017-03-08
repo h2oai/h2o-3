@@ -13,7 +13,7 @@ public class C1NChunkTest extends TestUtil {
 
     int[] vals = new int[]{0,1,3,254};
     for (int v : vals) nc.addNum(v,0);
-
+    int len = nc.len();
     Chunk cc = nc.compress();
     Assert.assertEquals(vals.length, cc._len);
     Assert.assertTrue(cc instanceof C1NChunk);
@@ -26,8 +26,7 @@ public class C1NChunkTest extends TestUtil {
       else Assert.assertTrue(cc.at8(i)==(int)densevals[i]);
     }
 
-    nc = cc.inflate_impl(new NewChunk(null, 0));
-    nc.values(0, nc._len);
+    nc = cc.extractRows(new NewChunk(null, 0),0,len);
     Assert.assertEquals(vals.length, nc._len);
     Assert.assertEquals(vals.length, nc._sparseLen);
     for (int i=0;i<vals.length;++i) Assert.assertEquals(vals[i], nc.at8(i));
