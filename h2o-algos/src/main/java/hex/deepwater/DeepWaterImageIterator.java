@@ -104,11 +104,11 @@ class DeepWaterImageIterator extends DeepWaterIterator {
           if (_cache)
             DKV.put(imgKey, new IcedImage(_conv._dim, Arrays.copyOfRange(_destData, start, start + _conv.len())));
         }
-      } catch (IOException e) {
-        Log.warn(e.getMessage());
       } catch (NullPointerException e) {
         e.printStackTrace();
         // ignored: ImageIO's ICC_Profile can fail with NPEs - unclear why
+      } catch (Throwable e) {
+        Log.warn(e.getMessage());
       }
       tryComplete();
     }

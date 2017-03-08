@@ -676,6 +676,9 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._seed = 1234;
       p._epochs = 1000;
       p._learning_rate = 1e-4;
+//      p._epochs = 2000;
+//      p._learning_rate = 0.005; //5e-7;
+//      p._momentum_start = 0.9;
       DeepWater j = new DeepWater(p);
       m = j.trainModel().get();
       Assert.assertTrue((m._output._training_metrics).rmse() < 5);
