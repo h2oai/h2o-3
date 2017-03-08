@@ -1,5 +1,6 @@
 package ai.h2o.automl;
 
+import ai.h2o.automl.UserFeedbackEvent.*;
 import ai.h2o.automl.strategies.initial.InitModel;
 import ai.h2o.automl.utils.AutoMLUtils;
 import hex.*;
@@ -85,6 +86,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private String project;
 
   private Leaderboard leaderboard;
+  private UserFeedback userFeedback;
 
   // check that we haven't messed up the original Frame
   private Vec[] originalTrainingFrameVecs;
@@ -104,8 +106,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   public AutoML(Key<AutoML> key, AutoMLBuildSpec buildSpec) {
     super(key);
 
-    this.buildSpec = buildSpec;
+    userFeedback = new UserFeedback(this._key);
 
+    this.buildSpec = buildSpec;
     handleDatafileParameters(buildSpec);
 
     // TODO: allow the user to set the project via the buildspec
@@ -140,6 +143,34 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     this.tempFrames = new ArrayList<>();
   }
 
+  protected void giveFeedback(UserFeedbackEvent.Level level, UserFeedbackEvent.Stage stage, String message) {
+    userFeedback.addEvent(level, stage, message);
+
+    switch(level) {
+      case Debug:
+        Log.debug(message);
+        break;
+      case Info:
+        Log.info(message);
+        break;
+      case Warn:
+        Log.warn(message);
+        break;
+    }
+  }
+
+  protected void debug(UserFeedbackEvent.Stage stage, String message) {
+    giveFeedback(UserFeedbackEvent.Level.Debug, stage, message);
+  }
+
+  protected void info(UserFeedbackEvent.Stage stage, String message) {
+    giveFeedback(UserFeedbackEvent.Level.Info, stage, message);
+  }
+
+  protected void warn(UserFeedbackEvent.Stage stage, String message) {
+    giveFeedback(UserFeedbackEvent.Level.Warn, stage, message);
+  }
+
 
   private void handleDatafileParameters(AutoMLBuildSpec buildSpec) {
     this.origTrainingFrame = DKV.getGet(buildSpec.input_spec.training_frame);
@@ -170,7 +201,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       this.trainingFrame = sf._destination_frames[0].get();
       this.validationFrame = sf._destination_frames[1].get();
       this.didValidationSplit = true;
-      Log.info("Automatically split the data into training and validation datasets.");
+      this.info(Stage.DataImport, "Automatically split the data into training and validation datasets.");
     }
     this.responseColumn = trainingFrame.vec(buildSpec.input_spec.response_column);
     if (verifyImmutability) {
@@ -272,12 +303,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return timeRemainingMs() > 0;
   }
 
-  public void pollAndUpdateProgress(String name, long workContribution, Job parentJob, Job subJob) {
+  public void pollAndUpdateProgress(Stage stage, String name, long workContribution, Job parentJob, Job subJob) {
     if (null == subJob) {
       parentJob.update(workContribution, "SKIPPED: " + name);
       return;
     }
-    Log.info(name + " started");
+    this.info(stage, name + " started");
     jobs.add(subJob);
 
     long lastWorkedSoFar = 0;
@@ -299,7 +330,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // add remaining work
     parentJob.update(workContribution - lastWorkedSoFar);
 
-    Log.info(name + " complete");
+    this.info(stage, name + " complete");
     try { jobs.remove(subJob); } catch (NullPointerException npe) {} // stop() can null jobs; can't just do a pre-check, because there's a race
 
   }
@@ -346,10 +377,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
    */
   public Job<Grid> hyperparameterSearch(String algoName, Model.Parameters baseParms, Map<String, Object[]> searchParms) {
     if (0.0 == baseParms._max_runtime_secs) {
-      Log.info("AutoML: out of time; skipping " + algoName + " hyperparameter search");
+      this.info(Stage.ModelTraining,"AutoML: out of time; skipping " + algoName + " hyperparameter search");
       return null;
     }
-    Log.info("AutoML: starting " + algoName + " hyperparameter search");
+    this.info(Stage.ModelTraining, "AutoML: starting " + algoName + " hyperparameter search");
     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria = (HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria)buildSpec.build_control.stopping_criteria.clone();
 
     if (searchCriteria.max_runtime_secs() == 0)
@@ -377,7 +408,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   Job<DRFModel>defaultRandomForest() {
     if (0.0 == timeRemainingMs()) {
-      Log.info("AutoML: out of time; skipping XRT");
+      this.info(Stage.ModelTraining, "AutoML: out of time; skipping XRT");
       return null;
     }
 
@@ -400,7 +431,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   Job<DRFModel>defaultExtremelyRandomTrees() {
     if (0.0 == timeRemainingMs()) {
-      Log.info("AutoML: out of time; skipping XRT");
+      this.info(Stage.ModelTraining, "AutoML: out of time; skipping XRT");
       return null;
     }
 
@@ -460,7 +491,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     glmParameters._alpha = new double[] {0.0, 0.2, 0.4, 0.6, 0.8, 1.0};  // Note: standard GLM parameter is an array; don't use searchParams!
     searchParams.put("_missing_values_handling", new DeepLearningModel.DeepLearningParameters.MissingValuesHandling[] {DeepLearningModel.DeepLearningParameters.MissingValuesHandling.MeanImputation, DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip});
 
-    Log.info("About to run GLM for: " + glmParameters._max_runtime_secs + "S");
+    this.info(Stage.ModelTraining, "About to run GLM for: " + glmParameters._max_runtime_secs + "S");
     Job<Grid>glmJob = hyperparameterSearch("GLM", glmParameters, searchParams);
     return glmJob;
   }
@@ -511,7 +542,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       searchParams.put("col_sample_rate_per_tree", new Double[]{0.4, 0.6, 0.8, 1.0});
 */
 
-    Log.info("About to run GBM for: " + gbmParameters._max_runtime_secs + "S");
+    this.info(Stage.ModelTraining, "About to run GBM for: " + gbmParameters._max_runtime_secs + "S");
     Job<Grid>gbmJob = hyperparameterSearch("GBM", gbmParameters, searchParams);
     return gbmJob;
   }
@@ -567,7 +598,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // build a fast RF with default settings...
     ///////////////////////////////////////////////////////////
     Job<DRFModel>defaultRandomForestJob = defaultRandomForest();
-    pollAndUpdateProgress("Default Random Forest build", 50, this.job(), defaultRandomForestJob);
+    pollAndUpdateProgress(Stage.ModelTraining, "Default Random Forest build", 50, this.job(), defaultRandomForestJob);
     if(defaultRandomForestJob != null) {
       DRFModel defaultDRF = (DRFModel) defaultRandomForestJob.get();
       leaderboard.addModel(defaultDRF);
@@ -578,7 +609,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // ... and another with "XRT" / extratrees settings
     ///////////////////////////////////////////////////////////
     Job<DRFModel>defaultExtremelyRandomTreesJob = defaultExtremelyRandomTrees();
-    pollAndUpdateProgress("Default Extremely Random Trees (XRT) build", 50, this.job(), defaultExtremelyRandomTreesJob);
+    pollAndUpdateProgress(Stage.ModelTraining, "Default Extremely Random Trees (XRT) build", 50, this.job(), defaultExtremelyRandomTreesJob);
     if(defaultExtremelyRandomTreesJob != null) {
       DRFModel defaultXRT = (DRFModel) defaultExtremelyRandomTreesJob.get();
       leaderboard.addModel(defaultXRT);
@@ -590,7 +621,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     ///////////////////////////////////////////////////////////
     // TODO: run for only part of the remaining time?
     Job<Grid>glmJob = defaultSearchGLM();
-    pollAndUpdateProgress("GLM hyperparameter search", 100, this.job(), glmJob);
+    pollAndUpdateProgress(Stage.ModelTraining, "GLM hyperparameter search", 100, this.job(), glmJob);
     if(glmJob != null) {
       Grid glmGrid = glmJob.get();
       leaderboard.addModels(glmGrid.getModelKeys());
@@ -602,7 +633,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     ///////////////////////////////////////////////////////////
     // TODO: run for only part of the remaining time?
     Job<Grid>gbmJob = defaultSearchGBM();
-    pollAndUpdateProgress("GBM hyperparameter search", 700, this.job(), gbmJob);
+    pollAndUpdateProgress(Stage.ModelTraining, "GBM hyperparameter search", 700, this.job(), gbmJob);
     if(gbmJob != null) {
       Grid gbmGrid = gbmJob.get();
       leaderboard.addModels(gbmGrid.getModelKeys());
@@ -615,13 +646,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     if (allModels.length == 0){
       this.job.update(100, "No models built: StackedEnsemble build skipped");
-      Log.info("No models were built, due to timeouts.");
+      this.info(Stage.ModelTraining, "No models were built, due to timeouts.");
     } else {
       Model m = allModels[0];
       if (m._output.isClassifier() && !m._output.isBinomialClassifier()) {
         // nada
         this.job.update(100, "Multinomial classifier: StackedEnsemble build skipped");
-        Log.info("Multinomial classifier: StackedEnsemble build skipped");
+        this.info(Stage.ModelTraining,"Multinomial classifier: StackedEnsemble build skipped");
       } else {
         ///////////////////////////////////////////////////////////
         // stack all models
@@ -641,13 +672,14 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
         Job<StackedEnsembleModel> ensembleJob = stack(notEnsembles);
 
-        pollAndUpdateProgress("StackedEnsemble build", 100, this.job(), ensembleJob);
+        pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build", 100, this.job(), ensembleJob);
 
         StackedEnsembleModel ensemble = (StackedEnsembleModel) ensembleJob.get();
         leaderboard.addModel(ensemble);
       }
     }
-    Log.info("AutoML: build done");
+    this.info(Stage.Workflow, "AutoML: build done");
+    Log.info(userFeedback.toString("User Feedback for AutoML Run: " + this._key));
     Log.info(leaderboard.toString("\n"));
 
     possiblyVerifyImmutability();
@@ -705,6 +737,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     //if (frameMetadata != null) frameMetadata.delete(); //TODO: We shouldn't have to worry about FrameMetadata being null
     AutoMLUtils.cleanup_adapt(trainingFrame, origTrainingFrame);
     leaderboard.delete();
+    userFeedback.delete();
     remove();
   }
 
@@ -713,6 +746,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
    */
   public void deleteWithChildren() {
     leaderboard.deleteWithChildren();
+    // implicit: feedback.delete();
     delete(); // is it safe to do leaderboard.delete() now?
     if (gridKey != null) gridKey.remove();
 
@@ -765,6 +799,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   public Leaderboard leaderboard() { return leaderboard._key.get(); }
 
+  public UserFeedback userFeedback() { return userFeedback._key.get(); }
+
 
   // satisfy typing for job return type...
   public static class AutoMLKeyV3 extends KeyV3<Iced, AutoMLKeyV3, AutoML> {
@@ -796,7 +832,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     if (verifyImmutability) {
       // check that we haven't messed up the original Frame
-      Log.info("Verifying training frame immutability. . .");
+      this.debug(Stage.Workflow, "Verifying training frame immutability. . .");
 
       Vec[] vecsRightNow = origTrainingFrame.vecs();
       String[] namesRightNow = origTrainingFrame.names();
@@ -830,9 +866,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         }
       }
 
-      Log.info(". . . training frame was mutated: " + warning);
+      if (warning)
+        this.warn(Stage.Workflow, "Training frame was mutated!  This indicates a bug in the AutoML software.");
+      else
+        this.debug(Stage.Workflow, "Training frame was not mutated (as expected).");
+
     } else {
-      Log.info("Not verifying training frame immutability. . .  This is turned off for efficiency.");
+      this.debug(Stage.Workflow, "Not verifying training frame immutability. . .  This is turned off for efficiency.");
     }
 
     return warning;
