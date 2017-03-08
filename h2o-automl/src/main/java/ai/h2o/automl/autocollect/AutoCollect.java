@@ -1,6 +1,8 @@
 package ai.h2o.automl.autocollect;
 
+import ai.h2o.automl.AutoML;
 import ai.h2o.automl.FrameMetadata;
+import ai.h2o.automl.UserFeedback;
 import ai.h2o.automl.colmeta.ColMeta;
 import water.DKV;
 import water.H2O;
@@ -182,7 +184,9 @@ public class AutoCollect {
     try {
       conn.setAutoCommit(false);  // transactionally set metadata...
       if( (_idFrame=getidFrameMeta(mc.name()))==-1 ) {
-        FrameMetadata fm = new FrameMetadata(mc.frame(), mc.y() , mc.x(), mc.name(), mc.isClass());
+        Key<AutoML> dummy = Key.make("AutoCollect_" + mc.name());
+        UserFeedback userFeedback = new UserFeedback(dummy);
+        FrameMetadata fm = new FrameMetadata(userFeedback, mc.frame(), mc.y() , mc.x(), mc.name(), mc.isClass());
         HashMap<String, Object> frameMeta = FrameMetadata.makeEmptyFrameMeta();
         fm.fillSimpleMeta(frameMeta);
         fm.fillDummies(frameMeta);

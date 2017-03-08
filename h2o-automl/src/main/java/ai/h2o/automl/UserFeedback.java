@@ -26,10 +26,27 @@ public class UserFeedback extends Keyed<UserFeedback> {
 
   public static String idForRun(Key<AutoML> runKey) { return "AutoML_Feedback_" + runKey.toString(); }
 
+  /** Add a Debug UserFeedbackEvent and log. */
+  public void debug(UserFeedbackEvent.Stage stage, String message) {
+    addEvent(new UserFeedbackEvent(UserFeedbackEvent.Level.Debug, stage, message));
+  }
+
+  /** Add a Info UserFeedbackEvent and log. */
+  public void info(UserFeedbackEvent.Stage stage, String message) {
+    addEvent(new UserFeedbackEvent(UserFeedbackEvent.Level.Info, stage, message));
+  }
+
+  /** Add a Warn UserFeedbackEvent and log. */
+  public void warn(UserFeedbackEvent.Stage stage, String message) {
+    addEvent(new UserFeedbackEvent(UserFeedbackEvent.Level.Warn, stage, message));
+  }
+
+  /** Add a UserFeedbackEvent, but don't log. */
   public void addEvent(UserFeedbackEvent.Level level, UserFeedbackEvent.Stage stage, String message) {
     addEvent(new UserFeedbackEvent(level, stage, message));
   }
 
+  /** Add a UserFeedbackEvent, but don't log. */
   public void addEvent(UserFeedbackEvent event) {
     UserFeedbackEvent[] oldEvents = feedbackEvents;
     feedbackEvents = new UserFeedbackEvent[feedbackEvents.length + 1];
