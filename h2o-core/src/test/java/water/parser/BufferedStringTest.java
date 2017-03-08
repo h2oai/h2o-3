@@ -30,6 +30,7 @@ public class BufferedStringTest {
     assertArrayEquals(expected, actual);
   }
 
+  @Ignore("This test fails currently - bugs in AutoBuffer, probably")
   @Test
   public void testRead_impl() throws Exception {
     final String source = "this is not a string";
@@ -37,9 +38,9 @@ public class BufferedStringTest {
     AutoBuffer ab = new AutoBuffer();
     sut1.write_impl(ab);
     ab.bufClose();
-//    BufferedString sut2 = new BufferedString("what?");
-//    sut2.read_impl(ab);
-//    assertEquals(sut1, sut2);
+    BufferedString sut2 = new BufferedString("what?");
+    sut2.read_impl(ab);
+    assertEquals(sut1, sut2);
   }
 
   @Test
@@ -50,7 +51,7 @@ public class BufferedStringTest {
     assertEquals(2, sut1.compareTo(new BufferedString("this is not a stri")));
   }
 
-  @Test
+  @Test @Ignore // this is a stub
   public void testHashCode() throws Exception {
 
   }
@@ -72,51 +73,52 @@ public class BufferedStringTest {
 //    assertArrayEquals(source.getBytes(), bytes);
   }
 
-  @Test
+  @Test @Ignore // this is a stub
   public void testAddBuff() throws Exception {
 
   }
 
-  @Test
+  @Test @Ignore // this is a stub
   public void testToString() throws Exception {
 
   }
 
-  @Test
+  @Test @Ignore // this is a stub
   public void testBytesToString() throws Exception {
 
   }
 
-  @Test
+  @Test @Ignore // this is a stub
   public void testToString1() throws Exception {
 
   }
 
-  @Test
+  @Test @Ignore // this is a stub
   public void testToBufferedString() throws Exception {
 
   }
 
-  @Test
+  @Test @Ignore // this is a stub
   public void testSet() throws Exception {
 
   }
 
-  @Test
+  @Test @Ignore // this is a stub
   public void testSet1() throws Exception {
 
   }
 
-  @Test
+  @Test @Ignore // this is a stub
   public void testSet2() throws Exception {
 
   }
 
-  @Test
+  @Test @Ignore // this is a stub
   public void testSetOff() throws Exception {
 
   }
 
+  @SuppressWarnings("EqualsBetweenInconvertibleTypes")
   @Test
   public void testEquals() throws Exception {
     BufferedString sut = new BufferedString("abc");
@@ -180,17 +182,17 @@ public class BufferedStringTest {
         expected, actual);
   }
 
-  @Test
+  @Test @Ignore // this is a stub
   public void testGetOffset() throws Exception {
 
   }
 
-  @Test
+  @Test @Ignore // this is a stub
   public void testLength() throws Exception {
 
   }
 
-  @Test
+  @Test @Ignore // this is a stub
   public void testGetNumericType() throws Exception {
 
   }
