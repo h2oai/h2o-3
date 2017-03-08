@@ -127,7 +127,8 @@ public class OOMTest extends TestUtil {
   public static void main(String[] args) {
     stall_till_cloudsize(args, 1);
     try {
-      new OOMTest().testParseMemoryStress();    // Throws on assertion error
+      System.out.println("All disabled.");
+      //new OOMTest().testParseMemoryStress();    // Throws on assertion error
     } catch( Throwable e ) {
       Log.err(e);
       StringWriter sw = new StringWriter();
