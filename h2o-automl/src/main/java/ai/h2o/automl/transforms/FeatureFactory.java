@@ -1,6 +1,7 @@
 package ai.h2o.automl.transforms;
 
 import ai.h2o.automl.FrameMetadata;
+import ai.h2o.automl.UserFeedback;
 import hex.Model;
 import water.DKV;
 import water.H2O;
@@ -116,17 +117,19 @@ public class FeatureFactory {
   private final String _response;
   private final String[] _predictors;
   private final boolean _isClassification;
+  private UserFeedback _userFeedback;
 
 
   /**
    * Create a new FeatureFactory for this Frame
    * @param f Frame upon which to generate new features
    */
-  public FeatureFactory(Frame f, String[] predictors, String response, boolean isClassification) {
+  public FeatureFactory(UserFeedback userFeedback, Frame f, String[] predictors, String response, boolean isClassification) {
     _predictors=predictors;
     _response=response;
     _isClassification=isClassification;
-    _fm = new FrameMetadata(f,f.find(response),predictors,f._key.toString(),isClassification);
+    _userFeedback = userFeedback;
+    _fm = new FrameMetadata(_userFeedback, f,f.find(response),predictors,f._key.toString(),isClassification);
   }
 
   public void delete() {
@@ -198,7 +201,7 @@ public class FeatureFactory {
       Collections.addAll(preds, _catInteractions.names());
       fullFrame.add(_catInteractions);
     }
-    FrameMetadata fullFrameMetadata = new FrameMetadata(fullFrame,fullFrame.find(_response),preds.toArray(new String[preds.size()]), "synthesized_fullFrame",_isClassification);
+    FrameMetadata fullFrameMetadata = new FrameMetadata(_userFeedback, fullFrame,fullFrame.find(_response),preds.toArray(new String[preds.size()]), "synthesized_fullFrame",_isClassification);
     AggFeatureBuilder afb = AggFeatureBuilder.buildAggFeatures(fullFrameMetadata);
     GBTasks gbs = new GBTasks(afb._gbCols,afb._aggs);
     gbs.doAll(fullFrame);
@@ -405,15 +408,14 @@ public class FeatureFactory {
  * FeatureBuilder expects to flatten a table of predictors against a single column.
  *
  *
- */
-class AggFeatureBuilder {
+ final class AggFeatureBuilder {
   String _primaryAgg;
   FrameMetadata _fm;
   String[] _predictors;
   AggFeatureBuilder(Frame fr, String primaryAgg, String[] predictors) {
     _primaryAgg=primaryAgg;
     _predictors=predictors;
-    _fm = new FrameMetadata(fr,-1,fr._key.toString());
+    _fm = new FrameMetadata(_userFeedback, fr,-1,fr._key.toString());
   }
 
 
@@ -428,3 +430,4 @@ class AggFeatureBuilder {
     }
   }
 }
+ */

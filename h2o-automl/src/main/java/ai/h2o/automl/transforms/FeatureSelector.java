@@ -1,6 +1,7 @@
 package ai.h2o.automl.transforms;
 
 import ai.h2o.automl.FrameMetadata;
+import ai.h2o.automl.UserFeedback;
 import hex.Model;
 import hex.ScoreKeeper;
 import hex.tree.gbm.GBM;
@@ -34,12 +35,14 @@ public abstract class FeatureSelector {
   private HashMap<String,Expr> _basicTransformsToTry;  // hold basic transforms that have not yet been vetted
   private HashMap<String,Expr> _basicTransformsToKeep; // these are transforms we want to keep
   private FeatureFactory.AggFeatureBuilder _aggFeatureBuilder; // iterate thru the aggregates and null out the uninteresting cases
+  private UserFeedback _userFeedback;
 
-  FeatureSelector(Frame f, String[] predictors, String response, boolean isClass) {
+  FeatureSelector(UserFeedback userFeedback, Frame f, String[] predictors, String response, boolean isClass) {
     _predictors=predictors;
     _response=response;
     _isClass=isClass;
-    _fm = new FrameMetadata(f,f.find(response),predictors,f._key.toString(),isClass);
+    _userFeedback = userFeedback;
+    _fm = new FrameMetadata(userFeedback, f,f.find(response),predictors,f._key.toString(),isClass);
   }
 
   public void debugRunAll() {
@@ -172,7 +175,7 @@ public abstract class FeatureSelector {
       names[idx++] = name;
     }
     Frame fullFrame = new Frame(names, vecs.clone());
-    FrameMetadata fullFrameMetadata = new FrameMetadata(fullFrame,fullFrame.find(_response),names, "synthesized_fullFrame",_isClass);
+    FrameMetadata fullFrameMetadata = new FrameMetadata(_userFeedback, fullFrame,fullFrame.find(_response),names, "synthesized_fullFrame",_isClass);
     _aggFeatureBuilder = FeatureFactory.AggFeatureBuilder.buildAggFeatures(fullFrameMetadata);
   }
 
@@ -182,8 +185,8 @@ public abstract class FeatureSelector {
 
 class GBMSelector extends FeatureSelector {
 
-  GBMSelector(Frame fm, String[] predictors, String response, boolean isClass) {
-    super(fm, predictors, response, isClass);
+  GBMSelector(UserFeedback userFeedback, Frame fm, String[] predictors, String response, boolean isClass) {
+    super(userFeedback, fm, predictors, response, isClass);
   }
 
   @Override protected void validateVec(Vec v[], String name[]) {
@@ -285,8 +288,8 @@ class GBMSelector extends FeatureSelector {
 // compute a mutual information score for each transformation
 class MISelector extends FeatureSelector {
 
-  MISelector(Frame fm, String[] predictors, String response, boolean isClass) {
-    super(fm, predictors, response, isClass);
+  MISelector(UserFeedback userFeedback, Frame fm, String[] predictors, String response, boolean isClass) {
+    super(userFeedback, fm, predictors, response, isClass);
   }
 
   @Override protected void validateVec(Vec v[], String name[]) {

@@ -91,7 +91,7 @@ public class MetaCollector {
    *     The difference being that these are compounded over the column data, rather than
    *     over the target column.
    */
-  public static class DynamicHisto extends MRTask<DynamicHisto> {
+  public final static class DynamicHisto extends MRTask<DynamicHisto> {
     public DHistogram _h;
     public double[] _sums; // different from _h._sums
     public double[] _ssqs; // different from _h._ssqs

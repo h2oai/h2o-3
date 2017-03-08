@@ -1,9 +1,9 @@
 package ai.h2o.automl.colmeta;
 
-
 import ai.h2o.automl.autocollect.AutoCollect;
 import ai.h2o.automl.guessers.column.ColNameScanner;
 import ai.h2o.automl.guessers.column.Guesser;
+import ai.h2o.automl.guessers.column.IgnoreGuesser.IgnoreReason;
 import ai.h2o.automl.guessers.column.SpecialNAGuesser;
 import hex.tree.DHistogram;
 import org.reflections.Reflections;
@@ -53,7 +53,7 @@ public class ColMeta extends Iced {
   public double[] _dist;        // distribution of classes
   public double[] _weightMult;  // weight multipliers for each class to even out distributions
 
-  public String _ignoredReason; // was this ignored by user, or by automl
+  public IgnoreReason _ignoredReason; // was this ignored by user, or by automl
   public boolean _isNumeric;    // is this a numeric column
   public boolean _isCategorical; // is this a categorical column
 
@@ -94,18 +94,21 @@ public class ColMeta extends Iced {
 
   // SECOND PASS
   // https://0xdata.atlassian.net/browse/STEAM-41 --column metadata to gather
-  public long _numUniq;
-  public double _avgUniqPerChk;   // number of uniques per chunk divided by number of chunks
+  public long _numUniques;
+  public double _avgUniquesPerChunk;   // number of uniques per chunk divided by number of chunks
 
-  public boolean  _chunksMonotonicallyIncreasing;  // indicates some week ordering in the dataset (by this column)
-  public double[] _chkBndries;                     // boundary values for each chunk [c1.min, c1.max, c2.min, c2.max, ...]; only for numeric vecs
+  public boolean  _chunksMonotonicallyIncreasing;  // indicates some weak ordering in the dataset (by this column)
+  public double[] _chunkBoundaries;                     // boundary values for each chunk [c1.min, c1.max, c2.min, c2.max, ...]; only for numeric vecs
 
   public double _median;
 
-  // is this an ID?
+  // is this an ID for IID data?
   //   - all unique
   //   - increasing ints
-  public boolean _isID;
+  public boolean _isRowBasedId;
+
+  // is this an ID for non-IID data, like timeseries?
+  public boolean _isNonIidId;
 
   // is it a date column?
   //   - has date info (possibly a month column since values are all 1-12, or 0-11)
@@ -127,7 +130,7 @@ public class ColMeta extends Iced {
     _v = v;
     _name = colname;
     _ignored=ignored;
-    if(_ignored) _ignoredReason = "Ignored by Input";
+    if(_ignored) _ignoredReason = IgnoreReason.user_specified;
     _idx = idx;
     _nameType=ColNameScanner.IGNORED;
     _response = response;

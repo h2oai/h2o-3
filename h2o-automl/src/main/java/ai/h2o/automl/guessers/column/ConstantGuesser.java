@@ -1,6 +1,7 @@
 package ai.h2o.automl.guessers.column;
 
 import ai.h2o.automl.colmeta.ColMeta;
+import ai.h2o.automl.guessers.column.IgnoreGuesser.*;
 import water.MRTask;
 import water.fvec.*;
 import water.nbhm.NonBlockingHashMap;
@@ -33,7 +34,7 @@ public class ConstantGuesser extends Guesser {
     if( cumFrac >= THRESHOLD) {   // most data is in a few constant values... ?
       Log.info("AutoML ignoring " + name + " for mostly constant: " + toFracString(ct._cnts,nrow));
       _cm._ignored=true;
-      _cm._ignoredReason="mostly constant";
+      _cm._ignoredReason= IgnoreReason.mostly_constant;
     }
   }
 

@@ -3,6 +3,7 @@ package ai.h2o.automl;
 import water.Iced;
 import water.util.TwoDimTable;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class UserFeedbackEvent extends Iced {
@@ -59,9 +60,10 @@ public class UserFeedbackEvent extends Iced {
                            UserFeedbackEvent.colFormats, "#");
   }
 
+  private static final SimpleDateFormat timestampFormat = new SimpleDateFormat("HH:mm:ss.S");
   public void addTwoDimTableRow(TwoDimTable table, int row) {
     int col = 0;
-    table.set(row, col++, new Date(timestamp));
+    table.set(row, col++, timestampFormat.format(new Date(timestamp)));
     table.set(row, col++, level);
     table.set(row, col++, stage);
     table.set(row, col++, message);
