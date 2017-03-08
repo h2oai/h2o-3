@@ -1,7 +1,5 @@
 package water.fvec;
 
-import water.AutoBuffer;
-import water.MemoryManager;
 import water.util.UnsafeUtils;
 
 /**
@@ -36,16 +34,8 @@ public class C8DChunk extends Chunk {
     return true;
   }
 
-
   @Override boolean setNA_impl(int idx) { UnsafeUtils.set8d(_mem,(idx<<3),Double.NaN); return true; }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    //nothing to inflate - just copy
-    nc.alloc_doubles(_len);
-    for( int i=0; i< _len; i++ )
-      nc.doubles()[i] = UnsafeUtils.get8d(_mem,(i<<3));
-    nc.set_sparseLen(nc.set_len(_len));
-    return nc;
-  }
+
   // 3.3333333e33
 //  public int pformat_len0() { return 22; }
 //  public String pformat0() { return "% 21.15e"; }
@@ -56,35 +46,26 @@ public class C8DChunk extends Chunk {
   }
 
   @Override
-  public double [] getDoubles(double [] vals, int from, int to){
-    for(int i = from; i < to; ++i)
-      vals[i - from] = UnsafeUtils.get8d(_mem, i << 3);
-    return vals;
+  public <T extends ChunkVisitor> T processRows(T v, int from, int to) {
+    for(int i = from; i < to; i++) v.addValue(UnsafeUtils.get8d(_mem,8*i));
+    return v;
   }
 
-  /**
-   * Dense bulk interface, fetch values from the given range
-   * @param vals
-   * @param from
-   * @param to
-   */
   @Override
-  public double [] getDoubles(double [] vals, int from, int to, double NA){
-    for(int i = from; i < to; ++i) {
-      double d = UnsafeUtils.get8d(_mem, i << 3);
-      vals[i - from] = Double.isNaN(d)?NA:d;
-    }
+  public <T extends ChunkVisitor> T processRows(T v, int[] ids) {
+    for(int i:ids) v.addValue(UnsafeUtils.get8d(_mem,8*i));
+    return v;
+  }
+
+  @Override public double [] getDoubles(double [] vals, int from, int to, double NA){
+    for(int i = from; i < to; i++)
+      vals[i-from] = UnsafeUtils.get8d(_mem,8*i);
     return vals;
   }
-  /**
-   * Dense bulk interface, fetch values from the given ids
-   * @param vals
-   * @param ids
-   */
-  @Override
-  public double [] getDoubles(double [] vals, int [] ids){
-    int j = 0;
-    for(int i:ids) vals[j++] = UnsafeUtils.get8d(_mem,i<<3);
+  @Override public double [] getDoubles(double [] vals, int [] ids){
+    int k = 0;
+    for(int i:ids)
+      vals[k++] = UnsafeUtils.get8d(_mem,8*i);
     return vals;
   }
 

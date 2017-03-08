@@ -28,6 +28,7 @@ public class RebalanceDatasetTest extends TestUtil {
           H2O.submitTask(rb);
           rb.join();
           rebalanced = DKV.get(rebalancedKey).get();
+          ParseDataset.logParseResults(rebalanced);
           assertEquals(rebalanced.numRows(), fr.numRows());
           assertEquals(rebalanced.anyVec().nChunks(), i);
           assertTrue(TestUtil.isIdenticalUpToRelTolerance(fr, rebalanced, 1e-10));

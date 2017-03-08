@@ -4,7 +4,6 @@ import water.DKV;
 import water.H2O;
 import water.Key;
 import water.MRTask;
-import water.rapids.ast.AstParameter;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 import water.rapids.Env;
@@ -53,8 +52,7 @@ public class TransformWrappedVec extends WrappedVec {
   public Vec makeVec() {
     Vec v  = new MRTask() {
       @Override public void map(Chunk c, NewChunk nc) {
-        for(int i=0;i<c._len;++i)
-          nc.addNum(c.atd(i));
+        c.extractRows(nc, 0,c._len);
       }
     }.doAll(Vec.T_NUM,this).outputFrame().anyVec();
     remove();
@@ -86,7 +84,6 @@ public class TransformWrappedVec extends WrappedVec {
     private final Env _env;
 
     TransformWrappedChunk(AstPrimitive fun, Vec transformWrappedVec, Chunk... c) {
-
       // set all the chunk fields
       _c = c; set_len(_c[0]._len);
       _start = _c[0]._start; _vec = transformWrappedVec; _cidx = _c[0]._cidx;
@@ -99,6 +96,15 @@ public class TransformWrappedVec extends WrappedVec {
       _env = new Env(null);
     }
 
+    @Override
+    public ChunkVisitor processRows(ChunkVisitor nc, int from, int to) {
+      throw H2O.unimpl();
+    }
+
+    @Override
+    public ChunkVisitor processRows(ChunkVisitor nc, int... rows) {
+      throw H2O.unimpl();
+    }
 
     // applies the function to a row of doubles
     @Override public double atd_impl(int idx) {
@@ -115,13 +121,7 @@ public class TransformWrappedVec extends WrappedVec {
     @Override public boolean set_impl(int idx, double d) { return false; }
     @Override public boolean set_impl(int idx, float f)  { return false; }
     @Override public boolean setNA_impl(int idx)         { return false; }
-    @Override public NewChunk inflate_impl(NewChunk nc) {
-      nc.set_sparseLen(nc.set_len(0));
-      for( int i=0; i< _len; i++ )
-        if( isNA(i) ) nc.addNA();
-        else          nc.addNum(atd(i));
-      return nc;
-    }
+
     @Override protected final void initFromBytes () { throw water.H2O.fail(); }
   }
 }

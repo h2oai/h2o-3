@@ -57,17 +57,21 @@ public class CStrChunk extends Chunk {
     _isAllASCII = b != 0;
     set_len((_valstart-_OFF)>>2);
   }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.set_sparseLen(nc.set_len(_len));
-    nc._isAllASCII = _isAllASCII;
-    int [] ids = nc.alloc_str_indices(_len);
-    for( int i = 0; i < _len; i++ )
-      ids[i] = UnsafeUtils.get4(_mem,idx(i));
-    nc._sslen = _mem.length - _valstart;
-    nc._ss = MemoryManager.malloc1(nc._sslen);
-    System.arraycopy(_mem,_valstart,nc._ss,0,nc._sslen);
+
+  @Override public ChunkVisitor processRows(ChunkVisitor nc, int from, int to){
+    BufferedString bs = new BufferedString();
+    for(int i = from; i < to; i++)
+      nc.addValue(atStr(bs,i));
     return nc;
   }
+  @Override public ChunkVisitor processRows(ChunkVisitor nc, int... rows){
+    BufferedString bs = new BufferedString();
+    for(int i:rows)
+      nc.addValue(atStr(bs,i));
+    return nc;
+  }
+
+
 
   /**
    * Optimized toLower() method to operate across the entire CStrChunk buffer in one pass.
@@ -80,7 +84,7 @@ public class CStrChunk extends Chunk {
    */
   public NewChunk asciiToLower(NewChunk nc) {
     // copy existing data
-    nc = this.inflate_impl(nc);
+    nc = this.extractRows(nc, 0,_len);
     //update offsets and byte array
     for(int i= 0; i < nc._sslen; i++) {
       if (nc._ss[i] > 0x40 && nc._ss[i] < 0x5B) // check for capital letter
@@ -101,7 +105,7 @@ public class CStrChunk extends Chunk {
    */
   public NewChunk asciiToUpper(NewChunk nc) {
     // copy existing data
-    nc = this.inflate_impl(nc);
+    nc = this.extractRows(nc, 0,_len);
     //update offsets and byte array
     for(int i= 0; i < nc._sslen; i++) {
       if (nc._ss[i] > 0x60 && nc._ss[i] < 0x7B) // check for capital letter
@@ -124,7 +128,7 @@ public class CStrChunk extends Chunk {
    */
   public NewChunk asciiTrim(NewChunk nc) {
     // copy existing data
-    nc = this.inflate_impl(nc);
+    nc = this.extractRows(nc, 0,_len);
     //update offsets and byte array
     for(int i=0; i < _len; i++) {
       int j = 0;
@@ -156,8 +160,7 @@ public class CStrChunk extends Chunk {
    */
   public NewChunk asciiSubstring(NewChunk nc, int startIndex, int endIndex) {
     // copy existing data
-    nc = this.inflate_impl(nc);
-    
+    nc = this.extractRows(nc, 0,_len);
     //update offsets and byte array
     for (int i = 0; i < _len; i++) {
       int off = UnsafeUtils.get4(_mem, idx(i));
@@ -234,7 +237,7 @@ public class CStrChunk extends Chunk {
    */
   public NewChunk asciiLStrip(NewChunk nc, String set) {
     // copy existing data
-    nc = this.inflate_impl(nc);
+    nc = this.extractRows(nc, 0,_len);
     //update offsets and byte array
     for(int i=0; i < _len; i++) {
       int j = 0;
@@ -249,7 +252,7 @@ public class CStrChunk extends Chunk {
 
   public NewChunk asciiRStrip(NewChunk nc, String set) {
     // copy existing data
-    nc = this.inflate_impl(nc);
+    nc = this.extractRows(nc, 0,_len);
     //update offsets and byte array
     for(int i=0; i < _len; i++) {
       int j = 0;

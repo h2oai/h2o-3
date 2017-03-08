@@ -19,7 +19,7 @@ public class C4SChunkTest extends TestUtil {
       if (l==1) nc.addNA(); //-2147483648
       for (int i = 0; i < man.length; ++i) nc.addNum(man[i], exp[i]);
       nc.addNA();
-
+      int len = nc.len();
       Chunk cc = nc.compress();
       Assert.assertEquals(man.length + 1 + l, cc._len);
       Assert.assertTrue(cc instanceof C4SChunk);
@@ -40,8 +40,7 @@ public class C4SChunkTest extends TestUtil {
         else Assert.assertTrue(cc.atd(i)==densevals[i]);
       }
 
-      nc = cc.inflate_impl(new NewChunk(null, 0));
-      nc.values(0, nc._len);
+      nc = cc.extractRows(new NewChunk(null, 0),0,len);
       Assert.assertEquals(man.length + 1 + l, nc._len);
       if (l==1) {
         Assert.assertTrue(nc.isNA(0));
@@ -82,7 +81,7 @@ public class C4SChunkTest extends TestUtil {
       if (l==1) nc.addNA(); //-2147483648
       for (int i = 0; i < man.length; ++i) nc.addNum(man[i], exp[i]);
       nc.addNA();
-
+      int len = nc.len();
       Chunk cc = nc.compress();
       Assert.assertEquals(man.length + 1 + l, cc._len);
       Assert.assertTrue(cc instanceof C4SChunk);
@@ -97,8 +96,7 @@ public class C4SChunkTest extends TestUtil {
       Assert.assertTrue(cc.isNA(man.length + l));
       Assert.assertTrue(cc.isNA_abs(man.length + l));
 
-      nc = cc.inflate_impl(new NewChunk(null, 0));
-      nc.values(0, nc._len);
+      nc = cc.extractRows(new NewChunk(null, 0),0,len);
       Assert.assertEquals(man.length + 1 + l, nc._len);
       if (l==1) {
         Assert.assertTrue(nc.isNA(0));

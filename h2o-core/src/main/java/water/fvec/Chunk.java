@@ -2,6 +2,7 @@ package water.fvec;
 
 import water.*;
 import water.parser.BufferedString;
+import water.util.PrettyPrint;
 
 import java.util.UUID;
 
@@ -115,61 +116,10 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
   public Chunk() {}
   private Chunk(byte [] bytes) {_mem = bytes;initFromBytes();}
 
-  /**
-   * Sparse bulk interface, stream through the compressed values and extract them into dense double array.
-   * @param vals holds extracted values, length must be >= this.sparseLen()
-   * @param ids holds extracted chunk-relative row ids, length must be >= this.sparseLen()
-   * @return number of extracted (non-zero) elements, equal to sparseLen()
-   */
-  public int asSparseDoubles(double[] vals, int[] ids){return asSparseDoubles(vals,ids,Double.NaN);}
-  public int asSparseDoubles(double [] vals, int [] ids, double NA) {
-    if(vals.length < sparseLenZero())
-      throw new IllegalArgumentException();
-    getDoubles(vals,0,_len);
-    for(int i = 0; i < _len; ++i) ids[i] = i;
-    return len();
-  }
-
-  /**
-   * Dense bulk interface, fetch values from the given range
-   * @param vals
-   * @param from
-   * @param to
-   */
-  public double [] getDoubles(double[] vals, int from, int to){ return getDoubles(vals,from,to, Double.NaN);}
-  public double [] getDoubles(double [] vals, int from, int to, double NA){
-    for(int i = from; i < to; ++i) {
-      vals[i - from] = atd(i);
-      if(Double.isNaN(vals[i-from]))
-        vals[i - from] = NA;
-    }
-    return vals;
-  }
-
-  public int [] getIntegers(int [] vals, int from, int to, int NA){
-    for(int i = from; i < to; ++i) {
-      double d = atd(i);
-      if(Double.isNaN(d))
-        vals[i] = NA;
-      else {
-        vals[i] = (int)d;
-        if(vals[i] != d) throw new IllegalArgumentException("Calling getIntegers on non-integer column");
-      }
-    }
-    return vals;
-  }
 
 
-  /**
-   * Dense bulk interface, fetch values from the given ids
-   * @param vals
-   * @param ids
-   */
-  public double[] getDoubles(double [] vals, int [] ids){
-    int j = 0;
-    for(int i:ids) vals[j++] = atd(i);
-    return vals;
-  }
+
+
   /** Global starting row for this local Chunk; a read-only field. */
   transient long _start = -1;
   /** Global starting row for this local Chunk */
@@ -470,7 +420,7 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
   public final long set(int idx, long l) {
     setWrite();
     if( _chk2.set_impl(idx,l) ) return l;
-    (_chk2 = inflate_impl(new NewChunk(this))).set_impl(idx,l);
+    (_chk2 = inflate()).set_impl(idx,l);
     return l;
   }
 
@@ -493,7 +443,7 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
   public final double set(int idx, double d) {
     setWrite();
     if( _chk2.set_impl(idx,d) ) return d;
-    (_chk2 = inflate_impl(new NewChunk(this))).set_impl(idx,d);
+    (_chk2 = inflate()).set_impl(idx,d);
     return d;
   }
 
@@ -511,7 +461,7 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
   public final float set(int idx, float f) {
     setWrite();
     if( _chk2.set_impl(idx,f) ) return f;
-    (_chk2 = inflate_impl(new NewChunk(this))).set_impl(idx,f);
+    (_chk2 = inflate()).set_impl(idx,f);
     return f;
   }
 
@@ -528,7 +478,7 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
   public final boolean setNA(int idx) {
     setWrite();
     if( _chk2.setNA_impl(idx) ) return true;
-    (_chk2 = inflate_impl(new NewChunk(this))).setNA_impl(idx);
+    (_chk2 = inflate()).setNA_impl(idx);
     return true;
   }
 
@@ -546,7 +496,7 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
   public final String set(int idx, String str) {
     setWrite();
     if( _chk2.set_impl(idx,str) ) return str;
-    (_chk2 = inflate_impl(new NewChunk(this))).set_impl(idx,str);
+    (_chk2 = inflate()).set_impl(idx,str);
     return str;
   }
 
@@ -556,7 +506,7 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
     long hi = uuid.getMostSignificantBits();
 
     if( _chk2.set_impl(idx, lo, hi) ) return uuid;
-    _chk2 = inflate_impl(new NewChunk(this));
+    _chk2 = inflate();
     _chk2.set_impl(idx,lo, hi);
     return uuid;
   }
@@ -708,13 +658,8 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
   double max() { return Double.NaN; }
 
 
-  public NewChunk inflate(){
-    return inflate_impl(new NewChunk(this));
-  }
-  /** Chunk-specific bulk inflater back to NewChunk.  Used when writing into a
-   *  chunk and written value is out-of-range for an update-in-place operation.
-   *  Bulk copy from the compressed form into the nc._ls8 array.   */
-  public abstract NewChunk inflate_impl(NewChunk nc);
+  public final NewChunk inflate(){ return extractRows(new NewChunk(this), 0,_len);}
+
 
   /** Return the next Chunk, or null if at end.  Mostly useful for parsers or
    *  optimized stencil calculations that want to "roll off the end" of a
@@ -809,4 +754,195 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
     throw new RuntimeException(sb.toString());
   }
 
+  public static abstract class ChunkVisitor {
+    // internal fields
+    Chunk _lastChunk;
+    int _lastId;
+    int _lastOffset;
+    public boolean expandedVals(){return false;}
+    void addValue(BufferedString bs){throw new UnsupportedOperationException();}
+    void addValue(long uuid_lo, long uuid_hi){throw new UnsupportedOperationException();}
+    void addValue(int val){throw new UnsupportedOperationException();}
+    void addValue(double val){throw new UnsupportedOperationException();}
+    void addValue(long val){throw new UnsupportedOperationException();}
+    void addValue(long m, int e){addValue((double)m*PrettyPrint.pow10(e));}
+    void addZeros(int zeros){throw new UnsupportedOperationException();}
+    void addNAs(int nas){throw new UnsupportedOperationException();}
+  }
+
+  public static final class NewChunkVisitor extends ChunkVisitor {
+    private final NewChunk _nc;
+    NewChunkVisitor(NewChunk nc){_nc = nc;}
+    @Override
+    public boolean expandedVals(){return true;}
+    @Override
+    void addValue(BufferedString bs){_nc.addStr(bs);}
+    @Override
+    void addValue(long uuid_lo, long uuid_hi){_nc.addUUID(uuid_lo,uuid_hi);}
+    @Override
+    void addValue(int val) {_nc.addNum(val,0);}
+    @Override
+    void addValue(long val) {_nc.addNum(val,0);}
+    @Override
+    void addValue(long val, int exp) {_nc.addNum(val,exp);}
+    @Override
+    void addValue(double val) {_nc.addNum(val);}
+    @Override
+    void addZeros(int zeros) {_nc.addZeros(zeros);}
+    @Override
+    void addNAs(int nas) {_nc.addNAs(nas);}
+  }
+
+  public static final class DoubleAryVisitor extends ChunkVisitor {
+    public final double [] vals;
+    private int _k = 0;
+    private final double _na;
+    DoubleAryVisitor(double [] vals){this(vals,Double.NaN);}
+    DoubleAryVisitor(double [] vals, double NA){
+      this.vals = vals; _na = NA;}
+    @Override
+    void addValue(int val) {
+      vals[_k++] = val;}
+    @Override
+    void addValue(long val) {
+      vals[_k++] = val;}
+    @Override
+    void addValue(double val) {
+      vals[_k++] = Double.isNaN(val)?_na:val;}
+    @Override
+    void addZeros(int zeros) {
+      int k = _k;
+      int kmax = k +zeros;
+      for(;k < kmax; k++) vals[k] = 0;
+      _k = kmax;
+    }
+    @Override
+    void addNAs(int nas) {
+      int k = _k;
+      int kmax = k + nas;
+      for(;k < kmax; k++) vals[k] = _na;
+      _k = kmax;
+    }
+  }
+  public static final class SparseDoubleAryVisitor extends ChunkVisitor {
+    public final boolean naSparse;
+    public final double [] vals;
+    public final int [] ids;
+    private int _sparseLen;
+    private int _len;
+    private final double _na;
+    SparseDoubleAryVisitor(double [] vals, int [] ids){this(vals,ids,false,Double.NaN);}
+    SparseDoubleAryVisitor(double [] vals, int [] ids, boolean naSparse){this(vals, ids, naSparse, Double.NaN);}
+    SparseDoubleAryVisitor(double [] vals, int [] ids, boolean naSparse, double NA){this.vals = vals; this.ids = ids; _na = NA; this.naSparse = naSparse;}
+    @Override
+    void addValue(int val) {ids[_sparseLen] = _len++; vals[_sparseLen++] = val;}
+    @Override
+    void addValue(long val) {ids[_sparseLen] = _len++; vals[_sparseLen++] = val;}
+    @Override
+    void addValue(double val) {ids[_sparseLen] = _len++; vals[_sparseLen++] = val;}
+    @Override
+    void addZeros(int zeros) {
+      if(naSparse) {
+        int kmax = _sparseLen + zeros;
+        for (int k = _sparseLen; k < kmax; k++) {
+          ids[k] = _len++;
+          vals[k] = 0;
+        }
+        _sparseLen = kmax;
+      } else
+        _len += zeros;
+    }
+    @Override
+    void addNAs(int nas) {
+      if(!naSparse) {
+        int kmax = _sparseLen + nas;
+        for (int k = _sparseLen; k < kmax; k++) {
+          ids[k] = _len++;
+          vals[k] = Double.NaN;
+        }
+        _sparseLen = kmax;
+      } else
+        _len += nas;
+    }
+  }
+
+  public static final class IntAryVisitor extends ChunkVisitor {
+    public final int [] vals;
+    private int _k = 0;
+    private final int _na;
+    IntAryVisitor(int [] vals){this(vals,(int)C4Chunk._NA);}
+    IntAryVisitor(int [] vals, int NA){this.vals = vals; _na = NA;}
+    @Override
+    public void addValue(int val) {vals[_k++] = val;}
+    @Override
+    public void addValue(long val) {
+      if(Integer.MAX_VALUE < val || val < Integer.MIN_VALUE)
+        throw new RuntimeException(val + " does not fit into int");
+      vals[_k++] = (int)val;
+    }
+    @Override
+    public void addValue(double val) {
+      int i = (int)val;
+      if( i != val)
+        throw new RuntimeException(val + " does not fit into int");
+      vals[_k++] = i;
+    }
+    @Override
+    public void addZeros(int zeros) {
+      int k = _k;
+      int kmax = k +zeros;
+      for(;k < kmax; k++)vals[k] = 0;
+      _k = kmax;
+    }
+    @Override
+    public void addNAs(int nas) {
+      int k = _k;
+      int kmax = k + nas;
+      for(;k < kmax; k++)vals[k] = _na;
+      _k = kmax;
+    }
+  }
+
+  public abstract <T extends ChunkVisitor> T processRows(T v, int from, int to);
+  public abstract <T extends ChunkVisitor> T processRows(T v, int [] ids);
+
+  // convenience methods wrapping around visitor interface
+  public NewChunk extractRows(NewChunk nc, int from, int to){
+    return processRows(new NewChunkVisitor(nc),from,to)._nc;
+  }
+  public NewChunk extractRows(NewChunk nc, int... rows){
+    return processRows(new NewChunkVisitor(nc),rows)._nc;
+  }
+
+  /**
+   * Dense bulk interface, fetch values from the given range
+   * @param vals
+   * @param from
+   * @param to
+   */
+  public double [] getDoubles(double[] vals, int from, int to){ return getDoubles(vals,from,to, Double.NaN);}
+  public double [] getDoubles(double [] vals, int from, int to, double NA){
+    return processRows(new DoubleAryVisitor(vals,NA),from,to).vals;
+  }
+  public int [] getIntegers(int [] vals, int from, int to, int NA){
+    return processRows(new IntAryVisitor(vals,NA),from,to).vals;
+  }
+  /**
+   * Dense bulk interface, fetch values from the given ids
+   * @param vals
+   * @param ids
+   */
+  public double[] getDoubles(double [] vals, int [] ids){
+    return processRows(new DoubleAryVisitor(vals),ids).vals;
+  }
+  /**
+   * Sparse bulk interface, stream through the compressed values and extract them into dense double array.
+   * @param vals holds extracted values, length must be >= this.sparseLen()
+   * @param ids holds extracted chunk-relative row ids, length must be >= this.sparseLen()
+   * @return number of extracted (non-zero) elements, equal to sparseLen()
+   */
+  public int getSparseDoubles(double[] vals, int[] ids){return getSparseDoubles(vals,ids,Double.NaN);}
+  public int getSparseDoubles(double [] vals, int [] ids, double NA) {
+    return processRows(new SparseDoubleAryVisitor(vals,ids,isSparseNA(),NA),0,_len)._sparseLen;
+  }
 }

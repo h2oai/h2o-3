@@ -17,7 +17,6 @@ test.pvalue.syn <- function(conn){
 	family = c("gaussian","poisson","tweedie","gamma","binomial")
 
 	for(i in 1:4){
-	 cat('i = ',i,'\n')
  	 if(i ==4){
     	set.seed(12)
     	y = (rgamma(N,shape = 6.4))
@@ -85,11 +84,11 @@ test.pvalue.syn <- function(conn){
                   family =distribu,standardize = T)
     	h_pval = hh1@model$coefficients_table[,5]
     	expect_equal(r_pval,h_pval,tolerance = 1e-4)
-    	#print("II")
-    	#hh1 = h2o.glm(objective_epsilon=0, beta_epsilon=1e-8,x = 3:length(colnames(hdata)),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,
-        #          family =distribu,standardize = T)
-    	#h_pval = hh1@model$coefficients_table[,5]
-    	#expect_equal(r_pval,h_pval,tolerance = 1e-4)
+    	print("II")
+    	hh1 = h2o.glm(objective_epsilon=0, beta_epsilon=1e-8,x = 3:length(colnames(hdata)),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,
+                  family =distribu,standardize = T)
+    	h_pval = hh1@model$coefficients_table[,5]
+    	expect_equal(r_pval,h_pval,tolerance = 1e-4)
     	#expect_equal(as.numeric(hh1@model$coefficients_table[,2]),as.numeric(hh1@model$coefficients_table[,6]),tolerance = 1e-4)
     
     	print("weight")
@@ -127,8 +126,7 @@ test.pvalue.syn <- function(conn){
 	h_pval = hh1@model$coefficients_table[,5]
 	expect_equal(r_pval,h_pval,tolerance = 1e-4)
 
-
-	#print("standardized")
+	print("standardized")
 	sdata =data.frame(scale(data))
 	sdata$y = data$y
 	hsdata = as.h2o(sdata,destination_frame = "sdata")
@@ -138,15 +136,12 @@ test.pvalue.syn <- function(conn){
 	            family =distribu,standardize = T)
 	h_pval = hh1@model$coefficients_table[,5]
 	expect_equal(r_pval,h_pval,tolerance = 1e-4)
-
-
-	#print("II")  ## P-value now computed for non-standardized coefficients only (all matches except for the intercept)
-	#hh1 = h2o.glm(objective_epsilon=0, beta_epsilon=1e-8,x = 3:length(colnames(hdata)),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,
-    #          family =distribu,standardize = T)
-	#h_pval = hh1@model$coefficients_table[,5]
-	#expect_equal(r_pval,h_pval,tolerance = 1e-4)
+	print("II")
+	hh1 = h2o.glm(objective_epsilon=0, beta_epsilon=1e-8,x = 3:length(colnames(hdata)),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,
+              family =distribu,standardize = T)
+	h_pval = hh1@model$coefficients_table[,5]
+	expect_equal(r_pval,h_pval,tolerance = 1e-4)
 	#expect_equal(as.numeric(hh1@model$coefficients_table[,2]),as.numeric(hh1@model$coefficients_table[,6]),tolerance = 1e-4)
-
 
 	print("weight")
 	(gg2 =glm(y~.- wts,family = distribu,data = data,weights = wts))
@@ -163,12 +158,8 @@ test.pvalue.syn <- function(conn){
 	hh3 = h2o.glm(objective_epsilon=0, beta_epsilon=1e-8,x = 3:length(colnames(hdata)),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,offset_column = "wts",
               family =distribu,standardize = F)
 	h_pval = hh3@model$coefficients_table[,5]
-	print(cbind(r_pval,as.data.frame(hh3@model$coefficients_table)))
-	print("haha")
-	print(which(abs(r_pval-h_pval)>1e-4))
-	print(cbind(r_pval,as.data.frame(hh3@model$coefficients_table))[abs(r_pval-h_pval)>1e-4,])
+	x = as.data.frame(hh3@model$coefficients_table[,5])
+	print(x)
 	expect_equal(r_pval,h_pval,tolerance = 1e-4)
-	print("gaga")
-	
  }
 doTest("Test p-vlaues on synthetic data", test.pvalue.syn)

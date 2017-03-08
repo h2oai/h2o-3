@@ -36,17 +36,25 @@ public class C4VolatileChunk extends Chunk {
   @Override boolean set_impl(int i, double d) {return false; }
   @Override boolean set_impl(int i, float f ) {return false; }
   @Override boolean setNA_impl(int idx) { _is[idx] = (int)_NA; return true; }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.set_sparseLen(0);
-    nc.set_len(0);
-    final int len = _len;
-    for( int i=0; i<len; i++ ) {
-      int res = _is[i];
-      if( res == _NA ) nc.addNA();
-      else             nc.addNum(res,0);
-    }
-    return nc;
+
+  private final void processRow(int r, ChunkVisitor v){
+    int i = UnsafeUtils.get4(_mem,(r<<2));
+    if(i == _NA) v.addNAs(1);
+    else v.addValue(i);
   }
+
+  @Override
+  public <T extends ChunkVisitor> T processRows(T v, int from, int to) {
+    for(int i = from; i < to; i++) processRow(i,v);
+    return v;
+  }
+
+  @Override
+  public <T extends ChunkVisitor> T processRows(T v, int[] ids) {
+    for(int i:ids) processRow(i,v);
+    return v;
+  }
+
   @Override public final void initFromBytes () {
     _len = _mem.length >> 2;
     _is = MemoryManager.malloc4(_len);
@@ -79,43 +87,5 @@ public class C4VolatileChunk extends Chunk {
 //    return fs;
 //  }
 
-  /**
-   * Dense bulk interface, fetch values from the given range
-   * @param vals
-   * @param from
-   * @param to
-   */
-  @Override
-  public double [] getDoubles(double [] vals, int from, int to, double NA){
-    for(int i = from; i < to; ++i) {
-      long res = _is[i];
-      vals[i - from] = res != _NA?res:NA;
-    }
-    return vals;
-  }
-  /**
-   * Dense bulk interface, fetch values from the given ids
-   * @param vals
-   * @param ids
-   */
-  @Override
-  public double [] getDoubles(double [] vals, int [] ids){
-    int j = 0;
-    for(int i:ids){
-      long res = _is[i];
-      vals[j++] = res != _NA?res:Double.NaN;
-    }
-    return vals;
-  }
-
-  @Override
-  public int [] getIntegers(int [] vals, int from, int to, int NA){
-    System.arraycopy(_is,from,vals,0,to-from);
-    if(NA != _NA) {
-      for(int i = 0; i < (to - from); ++i)
-        if(vals[i] == _NA) vals[i] = NA;
-    }
-    return vals;
-  }
 
 }

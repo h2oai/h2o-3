@@ -102,13 +102,6 @@ public class DMatrix  {
         for (int c = ((int) espc[fi]); c < (int) espc[fi + 1]; ++c) {
           NewChunk nc = chks[c].inflate();
           if (nc.isSparseNA()) nc.cancel_sparse(); //what is the better fix?
-          Iterator<Value> it = nc.values();
-          while (it.hasNext()) {
-            Value v = it.next();
-            NewChunk t = tgtChunks[v.rowId0()];
-            t.addZeros(c - (int) espc[fi] - t.len());
-            v.add2Chunk(t);
-          }
         }
 //            addToPendingCount(tgtChunks.length - 1);
         for (int j = 0; j < tgtChunks.length; ++j) { // finalize the target chunks and close them

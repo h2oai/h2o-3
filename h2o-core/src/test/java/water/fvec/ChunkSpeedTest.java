@@ -42,6 +42,8 @@ public class ChunkSpeedTest extends TestUtil {
     for (int i = 0; i < ll; ++i)
       chunks_part();
     for (int i = 0; i < ll; ++i)
+      chunks_visitor();
+    for (int i = 0; i < ll; ++i)
       chunksInline();
 //    for (int i = 0; i < ll; ++i)
 //      mrtask(false);
@@ -63,8 +65,8 @@ public class ChunkSpeedTest extends TestUtil {
 //        switch (j%1+0) { //just do 1 byte chunks
 //        switch (j%1+1) { //just do 2 byte chunks
 //        switch (j % 2) { //just do 1/2 byte chunks
-//    switch (j%3) { // do 3 chunk types
-        switch (j%4) { // do 4 chunk types
+    switch (j%4) { // do 3 chunk types
+//        switch (j%4) { // do 4 chunk types
       case 0:
         return i % 200; //C1NChunk - 1 byte integer
       case 1:
@@ -147,6 +149,8 @@ public class ChunkSpeedTest extends TestUtil {
     return sum;
   }
 
+
+
   double loop() {
     double sum =0;
     for (int j=0; j<cols; ++j) {
@@ -164,6 +168,19 @@ public class ChunkSpeedTest extends TestUtil {
     return sum;
   }
 
+  private static class ChunkSum extends Chunk.ChunkVisitor {
+    double sum;
+    public void addZeros(int n){}
+    public void addValue(double d){sum += d;}
+    public void addValue(long l){sum += l;}
+    public void addValue(int i){sum += i;}
+  }
+  double loop_visitor(){
+    ChunkSum viz = new ChunkSum();
+    for (int j=0; j<cols; ++j)
+      chunks[j].processRows(viz,0,chunks[j].len());
+    return viz.sum;
+  }
   double loop_parts() {
     double sum =0;
     double [] vals = new double[16];
@@ -253,6 +270,25 @@ public class ChunkSpeedTest extends TestUtil {
     }
     Log.info("Data size: " + PrettyPrint.bytes(siz));
     Log.info("Time for METHODS chunks PARTS(): " + PrettyPrint.msecs(done - start, true));
+    Log.info("");
+  }
+  void chunks_visitor()
+  {
+    long start = 0;
+    double sum = 0;
+    for (int r = 0; r < rep; ++r) {
+      if (r==rep/10)
+        start = System.currentTimeMillis();
+      sum += loop_visitor();
+    }
+    long done = System.currentTimeMillis();
+    Log.info("Sum: " + sum);
+    long siz = 0;
+    for (int j=0; j<cols; ++j) {
+      siz += chunks[j].byteSize();
+    }
+    Log.info("Data size: " + PrettyPrint.bytes(siz));
+    Log.info("Time for METHODS chunks Visitor(): " + PrettyPrint.msecs(done - start, true));
     Log.info("");
   }
   void chunksInverted()

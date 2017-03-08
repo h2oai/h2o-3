@@ -1,12 +1,12 @@
 package water.fvec;
 
-import water.*;
 import water.util.UnsafeUtils;
 
 /**
  * The scale/bias function, where data is in SIGNED bytes before scaling.
  */
 public class C1SChunk extends Chunk {
+
   static protected final int _OFF=8+8;
   private transient double _scale;
   public double scale() { return _scale; }
@@ -38,19 +38,42 @@ public class C1SChunk extends Chunk {
   @Override boolean set_impl(int i, double d) { return false; }
   @Override boolean set_impl(int i, float f ) { return false; }
   @Override boolean setNA_impl(int idx) { _mem[idx+_OFF] = (byte)C1Chunk._NA; return true; }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    double dx = Math.log10(_scale);
-    assert water.util.PrettyPrint.fitsIntoInt(dx);
-    nc.set_sparseLen(0);
-    nc.set_len(0);
-    final int len = _len;
-    for( int i=0; i<len; i++ ) {
-      int res = 0xFF&_mem[i+_OFF];
-      if( res == C1Chunk._NA ) nc.addNA();
-      else nc.addNum((res+_bias),(int)dx);
-    }
-    return nc;
+
+  private void processRow(int r, ChunkVisitor v){
+    int res = 0xFF&_mem[r+_OFF];
+    if( res == C1Chunk._NA ) v.addNAs(1);
+    else v.addValue((res+_bias)*_scale);
   }
+  private void processRow(int r, int exp, ChunkVisitor v){
+    int res = 0xFF&_mem[r+_OFF];
+    if( res == C1Chunk._NA ) v.addNAs(1);
+    else v.addValue((res+_bias),exp);
+  }
+
+  @Override
+  public <T extends ChunkVisitor> T processRows(T v, int from, int to) {
+    if(v.expandedVals()){
+      double x = Math.log10(_scale);
+      int e = (int)x;
+      assert x == e:"scale does not fit into int";
+      for(int i = from; i < to; i++) processRow(i,e,v);
+    } else
+      for(int i = from; i < to; i++) processRow(i,v);
+    return v;
+  }
+
+  @Override
+  public <T extends ChunkVisitor> T processRows(T v, int[] ids) {
+    if(v.expandedVals()){
+      double x = Math.log10(_scale);
+      int e = (int)x;
+      assert x == e:"scale does not fit into int";
+      for(int i:ids) processRow(i,e, v);
+    } else
+      for(int i:ids) processRow(i,v);
+    return v;
+  }
+
   //public int pformat_len0() { return hasFloat() ? pformat_len0(_scale,3) : super.pformat_len0(); }
   //public String  pformat0() { return hasFloat() ? "% 8.2e" : super.pformat0(); }
   @Override public byte precision() { return (byte)Math.max(-Math.log10(_scale),0); }

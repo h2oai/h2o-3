@@ -37,7 +37,7 @@ public class CUDChunkTest extends TestUtil {
     };
     for (double v : vals) nc.addNum(v);
     nc.addNA();
-
+    int len = nc.len();
     Chunk cc = nc.compress();
     Assert.assertEquals(vals.length + 1, cc._len);
     Assert.assertTrue(cc instanceof CUDChunk);
@@ -60,8 +60,7 @@ public class CUDChunkTest extends TestUtil {
     Assert.assertTrue(cc.atd(vals.length - 1) == a);
     vals[vals.length-1]=a;
 
-    nc = cc.inflate_impl(new NewChunk(null, 0));
-    nc.values(0, nc._len);
+    nc = cc.extractRows(new NewChunk(null, 0),0,len);
     Assert.assertEquals(vals.length + 1, nc._len);
     for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.atd(i), Math.ulp(vals[i]));
     for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.at_abs(i), Math.ulp(vals[i]));

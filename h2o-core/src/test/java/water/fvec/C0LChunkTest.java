@@ -16,7 +16,7 @@ public class C0LChunkTest extends TestUtil {
       for (int i=0;i<K;++i) nc.addNum(l,0);
       Assert.assertEquals(K, nc._len);
       if (l != 0l) Assert.assertEquals(l == 0l ? 0 : K, nc._sparseLen); //special case for sparse length
-
+      int len = nc.len();
       Chunk cc = nc.compress();
       Assert.assertEquals(K, cc._len);
       Assert.assertTrue(cc instanceof C0LChunk);
@@ -24,7 +24,7 @@ public class C0LChunkTest extends TestUtil {
 
       double[] sparsevals = new double[cc.sparseLenZero()];
       int[] sparseids = new int[cc.sparseLenZero()];
-      cc.asSparseDoubles(sparsevals, sparseids);
+      cc.getSparseDoubles(sparsevals, sparseids);
       for (int i = 0; i < sparsevals.length; ++i) {
         if (cc.isNA(sparseids[i])) Assert.assertTrue(Double.isNaN(sparsevals[i]));
         else Assert.assertTrue(cc.at8(sparseids[i])==sparsevals[i]);
@@ -37,16 +37,10 @@ public class C0LChunkTest extends TestUtil {
       }
 
       nc = new NewChunk(null, 0);
-      cc.inflate_impl(nc);
-      nc.values(0, nc._len);
+      cc.extractRows(nc, 0,len);
       Assert.assertEquals(K, nc._len);
       Assert.assertEquals(l == 0 ? 0 : K, nc._sparseLen);
 
-      Iterator<NewChunk.Value> it = nc.values(0, K);
-      if (l != 0l) { //if all 0s, then we're already at end
-        for (int i = 0; i < K; ++i) Assert.assertTrue(it.next().rowId0() == i);
-      }
-      Assert.assertTrue(!it.hasNext());
       for (int i = 0; i < K; ++i) Assert.assertEquals(l, nc.at8(i));
 
       Chunk cc2 = nc.compress();

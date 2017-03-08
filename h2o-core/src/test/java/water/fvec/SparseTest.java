@@ -1,112 +1,239 @@
 package water.fvec;
 
-import static org.junit.Assert.*;
 import org.junit.*;
 
-import java.util.Iterator;
-import water.Futures;
-import water.Key;
+import java.util.Arrays;
+import java.util.Random;
+import java.util.TreeSet;
+
 import water.TestUtil;
+import water.util.UnsafeUtils;
 
 /**
  * Created by tomasnykodym on 3/28/14.
  */
 public class SparseTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
-  private Chunk makeChunk(double [] vals, Futures fs) {
-    int nzs = 0;
-    int [] nonzeros = new int[vals.length];
-    int j = 0;
-    for(double d:vals)if(d != 0)nonzeros[nzs++] = j++;
-    Key key = Vec.newKey();
-    AppendableVec av = new AppendableVec(key, Vec.T_NUM);
-    NewChunk nv = new NewChunk(av,0);
-    for(double d:vals){
-      if(Double.isNaN(d))nv.addNA();
-      else if((long)d == d) nv.addNum((long)d,0);
-      else nv.addNum(d);
+
+  private static void test_at(Chunk c, double [] vals, int [] nzs_ary){
+    Random rnd = new Random(54321);
+    // test atd
+    for(int i =0 ; i < vals.length; ++i) {
+      Assert.assertEquals(vals[i],c.atd(i),0);
     }
-    nv.close(0,fs);
-    Vec vec = av.layout_and_close(fs);
-    return vec.chunkForChunkIdx(0);
+
+    for(int i =0 ; i < vals.length; ++i) {
+      int j = rnd.nextInt(vals.length);
+      Assert.assertEquals(vals[j],c.atd(j),0);
+    }
+    // test at8
+    for(int i =0 ; i < vals.length; ++i) {
+      if(Double.isNaN(vals[i])){
+        Assert.assertTrue(c.isNA(i));
+        try{
+          c.at8(i);
+          c.at8(i);
+          Assert.assertFalse("should've thrown", true);
+        } catch(RuntimeException rex){}
+      } else {
+        Assert.assertFalse(c.isNA(i));
+        Assert.assertEquals((long) vals[i], c.at8(i), 0);
+      }
+    }
+    // test random access
+    for(int i =0 ; i < vals.length; ++i) {
+      int j = rnd.nextInt(vals.length);
+      Assert.assertEquals(vals[j],c.atd(j),0);
+    }
   }
 
-  private Chunk setAndClose(double val, int id, Chunk c, Futures fs){return setAndClose(new double[]{val},new int[]{id},c,fs);}
-  private Chunk setAndClose(double [] vals, int [] ids, Chunk c, Futures fs) {
-    final int cidx = c.cidx();
-    final Vec vec = c._vec;
+  private static void test_next_nz(Chunk c, int len, int [] nzs_ary){
+    Random rnd = new Random(54321);
+    // test next nz
+    int x = -1;
+    for(int i = 0; i < nzs_ary.length; ++i) {
+      Assert.assertEquals(nzs_ary[i], c.nextNZ(x));
+      x = nzs_ary[i];
+    }
+    Assert.assertEquals(len,c.nextNZ(x));
+    for(int i = 0; i < nzs_ary.length; ++i) {
+      int j = rnd.nextInt(len);
+      int k = Arrays.binarySearch(nzs_ary,j);
+      if(k < 0) k = -k-1; else k = k +1;
+      Assert.assertEquals(nzs_ary[k], c.nextNZ(j));
+    }
+  }
+
+  private static void test_extract_rows(Chunk c, double [] vals, int [] nzs_ary){
+    NewChunk nc = new NewChunk(null, 0);
+    c.extractRows(nc,0,vals.length);
+    Assert.assertEquals(vals.length , nc.len());
+    Chunk c2 = nc.compress();
+    Assert.assertTrue(Arrays.equals(c.asBytes(), c2.asBytes()));
+
+    nc = new NewChunk(null, 0);
+    c.extractRows(nc,128,512);
+    NewChunk nc2 = new NewChunk(null, 0);
+    for(int i = 128; i < 512; i++)
+      nc2.addNum(vals[i]);
+    c2 = nc.compress();
+    Chunk c3 = nc2.compress();
+    Assert.assertTrue(Arrays.equals(c3.asBytes(), c2.asBytes()));
+
+    int [] ids = new int[vals.length];
+    int k = 0;
+    int l = 0;
+    for(int i = 0; i < ids.length; i += 8) {
+      while(l < nzs_ary.length && nzs_ary[l] < i)
+        ids[k++] = nzs_ary[l++];
+      if(l < nzs_ary.length && nzs_ary[l] == i)
+        ids[k++] = nzs_ary[l++];
+      else
+        ids[k++] = i;
+    }
+    ids = Arrays.copyOf(ids,k);
+
+    nc = new NewChunk(null,0);
+    nc2 = new NewChunk(null,0);
+    c.extractRows(nc,ids);
+    for(int i = 0; i < ids.length; i++){
+      nc2.addNum(vals[ids[i]]);
+    }
+    c2 = nc.compress();
+    c3 = nc2.compress();
+    Assert.assertTrue(Arrays.equals(c2.asBytes(), c3.asBytes()));
+  }
+
+
+
+  public static Chunk makeAndTestSparseChunk(Class clz, double [] vals, int [] nzs_ary, boolean isNA, int off){
+    NewChunk nc = new NewChunk(null,0);
+    nc.addZeros(off);
     for(int i = 0; i < vals.length; ++i)
-      c.set(ids[i], vals[i]);
-    c.close(cidx,fs);
-    return vec.chunkForChunkIdx(cidx);
-  }
-
-  private void runTest(double [] vs, double v1, double v2, Class class0, Class class1, Class class2) {
-    Futures fs = new Futures();
-    int length = 4*NewChunk.MIN_SPARSE_RATIO + 1;
-    double [] vals = new double[length];
-    int [] nzs = new int[]{length/4,length/2,(3*length)/4};
-    // test sparse double
-    vals[nzs[0]] = vs[0];
-    vals[nzs[1]] = vs[1];
-    vals[nzs[2]] = vs[2];
-    Chunk c0 = makeChunk(vals,fs);
-    assertTrue(class0.isAssignableFrom(c0.getClass()));
-    try{
-      assertTrue(class0.isAssignableFrom(c0.getClass()));
-      assertEquals(3,c0.sparseLenZero());
-      for(int i = 0; i < vals.length; ++i){
-        assertEquals(Double.isNaN(vals[i]), c0.isNA(i));
-        assertTrue(Double.isNaN(vals[i]) || vals[i] == c0.atd(i));
-      }
-      int j = c0.nextNZ(-1);
-      // test skip cnt iteration
-      for(int nz:nzs){
-        assertEquals(nz,j);
-        assertEquals(Double.isNaN(vals[nz]),c0.isNA(j));
-        assertTrue(Double.isNaN(vals[nz]) || vals[nz] == c0.atd(j));
-        j = c0.nextNZ(j);
-      }
-      Iterator<CXIChunk.Value> it = ((CXIChunk)c0).values();
-      // test iterator
-      for(int nz:nzs){
-        CXIChunk.Value v = it.next();
-        assertEquals(nz,v.rowInChunk());
-        assertEquals(Double.isNaN(vals[nz]), v.isNA());
-        assertTrue(Double.isNaN(vals[nz]) || vals[nz] == v.asDouble());
-      }
-      Chunk c1 = setAndClose(vals[length-1] = v1,length-1,c0,fs);
-      assertTrue(class1.isAssignableFrom(c1.getClass()));
-      // test sparse set
-      assertEquals(4,c1.sparseLenZero());
-      assertEquals(Double.isNaN(v1),c1.isNA(length - 1));
-      assertTrue(Double.isNaN(v1) || v1 == c1.atd(length - 1));
-      Chunk c2 = setAndClose(vals[0] = v2,0,c1,fs);
-      assertTrue(class2.isAssignableFrom(c2.getClass()));
-      assertTrue(c2.nextNZ(-1) == 0);
-      assertEquals(vals.length,c2.sparseLenZero());
-      for(int i = 0; i < vals.length; ++i){
-        assertEquals(Double.isNaN(vals[i]),c2.isNA(i));
-        assertTrue(Double.isNaN(vals[i]) || vals[i] == c2.atd(i));
-        assertTrue(c2.nextNZ(i) == i+1);
-      }
-      fs.blockForPending();
-    } finally {
-      c0._vec.remove();
+      nc.addNum(vals[i]);
+    Chunk c = nc.compress();
+    nzs_ary = nzs_ary.clone();
+    for(int i =0; i < nzs_ary.length; ++i)
+      nzs_ary[i] += off;
+    Assert.assertTrue(clz.isInstance(c));
+    if(isNA){
+      Assert.assertTrue(c.isSparseNA());
+      Assert.assertFalse(c.isSparseZero());
+      Assert.assertEquals(nzs_ary.length,c.sparseLenNA());
+      Assert.assertEquals(vals.length+off,c.sparseLenZero());
+    } else {
+      Assert.assertTrue(c.isSparseZero());
+      Assert.assertFalse(c.isSparseNA());
+      Assert.assertEquals(nzs_ary.length,c.sparseLenZero());
+      Assert.assertEquals(vals.length+off,c.sparseLenNA());
     }
+    // just test nzs
+    test_next_nz(c,vals.length+off,nzs_ary);
+    return c;
+  }
+  public static Chunk makeAndTestSparseChunk(Class clz, double [] vals, int [] nzs_ary, boolean isNA){
+    return makeAndTestSparseChunk(clz,vals,nzs_ary,isNA,true);
+  }
+  public static Chunk makeAndTestSparseChunk(Class clz, double [] vals, int [] nzs_ary, boolean isNA, boolean isSparse){
+    NewChunk nc = new NewChunk(null,0);
+    for(int i = 0; i < vals.length; ++i)
+      nc.addNum(vals[i]);
+    Chunk c = nc.compress();
+    Assert.assertTrue(clz.isInstance(c));
+    if(isSparse) {
+      if (isNA) {
+        Assert.assertEquals(isSparse, c.isSparseNA());
+        Assert.assertFalse(c.isSparseZero());
+        Assert.assertEquals(nzs_ary.length, c.sparseLenNA());
+        Assert.assertEquals(vals.length, c.sparseLenZero());
+      } else {
+        Assert.assertEquals(isSparse, c.isSparseZero());
+        Assert.assertFalse(c.isSparseNA());
+        Assert.assertEquals(nzs_ary.length, c.sparseLenZero());
+        Assert.assertEquals(vals.length, c.sparseLenNA());
+      }
+    }
+    test_at(c,vals,nzs_ary);
+    if(isSparse)
+      test_next_nz(c,vals.length,nzs_ary);
+    test_extract_rows(c,vals,nzs_ary);
+    return c;
   }
 
 
-  @Test public void testDouble() {runTest(new double [] {2.7182,3.14,42},Double.NaN,123.45,CXDChunk.class,CXDChunk.class,CUDChunk.class);}
+  @Test
+  public void doChunkTest() {
+    double [] binary_vals = new double[1024];
+    double [] valsZeroSmall;
+    double [] valsZero;
+    double [] valsNA;
+    double [] float_vals;
+    double [] double_vals;
+    int [] nzs_ary;
+    stall_till_cloudsize(1);
+    valsZeroSmall = new double[1024];
+    valsZero = new double[1024];
+    valsNA = new double[1024];
+    double [] valsNASmall = new double[1024];
+    double [] valsBig = new double[1024];
+    double [] valsNABig = new double[1024];
+    float_vals = new double[1024];
+    double_vals = new double[1024];
+    double [] float_vals_na = new double[1024];
+    double [] double_vals_na = new double[1024];
+    Arrays.fill(float_vals_na,Double.NaN);
+    Arrays.fill(double_vals_na,Double.NaN);
+    Arrays.fill(valsNA,Double.NaN);
+    Arrays.fill(valsNASmall,Double.NaN);
+    Arrays.fill(valsNABig,Double.NaN);
+    Random rnd = new Random(54321);
+    TreeSet<Integer> nzs = new TreeSet<>();
+    for(int i = 0; i < 96; i++) {
+      int x = rnd.nextInt(valsZero.length);
+      if(nzs.add(x)) {
+        binary_vals[x] = 1;
+        valsNA[x] =   rnd.nextDouble() < .95?rnd.nextInt():0;
+        valsZero[x] = rnd.nextDouble() < .95?rnd.nextInt():Double.NaN;
+        valsZeroSmall[x] = rnd.nextDouble() < .95?(rnd.nextInt(60000)-30000):Double.NaN;
+        valsNASmall[x] = rnd.nextDouble() < .95?(rnd.nextInt(60000)-30000):0;
+        valsBig[x] = rnd.nextDouble() < .95?((double)(long)(rnd.nextDouble()*Long.MAX_VALUE)):Double.NaN;
+        valsNABig[x] = rnd.nextDouble() < .95?((double)(long)(rnd.nextDouble()*Long.MAX_VALUE)):0;
+        float_vals[x] = rnd.nextDouble() < .95?rnd.nextFloat():Double.NaN;
+        double_vals[x] = rnd.nextDouble() < .95?rnd.nextDouble():Double.NaN;
+        float_vals_na[x] = rnd.nextDouble() < .95?rnd.nextFloat():0;
+        double_vals_na[x] = rnd.nextDouble() < .95?rnd.nextDouble():0;
+      }
+    }
+    nzs_ary = new int[nzs.size()];
+    int k = 0;
+    for(Integer i:nzs)
+      nzs_ary[k++] = i;
+    CXIChunk binaryChunk = (CXIChunk) SparseTest.makeAndTestSparseChunk(CXIChunk.class,binary_vals,nzs_ary,false);
+    Assert.assertEquals(2,binaryChunk._elem_sz);
+    CXIChunk binaryChunkLong = (CXIChunk) SparseTest.makeAndTestSparseChunk(CXIChunk.class,binary_vals,nzs_ary,false,1<<20);
+    Assert.assertEquals(4,binaryChunkLong._elem_sz);
+    SparseTest.makeAndTestSparseChunk(CXIChunk.class,valsZero,nzs_ary,false);
+    SparseTest.makeAndTestSparseChunk(CXIChunk.class,valsNA,nzs_ary,true);
+    CXIChunk smallZero = (CXIChunk) SparseTest.makeAndTestSparseChunk(CXIChunk.class,valsZeroSmall,nzs_ary,false);
+    Assert.assertEquals(4,smallZero._elem_sz);
+    CXIChunk smallZero2 = (CXIChunk) SparseTest.makeAndTestSparseChunk(CXIChunk.class,valsZeroSmall,nzs_ary,false,60000);
+    Assert.assertEquals(4,smallZero2._elem_sz);
+    CXIChunk smallZeroLong = (CXIChunk) SparseTest.makeAndTestSparseChunk(CXIChunk.class,valsZeroSmall,nzs_ary,false,1<<20);
+    Assert.assertEquals(8,smallZeroLong._elem_sz);
+    CXIChunk smallNA = (CXIChunk) SparseTest.makeAndTestSparseChunk(CXIChunk.class,valsNASmall,nzs_ary,true);
+    Assert.assertEquals(4,smallNA._elem_sz);
+    CXIChunk bigZero = (CXIChunk) SparseTest.makeAndTestSparseChunk(CXIChunk.class,valsBig,nzs_ary,false);
+    Assert.assertEquals(12,bigZero._elem_sz);
+    CXIChunk bigNAZero = (CXIChunk) SparseTest.makeAndTestSparseChunk(CXIChunk.class,valsNABig,nzs_ary,true);
+    Assert.assertEquals(12,bigNAZero._elem_sz);
+    CXFChunk floats = (CXFChunk) SparseTest.makeAndTestSparseChunk(CXFChunk.class,float_vals,nzs_ary,false);
+    Assert.assertEquals(8,floats._elem_sz);
+    CXFChunk doubles = (CXFChunk) SparseTest.makeAndTestSparseChunk(CXFChunk.class,double_vals,nzs_ary,false);
+    Assert.assertEquals(12,doubles._elem_sz);
+    CXFChunk floats_na = (CXFChunk) SparseTest.makeAndTestSparseChunk(CXFChunk.class,float_vals_na,nzs_ary,true);
+    Assert.assertEquals(8,floats_na._elem_sz);
+    CXFChunk doubles_na = (CXFChunk) SparseTest.makeAndTestSparseChunk(CXFChunk.class,double_vals_na,nzs_ary,true);
+    Assert.assertEquals(12,doubles_na._elem_sz);
+  }
 
-  @Test public void testBinary() {
-    runTest(new double [] {1,1,1},1,1,CX0Chunk.class,CX0Chunk.class,CBSChunk.class);
-    runTest(new double [] {1,1,1},Double.NaN,1,CX0Chunk.class,CXIChunk.class,CBSChunk.class);
-  }
-  @Test public void testInt() {
-    runTest(new double [] {1,2,Double.NaN},4,5,CXIChunk.class,CXIChunk.class,C1Chunk.class);
-    runTest(new double [] {1,2000,Double.NaN,3},4,5,CXIChunk.class,CXIChunk.class,C2Chunk.class);
-    runTest(new double [] {Double.NaN,2000,3},400000,5,CXIChunk.class,CXIChunk.class,C4Chunk.class);
-    runTest(new double [] {1,Double.NaN,2000,3},Double.NaN,1e10,CXIChunk.class,CXIChunk.class,C8Chunk.class);
-  }
 }

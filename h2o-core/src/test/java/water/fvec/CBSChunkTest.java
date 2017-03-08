@@ -8,6 +8,8 @@ import water.TestUtil;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.Random;
+import java.util.TreeSet;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -99,7 +101,7 @@ public class CBSChunkTest extends TestUtil {
       if (l==1) nc.addNA();
       for (int v : vals) nc.addNum(v);
       nc.addNA();
-
+      int len = nc.len();
       Chunk cc = nc.compress();
       Assert.assertEquals(vals.length + 1 + l, cc._len);
       Assert.assertTrue(cc instanceof CBSChunk);
@@ -109,14 +111,9 @@ public class CBSChunkTest extends TestUtil {
       Assert.assertTrue(cc.isNA_abs(vals.length + l));
 
       nc = new NewChunk(null, 0);
-      cc.inflate_impl(nc);
-      nc.values(0, nc._len);
+      cc.extractRows(nc, 0,len);
       Assert.assertEquals(vals.length+l+1, nc._sparseLen);
       Assert.assertEquals(vals.length+l+1, nc._len);
-
-      Iterator<NewChunk.Value> it = nc.values(0, vals.length+1+l);
-      for (int i = 0; i < vals.length+1+l; ++i) Assert.assertTrue(it.next().rowId0() == i);
-      Assert.assertTrue(!it.hasNext());
 
       if (l==1) {
         Assert.assertTrue(nc.isNA(0));
@@ -172,14 +169,9 @@ public class CBSChunkTest extends TestUtil {
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA_abs(notna));
 
     NewChunk nc = new NewChunk(null, 0);
-    cc.inflate_impl(nc);
-    nc.values(0, nc._len);
+    cc.extractRows(nc, 0,(int)vec.length());
     Assert.assertEquals(vals.length, nc._sparseLen);
     Assert.assertEquals(vals.length, nc._len);
-
-    Iterator<NewChunk.Value> it = nc.values(0, vals.length);
-    for (int i = 0; i < vals.length; ++i) Assert.assertTrue(it.next().rowId0() == i);
-    Assert.assertTrue(!it.hasNext());
 
     for (int na : NAs) Assert.assertTrue(cc.isNA(na));
     for (int na : NAs) Assert.assertTrue(cc.isNA_abs(na));
@@ -198,5 +190,24 @@ public class CBSChunkTest extends TestUtil {
     vec.remove();
   }
 
+  @Test public void testSparseAndVisitorInterface(){
+    double [] vals = new double[1024];
+    double [] valsNA = new double[1024];
+    TreeSet<Integer> nzs = new TreeSet<>();
+    Random rnd = new Random(54321);
+    for(int i = 0; i < 512; i++) {
+      int x = rnd.nextInt(vals.length);
+      if(nzs.add(x)) {
+        vals[x] = 1;
+        valsNA[x] =   rnd.nextDouble() < .95?1:Double.NaN;
+      }
+    }
+    int [] nzs_ary = new int[nzs.size()];
+    int k = 0;
+    for(Integer i:nzs)
+      nzs_ary[k++] = i;
+    SparseTest.makeAndTestSparseChunk(CBSChunk.class,vals,nzs_ary,false,false);
+    SparseTest.makeAndTestSparseChunk(CBSChunk.class,valsNA,nzs_ary,false,false);
+  }
 
 }
