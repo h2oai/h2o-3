@@ -1283,7 +1283,7 @@ public class NewChunk extends Chunk {
     res[6] = na_sparse?(byte)1:0;
     if(na_sparse)res[6] = (byte)1;
     for(int i = 0; i < _sparseLen; ++i){
-      if(id_sz == 2) UnsafeUtils.set4(res,8+i*elem_size+0,_id[i]);
+      if(id_sz == 2) UnsafeUtils.set2(res,CXIChunk._OFF+i*elem_size+0,(short)_id[i]);
       else UnsafeUtils.set4(res,CXIChunk._OFF+i*elem_size+0,_id[i]);
       long val = isNA2(i)?NA:_ms.get(i);
       switch(val_sz){

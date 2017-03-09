@@ -11,7 +11,7 @@ public class CXIChunk extends Chunk {
   transient int _val_sz;
   transient int _elem_sz;
 //  transient int _elemsz_log; // 2 or 3 for 4 or 8 byte per element
-  static int _OFF = 8; // 4B of len, 1B id sz 1B value, 1B isNA, 1B padding
+  static final int _OFF = 8; // 4B of len, 1B id sz 1B value, 1B isNA, 1B padding
 
 
   protected CXIChunk(byte [] mem){
@@ -56,11 +56,13 @@ public class CXIChunk extends Chunk {
 
   @Override
   protected final void initFromBytes() {
+    _start = -1;  _cidx = -1;
     _len = UnsafeUtils.get4(_mem,0);
     int id_sz = _mem[4]&0xFF;
     _val_sz = _mem[5]&0xFF;
     _elem_sz = _val_sz + id_sz;
     _isNA = (0xFF&_mem[6]) == 1;
+    _previousOffset = _OFF;
   }
 
   protected final int sparseLen(){
@@ -70,18 +72,27 @@ public class CXIChunk extends Chunk {
   protected final int getIdx(int off){return (off-_OFF)/_elem_sz;}
 
   protected final int findOffset(int i) { // do binary search
+    if(i == -1){
+      _previousOffset = _OFF;
+      return _OFF;
+    }
     int off = _previousOffset;
     int id = getId(off);
     if(id == i) return off;
-    if(id < i && (id = getId(off+=_elem_sz)) == i)
-      return (_previousOffset = off);
+    if(id < i && (id = getId(off+=_elem_sz)) == i) {
+      _previousOffset = off;
+      return off;
+    }
     int lb = id < i?getIdx(off):0;
     int ub = id > i?getIdx(off):sparseLen();
     while (lb < ub) {
       int mid = lb + ((ub - lb) >> 1);
       off = getOff(mid);
       int x = getId(off);
-      if (x == i) return off;
+      if (x == i) {
+        _previousOffset = off;
+        return off;
+      }
       if (x < i) lb = mid + 1;
       else ub = mid;
     }
@@ -142,7 +153,8 @@ public class CXIChunk extends Chunk {
   @Override public int nextNZ(int i){
     int x = findOffset(i);
     if(x < 0) x = -x-1-_elem_sz;
-    return getId(_previousOffset = x + _elem_sz);
+    _previousOffset = x += _elem_sz;
+    return getId(x);
   }
 
   @Override
