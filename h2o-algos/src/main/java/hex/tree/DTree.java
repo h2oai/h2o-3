@@ -490,7 +490,7 @@ public class DTree extends Iced {
       DTree.Split _s;
       final int _nid;
       @Override public void compute() {
-        _s = findBestSplitPoint(_hs[_col], _col, _tree._parms._min_rows);
+        _s = findBestSplitPoint(_hs[_col], _col, _tree._parms._min_rows, _tree._parms._reg_alpha, _tree._parms._reg_lambda);
         if (_s == null) return;
       }
     }
@@ -743,10 +743,12 @@ public class DTree extends Iced {
     return new CompressedTree(ab.buf(),_nclass,_seed,tid,cls, domains);
   }
 
-  static Split findBestSplitPoint(DHistogram hs, int col, double min_rows) {
+  static Split findBestSplitPoint(DHistogram hs, int col, double min_rows, double reg_alpha, double reg_lambda) {
     if(hs._vals == null) return null; // TODO: there are empty leafs?
     final int nbins = hs.nbins();
     assert nbins > 1;
+    double l1 = reg_alpha;
+    double l2 = 0.5 * reg_lambda;
 
     // Histogram arrays used for splitting, these are either the original bins
     // (for an ordered predictor), or sorted by the mean response (for an
@@ -822,24 +824,33 @@ public class DTree extends Iced {
       assert MathUtils.compare(wlo[b]+ whi[b]+wNA,tot,1e-5,1e-5);
     }
 
-    double best_seL=Double.MAX_VALUE;   // squared error for left side of the best split (so far)
-    double best_seR=Double.MAX_VALUE;   // squared error for right side of the best split (so far)
+    double best_lossL =Double.MAX_VALUE;   // squared error for left side of the best split (so far)
+    double best_lossR =Double.MAX_VALUE;   // squared error for right side of the best split (so far)
     DHistogram.NASplitDir nasplit = DHistogram.NASplitDir.None;
 
     // squared error of all non-NAs
-    double seNonNA = wYYhi[0] - wYhi[0]* wYhi[0]/ whi[0]; // Squared Error with no split
-    if (seNonNA < 0) seNonNA = 0;
-    double seBefore = seNonNA;
+    double predNonNAs = wYhi[0]/whi[0];
+    double lossNonNAs = wYYhi[0] - wYhi[0]* predNonNAs + l1 * Math.abs(predNonNAs) + l2 * predNonNAs*predNonNAs; // Squared Error with no split
+    if (lossNonNAs < 0) lossNonNAs = 0;
+    double lossBefore = lossNonNAs;
+
+    double best_predL = 0;
+    double best_predR = 0;
 
     // if there are any NAs, then try to split them from the non-NAs
     if (wNA>=min_rows) {
-      double seAll = (wYYhi[0] + wYYNA) - (wYhi[0] + wYNA) * (wYhi[0] + wYNA) / (whi[0] + wNA);
-      double seNA = wYYNA - wYNA * wYNA / wNA;
-      if (seNA < 0) seNA = 0;
-      best_seL = seNonNA;
-      best_seR = seNA;
+      double predAll = (wYhi[0]+wYNA)/(whi[0]+wNA);
+      double predNAs = (        wYNA)/(       wNA);
+
+      double lossAll = (wYYhi[0] + wYYNA) - (wYhi[0] + wYNA) * predAll + l1 * Math.abs(predAll) + l2 * predAll * predAll;
+      double lossNAs = (wYYNA           ) - (wYNA          ) * predNAs + l1 * Math.abs(predNAs) + l2 * predNAs * predNAs;
+      if (lossNAs < 0) lossNAs = 0;
+      best_lossL = lossNonNAs;
+      best_lossR = lossNAs;
+      best_predL = predNonNAs;
+      best_predR = predNAs;
       nasplit = DHistogram.NASplitDir.NAvsREST;
-      seBefore = seAll;
+      lossBefore = lossAll;
     }
 
     // Now roll the split-point across the bins.  There are 2 ways to do this:
@@ -859,56 +870,67 @@ public class DTree extends Iced {
       //                    = wYY - N*wY^2
       //                    = wYY - N*(wY/N)(wY/N)
       //                    = wYY - wY^2/N
-
       // no NAs
       if (wNA==0) {
-        double selo = wYYlo[b] - wYlo[b] * wYlo[b] / wlo[b];
-        double sehi = wYYhi[b] - wYhi[b] * wYhi[b] / whi[b];
-        if (selo < 0) selo = 0;    // Roundoff error; sometimes goes negative
-        if (sehi < 0) sehi = 0;    // Roundoff error; sometimes goes negative
-        if ((selo + sehi < best_seL + best_seR) || // Strictly less error?
+        double predLo = wYlo[b]/wlo[b];
+        double lossLo = wYYlo[b] - wYlo[b] * predLo + l1 * Math.abs(predLo) + l2 * predLo * predLo;
+        double predHi = wYhi[b]/whi[b];
+        double lossHi = wYYhi[b] - wYhi[b] * predHi + l1 * Math.abs(predHi) + l2 * predHi * predHi;
+        if (lossLo < 0) lossLo = 0;    // Roundoff error; sometimes goes negative
+        if (lossHi < 0) lossHi = 0;    // Roundoff error; sometimes goes negative
+        if ((lossLo + lossHi < best_lossL + best_lossR) || // Strictly less error?
                 // Or tied MSE, then pick split towards middle bins
-                (selo + sehi == best_seL + best_seR &&
+                (lossLo + lossHi == best_lossL + best_lossR &&
                         Math.abs(b - (nbins >> 1)) < Math.abs(best - (nbins >> 1)))) {
-          best_seL = selo;
-          best_seR = sehi;
+          best_lossL = lossLo;
+          best_lossR = lossHi;
           best = b;
+          best_predL = predLo;
+          best_predR = predHi;
         }
       } else {
         // option 1: split the numeric feature and throw NAs to the left
         {
-          double selo = wYYlo[b] + wYYNA - (wYlo[b] + wYNA) * (wYlo[b] + wYNA) / (wlo[b] + wNA);
-          double sehi = wYYhi[b] - wYhi[b] * wYhi[b] / whi[b];
-          if (selo < 0) selo = 0;    // Roundoff error; sometimes goes negative
-          if (sehi < 0) sehi = 0;    // Roundoff error; sometimes goes negative
-          if ((selo + sehi < best_seL + best_seR) || // Strictly less error?
+          double predLo = (wYlo[b]+wYNA)/(wlo[b]+wNA);
+          double predHi = (wYhi[b]     )/(whi[b]    );
+          double lossLo = wYYlo[b] + wYYNA - (wYlo[b] + wYNA) * predLo + l1 * Math.abs(predLo) + l2 * predLo * predLo;
+          double lossHi = wYYhi[b]         - (wYhi[b]       ) * predHi + l1 * Math.abs(predHi) + l2 * predHi * predHi;
+          if (lossLo < 0) lossLo = 0;    // Roundoff error; sometimes goes negative
+          if (lossHi < 0) lossHi = 0;    // Roundoff error; sometimes goes negative
+          if ((lossLo + lossHi < best_lossL + best_lossR) || // Strictly less error?
                   // Or tied SE, then pick split towards middle bins
-                  (selo + sehi == best_seL + best_seR &&
+                  (lossLo + lossHi == best_lossL + best_lossR &&
                           Math.abs(b - (nbins >> 1)) < Math.abs(best - (nbins >> 1)))) {
             if( (wlo[b] + wNA) >= min_rows && whi[b] >= min_rows) {
-              best_seL = selo;
-              best_seR = sehi;
+              best_lossL = lossLo;
+              best_lossR = lossHi;
               best = b;
               nasplit = DHistogram.NASplitDir.NALeft;
+              best_predL = predLo;
+              best_predR = predHi;
             }
           }
         }
 
         // option 2: split the numeric feature and throw NAs to the right
         {
-          double selo = wYYlo[b] - wYlo[b] * wYlo[b] / wlo[b];
-          double sehi = wYYhi[b]+wYYNA - (wYhi[b]+wYNA) * (wYhi[b]+wYNA) / (whi[b]+wNA);
-          if (selo < 0) selo = 0;    // Roundoff error; sometimes goes negative
-          if (sehi < 0) sehi = 0;    // Roundoff error; sometimes goes negative
-          if ((selo + sehi < best_seL + best_seR) || // Strictly less error?
+          double predLo = (wYlo[b]     )/(wlo[b]    );
+          double predHi = (wYhi[b]+wYNA)/(whi[b]+wNA);
+          double lossLo = wYYlo[b]       - (wYlo[b]     ) * predLo + l1 * Math.abs(predLo) + l2 * predLo * predLo;
+          double lossHi = wYYhi[b]+wYYNA - (wYhi[b]+wYNA) * predHi + l1 * Math.abs(predHi) + l2 * predHi * predHi;
+          if (lossLo < 0) lossLo = 0;    // Roundoff error; sometimes goes negative
+          if (lossHi < 0) lossHi = 0;    // Roundoff error; sometimes goes negative
+          if ((lossLo + lossHi < best_lossL + best_lossR) || // Strictly less error?
                   // Or tied SE, then pick split towards middle bins
-                  (selo + sehi == best_seL + best_seR &&
+                  (lossLo + lossHi == best_lossL + best_lossR &&
                           Math.abs(b - (nbins >> 1)) < Math.abs(best - (nbins >> 1)))) {
             if( wlo[b] >= min_rows && (whi[b] + wNA) >= min_rows ) {
-              best_seL = selo;
-              best_seR = sehi;
+              best_lossL = lossLo;
+              best_lossR = lossHi;
               best = b;
               nasplit = DHistogram.NASplitDir.NARight;
+              best_predL = predLo;
+              best_predR = predHi;
             }
           }
         }
@@ -965,8 +987,8 @@ public class DTree extends Iced {
     }
 
     //if( se <= best_seL+best_se1) return null; // Ultimately roundoff error loses, and no split actually helped
-    if (!(best_seL+ best_seR < seBefore * (1- hs._minSplitImprovement))) {
-//      Log.info("Not splitting: not enough relative improvement: " + (1-(best_seL + best_seR) / seBefore) + "\n" + hs);
+    if (!(best_lossL + best_lossR < lossBefore * (1- hs._minSplitImprovement))) {
+//      Log.info("Not splitting: not enough relative improvement: " + (1-(best_seL + best_seR) / lossBefore) + "\n" + hs);
       return null;
     }
 
@@ -988,6 +1010,9 @@ public class DTree extends Iced {
       nRight +=wNA;
       predRight +=wYNA;
     }
+    assert(Math.abs(predLeft/nLeft - best_predL) < 1e-5);
+    assert(Math.abs(predRight/nRight - best_predR) < 1e-5);
+
     assert(Math.abs(tot - (nRight + nLeft)) < 1e-5*tot);
 
     if( MathUtils.equalsWithinOneSmallUlp((float)(predLeft / nLeft),(float)(predRight / nRight)) ) {
@@ -1004,6 +1029,6 @@ public class DTree extends Iced {
     if (nasplit == DHistogram.NASplitDir.None) {
       nasplit = nLeft > nRight ? DHistogram.NASplitDir.Left : DHistogram.NASplitDir.Right;
     }
-    return new Split(col,best,nasplit,bs,equal,seBefore,best_seL, best_seR, nLeft, nRight, predLeft / nLeft, predRight / nRight);
+    return new Split(col,best,nasplit,bs,equal,lossBefore, best_lossL, best_lossR, nLeft, nRight, predLeft / nLeft, predRight / nRight);
   }
 }

@@ -73,6 +73,8 @@
 #'        "Random", "QuantilesGlobal", "RoundRobin". Defaults to AUTO.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen". Defaults to AUTO.
+#' @param reg_alpha L1 regularization. Higher values will make the model more conservative. Defaults to 0.
+#' @param reg_lambda L2 regularization. Higher values will make the model more conservative. Defaults to 0.
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @export
@@ -115,7 +117,9 @@ h2o.randomForest <- function(x, y, training_frame,
                              col_sample_rate_per_tree = 1,
                              min_split_improvement = 1e-05,
                              histogram_type = c("AUTO", "UniformAdaptive", "Random", "QuantilesGlobal", "RoundRobin"),
-                             categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen")
+                             categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen"),
+                             reg_alpha = 0,
+                             reg_lambda = 0
                              ) 
 {
   #If x is missing, then assume user wants to use all columns as features.
@@ -231,6 +235,10 @@ h2o.randomForest <- function(x, y, training_frame,
     parms$histogram_type <- histogram_type
   if (!missing(categorical_encoding))
     parms$categorical_encoding <- categorical_encoding
+  if (!missing(reg_alpha))
+    parms$reg_alpha <- reg_alpha
+  if (!missing(reg_lambda))
+    parms$reg_lambda <- reg_lambda
   # Error check and build model
   .h2o.modelJob('drf', parms, h2oRestApiVersion=3) 
 }

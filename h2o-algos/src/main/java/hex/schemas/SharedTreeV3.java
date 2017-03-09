@@ -90,5 +90,11 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
 
     @API(help="What type of histogram to use for finding optimal split points", values = { "AUTO", "UniformAdaptive", "Random", "QuantilesGlobal", "RoundRobin"}, level = API.Level.secondary, gridable = true)
     public SharedTreeParameters.HistogramType histogram_type;
+
+    @API(help="L1 regularization. Higher values will make the model more conservative.", level = API.Level.secondary, gridable = true)
+    public double reg_alpha;
+
+    @API(help="L2 regularization. Higher values will make the model more conservative.", level = API.Level.secondary, gridable = true)
+    public double reg_lambda;
   }
 }

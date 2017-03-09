@@ -84,6 +84,8 @@
 #' @param pred_noise_bandwidth Bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions Defaults to 0.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen". Defaults to AUTO.
+#' @param reg_alpha L1 regularization. Higher values will make the model more conservative. Defaults to 0.
+#' @param reg_lambda L2 regularization. Higher values will make the model more conservative. Defaults to 0.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @examples
 #' \donttest{
@@ -146,7 +148,9 @@ h2o.gbm <- function(x, y, training_frame,
                     histogram_type = c("AUTO", "UniformAdaptive", "Random", "QuantilesGlobal", "RoundRobin"),
                     max_abs_leafnode_pred = 1.797693135e+308,
                     pred_noise_bandwidth = 0,
-                    categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen")
+                    categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen"),
+                    reg_alpha = 0,
+                    reg_lambda = 0
                     ) 
 {
   #If x is missing, then assume user wants to use all columns as features.
@@ -279,6 +283,10 @@ h2o.gbm <- function(x, y, training_frame,
     parms$pred_noise_bandwidth <- pred_noise_bandwidth
   if (!missing(categorical_encoding))
     parms$categorical_encoding <- categorical_encoding
+  if (!missing(reg_alpha))
+    parms$reg_alpha <- reg_alpha
+  if (!missing(reg_lambda))
+    parms$reg_lambda <- reg_lambda
   # Error check and build model
   .h2o.modelJob('gbm', parms, h2oRestApiVersion=3) 
 }

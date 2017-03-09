@@ -32,7 +32,7 @@ class H2ORandomForestEstimator(H2OEstimator):
                       "stopping_metric", "stopping_tolerance", "max_runtime_secs", "seed", "build_tree_one_node",
                       "mtries", "sample_rate", "sample_rate_per_class", "binomial_double_trees", "checkpoint",
                       "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
-                      "histogram_type", "categorical_encoding"}
+                      "histogram_type", "categorical_encoding", "reg_alpha", "reg_lambda"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -686,5 +686,35 @@ class H2ORandomForestEstimator(H2OEstimator):
     def categorical_encoding(self, categorical_encoding):
         assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen"))
         self._parms["categorical_encoding"] = categorical_encoding
+
+
+    @property
+    def reg_alpha(self):
+        """
+        L1 regularization. Higher values will make the model more conservative.
+
+        Type: ``float``  (default: ``0``).
+        """
+        return self._parms.get("reg_alpha")
+
+    @reg_alpha.setter
+    def reg_alpha(self, reg_alpha):
+        assert_is_type(reg_alpha, None, numeric)
+        self._parms["reg_alpha"] = reg_alpha
+
+
+    @property
+    def reg_lambda(self):
+        """
+        L2 regularization. Higher values will make the model more conservative.
+
+        Type: ``float``  (default: ``0``).
+        """
+        return self._parms.get("reg_lambda")
+
+    @reg_lambda.setter
+    def reg_lambda(self, reg_lambda):
+        assert_is_type(reg_lambda, None, numeric)
+        self._parms["reg_lambda"] = reg_lambda
 
 

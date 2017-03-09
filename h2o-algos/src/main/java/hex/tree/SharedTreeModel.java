@@ -70,6 +70,9 @@ public abstract class SharedTreeModel<
 
     public double[] _sample_rate_per_class; //fraction of rows to sample for each tree, per class
 
+    public double _reg_alpha = 0; //L1 regularization
+    public double _reg_lambda = 0; //L2 regularization
+
     @Override public long progressUnits() { return _ntrees + (_histogram_type==HistogramType.QuantilesGlobal || _histogram_type==HistogramType.RoundRobin ? 1 : 0); }
 
     public double _col_sample_rate_change_per_level = 1.0f; //relative change of the column sampling rate for every level

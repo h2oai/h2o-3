@@ -60,6 +60,8 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
       "max_abs_leafnode_pred",
       "pred_noise_bandwidth",
       "categorical_encoding",
+      "reg_alpha",
+      "reg_lambda",
 //      "use_new_histo_tsk",
 //      "col_block_sz",
 //      "min_threads",
