@@ -204,6 +204,8 @@ final class RollupStats extends Iced {
           _sigma += zeroM2 + delta*delta * _rows * zeros / (_rows + zeros); //this is the variance*(N-1), will do sqrt(_sigma/(N-1)) later in postGlobal
           _rows += zeros;
         }
+      } else if(c.isSparseNA()){
+        _naCnt = c._len - c.sparseLenNA();
       }
     }
     _checksum = checksum;
