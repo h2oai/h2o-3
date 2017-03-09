@@ -762,8 +762,11 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
   public NewChunk extractRows(NewChunk nc, int from, int to){
     return processRows(new ChunkVisitor.NewChunkVisitor(nc),from,to)._nc;
   }
-  public NewChunk extractRows(NewChunk nc, int... rows){
+  public NewChunk extractRows(NewChunk nc, int[] rows){
     return processRows(new ChunkVisitor.NewChunkVisitor(nc),rows)._nc;
+  }
+  public NewChunk extractRows(NewChunk nc, int row){
+    return processRows(new ChunkVisitor.NewChunkVisitor(nc),row,row+1)._nc;
   }
 
   /**
