@@ -13,6 +13,10 @@ class UDPHeartbeat extends UDP {
       // and if we update it here we risk dropping an update.
       ab._h2o._heartbeat = new HeartBeat().read(ab);
       Paxos.doHeartbeat(ab._h2o);
+
+      if(ab._h2o._heartbeat._bully_client){
+        H2O.SELF._last_heard_from_bully_client = ab._h2o._last_heard_from;
+      }
     }
     return ab;
   }

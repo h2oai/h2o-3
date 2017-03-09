@@ -17,6 +17,7 @@ public class HeartBeat extends Iced<HeartBeat> {
   byte[] _jar_md5;              // JAR file digest
 
   public boolean _client;       // This is a client node: no keys homed here
+  public boolean _bully_client; // Special client mode - kill cluster when client disappears
 
   public int _pid;              // Process ID
 

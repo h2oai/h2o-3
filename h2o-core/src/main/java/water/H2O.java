@@ -115,6 +115,9 @@ final public class H2O {
             "    -client\n" +
             "          Launch H2O node in client mode.\n" +
             "\n" +
+            "    -bully_client\n" +
+            "          Launch H2O node in bully client mode.\n" +
+            "\n" +
             "    -context_path <context_path>\n" +
             "          The context path for jetty.\n" +
             "\n" +
@@ -215,6 +218,17 @@ final public class H2O {
 
     /** -client, -client=true; Client-only; no work; no homing of Keys (but can cache) */
     public boolean client;
+
+    /** -bully_client, -bully_client=true; Same as the client except the that cluster is stopped when this client
+     * disconnects from the rest of the cloud or the cloud is stopped when it doesn't hear heartbeat from the client for
+     * specified amount of time
+     */
+    public boolean bully_client = false;
+
+    /** -bully_client_timeout=timeout; Timeout in milliseconds for which non-client h2o nodes waits to receive heartbeat message from
+     * the client. If the heartbeat doesn't make it up to that time, the cloud is stopped.
+     */
+    public int bully_client_timeout = 10000;
 
     /** -user_name=user_name; Set user name */
     public String user_name = System.getProperty("user.name");
@@ -425,7 +439,14 @@ final public class H2O {
         ARGS.network = args[i];
       }
       else if (s.matches("client")) {
-        ARGS.client = true;
+        ARGS.client = true; ARGS.bully_client = false;
+      }
+      else if(s.matches("bully_client")){
+        ARGS.bully_client = true; ARGS.client = true;
+      }
+      else if(s.matches("bully_client_timeout")){
+        i = s.incrementAndCheck(i, args);
+        ARGS.bully_client_timeout = s.parseInt(args[i]);
       }
       else if (s.matches("user_name")) {
         i = s.incrementAndCheck(i, args);
@@ -1426,6 +1447,7 @@ final public class H2O {
     // Create the starter Cloud with 1 member
     SELF._heartbeat._jar_md5 = JarHash.JARHASH;
     SELF._heartbeat._client = ARGS.client;
+    SELF._heartbeat._bully_client = ARGS.bully_client;
   }
 
   /** Starts the worker threads, receiver threads, heartbeats and all other
@@ -1447,6 +1469,9 @@ final public class H2O {
       // Same same for a dropped ACK needing an ACKACK back.
       new H2ONode.AckAckTimeOutThread().start();
     }
+
+    // Start the thread which checks whether the cloud should be killed based on activity of bully client
+    new ClientHeartBeatCheckThread().start();
 
     // Start the MultiReceiverThread, to listen for multi-cast requests from
     // other Cloud Nodes. There should be only 1 of these, and it never shuts
@@ -1973,6 +1998,16 @@ final public class H2O {
   public static boolean addNodeToFlatfile(H2ONode node) {
     assert isFlatfileEnabled() : "Trying to use flatfile, but flatfile is not enabled!";
     return STATIC_H2OS.add(node);
+  }
+
+  /** Remove node from a manual multicast list.
+   *  Note: the method is valid only if -flatfile option was specified on commandline*
+   * @param node  h2o node
+   * @return true if node was already in the multicast list.
+   */
+  public static boolean removeNodeFromFlatfile(H2ONode node){
+    assert isFlatfileEnabled() : "Trying to use flatfile, but flatfile is not enabled!";
+    return STATIC_H2OS.remove(node);
   }
 
   /** Check if a node is included in a manual multicast list.
