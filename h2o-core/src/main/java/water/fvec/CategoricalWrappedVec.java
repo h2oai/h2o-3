@@ -4,7 +4,6 @@ import water.AutoBuffer;
 import water.Key;
 import water.DKV;
 import water.util.ArrayUtils;
-import water.util.UnsafeUtils;
 
 import java.util.Arrays;
 import java.util.HashMap;

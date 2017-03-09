@@ -1,7 +1,6 @@
 package water.fvec;
 
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
 import water.util.Log;
@@ -168,7 +167,7 @@ public class ChunkSpeedTest extends TestUtil {
     return sum;
   }
 
-  private static class ChunkSum extends Chunk.ChunkVisitor {
+  private static class ChunkSum extends ChunkVisitor {
     double sum;
     public void addZeros(int n){}
     public void addValue(double d){sum += d;}

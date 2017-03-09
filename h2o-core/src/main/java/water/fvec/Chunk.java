@@ -2,7 +2,6 @@ package water.fvec;
 
 import water.*;
 import water.parser.BufferedString;
-import water.util.PrettyPrint;
 
 import java.util.UUID;
 
@@ -756,164 +755,15 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
     throw new RuntimeException(sb.toString());
   }
 
-  public static abstract class ChunkVisitor {
-    // internal fields
-    Chunk _lastChunk;
-    int _lastId;
-    int _lastOffset;
-    public boolean expandedVals(){return false;}
-    void addValue(BufferedString bs){throw new UnsupportedOperationException();}
-    void addValue(long uuid_lo, long uuid_hi){throw new UnsupportedOperationException();}
-    void addValue(int val){throw new UnsupportedOperationException();}
-    void addValue(double val){throw new UnsupportedOperationException();}
-    void addValue(long val){throw new UnsupportedOperationException();}
-    void addValue(long m, int e){addValue((double)m*PrettyPrint.pow10(e));}
-    void addZeros(int zeros){throw new UnsupportedOperationException();}
-    void addNAs(int nas){throw new UnsupportedOperationException();}
-  }
-
-  public static final class NewChunkVisitor extends ChunkVisitor {
-    private final NewChunk _nc;
-    NewChunkVisitor(NewChunk nc){_nc = nc;}
-    @Override
-    public boolean expandedVals(){return true;}
-    @Override
-    void addValue(BufferedString bs){_nc.addStr(bs);}
-    @Override
-    void addValue(long uuid_lo, long uuid_hi){_nc.addUUID(uuid_lo,uuid_hi);}
-    @Override
-    void addValue(int val) {_nc.addNum(val,0);}
-    @Override
-    void addValue(long val) {_nc.addNum(val,0);}
-    @Override
-    void addValue(long val, int exp) {_nc.addNum(val,exp);}
-    @Override
-    void addValue(double val) {_nc.addNum(val);}
-    @Override
-    void addZeros(int zeros) {_nc.addZeros(zeros);}
-    @Override
-    void addNAs(int nas) {_nc.addNAs(nas);}
-  }
-
-  public static final class DoubleAryVisitor extends ChunkVisitor {
-    public final double [] vals;
-    private int _k = 0;
-    private final double _na;
-    DoubleAryVisitor(double [] vals){this(vals,Double.NaN);}
-    DoubleAryVisitor(double [] vals, double NA){
-      this.vals = vals; _na = NA;}
-    @Override
-    void addValue(int val) {
-      vals[_k++] = val;}
-    @Override
-    void addValue(long val) {
-      vals[_k++] = val;}
-    @Override
-    void addValue(double val) {
-      vals[_k++] = Double.isNaN(val)?_na:val;}
-    @Override
-    void addZeros(int zeros) {
-      int k = _k;
-      int kmax = k +zeros;
-      for(;k < kmax; k++) vals[k] = 0;
-      _k = kmax;
-    }
-    @Override
-    void addNAs(int nas) {
-      int k = _k;
-      int kmax = k + nas;
-      for(;k < kmax; k++) vals[k] = _na;
-      _k = kmax;
-    }
-  }
-  public static final class SparseDoubleAryVisitor extends ChunkVisitor {
-    public final boolean naSparse;
-    public final double [] vals;
-    public final int [] ids;
-    private int _sparseLen;
-    private int _len;
-    private final double _na;
-    SparseDoubleAryVisitor(double [] vals, int [] ids){this(vals,ids,false,Double.NaN);}
-    SparseDoubleAryVisitor(double [] vals, int [] ids, boolean naSparse){this(vals, ids, naSparse, Double.NaN);}
-    SparseDoubleAryVisitor(double [] vals, int [] ids, boolean naSparse, double NA){this.vals = vals; this.ids = ids; _na = NA; this.naSparse = naSparse;}
-    @Override
-    void addValue(int val) {ids[_sparseLen] = _len++; vals[_sparseLen++] = val;}
-    @Override
-    void addValue(long val) {ids[_sparseLen] = _len++; vals[_sparseLen++] = val;}
-    @Override
-    void addValue(double val) {ids[_sparseLen] = _len++; vals[_sparseLen++] = val;}
-    @Override
-    void addZeros(int zeros) {
-      if(naSparse) {
-        int kmax = _sparseLen + zeros;
-        for (int k = _sparseLen; k < kmax; k++) {
-          ids[k] = _len++;
-          vals[k] = 0;
-        }
-        _sparseLen = kmax;
-      } else
-        _len += zeros;
-    }
-    @Override
-    void addNAs(int nas) {
-      if(!naSparse) {
-        int kmax = _sparseLen + nas;
-        for (int k = _sparseLen; k < kmax; k++) {
-          ids[k] = _len++;
-          vals[k] = Double.NaN;
-        }
-        _sparseLen = kmax;
-      } else
-        _len += nas;
-    }
-  }
-
-  public static final class IntAryVisitor extends ChunkVisitor {
-    public final int [] vals;
-    private int _k = 0;
-    private final int _na;
-    IntAryVisitor(int [] vals){this(vals,(int)C4Chunk._NA);}
-    IntAryVisitor(int [] vals, int NA){this.vals = vals; _na = NA;}
-    @Override
-    public void addValue(int val) {vals[_k++] = val;}
-    @Override
-    public void addValue(long val) {
-      if(Integer.MAX_VALUE < val || val < Integer.MIN_VALUE)
-        throw new RuntimeException(val + " does not fit into int");
-      vals[_k++] = (int)val;
-    }
-    @Override
-    public void addValue(double val) {
-      int i = (int)val;
-      if( i != val)
-        throw new RuntimeException(val + " does not fit into int");
-      vals[_k++] = i;
-    }
-    @Override
-    public void addZeros(int zeros) {
-      int k = _k;
-      int kmax = k +zeros;
-      for(;k < kmax; k++)vals[k] = 0;
-      _k = kmax;
-    }
-    @Override
-    public void addNAs(int nas) {
-      int k = _k;
-      int kmax = k + nas;
-      for(;k < kmax; k++)vals[k] = _na;
-      _k = kmax;
-    }
-  }
-
   public abstract <T extends ChunkVisitor> T processRows(T v, int from, int to);
   public abstract <T extends ChunkVisitor> T processRows(T v, int [] ids);
 
   // convenience methods wrapping around visitor interface
   public NewChunk extractRows(NewChunk nc, int from, int to){
-    return processRows(new NewChunkVisitor(nc),from,to)._nc;
+    return processRows(new ChunkVisitor.NewChunkVisitor(nc),from,to)._nc;
   }
   public NewChunk extractRows(NewChunk nc, int... rows){
-    return processRows(new NewChunkVisitor(nc),rows)._nc;
+    return processRows(new ChunkVisitor.NewChunkVisitor(nc),rows)._nc;
   }
 
   /**
@@ -924,10 +774,10 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
    */
   public double [] getDoubles(double[] vals, int from, int to){ return getDoubles(vals,from,to, Double.NaN);}
   public double [] getDoubles(double [] vals, int from, int to, double NA){
-    return processRows(new DoubleAryVisitor(vals,NA),from,to).vals;
+    return processRows(new ChunkVisitor.DoubleAryVisitor(vals,NA),from,to).vals;
   }
   public int [] getIntegers(int [] vals, int from, int to, int NA){
-    return processRows(new IntAryVisitor(vals,NA),from,to).vals;
+    return processRows(new ChunkVisitor.IntAryVisitor(vals,NA),from,to).vals;
   }
   /**
    * Dense bulk interface, fetch values from the given ids
@@ -935,7 +785,7 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
    * @param ids
    */
   public double[] getDoubles(double [] vals, int [] ids){
-    return processRows(new DoubleAryVisitor(vals),ids).vals;
+    return processRows(new ChunkVisitor.DoubleAryVisitor(vals),ids).vals;
   }
   /**
    * Sparse bulk interface, stream through the compressed values and extract them into dense double array.
@@ -945,6 +795,6 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
    */
   public int getSparseDoubles(double[] vals, int[] ids){return getSparseDoubles(vals,ids,Double.NaN);}
   public int getSparseDoubles(double [] vals, int [] ids, double NA) {
-    return processRows(new SparseDoubleAryVisitor(vals,ids,isSparseNA(),NA),0,_len)._sparseLen;
+    return processRows(new ChunkVisitor.SparseDoubleAryVisitor(vals,ids,isSparseNA(),NA),0,_len).sparseLen();
   }
 }

@@ -1,7 +1,5 @@
 package water.fvec;
 
-import water.util.UnsafeUtils;
-
 /**
  * The empty-compression function, if all elements fit directly on UNSIGNED bytes.
  * [In particular, this is the compression style for data read in from files.]
