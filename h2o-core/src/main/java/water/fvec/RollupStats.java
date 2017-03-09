@@ -82,6 +82,7 @@ final class RollupStats extends Iced {
   private RollupStats map( Chunk c ) {
     _size = c.byteSize();
     boolean isUUID = c._vec.isUUID();
+    
     boolean isString = c._vec.isString();
     BufferedString tmpStr = new BufferedString();
     if (isString) _isInt = false;
@@ -141,17 +142,7 @@ final class RollupStats extends Iced {
 
     // Walk the non-zeros
     if( isUUID ) {   // UUID columns do not compute min/max/mean/sigma
-      for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
-        if( c.isNA(i) ) _naCnt++;
-        else {
-          long lo = c.at16l(i), hi = c.at16h(i);
-          if (lo != 0 || hi != 0) _nzCnt++;
-          l = lo ^ 37*hi;
-        }
-        if(l != 0) // ignore 0s in checksum to be consistent with sparse chunks
-          checksum ^= (17 * (start+i)) ^ 23*l;
-      }
-
+      checksum = processUUIDchunk(c, checksum, start, l);
     } else if( isString ) { // String columns do not compute min/max/mean/sigma
       for (int i = c.nextNZ(-1); i < c._len; i = c.nextNZ(i)) {
         if (c.isNA(i)) _naCnt++;
@@ -215,6 +206,24 @@ final class RollupStats extends Iced {
       _mean = _sigma = Double.NaN;
     }
     return this;
+  }
+
+  private long processUUIDchunk(Chunk c, long checksum, long start, long l) {
+    for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
+      if( c.isNA(i) ) _naCnt++;
+      else {
+        try {
+          long lo = c.at16l(i), hi = c.at16h(i);
+          if (lo != 0 || hi != 0) _nzCnt++;
+          l = lo ^ 37*hi;
+        } catch (Chunk.WrongType wt) {
+          throw new IllegalArgumentException(c.getClass().getSimpleName() + " c is not UUID as its vec " + c._vec._key + " claims");
+        }
+      }
+      if(l != 0) // ignore 0s in checksum to be consistent with sparse chunks
+        checksum ^= (17 * (start+i)) ^ 23*l;
+    }
+    return checksum;
   }
 
   private void reduce( RollupStats rs ) {

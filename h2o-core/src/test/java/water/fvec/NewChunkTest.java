@@ -7,6 +7,7 @@ import org.junit.Test;
 import water.DKV;
 import water.Futures;
 import water.TestUtil;
+import water.exceptions.H2OIllegalArgumentException;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -597,7 +598,7 @@ public class NewChunkTest extends TestUtil {
       nc.addUUID(C16Chunk._LO_NA, C16Chunk._HI_NA);
       assertTrue(nc.isNA(2));
       fail("Expected a failure on adding an illegal value");
-    } catch(IllegalArgumentException iae) {
+    } catch(H2OIllegalArgumentException iae) {
       // as expected
     }
 /* TODO(Vlad): fix after UUID checks get through
@@ -610,6 +611,18 @@ public class NewChunkTest extends TestUtil {
       // as expected
     }
     */
+  }
+
+  @Test public void testAddGarbageExpectingUUID() {
+    AppendableVec av = new AppendableVec(Vec.newKey(), Vec.T_UUID);
+    NewChunk nc = new NewChunk(av, 0);
+    nc.addNum(Math.PI);
+    try {
+      nc.compress();
+      fail("Expected an H2OIllegalArgumentException");
+    } catch (H2OIllegalArgumentException hiae) {
+      assertTrue(hiae.getMessage().contains("required to be UUID"));
+    }
   }
 
   @Ignore("Vlad: will fix it after UUID")

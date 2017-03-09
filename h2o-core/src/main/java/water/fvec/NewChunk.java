@@ -5,6 +5,7 @@ import water.AutoBuffer;
 import water.Futures;
 import water.H2O;
 import water.MemoryManager;
+import water.exceptions.H2OIllegalArgumentException;
 import water.parser.BufferedString;
 import water.util.PrettyPrint;
 import water.util.UnsafeUtils;
@@ -13,7 +14,11 @@ import java.util.*;
 
 // An uncompressed chunk of data, supporting an append operation
 public class NewChunk extends Chunk {
-
+  
+  static H2OIllegalArgumentException badType(String message) {
+    return new H2OIllegalArgumentException(message);
+  }
+  
   public void alloc_mantissa(int sparseLen) {_ms = new Mantissas(sparseLen);}
 
   public void alloc_exponent(int sparseLen) {_xs = new Exponents(sparseLen);}
@@ -412,7 +417,7 @@ public class NewChunk extends Chunk {
         return v;
       }
       @Override
-      public void remove() {throw new UnsupportedOperationException();}
+      public void remove() {throw new UnsupportedOperationException("remove not allowed in NewChunk");}
     };
   }
 
@@ -649,7 +654,7 @@ public class NewChunk extends Chunk {
 
   // Append a UUID, stored in _ls & _ds
   public void addUUID( long lo, long hi ) {
-    if (C16Chunk.isNA(lo, hi)) throw new IllegalArgumentException("Cannot set illegal UUID value");
+    if (C16Chunk.isNA(lo, hi)) throw badType("Cannot set illegal UUID value");
     if( _ms==null || _ds== null || _sparseLen >= _ms.len() )
       append2slowUUID();
     _ms.set(_sparseLen,lo);
@@ -1056,9 +1061,21 @@ public class NewChunk extends Chunk {
     return res < 0 ? 0 /*happens for rare FP roundoff computation of min & max */: res;
   }
 
+  private void checkCompatibility(byte detectedChunkType) {
+    if (_vec == null) { // who cares, probably a test
+      return;
+    }
+    
+    if (_vec.isUUID() && detectedChunkType != Vec.T_UUID) {
+      throw badType("The chunk was required to be UUID, but it is " + Vec.TYPE_STR[detectedChunkType]);
+    }
+  }
+  
   private Chunk compress2() {
     // Check for basic mode info: all missing or all strings or mixed stuff
     byte mode = type();
+    checkCompatibility(mode);
+    
     if( mode==Vec.T_BAD ) // ALL NAs, nothing to do
       return new C0DChunk(Double.NaN, _len);
     if( mode==Vec.T_STR )
@@ -1569,7 +1586,7 @@ public class NewChunk extends Chunk {
   }
   
   protected final long at8_impl2(int i) {
-    if(isNA2(i))throw new RuntimeException("Attempting to access NA as integer value.");
+    if(isNA2(i))throw badType("Attempting to access NA as integer value.");
     if( _ms == null ) return (long)_ds[i];
     return _ms.get(i)*PrettyPrint.pow10i(_xs.get(i));
   }
@@ -1579,7 +1596,7 @@ public class NewChunk extends Chunk {
       int idx = Arrays.binarySearch(_id,0, _sparseLen,i);
       if(idx >= 0) i = idx;
       else {
-        if (_sparseNA) throw new RuntimeException("Attempting to access NA as integer value.");
+        if (_sparseNA) throw badType("Attempting to access NA as integer value.");
         return 0;
       }
     }
@@ -1605,14 +1622,14 @@ public class NewChunk extends Chunk {
   @Override protected long at16l_impl(int idx) {
     long lo = loAt(idx);
     if(lo == C16Chunk._LO_NA && hiAt(idx) == C16Chunk._HI_NA) {
-      throw new RuntimeException("Attempting to access NA as integer lo value at " + idx);
+      throw badType("Attempting to access NA as integer lo value at " + idx);
     }
     return _ms.get(idx);
   }
   @Override protected long at16h_impl(int idx) {
     long hi = Double.doubleToRawLongBits(_ds[idx]);
     if(hi == C16Chunk._HI_NA && loAt(idx) == C16Chunk._LO_NA) {
-      throw new RuntimeException("Attempting to access NA as integer hi value at " + idx);
+      throw badType("Attempting to access NA as integer hi value at " + idx);
     }
     return hi;
   }
