@@ -388,13 +388,16 @@ class H2OCloudNode(object):
                                           cwd=there)
             os.chdir(cwd)
         else:
-            self.child = subprocess.Popen(args=cmd,
-                                          stdout=f,
-                                          stderr=subprocess.STDOUT,
-                                          cwd=self.output_dir)
+            try: 
+              self.child = subprocess.Popen(args=cmd,
+                                            stdout=f,
+                                            stderr=subprocess.STDOUT,
+                                            cwd=self.output_dir)
+              self.pid = self.child.pid
+              print("+ CMD: " + ' '.join(cmd))
 
-        self.pid = self.child.pid
-        print("+ CMD: " + ' '.join(cmd))
+            except OSError, Argument:
+                raise "Failed to spawn %s in %s" % (cmd, self.output_dir)
 
 
     def scrape_port_from_stdout(self):
