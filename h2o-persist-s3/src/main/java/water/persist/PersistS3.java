@@ -82,7 +82,12 @@ public final class PersistS3 extends Persist {
       try {
         return new PropertiesCredentials(credentials);
       } catch (IOException e) {
-        throw new AmazonClientException("Unable to load AWS credentials from file " + credentials);
+        Log.debug(
+            "Unable to load AWS credentials from file " + credentials + 
+                "; exists? " + credentials.exists() + ", canRead? " + credentials.canRead() + 
+                ", size=" + credentials.length() + "; problem: " + e.getMessage());
+        throw new AmazonClientException(
+            "PersistS3. Unable to load AWS credentials from file " + credentials + ": " + e.getMessage());
       }
     }
 
@@ -365,6 +370,7 @@ public final class PersistS3 extends Persist {
       if (e.getErrorCode().contains("404")) {
         throw new IOException(e);
       } else {
+        Log.err("AWS failed for " + Arrays.toString(parts) + ": " + e.getMessage());
         throw e;
       }
     }
