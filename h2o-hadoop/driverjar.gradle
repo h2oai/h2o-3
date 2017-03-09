@@ -13,10 +13,18 @@ sourceSets {
   main {
     java {
       if (project.hasProperty('notYarn')) {
-        srcDir  '../h2o-mapreduce-generic/src/main/java'
+        srcDirs  '../h2o-mapreduce-generic/src/main/java'
+      } else {
+        srcDirs '../h2o-mapreduce-generic/src/main/java',
+                '../h2o-yarn-generic/src/main/java'
       }
-      else {
-        srcDirs '../h2o-mapreduce-generic/src/main/java', '../h2o-yarn-generic/src/main/java'
+    }
+    resources {
+      if (project.hasProperty('notYarn')) {
+        srcDirs  '../h2o-mapreduce-generic/src/main/resources'
+      } else {
+        srcDirs '../h2o-mapreduce-generic/src/main/resources',
+                '../h2o-yarn-generic/src/main/resources'
       }
     }
   }
