@@ -1066,6 +1066,10 @@ public class NewChunk extends Chunk {
       return;
     }
     
+    if (detectedChunkType == Vec.T_BAD) { // ok, bad data
+      return; 
+    }
+    
     if (_vec.isUUID() && detectedChunkType != Vec.T_UUID) {
       throw badType("The chunk was required to be UUID, but it is " + Vec.TYPE_STR[detectedChunkType]);
     }
