@@ -55,7 +55,7 @@ public class CXIChunk extends Chunk {
 
 
   @Override
-  protected void initFromBytes() {
+  protected final void initFromBytes() {
     _len = UnsafeUtils.get4(_mem,0);
     int id_sz = _mem[4]&0xFF;
     _val_sz = _mem[5]&0xFF;

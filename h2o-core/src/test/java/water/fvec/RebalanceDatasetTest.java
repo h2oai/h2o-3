@@ -14,12 +14,13 @@ public class RebalanceDatasetTest extends TestUtil {
   @Test public void testProstate(){
     NFSFileVec[] nfs = new NFSFileVec[]{
             TestUtil.makeNfsFileVec("smalldata/logreg/prostate.csv"),
-        TestUtil.makeNfsFileVec("smalldata/covtype/covtype.20k.data")};
+        TestUtil.makeNfsFileVec("smalldata/covtype/covtype.20k.data"),
+        TestUtil.makeNfsFileVec("smalldata/chicago/chicagoCrimes10k.csv.zip")};
             //NFSFileVec.make(find_test_file("bigdata/laptop/usecases/cup98VAL_z.csv"))};
     for (NFSFileVec fv : nfs) {
       Frame fr = ParseDataset.parse(Key.make(), fv._key);
       Key rebalancedKey = Key.make("rebalanced");
-      int[] trials = {380, 1, 3, 8, 12, 256, 16, 32, 64, 11, 13};
+      int[] trials = {380, 1, 3, 8, 9, 12, 256, 16, 32, 64, 11, 13};
       for (int i : trials) {
         Frame rebalanced = null;
         try {

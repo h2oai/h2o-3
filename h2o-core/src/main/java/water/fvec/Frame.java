@@ -1282,7 +1282,7 @@ public class Frame extends Lockable<Frame> {
           ids[i-zeros] = i;
         } else zeros++;
       ids = Arrays.copyOf(ids,ids.length-zeros);
-      for (int c = 0; c < chks.length-2; ++c)
+      for (int c = 0; c < chks.length-1; ++c)
         chks[c].extractRows(nchks[c], ids);
     }
   }

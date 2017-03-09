@@ -382,11 +382,13 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
   }
 
   public Chunk deepCopy() {
-    Chunk c2 = (Chunk)clone();
+    Chunk c2 = clone();
     c2._vec=null;
     c2._start=-1;
     c2._cidx=-1;
     c2._mem = _mem.clone();
+    c2.initFromBytes();
+    assert len() == c2._len;
     return c2;
   }
 

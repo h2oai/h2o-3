@@ -190,5 +190,9 @@ public class CategoricalWrappedVec extends WrappedVec {
     public static AutoBuffer write_impl(CategoricalWrappedVec v,AutoBuffer bb) { throw water.H2O.fail(); }
     @Override protected final void initFromBytes () { throw water.H2O.fail(); }
     @Override public boolean hasNA() { return false; }
+
+    public Chunk deepCopy() {
+      return extractRows(new NewChunk(this),0,_c._len).compress();
+    }
   }
 }

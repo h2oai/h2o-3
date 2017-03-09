@@ -123,5 +123,9 @@ public class TransformWrappedVec extends WrappedVec {
     @Override public boolean setNA_impl(int idx)         { return false; }
 
     @Override protected final void initFromBytes () { throw water.H2O.fail(); }
+
+    public Chunk deepCopy() {
+      return extractRows(new NewChunk(this),0,_len).compress();
+    }
   }
 }
