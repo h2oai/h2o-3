@@ -396,7 +396,7 @@ class H2OCloudNode(object):
               self.pid = self.child.pid
               print("+ CMD: " + ' '.join(cmd))
 
-            except OSError, Argument:
+            except OSError:
                 raise "Failed to spawn %s in %s" % (cmd, self.output_dir)
 
 
