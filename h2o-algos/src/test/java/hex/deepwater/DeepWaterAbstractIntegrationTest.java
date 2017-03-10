@@ -1041,7 +1041,9 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._train = tfr._key;
       p._epochs = 10;
       p._response_column = "C5";
-      p._hidden = new int[]{2,2};
+      if(getBackend() != DeepWaterParameters.Backend.tensorflow) {
+        p._hidden = new int[]{2,2};
+      }
       p._seed = 0xdecaf;
       p._stopping_rounds = 0;
 
@@ -1072,7 +1074,9 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._train = tfr._key;
       p._epochs = 10;
       p._response_column = "C5";
-      p._hidden = new int[]{2,2};
+      if(getBackend() != DeepWaterParameters.Backend.tensorflow) {
+        p._hidden = new int[]{2, 2};
+      }
       p._seed = 0xdecaf;
 
       dl = new DeepWater(p).trainModel().get();
@@ -1230,7 +1234,9 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
         parms._response_column = "Class";
         parms._autoencoder = ae;
         parms._train_samples_per_iteration = 10;
-        parms._hidden = new int[]{10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10};
+        if(getBackend() != DeepWaterParameters.Backend.tensorflow) {
+          parms._hidden = new int[]{10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10};
+        }
         parms._learning_rate = 1e10;
         parms._standardize = false;
 
