@@ -210,4 +210,7 @@ public class CXIChunk extends Chunk {
     }
     return v;
   }
+
+  @Override
+  public boolean hasFloat(){return false;}
 }

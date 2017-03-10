@@ -88,4 +88,6 @@ public class CXFChunk extends CXIChunk {
     }
     return v;
   }
+  @Override
+  public boolean hasFloat(){return true;}
 }
