@@ -94,9 +94,7 @@ public class AstRStrip extends AstPrimitive {
         if (chk instanceof C0DChunk) // all NAs
           for (int i = 0; i < chk.len(); i++)
             newChk.addNA();
-        else if (((CStrChunk) chk)._isAllASCII && StringUtils.isAsciiPrintable(charSet)) { // fast-path operations
-          ((CStrChunk) chk).asciiRStrip(newChk, charSet);
-        } else {
+        else {
           BufferedString tmpStr = new BufferedString();
           for (int i = 0; i < chk.len(); i++) {
             if (chk.isNA(i))
