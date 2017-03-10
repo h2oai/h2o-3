@@ -512,7 +512,8 @@ final class RollupStats extends Iced {
         nbins = Math.min(lim, nbins); // Cap nbins at sane levels
       }
       Histo histo = new Histo(null, rs, nbins).doAll(vec);
-      assert ArrayUtils.sum(histo._bins) == rows;
+      long sum = ArrayUtils.sum(histo._bins);
+      assert sum == rows:"expected " + rows + " rows, got " + sum;
       rs._bins = histo._bins;
       // Compute percentiles from histogram
       rs._pctiles = new double[Vec.PERCENTILES.length];
