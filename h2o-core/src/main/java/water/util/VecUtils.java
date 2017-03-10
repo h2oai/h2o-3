@@ -39,7 +39,9 @@ public class VecUtils {
       case Vec.T_CAT:
         return src.makeCopy(src.domain());
       case Vec.T_NUM:
-        return numericToCategorical(src);
+        if (src.isInt()) return numericToCategorical(src);
+        else throw new H2OIllegalArgumentException("Cannot convert to categorical: column type " + src.get_type_str());
+
       case Vec.T_STR: // PUBDEV-2204
         return stringToCategorical(src);
       case Vec.T_TIME: // PUBDEV-2205
@@ -114,7 +116,7 @@ public class VecUtils {
       if (dom.length > Categorical.MAX_CATEGORICAL_COUNT)
         throw new H2OIllegalArgumentException("Column domain is too large to be represented as an categorical: " + dom.length + " > " + Categorical.MAX_CATEGORICAL_COUNT);
       return copyOver(src, Vec.T_CAT, dom);
-    } else throw new H2OIllegalArgumentException("Categorical conversion can only currently be applied to integer columns.");
+    } else throw new H2OIllegalArgumentException("Categorical conversion can only currently be applied to integer columns; tried " + src.get_type_str());
   }
 
   /**

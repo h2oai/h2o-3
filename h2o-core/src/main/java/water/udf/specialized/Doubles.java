@@ -10,7 +10,7 @@ import water.udf.DataColumns;
 /**
  * Specialized factory for double numbers
  */
-public class Doubles extends DataColumns.BaseFactory<Double> {
+public class Doubles extends DataColumns.SimpleColumnFactory<Double> {
   public static final water.udf.specialized.Doubles Doubles = new Doubles();
    
   public Doubles() {
@@ -50,7 +50,7 @@ public class Doubles extends DataColumns.BaseFactory<Double> {
      * deserialization wants it
      */
     public Column() {}
-    Column(Vec vec, ColumnFactory<Double> factory) {
+    Column(Vec vec, Doubles factory) {
       super(vec, factory);      
     }
     public Double get(long idx) { return vec().at(idx); }
