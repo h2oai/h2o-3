@@ -7,6 +7,7 @@ import water.fvec.Vec;
 import static water.parser.DefaultParserProviders.ARFF_INFO;
 
 class ARFFParser extends CsvParser {
+  private static final String TAG_ATTRIBUTE = "@ATTRIBUTE";
   private static final byte GUESS_SEP = ParseSetup.GUESS_SEP;
 
   ARFFParser(ParseSetup ps, Key jobKey) { super(ps, jobKey); }
@@ -18,7 +19,7 @@ class ARFFParser extends CsvParser {
     // Parse all lines starting with @ until EOF or @DATA
     boolean haveData = false;
     int offset = 0;
-    String[][] data;
+    String[][] data = new String[0][];;
     String[] labels;
     String[][] domains;
     String[] headerlines = new String[0];
@@ -37,11 +38,10 @@ class ARFFParser extends CsvParser {
     // process header
     final int nlines = headerlines.length;
     int ncols = nlines;
-    data = new String[ncols][];
     labels = new String[ncols];
     domains = new String[ncols][];
     ctypes = new byte[ncols];
-    processArffHeader(ncols, headerlines, data, labels, domains, ctypes);
+    processArffHeader(ncols, headerlines, labels, domains, ctypes);
 
     // data section (for preview)
     if (haveData) {
@@ -127,55 +127,63 @@ class ARFFParser extends CsvParser {
     return offset;
   }
 
-  private static void processArffHeader(int ncols, String[] headerlines, String[][] data, String[] labels, String[][] domains, byte[] ctypes) {
+  static void processArffHeader(int ncols, String[] headerlines, String[] labels, String[][] domains, byte[] ctypes) {
     for (int i=0; i<ncols; ++i) {
-      data[i] = headerlines[i].split("\\s+");
-      if (!data[i][0].equalsIgnoreCase("@ATTRIBUTE")) {
+      String[] line = headerlines[i].split("\\s+", 2);
+      if (!line[0].equalsIgnoreCase(TAG_ATTRIBUTE)) {
         throw new ParseDataset.H2OParseException("Expected line to start with @ATTRIBUTE.");
       } else {
-        if (data[i].length < 3 ) {
+        final String spec = (line.length == 2) ? line[1].replaceAll("\\s", " ") : ""; // normalize separators
+        int sepIdx = spec.lastIndexOf(' ');
+        if (sepIdx < 0) {
           throw new ParseDataset.H2OParseException("Expected @ATTRIBUTE to be followed by <attribute-name> <datatype>");
         }
-        labels[i] = data[i][1];
-        String type = data[i][2];
+        final String type = spec.substring(sepIdx + 1).trim();
         domains[i] = null;
+        ctypes[i] = Vec.T_BAD;
         if (type.equalsIgnoreCase("NUMERIC") || type.equalsIgnoreCase("REAL") || type.equalsIgnoreCase("INTEGER") || type.equalsIgnoreCase("INT")) {
           ctypes[i] = Vec.T_NUM;
-          continue;
         }
         else if (type.equalsIgnoreCase("DATE") || type.equalsIgnoreCase("TIME")) {
           ctypes[i] = Vec.T_TIME;
-          continue;
         }
         else if (type.equalsIgnoreCase("ENUM")) {
           ctypes[i] = Vec.T_CAT;
-          continue;
         }
         else if (type.equalsIgnoreCase("STRING")) {
           ctypes[i] = Vec.T_STR;
-          continue;
         }
         else if (type.equalsIgnoreCase("UUID")) { //extension of ARFF
           ctypes[i] = Vec.T_UUID;
-          continue;
         }
         else if (type.equalsIgnoreCase("RELATIONAL")) {
           throw new UnsupportedOperationException("Relational ARFF format is not supported.");
         }
-        else if (type.startsWith("{") && data[i][data[i].length-1].endsWith("}")) {
-          StringBuilder builder = new StringBuilder();
-          for(int j = 2; j < data[i].length; j++) {
-            builder.append(data[i][j]);
-          }
-          domains[i] = builder.toString().replaceAll("[{}]", "").split(",");
-          if (domains[i][0].length() > 0) {
-            // case of {A,B,C} (valid list of factors)
-            ctypes[i] = Vec.T_CAT;
-            continue;
-          }
+        else if (type.endsWith("}")) {
+          int domainSpecStart = spec.lastIndexOf('{');
+          if (domainSpecStart < 0)
+            throw new ParseDataset.H2OParseException("Invalid type specification.");
+          sepIdx = domainSpecStart - 1;
+          String domainSpec = spec.substring(domainSpecStart + 1, line[1].length() - 1);
+          domains[i] = domainSpec.split(",");
+          for (int j = 0; j < domains[i].length; j++)
+            domains[i][j] = domains[i][j].trim();
+          if (domains[i][0].length() > 0)
+            ctypes[i] = Vec.T_CAT; // case of {A,B,C} (valid list of factors)
         }
-        // only get here if data is invalid ARFF
-        throw new ParseDataset.H2OParseException("Unexpected line.");
+
+        if (ctypes[i] == Vec.T_BAD)
+          throw new ParseDataset.H2OParseException("Unexpected line.");
+
+        // remove the whitespaces separating the label and the type specification
+        while ((sepIdx > 0) && (spec.charAt(sepIdx - 1) == ' ')) sepIdx--;
+        String label = line[1].substring(0, sepIdx); // use the raw string before whitespace normalization
+
+        // remove quotes
+        if (label.length() >= 2 && label.startsWith("'") && label.endsWith("'"))
+          label = label.substring(1, label.length() - 1);
+
+        labels[i] = label;
       }
     }
 
