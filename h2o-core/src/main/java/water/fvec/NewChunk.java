@@ -1038,7 +1038,7 @@ public class NewChunk extends Chunk {
     if( mode==Vec.T_BAD ) // ALL NAs, nothing to do
       return new C0DChunk(Double.NaN, _len);
     if( mode==Vec.T_STR )
-      return new CStrChunk(_sslen, _ss, _sparseLen, _len, _id, _is, _isAllASCII);
+      return new CStrChunk(_sslen, _ss, _sparseLen, _len, _id, _is);
     boolean rerun=false;
     if(mode == Vec.T_CAT) {
       for(int i = 0; i< _sparseLen; i++ )

@@ -14,18 +14,26 @@ public class CStrChunk extends Chunk {
   public boolean _isAllASCII = false;
 
   public CStrChunk() {}
-  public CStrChunk(int sslen, byte[] ss, int sparseLen, int idxLen, int[] id, int[] is, boolean isAllASCII) {
+  public CStrChunk(int sslen, byte[] ss, int sparseLen, int idxLen, int[] id, int[] is) {
     _start = -1;
     _valstart = idx(idxLen);
-    _isAllASCII = isAllASCII;
     _len = idxLen;
     _mem = MemoryManager.malloc1(_valstart + sslen, false);
     UnsafeUtils.set4(_mem, 0, _valstart); // location of start of strings
-    UnsafeUtils.set1(_mem, 4, (byte) (isAllASCII ? 1 : 0)); // isAllASCII flag
+
     Arrays.fill(_mem,_OFF,_valstart,(byte)-1); // Indicate All Is NA's
     for( int i = 0; i < sparseLen; ++i ) // Copy the sparse indices
       UnsafeUtils.set4(_mem, idx(id==null ? i : id[i]), is[i]);
     UnsafeUtils.copyMemory(ss,0,_mem,_valstart,sslen);
+    _isAllASCII = true;
+    for(int i = _valstart; i < _mem.length; ++i) {
+      byte c = _mem[i];
+      if ((c & 0x80) == 128) { //value beyond std ASCII
+        _isAllASCII = false;
+        break;
+      }
+    }
+    UnsafeUtils.set1(_mem, 4, (byte) (_isAllASCII ? 1 : 0)); // isAllASCII flag
   }
 
   private int idx(int i) { return _OFF+(i<<2); }
