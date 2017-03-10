@@ -97,12 +97,16 @@ public class DMatrix  {
           tgtChunks[j] = new NewChunk(tgt.vec(j + colStart), fi);
         for (int c = ((int) espc[fi]); c < (int) espc[fi + 1]; ++c) {
           Chunk nc = chks[c];
-          if(nc.isSparseZero())
-            for(int k = nc.nextNZ(-1); k < nc._len; k = nc.nextNZ(k))
-              nc.extractRows(tgtChunks[k],k);
-          else
-            for(int k = 0; k < nc._len; k++)
-              nc.extractRows(tgtChunks[k],k);
+          if(nc.isSparseZero()) {
+            for (int k = nc.nextNZ(-1); k < nc._len; k = nc.nextNZ(k)) {
+              tgtChunks[k].addZeros((int) (c - espc[fi]) - tgtChunks[k]._len);
+              nc.extractRows(tgtChunks[k], k);
+            }
+          } else
+            for(int k = 0; k < nc._len; k++) {
+              tgtChunks[k].addZeros((int) (c - espc[fi]) - tgtChunks[k]._len);
+              nc.extractRows(tgtChunks[k], k);
+            }
         }
         for (int j = 0; j < tgtChunks.length; ++j) { // finalize the target chunks and close them
           final int fj = j;

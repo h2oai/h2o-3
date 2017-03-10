@@ -12,8 +12,11 @@ import org.junit.Test;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.VecUtils;
 
+import java.util.Random;
 import java.util.concurrent.ExecutionException;
 
 import static java.lang.Math.abs;
@@ -77,6 +80,43 @@ public class DMatrixTest extends TestUtil {
             Assert.assertEquals(train.vec(2).at(8),tTrain.vec(8).at(2),1e-10);
             Assert.assertTrue(abs(train.vec(4).at(18)-tTrain.vec(18).at(4)) < 1e-10);
 
+        } finally {
+            if (train != null) train.delete();
+            if (tTrain != null) tTrain.delete();
+        }
+    }
+
+    @Test public void testMatrixTransposeSparse() throws InterruptedException, ExecutionException {
+        Frame train = null, tTrain = null;
+        try {
+            double [] vals1 = new double[1024]; // sparse
+            double [] vals2 = new double[1024]; // dense
+            double [] vals3 = new double[1024]; // sparse
+            double [] vals4 = new double[1024]; // dense
+            Random rnd = new Random();
+            for(int i = 0; i < 96; i++){
+                vals1[rnd.nextInt(vals1.length)] = rnd.nextInt(100);
+                vals3[rnd.nextInt(vals3.length)] = rnd.nextFloat();
+            }
+            for(int i = 0; i < vals2.length; ++i) {
+                vals2[i] = rnd.nextDouble();
+                vals4[i] = rnd.nextInt();
+            }
+            Vec.VectorGroup vg = Vec.VectorGroup.VG_LEN1;
+            Vec v1 = Vec.makeCon(vg.addVec(),vals1);
+            Vec v2 = Vec.makeCon(vg.addVec(),vals2);
+            Vec v3 = Vec.makeCon(vg.addVec(),vals3);
+            Vec v4 = Vec.makeCon(vg.addVec(),vals4);
+            train = new Frame(new Vec[]{v1,v2,v3,v4});
+            tTrain = DMatrix.transpose(train);
+            Assert.assertEquals(vals1.length,tTrain.numCols());
+            for(int i = 0; i < vals1.length; ++i){
+                Vec x = tTrain.vec(i);
+                Assert.assertEquals(vals1[i],x.at(0),0);
+                Assert.assertEquals(vals2[i],x.at(1),0);
+                Assert.assertEquals(vals3[i],x.at(2),0);
+                Assert.assertEquals(vals4[i],x.at(3),0);
+            }
         } finally {
             if (train != null) train.delete();
             if (tTrain != null) tTrain.delete();
