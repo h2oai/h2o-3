@@ -5,6 +5,7 @@ import org.junit.Test;
 import water.udf.fp.Function;
 import water.udf.fp.Functions;
 import water.udf.fp.PureFunctions;
+import water.udf.specialized.EnumColumn;
 import water.udf.specialized.Enums;
 
 import java.util.Arrays;
@@ -20,7 +21,7 @@ import static water.udf.specialized.Strings.*;
  * Test for UDF
  */
 public class SerializabilityTest extends UdfTestBase {
-  
+
   public int requiredCloudSize() { return 1; }
 
   @SuppressWarnings("unchecked")
@@ -31,7 +32,7 @@ public class SerializabilityTest extends UdfTestBase {
     boolean eq = c.equals(copy); // for debugging
     assertEquals(c, copy);
   }
-  
+
   @Test
   public void testDoubleColumnSerializable() throws Exception {
     Column<Double> c = someDoubles();
@@ -118,10 +119,16 @@ public class SerializabilityTest extends UdfTestBase {
   @Test
   @SuppressWarnings("unchecked")
   public void testUnfoldingColumnSerializable() throws Exception {
-    Column<String> source = willDrop(Strings.newColumn(Arrays.asList("line 1; line 2; lin 3".split("; "))));
+    Column<String> source1 = willDrop(Strings.newColumn(Arrays.asList("line 1; line 2; lin 3".split("; "))));
 
     // produce another (virtual) column that stores a list of strings as a row value
-    Column<List<String>> c = new UnfoldingColumn<>(PureFunctions.splitBy(","), source, 10);
-    checkSerialization(c);
+    Column<List<String>> ufc
+        = new UnfoldingColumn<>(PureFunctions.splitBy(","), source1, 10);
+    checkSerialization(ufc);
+
+    EnumColumn source2 = willDrop(new Enums(new String[]{"red", "white", "blue"}).newColumn(Arrays.asList(0,1,1,0,2,2,1,2)));
+
+    Column<List<Integer>> ohe = source2.oneHotEncode();
+    checkSerialization(ohe);
   }
 }
