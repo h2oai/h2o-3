@@ -25,12 +25,6 @@ public class Register extends AbstractRegister{
             "GET /99/Leaderboards/{project}", LeaderboardsHandler.class, "fetch",
             "Return the AutoML leaderboard for the given project.");
 
-    /*
-    RequestServer.registerEndpoint("automl_schema",
-
-            "GET /3/AutoMLJSONSchemaHandler", AutoMLJSONSchemaHandler.class, "getJSONSchema",
-            "Get the json schema for the AutoML input fields.");
-*/
     Log.info("H2O AutoML extensions enabled.");
 
   }
