@@ -299,13 +299,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       cumulative += workedSoFar;
 
       parentJob.update(Math.round(workedSoFar - lastWorkedSoFar), name);
-      try {
-        Thread.currentThread().sleep(1000);
-      }
-      catch (InterruptedException e) {
-        // keep going
-      }
-      lastWorkedSoFar = workedSoFar;
 
       if (isGridSearch) {
         Grid grid = (Grid)subJob._result.get();
@@ -315,6 +308,25 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
                   "Built: " + gridCount + " models for search: " + name);
           gridLastCount = gridCount;
         }
+      }
+
+      try {
+        Thread.currentThread().sleep(1000);
+      }
+      catch (InterruptedException e) {
+        // keep going
+      }
+      lastWorkedSoFar = workedSoFar;
+    }
+
+    // pick up any stragglers:
+    if (isGridSearch) {
+      Grid grid = (Grid)subJob._result.get();
+      int gridCount = grid.getModelCount();
+      if (gridCount > gridLastCount) {
+        userFeedback.info(Stage.ModelTraining,
+                "Built: " + gridCount + " models for search: " + name);
+        gridLastCount = gridCount;
       }
     }
 
