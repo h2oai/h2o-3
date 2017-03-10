@@ -72,10 +72,6 @@ public class CXIChunk extends Chunk {
   protected final int getIdx(int off){return (off-_OFF)/_elem_sz;}
 
   protected final int findOffset(int i) { // do binary search
-    if(i == -1){
-      _previousOffset = _OFF;
-      return _OFF;
-    }
     int off = _previousOffset;
     int id = getId(off);
     if(id == i) return off;
