@@ -3,13 +3,16 @@ package ai.h2o.automl;
 import ai.h2o.automl.UserFeedbackEvent.Stage;
 import ai.h2o.automl.strategies.initial.InitModel;
 import ai.h2o.automl.utils.AutoMLUtils;
-import hex.*;
+import hex.Model;
+import hex.ModelBuilder;
+import hex.StackedEnsembleModel;
 import hex.deeplearning.DeepLearningModel;
 import hex.ensemble.StackedEnsemble;
 import hex.glm.GLMModel;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria;
+import hex.splitframe.ShuffleSplitFrame;
 import hex.tree.SharedTreeModel;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBMModel;
@@ -167,14 +170,14 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       DKV.put(this.trainingFrame);
     } else {
       // TODO: should the size of the splits adapt to origTrainingFrame.numRows()?
-      SplitFrame sf = new SplitFrame(origTrainingFrame,
-                                     new double[] { 0.7, 0.3 },
-                                     new Key[] { Key.make("training_" + origTrainingFrame._key),
-                                                 Key.make("validation_" + origTrainingFrame._key)});
-      sf.exec().get();
+      Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(origTrainingFrame,
+                                                           new Key[] { Key.make("training_" + origTrainingFrame._key),
+                                                                       Key.make("validation_" + origTrainingFrame._key)},
+                                                           new double[] { 0.7, 0.3 },
+                                                           buildSpec.build_control.stopping_criteria.seed());
 
-      this.trainingFrame = sf._destination_frames[0].get();
-      this.validationFrame = sf._destination_frames[1].get();
+      this.trainingFrame = splits[0];
+      this.validationFrame = splits[1];
       this.didValidationSplit = true;
       userFeedback.info(Stage.DataImport, "Automatically split the data into training and validation datasets");
     }
