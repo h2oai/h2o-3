@@ -1255,7 +1255,7 @@ public class Frame extends Lockable<Frame> {
     Key [] ks = anyVec().group().addVecs(vecs.length);
     Futures fs = new Futures();
     for(int i = 0; i < vecs.length; ++i)
-      DKV.put(vecs[i] = new Vec(ks[i], anyVec()._rowLayout, vecs[i].domain()),fs);
+      DKV.put(vecs[i] = new Vec(ks[i], anyVec()._rowLayout, vecs[i].domain(),vecs()[i]._type),fs);
     new MRTask() {
       @Override public void map(Chunk[] cs) {
         int cidx = cs[0].cidx();
