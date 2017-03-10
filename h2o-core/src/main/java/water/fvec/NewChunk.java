@@ -1456,7 +1456,6 @@ public class NewChunk extends Chunk {
       return setNA_impl(i);
     }
     if(_is == null && _len > 0) {
-      assert _sparseLen == 0;
       alloc_str_indices(_len);
       Arrays.fill(_is,-1);
     }
