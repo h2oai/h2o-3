@@ -1,6 +1,7 @@
 package water.parser;
 
 import java.util.ArrayList;
+
 import water.Key;
 import water.fvec.Vec;
 
@@ -173,7 +174,7 @@ class ARFFParser extends CsvParser {
         }
 
         if (ctypes[i] == Vec.T_BAD)
-          throw new ParseDataset.H2OParseException("Unexpected line.");
+          throw new ParseDataset.H2OParseException("Unexpected line, type not recognized. Attribute specification: " + type);
 
         // remove the whitespaces separating the label and the type specification
         while ((sepIdx > 0) && (spec.charAt(sepIdx - 1) == ' ')) sepIdx--;

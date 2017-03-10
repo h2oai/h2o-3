@@ -34,6 +34,35 @@ public class ARFFParserTest {
       assertArrayEquals(new String[]{"f", "t"}, domains[i]);
   }
 
+  @Test
+  public void testProcessArffHeader_invalidTag() {
+    runWithException("@attr BLAH NUMERIC", "Expected line to start with @ATTRIBUTE.");
+  }
+
+  @Test
+  public void testProcessArffHeader_unknownType() {
+    runWithException("@attribute BLAH BOOLEAN", "Unexpected line, type not recognized. Attribute specification: BOOLEAN");
+  }
+
+  @Test
+  public void testProcessArffHeader_invalidCategorical() {
+    runWithException("@attribute BLAH {}", "Unexpected line, type not recognized. Attribute specification: {}");
+  }
+
+  @Test
+  public void testProcessArffHeader_unsupportedType() {
+    runWithException("@attribute BLAH RELATIONAL", "Relational ARFF format is not supported.");
+  }
+
+  private void runWithException(String attrSpec, String exceptedMessage) {
+    try {
+      ARFFParser.processArffHeader(1, new String[]{attrSpec}, new String[1], new String[1][], new byte[1]);
+      fail("Parser was expected to fail on '" + attrSpec + "'.");
+    } catch (Exception e) {
+      assertEquals(exceptedMessage, e.getMessage());
+    }
+  }
+
   private static String[] headerData() {
     return new String[] {
             "@attribute TSH numeric",
