@@ -6,7 +6,7 @@ import water.fvec.Vec;
 import static org.junit.Assert.*;
 
 /**
- * Unit test for methods of ARFFParser, for integration test {@see ParserTestARFF}
+ * Unit test for methods of ARFFParser, for integration tests {@see ParserTestARFF}
  */
 public class ARFFParserTest {
 
