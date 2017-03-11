@@ -58,8 +58,10 @@ public class C8DChunk extends Chunk {
   }
 
   @Override public double [] getDoubles(double [] vals, int from, int to, double NA){
-    for(int i = from; i < to; i++)
-      vals[i-from] = UnsafeUtils.get8d(_mem,8*i);
+    for(int i = from; i < to; i++) {
+      double d = UnsafeUtils.get8d(_mem, 8 * i);
+      vals[i - from] = Double.isNaN(d)?NA:d;
+    }
     return vals;
   }
   @Override public double [] getDoubles(double [] vals, int [] ids){
