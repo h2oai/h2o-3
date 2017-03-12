@@ -115,6 +115,9 @@ final public class H2O {
             "    -client\n" +
             "          Launch H2O node in client mode.\n" +
             "\n" +
+            "    -bully_client\n" +
+            "          Launch H2O node in bully client mode.\n" +
+            "\n" +
             "    -context_path <context_path>\n" +
             "          The context path for jetty.\n" +
             "\n" +
@@ -215,6 +218,12 @@ final public class H2O {
 
     /** -client, -client=true; Client-only; no work; no homing of Keys (but can cache) */
     public boolean client;
+
+    /** -bully_client, -bully_client=true; Same as the client except the that cluster is stopped when this client
+     * disconnects from the rest of the cloud or the cloud is stopped when it doesn't hear heartbeat from the client for
+     * specified amount of time
+     */
+    public boolean bully_client = false;
 
     /** -user_name=user_name; Set user name */
     public String user_name = System.getProperty("user.name");
@@ -425,7 +434,10 @@ final public class H2O {
         ARGS.network = args[i];
       }
       else if (s.matches("client")) {
-        ARGS.client = true;
+        ARGS.client = true; ARGS.bully_client = false;
+      }
+      else if(s.matches("bully_client")){
+        ARGS.bully_client = true; ARGS.client = true;
       }
       else if (s.matches("user_name")) {
         i = s.incrementAndCheck(i, args);
@@ -1320,9 +1332,16 @@ final public class H2O {
     return flow_dir;
   }
 
+  /* List of all registered disconnect hooks. We need to create it as synchronized since we allow
+   * to register new hooks at runtime*/
+  private static Set<NodeDisconnectHook> nodeDisconnectHooks = Collections.synchronizedSet(new HashSet<NodeDisconnectHook>());
+
   /* A static list of acceptable Cloud members passed via -flatfile option.
    * It is updated also when a new client appears. */
   private static HashSet<H2ONode> STATIC_H2OS = null;
+
+  /* List of all clients that ever connected to this cloud */
+  private static HashSet<H2ONode> CLIENTS = new HashSet<>();
 
   // Reverse cloud index to a cloud; limit of 256 old clouds.
   static private final H2O[] CLOUDS = new H2O[256];
@@ -1426,6 +1445,7 @@ final public class H2O {
     // Create the starter Cloud with 1 member
     SELF._heartbeat._jar_md5 = JarHash.JARHASH;
     SELF._heartbeat._client = ARGS.client;
+    SELF._heartbeat._bully_client = ARGS.bully_client;
   }
 
   /** Starts the worker threads, receiver threads, heartbeats and all other
@@ -1915,6 +1935,13 @@ final public class H2O {
     // join an existing Cloud.
     new HeartBeatThread().start();
 
+    // register disconnect hooks for the disconnect watchdog
+    registerNodeDisconnectedHook(new NodeDisconnectHook.ClientDisconnectedHook());
+
+    // Thread which periodically checks the state node of nodes and executes all disconnect hooks in case
+    // the node was disconnected
+    new DisconnectedNodesWatchdog().start();
+
     long time11 = System.currentTimeMillis();
     if (GA != null)
       startGAStartupReport();
@@ -1965,6 +1992,49 @@ final public class H2O {
     }
   }
 
+  /**
+   * Register {@link NodeDisconnectHook}
+   * @param hook to register
+   */
+  public static void registerNodeDisconnectedHook(NodeDisconnectHook hook){
+    nodeDisconnectHooks.add(hook);
+  }
+
+  /**
+   *   Thread used to run disconnect hooks on nodes who disconnects from the cloud
+   */
+  public static class DisconnectedNodesWatchdog extends Thread {
+    final private int sleepMillis = 6000; // 6 seconds
+
+    @Override
+    public void run() {
+      while (true) {
+
+        // in multicast mode the the _connection_closed is not set on clients so we don't know which client
+        // is still available and which not. We can check the clients to see if they are still available based on
+        // _last_heard_from field
+        if(!H2O.isFlatfileEnabled()){
+          for(H2ONode client: H2O.CLIENTS){
+           if((System.currentTimeMillis() - client._last_heard_from) >= HeartBeatThread.CLIENT_TIMEOUT){
+             client._connection_closed = true;
+           }
+          }
+        }
+
+        for (NodeDisconnectHook hook : nodeDisconnectHooks) {
+          for(H2ONode node : H2O.getMembersAndClients()){
+            if(node._connection_closed){
+              hook.handleNodeDisconnect(node);
+            }
+          }
+        }
+        try {
+          Thread.sleep(sleepMillis);
+        } catch (InterruptedException ignore) {}
+      }
+    }
+  }
+
   /** Add node to a manual multicast list.
    *  Note: the method is valid only if -flatfile option was specified on commandline*
    * @param node  h2o node
@@ -1974,6 +2044,16 @@ final public class H2O {
     assert isFlatfileEnabled() : "Trying to use flatfile, but flatfile is not enabled!";
     return STATIC_H2OS.add(node);
   }
+
+  /** Remove node from a manual multicast list.
+    *  Note: the method is valid only if -flatfile option was specified on commandline*
+    * @param node  h2o node
+    * @return true if node was already in the multicast list.
+    */
+  public static boolean removeNodeFromFlatfile(H2ONode node){
+      assert isFlatfileEnabled() : "Trying to use flatfile, but flatfile is not enabled!";
+      return STATIC_H2OS.remove(node);
+    }
 
   /** Check if a node is included in a manual multicast list.
    *  Note: the method is valid only if -flatfile option was specified on commandline
@@ -2009,5 +2089,27 @@ final public class H2O {
    */
   public static HashSet<H2ONode> getFlatfile() {
     return (HashSet<H2ONode>) STATIC_H2OS.clone();
+  }
+
+  public static boolean reportClient(H2ONode client){
+    boolean newClient = CLIENTS.add(client);
+    if(newClient){
+      Log.info("New client discovered at " + client);
+    }
+    return newClient;
+  }
+
+  public static boolean removeClient(H2ONode client){
+    return CLIENTS.remove(client);
+  }
+
+  public static HashSet<H2ONode> getClients(){
+    return (HashSet<H2ONode>) CLIENTS.clone();
+  }
+
+  public static HashSet<H2ONode> getMembersAndClients(){
+    HashSet<H2ONode> membersAndClients = new HashSet<>(Arrays.asList(H2O.CLOUD.members()));
+    membersAndClients.addAll(CLIENTS);
+    return  (HashSet<H2ONode>) membersAndClients.clone();
   }
 }

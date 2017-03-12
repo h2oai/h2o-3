@@ -36,6 +36,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   transient short _unique_idx; // Dense integer index, skipping 0.  NOT cloud-wide unique.
   transient boolean _announcedLostContact;  // True if heartbeat published a no-contact msg
   transient public long _last_heard_from; // Time in msec since we last heard from this Node
+  transient public boolean _connection_closed; // Indicates whether connection to this h2o nodes is closed or not
   transient public volatile HeartBeat _heartbeat;  // My health info.  Changes 1/sec.
   transient public int _tcp_readers;               // Count of started TCP reader threads
 
@@ -438,7 +439,13 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   
     // Open channel on first write attempt
     private ByteChannel openChan() throws IOException {
-      return H2ONode.openChan(TCPReceiverThread.TCP_SMALL,_socketFactory, _key.getAddress(), _key.getPort());
+      try {
+        return H2ONode.openChan(TCPReceiverThread.TCP_SMALL, _socketFactory, _key.getAddress(), _key.getPort());
+      }catch (ConnectException e){
+        // can't establish connection to this node, report this as closed connection ( i.e the target h2o node is down)
+        _connection_closed = true;
+        throw e;
+      }
     }
   }
 
