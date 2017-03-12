@@ -9,15 +9,15 @@ import java.util.List;
 /**
  * General-case factory for columns
  */
-public interface ColumnFactory<T> extends ChunkFactory<T> {
+public interface ColumnFactory<DataType, ColumnType> extends ChunkFactory<DataType> {
   
-  DataColumn<T> newColumn(Vec vec);
+  ColumnType newColumn(Vec vec);
 
-  DataColumn<T> newColumn(long length, final Function<Long, T> f) throws IOException;
+  ColumnType newColumn(long length, final Function<Long, DataType> f) throws IOException;
 
-  DataColumn<T> newColumn(final List<T> xs) throws IOException;
+  ColumnType newColumn(final List<DataType> xs) throws IOException;
 
-  DataColumn<T> materialize(Column<T> xs) throws IOException;
+  ColumnType materialize(Column<DataType> xs) throws IOException;
 
   Vec buildZeroVec(long length);
 }

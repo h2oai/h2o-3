@@ -1,8 +1,6 @@
 package water.udf.fp;
 
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Operations on functions
@@ -43,9 +41,9 @@ public class Functions {
     };
   }
 
-  public static <T> Function<Long, T> onList(final List<T> list) {
-    return new Function<Long, T>() {
-      public T apply(Long i) { return list.get(i.intValue()); }
+  public static <X> Function<Long, X> onList(final List<X> list) {
+    return new Function<Long, X>() {
+      public X apply(Long i) { return list.get(i.intValue()); }
     };
   }
   
@@ -89,6 +87,80 @@ public class Functions {
     return new StringSplitter(separator);
   }
 
+  static class OneHotEncoder implements Unfoldable<Integer, Integer> {
+    private String[] domain;
+    private int hashCode;
+    
+    OneHotEncoder(String[] domain) {
+      this.domain = domain;
+      hashCode = 911 + Arrays.hashCode(domain);
+    }
+
+    @Override
+    public int hashCode() {
+      return hashCode;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      return (obj instanceof OneHotEncoder) &&
+             Arrays.equals(domain, ((OneHotEncoder)obj).domain);
+    }
+
+    @Override
+    public List<Integer> apply(Integer cat) {
+      List<Integer> bits = new ArrayList<>(domain.length+1);
+
+      for (int i = 0; i < domain.length; i++) bits.add(cat != null && cat == i ? 1 : 0);
+      bits.add(cat == null ? 1 : 0); 
+      return bits;
+    }
+  }
+
+  public static <X> Function<Integer, X> fromArray(final X[] array) {
+    return new Function<Integer, X>() {
+
+      @Override
+      public X apply(Integer i) {
+        return array[i];
+      }
+    };
+  }
+
+  public static Function<Integer, Integer> fromArray(final int[] array) {
+    return new Function<Integer, Integer>() {
+
+      @Override
+      public Integer apply(Integer i) {
+        return array[i];
+      }
+    };
+  }
+
+  public static <X> Function<Integer, X> fromCollection(final List<X> xs) {
+    return new Function<Integer, X>() {
+
+      @Override
+      public X apply(Integer i) {
+        return xs.get(i);
+      }
+    };
+  }
+
+  public static <X> Function<Integer, String> format(final String format) {
+    return new Function<Integer, String>() {
+
+      @Override
+      public String apply(Integer i) {
+        return String.format(format, i);
+      }
+    };
+  }
+  
+  public static Unfoldable<Integer, Integer> oneHotEncode(String[] domain) {
+    return new OneHotEncoder(domain);
+  }
+  
   public static int hashCode(Object x) {
     return x == null ? 0 : x.hashCode();
   }
