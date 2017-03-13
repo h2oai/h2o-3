@@ -45,7 +45,7 @@ public class AstPivot extends AstPrimitive {
     String[] header = (String[]) ArrayUtils.addAll(new String[]{index}, fr.vec(colIdx).domain());
     Frame initialPass = new pivotTask(fr,index,column,value).doAll(nClass+1, Vec.T_NUM, fr).outputFrame(null, header, null);
     initialPass = initialPass.sort(new int[]{0});
-    // Fix up when a run of the same index crosses over chunk boundaries
+    // Collapse identical index rows even when index crosses over chunk boundaries
     Frame secondPass = new pivotCleanup().doAll(nClass+1,Vec.T_NUM,initialPass).outputFrame(Key.<Frame>make(),header,null);
     Vec origTypeVec = secondPass.vec(0).makeCopy(null,fr.vec(indexIdx).get_type());
     secondPass.replace(0,origTypeVec);
@@ -57,7 +57,7 @@ public class AstPivot extends AstPrimitive {
     pivotCleanup() {}
     @Override
     public void map(Chunk[] cs, NewChunk[] nc) {
-      // skip past the first set of indexes if we know that the previous chunk will run in here
+      // skip past the first rows of the first index if we know that the previous chunk will run in here
       long firstIdx =  cs[0].at8(0);
       long globalIdx = cs[0].start();
       int start = 0;
@@ -69,32 +69,36 @@ public class AstPivot extends AstPrimitive {
         if (currentIdx != cs[0].at8(i+1)) {
           nc[0].addNum(cs[0].at8(i));
           for (int j=1;j<nc.length;j++) nc[j].addNum(cs[j].atd(i));
+          // were done here since we know the next row has a different index
           continue;
         }
+        // here we know we have to search ahead
         int count = 1;
         double[] newRow = new double[nc.length-1];
+        // start with a copy of the current row
         for (int j = 0; j < nc.length-1; j++) newRow[j] = cs[j+1].atd(i);
-        while(currentIdx ==  cs[0].at8(i+count) && count+i < cs[0]._len) {
+
+        while ( count + i < cs[0]._len && currentIdx == cs[0].at8(i + count) ) {
           // merge the forward row, the newRow and the existing row
           // here would be a good place to apply aggregating function
           // for now we are aggregating by "first"
-          for (int j=0;j<nc.length-1;j++) {
-            if(Double.isNaN(newRow[j]) && !Double.isNaN(cs[j+1].atd(i+count))) {
-              newRow[j] = cs[j+1].atd(i+count);
+          for (int j = 0; j < nc.length - 1; j++) {
+            if (Double.isNaN(newRow[j]) && !Double.isNaN(cs[j + 1].atd(i + count))) {
+              newRow[j] = cs[j + 1].atd(i + count);
             }
           }
           // need to look if we need to go to next chunk
-          if (i+count == cs[0]._len-1) {
+          if (i + count == cs[0]._len - 1) {
             Chunk nextChunk = cs[0].nextChunk();
             if (nextChunk != null && currentIdx == nextChunk.at8(0)) {
               Chunk[] nextChunkArr = new Chunk[]{};
-              for (int j=0;j<nc.length-1;j++) {
-                nextChunkArr[j] = cs[j+1].nextChunk();
+              for (int j = 0; j < nc.length - 1; j++) {
+                nextChunkArr[j] = cs[j + 1].nextChunk();
               }
               int countNC = 0;
-              while(currentIdx == nextChunk.at8(countNC)) {
-                for (int j=0;j<nc.length-1;j++) {
-                  if(Double.isNaN(newRow[j]) && !Double.isNaN(nextChunkArr[j].atd(countNC))) {
+              while (currentIdx == nextChunk.at8(countNC)) {
+                for (int j = 0; j < nc.length - 1; j++) {
+                  if (Double.isNaN(newRow[j]) && !Double.isNaN(nextChunkArr[j].atd(countNC))) {
                     newRow[j] = nextChunkArr[j].atd(countNC);
                   }
                 }
@@ -106,9 +110,9 @@ public class AstPivot extends AstPrimitive {
         }
         nc[0].addNum(currentIdx);
         for (int j = 1; j < nc.length; j++) {
-          nc[j].addNum(newRow[j-1]);
+          nc[j].addNum(newRow[j - 1]);
         }
-        i+=count;
+        i += (count - 1);
       }
     }
   }
