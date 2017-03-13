@@ -24,7 +24,7 @@
     "tests"
   ],
   "dependencies": {
-    "h2o-flow": "h2oai/h2o-flow#0e5e2259a0157651be8390eb6734c058a625859e"
+    "h2o-flow": "0.6.0"
   },
   "devDependencies": {}
 }
