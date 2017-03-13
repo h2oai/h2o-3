@@ -16,7 +16,8 @@ public class AggregatorV99 extends ModelBuilderSchema<Aggregator,AggregatorV99,A
             "response_column",
             "ignored_columns",
             "ignore_const_cols",
-            "radius_scale",
+            "target_num_exemplars",
+//            "radius_scale",
             "transform",
             "categorical_encoding",
 //            "pca_method",
@@ -26,8 +27,8 @@ public class AggregatorV99 extends ModelBuilderSchema<Aggregator,AggregatorV99,A
 //            "use_all_factor_levels",
 //            "max_runtime_secs"
     };
-    @API(help = "Radius scaling", gridable = true)
-    public double radius_scale;
+//    @API(help = "Radius scaling", gridable = true)
+//    public double radius_scale;
 
     @API(help = "Transformation of training data", values = { "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE" }, gridable = true, level= API.Level.expert)  // TODO: pull out of categorical class
     public DataInfo.TransformType transform;
@@ -40,6 +41,9 @@ public class AggregatorV99 extends ModelBuilderSchema<Aggregator,AggregatorV99,A
 
     @API(help = "Maximum number of iterations for PCA", direction = API.Direction.INOUT, gridable = true, level= API.Level.expert)
     public int max_iterations;
+
+    @API(help = "Target number of exemplars", direction = API.Direction.INOUT, gridable = true, level= API.Level.secondary)
+    public int target_num_exemplars;
 
     @API(help = "RNG seed for initialization", direction = API.Direction.INOUT, level= API.Level.secondary)
     public long seed;
