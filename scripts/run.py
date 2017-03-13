@@ -1814,7 +1814,7 @@ class TestRunner(object):
                     failure_message += "\n\n"
                     failure_message += "#" * 83 + "\n"
                     failure_message += "########### Problems encountered extracting Java messages. " \
-                                       "Please alert the QA team.\n"
+                                       "Massive Jenkins or test failure.\n"
                     failure_message += "#" * 83 + "\n\n"
 
                 if failure_message:
@@ -1824,13 +1824,14 @@ class TestRunner(object):
                     else:
                         failure = ""
 
+    # fixed problem with test name repeated in Jenkins job test report.
         xml_report = """<?xml version="1.0" encoding="UTF-8"?>
 <testsuite name="{testsuiteName}" tests="1" errors="{errors}" failures="{failures}" skip="{skip}">
-  <testcase classname="{testcaseClassName}" name="{testcaseName}" time="{testcaseRuntime}">
+  <testcase name="{testcaseName}" time="{testcaseRuntime}">
   {failure}
   </testcase>
 </testsuite>
-""".format(testsuiteName=testsuite_name, testcaseClassName=testcase_name, testcaseName=testcase_name,
+""".format(testsuiteName=testsuite_name, testcaseName=testcase_name,
            testcaseRuntime=testcase_runtime, failure=failure,
            errors=errors, failures=failures, skip=skip)
 

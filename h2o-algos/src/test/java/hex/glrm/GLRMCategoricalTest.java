@@ -62,7 +62,7 @@ public class GLRMCategoricalTest extends TestUtil {
     Frame train = null;
 
     try {
-      train = parse_test_file(Key.make("iris.hex"), "smalldata/iris/iris_wheader.csv");
+      train = parse_test_file(Key.make("iris.hex"), "smalldata/iris/iris_whear.csv");
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
       parms._k = 4;

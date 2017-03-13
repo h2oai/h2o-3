@@ -18,7 +18,7 @@ def pca_arrests():
 
 
 
-  for i in range(4):
+  for i in range(10,15):
     print("H2O PCA with " + str(i) + " dimensions:\n")
     print("Using these columns: {0}".format(arrestsH2O.names))
     pca_h2o = H2OPCA(k = i+1)

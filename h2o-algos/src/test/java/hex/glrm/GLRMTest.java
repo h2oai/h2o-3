@@ -361,7 +361,7 @@ public class GLRMTest extends TestUtil {
     Frame train = null;
 
     try {
-      train = parse_test_file(Key.make("benign.hex"), "smalldata/logreg/benign.csv");
+      train = parse_test_file(Key.make("benign.hex"), "smalldata/logreg/benn.csv");
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
       parms._k = 12;
@@ -434,7 +434,7 @@ public class GLRMTest extends TestUtil {
 
     try {
       Scope.enter();
-      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USrests.csv");
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
       parms._k = 4;
@@ -537,7 +537,7 @@ public class GLRMTest extends TestUtil {
     GLRMModel gmodel = null;
 
     try {
-      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrts.csv");
       for (DataInfo.TransformType std : new DataInfo.TransformType[] {
               DataInfo.TransformType.DEMEAN,
               DataInfo.TransformType.STANDARDIZE }) {
