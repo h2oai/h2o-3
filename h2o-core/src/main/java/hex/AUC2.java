@@ -5,6 +5,11 @@ import water.Iced;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Vec;
+import water.udf.fp.Function;
+import water.udf.fp.Functions;
+
+import static hex.AUC2.ThresholdCriterion.precision;
+import static hex.AUC2.ThresholdCriterion.recall;
 
 /** One-pass approximate AUC
  *
@@ -114,6 +119,14 @@ public class AUC2 extends Iced {
 
   /** @return maximum F1 */
   public double maxF1() { return ThresholdCriterion.f1.max_criterion(this); }
+  
+  public Function<Integer, Double> forCriterion(final ThresholdCriterion tc) {
+    return new Function<Integer, Double>() {
+      public Double apply(Integer i) {
+        return tc.exec(AUC2.this, i);
+      }
+    };
+  }
 
   /** Default bins, good answers on a highly unbalanced sorted (and reverse
    *  sorted) datasets */
@@ -148,6 +161,10 @@ public class AUC2 extends Iced {
     _auc = compute_auc();
     _gini = 2*_auc-1;
     _max_idx = DEFAULT_CM.max_criterion_idx(this);
+  }
+  
+  public double pr_auc() {
+    return Functions.AUC(forCriterion(recall), forCriterion(precision), 0, _nBins-1);
   }
 
   // Compute the Area Under the Curve, where the curve is defined by (TPR,FPR)
