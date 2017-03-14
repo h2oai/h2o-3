@@ -10,7 +10,7 @@ import water.udf.TypedChunk;
 public class RawChunk extends CXIChunk {
 
   public RawChunk(TypedChunk<?> base) {
-    super(base.length(), 0, new byte[6]);
+    super(new byte[CXIChunk._OFF]);
     _cidx = base.cidx();
     _vec = base.vec();
     this._start = base.start();

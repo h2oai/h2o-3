@@ -18,6 +18,8 @@ import java.util.Arrays;
 public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,CoxPHModel.CoxPHOutput> {
   @Override public ModelCategory[] can_build() { return new ModelCategory[] { ModelCategory.Unknown, }; }
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
+  @Override public boolean isSupervised() { return true; }
+
   public CoxPH( CoxPHModel.CoxPHParameters parms ) { super(parms); init(false); }
   @Override protected CoxPHDriver trainModelImpl() { return new CoxPHDriver(); }
 

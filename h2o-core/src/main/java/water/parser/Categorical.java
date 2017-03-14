@@ -67,7 +67,7 @@ public final class Categorical extends Iced {
     StringBuilder hexSB = new StringBuilder();
     for (int i =0; i < bStrs.length; i++) {
       String s = bStrs[i].toString();
-      if (!bStrs[i].equals(s)) {
+      if (!bStrs[i].sameString(s)) {
         if (s.contains("\uFFFD")) { // make weird chars into hex
           s = bStrs[i].bytesToString();
           if (hexConvCnt++ < MAX_EXAMPLES) hexSB.append(s +", ");

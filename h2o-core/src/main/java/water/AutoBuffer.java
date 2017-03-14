@@ -1490,10 +1490,19 @@ public final class AutoBuffer {
     try {
       return new ObjectInputStream(new ByteArrayInputStream(bytes)).readObject();
     } catch (IOException e) {
-      throw Log.throwErr(e);
+      String className = nameOfClass(bytes);
+      throw Log.throwErr(new RuntimeException("Failed to deserialize " + className, e));
     } catch (ClassNotFoundException e) {
       throw Log.throwErr(e);
     }
+  }
+
+  static String nameOfClass(byte[] bytes) {
+    if (bytes == null) return "(null)";
+    if (bytes.length < 11) return "(no name)";
+
+    int nameSize = Math.min(40, Math.max(3, bytes[7]));
+    return new String(bytes, 8, Math.min(nameSize, bytes.length - 8));
   }
   // ==========================================================================
   // Java Serializable objects

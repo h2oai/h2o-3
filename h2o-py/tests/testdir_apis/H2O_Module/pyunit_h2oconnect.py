@@ -9,7 +9,7 @@ from h2o.backend.connection import H2OConnection
 def h2oconnect():
     """
     Python API test: h2o.connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_certificates=None,
-     auth=None, proxy=None, cluster_id=None, cookies=None, verbose=True)
+     auth=None, proxy=None,cookies=None, verbose=True)
     """
     ipA = "127.0.0.1"
     portN = "54321"

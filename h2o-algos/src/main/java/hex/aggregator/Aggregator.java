@@ -20,6 +20,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
   }
 
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; }
+  @Override public boolean isSupervised() { return false; }
 
   public static class Exemplar extends Iced<Exemplar> {
     Exemplar(double[] d, long id) { data=d; gid=id; _cnt=1; }
@@ -101,6 +102,9 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
   public void init(boolean expensive) {
     if (expensive && _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.AUTO){
       _parms._categorical_encoding=Model.Parameters.CategoricalEncodingScheme.Eigen;
+    }
+    if (_parms._radius_scale <= 0) {
+      error("_radius_scale", "radius_scale must be > 0.");
     }
     super.init(expensive);
     if (expensive) {

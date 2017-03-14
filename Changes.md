@@ -2,6 +2,119 @@
 
 ##H2O
 
+###Ueno (3.10.4.1) - 3/3/2017
+
+<h4>        Technical task
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3943'>PUBDEV-3943</a>] -         Documentation: Naive Bayes links to parameters section
+</li>
+</ul>
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3817'>PUBDEV-3817</a>] -         Error in predict, performance functions caused by fold_column
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3820'>PUBDEV-3820</a>] -         Kmeans Centroid info not Rendered through Python API
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3827'>PUBDEV-3827</a>] -         PCA &quot;Importance of Components&quot; returns &quot;data frame with 0 columns and 0 rows&quot;
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3866'>PUBDEV-3866</a>] -         Stratified sampling does not split minority class
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3885'>PUBDEV-3885</a>] -         R Kmean&#39;s user_point doesn&#39;t get used
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3903'>PUBDEV-3903</a>] -         Setting -context_path doesn&#39;t change REST API path
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3932'>PUBDEV-3932</a>] -         K-means Training Metrics do not match Prediction Metrics with same data
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3938'>PUBDEV-3938</a>] -         h2o-py/tests/testdir_hdfs/pyunit_INTERNAL_HDFS_timestamp_date_orc.py failing
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4017'>PUBDEV-4017</a>] -         gradle update broke the build
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4019'>PUBDEV-4019</a>] -         H2O config (~/.h2oconfig) should allow user to specify username and password
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4032'>PUBDEV-4032</a>] -         Flow/R/Python - H2O cloudInfo should show if cluster is secured or not
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4039'>PUBDEV-4039</a>] -         FLOW fails to display custom models including Word2Vec
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4040'>PUBDEV-4040</a>] -         Import json module as different alias in Python API
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4041'>PUBDEV-4041</a>] -         Stacked Ensemble docstring example is broken
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4042'>PUBDEV-4042</a>] -         The autogen R bindings have an incorrect definition for the y argument
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4047'>PUBDEV-4047</a>] -         AIOOB while training an H2OKMeansEstimator
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4065'>PUBDEV-4065</a>] -         Fix bug in randomgridsearch and Fix intermittent pyunit_gbm_random_grid_large.py
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4066'>PUBDEV-4066</a>] -         Typos in Stacked Ensemble Python H2O User Guide example code
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4073'>PUBDEV-4073</a>] -         StackedEnsemble: stacking fails if combined with ignore_columns
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4083'>PUBDEV-4083</a>] -         AIOOB in GLM
+</li>
+</ul>
+
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3852'>PUBDEV-3852</a>] -         Documentation: Add Data Munging topic for file name globbing
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4009'>PUBDEV-4009</a>] -         Integration to add new top-level Plot menu to Flow
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4038'>PUBDEV-4038</a>] -         Add stddev to PDP computation
+</li>
+</ul>
+
+<h4>        Task
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3685'>PUBDEV-3685</a>] -         Update h2o-py README
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3797'>PUBDEV-3797</a>] -         Generate Python API tests for H2O Cluster commands
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3914'>PUBDEV-3914</a>] -         Add documentation for python GroupBy class
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3915'>PUBDEV-3915</a>] -         Document python&#39;s Assembly and ConfusionMatrix classes, add python API tests as well
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3937'>PUBDEV-3937</a>] -         Clean up R docs
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3986'>PUBDEV-3986</a>] -         Documentation: Summarize the method for estimating k in kmeans and add to docs
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4006'>PUBDEV-4006</a>] -         Update links to Stacking on docs.h2o.ai
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4021'>PUBDEV-4021</a>] -         H2O config (~/.h2oconfig) should allow user to specify username and password
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4067'>PUBDEV-4067</a>] -         Check if strict_version_check is TRUE when checking for config file
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3781'>PUBDEV-3781</a>] -         Documentation: Add info about sparse data support
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3784'>PUBDEV-3784</a>] -         h2o doc deeplearning:  clarify what the (heuristics)defaults for auto are in categorical_encoding
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3919'>PUBDEV-3919</a>] -         Saving/serializing currently existing, detailed model information
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3961'>PUBDEV-3961</a>] -         Py/R: Remove unused &#39;cluster_id&#39; parameter
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3983'>PUBDEV-3983</a>] -         Update GBM FAQ
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3994'>PUBDEV-3994</a>] -         Documentation: Add info about imputing data in Flow and in Data Manipulation
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3998'>PUBDEV-3998</a>] -         Documentation: Add instructions for running demos
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4005'>PUBDEV-4005</a>] -         AIOOB Exception with fold_column set with kmeans
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4055'>PUBDEV-4055</a>] -         Modify h2o#connect function to accept config with connect_params field
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4059'>PUBDEV-4059</a>] -         Change of h2o.connect(config) interface to support Steam
+</li>
+</ul>
+
 ###Tverberg (3.10.3.5) - 2/16/2017
 
 <h4>        Bug
@@ -33,8 +146,8 @@
 
 ###Tverberg (3.10.3.4) - 2/3/2017
 
-<h2>        Bug
-</h2>
+<h4>        Bug
+</h4>
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3965'>PUBDEV-3965</a>] -         Importing data in python returns error - TypeError: expected string or bytes-like object
 </li>

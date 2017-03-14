@@ -9,7 +9,7 @@ from h2o.exceptions import H2OConnectionError
 def h2oinit():
     """
     Python API test: h2o.init(url=None, ip=None, port=None, https=None, insecure=None, username=None, password=None,
-     cluster_id=None, cookies=None, proxy=None, start_h2o=True, nthreads=-1, ice_root=None, enable_assertions=True,
+     cookies=None, proxy=None, start_h2o=True, nthreads=-1, ice_root=None, enable_assertions=True,
       max_mem_size=None, min_mem_size=None, strict_version_check=None, **kwargs)
     """
     start_h2o = False

@@ -12,6 +12,7 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
 
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ ModelCategory.WordEmbedding, }; }
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; }
+  @Override public boolean isSupervised() { return false; }
 
   public Word2Vec(boolean startup_once) {
     super(new Word2VecParameters(), startup_once);

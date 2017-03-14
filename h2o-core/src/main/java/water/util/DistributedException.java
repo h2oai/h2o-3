@@ -15,7 +15,7 @@ public final class DistributedException extends RuntimeException  {
   public DistributedException(){truncateStackTrace(true);}
   public DistributedException(Throwable cause){ this(cause,true);}
   public DistributedException(Throwable cause, boolean keepStackTrace){
-    super("DistributedException from " + H2O.SELF,cause);
+    super("DistributedException from " + H2O.SELF + ": '" + cause.getMessage() + "'",cause);
     truncateStackTrace(keepStackTrace);
   }
   public DistributedException(String msg, Throwable cause){

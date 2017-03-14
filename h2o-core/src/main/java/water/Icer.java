@@ -19,7 +19,7 @@ public abstract class Icer<T extends Freezable> {
   protected T read    (AutoBuffer ab, T ice) { /*base of the read call chain; no fields to read*/return ice; }
   protected T readJSON(AutoBuffer ab, T ice) { /*base of the read call chain; no fields to read*/return ice; }
   protected void copyOver( T dst, T src ) { /*base of the call chain; no fields to copy*/ }
-  protected int frozenType() { throw fail(); }
+  public int frozenType() { throw fail(); }
   protected String className() { throw fail(); }
   private RuntimeException fail() {
     return new RuntimeException(getClass().toString()+" should be automatically overridden by the auto-serialization code");

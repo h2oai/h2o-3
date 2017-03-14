@@ -48,6 +48,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   boolean _wideDataset = false;         // default with wideDataset set to be false.
   @Override protected PCADriver trainModelImpl() { return new PCADriver(); }
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ ModelCategory.Clustering }; }
+  @Override public boolean isSupervised() { return false; }
 
   @Override public boolean havePojo() { return true; }
   @Override public boolean haveMojo() { return false; }

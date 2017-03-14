@@ -19,7 +19,7 @@ public class C2ChunkTest extends TestUtil {
       if (l==1) nc.addNA();
       for (int v : vals) nc.addNum(v, 0);
       nc.addNA(); //-32768
-
+      int len = nc.len();
       Chunk cc = nc.compress();
       Assert.assertEquals(vals.length + 1 + l, cc._len);
       Assert.assertTrue(cc instanceof C2Chunk);
@@ -33,16 +33,12 @@ public class C2ChunkTest extends TestUtil {
         if (cc.isNA(i)) Assert.assertTrue(Double.isNaN(densevals[i]));
         else Assert.assertTrue(cc.at8(i)==(int)densevals[i]);
       }
-
       nc = new NewChunk(null, 0);
-      cc.inflate_impl(nc);
-      nc.values(0, nc._len);
+      cc.extractRows(nc,0,len);
       if (l==1) Assert.assertTrue(cc.isNA(0));
       Assert.assertEquals(vals.length+l+1, nc._sparseLen);
       Assert.assertEquals(vals.length+l+1, nc._len);
-      Iterator<NewChunk.Value> it = nc.values(0, vals.length+1+l);
-      for (int i = 0; i < vals.length+1+l; ++i) Assert.assertTrue(it.next().rowId0() == i);
-      Assert.assertTrue(!it.hasNext());
+
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.at8(l + i));
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.at8_abs(l + i));
       Assert.assertTrue(cc.isNA(vals.length + l));
@@ -86,14 +82,9 @@ public class C2ChunkTest extends TestUtil {
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA_abs(notna));
 
     NewChunk nc = new NewChunk(null, 0);
-    cc.inflate_impl(nc);
-    nc.values(0, nc._len);
+    cc.extractRows(nc,0,(int)vec.length());
     Assert.assertEquals(vals.length, nc._sparseLen);
     Assert.assertEquals(vals.length, nc._len);
-
-    Iterator<NewChunk.Value> it = nc.values(0, vals.length);
-    for (int i = 0; i < vals.length; ++i) Assert.assertTrue(it.next().rowId0() == i);
-    Assert.assertTrue(!it.hasNext());
 
     for (int na : NAs) Assert.assertTrue(cc.isNA(na));
     for (int na : NAs) Assert.assertTrue(cc.isNA_abs(na));

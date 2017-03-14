@@ -461,8 +461,8 @@ def help_extra_params_for(algo):
     elif algo in ["deeplearning", "deepwater","drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
         return """#' @param x A vector containing the names or indices of the predictor variables to use in building the model.
             #'        If x is missing,then all columns except y are used.
-            #' @param y The name of the response variable in the model.If the data does not contain a header, this is the column index
-            #'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
+            #' @param y The name of the response variable in the model.If the data does not contain a header, this is the first column
+            #'        index, and increasing from left to right. (The response must be either an integer or a
             #'        categorical variable)."""
     elif algo == "svd":
         return """#' @param x A vector containing the \code{character} names of the predictors in the model.
