@@ -16,7 +16,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Searches for matches to argument ‘regex’ within each element
+ * Searches for matches to argument "regex" within each element
  * of a string column.
  *
  * Params:
