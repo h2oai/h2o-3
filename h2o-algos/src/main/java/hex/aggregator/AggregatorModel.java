@@ -31,6 +31,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     public PCAModel.PCAParameters.Method _pca_method = PCAModel.PCAParameters.Method.Power;   // Method for dimensionality reduction
     public int _k = 1;                     // Number of principal components
     public int _target_num_exemplars = 5000;
+    public double _rel_tol_num_exemplars = 0.5;
     public boolean _use_all_factor_levels = false;   // When expanding categoricals, should first level be kept or dropped?
   }
 
