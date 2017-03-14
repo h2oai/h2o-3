@@ -43,8 +43,7 @@ public class AggregatorTest extends TestUtil {
     Frame output = agg._output._output_frame.get();
     System.out.println(output.toTwoDimTable(0,10));
     frame.delete();
-    Log.info("Number of exemplars: " + agg._exemplars.length);
-    Assert.assertTrue(Math.abs(agg._exemplars.length-max)<=0.5*max);
+    checkNumExemplars(agg);
     output.remove();
     agg.remove();
   }
@@ -135,12 +134,28 @@ public class AggregatorTest extends TestUtil {
     agg.checkConsistency();
     Frame output = agg._output._output_frame.get();
     System.out.println(output.toTwoDimTable(0,10));
-    Log.info("Number of exemplars: " + agg._exemplars.length);
-    Assert.assertTrue(agg._exemplars.length<=278);
+    checkNumExemplars(agg);
     output.remove();
     frame.remove();
     agg.remove();
     Scope.exit();
+  }
+
+  @Ignore
+  @Test public void testAirlines() {
+    Frame frame = parse_test_file("smalldata/airlines/allyears2k_headers.zip");
+    AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
+    parms._train = frame._key;
+    parms._target_num_exemplars = 500;
+    parms._rel_tol_num_exemplars = 0.05;
+    long start = System.currentTimeMillis();
+    AggregatorModel agg = new Aggregator(parms).trainModel().get();  // 0.179
+    System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");    agg.checkConsistency();
+    frame.delete();
+    Frame output = agg._output._output_frame.get();
+    output.remove();
+    checkNumExemplars(agg);
+    agg.remove();
   }
 
   @Test public void testCovtype() {
@@ -149,6 +164,7 @@ public class AggregatorTest extends TestUtil {
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
     parms._target_num_exemplars = 500;
+    parms._rel_tol_num_exemplars = 0.05;
     long start = System.currentTimeMillis();
     AggregatorModel agg = new Aggregator(parms).trainModel().get();  // 0.179
     System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");    agg.checkConsistency();
@@ -156,9 +172,14 @@ public class AggregatorTest extends TestUtil {
     Frame output = agg._output._output_frame.get();
     Log.info("Exemplars: " + output.toString());
     output.remove();
-    Log.info("Number of exemplars: " + agg._exemplars.length);
-    Assert.assertTrue(agg._exemplars.length<=500*1.05);
+    checkNumExemplars(agg);
     agg.remove();
+  }
+
+  public void checkNumExemplars(AggregatorModel m) {
+    Log.info("Number of exemplars: " + m._exemplars.length);
+    Assert.assertTrue(m._exemplars.length >= (1.-m._parms._rel_tol_num_exemplars)*m._parms._target_num_exemplars);
+    Assert.assertTrue(m._exemplars.length <= (1.+m._parms._rel_tol_num_exemplars)*m._parms._target_num_exemplars);
   }
 
   @Test public void testChunks() {
@@ -167,12 +188,12 @@ public class AggregatorTest extends TestUtil {
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
     parms._target_num_exemplars = 137;
+    parms._rel_tol_num_exemplars = 0.05;
     long start = System.currentTimeMillis();
     AggregatorModel agg = new Aggregator(parms).trainModel().get();  // 0.418
     System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");    agg.checkConsistency();
     Frame output = agg._output._output_frame.get();
-    Log.info("Number of exemplars: " + agg._exemplars.length);
-//    Assert.assertTrue(agg._exemplars.length==1993);
+    checkNumExemplars(agg);
     output.remove();
     agg.remove();
 
@@ -186,6 +207,7 @@ public class AggregatorTest extends TestUtil {
       parms = new AggregatorModel.AggregatorParameters();
       parms._train = frame._key;
       parms._target_num_exemplars = 137;
+      parms._rel_tol_num_exemplars = 0.05;
       start = System.currentTimeMillis();
       AggregatorModel agg2 = new Aggregator(parms).trainModel().get();  // 0.373 0.504 0.357 0.454 0.368 0.355
       System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");      agg2.checkConsistency();
@@ -194,6 +216,7 @@ public class AggregatorTest extends TestUtil {
       Assert.assertTrue(Math.abs(agg._exemplars.length - agg2._exemplars.length) == 0);
       output = agg2._output._output_frame.get();
       output.remove();
+      checkNumExemplars(agg);
       agg2.remove();
     }
     frame.delete();
@@ -225,8 +248,7 @@ public class AggregatorTest extends TestUtil {
 
     Frame output = agg._output._output_frame.get();
     output.remove();
-    Log.info("Number of exemplars: " + agg._exemplars.length);
-    Assert.assertTrue(agg._exemplars.length<=117);
+    checkNumExemplars(agg);
     frame.delete();
     agg.remove();
   }
@@ -274,6 +296,7 @@ public class AggregatorTest extends TestUtil {
 //    Log.info("Exemplars: " + output);
     output.remove();
     Log.info("Number of exemplars: " + agg._exemplars.length);
+    checkNumExemplars(agg);
     agg.remove();
   }
 }
