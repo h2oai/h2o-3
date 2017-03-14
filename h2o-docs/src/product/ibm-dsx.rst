@@ -1,7 +1,7 @@
 Using H2O with IBM Data Science Experience - BETA
 =================================================
 
-The IBM Data Science Experience (DSX) is an environment provides an interactive, collaborative, cloud-based environment where data scientists can use multiple tools to activate their insights. With DSX, Data scientists can use the best of open source tools such as R and Python, tap into IBMs unique features, grow their capabilities, and share their successes. 
+The IBM Data Science Experience (DSX) provides an interactive, collaborative, cloud-based environment where data scientists can use multiple tools to activate their insights. With DSX, Data scientists can use the best of open source tools such as R and Python, tap into IBMs unique features, grow their capabilities, and share their successes. 
 
 This section show how simple it is to use H2O R with IBM DSX. 
 
@@ -15,7 +15,13 @@ This section show how simple it is to use H2O R with IBM DSX.
   .. figure:: images/ibm-select-r-studio.png
       :alt: Start RStudio
 
-3. Install and start H2O using the instructions included on the `H2O Download site > Install in R <http://www.h2o.ai/download>`__. 
+3. Install and start H2O R using the instructions included on the `H2O Download site <http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html>`__. Note that this page opens by default to the **Download and Run** tab. Be sure to select the **Install in R** tab. |install|
+
+  You can also view a quick start video of starting H2O in R by clicking `here <https://www.youtube.com/embed/zzV1kTCnmR0?list=PLNtMya54qvOHbBdA1x8FNRSpMBEHmhxr0>`__. 
+
+  .. |install| image:: images/ibm_install_in_r.png
+     :height: 24
+     :width: 204
 
   .. figure:: images/ibm-start-h2o.png
       :alt: Install and start H2O
