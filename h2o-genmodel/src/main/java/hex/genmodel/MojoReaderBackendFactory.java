@@ -11,6 +11,40 @@ import java.util.HashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+/**
+ * Factory class for vending MojoReaderBackend object that can be used to load MOJOs from different data sources.
+ *
+ * <p>This class provides convenience methods for loading MOJOs from files, URLs (this includes classpath resources)
+ * and also from a generic InputStream source.</p>
+ *
+ * <p>User needs to make a choice of a Caching Strategy for MOJO sources that are not file based.
+ * Available caching strategies:</p>
+ * <ul>
+ *  <li>MEMORY: (decompressed) content of the MOJO will be cached in memory, this should be suitable for most cases
+ *  (for very large models please make sure that your application has enough memory to hold the unpacked MOJO)</li>
+ *  <li>DISK: MOJO is cached in a temporary file on disk, recommended for very large models</li>
+ * </ul>
+ *
+ * <p>Example of using MojoReaderBackendFactory to read a MOJO from a classpath resource:</p>
+ *
+ * <pre>
+ * {@code
+ *   public class ExampleApp {
+ *     public static void main(String[] args) throws Exception {
+ *       URL mojoURL = ExampleApp.class.getResource("/com/company/mojo.zip");
+ *       MojoReaderBackend reader = MojoReaderBackendFactory.createReaderBackend(mojoURL, CachingStrategy.MEMORY);
+ *       MojoModel model = ModelMojoReader.readFrom(reader);
+ *       EasyPredictModelWrapper modelWrapper = new EasyPredictModelWrapper(model);
+ *       RowData testRow = new RowData();
+ *         for (int i = 0; i < args.length; i++)
+ *           testRow.put("C"+i, Double.valueOf(args[i]));
+ *       RegressionModelPrediction prediction = (RegressionModelPrediction) modelWrapper.predict(testRow);
+ *       System.out.println("Prediction: " + prediction.value);
+ *     }
+ *   }
+ * }
+ * </pre>
+ */
 public class MojoReaderBackendFactory {
 
   public enum CachingStrategy { MEMORY, DISK }
