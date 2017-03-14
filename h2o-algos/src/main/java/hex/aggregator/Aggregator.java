@@ -108,6 +108,9 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
     if (_parms._target_num_exemplars <= 0) {
       error("_target_num_exemplars", "target_num_exemplars must be > 0.");
     }
+    if (_parms._rel_tol_num_exemplars <= 0 || _parms._rel_tol_num_exemplars>=1) {
+      error("_rel_tol_num_exemplars", "rel_tol_num_exemplars must be inside 0...1.");
+    }
     super.init(expensive);
     if (expensive) {
       byte[] types = _train.types();
@@ -154,7 +157,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         double hi = 256;
         double mid = 8; //starting point of radius_scale
 
-        double tol = 0.5; // +/- 50% off target number of exemplars is ok
+        double tol = _parms._rel_tol_num_exemplars;
         int upperLimit = (int)((1.+tol)*targetNumExemplars);
         int lowerLimit = (int)((1.-tol)*targetNumExemplars);
 
