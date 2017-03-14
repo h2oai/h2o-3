@@ -1138,7 +1138,8 @@ public class h2odriver extends Configured implements Tool {
       ss.setReuseAddress(true);
       InetSocketAddress sa = new InetSocketAddress(driverCallbackIp, p);
       try {
-        ss.bind(sa, p); // FIXME: ??? why is the 'backlog' parameter set this way (to a value of the port number)?
+        int backlog = Math.max(50, numNodes * 3); // minimum 50 (bind's default) or numNodes * 3 (safety constant, arbitrary)
+        ss.bind(sa, backlog);
         result = ss;
       } catch (SecurityException se) {
         securityExceptionCount++;
