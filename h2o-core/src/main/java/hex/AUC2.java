@@ -3,6 +3,7 @@ package hex;
 import java.util.Arrays;
 import water.Iced;
 import water.MRTask;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Vec;
 import water.udf.fp.Function;
@@ -164,7 +165,20 @@ public class AUC2 extends Iced {
   }
   
   public double pr_auc() {
-    return Functions.AUC(forCriterion(recall), forCriterion(precision), 0, _nBins-1);
+    checkRecallValidity();
+    return Functions.integrate(forCriterion(recall), forCriterion(precision), 0, _nBins-1);
+  }
+
+  // Checks that recall is monotonic function.
+  // According to Leland, it should be; otherwise it's an error.
+  void checkRecallValidity() {
+    double x0 = recall.exec(this, 0);
+    for (int i = 1; i < _nBins; i++) {
+      double x1 = recall.exec(this, i);
+      if (x0 >= x1) 
+        throw new H2OIllegalArgumentException(""+i, "recall", ""+x1 + "<" + x0);
+      x1 = x0;
+    }
   }
 
   // Compute the Area Under the Curve, where the curve is defined by (TPR,FPR)

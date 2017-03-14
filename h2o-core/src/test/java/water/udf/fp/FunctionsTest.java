@@ -79,9 +79,9 @@ public class FunctionsTest {
     Function<Integer, Double> x = new Function<Integer, Double>() {
       public Double apply(Integer i) { return i * 0.1; }
     };
-    assertEquals(1.0, AUC(x, c, 0, 2), 0.01);
-    assertEquals(10.0, AUC(x, c, 0, 20), 0.01);
-    assertEquals(2.0, AUC(x, x, 0, 20), 0.01);
+    assertEquals(1.0, integrate(x, c, 0, 2), 0.01);
+    assertEquals(10.0, integrate(x, c, 0, 20), 0.01);
+    assertEquals(2.0, integrate(x, x, 0, 20), 0.01);
 
     Function<Integer, Double> sin = new Function<Integer, Double>() {
       public Double apply(Integer i) { return Math.sin((314-i) * 0.01); }
@@ -89,8 +89,8 @@ public class FunctionsTest {
     Function<Integer, Double> cos = new Function<Integer, Double>() {
       public Double apply(Integer i) { return Math.cos((314-i) * 0.01); }
     };
-    final double actual = AUC(cos, sin, 0, 314);
+    final double actual = integrate(cos, sin, 0, 314);
     assertEquals(Math.PI * 0.5, actual, 0.02);
-    assertEquals(Math.PI, AUC(cos, sin, 0, 628), 0.01);
+    assertEquals(Math.PI, integrate(cos, sin, 0, 628), 0.01);
   }
 }

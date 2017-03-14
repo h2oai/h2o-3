@@ -102,7 +102,7 @@ public class Functions {
    * @param to max value of the curve range
    * @return the area under curve, the result of integrating x*y' over [from,to].
    */
-  public static double AUC(
+  public static double integrate(
       Function<Integer, Double> x,
       Function<Integer, Double> y,
       int from, int to) {
