@@ -42,7 +42,7 @@ public class AggregatorV99 extends ModelBuilderSchema<Aggregator,AggregatorV99,A
     @API(help = "Maximum number of iterations for PCA", direction = API.Direction.INOUT, gridable = true, level= API.Level.expert)
     public int max_iterations;
 
-    @API(help = "Target number of exemplars", direction = API.Direction.INOUT, gridable = true, level= API.Level.secondary)
+    @API(help = "Targeted number of exemplars", direction = API.Direction.INOUT, gridable = true, level= API.Level.secondary)
     public int target_num_exemplars;
 
     @API(help = "RNG seed for initialization", direction = API.Direction.INOUT, level= API.Level.secondary)
