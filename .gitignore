@@ -98,5 +98,5 @@ wrapper
 native
 
 # Ignore Sublime Text project settings
- *.sublime-project
- *.sublime-workspace
+*.sublime-project
+*.sublime-workspace
