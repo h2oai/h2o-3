@@ -388,13 +388,14 @@ class H2OCloudNode(object):
                                           cwd=there)
             os.chdir(cwd)
         else:
-            try: 
+            try:
+              print("+ CMD: " + ' '.join(cmd))
+              
               self.child = subprocess.Popen(args=cmd,
                                             stdout=f,
                                             stderr=subprocess.STDOUT,
                                             cwd=self.output_dir)
               self.pid = self.child.pid
-              print("+ CMD: " + ' '.join(cmd))
 
             except OSError:
                 raise "Failed to spawn %s in %s" % (cmd, self.output_dir)
