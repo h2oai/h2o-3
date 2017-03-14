@@ -44,7 +44,7 @@ public class AggregatorTest extends TestUtil {
     System.out.println(output.toTwoDimTable(0,10));
     frame.delete();
     Log.info("Number of exemplars: " + agg._exemplars.length);
-    Assert.assertTrue(Math.abs(agg._exemplars.length-max)<0.25*max);
+    Assert.assertTrue(Math.abs(agg._exemplars.length-max)<=0.5*max);
     output.remove();
     agg.remove();
   }

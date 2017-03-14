@@ -106,7 +106,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
       _parms._categorical_encoding=Model.Parameters.CategoricalEncodingScheme.Eigen;
     }
     if (_parms._target_num_exemplars <= 0) {
-      error("_max_exemplars", "max_exemplars must be > 0.");
+      error("_target_num_exemplars", "target_num_exemplars must be > 0.");
     }
     super.init(expensive);
     if (expensive) {
@@ -150,17 +150,25 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         // Increase radius until we have low enough number of exemplars
         _job.update(0, "Aggregating.");
         int numExemplars;
-        double mid = 32;
+        double lo = 0;
+        double hi = 256;
+        double mid = 8; //starting point of radius_scale
+
+        double tol = 0.5; // +/- 50% off target number of exemplars is ok
+        int upperLimit = (int)((1.+tol)*targetNumExemplars);
+        int lowerLimit = (int)((1.-tol)*targetNumExemplars);
+
         Key terminateKey = Key.make();
         while(true) {
+          Log.info("radius_scale lo/mid/hi: " + lo + "/" + mid + "/" + hi);
           double radius = mid * radiusBase;
-          if (targetNumExemplars ==orig.numRows()) radius = 0;
+          if (targetNumExemplars==orig.numRows()) radius = 0;
 
           // Add workspace vector for exemplar assignment
           Vec[] vecs = Arrays.copyOf(orig.vecs(), orig.vecs().length + 1);
           assignment = vecs[vecs.length - 1] = orig.anyVec().makeZero();
           Log.info("Aggregating with radius " + String.format("%5f", radius) + ":");
-          aggTask = new AggregateTask(di._key, radius, _job._key, targetNumExemplars, radius==0 ? null : terminateKey).doAll(vecs);
+          aggTask = new AggregateTask(di._key, radius, _job._key, upperLimit, radius == 0 ? null : terminateKey).doAll(vecs);
 
           if (radius == 0) {
             Log.info(" Returning original dataset.");
@@ -168,26 +176,38 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
             assert(numExemplars == orig.numRows());
             break;
           }
-          if (aggTask.isTerminated() || aggTask._exemplars.length > targetNumExemplars) {
+
+          // stuck in range [0,256] with too many exemplars? - just do it
+          if (aggTask.isTerminated() && Math.abs(hi-lo) < 1e-3 * Math.abs(lo+hi)) {
+            aggTask = new AggregateTask(di._key, radius, _job._key, (int)orig.numRows(), terminateKey).doAll(vecs);
+            Log.info(" Running again without early cutout.");
+            numExemplars = aggTask._exemplars.length;
+            break;
+          }
+
+          if (aggTask.isTerminated() || aggTask._exemplars.length > upperLimit) {
             Log.info(" Too many exemplars.");
-            mid *= 1.1;
+            lo = mid;
           } else {
             numExemplars = aggTask._exemplars.length;
             Log.info(" " + numExemplars + " exemplars.");
-            if (Math.abs(numExemplars- targetNumExemplars)<0.25* targetNumExemplars) { // close enough
-              Log.info("Converged.");
+            if (numExemplars >= lowerLimit && numExemplars <= upperLimit) { // close enough
+              Log.info(" Within " + (100*tol) +"% of target number of exemplars. Done.");
               break;
             } else {
               Log.info(" Too few exemplars.");
-              mid *= 0.5;
+              hi = mid;
             }
           }
+          mid = lo + (hi-lo)/2.;
         }
         _job.update(1, "Aggregation finished. Got " + numExemplars + " examplars");
         assert (!aggTask.isTerminated());
         DKV.remove(terminateKey);
 
-        _job.update(1, "Aggregating exemplar assignments.");
+        String msg = "Creating exemplar assignments.";
+        Log.info(msg);
+        _job.update(1, msg);
         new RenumberTask(aggTask._mapping).doAll(assignment);
 
         // Populate model output state
@@ -198,7 +218,9 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         model._exemplar_assignment_vec_key = assignment._key;
         model._output._output_frame = Key.make("aggregated_" + _parms._train.toString() + "_by_" + model._key);
 
-        _job.update(1, "Creating output frame.");
+        msg = "Creating output frame.";
+        Log.info(msg);
+        _job.update(1, msg);
         model.createFrameOfExemplars(_parms._train.get(), model._output._output_frame);
 
         _job.update(1, "Done.");
