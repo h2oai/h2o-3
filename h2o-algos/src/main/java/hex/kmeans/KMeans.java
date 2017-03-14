@@ -62,8 +62,8 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     super.init(expensive);
     if(expensive)
       if(_parms._fold_column != null) _train.remove(_parms._fold_column);
-    if( _parms._max_iterations < 0 || _parms._max_iterations > 1e6)
-      error("_max_iterations", " max_iterations must be between 0 and 1e6");
+    if( _parms._max_iterations <= 0 || _parms._max_iterations > 1e6)
+      error("_max_iterations", " max_iterations must be between 1 and 1e6");
     if (_train == null) return;
     if (_parms._init == Initialization.User && _parms._user_points == null)
       error("_user_y","Must specify initial cluster centers");

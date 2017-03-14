@@ -1,6 +1,5 @@
 package water.fvec;
 
-import water.*;
 import water.util.UnsafeUtils;
 
 public class C16Chunk extends Chunk {
@@ -39,19 +38,22 @@ public class C16Chunk extends Chunk {
   @Override boolean set_impl(int i, double d) { return false; }
   @Override boolean set_impl(int i, float f ) { return false; }
   @Override boolean setNA_impl(int idx) { return set_impl(idx, _LO_NA, _HI_NA); }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.set_len(nc.set_sparseLen(0));
 
-    for( int i=0; i< _len; i++ ) {
-      long lo = loAt(i);
-      long hi = hiAt(i);
-      if(lo == _LO_NA && hi == _HI_NA)
-        nc.addNA();
-      else
-        nc.addUUID(lo, hi);
+  @Override
+  public <T extends ChunkVisitor> T processRows(T v, int from, int to) {
+    for(int i = from; i < to; i++) {
+      if(isNA(i)) v.addNAs(1);
+      else v.addValue(UnsafeUtils.get8(_mem, 16 * i), UnsafeUtils.get8(_mem, 16 * i + 8));
     }
-    return nc;
+    return v;
   }
+
+  @Override
+  public <T extends ChunkVisitor> T processRows(T v, int[] ids) {
+    for(int i:ids) v.addValue(UnsafeUtils.get8(_mem,16*i),UnsafeUtils.get8(_mem,16*i+8));
+    return v;
+  }
+
   @Override protected final void initFromBytes () {
     _start = -1;  _cidx = -1;
     set_len(_mem.length>>4);

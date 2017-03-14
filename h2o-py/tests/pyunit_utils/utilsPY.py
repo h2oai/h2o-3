@@ -1424,7 +1424,7 @@ def generate_sign_vec(table1, table2):
 
     return sign_vec
 
-def equal_two_arrays(array1, array2, eps, tolerance):
+def equal_two_arrays(array1, array2, eps, tolerance, throwError=True):
     """
     This function will compare the values of two python tuples.  First, if the values are below
     eps which denotes the significance level that we care, no comparison is performed.  Next,
@@ -1453,7 +1453,10 @@ def equal_two_arrays(array1, array2, eps, tolerance):
 
         return True                                     # return True, elements of two arrays are close enough
     else:
-        assert False, "The two arrays are of different size!"
+        if throwError:
+            assert False, "The two arrays are of different size!"
+        else:
+            return False
 
 def equal_2D_tables(table1, table2, tolerance=1e-6):
     """
@@ -1484,6 +1487,7 @@ def equal_2D_tables(table1, table2, tolerance=1e-6):
 
     else:
         assert False, "The two arrays are of different size!"
+
 
 def compare_two_arrays(array1, array2, eps, tolerance, comparison_string, array1_string, array2_string, error_string,
                        success_string, template_is_better, just_print=False):
@@ -2885,3 +2889,68 @@ def cannaryHDFSTest(hdfs_name_node, file_name):
             return True
         else:       # exception is caused by other reasons.
             return False
+
+def extract_scoring_history_field(aModel, fieldOfInterest):
+    """
+    Given a fieldOfInterest that are found in the model scoring history, this function will extract the list
+    of field values for you from the model.
+
+    :param aModel: H2O model where you want to extract a list of fields from the scoring history
+    :param fieldOfInterest: string representing a field of interest.
+    :return: List of field values or None if it cannot be found
+    """
+
+    allFields = aModel._model_json["output"]["scoring_history"]._col_header
+    if fieldOfInterest in allFields:
+        cellValues = []
+        fieldIndex = allFields.index(fieldOfInterest)
+        for eachCell in aModel._model_json["output"]["scoring_history"].cell_values:
+            cellValues.append(eachCell[fieldIndex])
+        return cellValues
+    else:
+        return None
+
+
+def model_run_time_sorted_by_time(model_list):
+    """
+    This function is written to sort the metrics that we care in the order of when the model was built.  The
+    oldest model metric will be the first element.
+    :param model_list: list of models built sequentially that contains metric of interest among other fields
+    :return: model run time in secs sorted by order of building
+    """
+
+    model_num = len(model_list)
+
+    model_runtime_sec_list = [None] * model_num
+
+
+    for index in range(model_num):
+        model_index = int(model_list[index]._id.split('_')[-1])
+        model_runtime_sec_list[model_index] = \
+            (model_list[index]._model_json["output"]["run_time"]/1000.0)
+
+    return model_runtime_sec_list
+
+
+def model_seed_sorted_by_time(model_list):
+    """
+    This function is written to find the seed used by each model in the order of when the model was built.  The
+    oldest model metric will be the first element.
+    :param model_list: list of models built sequentially that contains metric of interest among other fields
+    :return: model seed sorted by order of building
+    """
+
+    model_num = len(model_list)
+
+    model_seed_list = [None] * model_num
+
+
+    for index in range(model_num):
+        model_index = int(model_list[index]._id.split('_')[-1])
+
+        for pIndex in range(len(model_list.models[0]._model_json["parameters"])):
+            if model_list.models[index]._model_json["parameters"][pIndex]["name"]=="seed":
+                model_seed_list[model_index]=model_list.models[index]._model_json["parameters"][pIndex]["actual_value"]
+                break
+
+    return model_seed_list

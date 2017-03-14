@@ -1,7 +1,7 @@
-Importing Data
---------------
+Importing a File
+----------------
 
-The import function is a parallelized reader and pulls information from the server from a location specified by the client. The path is a server-side path. This is a fast, scalable, highly optimized way to read data. H2O pulls the data from a data store and initiates the data transfer as a read operation.
+Unlike the `upload <uploading-data.html>`__ function, the import function is a parallelized reader and pulls information from the server from a location specified by the client. The path is a server-side path. This is a fast, scalable, highly optimized way to read data. H2O pulls the data from a data store and initiates the data transfer as a read operation.
 
 .. example-code::
    .. code-block:: r

@@ -9,5 +9,4 @@ public class AboutV3 extends RequestSchemaV3<Iced, AboutV3> {
 
   @API(help = "List of properties about this running H2O instance", direction = API.Direction.OUTPUT)
   public AboutEntryV3 entries[];
-
 }

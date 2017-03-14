@@ -301,8 +301,6 @@ class H2OFrame(object):
         raise H2OValueError("Column '%r' does not exist in the frame" % col)
 
 
-
-
     def _import_parse(self, path, pattern, destination_frame, header, separator, column_names, column_types, na_strings):
         if is_type(path, str) and "://" not in path:
             path = os.path.abspath(path)
@@ -2082,9 +2080,17 @@ class H2OFrame(object):
 
         :returns: new H2OFrame with columns of the "enum" type.
         """
+        
+        for colname in self.names:
+            t = self.types[colname]
+            if t not in {"int", "string", "enum"}: raise H2OValueError("Only 'int' or 'string' are allowed for asfactor(), got %s:%s " % (colname, t))
+
         fr = H2OFrame._expr(expr=ExprNode("as.factor", self), cache=self._ex._cache)
         if fr._ex._cache.types_valid():
-            fr._ex._cache.types = {list(fr._ex._cache.types)[0]: "enum"}
+          fr._ex._cache.types = {name: "enum" for name in self.types}
+        else:
+          raise H2OTypeError("Types are not available in result")
+        
         return fr
 
 
@@ -2497,7 +2503,7 @@ class H2OFrame(object):
         Conduct a diff-1 transform on a numeric frame column.
 
         :returns: an H2OFrame where each element is equal to the corresponding element in the source
-        frame minus the previous-row element in the same frame.
+            frame minus the previous-row element in the same frame.
         """
         fr = H2OFrame._expr(expr=ExprNode("difflag1", self), cache=self._ex._cache)
         return fr

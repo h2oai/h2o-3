@@ -1537,13 +1537,13 @@ public class GBMTest extends TestUtil {
       Map.Entry<Double, Pair<Float,Float>> n = it.next();
       if (i>0) Assert.assertTrue(n.getKey() > fullDataMSE); //any sampling should make training set MSE worse
       Log.info( "MSE: " + n.getKey() + ", "
-              + ", row sample: " + ((Pair)n.getValue()).getKey()
-              + ", col sample: " + ((Pair)n.getValue()).getValue());
+              + ", row sample: " + ((Pair)n.getValue())._1()
+              + ", col sample: " + ((Pair)n.getValue())._2());
       last=n.getValue();
     }
     // worst training MSE should belong to the most sampled case
-    Assert.assertTrue(last.getKey()==sample_rates[0]);
-    Assert.assertTrue(last.getValue()==col_sample_rates[0]);
+    Assert.assertTrue(last._1()==sample_rates[0]);
+    Assert.assertTrue(last._2()==col_sample_rates[0]);
   }
 
   @Test

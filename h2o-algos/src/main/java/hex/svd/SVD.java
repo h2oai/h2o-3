@@ -55,6 +55,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   @Override protected SVDDriver trainModelImpl() { return new SVDDriver(); }
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ ModelCategory.DimReduction }; }
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
+  @Override public boolean isSupervised() { return false; }
 
   @Override public boolean havePojo() { return true; }
   @Override public boolean haveMojo() { return false; }

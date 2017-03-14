@@ -849,6 +849,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
     }
 
+    /**
+     * Variance Covariance matrix accessor. Available only if odel has been built with p-values.
+     * @return
+     */
+    public double [][] vcov(){return _vcov;}
+
+    
     @Override
     public int nclasses() {
       return _nclasses;

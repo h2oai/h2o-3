@@ -219,7 +219,6 @@ final public class H2O {
     /** -user_name=user_name; Set user name */
     public String user_name = System.getProperty("user.name");
 
-
     //-----------------------------------------------------------------------------------
     // Node configuration
     //-----------------------------------------------------------------------------------
@@ -285,6 +284,9 @@ final public class H2O {
 
     /** -internal_security_conf path (absolute or relative) to a file containing all internal security related configurations */
     public String internal_security_conf = null;
+
+    /** -internal_security_enabled is a boolean that indicates if internal communication paths are secured*/
+    public boolean internal_security_enabled = false;
 
     //-----------------------------------------------------------------------------------
     // Debugging
@@ -1535,7 +1537,9 @@ final public class H2O {
   }
 
   public final int size() { return _memary.length; }
-  final H2ONode leader() { return _memary[0]; }
+  final H2ONode leader() {
+    return _memary[0]; 
+  }
 
   // Find the node index for this H2ONode, or a negative number on a miss
   int nidx( H2ONode h2o ) { return java.util.Arrays.binarySearch(_memary,h2o); }

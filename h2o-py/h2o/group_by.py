@@ -25,23 +25,24 @@ class GroupBy(object):
 
     Sample usage:
 
-       >>> my_frame = ...  # some existing H2OFrame
-       >>> grouped = my_frame.group_by(by=["C1", "C2"])
-       >>> grouped.sum(col="X1", na="all").mean(col="X5", na="all").max()
-       >>> grouped.get_frame()
+    >>> my_frame = ...  # some existing H2OFrame
+    >>> grouped = my_frame.group_by(by=["C1", "C2"])
+    >>> grouped.sum(col="X1", na="all").mean(col="X5", na="all").max()
+    >>> grouped.get_frame()
 
-    Any number of aggregations may be chained together in this manner.  Note that once the aggregation
-    operations are complete, calling the GroupBy object with a new set of aggregations will yield no
-    effect.  You must generate a new GroupBy object in order to apply a new aggregation on it.  In addition,
-    certain aggregations are only defined for numerical or categorical columns.  An error will be thrown for
-    calling aggregation on the wrong data types.
 
-    If no arguments are given to the aggregation (e.g. "max" in the above example),
-    then it is assumed that the aggregation should apply to all columns but the
-    group by columns.
+    Any number of aggregations may be chained together in this manner.  Note that once the aggregation operations
+    are complete, calling the GroupBy object with a new set of aggregations will yield no effect.  You must generate
+    a new GroupBy object in order to apply a new aggregation on it.  In addition, certain aggregations are only
+    defined for numerical or categorical columns.  An error will be thrown for calling aggregation on the wrong
+    data types.
+
+    If no arguments are given to the aggregation (e.g. "max" in the above example), then it is assumed that the
+    aggregation should apply to all columns but the group by columns.
 
     All GroupBy aggregations take parameter na, which controls treatment of NA values during the calculation.
     It can be one of:
+
         - "all" (default) -- any NAs are used in the calculation as-is; which usually results in the final result
           being NA too.
         - "ignore" -- NA entries are not included in calculations, but the total number of entries is taken as the
@@ -52,11 +53,12 @@ class GroupBy(object):
     Variance (var) and standard deviation (sd) are the sample (not population) statistics.
     """
 
+
     def __init__(self, fr, by):
         """
         Return a new ``GroupBy`` object using the H2OFrame specified in fr and the desired grouping columns
-        specified in by.  The original H2O frame will be stored as member _fr.  Information on the new
-        grouping of the original frame is described in a new H2OFrame in member frame.
+        specified in by.  The original H2O frame will be stored as member _fr.  Information on the new grouping
+        of the original frame is described in a new H2OFrame in member frame.
 
         The returned groups are sorted by the natural group-by column sort.
 
@@ -79,12 +81,11 @@ class GroupBy(object):
 
     def min(self, col=None, na="all"):
         """
-        Calculate the minimum of each column specified in col for each group of a GroupBy object.  If no col is given,
-        compute the minimum among all numeric columns other than those being grouped on.
+        Calculate the minimum of each column specified in col for each group of a GroupBy object.  If no col is
+        given, compute the minimum among all numeric columns other than those being grouped on.
 
         :param col: col can be None (default), a column name (str) or an index (int) of a single column,  or a
-            list for multiple columns
-        denoting the set of columns to group by.
+            list for multiple columns denoting the set of columns to group by.
         :param str na:  one of 'rm', 'ignore' or 'all' (default).
         :return: the original GroupBy object (self), for ease of constructing chained operations.
 
@@ -94,8 +95,8 @@ class GroupBy(object):
 
     def max(self, col=None, na="all"):
         """
-        Calculate the maximum of each column specified in col for each group of a GroupBy object.  If no col is given,
-        compute the maximum among all numeric columns other than those being grouped on.
+        Calculate the maximum of each column specified in col for each group of a GroupBy object.  If no col is
+        given, compute the maximum among all numeric columns other than those being grouped on.
 
         :param col: col can be None (default), a column name (str) or an index (int) of a single column,  or a
             list for multiple columns
@@ -107,8 +108,8 @@ class GroupBy(object):
 
     def mean(self, col=None, na="all"):
         """
-        Calculate the mean of each column specified in col for each group of a GroupBy object.  If no col is given,
-        compute the mean among all numeric columns other than those being grouped on.
+        Calculate the mean of each column specified in col for each group of a GroupBy object.  If no col is
+        given, compute the mean among all numeric columns other than those being grouped on.
 
         :param col: col can be None (default), a column name (str) or an index (int) of a single column,  or a
             list for multiple columns
@@ -143,8 +144,8 @@ class GroupBy(object):
 
     def sd(self, col=None, na="all"):
         """
-        Calculate the standard deviation of each column specified in col for each group of a GroupBy object.
-        If no col is given, compute the standard deviation among all numeric columns other than those being grouped on.
+        Calculate the standard deviation of each column specified in col for each group of a GroupBy object. If no
+        col is given, compute the standard deviation among all numeric columns other than those being grouped on.
 
         :param col: col can be None (default), a column name (str) or an index (int) of a single column,  or a
             list for multiple columns
@@ -156,8 +157,8 @@ class GroupBy(object):
 
     def var(self, col=None, na="all"):
         """
-        Calculate the variance of each column specified in col for each group of a GroupBy object.  If no col is given,
-        compute the variance among all numeric columns other than those being grouped on.
+        Calculate the variance of each column specified in col for each group of a GroupBy object.  If no col is
+        given, compute the variance among all numeric columns other than those being grouped on.
 
         :param col: col can be None (default), a column name (str) or an index (int) of a single column,  or a
             list for multiple columns
@@ -210,8 +211,8 @@ class GroupBy(object):
         The number of columns depend on the number of aggregations performed, the number of columns specified in
         the col parameter.  Generally, expect the number of columns to be
 
-        (len(col) of aggregation 0 + len(col) of aggregation 1 +...+ len(col) of aggregation n) x (number of groups of the GroupBy object)
-        +1 (for group-by group names).
+        (len(col) of aggregation 0 + len(col) of aggregation 1 +...+ len(col) of aggregation n) x
+        (number of groups of the GroupBy object) +1 (for group-by group names).
 
         Note:
             - the count aggregation only generates one column;

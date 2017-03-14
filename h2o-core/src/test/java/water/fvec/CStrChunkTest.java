@@ -22,7 +22,7 @@ public class CStrChunkTest extends TestUtil {
       if (l==1) nc.addNA();
       for (BufferedString v : vals) nc.addStr(v);
       nc.addNA();
-
+      int len = nc.len();
       Chunk cc = nc.compress();
       Assert.assertEquals(vals.length + 1 + l, cc._len);
       Assert.assertTrue(cc instanceof CStrChunk);
@@ -44,7 +44,7 @@ public class CStrChunkTest extends TestUtil {
       Assert.assertTrue(cc2.isNA(vals.length + l));
       Assert.assertTrue(cc2.isNA_abs(vals.length + l));
 
-      nc = cc.inflate_impl(new NewChunk(null, 0));
+      nc = cc.extractRows(new NewChunk(null, 0),0,len);
       Assert.assertEquals(vals.length + 1 + l, nc._len);
 
       if (l==1) Assert.assertTrue(nc.isNA(0));
@@ -101,9 +101,10 @@ public class CStrChunkTest extends TestUtil {
     nc.addStr(new BufferedString("bar"));
     Chunk c = nc.compress();
     Assert.assertTrue("first 100 entries are NA",c.isNA(0) && c.isNA(99));
-    Assert.assertTrue("Sparse string has values",c.atStr(new BufferedString(),100).equals("foo"));
+    Assert.assertTrue("Sparse string has values",c.atStr(new BufferedString(),100).sameString("foo"));
     Assert.assertTrue("NA",c.isNA(101));
-    Assert.assertTrue("Sparse string has values",c.atStr(new BufferedString(),102).equals("bar"));
+    final BufferedString bufferedString = c.atStr(new BufferedString(), 102);
+    Assert.assertTrue("Sparse string has values: expected `bar`, got " + bufferedString, bufferedString.sameString("bar"));
   }
 }
 

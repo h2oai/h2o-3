@@ -42,6 +42,7 @@ should be added to the group automatically.
    starting-h2o
    aws
    azure
+   ibm-dsx
    hadoop
    docker
 

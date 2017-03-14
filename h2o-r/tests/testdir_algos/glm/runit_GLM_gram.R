@@ -9,17 +9,18 @@ test.GLM.nonnegative <- function() {
   w = p[,3]*p[,2]
   names(w) <- c("w")
   X = h2o.cbind(df[x],w)
-  gfr = h2o.computeGram(X=X,weights="w",skip_missing=TRUE,standardize=TRUE)
+  gfr = h2o.computeGram(X=X,weights="w",skip_missing=TRUE,standardize=FALSE)
   gm = as.matrix(gfr)
   rownames(gm) <- colnames(gm)
   h2o.rm(h2o.getId(gfr))
   ginvDiag = diag(solve(gm))
   ginvDiag = ginvDiag[c(length(ginvDiag),1:length(ginvDiag)-1)]
-  beta = m@model$coefficients_table[,6]
+  beta = m@model$coefficients_table[,2]
   names(beta) <- m@model$coefficients_table[,1]
   zvalues = beta/sqrt(ginvDiag)
   zvalues_h2o = m@model$coefficients_table[,4]
-  cbind(zvalues,zvalues_h2o)
+  print(as.data.frame(m@model$coefficients_table))
+  print(cbind(zvalues,zvalues_h2o))
   if(max(abs(zvalues-zvalues_h2o)) > 1e-4) fail("z-scores do not match")
   #test 2 compare non-weighted non-standardized matrix to t(M) %*% M
   dfr = as.data.frame(df)
