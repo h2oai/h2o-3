@@ -51,7 +51,7 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
 
 
     public void validateArguments() {
-        if (watchdogRetryTimeout < 0 || watchdogRetryTimeout >= 65536) {
+        if (watchdogRetryTimeout < 0) {
             H2O.parseFailed("Failed noes watchdog retry timeout has to be positive: " + watchdogRetryTimeout);
         }
     }
