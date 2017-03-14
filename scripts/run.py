@@ -1415,7 +1415,7 @@ class TestRunner(object):
             if self._h2o_exists_and_healthy(c.get_ip(), c.get_port()):
                 print("Node {} healthy.".format(c))
             else:
-                print("Node %r NOT HEALTHY" % c)
+                print("Node with IP {} and port {} NOT HEALTHY" .format(c.get_ip(),c.get_port()))
                 # should an exception be thrown?
 
     def stop_clouds(self):
