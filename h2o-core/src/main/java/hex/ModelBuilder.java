@@ -982,6 +982,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           _vresponse = _valid.vec(_parms._response_column);
         }
       }
+      boolean restructured = false;
       Vec[] vecs = _train.vecs();
       for (int j = 0; j < vecs.length; ++j) {
         Vec v = vecs[j];
@@ -1009,9 +1010,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 //          for (int i=0;i<len;++i)
 //            Log.info(vNew.domain()[i] + " -> " + meanWeightedResponse[idx[i]]);
           vecs[j] = vNew;
+          restructured = true;
         }
       }
-      _train.restructure(_train.names(), vecs);
+      if (restructured)
+        _train.restructure(_train.names(), vecs);
     }
     assert (!expensive || _valid==null || Arrays.equals(_train._names, _valid._names) || _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.Binary);
     if (_valid!=null && !Arrays.equals(_train._names, _valid._names) && _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.Binary) {
