@@ -1,7 +1,6 @@
 package ai.h2o.automl;
 
-import hex.Model;
-import hex.ModelMetrics;
+import hex.*;
 import water.*;
 import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
@@ -240,16 +239,22 @@ public class Leaderboard extends Keyed<Leaderboard> {
       sb.append(" ");
 
       // TODO: allow the metric to be passed in.  Note that this assumes the validation (or training) frame is the same.
-      // TODO: if validation metrics are available, print those.
+      ModelMetrics mm =
+              m._output._cross_validation_metrics != null ?
+                      m._output._cross_validation_metrics :
+                      m._output._validation_metrics != null ?
+                              m._output._validation_metrics :
+                              m._output._training_metrics;
+
       if (m._output.isBinomialClassifier()) {
         sb.append("auc: ");
-        sb.append(m.auc());
+        sb.append(((ModelMetricsBinomial)mm).auc());
       } else if (m._output.isClassifier()) {
         sb.append("mean per class error: ");
-        sb.append(m.mean_per_class_error());
+        sb.append(((ModelMetricsMultinomial)mm).mean_per_class_error());
       } else if (m._output.isSupervised()) {
         sb.append("mean residual deviance: ");
-        sb.append(m.deviance());
+        sb.append(((ModelMetricsRegression)mm).residual_deviance());
       }
 
       sb.append(separator);
