@@ -35,7 +35,7 @@ final class RollupStats extends Iced {
   volatile transient ForkJoinTask _tsk;
 
   // Computed in 1st pass
-  volatile long _naCnt; //count(!isNA(X))
+  volatile long _naCnt; //count(isNA(X))
   double _mean, _sigma; //mean(X) and sqrt(sum((X-mean(X))^2)) for non-NA values
   long    _rows,        //count(X) for non-NA values
           _nzCnt,       //count(X!=0) for non-NA values
