@@ -1,12 +1,7 @@
 package hex.genmodel;
 
-import com.google.common.io.ByteStreams;
-
 import java.io.*;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -79,25 +74,43 @@ public class MojoReaderBackendFactory {
   }
 
   private static MojoReaderBackend createInMemoryReaderBackend(InputStream inputStream) throws IOException {
-    ZipInputStream zis = new ZipInputStream(inputStream);
     HashMap<String, byte[]> content = new HashMap<>();
-    ZipEntry entry;
-    while ((entry = zis.getNextEntry()) != null) {
-      if (entry.getSize() > Integer.MAX_VALUE)
-        throw new IOException("File too large: " + entry.getName());
-      ByteArrayOutputStream os = new ByteArrayOutputStream();
-      ByteStreams.copy(zis, os);
-      content.put(entry.getName(), os.toByteArray());
+    ZipInputStream zis = new ZipInputStream(inputStream);
+    try {
+      ZipEntry entry;
+      while ((entry = zis.getNextEntry()) != null) {
+        if (entry.getSize() > Integer.MAX_VALUE)
+          throw new IOException("File too large: " + entry.getName());
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        copyStream(zis, os);
+        content.put(entry.getName(), os.toByteArray());
+      }
+    } finally {
+      zis.close();
     }
     return new InMemoryMojoReaderBackend(content);
   }
 
   private static MojoReaderBackend createTempFileReaderBackend(InputStream inputStream) throws IOException {
-    Path tmp = Files.createTempFile("h2o-mojo", ".zip");
-    Files.copy(inputStream, tmp, StandardCopyOption.REPLACE_EXISTING);
-    File tmpFile = tmp.toFile();
+    File tmpFile = File.createTempFile("h2o-mojo", ".zip");
+    FileOutputStream fos = new FileOutputStream(tmpFile);
+    try {
+      copyStream(inputStream, fos);
+    } finally {
+      fos.close();
+    }
     tmpFile.deleteOnExit(); // register delete on exit hook (in case tmp reader doesn't do the job)
     return new TmpMojoReaderBackend(tmpFile);
+  }
+
+  private static void copyStream(InputStream source, OutputStream target) throws IOException {
+    byte[] buffer = new byte[8 * 1024];
+    while (true) {
+      int len = source.read(buffer);
+      if (len == -1)
+        break;
+      target.write(buffer, 0, len);
+    }
   }
 
 }
