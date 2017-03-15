@@ -84,8 +84,8 @@ public class FrameUtils {
         return new CategoricalBinaryEncoder(dataset, skipCols).exec().get();
       case Eigen:
         return new CategoricalEigenEncoder(tev, dataset, skipCols).exec().get();
-      case Integer:
-        return new CategoricalIntegerEncoder(dataset, skipCols).exec().get();
+      case LabelEncoder:
+        return new CategoricalLabelEncoder(dataset, skipCols).exec().get();
       default:
         throw H2O.unimpl();
     }
@@ -553,24 +553,24 @@ public class FrameUtils {
     }
   }
 
-  public static class CategoricalIntegerEncoder extends Iced {
+  public static class CategoricalLabelEncoder extends Iced {
     final Frame _frame;
     Job<Frame> _job;
     final String[] _skipCols;
 
-    public CategoricalIntegerEncoder(Frame dataset, String[] skipCols) {
+    public CategoricalLabelEncoder(Frame dataset, String[] skipCols) {
       _frame = dataset;
       _skipCols = skipCols;
     }
 
     /**
-     * Driver for CategoricalIntegerEncoder
+     * Driver for CategoricalLabelEncoder
      */
-    class CategoricalIntegerEncoderDriver extends H2O.H2OCountedCompleter {
+    class CategoricalLabelEncoderDriver extends H2O.H2OCountedCompleter {
       final Frame _frame;
       final Key<Frame> _destKey;
       final String[] _skipCols;
-      CategoricalIntegerEncoderDriver(Frame frame, Key<Frame> destKey, String[] skipCols) { _frame = frame; _destKey = destKey; _skipCols = skipCols; }
+      CategoricalLabelEncoderDriver(Frame frame, Key<Frame> destKey, String[] skipCols) { _frame = frame; _destKey = destKey; _skipCols = skipCols; }
 
       @Override public void compute2() {
         Vec[] frameVecs = _frame.vecs();
@@ -605,9 +605,9 @@ public class FrameUtils {
       if (_frame == null)
         throw new IllegalArgumentException("Frame doesn't exist.");
       Key<Frame> destKey = Key.makeSystem(Key.make().toString());
-      _job = new Job<>(destKey, Frame.class.getName(), "CategoricalIntegerEncoder");
+      _job = new Job<>(destKey, Frame.class.getName(), "CategoricalLabelEncoder");
       int workAmount = _frame.lastVec().nChunks();
-      return _job.start(new CategoricalIntegerEncoderDriver(_frame, destKey, _skipCols), workAmount);
+      return _job.start(new CategoricalLabelEncoderDriver(_frame, destKey, _skipCols), workAmount);
     }
   }
   /**

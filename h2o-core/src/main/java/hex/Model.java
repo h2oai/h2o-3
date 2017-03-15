@@ -129,7 +129,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       AUTO, Random, Modulo, Stratified
     }
     public enum CategoricalEncodingScheme {
-      AUTO, OneHotInternal, OneHotExplicit, Enum, Binary, Eigen, Integer, SortByResponse
+      AUTO, OneHotInternal, OneHotExplicit, Enum, Binary, Eigen, LabelEncoder, SortByResponse
     }
     public long _seed = -1;
     public long getOrMakeRealSeed(){
@@ -940,9 +940,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             vec = evec;
           }
         } else if(vec.isCategorical()) {
-          if (parms._categorical_encoding == Parameters.CategoricalEncodingScheme.Integer) {
+          if (parms._categorical_encoding == Parameters.CategoricalEncodingScheme.LabelEncoder) {
             Vec evec = vec.toNumericVec();
-            toDelete.put(evec._key, "categorically encoded vec");
+            toDelete.put(evec._key, "label encoded vec");
             vec = evec;
           } else {
             throw new IllegalArgumentException("Test/Validation dataset has categorical column '" + names[i] + "' which is real-valued in the training data");
