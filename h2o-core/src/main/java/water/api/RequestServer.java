@@ -245,7 +245,7 @@ public class RequestServer extends HttpServlet {
       Properties parms = new Properties();
       String postBody = null;
 
-      if (contentType.startsWith(MIME_JSON)) {
+      if (contentType != null && contentType.startsWith(MIME_JSON)) {
         StringBuffer jb = new StringBuffer();
         String line = null;
         try {
