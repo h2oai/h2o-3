@@ -181,8 +181,10 @@ public class h2odriver extends Configured implements Tool {
       String[] ports = rangeSpec.split("-");
       if (ports.length != 2)
         throw new IllegalArgumentException("Invalid port range specification (" + rangeSpec + ")");
-      return new PortRange(Integer.parseInt(ports[0]), Integer.parseInt(ports[1]));
+      return new PortRange(parseIntLenient(ports[0]), parseIntLenient(ports[1]));
     }
+
+    private static int parseIntLenient(String s) { return Integer.parseInt(s.trim()); }
 
     @Override
     public String toString() { return "[" + from + "-" + to + "]"; }
