@@ -346,6 +346,12 @@ public abstract class ParseTime {
 
   private static DateTimeZone _timezone;
 
+  /**
+   * Set the Time Zone on the H2O Cloud
+   *
+   * @param tz Timezone
+   * @throws IllegalArgumentException if the timezone(tz) is invalid
+   */
   public static void setTimezone(final String tz) {
     Set<String> idSet = DateTimeZone.getAvailableIDs();
     if (idSet.contains(tz)) {
@@ -357,6 +363,7 @@ public abstract class ParseTime {
       }.doAllNodes();
     } else {
       Log.err("Attempted to set unrecognized timezone: "+ tz);
+      throw new IllegalArgumentException("Attempted to set unrecognized timezone: "+ tz);
     }
   }
 
