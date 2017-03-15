@@ -737,10 +737,12 @@ public class h2odriver extends Configured implements Tool {
       else if (s.equals("-driverportrange")) {
         i++; if (i >= args.length) { usage(); }
         driverCallbackPortRange = PortRange.parse(args[i]);
-      } else if (s.equals("-network")) {
+      }
+      else if (s.equals("-network")) {
         i++; if (i >= args.length) { usage(); }
         network = args[i];
-      }  else if (s.equals("-timeout")) {
+      }
+      else if (s.equals("-timeout")) {
         i++; if (i >= args.length) { usage(); }
         cloudFormationTimeoutSeconds = Integer.parseInt(args[i]);
       }
