@@ -85,22 +85,38 @@ public class MojoReaderBackendFactory {
         copyStream(zis, os);
         content.put(entry.getName(), os.toByteArray());
       }
-    } finally {
       zis.close();
+    } finally {
+      closeQuietly(zis);
     }
     return new InMemoryMojoReaderBackend(content);
   }
 
   private static MojoReaderBackend createTempFileReaderBackend(InputStream inputStream) throws IOException {
     File tmpFile = File.createTempFile("h2o-mojo", ".zip");
+    tmpFile.deleteOnExit(); // register delete on exit hook (in case tmp reader doesn't do the job)
     FileOutputStream fos = new FileOutputStream(tmpFile);
     try {
       copyStream(inputStream, fos);
-    } finally {
       fos.close();
+    } catch (IOException e) {
+      closeQuietly(fos); // Windows won't let us delete an open file
+      if (! tmpFile.delete())
+        e = new IOException(e.getMessage() + " [Note: temp file " + tmpFile + " not deleted]", e);
+      throw e;
+    } finally {
+      closeQuietly(fos);
     }
-    tmpFile.deleteOnExit(); // register delete on exit hook (in case tmp reader doesn't do the job)
     return new TmpMojoReaderBackend(tmpFile);
+  }
+
+  private static void closeQuietly(Closeable c) {
+    if (c != null)
+      try {
+        c.close();
+      } catch (IOException e) {
+        // intentionally ignore exception
+      }
   }
 
   private static void copyStream(InputStream source, OutputStream target) throws IOException {
