@@ -39,21 +39,38 @@ public class CBSChunk extends Chunk {
 
   @Override protected long at8_impl(int idx) {
     byte b = read(idx);
+    if(!(b == _NA || b == 0 || b == 1)){
+      System.out.println("haha");
+      b = read(idx);
+    }
+
+    assert b == _NA || b == 0 || b == 1:"b = " + b;
     if( b == _NA ) throw new IllegalArgumentException("at8_abs but value is missing");
     return b;
   }
   @Override protected double atd_impl(int idx) {
     byte b = read(idx);
+    assert b == _NA || b == 0 || b == 1:"b = " + b;
     return b == _NA ? Double.NaN : b;
   }
   @Override protected final boolean isNA_impl( int i ) { return read(i)==_NA; }
 
 
 
+  private void set_byte(int idx, byte val){
+    assert val == 1 || val == 0 || val == _NA:"val = " + val;
+    int bix = _OFF + ((idx*_bpv)>>3); // byte index
+    int off = _bpv*idx & 7; // index within the byte
+    int mask = (~(1 | _bpv) << off)| (val << off);
+    _mem[bix] &= mask; // 1 or 3 for 1bit per value or 2 bits per value
+  }
   void write(int idx, byte val){
+    assert val == 1 || val == 0 || val == _NA:"val = " + val;
     int bix = _OFF + ((idx*_bpv)>>3); // byte index
     int off = _bpv*idx & 7; // index within the byte
     write(bix, off,val);
+    assert read(idx) == val:"val = " + val + ", read = " + read(idx);
+
   }
 
   protected byte read(int idx) {
@@ -72,43 +89,33 @@ public class CBSChunk extends Chunk {
   }
 
   @Override boolean set_impl(int idx, double d) {
-    if(d == 0) {
-      write(idx,(byte)0);
-      return true;
-    }
-    if(d == 1){
-      write(idx,(byte)1);
-      return true;
-    }
-    if(Double.isNaN(d) && _bpv == 2){
-      write(idx,_NA);
+    if(Double.isNaN(d)) return setNA_impl(idx);
+    if(d == 0 || d == 1) {
+      set_byte(idx,(byte)d);
       return true;
     }
     return false;
   }
   @Override boolean set_impl(int idx, float f ) {
-    if(f == 0) {
-      write(idx,(byte)0);
-      return true;
-    }
-    if(f == 1){
-      write(idx,(byte)1);
-      return true;
-    }
-    if(Float.isNaN(f) && _bpv == 2){
-      write(idx,_NA);
+    if(Float.isNaN(f))
+      return setNA_impl(idx);
+    if(f == 0 || f == 1) {
+      set_byte(idx,(byte)f);
       return true;
     }
     return false;
   }
   @Override boolean setNA_impl(int idx) {
-    if(_bpv == 1) return false;
-    write(idx,_NA);
-    return true;
+    if(_bpv == 2) {
+      set_byte(idx, _NA);
+      return true;
+    }
+    return false;
   }
 
   private void processRow(int r, ChunkVisitor v){
     int i = read(r);
+    assert i == _NA || i == 0 || i == 1;
     if(i == _NA) v.addNAs(1);
     else v.addValue(i);
   }
@@ -141,6 +148,7 @@ public class CBSChunk extends Chunk {
   }
 
   private byte write(int bix, int off, int val){
+    assert val == 1 || val == _NA || val == 0:"val = " + val;
     return _mem[bix] |= (val << off);
   }
 
