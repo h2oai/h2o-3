@@ -6,6 +6,7 @@ import water.persist.Persist.PersistEntry;
 import water.persist.PersistManager;
 import water.util.FileUtils;
 import water.util.Log;
+import water.util.StringUtils;
 
 import java.io.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -183,7 +184,7 @@ public class NodePersistentStorage {
     validateCategoryName(categoryName);
     validateKeyName(keyName);
 
-    InputStream is = new ByteArrayInputStream(value.getBytes());
+    InputStream is = new ByteArrayInputStream(StringUtils.bytesOf(value));
     put(categoryName, keyName, is);
   }
 

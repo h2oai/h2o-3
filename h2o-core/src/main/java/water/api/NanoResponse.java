@@ -2,6 +2,7 @@ package water.api;
 
 import water.util.FileUtils;
 import water.util.Log;
+import water.util.StringUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -36,12 +37,7 @@ public class NanoResponse {
   public NanoResponse(String status, String mimeType, String txt) {
     this.status = status;
     this.mimeType = mimeType;
-    try {
-      this.data = new ByteArrayInputStream(txt.getBytes("UTF-8"));
-    }
-    catch (java.io.UnsupportedEncodingException e) {
-      Log.err(e);
-    }
+    this.data = new ByteArrayInputStream(StringUtils.bytesOf(txt));
   }
 
   public void writeTo(OutputStream os) {

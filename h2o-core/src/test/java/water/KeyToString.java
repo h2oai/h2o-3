@@ -2,12 +2,13 @@ package water;
 
 import static org.junit.Assert.*;
 import org.junit.*;
+import water.util.StringUtils;
 
 import java.util.Arrays;
 
 public class KeyToString extends TestUtil {
   @Test public void testKeyToString() {
-    byte[] b = "XXXHelloAll".getBytes();
+    byte[] b = StringUtils.bytesOf("XXXHelloAll");
     assertTrue(Key.make(b).toString().equals("XXXHelloAll"));
     assertTrue(Arrays.equals(Key.make(b)._kb,b));
     b[0] = 16;

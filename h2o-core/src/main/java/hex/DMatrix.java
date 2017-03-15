@@ -11,6 +11,7 @@ import water.fvec.NewChunk.Value;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
+import water.util.StringUtils;
 
 import java.util.Arrays;
 import java.util.Iterator;

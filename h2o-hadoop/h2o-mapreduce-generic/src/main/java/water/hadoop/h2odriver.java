@@ -11,6 +11,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import water.network.SecurityUtils;
+import water.util.StringUtils;
 
 import java.io.*;
 import java.net.*;
@@ -1250,11 +1251,11 @@ public class h2odriver extends Configured implements Tool {
       addMapperConf(conf, "-login_conf", "login.conf", loginConfFileName);
     } else if (kerberosLogin) {
       // Use default Kerberos configuration file
-      final byte[] krbConfData = (
+      final byte[] krbConfData = StringUtils.bytesOf(
               "krb5loginmodule {\n" +
               "     com.sun.security.auth.module.Krb5LoginModule required;\n" +
               "};"
-      ).getBytes();
+      );
       addMapperConf(conf, "-login_conf", "login.conf", krbConfData);
     }
 
