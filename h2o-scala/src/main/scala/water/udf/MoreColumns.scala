@@ -154,9 +154,4 @@ object MoreColumns extends DataColumns {
   (f: X => Iterable[Y], source: Column[X], width: Int): UnfoldingColumn[X, Y] = {
     new UnfoldingColumn[X, Y](fu1[X, Y](f), source, width)
   }
-
-  //  def unfoldingFrame[X, Y](f: X => Iterable[Y], source: Column[X], width: Int) = {
-  //    new UnfoldingFrame[X, Y](fu1[X, Y](f), source, width)
-  //  }
-
 }

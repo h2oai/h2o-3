@@ -674,8 +674,8 @@ public class Frame extends Lockable<Frame> {
         vecs[i] = cvecs[ccv++] = anyVec().makeCon(c);
       }
     return new Frame[] {
-      new Frame(Key.<Frame>make("subframe" + Key.make().toString()), names, vecs),
-      ccv > 0? new Frame(Key.<Frame>make("subframe" + Key.make().toString()), Arrays.copyOf(cnames, ccv), Arrays.copyOf(cvecs,ccv)) : null
+      new Frame(Key.<Frame>make("subframe" + Key.make()), names, vecs),
+      ccv > 0? new Frame(Key.<Frame>make("subframe" + Key.make()), Arrays.copyOf(cnames, ccv), Arrays.copyOf(cvecs,ccv)) : null
     };
   }
 
@@ -1591,7 +1591,7 @@ public class Frame extends Lockable<Frame> {
 
   public void checkVecs(String message) {
     for (Vec vec : vecs()) if (DKV.get(vec._key)== null) {
-      throw new IllegalStateException(message + ": very bad vec " + vec + ", total disaster.");
+      throw new IllegalStateException(message + " Frame " + this._key + ": vector " + vec._key + " missing in DKV");
     }
   }
 

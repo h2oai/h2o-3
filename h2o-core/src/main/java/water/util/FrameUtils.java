@@ -83,17 +83,6 @@ public class FrameUtils {
       case Enum:
       case OneHotInternal:
         return dataset; //leave as is - most algos do their own internal default handling of enums
-// Commented out until further notice.      
-//      case OneHot:
-//        dataset.checkVecs("Before OneHot");
-//        try {
-//          Frame res = Enums.oneHotEncoding(newDestKey(), dataset, skipCols);
-//          dataset.checkVecs("same frame, After OneHot");
-//          res.checkVecs("encoded frame, after OneHot");
-//          return res;
-//        } catch(IOException ioe) {
-//          throw new RuntimeException("OneHot encoding has a problem", ioe);
-//        }
       case OneHotExplicit:
         return new CategoricalOneHotEncoder(dataset, skipCols).exec().get();
       case Binary:

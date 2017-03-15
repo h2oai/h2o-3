@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Single column frame that knows its data type and can materialize
+ * A frame consisting of columns of the same type.
  */
 public class MatrixFrame<ColumnType extends DataColumn<?>>
     extends Frame {
@@ -15,7 +15,7 @@ public class MatrixFrame<ColumnType extends DataColumn<?>>
   private List<ColumnType> columns;
 
   /**
-   * deserialization :(
+   * deserialization requirements
    */
   public MatrixFrame() {
     length = -1;
@@ -42,8 +42,7 @@ public class MatrixFrame<ColumnType extends DataColumn<?>>
     return vecs.toArray(new Vec[0]);
   }
 
-  public static
-  <DataType, ColumnType extends DataColumn<DataType>>
+  public static <DataType, ColumnType extends DataColumn<DataType>>
   MatrixFrame<ColumnType> forColumns(final List<ColumnType> columns) {
     return new MatrixFrame<ColumnType>(columns.get(0).size(), columns) {
     };
