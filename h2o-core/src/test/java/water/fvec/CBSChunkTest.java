@@ -4,6 +4,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Futures;
+import water.Scope;
 import water.TestUtil;
 
 import java.util.Arrays;
@@ -56,6 +57,49 @@ public class CBSChunkTest extends TestUtil {
     vv.remove();
   }
 
+
+  @Test
+  public void testSet(){
+    Scope.enter();
+    // with NAs
+    double [] x = new double[]{0,1,Double.NaN};
+    double [] vals = new double[1024];
+    Random rnd = new Random(54321);
+    for(int i = 0; i < vals.length; ++i)
+      vals[i] = x[rnd.nextInt(3)];
+
+    Chunk c = Vec.makeVec(vals, Vec.VectorGroup.VG_LEN1.addVec()).chunkForChunkIdx(0);
+    assertTrue(c instanceof CBSChunk);
+    for(int i = 0; i < vals.length; ++i)
+      assertEquals(vals[i],c.atd(i),0);
+    for(int i = 0; i < vals.length; ++i)
+      c.set(i,vals[i] = x[rnd.nextInt(3)]);
+    for(int i = 0; i < vals.length; ++i)
+      assertEquals(vals[i],c.atd(i),0);
+    // without NAS
+    for(int i = 0; i < vals.length; ++i)
+      vals[i] = x[rnd.nextInt(2)];
+    c = Vec.makeVec(vals, Vec.VectorGroup.VG_LEN1.addVec()).chunkForChunkIdx(0);
+    assertTrue(c instanceof CBSChunk);
+    for(int i = 0; i < vals.length; ++i)
+      assertEquals(vals[i],c.atd(i),0);
+    for(int i = 0; i < vals.length; ++i)
+      c.set(i,vals[i] = x[rnd.nextInt(2)]);
+    for(int i = 0; i < vals.length; ++i)
+      assertEquals(vals[i],c.atd(i),0);
+    // set some NAs
+    int i = vals.length >> 2;
+    int j = vals.length >> 1;
+    c.setNA(i);
+    c.set(j,Double.NaN);
+    vals[j] = Double.NaN;
+    vals[i] = Double.NaN;
+    Assert.assertTrue(c.isNA(i));
+    Assert.assertTrue(c.isNA(j));
+    for(int k = 0; k < vals.length; ++k)
+      assertEquals(vals[k],c.atd(k),0);
+    Scope.exit();
+  }
   // Test one bit per value compression which is used
   // for data without NAs
   @Test public void test1BPV() {
