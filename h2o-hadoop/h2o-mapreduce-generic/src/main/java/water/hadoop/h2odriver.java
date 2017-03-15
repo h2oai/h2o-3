@@ -1131,9 +1131,10 @@ public class h2odriver extends Configured implements Tool {
 
   private static ServerSocket bindCallbackSocket() throws IOException {
     Exception ex = null;
-    int securityExceptionCount = 0;
+    int permissionExceptionCount = 0; // try to detect likely unintended range specifications
+    // eg.: running with non-root user & setting range 100-1100 (the effective range would be 1024-1100 = not what user wanted)
     ServerSocket result = null;
-    for (int p = driverCallbackPortRange.from; p <= driverCallbackPortRange.to; p++) {
+    for (int p = driverCallbackPortRange.from; (result == null) && (p <= driverCallbackPortRange.to); p++) {
       ServerSocket ss = new ServerSocket();
       ss.setReuseAddress(true);
       InetSocketAddress sa = new InetSocketAddress(driverCallbackIp, p);
@@ -1141,17 +1142,21 @@ public class h2odriver extends Configured implements Tool {
         int backlog = Math.max(50, numNodes * 3); // minimum 50 (bind's default) or numNodes * 3 (safety constant, arbitrary)
         ss.bind(sa, backlog);
         result = ss;
-      } catch (SecurityException se) {
-        securityExceptionCount++;
-        ex = se;
+      } catch (BindException e) {
+        if ("Permission denied".equals(e.getMessage()))
+          permissionExceptionCount++;
+        ex = e;
+      } catch (SecurityException e) {
+        permissionExceptionCount++;
+        ex = e;
       } catch (IOException e) {
         ex = e;
       } catch (RuntimeException e) {
         ex = e;
       }
     }
-    if ((securityExceptionCount > 0) && (! driverCallbackPortRange.isSinglePort()))
-      warning("Some ports (count=" + securityExceptionCount + ") of the specified port range are not available" +
+    if ((permissionExceptionCount > 0) && (! driverCallbackPortRange.isSinglePort()))
+      warning("Some ports (count=" + permissionExceptionCount + ") of the specified port range are not available" +
               " due to process restrictions (range: " + driverCallbackPortRange + ").");
     if (result == null)
       if (ex instanceof IOException)
