@@ -57,7 +57,6 @@ public class AstLStrip extends AstPrimitive {
         nvs[i] = lstripStringCol(v, set);
       i++;
     }
-
     return new ValFrame(new Frame(nvs));
   }
 

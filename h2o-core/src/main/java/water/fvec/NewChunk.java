@@ -391,9 +391,12 @@ public class NewChunk extends Chunk {
         c.addNum(0,0);
     }
   }
-
-  public Iterator<Value> values(){ return values(0,_len);}
-  public Iterator<Value> values(int fromIdx, int toIdx){
+ 
+  public Iterator<Value> values() { 
+    return values(0,_len);
+  }
+  
+  public Iterator<Value> values(int fromIdx, int toIdx) {
     final int lId, gId;
     final int to = Math.min(toIdx, _len);
 
@@ -611,6 +614,7 @@ public class NewChunk extends Chunk {
   }
 
   // Append a string, store in _ss & _is
+  // TODO cleanup
   public void addStr(Object str) {
     if(_id == null || str != null) {
       if(_is == null || _sparseLen >= _is.length) {
@@ -641,6 +645,7 @@ public class NewChunk extends Chunk {
     if( c.isNA_abs(row) ) addNA();
     else { addStr(c.atStr_abs(new BufferedString(), row)); _isAllASCII &= ((CStrChunk)c)._isAllASCII; }
   }
+
 
   public void addStr(Chunk c, int row) {
     if( c.isNA(row) ) addNA();
@@ -679,20 +684,23 @@ public class NewChunk extends Chunk {
   public final boolean sparseNA() {return _id != null && _sparseNA;}
 
   public void addZeros(int n){
-    if(!sparseZero()) for(int i = 0; i < n; ++i)addNum(0,0);
-    else set_len(_len + n);
+    if(n == 0) return;
+    assert n > 0;
+    while(!sparseZero() && n != 0) {
+      addNum(0, 0);
+      n--;
+    }
+    assert n >= 0;
+    _len += n;
   }
   
   public void addNAs(int n) {
-    if(!sparseNA())
-      for (int i = 0; i <n; ++i) {
-        addNA();
-        if(sparseNA()) {
-          set_len(_len + n - i -1);
-          return;
-        }
-      }
-    else set_len(_len + n);
+    if(n == 0) return;
+    while(!sparseNA() && n != 0) {
+      addNA();
+      n--;
+    }
+    _len += n;
   }
   
   // Append all of 'nc' onto the current NewChunk.  Kill nc.
@@ -1083,7 +1091,7 @@ public class NewChunk extends Chunk {
     if( mode==Vec.T_BAD ) // ALL NAs, nothing to do
       return new C0DChunk(Double.NaN, _len);
     if( mode==Vec.T_STR )
-      return new CStrChunk(_sslen, _ss, _sparseLen, _len, _id, _is, _isAllASCII);
+      return new CStrChunk(_sslen, _ss, _sparseLen, _len, _id, _is);
     boolean rerun=false;
     if(mode == Vec.T_CAT) {
       for(int i = 0; i< _sparseLen; i++ )
@@ -1112,7 +1120,7 @@ public class NewChunk extends Chunk {
     } else if(_sparseRatio*(_len - _naCnt) < _len){
       set_sparse(_len - _naCnt, Compress.NA);
       na_sparse = true;
-    } else if (_sparseLen != _len)
+    } else if (_id != null)
       cancel_sparse();
     
     // If the data is UUIDs there's not much compression going on
@@ -1122,12 +1130,16 @@ public class NewChunk extends Chunk {
     if(_naCnt == _len) return new C0DChunk(Double.NaN,_len);
     // If the data was set8 as doubles, we do a quick check to see if it's
     // plain longs.  If not, we give up and use doubles.
+    boolean isInteger = true;
+    boolean isFloat = true;
     if( _ds != null ) {
       int i; // check if we can flip to ints
-      for (i=0; i < _sparseLen; ++i)
+      for (i=0; i < _sparseLen && (isInteger || isFloat); ++i) {
         if (!Double.isNaN(_ds[i]) && (double) (long) _ds[i] != _ds[i])
-          break;
-      boolean isInteger = i == _sparseLen;
+          isInteger = false;
+        if (!Double.isNaN(_ds[i]) && (double) (float) _ds[i] != _ds[i])
+          isFloat = false;
+      }
       boolean isConstant = !(sparse || na_sparse) || _sparseLen == 0;
       double constVal = 0;
       if (!(sparse || na_sparse)) { // check the values, sparse with some nonzeros can not be constant - has 0s and (at least 1) nonzero
@@ -1141,9 +1153,9 @@ public class NewChunk extends Chunk {
       if(isConstant)
         return isInteger? new C0LChunk((long)constVal, _len): new C0DChunk(constVal,_len);
       if(!isInteger) {
-        if (sparse) return new CXDChunk(_len, 8, bufD(8));
-        else if (na_sparse) return new CNAXDChunk(_len, 8, bufD(8));
-        else return chunkD();
+        return  (sparse || na_sparse)
+            ?new CXFChunk(bufD(isFloat?4:8,na_sparse))
+            :chunkD();
       }
       // Else flip to longs
       _ms = new Mantissas(_ds.length);
@@ -1201,7 +1213,8 @@ public class NewChunk extends Chunk {
     if(sparse){ // sparse?  then compare vs implied 0s
       if( min > 0 ) { min = 0; llo=0; xlo=0; }
       if( max < 0 ) { max = 0; lhi=0; xhi=0; }
-      xmin = Math.min(xmin,0);
+       xmin = Math.min(xmin,0);
+
     }
     // Constant column?
     if( _naCnt==0 && (min==max)) {
@@ -1228,35 +1241,38 @@ public class NewChunk extends Chunk {
       lemin = llo*pow10lo;
       if( (lemin/pow10lo) != llo ) overflow = true;
     }
+    final long leRange = leRange(lemin,lemax);
 
     // Boolean column?
     if (max == 1 && min == 0 && xmin == 0 && !overflow) {
-      if(sparse) { // Very sparse?
-        return  _naCnt==0
-          ? new CX0Chunk(_len, bufS(0))// No NAs, can store as sparse bitvector
-          : new CXIChunk(_len, 1,bufS(1)); // have NAs, store as sparse 1byte values
+      if(sparse || na_sparse) { // Very sparse?
+        return  !na_sparse && _naCnt==0
+          ? new CXIChunk(bufS(_len,_len < 65535?2:4,0,false))// No NAs, can store as sparse bitvector
+          : _len < 65535 && (Short.MIN_VALUE < min && max < Short.MAX_VALUE)
+            ?new CXIChunk(bufS(_len,2,2,na_sparse))
+            :new CXIChunk(bufS(_len,4,4,na_sparse));
       }
-      if(na_sparse) return new CNAXIChunk(_len, 1, bufS(1));
       int bpv = _catCnt +_naCnt > 0 ? 2 : 1;   // Bit-vector
-      byte[] cbuf = bufB(bpv);
-      return new CBSChunk(cbuf, cbuf[0], cbuf[1]);
+      return bufB(bpv);
     }
 
     final boolean fpoint = xmin < 0 || min < Long.MIN_VALUE || max > Long.MAX_VALUE;
 
-    if( sparse ) {
-      if(fpoint) return new CXDChunk(_len,8,bufD(8));
-      int sz = 8;
-      if( Short.MIN_VALUE <= min && max <= Short.MAX_VALUE ) sz = 2;
-      else if( Integer.MIN_VALUE <= min && max <= Integer.MAX_VALUE ) sz = 4;
-      return new CXIChunk(_len,sz,bufS(sz));
-    }
-    if( na_sparse ) {
-      if(fpoint) return new CNAXDChunk(_len,8,bufD(8));
-      int sz = 8;
-      if( Short.MIN_VALUE <= min && max <= Short.MAX_VALUE ) sz = 2;
-      else if( Integer.MIN_VALUE <= min && max <= Integer.MAX_VALUE ) sz = 4;
-      return new CNAXIChunk(_len,sz,bufS(sz));      
+    if( sparse || na_sparse ) {
+      if(fpoint) {
+        if(_ds == null){
+          switch_to_doubles();
+          isFloat = false;
+        }
+        return new CXFChunk(bufD(isFloat?4:8,na_sparse));
+      }
+      if( Integer.MIN_VALUE <= min && max <= Integer.MAX_VALUE ) {
+        if(_len < 65535 && (Short.MIN_VALUE < min && max < Short.MAX_VALUE))
+          return new CXIChunk(bufS(_len,2,2, na_sparse));
+        else
+          return new CXIChunk(bufS(_len, 4,4, na_sparse));
+      }
+      return new CXIChunk(bufS(_len, 4,8, na_sparse));
     }
     // Exponent scaling: replacing numbers like 1.3 with 13e-1.  '13' fits in a
     // byte and we scale the column by 0.1.  A set of numbers like
@@ -1271,7 +1287,6 @@ public class NewChunk extends Chunk {
     // wise we just flip to a float or double representation.
     if( overflow || (fpoint && floatOverflow) || -35 > xmin || xmin > 35 )
       return chunkD();
-    final long leRange = leRange(lemin,lemax);
     if( fpoint ) {
       if( (int)lemin == lemin && (int)lemax == lemax ) {
         if(leRange < 255) // Fits in scaled biased byte?
@@ -1314,76 +1329,48 @@ public class NewChunk extends Chunk {
   private static long [] NAS = {C1Chunk._NA,C2Chunk._NA,C4Chunk._NA,C8Chunk._NA};
 
   // Compute a sparse integer buffer
-  private byte[] bufS(final int valsz){
-    int log = 0;
-    while((1 << log) < valsz)++log;
-    assert valsz == 0 || (1 << log) == valsz;
-    final int ridsz = _len >= 65535?4:2;
-    final int elmsz = ridsz + valsz;
-    int off = CXIChunk._OFF;
-    byte [] buf = MemoryManager.malloc1(off + _sparseLen *elmsz,true);
-    for(int i = 0; i< _sparseLen; i++, off += elmsz ) {
-      if(ridsz == 2)
-        UnsafeUtils.set2(buf,off,(short)_id[i]);
-      else
-        UnsafeUtils.set4(buf,off,_id[i]);
-      if(valsz == 0){
-        assert _xs.get(i) == 0 && _ms.get(i) == 1;
-        continue;
-      }
-      assert isNA2(i) || _xs.get(i) >= 0:"unexpected exponent " + _xs.get(i); // assert we have int or NA
-      final long lval = isNA2(i) ? NAS[log] : _ms.get(i)*PrettyPrint.pow10i(_xs.get(i));
-      switch(valsz){
-        case 1:
-          buf[off+ridsz] = (byte)lval;
-          break;
-        case 2:
-          short sval = (short)lval;
-          UnsafeUtils.set2(buf,off+ridsz,sval);
-          break;
-        case 4:
-          int ival = (int)lval;
-          UnsafeUtils.set4(buf, off + ridsz, ival);
-          break;
-        case 8:
-          UnsafeUtils.set8(buf, off + ridsz, lval);
-          break;
-        default:
-          throw H2O.fail();
+  private byte[] bufS(int len, int id_sz, int val_sz,boolean na_sparse){
+    long NA = CXIChunk.NA(val_sz);
+    int elem_size = id_sz+val_sz;
+    byte [] res = MemoryManager.malloc1(CXIChunk._OFF + _sparseLen*elem_size);
+    UnsafeUtils.set4(res,0,len);
+    res[4] = (byte)id_sz;
+    res[5] = (byte)val_sz;
+    res[6] = na_sparse?(byte)1:0;
+    if(na_sparse)res[6] = (byte)1;
+    for(int i = 0; i < _sparseLen; ++i){
+      if(id_sz == 2) UnsafeUtils.set2(res,CXIChunk._OFF+i*elem_size+0,(short)_id[i]);
+      else UnsafeUtils.set4(res,CXIChunk._OFF+i*elem_size+0,_id[i]);
+      long val = isNA2(i)?NA:_ms.get(i);
+      switch(val_sz){
+        case 0: break; // no value store dfor binary chunks
+        case 2: UnsafeUtils.set2(res,CXIChunk._OFF+i*elem_size+id_sz,(short)val); break;
+        case 4: UnsafeUtils.set4(res,CXIChunk._OFF+i*elem_size+id_sz,(int)val); break;
+        case 8: UnsafeUtils.set8(res,CXIChunk._OFF+i*elem_size+id_sz,val); break;
+        default: throw H2O.unimpl();
       }
     }
-    assert off==buf.length;
-    return buf;
+    return res;
   }
 
   // Compute a sparse float buffer
-  private byte[] bufD(final int valsz){
-    int log = 0;
-    while((1 << log) < valsz)++log;
-    assert (1 << log) == valsz;
-    final int ridsz = _len >= 65535?4:2;
-    final int elmsz = ridsz + valsz;
-    int off = CXDChunk._OFF;
-    byte [] buf = MemoryManager.malloc1(off + _sparseLen *elmsz,true);
-    for(int i = 0; i< _sparseLen; i++, off += elmsz ) {
-      if(ridsz == 2)
-        UnsafeUtils.set2(buf,off,(short)_id[i]);
-      else
-        UnsafeUtils.set4(buf,off,_id[i]);
-      final double dval = _ds == null?isNA2(i)?Double.NaN:_ms.get(i)*PrettyPrint.pow10(_xs.get(i)):_ds[i];
-      switch(valsz){
-        case 4:
-          UnsafeUtils.set4f(buf, off + ridsz, (float) dval);
-          break;
-        case 8:
-          UnsafeUtils.set8d(buf, off + ridsz, dval);
-          break;
-        default:
-          throw H2O.fail();
-      }
+  private byte[] bufD(final int valsz, boolean na_sparse){
+    int elem_size = valsz+4;
+    byte [] res = MemoryManager.malloc1(CXIChunk._OFF + _sparseLen*elem_size);
+    UnsafeUtils.set4(res,0,_len);
+    res[4] = (byte)4;
+    res[5] = (byte)valsz;
+    res[6] = na_sparse?(byte)1:0;
+    if(na_sparse)res[6] = (byte)1;
+    for(int i = 0; i < _sparseLen; ++i){
+      UnsafeUtils.set4(res,CXIChunk._OFF+i*elem_size+0,_id[i]);
+      if(valsz == 4){
+        UnsafeUtils.set4f(res,CXIChunk._OFF+i*elem_size+4,(float)_ds[i]);
+      } else if(valsz == 8) {
+        UnsafeUtils.set8d(res,CXIChunk._OFF+i*elem_size+4,_ds[i]);
+      } else throw H2O.unimpl();
     }
-    assert off==buf.length;
-    return buf;
+    return res;
   }
   // Compute a compressed integer buffer
   private byte[] bufX( long bias, int scale, int off, int log ) {
@@ -1466,39 +1453,14 @@ public class NewChunk extends Chunk {
   }
 
   // Compute compressed boolean buffer
-  private byte[] bufB(int bpv) {
-    assert bpv == 1 || bpv == 2 : "Only bit vectors with/without NA are supported";
-    final int off = CBSChunk._OFF;
-    int clen  = off + CBSChunk.clen(_len, bpv);
-    byte bs[] = new byte[clen];
-    // Save the gap = number of unfilled bits and bpv value
-    bs[0] = (byte) (((_len *bpv)&7)==0 ? 0 : (8-((_len *bpv)&7)));
-    bs[1] = (byte) bpv;
-
-    // Dense bitvector
-    int  boff = 0;
-    byte b    = 0;
-    int  idx  = CBSChunk._OFF;
-    int j = 0;
-    for (int i=0; i< _len; i++) {
-      byte val = 0;
-      if(_id == null || (j < _id.length && _id[j] == i)) {
-        assert bpv == 2 || !isNA2(j);
-        val = (byte)(isNA2(j)?CBSChunk._NA:_ms.get(j));
-        ++j;
-      }
-      if( bpv==1 )
-        b = CBSChunk.write1b(b, val, boff);
-      else
-        b = CBSChunk.write2b(b, val, boff);
-      boff += bpv;
-      if (boff>8-bpv) { assert boff == 8; bs[idx] = b; boff = 0; b = 0; idx++; }
+  private CBSChunk bufB(int bpv) {
+    CBSChunk chk = new CBSChunk(_len,bpv);
+    for(int i = 0; i < _len; ++i){
+      if(isNA2(i)) chk.write(i,CBSChunk._NA);
+      else if(_ms.get(i) == 1) chk.write(i, (byte)1);
+      else assert _ms.get(i) == 0;
     }
-    assert j == _sparseLen;
-    assert bs[0] == (byte) (boff == 0 ? 0 : 8-boff):"b[0] = " + bs[0] + ", boff = " + boff + ", bpv = " + bpv;
-    // Flush last byte
-    if (boff>0) bs[idx] = b;
-    return bs;
+    return chk;
   }
 
   // Set & At on NewChunks are weird: only used after inflating some other
@@ -1550,7 +1512,6 @@ public class NewChunk extends Chunk {
       return setNA_impl(i);
     }
     if(_is == null && _len > 0) {
-      assert _sparseLen == 0;
       alloc_str_indices(_len);
       Arrays.fill(_is,-1);
     }
@@ -1659,13 +1620,35 @@ public class NewChunk extends Chunk {
     return bStr.set(_ss, _is[i], len);
   }
   @Override protected final void initFromBytes () {throw H2O.fail();}
+
+  @Override
+  public <T extends ChunkVisitor> T processRows(T v, int from, int to) {
+    throw new  UnsupportedOperationException("New chunk does not support visitor pattern");
+  }
+
+  @Override
+  public <T extends ChunkVisitor> T processRows(T v, int[] ids) {
+    throw new  UnsupportedOperationException("New chunk does not support visitor pattern");
+  }
+
   public static AutoBuffer write_impl(NewChunk nc,AutoBuffer bb) { throw H2O.fail(); }
-  @Override public NewChunk inflate_impl(NewChunk nc) { throw H2O.fail(); }
+
   @Override public String toString() { return "NewChunk._sparseLen="+ _sparseLen; }
+
+  @Override
+  public NewChunk extractRows(NewChunk nc, int from, int to) {
+    throw H2O.unimpl("Not expected to be called on NewChunk");
+  }
+
+  @Override
+  public NewChunk extractRows(NewChunk nc, int... rows) {
+    throw H2O.unimpl("Not expected to be called on NewChunk");
+  }
 
   // We have to explicitly override cidx implementation since we hide _cidx field with new version
   @Override
   public int cidx() {
     return _cidx;
   }
+
 }

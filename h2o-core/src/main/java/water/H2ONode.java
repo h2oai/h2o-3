@@ -398,6 +398,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
               bb = _msgQ.poll();  // Go get more, same batch
             }
             sendBuffer();         // Send final trailing BBs
+          } catch (IllegalMonitorStateException imse) { /* ignore */
           } catch (InterruptedException e) { /*ignore*/ }
         }
       } catch(Throwable t) { throw Log.throwErr(t); }

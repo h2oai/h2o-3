@@ -20,7 +20,7 @@ public class C1SChunkTest extends TestUtil {
       if (l==1) nc.addNA();
       for (int i = 0; i < man.length; ++i) nc.addNum(man[i], exp[i]);
       nc.addNA();
-
+      int len = nc.len();
       Chunk cc = nc.compress();
       Assert.assertEquals(man.length + 1 + l, cc._len);
       Assert.assertTrue(cc instanceof C1SChunk);
@@ -41,8 +41,7 @@ public class C1SChunkTest extends TestUtil {
         else Assert.assertTrue(cc.atd(i)==densevals[i]);
       }
 
-      nc = cc.inflate_impl(new NewChunk(null, 0));
-      nc.values(0, nc._len);
+      nc = cc.extractRows(new NewChunk(null, 0),0,len);
       Assert.assertEquals(man.length + 1 + l, nc._len);
       Assert.assertEquals(man.length + 1 + l, nc._sparseLen);
       if (l==1) {
@@ -81,7 +80,7 @@ public class C1SChunkTest extends TestUtil {
       if (l==1) nc.addNA();
       for (int i = 0; i < man.length; ++i) nc.addNum(man[i], exp[i]);
       nc.addNA();
-
+      int len = nc.len();
       Chunk cc = nc.compress();
       Assert.assertEquals(man.length + 1 + l, cc._len);
       Assert.assertTrue(cc instanceof C1SChunk);
@@ -90,8 +89,7 @@ public class C1SChunkTest extends TestUtil {
         Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) cc.atd(l + i), 0);
       Assert.assertTrue(cc.isNA(man.length + l));
 
-      nc = cc.inflate_impl(new NewChunk(null, 0));
-      nc.values(0, nc._len);
+      nc = cc.extractRows(new NewChunk(null, 0),0,len);
       Assert.assertEquals(man.length + 1 + l, nc._len);
       Assert.assertEquals(man.length + 1 + l, nc._sparseLen);
       if (l==1) {
@@ -144,14 +142,10 @@ public class C1SChunkTest extends TestUtil {
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA_abs(notna));
 
     NewChunk nc = new NewChunk(null, 0);
-    cc.inflate_impl(nc);
-    nc.values(0, nc._len);
+    cc.extractRows(nc,0,(int)vec.length());
     Assert.assertEquals(vals.length, nc._sparseLen);
     Assert.assertEquals(vals.length, nc._len);
 
-    Iterator<NewChunk.Value> it = nc.values(0, vals.length);
-    for (int i = 0; i < vals.length; ++i) Assert.assertTrue(it.next().rowId0() == i);
-    Assert.assertTrue(!it.hasNext());
 
     for (int na : NAs) Assert.assertTrue(cc.isNA(na));
     for (int na : NAs) Assert.assertTrue(cc.isNA_abs(na));

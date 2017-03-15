@@ -131,25 +131,29 @@ public class MRUtils {
   }
 
   public static class Dist extends MRTask<Dist> {
-    private IcedHashMap<Double,Integer> _dist;
+    private IcedHashMap<IcedDouble,IcedAtomicInt> _dist;
     @Override public void map(Chunk ys) {
       _dist = new IcedHashMap<>();
+      IcedDouble d = new IcedDouble(0);
       for( int row=0; row< ys._len; row++ )
         if( !ys.isNA(row) ) {
-          double v = ys.atd(row);
-          Integer oldV = _dist.putIfAbsent(v,1);
-          if( oldV!=null ) _dist.put(v,oldV+1);
+          d._val = ys.atd(row);
+          IcedAtomicInt oldV = _dist.get(d);
+          if(oldV == null)
+            oldV = _dist.putIfAbsent(new IcedDouble(d._val), new IcedAtomicInt(1));
+          if(oldV != null)
+            oldV.incrementAndGet();
         }
     }
 
     @Override public void reduce(Dist mrt) {
       if( _dist != mrt._dist ) {
-        IcedHashMap<Double,Integer> l = _dist;
-        IcedHashMap<Double,Integer> r = mrt._dist;
+        IcedHashMap<IcedDouble,IcedAtomicInt> l = _dist;
+        IcedHashMap<IcedDouble,IcedAtomicInt> r = mrt._dist;
         if( l.size() < r.size() ) { l=r; r=_dist; }
-        for( Double v: r.keySet() ) {
-          Integer oldVal = l.putIfAbsent(v, r.get(v));
-          if( oldVal!=null ) l.put(v, oldVal+r.get(v));
+        for( IcedDouble v: r.keySet() ) {
+          IcedAtomicInt oldVal = l.putIfAbsent(v, r.get(v));
+          if( oldVal!=null ) oldVal.addAndGet(r.get(v).get());
         }
         _dist=l;
         mrt._dist=null;
@@ -158,13 +162,13 @@ public class MRUtils {
     public double[] dist() {
       int i=0;
       double[] dist = new double[_dist.size()];
-      for( int v: _dist.values() ) dist[i++] = v;
+      for( IcedAtomicInt v: _dist.values() ) dist[i++] = v.get();
       return dist;
     }
     public double[] keys() {
       int i=0;
       double[] keys = new double[_dist.size()];
-      for( double v: _dist.keySet() ) keys[i++] = v;
+      for( IcedDouble k: _dist.keySet() ) keys[i++] = k._val;
       return keys;
     }
   }

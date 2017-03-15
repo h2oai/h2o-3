@@ -1,6 +1,5 @@
 package water.fvec;
 
-import water.*;
 import water.util.UnsafeUtils;
 
 /**
@@ -39,20 +38,60 @@ public class C4SChunk extends Chunk {
   @Override boolean set_impl(int i, double d) { return false; }
   @Override boolean set_impl(int i, float f ) { return false; }
   @Override boolean setNA_impl(int idx) { UnsafeUtils.set4(_mem,(idx<<2)+_OFF,(int)_NA); return true; }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    double dx = Math.log10(_scale);
-    assert water.util.PrettyPrint.fitsIntoInt(dx);
-    nc.set_sparseLen(0);
-    nc.set_len(0);
-    final int len = _len;
-    for( int i=0; i<len; i++ ) {
-      int res = UnsafeUtils.get4(_mem,(i<<2)+_OFF);
-      if( res == _NA ) nc.addNA();
-      else nc.addNum(res+_bias,(int)dx);
-    }
-    return nc;
+
+  private void processRow(int r, ChunkVisitor v){
+    long res = UnsafeUtils.get4(_mem,(r<<2)+_OFF);
+    if( res == C4Chunk._NA ) v.addNAs(1);
+    else v.addValue((res+_bias)*_scale);
   }
-//  public int pformat_len0() { return pformat_len0(_scale,5); }
+  private void processRow(int r, int exp, ChunkVisitor v){
+    long res = UnsafeUtils.get4(_mem,(r<<2)+_OFF);
+    if( res == C4Chunk._NA ) v.addNAs(1);
+    else v.addValue((res+_bias),exp);
+  }
+
+  @Override
+  public <T extends ChunkVisitor> T processRows(T v, int from, int to) {
+    if(v.expandedVals()){
+      double x = Math.log10(_scale);
+      int e = (int)x;
+      assert x == e:"scale does not fit into int";
+      for(int i = from; i < to; i++) processRow(i,e,v);
+    } else
+      for(int i = from; i < to; i++) processRow(i,v);
+    return v;
+  }
+
+  @Override
+  public <T extends ChunkVisitor> T processRows(T v, int[] ids) {
+    if(v.expandedVals()){
+      double x = Math.log10(_scale);
+      int e = (int)x;
+      assert x == e:"scale does not fit into int";
+      for(int i:ids) processRow(i,e, v);
+    } else
+      for(int i:ids) processRow(i,v);
+    return v;
+  }
+
+  @Override public double [] getDoubles(double [] vals, int from, int to, double NA){
+    for(int i = from; i < to; i++) {
+      int x = UnsafeUtils.get4(_mem,_OFF + 4*i);
+      vals[i-from] = (x == C4Chunk._NA)?NA:(x+_bias)*_scale;
+    }
+    return vals;
+  }
+
+  @Override public double [] getDoubles(double [] vals, int [] ids){
+    int k = 0;
+    for(int i:ids) {
+      int x = UnsafeUtils.get4(_mem, _OFF + 4*i);
+      vals[k++] = (x == C4Chunk._NA)?Double.NaN:(x+_bias)*_scale;
+    }
+    return vals;
+  }
+
+  //  public int pformat_len0() { return pformat_len0(_scale,5); }
 //  public String pformat0() { return "% 10.4e"; }
   @Override public byte precision() { return (byte)Math.max(-Math.log10(_scale),0); }
   @Override public final void initFromBytes () {
@@ -62,32 +101,5 @@ public class C4SChunk extends Chunk {
     _bias = UnsafeUtils.get8 (_mem,8);
   }
 
-  /**
-   * Dense bulk interface, fetch values from the given range
-   * @param vals
-   * @param from
-   * @param to
-   */
-  @Override
-  public double [] getDoubles(double [] vals, int from, int to, double NA){
-    for(int i = from; i < to; ++i) {
-      long res = UnsafeUtils.get4(_mem,(i<<2)+_OFF);
-      vals[i-from] = res != C4Chunk._NA?(res + _bias)*_scale:NA;
-    }
-    return vals;
-  }
-  /**
-   * Dense bulk interface, fetch values from the given ids
-   * @param vals
-   * @param ids
-   */
-  @Override
-  public double [] getDoubles(double [] vals, int [] ids){
-    int j = 0;
-    for(int i:ids) {
-      long res = UnsafeUtils.get4(_mem,(i<<2)+_OFF);
-      vals[j++] = res != C4Chunk._NA?(res + _bias)*_scale:Double.NaN;
-    }
-    return vals;
-  }
+
 }

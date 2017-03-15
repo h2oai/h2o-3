@@ -1,6 +1,5 @@
 package water.fvec;
 
-import water.*;
 import water.util.UnsafeUtils;
 
 /**
@@ -27,17 +26,26 @@ public class C4Chunk extends Chunk {
   @Override boolean set_impl(int i, double d) { return false; }
   @Override boolean set_impl(int i, float f ) { return false; }
   @Override boolean setNA_impl(int idx) { UnsafeUtils.set4(_mem,(idx<<2),(int)_NA); return true; }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.set_sparseLen(0);
-    nc.set_len(0);
-    final int len = _len;
-    for( int i=0; i<len; i++ ) {
-      int res = UnsafeUtils.get4(_mem,(i<<2));
-      if( res == _NA ) nc.addNA();
-      else             nc.addNum(res,0);
-    }
-    return nc;
+
+
+  private final void processRow(int r, ChunkVisitor v){
+    int i = UnsafeUtils.get4(_mem,(r<<2));
+    if(i == _NA) v.addNAs(1);
+    else v.addValue(i);
   }
+
+  @Override
+  public <T extends ChunkVisitor> T processRows(T v, int from, int to) {
+    for(int i = from; i < to; i++) processRow(i,v);
+    return v;
+  }
+
+  @Override
+  public <T extends ChunkVisitor> T processRows(T v, int[] ids) {
+    for(int i:ids) processRow(i,v);
+    return v;
+  }
+
   @Override public final void initFromBytes () {
     _start = -1;  _cidx = -1;
     set_len(_mem.length>>2);
@@ -45,41 +53,26 @@ public class C4Chunk extends Chunk {
   }
   @Override public boolean hasFloat() {return false;}
 
-
-  /**
-   * Dense bulk interface, fetch values from the given range
-   * @param vals
-   * @param from
-   * @param to
-   */
-  @Override
-  public double [] getDoubles(double [] vals, int from, int to, double NA){
-    for(int i = from; i < to; ++i) {
-      long res = UnsafeUtils.get4(_mem, i << 2);
-      vals[i - from] = res != _NA?res:NA;
+  @Override public double [] getDoubles(double [] vals, int from, int to, double NA){
+    for(int i = from; i < to; i++) {
+      int x = UnsafeUtils.get4(_mem, 4*i);
+      vals[i-from] = (x == _NA)?NA:x;
     }
     return vals;
   }
-  /**
-   * Dense bulk interface, fetch values from the given ids
-   * @param vals
-   * @param ids
-   */
-  @Override
-  public double [] getDoubles(double [] vals, int [] ids){
-    int j = 0;
-    for(int i:ids){
-      long res = UnsafeUtils.get4(_mem,i<<2);
-      vals[j++] = res != _NA?res:Double.NaN;
+  @Override public double [] getDoubles(double [] vals, int [] ids){
+    int k = 0;
+    for(int i:ids) {
+      int x = UnsafeUtils.get4(_mem, 4*i);
+      vals[k++] = (x == _NA)?Double.NaN:x;
     }
     return vals;
   }
 
-  @Override
-  public int [] getIntegers(int [] vals, int from, int to, int NA){
-    for(int i = from; i < to; ++i) {
-      int res = UnsafeUtils.get4(_mem, i << 2);
-      vals[i - from] = res != _NA?res:NA;
+  @Override public int [] getIntegers(int [] vals, int from, int to, int NA){
+    for(int i = from; i < to; i++) {
+      int x = UnsafeUtils.get4(_mem, 4*i);
+      vals[i-from] = (x == _NA)?NA:x;
     }
     return vals;
   }

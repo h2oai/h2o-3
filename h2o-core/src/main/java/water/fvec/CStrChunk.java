@@ -14,18 +14,26 @@ public class CStrChunk extends Chunk {
   public boolean _isAllASCII = false;
 
   public CStrChunk() {}
-  public CStrChunk(int sslen, byte[] ss, int sparseLen, int idxLen, int[] id, int[] is, boolean isAllASCII) {
+  public CStrChunk(int sslen, byte[] ss, int sparseLen, int idxLen, int[] id, int[] is) {
     _start = -1;
     _valstart = idx(idxLen);
-    _isAllASCII = isAllASCII;
     _len = idxLen;
     _mem = MemoryManager.malloc1(_valstart + sslen, false);
     UnsafeUtils.set4(_mem, 0, _valstart); // location of start of strings
-    UnsafeUtils.set1(_mem, 4, (byte) (isAllASCII ? 1 : 0)); // isAllASCII flag
+
     Arrays.fill(_mem,_OFF,_valstart,(byte)-1); // Indicate All Is NA's
     for( int i = 0; i < sparseLen; ++i ) // Copy the sparse indices
       UnsafeUtils.set4(_mem, idx(id==null ? i : id[i]), is[i]);
     UnsafeUtils.copyMemory(ss,0,_mem,_valstart,sslen);
+    _isAllASCII = true;
+    for(int i = _valstart; i < _mem.length; ++i) {
+      byte c = _mem[i];
+      if ((c & 0x80) == 128) { //value beyond std ASCII
+        _isAllASCII = false;
+        break;
+      }
+    }
+    UnsafeUtils.set1(_mem, 4, (byte) (_isAllASCII ? 1 : 0)); // isAllASCII flag
   }
 
   private int idx(int i) { return _OFF+(i<<2); }
@@ -57,17 +65,21 @@ public class CStrChunk extends Chunk {
     _isAllASCII = b != 0;
     set_len((_valstart-_OFF)>>2);
   }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.set_sparseLen(nc.set_len(_len));
-    nc._isAllASCII = _isAllASCII;
-    int [] ids = nc.alloc_str_indices(_len);
-    for( int i = 0; i < _len; i++ )
-      ids[i] = UnsafeUtils.get4(_mem,idx(i));
-    nc._sslen = _mem.length - _valstart;
-    nc._ss = MemoryManager.malloc1(nc._sslen);
-    System.arraycopy(_mem,_valstart,nc._ss,0,nc._sslen);
+
+  @Override public ChunkVisitor processRows(ChunkVisitor nc, int from, int to){
+    BufferedString bs = new BufferedString();
+    for(int i = from; i < to; i++)
+      nc.addValue(atStr(bs,i));
     return nc;
   }
+  @Override public ChunkVisitor processRows(ChunkVisitor nc, int... rows){
+    BufferedString bs = new BufferedString();
+    for(int i:rows)
+      nc.addValue(atStr(bs,i));
+    return nc;
+  }
+
+
 
   /**
    * Optimized toLower() method to operate across the entire CStrChunk buffer in one pass.
@@ -80,7 +92,7 @@ public class CStrChunk extends Chunk {
    */
   public NewChunk asciiToLower(NewChunk nc) {
     // copy existing data
-    nc = this.inflate_impl(nc);
+    nc = this.extractRows(nc, 0,_len);
     //update offsets and byte array
     for(int i= 0; i < nc._sslen; i++) {
       if (nc._ss[i] > 0x40 && nc._ss[i] < 0x5B) // check for capital letter
@@ -101,7 +113,7 @@ public class CStrChunk extends Chunk {
    */
   public NewChunk asciiToUpper(NewChunk nc) {
     // copy existing data
-    nc = this.inflate_impl(nc);
+    nc = this.extractRows(nc, 0,_len);
     //update offsets and byte array
     for(int i= 0; i < nc._sslen; i++) {
       if (nc._ss[i] > 0x60 && nc._ss[i] < 0x7B) // check for capital letter
@@ -124,7 +136,7 @@ public class CStrChunk extends Chunk {
    */
   public NewChunk asciiTrim(NewChunk nc) {
     // copy existing data
-    nc = this.inflate_impl(nc);
+    nc = this.extractRows(nc, 0,_len);
     //update offsets and byte array
     for(int i=0; i < _len; i++) {
       int j = 0;
@@ -156,8 +168,7 @@ public class CStrChunk extends Chunk {
    */
   public NewChunk asciiSubstring(NewChunk nc, int startIndex, int endIndex) {
     // copy existing data
-    nc = this.inflate_impl(nc);
-    
+    nc = this.extractRows(nc, 0,_len);
     //update offsets and byte array
     for (int i = 0; i < _len; i++) {
       int off = UnsafeUtils.get4(_mem, idx(i));
@@ -234,34 +245,34 @@ public class CStrChunk extends Chunk {
    */
   public NewChunk asciiLStrip(NewChunk nc, String set) {
     // copy existing data
-    nc = this.inflate_impl(nc);
+    BufferedString bs = new BufferedString().set(_mem);
     //update offsets and byte array
     for(int i=0; i < _len; i++) {
       int j = 0;
-      int off = UnsafeUtils.get4(_mem,idx(i));
+      int off = _valstart + UnsafeUtils.get4(_mem,idx(i));
       if (off != NA) {
-        while( intersects(_mem[_valstart + off + j], set) ) j++;
-        if (j > 0) nc.set_is(i,off + j);
-      }
+        while( intersects(_mem[off], set) ) off++;
+        while(_mem[off + j] != 0) j++;
+        nc.addStr(bs.set(_mem,off,j));
+      } else nc.addNA();
     }
     return nc;
   }
 
   public NewChunk asciiRStrip(NewChunk nc, String set) {
     // copy existing data
-    nc = this.inflate_impl(nc);
+    BufferedString bs = new BufferedString();
     //update offsets and byte array
     for(int i=0; i < _len; i++) {
       int j = 0;
-      int off = UnsafeUtils.get4(_mem,idx(i));
+      int off = _valstart + UnsafeUtils.get4(_mem,idx(i));
       if (off != NA) {
-        while( _mem[_valstart+off+j] != 0 ) j++; //Find end
-        j--;
-        while( intersects(_mem[_valstart + off + j], set) ) { // March back while char in set
-          nc._ss[off+j] = 0; //Set new end
+        while( _mem[off+j] != 0 ) j++; //Find end
+        while( intersects(_mem[off + j - 1], set) )  // March back while char in set
           j--;
-        }
-      }
+        bs.set(_mem,off,j);
+        nc.addStr(bs);
+      } else nc.addNA();
     }
     return nc;
   }

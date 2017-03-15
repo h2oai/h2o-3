@@ -1017,7 +1017,9 @@ public class Vec extends Keyed<Vec> {
     int tcidx = c._cidx;
     if( cstart == start && v != null && tcidx == cidx)
       return c;                       // Already filled-in
-    assert cstart == -1 || v == null || tcidx == -1; // Was not filled in (everybody racily writes the same start value)
+    if(!(cstart == -1 || v == null || tcidx == -1))
+      throw new RuntimeException("Was not filled in (everybody racily writes the same start value:  cstart = " + cstart + " v == null? " + (v == null) + " cidx = " + tcidx + ", chunk = " + c.getClass().getName());
+    assert cstart == -1 || v == null || tcidx == -1:" cstart = " + cstart + " v == null? " + (v == null) + " cidx = " + tcidx + ", chunk = " + c.getClass().getName(); // Was not filled in (everybody racily writes the same start value)
     c._vec = this;             // Fields not filled in by unpacking from Value
     c._start = start;          // Fields not filled in by unpacking from Value
     c._cidx = cidx;
