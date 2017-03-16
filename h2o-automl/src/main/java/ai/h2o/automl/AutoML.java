@@ -134,6 +134,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       .replace(".svmlight", "")
       .replace(".arff", "")
       .replace(".orc", "");
+    userFeedback.info(Stage.Workflow, "Project: " + project);
     leaderboard = new Leaderboard(project);
 
     /*
@@ -676,7 +677,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     HashMap<String, Object> frameMeta = FrameMetadata.makeEmptyFrameMeta();
     frameMetadata.fillSimpleMeta(frameMeta);
-    giveColumnFeedback(trainingFrame, userFeedback, frameMeta);
+    giveDatasetFeedback(trainingFrame, userFeedback, frameMeta);
 
     job.update(20, "Computed dataset metadata");
 
@@ -999,9 +1000,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return warning;
   }
 
-  private void giveColumnFeedback(Frame frame, UserFeedback userFeedback, HashMap<String, Object> frameMeta) {
+  private void giveDatasetFeedback(Frame frame, UserFeedback userFeedback, HashMap<String, Object> frameMeta) {
     userFeedback.info(Stage.FeatureAnalysis, "Metadata for Frame: " + frame._key.toString());
     for (Map.Entry<String, Object> entry : frameMeta.entrySet()) {
+      if (entry.getKey().startsWith("Dummy"))
+        continue;
       userFeedback.info(Stage.FeatureAnalysis, entry.getKey() + ": " + entry.getValue());
     }
   }
