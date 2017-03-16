@@ -7,7 +7,9 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.util.Log;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static water.DKV.getGet;
 import static water.Key.make;
@@ -49,6 +51,13 @@ public class Leaderboard extends Keyed<Leaderboard> {
    */
   private boolean sort_decreasing;
 
+  /**
+   * UserFeedback object used to send, um, feedback to the, ah, user.  :-)
+   * Note that multiple Leaderboards can potentially use the same UserFeedback
+   * object.
+   */
+  private UserFeedback userFeedback;
+
   /** HIDEME! */
   private Leaderboard() {
     throw new UnsupportedOperationException("Do not call the default constructor Leaderboard().");
@@ -57,9 +66,10 @@ public class Leaderboard extends Keyed<Leaderboard> {
   /**
    *
    */
-  public Leaderboard(String project) {
+  public Leaderboard(String project, UserFeedback userFeedback) {
     this._key = make(idForProject(project));
     this.project = project;
+    this.userFeedback = userFeedback;
 
     Leaderboard old = DKV.getGet(this._key);
 
@@ -99,6 +109,12 @@ public class Leaderboard extends Keyed<Leaderboard> {
       setMetricAndDirection("mean_residual_deviance", false);
   }
 
+  /**
+   * Add the given models to the leaderboard.  Note that to make this easier to use from
+   * Grid, which returns its models in random order, we allow the caller to add the same
+   * model multiple times and we eliminate the duplicates here.
+   * @param newModels
+   */
   public void addModels(final Key<Model>[] newModels) {
     if (null == this._key)
       throw new H2OIllegalArgumentException("Can't add models to a Leaderboard which isn't in the DKV.");
@@ -113,10 +129,14 @@ public class Leaderboard extends Keyed<Leaderboard> {
       public Leaderboard atomic(Leaderboard old) {
         if (old == null) old = new Leaderboard();
 
-        Key<Model>[] oldModels = old.models;
-        old.models = new Key[oldModels.length + newModels.length];
-        System.arraycopy(oldModels, 0, old.models, 0, oldModels.length);
-        System.arraycopy(newModels, 0, old.models, oldModels.length, newModels.length);
+        final Key<Model>[] oldModels = old.models;
+        final Key<Model> oldLeader = (oldModels == null || 0 == oldModels.length) ? null : oldModels[0];
+
+        // eliminate duplicates
+        Set<Key<Model>> uniques = new HashSet(oldModels.length + newModels.length);
+        uniques.addAll(Arrays.asList(oldModels));
+        uniques.addAll(Arrays.asList(newModels));
+        old.models = uniques.toArray(new Key[0]);
 
         // Sort by metric.
         // TODO: If we want to train on different frames and then compare we need to score all the models and sort on the new metrics.
@@ -128,6 +148,11 @@ public class Leaderboard extends Keyed<Leaderboard> {
           Log.warn("ModelMetrics.sortModelsByMetric failed: " + e);
           throw e;
         }
+
+        // NOTE: we've now written over old.models
+        if (oldLeader == null || ! oldLeader.equals(old.models[0]))
+          userFeedback.info(UserFeedbackEvent.Stage.ModelTraining, "New leader: " + old.models[0]);
+
         return old;
       } // atomic
     }.invoke(this._key);
