@@ -471,7 +471,10 @@ public class PojoUtils {
           f.set(o, value);
         }
       } else if (f.getType().isArray() && value.getClass().isArray()) {
-        if (f.getType().getComponentType() == int.class && value.getClass().getComponentType() == Integer.class) {
+        if (f.getType().getComponentType() == value.getClass().getComponentType()) {
+          // array of the same type on both sides
+          f.set(o, value);
+        } else if (f.getType().getComponentType() == int.class && value.getClass().getComponentType() == Integer.class) {
           Integer[] valuesTyped = ((Integer[])value);
           int[] valuesCast = new int[valuesTyped.length];
           for (int i = 0; i < valuesTyped.length; i++)
