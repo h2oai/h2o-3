@@ -5,7 +5,7 @@ import h2o
 from tests import pyunit_utils
 from h2o.estimators.deepwater import H2ODeepWaterEstimator
 
-import urllib
+from requests import get
 
 def deepwater_inception_bn_feature_extraction():
   if not H2ODeepWaterEstimator.available(): return
@@ -15,12 +15,15 @@ def deepwater_inception_bn_feature_extraction():
   nclasses = frame[1].nlevels()[0]
 
   print("Downloading the model")
-  if not os.path.exists("model.json"):
-    urllib.urlretrieve ("https://raw.githubusercontent.com/h2oai/deepwater/master/mxnet/src/main/resources/deepwater/backends/mxnet/models/Inception/Inception_BN-symbol.json", "model.json")
-  if not os.path.exists("model.params"):
-    urllib.urlretrieve ("https://raw.githubusercontent.com/h2oai/deepwater/master/mxnet/src/main/resources/deepwater/backends/mxnet/models/Inception/Inception_BN-0039.params", "model.params")
-  if not os.path.exists("mean_224.nd"):
-    urllib.urlretrieve ("https://raw.githubusercontent.com/h2oai/deepwater/master/mxnet/src/main/resources/deepwater/backends/mxnet/models/Inception/mean_224.nd", "mean_224.nd")
+  with open("model.json", "wb") as file:
+    response = get("https://raw.githubusercontent.com/h2oai/deepwater/master/mxnet/src/main/resources/deepwater/backends/mxnet/models/Inception/Inception_BN-symbol.json")
+    file.write(response.content)
+  with open("model.params", "wb") as file:
+    response = get("https://raw.githubusercontent.com/h2oai/deepwater/master/mxnet/src/main/resources/deepwater/backends/mxnet/models/Inception/Inception_BN-0039.params")
+    file.write(response.content)
+  with open("mean_224.nd", "wb") as file:
+    response = get("https://raw.githubusercontent.com/h2oai/deepwater/master/mxnet/src/main/resources/deepwater/backends/mxnet/models/Inception/mean_224.nd")
+    file.write(response.content)
 
   print("Importing the model architecture for training in H2O")
   model = H2ODeepWaterEstimator(epochs=0, ## no training - just load the state - NOTE: training for this 3-class problem wouldn't work since the model has 1k classes
@@ -49,6 +52,12 @@ def deepwater_inception_bn_feature_extraction():
 
   print(extracted_features2.ncol)
   assert extracted_features2.ncol == 10976
+
+  ## Find the squared cosine similarity between the first 10 images and the rest
+  df = extracted_features[:10,:].distance(extracted_features[10:,:], "cosine_sq")
+  print(df)
+  assert df.shape[0] == 257
+  assert df.shape[1] == 10
 
 if __name__ == "__main__":
   pyunit_utils.standalone_test(deepwater_inception_bn_feature_extraction)
