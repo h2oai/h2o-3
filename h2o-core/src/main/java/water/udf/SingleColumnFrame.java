@@ -44,9 +44,7 @@ public class SingleColumnFrame<DataType, ColumnType extends DataColumn<DataType>
       final Column<DataType> column) {
     return new SingleColumnFrame<DataType, ColumnType>(factory, column.size(), column) {
       @Override
-      protected Vec buildZeroVec() {
-        return factory.buildZeroVec(column);
-      }
+      protected Vec buildZeroVec() { return factory.buildZeroVec(column); }
     };
   }
 
