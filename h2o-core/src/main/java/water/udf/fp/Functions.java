@@ -1,5 +1,7 @@
 package water.udf.fp;
 
+import static water.util.Java7.*;
+
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -27,7 +29,7 @@ public class Functions {
     public boolean equals(Object obj) {
       if (!(obj instanceof Composition)) return false;
       Composition other = (Composition) obj;
-      return equal(f, other.f) && equal(g, other.g);
+      return Objects.equals(f, other.f) && Objects.equals(g, other.g);
     }
 
     @Override public Z apply(X x) { return g.apply(f.apply(x)); }
@@ -81,7 +83,7 @@ public class Functions {
     public boolean equals(Object obj) {
       if (!(obj instanceof StringSplitter)) return false;
       StringSplitter other = (StringSplitter) obj;
-      return equal(separator, other.separator);
+      return Objects.equals(separator, other.separator);
     }
   }
   
@@ -89,11 +91,32 @@ public class Functions {
     return new StringSplitter(separator);
   }
 
-  public static int hashCode(Object x) {
-    return x == null ? 0 : x.hashCode();
-  }
+  /**
+   * Integrates "area under curve" (assuming it exists),
+   * that is, for a parametric curve specified by functions x and y,
+   * defined on integer domain [from, to], calculate the area
+   * between x[from], x[to], horizontal axis, and the curve.
+   * @param x x-component of the curve
+   * @param y y-component of the curve
+   * @param from min value of the curve range
+   * @param to max value of the curve range
+   * @return the area under curve, the result of integrating x*y' over [from,to].
+   */
+  public static double integrate(
+      Function<Integer, Double> x,
+      Function<Integer, Double> y,
+      int from, int to) {
+    double s = 0;
+    double x0 = x.apply(from);
+    double y0 = y.apply(from);
+    for (int i = from + 1; i <= to; i++) {
+      double x1 = x.apply(i);
+      double y1 = y.apply(i);
+      s += (y1+y0)*(x1-x0)*.5;
 
-  public static boolean equal(Object x, Object y) {
-    return x == null ? y == null : x.equals(y);
+      x0 = x1; y0 = y1;
+    }
+
+    return s;
   }
 }
