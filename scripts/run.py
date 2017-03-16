@@ -388,13 +388,16 @@ class H2OCloudNode(object):
                                           cwd=there)
             os.chdir(cwd)
         else:
-            self.child = subprocess.Popen(args=cmd,
-                                          stdout=f,
-                                          stderr=subprocess.STDOUT,
-                                          cwd=self.output_dir)
+            try: 
+              self.child = subprocess.Popen(args=cmd,
+                                            stdout=f,
+                                            stderr=subprocess.STDOUT,
+                                            cwd=self.output_dir)
+              self.pid = self.child.pid
+              print("+ CMD: " + ' '.join(cmd))
 
-        self.pid = self.child.pid
-        print("+ CMD: " + ' '.join(cmd))
+            except OSError:
+                raise "Failed to spawn %s in %s" % (cmd, self.output_dir)
 
 
     def scrape_port_from_stdout(self):
@@ -715,7 +718,7 @@ class Test(object):
         if is_rdemo(self.test_name) or is_runit(self.test_name) or is_rbooklet(self.test_name):
             cmd = self._rtest_cmd(self.test_name, self.ip, self.port, self.on_hadoop, self.hadoop_namenode)
         elif (is_ipython_notebook(self.test_name) or is_pydemo(self.test_name) or is_pyunit(self.test_name) or
-                  is_pybooklet(self.test_name)):
+              is_pybooklet(self.test_name)):
             cmd = self._pytest_cmd(self.test_name, self.ip, self.port, self.on_hadoop, self.hadoop_namenode)
         elif is_gradle_build_python_test(self.test_name):
             cmd = ["python", self.test_name, "--usecloud", self.ip + ":" + str(self.port)]
@@ -938,8 +941,8 @@ class Test(object):
         if g_perf:
             return ["phantomjs", test_name, "--host", ip + ":" + str(port), "--timeout", str(g_phantomjs_to),
                     "--packs", g_phantomjs_packs, "--perf", g_date, str(g_build_id), g_git_hash, g_git_branch,
-                    str(g_ncpu), g_os, g_job_name, g_output_dir, "--excludeFlows", self.exclude_flows]
-
+                   str(g_ncpu), g_os, g_job_name, g_output_dir, "--excludeFlows", self.exclude_flows]
+        
         else:
             return ["phantomjs", test_name, "--host", ip + ":" + str(port), "--timeout", str(g_phantomjs_to),
                     "--packs", g_phantomjs_packs, "--excludeFlows", self.exclude_flows]
@@ -1415,7 +1418,7 @@ class TestRunner(object):
             if self._h2o_exists_and_healthy(c.get_ip(), c.get_port()):
                 print("Node {} healthy.".format(c))
             else:
-                print("Node %r NOT HEALTHY" % c)
+                print("Node with IP {} and port {} NOT HEALTHY" .format(c.get_ip(),c.get_port()))
                 # should an exception be thrown?
 
     def stop_clouds(self):
@@ -1524,7 +1527,7 @@ class TestRunner(object):
             self._log("Terminated list:         " + ", ".join(terminated_list))
         if len(self.bad_clouds) > 0:
             self._log("Bad cloud list:          " + ", ".join(["{0}:{1}".format(bc[0], bc[1])
-                                                               for bc in self.bad_clouds]))
+                      for bc in self.bad_clouds]))
 
     def terminate(self):
         """
@@ -1817,7 +1820,7 @@ class TestRunner(object):
                 if failure_message:
                     if failure_type:
                         failure = """<failure type="{}" message="{}"><![CDATA[{}]]></failure>""" \
-                            .format(failure_type, failure_description, failure_message)
+                                  .format(failure_type, failure_description, failure_message)
                     else:
                         failure = ""
 
