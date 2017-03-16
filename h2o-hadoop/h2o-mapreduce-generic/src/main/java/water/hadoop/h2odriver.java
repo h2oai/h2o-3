@@ -795,7 +795,7 @@ public class h2odriver extends Configured implements Tool {
       else if (s.equals("-internal_secure_connections")) {
         internal_secure_connections = true;
       }
-      else if (s.equals("-internal_security_conf")) {
+      else if (s.equals("-internal_security_conf") || s.equals("-internal_security")) {
         i++; if (i >= args.length) { usage(); }
         securityConf = args[i];
       }
