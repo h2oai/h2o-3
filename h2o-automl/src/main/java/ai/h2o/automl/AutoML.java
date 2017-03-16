@@ -135,7 +135,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       .replace(".arff", "")
       .replace(".orc", "");
     userFeedback.info(Stage.Workflow, "Project: " + project);
-    leaderboard = new Leaderboard(project);
+    leaderboard = new Leaderboard(project, userFeedback);
 
     /*
     TODO
