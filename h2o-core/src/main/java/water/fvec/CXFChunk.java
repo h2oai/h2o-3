@@ -9,7 +9,10 @@ public class CXFChunk extends CXIChunk {
     super(mem);
   }
 
-  private double getVal(int x){
+  @Override public long getVal(int x){
+    throw H2O.unimpl();
+  }
+  private double getFVal(int x){
     switch(_elem_sz) {
       case 8:  return UnsafeUtils.get4f(_mem, x + 4);
       case 12: return UnsafeUtils.get8d(_mem, x + 4);
@@ -23,7 +26,7 @@ public class CXFChunk extends CXIChunk {
       if(_isNA) throw new RuntimeException("at4 but the value is missing!");
       return 0;
     }
-    double val = getVal(x);
+    double val = getFVal(x);
     if(Double.isNaN(val)) throw new RuntimeException("at4 but the value is missing!");
     return (long)val;
   }
@@ -32,7 +35,7 @@ public class CXFChunk extends CXIChunk {
     int x = findOffset(idx);
     if(x < 0)
       return _isNA?Double.NaN:0;
-    return getVal(x);
+    return getFVal(x);
   }
 
   @Override
@@ -49,7 +52,7 @@ public class CXFChunk extends CXIChunk {
       if(id >= to)break;
       if(_isNA) v.addNAs(id-prevId-1);
       else v.addZeros(id-prevId-1);
-      v.addValue(getVal(x));
+      v.addValue(getFVal(x));
       prevId = id;
       x+=_elem_sz;
     }
@@ -75,7 +78,7 @@ public class CXFChunk extends CXIChunk {
       if(idx == idk){
         if(_isNA) v.addNAs(zeros);
         else v.addZeros(zeros);
-        v.addValue(getVal(x));
+        v.addValue(getFVal(x));
         zeros = 0;
         x+=_elem_sz;
       } else

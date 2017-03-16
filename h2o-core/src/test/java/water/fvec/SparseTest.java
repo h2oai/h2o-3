@@ -7,6 +7,7 @@ import java.util.Random;
 import java.util.TreeSet;
 
 import water.TestUtil;
+import water.util.PrettyPrint;
 import water.util.UnsafeUtils;
 
 /**
@@ -184,6 +185,79 @@ public class SparseTest extends TestUtil {
     return c;
   }
 
+  @Test
+  public void testCXSChunk() {
+
+    Random rnd = new Random(54321);
+    for(boolean small:new boolean[]{false,true}) {
+      for(boolean naSparse:new boolean[]{false,true}) {
+        NewChunk nc = new NewChunk(null,0);
+        TreeSet<Integer> nzsSet = new TreeSet<>();
+        for (int i = 0; i < 96; ++i) {
+          int x = rnd.nextInt(1024);
+          while (!nzsSet.add(x)) x = rnd.nextInt(1024);
+        }
+        assert nzsSet.size() == 96:"size = " + nzsSet.size();
+        int[] nzs_ary = new int[96];
+        int k = 0;
+
+        for (int x : nzsSet) nzs_ary[k++] = x;
+        // small
+        int prev = -1;
+        double[] vals = new double[1024];
+        if(naSparse) Arrays.fill(vals,Double.NaN);
+        for (int x : nzs_ary) {
+          if(naSparse)
+            nc.addNAs(x-prev-1);
+          else
+            nc.addZeros(x - prev - 1);
+          prev = x;
+          long m = 1 + Short.MIN_VALUE + rnd.nextInt(Short.MAX_VALUE);
+          int e = -3 + rnd.nextInt(small ? 1 : 3);
+          nc.addNum(m, e);
+          vals[x] = m * PrettyPrint.pow10(e);
+        }
+        if(naSparse)
+          nc.addNAs(1024-prev-1);
+        else
+          nc.addZeros(1024 - prev - 1);
+        Chunk c = nc.compress();
+        NewChunk nc2 = new NewChunk(null,0);
+        c.extractRows(nc2,0,1024);
+        Assert.assertArrayEquals(c.asBytes(),nc2.compress().asBytes());
+        System.out.println("compressed into " + c);
+        Assert.assertTrue(c instanceof CXSChunk);
+        CXSChunk cxs = (CXSChunk) c;
+        if(small) Assert.assertEquals(4,cxs._elem_sz);
+        else Assert.assertEquals(8,cxs._elem_sz);
+        if(naSparse){
+          Assert.assertTrue(cxs.isSparseNA());
+          Assert.assertFalse(cxs.isSparseZero());
+          Assert.assertEquals(nzs_ary.length,cxs.sparseLenNA());
+          Assert.assertEquals(vals.length,cxs.sparseLenZero());
+        } else {
+          Assert.assertTrue(cxs.isSparseZero());
+          Assert.assertFalse(cxs.isSparseNA());
+          Assert.assertEquals(nzs_ary.length,cxs.sparseLenZero());
+          Assert.assertEquals(vals.length,cxs.sparseLenNA());
+        }
+        double[] valsx = c.getDoubles(new double[1024], 0, 1024, Double.NaN);
+        Assert.assertArrayEquals(vals, valsx, 1e-10);
+        double [] sparse_vals = new double[1024];
+        int [] sparse_ids = new int[1024];
+        int nzs = c.getSparseDoubles(sparse_vals,sparse_ids);
+        Assert.assertArrayEquals(nzs_ary,Arrays.copyOf(sparse_ids,nzs));
+        for(int i = 0; i < nzs_ary.length; ++i){
+          Assert.assertEquals(vals[nzs_ary[i]],sparse_vals[i],1e-10);
+        }
+        int x = -1;
+        for(int i = 0; i < nzs; i++){
+          x = c.nextNZ(x);
+          Assert.assertEquals(nzs_ary[i],x);
+        }
+      }
+    }
+  }
 
   @Test
   public void doChunkTest() {

@@ -476,9 +476,12 @@ public class NewChunk extends Chunk {
         addNum(Double.NaN);
         return;
       } else {
-        if (!_sparseNA && _sparseLen == _ms.len())
-          append2slow();
+        if(!_sparseNA&& (_ms == null || _sparseLen == _ms.len()))
+            append2slow();
         if(!_sparseNA) {
+          if(_ms.len() <= _sparseLen)
+            System.out.println("haha");
+          assert _ms != null && _ms.len() > _sparseLen;
           if(_missing == null) _missing = new BitSet();
           _missing.set(_sparseLen);
           if (_id != null) _id[_sparseLen] = _len;
@@ -1209,6 +1212,14 @@ public class NewChunk extends Chunk {
     if( sparse || na_sparse ) {
       if(fpoint) {
         if(_ds == null){
+          if(leRange < 4294967295l){
+            if(Math.max(leRange,_len) < 65535) {
+              long bias = 32767 + lemin;
+              return new CXSChunk(bufSX(bias, xmin, 4, na_sparse));
+            }
+            long bias = 2147483647l + lemin;
+            return new CXSChunk(bufSX(bias, xmin, 8, na_sparse));
+          }
           switch_to_doubles();
           isFloat = false;
         }
@@ -1276,16 +1287,21 @@ public class NewChunk extends Chunk {
 
   private static long [] NAS = {C1Chunk._NA,C2Chunk._NA,C4Chunk._NA,C8Chunk._NA};
 
-  // Compute a sparse integer buffer
-  private byte[] bufS(int len, int id_sz, int val_sz,boolean na_sparse){
-    long NA = CXIChunk.NA(val_sz);
-    int elem_size = id_sz+val_sz;
-    byte [] res = MemoryManager.malloc1(CXIChunk._OFF + _sparseLen*elem_size);
-    UnsafeUtils.set4(res,0,len);
+
+  private byte [] newSparseChunkMem(int off,int id_sz, int val_sz,boolean na_sparse){
+    byte [] res = MemoryManager.malloc1(off + _sparseLen*(id_sz+val_sz));
+    UnsafeUtils.set4(res,0,_len);
     res[4] = (byte)id_sz;
     res[5] = (byte)val_sz;
     res[6] = na_sparse?(byte)1:0;
     if(na_sparse)res[6] = (byte)1;
+    return res;
+  }
+  // Compute a sparse integer buffer
+  private byte[] bufS(int len, int id_sz, int val_sz,boolean na_sparse){
+    long NA = CXIChunk.NA(val_sz);
+    int elem_size = id_sz+val_sz;
+    byte [] res = newSparseChunkMem(CXIChunk._OFF,id_sz,val_sz,na_sparse);
     for(int i = 0; i < _sparseLen; ++i){
       if(id_sz == 2) UnsafeUtils.set2(res,CXIChunk._OFF+i*elem_size+0,(short)_id[i]);
       else UnsafeUtils.set4(res,CXIChunk._OFF+i*elem_size+0,_id[i]);
@@ -1319,6 +1335,34 @@ public class NewChunk extends Chunk {
       } else throw H2O.unimpl();
     }
     return res;
+  }
+  private byte[] bufSX( long bias, int scale, int elmsz, boolean na_sparse) {
+    byte [] mem = newSparseChunkMem(CXSChunk._OFF,elmsz>>1,elmsz>>1,na_sparse);
+    long NA = elmsz == 4?C2Chunk._NA:C4Chunk._NA;
+    UnsafeUtils.set4(mem,CXIChunk._OFF,scale);
+    UnsafeUtils.set8(mem,CXIChunk._OFF+4,bias);
+    int i = 0;
+    for(int off = CXSChunk._OFF; off < mem.length; off += elmsz,i++) {
+      long le = NA;
+      if(!isNA2(i)){
+        int x = _xs.get(i)-scale;
+        try {
+          le = -bias + (x >= 0
+              ? _ms.get(i) * PrettyPrint.pow10i(x)
+              : _ms.get(i) / PrettyPrint.pow10i(-x));
+        } catch(Throwable t){
+          t.printStackTrace();
+        }
+      }
+      if(elmsz == 4){
+        UnsafeUtils.set2(mem,off,(short)_id[i]);
+        UnsafeUtils.set2(mem,off+2,(short)le);
+      } else if(elmsz == 8){
+        UnsafeUtils.set4(mem,off,_id[i]);
+        UnsafeUtils.set4(mem,off+4,(int)le);
+      } else throw H2O.unimpl();
+    }
+    return mem;
   }
   // Compute a compressed integer buffer
   private byte[] bufX( long bias, int scale, int off, int log ) {

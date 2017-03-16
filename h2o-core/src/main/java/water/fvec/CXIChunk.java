@@ -5,7 +5,7 @@ import water.util.UnsafeUtils;
 
 // Sparse chunk.
 public class CXIChunk extends Chunk {
-  private static long [] _NAS = new long[]{-1/* not used, binary chunks can't have NAs */,/* not used*/-1,C2Chunk._NA,-1,C4Chunk._NA,-1,-1,-1,C8Chunk._NA};
+  protected static long [] _NAS = new long[]{-1/* not used, binary chunks can't have NAs */,/* not used*/-1,C2Chunk._NA,-1,C4Chunk._NA,-1,-1,-1,C8Chunk._NA};
   public static long NA(int val_sz){return _NAS[val_sz];}
   transient boolean _isNA; // na sparse or zero sparse
   transient int _val_sz;
@@ -33,7 +33,7 @@ public class CXIChunk extends Chunk {
     return id_sz == 4?UnsafeUtils.get4(_mem,x):0xFFFF&UnsafeUtils.get2(_mem,x);
   }
 
-  private long getVal(int x){
+  protected long getVal(int x){
     switch(_val_sz){
       case 0: return 1;
       case 2: return UnsafeUtils.get2(_mem,x+2);
@@ -55,35 +55,38 @@ public class CXIChunk extends Chunk {
 
 
   @Override
-  protected final void initFromBytes() {
+  protected void initFromBytes() {
     _start = -1;  _cidx = -1;
     _len = UnsafeUtils.get4(_mem,0);
     int id_sz = _mem[4]&0xFF;
     _val_sz = _mem[5]&0xFF;
     _elem_sz = _val_sz + id_sz;
     _isNA = (0xFF&_mem[6]) == 1;
-    _previousOffset = _OFF;
+    _previousOffset = OFF();
   }
 
   protected final int sparseLen(){
-    return (_mem.length - _OFF) / _elem_sz;
+    return (_mem.length - OFF()) / _elem_sz;
   }
-  protected final int getOff(int id){return _OFF + _elem_sz*id;}
-  protected final int getIdx(int off){return (off-_OFF)/_elem_sz;}
+  protected final int getOff(int id, int OFF){return OFF + _elem_sz*id;}
+  protected final int getIdx(int off, int OFF){return (off-OFF)/_elem_sz;}
+
+  protected int OFF(){return _OFF;}
 
   protected final int findOffset(int i) { // do binary search
     int off = _previousOffset;
     int id = getId(off);
+    int OFF = OFF();
     if(id == i) return off;
     if(id < i && (id = getId(off+=_elem_sz)) == i) {
       _previousOffset = off;
       return off;
     }
-    int lb = id < i?getIdx(off):0;
-    int ub = id > i?getIdx(off):sparseLen();
+    int lb = id < i?getIdx(off,OFF):0;
+    int ub = id > i?getIdx(off,OFF):sparseLen();
     while (lb < ub) {
       int mid = lb + ((ub - lb) >> 1);
-      off = getOff(mid);
+      off = getOff(mid,OFF);
       int x = getId(off);
       if (x == i) {
         _previousOffset = off;
@@ -92,7 +95,7 @@ public class CXIChunk extends Chunk {
       if (x < i) lb = mid + 1;
       else ub = mid;
     }
-    return -getOff(ub)-1;
+    return -getOff(ub,OFF)-1;
   }
 
   @Override public long at8_impl(int idx){
@@ -109,8 +112,7 @@ public class CXIChunk extends Chunk {
 
   @Override public double atd_impl(int idx) {
     int x = findOffset(idx);
-    if(x < 0)
-      return _isNA?Double.NaN:0;
+    if(x < 0) return _isNA?Double.NaN:0;
     return getFVal(x);
   }
 
@@ -144,7 +146,7 @@ public class CXIChunk extends Chunk {
 
   public final int len(){return _len;}
 
-  private transient int _previousOffset = _OFF;
+  private transient int _previousOffset;
 
   @Override public int nextNZ(int i){
     int x = findOffset(i);
@@ -153,21 +155,25 @@ public class CXIChunk extends Chunk {
     return getId(x);
   }
 
+  protected void processRow(ChunkVisitor v, int x){
+    long val = getVal(x);
+    if(val ==_NAS[_val_sz])
+      v.addNAs(1);
+    else
+      v.addValue(val);
+  }
+
   @Override
   public <T extends ChunkVisitor> T processRows(T v, int from, int to){
     int prevId = from-1;
-    int x = from == 0?_OFF: findOffset(from);
+    int x = from == 0?OFF(): findOffset(from);
     if(x < 0) x = -x-1;
     while(x < _mem.length){
       int id = getId(x);
       if(id >= to)break;
       if(_isNA) v.addNAs(id-prevId-1);
       else v.addZeros(id-prevId-1);
-      long val = getVal(x);
-      if(val ==_NAS[_val_sz])
-        v.addNAs(1);
-      else
-        v.addValue(val);
+      processRow(v,x);
       prevId = id;
       x+=_elem_sz;
     }
@@ -178,7 +184,7 @@ public class CXIChunk extends Chunk {
 
   @Override
   public <T extends ChunkVisitor> T processRows(T v, int [] ids){
-    int x = _OFF;
+    int x = OFF();
     int k = 0;
     int zeros = 0;
     while(k < ids.length) {
@@ -193,11 +199,7 @@ public class CXIChunk extends Chunk {
       if(idx == idk){
         if(_isNA) v.addNAs(zeros);
         else v.addZeros(zeros);
-        long val = getVal(x);
-        if(val == _NAS[_val_sz])
-          v.addNAs(1);
-        else
-          v.addValue(val);
+        processRow(v,x);
         zeros = 0;
         x+=_elem_sz;
       } else
