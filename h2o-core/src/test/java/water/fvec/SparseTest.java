@@ -64,6 +64,28 @@ public class SparseTest extends TestUtil {
     }
   }
 
+  private static void test_get_doubles(Chunk c, double [] vals, int [] nzs_ary, boolean isSparse){
+    double [] x = new double[vals.length];
+    double NA = Double.MAX_VALUE;
+    c.getDoubles(x,0,vals.length);
+    Assert.assertArrayEquals(vals,x,0);
+    Arrays.fill(x,0);
+    c.getDoubles(x,0,vals.length,NA);
+    for(int i =0 ; i < x.length; ++i)
+      if(Double.isNaN(vals[i])){
+          Assert.assertEquals(NA,x[i],0);
+      } else Assert.assertEquals(vals[i],x[i],0);
+    // test sparse doubles
+    if(isSparse) {
+      int[] ids = new int[x.length];
+      int nzs = c.getSparseDoubles(x, ids);
+      Assert.assertEquals(nzs_ary.length, nzs);
+      Assert.assertArrayEquals(nzs_ary, Arrays.copyOf(ids, nzs));
+      for (int i = 0; i < nzs; ++i) {
+        Assert.assertEquals(vals[nzs_ary[i]], x[i], 0);
+      }
+    }
+  }
   private static void test_extract_rows(Chunk c, double [] vals, int [] nzs_ary){
     NewChunk nc = new NewChunk(null, 0);
     c.extractRows(nc,0,vals.length);
@@ -157,6 +179,8 @@ public class SparseTest extends TestUtil {
     if(isSparse)
       test_next_nz(c,vals.length,nzs_ary);
     test_extract_rows(c,vals,nzs_ary);
+
+    test_get_doubles(c,vals,nzs_ary,isSparse);
     return c;
   }
 

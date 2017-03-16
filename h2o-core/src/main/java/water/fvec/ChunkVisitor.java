@@ -124,7 +124,7 @@ public abstract class ChunkVisitor {
     @Override
     void addValue(long val) {ids[_sparseLen] = _len++; vals[_sparseLen++] = val;}
     @Override
-    void addValue(double val) {ids[_sparseLen] = _len++; vals[_sparseLen++] = val;}
+    void addValue(double val) {ids[_sparseLen] = _len++; vals[_sparseLen++] = Double.isNaN(val)?_na:val;}
     @Override
     void addZeros(int zeros) {
       if(naSparse) {
@@ -143,7 +143,7 @@ public abstract class ChunkVisitor {
         int kmax = _sparseLen + nas;
         for (int k = _sparseLen; k < kmax; k++) {
           ids[k] = _len++;
-          vals[k] = Double.NaN;
+          vals[k] = _na;
         }
         _sparseLen = kmax;
       } else

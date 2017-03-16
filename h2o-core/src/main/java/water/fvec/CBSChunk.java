@@ -50,6 +50,12 @@ public class CBSChunk extends Chunk {
 
 
 
+  private void set_byte(int idx, byte val){
+    int bix = _OFF + ((idx*_bpv)>>3); // byte index
+    int off = _bpv*idx & 7; // index within the byte
+    int mask = ~((1 | _bpv) << off);
+    _mem[bix] = (byte)((_mem[bix] & mask) | (val << off)); // 1 or 3 for 1bit per value or 2 bits per value
+  }
   void write(int idx, byte val){
     int bix = _OFF + ((idx*_bpv)>>3); // byte index
     int off = _bpv*idx & 7; // index within the byte
@@ -72,39 +78,28 @@ public class CBSChunk extends Chunk {
   }
 
   @Override boolean set_impl(int idx, double d) {
-    if(d == 0) {
-      write(idx,(byte)0);
-      return true;
-    }
-    if(d == 1){
-      write(idx,(byte)1);
-      return true;
-    }
-    if(Double.isNaN(d) && _bpv == 2){
-      write(idx,_NA);
+    if(Double.isNaN(d)) return setNA_impl(idx);
+    if(d == 0 || d == 1) {
+      set_byte(idx,(byte)d);
       return true;
     }
     return false;
   }
   @Override boolean set_impl(int idx, float f ) {
-    if(f == 0) {
-      write(idx,(byte)0);
-      return true;
-    }
-    if(f == 1){
-      write(idx,(byte)1);
-      return true;
-    }
-    if(Float.isNaN(f) && _bpv == 2){
-      write(idx,_NA);
+    if(Float.isNaN(f))
+      return setNA_impl(idx);
+    if(f == 0 || f == 1) {
+      set_byte(idx,(byte)f);
       return true;
     }
     return false;
   }
   @Override boolean setNA_impl(int idx) {
-    if(_bpv == 1) return false;
-    write(idx,_NA);
-    return true;
+    if(_bpv == 2) {
+      set_byte(idx, _NA);
+      return true;
+    }
+    return false;
   }
 
   private void processRow(int r, ChunkVisitor v){
