@@ -58,6 +58,7 @@ public class h2odriver extends Configured implements Tool {
   static String mapperPermSize = null;
   static String driverCallbackIp = null;
   static int driverCallbackPort = 0;          // By default, let the system pick the port.
+  static PortRange driverCallbackPortRange = null;
   static String network = null;
   static boolean disown = false;
   static String clusterReadyFileName = null;
@@ -150,6 +151,43 @@ public class h2odriver extends Configured implements Tool {
 
   public static void maybePrintYarnLogsMessage() {
     maybePrintYarnLogsMessage(true);
+  }
+
+  private static class PortRange {
+    int from;
+    int to;
+
+    public PortRange(int from, int to) {
+      this.from = from;
+      this.to = to;
+    }
+
+    void validate() {
+      if (from > to)
+        error("Invalid port range (lower bound larger than upper bound: " + this + ").");
+      if ((from == 0) && (to != 0))
+        error("Invalid port range (lower bound cannot be 0).");
+      if (to > 65535)
+        error("Invalid port range (upper bound > 65535).");
+    }
+
+    boolean isSinglePort() {
+      return from == to;
+    }
+
+    static PortRange parse(String rangeSpec) {
+      if (rangeSpec == null)
+        throw new NullPointerException("Port range is not specified (null).");
+      String[] ports = rangeSpec.split("-");
+      if (ports.length != 2)
+        throw new IllegalArgumentException("Invalid port range specification (" + rangeSpec + ")");
+      return new PortRange(parseIntLenient(ports[0]), parseIntLenient(ports[1]));
+    }
+
+    private static int parseIntLenient(String s) { return Integer.parseInt(s.trim()); }
+
+    @Override
+    public String toString() { return "[" + from + "-" + to + "]"; }
   }
 
   public static class H2ORecordReader extends RecordReader<Text, Text> {
@@ -477,6 +515,7 @@ public class h2odriver extends Configured implements Tool {
                     "              (Note nnnnn is chosen randomly to produce a unique name)\n" +
                     "          [-driverif <ip address of mapper->driver callback interface>]\n" +
                     "          [-driverport <port of mapper->driver callback interface>]\n" +
+                    "          [-driverportrange <range portX-portY of mapper->driver callback interface>; eg: 50000-55000]\n" +
                     "          [-network <IPv4network1Specification>[,<IPv4network2Specification> ...]\n" +
                     "          [-timeout <seconds>]\n" +
                     "          [-disown]\n" +
@@ -507,9 +546,9 @@ public class h2odriver extends Configured implements Tool {
                     "             Extra memory for internal JVM use outside of Java heap.\n" +
                     "                 mapreduce.map.memory.mb = mapperXmx * (1 + extramempercent/100)\n" +
                     "          o  -libjars with an h2o.jar is required.\n" +
-                    "          o  -driverif and -driverport let the user optionally specify the\n" +
-                    "             network interface and port (on the driver host) for callback\n" +
-                    "             messages from the mapper to the driver.\n" +
+                    "          o  -driverif and -driverport/-driverportrange let the user optionally" +
+                    "             specify the network interface and port/port range (on the driver host)" +
+                    "             for callback messages from the mapper to the driver.\n" +
                     "          o  -network allows the user to specify a list of networks that the\n" +
                     "             H2O nodes can bind to.  Use this if you have multiple network\n" +
                     "             interfaces on the hosts in your Hadoop cluster and you want to\n" +
@@ -549,6 +588,14 @@ public class h2odriver extends Configured implements Tool {
   static void error(String s) {
     System.err.printf("\nERROR: " + "%s\n\n", s);
     usage();
+  }
+
+  /**
+   * Print a warning message.
+   * @param s Warning message
+   */
+  static void warning(String s) {
+    System.err.printf("\nWARNING: " + "%s\n\n", s);
   }
 
   /**
@@ -688,6 +735,10 @@ public class h2odriver extends Configured implements Tool {
       else if (s.equals("-driverport")) {
         i++; if (i >= args.length) { usage(); }
         driverCallbackPort = Integer.parseInt(args[i]);
+      }
+      else if (s.equals("-driverportrange")) {
+        i++; if (i >= args.length) { usage(); }
+        driverCallbackPortRange = PortRange.parse(args[i]);
       }
       else if (s.equals("-network")) {
         i++; if (i >= args.length) { usage(); }
@@ -899,6 +950,13 @@ public class h2odriver extends Configured implements Tool {
     if ((nthreads >= 0) && (nthreads < 4)) {
       error("nthreads invalid (must be >= 4): " + nthreads);
     }
+
+    if ((driverCallbackPort != 0) && (driverCallbackPortRange != null)) {
+      error("cannot specify both -driverport and -driverportrange (remove one of these options)");
+    }
+
+    if (driverCallbackPortRange != null)
+      driverCallbackPortRange.validate();
   }
 
   static String calcMyIp() throws Exception {
@@ -1075,6 +1133,43 @@ public class h2odriver extends Configured implements Tool {
     mapperConfLength++;
   }
 
+  private static ServerSocket bindCallbackSocket() throws IOException {
+    Exception ex = null;
+    int permissionExceptionCount = 0; // try to detect likely unintended range specifications
+    // eg.: running with non-root user & setting range 100-1100 (the effective range would be 1024-1100 = not what user wanted)
+    ServerSocket result = null;
+    for (int p = driverCallbackPortRange.from; (result == null) && (p <= driverCallbackPortRange.to); p++) {
+      ServerSocket ss = new ServerSocket();
+      ss.setReuseAddress(true);
+      InetSocketAddress sa = new InetSocketAddress(driverCallbackIp, p);
+      try {
+        int backlog = Math.max(50, numNodes * 3); // minimum 50 (bind's default) or numNodes * 3 (safety constant, arbitrary)
+        ss.bind(sa, backlog);
+        result = ss;
+      } catch (BindException e) {
+        if ("Permission denied".equals(e.getMessage()))
+          permissionExceptionCount++;
+        ex = e;
+      } catch (SecurityException e) {
+        permissionExceptionCount++;
+        ex = e;
+      } catch (IOException e) {
+        ex = e;
+      } catch (RuntimeException e) {
+        ex = e;
+      }
+    }
+    if ((permissionExceptionCount > 0) && (! driverCallbackPortRange.isSinglePort()))
+      warning("Some ports (count=" + permissionExceptionCount + ") of the specified port range are not available" +
+              " due to process restrictions (range: " + driverCallbackPortRange + ").");
+    if (result == null)
+      if (ex instanceof IOException)
+        throw (IOException) ex;
+      else
+        throw (RuntimeException) ex;
+    return result;
+  }
+
   private int run2(String[] args) throws Exception {
     // Arguments that get their default value set based on runtime info.
     // -----------------------------------------------------------------
@@ -1096,16 +1191,16 @@ public class h2odriver extends Configured implements Tool {
     if (driverCallbackIp == null) {
       driverCallbackIp = calcMyIp();
     }
-    driverCallbackSocket = new ServerSocket();
-    driverCallbackSocket.setReuseAddress(true);
-    InetSocketAddress sa = new InetSocketAddress(driverCallbackIp, driverCallbackPort);
-    driverCallbackSocket.bind(sa, driverCallbackPort);
+    if (driverCallbackPortRange == null) {
+      driverCallbackPortRange = new PortRange(driverCallbackPort, driverCallbackPort);
+    }
+    driverCallbackSocket = bindCallbackSocket();
     int actualDriverCallbackPort = driverCallbackSocket.getLocalPort();
     CallbackManager cm = new CallbackManager();
     cm.setServerSocket(driverCallbackSocket);
     cm.start();
     System.out.println("Using mapper->driver callback IP address and port: " + driverCallbackIp + ":" + actualDriverCallbackPort);
-    System.out.println("(You can override these with -driverif and -driverport.)");
+    System.out.println("(You can override these with -driverif and -driverport/-driverportrange.)");
 
     // Set up configuration.
     // ---------------------
