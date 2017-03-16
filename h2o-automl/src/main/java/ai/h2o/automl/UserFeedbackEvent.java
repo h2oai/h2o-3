@@ -25,6 +25,22 @@ public class UserFeedbackEvent extends Iced {
   private Stage stage;
   private String message;
 
+  public long getTimestamp() {
+    return timestamp;
+  }
+
+  public Level getLevel() {
+    return level;
+  }
+
+  public Stage getStage() {
+    return stage;
+  }
+
+  public String getMessage() {
+    return message;
+  }
+
   public UserFeedbackEvent(Level level, Stage stage, String message) {
     this.timestamp = System.currentTimeMillis();
     this.level = level;
