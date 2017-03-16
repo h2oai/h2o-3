@@ -72,10 +72,7 @@ def random_grid_model_seeds_PUBDEV_4090():
     model_len = min(len(air_grid1), len(air_grid2))
     correct_model_seeds = list(range(search_criteria_tune1["seed"], search_criteria_tune1["seed"]+model_len))
     assert model_seeds1[0:model_len]==model_seeds2[0:model_len], "Random gridsearch seed is not set correctly as model seeds..."
-    # this assert was failing; have to add more diagnostics
-    expected1 = ','.join(correct_model_seeds)
-    actual1 = ','.join(mdel_seeds1)
-    assert model_seeds1==correct_model_seeds, "Model seeds are not correct: expected %s; got %s" % (expected1, actual1) 
+    assert model_seeds1==correct_model_seeds, "Random gridsearch seed is not "
 
     # compare training_rmse from scoring history
     metric_list1 = pyunit_utils.extract_scoring_history_field(air_grid1.models[0], "training_rmse")
