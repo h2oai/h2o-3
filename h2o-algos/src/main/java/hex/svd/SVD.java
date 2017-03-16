@@ -83,18 +83,23 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     HeartBeat hb = H2O.SELF._heartbeat;
     double p = LinearAlgebraUtils.numColsExp(_train,true);
     double r = _train.numRows();
-
-    long mem_usage = _parms._svd_method == SVDParameters.Method.GramSVD ? (long)(hb._cpus_allowed * p*p * 8/*doubles*/
+    boolean useGramSVD = _parms._svd_method == SVDParameters.Method.GramSVD;
+    boolean usePower = _parms._svd_method == SVDParameters.Method.Power;
+    long mem_usage = (useGramSVD || usePower) ? (long)(hb._cpus_allowed * p*p * 8/*doubles*/
             * Math.log((double)_train.lastVec().nChunks())/Math.log(2.)) : 1; //one gram per core
-    long mem_usage_w = _parms._svd_method == SVDParameters.Method.GramSVD ? (long)(hb._cpus_allowed * r*r * 8/*doubles*/
+    long mem_usage_w = (useGramSVD || usePower) ? (long)(hb._cpus_allowed * r*r * 8/*doubles*/
             * Math.log((double)_train.lastVec().nChunks())/Math.log(2.)) : 1; //one gram per core
     long max_mem = hb.get_free_mem();
 
-    if ((mem_usage > max_mem) && (mem_usage_w > max_mem) && _wideDataset) {
+    if ((mem_usage > max_mem) && (mem_usage_w > max_mem)) {
       String msg = "Gram matrices (one per thread) won't fit in the driver node's memory ("
               + PrettyPrint.bytes(mem_usage) + " > " + PrettyPrint.bytes(max_mem)
               + ") - try reducing the number of columns and/or the number of categorical factors.";
       error("_train", msg);
+    }
+
+    if (mem_usage > max_mem) {  // choose the most memory efficient one
+      _wideDataset = true;   // set to true if wide dataset is detected
     }
   }
 
@@ -179,7 +184,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       // Update v_i <- (A'Av_{i-1})/||A'Av_{i-1}|| where A'A = Gram matrix of training frame
       while(iters < _parms._max_iterations && err > TOLERANCE) {
         // Compute x_i <- A'Av_{i-1} and ||x_i||
-        gram.mul(v, vnew, true);
+        gram.mulL(v, vnew);
 
         lambda1_calc = innerProduct(vnew, v);
         lambda_est = innerProduct(vnew, vnew);

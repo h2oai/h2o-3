@@ -763,27 +763,32 @@ public final class Gram extends Iced<Gram> {
   However, need to consider case when you have categoricals!  Make them part of the matrix
   in the multiplication process.
    */
-  public void mul(double [] x, double [] res, boolean saveMemory){
-    if (saveMemory) {
-      int colSize = fullN();        // actual gram matrix size
-      int offsetForCat = colSize-_xx.length; // offset for categorical columns
+  public void mulL(double[] x, double[] res){
+    int colSize = fullN();        // actual gram matrix size
+    int offsetForCat = colSize-_xx.length; // offset for categorical columns
 
-      for (int rowIndex = 0; rowIndex < colSize; rowIndex++) {
-        double d = 0;
+    for (int rowIndex = 0; rowIndex < colSize; rowIndex++) {
+      double d = 0;
+      if (rowIndex >=offsetForCat) {
         for (int colIndex = 0; colIndex < rowIndex; colIndex++) {   // below diagonal
-          d += rowIndex>=offsetForCat?_xx[rowIndex-offsetForCat][colIndex] * x[colIndex]:0.0;
+          d += _xx[rowIndex - offsetForCat][colIndex] * x[colIndex];
         }
-        // on diagonal
-        d+= (rowIndex>=offsetForCat)?_xx[rowIndex-offsetForCat][rowIndex]*x[rowIndex]:_diag[rowIndex]*x[rowIndex];
-
-        for (int colIndex = rowIndex+1; colIndex < colSize; colIndex++) {   // above diagonal
-          d += (rowIndex<offsetForCat)?((colIndex<offsetForCat)?0:_xx[colIndex-offsetForCat][rowIndex]*x[colIndex]):
-                  _xx[colIndex-offsetForCat][rowIndex]*x[colIndex];
-        }
-        res[rowIndex] = d;
       }
-    } else {
-      mul(x, res);  // call original implementation if preferred
+      // on diagonal
+      d+= (rowIndex>=offsetForCat)?_xx[rowIndex-offsetForCat][rowIndex]*x[rowIndex]:_diag[rowIndex]*x[rowIndex];
+
+      for (int colIndex = rowIndex+1; colIndex < colSize; colIndex++) {   // above diagonal
+        if (rowIndex<offsetForCat) {
+          if ((colIndex>=offsetForCat)) {
+            d += _xx[colIndex-offsetForCat][rowIndex]*x[colIndex];
+          }
+        } else {
+          d += _xx[colIndex-offsetForCat][rowIndex]*x[colIndex];
+        }
+/*        d += (rowIndex<offsetForCat)?((colIndex<offsetForCat)?0:_xx[colIndex-offsetForCat][rowIndex]*x[colIndex]):
+                _xx[colIndex-offsetForCat][rowIndex]*x[colIndex];*/
+    }
+      res[rowIndex] = d;
     }
   }
 

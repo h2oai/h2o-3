@@ -56,15 +56,15 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
  //   int numCPUs= H2O.NUMCPUS;   // proper way to get number of CPUs.
     double p = hex.util.LinearAlgebraUtils.numColsExp(_train,true);
     double r = _train.numRows();
-    long mem_usage =
-            (_parms._pca_method == PCAParameters.Method.GramSVD) || (_parms._pca_method==PCAParameters.Method.Power)
-                    ? (long)(hb._cpus_allowed * p*p * 8/*doubles*/ *
+    boolean useGramSVD = _parms._pca_method == PCAParameters.Method.GramSVD;
+    boolean usePower = _parms._pca_method==PCAParameters.Method.Power;
+
+    long mem_usage = (useGramSVD || usePower) ? (long)(hb._cpus_allowed * p*p * 8/*doubles*/ *
                     Math.log((double)_train.lastVec().nChunks())/Math.log(2.)) : 1; //one gram per core
-    long mem_usage_w = (_parms._pca_method == PCAParameters.Method.GramSVD) ||
-            (_parms._pca_method==PCAParameters.Method.Power)
-            ? (long)(hb._cpus_allowed * r*r *
+    long mem_usage_w = (useGramSVD || usePower) ? (long)(hb._cpus_allowed * r*r *
             8/*doubles*/ * Math.log((double)_train.lastVec().nChunks())/Math.log(2.)) : 1;
     long max_mem = hb.get_free_mem();
+
     if ((mem_usage > max_mem) && (mem_usage_w > max_mem))  {
       String msg = "Gram matrices (one per thread) won't fit in the driver node's memory ("
               + PrettyPrint.bytes(mem_usage) + " > " + PrettyPrint.bytes(max_mem)

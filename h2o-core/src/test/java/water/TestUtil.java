@@ -1,7 +1,6 @@
 package water;
 
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
@@ -550,13 +549,13 @@ public class TestUtil extends Iced {
 
   public static void checkStddev(double[] expected, double[] actual, double threshold) {
     for(int i = 0; i < actual.length; i++)
-      Assert.assertEquals(expected[i], actual[i], threshold);
+      assertEquals(expected[i], actual[i], threshold);
   }
 
   public static void checkIcedArrays(IcedWrapper[][] expected, IcedWrapper[][] actual, double threshold) {
     for(int i = 0; i < actual.length; i++)
       for (int j = 0; j < actual[0].length; j++)
-      Assert.assertEquals(expected[i][j].d, actual[i][j].d, threshold);
+      assertEquals(expected[i][j].d, actual[i][j].d, threshold);
   }
 
   public static boolean[] checkEigvec(double[][] expected, double[][] actual, double threshold) {
@@ -568,7 +567,7 @@ public class TestUtil extends Iced {
       // flipped[j] = Math.abs(expected[0][j] - actual[0][j]) > threshold;
       flipped[j] = Math.abs(expected[0][j] - actual[0][j]) > Math.abs(expected[0][j] + actual[0][j]);
       for(int i = 0; i < nfeat; i++) {
-        Assert.assertEquals(expected[i][j], flipped[j] ? -actual[i][j] : actual[i][j], threshold);
+        assertEquals(expected[i][j], flipped[j] ? -actual[i][j] : actual[i][j], threshold);
       }
     }
     return flipped;
@@ -582,7 +581,7 @@ public class TestUtil extends Iced {
     for(int j = 0; j < ncomp; j++) {
       flipped[j] = Math.abs(expected[0][j] - (double)actual.get(0,j)) > threshold;
       for(int i = 0; i < nfeat; i++) {
-        Assert.assertEquals(expected[i][j], flipped[j] ? -(double)actual.get(i,j) : (double)actual.get(i,j), threshold);
+        assertEquals(expected[i][j], flipped[j] ? -(double)actual.get(i,j) : (double)actual.get(i,j), threshold);
       }
     }
     return flipped;
@@ -596,7 +595,7 @@ public class TestUtil extends Iced {
     for(int j = 0; j < ncomp; j++) {
       flipped[j] = Math.abs((double)expected.get(0,j) - (double)actual.get(0,j)) > threshold;
       for(int i = 0; i < nfeat; i++) {
-        Assert.assertEquals((double) expected.get(i,j), flipped[j] ? -(double)actual.get(i,j) : (double)actual.get(i,j), threshold);
+        assertEquals((double) expected.get(i,j), flipped[j] ? -(double)actual.get(i,j) : (double)actual.get(i,j), threshold);
       }
     }
     return flipped;
@@ -611,13 +610,13 @@ public class TestUtil extends Iced {
     for(int j = 0; j < ncomp; j++) {
       Vec.Reader vexp = expected.vec(j).new Reader();
       Vec.Reader vact = actual.vec(j).new Reader();
-      Assert.assertEquals(vexp.length(), vact.length());
+      assertEquals(vexp.length(), vact.length());
       for (int i = 0; i < nfeat; i++) {
         if (vexp.isNA(i) || vact.isNA(i)) {
           continue;
         }
         // only perform comparison when data is not NAN
-        Assert.assertEquals(vexp.at8(i), flipped[j] ? -vact.at8(i) : vact.at8(i), threshold);
+        assertEquals(vexp.at8(i), flipped[j] ? -vact.at8(i) : vact.at8(i), threshold);
 
       }
     }

@@ -2,14 +2,12 @@ package hex.pca;
 
 import hex.DataInfo;
 import hex.SplitFrame;
-import hex.gram.Gram;
 import hex.pca.PCAModel.PCAParameters;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
-import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -17,8 +15,6 @@ import water.util.ArrayUtils;
 import water.util.FrameUtils;
 
 import java.util.concurrent.ExecutionException;
-
-import static water.util.ArrayUtils.mmul;
 
 public class PCATest extends TestUtil {
   public static final double TOLERANCE = 1e-6;
@@ -227,53 +223,6 @@ public class PCATest extends TestUtil {
     double[][] xtgram_glrm = ArrayUtils.formGram(x, true);
     Assert.assertArrayEquals(xgram, xgram_glrm);
     Assert.assertArrayEquals(xtgram, xtgram_glrm);
-  }
-
-  @Test public void testGramMul() {
-    Scope.enter();
-    Frame gramInputOoldONew = parse_test_file(Key.make("checkGram.hex"), "smalldata/pca_test/GramTestData2.csv.zip");
-    Scope.track(gramInputOoldONew);
-    int gramSize = (int) gramInputOoldONew.numRows();
-    double[][] dataGram = new double[gramSize][gramSize];
-    double[] input = new double[gramSize];
-    double[] corr_output = new double[gramSize];
-    double[] gramOutputOld = new double[gramSize];
-    double[] gramOutputNew = new double[gramSize];
-    double[] gramOutputOldS = new double[gramSize];
-    double[] gramOutputNewS = new double[gramSize];
-    Gram gram = new Gram(gramSize, 0, gramSize, 0, false);  // need to get the categorical columns in here
-
-    for (int colIndex = 0; colIndex < gramSize; colIndex++) {   // go through each column
-      input[colIndex] = gramInputOoldONew.vec(380).at(colIndex);
-      gramOutputOldS[colIndex] = gramInputOoldONew.vec(381).at(colIndex);
-      gramOutputNewS[colIndex] = gramInputOoldONew.vec(382).at(colIndex);
-      for (int rowIndex=0; rowIndex < gramSize; rowIndex++) {
-        dataGram[rowIndex][colIndex] = gramInputOoldONew.vec(colIndex).at(rowIndex);
-
-        if (colIndex <= rowIndex) {
-          gram._xx[rowIndex][colIndex] = dataGram[rowIndex][colIndex];
-        }
-      }
-    }
-
-    gram.mul(input, gramOutputOld);
-    gram.mul(input, gramOutputNew, true);
-    corr_output = mmul(dataGram, input);
-
-    Frame gramOutOld = new water.util.ArrayUtils().frame(gramOutputOld);
-    Frame gramOutNew = new water.util.ArrayUtils().frame(gramOutputNew);
-    Frame corrOut = new water.util.ArrayUtils().frame(corr_output);
-
-    Scope.track(gramOutOld);
-    Scope.track(gramOutNew);
-    Scope.track(corrOut);
-
-    isIdenticalUpToRelTolerance(gramOutNew, corrOut, 1e-6);
-    isIdenticalUpToRelTolerance(gramOutOld, corrOut, 1e-6);
-
-//    Assert.assertArrayEquals(xgram, xgram_glrm);
-//    Assert.assertArrayEquals(xtgram, xtgram_glrm);
-    Scope.exit();
   }
 
   /* Make sure POJO works if the model is only built from categorical variables (no numeric columns) */
