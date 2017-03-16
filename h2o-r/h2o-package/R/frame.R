@@ -1716,7 +1716,7 @@ h2o.tail <- function(x,n=6L,...) {
   if( n==0L ) head(x,n=0L)
   else {
     startidx <- max(1L, endidx - n + 1)
-    as.data.frame(.newExpr("rows",x,paste0("[",startidx-1,":",(endidx-startidx+1),"]")))
+    .fetch.data(.newExpr("rows",x,paste0("[",startidx-1,":",(endidx-startidx+1),"]")),n)
   }
 }
 
