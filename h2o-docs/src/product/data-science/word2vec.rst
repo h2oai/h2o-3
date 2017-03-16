@@ -4,11 +4,12 @@ Word2vec
 Introduction
 ~~~~~~~~~~~~
 
-In text-rich datasets, the Word2vec algorithm computes vector representations of words within the data and outputs those word vectors into a single file. The vector space can include hundreds of dimensions, with each unique word in the sample (`corpus <https://en.wikipedia.org/wiki/Corpus_linguistics>`__) being assigned a corresponding vector in the space. In addition, words that share similar contexts in the corpus are placed in close proximity to one another in the space.
+The Word2vec algorithm takes a text `corpus <https://en.wikipedia.org/wiki/Corpus_linguistics>`__ as an input and produces the word vectors as output. The algorithm first creates a vocabulary from the training text data and then learns vector representations of the words. The vector space can include hundreds of dimensions, with each unique word in the sample corpus being assigned a corresponding vector in the space. In addition, words that share similar contexts in the corpus are placed in close proximity to one another in the space. The result is an H2O Word2vec model that can be exported as a binary model or as a MOJO. This file can be used as features in many natural language processing and machine learning applications. 
 
-A Word2vec demo in R using a Craigslist job titles dataset available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.word2vec.craigslistjobtitles.R>`__.
+**Notes**: 
 
-**Note**: Word2vec is not currently supported under Python.
+- Word2vec is not currently supported under Python.
+- A Word2vec demo in R using a Craigslist job titles dataset available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.word2vec.craigslistjobtitles.R>`__.
 
 Defining a Word2vec Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -19,13 +20,17 @@ Defining a Word2vec Model
 
 - **min_word_freq**: Specify an integer for the minimum word frequency. Word2vec will discard words that appear less than this number of times.
 
-- **word_model**: Specify "SkipGram" to use the Skip-Gram model when producing a distributed representation of words. When enabled, the model uses each word to predict the surrounding window of context words. The skip-gram architecture weighs close context words more heavily than more distant context words. Enabling this option can increase model build time but performs better for infrequently used words. 
+- **word_model**: Specify "SkipGram" to use the Skip-Gram model when producing a distributed representation of words. When enabled, the model uses each word to predict the surrounding window of context words. The skip-gram architecture weighs close context words more heavily than more distant context words. Using Skip-Gram can increase model build time but performs better for infrequently used words. **NOTE**: This option is specified by default and cannot be disabled. It is currently the only approach supported in H2O. 
 
-- **norm_model**: Specify "HSM" to use Hierarchical Softmax. When enabled, Word2vec uses a `Huffman tree <https://en.wikipedia.org/wiki/Huffman_coding>`__ to reduce calculations when approximating the conditional log-likelihood that the model is attempting to maximize. This option is useful for infrequent words, but this option becomes less useful as training epochs increase.
+- **norm_model**: Specify "HSM" to use Hierarchical Softmax. When enabled, Word2vec uses a `Huffman tree <https://en.wikipedia.org/wiki/Huffman_coding>`__ to reduce calculations when approximating the conditional log-likelihood that the model is attempting to maximize. This option is useful for infrequent words, but this option becomes less useful as training epochs increase. **NOTE**: This option is specified by default and cannot be disabled. It is currently the only approach supported in H2O. 
 
 - **vec_size**: Specify the size of word vectors.
 
-- **window_size**: Specify the maximum skip length between words.
+- **window_size**: This specifies the size of the context window around a given word. For example, consider the following string:
+
+   "Lorem ipsum (dolor sit amet, quot hendrerit) pri cu,..."
+
+  For a target word, "amet" and ``window size=2``, the context is made of words: dolor, sit, quot, hendrerit.
 
 - **sent_sample_rate**: Set the threshold for the occurrence of words. Those words that appear with higher frequency in the training data will be randomly down-sampled. An ideal range for this option 0, 1e-5.
 
@@ -57,6 +62,8 @@ A ``transform`` function is available for use with Word2vec. This function trans
 - ``word2vec``: A Word2Vec model
 - ``words``: An H2O Frame made of a single column containing source words. Note that you can specify to include a subset of this frame.
 - ``aggregate_method``: Specifies how to aggregate sequences of words. If the method is ``NONE``, then no aggregation is performed, and each input word is mapped to a single word-vector. If the method is ``AVERAGE``, then the input is treated as sequences of words delimited by NA. Each word of a sequences is internally mapped to a vector, and vectors belonging to the same sentence are averaged and returned in the result.
+
+More information about this function can be found in the `H2O-3 GitHub repository <https://github.com/h2oai/h2o-3/blob/master/h2o-r/h2o-package/R/w2vutils.R#L21>`__.
 
 **Example**
 
@@ -91,18 +98,6 @@ A ``transform`` function is available for use with Word2vec. This function trans
       key <- res$vectors_frame$name
       h2o.getFrame(key)
     }
-
-
-FAQ
-~~~
-
-
-
-
-Word2vec Algorithm
-~~~~~~~~~~~~~~~~~~
-
-
 
 
 References
