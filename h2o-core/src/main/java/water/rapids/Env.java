@@ -191,6 +191,7 @@ public class Env extends Iced {
 
     // Advanced Math
     init(new AstCorrelation());
+    init(new AstDistance());
     init(new AstHist());
     init(new AstImpute());
     init(new AstKFold());
