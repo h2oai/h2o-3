@@ -24,6 +24,7 @@ import water.util.SB;
 //
 
 //Compress Tree begins
+//
 public class CompressedTree extends Keyed<CompressedTree> {
   final byte [] _bits;
   final int _nclass;     // Number of classes being predicted (for an integer prediction tree)
