@@ -51,7 +51,7 @@ def vec_math_ops():
     print("Testing trigonometric functions")
     assert ((h2o_data1.cos() - h2o.H2OFrame(np.cos(np_data1))).abs() < 1e-12).all()
     assert ((h2o_data1.sin() - h2o.H2OFrame(np.sin(np_data1))).abs() < 1e-12).all()
-    assert ((h2o_data1.tan() - h2o.H2OFrame(np.tan(np_data1))).abs() < 1e-12 * (h2o_data1.tan().abs() + 1)).all()
+    assert ((h2o_data1.tan() - h2o.H2OFrame(np.tan(np_data1))).abs() < 1e-9 * (h2o_data1.tan().abs() + 1)).all()
     print("Testing inverse trigonometric functions")
     assert ((h2o_data2.acos() - h2o.H2OFrame(np.arccos(np_data2))).abs() < 1e-12).all()
     assert ((h2o_data2.asin() - h2o.H2OFrame(np.arcsin(np_data2))).abs() < 1e-12).all()
@@ -60,16 +60,16 @@ def vec_math_ops():
     assert ((h2o_data1.cosh() - h2o.H2OFrame(np.cosh(np_data1))).abs() < 1e-12 * h2o_data1.cosh().abs()).all()
     assert ((h2o_data1.sinh() - h2o.H2OFrame(np.sinh(np_data1))).abs() < 1e-12 * h2o_data1.sinh().abs()).all()
     assert ((h2o_data1.tanh() - h2o.H2OFrame(np.tanh(np_data1))).abs() < 1e-12 * h2o_data1.tanh().abs()).all()
-    assert ((h2o_data3.acosh() - h2o.H2OFrame(np.arccosh(np_data3))).abs() < 1e-12 * h2o_data3.acosh().abs()).all()
+    assert ((h2o_data3.acosh() - h2o.H2OFrame(np.arccosh(np_data3))).abs() < 1e-9 * h2o_data3.acosh().abs()).all()
     assert ((h2o_data1.asinh() - h2o.H2OFrame(np.arcsinh(np_data1))).abs() < 1e-12 * h2o_data1.asinh().abs()).all()
-    assert ((h2o_data2.atanh() - h2o.H2OFrame(np.arctanh(np_data2))).abs() < 1e-12 * h2o_data2.atanh().abs()).all()
+    assert ((h2o_data2.atanh() - h2o.H2OFrame(np.arctanh(np_data2))).abs() < 1e-9 * h2o_data2.atanh().abs()).all()
 
     print("Testing gamma functions")
     x_val = h2o_data3[5, c]
     assert type(x_val) is float
     h2o_val = h2o_data3[c].gamma()[5, :].flatten()
     num_val = math.gamma(x_val)
-    assert abs(h2o_val - num_val) < max(abs(h2o_val), abs(num_val)) * 1e-6, \
+    assert abs(h2o_val - num_val) < max(abs(h2o_val), abs(num_val)) * 1e-5, \
         "h2o computed gamma({0}) = {1} while math computed gamma({0}) = {2}".format(x_val, h2o_val, num_val)
 
     h2o_val = h2o_data3[c].lgamma()[5, :].flatten()
@@ -79,7 +79,7 @@ def vec_math_ops():
 
     h2o_val = h2o_data3[c].digamma()[5, :].flatten()
     num_val = scipy.special.polygamma(0, x_val)
-    assert abs(h2o_val - num_val) < max(abs(h2o_val), abs(num_val)) * 1e-6, \
+    assert abs(h2o_val - num_val) < max(abs(h2o_val), abs(num_val)) * 1e-5, \
         "h2o computed digamma({0}) = {1} while scipy computed digamma({0}) = {2}".format(x_val, h2o_val, num_val)
 
     h2o_val = h2o_data3[c].trigamma()[5, :].flatten()
