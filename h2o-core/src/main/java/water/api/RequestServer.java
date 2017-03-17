@@ -472,7 +472,7 @@ public class RequestServer extends HttpServlet {
       // some special cases for which we return 400 because it's likely a problem with the client request:
       if (e instanceof IllegalArgumentException || e instanceof FileNotFoundException || e instanceof MalformedURLException)
         error._http_status = HttpResponseStatus.BAD_REQUEST.getCode();
-      Log.err("Caught exception: " + error.toString());
+      Log.err("Caught exception: " + error.toString() +";parms=" + parms);
       return serveError(error);
     }
   }
@@ -741,11 +741,11 @@ public class RequestServer extends HttpServlet {
           g.doIt();
           bytes = g.bytes;
         } else {
-          bytes = "Node not healthy".getBytes();
+          bytes = StringUtils.bytesOf("Node not healthy");
         }
       }
       catch (Exception e) {
-        bytes = e.toString().getBytes();
+        bytes = StringUtils.toBytes(e);
       }
       perNodeZipByteArray[i] = bytes;
     }
@@ -759,7 +759,7 @@ public class RequestServer extends HttpServlet {
         bytes = g.bytes;
       }
       catch (Exception e) {
-        bytes = e.toString().getBytes();
+        bytes = StringUtils.toBytes(e);
       }
       clientNodeByteArray = bytes;
     }
@@ -770,7 +770,7 @@ public class RequestServer extends HttpServlet {
       finalZipByteArray = zipLogs(perNodeZipByteArray, clientNodeByteArray, outputFileStem);
     }
     catch (Exception e) {
-      finalZipByteArray = e.toString().getBytes();
+      finalZipByteArray = StringUtils.toBytes(e);
     }
 
     NanoResponse res = new NanoResponse(HTTP_OK, MIME_DEFAULT_BINARY, new ByteArrayInputStream(finalZipByteArray));

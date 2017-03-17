@@ -35,9 +35,9 @@ final class RollupStats extends Iced {
   volatile transient ForkJoinTask _tsk;
 
   // Computed in 1st pass
-  volatile long _naCnt; //count(!isNA(X))
+  volatile long _naCnt; //count(isNA(X))
   double _mean, _sigma; //mean(X) and sqrt(sum((X-mean(X))^2)) for non-NA values
-  long    _rows,        //count(X) for non-NA values
+  long    _rows,        //count(X) for non-NA values excluding negative/positive infinities (for numeric Vecs)
           _nzCnt,       //count(X!=0) for non-NA values
           _size,        //byte size
           _pinfs,       //count(+inf)
@@ -204,6 +204,8 @@ final class RollupStats extends Iced {
           _sigma += zeroM2 + delta*delta * _rows * zeros / (_rows + zeros); //this is the variance*(N-1), will do sqrt(_sigma/(N-1)) later in postGlobal
           _rows += zeros;
         }
+      } else if(c.isSparseNA()){
+        _naCnt = c._len - c.sparseLenNA();
       }
     }
     _checksum = checksum;
@@ -510,7 +512,8 @@ final class RollupStats extends Iced {
         nbins = Math.min(lim, nbins); // Cap nbins at sane levels
       }
       Histo histo = new Histo(null, rs, nbins).doAll(vec);
-      assert ArrayUtils.sum(histo._bins) == rows;
+      long sum = ArrayUtils.sum(histo._bins);
+      assert sum == rows:"expected " + rows + " rows, got " + sum;
       rs._bins = histo._bins;
       // Compute percentiles from histogram
       rs._pctiles = new double[Vec.PERCENTILES.length];

@@ -1,6 +1,5 @@
 package water.fvec;
 
-import water.*;
 import water.util.UnsafeUtils;
 
 /**
@@ -23,13 +22,7 @@ public class C8Chunk extends Chunk {
   @Override boolean set_impl(int i, double d) { return false; }
   @Override boolean set_impl(int i, float f ) { return false; }
   @Override boolean setNA_impl(int idx) { UnsafeUtils.set8(_mem,(idx<<3),_NA); return true; }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.set_sparseLen(nc.set_len(0));
-    for( int i=0; i< _len; i++ )
-      if(isNA(i))nc.addNA();
-      else nc.addNum(at8(i),0);
-    return nc;
-  }
+
   @Override public final void initFromBytes () {
     _start = -1;  _cidx = -1;
     set_len(_mem.length>>3);
@@ -38,35 +31,37 @@ public class C8Chunk extends Chunk {
   @Override
   public boolean hasFloat() {return false;}
 
+  private final void processRow(int r, ChunkVisitor v){
+    long l = UnsafeUtils.get8(_mem,(r<<3));
+    if(l == _NA) v.addNAs(1);
+    else v.addValue(l);
+  }
 
-
-  /**
-   * Dense bulk interface, fetch values from the given range
-   * @param vals
-   * @param from
-   * @param to
-   */
   @Override
-  public double[] getDoubles(double [] vals, int from, int to, double NA){
-    for(int i = from; i < to; ++i) {
-      long res = UnsafeUtils.get8(_mem, i << 3);;
-      vals[i - from] = res != _NA?res:NA;
+  public <T extends ChunkVisitor> T processRows(T v, int from, int to) {
+    for(int i = from; i < to; i++) processRow(i,v);
+    return v;
+  }
+
+  @Override
+  public <T extends ChunkVisitor> T processRows(T v, int[] ids) {
+    for(int i:ids) processRow(i,v);
+    return v;
+  }
+
+  @Override public double [] getDoubles(double [] vals, int from, int to, double NA){
+    for(int i = from; i < to; i++) {
+      long x = UnsafeUtils.get8(_mem, 8*i);
+      vals[i-from] = (x == _NA)?NA:x;
     }
     return vals;
   }
-  /**
-   * Dense bulk interface, fetch values from the given ids
-   * @param vals
-   * @param ids
-   */
-  @Override
-  public double[] getDoubles(double [] vals, int [] ids){
-    int j = 0;
+  @Override public double [] getDoubles(double [] vals, int [] ids){
+    int k = 0;
     for(int i:ids) {
-      long res = UnsafeUtils.get8(_mem,i<<3);
-      vals[j++] = res != _NA?res:Double.NaN;
+      long x = UnsafeUtils.get8(_mem, 8*i);
+      vals[k++] = (x == _NA)?Double.NaN:x;
     }
     return vals;
   }
-
 }

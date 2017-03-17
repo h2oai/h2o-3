@@ -389,7 +389,7 @@ Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-
 
     javac -version
 
-##### Step 3. Install R and the required packages:
+#### Step 3. Install R and the required packages:
 
 Installation instructions can be found here [R installation](http://cran.r-project.org).  Click “Download R for Linux”.  Click “ubuntu”.  Follow the given instructions.
 

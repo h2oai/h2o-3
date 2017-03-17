@@ -61,6 +61,7 @@ public final class Categorical extends Iced {
   }
 
   public static final int MAX_EXAMPLES = 10;
+  // TODO(Vlad): either make sure it works, or just get rid of it
   public void convertToUTF8(int col){
     int hexConvCnt = 0;
     BufferedString[] bStrs = _map.keySet().toArray(new BufferedString[_map.size()]);

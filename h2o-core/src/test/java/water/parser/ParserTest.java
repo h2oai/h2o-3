@@ -11,6 +11,7 @@ import water.api.schemas3.ParseSetupV3;
 import water.fvec.*;
 import water.util.FileUtils;
 import water.util.Log;
+import water.util.StringUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,7 +35,7 @@ public class ParserTest extends TestUtil {
     DKV.put(k,bv,fs);
     for( int i = 0; i < data.length; ++i ) {
       Key ck = bv.chunkKey(i);
-      DKV.put(ck, new Value(ck,new C1NChunk(data[i].getBytes())),fs);
+      DKV.put(ck, new Value(ck,new C1NChunk(StringUtils.bytesOf(data[i]))),fs);
     }
     fs.blockForPending();
     return k;

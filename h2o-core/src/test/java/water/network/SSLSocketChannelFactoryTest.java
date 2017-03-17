@@ -2,6 +2,7 @@ package water.network;
 
 import org.junit.Test;
 import water.util.FileUtils;
+import water.util.StringUtils;
 
 import javax.net.ssl.SSLException;
 import java.io.IOException;
@@ -168,7 +169,7 @@ public class SSLSocketChannelFactoryTest {
 
                 // FIRST TEST: SSL -> SSL SMALL COMMUNICATION
                 ByteBuffer write = ByteBuffer.allocate(1024);
-                write.put("hello, world".getBytes("UTF-8"));
+                write.put(StringUtils.bytesOf("hello, world"));
                 write.flip();
                 wrappedChannel.write(write);
 
@@ -180,8 +181,7 @@ public class SSLSocketChannelFactoryTest {
                     toWriteBig.clear();
                     while (toWriteBig.hasRemaining()) {
                         toWriteBig.put(
-                                ("hello, world" + ((i * 64 * 1024 + toWriteBig.position()) % 9) + "!!!")
-                                        .getBytes("UTF-8")
+                            StringUtils.bytesOf("hello, world" + ((i * 64 * 1024 + toWriteBig.position()) % 9) + "!!!")
                         );
                     }
                     toWriteBig.flip();
@@ -192,7 +192,7 @@ public class SSLSocketChannelFactoryTest {
 
                 // THIRD TEST: NON-SSL -> SSL COMMUNICATION
                 write.clear();
-                write.put("hello, world".getBytes("UTF-8"));
+                write.put(StringUtils.bytesOf("hello, world"));
                 write.flip();
                 sock.write(write);
 
@@ -200,8 +200,7 @@ public class SSLSocketChannelFactoryTest {
 
                 // FOURTH TEST: SSL -> NON-SSL COMMUNICATION
                 write.clear();
-                write.put("hello, world".getBytes("UTF-8"));
-                write.flip();
+                write.put(StringUtils.bytesOf("hello, world"));
                 wrappedChannel.write(write);
 
             } catch (IOException | InterruptedException | BrokenBarrierException e) {

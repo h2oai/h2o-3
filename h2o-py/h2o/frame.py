@@ -1778,6 +1778,20 @@ class H2OFrame(object):
         assert_is_type(by, str, int, [str, int])
         return GroupBy(self, by)
 
+    def sort(self, by):
+        """
+        Return a new Frame that is sorted by column(s) in ascending order. A fully distributed and parallel sort.
+        :param by: The column to sort by (either a single column name, or a list of column names, or
+            a list of column indices)
+        :return: a new sorted Frame
+        """
+        assert_is_type(by, str, int, [str, int])
+        if type(by) != list: by = [by]
+        for c in by:
+            if self.type(c) not in ["enum","time","int"]:
+                raise H2OValueError("Sort by column: " + str(c) + " not of enum, time, or int type")
+        return H2OFrame._expr(expr=ExprNode("sort",self,by))
+
 
     def impute(self, column=-1, method="mean", combine_method="interpolate", by=None, group_by_frame=None, values=None):
         """

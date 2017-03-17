@@ -24,7 +24,7 @@ class H2OAggregatorEstimator(H2OEstimator):
         super(H2OAggregatorEstimator, self).__init__()
         self._parms = {}
         names_list = {"model_id", "training_frame", "response_column", "ignored_columns", "ignore_const_cols",
-                      "radius_scale", "transform", "categorical_encoding"}
+                      "target_num_exemplars", "rel_tol_num_exemplars", "transform", "categorical_encoding"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -97,18 +97,33 @@ class H2OAggregatorEstimator(H2OEstimator):
 
 
     @property
-    def radius_scale(self):
+    def target_num_exemplars(self):
         """
-        Radius scaling
+        Targeted number of exemplars
 
-        Type: ``float``  (default: ``1``).
+        Type: ``int``  (default: ``5000``).
         """
-        return self._parms.get("radius_scale")
+        return self._parms.get("target_num_exemplars")
 
-    @radius_scale.setter
-    def radius_scale(self, radius_scale):
-        assert_is_type(radius_scale, None, numeric)
-        self._parms["radius_scale"] = radius_scale
+    @target_num_exemplars.setter
+    def target_num_exemplars(self, target_num_exemplars):
+        assert_is_type(target_num_exemplars, None, int)
+        self._parms["target_num_exemplars"] = target_num_exemplars
+
+
+    @property
+    def rel_tol_num_exemplars(self):
+        """
+        Relative tolerance for number of exemplars (e.g, 0.5 is +/- 50%)
+
+        Type: ``float``  (default: ``0.5``).
+        """
+        return self._parms.get("rel_tol_num_exemplars")
+
+    @rel_tol_num_exemplars.setter
+    def rel_tol_num_exemplars(self, rel_tol_num_exemplars):
+        assert_is_type(rel_tol_num_exemplars, None, numeric)
+        self._parms["rel_tol_num_exemplars"] = rel_tol_num_exemplars
 
 
     @property

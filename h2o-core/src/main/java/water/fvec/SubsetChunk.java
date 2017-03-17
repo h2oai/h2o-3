@@ -13,7 +13,23 @@ public class SubsetChunk extends Chunk {
     _start = rows._start; _vec = subset_vec; _cidx = rows._cidx;
     _mem = new byte[0];
   }
-  
+
+  @Override
+  public ChunkVisitor processRows(ChunkVisitor nc, int from, int to) {
+    int [] rows = _rows.getIntegers(new int[to-from],from,to,-1);
+    return _data.processRows(nc, rows);
+  }
+
+  @Override
+  public ChunkVisitor processRows(ChunkVisitor nc, int... rows) {
+    int [] expandedRows = _rows.getIntegers(new int[rows[rows.length-1]-rows[0]],rows[0],rows[rows.length-1],-1);
+    int off = rows[0];
+    int [] selectedRows = new int[rows.length];
+    for(int i = 0; i < rows.length; ++i)
+      selectedRows[i] = expandedRows[rows[i]-off];
+    return _data.processRows(nc, selectedRows);
+  }
+
   @Override protected double atd_impl(int idx) { return _data.atd_impl((int)_rows.at8_impl(idx)); }
   @Override protected long   at8_impl(int idx) { return _data.at8_impl((int)_rows.at8_impl(idx)); }
 
@@ -23,7 +39,7 @@ public class SubsetChunk extends Chunk {
   @Override boolean set_impl(int idx, double d) { return false; }
   @Override boolean set_impl(int idx, float f)  { return false; }
   @Override boolean setNA_impl(int idx)         { return false; }
-  @Override public NewChunk inflate_impl(NewChunk  nc ) { throw water.H2O.fail(); }
+
   public static AutoBuffer write_impl(SubsetChunk sc, AutoBuffer bb) { throw water.H2O.fail(); }
   @Override protected final void initFromBytes () { throw water.H2O.fail(); }
 }

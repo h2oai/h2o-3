@@ -6,6 +6,7 @@ import water.H2O;
 import water.api.SchemaServer;
 import water.api.StreamWriter;
 import water.api.schemas3.ModelSchemaV3;
+import water.util.StringUtils;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -133,7 +134,7 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
   /** Finish writing a text file. */
   protected final void finishWritingTextFile() throws IOException {
     assert tmpfile != null : "No text file is currently being written";
-    writeblob(tmpname, tmpfile.toString().getBytes(Charset.forName("UTF-8")));
+    writeblob(tmpname, StringUtils.toBytes(tmpfile));
     tmpfile = null;
   }
 

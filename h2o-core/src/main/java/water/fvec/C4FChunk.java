@@ -1,6 +1,5 @@
 package water.fvec;
 
-import water.*;
 import water.util.UnsafeUtils;
 
 /**
@@ -25,17 +24,36 @@ public class C4FChunk extends Chunk {
     return true;
   }
   @Override boolean setNA_impl(int idx) { UnsafeUtils.set4f(_mem,(idx<<2),Float.NaN); return true; }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.set_sparseLen(0);
-    nc.set_len(0);
-    final int len = _len;
-    for( int i=0; i<len; i++ ) {
-      float res = UnsafeUtils.get4f(_mem,(i<<2));
-      if( Float.isNaN(res) ) nc.addNum(Double.NaN);
-      else nc.addNum(res);
-    }
+
+  @Override public NewChunk extractRows(NewChunk nc, int from, int to){
+    for(int i = from; i < to; i++)
+      nc.addNum(UnsafeUtils.get4f(_mem,4*i));
     return nc;
   }
+  @Override public NewChunk extractRows(NewChunk nc, int... rows){
+    for(int i:rows)
+      nc.addNum(UnsafeUtils.get4f(_mem,4*i));
+    return nc;
+  }
+
+  private final void processRow(int r, ChunkVisitor v){
+    float f = UnsafeUtils.get4f(_mem,(r<<2));
+    if(Float.isNaN(f)) v.addNAs(1);
+    else v.addValue((double)f);
+  }
+
+  @Override
+  public <T extends ChunkVisitor> T processRows(T v, int from, int to) {
+    for(int i = from; i < to; i++) processRow(i,v);
+    return v;
+  }
+
+  @Override
+  public <T extends ChunkVisitor> T processRows(T v, int[] ids) {
+    for(int i:ids) processRow(i,v);
+    return v;
+  }
+
   // 3.3333333e33
 //  public int pformat_len0() { return 14; }
 //  public String pformat0() { return "% 13.7e"; }

@@ -175,7 +175,7 @@ public class TypeMap {
   // including during deserialization when a Node will be presented with a
   // fresh new ID with no idea what it stands for.  Does NOT resize the GOLD
   // array, since the id->className mapping has already happened.
-  static Icer getIcer( Freezable ice ) { return getIcer(onIce(ice),ice.getClass()); }
+  public static Icer getIcer( Freezable ice ) { return getIcer(onIce(ice),ice.getClass()); }
   static Icer getIcer( int id, Iced ice )      { return getIcer(id,ice.getClass()); }
   static Icer getIcer( int id, Freezable ice ) { return getIcer(id,ice.getClass()); }
   static Icer getIcer( int id, Class ice_clz ) {

@@ -6,6 +6,7 @@ import org.junit.Test;
 import water.*;
 import water.util.ArrayUtils;
 import water.util.FileUtils;
+import water.util.StringUtils;
 
 import java.io.File;
 
@@ -21,7 +22,7 @@ public class FVecTest extends TestUtil {
     byte [][] chunks = new byte[data.length][];
     long [] espc = new long[data.length+1];
     for(int i = 0; i < chunks.length; ++i){
-      chunks[i] = data[i].getBytes();
+      chunks[i] = StringUtils.bytesOf(data[i]);
       espc[i+1] = espc[i] + data[i].length();
     }
     Futures fs = new Futures();

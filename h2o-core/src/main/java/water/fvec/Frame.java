@@ -1097,7 +1097,7 @@ public class Frame extends Lockable<Frame> {
         r = ix[0].at8(i);   // next row to select
         if (r < 0) continue;
         if (r >= nrow) {
-          for (int c = 0; c < vecs.length; c++) ncs[c].addNum(Double.NaN);
+          for (int c = 0; c < vecs.length; c++) ncs[c].addNA();
         } else {
           if (r < last_c0 || r >= last_c1) {
             last_ci = anyv.elem2ChunkIdx(r);
@@ -1106,10 +1106,9 @@ public class Frame extends Lockable<Frame> {
             for (int c = 0; c < vecs.length; c++)
               last_cs[c] = vecs[c].chunkForChunkIdx(last_ci);
           }
+          int ir = (int)(r - last_cs[0].start());
           for (int c = 0; c < vecs.length; c++)
-            if( vecs[c].isUUID() ) ncs[c].addUUID(last_cs[c], r);
-            else if( vecs[c].isString() ) ncs[c].addStr(last_cs[c],r);
-            else                   ncs[c].addNum (last_cs[c].at_abs(r));
+            last_cs[c].extractRows(ncs[c],ir);
         }
       }
     }
@@ -1237,22 +1236,8 @@ public class Frame extends Lockable<Frame> {
         // Process this next set of rows
         // For all cols in the new set;
         BufferedString tmpStr = new BufferedString();
-        for (int i = 0; i < _cols.length; i++) {
-          Chunk oc = chks[_cols[i]];
-          NewChunk nc = nchks[i];
-          if (_isInt[i] == 1) { // Slice on integer columns
-            for (int j = rlo; j < rhi; j++)
-              if (oc._vec.isUUID()) nc.addUUID(oc, j);
-              else if (oc.isNA(j)) nc.addNA();
-              else nc.addNum(oc.at8(j), 0);
-          } else if (oc._vec.isString()) {
-            for (int j = rlo; j < rhi; j++)
-              nc.addStr(oc.atStr(tmpStr, j));
-          } else {// Slice on double columns
-            for (int j = rlo; j < rhi; j++)
-              nc.addNum(oc.atd(j));
-          }
-        }
+        for (int i = 0; i < _cols.length; i++)
+          chks[_cols[i]].extractRows(nchks[i], rlo,rhi);
         rlo = rhi;
         if (_rows == null) break;
       }
@@ -1261,107 +1246,47 @@ public class Frame extends Lockable<Frame> {
 
   /**
    * Create a copy of the input Frame and return that copied Frame. All Vecs in this are copied in parallel.
-   * Caller mut do the DKV.put
+   * Caller must do the DKV.put
    * @param keyName Key for resulting frame. If null, no key will be given.
    * @return The fresh copy of fr.
    */
   public Frame deepCopy(String keyName) {
-    return new MRTask() {
-      @Override public void map(Chunk[] cs, NewChunk[] ncs) {
-        for(int col=0;col<cs.length;++col)
-          for(int row=0;row<cs[0]._len;++row) {
-            if( cs[col].isNA(row) ) ncs[col].addNA();
-            else if( cs[col] instanceof CStrChunk ) ncs[col].addStr(cs[col], row);
-            else if( cs[col] instanceof C16Chunk ) ncs[col].addUUID(cs[col], row);
-            else if( !cs[col].hasFloat() ) ncs[col].addNum(cs[col].at8(row), 0);
-            else ncs[col].addNum(cs[col].atd(row));
-          }
+    final Vec [] vecs = vecs().clone();
+    Key [] ks = anyVec().group().addVecs(vecs.length);
+    Futures fs = new Futures();
+    for(int i = 0; i < vecs.length; ++i)
+      DKV.put(vecs[i] = new Vec(ks[i], anyVec()._rowLayout, vecs[i].domain(),vecs()[i]._type),fs);
+    new MRTask() {
+      @Override public void map(Chunk[] cs) {
+        int cidx = cs[0].cidx();
+        for(int i = 0; i < cs.length; ++i)
+          DKV.put(vecs[i].chunkKey(cidx),cs[i].deepCopy(),_fs);
       }
-    }.doAll(this.types(),this).outputFrame(keyName==null?null:Key.make(keyName),this.names(),this.domains());
+    }.doAll(this);//.outputFrame(keyName==null?null:Key.make(keyName),this.names(),this.domains());
+    fs.blockForPending();
+    return new Frame((keyName==null?null:Key.<Frame>make(keyName)),this.names(),vecs);
   }
 
-  // _vecs put into kv store already
-  private class DoCopyFrame extends MRTask<DoCopyFrame> {
-    final Vec[] _vecs;
-    DoCopyFrame(Vec[] vecs) {
-      _vecs = new Vec[vecs.length];
-      int rowLayout = _vecs[0]._rowLayout;
-      for(int i=0;i<vecs.length;++i)
-        _vecs[i] = new Vec(vecs[i].group().addVec(),rowLayout, vecs[i].domain(), vecs[i]._type);
-    }
-    @Override public void map(Chunk[] cs) {
-      int i=0;
-      for(Chunk c: cs) {
-        Chunk c2 = c.clone();
-        c2._vec=null;
-        c2._start=-1;
-        c2._cidx=-1;
-        c2._mem = c2._mem.clone();
-        DKV.put(_vecs[i++].chunkKey(c.cidx()), c2, _fs, true);
-      }
-    }
-    @Override public void postGlobal() { for( Vec _vec : _vecs ) DKV.put(_vec); }
-  }
+
 
   /**
    *  Last column is a bit vec indicating whether or not to take the row.
    */
   public static class DeepSelect extends MRTask<DeepSelect> {
-
-    @Override public void map( Chunk chks[], NewChunk nchks[] ) {
-      Chunk pred = chks[chks.length - 1];
-      int[] ids = new int[pred._len];
-      double[] vals = new double[ids.length];
-      int selected = pred.nonzeros(ids);
-      int[] selectedIds = new int[selected];
-      // todo keeping old behavior of ignoring missing, while R does insert missing into result
-      // filter out missing
-      int non_nas = 0;
-      for(int i = 0; i < selected; ++i)
-        if(!pred.isNA(ids[i]))
-          selectedIds[non_nas++] = ids[i];
-      selected = non_nas;
-      for (int i = 0; i < chks.length - 1; ++i) {
-        Chunk c = chks[i]; // do not need to inflate cause sparse does not compress doubles
-        NewChunk nc = nchks[i];
-        if (c.isSparseZero() || c.isSparseNA()) {
-          nc.alloc_indices(selectedIds.length);
-          nc.alloc_doubles(selectedIds.length);
-          nc._sparseNA = c.isSparseNA();
-          int n = c.asSparseDoubles(vals, ids);
-          int k = 0;
-          int l = -1;
-          for (int j = 0; j < n; ++j) {
-            while (k < selected && selectedIds[k] < ids[j]) ++k;
-            if (k == selected) break;
-            if (selectedIds[k] == ids[j]) {
-              int add = k - l - 1;
-              if(add > 0) {
-                if (c.isSparseZero()) nc.addZeros(add);
-                else nc.addNAs(add);
-              }
-              nc.addNum(vals[j]);
-              l = k;
-              k++;
-            }
-          }
-          int add = selected - l - 1;
-          if(add > 0) {
-            if (c.isSparseZero()) nc.addZeros(add);
-            else nc.addNAs(add);
-          }
-          assert nc.len() == selected:"len = " + nc.len() + ", selected = " + selected;
-        } else {
-          NewChunk src = new NewChunk(c);
-          src = c.inflate_impl(src);
-//          if(src.sparseNA() || src.sparseZero())
-//            src.cancel_sparse();
-          for (int j = 0; j < selected; ++j)
-            src.add2Chunk(nc, selectedIds[j]);
-        }
-      }
+    @Override public void map( Chunk[] chks, NewChunk [] nchks ) {
+      Chunk pred =  chks[chks.length - 1];
+      int[] ids = pred.getIntegers(new int[pred._len],0,pred._len,0);
+      int zeros = 0;
+      for(int i = 0; i < ids.length; ++i)
+        if(ids[i] == 1){
+          ids[i-zeros] = i;
+        } else zeros++;
+      ids = Arrays.copyOf(ids,ids.length-zeros);
+      for (int c = 0; c < chks.length-1; ++c)
+        chks[c].extractRows(nchks[c], ids);
     }
   }
+
   private String[][] domains(int [] cols){
     Vec[] vecs = vecs();
     String[][] res = new String[cols.length][];
@@ -1474,7 +1399,7 @@ public class Frame extends Lockable<Frame> {
           sb.append(',').append('"').append(names[i]).append('"');
         sb.append('\n');
       }
-      _line = sb.toString().getBytes();
+      _line = StringUtils.bytesOf(sb);
       _chkRow = -1; // first process the header line
       _curChks = chks;
     }
@@ -1513,7 +1438,7 @@ public class Frame extends Lockable<Frame> {
         }
       }
       sb.append('\n');
-      return sb.toString().getBytes();
+      return StringUtils.bytesOf(sb);
     }
 
     @Override public int available() throws IOException {

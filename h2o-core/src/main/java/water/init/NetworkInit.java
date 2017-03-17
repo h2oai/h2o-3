@@ -6,6 +6,7 @@ import water.JettyHTTPD;
 import water.util.Log;
 import water.util.NetworkUtils;
 import water.util.OSUtils;
+import water.util.StringUtils;
 
 import java.io.*;
 import java.net.*;
@@ -629,7 +630,7 @@ public class NetworkInit {
 
   static HashSet<H2ONode> parseFlatFileFromString( String s ) {
     HashSet<H2ONode> h2os = new HashSet<>();
-    InputStream is = new ByteArrayInputStream(s.getBytes());
+    InputStream is = new ByteArrayInputStream(StringUtils.bytesOf(s));
     List<FlatFileEntry> list = parseFlatFile(is);
     for(FlatFileEntry entry : list)
       h2os.add(H2ONode.intern(entry.inet, entry.port+1));// use the UDP port here
