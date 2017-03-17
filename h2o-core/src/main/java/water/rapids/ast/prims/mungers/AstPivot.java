@@ -46,11 +46,14 @@ public class AstPivot extends AstPrimitive {
     Frame initialPass = new pivotTask(fr,index,column,value).doAll(nClass+1, Vec.T_NUM, fr).outputFrame(null, header, null);
     initialPass = initialPass.sort(new int[]{0});
     // Collapse identical index rows even when index crosses over chunk boundaries
-    Frame secondPass = new pivotCleanup().doAll(nClass+1,Vec.T_NUM,initialPass).outputFrame(Key.<Frame>make(),header,null);
-    Vec origTypeVec = secondPass.vec(0).makeCopy(null,fr.vec(indexIdx).get_type());
-    secondPass.replace(0,origTypeVec);
+    Frame secondPass = new pivotCleanup().doAll(nClass+1,Vec.T_NUM,initialPass).outputFrame(null,header,null);
+    Frame result = new Frame(secondPass.vec(0).makeCopy(null,fr.vec(indexIdx).get_type()));
+    result._key = Key.<Frame>make();
+    result.setNames(new String[]{index});
+    secondPass.remove(0);
+    result.add(secondPass);
     initialPass.delete();
-    return new ValFrame(secondPass);
+    return new ValFrame(result);
   }
 
   protected class pivotCleanup extends MRTask<AstPivot.pivotCleanup>{
