@@ -18,8 +18,9 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
       {"C0L","Constant long"},
       {"C0D","Constant double"},
       {"CBS","Binary"},
-      {"CXI","Sparse Integers"},                   // Sparse ints
-      {"CXF","Sparse Reals"},                   // Sparse ints
+      {"CXI","Sparse Integers"},
+      {"CXS","Sparse Fractions"},
+      {"CXF","Sparse Reals"},
       {"C1","1-Byte Integers"},
       {"C1N","1-Byte Integers (w/o NAs)"},
       {"C1S","1-Byte Fractions"},
