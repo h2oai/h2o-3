@@ -34,11 +34,17 @@ public class EckoClient {
 
   private static void initializeEcko() {
     int httpStatus = -1;
+    final String definitions = "at / def Feedback Timestamp Level Stage Message" +
+            // " def LeaderboardModel ID Metric" +
+            " add Leaderboard in table" +
+            " add \"User Feedback\" as map of Feedback" +
+            feedbackTableStyle +
+            feedbackRowStyle;
     try {
       httpStatus = Request.Put(eckoHost)
               .connectTimeout(eckoTimeout)
               .socketTimeout(eckoTimeout)
-              .bodyString("at / def Feedback Timestamp Level Stage Message add \"User Feedback\" as map of Feedback" + feedbackTableStyle + feedbackRowStyle, ContentType.TEXT_PLAIN)
+              .bodyString(definitions, ContentType.TEXT_PLAIN)
               .execute()
               .returnResponse()
               .getStatusLine()
@@ -61,7 +67,7 @@ public class EckoClient {
 
   public static final void addEvent(UserFeedbackEvent event) {
     if (eckoEnabled && !eckoInitialized) {
-      initializeEcko();
+      initializeEcko();  // NOTE: can set eckEnabled to false
     }
 
     if (eckoEnabled) {
@@ -76,6 +82,40 @@ public class EckoClient {
                         event.getLevel() + " " +
                         event.getStage() + " " +
                         "\"" + event.getMessage() + "\"",
+                        ContentType.TEXT_PLAIN)
+                .execute()
+                .returnResponse()
+                .getStatusLine()
+                .getStatusCode();
+      } catch (Exception e) {
+        Log.info(eckoExceptionMessage + e);
+      }
+
+      if (httpStatus == 200) {
+        // silent
+      } else {
+        eckoEnabled = false;
+        Log.info(eckoFailedMessage);
+      }
+    } // eckoEnabled
+  }
+
+
+  public static final void updateLeaderboard(Leaderboard leaderboard) {
+    if (eckoEnabled && !eckoInitialized) {
+      initializeEcko();  // NOTE: can set eckEnabled to false
+    }
+
+    if (eckoEnabled) {
+      String leaderboardTsv = leaderboard.toString(leaderboard.getProject(), leaderboard.models(), "\\t", "\\n", false);
+
+      int httpStatus = -1;
+      try {
+        httpStatus = Request.Put(eckoHost)
+                .connectTimeout(eckoTimeout)
+                .socketTimeout(eckoTimeout)
+                .bodyString("at / put Leaderboard \"" +
+                                leaderboardTsv + "\"",
                         ContentType.TEXT_PLAIN)
                 .execute()
                 .returnResponse()
