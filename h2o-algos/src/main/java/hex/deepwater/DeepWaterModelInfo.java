@@ -165,11 +165,14 @@ final public class DeepWaterModelInfo extends Iced {
             break;
           case auto:
           case alexnet:
-          case inception_bn:
           case googlenet:
           case resnet:
             _width = 224;
             _height = 224;
+            break;
+          case inception_bn:
+            _width = 299;
+            _height = 299;
             break;
           case vgg:
             _width = 320;

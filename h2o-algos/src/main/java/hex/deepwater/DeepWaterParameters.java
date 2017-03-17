@@ -207,7 +207,7 @@ public class DeepWaterParameters extends Model.Parameters {
    * The momentum used for training will remain the same for training beyond reaching that point.
    * This parameter is only active if adaptive learning rate is disabled.
    */
-  public double _momentum_stable = 0.99;
+  public double _momentum_stable = 0.9;
 
 
   /**
