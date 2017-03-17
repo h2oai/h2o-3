@@ -1,6 +1,5 @@
 package water.fvec;
 
-import water.AutoBuffer;
 import water.MemoryManager;
 import water.util.UnsafeUtils;
 
@@ -79,11 +78,15 @@ public class CUDChunk extends Chunk {
   @Override boolean setNA_impl(int idx) {
     return set_impl(idx, Double.NaN);
   }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.alloc_doubles(_len);
-    for( int i=0; i< _len; i++ )
-      nc.doubles()[i] = atd_impl(i);
-    nc.set_sparseLen(nc.set_len(_len));
+  @Override public ChunkVisitor processRows(ChunkVisitor nc, int from, int to){
+    for(int i = from; i < to; i++)
+      nc.addValue(atd(i));
+    return nc;
+  }
+
+  @Override public ChunkVisitor processRows(ChunkVisitor nc, int... rows){
+    for(int i:rows)
+      nc.addValue(atd(i));
     return nc;
   }
   @Override protected final void initFromBytes () {

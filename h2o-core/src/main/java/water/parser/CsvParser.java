@@ -5,6 +5,8 @@ import org.apache.http.ParseException;
 import water.fvec.Vec;
 import water.fvec.FileVec;
 import water.Key;
+import water.util.StringUtils;
+
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -491,7 +493,7 @@ MAIN_LOOP:
   /** Dermines the number of separators in given line.  Correctly handles quoted tokens. */
   private static int[] determineSeparatorCounts(String from, byte singleQuote) {
     int[] result = new int[separators.length];
-    byte[] bits = from.getBytes();
+    byte[] bits = StringUtils.bytesOf(from);
     boolean inQuote = false;
     for( byte c : bits ) {
       if( (c == singleQuote) || (c == CsvParser.CHAR_DOUBLE_QUOTE) )
@@ -513,7 +515,7 @@ MAIN_LOOP:
   }
   public static String[] determineTokens(String from, byte separator, byte singleQuote) {
     ArrayList<String> tokens = new ArrayList<>();
-    byte[] bits = from.getBytes();
+    byte[] bits = StringUtils.bytesOf(from);
     int offset = 0;
     int quotes = 0;
     while (offset < bits.length) {

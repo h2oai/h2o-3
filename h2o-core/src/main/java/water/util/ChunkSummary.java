@@ -13,53 +13,28 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
 
   ChunkSummary() {  super((byte)(Thread.currentThread() instanceof H2O.FJWThr ? currThrPriority()+1 : H2O.MIN_HI_PRIORITY - 2)); }
 
-  // static list of chunks for which statistics are to be gathered
-  final transient static String[] chunkTypes = new String[]{
-    "C0L",
-    "C0D",
-    "CBS",
-    "CX0",                   // Sparser bitvector; popular so near head of list
-    "CXI",                   // Sparse ints
-    "C1",
-    "C1N",
-    "C1S",
-    "C2",
-    "C2S",
-    "C4",
-    "C4S",
-    "C4F",
-    "C8",
-    "CNAXI",                    // NA sparse ints
-    "C16",                      // UUID
-    "CStr",                     // Strings
-    "CXD",                      // Sparse doubles
-    "CNAXD",                    // NA sparse doubles      
-    "CUD",                      // Few Unique doubles
-    "C8D",                      //leave this as last -> no compression
+  public static final String[][] chunkTypes = new String[][]{
+
+      {"C0L","Constant long"},
+      {"C0D","Constant double"},
+      {"CBS","Binary"},
+      {"CXI","Sparse Integers"},                   // Sparse ints
+      {"CXF","Sparse Reals"},                   // Sparse ints
+      {"C1","1-Byte Integers"},
+      {"C1N","1-Byte Integers (w/o NAs)"},
+      {"C1S","1-Byte Fractions"},
+      {"C2","2-Byte Integers"},
+      {"C2S","2-Byte Fractions"},
+      {"C4","4-Byte Integers"},
+      {"C4S","4-Byte Fractions"},
+      {"C4F","4-byte Reals"},
+      {"C8","8-byte Integers"},
+      {"C16","UUIDs"},
+      {"CStr","Strings"},
+      {"CUD","Unique Reals"},
+      {"C8D","64-bit Reals"},
   };
-  final transient static String[] chunkNames = new String[]{
-          "Constant Integers",
-          "Constant Reals",
-          "Bits",
-          "Zero Sparse Bits",
-          "Zero Sparse Integers",
-          "1-Byte Integers",
-          "1-Byte Integers (w/o NAs)",
-          "1-Byte Fractions",
-          "2-Byte Integers",
-          "2-Byte Fractions",
-          "4-Byte Integers",
-          "4-Byte Fractions",
-          "32-bit Reals",
-          "64-bit Integers",
-          "NA Sparse Integers",
-          "128-bit UUID",
-          "String",
-          "Zero Sparse Reals",
-          "NA Sparse Reals",
-          "Unique Reals",
-          "64-bit Reals",
-  };
+
 
   // OUTPUT
   private long[] chunk_counts;
@@ -110,7 +85,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
       // Table lookup, roughly sorted by frequency
       int j;
       for( j = 0; j < chunkTypes.length; ++j )
-        if( sname.equals(chunkTypes[j]) )
+        if( sname.equals(chunkTypes[j][0]) )
           break;
       if( j==chunkTypes.length ) throw H2O.fail("Unknown Chunk Type: " + sname);
       chunk_counts[j]++;
@@ -190,12 +165,12 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     int row = 0;
     for (int j = 0; j < chunkTypes.length; ++j) {
       if (chunk_counts != null && chunk_counts[j] > 0) {
-        table.set(row, 0, chunkTypes[j]);
-        table.set(row, 1, chunkNames[j]);
+        table.set(row, 0, chunkTypes[j][0]);
+        table.set(row, 1, chunkTypes[j][1]);
         table.set(row, 2, chunk_counts[j]);
-        table.set(row, 3, (float) chunk_counts[j] / total_chunk_count * 100.);
+        table.set(row, 3, (float) chunk_counts[j] / total_chunk_count * 100.f);
         table.set(row, 4, display(chunk_byte_sizes[j]));
-        table.set(row, 5, (float) chunk_byte_sizes[j] / total_chunk_byte_size * 100.);
+        table.set(row, 5, (float) chunk_byte_sizes[j] / total_chunk_byte_size * 100.f);
         row++;
       }
     }

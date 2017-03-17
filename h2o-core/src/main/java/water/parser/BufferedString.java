@@ -3,6 +3,7 @@ package water.parser;
 import com.google.common.base.Charsets;
 import water.AutoBuffer;
 import water.Iced;
+import water.util.StringUtils;
 
 import java.util.Arrays;
 import java.util.Formatter;
@@ -28,7 +29,7 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
      this(Arrays.copyOfRange(from._buf,from._off,from._off+from._len));
    }
 
-   public BufferedString(String from) { this(from.getBytes(Charsets.UTF_8)); }
+   public BufferedString(String from) { this(StringUtils.bytesOf(from)); }
    // Used to make a temp recycling BufferedString in hot loops
    public BufferedString() { }
 
@@ -137,7 +138,7 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
   }
 
   public final BufferedString set(String s) {
-    return set(s.getBytes(Charsets.UTF_8));
+    return set(StringUtils.bytesOf(s));
   }
 
   public void setOff(int off) {

@@ -4,6 +4,7 @@ import hex.genmodel.utils.ParseUtils;
 import hex.genmodel.utils.StringEscapeUtils;
 
 import java.io.BufferedReader;
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,7 +30,12 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     ModelMojoReader mmr = ModelMojoFactory.getMojoReader(algo);
     mmr._lkv = info;
     mmr._reader = reader;
-    mmr.readAll();
+    try {
+      mmr.readAll();
+    } finally {
+      if (mmr instanceof Closeable)
+        ((Closeable) mmr).close();
+    }
     return mmr._model;
   }
 

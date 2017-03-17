@@ -8,6 +8,8 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.IcedInt;
+import water.util.Log;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -103,8 +105,11 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
     if (expensive && _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.AUTO){
       _parms._categorical_encoding=Model.Parameters.CategoricalEncodingScheme.Eigen;
     }
-    if (_parms._radius_scale <= 0) {
-      error("_radius_scale", "radius_scale must be > 0.");
+    if (_parms._target_num_exemplars <= 0) {
+      error("_target_num_exemplars", "target_num_exemplars must be > 0.");
+    }
+    if (_parms._rel_tol_num_exemplars <= 0 || _parms._rel_tol_num_exemplars>=1) {
+      error("_rel_tol_num_exemplars", "rel_tol_num_exemplars must be inside 0...1.");
     }
     super.init(expensive);
     if (expensive) {
@@ -140,16 +145,72 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         _job.update(1,"Preprocessing data.");
         di = new DataInfo(orig, null, true, _parms._transform, false, false, false);
         DKV.put(di);
-        final double radius = _parms._radius_scale * .1/Math.pow(Math.log(orig.numRows()), 1.0 / orig.numCols()); // mostly always going to be ~ (_radius_scale * 0.09)
+        Vec assignment;
+        AggregateTask aggTask;
+        final double radiusBase = .1 / Math.pow(Math.log(orig.numRows()), 1.0 / orig.numCols()); // Lee's magic formula
+        final int targetNumExemplars = (int)Math.min((long)_parms._target_num_exemplars, orig.numRows());
 
-        // Add workspace vector for exemplar assignment
-        Vec[] vecs = Arrays.copyOf(orig.vecs(), orig.vecs().length+1);
-        Vec assignment = vecs[vecs.length-1] = orig.anyVec().makeZero();
+        // Increase radius until we have low enough number of exemplars
+        _job.update(0, "Aggregating.");
+        int numExemplars;
+        double lo = 0;
+        double hi = 256;
+        double mid = 8; //starting point of radius_scale
 
-        _job.update(1, "Aggregating.");
-        AggregateTask aggTask = new AggregateTask(di._key, radius, _job._key).doAll(vecs);
+        double tol = _parms._rel_tol_num_exemplars;
+        int upperLimit = (int)((1.+tol)*targetNumExemplars);
+        int lowerLimit = (int)((1.-tol)*targetNumExemplars);
 
-        _job.update(1, "Aggregating exemplar assignments.");
+        Key terminateKey = Key.make();
+        while(true) {
+          Log.info("radius_scale lo/mid/hi: " + lo + "/" + mid + "/" + hi);
+          double radius = mid * radiusBase;
+          if (targetNumExemplars==orig.numRows()) radius = 0;
+
+          // Add workspace vector for exemplar assignment
+          Vec[] vecs = Arrays.copyOf(orig.vecs(), orig.vecs().length + 1);
+          assignment = vecs[vecs.length - 1] = orig.anyVec().makeZero();
+          Log.info("Aggregating with radius " + String.format("%5f", radius) + ":");
+          aggTask = new AggregateTask(di._key, radius, _job._key, upperLimit, radius == 0 ? null : terminateKey).doAll(vecs);
+
+          if (radius == 0) {
+            Log.info(" Returning original dataset.");
+            numExemplars = aggTask._exemplars.length;
+            assert(numExemplars == orig.numRows());
+            break;
+          }
+
+          // stuck in range [0,256] with too many exemplars? - just do it
+          if (aggTask.isTerminated() && Math.abs(hi-lo) < 1e-3 * Math.abs(lo+hi)) {
+            aggTask = new AggregateTask(di._key, radius, _job._key, (int)orig.numRows(), terminateKey).doAll(vecs);
+            Log.info(" Running again without early cutout.");
+            numExemplars = aggTask._exemplars.length;
+            break;
+          }
+
+          if (aggTask.isTerminated() || aggTask._exemplars.length > upperLimit) {
+            Log.info(" Too many exemplars.");
+            lo = mid;
+          } else {
+            numExemplars = aggTask._exemplars.length;
+            Log.info(" " + numExemplars + " exemplars.");
+            if (numExemplars >= lowerLimit && numExemplars <= upperLimit) { // close enough
+              Log.info(" Within " + (100*tol) +"% of target number of exemplars. Done.");
+              break;
+            } else {
+              Log.info(" Too few exemplars.");
+              hi = mid;
+            }
+          }
+          mid = lo + (hi-lo)/2.;
+        }
+        _job.update(1, "Aggregation finished. Got " + numExemplars + " examplars");
+        assert (!aggTask.isTerminated());
+        DKV.remove(terminateKey);
+
+        String msg = "Creating exemplar assignments.";
+        Log.info(msg);
+        _job.update(1, msg);
         new RenumberTask(aggTask._mapping).doAll(assignment);
 
         // Populate model output state
@@ -160,7 +221,9 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         model._exemplar_assignment_vec_key = assignment._key;
         model._output._output_frame = Key.make("aggregated_" + _parms._train.toString() + "_by_" + model._key);
 
-        _job.update(1, "Creating output frame.");
+        msg = "Creating output frame.";
+        Log.info(msg);
+        _job.update(1, msg);
         model.createFrameOfExemplars(_parms._train.get(), model._output._output_frame);
 
         _job.update(1, "Done.");
@@ -185,9 +248,11 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
     final double _delta;
     final Key _dataInfoKey;
     final Key _jobKey;
+    final int _maxExemplars;
 
     // OUTPUT
     Exemplar[] _exemplars;
+    Key _terminateKey;
 //    long[] _counts;
 
     static class MyPair extends Iced<MyPair> implements Comparable<MyPair> {
@@ -244,10 +309,21 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
 
     GIDMapping _mapping;
 
-    public AggregateTask(Key<DataInfo> dataInfoKey, double radius, Key<Job> jobKey) {
+    public AggregateTask(Key<DataInfo> dataInfoKey, double radius, Key<Job> jobKey, int maxExemplars, Key terminateKey) {
       _delta = radius*radius;
       _dataInfoKey = dataInfoKey;
       _jobKey = jobKey;
+      _maxExemplars = maxExemplars;
+      _terminateKey = terminateKey;
+      if (_terminateKey!=null)
+        DKV.put(_terminateKey, new IcedInt(0));
+    }
+    private boolean isTerminated() {
+      return _terminateKey != null && ((IcedInt)(DKV.getGet(_terminateKey)))._val==1;
+    }
+    private void terminate() {
+      if (_terminateKey != null)
+        DKV.put(_terminateKey, new IcedInt(1));
     }
 
     @Override
@@ -264,6 +340,8 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
       DataInfo.Row row = di.newDenseRow(); //shared _dataInfo - faster, no writes
       final int nCols = row.nNums;
       for (int r=0; r<chks[0]._len; ++r) {
+        if (r%100 == 0 && isTerminated())
+          return;
         long rowIndex = chks[0].start()+r;
         row = di.extractDenseRow(dataChks, r, row);
         double[] data = Arrays.copyOf(row.numVals, nCols);
@@ -298,12 +376,21 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
             /* otherwise, assign a new exemplar */
             Exemplar ex = new Exemplar(data, rowIndex);
             es = Exemplar.addExemplar(es,ex);
+            if (es.length > 2*_maxExemplars) { //es array grows by 2x - have to be conservative here
+              terminate();
+            }
             assignmentChk.set(r, rowIndex); //assign to self
           }
         }
       }
       // populate output primitive arrays
       _exemplars = Exemplar.trim(es);
+      if (_exemplars.length > _maxExemplars) {
+        terminate();
+      }
+      if (isTerminated())
+        return;
+
       assert(_exemplars.length <= chks[0].len());
       long sum=0;
       for (Exemplar e: _exemplars) sum+=e._cnt;
@@ -313,6 +400,15 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
 
     @Override
     public void reduce(AggregateTask mrt) {
+      if (isTerminated() || _exemplars == null || mrt._exemplars == null || _exemplars.length > _maxExemplars || mrt._exemplars.length > _maxExemplars) {
+        terminate();
+        _mapping = null;
+        _exemplars = null;
+        mrt._exemplars = null;
+      }
+      if (isTerminated())
+        return;
+
       for (int i=0; i<mrt._mapping.len; ++i)
         _mapping.set(mrt._mapping.pairSet[i].first, mrt._mapping.pairSet[i].second);
       // reduce mrt into this

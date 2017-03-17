@@ -9,6 +9,7 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.PrettyPrint;
+import water.util.StringUtils;
 
 import java.util.Random;
 import java.util.UUID;
@@ -80,7 +81,7 @@ public class ParserTest2 extends TestUtil {
                                               ar("'Tomas''s","test2'","test2",null),
                                               ar("last","'line''s","trailing","piece'") };
     Key k = ParserTest.makeByteVec(data);
-    ParseSetup gSetupF = ParseSetup.guessSetup(null, data[0].getBytes(), CSV_INFO, (byte)',', 4, false/*single quote*/, ParseSetup.NO_HEADER, null, null, null, null);
+    ParseSetup gSetupF = ParseSetup.guessSetup(null, StringUtils.bytesOf(data[0]), CSV_INFO, (byte)',', 4, false/*single quote*/, ParseSetup.NO_HEADER, null, null, null, null);
     gSetupF._column_types = ParseSetup.strToColumnTypes(new String[]{"Enum", "Enum", "Enum", "Enum"});
     Frame frF = ParseDataset.parse(Key.make(), new Key[]{k}, false, gSetupF);
     testParsed(frF,expectFalse);
@@ -88,7 +89,7 @@ public class ParserTest2 extends TestUtil {
     String[][] expectTrue = new String[][] { ar("Tomass,test,first,line", null),
                                              ar("Tomas''stest2","test2"),
                                              ar("last", "lines trailing piece") };
-    ParseSetup gSetupT = ParseSetup.guessSetup(null, data[0].getBytes(), CSV_INFO, (byte)',', 2, true/*single quote*/, ParseSetup.NO_HEADER, null, null, null, null);
+    ParseSetup gSetupT = ParseSetup.guessSetup(null, StringUtils.bytesOf(data[0]), CSV_INFO, (byte)',', 2, true/*single quote*/, ParseSetup.NO_HEADER, null, null, null, null);
     gSetupT._column_types = ParseSetup.strToColumnTypes(new String[]{"Enum", "Enum", "Enum", "Enum"});
     Frame frT = ParseDataset.parse(Key.make(), new Key[]{k}, true, gSetupT);
     //testParsed(frT,expectTrue);  // not currently passing
@@ -255,7 +256,7 @@ public class ParserTest2 extends TestUtil {
     long startTime = System.currentTimeMillis();
     for (int i = 0; i < numOfIterations; i++) {
       int idx = random.nextInt(numOfUniqueCats);
-      bs.set(values[idx].getBytes());
+      bs.set(StringUtils.bytesOf(values[idx]));
       cat.addKey(bs);
       if (i % 10000000 == 0) System.out.println("Iterations: " + i);
     }

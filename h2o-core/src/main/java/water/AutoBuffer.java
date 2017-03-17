@@ -10,6 +10,7 @@ import java.util.Random;
 
 import water.network.SocketChannelUtils;
 import water.util.Log;
+import water.util.StringUtils;
 import water.util.TwoDimTable;
 
 /** A ByteBuffer backed mixed Input/Output streaming class, using Iced serialization.
@@ -1466,7 +1467,7 @@ public final class AutoBuffer {
   // Put a String as bytes (not chars!)
   public AutoBuffer putStr( String s ) {
     if( s==null ) return putInt(-1);
-    return putA1(s.getBytes(UTF_8));
+    return putA1(StringUtils.bytesOf(s));
   }
 
   @SuppressWarnings("unused")  public AutoBuffer putEnum( Enum x ) {
@@ -1594,7 +1595,7 @@ public final class AutoBuffer {
   public AutoBuffer putJNULL( ) { return put1('n').put1('u').put1('l').put1('l'); }
   // Escaped JSON string
   private AutoBuffer putJStr( String s ) {
-    byte[] b = s.getBytes();
+    byte[] b = StringUtils.bytesOf(s);
     int off=0;
     for( int i=0; i<b.length; i++ ) {
       if( b[i] == '\\' || b[i] == '"') { // Double up backslashes, escape quotes
@@ -1707,7 +1708,7 @@ public final class AutoBuffer {
 
   // Most simple integers
   private AutoBuffer putJInt( int i ) {
-    byte b[] = Integer.toString(i).getBytes();
+    byte b[] = StringUtils.toBytes(i);
     return putA1(b,b.length);
   }
 
