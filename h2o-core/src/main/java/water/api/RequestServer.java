@@ -472,7 +472,7 @@ public class RequestServer extends HttpServlet {
       // some special cases for which we return 400 because it's likely a problem with the client request:
       if (e instanceof IllegalArgumentException || e instanceof FileNotFoundException || e instanceof MalformedURLException)
         error._http_status = HttpResponseStatus.BAD_REQUEST.getCode();
-      Log.err("Caught exception: " + error.toString());
+      Log.err("Caught exception: " + error.toString() +";parms=" + parms);
       return serveError(error);
     }
   }
