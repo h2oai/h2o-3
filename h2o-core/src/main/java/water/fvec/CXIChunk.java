@@ -42,7 +42,8 @@ public class CXIChunk extends Chunk {
       default: throw H2O.unimpl();
     }
   }
-  private double getFVal(int x){
+
+  protected double getFVal(int x){
     long ival = getVal(x);
     return ival == _NAS[_val_sz]?Double.NaN:ival;
   }

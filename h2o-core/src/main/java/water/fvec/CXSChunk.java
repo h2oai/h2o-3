@@ -26,10 +26,20 @@ public class CXSChunk extends CXIChunk {
     _scale = PrettyPrint.pow10(_exponent);
   }
   public double atd_impl(int i){
-    return (super.atd_impl(i) + _bias)*_scale;
+    int x = findOffset(i);
+    if(x < 0) return _isNA?Double.NaN:0;
+    return (getFVal(x)+_bias)*_scale;
   }
   public long at8_impl(int i){
-    return (long)((super.at8_impl(i)+_bias)*_scale);
+    int x = findOffset(i);
+    if(x < 0) {
+      if(_isNA) throw new RuntimeException("at8 but the value is missing");
+      return 0;
+    }
+    long l = getVal(x);
+    if(l == _NAS[_val_sz])
+      throw new RuntimeException("at8 but the value is missing");
+    return (long)((l+_bias)*_scale);
   }
 
   protected void processRow(ChunkVisitor v, int x){
