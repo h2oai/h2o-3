@@ -115,7 +115,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
    * model multiple times and we eliminate the duplicates here.
    * @param newModels
    */
-  public void addModels(final Key<Model>[] newModels) {
+  final public void addModels(final Key<Model>[] newModels) {
     if (null == this._key)
       throw new H2OIllegalArgumentException("Can't add models to a Leaderboard which isn't in the DKV.");
 
@@ -124,9 +124,11 @@ public class Leaderboard extends Keyed<Leaderboard> {
       setDefaultMetricAndDirection(newModels[0].get());
     }
 
+    final Key<Model> newLeader[] = new Key[1]; // only set if there's a new leader
+
     new TAtomic<Leaderboard>() {
       @Override
-      public Leaderboard atomic(Leaderboard old) {
+      final public Leaderboard atomic(Leaderboard old) {
         if (old == null) old = new Leaderboard();
 
         final Key<Model>[] oldModels = old.models;
@@ -150,12 +152,21 @@ public class Leaderboard extends Keyed<Leaderboard> {
         }
 
         // NOTE: we've now written over old.models
+        // TODO: should take out of the tatomic
         if (oldLeader == null || ! oldLeader.equals(old.models[0]))
-          userFeedback.info(UserFeedbackEvent.Stage.ModelTraining, "New leader: " + old.models[0]);
+          newLeader[0] = old.models[0];
 
         return old;
       } // atomic
     }.invoke(this._key);
+
+    // We've updated the DKV but not this instance, so:
+
+    this.models = this.modelKeys();
+    if (null != newLeader[0]) {
+      userFeedback.info(UserFeedbackEvent.Stage.ModelTraining, "New leader: " + newLeader[0]);
+      EckoClient.updateLeaderboard(this);
+    }
   }
 
 
@@ -242,27 +253,32 @@ public class Leaderboard extends Keyed<Leaderboard> {
   }
 
 
+/*
   public static String toString(Model[] models) {
-    return toString(null, models, "\n");
+    return toString(null, models, " ", "\n");
   }
 
   public static String toString(String project, Model[] models) {
     return toString(project, models, "\n");
   }
+  */
 
-  public static String toString(String project, Model[] models, String separator) {
-    StringBuilder sb = new StringBuilder("Leaderboard for project \"" + project + "\": ");
+  public static String toString(String project, Model[] models, String fieldSeparator, String lineSeparator, boolean includeTitle) {
+    StringBuilder sb = new StringBuilder();
+    if (includeTitle) {
+      sb.append("Leaderboard for project \"")
+              .append(project)
+              .append("\": ");
 
-    if (models.length == 0) {
-      sb.append("<empty>");
-      return sb.toString();
+      if (models.length == 0) {
+        sb.append("<empty>");
+        return sb.toString();
+      }
+      sb.append(lineSeparator);
     }
-    sb.append(separator);
 
+    boolean printedHeader = false;
     for (Model m : models) {
-      sb.append(m._key.toString());
-      sb.append(" ");
-
       // TODO: allow the metric to be passed in.  Note that this assumes the validation (or training) frame is the same.
       ModelMetrics mm =
               m._output._cross_validation_metrics != null ?
@@ -271,28 +287,43 @@ public class Leaderboard extends Keyed<Leaderboard> {
                               m._output._validation_metrics :
                               m._output._training_metrics;
 
+      if (! printedHeader) {
+        sb.append("Model_ID");
+        sb.append(fieldSeparator);
+
+        if (m._output.isBinomialClassifier()) {
+          sb.append("auc");
+        } else if (m._output.isClassifier()) {
+          sb.append("mean_per_class_error");
+        } else if (m._output.isSupervised()) {
+          sb.append("mean_residual_deviance");
+        }
+        sb.append(lineSeparator);
+        printedHeader = true;
+      }
+
+      sb.append(m._key.toString());
+      sb.append(fieldSeparator);
+
       if (m._output.isBinomialClassifier()) {
-        sb.append("auc: ");
         sb.append(((ModelMetricsBinomial)mm).auc());
       } else if (m._output.isClassifier()) {
-        sb.append("mean per class error: ");
         sb.append(((ModelMetricsMultinomial)mm).mean_per_class_error());
       } else if (m._output.isSupervised()) {
-        sb.append("mean residual deviance: ");
         sb.append(((ModelMetricsRegression)mm).residual_deviance());
       }
 
-      sb.append(separator);
+      sb.append(lineSeparator);
     }
     return sb.toString();
   }
 
-  public String toString(String separator) {
-    return toString(project, models(), separator);
+  public String toString(String fieldSeparator, String lineSeparator) {
+    return toString(project, models(), fieldSeparator, lineSeparator, true);
   }
 
   @Override
   public String toString() {
-    return toString(" | ");
+    return toString(" ; ", " | ");
   }
 }

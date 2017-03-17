@@ -114,6 +114,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     userFeedback = new UserFeedback(this._key);
     userFeedback.info(Stage.Workflow, "AutoML job created: " + fullTimestampFormat.format(new Date()));
+    userFeedback.info(Stage.Workflow, "Build control seed: " +
+            buildSpec.build_control.stopping_criteria.seed() +
+            (buildSpec.build_control.stopping_criteria.seed() == -1 ? " (random)" : ""));
 
     this.buildSpec = buildSpec;
     handleDatafileParameters(buildSpec);
@@ -781,7 +784,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
     userFeedback.info(Stage.Workflow, "AutoML: build done");
     Log.info(userFeedback.toString("User Feedback for AutoML Run: " + this._key));
-    Log.info(leaderboard.toString("\n"));
+    Log.info(leaderboard.toString("\t", "\n"));
 
     possiblyVerifyImmutability();
     // gather more data? build more models? start applying transforms? what next ...?
