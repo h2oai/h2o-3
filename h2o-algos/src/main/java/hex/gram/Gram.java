@@ -746,7 +746,7 @@ public final class Gram extends Iced<Gram> {
   }
   private double [][] XX = null;
 
-  public void mul(double [] x, double [] res){
+/*  public void mul(double [] x, double [] res){
     Arrays.fill(res,0);
     if(XX == null) XX = getXX(false,false);
     for(int i = 0; i < XX.length; ++i){
@@ -756,14 +756,14 @@ public final class Gram extends Iced<Gram> {
         d += xi[j]*x[j];
       res[i] = d;
     }
-  }
+  }*/
 
   /*
   This method will not allocate the extra memory and hence is considered for lowMemory systems.
   However, need to consider case when you have categoricals!  Make them part of the matrix
-  in the multiplication process.
+  in the multiplication process.  Done!
    */
-  public void mulL(double[] x, double[] res){
+  public void mul(double[] x, double[] res){
     int colSize = fullN();        // actual gram matrix size
     int offsetForCat = colSize-_xx.length; // offset for categorical columns
 
