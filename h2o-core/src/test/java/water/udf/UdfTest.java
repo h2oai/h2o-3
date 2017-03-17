@@ -23,11 +23,13 @@ import static water.util.FileUtils.*;
  */
 public class UdfTest extends UdfTestBase {
   
-  int requiredCloudSize() { return 5; }
+  int requiredCloudSize() { return 1; }
   
   private DataColumn<Double> sines() throws java.io.IOException {
     return willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
-      public Double apply(Long i) { return (i > 10 && i < 20) ? null : Math.sin(i); }
+      public Double apply(Long i) { 
+        return (i > 10 && i < 20) ? null : Math.sin(i);
+      }
     }));
   }
 

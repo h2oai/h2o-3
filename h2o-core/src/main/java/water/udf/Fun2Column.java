@@ -31,17 +31,21 @@ public class Fun2Column<X, Y, Z> extends FunColumnBase<Z> {
     this.ys = ys;
     assert xs.isCompatibleWith(ys) : "Columns must be compatible: " + xs + ", " + ys;
   }
-  
-  @Override public Z get(long idx) { 
-    return isNA(idx) ? null : f.apply(xs.apply(idx), ys.apply(idx)); 
-  }
 
   @Override
   public TypedChunk<Z> chunkAt(int i) {
     return new FunChunk(xs.chunkAt(i), ys.chunkAt(i));
   }
 
-  @Override public boolean isNA(long idx) { return xs.isNA(idx) || ys.isNA(idx); }
+  private boolean argIsNA(long idx) { 
+    return xs.isNA(idx) || ys.isNA(idx);
+  }
+  
+  @Override public Z get(long idx) { 
+    return argIsNA(idx) ? null : f.apply(xs.apply(idx), ys.apply(idx)); 
+  }
+
+  @Override public boolean isNA(long idx) { return get(idx) == null; }
 
   /**
    * Pretends to be a chunk of a column, for distributed calculations.

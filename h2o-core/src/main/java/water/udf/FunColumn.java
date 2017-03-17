@@ -32,9 +32,9 @@ public class FunColumn<X, Y> extends FunColumnBase<Y> {
     return new FunChunk(xs.chunkAt(i));
   }
 
-  public Y get(long idx) { return isNA(idx) ? null : f.apply(xs.apply(idx)); }
+  public Y get(long idx) { return xs.isNA(idx) ? null : f.apply(xs.apply(idx)); }
 
-  @Override public boolean isNA(long idx) { return xs.isNA(idx); }
+  @Override public boolean isNA(long idx) { return get(idx) == null; }
 
   /**
    * Pretends to be a chunk of a column, for distributed calculations.

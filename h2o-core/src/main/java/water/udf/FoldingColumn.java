@@ -53,6 +53,7 @@ public class FoldingColumn<X, Y> extends FunColumnBase<Y> {
   }
   
   @Override public Y get(long idx) {
+    if (argIsNA(idx)) return null;
     Y y = f.initial();
     for (Column<X> col : columns) y = f.apply(y, col.apply(idx));
     return y; 
@@ -66,9 +67,13 @@ public class FoldingColumn<X, Y> extends FunColumnBase<Y> {
     return new FunChunk(chunks);
   }
 
-  @Override public boolean isNA(long idx) {
+  private boolean argIsNA(long idx) {
     for (Column<X> col : columns) if (col.isNA(idx)) return true;
     return false;
+  }
+
+  @Override public boolean isNA(long idx) {
+    return get(idx) == null;
   }
 
   private class FunChunk extends DependentChunk<Y> {
