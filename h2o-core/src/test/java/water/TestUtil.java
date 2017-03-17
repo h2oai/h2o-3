@@ -1,7 +1,6 @@
 package water;
 
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
@@ -12,14 +11,18 @@ import water.parser.BufferedString;
 import water.parser.DefaultParserProviders;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
-import water.util.*;
+import water.util.FileUtils;
+import water.util.Log;
 import water.util.Timer;
+import water.util.TwoDimTable;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.UUID;
 
 import static org.junit.Assert.*;
 
@@ -85,6 +88,34 @@ public class TestUtil extends Iced {
     _initial_keycnt = H2O.store_size();
     // Finalize registration of REST API to enable tests which are touching Schemas.
     H2O.finalizeRegistration();
+  }
+
+
+  /**
+   * Converts a H2OFrame to a csv file for debugging purposes.
+   *
+   * @param fileNameWithPath: String containing filename with path that will contain the H2O Frame
+   * @param h2oframe: H2O Frame to be saved as CSV file.
+   * @param header: boolean to decide if column names should be saved.  Set to false if don't care.
+   * @param hex_string: boolean to decide if the double values are written in hex.  Set to false if don't care.
+   * @throws IOException
+   */
+  public static void writeFrameToCSV(String fileNameWithPath, Frame h2oframe, boolean header, boolean hex_string)
+          throws IOException {
+    InputStream frameToStream = h2oframe.toCSV(header, hex_string);    // read in frame as Inputstream
+    // write Inputstream to a real file
+    File targetFile = new File(fileNameWithPath);
+    OutputStream outStream = new FileOutputStream(targetFile);
+
+    byte[] buffer = new byte[1<<20];
+    int bytesRead;
+
+    while((bytesRead=frameToStream.read(buffer)) > 0) { // for our toCSV stream, return 0 as EOF, not -1
+      outStream.write(buffer, 0, bytesRead);
+    }
+    frameToStream.close();
+    outStream.flush();
+    outStream.close();
   }
 
   @AfterClass
@@ -518,13 +549,13 @@ public class TestUtil extends Iced {
 
   public static void checkStddev(double[] expected, double[] actual, double threshold) {
     for(int i = 0; i < actual.length; i++)
-      Assert.assertEquals(expected[i], actual[i], threshold);
+      assertEquals(expected[i], actual[i], threshold);
   }
 
   public static void checkIcedArrays(IcedWrapper[][] expected, IcedWrapper[][] actual, double threshold) {
     for(int i = 0; i < actual.length; i++)
       for (int j = 0; j < actual[0].length; j++)
-      Assert.assertEquals(expected[i][j].d, actual[i][j].d, threshold);
+      assertEquals(expected[i][j].d, actual[i][j].d, threshold);
   }
 
   public static boolean[] checkEigvec(double[][] expected, double[][] actual, double threshold) {
@@ -536,7 +567,7 @@ public class TestUtil extends Iced {
       // flipped[j] = Math.abs(expected[0][j] - actual[0][j]) > threshold;
       flipped[j] = Math.abs(expected[0][j] - actual[0][j]) > Math.abs(expected[0][j] + actual[0][j]);
       for(int i = 0; i < nfeat; i++) {
-        Assert.assertEquals(expected[i][j], flipped[j] ? -actual[i][j] : actual[i][j], threshold);
+        assertEquals(expected[i][j], flipped[j] ? -actual[i][j] : actual[i][j], threshold);
       }
     }
     return flipped;
@@ -550,7 +581,7 @@ public class TestUtil extends Iced {
     for(int j = 0; j < ncomp; j++) {
       flipped[j] = Math.abs(expected[0][j] - (double)actual.get(0,j)) > threshold;
       for(int i = 0; i < nfeat; i++) {
-        Assert.assertEquals(expected[i][j], flipped[j] ? -(double)actual.get(i,j) : (double)actual.get(i,j), threshold);
+        assertEquals(expected[i][j], flipped[j] ? -(double)actual.get(i,j) : (double)actual.get(i,j), threshold);
       }
     }
     return flipped;
@@ -564,7 +595,7 @@ public class TestUtil extends Iced {
     for(int j = 0; j < ncomp; j++) {
       flipped[j] = Math.abs((double)expected.get(0,j) - (double)actual.get(0,j)) > threshold;
       for(int i = 0; i < nfeat; i++) {
-        Assert.assertEquals((double) expected.get(i,j), flipped[j] ? -(double)actual.get(i,j) : (double)actual.get(i,j), threshold);
+        assertEquals((double) expected.get(i,j), flipped[j] ? -(double)actual.get(i,j) : (double)actual.get(i,j), threshold);
       }
     }
     return flipped;
@@ -579,13 +610,13 @@ public class TestUtil extends Iced {
     for(int j = 0; j < ncomp; j++) {
       Vec.Reader vexp = expected.vec(j).new Reader();
       Vec.Reader vact = actual.vec(j).new Reader();
-      Assert.assertEquals(vexp.length(), vact.length());
+      assertEquals(vexp.length(), vact.length());
       for (int i = 0; i < nfeat; i++) {
         if (vexp.isNA(i) || vact.isNA(i)) {
           continue;
         }
         // only perform comparison when data is not NAN
-        Assert.assertEquals(vexp.at8(i), flipped[j] ? -vact.at8(i) : vact.at8(i), threshold);
+        assertEquals(vexp.at8(i), flipped[j] ? -vact.at8(i) : vact.at8(i), threshold);
 
       }
     }

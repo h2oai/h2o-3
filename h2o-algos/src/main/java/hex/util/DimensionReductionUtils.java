@@ -1,13 +1,17 @@
 package hex.util;
 
+import hex.DataInfo;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+import water.fvec.Frame;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+
+import static water.util.ArrayUtils.*;
 
 
 /**
@@ -92,5 +96,36 @@ public class DimensionReductionUtils {
             }
         }
         return table;
+    }
+
+    /**
+     * This function will tranform the eigenvectors calculated for a matrix T(A) to the ones calculated for
+     * matrix A.
+     * 
+     * @param dinfo
+     * @param vEigenIn
+     * @return
+     */
+    public static double[][] transformEigenVectors(DataInfo dinfo, double[][] vEigenIn) {
+        Frame tempFrame = new Frame(dinfo._adaptedFrame);
+        Frame eigFrame = new water.util.ArrayUtils().frame(vEigenIn);
+        tempFrame.add(eigFrame);
+
+        LinearAlgebraUtils.SMulTask stsk = new LinearAlgebraUtils.SMulTask(dinfo, eigFrame.numCols(),
+                dinfo._numOffsets[dinfo._numOffsets.length - 1]);   // will allocate new memory for _atq
+        double[][] eigenVecs = stsk.doAll(tempFrame)._atq;
+
+        if (eigFrame != null) { // delete frame to prevent leak keys.
+            eigFrame.delete();
+        }
+
+        // need to normalize eigenvectors after multiplication by transpose(A) so that they have unit norm
+        double[][] eigenVecsTranspose = transpose(eigenVecs);   // transpose will allocate memory
+        double[] eigenNormsI = new double[eigenVecsTranspose.length];
+        for (int vecIndex = 0; vecIndex < eigenVecsTranspose.length; vecIndex++) {
+            eigenNormsI[vecIndex] = 1.0 / l2norm(eigenVecsTranspose[vecIndex]);
+        }
+
+        return transpose(mult(eigenVecsTranspose, eigenNormsI));
     }
 }

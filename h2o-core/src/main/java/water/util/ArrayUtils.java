@@ -321,9 +321,14 @@ public class ArrayUtils {
   }
 
   public static double[] multArrVec(double[][] ary, double[] nums) {
+    if(ary == null) return null;
+    double[] res = new double[ary.length];
+    return multArrVec(ary, nums, res);
+  }
+
+  public static double[] multArrVec(double[][] ary, double[] nums, double[] res) {
     if(ary == null || nums == null) return null;
     assert ary[0].length == nums.length : "Inner dimensions must match: Got " + ary[0].length + " != " + nums.length;
-    double[] res = new double[ary.length];
     for(int i = 0; i < ary.length; i++)
       res[i] = innerProduct(ary[i], nums);
     return res;
@@ -341,10 +346,13 @@ public class ArrayUtils {
     return res;
   }
 
-  public static double[][] multArrArr(double[][] ary1, double[][] ary2) {
+  /*
+  with no memory allocation for results.  We assume the memory is already allocated.
+   */
+  public static double[][] multArrArr(double[][] ary1, double[][] ary2, double[][] res) {
     if(ary1 == null || ary2 == null) return null;
-    assert ary1[0].length == ary2.length : "Inner dimensions must match: Got " + ary1[0].length + " != " + ary2.length;   // Inner dimensions must match
-    double[][] res = new double[ary1.length][ary2[0].length];
+    // Inner dimensions must match
+    assert ary1[0].length == ary2.length : "Inner dimensions must match: Got " + ary1[0].length + " != " + ary2.length;
 
     for(int i = 0; i < ary1.length; i++) {
       for(int j = 0; j < ary2[0].length; j++) {
@@ -355,6 +363,16 @@ public class ArrayUtils {
       }
     }
     return res;
+  }
+
+  /*
+  with memory allocation for results
+   */
+  public static double[][] multArrArr(double[][] ary1, double[][] ary2) {
+    if(ary1 == null || ary2 == null) return null;
+    double[][] res = new double[ary1.length][ary2[0].length];
+
+    return multArrArr(ary1, ary2, res);
   }
 
   public static double[][] transpose(double[][] ary) {
@@ -835,11 +853,24 @@ public class ArrayUtils {
   public static double[] gaussianVector(int n, long seed) { return gaussianVector(n, getRNG(seed)); }
   public static double[] gaussianVector(int n, Random random) {
     if(n <= 0) return null;
-    double[] result = new double[n];
+    double[] result = new double[n];  // ToDo: Get rid of this new action.
 
     for(int i = 0; i < n; i++)
       result[i] = random.nextGaussian();
     return result;
+  }
+
+  /** Remove the array allocation in this one */
+  public static double[] gaussianVector(long seed, double[] vseed) {
+    if (vseed == null)
+      return null;
+
+    Random random = getRNG(seed);
+    int arraySize = vseed.length;
+    for (int i=0; i < arraySize; i++) {
+      vseed[i] = random.nextGaussian();
+    }
+    return vseed;
   }
 
   /** Returns number of strings which represents a number. */
