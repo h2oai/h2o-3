@@ -6,6 +6,7 @@ import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.Log;
 
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -239,6 +240,14 @@ public class Leaderboard extends Keyed<Leaderboard> {
     return modelKeys[0].get();
   }
 
+  public long[] timestamps(Model[] models) {
+    long[] timestamps = new long[models.length];
+    int i = 0;
+    for (Model m : models)
+      timestamps[i++] = m._output._end_time;
+    return timestamps;
+  }
+
   /**
    * Delete everything in the DKV that this points to.  We currently need to be able to call this after deleteWithChildren().
    */
@@ -262,6 +271,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     return toString(project, models, "\n");
   }
   */
+private static final SimpleDateFormat timestampFormat = new SimpleDateFormat("HH:mm:ss.SSS");
 
   public static String toString(String project, Model[] models, String fieldSeparator, String lineSeparator, boolean includeTitle) {
     StringBuilder sb = new StringBuilder();
@@ -298,6 +308,8 @@ public class Leaderboard extends Keyed<Leaderboard> {
         } else if (m._output.isSupervised()) {
           sb.append("mean_residual_deviance");
         }
+        sb.append(fieldSeparator);
+        sb.append("timestamp");
         sb.append(lineSeparator);
         printedHeader = true;
       }
@@ -312,6 +324,9 @@ public class Leaderboard extends Keyed<Leaderboard> {
       } else if (m._output.isSupervised()) {
         sb.append(((ModelMetricsRegression)mm).residual_deviance());
       }
+      sb.append(fieldSeparator);
+
+      sb.append(timestampFormat.format(m._output._end_time));
 
       sb.append(lineSeparator);
     }
