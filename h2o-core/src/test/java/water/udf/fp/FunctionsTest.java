@@ -67,7 +67,7 @@ public class FunctionsTest {
     assertEquals(1001590, c.apply("not my number").intValue());
   }
 
-  @SafeVarargs
+  //@SafeVarargs
   private static <T> List<T> listOf(T... ss) {
     return Arrays.asList(ss);
   }
