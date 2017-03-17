@@ -746,7 +746,7 @@ public final class Gram extends Iced<Gram> {
   }
   private double [][] XX = null;
 
-  public void mul(double [] x, double [] res){
+/*  public void mul(double [] x, double [] res){
     Arrays.fill(res,0);
     if(XX == null) XX = getXX(false,false);
     for(int i = 0; i < XX.length; ++i){
@@ -756,8 +756,41 @@ public final class Gram extends Iced<Gram> {
         d += xi[j]*x[j];
       res[i] = d;
     }
-  }
+  }*/
 
+  /*
+  This method will not allocate the extra memory and hence is considered for lowMemory systems.
+  However, need to consider case when you have categoricals!  Make them part of the matrix
+  in the multiplication process.  Done!
+   */
+  public void mul(double[] x, double[] res){
+    int colSize = fullN();        // actual gram matrix size
+    int offsetForCat = colSize-_xx.length; // offset for categorical columns
+
+    for (int rowIndex = 0; rowIndex < colSize; rowIndex++) {
+      double d = 0;
+      if (rowIndex >=offsetForCat) {
+        for (int colIndex = 0; colIndex < rowIndex; colIndex++) {   // below diagonal
+          d += _xx[rowIndex - offsetForCat][colIndex] * x[colIndex];
+        }
+      }
+      // on diagonal
+      d+= (rowIndex>=offsetForCat)?_xx[rowIndex-offsetForCat][rowIndex]*x[rowIndex]:_diag[rowIndex]*x[rowIndex];
+
+      for (int colIndex = rowIndex+1; colIndex < colSize; colIndex++) {   // above diagonal
+        if (rowIndex<offsetForCat) {
+          if ((colIndex>=offsetForCat)) {
+            d += _xx[colIndex-offsetForCat][rowIndex]*x[colIndex];
+          }
+        } else {
+          d += _xx[colIndex-offsetForCat][rowIndex]*x[colIndex];
+        }
+/*        d += (rowIndex<offsetForCat)?((colIndex<offsetForCat)?0:_xx[colIndex-offsetForCat][rowIndex]*x[colIndex]):
+                _xx[colIndex-offsetForCat][rowIndex]*x[colIndex];*/
+    }
+      res[rowIndex] = d;
+    }
+  }
 
   /**
    * Task to compute outer product of a matrix normalized by the number of observations (not counting rows with NAs).

@@ -17,7 +17,6 @@ import hex.gram.Gram.OuterGramTask;
 import hex.pca.PCAModel.PCAParameters;
 import hex.svd.SVD;
 import hex.svd.SVDModel;
-import hex.util.LinearAlgebraUtils.SMulTask;
 import water.DKV;
 import water.H2O;
 import water.HeartBeat;
@@ -31,9 +30,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 
-import static hex.util.DimensionReductionUtils.createScoringHistoryTableDR;
-import static hex.util.DimensionReductionUtils.generateIPC;
-import static water.util.ArrayUtils.*;
+import static hex.util.DimensionReductionUtils.*;
+import static water.util.ArrayUtils.mult;
 
 /**
  * Principal Components Analysis
@@ -58,26 +56,28 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
  //   int numCPUs= H2O.NUMCPUS;   // proper way to get number of CPUs.
     double p = hex.util.LinearAlgebraUtils.numColsExp(_train,true);
     double r = _train.numRows();
-    long mem_usage =
-            _parms._pca_method == PCAParameters.Method.GramSVD ? (long)(hb._cpus_allowed * p*p * 8/*doubles*/ *
+    boolean useGramSVD = _parms._pca_method == PCAParameters.Method.GramSVD;
+    boolean usePower = _parms._pca_method==PCAParameters.Method.Power;
+
+    long mem_usage = (useGramSVD || usePower) ? (long)(hb._cpus_allowed * p*p * 8/*doubles*/ *
                     Math.log((double)_train.lastVec().nChunks())/Math.log(2.)) : 1; //one gram per core
-    long mem_usage_w = _parms._pca_method == PCAParameters.Method.GramSVD ? (long)(hb._cpus_allowed * r*r *
+    long mem_usage_w = (useGramSVD || usePower) ? (long)(hb._cpus_allowed * r*r *
             8/*doubles*/ * Math.log((double)_train.lastVec().nChunks())/Math.log(2.)) : 1;
     long max_mem = hb.get_free_mem();
+
     if ((mem_usage > max_mem) && (mem_usage_w > max_mem))  {
       String msg = "Gram matrices (one per thread) won't fit in the driver node's memory ("
               + PrettyPrint.bytes(mem_usage) + " > " + PrettyPrint.bytes(max_mem)
               + ") - try reducing the number of columns and/or the number of categorical factors.";
       error("_train", msg);
     }
-    if (mem_usage > max_mem) {
+    if (mem_usage > max_mem) {  // choose the most memory efficient one
       _wideDataset = true;   // set to true if wide dataset is detected
     }
   }
 
   /*
-    Set value of wideDataset.  Note that this routine is used for test purposes only and is not intended
-    for users but more for developers for setting.
+    Set value of wideDataset.  Note that this routine is used for test purposes only and not for users.
  */
   public void setWideDataset(boolean isWide) {
     _wideDataset = isWide;
@@ -312,27 +312,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           _job.update(1, "Computing stats from SVD");
           // correct for the eigenvector by t(A)*eigenvector for wide dataset
           if (_wideDataset) {
-            // squeeze dataset A and eigenVector matirx U into one frame, tempFrame and use SMulTask to
-            // perform the multiplication of Transpose(A) * U
-            Frame tempFrame = new Frame(dinfo._adaptedFrame);
-            Frame eigFrame = new water.util.ArrayUtils().frame(svdJ.getV().getArray());
-            tempFrame.add(eigFrame);
-
-            SMulTask stsk = new SMulTask(dinfo, svdJ.getV().getArray().length,
-                    dinfo._numOffsets[dinfo._numOffsets.length-1]);
-            double[][] eigenVecs = stsk.doAll(tempFrame)._atq;
-
-            if (eigFrame != null) { // delete frame to prevent leak keys.
-              eigFrame.delete();
-            }
-
-            // need to normalize eigenvectors after multiplication by transpose(A) so that they have unit norm
-            double[][] eigenVecsTranspose = transpose(eigenVecs);
-            double[] eigenNormsI = new double[eigenVecsTranspose.length];
-            for (int vecIndex = 0; vecIndex < eigenVecsTranspose.length; vecIndex++) {
-              eigenNormsI[vecIndex] = 1.0/l2norm(eigenVecsTranspose[vecIndex]);
-            }
-            eigenVecs = transpose(mult(eigenVecsTranspose, eigenNormsI));
+            double[][] eigenVecs = transformEigenVectors(dinfo, svdJ.getV().getArray());
             computeStatsFillModel(model, dinfo, svdJ.getSingularValues(), eigenVecs, gram, model._output._nobs);
           } else {
             computeStatsFillModel(model, dinfo, svdJ, gram, model._output._nobs);
@@ -359,6 +339,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           parms._nv = _parms._k;
           parms._max_iterations = _parms._max_iterations;
           parms._seed = _parms._seed;
+          parms._impute_missing = _parms._impute_missing;
 
           // Set method for computing SVD accordingly
           if(_parms._pca_method == PCAParameters.Method.Power) {
@@ -372,8 +353,11 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           parms._keep_u = false;
           parms._save_v_frame = false;
 
+          SVD svdP = new SVD(parms, _job);
+          svdP.setWideDataset(_wideDataset);  // force to treat dataset as wide even though it is not.
+
           // Build an SVD model
-          SVDModel svd = new SVD(parms, _job).trainModelNested(tranRebalanced);
+          SVDModel svd = svdP.trainModelNested(tranRebalanced);
           if (stop_requested()) {
             return;
           }
@@ -396,6 +380,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           parms._k = _parms._k;
           parms._max_iterations = _parms._max_iterations;
           parms._seed = _parms._seed;
+
           parms._recover_svd = true;
 
           parms._loss = GlrmLoss.Quadratic;

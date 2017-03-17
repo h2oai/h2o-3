@@ -1357,43 +1357,53 @@ def show_test_results(test_name, curr_test_val, new_test_val):
         return 0
 
 
-def assert_H2OTwoDimTable_equal(table1, table2, col_header_list, tolerance=1e-6, check_sign=False):
+def assert_H2OTwoDimTable_equal(table1, table2, col_header_list, tolerance=1e-6, check_sign=False, check_all=True,
+                                num_per_dim=10):
     """
     This method compares two H2OTwoDimTables and verify that their difference is less than value set in tolerance. It
     is probably an overkill for I have assumed that the order of col_header_list may not be in the same order as
     the values in the table.cell_values[ind][0].  In addition, I do not assume an order for the names in the
     table.cell_values[ind][0] either for there is no reason for an order to exist.
 
+    To limit the test run time, we can test a randomly sampled of points instead of all points
+
     :param table1: H2OTwoDimTable to be compared
     :param table2: the other H2OTwoDimTable to be compared
     :param col_header_list: list of strings denote names that we can the comparison to be performed
     :param tolerance: default to 1e-6
     :param check_sign: bool, determine if the sign of values are important or not.  For eigenvectors, they are not.
+    :param check_all: bool, determine if we need to compare every single element
+    :param num_per_dim: integer, number of elements to sample per dimension.  We have 3 here.
     :return: None if comparison succeed and raise an error if comparison failed for whatever reason
     """
     num_comparison = len(set(col_header_list))
     size1 = len(table1.cell_values)
     size2 = len(table2.cell_values)
-    worst_error = -1.0
+    worst_error = 0
 
     assert size1==size2, "The two H2OTwoDimTables are of different size!"
     assert num_comparison<=size1, "H2OTwoDimTable do not have all the attributes specified in col_header_list."
     flip_sign_vec = generate_sign_vec(table1, table2) if check_sign else [1]*len(table1.cell_values[0])  # correct for sign change for eigenvector comparisons
+    randRange1 = generate_for_indices(len(table1.cell_values), check_all, num_per_dim, 0)
+    randRange2 = generate_for_indices(len(table2.cell_values), check_all, num_per_dim, 0)
+
 
     for ind in range(num_comparison):
         col_name = col_header_list[ind]
         next_name=False
 
-        for name_ind1 in range(len(table1.cell_values)):
+        for name_ind1 in randRange1:
             if col_name!=str(table1.cell_values[name_ind1][0]):
                 continue
-            for name_ind2 in range(len(table2.cell_values)):
+
+            for name_ind2 in randRange2:
                 if not(col_name==str(table2.cell_values[name_ind2][0])):
                     continue
 
                 # now we have the col header names, do the actual comparison
                 if str(table1.cell_values[name_ind1][0])==str(table2.cell_values[name_ind2][0]):
-                    for indC in range(1, len(table2.cell_values[name_ind2])):
+                    randRange3 = generate_for_indices(len(table2.cell_values[name_ind2]), check_all, num_per_dim,1)
+                    for indC in randRange3:
                         val1 = table1.cell_values[name_ind1][indC]
                         val2 = table2.cell_values[name_ind2][indC]*flip_sign_vec[indC]
 
@@ -1413,6 +1423,14 @@ def assert_H2OTwoDimTable_equal(table1, table2, col_header_list, tolerance=1e-6,
             if next_name:   # ready to go to the next name in col_header_list
                 break
     print("******* Congrats!  Test passed.  Maximum difference of your comparison is {0}".format(worst_error))
+
+def generate_for_indices(list_size, check_all, num_per_dim, start_val):
+    if check_all:
+        return list(range(start_val, list_size))
+    else:
+        randomList = list(range(start_val, list_size))
+        shuffle(randomList)
+        return randomList[0:min(list_size, num_per_dim)]
 
 def generate_sign_vec(table1, table2):
     sign_vec = [1]*len(table1.cell_values[0])

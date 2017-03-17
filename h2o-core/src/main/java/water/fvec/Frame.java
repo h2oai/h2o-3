@@ -1433,6 +1433,10 @@ public class Frame extends Lockable<Frame> {
 
   /** Convert this Frame to a CSV (in an {@link InputStream}), that optionally
    *  is compatible with R 3.1's recent change to read.csv()'s behavior.
+   *
+   *  WARNING: Note that the end of a file is denoted by the read function
+   *  returning 0 instead of -1.
+   *
    *  @return An InputStream containing this Frame as a CSV */
   public InputStream toCSV(boolean headers, boolean hex_string) {
     return new CSVStream(this, headers, hex_string);
