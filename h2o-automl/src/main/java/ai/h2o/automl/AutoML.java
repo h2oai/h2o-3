@@ -282,7 +282,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return timeRemainingMs() > 0;
   }
 
-  public void pollAndUpdateProgress(Stage stage, String name, long workContribution, Job parentJob, Job subJob) {
+  private enum JobType {
+    Unknown,
+    ModelBuild,
+    HyperparamSearch
+  }
+
+  public void pollAndUpdateProgress(Stage stage, String name, long workContribution, Job parentJob, Job subJob, JobType subJobType) {
     if (null == subJob) {
       parentJob.update(workContribution, "SKIPPED: " + name);
       return;
@@ -292,7 +298,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     long lastWorkedSoFar = 0;
     long cumulative = 0;
-    boolean isGridSearch = (subJob._result.get() instanceof Grid);
     int gridLastCount = 0;
 
     while (subJob.isRunning()) {
@@ -301,12 +306,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
       parentJob.update(Math.round(workedSoFar - lastWorkedSoFar), name);
 
-      if (isGridSearch) {
+      if (JobType.HyperparamSearch == subJobType) {
         Grid grid = (Grid)subJob._result.get();
         int gridCount = grid.getModelCount();
         if (gridCount > gridLastCount) {
           userFeedback.info(Stage.ModelTraining,
                   "Built: " + gridCount + " models for search: " + name);
+          leaderboard.addModels(grid.getModelKeys());
           gridLastCount = gridCount;
         }
       }
@@ -321,14 +327,17 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
 
     // pick up any stragglers:
-    if (isGridSearch) {
+    if (JobType.HyperparamSearch == subJobType) {
       Grid grid = (Grid)subJob._result.get();
       int gridCount = grid.getModelCount();
       if (gridCount > gridLastCount) {
         userFeedback.info(Stage.ModelTraining,
                 "Built: " + gridCount + " models for search: " + name);
+        leaderboard.addModels(grid.getModelKeys());
         gridLastCount = gridCount;
       }
+    } else if (JobType.ModelBuild == subJobType) {
+      leaderboard.addModel((Model)subJob._result.get());
     }
 
     // add remaining work
@@ -687,22 +696,14 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // build a fast RF with default settings...
     ///////////////////////////////////////////////////////////
     Job<DRFModel>defaultRandomForestJob = defaultRandomForest();
-    pollAndUpdateProgress(Stage.ModelTraining, "Default Random Forest build", 50, this.job(), defaultRandomForestJob);
-    if(defaultRandomForestJob != null) {
-      DRFModel defaultDRF = (DRFModel) defaultRandomForestJob.get();
-      leaderboard.addModel(defaultDRF);
-    }
+    pollAndUpdateProgress(Stage.ModelTraining, "Default Random Forest build", 50, this.job(), defaultRandomForestJob, JobType.ModelBuild);
 
 
     ///////////////////////////////////////////////////////////
     // ... and another with "XRT" / extratrees settings
     ///////////////////////////////////////////////////////////
     Job<DRFModel>defaultExtremelyRandomTreesJob = defaultExtremelyRandomTrees();
-    pollAndUpdateProgress(Stage.ModelTraining, "Default Extremely Random Trees (XRT) build", 50, this.job(), defaultExtremelyRandomTreesJob);
-    if(defaultExtremelyRandomTreesJob != null) {
-      DRFModel defaultXRT = (DRFModel) defaultExtremelyRandomTreesJob.get();
-      leaderboard.addModel(defaultXRT);
-    }
+    pollAndUpdateProgress(Stage.ModelTraining, "Default Extremely Random Trees (XRT) build", 50, this.job(), defaultExtremelyRandomTreesJob, JobType.ModelBuild);
 
 
     ///////////////////////////////////////////////////////////
@@ -710,55 +711,38 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     ///////////////////////////////////////////////////////////
     // TODO: run for only part of the remaining time?
     Job<Grid>glmJob = defaultSearchGLM();
-    pollAndUpdateProgress(Stage.ModelTraining, "GLM hyperparameter search", 50, this.job(), glmJob);
-    if(glmJob != null) {
-      Grid glmGrid = glmJob.get();
-      leaderboard.addModels(glmGrid.getModelKeys());
-    }
+    pollAndUpdateProgress(Stage.ModelTraining, "GLM hyperparameter search", 50, this.job(), glmJob, JobType.HyperparamSearch);
 
     ///////////////////////////////////////////////////////////
     // build GBMs with the default search parameters
     ///////////////////////////////////////////////////////////
     // TODO: run for only part of the remaining time?
     Job<Grid> gbmJob = defaultSearchGBM();
-    pollAndUpdateProgress(Stage.ModelTraining, "GBM hyperparameter search", 150, this.job(), gbmJob);
-    if (gbmJob != null) {
-      Grid gbmGrid = gbmJob.get();
-      leaderboard.addModels(gbmGrid.getModelKeys());
-    }
+    pollAndUpdateProgress(Stage.ModelTraining, "GBM hyperparameter search", 150, this.job(), gbmJob, JobType.HyperparamSearch);
 
     ///////////////////////////////////////////////////////////
     // build DL models with the default search parameter set 1
     ///////////////////////////////////////////////////////////
     // TODO: run for only part of the remaining time?
     Job<Grid>dlJob1 = defaultSearchDL1();
-    pollAndUpdateProgress(Stage.ModelTraining, "DeepLearning hyperparameter search 1", 150, this.job(), dlJob1);
-    if(dlJob1 != null) {
-      Grid dlGrid = dlJob1.get();
-      leaderboard.addModels(dlGrid.getModelKeys());
-    }
+    pollAndUpdateProgress(Stage.ModelTraining, "DeepLearning hyperparameter search 1", 150, this.job(), dlJob1, JobType.HyperparamSearch);
+
 
     ///////////////////////////////////////////////////////////
     // build DL models with the default search parameter set 2
     ///////////////////////////////////////////////////////////
     // TODO: run for only part of the remaining time?
     Job<Grid>dlJob2 = defaultSearchDL2();
-    pollAndUpdateProgress(Stage.ModelTraining, "DeepLearning hyperparameter search 2", 200, this.job(), dlJob2);
-    if(dlJob2 != null) {
-      Grid dlGrid = dlJob2.get();
-      leaderboard.addModels(dlGrid.getModelKeys());
-    }
+    pollAndUpdateProgress(Stage.ModelTraining, "DeepLearning hyperparameter search 2", 200, this.job(), dlJob2, JobType.HyperparamSearch);
+
 
     ///////////////////////////////////////////////////////////
     // build DL models with the default search parameter set 3
     ///////////////////////////////////////////////////////////
     // TODO: run for only part of the remaining time?
     Job<Grid>dlJob3 = defaultSearchDL3();
-    pollAndUpdateProgress(Stage.ModelTraining, "DeepLearning hyperparameter search 3", 300, this.job(), dlJob3);
-    if(dlJob3 != null) {
-      Grid dlGrid = dlJob3.get();
-      leaderboard.addModels(dlGrid.getModelKeys());
-    }
+    pollAndUpdateProgress(Stage.ModelTraining, "DeepLearning hyperparameter search 3", 300, this.job(), dlJob3, JobType.HyperparamSearch);
+
 
     ///////////////////////////////////////////////////////////
     // (optionally) build StackedEnsemble
@@ -792,11 +776,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
             notEnsembles[notEnsembleIndex++] = aModel._key;
 
         Job<StackedEnsembleModel> ensembleJob = stack(notEnsembles);
-
-        pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build", 50, this.job(), ensembleJob);
-
-        StackedEnsembleModel ensemble = (StackedEnsembleModel) ensembleJob.get();
-        leaderboard.addModel(ensemble);
+        pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build", 50, this.job(), ensembleJob, JobType.ModelBuild);
       }
     }
     userFeedback.info(Stage.Workflow, "AutoML: build done");
