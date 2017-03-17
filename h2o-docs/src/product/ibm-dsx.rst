@@ -15,9 +15,9 @@ This section show how simple it is to use H2O R with IBM DSX.
   .. figure:: images/ibm-select-r-studio.png
       :alt: Start RStudio
 
-3. Install and start H2O R using the instructions included on the `H2O Download site <http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html>`__. Note that this page opens by default to the **Download and Run** tab. Be sure to select the **Install in R** tab. |install|
+3. Install and start H2O R using the instructions included on the `H2O Download site <http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html>`__. Note that this page opens by default to the **Download and Run** tab. Be sure to select the **Install in R** tab for R installation instructions. |install|
 
-  You can also view a quick start video of starting H2O in R by clicking `here <https://www.youtube.com/embed/zzV1kTCnmR0?list=PLNtMya54qvOHbBdA1x8FNRSpMBEHmhxr0>`__. 
+  You can also view a quick start video of installing and starting H2O in R by clicking `here <https://www.youtube.com/embed/zzV1kTCnmR0?list=PLNtMya54qvOHbBdA1x8FNRSpMBEHmhxr0>`__. 
 
   .. |install| image:: images/ibm_install_in_r.png
      :height: 24
@@ -26,4 +26,8 @@ This section show how simple it is to use H2O R with IBM DSX.
   .. figure:: images/ibm-start-h2o.png
       :alt: Install and start H2O
 
-After H2O is installed and running, you are ready to use H2O in DSX!
+After H2O is installed and running, you are ready to use H2O in DSX! Refer to any of the following references for more information about using H2O with R:
+
+- `New User Quick Start <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#new-user-quick-start>`__
+- `R Booklet <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/RBooklet.pdf>`__
+- `R Demos <https://github.com/h2oai/h2o-3/tree/master/h2o-r/demos>`__
