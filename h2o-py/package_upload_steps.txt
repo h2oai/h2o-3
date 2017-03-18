@@ -43,10 +43,13 @@ Upload to Anaconda
 
         $ python setup.py bdist_wheel
 
-3. Build the conda package and upload to anaconda automatically
+3. Change `__version__` in h2o/__init__.py from "SUBST_PROJECT_VERSION" to the actual release version.
+
+4. Build the conda package and upload to anaconda automatically
 
         $ cd conda
         $ conda build h2o
+
 
 
 ===================================
