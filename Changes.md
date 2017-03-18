@@ -1,8 +1,52 @@
-#Recent Changes
+# Recent Changes
 
-##H2O
+## H2O
 
-###Ueno (3.10.4.1) - 3/3/2017
+### Ueno (3.10.4.2) - 3/18/2017
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4119'>PUBDEV-4119</a>] -         Deep Learning: mini_batch_size &gt;&gt;&gt; 1 causes OOM issues
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4135'>PUBDEV-4135</a>] -         head(df) and tail(df) results in R are inconsistent for datetime columns
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4144'>PUBDEV-4144</a>] -         GLM with family = multinomial, intercept=false, and weights or SkipMissing produces error
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4155'>PUBDEV-4155</a>] -         glm hot fix: fix model.score0 for multinomial
+</li>
+</ul>
+
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4133'>PUBDEV-4133</a>] -         Add option to specify a port range for the Hadoop driver callback
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4139'>PUBDEV-4139</a>] -         Support reading MOJO from a classpath resource
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4056'>PUBDEV-4056</a>] -         Arff Parser doesn&#39;t recognize spaces in @attribute
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4099'>PUBDEV-4099</a>] -         How to generate Precision Recall AUC (PRAUC) from the scala code
+</li>
+</ul>
+
+<h4>        Docs
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3977'>PUBDEV-3977</a>] -         Documentation: Add documentation for word2vec
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4118'>PUBDEV-4118</a>] -         Documentation: Add topic for using with IBM Data Science Experience
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4149'>PUBDEV-4149</a>] -         Document &quot;driverportrange&quot; option of H2O&#39;s Hadoop driver
+</li>
+</ul>
+
+### Ueno (3.10.4.1) - 3/3/2017
 
 <h4>        Technical task
 </h4>
@@ -115,7 +159,7 @@
 </li>
 </ul>
 
-###Tverberg (3.10.3.5) - 2/16/2017
+### Tverberg (3.10.3.5) - 2/16/2017
 
 <h4>        Bug
 </h4>
@@ -144,7 +188,7 @@
 </li>
 </ul>
 
-###Tverberg (3.10.3.4) - 2/3/2017
+### Tverberg (3.10.3.4) - 2/3/2017
 
 <h4>        Bug
 </h4>
@@ -153,7 +197,7 @@
 </li>
 </ul>
 
-###Tverberg (3.10.3.3) - 2/2/2017
+### Tverberg (3.10.3.3) - 2/2/2017
 
 <h4>        Bug
 </h4>
@@ -169,7 +213,7 @@
 </li>
 </ul>
 
-###Tverberg (3.10.3.2) - 1/31/2017
+### Tverberg (3.10.3.2) - 1/31/2017
 
 <h4>        Bug
 </h4>
@@ -178,7 +222,7 @@
 </li>
 </ul>
 
-###Tverberg (3.10.3.1) - 1/30/2017
+### Tverberg (3.10.3.1) - 1/30/2017
 
 <h4>        Bug
 </h4>
@@ -259,7 +303,7 @@
 </li>
 </ul>
 
-###Tutte (3.10.2.2) - 1/12/2017
+### Tutte (3.10.2.2) - 1/12/2017
 
 <h4>        Bug
 </h4>
@@ -275,7 +319,7 @@
 </li>
 </ul>
 
-###Tutte (3.10.2.1) - 12/22/2016
+### Tutte (3.10.2.1) - 12/22/2016
 
 <h4>        Bug
 </h4>
@@ -377,7 +421,7 @@
 </li>
 </ul>
 
-###Turnbull (3.10.1.2) - 12/14/2016
+### Turnbull (3.10.1.2) - 12/14/2016
 
 <h4>        Bug
 </h4>
@@ -456,7 +500,7 @@
 </li>
 </ul>
 
-###Turing (3.10.0.10) - 11/7/2016
+### Turing (3.10.0.10) - 11/7/2016
 
 <h4>        Bug
 </h4>
@@ -467,7 +511,7 @@
 </li>
 </ul>
 
-###Turing (3.10.0.9) - 10/25/2016
+### Turing (3.10.0.9) - 10/25/2016
 
 <h4>        Bug
 </h4>
@@ -491,7 +535,7 @@
 </li>
 </ul>
 
-###Turing (3.10.0.8) - 10/10/2016
+### Turing (3.10.0.8) - 10/10/2016
 
 <h4>        Technical task
 </h4>
@@ -556,7 +600,7 @@
 </li>
 </ul>
 
-###Turing (3.10.0.7) - 9/19/2016
+### Turing (3.10.0.7) - 9/19/2016
 
 <h4>        Bug
 </h4>
