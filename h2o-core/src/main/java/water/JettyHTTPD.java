@@ -29,10 +29,14 @@ import water.util.StringUtils;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.*;
+import java.io.EOFException;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URLDecoder;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
 
 /**
  * Embedded Jetty instance inside H2O.
@@ -47,6 +51,15 @@ public class JettyHTTPD {
   private static final ThreadLocal<Integer> _status = new ThreadLocal<>();
 
   private static final ThreadLocal<String> _userAgent = new ThreadLocal<>();
+  private static Authenticator AUTHENTICATOR = new BasicAuthenticator();
+
+  /**
+   * Set the authenticator used by the {@link SecurityHandler}. The default authenticator is the
+   * {@link BasicAuthenticator}.
+   *
+   * @param authenticator
+   */
+  public static void setAuthenticator(Authenticator authenticator) { AUTHENTICATOR = authenticator; }
 
   private static void startRequestLifecycle() {
     _startMillis.set(System.currentTimeMillis());
@@ -235,7 +248,7 @@ public class JettyHTTPD {
       security.setConstraintMappings(Collections.singletonList(mapping));
 
       // Authentication / Authorization
-      security.setAuthenticator(new BasicAuthenticator());
+      security.setAuthenticator(AUTHENTICATOR);
       security.setLoginService(loginService);
 
       // Pass-through to H2O if authenticated.
