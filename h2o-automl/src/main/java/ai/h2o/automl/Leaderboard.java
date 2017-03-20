@@ -164,9 +164,10 @@ public class Leaderboard extends Keyed<Leaderboard> {
     // We've updated the DKV but not this instance, so:
 
     this.models = this.modelKeys();
+    // always
+    EckoClient.updateLeaderboard(this);
     if (null != newLeader[0]) {
       userFeedback.info(UserFeedbackEvent.Stage.ModelTraining, "New leader: " + newLeader[0]);
-      EckoClient.updateLeaderboard(this);
     }
   }
 
@@ -261,7 +262,74 @@ public class Leaderboard extends Keyed<Leaderboard> {
     delete();
   }
 
+  public String rankTsv() {
+    String fieldSeparator = "\\t";
+    String lineSeparator = "\\n";
 
+    StringBuffer sb = new StringBuffer();
+//    sb.append("Rank").append(fieldSeparator).append("Error").append(lineSeparator);
+    sb.append("Error").append(lineSeparator);
+
+    Model[] models = models();
+    for (int i = models.length - 1; i >= 0; i--) {
+      // TODO: allow the metric to be passed in.  Note that this assumes the validation (or training) frame is the same.
+      Model m = models[i];
+      ModelMetrics mm =
+              m._output._cross_validation_metrics != null ?
+                      m._output._cross_validation_metrics :
+                      m._output._validation_metrics != null ?
+                              m._output._validation_metrics :
+                              m._output._training_metrics;
+
+      // sb.append(i + 1);
+      // sb.append(fieldSeparator);
+
+      if (m._output.isBinomialClassifier()) {
+        sb.append(((ModelMetricsBinomial)mm).auc());
+      } else if (m._output.isClassifier()) {
+        sb.append(((ModelMetricsMultinomial)mm).mean_per_class_error());
+      } else if (m._output.isSupervised()) {
+        sb.append(((ModelMetricsRegression)mm).residual_deviance());
+      }
+
+      sb.append(lineSeparator);
+    }
+    return sb.toString();
+  }
+
+  public String timeTsv() {
+    String fieldSeparator = "\\t";
+    String lineSeparator = "\\n";
+
+    StringBuffer sb = new StringBuffer();
+    sb.append("Time").append(fieldSeparator).append("Error").append(lineSeparator);
+
+    Model[] models = models();
+    for (int i = models.length - 1; i >= 0; i--) {
+      // TODO: allow the metric to be passed in.  Note that this assumes the validation (or training) frame is the same.
+      Model m = models[i];
+      ModelMetrics mm =
+              m._output._cross_validation_metrics != null ?
+                      m._output._cross_validation_metrics :
+                      m._output._validation_metrics != null ?
+                              m._output._validation_metrics :
+                              m._output._training_metrics;
+
+      sb.append(timestampFormat.format(m._output._end_time));
+      sb.append(fieldSeparator);
+
+      if (m._output.isBinomialClassifier()) {
+        sb.append(((ModelMetricsBinomial)mm).auc());
+      } else if (m._output.isClassifier()) {
+        sb.append(((ModelMetricsMultinomial)mm).mean_per_class_error());
+      } else if (m._output.isSupervised()) {
+        sb.append(((ModelMetricsRegression)mm).residual_deviance());
+      }
+
+      sb.append(lineSeparator);
+    }
+    return sb.toString();
+  }
 /*
   public static String toString(Model[] models) {
     return toString(null, models, " ", "\n");
@@ -271,9 +339,9 @@ public class Leaderboard extends Keyed<Leaderboard> {
     return toString(project, models, "\n");
   }
   */
-private static final SimpleDateFormat timestampFormat = new SimpleDateFormat("HH:mm:ss.SSS");
+  private static final SimpleDateFormat timestampFormat = new SimpleDateFormat("HH:mm:ss.SSS");
 
-  public static String toString(String project, Model[] models, String fieldSeparator, String lineSeparator, boolean includeTitle) {
+  public static String toString(String project, Model[] models, String fieldSeparator, String lineSeparator, boolean includeTitle, boolean includeHeader, boolean includeTimestamp) {
     StringBuilder sb = new StringBuilder();
     if (includeTitle) {
       sb.append("Leaderboard for project \"")
@@ -297,7 +365,7 @@ private static final SimpleDateFormat timestampFormat = new SimpleDateFormat("HH
                               m._output._validation_metrics :
                               m._output._training_metrics;
 
-      if (! printedHeader) {
+      if (includeHeader && ! printedHeader) {
         sb.append("Model_ID");
         sb.append(fieldSeparator);
 
@@ -309,8 +377,10 @@ private static final SimpleDateFormat timestampFormat = new SimpleDateFormat("HH
           sb.append("mean_residual_deviance");
         }
         sb.append(fieldSeparator);
-        sb.append("timestamp");
-        sb.append(lineSeparator);
+        if (includeTimestamp) {
+          sb.append("timestamp");
+          sb.append(lineSeparator);
+        }
         printedHeader = true;
       }
 
@@ -324,9 +394,11 @@ private static final SimpleDateFormat timestampFormat = new SimpleDateFormat("HH
       } else if (m._output.isSupervised()) {
         sb.append(((ModelMetricsRegression)mm).residual_deviance());
       }
-      sb.append(fieldSeparator);
 
-      sb.append(timestampFormat.format(m._output._end_time));
+      if (includeTimestamp) {
+        sb.append(fieldSeparator);
+        sb.append(timestampFormat.format(m._output._end_time));
+      }
 
       sb.append(lineSeparator);
     }
@@ -334,7 +406,7 @@ private static final SimpleDateFormat timestampFormat = new SimpleDateFormat("HH
   }
 
   public String toString(String fieldSeparator, String lineSeparator) {
-    return toString(project, models(), fieldSeparator, lineSeparator, true);
+    return toString(project, models(), fieldSeparator, lineSeparator, true, true, false);
   }
 
   @Override

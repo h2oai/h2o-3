@@ -36,6 +36,8 @@ public class EckoClient {
     int httpStatus = -1;
     final String definitions = "at / def Feedback Timestamp Level Stage Message" +
             // " def LeaderboardModel ID Metric" +
+//            " add Error in vis  input tsv  mark point  x Rank x-type O  y Error y-type Q" +
+            // " add Error in vis  input tsv  mark point y Error y-type O" +
             " add Leaderboard in table" +
             " add \"User Feedback\" as map of Feedback" +
             feedbackTableStyle +
@@ -107,15 +109,21 @@ public class EckoClient {
     }
 
     if (eckoEnabled) {
-      String leaderboardTsv = leaderboard.toString(leaderboard.getProject(), leaderboard.models(), "\\t", "\\n", false);
+      String leaderboardTsv = leaderboard.toString(leaderboard.getProject(), leaderboard.models(), "\\t", "\\n", false, true, true);
+      String rankTsv = leaderboard.rankTsv();
+      String timeTsv = leaderboard.timeTsv();
 
       int httpStatus = -1;
       try {
         httpStatus = Request.Put(eckoHost)
                 .connectTimeout(eckoTimeout)
                 .socketTimeout(eckoTimeout)
-                .bodyString("at / put Leaderboard \"" +
-                                leaderboardTsv + "\"",
+                .bodyString(
+                        "at / put Leaderboard \"" +
+                        leaderboardTsv + "\"" +
+//                        "at / put Error \"" +
+//                        rankTsv + "\"",
+                                "",
                         ContentType.TEXT_PLAIN)
                 .execute()
                 .returnResponse()
