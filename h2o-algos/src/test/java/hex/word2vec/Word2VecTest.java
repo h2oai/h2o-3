@@ -9,6 +9,7 @@ import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.parser.BufferedString;
+import water.util.ArrayUtils;
 import water.util.Log;
 
 import java.util.*;
@@ -149,25 +150,31 @@ public class Word2VecTest extends TestUtil {
       w2vm._output._vecs = new float[] {1.0f, 0.0f, 0.0f, 1.0f};
       DKV.put(w2vm);
 
-      String[] sentences = {
-              "a", "b", null,
-              "a", "c", null,
-              "c", null,
-              "a", "a" /*chunk end*/, "a", "b", null,
-              "b" // no terminator at the end
+      String[][] chunks = {
+              new String[] {"a", "b", null, "a", "c", null, "c", null, "a", "a"},
+              new String[] {"a", "b", null},
+              new String[] {null, null},
+              new String[] {"b", "b", "a"},
+              new String[] {"b"} // no terminator at the end
       };
+      long[] layout = new long[chunks.length];
+      String[] sentences = new String[0];
+      for (int i = 0; i < chunks.length; i++) {
+        sentences = ArrayUtils.append(sentences, chunks[i]);
+        layout[i] = chunks[i].length;
+      }
 
       Frame f = new TestFrameBuilder()
               .withName("data")
               .withColNames("Sentences")
               .withVecTypes(Vec.T_STR)
               .withDataForCol(0, sentences)
-              .withChunkLayout(10, 4)
+              .withChunkLayout(layout)
               .build();
 
       Frame result = Scope.track(w2vm.transform(f.vec(0), Word2VecModel.AggregateMethod.AVERAGE));
-      Vec expectedAs = Scope.track(dvec(0.5, 1.0, Double.NaN, 0.75, 0.0));
-      Vec expectedBs = Scope.track(dvec(0.5, 0.0, Double.NaN, 0.25, 1.0));
+      Vec expectedAs = Scope.track(dvec(0.5, 1.0, Double.NaN, 0.75, Double.NaN, Double.NaN, 0.25));
+      Vec expectedBs = Scope.track(dvec(0.5, 0.0, Double.NaN, 0.25, Double.NaN, Double.NaN, 0.75));
 
       assertVecEquals(expectedAs, result.vec(w2vm._output._vocab.get(new BufferedString("a"))), 0.0001);
       assertVecEquals(expectedBs, result.vec(w2vm._output._vocab.get(new BufferedString("b"))), 0.0001);
