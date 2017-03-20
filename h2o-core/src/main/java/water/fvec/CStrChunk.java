@@ -1,11 +1,11 @@
 package water.fvec;
 
 import water.*;
+import water.util.SetOfBytes;
 import water.util.UnsafeUtils;
 import water.parser.BufferedString;
 
 import java.util.Arrays;
-import java.util.HashMap;
 
 public class CStrChunk extends Chunk {
   static final int NA = -1;
@@ -44,23 +44,30 @@ public class CStrChunk extends Chunk {
   @Override public boolean set_impl(int idx, String str) { return false; }
 
   @Override public boolean isNA_impl(int idx) {
-    int off = UnsafeUtils.get4(_mem,idx(idx));
+    int off = intAt(idx);
     return off == NA;
   }
 
+  public int intAt(int i) { return UnsafeUtils.get4(_mem, idx(i)); }
+  public byte byteAt(int i) { return _mem[_valstart+i]; }
+  public int lengthAtOffset(int off) {
+    int len = 0;
+    while (byteAt(off + len) != 0) len++;
+    return len;
+  }
+  
   @Override public long at8_impl(int idx) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
   @Override public double atd_impl(int idx) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
   @Override public BufferedString atStr_impl(BufferedString bStr, int idx) {
-    int off = UnsafeUtils.get4(_mem,idx(idx));
+    int off = intAt(idx);
     if( off == NA ) return null;
-    int len = 0;
-    while( _mem[_valstart+off+len] != 0 ) len++;
+    int len = lengthAtOffset(off);
     return bStr.set(_mem,_valstart+off,len);
   }
 
   @Override protected final void initFromBytes () {
     _start = -1;  _cidx = -1;
-    _valstart = UnsafeUtils.get4(_mem,0);
+    _valstart = UnsafeUtils.get4(_mem, 0);
     byte b = UnsafeUtils.get1(_mem,4);
     _isAllASCII = b != 0;
     set_len((_valstart-_OFF)>>2);
@@ -211,27 +218,30 @@ public class CStrChunk extends Chunk {
   public NewChunk asciiEntropy(NewChunk nc) {
     nc.alloc_doubles(_len);
     for (int i = 0; i < _len; i++) {
-      int off = UnsafeUtils.get4(_mem, idx(i));
-      if (off != NA) {
-        HashMap<Byte, Integer> freq = new HashMap<>();
-        int j = 0;
-        while (_mem[_valstart + off + j] != 0)  {
-          Integer count = freq.get(_mem[_valstart + off + j]);
-          if (count == null) freq.put(_mem[_valstart + off + j], 1);
-          else freq.put(_mem[_valstart + off + j], count+1);
-          j++;
-        }
-        double sume = 0;
-        int N = j;
-        double n;
-        for (Byte b : freq.keySet()) {
-          n = freq.get(b);
-          sume += -n/N * Math.log(n/N) / Math.log(2);
-        }
-        nc.addNum(sume);
-      } else nc.addNA();
+      double entropy = entropyAt(i);
+      if (Double.isNaN(entropy)) nc.addNA();
+      else                       nc.addNum(entropy);
     }
     return nc;
+  }
+
+  double entropyAt(int i) {
+    int off = intAt(i);
+    if (off == NA) return Double.NaN;
+    int[] frq = new int[256];
+    int len = lengthAtOffset(off);
+    for (int j = 0; j < len; j++) {
+      frq[0xff & byteAt(off + j)]++;
+    }
+    double sum = 0;
+    for (int b = 0; b < 256; b++) {
+      int f = frq[b];
+      if (f > 0) {
+        double x = (double)f / len;
+        sum += x * Math.log(x);
+      }
+    }
+    return - sum / Math.log(2);
   }
 
   /**
@@ -240,54 +250,35 @@ public class CStrChunk extends Chunk {
    * NewChunk is the same size as the original, despite trimming.
    *
    * @param nc NewChunk to be filled with strip version of strings in this chunk
-   * @param set chars to strip, treated as ASCII
+   * @param chars chars to strip, treated as ASCII
    * @return Filled NewChunk
    */
-  public NewChunk asciiLStrip(NewChunk nc, String set) {
-    // copy existing data
-    BufferedString bs = new BufferedString().set(_mem);
+  public NewChunk asciiLStrip(NewChunk nc, String chars) {
+    SetOfBytes set = new SetOfBytes(chars);
     //update offsets and byte array
     for(int i=0; i < _len; i++) {
-      int j = 0;
-      int off = _valstart + UnsafeUtils.get4(_mem,idx(i));
+      int off = intAt(i);
       if (off != NA) {
-        while( intersects(_mem[off], set) ) off++;
-        while(_mem[off + j] != 0) j++;
-        nc.addStr(bs.set(_mem,off,j));
+        while (set.contains(byteAt(off))) off++;
+        int len = lengthAtOffset(off);
+        nc.addStr(new BufferedString(_mem, _valstart+off, len));
       } else nc.addNA();
     }
     return nc;
   }
 
-  public NewChunk asciiRStrip(NewChunk nc, String set) {
-    // copy existing data
-    BufferedString bs = new BufferedString();
+  public NewChunk asciiRStrip(NewChunk nc, String chars) {
+    SetOfBytes set = new SetOfBytes(chars);
     //update offsets and byte array
     for(int i=0; i < _len; i++) {
-      int j = 0;
-      int off = _valstart + UnsafeUtils.get4(_mem,idx(i));
+      int off = intAt(i);
       if (off != NA) {
-        while( _mem[off+j] != 0 ) j++; //Find end
-        while( intersects(_mem[off + j - 1], set) )  // March back while char in set
-          j--;
-        bs.set(_mem,off,j);
-        nc.addStr(bs);
+        int pos = off + lengthAtOffset(off);
+        while (pos --> off && set.contains(byteAt(pos)));
+        nc.addStr(new BufferedString(_mem, _valstart+off, pos - off + 1));
       } else nc.addNA();
     }
     return nc;
-  }
-
-  /**
-   * Does c intersect w/ set?
-   * @param c char to look for
-   * @param set set to look in
-   * @return true if c is in set
-   */
-  private boolean intersects(byte c, String set) {
-    for (int i=0; i < set.length(); i++)
-      if (c == set.charAt(i))
-        return true;
-    return false;
   }
 }
 
