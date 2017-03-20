@@ -432,18 +432,22 @@ class H2OFrame(object):
                     print(s.encode("ascii", "replace"))
 
 
-    def summary(self):
+    def summary(self, return_data=False):
         """
         Display summary information about the frame.
 
         Summary includes min/mean/max/sigma and other rollup data.
+        :param bool return_data: Return a dictionary of the summary output
         """
         if not self._ex._cache.is_valid(): self._frame()._ex._cache.fill()
-        if H2ODisplay._in_ipy():
-            import IPython.display
-            IPython.display.display_html(self._ex._cache._tabulate("html", True), raw=True)
+        if not return_data:
+            if H2ODisplay._in_ipy():
+                import IPython.display
+                IPython.display.display_html(self._ex._cache._tabulate("html", True), raw=True)
+            else:
+                print(self._ex._cache._tabulate("simple", True))
         else:
-            print(self._ex._cache._tabulate("simple", True))
+            return self._ex._cache._data
 
 
     def describe(self, chunk_summary=False):
