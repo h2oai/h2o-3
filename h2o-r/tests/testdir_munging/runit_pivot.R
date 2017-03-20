@@ -11,9 +11,7 @@ test.pivot <- function(){
                          missing_fraction=0.0,
                          seed=123)
     df$C3 = h2o.abs(df$C3)
-    head(df)
     df2 = h2o.pivot(df,index="C3",column="C2",value="C1")
-    head(df2)
     expect_equal(nrow(df2),101)
     expect_equal(ncol(df2),11)
 }

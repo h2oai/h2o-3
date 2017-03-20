@@ -2345,14 +2345,12 @@ class H2OFrame(object):
 
     def pivot(self, index, column, value):
         """
-        Pivot the frame designated by the three columns: index, column, and value
-        Index is a column that will be the row label
-        Column is a column that contains categorical levels which will each be turned into a column
-        Value is a column associated with an index and column
+        Pivot the frame designated by the three columns: index, column, and value. Index and column should be
+        of type enum, int, or time.
 
-        :param index:
-        :param column:
-        :param value:
+        :param index: Index is a column that will be the row label
+        :param column: The labels for the columns in the pivoted Frame
+        :param value: The column of values for the given index and column label
         :return:
         """
         assert_is_type(index, str)
@@ -2367,6 +2365,8 @@ class H2OFrame(object):
             raise H2OValueError("Value column not in H2OFrame")
         if self.type(column) not in ["enum","time","int"]:
             raise H2OValueError("'column' argument is not type enum, time or int")
+        if self.type(index) not in ["enum","time","int"]:
+            raise H2OValueError("'index' argument is not type enum, time or int")
         return H2OFrame._expr(expr=ExprNode("pivot",self,index,column,value))
 
     def sub(self, pattern, replacement, ignore_case=False):
