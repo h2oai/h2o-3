@@ -91,14 +91,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       if (hasOffsetCol() && isClassifier() && _parms._distribution == DistributionFamily.multinomial) {
         error("_offset_column", "Offset is not supported for multinomial distribution.");
       }
-      if (hasOffsetCol() && _parms._distribution == DistributionFamily.bernoulli) {
-        if (_offset.max() > 1)
-          error("_offset_column", "Offset cannot be larger than 1 for Bernoulli distribution.");
-      }
-      if (hasOffsetCol() && _parms._distribution == DistributionFamily.modified_huber) {
-        if (_offset.max() > 1)
-          error("_offset_column", "Offset cannot be larger than 1 for Modified Huber distribution.");
-      }
     }
 
     switch( _parms._distribution) {
