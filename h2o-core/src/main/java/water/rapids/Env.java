@@ -242,6 +242,7 @@ public class Env extends Iced {
     init(new AstScale());
     init(new AstSetDomain());
     init(new AstSetLevel());
+    init(new AstPivot());
 
     // Assignment; all of these lean heavily on Copy-On-Write optimizations.
     init(new AstAppend());      // Add a column

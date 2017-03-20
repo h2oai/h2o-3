@@ -1094,6 +1094,27 @@ h2o.impute <- function(data, column=0, method=c("mean","median","mode"), # TODO:
 #' @param na.rm ignore missing values
 #' @export
 range.H2OFrame <- function(...,na.rm = TRUE) c(min(...,na.rm=na.rm), max(...,na.rm=na.rm))
+
+#' Pivot the frame designated by the three columns: index, column, and value
+#' Index is a column that will be the row label
+#' Column is a column that contains categorical levels which will each be turned into a column
+#' Value is a column associated with an index and column
+#'
+#' @param x an H2OFrame
+#' @param index the column where pivoted rows should be aligned on
+#' @param column the column to pivot
+#' @param value values of the pivoted table
+#' @return An H2OFrame with columns from the columns arg, aligned on the index arg, with values from values arg
+#' @export
+h2o.pivot <- function(x, index, column, value){
+  if(! index %in% colnames(x)) stop("index column not found in dataframe")
+  if(! column %in% colnames(x)) stop("column column not found in dataframe")
+  if(! value %in% colnames(x)) stop("value column not found in dataframe")
+  if( ! h2o.getTypes(x)[grep(index,colnames(x))] %in% c("enum","time","int")) {
+    stop("index must be enum, time or int")
+  }
+  .newExpr("pivot", x, .quote(index), .quote(column), .quote(value))
+}
 #-----------------------------------------------------------------------------------------------------------------------
 # Time & Date
 #-----------------------------------------------------------------------------------------------------------------------
@@ -3815,6 +3836,7 @@ h2o.isax <- function(x, num_words, max_cardinality, optimize_card = FALSE){
   }
   .newExpr("isax", x, num_words, max_cardinality, optimize_card)
 }
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 # String Operations
