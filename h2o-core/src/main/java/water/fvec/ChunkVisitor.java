@@ -77,23 +77,28 @@ public abstract class ChunkVisitor {
     public final double [] vals;
     private int _k = 0;
     private final double _na;
-    DoubleAryVisitor(double [] vals){this(vals,Double.NaN);}
-    DoubleAryVisitor(double [] vals, double NA){
-      this.vals = vals; _na = NA;}
+    private final double _bias;
+    private final double _scale;
+    DoubleAryVisitor(double [] vals, double NA, double bias, double scale){
+      this.vals = vals; _na = NA;
+      _bias = bias;
+      _scale = scale;
+    }
     @Override
     void addValue(int val) {
-      vals[_k++] = val;}
+      vals[_k++] = _scale*(val-_bias);}
     @Override
     void addValue(long val) {
-      vals[_k++] = val;}
+      vals[_k++] = _scale*(val-_bias);}
     @Override
     void addValue(double val) {
-      vals[_k++] = Double.isNaN(val)?_na:val;}
+      vals[_k++] = Double.isNaN(val)?_na:_scale*(val-_bias);}
     @Override
     void addZeros(int zeros) {
       int k = _k;
       int kmax = k +zeros;
-      for(;k < kmax; k++) vals[k] = 0;
+      double zero = _scale*(0-_bias);
+      for(;k < kmax; k++) vals[k] = zero;
       _k = kmax;
     }
     @Override

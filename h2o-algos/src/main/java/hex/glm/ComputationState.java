@@ -42,6 +42,8 @@ public final class ComputationState {
   private GLMGradientSolver _gslvr;
   private final Job _job;
   private int _activeClass = -1;
+  protected double _obj_reg;
+
 
   /**
    *
@@ -74,7 +76,7 @@ public final class ComputationState {
     applyStrongRules(lambda, _lambda);
     adjustToNewLambda(lambda, 0);
     _lambda = lambda;
-    _gslvr = new GLMGradientSolver(_job,_parms,_activeData,l2pen(),_activeBC);
+    _gslvr = new GLMGradientSolver(_job,_obj_reg,_parms,_activeData,l2pen(),_activeBC);
   }
   public double [] beta(){
     if(_activeClass != -1)
@@ -123,6 +125,16 @@ public final class ComputationState {
   public double l1pen() {return _alpha*_lambda;}
   public double l2pen() {return (1-_alpha)*_lambda;}
 
+  /*
+   * Two max reasonable sizes for gram. Computing gram matrix is often the most efficient way of cfitting GLM, especially in distributed settings, since gram is usually much smalelr than the original dataset and is LOCAL.
+   * However, that only applies if the gram is belowe certain limit. There are two limits for dense and sparse because there are two different bottlenecks, memory and computational cost.
+   *
+   * 1. The overall size of gram has to be limited because GLM will make several copies while building it, size grows as O(P^2) and quickly outgrows available RAM.
+   * 2. The dense size (the expected number of nonzeros per observation) is limited since the cost of building the matrix grows as (M*P^2) and quickly becomes unfeasible (meaning other solvers will be much faster).
+   *
+   */
+  public int MAX_GRAM_N = 5000; // should be update in GLM init according to the amount of free ram
+  public int MAX_GRAM_DENSE = 500;
 
   /**
    * Apply strong rules to filter out expected inactive (with zero coefficient) predictors.
@@ -177,7 +189,7 @@ public final class ComputationState {
         assert _u == null || _activeData.activeCols().length == _u.length;
         _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal, ArrayUtils.select(_ginfo._gradient, cols));
         _activeBC = _bc.filterExpandedColumns(_activeData.activeCols());
-        _gslvr = new GLMGradientSolver(_job,_parms,_activeData,(1-_alpha)*_lambda,_bc);
+        _gslvr = new GLMGradientSolver(_job,_obj_reg,_parms,_activeData,(1-_alpha)*_lambda,_bc);
         assert _beta.length == cols.length;
         return;
       }
@@ -391,7 +403,7 @@ public final class ComputationState {
     }
     int [] activeCols = _activeData.activeCols();
     if(beta != _beta || _ginfo == null) {
-      _gslvr = new GLMGradientSolver(_job, _parms, _dinfo, (1 - _alpha) * _lambda, _bc);
+      _gslvr = new GLMGradientSolver(_job, _obj_reg, _parms, _dinfo, (1 - _alpha) * _lambda, _bc);
       _ginfo = _gslvr.getGradient(beta);
     }
     double[] grad = _ginfo._gradient.clone();
@@ -439,7 +451,7 @@ public final class ComputationState {
         _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal, ArrayUtils.select(_ginfo._gradient, newCols));
         _activeData = _dinfo.filterExpandedColumns(newCols);
         _activeBC = _bc.filterExpandedColumns(_activeData.activeCols());
-        _gslvr = new GLMGradientSolver(_job, _parms, _activeData, (1 - _alpha) * _lambda, _activeBC);
+        _gslvr = new GLMGradientSolver(_job, _obj_reg, _parms, _activeData, (1 - _alpha) * _lambda, _activeBC);
         return false;
       }
     }
@@ -455,7 +467,7 @@ public final class ComputationState {
       _ginfo._gradient = ArrayUtils.removeIds(_ginfo._gradient,cols);
     _activeData = _dinfo.filterExpandedColumns(activeCols);
     _activeBC = _bc.filterExpandedColumns(activeCols);
-    _gslvr = new GLMGradientSolver(_job, _parms, _activeData, (1 - _alpha) * _lambda, _activeBC);
+    _gslvr = new GLMGradientSolver(_job, _obj_reg, _parms, _activeData, (1 - _alpha) * _lambda, _activeBC);
     return activeCols;
   }
 
@@ -483,7 +495,7 @@ public final class ComputationState {
   public double objective() {return _beta == null?Double.MAX_VALUE:objective(_beta,_likelihood);}
 
   public double objective(double [] beta, double likelihood) {
-    return likelihood * _parms._obj_reg + penalty(beta) + (_activeBC == null?0:_activeBC.proxPen(beta));
+    return likelihood * _obj_reg + penalty(beta) + (_activeBC == null?0:_activeBC.proxPen(beta));
   }
   protected double  updateState(double [] beta, double likelihood) {
     _betaDiff = ArrayUtils.linfnorm(_beta == null?beta:ArrayUtils.subtract(_beta,beta),false);

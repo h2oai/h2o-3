@@ -93,6 +93,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     super.computeCrossValidation();
   }
 
+  protected int nModelsInParallel() {
+    if (!_parms._parallelize_cross_validation || _parms._max_runtime_secs != 0) return 1; //user demands serial building (or we need to honor the time constraints for all CV models equally)
+    Solver s = _parms._solver;
+    if(s == Solver.COORDINATE_DESCENT || s == Solver.IRLSM || (s == Solver.AUTO && !_parms._lambda_search)) {
+      return 1; // stay safe
+    }
+    // no limit
+    return 1000;
+  }
+
   /**
    * If run with lambda search, we need to take extra action performed after cross-val models are built.
    * Each of the folds have been computed with ots own private validation datasetd and it performed early stopping based on it.
@@ -432,8 +442,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         Log.info(LogMsg("using " + ymt.nobs() + " nobs out of " + _dinfo._adaptedFrame.numRows() + " total"));
         // if sparse data, need second pass to compute variance
         _nobs = ymt.nobs();
-        if (_parms._obj_reg == -1)
-          _parms._obj_reg = 1.0 / ymt.wsum();
+        _state._obj_reg = _parms._xobj_regx == -1?1.0 / ymt.wsum():_parms._xobj_regx;
+
         if(!_parms._stdOverride)
           _dinfo.updateWeightedSigmaAndMean(ymt.predictorSDs(), ymt.predictorMeans());
         if (_parms._family == Family.multinomial) {
@@ -444,8 +454,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _state._ymu = _parms._intercept?ymt._yMu:new double[]{_parms.linkInv(0)};
       } else {
         _nobs = _train.numRows();
-        if (_parms._obj_reg == -1)
-          _parms._obj_reg = 1.0 / _nobs;
+        _state._obj_reg = _parms._xobj_regx == -1?1.0 / _nobs:_parms._xobj_regx;
         if (_parms._family == Family.multinomial) {
           _state._ymu = MemoryManager.malloc8d(_nclass);
           for (int i = 0; i < _state._ymu.length; ++i)
@@ -458,7 +467,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         error("_compute_p_values","P-values can not be computed for constrained problems");
       _state.setBC(bc);
       if(hasOffsetCol() && _parms._intercept) { // fit intercept
-        GLMGradientSolver gslvr = new GLMGradientSolver(_job,_parms, _dinfo.filterExpandedColumns(new int[0]), 0, _state.activeBC());
+        GLMGradientSolver gslvr = new GLMGradientSolver(_job,_state._obj_reg,_parms, _dinfo.filterExpandedColumns(new int[0]), 0, _state.activeBC());
         double [] x = new L_BFGS().solve(gslvr,new double[]{-_offset.mean()}).coefs;
         Log.info(LogMsg("fitted intercept = " + x[0]));
         x[0] = _parms.linkInv(x[0]);
@@ -471,7 +480,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if(_offset != null) vecs.add(_offset);
       vecs.add(_response);
       double [] beta = getNullBeta();
-      GLMGradientInfo ginfo = new GLMGradientSolver(_job,_parms, _dinfo, 0, _state.activeBC()).getGradient(beta);
+      GLMGradientInfo ginfo = new GLMGradientSolver(_job,_state._obj_reg,_parms, _dinfo, 0, _state.activeBC()).getGradient(beta);
       _lmax = lmax(ginfo._gradient);
       _state.setLambdaMax(_lmax);
       _model = new GLMModel(_result, _parms, GLM.this, _state._ymu, _dinfo._adaptedFrame.lastVec().sigma(), _lmax, _nobs);
@@ -546,6 +555,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     private void doCleanup() {
       try {
+        if(_codVecs != null) {
+          _codVecs.remove();
+          _codVecs = null;
+        }
         if(_parms._lambda_search && _parms._is_cv_model)
           Scope.untrack(removeLater(_dinfo.getWeightsVec()._key));
         if(!_cv && _model!=null)
@@ -566,8 +579,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           t._beta = ArrayUtils.removeIds(t._beta, zeros);
         _state.removeCols(zeros);
       }
-      t._gram.mul(_parms._obj_reg);
-      ArrayUtils.mult(t._xy, _parms._obj_reg);
+      t._gram.mul(_state._obj_reg);
+      ArrayUtils.mult(t._xy, _state._obj_reg);
       return (s == Solver.COORDINATE_DESCENT)?COD_solve(t,_state._alpha,_state.lambda()):ADMM_solve(t._gram, t._xy);
     }
 
@@ -653,7 +666,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       double [] x = t._gram.mul(beta);
       for(int i = 0; i < x.length; ++i)
         x[i] = (x[i] - 2*t._xy[i]);
-      double l = .5*(ArrayUtils.innerProduct(x,beta)/_parms._obj_reg + t._yy );
+      double l = .5*(ArrayUtils.innerProduct(x,beta)/_state._obj_reg + t._yy );
       _state.updateState(beta, l);
     }
 
@@ -662,16 +675,20 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       double [] betaCnd = _state.beta();
       LineSearchSolver ls = null;
       boolean firstIter = true;
+      int iterCnt = 0;
       try {
         while (true) {
+          iterCnt++;
           long t1 = System.currentTimeMillis();
           GLMIterationTask t = new GLMTask.GLMIterationTask(_job._key, _state.activeData(), glmw, betaCnd).doAll(_state.activeData()._adaptedFrame);
           long t2 = System.currentTimeMillis();
           if (!_state._lsNeeded && (Double.isNaN(t._likelihood) || _state.objective(t._beta, t._likelihood) > _state.objective() + _parms._objective_epsilon)) {
             _state._lsNeeded = true;
           } else {
-            if (!firstIter && !_state._lsNeeded && !progress(t._beta, t._likelihood))
+            if (!firstIter && !_state._lsNeeded && !progress(t._beta, t._likelihood)) {
+              System.out.println("DONE after " + (iterCnt-1) + " iterations (1)");
               return;
+            }
             betaCnd = solveGram(s,t);
           }
           firstIter = false;
@@ -686,8 +703,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               return;
             }
             betaCnd = ls.getX();
-            if(!progress(betaCnd,ls.ginfo()))
+            if(!progress(betaCnd,ls.ginfo())) {
+              System.out.println("DONE after " + iterCnt + " iterations");
               return;
+            }
             long t4 = System.currentTimeMillis();
             Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "+" + (t4 - t3) + "=" + (t4 - t1) + "ms, step = " + ls.step() + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
           } else
@@ -776,157 +795,118 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
     }
 
+    private Frame _codVecs;
     private void fitCOD() {
-      double [] beta = _state.beta();
-      int p = _state.activeData().fullN()+ 1;
-      double wsum,wsumu; // intercept denum
+      DataInfo activeData = _state.activeData();
+      if(activeData._predictor_transform != DataInfo.TransformType.STANDARDIZE)
+        throw H2O.unimpl("COD for non-standardized data is not implemented!");
+      final double l1pen = _state.lambda() * _parms._alpha[0];
+      final double l2pen = _state.lambda() * (1-_parms._alpha[0]);
+      double [] beta = _state.beta().clone();
+      double wsumx,wsumux; // intercept denum
+      double wsumInv, wsumuInv;
       double [] denums;
-      boolean skipFirstLevel = !_state.activeData()._useAllFactorLevels;
       double [] betaold = beta.clone();
-      double objold = _state.objective();
       int iter2=0; // total cd iters
-      // get reweighted least squares vectors
-      Vec[] newVecs = _state.activeData()._adaptedFrame.anyVec().makeZeros(3);
-      Vec w = newVecs[0]; // fixed before each CD loop
-      Vec z = newVecs[1]; // fixed before each CD loop
-      Vec zTilda = newVecs[2]; // will be updated at every variable within CD loop
-      long startTimeTotalNaive = System.currentTimeMillis();
-
-      // generate new IRLS iteration
-      while (iter2++ < 30) {
-
-        Frame fr = new Frame(_state.activeData()._adaptedFrame);
-        fr.add("w", w); // fr has all data
-        fr.add("z", z);
-        fr.add("zTilda", zTilda);
-
-        GLMGenerateWeightsTask gt = new GLMGenerateWeightsTask(_job._key, _state.activeData(), _parms, beta).doAll(fr);
-        double objVal = objVal(gt._likelihood, gt._betaw, _state.lambda());
-        denums = gt.denums;
-        wsum = gt.wsum;
-        wsumu = gt.wsumu;
-        int iter1 = 0;
-
-        // coordinate descent loop
-        while (iter1++ < 100) {
-          Frame fr2 = new Frame();
-          fr2.add("w", w);
-          fr2.add("z", z);
-          fr2.add("zTilda", zTilda); // original x%*%beta if first iteration
-
-          for(int i=0; i < _state.activeData()._cats; i++) {
-            Frame fr3 = new Frame(fr2);
-            int level_num = _state.activeData()._catOffsets[i+1]-_state.activeData()._catOffsets[i];
-            int prev_level_num = 0;
-            fr3.add("xj", _state.activeData()._adaptedFrame.vec(i));
-
-            boolean intercept = (i == 0); // prev var is intercept
-            if(!intercept) {
-              prev_level_num = _state.activeData()._catOffsets[i]-_state.activeData()._catOffsets[i-1];
-              fr3.add("xjm1", _state.activeData()._adaptedFrame.vec(i-1)); // add previous categorical variable
-            }
-            int start_old = _state.activeData()._catOffsets[i];
-            GLMCoordinateDescentTaskSeqNaive stupdate;
-            if(intercept)
-              stupdate = new GLMCoordinateDescentTaskSeqNaive(intercept, false, 4 , Arrays.copyOfRange(betaold, start_old, start_old+level_num),
-                new double [] {beta[p-1]}, _state.activeData()._catLvls[i], null, null, null, null, null, skipFirstLevel).doAll(fr3);
-            else
-              stupdate = new GLMCoordinateDescentTaskSeqNaive(intercept, false, 1 , Arrays.copyOfRange(betaold, start_old,start_old+level_num),
-                Arrays.copyOfRange(beta, _state.activeData()._catOffsets[i-1], _state.activeData()._catOffsets[i]) ,  _state.activeData()._catLvls[i] ,
-                _state.activeData()._catLvls[i-1], null, null, null, null, skipFirstLevel ).doAll(fr3);
-
-            for(int j=0; j < level_num; ++j)
-              beta[_state.activeData()._catOffsets[i]+j] = ADMM.shrinkage(stupdate._temp[j] / wsumu, _state.lambda() * _parms._alpha[0])
-                / (denums[_state.activeData()._catOffsets[i]+j] / wsumu + _state.lambda() * (1 - _parms._alpha[0]));
-          }
-
-          int cat_num = 2; // if intercept, or not intercept but not first numeric, then both are numeric .
-          for (int i = 0; i < _state.activeData()._nums; ++i) {
-            GLMCoordinateDescentTaskSeqNaive stupdate;
-            Frame fr3 = new Frame(fr2);
-            fr3.add("xj", _state.activeData()._adaptedFrame.vec(i+_state.activeData()._cats)); // add current variable col
-            boolean intercept = (i == 0 && _state.activeData().numStart() == 0); // if true then all numeric case and doing beta_1
-
-            double [] meannew=null, meanold=null, varnew=null, varold=null;
-            if(i > 0 || intercept) {// previous var is a numeric var
-              cat_num = 3;
-              if(!intercept)
-                fr3.add("xjm1", _state.activeData()._adaptedFrame.vec(i - 1 + _state.activeData()._cats)); // add previous one if not doing a beta_1 update, ow just pass it the intercept term
-              if( _state.activeData()._normMul!=null ) {
-                varold = new double[]{_state.activeData()._normMul[i]};
-                meanold = new double[]{_state.activeData()._normSub[i]};
-                if (i!= 0){
-                  varnew = new double []{ _state.activeData()._normMul[i-1]};
-                  meannew = new double [] { _state.activeData()._normSub[i-1]};
-                }
-              }
-              stupdate = new GLMCoordinateDescentTaskSeqNaive(intercept, false, cat_num , new double [] { betaold[_state.activeData().numStart()+ i]},
-                new double []{ beta[ (_state.activeData().numStart()+i-1+p)%p ]}, null, null,
-                varold, meanold, varnew, meannew, skipFirstLevel ).doAll(fr3);
-
-              beta[i+_state.activeData().numStart()] = ADMM.shrinkage(stupdate._temp[0] / wsumu, _state.lambda() * _parms._alpha[0])
-                / (denums[i+_state.activeData().numStart()] / wsumu + _state.lambda() * (1 - _parms._alpha[0]));
-            }
-            else if (i == 0 && !intercept){ // previous one is the last categorical variable
-              int prev_level_num = _state.activeData().numStart()-_state.activeData()._catOffsets[_state.activeData()._cats-1];
-              fr3.add("xjm1", _state.activeData()._adaptedFrame.vec(_state.activeData()._cats-1)); // add previous categorical variable
-              if( _state.activeData()._normMul!=null){
-                varold = new double []{ _state.activeData()._normMul[i]};
-                meanold =  new double [] { _state.activeData()._normSub[i]};
-              }
-              stupdate = new GLMCoordinateDescentTaskSeqNaive(intercept, false, cat_num , new double [] {betaold[ _state.activeData().numStart()]},
-                Arrays.copyOfRange(beta,_state.activeData()._catOffsets[_state.activeData()._cats-1],_state.activeData().numStart() ), null, _state.activeData()._catLvls[_state.activeData()._cats-1],
-                varold, meanold, null, null, skipFirstLevel ).doAll(fr3);
-              beta[_state.activeData().numStart()] = ADMM.shrinkage(stupdate._temp[0] / wsumu, _state.lambda() * _parms._alpha[0])
-                / (denums[_state.activeData().numStart()] / wsumu + _state.lambda() * (1 - _parms._alpha[0]));
-            }
-          }
-          if(_state.activeData()._nums + _state.activeData()._cats > 0) {
-            // intercept update: preceded by a categorical or numeric variable
-            Frame fr3 = new Frame(fr2);
-            fr3.add("xjm1", _state.activeData()._adaptedFrame.vec(_state.activeData()._cats + _state.activeData()._nums - 1)); // add last variable updated in cycle to the frame
-            GLMCoordinateDescentTaskSeqNaive iupdate;
-            if (_state.activeData()._adaptedFrame.vec(_state.activeData()._cats + _state.activeData()._nums - 1).isCategorical()) { // only categorical vars
-              cat_num = 2;
-              iupdate = new GLMCoordinateDescentTaskSeqNaive(false, true, cat_num, new double[]{betaold[betaold.length - 1]},
-                Arrays.copyOfRange(beta, _state.activeData()._catOffsets[_state.activeData()._cats - 1], _state.activeData()._catOffsets[_state.activeData()._cats]),
-                null, _state.activeData()._catLvls[_state.activeData()._cats - 1], null, null, null, null, skipFirstLevel).doAll(fr3);
-            } else { // last variable is numeric
-              cat_num = 3;
-              double[] meannew = null, varnew = null;
-              if (_state.activeData()._normMul != null) {
-                varnew = new double[]{_state.activeData()._normMul[_state.activeData()._normMul.length - 1]};
-                meannew = new double[]{_state.activeData()._normSub[_state.activeData()._normSub.length - 1]};
-              }
-              iupdate = new GLMCoordinateDescentTaskSeqNaive(false, true, cat_num,
-                new double[]{betaold[betaold.length - 1]}, new double[]{beta[beta.length - 2]}, null, null,
-                null, null, varnew, meannew, skipFirstLevel).doAll(fr3);
-            }
-            if (_parms._intercept)
-              beta[beta.length - 1] = iupdate._temp[0] / wsum;
-          }
-          double maxdiff = ArrayUtils.linfnorm(ArrayUtils.subtract(beta, betaold), false); // false to keep the intercept
-          System.arraycopy(beta, 0, betaold, 0, beta.length);
-          if (maxdiff < _parms._beta_epsilon)
-            break;
-        }
-
-        double percdiff = Math.abs((objold - objVal)/objold);
-        if (percdiff < _parms._objective_epsilon & iter2 >1 )
-          break;
-        objold=objVal;
-        System.out.println("iter1 = " + iter1);
+      if(_codVecs == null) {
+        _codVecs = new Frame(new String[]{"w", "z", "zTilda", "d0", "d1"}, _state.activeData()._adaptedFrame.anyVec().makeVolatileDoubles(0, 0, 0, 1, 1));
+        _codVecs.add(new String[]{"c0", "c1"}, _state.activeData()._adaptedFrame.anyVec().makeVolatileInts(new int[]{0, 0}));
       }
-      System.out.println("iter2 = " + iter2);
+      final Frame fr0 = new Frame(_state.activeData()._adaptedFrame).add(_codVecs);
+      long startTimeTotalNaive = System.currentTimeMillis();
+      GLMGenerateWeightsTask gt = new GLMGenerateWeightsTask(_job._key, _state.activeData(), _parms, beta).doAll(fr0);
+      int iter1Sum = 0;
+      // generate new IRLS iteration
+      while (iter2++ < 50) {
+        denums = gt.denums;
+        wsumx = gt.wsum;
+        wsumux = gt.wsumu;
+        wsumInv = 1.0/wsumx;
+        wsumuInv = 1.0/wsumux;
+        assert wsumuInv == _state._obj_reg:"wsumux = " + wsumux + ", objreg = " + _state._obj_reg;
+        for(int i = 0; i < denums.length; ++i)
+          denums[i] = 1.0/(denums[i]*wsumuInv + l2pen);
+        int iter1 = 0;
+        int iter_cnt = 0;
+        final Frame fr1 = new Frame(_codVecs);
+        final int xjIdx = fr1.numCols();
+        fr1.add("xj", /* just a placeholder */ _codVecs.anyVec()); // add current variable col
+        double objx_old = Double.POSITIVE_INFINITY;
+
+        while (iter1++ < 100) {
+          if (activeData._cats > 0) {
+            fr1.replace(xjIdx, activeData._adaptedFrame.vec(0)); // add current variable col
+            double [] b = Arrays.copyOf(betaold,activeData._catOffsets[1]+1);
+            b[b.length-1] = 0;
+            double [] res = new GLMCoordinateDescentTaskSeqNaiveIcptCat(iter_cnt++,b, beta[betaold.length-1],activeData.catMap(0),activeData._catNAFill[0]).doAll(fr1)._res;
+            for(int j=0; j < res.length-1; ++j)
+              beta[j] = b[j] = ADMM.shrinkage(res[j]*wsumuInv, l1pen) * denums[j];
+            for (int i = 1; i < activeData._cats; ++i) {
+              fr1.replace(xjIdx, activeData._adaptedFrame.vec(i)); // add current variable col
+              double [] b2 = Arrays.copyOfRange(betaold,activeData._catOffsets[i],activeData._catOffsets[i+1]+1);
+              b2[b2.length-1] = 0;
+              res = new GLMCoordinateDescentTaskSeqNaiveCatCat(iter_cnt++,b2,b,activeData.catMap(i),activeData._catNAFill[i]).doAll(fr1)._res;
+              int off = activeData._catOffsets[i];
+              for(int j=0; j < res.length-1; ++j)
+                beta[off+j] = b2[j]  = ADMM.shrinkage(res[j]*wsumuInv, l1pen) * denums[off+j];
+              b = b2;
+            }
+            if(activeData._nums>0) {
+              fr1.replace(xjIdx,activeData._adaptedFrame.vec(activeData._cats));
+              double stupdate = new GLMCoordinateDescentTaskSeqNaiveCatNum(iter_cnt++, betaold[activeData.numStart()], b, activeData.normMul(0), activeData.normSub(0), 0 /* always standardized => mean == 0 */ ).doAll(fr1)._res;
+              beta[activeData.numStart()] = ADMM.shrinkage(stupdate * wsumuInv,l1pen) * denums[_state.activeData().numStart()];
+            } else { // catIcpt
+              beta[beta.length-1] = new GLMTask.GLMCoordinateDescentTaskSeqNaiveCatIcpt(iter_cnt++, betaold[beta.length-1], b).doAll(_codVecs)._res * wsumInv;
+            }
+          } else if(activeData._nums > 0) {
+            fr1.replace(xjIdx,activeData._adaptedFrame.vec(activeData._cats));
+            double stupdate = new GLMCoordinateDescentTaskSeqNaiveIcptNum(iter_cnt++, betaold[0], betaold[beta.length-1], activeData.normMul(0), activeData.normSub(0), 0).doAll(fr1)._res;
+            assert activeData.numStart() == 0;
+            beta[0] = ADMM.shrinkage(stupdate * wsumuInv,l1pen) * denums[0];
+          }
+          for (int i = 1; i < activeData._nums; i++) {
+            int currIdx = i + activeData.numStart();
+            int prevIdx = currIdx - 1;
+            fr1.replace(xjIdx, activeData._adaptedFrame.vec(activeData._cats+i)); // add current variable col
+            double max = (activeData._adaptedFrame.vec(i).max() - activeData.normSub(i))*activeData.normMul(i);
+            double min = (activeData._adaptedFrame.vec(i).min() - activeData.normSub(i))*activeData.normMul(i);
+            GLMCoordinateDescentTaskSeqNaiveNumNum tsk = new GLMCoordinateDescentTaskSeqNaiveNumNum(iter_cnt++, betaold[currIdx], beta[prevIdx], activeData.normMul(i), activeData.normSub(i),0,max,min).doAll(fr1);
+            beta[currIdx] = ADMM.shrinkage(tsk._res * wsumuInv,l1pen) * denums[currIdx];
+          }
+          // intercept
+          if (activeData.numNums() > 0) {
+            GLMCoordinateDescentTaskSeqNaiveNumIcpt tsk = new GLMCoordinateDescentTaskSeqNaiveNumIcpt(iter_cnt++, betaold[betaold.length - 1], beta[beta.length - 2]).doAll(_codVecs);
+            beta[beta.length - 1] = tsk._res*wsumInv;
+          }
+          double maxDiff = 0;
+          for(int i = 0; i < beta.length-1; ++i){ // intercept does not count
+            double diff = beta[i] - betaold[i];
+            if (diff > maxDiff) maxDiff = diff;
+            else if (-diff > maxDiff) maxDiff = -diff;
+          }
+          if (maxDiff < _parms._beta_epsilon)
+            break;
+          // compute new objective
+          double residual = new GLMCoordinateDescentTaskSeqNaiveResidual(beta[beta.length - 1]).doAll(_codVecs)._res;
+          double objx = residual * wsumuInv * .5  + l1pen * ArrayUtils.l1norm(beta, true) + .5 * l2pen * ArrayUtils.l2norm2(beta, true);
+          double xdiff = (((objx_old - objx) / objx_old));
+          if (xdiff < _parms._objective_epsilon*(_parms._family == Family.gaussian?1:1e-1))
+            break;
+          objx_old = objx;
+          System.arraycopy(beta,0,betaold,0,beta.length);
+        }
+        iter1Sum += iter1;
+        gt = new GLMGenerateWeightsTask(_job._key, _state.activeData(), _parms, beta).doAll(fr0);
+        if(!progress(beta.clone(),gt._likelihood))
+          break;
+      }
       long endTimeTotalNaive = System.currentTimeMillis();
-      long durationTotalNaive = (endTimeTotalNaive - startTimeTotalNaive)/1000;
-      System.out.println("Time to run Naive Coordinate Descent " + durationTotalNaive);
-      _state._iter = iter2;
-      for (Vec v : newVecs) v.remove();
-      _state.updateState(beta,objold);
+      Log.info(LogMsg("COD Naive took " + iter2 + ":" + iter1Sum + " iterations, " + (endTimeTotalNaive-startTimeTotalNaive)*0.001 + " seconds"));
     }
     private void fitModel() {
       Solver solver = (_parms._solver == Solver.AUTO) ? defaultSolver() : _parms._solver;
+//      if(solver == Solver.COORDINATE_DESCENT_NAIVE && _state.activeData().fullN() < 250)
+//        solver = Solver.COORDINATE_DESCENT;
       switch (solver) {
         case COORDINATE_DESCENT: // fall through to IRLSM
         case IRLSM:
@@ -965,12 +945,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           activeData.setPredictorTransform(DataInfo.TransformType.NONE);
           Gram g = new GLMIterationTask(_job._key,activeData,new GLMWeightsFun(_parms),beta_nostd).doAll(activeData._adaptedFrame)._gram;
           activeData.setPredictorTransform(transform); // just in case, restore the trasnform
-          g.mul(_parms._obj_reg);
+          g.mul(_state._obj_reg);
           chol = g.cholesky(null);
           beta = beta_nostd;
         }
         double [][] inv = chol.getInv();
-        ArrayUtils.mult(inv,_parms._obj_reg*se);
+        ArrayUtils.mult(inv,_state._obj_reg*se);
         _vcov = inv;
         for(int i = 0; i < zvalues.length; ++i)
           zvalues[i] = beta[i]/Math.sqrt(inv[i][i]);
@@ -1079,8 +1059,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       double oldDevTrain = _nullDevTrain;
       double oldDevTest = _nullDevTest;
-      double [] devHistoryTrain = new double[5];
-      double [] devHistoryTest = new double[5];
+      double [] devHistoryTrain = new double[3];
+      double [] devHistoryTest = new double[3];
 
       if(!_parms._lambda_search)
         updateProgress(false);
@@ -1197,24 +1177,25 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
   private Solver defaultSolver() {
     Solver s = Solver.IRLSM;
+    int max_dense = 0;
     int max_active = 0;
-    if(_parms._family == Family.multinomial )
-      for(int c = 0; c < _nclass; ++c)
-        max_active = Math.max(_state.activeDataMultinomial(c).fullN(),max_active);
-    else max_active = _state.activeData().fullN();
-    if(max_active >= 5000) // cutoff has to be somewhere
+    if(_parms._lambda_search)
+      return Solver.COORDINATE_DESCENT_NAIVE;
+    if(_parms._family == Family.multinomial ) {
+      for (int c = 0; c < _nclass; ++c) {
+        DataInfo dinfo = _state.activeDataMultinomial(c);
+        max_active = Math.max(dinfo.fullN(), max_active);
+        max_dense = Math.max(dinfo.denseN(), max_dense);
+      }
+      if(_state.l1pen() == 0 || max_active > _state.MAX_GRAM_N || max_dense > _state.MAX_GRAM_DENSE) // cutoff has to be somewhere
+        s = Solver.L_BFGS;
+      else return Solver.IRLSM;
+    }  else if(_state.activeData().fullN() > _state.MAX_GRAM_N || _state.activeData().denseN() > _state.MAX_GRAM_DENSE) {
       s = Solver.L_BFGS;
-    else if(_parms._lambda_search) { // lambda search prefers coordinate descent
-      // l1 lambda search is better with coordinate descent!
-      s = Solver.COORDINATE_DESCENT;
-    } else if(_state.activeBC().hasBounds() && !_state.activeBC().hasProximalPenalty()) {
-      s = Solver.COORDINATE_DESCENT;
-    } else if(_parms._family == Family.multinomial && _parms._alpha[0] == 0)
-      s = Solver.L_BFGS; // multinomial does better with lbfgs
-    else
-      Log.info(LogMsg("picked solver " + s));
-    if(s != Solver.L_BFGS && _parms._max_active_predictors == -1)
-      _parms._max_active_predictors = 5000;
+    }
+    Log.info(LogMsg("picked solver " + s));
+    if(s != Solver.L_BFGS && s != Solver.COORDINATE_DESCENT_NAIVE && _parms._max_active_predictors == -1)
+      _parms._max_active_predictors = _state.MAX_GRAM_N;
     _parms._solver = s;
     return s;
   }
@@ -1229,7 +1210,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         proximalPen += diff * diff * bc._rho[i];
       }
     }
-    return (likelihood * _parms._obj_reg
+    return (likelihood * _state._obj_reg
       + .5 * proximalPen
       + lambda * (alpha * ArrayUtils.l1norm(beta, _parms._intercept)
       + (1 - alpha) * .5 * ArrayUtils.l2norm2(beta, _parms._intercept)));
@@ -1268,7 +1249,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     return grads;
   }
   public double [] COD_solve(GLMIterationTask gt, double alpha, double lambda) {
-    double wsumInv = 1.0/(gt.wsum*_parms._obj_reg);
+    double wsumInv = 1.0/(gt.wsum*_state._obj_reg);
     double l1pen = lambda * alpha;
     double l2pen = lambda*(1-alpha);
     double [][] xx = gt._gram.getXX();
@@ -1636,15 +1617,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     final DataInfo _dinfo;
     final BetaConstraint _bc;
     final double _l2pen; // l2 penalty
+    private final double _obj_reg;
     double[][] _betaMultinomial;
     final Job _job;
 
-    public GLMGradientSolver(Job job, GLMParameters glmp, DataInfo dinfo, double l2pen, BetaConstraint bc) {
+    public GLMGradientSolver(Job job, double obj_reg, GLMParameters glmp, DataInfo dinfo, double l2pen, BetaConstraint bc) {
       _job = job;
       _bc = bc;
       _parms = glmp;
       _dinfo = dinfo;
       _l2pen = l2pen;
+      _obj_reg = obj_reg;
     }
 
     @Override
@@ -1662,7 +1645,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           System.arraycopy(beta, off, _betaMultinomial[i], 0, _betaMultinomial[i].length);
           off += _betaMultinomial[i].length;
         }
-        GLMMultinomialGradientTask gt = new GLMMultinomialGradientTask(_job,_dinfo, _l2pen, _betaMultinomial, _parms._obj_reg).doAll(_dinfo._adaptedFrame);
+        GLMMultinomialGradientTask gt = new GLMMultinomialGradientTask(_job,_dinfo, _l2pen, _betaMultinomial, _obj_reg).doAll(_dinfo._adaptedFrame);
         double l2pen = 0;
         for (double[] b : _betaMultinomial)
           l2pen += ArrayUtils.l2norm2(b, _dinfo._intercept);
@@ -1671,26 +1654,26 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           for(int i = _dinfo.fullN(); i < beta.length; i += _dinfo.fullN()+1)
             grad[i] = 0;
         }
-        return new GLMGradientInfo(gt._likelihood, gt._likelihood * _parms._obj_reg + .5 * _l2pen * l2pen, grad);
+        return new GLMGradientInfo(gt._likelihood, gt._likelihood * _obj_reg + .5 * _l2pen * l2pen, grad);
       } else {
         assert beta.length == _dinfo.fullN() + 1;
         assert _parms._intercept || (beta[beta.length-1] == 0);
         GLMGradientTask gt;
         if(_parms._family == Family.binomial && _parms._link == Link.logit)
-          gt = new GLMBinomialGradientTask(_job == null?null:_job._key,_dinfo,_parms,_l2pen, beta).doAll(_dinfo._adaptedFrame);
+          gt = new GLMBinomialGradientTask(_job == null?null:_job._key,_obj_reg, _dinfo,_parms,_l2pen, beta).doAll(_dinfo._adaptedFrame);
         else if(_parms._family == Family.gaussian && _parms._link == Link.identity)
-          gt = new GLMGaussianGradientTask(_job == null?null:_job._key,_dinfo,_parms,_l2pen, beta).doAll(_dinfo._adaptedFrame);
+          gt = new GLMGaussianGradientTask(_job == null?null:_job._key,_obj_reg,_dinfo,_parms,_l2pen, beta).doAll(_dinfo._adaptedFrame);
         else if(_parms._family == Family.poisson && _parms._link == Link.log)
-          gt = new GLMPoissonGradientTask(_job == null?null:_job._key,_dinfo,_parms,_l2pen, beta).doAll(_dinfo._adaptedFrame);
+          gt = new GLMPoissonGradientTask(_job == null?null:_job._key,_obj_reg,_dinfo,_parms,_l2pen, beta).doAll(_dinfo._adaptedFrame);
         else if(_parms._family == Family.quasibinomial)
-          gt = new GLMQuasiBinomialGradientTask(_job == null?null:_job._key,_dinfo,_parms,_l2pen, beta).doAll(_dinfo._adaptedFrame);
+          gt = new GLMQuasiBinomialGradientTask(_job == null?null:_job._key,_obj_reg,_dinfo,_parms,_l2pen, beta).doAll(_dinfo._adaptedFrame);
         else
-          gt = new GLMGenericGradientTask(_job == null?null:_job._key, _dinfo, _parms, _l2pen, beta).doAll(_dinfo._adaptedFrame);
+          gt = new GLMGenericGradientTask(_job == null?null:_job._key, _obj_reg,_dinfo, _parms, _l2pen, beta).doAll(_dinfo._adaptedFrame);
         double [] gradient = gt._gradient;
         double  likelihood = gt._likelihood;
         if (!_parms._intercept) // no intercept, null the ginfo
           gradient[gradient.length - 1] = 0;
-        double obj = likelihood * _parms._obj_reg + .5 * _l2pen * ArrayUtils.l2norm2(beta, true);
+        double obj = likelihood * _obj_reg + .5 * _l2pen * ArrayUtils.l2norm2(beta, true);
         if (_bc != null && _bc._betaGiven != null && _bc._rho != null)
           obj = ProximalGradientSolver.proximal_gradient(gradient, obj, beta, _bc._betaGiven, _bc._rho);
         return new GLMGradientInfo(likelihood, obj, gradient);
@@ -1700,7 +1683,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     @Override
     public GradientInfo getObjective(double[] beta) {
       double l = new GLMResDevTask(_job._key,_dinfo,_parms,beta).doAll(_dinfo._adaptedFrame)._likelihood;
-      return new GLMGradientInfo(l,l*_parms._obj_reg + .5*_l2pen*ArrayUtils.l2norm2(beta,true),null);
+      return new GLMGradientInfo(l,l*_obj_reg + .5*_l2pen*ArrayUtils.l2norm2(beta,true),null);
     }
   }
 

@@ -187,7 +187,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double _beta_epsilon = 1e-4;
     public double _objective_epsilon = -1;
     public double _gradient_epsilon = -1;
-    public double _obj_reg = -1;
+    public double _xobj_regx = -1;
     public boolean _compute_p_values = false;
     public boolean _remove_collinear_columns = false;
     public String[] _interactions=null;
@@ -215,7 +215,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         glm.error("_alpha", "Alpha value must be between 0 and 1");
       if(_lambda != null && _lambda[0] < 0)
         glm.error("_lambda", "Lambda value must be >= 0");
-      if(_obj_reg != -1 && _obj_reg <= 0)
+      if(_xobj_regx != -1 && _xobj_regx <= 0)
         glm.error("obj_reg","Must be positive or -1 for default");
       if(_prior != -1 && _prior <= 0 || _prior >= 1)
         glm.error("_prior","Prior must be in (exclusive) range (0,1)");

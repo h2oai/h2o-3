@@ -777,7 +777,10 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
    */
   public double [] getDoubles(double[] vals, int from, int to){ return getDoubles(vals,from,to, Double.NaN);}
   public double [] getDoubles(double [] vals, int from, int to, double NA){
-    return processRows(new ChunkVisitor.DoubleAryVisitor(vals,NA),from,to).vals;
+    return processRows(new ChunkVisitor.DoubleAryVisitor(vals,NA,0,1),from,to).vals;
+  }
+  public double [] getDoubles(double [] vals, int from, int to, double NA, double bias, double scale){
+    return processRows(new ChunkVisitor.DoubleAryVisitor(vals,NA,bias,scale),from,to).vals;
   }
   public int [] getIntegers(int [] vals, int from, int to, int NA){
     return processRows(new ChunkVisitor.IntAryVisitor(vals,NA),from,to).vals;
@@ -788,7 +791,7 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
    * @param ids
    */
   public double[] getDoubles(double [] vals, int [] ids){
-    return processRows(new ChunkVisitor.DoubleAryVisitor(vals),ids).vals;
+    return processRows(new ChunkVisitor.DoubleAryVisitor(vals, Double.NaN, 0,1),ids).vals;
   }
   /**
    * Sparse bulk interface, stream through the compressed values and extract them into dense double array.

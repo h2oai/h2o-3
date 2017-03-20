@@ -56,6 +56,14 @@ public class C8Chunk extends Chunk {
     }
     return vals;
   }
+
+  @Override public double [] getDoubles(double [] vals, int from, int to, double NA, double bias, double scale){
+    for(int i = from; i < to; i++) {
+      long x = UnsafeUtils.get8(_mem, 8*i);
+      vals[i-from] = (x==_NA)?NA:scale*(x-bias);
+    }
+    return vals;
+  }
   @Override public double [] getDoubles(double [] vals, int [] ids){
     int k = 0;
     for(int i:ids) {

@@ -300,8 +300,8 @@ public class GLMTest  extends TestUtil {
       for (int i = 0; i < beta.length; ++i)
         beta[i] = 1 - 2 * rnd.nextDouble();
 
-      GLMGradientTask grtSpc = new GLMBinomialGradientTask(null,dinfo, params, params._lambda[0], beta).doAll(dinfo._adaptedFrame);
-      GLMGradientTask grtGen = new GLMGenericGradientTask(null,dinfo, params, params._lambda[0], beta).doAll(dinfo._adaptedFrame);
+      GLMGradientTask grtSpc = new GLMBinomialGradientTask(null,1,dinfo, params, params._lambda[0], beta).doAll(dinfo._adaptedFrame);
+      GLMGradientTask grtGen = new GLMGenericGradientTask(null,1,dinfo, params, params._lambda[0], beta).doAll(dinfo._adaptedFrame);
       for (int i = 0; i < beta.length; ++i)
         assertEquals("gradients differ", grtSpc._gradient[i], grtGen._gradient[i], 1e-4);
       params = new GLMParameters(Family.gaussian, Family.gaussian.defaultLink, new double[]{0}, new double[]{0}, 0, 0);
@@ -313,8 +313,8 @@ public class GLMTest  extends TestUtil {
       rnd = new Random(1987654321);
       for (int i = 0; i < beta.length; ++i)
         beta[i] = 1 - 2 * rnd.nextDouble();
-      grtSpc = new GLMGaussianGradientTask(null,dinfo, params, params._lambda[0], beta).doAll(dinfo._adaptedFrame);
-      grtGen = new GLMGenericGradientTask(null,dinfo, params, params._lambda[0], beta).doAll(dinfo._adaptedFrame);
+      grtSpc = new GLMGaussianGradientTask(null,1,dinfo, params, params._lambda[0], beta).doAll(dinfo._adaptedFrame);
+      grtGen = new GLMGenericGradientTask(null,1,dinfo, params, params._lambda[0], beta).doAll(dinfo._adaptedFrame);
       for (int i = 0; i < beta.length; ++i)
         assertEquals("gradients differ: " + Arrays.toString(grtSpc._gradient) + " != " + Arrays.toString(grtGen._gradient), grtSpc._gradient[i], grtGen._gradient[i], 1e-4);
       dinfo.remove();
@@ -628,7 +628,7 @@ public class GLMTest  extends TestUtil {
       params._objective_epsilon = 0;
       params._alpha = new double[]{1};
       params._lambda = new double[]{0.001607};
-      params._obj_reg = 1.0/380;
+
       GLM glm = new GLM( params, modelKey);
       model = glm.trainModel().get();
       assertTrue(glm.isStopped());
@@ -654,7 +654,7 @@ public class GLMTest  extends TestUtil {
       DKV.put(fr._key, fr);
       // now check the ginfo
       DataInfo dinfo = new DataInfo(fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
-      GLMGradientTask lt = new GLMBinomialGradientTask(null,dinfo,params,0,beta).doAll(dinfo._adaptedFrame);
+      GLMGradientTask lt = new GLMBinomialGradientTask(null,1.0/380,dinfo,params,0,beta).doAll(dinfo._adaptedFrame);
       double [] grad = lt._gradient;
       String [] names = model.dinfo().coefNames();
       BufferedString tmpStr = new BufferedString();
@@ -823,7 +823,7 @@ public class GLMTest  extends TestUtil {
       params._train = fr._key;
       params._alpha = new double[]{0};
       params._lambda = new double[]{0};
-      params._obj_reg = 1.0/380;
+
       params._objective_epsilon = 0;
       GLM glm = new GLM( params, modelKey);
       model = glm.trainModel().get();
@@ -835,7 +835,7 @@ public class GLMTest  extends TestUtil {
       fr.add("CAPSULE", fr.remove("CAPSULE"));
       // now check the ginfo
       DataInfo dinfo = new DataInfo(fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
-      GLMGradientTask lt = new GLMBinomialGradientTask(null,dinfo, params, 0, beta_1).doAll(dinfo._adaptedFrame);
+      GLMGradientTask lt = new GLMBinomialGradientTask(null,1.0/380,dinfo, params, 0, beta_1).doAll(dinfo._adaptedFrame);
       double[] grad = lt._gradient;
       for (int i = 0; i < beta_1.length; ++i)
         assertEquals(0, grad[i] + betaConstraints.vec("rho").at(i) * (beta_1[i] - betaConstraints.vec("beta_given").at(i)), 1e-4);
@@ -1196,7 +1196,7 @@ public class GLMTest  extends TestUtil {
       params._valid = fr._key;
       params._lambda = new double[] {0.01};//null; //new double[]{0.02934};//{0.02934494}; // null;
       params._alpha = new double[]{1};
-      params._standardize = false;
+      params._standardize = true;
       params._solver = Solver.COORDINATE_DESCENT_NAIVE;
       params._lambda_search = true;
       params._nlambdas = 5;
@@ -1266,7 +1266,7 @@ public class GLMTest  extends TestUtil {
       params._valid = fr._key;
       params._lambda = null; // new double [] {0.25};
       params._alpha = new double[]{1};
-      params._standardize = false;
+      params._standardize = true;
       params._solver = Solver.COORDINATE_DESCENT_NAIVE;//IRLSM
       params._lambda_search = true;
       params._nlambdas = 5;
@@ -1440,7 +1440,6 @@ public class GLMTest  extends TestUtil {
     }
   }
 
-
   /**
    * Simple test for binomial family (no regularization, test both lsm solvers).
    * Runs the classical prostate, using dataset with race replaced by categoricals (probably as it's supposed to be?), in any case,
@@ -1514,7 +1513,6 @@ public class GLMTest  extends TestUtil {
       params._lambda = null;
       params._alpha = new double[]{0};
       params._prior = -1;
-      params._obj_reg = -1;
       params._max_iterations = 500;
       params._objective_epsilon = 1e-6;
       // test the same data and model with prior, should get the same model except for the intercept

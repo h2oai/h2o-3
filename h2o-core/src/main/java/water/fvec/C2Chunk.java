@@ -47,6 +47,13 @@ public class C2Chunk extends Chunk {
     }
     return vals;
   }
+  @Override public double [] getDoubles(double [] vals, int from, int to, double NA, double bias, double scale){
+    for(int i = from; i < to; i++) {
+      int x = UnsafeUtils.get2(_mem, 2*i);
+      vals[i-from] = (x == _NA)?NA:scale*(x-bias);
+    }
+    return vals;
+  }
 
   @Override public double [] getDoubles(double [] vals, int [] ids){
     int k = 0;
@@ -65,6 +72,7 @@ public class C2Chunk extends Chunk {
     }
     return vals;
   }
+
 
   @Override
   public <T extends ChunkVisitor> T processRows(T v, int from, int to) {

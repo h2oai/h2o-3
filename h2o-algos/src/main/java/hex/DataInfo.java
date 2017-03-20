@@ -62,6 +62,17 @@ public class DataInfo extends Keyed<DataInfo> {
 
   public int catNAFill(int cid) {return _catNAFill[cid];}
 
+  public int[] catMap(int i) {
+    return _catMap == null?null:_catMap[i];
+  }
+
+  public double normMul(int i) {
+    return _normMul == null?1:_normMul[i];
+  }
+  public double normSub(int i) {
+    return _normSub == null?0:_normSub[i];
+  }
+
   public enum TransformType {
     NONE, STANDARDIZE, NORMALIZE, DEMEAN, DESCALE;
 
@@ -642,6 +653,16 @@ public class DataInfo extends Keyed<DataInfo> {
       return Arrays.binarySearch(_interactionVecs,colid) >= 0;
   }
 
+  public int numDense(){
+    int res = 0;
+    Vec [] v = _adaptedFrame.bulkRollups();
+    long sparseThreshold = _adaptedFrame.numRows() >> 4;
+    for(int i = _cats; i < _cats + _nums; i++)
+      if(v[i].nzCnt() > sparseThreshold)
+        res++;
+    return res;
+  }
+  public final int denseN()     { return numCats() + numDense();      }
   /**
    *
    * Get the fully expanded number of predictor columns.

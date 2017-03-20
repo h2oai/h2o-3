@@ -69,6 +69,13 @@ public class C1Chunk extends Chunk {
     }
     return vals;
   }
+  @Override public double [] getDoubles(double [] vals, int from, int to, double NA, double bias, double scale){
+    for(int i = from; i < to; i++) {
+      int x = 0xFF&_mem[i];
+      vals[i-from] = (x == _NA)?NA:scale*(x-bias);
+    }
+    return vals;
+  }
 
   @Override public double [] getDoubles(double [] vals, int [] ids){
     int k = 0;

@@ -595,6 +595,26 @@ public class Vec extends Keyed<Vec> {
     return vecs;
   }
 
+  public Vec [] makeVolatileDoubles(final double... vals){
+    Vec [] vecs = makeZeros(vals.length);
+    for(Vec v:vecs) {
+      v._volatile = true;
+      DKV.put(v);
+    }
+    new MRTask(){
+      @Override public void map(Chunk [] cs){
+        int len = cs[0].len();
+        for(int i = 0; i < cs.length; ++i) {
+          double [] ary = MemoryManager.malloc8d(len);
+          Arrays.fill(ary,vals[i]);
+          cs[i].setVolatile(ary);
+        }
+      }
+    }.doAll(vecs);
+
+    return vecs;
+  }
+
   /**
    * Make a temporary work vec of int [] .
    * Volatile vecs can only be used locally (chunks do not serialize) and are assumed to change frequently(MRTask call preWiting() by default).

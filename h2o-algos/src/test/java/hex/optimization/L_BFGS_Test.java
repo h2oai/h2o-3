@@ -71,8 +71,7 @@ public class L_BFGS_Test  extends TestUtil {
       Frame valid = new Frame(source._names.clone(),source.vecs().clone());
       dinfo = new DataInfo(source, valid, 1, false, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
       DKV.put(dinfo._key,dinfo);
-      glmp._obj_reg = 1/380.0;
-      GLMGradientSolver solver = new GLMGradientSolver(null,glmp, dinfo, 1e-5, null);
+      GLMGradientSolver solver = new GLMGradientSolver(null,1/380.0,glmp, dinfo, 1e-5, null);
       L_BFGS lbfgs = new L_BFGS().setGradEps(1e-8);
 
       double [] beta = MemoryManager.malloc8d(dinfo.fullN()+1);
@@ -107,10 +106,10 @@ public class L_BFGS_Test  extends TestUtil {
       GLMParameters glmp = new GLMParameters(Family.gaussian);
       glmp._lambda = new double[]{1e-5};
       glmp._alpha = new double[]{0};
-      glmp._obj_reg = 0.01;
+
       dinfo = new DataInfo(source, valid, 1, false, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
       DKV.put(dinfo._key,dinfo);
-      GradientSolver solver = new GLMGradientSolver(null,glmp, dinfo, 1e-5, null);
+      GradientSolver solver = new GLMGradientSolver(null,0.01,glmp, dinfo, 1e-5, null);
       L_BFGS lbfgs = new L_BFGS().setMaxIter(20);
       double [] beta = MemoryManager.malloc8d(dinfo.fullN()+1);
       beta[beta.length-1] = new GLMWeightsFun(glmp).link(source.lastVec().mean());

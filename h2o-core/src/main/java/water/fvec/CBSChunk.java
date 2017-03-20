@@ -159,6 +159,29 @@ public class CBSChunk extends Chunk {
     set_len(((_mem.length - _OFF)*8 - _gap) / _bpv);
   }
 
+  @Override public int [] getIntegers(int [] vals, int from, int to, int NA) {
+    for(int i = from; i < to; ++i) {
+      int x = read(i);
+      vals[i - from] = (x == _NA)?NA:x;
+    }
+    return vals;
+  }
+
+  @Override public double [] getDoubles(double [] vals, int from, int to, double NA) {
+    for(int i = from; i < to; ++i) {
+      int x = read(i);
+      vals[i - from] = (x == _NA)?NA:x;
+    }
+    return vals;
+  }
+  @Override public double [] getDoubles(double [] vals, int from, int to, double NA, double bias, double scale) {
+    for(int i = from; i < to; ++i) {
+      int x = read(i);
+      vals[i - from] = (x == _NA)?NA:scale*(x-bias);
+    }
+    return vals;
+  }
+
   @Override
   public boolean hasFloat() {return false;}
 
