@@ -46,7 +46,7 @@ When ``quantile`` is specified, then users can also specify a ``quantile_alpha``
 
 When ``huber`` is specified, then users can also specify a ``huber_alpha`` value. This indicates the top percentile of error that should be considered as outliers. 
 
-For all distributions except ``multinomial``, you can specify an ``offset_column``. Offsets are per-row “bias values” that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__. If the distribution is Bernoulli, then the value for the ``offset_column`` must be less than 1.
+For all distributions except ``multinomial``, you can specify an ``offset_column``. Offsets are per-row “bias values” that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__. 
 
 Some examples of response distributions are provided below.
 

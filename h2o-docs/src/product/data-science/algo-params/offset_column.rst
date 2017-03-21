@@ -8,7 +8,9 @@
 Description
 ~~~~~~~~~~~
 
-An offset is a per-row “bias value” that is used during model training. For Gaussian distributions, offsets can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__. If the distribution is Bernoulli, the value must be less than one. This option is not applicable for multinomial distributions.
+An offset is a per-row “bias value” that is used during model training. For Gaussian distributions, offsets can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__. This option is not applicable for multinomial distributions.
+
+Because the ``offset_column`` is hard to create, it may be useful to pass in a column of predicted results from a previous model. (In the link function space, for example if working with a binary response, use the predicted logit values.) For example, this previous model could contain features not present in your current training set. 
 
 **Note**: 
 
@@ -20,6 +22,8 @@ Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
 - `distribution <distribution.html>`__
+- `family <family.html>`__
+- `link <link.html>`__
 - `weights_column <weights_column.html>`__
 - `y <y.html>`__
 
