@@ -10,6 +10,7 @@ import water.nbhm.NonBlockingHashMap;
 import water.rapids.Assembly;
 import water.util.*;
 
+import javax.servlet.*;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -244,6 +245,9 @@ public class RequestServer extends HttpServlet {
       final String contentType = request.getContentType();
       Properties parms = new Properties();
       String postBody = null;
+      if (H2O.ARGS.cors) {
+        response.setHeader("Access-Control-Allow-Origin", "*");
+      }
 
       if ("application/json".equals(contentType)) {
         StringBuffer jb = new StringBuffer();

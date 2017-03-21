@@ -308,6 +308,9 @@ final public class H2O {
     /** -no_latest_check Do not attempt to retrieve latest H2O version from S3 on startup */
     public boolean noLatestCheck = false;
 
+    /** If true, adds Access-Control-Allow-Origin: * header to all REST endpoint responses **/
+    public boolean cors = false;
+
     @Override public String toString() {
       StringBuilder result = new StringBuilder();
 
@@ -359,6 +362,7 @@ final public class H2O {
     }
     public boolean matches(String s) {
       _lastMatchedFor = s;
+      System.out.println("matches: " + _s + "\t" + s + "\t" + _s.equals("-"  + s));
       if (_s.equals("-"  + s)) return true;
       if (_s.equals("--" + s)) return true;
       return false;
@@ -387,7 +391,6 @@ final public class H2O {
     for (AbstractH2OExtension e : H2O.getExtensions()) {
       args = e.parseArguments(args);
     }
-
     for (int i = 0; i < args.length; i++) {
       OptString s = new OptString(args[i]);
       if (s.matches("h") || s.matches("help")) {
@@ -531,6 +534,9 @@ final public class H2O {
       }
       else if (s.matches("no_latest_check")) {
         ARGS.noLatestCheck = true;
+      }
+      else if (s.matches("debug.cors")) {
+        ARGS.cors = true;
       }
       else {
         parseFailed("Unknown argument (" + s + ")");
