@@ -9,10 +9,8 @@ import org.joda.time.format.DateTimeFormatterBuilder;
 import water.MRTask;
 import water.util.Log;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
+
 import static water.util.StringUtils.*;
 
 public abstract class ParseTime {
@@ -44,6 +42,28 @@ public abstract class ParseTime {
     {bytesOf("dec"),bytesOf("december")}
   };
 
+  private static List<String> dateFormats = Arrays.asList(
+      "YYYY-MM-dd HH:mm:ss.SSS",
+      "YYYYMMdd",
+      "YYYYMM"
+  );
+
+  private static List<DateTimeFormatter> dtfs = new LinkedList<DateTimeFormatter>() {{
+    for (String f : dateFormats) add(DateTimeFormat.forPattern(f));
+  }};
+
+  public static Date parseDate(String s) {
+    long maybeSomething = ParseTime.attemptTimeParse(new BufferedString(s));
+    if (maybeSomething != Long.MIN_VALUE) return new Date(maybeSomething);
+
+    for (DateTimeFormatter dtf : dtfs)
+      try {
+        return dtf.parseDateTime(s).toDate();
+      } catch (Exception ignored) {}
+
+    return null;
+  }
+  
   public static long attemptTimeParse( BufferedString str ) {
     try {
       long t0 = attemptYearFirstTimeParse(str); // "yyyy-MM-dd" and time if present
@@ -340,8 +360,7 @@ public abstract class ParseTime {
   }
   private static boolean isDigit(byte b) { return (b >= '0' && b <= '9'); }
   private static boolean isChar(byte b) {
-    if (b < 'A' || (b >'Z' && b < 'a')  || b > 'z') return false;
-    else return true;
+    return !(b < 'A' || (b >'Z' && b < 'a')  || b > 'z');
   }
 
   private static DateTimeZone _timezone;
@@ -367,7 +386,7 @@ public abstract class ParseTime {
   public static String listTimezones() {
     DateTimeFormatter offsetFormatter = new DateTimeFormatterBuilder().appendTimeZoneOffset(null, true, 2, 4).toFormatter();
     Set<String> idSet = DateTimeZone.getAvailableIDs();
-    Map<String, String> tzMap = new TreeMap();
+    Map<String, String> tzMap = new TreeMap<String, String>();
     Iterator<String> it = idSet.iterator();
     String id, cid, offset, key, output;
     DateTimeZone tz;
