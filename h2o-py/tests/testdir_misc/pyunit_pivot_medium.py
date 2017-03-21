@@ -1,6 +1,10 @@
+#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
+"""Pyunit for h2o.pivot"""
 from __future__ import print_function
 import sys
 sys.path.insert(1,"../../")
+from builtins import range
 import h2o
 from tests import pyunit_utils
 
@@ -24,9 +28,9 @@ def pivot():
     print("Testing size: ")
     for s in [100,200,300,400,500,1000,2000,4211,100000]:
         print(str(s))
-        df1 = h2o.H2OFrame({"index":range(1,s+1),"column":["a"]*s,"value":[1]*s})
-        df2 = h2o.H2OFrame({"index":range(1,s+1),"column":["b"]*s,"value":[2]*s})
-        df3 = h2o.H2OFrame({"index":range(1,s+1),"column":["c"]*s,"value":[3]*s})
+        df1 = h2o.H2OFrame({"index":list(range(1,s+1)),"column":["a"]*s,"value":[1]*s})
+        df2 = h2o.H2OFrame({"index":list(range(1,s+1)),"column":["b"]*s,"value":[2]*s})
+        df3 = h2o.H2OFrame({"index":list(range(1,s+1)),"column":["c"]*s,"value":[3]*s})
         dfall = df1.rbind(df2)
         dfall = dfall.rbind(df3)
         res = dfall.pivot(index="index", column="column", value="value")
