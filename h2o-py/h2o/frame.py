@@ -2369,31 +2369,6 @@ class H2OFrame(object):
         if max_cardinality <= 0: raise H2OValueError("max_cardinality must be greater than 0")
         return H2OFrame._expr(expr=ExprNode("isax", self, num_words, max_cardinality, optimize_card))
 
-    def pivot(self, index, column, value):
-        """
-        Pivot the frame designated by the three columns: index, column, and value. Index and column should be
-        of type enum, int, or time.
-
-        :param index: Index is a column that will be the row label
-        :param column: The labels for the columns in the pivoted Frame
-        :param value: The column of values for the given index and column label
-        :return:
-        """
-        assert_is_type(index, str)
-        assert_is_type(column, str)
-        assert_is_type(value, str)
-        col_names = self.names
-        if index not in col_names:
-            raise H2OValueError("Index not in H2OFrame")
-        if column not in col_names:
-            raise H2OValueError("Column not in H2OFrame")
-        if value not in col_names:
-            raise H2OValueError("Value column not in H2OFrame")
-        if self.type(column) not in ["enum","time","int"]:
-            raise H2OValueError("'column' argument is not type enum, time or int")
-        if self.type(index) not in ["enum","time","int"]:
-            raise H2OValueError("'index' argument is not type enum, time or int")
-        return H2OFrame._expr(expr=ExprNode("pivot",self,index,column,value))
 
     def sub(self, pattern, replacement, ignore_case=False):
         """
