@@ -38,6 +38,8 @@ src/main/java/water/BuildVersion.java
 .Rproj.user
 .RData
 .Rhistory
+*.Rproj
+*.Rbuildignore
 Rsandbox
 .DS_Store
 .DS_Store?
