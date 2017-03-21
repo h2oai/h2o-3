@@ -105,4 +105,52 @@ These are available in the Bluemix/Softlayer management console.
       </property>
     </configuration>
 
+Google Cloud Storage Connector for Hadoop & Spark
+~~~~~~~~~~~~~~~~~~~~~~~~
 
+**Required Library**
+
+To access the Google Cloud Store Object Store, Google's cloud storage connector, ``gcs-connector-latest-hadoop2.jar`` is required.
+The official documentation and driver can be found here https://cloud.google.com/hadoop/google-cloud-storage-connector
+
+**H2O Command Line**
+
+::
+
+    H2O on Hadoop:
+    hadoop jar h2o-driver.jar -libjars /path/to/gcs-connector-latest-hadoop2.jar
+
+    Sparkling Water
+    export SPARK_CLASSPATH=/home/nick/spark-2.0.2-bin-hadoop2.6/lib_managed/jar/gcs-connector-latest-hadoop2.jar
+    sparkling-water-2.0.5/bin/sparkling-shell --conf "spark.executor.memory=10g"
+
+**URI Scheme**
+
+Data source is available under the regular Google Storage URI structure: ``gs://<BUCKETNAME>/path/to/file``
+For example,
+
+::
+
+    gs://mybucket/iris.csv
+
+**core-site.xml Configuration**
+
+core-site.xml needs to be configured for at least the following properties (class, project-id, bucketname) in the example below.
+A full list of configuration options is found here https://github.com/GoogleCloudPlatform/bigdata-interop/blob/master/gcs/conf/gcs-core-default.xml
+
+.. code:: xml
+
+    <configuration>
+        <property>
+                <name>fs.gs.impl</name>
+                <value>com.google.cloud.hadoop.fs.gcs.GoogleHadoopFileSystem</value>
+        </property>
+        <property>
+                <name>fs.gs.project.id</name>
+                <value>my-google-project-id</value>
+        </property>
+        <property>
+                <name>fs.gs.system.bucket</name>
+                <value>mybucket</value>
+        </property>
+    </configuration>
