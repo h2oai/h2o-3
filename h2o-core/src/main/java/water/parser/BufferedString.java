@@ -22,7 +22,13 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
    private int _off;
    private int _len;
 
-   BufferedString(byte[] buf, int off, int len) { _buf = buf;  _off = off;  _len = len; }
+   public BufferedString(byte[] buf, int off, int len) { 
+     _buf = buf;  
+     _off = off;  
+     _len = len; 
+     assert len >= 0 :  "Bad length " + len;
+   }
+
    private BufferedString(byte[] buf) { this(buf,0,buf.length); }
    // Cloning constructing used during collecting unique categoricals
    BufferedString(BufferedString from) {
@@ -45,6 +51,11 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
     return this;
   }
 
+  /**
+   * Comparison, according to Comparable interface
+   * @param o other string to compare
+   * @return -1 or 0 or 1, as specified in Comparable
+   */
    @Override public int compareTo( BufferedString o ) {
      int len = Math.min(_len,o._len);
      for( int i=0; i<len; i++ ) {
@@ -134,6 +145,7 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
     _buf = buf;
     _off = off;
     _len = len;
+    assert len >= 0 : "Bad length " + len;
     return this;
   }
 
