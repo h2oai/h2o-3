@@ -362,7 +362,6 @@ final public class H2O {
     }
     public boolean matches(String s) {
       _lastMatchedFor = s;
-      System.out.println("matches: " + _s + "\t" + s + "\t" + _s.equals("-"  + s));
       if (_s.equals("-"  + s)) return true;
       if (_s.equals("--" + s)) return true;
       return false;
