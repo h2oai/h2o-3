@@ -8,6 +8,11 @@ import water.Key;
 import water.TestUtil;
 import water.fvec.*;
 
+import java.util.*;
+
+import static org.junit.Assert.*;
+import static water.parser.ParseTime.*;
+
 public class ParseTimeTest extends TestUtil {
   @BeforeClass static public void setup() { stall_till_cloudsize(1); }
   private double[] d(double... ds) { return ds; }
@@ -308,6 +313,24 @@ public class ParseTimeTest extends TestUtil {
   @Test public void testParseInvalidPubDev3675() {
     long millis = ParseTime.attemptTimeParse(new BufferedString("XXXX0101"));
     Assert.assertEquals("Expected Long.MIN_VALUE as a marker of invalid date", Long.MIN_VALUE, millis);
+  }
+  
+  @Test public void testParseDatePubDev4159() {
+    Map<String, String> samples = new HashMap<String, String>() {
+      {
+        put("my first date", "null");
+        put("2017-05-28 23:15:42.123", "Sun May 28 23:15:42 PDT 2017");
+        put("2017-03-17 10:49:00.567", "Fri Mar 17 10:49:00 PDT 2017");
+        put("192005", "Sat May 01 00:00:00 PST 1920");
+        put("200101", "Mon Jan 01 00:00:00 PST 2001");
+        put("200202", "Fri Feb 01 00:00:00 PST 2002");
+        put("20151011", "Sun Oct 11 00:00:00 PDT 2015");
+        put("20151122", "Sun Nov 22 00:00:00 PST 2015");
+      }};
+    
+    for (String k : samples.keySet()) {
+      assertEquals("for " + k, samples.get(k), ""+parseDate(k));
+    }
   }
 
 }

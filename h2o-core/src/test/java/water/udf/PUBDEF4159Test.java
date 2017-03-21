@@ -5,12 +5,14 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.junit.Test;
-import water.udf.fp.FP;
-import water.udf.fp.Function;
-import water.udf.fp.Predicate;
-import water.udf.fp.PureFunctions;
+import water.fvec.Frame;
+import water.fvec.Vec;
+import water.parser.BufferedString;
+import water.parser.ParseTime;
+import water.udf.fp.*;
 import water.udf.specialized.Enums;
 import water.util.StringUtils;
+import water.util.TwoDimTable;
 
 import java.io.File;
 import java.io.IOException;
@@ -54,6 +56,9 @@ public class PUBDEF4159Test extends UdfTestBase {
   }};
   
   private static Date d(String s) {
+    long maybeSomething = ParseTime.attemptTimeParse(new BufferedString(s));
+    if (maybeSomething != Long.MIN_VALUE) return new Date(maybeSomething);
+
     for (DateTimeFormatter dtf : dtfs) 
       try {
         return dtf.parseDateTime(s).toDate();
@@ -65,6 +70,24 @@ public class PUBDEF4159Test extends UdfTestBase {
   public static final Function<String, Date> AS_DATE = new Function<String, Date>() {
     @Override public Date apply(String s) {
       return d(s);
+    }
+  };
+  
+  public static final Function2<Date, Date, Double> YEARS_BETWEEN = new Function2<Date, Date, Double>() {
+    @Override
+    public Double apply(Date from, Date to) {
+      double d = (to.getTime() - from.getTime()) / 1000.0 / 3600 / 24 / 365.25;
+//      System.out.println(d + " years from " + from + " to " + to);
+      return d;
+    }
+  };
+
+  public static final Function2<Date, Date, Double> MONTHS_BETWEEN = new Function2<Date, Date, Double>() {
+    @Override
+    public Double apply(Date from, Date to) {
+      double d = (to.getTime() - from.getTime()) / 1000.0 / 3600 / 24 / 365.25 * 12;
+//      System.out.println(d + " months from " + from + " to " + to);
+      return d;
     }
   };
 
@@ -81,88 +104,57 @@ public class PUBDEF4159Test extends UdfTestBase {
     final boolean na_0 = dates.isNA(0);
     assertTrue(na_0);
     assertTrue(dates.isNA(9));
-    for (int i = 1; i < 9; i++) assertFalse("@" + i, dates.isNA(i));
+    for (int i = 1; i < 9; i++) {
+      assertFalse("@" + i, dates.isNA(i));
+    }
 
     assertEquals(new Date(1489747740567L + 7*3600*1000L), dates.apply(2));
+    Column<Date> materialized = Dates.materialize(dates);
+
+    for (int i = 0; i < inputDates.size(); i++) {
+      assertEquals(dates.apply(i), materialized.apply(i));
+    }
+
+    assertEquals(Vec.T_TIME, materialized.vec().get_type());
   }
 
   @Test
-  public void testOfDates() throws Exception {
-    Column<Date> c = willDrop(Dates.newColumn(1 << 20, new Function<Long, Date>() {
-       public Date apply(Long i) {
-        return new Date(i*3600000L*24);
+  public void test_deltaYears() throws Exception {
+    Column<String> x2 = Strings.newColumn(1200, new Function<Long, String>() {
+
+      @Override public String apply(Long i) {
+        int y = i.intValue() / 12 + 1917;
+        int m = i.intValue() % 12 + 1;
+        return String.format("%4d-%02d-15 04:20:00", y, m);
       }
-    }));
-    assertEquals(new Date(0), c.apply(0));
-    assertEquals(new Date(258 * 24 * 3600 * 1000L), c.apply(258));
+    });
 
-    Column<Date> materialized = Dates.materialize(c);
+    Column<Date> d2 = new FunColumn<>(AS_DATE, x2);
 
-    for (int i = 0; i < 100000; i++) {
-      assertEquals(c.apply(i), materialized.apply(i));
-    }
+    Column<Date> d1 = Dates.newColumn(1200, new Function<Long, Date>() {
+      @Override public Date apply(Long i) {
+        return new Date((i-365*53) * 1000L*3600*24);
+      }
+    });
+
+    Column<Double> years = Doubles.materialize(new Fun2Column<Date, Date, Double>(YEARS_BETWEEN, d1, d2));
+    
+    Column<Double> months = Doubles.materialize(new Fun2Column<Date, Date, Double>(MONTHS_BETWEEN, d1, d2));
+
+    Vec yv = years.vec();
+    assertEquals(0.004, yv.at(0), 0.0005);
+    assertEquals(88.658, yv.at(1100), 0.0005);
+
+    Vec mv = months.vec();
+    assertEquals(0.05, mv.at(0), 0.0005);
+    assertEquals(1063.9, mv.at(1100), 0.001);
+    Frame f = new Frame(d1.vec(), d2.vec(), years.vec(), months.vec());
+
+    TwoDimTable tdt = f.toTwoDimTable(1198, 1200, false);
+    String expected = "Frame null (1200 rows and 4 cols):\n" +
+        "                   C1                   C2                 C3                  C4\n" +
+        "  1920-04-25 16:00:00  2016-11-15 04:20:00  96.55719066088676  1158.6862879306411\n" +
+        "  1920-04-26 16:00:00  2016-12-15 04:20:00  96.63658833371359  1159.6390600045631\n";
+    assertEquals(expected, tdt.toString());
   }
-
-//  @Test
-//  public void testOfSquares() throws Exception {
-//    Column<Double> x = five_x();
-//
-//    Column<Double> y = new FunColumn<>(PureFunctions.SQUARE, x);
-//
-//    assertEquals(0.0, y.apply(0), 0.000001);
-//    assertEquals(44100.0, y.apply(42), 0.000001);
-//    assertEquals(10000000000.0, y.apply(20000), 0.000001);
-//  }
-//
-//  @Test
-//  public void testFun2CompatibilityWithConst() throws Exception {
-//    Column<Double> x = five_x();
-//    Column<Double> y = Doubles.constColumn(42.0, 1 << 20);
-//    Column<Double> z = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
-//      public Double apply(Long i) { return Math.sin(i*0.0001); }
-//    }));
-//
-//    try {
-//      Column<Double> z1 = new Fun2Column<>(PureFunctions.PLUS, x, y);
-//      fail("Column incompatibility should be detected");
-//    } catch (AssertionError ae) {
-//      // as designed
-//    }
-//
-//    try {
-//      Column<Double> r = new Fun3Column<>(PureFunctions.X2_PLUS_Y2_PLUS_Z2, x, y, z);
-//      fail("Column incompatibility should be detected");
-//    } catch (AssertionError ae) {
-//      // as designed
-//    }
-//
-//    try {
-//      Column<Double> r = new Fun3Column<>(PureFunctions.X2_PLUS_Y2_PLUS_Z2, x, z, y);
-//      fail("Column incompatibility should be detected");
-//    } catch (AssertionError ae) {
-//      // as designed
-//    }
-//  }
-
-//  @Test
-//  public void testUnfoldingFrame() throws IOException {
-//    File file = getFile("smalldata/chicago/chicagoAllWeather.csv");
-//    final List<String> lines = Files.readLines(file, Charset.defaultCharset());
-//    Column<String> source = willDrop(Strings.newColumn(lines));
-//    Column<List<String>> split = new UnfoldingColumn<>(PureFunctions.splitBy(","), source, 10);
-//    UnfoldingFrame<String> frame = new UnfoldingFrame<>(Strings, split.size(), split, 11);
-//    List<DataColumn<String>> columns = frame.materialize();
-//    
-//    for (int i = 0; i < lines.size(); i++) {
-//      List<String> fromColumns = new ArrayList<>(10);
-//      for (int j = 0; j < 10; j++) {
-//        String value = columns.get(j).get(i);
-//        if (value != null) fromColumns.add(value);
-//      }
-//      String actual = StringUtils.join(" ", fromColumns);
-//      assertEquals(lines.get(i).replaceAll("\\,", " ").trim(), actual);
-//    }
-//    
-//    assertTrue("Need to align the result", columns.get(5).isCompatibleWith(source));
-//  }
 }
