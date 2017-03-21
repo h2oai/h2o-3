@@ -44,24 +44,27 @@ public class AstPivot extends AstBuiltin<AstPivot> {
     // This is the sort then MRTask method.
     // Create the target Frame
     // Now sort on the index key, result is that unique keys will be localized
-    fr = fr.sort(new int[]{0});
+    Frame fr2 = fr.sort(new int[]{0});
     final long[] classes = new VecUtils.CollectDomain().doAll(fr.vec(colIdx)).domain();
     final int nClass = fr.vec(colIdx).isNumeric() ? classes.length : fr.vec(colIdx).domain().length;
     String[] header = (String[]) ArrayUtils.addAll(new String[]{index}, fr.vec(colIdx).domain());
-    Frame initialPass = new pivotTask(fr,index,column,value)
-      .doAll(nClass+1, Vec.T_NUM, fr)
+    Frame initialPassPreSort = new pivotTask(fr2,index,column,value)
+      .doAll(nClass+1, Vec.T_NUM, fr2)
       .outputFrame(null, header, null);
-    initialPass = initialPass.sort(new int[]{0});
+    fr2.delete();
+    Frame initialPass = initialPassPreSort.sort(new int[]{0});
+    initialPassPreSort.delete();
     // Collapse identical index rows even when index crosses over chunk boundaries
     Frame secondPass = new pivotCleanup()
       .doAll(nClass+1,Vec.T_NUM,initialPass)
       .outputFrame(null,header,null);
+
+    initialPass.delete();
     Frame result = new Frame(secondPass.vec(0).makeCopy(null,fr.vec(indexIdx).get_type()));
     result._key = Key.<Frame>make();
     result.setNames(new String[]{index});
     secondPass.remove(0);
     result.add(secondPass);
-    initialPass.delete();
     return new ValFrame(result);
   }
 

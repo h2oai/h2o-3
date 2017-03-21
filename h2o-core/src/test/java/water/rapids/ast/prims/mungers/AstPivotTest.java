@@ -21,14 +21,14 @@ public class AstPivotTest  extends TestUtil {
         Scope.enter();
         try {
             Session sess = new Session();
-            Frame fr = new TestFrameBuilder()
+            Frame fr = Scope.track(new TestFrameBuilder()
                     .withName("$fr", sess)
                     .withColNames("index", "col", "value")
                     .withVecTypes(Vec.T_NUM,Vec.T_CAT,Vec.T_NUM)
                     .withDataForCol(0, ar(1, 2, 3, 4, 2, 4))
                     .withDataForCol(1, ar("a", "a", "a", "a", "b", "b"))
                     .withDataForCol(2, ard(10.1, 10.2, 10.3, 10.4, 20.1, 22.2))
-                    .build();
+                    .build());
             Val val = Rapids.exec("(pivot $fr 'index' 'col' 'value')", sess);
             Assert.assertTrue(val instanceof ValFrame);
             Frame res = Scope.track(val.getFrame());
