@@ -11,7 +11,7 @@ import water.udf.DataColumns;
 /**
  * Factory for strings column
  */
-public class Strings extends DataColumns.BaseFactory<String> {
+public class Strings extends DataColumns.BaseFactory<String, DataColumn<String>> {
   public static final Strings Strings = new Strings();
   
   public Strings() {
@@ -48,7 +48,7 @@ public class Strings extends DataColumns.BaseFactory<String> {
      */
     public StringColumn() {}
     
-    StringColumn(Vec vec, ColumnFactory<String> factory) { super(vec, factory); }
+    StringColumn(Vec vec, ColumnFactory<String, DataColumn<String>> factory) { super(vec, factory); }
 
     @Override
     public String get(long idx) {

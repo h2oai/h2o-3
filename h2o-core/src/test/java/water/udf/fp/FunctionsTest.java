@@ -1,16 +1,19 @@
 package water.udf.fp;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import static water.udf.fp.Functions.*;
 
 import static org.junit.Assert.*;
+import static water.udf.fp.Functions.*;
 
 /**
  * Tests for Functions.
- * 
+ *
  * Created by vpatryshev on 12/13/16.
  */
 public class FunctionsTest {
@@ -54,19 +57,37 @@ public class FunctionsTest {
     Function<Integer, String> f = new Function<Integer, String>() {
       @Override public String apply(Integer i) { return "<<" + i + ">>"; }
     };
-    
+
     assertFalse(map(Collections.<Integer>emptyList(), f).iterator().hasNext());
     assertEquals(Arrays.asList("<<2>>","<<3>>","<<5>>","<<7>>"), map(Arrays.asList(2,3,5,7), f));
   }
 
   @Test
   public void testConstant() throws Exception {
-    Function<String, Integer> c = Functions.<String, Integer>constant(1001590);
+    Function<String, Integer> c = constant(1001590);
     assertEquals(1001590, c.apply("not my number").intValue());
+  }
+
+  //@SafeVarargs
+  private static <T> List<T> listOf(T... ss) {
+    return Arrays.asList(ss);
   }
 
   @Test
   public void testSplitBy() throws Exception {
+    assertEquals(listOf(""), splitBy(":").apply(""));
+    assertTrue(Functions.splitBy(":").apply(":").isEmpty());
+    assertEquals(listOf(" "), splitBy(":").apply(" :"));
+    assertEquals(listOf("", " "), splitBy(":").apply(": "));
+  }
+
+  @Test
+  public void testOneHotEncode() throws Exception {
+    Unfoldable<Integer, Integer> sut = oneHotEncode(new String[]{"red", "white", "blue"});
+    assertEquals(listOf(1,0,0,0), sut.apply(0));
+    assertEquals(listOf(0,1,0,0), sut.apply(1));
+    assertEquals(listOf(0,0,1,0), sut.apply(2));
+    assertEquals(listOf(0,0,0,1), sut.apply(null));
     assertEquals(Arrays.asList(""), splitBy(":").apply(""));
     assertTrue(splitBy(":").apply(":").isEmpty());
     assertEquals(Arrays.asList(" "), splitBy(":").apply(" :"));
