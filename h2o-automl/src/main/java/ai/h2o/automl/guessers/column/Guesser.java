@@ -28,7 +28,8 @@ public abstract class Guesser {
    * @param v the actual vec to perform any kind of guessing on
    */
   public void guess(String name, Vec v) {
-    if( _cm._ignored ) return;
-    guess0(name,v);
+    //if( _cm._ignored ) return;
+    //guess0(name,v);
+    return;
   }
 }
