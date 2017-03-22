@@ -18,18 +18,10 @@ test.dist <- function() {
   expect_true(min(D) >= 0)
   expect_true(max(D) <= 1)
 
-
   A = h2o.distance(references, queries, "l1")
-  print(A)
-
   B = h2o.distance(references, queries, "cosine")
-  print(B)
-
   a = h2o.distance(queries, references, "l1")
-  print(a)
-
   b = h2o.distance(queries, references, "cosine")
-  print(b) 
 
   expect_true(all(t(A) == a))
   expect_true(all(t(B) == b))

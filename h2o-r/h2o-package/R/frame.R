@@ -2313,7 +2313,7 @@ h2o.cor <- function(x, y=NULL,na.rm = FALSE, use){
 }
 
 #'
-#' Compute the pairwise distance between all rows of two numeric H2OFrames.
+#' Compute a pairwise distance measure between all rows of two numeric H2OFrames.
 #'
 #' @param x An H2OFrame object (large, references).
 #' @param y An H2OFrame object (small, queries).
@@ -2327,7 +2327,7 @@ h2o.cor <- function(x, y=NULL,na.rm = FALSE, use){
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(path = prosPath)
-#' distance(prostate.hex, prostate.hex[1,], "cosine")
+#' distance(prostate.hex[11:30,], prostate.hex[1:10,], "cosine")
 #' }
 #' @export
 h2o.distance <- function(x, y, measure){

@@ -30,16 +30,9 @@ def distance_test():
     assert(D.max() <= 1)
 
     A = references.distance(queries, "l2")
-    print(A)
-
     B = references.distance(queries, "cosine")
-    print(B)
-
     a = queries.distance(references, "l2")
-    print(a)
-
     b = queries.distance(references, "cosine")
-    print(b)
 
     assert((A.transpose() == a).all())
     assert((B.transpose() == b).all())
