@@ -15,6 +15,7 @@ import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.ast.prims.mungers.AstNaOmit;
 import water.util.ArrayUtils;
+import water.util.Log;
 
 import java.util.*;
 
@@ -712,7 +713,11 @@ public class FrameMetadata extends Iced {
       }
 
       int nbins = (int) Math.ceil(1 + log2(v.length()));  // Sturges nbins
-      if(!(_colMeta._ignored)) {
+
+      if(_colMeta._v.isBad()){
+        Log.info("Skipping all NaN column -> " + _colMeta._name);
+      }
+      if(!(_colMeta._ignored) && !(_colMeta._v.isBad())) {
         _colMeta._histo = MetaCollector.DynamicHisto.makeDHistogram(colname, nbins, nbins, (byte) (v.isCategorical() ? 2 : (v.isInt() ? 1 : 0)), v.min(), v.max());
       }
 
@@ -743,7 +748,7 @@ public class FrameMetadata extends Iced {
 
     @Override public void compute2() {
       long start = System.currentTimeMillis();
-      if (!(_colMeta._ignored)) {
+      if (!(_colMeta._ignored) && !(_colMeta._v.isBad())) {
         HistTask t = new HistTask(_colMeta._histo, _mean).doAll(_colMeta._v);
         _elapsed = System.currentTimeMillis() - start;
         _colMeta._thirdMoment = t._thirdMoment / ((_colMeta._v.length() - _colMeta._v.naCnt()) - 1);
