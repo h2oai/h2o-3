@@ -27,7 +27,7 @@ dependencies {
   testCompile "junit:junit:${junitVersion}"
   compile "net.sf.opencsv:opencsv:2.3"
   compile "com.google.protobuf.nano:protobuf-javanano:3.1.0"
-  compile "ai.h2o:deepwater-backend-api:1.0.3-SNAPSHOT"
+  compile "ai.h2o:deepwater-backend-api:1.0.3"
 }
 
 build.dependsOn shadowJar
