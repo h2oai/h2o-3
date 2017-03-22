@@ -497,11 +497,9 @@ final public class H2O {
         ARGS.quiet = true;
       }
       else if(s.matches("useUDP")) {
-        i = s.incrementAndCheck(i, args);
         ARGS.useUDP = true;
       }
       else if(s.matches("cleaner")) {
-        i = s.incrementAndCheck(i, args);
         ARGS.cleaner = true;
       }
       else if (s.matches("jks")) {
@@ -1752,7 +1750,7 @@ final public class H2O {
       if( s.startsWith("ai.h2o.") ) {
         args2.add("-" + s.substring(7));
         // hack: Junits expect properties, throw out dummy prop for ga_opt_out
-        if (!s.substring(7).equals("ga_opt_out"))
+        if (!s.substring(7).equals("ga_opt_out") && !System.getProperty(s).isEmpty())
           args2.add(System.getProperty(s));
       }
     }
