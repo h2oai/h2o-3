@@ -1488,10 +1488,12 @@ public final class AutoBuffer {
   }
 
   public static Object javaSerializeReadPojo(byte [] bytes) {
+    String className = nameOfClass(bytes);
     try {
-      return new ObjectInputStream(new ByteArrayInputStream(bytes)).readObject();
+      final ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes));
+      Object o = ois.readObject();
+      return o;
     } catch (IOException e) {
-      String className = nameOfClass(bytes);
       throw Log.throwErr(new RuntimeException("Failed to deserialize " + className, e));
     } catch (ClassNotFoundException e) {
       throw Log.throwErr(e);
