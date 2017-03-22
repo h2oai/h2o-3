@@ -38,6 +38,11 @@ public abstract class ColumnBase<T> extends Iced<ColumnBase<T>> implements Colum
         if (!hasNext()) throw new NoSuchElementException("size=" + size());
         return apply(i++);
       }
+      
+      @Override
+      public void remove() {
+        throw new UnsupportedOperationException();
+      }
     };
   }
 }
