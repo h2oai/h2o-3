@@ -1,5 +1,5 @@
 ext {
-  hadoopVersion = 'iot4.2'
+  hadoopVersion = 'iop4.2'
   hadoopMavenArtifactVersion = '2.7.2'
 }
 
