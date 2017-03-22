@@ -8,15 +8,15 @@
 Description
 ~~~~~~~~~~~
 
-An offset is a per-row “bias value” that is used during model training. For Gaussian distributions, offsets can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__. This option is not applicable for multinomial distributions.
+An offset is a per-row “bias value” that is used during model training. For Gaussian distributions, offsets can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. 
 
-Because the ``offset_column`` is hard to create, it may be useful to pass in a column of predicted results from a previous model. (In the link function space, for example if working with a binary response, use the predicted logit values.) For example, this previous model could contain features not present in your current training set. 
+When used with GBM, Deep Learning, or GLM distributions/family-link functions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For example, you may have fitted some other (logistic) regression using other variables (and data), and now you want to see if the present variables can add anything. So you use the predicted logit from the other model as an offset in. To get the logit from a predicted probability in H2O, you can use this expression: :math:`\text{logit} = \text{log}\big(\frac{prob}{(1-prob)}\big)`.
 
 **Note**: 
 
-- The ``offset_column`` can only be used for regression problems.
+- An offset column can only be used for regression problems.
+- This option is not applicable for multinomial distributions
 - The offset column cannot be the same as the `fold_column <fold_column.html>`__. 
-
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
