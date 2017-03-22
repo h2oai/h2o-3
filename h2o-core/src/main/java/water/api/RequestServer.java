@@ -244,7 +244,7 @@ public class RequestServer extends HttpServlet {
       final String contentType = request.getContentType();
       Properties parms = new Properties();
       String postBody = null;
-      if (H2O.ARGS.cors) {
+      if (System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.cors") != null) {
         response.setHeader("Access-Control-Allow-Origin", "*");
       }
 
