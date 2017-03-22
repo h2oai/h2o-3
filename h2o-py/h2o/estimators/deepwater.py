@@ -484,7 +484,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
         """
         Final momentum after the ramp is over (try 0.99).
 
-        Type: ``float``  (default: ``0.99``).
+        Type: ``float``  (default: ``0.9``).
         """
         return self._parms.get("momentum_stable")
 
