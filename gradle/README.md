@@ -116,5 +116,5 @@ In release Jenkins job, please setup environment and call the `make-dist.sh` scr
 
 * How can I pass a parameter to gradle build?
   * Specify parameter with `-P` option on gradle command line, for example:
-    `./gradlew -Pdisable.java6bytecode.gen=true install`
+    `./gradlew -PdoFindbugs=true install`
 
