@@ -115,7 +115,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
       int seqLength = 0;
       boolean seqOpen = false;
       BufferedString tmp = new BufferedString();
-      do {
+      chunkLoop: do {
         for (int i = offset; i < chk._len; i++) {
           if (chk.isNA(i)) {
             writeAggregate(seqLength, aggregated, ncs);
@@ -123,7 +123,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
             seqLength = 0;
             seqOpen = false;
             if (chk != cs[0])
-              break; // we just closed a sequence that was left open in one of the previous chunks
+              break chunkLoop; // we just closed a sequence that was left open in one of the previous chunks
           } else {
             BufferedString word = chk.atStr(tmp, i);
             float[] vs = _model.transform(word);
@@ -136,7 +136,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
           }
         }
         offset = 0;
-      } while (seqOpen && ((chk = chk.nextChunk()) != null));
+      } while ((chk = chk.nextChunk()) != null);
       // last sequence doesn't have to be terminated by NA
       if (seqOpen)
         writeAggregate(seqLength, aggregated, ncs);
