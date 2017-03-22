@@ -161,8 +161,8 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
   @Ignore //too slow
   @Test public void convergenceGoogleNetGrayScale() { checkConvergence(1, DeepWaterParameters.Network.googlenet, 100); }
 
-  @Test public void convergenceLenetColor() { checkConvergence(3, lenet, 125); }
-  @Test public void convergenceLenetGrayScale() { checkConvergence(1, lenet, 50); }
+  @Test public void convergenceLenetColor() { checkConvergence(3, lenet, 300); }
+  @Test public void convergenceLenetGrayScale() { checkConvergence(1, lenet, 150); }
 
   @Ignore
   @Test public void convergenceVGGColor() { checkConvergence(3, DeepWaterParameters.Network.vgg, 50); }
