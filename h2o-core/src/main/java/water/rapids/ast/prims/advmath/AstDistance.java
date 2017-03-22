@@ -5,15 +5,19 @@ import water.MRTask;
 import water.fvec.*;
 import water.rapids.Env;
 import water.rapids.Val;
+import water.rapids.ast.AstBuiltin;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
+import water.util.ArrayUtils;
 import water.util.Log;
+
+import java.util.Arrays;
 
 /**
  * Calculate Distance Metric between pairs of rows
  */
-public class AstDistance extends AstPrimitive {
+public class AstDistance extends AstBuiltin<AstDistance> {
   @Override
   public String[] args() {
     return new String[]{"ary", "x", "y", "measure"};
@@ -30,6 +34,16 @@ public class AstDistance extends AstPrimitive {
   }
 
   @Override
+  public String description() {
+    return "Compute a pairwise distance measure between all rows of two numeric H2OFrames.\n" +
+            "For a given (usually larger) reference frame (N rows x p cols),\n" +
+            "and a (usually smaller) query frame (M rows x p cols), we return a numeric Frame of size (N rows x M cols),\n" +
+            "where the ij-th element is the distance measure between the i-th reference row and the j-th query row.\n" +
+            "Note1: The output frame is symmetric.\n" +
+            "Note2: Since N x M can be very large, it may be more efficient (memory-wise) to make multiple calls with smaller query Frames.";
+  }
+
+  @Override
   public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame frx = stk.track(asts[1].exec(env)).getFrame();
     Frame fry = stk.track(asts[2].exec(env)).getFrame();
@@ -40,6 +54,9 @@ public class AstDistance extends AstPrimitive {
   public Val computeCosineDistances(Frame references, Frame queries, String distanceMetric) {
     Log.info("Number of references: " + references.numRows());
     Log.info("Number of queries   : " + queries.numRows());
+    String[] options = new String[]{"cosine","cosine_sq","l1","l2"};
+    if (!ArrayUtils.contains(options, distanceMetric.toLowerCase()))
+      throw new IllegalArgumentException("Invalid distance measure provided: " + distanceMetric + ". Mustbe one of " + Arrays.toString(options));
     if (references.numRows() * queries.numRows() * 8 > H2O.CLOUD.free_mem() )
       throw new IllegalArgumentException("Not enough free memory to allocate the distance matrix (" +
           references.numRows() + " rows and " + queries.numRows() + " cols. Try specifying a smaller query frame.");
@@ -87,8 +104,6 @@ public class AstDistance extends AstPrimitive {
       final boolean cosine_sq = _measure.toLowerCase().equals("cosine_sq");
       final boolean l1 = _measure.toLowerCase().equals("l1");
       final boolean l2 = _measure.toLowerCase().equals("l2");
-      if (!cosine && !cosine_sq && !l1 && !l2)
-        throw new IllegalArgumentException("Invalid distance measure provided.");
 
       if (cosine || cosine_sq) {
         denomR = new double[R];
