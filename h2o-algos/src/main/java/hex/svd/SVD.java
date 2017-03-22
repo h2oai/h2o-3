@@ -45,6 +45,7 @@ import static water.util.ArrayUtils.*;
 public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.SVDOutput> {
   // Convergence tolerance
   private final double TOLERANCE = 1e-8;    // Cutoff for estimation error of right singular vector
+  private final double EPS = TOLERANCE*TOLERANCE;         // cutoff if vector norm is too small
 
   // Maximum number of columns when categoricals expanded
   private final int MAX_COLS_EXPANDED = 5000;
@@ -56,6 +57,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   private transient int _ncolExp;    // With categoricals expanded into 0/1 indicator cols
   boolean _wideDataset = false;         // default with wideDataset set to be false.
   private double[] _estimatedSingularValues; // store estimated singular values for power method
+  private boolean _matrixRankReached = false; // stop if eigenvector norm becomes too small.  Reach rank of matrix
 
   @Override protected SVDDriver trainModelImpl() { return new SVDDriver(); }
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ ModelCategory.DimReduction }; }
@@ -98,7 +100,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       error("_train", msg);
     }
 
-    if (mem_usage > max_mem) {  // choose the most memory efficient one
+    if (mem_usage > mem_usage_w) {  // choose the most memory efficient one
       _wideDataset = true;   // set to true if wide dataset is detected
     }
   }
@@ -170,7 +172,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
      */
     private double[] powerLoop(Gram gram, double[] v, SVDModel model, double[] vnew, int k) {
       // TODO: What happens if Gram matrix is essentially zero? Numerical inaccuracies in PUBDEV-1161.
-//      assert vinit.length == gram.fullN();
       assert v.length == gram.fullN();
 
       // Set initial value v_0 to standard normal distribution
@@ -189,19 +190,30 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         lambda1_calc = innerProduct(vnew, v);
         lambda_est = innerProduct(vnew, vnew);
         double norm = l2norm(vnew);
+        double invnorm = 0;
 
-        double diff; err = 0;
-        for (int i = 0; i < v.length; i++) {
-          vnew[i] /= norm;        // Compute singular vector v_i = x_i/||x_i||
-          v[i] = vnew[i];         // Update v_i for next iteration
+        err = 0;
+        if (norm > 0.0) {
+          invnorm = 1 / norm;
+
+          for (int i = 0; i < v.length; i++) {
+            vnew[i] *= invnorm;        // Compute singular vector v_i = x_i/||x_i||
+            v[i] = vnew[i];         // Update v_i for next iteration
+          }
+
+          err = Math.sqrt(lambda_est - lambda1_calc * lambda1_calc);
+          iters++;    // TODO: Should output vector of final iterations for each k
+          // store variables for scoring history
+          model._output._training_time_ms.add(System.currentTimeMillis());
+          model._output._history_err.add(err);
+          model._output._history_eigenVectorIndex.add((double) eigIndex);
         }
+        else {
+          _job.warn("_train: Number of eigenvectors/eigenvalues is less than specified by user.");
+          _matrixRankReached = true;
+          break;
 
-        err = Math.sqrt(lambda_est-lambda1_calc*lambda1_calc);
-        iters++;    // TODO: Should output vector of final iterations for each k
-        // store variables for scoring history
-        model._output._training_time_ms.add(System.currentTimeMillis());
-        model._output._history_err.add(err);
-        model._output._history_eigenVectorIndex.add((double) eigIndex);
+        }
       }
 
       if (err > TOLERANCE) {
@@ -417,11 +429,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         Frame tranRebalanced = new Frame(_train);
         boolean frameHasNas = tranRebalanced.hasNAs();
         // 0) Transform training data and save standardization vectors for use in scoring later
-        if (!_parms._impute_missing) {    // added warning to user per request from Nidhi
-
-        }
-
-        if (_wideDataset && (!_parms._impute_missing) && frameHasNas) { // remove NAs rows
+        if ((!_parms._impute_missing) && frameHasNas) { // remove NAs rows
           tinfo = new DataInfo(_train, _valid, 0, _parms._use_all_factor_levels, _parms._transform,
                   DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */
                   _parms._impute_missing, /* missingBucket */ false, /* weights */ false,
@@ -437,8 +445,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
                 _parms._impute_missing, /* missingBucket */ false, /* weights */ false,
                 /* offset */ false, /* fold */ false, /* intercept */ false);
         DKV.put(dinfo._key, dinfo);
+        checkMemoryFootPrint();
 
-        if (_wideDataset && !_parms._impute_missing && frameHasNas) {
+        if (!_parms._impute_missing && frameHasNas) {
           // fixed the std and mean of dinfo to that of the frame before removing NA rows
           dinfo._normMul = tinfo._normMul;
           dinfo._numMeans = tinfo._numMeans;
@@ -509,7 +518,6 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           GramUpdate guptsk = null;
           double[][] gramArrays = null;       // store outergram as a double array
           double[][] gramUpdatesW = null;     // store the result of (I-sum vi*T(vi))*A*T(A)*(I-sum vi*T(vi))
-          double[][] uVecsWide = null;    // store transformed eignvector in the end for wide datasetz
 
           _estimatedSingularValues = new double[_parms._nv];  // allocate memory once
 
@@ -571,6 +579,10 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
           for (int k = 1; k < _parms._nv; k++) {  // loop through for each eigenvalue/eigenvector...
             if (stop_requested()) break;
+            if (_matrixRankReached) {
+              _parms._nv = k-1;   // change number of eigenvector parameters to be the actual number of eigenvectors found
+              break;
+            }
             _job.update(1, "Iteration " + String.valueOf(k+1) + " of power method");   // One unit of work
 
             // 2) Iterate x_i <- (A_k'A_k/n)x_{i-1} until convergence and set v_k = x_i/||x_i||
