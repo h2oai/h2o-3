@@ -32,17 +32,21 @@ public class Fun3Column<X, Y, Z, T> extends FunColumnBase<T> {
     assert xs.isCompatibleWith(ys) : "Columns 1 and 2 must be compatible: " + xs + ", " + ys;
     assert xs.isCompatibleWith(zs) : "Columns 1 and 3 must be compatible: " + xs + ", " + zs;
   }
-  
-  @Override public T get(long idx) { 
-    return isNA(idx) ? null : f.apply(xs.apply(idx), ys.apply(idx), zs.apply(idx)); 
-  }
 
   @Override
   public TypedChunk<T> chunkAt(int i) {
     return new FunChunk(xs.chunkAt(i), ys.chunkAt(i), zs.chunkAt(i));
   }
 
-  @Override public boolean isNA(long idx) { return xs.isNA(idx) || ys.isNA(idx); }
+  private boolean argIsNA(long idx) {
+    return xs.isNA(idx) || ys.isNA(idx) || zs.isNA(idx);
+  }
+
+  @Override public T get(long idx) { 
+    return argIsNA(idx) ? null : f.apply(xs.apply(idx), ys.apply(idx), zs.apply(idx)); 
+  }
+
+  @Override public boolean isNA(long idx) { return get(idx) == null; }
 
   /**
    * Pretends to be a chunk of a column, for distributed calculations.

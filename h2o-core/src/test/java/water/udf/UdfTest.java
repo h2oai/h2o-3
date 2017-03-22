@@ -27,7 +27,9 @@ public class UdfTest extends UdfTestBase {
   
   private DataColumn<Double> sines() throws java.io.IOException {
     return willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
-      public Double apply(Long i) { return (i > 10 && i < 20) ? null : Math.sin(i); }
+      public Double apply(Long i) { 
+        return (i > 10 && i < 20) ? null : Math.sin(i);
+      }
     }));
   }
 
@@ -202,9 +204,11 @@ public class UdfTest extends UdfTestBase {
       assertTrue(z2.isNA(i) == materialized.isNA(i));
       // the following exposes a problem. nulls being returned.
       if (expected == null) assertTrue("At " + i + ":", materialized.isNA(i));
-      Double actual = materialized.apply(i);
-      
-      if (!z2.isNA(i)) assertEquals(expected, actual, 0.0001);
+      else {
+        Double actual = materialized.apply(i);
+
+        if (!z2.isNA(i)) assertEquals(expected, actual, 0.0001);
+      }
     }
   }
 

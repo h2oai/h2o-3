@@ -24,7 +24,7 @@ import water.udf.fp.Function;
  * But, unlike Vec, any value T can be a type of column data. Does not have to be Serializable,
  * for instance.
  */
-public interface Column<T> extends Function<Long, T>, Vec.Holder {
+public interface Column<T> extends Function<Long, T>, Vec.Holder, Iterable<T> {
   T apply(long idx);
   TypedChunk<T> chunkAt(int i);
   

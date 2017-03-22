@@ -1,6 +1,10 @@
 package water.udf.fp;
 
+import org.joda.time.DateTime;
+import water.parser.ParseTime;
+
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -29,6 +33,29 @@ public class PureFunctions extends Functions {
       return sum == null || x == null ? null : sum+x;
     }
   };
+
+
+
+  public static final Function<String, Date> AS_DATE = new Function<String, Date>() {
+    @Override public Date apply(String s) {
+      return ParseTime.parseDate(s);
+    }
+  };
+
+  public static final Function2<Date, Date, Double> YEARS_BETWEEN = new Function2<Date, Date, Double>() {
+    @Override
+    public Double apply(Date from, Date to) {
+      return (to.getTime() - from.getTime()) / 1000.0 / 3600 / 24 / 365.25;
+    }
+  };
+
+  public static final Function2<Date, Date, Double> MONTHS_BETWEEN = new Function2<Date, Date, Double>() {
+    @Override
+    public Double apply(Date from, Date to) {
+      return (to.getTime() - from.getTime()) / 1000.0 / 3600 / 24 / 365.25 * 12;
+    }
+  };
+
   public static final Foldable<Double, Double> SUM_OF_SQUARES = new Foldable<Double, Double>() {
     @Override public Double initial() { return 0.; }
 
