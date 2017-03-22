@@ -42,7 +42,11 @@ public class IDGuesser extends Guesser {
     int _size;
     @Override public void setupLocal() { _hm=new NonBlockingHashMapLong<>(); }
     @Override public void map(Chunk c) {
-      for(int i=0;i<c._len;++i) _hm.putIfAbsent(c.at8(i),"");
+      for(int i=0;i<c._len;++i){
+        if(!c.isNA(i)) {
+          _hm.putIfAbsent(c.at8(i), "");
+        }
+      }
     }
     @Override public void reduce(UniqTask t) {
       if( _hm!=t._hm ) _hm.putAll(t._hm);
@@ -55,7 +59,11 @@ public class IDGuesser extends Guesser {
     private double _fracUniq;
     @Override public void map(Chunk c) {
       NonBlockingHashMapLong<String> hm = new NonBlockingHashMapLong<>();
-      for(int i=0;i<c._len;++i) hm.putIfAbsent(c.at8(i),"");
+      for(int i=0;i<c._len;++i) {
+        if(!c.isNA(i)) {
+          hm.putIfAbsent(c.at8(i), "");
+        }
+      }
       _fracUniq = (double)hm.size()/(double)c._len;
     }
     @Override public void reduce(UniqTaskPerChk t) { _fracUniq+=t._fracUniq; }
