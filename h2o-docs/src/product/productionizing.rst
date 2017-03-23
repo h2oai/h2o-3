@@ -165,7 +165,7 @@ Example training data source                        Iris
 Example scoring data source                         Single Row
 Scoring environment                                 Portable
 Scoring engine                                      H2O MOJO
-Scoring latency SLA                                 Batch
+Scoring latency SLA                                 Real-time example but can be adapted (use in Hive UDF etc.)
 ==================================================  ===========================================================
 
 =========    ==================================================================================================
