@@ -102,3 +102,7 @@ native
 # Ignore Sublime Text project settings
 *.sublime-project
 *.sublime-workspace
+
+# Ignore Jupyter Notebook project files
+*.ipynb_checkpoints/
+*.ipynb
