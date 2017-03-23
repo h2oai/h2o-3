@@ -39,9 +39,6 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
   @BeforeClass
   static public void stall() { stall_till_cloudsize(1); }
 
-  @BeforeClass
-  public static void checkBackend() { Assume.assumeTrue(DeepWater.haveBackend()); }
-
   @Before
   public void createBackend() throws Exception {
     backend = createDeepWaterBackend(getBackend().toString());

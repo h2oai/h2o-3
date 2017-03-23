@@ -44,6 +44,10 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
     return false;
   }
 
+  static boolean haveBackend(DeepWaterParameters.Backend b) {
+    return DeepwaterMojoModel.createDeepWaterBackend(b.toString()) != null;
+  }
+
   @Override public BuilderVisibility builderVisibility() {
      return haveBackend() ? BuilderVisibility.Stable : BuilderVisibility.Experimental;
   }
