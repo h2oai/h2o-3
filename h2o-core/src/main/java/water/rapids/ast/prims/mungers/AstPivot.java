@@ -7,7 +7,7 @@ import water.rapids.Val;
 import water.rapids.ast.AstBuiltin;
 import water.rapids.vals.ValFrame;
 import water.util.VecUtils;
-
+import org.joda.time.DateTime;
 import java.util.Arrays;
 
 public class AstPivot extends AstBuiltin<AstPivot> {
@@ -46,14 +46,22 @@ public class AstPivot extends AstBuiltin<AstPivot> {
     // Now sort on the index key, result is that unique keys will be localized
     Frame fr2 = fr.sort(new int[]{indexIdx});
     final long[] classes = new VecUtils.CollectDomain().doAll(fr.vec(colIdx)).domain();
-    final int nClass = fr.vec(colIdx).isNumeric() ? classes.length : fr.vec(colIdx).domain().length;
-    String[] header = (String[]) ArrayUtils.addAll(new String[]{index}, fr.vec(colIdx).domain());
+    final int nClass = (fr.vec(colIdx).isNumeric() || fr.vec(colIdx).isTime()) ? classes.length : fr.vec(colIdx).domain().length;
+    String[] header = null;
+    if (fr.vec(colIdx).isNumeric()) {
+      header = (String[]) ArrayUtils.addAll(new String[]{index}, Arrays.toString(classes).split("[\\[\\]]")[1].split(", "));
+    } else if (fr.vec(colIdx).isTime()) {
+      header = new String[nClass];
+      for (int i=0;i<nClass;i++) header[i] = (new DateTime(classes[i])).toString();
+    } else {
+      header = (String[]) ArrayUtils.addAll(new String[]{index}, fr.vec(colIdx).domain());
+    }
 
-    Frame initialPass = new pivotTask(fr2.find(index),fr2.find(column),fr2.find(value))
+    Frame initialPass = new pivotTask(fr2.find(index),fr2.find(column),fr2.find(value),classes)
       .doAll(nClass+1, Vec.T_NUM, fr2)
       .outputFrame(null, header, null);
-
-    Frame result = new Frame(initialPass.vec(0).makeCopy(null,fr.vec(indexIdx).get_type()));
+    fr2.delete();
+    Frame result = new Frame(initialPass.vec(0).makeCopy(fr.vec(indexIdx).domain(),fr.vec(indexIdx).get_type()));
     result._key = Key.<Frame>make();
     result.setNames(new String[]{index});
     initialPass.remove(0);
@@ -65,8 +73,9 @@ public class AstPivot extends AstBuiltin<AstPivot> {
     int _indexColIdx;
     int _colColIdx;
     int _valColIdx;
-    pivotTask(int indexColIdx, int colColIdx, int valColIdx) {
-      _indexColIdx = indexColIdx; _colColIdx = colColIdx; _valColIdx = valColIdx;
+    long[] _classes;
+    pivotTask(int indexColIdx, int colColIdx, int valColIdx, long[] classes) {
+      _indexColIdx = indexColIdx; _colColIdx = colColIdx; _valColIdx = valColIdx; _classes=classes;
     }
     @Override
     public void map(Chunk[] cs, NewChunk[] nc) {
@@ -86,7 +95,7 @@ public class AstPivot extends AstBuiltin<AstPivot> {
               (cs[_indexColIdx].nextChunk() == null || cs[_indexColIdx].nextChunk() != null && currentIdx != cs[_indexColIdx].nextChunk().at8(0)))
           || (i < cs[_indexColIdx]._len -1 && currentIdx != cs[_indexColIdx].at8(i+1))) {
 
-          newRow[(int) cs[_colColIdx].at8(i)] = cs[_valColIdx].atd(i);
+          newRow[ArrayUtils.indexOf(_classes,cs[_colColIdx].at8(i))] = cs[_valColIdx].atd(i);
           nc[0].addNum(cs[_indexColIdx].at8(i));
           for (int j = 1; j < nc.length; j++)  nc[j].addNum(newRow[j - 1]);
           // were done here since we know the next row has a different index
@@ -94,14 +103,14 @@ public class AstPivot extends AstBuiltin<AstPivot> {
         }
         // here we know we have to search ahead
         int count = 1;
-        newRow[(int) cs[_colColIdx].at8(i)] = cs[_valColIdx].atd(i);
+        newRow[ArrayUtils.indexOf(_classes,cs[_colColIdx].at8(i))] = cs[_valColIdx].atd(i);
 
         while ( count + i < cs[_indexColIdx]._len && currentIdx == cs[_indexColIdx].at8(i + count) ) {
           // merge the forward row, the newRow and the existing row
           // here would be a good place to apply aggregating function
           // for now we are aggregating by "first"
-          if (Double.isNaN(newRow[(int) cs[_colColIdx].at8(i + count)]))  {
-            newRow[(int) cs[_colColIdx].at8(i + count)] = cs[_valColIdx].atd(i + count);
+          if (Double.isNaN(newRow[ArrayUtils.indexOf(_classes,cs[_colColIdx].at8(i + count))]))  {
+            newRow[ArrayUtils.indexOf(_classes,cs[_colColIdx].at8(i + count))] = cs[_valColIdx].atd(i + count);
           }
           count++;
         }
@@ -113,7 +122,7 @@ public class AstPivot extends AstBuiltin<AstPivot> {
           int countNC = 0;
           // If we reach the end of the chunk, we'll update nextChunk and nextChunkArr
           while (indexNC != null && countNC < indexNC._len && currentIdx == indexNC.at8(countNC)) {
-              if (Double.isNaN(newRow[(int) colNC.atd(countNC)])) {
+              if (Double.isNaN(newRow[ArrayUtils.indexOf(_classes, colNC.at8(countNC))])) {
                 newRow[(int) colNC.atd(countNC)] = valNC.atd(countNC);
               }
             }
