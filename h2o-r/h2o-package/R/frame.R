@@ -2128,7 +2128,10 @@ h2o.describe <- function(frame) {
                                                           )
                                                           })))
   names(res) <- c("Label", "Type", "Missing", "Zeros", "PosInf", "NegInf", "Min", "Max", "Mean", "Sigma", "Cardinality")
-  res
+
+  res2 <- apply(res[,3:ncol(res)], 2, as.numeric)
+  res2 <- cbind(res[,1:2], res2)
+  return(res2)
 }
 
 #' @rdname h2o.summary
