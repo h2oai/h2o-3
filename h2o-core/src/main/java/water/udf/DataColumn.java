@@ -64,7 +64,7 @@ public abstract class DataColumn<T> extends ColumnBase<T> {
     if (vec == null) vec = DKV.get(vecKey).get();
     return vec;
   }
-  
+
   @Override public String toString() {
     return "DataColumn(type=" + type + ", factory=" + chunkFactory + ", vec=" + vec() + ")";
   }

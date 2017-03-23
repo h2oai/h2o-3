@@ -27,7 +27,9 @@ public class UdfTest extends UdfTestBase {
   
   private DataColumn<Double> sines() throws java.io.IOException {
     return willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
-      public Double apply(Long i) { return (i > 10 && i < 20) ? null : Math.sin(i); }
+      public Double apply(Long i) { 
+        return (i > 10 && i < 20) ? null : Math.sin(i);
+      }
     }));
   }
 

@@ -44,7 +44,10 @@ public class UnfoldingColumn<X, Y> extends FunColumnBase<List<Y>> {
   }
   
   public List<Y> get(long idx) {
-    List<Y> raw = isNA(idx) ? Collections.<Y>emptyList() : f.apply(column.apply(idx));
+    if (argIsNA(idx)) return null;
+    List<Y> raw = f.apply(column.apply(idx));
+    if (raw == null) return null;
+    
     if (requiredSize == 0 || raw.size() == requiredSize) return raw;
     else {
       List<Y> result = raw.subList(0, Math.min(raw.size(), requiredSize));
@@ -69,8 +72,12 @@ public class UnfoldingColumn<X, Y> extends FunColumnBase<List<Y>> {
     throw H2O.unimpl("Will have to think how to implement multi-string chunks...");
   }
 
-  @Override public boolean isNA(long idx) {
+  private boolean argIsNA(long idx) {
     return column.isNA(idx);
+  }
+
+  @Override public boolean isNA(long idx) {
+    return get(idx) == null;
   }
 
   public static String join(String delimiter, Iterable<?> xs) {
