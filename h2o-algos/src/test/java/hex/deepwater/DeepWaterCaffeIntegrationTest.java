@@ -12,14 +12,14 @@ import java.io.FileInputStream;
 import java.util.Random;
 import java.util.zip.GZIPInputStream;
 
-@Ignore
 public class DeepWaterCaffeIntegrationTest extends DeepWaterAbstractIntegrationTest {
 
   @Override
   DeepWaterParameters.Backend getBackend() { return DeepWaterParameters.Backend.caffe; }
 
   @BeforeClass
-  public static void checkBackend() { Assume.assumeTrue(DeepWater.haveBackend(DeepWaterParameters.Backend.caffe)); };
+  //public static void checkBackend() { Assume.assumeTrue(DeepWater.haveBackend(DeepWaterParameters.Backend.caffe)); };
+  public static void checkBackend() { Assume.assumeTrue(false); }
 
   @Test
   public void run() throws Exception {
