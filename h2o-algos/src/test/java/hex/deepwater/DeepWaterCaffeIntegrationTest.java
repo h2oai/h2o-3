@@ -18,8 +18,7 @@ public class DeepWaterCaffeIntegrationTest extends DeepWaterAbstractIntegrationT
   DeepWaterParameters.Backend getBackend() { return DeepWaterParameters.Backend.caffe; }
 
   @BeforeClass
-  //public static void checkBackend() { Assume.assumeTrue(DeepWater.haveBackend(DeepWaterParameters.Backend.caffe)); };
-  public static void checkBackend() { Assume.assumeTrue(false); }
+  public static void checkBackend() { Assume.assumeTrue(DeepWater.haveBackend(DeepWaterParameters.Backend.caffe)); };
 
   @Test
   public void run() throws Exception {
