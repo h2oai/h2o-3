@@ -8,10 +8,12 @@ import water.util.TwoDimTable;
 import static water.Key.make;
 
 public class UserFeedback extends Keyed<UserFeedback> {
+  transient private AutoML autoML; // don't serialize
   private UserFeedbackEvent[] feedbackEvents; // wish we had IcedArrayList(). . .
 
-  public UserFeedback(Key<AutoML> runKey) {
-    this._key = make(idForRun(runKey));
+  public UserFeedback(AutoML autoML) {
+    this._key = make(idForRun(autoML._key));
+    this.autoML = autoML;
 
     UserFeedback old = DKV.getGet(this._key);
 
@@ -28,22 +30,22 @@ public class UserFeedback extends Keyed<UserFeedback> {
 
   /** Add a Debug UserFeedbackEvent and log. */
   public void debug(UserFeedbackEvent.Stage stage, String message) {
-    addEvent(new UserFeedbackEvent(UserFeedbackEvent.Level.Debug, stage, message));
+    addEvent(new UserFeedbackEvent(autoML, UserFeedbackEvent.Level.Debug, stage, message));
   }
 
   /** Add a Info UserFeedbackEvent and log. */
   public void info(UserFeedbackEvent.Stage stage, String message) {
-    addEvent(new UserFeedbackEvent(UserFeedbackEvent.Level.Info, stage, message));
+    addEvent(new UserFeedbackEvent(autoML, UserFeedbackEvent.Level.Info, stage, message));
   }
 
   /** Add a Warn UserFeedbackEvent and log. */
   public void warn(UserFeedbackEvent.Stage stage, String message) {
-    addEvent(new UserFeedbackEvent(UserFeedbackEvent.Level.Warn, stage, message));
+    addEvent(new UserFeedbackEvent(autoML, UserFeedbackEvent.Level.Warn, stage, message));
   }
 
   /** Add a UserFeedbackEvent, but don't log. */
   public void addEvent(UserFeedbackEvent.Level level, UserFeedbackEvent.Stage stage, String message) {
-    addEvent(new UserFeedbackEvent(level, stage, message));
+    addEvent(new UserFeedbackEvent(autoML, level, stage, message));
   }
 
   /** Add a UserFeedbackEvent, but don't log. */
@@ -54,7 +56,6 @@ public class UserFeedback extends Keyed<UserFeedback> {
     feedbackEvents[oldEvents.length] = event;
 
     EckoClient.addEvent(event);
-
   } // addEvent
 
   /**

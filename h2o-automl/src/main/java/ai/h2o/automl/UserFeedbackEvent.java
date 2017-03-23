@@ -21,6 +21,7 @@ public class UserFeedbackEvent extends Iced {
   }
 
   private long timestamp;
+  transient private AutoML autoML;
   private Level level;
   private Stage stage;
   private String message;
@@ -28,6 +29,8 @@ public class UserFeedbackEvent extends Iced {
   public long getTimestamp() {
     return timestamp;
   }
+
+  public AutoML getAutoML() { return autoML; }
 
   public Level getLevel() {
     return level;
@@ -41,8 +44,9 @@ public class UserFeedbackEvent extends Iced {
     return message;
   }
 
-  public UserFeedbackEvent(Level level, Stage stage, String message) {
+  public UserFeedbackEvent(AutoML autoML, Level level, Stage stage, String message) {
     this.timestamp = System.currentTimeMillis();
+    this.autoML = autoML;
     this.level = level;
     this.stage = stage;
     this.message = message;
