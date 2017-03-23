@@ -184,8 +184,8 @@ public class AutoCollect {
     try {
       conn.setAutoCommit(false);  // transactionally set metadata...
       if( (_idFrame=getidFrameMeta(mc.name()))==-1 ) {
-        Key<AutoML> dummy = Key.make("AutoCollect_" + mc.name());
-        UserFeedback userFeedback = new UserFeedback(dummy);
+//        Key<AutoML> dummy = Key.make("AutoCollect_" + mc.name());
+        UserFeedback userFeedback = new UserFeedback(new AutoML());
         FrameMetadata fm = new FrameMetadata(userFeedback, mc.frame(), mc.y() , mc.x(), mc.name(), mc.isClass());
         HashMap<String, Object> frameMeta = FrameMetadata.makeEmptyFrameMeta();
         fm.fillSimpleMeta(frameMeta);

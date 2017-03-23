@@ -1,14 +1,18 @@
 package ai.h2o.automl;
 
+import hex.Model;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.entity.ContentType;
 import water.util.Log;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 public class EckoClient {
   private static int numEvents = 0;
+  private static Map<String, ProjectStatus> statuses = new HashMap<>(); // remember the last status for each project
 
   private static final int eckoTimeout = 10000;
   private static final String eckoHelpMessage = "Ecko server is NOT enabled for user feedback updates.  To use Ecko, start a server on localhost:55555 before you run your AutoML-enabled h2o.";
@@ -31,29 +35,47 @@ public class EckoClient {
                                                  + " set Feedback Message "
                                                  + feedbackCellStyle;
   private static final String feedbackTableStyle = " set \"User Feedback\" -font-weight 120";
+  private static final String projectPageDefs = "at %s def Feedback Timestamp Level Stage Message" +
+          // " def LeaderboardModel ID Metric" +
+//            " add Error in vis  input tsv  mark point  x Rank x-type O  y Error y-type Q" +
+          // " add Error in vis  input tsv  mark point y Error y-type O" +
+          " add Leaderboard in table" +
+          " add \"User Feedback\" as map of Feedback" +
+          feedbackTableStyle +
+          feedbackRowStyle;
+  private static final String projectTableStyle = " set Projects -font-weight 120";
+  private static final String homePageDefs = "at / def BuildStatus Project Message PercentDone Leader" +
+          " add Projects as map of BuildStatus" +
+          projectTableStyle;
+
+  private final static class ProjectStatus {
+    public ProjectStatus(String project) {
+      this.project = project;
+    }
+
+    final String project;
+    public UserFeedbackEvent lastEvent;
+    public double progress;
+    public Leaderboard leaderboard;
+    public Model leader;
+    public String leaderMetric;
+    public double leaderError;
+  }
 
   private static void initializeEcko() {
     int httpStatus = -1;
-    final String definitions = "at / def Feedback Timestamp Level Stage Message" +
-            // " def LeaderboardModel ID Metric" +
-//            " add Error in vis  input tsv  mark point  x Rank x-type O  y Error y-type Q" +
-            // " add Error in vis  input tsv  mark point y Error y-type O" +
-            " add Leaderboard in table" +
-            " add \"User Feedback\" as map of Feedback" +
-            feedbackTableStyle +
-            feedbackRowStyle;
     try {
       httpStatus = Request.Put(eckoHost)
               .connectTimeout(eckoTimeout)
               .socketTimeout(eckoTimeout)
-              .bodyString(definitions, ContentType.TEXT_PLAIN)
+              .bodyString(homePageDefs, ContentType.TEXT_PLAIN)
               .execute()
               .returnResponse()
               .getStatusLine()
               .getStatusCode();
     }
     catch (Exception e) {
-
+      // handle below
     }
 
     if (httpStatus == 200) {
@@ -67,18 +89,53 @@ public class EckoClient {
       Log.info(eckoHelpMessage);
   }
 
+  private static void initializeProjectPage(String project) {
+    if (!eckoEnabled || statuses.containsKey(project)) return;
+
+    int httpStatus = -1;
+    statuses.put(project, new ProjectStatus(project));
+    try {
+      httpStatus = Request.Put(eckoHost)
+              .connectTimeout(eckoTimeout)
+              .socketTimeout(eckoTimeout)
+              .bodyString(String.format(projectPageDefs, project), ContentType.TEXT_PLAIN)
+              .execute()
+              .returnResponse()
+              .getStatusLine()
+              .getStatusCode();
+    }
+    catch (Exception e) {
+      // handle below
+    }
+
+    if (! (httpStatus == 200)) {
+      eckoEnabled = false;
+    }
+
+    if (!eckoEnabled)
+      Log.info(eckoFailedMessage);
+  }
+
+
   public static final void addEvent(UserFeedbackEvent event) {
+    ProjectStatus status = statuses.get(statuses.get(event.getAutoML().project()));
+    status.lastEvent = event;
+
     if (eckoEnabled && !eckoInitialized) {
-      initializeEcko();  // NOTE: can set eckEnabled to false
+      initializeEcko();  // NOTE: can set eckoEnabled to false
     }
 
     if (eckoEnabled) {
+      AutoML autoML = event.getAutoML();
+      String project = autoML.project();
+      initializeProjectPage(project);
+
       int httpStatus = -1;
       try {
         httpStatus = Request.Put(eckoHost)
                 .connectTimeout(eckoTimeout)
                 .socketTimeout(eckoTimeout)
-                .bodyString("at / put \"User Feedback\" " +
+                .bodyString("at %s put \"User Feedback\" ".format(project) +
                         String.format("%1$05d", numEvents++) + " " +
                         timestampFormat.format(new Date(event.getTimestamp())) + " " +
                         event.getLevel() + " " +
@@ -99,17 +156,26 @@ public class EckoClient {
         eckoEnabled = false;
         Log.info(eckoFailedMessage);
       }
+
+      updateHomePage(status);
     } // eckoEnabled
-  }
+  } // addEvent
 
 
   public static final void updateLeaderboard(Leaderboard leaderboard) {
+    ProjectStatus status = statuses.get(leaderboard.getProject());
+    status.leaderboard = leaderboard;
+    status.leader = leaderboard.leader();
+    status.leaderError = leaderboard.errorForModel(status.leader);
+    status.leaderMetric = leaderboard.metricForModel(status.leader);
+
     if (eckoEnabled && !eckoInitialized) {
-      initializeEcko();  // NOTE: can set eckEnabled to false
+      initializeEcko();  // NOTE: can set eckoEnabled to false
     }
 
+    String project = leaderboard.getProject();
     if (eckoEnabled) {
-      String leaderboardTsv = leaderboard.toString(leaderboard.getProject(), leaderboard.models(), "\\t", "\\n", false, true, true);
+      String leaderboardTsv = leaderboard.toString(project, leaderboard.models(), "\\t", "\\n", false, true, true);
       String rankTsv = leaderboard.rankTsv();
       String timeTsv = leaderboard.timeTsv();
 
@@ -119,7 +185,7 @@ public class EckoClient {
                 .connectTimeout(eckoTimeout)
                 .socketTimeout(eckoTimeout)
                 .bodyString(
-                        "at / put Leaderboard \"" +
+                        "at %s put Leaderboard \"".format(project) +
                         leaderboardTsv + "\"" +
 //                        "at / put Error \"" +
 //                        rankTsv + "\"",
@@ -139,6 +205,52 @@ public class EckoClient {
         eckoEnabled = false;
         Log.info(eckoFailedMessage);
       }
+
+      updateHomePage(status);
     } // eckoEnabled
+  } // updateLeaderboard
+
+  public static final void updateProgress(AutoML autoML) {
+    ProjectStatus status = statuses.get(autoML.project());
+    double progress = (autoML.job() == null ? 0.0 : autoML.job().progress());
+    status.progress = progress;
+    updateHomePage(status);
   }
+
+  public static final void updateHomePage(ProjectStatus status) {
+    if (eckoEnabled && !eckoInitialized) {
+      initializeEcko();  // NOTE: can set eckoEnabled to false
+    }
+
+    String project = status.project;
+    if (eckoEnabled) {
+      int httpStatus = -1;
+      try {
+        httpStatus = Request.Put(eckoHost)
+                .connectTimeout(eckoTimeout)
+                .socketTimeout(eckoTimeout)
+                .bodyString(
+                        "at %s put Leaderboard \"".format(project) +
+//                                leaderboardTsv + "\"" +
+//                        "at / put Error \"" +
+//                        rankTsv + "\"",
+                                "",
+                        ContentType.TEXT_PLAIN)
+                .execute()
+                .returnResponse()
+                .getStatusLine()
+                .getStatusCode();
+      } catch (Exception e) {
+        Log.info(eckoExceptionMessage + e);
+      }
+
+      if (httpStatus == 200) {
+        // silent
+      } else {
+        eckoEnabled = false;
+        Log.info(eckoFailedMessage);
+      }
+    } // eckoEnabled
+  } // updateLeaderboard
+
 }

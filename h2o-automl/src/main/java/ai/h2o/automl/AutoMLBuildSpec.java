@@ -96,4 +96,26 @@ public class AutoMLBuildSpec extends Iced {
 
   // output
   public JobV3 job;
+
+  public String project() {
+    // TODO: allow the user to set the project via the buildspec
+    String specified = input_spec.training_path != null ?
+            input_spec.training_path.path :
+            input_spec.training_frame.toString();
+    String[] path = specified.split("/");
+    return path[path.length - 1]
+            .replace(".hex", "")
+            .replace(".CSV", "")
+            .replace(".XLS", "")
+            .replace(".XSLX", "")
+            .replace(".SVMLight", "")
+            .replace(".ARFF", "")
+            .replace(".ORC", "")
+            .replace(".csv", "")
+            .replace(".xls", "")
+            .replace(".xslx", "")
+            .replace(".svmlight", "")
+            .replace(".arff", "")
+            .replace(".orc", "");
+  }
 }

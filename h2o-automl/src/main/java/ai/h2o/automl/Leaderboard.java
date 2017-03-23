@@ -54,8 +54,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
   /**
    * UserFeedback object used to send, um, feedback to the, ah, user.  :-)
-   * Note that multiple Leaderboards can potentially use the same UserFeedback
-   * object.
+   * Right now this is a "new leader" message.
    */
   private UserFeedback userFeedback;
 
@@ -262,6 +261,36 @@ public class Leaderboard extends Keyed<Leaderboard> {
     delete();
   }
 
+  public static double errorForModel(Model m) {
+    ModelMetrics mm =
+            m._output._cross_validation_metrics != null ?
+                    m._output._cross_validation_metrics :
+                    m._output._validation_metrics != null ?
+                            m._output._validation_metrics :
+                            m._output._training_metrics;
+
+    if (m._output.isBinomialClassifier()) {
+      return(((ModelMetricsBinomial)mm).auc());
+    } else if (m._output.isClassifier()) {
+      return(((ModelMetricsMultinomial)mm).mean_per_class_error());
+    } else if (m._output.isSupervised()) {
+      return(((ModelMetricsRegression)mm).residual_deviance());
+    }
+    Log.warn("Failed to find metric for model: " + m);
+    return Double.NaN;
+  }
+
+  public String metricForModel(Model m) {
+    if (m._output.isBinomialClassifier()) {
+      return "auc";
+    } else if (m._output.isClassifier()) {
+      return "mean per-class error";
+    } else if (m._output.isSupervised()) {
+      return "residual deviance";
+    }
+    return "unknown";
+  }
+
   public String rankTsv() {
     String fieldSeparator = "\\t";
     String lineSeparator = "\\n";
@@ -274,24 +303,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     for (int i = models.length - 1; i >= 0; i--) {
       // TODO: allow the metric to be passed in.  Note that this assumes the validation (or training) frame is the same.
       Model m = models[i];
-      ModelMetrics mm =
-              m._output._cross_validation_metrics != null ?
-                      m._output._cross_validation_metrics :
-                      m._output._validation_metrics != null ?
-                              m._output._validation_metrics :
-                              m._output._training_metrics;
-
-      // sb.append(i + 1);
-      // sb.append(fieldSeparator);
-
-      if (m._output.isBinomialClassifier()) {
-        sb.append(((ModelMetricsBinomial)mm).auc());
-      } else if (m._output.isClassifier()) {
-        sb.append(((ModelMetricsMultinomial)mm).mean_per_class_error());
-      } else if (m._output.isSupervised()) {
-        sb.append(((ModelMetricsRegression)mm).residual_deviance());
-      }
-
+      sb.append(errorForModel(m));
       sb.append(lineSeparator);
     }
     return sb.toString();
@@ -308,24 +320,10 @@ public class Leaderboard extends Keyed<Leaderboard> {
     for (int i = models.length - 1; i >= 0; i--) {
       // TODO: allow the metric to be passed in.  Note that this assumes the validation (or training) frame is the same.
       Model m = models[i];
-      ModelMetrics mm =
-              m._output._cross_validation_metrics != null ?
-                      m._output._cross_validation_metrics :
-                      m._output._validation_metrics != null ?
-                              m._output._validation_metrics :
-                              m._output._training_metrics;
-
       sb.append(timestampFormat.format(m._output._end_time));
       sb.append(fieldSeparator);
 
-      if (m._output.isBinomialClassifier()) {
-        sb.append(((ModelMetricsBinomial)mm).auc());
-      } else if (m._output.isClassifier()) {
-        sb.append(((ModelMetricsMultinomial)mm).mean_per_class_error());
-      } else if (m._output.isSupervised()) {
-        sb.append(((ModelMetricsRegression)mm).residual_deviance());
-      }
-
+      sb.append(errorForModel(m));
       sb.append(lineSeparator);
     }
     return sb.toString();
@@ -358,13 +356,6 @@ public class Leaderboard extends Keyed<Leaderboard> {
     boolean printedHeader = false;
     for (Model m : models) {
       // TODO: allow the metric to be passed in.  Note that this assumes the validation (or training) frame is the same.
-      ModelMetrics mm =
-              m._output._cross_validation_metrics != null ?
-                      m._output._cross_validation_metrics :
-                      m._output._validation_metrics != null ?
-                              m._output._validation_metrics :
-                              m._output._training_metrics;
-
       if (includeHeader && ! printedHeader) {
         sb.append("Model_ID");
         sb.append(fieldSeparator);
@@ -387,13 +378,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
       sb.append(m._key.toString());
       sb.append(fieldSeparator);
 
-      if (m._output.isBinomialClassifier()) {
-        sb.append(((ModelMetricsBinomial)mm).auc());
-      } else if (m._output.isClassifier()) {
-        sb.append(((ModelMetricsMultinomial)mm).mean_per_class_error());
-      } else if (m._output.isSupervised()) {
-        sb.append(((ModelMetricsRegression)mm).residual_deviance());
-      }
+      sb.append(errorForModel(m));
 
       if (includeTimestamp) {
         sb.append(fieldSeparator);

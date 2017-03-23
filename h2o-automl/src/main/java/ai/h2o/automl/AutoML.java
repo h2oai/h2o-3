@@ -112,31 +112,21 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   public AutoML(Key<AutoML> key, AutoMLBuildSpec buildSpec) {
     super(key);
 
-    userFeedback = new UserFeedback(this._key);
-    userFeedback.info(Stage.Workflow, "AutoML job created: " + fullTimestampFormat.format(new Date()));
+    Date startTime = new Date();
+
+    userFeedback = new UserFeedback(this); // Don't use until we set this.project
+
+    this.buildSpec = buildSpec;
+    this.project = buildSpec.project();
+
+    userFeedback.info(Stage.Workflow, "AutoML job created: " + fullTimestampFormat.format(startTime));
+
+    handleDatafileParameters(buildSpec);
+
     userFeedback.info(Stage.Workflow, "Build control seed: " +
             buildSpec.build_control.stopping_criteria.seed() +
             (buildSpec.build_control.stopping_criteria.seed() == -1 ? " (random)" : ""));
 
-    this.buildSpec = buildSpec;
-    handleDatafileParameters(buildSpec);
-
-    // TODO: allow the user to set the project via the buildspec
-    String[] path = this.origTrainingFrame._key.toString().split("/");
-    project = path[path.length - 1]
-      .replace(".hex", "")
-      .replace(".CSV", "")
-      .replace(".XLS", "")
-      .replace(".XSLX", "")
-      .replace(".SVMLight", "")
-      .replace(".ARFF", "")
-      .replace(".ORC", "")
-      .replace(".csv", "")
-      .replace(".xls", "")
-      .replace(".xslx", "")
-      .replace(".svmlight", "")
-      .replace(".arff", "")
-      .replace(".orc", "");
     userFeedback.info(Stage.Workflow, "Project: " + project);
     leaderboard = new Leaderboard(project, userFeedback);
 
@@ -903,9 +893,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   public Leaderboard leaderboard() { return leaderboard._key.get(); }
+  public Model leader() { return (leaderboard == null ? null : leaderboard().leader()); }
 
   public UserFeedback userFeedback() { return userFeedback._key.get(); }
 
+  public String project() {
+    return project;
+  }
 
   // satisfy typing for job return type...
   public static class AutoMLKeyV3 extends KeyV3<Iced, AutoMLKeyV3, AutoML> {
