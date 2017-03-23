@@ -87,7 +87,7 @@ public class MRThrow extends TestUtil {
     // Count occurrences of bytes
     @Override public void map( Chunk chk ) {
       _x = new int[256];            // One-time set histogram array
-      byte[] bits = chk.getBytes(); // Raw file bytes
+      byte[] bits = chk.bytes(); // Raw file bytes
       for( byte b : bits )          // Compute local histogram
         _x[b&0xFF]++;
       if( H2O.SELF.equals(_throwAt) )

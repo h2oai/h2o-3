@@ -166,7 +166,7 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
   /** Short-cut to the embedded big-data memory.  Generally not useful for
    *  public consumption, since the data remains compressed and holding on to a
    *  pointer to this array defeats the user-mode spill-to-disk. */
-  public byte[] getBytes() { return _mem; }
+  public byte[] bytes() { return _mem; }
 
   public void setBytes(byte[] mem) { _mem = mem; }
 

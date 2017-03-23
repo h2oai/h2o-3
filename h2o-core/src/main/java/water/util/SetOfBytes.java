@@ -15,7 +15,7 @@ public class SetOfBytes {
   }
   
   public SetOfBytes(String s) {
-    this(s.getBytes());
+    this(StringUtils.bytesOf(s));
   }
   
   public boolean contains(int b) { return b < 256 && b > -129 && bits[0xff&b];}
@@ -35,7 +35,7 @@ public class SetOfBytes {
     return n;
   }
   
-  public byte[] getBytes() {
+  public byte[] bytes() {
     byte[] out = new byte[size()];
     int i = 0;
     for (int b = 0; b < 256; b++) if (bits[b]) out[i++] = (byte)b;
@@ -44,6 +44,6 @@ public class SetOfBytes {
   }
   
   @Override public String toString() {
-    return "SetOfBytes(" + Arrays.toString(getBytes()) + ")";
+    return "SetOfBytes(" + Arrays.toString(bytes()) + ")";
   }
 }

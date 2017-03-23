@@ -213,9 +213,9 @@ subprojects {
         if (applyFindbugsPlugin) {
             apply from: "$rootDir/gradle/findbugs.gradle"
         }
-        if (project.hasProperty("doCheckStyle")) {
-            apply from: "$rootDir/gradle/checkstyle.gradle"
-        }
+
+        apply from: "$rootDir/gradle/checkstyle.gradle"
+
         if (project.hasProperty("doAnimalSniffer") && project.doAnimalSniffer == "true") {
             apply from: "$rootDir/gradle/animalSniffer.gradle"
         }

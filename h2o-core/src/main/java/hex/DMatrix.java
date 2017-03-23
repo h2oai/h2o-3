@@ -7,14 +7,11 @@ import water.H2O.H2OCountedCompleter;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
-import water.fvec.NewChunk.Value;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
-import water.util.StringUtils;
 
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -259,7 +256,7 @@ public class DMatrix  {
       }
       Chunk modChunk = new NewChunk(res).setSparseRatio(2).compress();
       if(_progressKey != null)
-        new UpdateProgress(modChunk.getBytes().length,modChunk.frozenType()).fork(_progressKey);
+        new UpdateProgress(modChunk.bytes().length,modChunk.frozenType()).fork(_progressKey);
       DKV.put(zChunk.vec().chunkKey(zChunk.cidx()),modChunk,_fs);
     }
     @Override public void closeLocal(){

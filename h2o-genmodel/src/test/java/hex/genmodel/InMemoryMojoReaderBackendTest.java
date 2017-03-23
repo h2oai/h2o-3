@@ -6,6 +6,7 @@ import org.junit.Test;
 import java.io.BufferedReader;
 import java.util.HashMap;
 import java.util.Map;
+import water.util.StringUtils;
 
 import static org.junit.Assert.*;
 
@@ -16,7 +17,7 @@ public class InMemoryMojoReaderBackendTest {
   @Before
   public void setup() {
     Map<String, byte[]> content = new HashMap<>();
-    content.put("text-file", "line1\nline2\n".getBytes());
+    content.put("text-file", StringUtils.bytesOf("line1\nline2\n"));
     content.put("binary-file", new byte[]{0, 1, 2});
     readerBackend = new InMemoryMojoReaderBackend(content);
   }

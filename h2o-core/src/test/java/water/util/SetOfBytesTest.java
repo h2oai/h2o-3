@@ -50,7 +50,7 @@ public class SetOfBytesTest {
   @Test
   public void testAsBytes() throws Exception {
     SetOfBytes sut = new SetOfBytes("Hello World!");
-    assertEquals(sut, new SetOfBytes(sut.getBytes()));
-    assertArrayEquals(" !HWdelor".getBytes(), sut.getBytes());
+    assertEquals(sut, new SetOfBytes(sut.bytes()));
+    assertArrayEquals(StringUtils.bytesOf(" !HWdelor"), sut.bytes());
   }
 }
