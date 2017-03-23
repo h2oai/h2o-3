@@ -343,7 +343,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     }
 
     private static <T extends Keyed> Key<T> publish(Keyed<T> keyed) {
-      Scope.track_generic(keyed);
+      Scope.track(keyed);
       DKV.put(keyed);
       return keyed._key;
     }

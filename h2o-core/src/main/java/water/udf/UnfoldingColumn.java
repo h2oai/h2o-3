@@ -3,6 +3,7 @@ package water.udf;
 import water.H2O;
 import water.udf.fp.Functions;
 import water.udf.fp.Unfoldable;
+import water.util.Java7;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -17,9 +18,9 @@ public class UnfoldingColumn<X, Y> extends FunColumnBase<List<Y>> {
   private final Column<X> column;
   private int requiredSize;
   
-  @Override public long size() { return column.size(); }
+  @Override public long size() { return column == null ? 0 : column.size(); }
 
-  @Override public int rowLayout() { return column.rowLayout(); }
+  @Override public int rowLayout() { return column == null ? 0 : column.rowLayout(); }
 
   /**
    * deserialization :(
@@ -44,7 +45,7 @@ public class UnfoldingColumn<X, Y> extends FunColumnBase<List<Y>> {
   }
   
   public List<Y> get(long idx) {
-    List<Y> raw = isNA(idx) ? Collections.<Y>emptyList() : f.apply(column.apply(idx));
+    List<Y> raw = f.apply(column == null ? null : column.apply(idx));
     if (requiredSize == 0 || raw.size() == requiredSize) return raw;
     else {
       List<Y> result = raw.subList(0, Math.min(raw.size(), requiredSize));
@@ -70,7 +71,7 @@ public class UnfoldingColumn<X, Y> extends FunColumnBase<List<Y>> {
   }
 
   @Override public boolean isNA(long idx) {
-    return column.isNA(idx);
+    return column == null || column.isNA(idx);
   }
 
   public static String join(String delimiter, Iterable<?> xs) {
@@ -90,13 +91,13 @@ public class UnfoldingColumn<X, Y> extends FunColumnBase<List<Y>> {
 
       return (requiredSize == that.requiredSize) &&
           Objects.equals(f, that.f) &&
-          column.equals(that.column);
+          Objects.equals(column, that.column);
     } else return false;
   }
 
   @Override
   public int hashCode() {
-    int result = 61 * column.hashCode() + Objects.hashCode(f);
+    int result = 61 * Objects.hashCode(column) + Objects.hashCode(f);
     return 19 * result + requiredSize;
   }
 }

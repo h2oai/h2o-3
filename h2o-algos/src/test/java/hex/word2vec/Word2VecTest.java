@@ -46,7 +46,7 @@ public class Word2VecTest extends TestUtil {
       p._init_learning_rate = 0.025f;
       p._epochs = 1;
 
-      Word2VecModel w2vm = (Word2VecModel) Scope.track_generic(new Word2Vec(p).trainModel().get());
+      Word2VecModel w2vm = (Word2VecModel) Scope.track(new Word2Vec(p).trainModel().get());
 
       Map<String, Float> hm = w2vm.findSynonyms("a", 2);
       logResults(hm);
@@ -93,7 +93,7 @@ public class Word2VecTest extends TestUtil {
       p._vec_size = 2;
       p._pre_trained = pretrained._key;
 
-      Word2VecModel w2vm = (Word2VecModel) Scope.track_generic(new Word2Vec(p).trainModel().get());
+      Word2VecModel w2vm = (Word2VecModel) Scope.track(new Word2Vec(p).trainModel().get());
 
       for (int i = 0; i < words.length; i++) {
         float[] wordVector = w2vm.transform(words[i]);
@@ -146,7 +146,7 @@ public class Word2VecTest extends TestUtil {
       p._min_word_freq = 0;
       p._epochs = 1;
       p._vec_size = 2;
-      Word2VecModel w2vm = (Word2VecModel) Scope.track_generic(new Word2Vec(p).trainModel().get());
+      Word2VecModel w2vm = (Word2VecModel) Scope.track(new Word2Vec(p).trainModel().get());
       w2vm._output._vecs = new float[] {1.0f, 0.0f, 0.0f, 1.0f};
       DKV.put(w2vm);
 

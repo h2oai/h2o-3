@@ -5,7 +5,6 @@ import org.junit.Test;
 import water.udf.fp.Function;
 import water.udf.fp.Predicate;
 import water.udf.fp.PureFunctions;
-import water.udf.specialized.Enums;
 import water.util.StringUtils;
 
 import java.io.File;
@@ -22,9 +21,9 @@ import static water.util.FileUtils.*;
  * Test for UDF
  */
 public class UdfTest extends UdfTestBase {
-  
-  int requiredCloudSize() { return 2; }
-  
+
+  int requiredCloudSize() { return 5; }
+
   private DataColumn<Double> sines() throws java.io.IOException {
     return willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
       public Double apply(Long i) { return (i > 10 && i < 20) ? null : Math.sin(i); }
@@ -70,7 +69,7 @@ public class UdfTest extends UdfTestBase {
   @Test
   public void testOfStrings() throws Exception {
     Column<String> c = willDrop(Strings.newColumn(1 << 20, new Function<Long, String>() {
-       public String apply(Long i) {
+      public String apply(Long i) {
         return i == 42 ? null : "<<" + i + ">>";
       }
     }));
@@ -85,27 +84,9 @@ public class UdfTest extends UdfTestBase {
   }
 
   @Test
-  public void testOfEnums() throws Exception {
-    Column<Integer> c = willDrop(Enums.enums(new String[] {"Red", "White", "Blue"})
-        .newColumn(1 << 20, new Function<Long, Integer>() {
-       public Integer apply(Long i) { return (int)( i % 3); }
-    }));
-    assertEquals(0, c.apply(0).intValue());
-    assertEquals(0, c.apply(42).intValue());
-    assertEquals(1, c.apply(100).intValue());
-    assertEquals(2, c.apply(20000).intValue());
-
-    Column<Integer> materialized = Enums.enums(new String[] {"Red", "White", "Blue"}).materialize(c);
-
-    for (int i = 0; i < 100000; i++) {
-      assertEquals(c.apply(i), materialized.apply(i));
-    }
-  }
-
-  @Test
   public void testOfDates() throws Exception {
     Column<Date> c = willDrop(Dates.newColumn(1 << 20, new Function<Long, Date>() {
-       public Date apply(Long i) {
+      public Date apply(Long i) {
         return new Date(i*3600000L*24);
       }
     }));
@@ -138,24 +119,6 @@ public class UdfTest extends UdfTestBase {
 //  }
 
   @Test
-  public void testOfEnumFun() throws Exception {
-    final String[] domain = {"Red", "White", "Blue"};
-    Column<Integer> x = willDrop(Enums.enums(domain)
-        .newColumn(1 << 20, new Function<Long, Integer>() {
-           public Integer apply(Long i) { return (int)( i % 3); }
-        }));
-
-    Column<String> y = new FunColumn<>(new Function<Integer, String>() {
-      public String apply(Integer i) { return domain[i]; }
-    }, x);
-    
-    assertEquals("Red", y.apply(0));
-    assertEquals("Red", y.apply(42));
-    assertEquals("White", y.apply(100));
-    assertEquals("Blue", y.apply(20000));
-  }
-
-  @Test
   public void testOfSquares() throws Exception {
     Column<Double> x = five_x();
 
@@ -186,7 +149,7 @@ public class UdfTest extends UdfTestBase {
     Column<Double> y2 = willDrop(new FunColumn<>(PureFunctions.SQUARE, y));
     Column<Double> z1 = willDrop(new Fun2Column<>(PureFunctions.PLUS, x, y2));
     Column<Double> z2 = willDrop(new Fun2Column<>(PureFunctions.X2_PLUS_Y2, x, y));
-    
+
     assertEquals(0.0, z1.apply(0), 0.000001);
     assertEquals(210.84001174779368, z1.apply(42), 0.000001);
     assertEquals(100000.3387062632, z1.apply(20000), 0.000001);
@@ -201,10 +164,13 @@ public class UdfTest extends UdfTestBase {
       Double expected = z2.apply(i);
       assertTrue(z2.isNA(i) == materialized.isNA(i));
       // the following exposes a problem. nulls being returned.
-      if (expected == null) assertTrue("At " + i + ":", materialized.isNA(i));
-      Double actual = materialized.apply(i);
-      
-      if (!z2.isNA(i)) assertEquals(expected, actual, 0.0001);
+      if (expected == null) {
+        assertTrue("At " + i + ":", materialized.isNA(i));
+      } else {
+        Double actual = materialized.apply(i);
+
+        if (!z2.isNA(i)) assertEquals(expected, actual, 0.0001);
+      }
     }
   }
 
@@ -229,7 +195,7 @@ public class UdfTest extends UdfTestBase {
     } catch (AssertionError ae) {
       // as designed
     }
-    
+
     try {
       Column<Double> r = new Fun3Column<>(PureFunctions.X2_PLUS_Y2_PLUS_Z2, x, z, y);
       fail("Column incompatibility should be detected");
@@ -271,8 +237,8 @@ public class UdfTest extends UdfTestBase {
   @Test
   public void testFun3() throws Exception {
     Column<Double> x = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
-        public Double apply(Long i) { return Math.cos(i*0.0001)*Math.cos(i*0.0000001); }
-      }));
+      public Double apply(Long i) { return Math.cos(i*0.0001)*Math.cos(i*0.0000001); }
+    }));
 
     Column<Double> y = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
       public Double apply(Long i) { return Math.cos(i*0.0001)*Math.sin(i*0.0000001); }
@@ -328,13 +294,14 @@ public class UdfTest extends UdfTestBase {
     } catch (AssertionError ae) {
       // good, good!
     }
-    
+
     Column<Double> materialized = Doubles.materialize(r);
 
     for (int i = 0; i < 100000; i++) {
       assertEquals(r.apply(i), materialized.apply(i), 0.0001);
     }
   }
+
   @Test
   public void testFoldingColumnCompatibility() throws Exception {
     Column<Double> x = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
@@ -385,19 +352,19 @@ public class UdfTest extends UdfTestBase {
     final List<String> lines = Files.readLines(file, Charset.defaultCharset());
     Column<String> source = willDrop(Strings.newColumn(lines));
     Column<List<String>> split = new UnfoldingColumn<>(PureFunctions.splitBy(","), source, 10);
-    UnfoldingFrame<String> frame = new UnfoldingFrame<>(Strings, split.size(), split, 11);
-    List<DataColumn<String>> columns = frame.materialize();
-    
+    UnfoldingFrame<String, DataColumn<String>> frame = new UnfoldingFrame<>(Strings, split.size(), split, 11);
+    final MatrixFrame<DataColumn<String>> materialized = frame.materialize();
+
     for (int i = 0; i < lines.size(); i++) {
       List<String> fromColumns = new ArrayList<>(10);
       for (int j = 0; j < 10; j++) {
-        String value = columns.get(j).get(i);
+        String value = materialized.column(j).get(i);
         if (value != null) fromColumns.add(value);
       }
       String actual = StringUtils.join(" ", fromColumns);
       assertEquals(lines.get(i).replaceAll("\\,", " ").trim(), actual);
     }
-    
-    assertTrue("Need to align the result", columns.get(5).isCompatibleWith(source));
+
+    assertTrue("Need to align the result", materialized.column(5).isCompatibleWith(source));
   }
 }

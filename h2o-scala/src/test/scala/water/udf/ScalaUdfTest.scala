@@ -1,17 +1,17 @@
 package water.udf
 
 import java.io.File
+import java.lang
 import java.util.{Date, GregorianCalendar}
-import java.{lang, util}
 
-import org.junit.{Assert, Test}
+import org.junit.{Assert, BeforeClass, Test}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
-import water.Test0
 import water.TestUtil._
 import water.udf.MoreColumns._
 import water.udf.fp.PureFunctions._
 import water.udf.fp.{Function, Functions, PureFunctions}
 import water.util.FileUtils._
+import water.{Test0, TestUtil}
 
 import scala.collection.JavaConverters._
 import scala.io.Source
@@ -22,17 +22,17 @@ import scala.language.postfixOps
   */
 class ScalaUdfTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
   val A_LOT: Int = 1 << 20
-  
-  override def beforeAll: Unit = stall_till_cloudsize(2)
+
+  override def beforeAll: Unit = stall_till_cloudsize(3)
 
   val sinOpt =
     (i: Long) => Some(i).filter(k => k <= 10 || k >= 20).map(i => math.sin(i.toDouble))
 
-  private def sines: DataColumn[lang.Double] = willDrop(ScalaDoubles.newColumnOpt(1L << 20, sinOpt))
+  private def sines: DataColumn[lang.Double] = willDrop(Doubles.newColumnOpt(1L << 20, sinOpt))
 
-  private def sinesShort: DataColumn[lang.Double] = willDrop(ScalaDoubles.newColumnOpt(1001590, sinOpt))
+  private def sinesShort: DataColumn[lang.Double] = willDrop(Doubles.newColumnOpt(1001590, sinOpt))
 
-  private def five_x: DataColumn[lang.Double] = willDrop(ScalaDoubles.newColumn(A_LOT, (i: Long) => i * 5.0))
+  private def five_x: DataColumn[lang.Double] = willDrop(Doubles.newColumn(A_LOT, (i: Long) => i * 5.0))
 
   val coscos = (i: Long) => math.cos(i * 0.0001) * Math.cos(i * 0.0000001)
   val cossin = (i: Long) => math.cos(i * 0.0001) * Math.sin(i * 0.0000001)
@@ -136,7 +136,7 @@ class ScalaUdfTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
     assert(0.0 == z2(0), 0.000001)
     assert(44100.840011747794 == z2(42), 0.000001)
     assert(10000000000.3387062632 == z2(20000), 0.000001)
-    val materialized: Column[lang.Double] = willDrop(ScalaDoubles.materialize(z2))
+    val materialized: Column[lang.Double] = willDrop(Doubles.materialize(z2))
     for {i <- 0 until 100000} {
       {
         val expected = z2(i)
@@ -153,7 +153,7 @@ class ScalaUdfTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
   test("Fun2Compatibility") {
     val x: Column[lang.Double] = five_x
     val y: Column[lang.Double] = sinesShort
-    val z: Column[lang.Double] = willDrop(ScalaDoubles.newColumn(A_LOT, (i: Long) => math.sin(i * 0.0001)))
+    val z: Column[lang.Double] = willDrop(Doubles.newColumn(A_LOT, (i: Long) => math.sin(i * 0.0001)))
 
     try {
       val z1: Column[lang.Double] = new Fun2Column[lang.Double, lang.Double, lang.Double](PureFunctions.PLUS, x, y)
@@ -178,9 +178,9 @@ class ScalaUdfTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
     }
   }
 
-  def xsOnSphere: DataColumn[lang.Double] = willDrop(ScalaDoubles.newColumn(A_LOT, coscos))
-  def ysOnSphere: DataColumn[lang.Double] = willDrop(ScalaDoubles.newColumn(A_LOT, cossin))
-  def zsOnSphere: DataColumn[lang.Double] = willDrop(ScalaDoubles.newColumn(A_LOT, sinth))
+  def xsOnSphere: DataColumn[lang.Double] = willDrop(Doubles.newColumn(A_LOT, coscos))
+  def ysOnSphere: DataColumn[lang.Double] = willDrop(Doubles.newColumn(A_LOT, cossin))
+  def zsOnSphere: DataColumn[lang.Double] = willDrop(Doubles.newColumn(A_LOT, sinth))
 
   test("Fun3") {
     val x: Column[lang.Double] = xsOnSphere
@@ -190,7 +190,7 @@ class ScalaUdfTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
 
     for {i <- 0 until 100000} assert(math.abs(r(i * 10) - 1.0) < 0.0001)
 
-    val materialized: Column[lang.Double] = ScalaDoubles.materialize(r)
+    val materialized: Column[lang.Double] = Doubles.materialize(r)
     for {i <- 0 until 100000} assert(r(i) == materialized(i), 0.0001)
   }
 
@@ -209,10 +209,10 @@ class ScalaUdfTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
       assert(math.abs(x1(i) - xi * xi) < 0.0002, s"@$i: $xi")
     }
 
-// should not work for now    val x0: Column[lang.Double] = new FoldingColumn[lang.Double, lang.Double](Functions.SUM_OF_SQUARES)
-//    for {i <- 0 until 100000} assert(x0(i) == 0.0, 0.0001)
+    // should not work for now    val x0: Column[lang.Double] = new FoldingColumn[lang.Double, lang.Double](Functions.SUM_OF_SQUARES)
+    //    for {i <- 0 until 100000} assert(x0(i) == 0.0, 0.0001)
 
-    val materialized: Column[lang.Double] = ScalaDoubles.materialize(r)
+    val materialized: Column[lang.Double] = Doubles.materialize(r)
 
     for {i <- 0 until 100000} assert(r(i) == materialized(i), 0.0001)
   }
@@ -227,16 +227,16 @@ class ScalaUdfTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
       fail("Should have failed on incompatibility")
     }
     catch {
-      case ae: AssertionError => 
+      case ae: AssertionError =>
     }
   }
-  
+
   test("FoldingColumn, Scala") {
     val x: Column[lang.Double] = xsOnSphere
     val y: Column[lang.Double] = ysOnSphere
     val z: Column[lang.Double] = zsOnSphere
     val r: Column[lang.Double] = foldingColumn[lang.Double](
-      Magma[lang.Double](0.0, (sum:lang.Double) => (v:lang.Double) => sum+v*v), 
+      Magma[lang.Double](0.0, (sum:lang.Double) => (v:lang.Double) => sum+v*v),
       x, y, z)
 
     for {i <- 0 until 100000} {
@@ -250,9 +250,9 @@ class ScalaUdfTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
   test("UnfoldingColumn") {
     val file: File = getFile("smalldata/chicago/chicagoAllWeather.csv")
     val ss = Source.fromFile(file).getLines().toList
-    
+
     val source: Column[lang.String] = willDrop(Strings.newColumn(ss))
-    
+
     val split: Column[java.util.List[String]] = new UnfoldingColumn[String, String](Functions.splitBy(","), source, 10)
 
     assert(ss.size == split.size())
@@ -290,22 +290,26 @@ class ScalaUdfTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
     val split: Column[java.util.List[String]] = new UnfoldingColumn[lang.String, String](Functions.splitBy(","), source, 10)
 
     assert(ss.size == split.size())
-    
-    val frame: UnfoldingFrame[String] = new UnfoldingFrame[String](Strings, split.size, split, 11)
-    
-    val columns: util.List[DataColumn[lang.String]] = frame.materialize
+
+    val frame = new UnfoldingFrame[String, DataColumn[String]](Strings, split.size, split, 11)
+
+    val matrix: MatrixFrame[DataColumn[String]] = frame.materialize
 
     {
       for {i <- ss.indices} {
-        val fromColumns = (0 until 10) map (columns.get(_).get(i))
+        val fromColumns = (0 until 10) map (matrix.column(_).get(i))
         val actual = fromColumns filter (null !=) mkString " "
         assert(ss(i).replaceAll(",", " ").trim == actual)
       }
     }
-    assert(columns.get(5).isCompatibleWith(source), "Need until align the result")
+    assert(matrix.column(5).isCompatibleWith(source), "Need until align the result")
   }
 
   @Test def testSomethingElse(): Unit = {
     Assert.assertTrue(true)
   }
+}
+
+object ScalaUdfTest extends TestUtil {
+  @BeforeClass def setup() = TestUtil.stall_till_cloudsize(3)
 }

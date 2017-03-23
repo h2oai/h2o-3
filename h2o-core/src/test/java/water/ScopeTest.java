@@ -15,7 +15,7 @@ public class ScopeTest extends TestUtil {
     final Key<DummyKeyed> k = Key.make();
     try {
       Scope.enter();
-      DKV.put(Scope.track_generic(new DummyKeyed(k)));
+      DKV.put(Scope.track(new DummyKeyed(k)));
       Scope.exit();
       assertNull("DKV value should be automatically removed", DKV.get(k));
     } finally {
