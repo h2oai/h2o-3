@@ -12,6 +12,7 @@ import java.io.FileInputStream;
 import java.util.Random;
 import java.util.zip.GZIPInputStream;
 
+@Ignore
 public class DeepWaterCaffeIntegrationTest extends DeepWaterAbstractIntegrationTest {
 
   @Override
