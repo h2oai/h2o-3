@@ -125,15 +125,31 @@ def gen_module(schema, algo, module):
             yield "    beta_constraints <- as.h2o(beta_constraints)"
             yield "  }"
     yield ""
-    yield "  # Required args: training_frame"
-    yield "  if( missing(training_frame) ) stop(\"argument \'training_frame\' is missing, with no default\")"
-    # yield "  if( missing(validation_frame) ) validation_frame = NULL"
-    yield "  # Training_frame must be a key or an H2OFrame object"
-    yield "  if (!is.H2OFrame(training_frame))"
-    yield "     tryCatch(training_frame <- h2o.getFrame(training_frame),"
-    yield "           error = function(err) {"
-    yield "             stop(\"argument \'training_frame\' must be a valid H2OFrame or key\")"
-    yield "           })"
+    if algo == "word2vec":
+        yield "  # training_frame is required if pre_trained frame is not specified"
+        yield "  if( missing(pre_trained) && missing(training_frame) ) stop(\"argument \'training_frame\' is missing, with no default\")"
+        yield "  # training_frame must be a key or an H2OFrame object"
+        yield "  if (!missing(training_frame) && !is.H2OFrame(training_frame))"
+        yield "    tryCatch(training_frame <- h2o.getFrame(training_frame),"
+        yield "             error = function(err) {"
+        yield "               stop(\"argument \'training_frame\' must be a valid H2OFrame or key\")"
+        yield "             })"
+        yield "  # pre_trained must be a key or an H2OFrame object"
+        yield "  if (!missing(pre_trained) && !is.H2OFrame(pre_trained))"
+        yield "    tryCatch(pre_trained <- h2o.getFrame(pre_trained),"
+        yield "             error = function(err) {"
+        yield "               stop(\"argument \'pre_trained\' must be a valid H2OFrame or key\")"
+        yield "             })"
+    else:
+        yield "  # Required args: training_frame"
+        yield "  if( missing(training_frame) ) stop(\"argument \'training_frame\' is missing, with no default\")"
+        # yield "  if( missing(validation_frame) ) validation_frame = NULL"
+        yield "  # Training_frame must be a key or an H2OFrame object"
+        yield "  if (!is.H2OFrame(training_frame))"
+        yield "     tryCatch(training_frame <- h2o.getFrame(training_frame),"
+        yield "           error = function(err) {"
+        yield "             stop(\"argument \'training_frame\' must be a valid H2OFrame or key\")"
+        yield "           })"
     if algo not in ["stackedensemble", "word2vec"]:
         yield "  # Validation_frame must be a key or an H2OFrame object"
         yield "  if (!is.null(validation_frame)) {"
@@ -435,7 +451,7 @@ def get_extra_params_for(algo):
     elif algo == "svd":
         return "training_frame, x, destination_key"
     elif algo == "word2vec":
-        return "training_frame"
+        return "training_frame = NULL"
     else:
         return "training_frame, x"
 
@@ -445,8 +461,8 @@ def help_extra_params_for(algo):
     elif algo in ["deeplearning", "deepwater","drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
         return """#' @param x A vector containing the names or indices of the predictor variables to use in building the model.
             #'        If x is missing,then all columns except y are used.
-            #' @param y The name of the response variable in the model.If the data does not contain a header, this is the column index
-            #'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
+            #' @param y The name of the response variable in the model.If the data does not contain a header, this is the first column
+            #'        index, and increasing from left to right. (The response must be either an integer or a
             #'        categorical variable)."""
     elif algo == "svd":
         return """#' @param x A vector containing the \code{character} names of the predictors in the model.
@@ -521,26 +537,32 @@ def help_extra_checks_for(algo):
         """
     if algo == "kmeans":
         return """
-  # Check if init is an acceptable set of user-specified starting points
-  if( is.data.frame(init) || is.matrix(init) || is.list(init) || is.H2OFrame(init) ) {
-  parms[["init"]] <- "User"
+  # Check if user_points is an acceptable set of user-specified starting points
+  if( is.data.frame(user_points) || is.matrix(user_points) || is.list(user_points) || is.H2OFrame(user_points) ) {
+    if ( length(init) > 1 || init == 'User') {
+      parms[["init"]] <- "User"
+    } else {
+      warning(paste0("Parameter init must equal 'User' when user_points is set. Ignoring init = '", init, "'. Setting init = 'User'."))
+    }
+
+    parms[["init"]] <- "User"
   # Convert user-specified starting points to H2OFrame
-  if( is.data.frame(init) || is.matrix(init) || is.list(init) ) {
-    if( !is.data.frame(init) && !is.matrix(init) ) init <- t(as.data.frame(init))
-    init <- as.h2o(init)
+  if( is.data.frame(user_points) || is.matrix(user_points) || is.list(user_points) ) {
+    if( !is.data.frame(user_points) && !is.matrix(user_points) ) user_points <- t(as.data.frame(user_points))
+    user_points <- as.h2o(user_points)
   }
-  parms[["user_points"]] <- init
+  parms[["user_points"]] <- user_points
   # Set k
-  if( !(missing(k)) && k!=as.integer(nrow(init)) ) {
+  if( !(missing(k)) && k!=as.integer(nrow(user_points)) ) {
     warning("Parameter k is not equal to the number of user-specified starting points. Ignoring k. Using specified starting points.")
   }
-  parms[["k"]] <- as.numeric(nrow(init))
-  }
-  else if ( is.character(init) ) { # Furthest, Random, PlusPlus
-  parms[["user_points"]] <- NULL
-  }
-  else{
-  stop ("argument init must be set to Furthest, Random, PlusPlus, or a valid set of user-defined starting points.")
+  parms[["k"]] <- as.numeric(nrow(user_points))
+
+  } else if ( is.character(init) ) { # Furthest, Random, PlusPlus{
+    parms[["user_points"]] <- NULL
+
+  } else{
+    stop ("argument init must be set to Furthest, Random, PlusPlus, or a valid set of user-defined starting points.")
   }
         """
 

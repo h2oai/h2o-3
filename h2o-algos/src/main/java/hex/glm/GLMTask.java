@@ -152,7 +152,7 @@ public abstract class GLMTask  {
      int [] ids = MemoryManager.malloc4(chks[0]._len);
      for(int c = 0; c < _mean.length; ++c){
        double mu = _mean[c];
-       int n = chks[c].asSparseDoubles(vals,ids);
+       int n = chks[c].getSparseDoubles(vals,ids);
        double s = 0;
        for(int i = 0; i < n; ++i) {
          double d = vals[i];
@@ -227,7 +227,7 @@ public abstract class GLMTask  {
        for (int i = 0; i < chunks.length; ++i) {
          int n = vals.length;
          if(chunks[i].isSparseZero())
-           n = chunks[i].asSparseDoubles(vals,ids);
+           n = chunks[i].getSparseDoubles(vals,ids);
          else
           chunks[i].getDoubles(vals,0,n);
          for (int r = 0; r < n; ++r) {
@@ -476,7 +476,7 @@ public abstract class GLMTask  {
       for(int cid = 0; cid < _dinfo._cats; ++cid){
         Chunk c = chks[cid];
         if(c.isSparseZero()) {
-          int nvals = c.asSparseDoubles(vals,ids,_dinfo.catNAFill(cid));
+          int nvals = c.getSparseDoubles(vals,ids,_dinfo.catNAFill(cid));
           for(int i = 0; i < nvals; ++i){
             int id = _dinfo.getCategoricalId(cid,(int)vals[i]);
             if(id >=0) etas[ids[i]] += _beta[id];
@@ -496,7 +496,7 @@ public abstract class GLMTask  {
       for(int cid = 0; cid < _dinfo._cats; ++cid){
         Chunk c = chks[cid];
         if(c.isSparseZero()) {
-          int nvals = c.asSparseDoubles(vals,ids,_dinfo.catNAFill(cid));
+          int nvals = c.getSparseDoubles(vals,ids,_dinfo.catNAFill(cid));
           for(int i = 0; i < nvals; ++i){
             int id = _dinfo.getCategoricalId(cid,(int)vals[i]);
             if(id >=0) _gradient[id] += etas[ids[i]];
@@ -520,11 +520,11 @@ public abstract class GLMTask  {
         Chunk c = chks[cid+_dinfo._cats];
         double b = scale*_beta[numOff+cid];
         if(c.isSparseZero()){
-          int nvals = c.asSparseDoubles(vals,ids,NA);
+          int nvals = c.getSparseDoubles(vals,ids,NA);
           for(int i = 0; i < nvals; ++i)
             etas[ids[i]] += vals[i] * b;
         } else if(c.isSparseNA()){
-          int nvals = c.asSparseDoubles(vals,ids,NA);
+          int nvals = c.getSparseDoubles(vals,ids,NA);
           for(int i = 0; i < nvals; ++i)
             etas[ids[i]] += (vals[i] - off) * b;
         } else {
@@ -543,14 +543,14 @@ public abstract class GLMTask  {
         double scale = _dinfo._normMul == null?1:_dinfo._normMul[cid];
         if(c.isSparseZero()){
           double g = 0;
-          int nVals = c.asSparseDoubles(vals,ids,NA);
+          int nVals = c.getSparseDoubles(vals,ids,NA);
           for(int i = 0; i < nVals; ++i)
             g += vals[i]*scale*etas[ids[i]];
           _gradient[numOff+cid] = g;
         } else if(c.isSparseNA()){
           double off = _dinfo._normSub == null?0:_dinfo._normSub[cid];
           double g = 0;
-          int nVals = c.asSparseDoubles(vals,ids,NA);
+          int nVals = c.getSparseDoubles(vals,ids,NA);
           for(int i = 0; i < nVals; ++i)
             g += (vals[i]-off)*scale*etas[ids[i]];
           _gradient[numOff+cid] = g;
@@ -761,7 +761,7 @@ public abstract class GLMTask  {
       for(int cid = 0; cid < _dinfo._cats; ++cid){
         Chunk c = chks[cid];
         if(c.isSparseZero()) {
-          int nvals = c.asSparseDoubles(vals,ids,_dinfo.catNAFill(cid));
+          int nvals = c.getSparseDoubles(vals,ids,_dinfo.catNAFill(cid));
           for(int i = 0; i < nvals; ++i){
             int id = _dinfo.getCategoricalId(cid,(int)vals[i]);
             if(id >=0)ArrayUtils.add(etas[ids[i]],_beta[id]);
@@ -781,7 +781,7 @@ public abstract class GLMTask  {
       for(int cid = 0; cid < _dinfo._cats; ++cid){
         Chunk c = chks[cid];
         if(c.isSparseZero()) {
-          int nvals = c.asSparseDoubles(vals,ids,_dinfo.catNAFill(cid));
+          int nvals = c.getSparseDoubles(vals,ids,_dinfo.catNAFill(cid));
           for(int i = 0; i < nvals; ++i){
             int id = _dinfo.getCategoricalId(cid,(int)vals[i]);
             if(id >=0) ArrayUtils.add(_gradient[id],etas[ids[i]]);
@@ -804,7 +804,7 @@ public abstract class GLMTask  {
         double NA = _dinfo._numMeans[cid];
         Chunk c = chks[cid+_dinfo._cats];
         if(c.isSparseZero() || c.isSparseNA()){
-          int nvals = c.asSparseDoubles(vals,ids,NA);
+          int nvals = c.getSparseDoubles(vals,ids,NA);
           for(int i = 0; i < nvals; ++i) {
             double d = vals[i]*scale;
             ArrayUtils.wadd(etas[ids[i]],b,d);
@@ -828,7 +828,7 @@ public abstract class GLMTask  {
         Chunk c = chks[cid+_dinfo._cats];
         double scale = _dinfo._normMul == null?1:_dinfo._normMul[cid];
         if(c.isSparseZero() || c.isSparseNA()){
-          int nVals = c.asSparseDoubles(vals,ids,NA);
+          int nVals = c.getSparseDoubles(vals,ids,NA);
           for (int i = 0; i < nVals; ++i)
             ArrayUtils.wadd(g,etas[ids[i]],vals[i] * scale);
         } else {

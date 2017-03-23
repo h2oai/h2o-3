@@ -61,13 +61,14 @@ public final class Categorical extends Iced {
   }
 
   public static final int MAX_EXAMPLES = 10;
+  // TODO(Vlad): either make sure it works, or just get rid of it
   public void convertToUTF8(int col){
     int hexConvCnt = 0;
     BufferedString[] bStrs = _map.keySet().toArray(new BufferedString[_map.size()]);
     StringBuilder hexSB = new StringBuilder();
     for (int i =0; i < bStrs.length; i++) {
       String s = bStrs[i].toString();
-      if (!bStrs[i].equals(s)) {
+      if (!bStrs[i].sameString(s)) {
         if (s.contains("\uFFFD")) { // make weird chars into hex
           s = bStrs[i].bytesToString();
           if (hexConvCnt++ < MAX_EXAMPLES) hexSB.append(s +", ");

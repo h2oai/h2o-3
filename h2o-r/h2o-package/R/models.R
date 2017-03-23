@@ -95,7 +95,8 @@
 
 
 .h2o.modelJob <- function( algo, params, h2oRestApiVersion=.h2o.__REST_API_VERSION ) {
-  .eval.frame(params$training_frame)
+  if( !is.null(params$validation_frame) )
+    .eval.frame(params$training_frame)
   if( !is.null(params$validation_frame) )
     .eval.frame(params$validation_frame)
   job <- .h2o.startModelJob(algo, params, h2oRestApiVersion)
@@ -2259,7 +2260,7 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds=
       tbl <- data.frame(col1,col2,col3,col4)
       colnames(tbl) <- cnames
       rownames(tbl) <- rnames
-      header <-  "Confusion Matrix"
+      header <-  "Confusion Matrix (vertical: actual; across: predicted) "
       if(t %in% metrics_thresholds) {
         m <- metrics_list[which(t == metrics_thresholds)]
         if( length(m) > 1) m <- m[[1]]
@@ -2858,6 +2859,7 @@ h2o.cross_validation_predictions <- function(object) {
 #' @param destination_key An key reference to the created partial dependence tables in H2O.
 #' @param nbins Number of bins used. For categorical columns make sure the number of bins exceed the level count.
 #' @param plot A logical specifying whether to plot partial dependence table.
+#' @param plot_stddev A logical specifying whether to add std err to partial dependence plot.
 #' @return Plot and list of calculated mean response tables for each feature requested.
 #' @examples
 #' \donttest{
@@ -2877,11 +2879,13 @@ h2o.cross_validation_predictions <- function(object) {
 #' }
 #' @export
 
-h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot = TRUE) {
+h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot = TRUE, plot_stddev = TRUE) {
   if(!is(object, "H2OModel")) stop("object must be an H2Omodel")
   if( is(object, "H2OMultinomialModel")) stop("object must be a regression model or binary classfier")
   if(!is(data, "H2OFrame")) stop("data must be H2OFrame")
   if(!is.numeric(nbins) | !(nbins > 0) ) stop("nbins must be a positive numeric")
+  if(!is.logical(plot)) stop("plot must be a logical value")
+  if(!is.logical(plot_stddev)) stop("plot must be a logical value")
   if(missing(cols)) cols =  object@parameters$x
 
   y = object@parameters$y
@@ -2902,7 +2906,7 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
 
   ## Change feature names to the original supplied, the following is okay because order is preserved
   pps <- res$partial_dependence_data
-  for(i in 1:length(pps)) if(!all(is.na( pps[[i]])) ) names(pps[[i]]) <- c(cols[i], "mean_response")
+  for(i in 1:length(pps)) if(!all(is.na( pps[[i]])) ) names(pps[[i]]) <- c(cols[i], "mean_response", "stddev_response")
 
   col_types = unlist(h2o.getTypes(data))
   col_names = names(data)
@@ -2910,7 +2914,19 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
     if(!all(is.na(pp))) {
       type = col_types[which(col_names == names(pp)[1])]
       if(type == "enum") pp[,1] = as.factor( pp[,1])
-      plot(pp, type = "l", main = attr(x,"description"))
+      
+      ## Added upper and lower std dev confidence bound
+      upper = pp[,2] + pp[,3]
+      lower = pp[,2] - pp[,3]
+      plot(pp[,1:2], type = "l", main = attr(x,"description"), ylim  = c(min(lower), max(upper)))
+      
+      ## Plot one standard deviation above and below the mean
+      if( plot_stddev) {
+        polygon(c(pp[,1], rev(pp[,1])), c(lower, rev(upper)), col = "grey75", border = F)
+        lines(pp[,1], pp[,2], lwd = 2)
+        lines(pp[,1], lower, col = "blue", lty = 2)
+        lines(pp[,1], upper, col = "blue", lty = 2) 
+      }
     } else {
       print("Partial Dependence not calculated--make sure nbins is as high as the level count")
     }

@@ -165,6 +165,7 @@ public class HeartBeatThread extends Thread {
       // Once per second, for the entire cloud a Node will multi-cast publish
       // itself, so other unrelated Clouds discover each other and form up.
       try { Thread.sleep(SLEEP); } // Only once-sec per entire Cloud
+      catch( IllegalMonitorStateException ignore ) { }
       catch( InterruptedException ignore ) { }
     }
   }

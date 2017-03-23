@@ -518,7 +518,6 @@ public class NewChunkTest extends TestUtil {
       post_write();
       assertEquals(K, nc._len);
       assertEquals(0, cc.atd(K - 3), Math.ulp(0));
-      assertTrue(cc.chk2() instanceof CNAXDChunk);
 
       for (int i = 0; i < K - 5; i++) assertEquals(Double.NaN, cc.atd(i), Math.ulp(0));
       assertEquals(extra, cc.atd(K - 5), Math.ulp(extra));

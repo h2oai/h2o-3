@@ -1,7 +1,7 @@
 package ai.h2o.api.proto.frames;
 
 
-import ai.h2o.api.proto.core.GrpcCommon;
+import ai.h2o.api.GrpcUtils;
 import ai.h2o.api.proto.core.JobInfo;
 import ai.h2o.api.proto.core.JobService;
 import hex.createframe.recipes.SimpleCreateFrameRecipe;
@@ -48,7 +48,7 @@ public class CreateFrameService extends CreateFrameGrpc.CreateFrameImplBase {
       responseObserver.onCompleted();
 
     } catch (Throwable ex) {
-      GrpcCommon.sendError(ex, responseObserver, JobInfo.class);
+      GrpcUtils.sendError(ex, responseObserver, JobInfo.class);
     }
   }
 

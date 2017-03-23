@@ -96,6 +96,7 @@ public class PartialDependence extends Lockable<PartialDependence> {
 
         Futures fs = new Futures();
         final double meanResponse[] = new double[colVals.length];
+        final double stddevResponse[] = new double[colVals.length];
 
         final boolean cat = fr.vec(col).isCategorical();
 
@@ -117,8 +118,10 @@ public class PartialDependence extends Lockable<PartialDependence> {
                 preds = _model_id.get().score(test, Key.make().toString(), _job, false);
                 if (_model_id.get()._output.nclasses() == 2) {
                   meanResponse[which] = preds.vec(2).mean();
+                  stddevResponse[which] = preds.vec(2).sigma();
                 } else if (_model_id.get()._output.nclasses() == 1) {
                   meanResponse[which] = preds.vec(0).mean();
+                  stddevResponse[which] = preds.vec(0).sigma();
                 } else throw H2O.unimpl();
               } finally {
                 if (preds != null) preds.remove();
@@ -149,7 +152,12 @@ public class PartialDependence extends Lockable<PartialDependence> {
 
 //        Log.info("Baseline: " + baselineMeanResponse);
 //        Log.info(Arrays.toString(meanResponse));
-        _partial_dependence_data[i] = new TwoDimTable("PartialDependence", ("Partial Dependence Plot of model " + _model_id + " on column '" + _cols[i] + "'"), new String[actualbins], new String[]{_cols[i], "mean_response"}, new String[]{cat ? "string" : "double", "double"}, new String[]{cat ? "%s" : "%5f", "%5f"}, null);
+        _partial_dependence_data[i] = new TwoDimTable("PartialDependence",
+                ("Partial Dependence Plot of model " + _model_id + " on column '" + _cols[i] + "'"),
+                new String[actualbins],
+                new String[]{_cols[i], "mean_response", "stddev_response"},
+                new String[]{cat ? "string" : "double", "double", "double"},
+                new String[]{cat ? "%s" : "%5f", "%5f", "%5f"}, null);
         for (int j = 0; j < meanResponse.length; ++j) {
           if (fr.vec(col).isCategorical()) {
             _partial_dependence_data[i].set(j, 0, fr.vec(col).domain()[(int) colVals[j]]);
@@ -157,6 +165,7 @@ public class PartialDependence extends Lockable<PartialDependence> {
             _partial_dependence_data[i].set(j, 0, colVals[j]);
           }
           _partial_dependence_data[i].set(j, 1, meanResponse[j]);
+          _partial_dependence_data[i].set(j, 2, stddevResponse[j]);
         }
         _job.update(1);
         update(_job);

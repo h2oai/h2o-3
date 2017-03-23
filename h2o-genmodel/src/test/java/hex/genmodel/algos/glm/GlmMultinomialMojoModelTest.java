@@ -72,6 +72,11 @@ public class GlmMultinomialMojoModelTest {
     public byte[] getBinaryFile(String filename) throws IOException {
       throw new UnsupportedOperationException("Unexpected call to getBinaryFile()");
     }
+
+    @Override
+    public boolean exists(String name) {
+      throw new UnsupportedOperationException("Unexpected call to exists()");
+    }
   }
 
 }

@@ -1,5 +1,14 @@
 package water;
 
+import water.RPC.RPCCall;
+import water.nbhm.NonBlockingHashMap;
+import water.nbhm.NonBlockingHashMapLong;
+import water.network.SocketChannelFactory;
+import water.util.ArrayUtils;
+import water.util.Log;
+import water.util.MathUtils;
+import water.util.UnsafeUtils;
+
 import java.io.IOException;
 import java.net.*;
 import java.nio.ByteBuffer;
@@ -10,15 +19,6 @@ import java.nio.channels.SocketChannel;
 import java.util.*;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import water.RPC.RPCCall;
-import water.nbhm.NonBlockingHashMap;
-import water.nbhm.NonBlockingHashMapLong;
-import water.util.ArrayUtils;
-import water.network.SocketChannelFactory;
-import water.util.Log;
-import water.util.MathUtils;
-import water.util.UnsafeUtils;
 
 /**
  * A <code>Node</code> in an <code>H2O</code> Cloud.
@@ -126,6 +126,11 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
 
     _security = H2OSecurityManager.instance();
     _socketFactory = SocketChannelFactory.instance(_security);
+  }
+
+  public boolean isHealthy() { return isHealthy(System.currentTimeMillis()); }
+  public boolean isHealthy(long now) {
+    return (now - _last_heard_from) < HeartBeatThread.TIMEOUT;
   }
 
   // ---------------
@@ -393,6 +398,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
               bb = _msgQ.poll();  // Go get more, same batch
             }
             sendBuffer();         // Send final trailing BBs
+          } catch (IllegalMonitorStateException imse) { /* ignore */
           } catch (InterruptedException e) { /*ignore*/ }
         }
       } catch(Throwable t) { throw Log.throwErr(t); }

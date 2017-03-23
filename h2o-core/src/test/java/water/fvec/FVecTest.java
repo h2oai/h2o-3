@@ -5,6 +5,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
 import water.util.ArrayUtils;
+import water.util.FileUtils;
+import water.util.StringUtils;
 
 import java.io.File;
 
@@ -20,7 +22,7 @@ public class FVecTest extends TestUtil {
     byte [][] chunks = new byte[data.length][];
     long [] espc = new long[data.length+1];
     for(int i = 0; i < chunks.length; ++i){
-      chunks[i] = data[i].getBytes();
+      chunks[i] = StringUtils.bytesOf(data[i]);
       espc[i+1] = espc[i] + data[i].length();
     }
     Futures fs = new Futures();
@@ -47,7 +49,7 @@ public class FVecTest extends TestUtil {
   // ==========================================================================
   @Test public void testBasicCRUD() {
     // Make and insert a FileVec to the global store
-    File file = find_test_file("./smalldata/junit/cars.csv");
+    File file = FileUtils.locateFile("./smalldata/junit/cars.csv");
     NFSFileVec nfs = NFSFileVec.make(file);
     int sum = ArrayUtils.sum(new ByteHisto().doAll(nfs)._x);
     assertEquals(file.length(),sum);
@@ -107,8 +109,7 @@ public class FVecTest extends TestUtil {
   // Test making a appendable vector from a plain vector
   @Test public void testNewVec() {
     // Make and insert a File8Vec to the global store
-    File file = find_test_file("./smalldata/junit/cars.csv");
-    NFSFileVec nfs = NFSFileVec.make(file);
+    NFSFileVec nfs = TestUtil.makeNfsFileVec("./smalldata/junit/cars.csv");
     Vec res = new TestNewVec().doAll(new byte[]{Vec.T_NUM},nfs).outputFrame(new String[]{"v"},new String[][]{null}).anyVec();
     assertEquals(nfs.at8(0)+1,res.at8(0));
     assertEquals(nfs.at8(1)+1,res.at8(1));

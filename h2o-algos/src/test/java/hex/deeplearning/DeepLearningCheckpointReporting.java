@@ -13,6 +13,7 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
+import water.util.FileUtils;
 import water.util.TwoDimTable;
 
 import java.io.File;
@@ -24,8 +25,7 @@ public class DeepLearningCheckpointReporting extends TestUtil {
     Scope.enter();
     Frame frame = null;
     try {
-      File file = find_test_file("smalldata/logreg/prostate.csv");
-      NFSFileVec trainfv = NFSFileVec.make(file);
+      NFSFileVec trainfv = TestUtil.makeNfsFileVec("smalldata/logreg/prostate.csv");
       frame = ParseDataset.parse(Key.make(), trainfv._key);
       DeepLearningParameters p = new DeepLearningParameters();
 
@@ -99,7 +99,9 @@ public class DeepLearningCheckpointReporting extends TestUtil {
           durationBefore = durationBefore.substring(0, durationBefore.length()-4);
           String durationAfter = (String)table.get((int)(p._epochs+1),1);
           durationAfter = durationAfter.substring(0, durationAfter.length()-4);
-          Assert.assertTrue("Duration must be smooth", Double.parseDouble(durationAfter) - Double.parseDouble(durationBefore) < sleepTime+1);
+          double diff = Double.parseDouble(durationAfter) - Double.parseDouble(durationBefore);
+          
+          Assert.assertTrue("Duration must be smooth; actual " + diff + ", expected at most " + sleepTime + " (before=" + durationBefore + ", after=" + durationAfter + ")", diff < sleepTime+1);
 
           // Check that time stamp does see the sleep
           String timeStampBefore = (String)table.get((int)(p._epochs),0);

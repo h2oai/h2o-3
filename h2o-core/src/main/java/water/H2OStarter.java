@@ -14,18 +14,23 @@ public class H2OStarter {
    * @param finalizeRestRegistration  close registration of REST API
    */
   public static void start(String[] args, String relativeResourcePath, boolean finalizeRestRegistration) {
+    long time0 = System.currentTimeMillis();
     H2O.configureLogging();
     H2O.registerExtensions();
 
     // Fire up the H2O Cluster
     H2O.main(args);
 
-    H2O.registerRestApis(relativeResourcePath);
-    if (finalizeRestRegistration) {
-      H2O.finalizeRegistration();
+    if (!H2O.ARGS.disable_web) {
+      H2O.registerRestApis(relativeResourcePath);
+      if (finalizeRestRegistration) {
+        H2O.finalizeRegistration();
+      }
     }
 
-    if (! H2O.ARGS.disable_web) {
+    long timeF = System.currentTimeMillis();
+    Log.info("H2O started in " + (timeF - time0) + "ms");
+    if (!H2O.ARGS.disable_web) {
       Log.info("");
       Log.info("Open H2O Flow in your web browser: " + H2O.getURL(H2O.getJetty().getScheme()));
       Log.info("");

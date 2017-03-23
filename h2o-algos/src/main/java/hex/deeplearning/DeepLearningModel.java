@@ -2169,6 +2169,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
             Log.info("_categorical_encoding: Automatically enabling OneHotInternal categorical encoding.");
           toParms._categorical_encoding = CategoricalEncodingScheme.OneHotInternal;
          }
+        if (fromParms._mini_batch_size > 1) {
+          Log.warn("_mini_batch_size", "Only mini-batch size = 1 is supported right now.");
+          toParms._mini_batch_size = 1;
+        }
         if (fromParms._adaptive_rate) {
           if (!fromParms._quiet_mode)
             Log.info("_adaptive_rate: Using automatic learning rate. Ignoring the following input parameters: "

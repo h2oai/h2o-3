@@ -1,6 +1,7 @@
 package water;
 
 import water.util.ReflectionUtils;
+import water.util.StringUtils;
 import water.util.UnsafeUtils;
 import water.fvec.*;
 
@@ -457,7 +458,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
         l -= Character.isDigit(l) ? '0' : ('a' - 10);
         res[r++] = (byte)(h << 4 | l);
       }
-      System.arraycopy(tail.getBytes(), 0, res, r, tail.length());
+      System.arraycopy(StringUtils.bytesOf(tail), 0, res, r, tail.length());
       return res;
     } else {
       byte[] res = new byte[what.length()];

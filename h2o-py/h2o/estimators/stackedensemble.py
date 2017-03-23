@@ -29,15 +29,16 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
       >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
       >>> from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
       >>> col_types = ["numeric", "numeric", "numeric", "enum", "enum", "numeric", "numeric", "numeric", "numeric"]
-      >>> dat = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv", destination_frame="prostate_hex", col_types= col_types)
-      >>> train, test = dat.split_frame(ratios=[.8], seed=1)
+      >>> data = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv", col_types=col_types)
+      >>> train, test = data.split_frame(ratios=[.8], seed=1)
       >>> x = ["CAPSULE","GLEASON","RACE","DPROS","DCAPS","PSA","VOL"]
       >>> y = "AGE"
-      >>> my_gbm = H2OGradientBoostingEstimator()
+      >>> nfolds = 5
+      >>> my_gbm = H2OGradientBoostingEstimator(nfolds=nfolds, fold_assignment="Modulo", keep_cross_validation_predictions=True)
       >>> my_gbm.train(x=x, y=y, training_frame=train)
-      >>> my_rf = H2ORandomForestEstimator()
+      >>> my_rf = H2ORandomForestEstimator(nfolds=nfolds, fold_assignment="Modulo", keep_cross_validation_predictions=True)
       >>> my_rf.train(x=x, y=y, training_frame=train)
-      >>> stack = H2OStackedEnsembleEstimator(model_id="my_ensemble_guassian", training_frame=train, validation_frame=test, base_models=[my_gbm.model_id,  my_rf.model_id], selection_strategy="choose_all")
+      >>> stack = H2OStackedEnsembleEstimator(model_id="my_ensemble", training_frame=train, validation_frame=test, base_models=[my_gbm.model_id, my_rf.model_id])
       >>> stack.train(x=x, y=y, training_frame=train, validation_frame=test)
       >>> stack.model_performance()
     """
@@ -65,7 +66,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         """
         Id of the training data frame (Not required, to allow initial validation of model parameters).
 
-        Type: ``str``.
+        Type: ``H2OFrame``.
         """
         return self._parms.get("training_frame")
 
@@ -80,7 +81,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         """
         Id of the validation data frame.
 
-        Type: ``str``.
+        Type: ``H2OFrame``.
         """
         return self._parms.get("validation_frame")
 

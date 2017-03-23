@@ -12,25 +12,25 @@ test.km.scoring <- function() {
   iris.hex = h2o.uploadFile( locate("smalldata/iris/iris2.csv"))
   
   Log.info("Take first numeric column and insert NAs...\n")
-  iris2 = iris.hex[,2]
+  iris2 = iris.hex[,"Sepal.Length"]
   iris2 = h2o.insertMissingValues(iris2, fraction = 0.10)
-  
+    
   Log.info("Run K-means with standardization off and only 2 centers...\n")
-  km_iris = h2o.kmeans(iris2, k = 2, standardize = F, seed = seed)
+  km_iris = h2o.kmeans(iris2, x = "Sepal.Length", k = 2, standardize = F, seed = seed)
   
   Log.info("Run manually calculation of model metrics to compare with H2O model metrics...\n") 
-  mean0 = mean(iris2, na.rm = T)
+  mean0 = mean(iris2[,"Sepal.Length"], na.rm = T)
   center1 = km_iris@model$centers[,2][1]
   center2 = km_iris@model$centers[,2][2]
   
   iris2_r = as.data.frame(iris2)
-  iris2_r[,"Sepal.Length_Imputed"] = ifelse(is.na(iris2_r[,1]), mean0, iris2_r[,1])
+  iris2_r[,"Sepal.Length_Imputed"] = ifelse(is.na(iris2_r[,"Sepal.Length"]), mean0, iris2_r[,"Sepal.Length"])
   iris2_r[,"Dist_To_Center_1"] = abs(iris2_r[,"Sepal.Length_Imputed"] - center1)
   iris2_r[,"Dist_To_Center_2"] = abs(iris2_r[,"Sepal.Length_Imputed"] - center2)
   iris2_r[,"Cluster_ID"] = ifelse(iris2_r[,"Dist_To_Center_1"] < iris2_r[,"Dist_To_Center_2"], 1, 2 )
   
-  set1 = iris2_r [ iris2_r$Cluster_ID == 1,]
-  set2 = iris2_r [ iris2_r$Cluster_ID == 2,]
+  set1 = iris2_r[ iris2_r$Cluster_ID == 1,]
+  set2 = iris2_r[ iris2_r$Cluster_ID == 2,]
   set1[,"Squared_Error"] = (set1$Dist_To_Center_1)^2
   set2[,"Squared_Error"] = (set2$Dist_To_Center_2)^2
   
@@ -46,6 +46,36 @@ test.km.scoring <- function() {
   withinss_manual = c(sum(set1$Squared_Error), sum(set2$Squared_Error))
   withinss_h2o = h2o.centroid_stats(km_iris)$within_cluster_sum_of_squares
   checkEqualsNumeric(withinss_manual, withinss_h2o, tolerance = 1e-03)
+
+  ## Check cross validation models
+  Log.info("Use Petal.Length and add response column back to use as fold_column...\n")
+  ## If there are NAs in frame the crossfold will take the mean of the entire frame not just each fold
+  iris3 = iris.hex[,"Petal.Length"]
+  iris3[,"fold_column"] = iris.hex[,"response"]
+  
+  Log.info("Run K-means with nfolds but for now run without NA in the xval...\n")
+  km_iris = h2o.kmeans(iris3, k = 2, standardize = F, seed = seed, fold_column = "fold_column")
+
+  Log.info("Create each train/valid fold and run kmeans 3x...\n")
+  cv_models = lapply( km_iris@model$cross_validation_models, function(x) h2o.getModel(x$name))
+  models = NULL
+  folds = h2o.levels(iris3[,"fold_column"])
+  for (fold in folds) {
+    valid = iris3[iris3[,"fold_column"] == fold, "Petal.Length"]
+    train = iris3[!iris3[,"fold_column"] == fold, "Petal.Length"]
+    tmp = h2o.kmeans(training_frame = train, k = 2, standardize = F, seed = seed)
+    models = c(models, tmp)
+  }
+
+  ## WithinSS and BetweenSS might deviate within some tolerance but TotSS shouldn't
+  checkEqualsNumeric(unlist(lapply(models, function(x) h2o.betweenss(x, train = T) )),
+                     unlist(lapply(cv_models, function(x) h2o.betweenss(x, train = T))), tolerance = 0.05)
+  
+  checkEqualsNumeric(unlist(lapply(models, function(x) h2o.tot_withinss(x, train = T))),
+                     unlist(lapply(cv_models, function(x) h2o.tot_withinss(x, train = T))), tolerance = 0.05)
+  
+  checkEqualsNumeric(unlist(lapply(models, function(x) h2o.totss(x, train = T) ) ),
+                     unlist(lapply(cv_models, function(x) h2o.totss(x, train = T) )))
   
 ## ---------------------------------------------------------------------------------------------------- ##
   

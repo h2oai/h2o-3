@@ -24,7 +24,7 @@ test.pca.car <- function() {
     h2o.rm(mm)
   }
   # check to make sure PCA is not taking too long to run
-  expect_true(max(run_time_c) < 1000)
+  expect_true(max(run_time_c) < 60000)
 }
 
 doTest("PCA Test: USArrests Data", test.pca.car)

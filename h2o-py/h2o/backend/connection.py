@@ -210,7 +210,7 @@ class H2OConnection(backwards_compatible()):
 
     @staticmethod
     def open(server=None, url=None, ip=None, port=None, https=None, auth=None, verify_ssl_certificates=True,
-             proxy=None, cluster_id=None, cookies=None, verbose=True, _msgs=None):
+             proxy=None, cookies=None, verbose=True, _msgs=None):
         r"""
         Establish connection to an existing H2O server.
 
@@ -244,7 +244,6 @@ class H2OConnection(backwards_compatible()):
             will attempt to use a proxy specified in the environment (in HTTP_PROXY / HTTPS_PROXY variables). We
             check for the presence of these variables and issue a warning if they are found. In order to suppress
             that warning and use proxy from the environment, pass ``proxy="(default)"``.
-        :param cluster_id: name of the H2O cluster to connect to. This option is used from Steam only.
         :param cookies: Cookie (or list of) to add to requests
         :param verbose: if True, then connection progress info will be printed to the stdout.
         :param _msgs: custom messages to display during connection. This is a tuple (initial message, success message,
@@ -291,7 +290,6 @@ class H2OConnection(backwards_compatible()):
         assert_is_type(verify_ssl_certificates, bool)
         assert_is_type(proxy, str, None)
         assert_is_type(auth, AuthBase, (str, str), None)
-        assert_is_type(cluster_id, int, None)
         assert_is_type(cookies, str, [str], None)
         assert_is_type(_msgs, None, (str, str, str))
 
@@ -301,7 +299,6 @@ class H2OConnection(backwards_compatible()):
         conn._base_url = "%s://%s:%d%s" % (scheme, ip, port, context_path)
         conn._verify_ssl_cert = bool(verify_ssl_certificates)
         conn._auth = auth
-        conn._cluster_id = cluster_id
         conn._cookies = cookies
         conn._proxies = None
         if proxy and proxy != "(default)":
@@ -638,7 +635,9 @@ class H2OConnection(backwards_compatible()):
         msg += "[%s] %s\n" % (time.strftime("%H:%M:%S"), endpoint)
         if params is not None: msg += "     params: {%s}\n" % ", ".join("%s:%s" % item for item in viewitems(params))
         if data is not None:   msg += "     body: {%s}\n" % ", ".join("%s:%s" % item for item in viewitems(data))
-        if json is not None:   msg += "     json: %s\n" % json.dumps(json)
+        if json is not None:
+            import json as j
+            msg += "     json: %s\n" % j.dumps(json)
         if files is not None:  msg += "     file: %s\n" % ", ".join(f.name for f in viewvalues(files))
         self._log_message(msg + "\n")
 

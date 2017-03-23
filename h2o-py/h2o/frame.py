@@ -22,7 +22,7 @@ import requests
 
 import h2o
 from h2o.display import H2ODisplay
-from h2o.exceptions import H2OValueError
+from h2o.exceptions import H2OTypeError, H2OValueError
 from h2o.expr import ExprNode
 from h2o.group_by import GroupBy
 from h2o.job import H2OJob
@@ -98,6 +98,7 @@ class H2OFrame(object):
 
         self._ex = ExprNode()
         self._ex._children = None
+        self._is_frame = True  # Indicate that this is an actual frame, allowing typechecks to be made
         if python_obj is not None:
             self._upload_python_object(python_obj, destination_frame, header, separator,
                                        column_names, column_types, na_strings)
@@ -300,8 +301,6 @@ class H2OFrame(object):
         raise H2OValueError("Column '%r' does not exist in the frame" % col)
 
 
-
-
     def _import_parse(self, path, pattern, destination_frame, header, separator, column_names, column_types, na_strings):
         if is_type(path, str) and "://" not in path:
             path = os.path.abspath(path)
@@ -433,18 +432,22 @@ class H2OFrame(object):
                     print(s.encode("ascii", "replace"))
 
 
-    def summary(self):
+    def summary(self, return_data=False):
         """
         Display summary information about the frame.
 
         Summary includes min/mean/max/sigma and other rollup data.
+        :param bool return_data: Return a dictionary of the summary output
         """
         if not self._ex._cache.is_valid(): self._frame()._ex._cache.fill()
-        if H2ODisplay._in_ipy():
-            import IPython.display
-            IPython.display.display_html(self._ex._cache._tabulate("html", True), raw=True)
+        if not return_data:
+            if H2ODisplay._in_ipy():
+                import IPython.display
+                IPython.display.display_html(self._ex._cache._tabulate("html", True), raw=True)
+            else:
+                print(self._ex._cache._tabulate("simple", True))
         else:
-            print(self._ex._cache._tabulate("simple", True))
+            return self._ex._cache._data
 
 
     def describe(self, chunk_summary=False):
@@ -516,11 +519,14 @@ class H2OFrame(object):
         return H2OFrame._expr(expr=ExprNode("not", self), cache=self._ex._cache)
 
 
-    def _unop(self, op):
+    def _unop(self, op, rtype="real"):
+        if self._is_frame:
+            for cname, ctype in self.types.items():
+                if ctype not in {"int", "real", "bool"}:
+                    raise H2OValueError("Function %s cannot be applied to %s column '%s'" % (op, ctype, cname))
         ret = H2OFrame._expr(expr=ExprNode(op, self), cache=self._ex._cache)
-        if ret._ex._cache._names is not None:
-            ret._ex._cache._names = ["%s(%s)" % (op, name) for name in ret._ex._cache._names]
-            ret._ex._cache._types = None
+        ret._ex._cache._names = ["%s(%s)" % (op, name) for name in self._ex._cache._names]
+        ret._ex._cache._types = {name: rtype for name in ret._ex._cache._names}
         return ret
 
 
@@ -749,7 +755,7 @@ class H2OFrame(object):
 
     def sign(self):
         """Return new H2OFrame equal to signs of the values in the frame: -1 , +1, or 0."""
-        return self._unop("sign")
+        return self._unop("sign", rtype="int")
 
 
     def sqrt(self):
@@ -766,7 +772,7 @@ class H2OFrame(object):
 
         :returns: new H2OFrame of truncated values of the original frame.
         """
-        return self._unop("trunc")
+        return self._unop("trunc", rtype="int")
 
 
     def ceil(self):
@@ -777,7 +783,7 @@ class H2OFrame(object):
 
         :returns: new H2OFrame of ceiling values of the original frame.
         """
-        return self._unop("ceiling")
+        return self._unop("ceiling", rtype="int")
 
 
     def floor(self):
@@ -788,7 +794,7 @@ class H2OFrame(object):
 
         :returns: new H2OFrame of floor values of the original frame.
         """
-        return self._unop("floor")
+        return self._unop("floor", rtype="int")
 
 
     def log(self):
@@ -1242,11 +1248,7 @@ class H2OFrame(object):
         This will create a multiline string, where each line will contain a separate row of frame's data, with
         individual values separated by commas.
         """
-        url = h2o.connection().make_url("DownloadDataset", 3) + "?frame_id={}&hex_string=false".format(self.frame_id)
-        # TODO: this should be moved into H2OConnection class
-        return requests.get(url, headers={'User-Agent': 'H2O Python client/' + sys.version.replace('\n', '')},
-                            auth=h2o.connection()._auth,
-                            verify=h2o.connection()._verify_ssl_cert, stream=True).text
+        return h2o.api("GET /3/DownloadDataset", data={"frame_id": self.frame_id, "hex_string": False})
 
 
     def __getitem__(self, item):
@@ -1342,6 +1344,7 @@ class H2OFrame(object):
         fr._ex._cache.nrows = new_nrows
         fr._ex._cache.names = new_names
         fr._ex._cache.types = new_types
+        fr._is_frame = self._is_frame
         return fr
 
     def _compute_ncol_update(self, item):  # computes new ncol, names, and types
@@ -1779,6 +1782,20 @@ class H2OFrame(object):
         assert_is_type(by, str, int, [str, int])
         return GroupBy(self, by)
 
+    def sort(self, by):
+        """
+        Return a new Frame that is sorted by column(s) in ascending order. A fully distributed and parallel sort.
+        :param by: The column to sort by (either a single column name, or a list of column names, or
+            a list of column indices)
+        :return: a new sorted Frame
+        """
+        assert_is_type(by, str, int, [str, int])
+        if type(by) != list: by = [by]
+        for c in by:
+            if self.type(c) not in ["enum","time","int"]:
+                raise H2OValueError("Sort by column: " + str(c) + " not of enum, time, or int type")
+        return H2OFrame._expr(expr=ExprNode("sort",self,by))
+
 
     def impute(self, column=-1, method="mean", combine_method="interpolate", by=None, group_by_frame=None, values=None):
         """
@@ -2075,15 +2092,55 @@ class H2OFrame(object):
         return H2OFrame._expr(expr=ExprNode("cor", self, y, use))._frame()
 
 
+    def distance(self, y, measure=None):
+        """
+        Compute a pairwise distance measure between all rows of two numeric H2OFrames.
+
+        :param H2OFrame y: Frame containing queries (small)
+        :param str use: A string indicating what distance measure to use. Must be one of:
+
+            - ``"l1"``:        Absolute distance (L1-norm, >=0)
+            - ``"l2"``:        Euclidean distance (L2-norm, >=0)
+            - ``"cosine"``:    Cosine similarity (-1...1)
+            - ``"cosine_sq"``: Squared Cosine similarity (0...1)
+
+        :examples:
+          >>>
+          >>> iris_h2o = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
+          >>> references = iris_h2o[10:150,0:4
+          >>> queries    = iris_h2o[0:10,0:4]
+          >>> A = references.distance(queries, "l1")
+          >>> B = references.distance(queries, "l2")
+          >>> C = references.distance(queries, "cosine")
+          >>> D = references.distance(queries, "cosine_sq")
+          >>> E = queries.distance(references, "l1")
+          >>> (E.transpose() == A).all()
+
+        :returns: An H2OFrame of the matrix containing pairwise distance / similarity between the 
+            rows of this frame (N x p) and ``y`` (M x p), with dimensions (N x M).
+        """
+        assert_is_type(y, H2OFrame)
+        if measure is None: measure = "l2"
+        return H2OFrame._expr(expr=ExprNode("distance", self, y, measure))._frame()
+
+
     def asfactor(self):
         """
         Convert columns in the current frame to categoricals.
 
         :returns: new H2OFrame with columns of the "enum" type.
         """
+        
+        for colname in self.names:
+            t = self.types[colname]
+            if t not in {"int", "string", "enum"}: raise H2OValueError("Only 'int' or 'string' are allowed for asfactor(), got %s:%s " % (colname, t))
+
         fr = H2OFrame._expr(expr=ExprNode("as.factor", self), cache=self._ex._cache)
         if fr._ex._cache.types_valid():
-            fr._ex._cache.types = {list(fr._ex._cache.types)[0]: "enum"}
+          fr._ex._cache.types = {name: "enum" for name in self.types}
+        else:
+          raise H2OTypeError("Types are not available in result")
+        
         return fr
 
 
@@ -2344,6 +2401,31 @@ class H2OFrame(object):
         if max_cardinality <= 0: raise H2OValueError("max_cardinality must be greater than 0")
         return H2OFrame._expr(expr=ExprNode("isax", self, num_words, max_cardinality, optimize_card))
 
+    def pivot(self, index, column, value):
+        """
+        Pivot the frame designated by the three columns: index, column, and value. Index and column should be
+        of type enum, int, or time.
+
+        :param index: Index is a column that will be the row label
+        :param column: The labels for the columns in the pivoted Frame
+        :param value: The column of values for the given index and column label
+        :return:
+        """
+        assert_is_type(index, str)
+        assert_is_type(column, str)
+        assert_is_type(value, str)
+        col_names = self.names
+        if index not in col_names:
+            raise H2OValueError("Index not in H2OFrame")
+        if column not in col_names:
+            raise H2OValueError("Column not in H2OFrame")
+        if value not in col_names:
+            raise H2OValueError("Value column not in H2OFrame")
+        if self.type(column) not in ["enum","time","int"]:
+            raise H2OValueError("'column' argument is not type enum, time or int")
+        if self.type(index) not in ["enum","time","int"]:
+            raise H2OValueError("'index' argument is not type enum, time or int")
+        return H2OFrame._expr(expr=ExprNode("pivot",self,index,column,value))
 
     def sub(self, pattern, replacement, ignore_case=False):
         """
@@ -2496,7 +2578,7 @@ class H2OFrame(object):
         Conduct a diff-1 transform on a numeric frame column.
 
         :returns: an H2OFrame where each element is equal to the corresponding element in the source
-        frame minus the previous-row element in the same frame.
+            frame minus the previous-row element in the same frame.
         """
         fr = H2OFrame._expr(expr=ExprNode("difflag1", self), cache=self._ex._cache)
         return fr
@@ -2821,7 +2903,7 @@ class H2OFrame(object):
 def _binop(lhs, op, rhs):
     assert_is_type(lhs, str, numeric, datetime.date, pandas_timestamp, numpy_datetime, H2OFrame)
     assert_is_type(rhs, str, numeric, datetime.date, pandas_timestamp, numpy_datetime, H2OFrame)
-    if isinstance(lhs, H2OFrame) and isinstance(rhs, H2OFrame):
+    if isinstance(lhs, H2OFrame) and isinstance(rhs, H2OFrame) and lhs._is_frame and rhs._is_frame:
         lrows, lcols = lhs.shape
         rrows, rcols = rhs.shape
         compatible = ((lcols == rcols and lrows == rrows) or

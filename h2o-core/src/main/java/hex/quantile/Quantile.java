@@ -16,6 +16,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
   private int _ncols;
 
   @Override protected boolean logMe() { return false; }
+  @Override public boolean isSupervised() { return false; }
 
   // Called from Nano thread; start the Quantile Job on a F/J thread
   public Quantile( QuantileModel.QuantileParameters parms ) { super(parms); init(false); }

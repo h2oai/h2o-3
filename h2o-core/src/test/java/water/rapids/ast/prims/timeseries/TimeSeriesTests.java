@@ -41,7 +41,8 @@ public class TimeSeriesTests extends TestUtil{
         DKV.put(fr1);
         Val res2 = Rapids.exec("(isax " + fr1._key + " 10 10 0)"); // 10 words 10 max cardinality 0 optimize card
         fr2 = res2.getFrame();
-        String isaxIDX = "0^10_0^10_0^10_0^10_5^10_7^10_8^10_9^10_9^10_8^10";
-        Assert.assertEquals(fr2.vec(0).atStr(new BufferedString(),0),isaxIDX);
+        String expected = "0^10_0^10_0^10_0^10_5^10_7^10_8^10_9^10_9^10_8^10";
+        final String actual = fr2.vec(0).atStr(new BufferedString(), 0).toString();
+        Assert.assertEquals(expected, actual);
     }
 }

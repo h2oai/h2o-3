@@ -11,6 +11,8 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
+import water.util.FileUtils;
+
 import static water.parser.ParserTest.makeByteVec;
 
 import java.util.Arrays;
@@ -91,7 +93,7 @@ public class ParserTestARFF extends TestUtil {
    *  @param fname Test filename
    *  @return      Frame or NPE */
   private Frame parse_test_file_single_quotes( String fname ) {
-    NFSFileVec nfs = NFSFileVec.make(find_test_file(fname));
+    NFSFileVec nfs = TestUtil.makeNfsFileVec(fname);
     return ParseDataset.parse(Key.make(), new Key[]{nfs._key}, true, true /*single quote*/, ParseSetup.GUESS_HEADER);
   }
 

@@ -1170,8 +1170,13 @@ public class GLMBasicTestBinomial extends TestUtil {
       String[] names_expected = new String[]{"Intercept", "ID", "AGE", "RACE.R2", "RACE.R3", "DPROS.b", "DPROS.c", "DPROS.d", "DCAPS.b", "PSA", "VOL", "GLEASON"};
       // do not compare std_err here, depends on the coefficients
 //      double[] stder_expected = new double[]{1.5687858,   0.1534062,   0.1449847,   1.5423974, 1.5827190,   0.3950883,   0.4161974,  0.5426512,   0.5179591,   0.2244733, 0.1620383,   0.1963285};
-      double[] zvals_expected = new double[]{-0.81620723,  1.24208800, -0.14610616 , 0.04428674, -0.46826589 , 2.24843259,  3.13779030 , 1.44550154 , 1.18227779 , 2.71377864 ,-1.11887108 , 4.67333842};
-      double[] pvals_expected = new double[]{4.143816e-01 ,2.142041e-01 ,8.838376e-01, 9.646758e-01, 6.395945e-01, 2.454862e-02, 1.702266e-03, 1.483171e-01, 2.370955e-01, 6.652060e-03 ,2.631951e-01, 2.963429e-06};
+//      double[] zvals_expected = new double[]{-0.81620723,  1.24208800, -0.14610616 , 0.04428674, -0.46826589 , 2.24843259,  3.13779030 , 1.44550154 , 1.18227779 , 2.71377864 ,-1.11887108 , 4.67333842};
+//      double[] pvals_expected = new double[]{4.143816e-01 ,2.142041e-01 ,8.838376e-01, 9.646758e-01, 6.395945e-01, 2.454862e-02, 1.702266e-03, 1.483171e-01, 2.370955e-01, 6.652060e-03 ,2.631951e-01, 2.963429e-06};
+
+//      String[] names_expected = new String[]{"Intercept", "ID", "AGE", "RACE.R2", "RACE.R3", "DPROS.b", "DPROS.c", "DPROS.d", "DCAPS.b", "PSA", "VOL", "GLEASON"};
+      double[] stder_expected = new double[]{2.383945093, 0.001376361, 0.022369891, 1.542397413, 1.582718967, 0.395088333, 0.416197382, 0.542651183, 0.517959064, 0.011148747, 0.008753002, 0.182282351};
+      double[] zvals_expected = new double[]{-2.99223901, 1.24208800, -0.14610616, 0.04428674, -0.46826589, 2.24843259, 3.13779030, 1.44550154, 1.18227779, 2.71377864, -1.11887108, 4.67333842};
+      double[] pvals_expected = new double[]{2.769394e-03, 2.142041e-01, 8.838376e-01, 9.646758e-01, 6.395945e-01, 2.454862e-02, 1.702266e-03, 1.483171e-01, 2.370955e-01, 6.652060e-03, 2.631951e-01, 2.963429e-06};
       String[] names_actual = model._output.coefficientNames();
       HashMap<String, Integer> coefMap = new HashMap<>();
       for (int i = 0; i < names_expected.length; ++i)

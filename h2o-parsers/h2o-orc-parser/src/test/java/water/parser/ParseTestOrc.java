@@ -10,10 +10,12 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import water.TestUtil;
+import water.util.FileUtils;
 import water.util.Log;
 
 import static org.junit.Assert.assertEquals;
 import static water.parser.OrcTestUtils.compareOrcAndH2OFrame;
+import static water.util.FileUtils.*;
 
 /**
  * Test suite for orc parser.
@@ -83,7 +85,7 @@ public class ParseTestOrc extends TestUtil {
 
             String fileName = allOrcFiles[fIndex];
             Log.info("Orc Parser parsing " + fileName);
-            File f = find_test_file_static(fileName);
+            File f = locateFile(fileName);
 
             if (f != null && f.exists()) {
                 try {

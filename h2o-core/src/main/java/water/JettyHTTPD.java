@@ -24,6 +24,7 @@ import water.exceptions.H2OAbstractRuntimeException;
 import water.exceptions.H2OFailException;
 import water.util.HttpResponseStatus;
 import water.util.Log;
+import water.util.StringUtils;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -392,7 +393,7 @@ public class JettyHTTPD {
     }
 
     boundaryString = ct.substring(idx + "boundary=".length());
-    byte[] boundary = boundaryString.getBytes();
+    byte[] boundary = StringUtils.bytesOf(boundaryString);
 
     // Consume headers of the mime part.
     InputStream is = request.getInputStream();
@@ -405,7 +406,7 @@ public class JettyHTTPD {
   }
 
   public static boolean validKeyName(String name) {
-    byte[] arr = name.getBytes();
+    byte[] arr = StringUtils.bytesOf(name);
     for (byte b : arr) {
       if (b == '"') return false;
       if (b == '\\') return false;
@@ -435,7 +436,9 @@ public class JettyHTTPD {
         String s = new H2OErrorV3().fillFromImpl(error).toJsonString();
         response.getWriter().write(s);
       }
-      catch (Exception ignore) {}
+      catch (Exception ignore) {
+        ignore.printStackTrace();
+      }
     }
     else { // make sure that no Exception is ever thrown out from the request
       H2OError error = new H2OError(e, uri);
@@ -457,7 +460,9 @@ public class JettyHTTPD {
         String s = new H2OErrorV3().fillFromImpl(error).toJsonString();
         response.getWriter().write(s);
       }
-      catch (Exception ignore) {}
+      catch (Exception ignore) {
+        ignore.printStackTrace();
+      }
     }
   }
 

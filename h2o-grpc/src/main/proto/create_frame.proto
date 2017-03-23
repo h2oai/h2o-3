@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+import "job.proto";
+
+option java_package = "ai.h2o.api.proto.frames";
+option java_multiple_files = true;
+
+package core;
+
+
+service CreateFrame {
+    rpc simple (CreateFrameSimpleSpec) returns (JobInfo);
+}
+
+
+message CreateFrameSimpleSpec {
+    enum ResponseType {
+        NONE = 0;
+        REAL = 1;
+        INT = 2;
+        BOOL = 3;
+        ENUM = 4;
+        TIME = 5;
+    }
+
+    // Id for the frame to be created
+    string target_id = 1;
+
+    // Seed for the random number generator. Providing same seed should produce exactly same frames
+    int64 seed = 2;
+
+    // Number of rows
+    int32 nrows = 3;
+
+    // Number of real-valued columns. Values in these columns will be uniformly distributed between
+    // real_lb and real_ub
+    int32 ncols_real = 4;
+
+    // Number of integer columns
+    int32 ncols_int = 5;
+
+    // Number of categorical (enum) columns
+    int32 ncols_enum = 6;
+
+    // Number of binary (boolean) columns
+    int32 ncols_bool = 7;
+
+    // Number of string columns
+    int32 ncols_str = 8;
+
+    // Number of columns of "time" type
+    int32 ncols_time = 9;
+
+    double real_lb = 10;
+    double real_ub = 11;
+    int32 int_lb = 12;
+    int32 int_ub = 13;
+    int32 enum_nlevels = 14;
+    float bool_p = 15;
+    int64 time_lb = 16;
+    int64 time_ub = 17;
+    int32 str_length = 18;
+
+    // Fraction of missing values
+    float missing_fraction = 19;
+
+    // Type of the response column to add
+    ResponseType response_type = 20;
+
+    // Lower bound for the response variable (real/int/time types)
+    double response_lb = 21;
+
+    // Upper bound for the response variable (real/int/time types)
+    double response_ub = 22;
+
+    // Frequency of 1s for the bool (binary) response column
+    double response_p = 23;
+
+    // Number of categorical levels for the enum response column
+    int32 response_nlevels = 24;
+}

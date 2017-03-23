@@ -34,8 +34,9 @@ class H2OConfigReader(object):
     #-------------------------------------------------------------------------------------------------------------------
 
     _allowed_config_keys = {
-        "init.check_version", "init.proxy", "init.url", "init.cluster_id", "init.verify_ssl_certificates",
-        "init.cookies", "general.allow_breaking_changes"
+        "init.check_version", "init.proxy", "init.url", "init.verify_ssl_certificates",
+        "init.cookies", "init.username", "init.password",
+        "general.allow_breaking_changes"
     }
 
     def __init__(self):
@@ -60,7 +61,7 @@ class H2OConfigReader(object):
             if os.path.isfile(f):
                 self._logger.info("Reading config file %s" % f)
                 section_rx = re.compile(r"^\[(\w+)\]$")
-                keyvalue_rx = re.compile(r"^(\w+:)?([\w.]+)\s*=\s*(.*)$")
+                keyvalue_rx = re.compile(r"^(\w+:)?([\w.]+)\s*=(.*)$")
                 with io.open(f, "rt", encoding="utf-8") as config_file:
                     section_name = None
                     for lineno, line in enumerate(config_file):
@@ -74,7 +75,7 @@ class H2OConfigReader(object):
                         if m2:
                             lng = m2.group(1)
                             key = m2.group(2)
-                            val = m2.group(3)
+                            val = m2.group(3).strip()
                             if lng and lng.lower() != "py:": continue
                             if section_name:
                                 key = section_name + "." + key

@@ -388,13 +388,16 @@ class H2OCloudNode(object):
                                           cwd=there)
             os.chdir(cwd)
         else:
-            self.child = subprocess.Popen(args=cmd,
-                                          stdout=f,
-                                          stderr=subprocess.STDOUT,
-                                          cwd=self.output_dir)
+            try: 
+              self.child = subprocess.Popen(args=cmd,
+                                            stdout=f,
+                                            stderr=subprocess.STDOUT,
+                                            cwd=self.output_dir)
+              self.pid = self.child.pid
+              print("+ CMD: " + ' '.join(cmd))
 
-        self.pid = self.child.pid
-        print("+ CMD: " + ' '.join(cmd))
+            except OSError:
+                raise "Failed to spawn %s in %s" % (cmd, self.output_dir)
 
 
     def scrape_port_from_stdout(self):
@@ -934,10 +937,12 @@ class Test(object):
         return cmd
 
     def _javascript_cmd(self, test_name, ip, port):
+        # return ["phantomjs", test_name]
         if g_perf:
             return ["phantomjs", test_name, "--host", ip + ":" + str(port), "--timeout", str(g_phantomjs_to),
                     "--packs", g_phantomjs_packs, "--perf", g_date, str(g_build_id), g_git_hash, g_git_branch,
-                    str(g_ncpu), g_os, g_job_name, g_output_dir, "--excludeFlows", self.exclude_flows]
+                   str(g_ncpu), g_os, g_job_name, g_output_dir, "--excludeFlows", self.exclude_flows]
+        
         else:
             return ["phantomjs", test_name, "--host", ip + ":" + str(port), "--timeout", str(g_phantomjs_to),
                     "--packs", g_phantomjs_packs, "--excludeFlows", self.exclude_flows]
@@ -1413,7 +1418,7 @@ class TestRunner(object):
             if self._h2o_exists_and_healthy(c.get_ip(), c.get_port()):
                 print("Node {} healthy.".format(c))
             else:
-                print("Node %r NOT HEALTHY" % c)
+                print("Node with IP {} and port {} NOT HEALTHY" .format(c.get_ip(),c.get_port()))
                 # should an exception be thrown?
 
     def stop_clouds(self):

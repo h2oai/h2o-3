@@ -22,6 +22,15 @@ test.word2vec.sg_hs <- function() {
   vectors <- h2o.transform(w2v, words = words[1:1000,])
   expect_equal(nrow(vectors), 1000)
   expect_equal(ncol(vectors), 50)
+
+  aggregated <- h2o.transform(w2v, words = words[1:1000,], aggregate_method = "AVERAGE")
+  expect_equal(nrow(aggregated), 1)
+  expect_equal(ncol(aggregated), 50)
+
+  aggregated.local <- as.vector(as.matrix(aggregated))
+  aggregated.expected <- colMeans(as.data.frame(vectors), na.rm = TRUE)
+  names(aggregated.local) <- names(aggregated.expected)
+  expect_equal(aggregated.local, aggregated.expected, tolerance = 1e-5, scale = 1)
 }
 
 doTest("Test word2vec (Skip Gram, Hierarchical Softmax) on text8 dataset", test.word2vec.sg_hs)

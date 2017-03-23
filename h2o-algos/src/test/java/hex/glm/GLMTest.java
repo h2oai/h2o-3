@@ -1491,6 +1491,7 @@ public class GLMTest  extends TestUtil {
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model,fr);
       hex.AUC2 adata = mm._auc;
       assertEquals(model._output._training_metrics.auc_obj()._auc, adata._auc, 1e-8);
+      assertEquals(0.7588625640559653, adata.pr_auc(), 1e-8);
       assertEquals(model._output._training_metrics._MSE, mm._MSE, 1e-8);
       assertEquals(((ModelMetricsBinomialGLM)model._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM)mm)._resDev, 1e-8);
       model.score(fr).delete();

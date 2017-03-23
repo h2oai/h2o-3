@@ -219,6 +219,17 @@ public class TwoDimTable extends Iced {
   public int getColDim() { return colHeaders.length; }
 
   /**
+   * Need to change table header when we are calling GLRM from PCA.
+   *
+   * @param newHeader: String containing new table header.
+   */
+  public void setTableHeader(String newHeader) {
+    if (!StringUtils.isNullOrEmpty(newHeader)) {
+      this.tableHeader = newHeader;
+    }
+  }
+
+  /**
    * Setter for table cells
    * @param row a row index
    * @param col a column index

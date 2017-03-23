@@ -1,7 +1,8 @@
 package water.network;
 
 import org.junit.Test;
-import water.TestUtil;
+import water.util.FileUtils;
+import water.util.StringUtils;
 
 import javax.net.ssl.SSLException;
 import java.io.IOException;
@@ -14,6 +15,7 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
 import static org.junit.Assert.*;
+import static water.util.FileUtils.*;
 
 public class SSLSocketChannelFactoryTest {
 
@@ -23,9 +25,9 @@ public class SSLSocketChannelFactoryTest {
     public void shouldHandshake() throws IOException, SSLContextException, BrokenBarrierException, InterruptedException {
         SSLProperties props = new SSLProperties();
         props.put("h2o_ssl_protocol", SecurityUtils.defaultTLSVersion());
-        props.put("h2o_ssl_jks_internal", TestUtil.find_test_file_static("src/test/resources/keystore.jks").getPath());
+        props.put("h2o_ssl_jks_internal", getFile("src/test/resources/keystore.jks").getPath());
         props.put("h2o_ssl_jks_password", "password");
-        props.put("h2o_ssl_jts", TestUtil.find_test_file_static("src/test/resources/cacerts.jks").getPath());
+        props.put("h2o_ssl_jts", getFile("src/test/resources/cacerts.jks").getPath());
         props.put("h2o_ssl_jts_password", "password");
 
         final SSLSocketChannelFactory factory = new SSLSocketChannelFactory(props);
@@ -167,7 +169,7 @@ public class SSLSocketChannelFactoryTest {
 
                 // FIRST TEST: SSL -> SSL SMALL COMMUNICATION
                 ByteBuffer write = ByteBuffer.allocate(1024);
-                write.put("hello, world".getBytes("UTF-8"));
+                write.put(StringUtils.bytesOf("hello, world"));
                 write.flip();
                 wrappedChannel.write(write);
 
@@ -179,8 +181,7 @@ public class SSLSocketChannelFactoryTest {
                     toWriteBig.clear();
                     while (toWriteBig.hasRemaining()) {
                         toWriteBig.put(
-                                ("hello, world" + ((i * 64 * 1024 + toWriteBig.position()) % 9) + "!!!")
-                                        .getBytes("UTF-8")
+                            StringUtils.bytesOf("hello, world" + ((i * 64 * 1024 + toWriteBig.position()) % 9) + "!!!")
                         );
                     }
                     toWriteBig.flip();
@@ -191,7 +192,7 @@ public class SSLSocketChannelFactoryTest {
 
                 // THIRD TEST: NON-SSL -> SSL COMMUNICATION
                 write.clear();
-                write.put("hello, world".getBytes("UTF-8"));
+                write.put(StringUtils.bytesOf("hello, world"));
                 write.flip();
                 sock.write(write);
 
@@ -199,8 +200,7 @@ public class SSLSocketChannelFactoryTest {
 
                 // FOURTH TEST: SSL -> NON-SSL COMMUNICATION
                 write.clear();
-                write.put("hello, world".getBytes("UTF-8"));
-                write.flip();
+                write.put(StringUtils.bytesOf("hello, world"));
                 wrappedChannel.write(write);
 
             } catch (IOException | InterruptedException | BrokenBarrierException e) {

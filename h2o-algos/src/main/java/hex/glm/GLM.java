@@ -329,8 +329,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (_parms._family == Family.multinomial) {
         _nullBeta = MemoryManager.malloc8d((_dinfo.fullN() + 1) * nclasses());
         int N = _dinfo.fullN() + 1;
-        for (int i = 0; i < nclasses(); ++i)
-          _nullBeta[_dinfo.fullN() + i * N] = Math.log(_state._ymu[i]);
+        if(_parms._intercept)
+          for (int i = 0; i < nclasses(); ++i)
+            _nullBeta[_dinfo.fullN() + i * N] = Math.log(_state._ymu[i]);
       } else {
         _nullBeta = MemoryManager.malloc8d(_dinfo.fullN() + 1);
         if (_parms._intercept && !(_parms._family == Family.quasibinomial))
@@ -435,6 +436,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _parms._obj_reg = 1.0 / ymt.wsum();
         if(!_parms._stdOverride)
           _dinfo.updateWeightedSigmaAndMean(ymt.predictorSDs(), ymt.predictorMeans());
+        if (_parms._family == Family.multinomial) {
+          _state._ymu = MemoryManager.malloc8d(_nclass);
+          for (int i = 0; i < _state._ymu.length; ++i)
+            _state._ymu[i] = _priorClassDist[i];
+        } else
         _state._ymu = _parms._intercept?ymt._yMu:new double[]{_parms.linkInv(0)};
       } else {
         _nobs = _train.numRows();
@@ -697,11 +703,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       final double l1pen = _state.l1pen();
       GLMGradientSolver gslvr = _state.gslvr();
       GLMWeightsFun glmw = new GLMWeightsFun(_parms);
-      if (_parms._family == Family.multinomial) {
+      if (beta == null && _parms._family == Family.multinomial) {
         beta = MemoryManager.malloc8d((_state.activeData().fullN() + 1) * _nclass);
         int P = _state.activeData().fullN() + 1;
-        for (int i = 0; i < _nclass; ++i)
-          beta[i * P + P - 1] = glmw.link(_state._ymu[i]);
+        if(_parms._intercept)
+          for (int i = 0; i < _nclass; ++i)
+            beta[i * P + P - 1] = glmw.link(_state._ymu[i]);
       }
       if (beta == null) {
         beta = MemoryManager.malloc8d(_state.activeData().fullN() + 1);
@@ -943,13 +950,26 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         double se = 1;
         boolean seEst = false;
         double [] beta = _state.beta();
+
         if(_parms._family != Family.binomial && _parms._family != Family.poisson) {
           seEst = true;
           ComputeSETsk ct = new ComputeSETsk(null, _state.activeData(), _job._key, beta, _parms).doAll(_state.activeData()._adaptedFrame);
           se = ct._sumsqe / (_nobs - 1 - _state.activeData().fullN());
         }
         double [] zvalues = MemoryManager.malloc8d(_state.activeData().fullN()+1);
-        double [][] inv = _chol.getInv();
+        Cholesky chol = _chol;
+        if(_parms._standardize){ // compute non-standardized t(X)%*%W%*%X
+          DataInfo activeData = _state.activeData();
+          double [] beta_nostd = activeData.denormalizeBeta(beta);
+          DataInfo.TransformType transform = activeData._predictor_transform;
+          activeData.setPredictorTransform(DataInfo.TransformType.NONE);
+          Gram g = new GLMIterationTask(_job._key,activeData,new GLMWeightsFun(_parms),beta_nostd).doAll(activeData._adaptedFrame)._gram;
+          activeData.setPredictorTransform(transform); // just in case, restore the trasnform
+          g.mul(_parms._obj_reg);
+          chol = g.cholesky(null);
+          beta = beta_nostd;
+        }
+        double [][] inv = chol.getInv();
         ArrayUtils.mult(inv,_parms._obj_reg*se);
         _vcov = inv;
         for(int i = 0; i < zvalues.length; ++i)
@@ -1646,7 +1666,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         double l2pen = 0;
         for (double[] b : _betaMultinomial)
           l2pen += ArrayUtils.l2norm2(b, _dinfo._intercept);
-        return new GLMGradientInfo(gt._likelihood, gt._likelihood * _parms._obj_reg + .5 * _l2pen * l2pen, gt.gradient());
+        double [] grad = gt.gradient();
+        if(!_parms._intercept){
+          for(int i = _dinfo.fullN(); i < beta.length; i += _dinfo.fullN()+1)
+            grad[i] = 0;
+        }
+        return new GLMGradientInfo(gt._likelihood, gt._likelihood * _parms._obj_reg + .5 * _l2pen * l2pen, grad);
       } else {
         assert beta.length == _dinfo.fullN() + 1;
         assert _parms._intercept || (beta[beta.length-1] == 0);

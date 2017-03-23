@@ -79,7 +79,7 @@ From the **/data/h2o-{{branch\_name}}** directory, run:
 
 ::
 
-    docker build -t "h2oai/{{branch_name}}:v5" .
+    docker build -t "h2o.ai/{{branch_name}}:v5" .
 
     **Note**: ``v5`` represents the current version number.
 
