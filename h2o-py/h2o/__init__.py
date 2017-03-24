@@ -23,7 +23,7 @@ from h2o.h2o import (connect, init, api, connection,
 # one would have to import it from h2o.frames.
 from h2o.frame import H2OFrame  # NOQA
 
-__version__ = "SUBST_PROJECT_VERSION"
+__version__ = "3.11.0.99999"
 
 
 __all__ = ("connect", "init", "api", "connection", "upload_file", "lazy_import", "import_file", "import_sql_table",
