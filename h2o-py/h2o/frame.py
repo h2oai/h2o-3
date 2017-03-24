@@ -2092,6 +2092,38 @@ class H2OFrame(object):
         return H2OFrame._expr(expr=ExprNode("cor", self, y, use))._frame()
 
 
+    def distance(self, y, measure=None):
+        """
+        Compute a pairwise distance measure between all rows of two numeric H2OFrames.
+
+        :param H2OFrame y: Frame containing queries (small)
+        :param str use: A string indicating what distance measure to use. Must be one of:
+
+            - ``"l1"``:        Absolute distance (L1-norm, >=0)
+            - ``"l2"``:        Euclidean distance (L2-norm, >=0)
+            - ``"cosine"``:    Cosine similarity (-1...1)
+            - ``"cosine_sq"``: Squared Cosine similarity (0...1)
+
+        :examples:
+          >>>
+          >>> iris_h2o = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
+          >>> references = iris_h2o[10:150,0:4
+          >>> queries    = iris_h2o[0:10,0:4]
+          >>> A = references.distance(queries, "l1")
+          >>> B = references.distance(queries, "l2")
+          >>> C = references.distance(queries, "cosine")
+          >>> D = references.distance(queries, "cosine_sq")
+          >>> E = queries.distance(references, "l1")
+          >>> (E.transpose() == A).all()
+
+        :returns: An H2OFrame of the matrix containing pairwise distance / similarity between the 
+            rows of this frame (N x p) and ``y`` (M x p), with dimensions (N x M).
+        """
+        assert_is_type(y, H2OFrame)
+        if measure is None: measure = "l2"
+        return H2OFrame._expr(expr=ExprNode("distance", self, y, measure))._frame()
+
+
     def asfactor(self):
         """
         Convert columns in the current frame to categoricals.
