@@ -6,8 +6,17 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 test <- function() {
   ## Import data
-  h2oData <- h2o.importFile("/mnt/0xcustomer-datasets/c27/data.csv")
-  betaConstraints <- h2o.importFile("/mnt/0xcustomer-datasets/c27/constraints_indices.csv")
+  results = tryCatch({
+    h2oData <<- h2o.importFile("/mnt/0xcustomer-datasets/c27/data.csv")
+    betaConstraints <<- h2o.importFile("/mnt/0xcustomer-datasets/c27/constraints_indices.csv")
+    runTest<<-TRUE
+  },
+  error=function(e) {
+    print("**** WARNING: runit_INTERNAL_GLM_bc_illegal_input.R test is not conducted because the datasets are not accessible.")
+    runTest<<-FALSE
+  })
+
+  if (runTest) {
   betaConstraints <- betaConstraints[1:(nrow(betaConstraints)-1),] # remove intercept
   bc <- as.data.frame(betaConstraints)
 
@@ -42,6 +51,7 @@ test <- function() {
   c <- bc
   names(c) <- gsub("lower_bounds", replacement = "lowerbounds", x = names(bc))
   checkException(run_glm(c), "Did not detect beta constraint column name typo.", silent = T)
+  }
 }
 
 doTest("GLM Test: Beta Constraints Illegal Argument Exceptions", test)

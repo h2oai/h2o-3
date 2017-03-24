@@ -5,8 +5,16 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test <- function(){
   ## Import data
-  h2oData <- h2o.importFile("/mnt/0xcustomer-datasets/c27/data.csv")
-  betaConstraints <- h2o.importFile("/mnt/0xcustomer-datasets/c27/constraints_indices.csv")
+  result = tryCatch({
+    h2oData <<- h2o.importFile("/mnt/0xcustomer-datasets/c27/data.csv")
+    betaConstraints <<- h2o.importFile("/mnt/0xcustomer-datasets/c27/constraints_indices.csv")
+    runTest=TRUE},
+    error=function(e) {
+      print("**** WARNING: runit_INTERNAL_hex_2025_priors.R test is not conducted because the datasets are not accessible.")
+      runTest<<-FALSE
+    })
+
+  if (runTest) {
   betaConstraints <- betaConstraints[1:(nrow(betaConstraints)-1),] # remove intercept
   betaConstraints <- as.data.frame(betaConstraints)
 
@@ -49,6 +57,7 @@ test <- function(){
   intercept2adj <- intercept1-adjustment
   checkEqualsNumeric(coeff1, coeff2, tolerance = 0)
   checkEqualsNumeric(intercept2, intercept2adj, tolerance = 1E-10)
+  }
 }
 
 doTest("GLM Test: Beta Constraints with Priors", test)
