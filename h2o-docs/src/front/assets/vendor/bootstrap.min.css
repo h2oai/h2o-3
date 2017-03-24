@@ -4608,7 +4608,7 @@ a.list-group-item-danger.active,a.list-group-item-danger.active:hover,a.list-gro
 	border-radius:6px
 }
 .well-sm {
-	padding:9px;
+	padding:4px;
 	border-radius:0px;
 	border: 1px solid #424242;
 }
