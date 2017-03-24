@@ -840,7 +840,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
   @Override
   public Frame scoreDeepFeatures(Frame frame, String layer, Job j) {
-    throw H2O.unimpl("Cannot extract named hidden layers for H2O DeepLearning.");
+    throw H2O.unimpl("Cannot extract named hidden layer '" + layer + "' for H2O DeepLearning.");
   }
 
 
