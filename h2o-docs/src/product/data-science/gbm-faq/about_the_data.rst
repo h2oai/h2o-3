@@ -3,7 +3,7 @@ About the Data
 
 - **How does the algorithm handle highly imbalanced data in a response column?**
 
- The GBM algorithm is quite good at handling highly imbalanced data because it's simply a partitioning scheme. GBM uses the weights column for per-row weights if you want control. When your datasest includes imbalanced data, can specify ``balance_classes``, ``class_sampling_factors``, ``sample_rate_per_class``, and ``max_after_balance_size`` to control over/under-sampling.
+ The GBM algorithm is quite good at handling highly imbalanced data because it's simply a partitioning scheme. Use the weights column for per-row weights if you want to control over/under-sampling. When your dataset includes imbalanced data, you can also specify ``balance_classes``, ``class_sampling_factors``, ``sample_rate_per_class``, and ``max_after_balance_size`` to control over/under-sampling.
 
 - **What if there are a large number of columns in the dataset?**
 

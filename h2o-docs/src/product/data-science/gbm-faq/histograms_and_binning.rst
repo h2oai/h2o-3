@@ -35,7 +35,7 @@ Histograms and Binning
 
 - **How does QuantilesGlobal binning differ from UniformAdaptive binning?**
 
- QuantilesGlobal computes ``nbins`` quantiles for each numeric (non-binary) column, then refines/pads each bucket (between two quantiles) uniformly (and randomly for remainders) into a total of ``nbins_top_level`` bins. This set of split points is then used for all levels of the tree: each leaf node histogram gets min/max-range adjusted (based on its population range) and also linearly refined/padded to end up with exactly ``nbins`` (level) bins to pick the best split from. For integer columns where this ends up with more than the unique number of distinct values, we fall back to the pure-integer buckets.
+ QuantilesGlobal computes ``nbins`` quantiles for each numeric (non-binary) column, then refines/pads each bucket (between two quantiles) uniformly (and randomly for remainders) into a total of ``nbins_top_level`` bins. This set of split points is then used for all levels of the tree: each leaf node histogram gets min/max-range adjusted (based on its population range) and also linearly refined/padded to end up with exactly ``nbins`` (level) bins to pick the best split from. For integer columns where this ends up with more than the unique number of distinct values, GBM falls back to the pure-integer buckets.
 
  UniformAdaptive builds equal-width histograms, with adaptive ranges based on the content of each column’s data in the node to be split.
 
