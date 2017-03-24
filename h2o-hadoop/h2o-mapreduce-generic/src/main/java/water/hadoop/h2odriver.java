@@ -92,6 +92,7 @@ public class h2odriver extends Configured implements Tool {
   static boolean hashLogin = false;
   static boolean ldapLogin = false;
   static boolean kerberosLogin = false;
+  static boolean pamLogin = false;
   static String loginConfFileName = null;
   static String userName = System.getProperty("user.name");
 
@@ -860,6 +861,9 @@ public class h2odriver extends Configured implements Tool {
       else if (s.equals("-kerberos_login")) {
         kerberosLogin = true;
       }
+      else if (s.equals("-pam_login")) {
+        pamLogin = true;
+      }
       else if (s.equals("-login_conf")) {
         i++; if (i >= args.length) { usage(); }
         loginConfFileName = args[i];
@@ -1330,6 +1334,9 @@ public class h2odriver extends Configured implements Tool {
     if (kerberosLogin) {
       addMapperArg(conf, "-kerberos_login");
     }
+    if (pamLogin) {
+      addMapperArg(conf, "-pam_login");
+    }
     addMapperArg(conf, "-user_name", userName);
 
     for (String s : extraArguments) {
@@ -1352,6 +1359,15 @@ public class h2odriver extends Configured implements Tool {
               "};"
       );
       addMapperConf(conf, "-login_conf", "login.conf", krbConfData);
+    } else if (pamLogin) {
+      // Use default PAM configuration file
+      final byte[] pamConfData = StringUtils.bytesOf(
+              "pamloginmodule {\n" +
+                      "     de.codedo.jaas.PamLoginModule required\n" +
+                      "     service = h2o;\n" +
+                      "};"
+      );
+      addMapperConf(conf, "-login_conf", "login.conf", pamConfData);
     }
 
     // SSL
