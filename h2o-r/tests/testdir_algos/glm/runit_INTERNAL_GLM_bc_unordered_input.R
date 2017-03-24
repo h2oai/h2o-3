@@ -8,8 +8,17 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 test <- function() {
   ## Import data
-  h2oData <- h2o.importFile("/mnt/0xcustomer-datasets/c27/data.csv")
-  bc <- h2o.importFile("/mnt/0xcustomer-datasets/c27/constraints_indices.csv")
+  
+  result = tryCatch({
+    h2oData <<- h2o.importFile("/mnt/0xcustomer-datasets/c27/data.csv")
+    bc <<- h2o.importFile("/mnt/0xcustomer-datasets/c27/constraints_indices.csv")
+    runTest<<-TRUE
+  }, error = function(e) {
+    print("**** WARNING: runit_INTERNAL_GLM_bc_unordered_input.R test is not conducted because the datasets are not accessible.")
+    runTest<<-FALSE
+  })
+
+  if (runTest) {
   bc <- bc[1:(nrow(bc)-1),] # remove intercept
   bc <- as.data.frame(bc)
 
@@ -42,6 +51,7 @@ test <- function() {
 
   checkEqualsNumeric(h2o.coef(a), h2o.coef(b))
   checkEqualsNumeric(h2o.coef(b), h2o.coef(c))
+  }
 }
 
 doTest("GLM Test: Beta Constraints with Priors", test)
