@@ -713,7 +713,9 @@ public class FrameMetadata extends Iced {
       }
 
       int nbins = (int) Math.ceil(1 + log2(v.length()));  // Sturges nbins
-
+      if(_colMeta._v.isBad()){
+        Log.info("Skipping all NaN column -> " + _colMeta._name);
+      }
       if(!(_colMeta._ignored) && !(_colMeta._v.isBad())) {
         _colMeta._histo = MetaCollector.DynamicHisto.makeDHistogram(colname, nbins, nbins, (byte) (v.isCategorical() ? 2 : (v.isInt() ? 1 : 0)), v.min(), v.max());
       }
