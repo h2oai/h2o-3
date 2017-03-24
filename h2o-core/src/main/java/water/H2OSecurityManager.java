@@ -44,14 +44,14 @@ public class H2OSecurityManager {
 
     private volatile static H2OSecurityManager INSTANCE = null;
 
-    public boolean securityEnabled = false;
+    public final boolean securityEnabled;
     private SSLSocketChannelFactory sslSocketChannelFactory;
 
     private H2OSecurityManager() {
+        this.securityEnabled = H2O.ARGS.internal_security_conf != null;
         try {
             if (null != H2O.ARGS.internal_security_conf) {
                 this.sslSocketChannelFactory = new SSLSocketChannelFactory();
-                this.securityEnabled = true;
                 Log.info("H2O node running in encrypted mode using config file [" + H2O.ARGS.internal_security_conf + "]");
             } else {
                 Log.info("H2O node running in unencrypted mode.");

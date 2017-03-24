@@ -56,3 +56,5 @@ task copyJar(type: Copy) {
 shadowJar.finalizedBy copyJar
 // Run shadowJar as par of build
 jar.finalizedBy shadowJar
+
+build.dependsOn ":h2o-grpc:build"

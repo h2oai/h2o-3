@@ -42,6 +42,8 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
 
+  @Override public boolean isSupervised() { return true; }
+
   @Override protected StackedEnsembleDriver trainModelImpl() { return _driver = new StackedEnsembleDriver(); }
 
   public static void addModelPredictionsToLevelOneFrame(Model aModel, Frame aModelsPredictions, Frame levelOneFrame) {
@@ -82,7 +84,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         StackedEnsemble.addModelPredictionsToLevelOneFrame(aModel, aModelsPredictions, levelOneFrame);
       } // for all base_models
 
-      levelOneFrame.add(_model.responseColumn, _model.commonTrainingFrame.vec(_model.responseColumn));
+      levelOneFrame.add(_model.responseColumn, _model._parms.train().vec(_model.responseColumn));
 
       // TODO: what if we're running multiple in parallel and have a name collision?
 

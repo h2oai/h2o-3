@@ -8,6 +8,7 @@ import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
+import water.util.FileUtils;
 import water.util.VecUtils;
 
 import static water.util.FrameUtils.parseFrame;
@@ -196,8 +197,8 @@ public class ConfusionMatrixTest extends TestUtil {
 
   private void simpleCMTest(String f1, String f2, String[] expectedActualDomain, String[] expectedPredictDomain, String[] expectedDomain, double[][] expectedCM, boolean debug) {
     try {
-      Frame v1 = parseFrame(Key.make("v1.hex"), find_test_file(f1));
-      Frame v2 = parseFrame(Key.make("v2.hex"), find_test_file(f2));
+      Frame v1 = parseFrame(Key.make("v1.hex"), FileUtils.getFile(f1));
+      Frame v2 = parseFrame(Key.make("v2.hex"), FileUtils.getFile(f2));
       if (!v1.isCompatible(v2)) {
         Frame old = null;
         v2 = new Frame(v1.makeCompatible(old = v2));

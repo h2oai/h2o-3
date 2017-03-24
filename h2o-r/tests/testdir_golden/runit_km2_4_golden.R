@@ -18,19 +18,19 @@ test.kmsplit.golden <- function() {
   trainR <- ozoneR; testR <- ozoneR
   trainH2O <- ozoneH2O; testH2O <- ozoneH2O
 
-  # a random sample here, is no different than random init to kmeans
-  # h2o might not get the desired centers with random init
+  # a random sample here, is no different than random user_points to kmeans
+  # h2o might not get the desired centers with random user_points
   # startIdx <- sort(sample(1:nrow(trainR), 3))
 
   # was getting "close" center agreement, but one or two predict miscompared
-  # switched to fixed random init
+  # switched to fixed random user_points
   # dataset has 111 data rows. seem randomly ordered
   startIdx <- c(1,20,100)
     
   Log.info("Initial cluster centers:"); print(trainR[startIdx,])
   # fitR <- kmeans(trainR, centers = trainR[startIdx,], iter.max = 1000, algorithm = "Lloyd")
   fitR <- kcca(trainR, k = as.matrix(trainR[startIdx,], family = kccaFamily("kmeans"), control = list(iter.max = 1000)))
-  fitH2O <- h2o.kmeans(trainH2O, init = trainH2O[startIdx,], standardize = FALSE)
+  fitH2O <- h2o.kmeans(trainH2O, user_points = trainH2O[startIdx,], standardize = FALSE)
   
   Log.info("R Final Clusters:"); print(fitR@centers)
   Log.info("H2O Final Clusters:"); print(getCenters(fitH2O))

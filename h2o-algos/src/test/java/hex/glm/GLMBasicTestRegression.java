@@ -5,13 +5,11 @@ import hex.deeplearning.DeepLearningModel;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Solver;
-import junit.framework.Assert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
-import water.MRTask;
 import water.TestUtil;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
@@ -19,10 +17,12 @@ import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
-import java.util.Random;
 
 import water.fvec.*;
+import static water.util.FileUtils.*;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -41,9 +41,9 @@ public class GLMBasicTestRegression extends TestUtil {
   static Frame _airlinesMM;
 
   @BeforeClass
-  public static void setup() {
+  public static void setup() throws IOException {
     stall_till_cloudsize(1);
-    File f = find_test_file_static("smalldata/glm_test/cancar_logIn.csv");
+    File f = getFile("smalldata/glm_test/cancar_logIn.csv");
     assert f.exists();
     NFSFileVec nfs = NFSFileVec.make(f);
     Key outputKey = Key.make("prostate_cat_train.hex");
@@ -52,22 +52,19 @@ public class GLMBasicTestRegression extends TestUtil {
     _canCarTrain.add("Class", (_class = _canCarTrain.remove("Class")).toCategoricalVec());
 
     DKV.put(_canCarTrain._key, _canCarTrain);
-    f = find_test_file_static("smalldata/glm_test/earinf.txt");
-    assert f.exists();
+    f = getFile("smalldata/glm_test/earinf.txt");
     nfs = NFSFileVec.make(f);
     outputKey = Key.make("earinf.hex");
     _earinf = ParseDataset.parse(outputKey, nfs._key);
     DKV.put(_earinf._key, _earinf);
 
-    f = find_test_file_static("smalldata/glm_test/weighted.csv");
-    assert f.exists();
+    f = getFile("smalldata/glm_test/weighted.csv");
     nfs = NFSFileVec.make(f);
     outputKey = Key.make("weighted.hex");
     _weighted = ParseDataset.parse(outputKey, nfs._key);
     DKV.put(_weighted._key, _weighted);
 
-    f = find_test_file_static("smalldata/glm_test/upsampled.csv");
-    assert f.exists();
+    f = getFile("smalldata/glm_test/upsampled.csv");
     nfs = NFSFileVec.make(f);
     outputKey = Key.make("upsampled.hex");
     _upsampled = ParseDataset.parse(outputKey, nfs._key);
@@ -741,8 +738,11 @@ public class GLMBasicTestRegression extends TestUtil {
       String[] names_expected = new String[]{"Intercept", "ID", "AGE", "RACE.R2", "RACE.R3", "DPROS.b", "DPROS.c", "DPROS.d", "DCAPS.b", "PSA", "VOL", "GLEASON"};
       // do not compare std_err here, depends on the coefficients
 //      double[] stder_expected = new double[]{1.5687858,   0.1534062,   0.1449847,   1.5423974, 1.5827190,   0.3950883,   0.4161974,  0.5426512,   0.5179591,   0.2244733, 0.1620383,   0.1963285};
-      double[] zvals_expected = new double[]{1.14158283,  1.29061005, -0.14920829, -0.05883397, -0.56178799, 2.22564893,  3.21891333,  1.22168646,  1.61119882,  3.13650800, -1.39379859,  5.26524961 };
-      double[] pvals_expected = new double[]{2.546098e-01, 1.979113e-01, 8.814975e-01, 9.531266e-01, 5.747131e-01, 2.683977e-02, 1.439295e-03, 2.228612e-01, 1.082711e-01, 1.893210e-03, 1.644916e-01, 2.805776e-07 };
+//      double[] zvals_expected = new double[]{1.14158283,  1.29061005, -0.14920829, -0.05883397, -0.56178799, 2.22564893,  3.21891333,  1.22168646,  1.61119882,  3.13650800, -1.39379859,  5.26524961 };
+//      double[] pvals_expected = new double[]{2.546098e-01, 1.979113e-01, 8.814975e-01, 9.531266e-01, 5.747131e-01, 2.683977e-02, 1.439295e-03, 2.228612e-01, 1.082711e-01, 1.893210e-03, 1.644916e-01, 2.805776e-07 };
+      double[] stder_expected = new double[]{0.4035941476, 0.0002387281, 0.0040245520, 0.2511007120, 0.2593492335, 0.0657117271, 0.0713659021, 0.0937207659, 0.0888124376, 0.0015060289, 0.0013919737, 0.0273258788};
+      double[] zvals_expected = new double[]{-1.70241133,  1.29061005, -0.14920829, -0.05883397, -0.56178799,  2.22564893,  3.21891333,  1.22168646, 1.61119882,  3.13650800, -1.39379859,  5.26524961 };
+      double[] pvals_expected = new double[]{8.979610e-02, 1.979113e-01, 8.814975e-01, 9.531266e-01, 5.747131e-01, 2.683977e-02, 1.439295e-03, 2.228612e-01, 1.082711e-01, 1.893210e-03, 1.644916e-01, 2.805776e-07};
       String[] names_actual = model._output.coefficientNames();
       HashMap<String, Integer> coefMap = new HashMap<>();
       for (int i = 0; i < names_expected.length; ++i)
@@ -766,7 +766,7 @@ public class GLMBasicTestRegression extends TestUtil {
     }
 
     // Airlines (has collinear columns)
-    params._standardize = false;
+    params._standardize = true;
     params._remove_collinear_columns = true;
     params._train = _airlines._key;
     params._response_column = "IsDepDelayed";

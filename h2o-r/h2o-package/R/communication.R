@@ -136,9 +136,6 @@
 
   tmp <- NULL
   header <- c('Connection' = 'close')
-  if (!is.na(conn@cluster_id)) {
-    header['X-Cluster'] = conn@cluster_id
-  }
 
   if(!is.na(conn@cookies)) {
     header['Cookie'] = paste0(conn@cookies, collapse=';')
@@ -641,6 +638,7 @@ h2o.clusterInfo <- function() {
   clusterHealth <- all(sapply(nodeInfo,function(x) as.logical(x['healthy'])))
 
   is_client <- res$is_client
+
   if (is.null(is_client)) {
     is_client <- FALSE
   }
@@ -666,6 +664,7 @@ h2o.clusterInfo <- function() {
   cat("    H2O Connection ip:         ", ip, "\n")
   cat("    H2O Connection port:       ", port, "\n")
   cat("    H2O Connection proxy:      ", proxy, "\n")
+  cat("    H2O Internal Security:     ", res$internal_security_enabled, "\n")
   cat("    R Version:                 ", R.version.string, "\n")
   
   cpusLimited = sapply(nodeInfo, function(x) x[['num_cpus']] > 1L && x[['nthreads']] != 1L && x[['cpus_allowed']] == 1L)

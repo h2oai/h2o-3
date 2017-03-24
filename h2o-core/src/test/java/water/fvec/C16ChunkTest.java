@@ -55,28 +55,25 @@ public class C16ChunkTest extends TestUtil {
       u(-823048234L,  -823048235L),
       u(-123123L,     -123124L)};
 
-  Chunk buildTestData(boolean withNA) {
+  NewChunk buildTestData(boolean withNA) {
     NewChunk nc = new NewChunk(null, 0);
-
     if (withNA) nc.addNA();
     for (UUID u : sampleVals) nc.addUUID(u.getLeastSignificantBits(), u.getMostSignificantBits());
     nc.addNA();
-
-    return nc.compress();
+    return nc;
   }
 
   @Test
   public void test_inflate_impl() {
     for (int l=0; l<2; ++l) {
       boolean haveNA = l == 1;
-      Chunk cc = buildTestData(haveNA);
-
+      NewChunk nc = buildTestData(haveNA);
+      int len = nc.len();
+      Chunk cc = nc.compress();
       Assert.assertEquals(sampleVals.length + 1 + l, cc._len);
       Assert.assertTrue(cc instanceof C16Chunk);
       checkChunk(cc, l, haveNA);
-
-      NewChunk nc = cc.inflate_impl(new NewChunk(null, 0));
-      nc.values(0, nc._len);
+      nc = cc.extractRows(new NewChunk(null, 0),0,len);
       Assert.assertEquals(sampleVals.length + 1 + l, nc._len);
       checkChunk(nc, l, haveNA);
 
@@ -91,7 +88,7 @@ public class C16ChunkTest extends TestUtil {
 
   @Test
   public void test_illegal_values() {
-    Chunk cc = buildTestData(false);
+    Chunk cc = buildTestData(false).compress();
     try {
       cc.set_impl(4, C16Chunk._LO_NA, C16Chunk._HI_NA);
       fail("Expected a failure on adding an illegal value");

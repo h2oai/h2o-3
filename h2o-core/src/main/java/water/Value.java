@@ -7,6 +7,7 @@ import jsr166y.ForkJoinPool;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
+import water.util.StringUtils;
 
 /** The core Value stored in the distributed K/V store, used to cache Plain Old
  *  Java Objects, and maintain coherency around the cluster.  It contains an
@@ -308,7 +309,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _replicas = null;
   }
   Value(Key k, byte[] mem ) { this(k, mem.length, mem, TypeMap.PRIM_B, ICE); }
-  Value(Key k, String s ) { this(k, s.getBytes()); }
+  Value(Key k, String s ) { this(k, StringUtils.bytesOf(s)); }
   Value(Key k, Iced pojo ) { this(k,pojo,ICE); }
   Value(Key k, Iced pojo, byte be ) {
     _key = k;

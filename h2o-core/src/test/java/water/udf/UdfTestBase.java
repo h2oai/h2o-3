@@ -4,16 +4,15 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import water.H2OStarter;
-import water.Iced;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
+import water.util.FileUtils;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Method;
-import static water.TestUtil.*;
 
 /**
  * All test functionality specific for udf (not actually), 
@@ -52,15 +51,9 @@ public class UdfTestBase extends TestUtil {
   }
 
 
-  public static Vec loadFile(String fname) {
-    File f = getFile(fname);
+  public static Vec loadFile(String fname) throws IOException {
+    File f = FileUtils.getFile(fname);
     return NFSFileVec.make(f);
-  }
-
-  public static File getFile(String fname) {
-    File f = find_test_file_static(fname);
-    checkFile(fname, f);
-    return f;
   }
 
   // the following code exists or else gradlew will complain; also, it checks assertions

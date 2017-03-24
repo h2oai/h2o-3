@@ -59,7 +59,6 @@ setRefClass("H2OConnectionMutableState",
 #' @slot insecure Set this to TRUE to disable SSL certificate checking.
 #' @slot username Username to login with.
 #' @slot password Password to login with.
-#' @slot cluster_id Cluster to login to. Used for Steam connections
 #' @slot cookies Cookies to add to request
 #' @slot context_path Context path which is appended to H2O server location.
 #' @slot mutable An \code{H2OConnectionMutableState} object to hold the mutable state for the H2O connection.
@@ -69,7 +68,6 @@ setClass("H2OConnection",
          representation(ip="character", port="numeric", proxy="character",
                         https="logical", insecure="logical",
                         username="character", password="character",
-                        cluster_id="numeric",
                         cookies="character",
                         context_path="character",
                         mutable="H2OConnectionMutableState"),
@@ -80,7 +78,6 @@ setClass("H2OConnection",
                    insecure     = FALSE,
                    username     = NA_character_,
                    password     = NA_character_,
-                   cluster_id   = NA_integer_,
                    cookies      = NA_character_,
                    context_path = NA_character_,
                    mutable      = new("H2OConnectionMutableState")))
@@ -403,7 +400,7 @@ setMethod("show", "H2OBinomialMetrics", function(object) {
     cm <- h2o.confusionMatrix(object)
     if( is.null(cm) ) print(NULL)
     else {
-      attr(cm, "header") <- "Confusion Matrix for F1-optimal threshold"
+      attr(cm, "header") <- "Confusion Matrix (vertical: actual; across: predicted) for F1-optimal threshold"
       print(cm)
       cat("\n")
     }

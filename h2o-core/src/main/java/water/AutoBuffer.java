@@ -10,6 +10,7 @@ import java.util.Random;
 
 import water.network.SocketChannelUtils;
 import water.util.Log;
+import water.util.StringUtils;
 import water.util.TwoDimTable;
 
 /** A ByteBuffer backed mixed Input/Output streaming class, using Iced serialization.
@@ -40,6 +41,8 @@ public final class AutoBuffer {
   // The direct ByteBuffer for schlorping data about.
   // Set to null to indicate the AutoBuffer is closed.
   ByteBuffer _bb;
+  public String sourceName = "???";
+
   public boolean isClosed() { return _bb == null ; }
 
   // The ByteChannel for moving data in or out.  Could be a SocketChannel (for
@@ -614,7 +617,7 @@ public final class AutoBuffer {
     long ns = System.nanoTime();
     while( _bb.position() < sz ) { // Read until we got enuf
       try {
-        int res = _is == null ? _chan.read(_bb) : _is.read(_bb.array(),_bb.position(),_bb.remaining()); // Read more
+        int res = readAnInt(); // Read more
         // Readers are supposed to be strongly typed and read the exact expected bytes.
         // However, if a TCP connection fails mid-read we'll get a short-read.
         // This is indistinguishable from a mis-alignment between the writer and reader!
@@ -637,6 +640,19 @@ public final class AutoBuffer {
     //for( int i=0; i < _bb.limit(); i++ ) if( _bb.get(i)==0 ) _zeros++;
     _firstPage = false;         // First page of data is gone gone gone
     return _bb;
+  }
+
+  private int readAnInt() throws IOException {
+    if (_is == null) return _chan.read(_bb);
+
+    final byte[] array = _bb.array();
+    final int position = _bb.position();
+    final int remaining = _bb.remaining();
+    try {
+      return _is.read(array, position, remaining);
+    } catch (IOException ioe) {
+      throw new IOException("Failed reading " + remaining + " bytes into buffer[" + array.length + "] at " + position + " from " + sourceName + " " + _is, ioe);
+    }
   }
 
   /** Put as needed to keep from overflowing the ByteBuffer. */
@@ -1452,7 +1468,7 @@ public final class AutoBuffer {
   // Put a String as bytes (not chars!)
   public AutoBuffer putStr( String s ) {
     if( s==null ) return putInt(-1);
-    return putA1(s.getBytes(UTF_8));
+    return putA1(StringUtils.bytesOf(s));
   }
 
   @SuppressWarnings("unused")  public AutoBuffer putEnum( Enum x ) {
@@ -1474,12 +1490,23 @@ public final class AutoBuffer {
 
   public static Object javaSerializeReadPojo(byte [] bytes) {
     try {
-      return new ObjectInputStream(new ByteArrayInputStream(bytes)).readObject();
+      final ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes));
+      Object o = ois.readObject();
+      return o;
     } catch (IOException e) {
-      throw Log.throwErr(e);
+      String className = nameOfClass(bytes);
+      throw Log.throwErr(new RuntimeException("Failed to deserialize " + className, e));
     } catch (ClassNotFoundException e) {
       throw Log.throwErr(e);
     }
+  }
+
+  static String nameOfClass(byte[] bytes) {
+    if (bytes == null) return "(null)";
+    if (bytes.length < 11) return "(no name)";
+
+    int nameSize = Math.min(40, Math.max(3, bytes[7]));
+    return new String(bytes, 8, Math.min(nameSize, bytes.length - 8));
   }
   // ==========================================================================
   // Java Serializable objects
@@ -1571,7 +1598,7 @@ public final class AutoBuffer {
   public AutoBuffer putJNULL( ) { return put1('n').put1('u').put1('l').put1('l'); }
   // Escaped JSON string
   private AutoBuffer putJStr( String s ) {
-    byte[] b = s.getBytes();
+    byte[] b = StringUtils.bytesOf(s);
     int off=0;
     for( int i=0; i<b.length; i++ ) {
       if( b[i] == '\\' || b[i] == '"') { // Double up backslashes, escape quotes
@@ -1684,7 +1711,7 @@ public final class AutoBuffer {
 
   // Most simple integers
   private AutoBuffer putJInt( int i ) {
-    byte b[] = Integer.toString(i).getBytes();
+    byte b[] = StringUtils.toBytes(i);
     return putA1(b,b.length);
   }
 

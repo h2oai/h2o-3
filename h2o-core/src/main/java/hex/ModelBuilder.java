@@ -557,7 +557,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
   protected boolean logMe() { return true; }
 
-  public boolean isSupervised(){return false;}
+  abstract public boolean isSupervised();
 
   protected transient Vec _response; // Handy response column
   protected transient Vec _vresponse; // Handy response column
@@ -698,6 +698,14 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           return (ignoreConstColumns() && v.isConst()) || v.isBad() || (ignoreStringColumns() && v.isString()); }
       }.doIt(_train,"Dropping constant columns: ",expensive);
   }
+
+  /**
+   * Ignore invalid columns (columns that have a very high max value, which can cause issues in DHistogram)
+   * @param npredictors
+   * @param expensive
+   */
+  protected void ignoreInvalidColumns(int npredictors, boolean expensive){}
+
   /**
    * Override this method to call error() if the model is expected to not fit in memory, and say why
    */
@@ -847,6 +855,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // them.  Text algos (grep, word2vec) take raw text columns - which are
     // numeric (arrays of bytes).
     ignoreBadColumns(separateFeatureVecs(), expensive);
+    ignoreInvalidColumns(separateFeatureVecs(), expensive);
     // Check that at least some columns are not-constant and not-all-NAs
     if( _train.numCols() == 0 )
       error("_train","There are no usable columns to generate model");
@@ -1074,13 +1083,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   transient public HashSet<String> _removedCols = new HashSet<>();
-  abstract class FilterCols {
+  public abstract class FilterCols {
     final int _specialVecs; // special vecs to skip at the end
     public FilterCols(int n) {_specialVecs = n;}
 
     abstract protected boolean filter(Vec v);
 
-    void doIt( Frame f, String msg, boolean expensive ) {
+    public void doIt( Frame f, String msg, boolean expensive ) {
       List<Integer> rmcolsList = new ArrayList<>();
       for( int i = 0; i < f.vecs().length - _specialVecs; i++ )
         if( filter(f.vecs()[i]) ) rmcolsList.add(i);

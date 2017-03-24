@@ -12,6 +12,7 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -447,6 +448,12 @@ public class PojoUtils {
         return;
       }
 
+      if (List.class.isAssignableFrom(value.getClass()) && f.getType().isArray() && f.getType().getComponentType() == String.class) {
+        // convert ArrayList to array and try again
+        setField(o, fieldName, ((List)value).toArray(new String[0]));
+        return;
+      }
+
       // If it doesn't know any better, Gson deserializes all numeric types as doubles.
       // If our target is an integer type, cast.
       if (f.getType().isPrimitive() && f.getType() != value.getClass()) {
@@ -455,13 +462,48 @@ public class PojoUtils {
           f.set(o, ((Double) value).intValue());
         else if (f.getType() == long.class && (value.getClass() == Double.class || value.getClass() == Float.class))
           f.set(o, ((Double) value).longValue());
+        else if (f.getType() == int.class && value.getClass() == Integer.class)
+          f.set(o, ((Integer) value).intValue());
+        else if (f.getType() == long.class && (value.getClass() == Long.class || value.getClass() == Integer.class))
+          f.set(o, ((Long) value).longValue());
         else {
           // Double -> double, Integer -> int will work:
           f.set(o, value);
         }
+      } else if (f.getType().isArray() && value.getClass().isArray()) {
+        if (f.getType().getComponentType() == value.getClass().getComponentType()) {
+          // array of the same type on both sides
+          f.set(o, value);
+        } else if (f.getType().getComponentType() == int.class && value.getClass().getComponentType() == Integer.class) {
+          Integer[] valuesTyped = ((Integer[])value);
+          int[] valuesCast = new int[valuesTyped.length];
+          for (int i = 0; i < valuesTyped.length; i++)
+            valuesCast[i] = valuesTyped[i];
+          f.set(o, valuesCast);
+        } else if (f.getType().getComponentType() == long.class && value.getClass().getComponentType() == Long.class) {
+          Long[] valuesTyped = ((Long[])value);
+          long[] valuesCast = new long[valuesTyped.length];
+          for (int i = 0; i < valuesTyped.length; i++)
+            valuesCast[i] = valuesTyped[i];
+          f.set(o, valuesCast);
+        } else if (f.getType().getComponentType() == double.class && (value.getClass().getComponentType() == Float.class || value.getClass().getComponentType() == Double.class || value.getClass().getComponentType() == Integer.class || value.getClass().getComponentType() == Long.class)) {
+          Double[] valuesTyped = ((Double[])value);
+          double[] valuesCast = new double[valuesTyped.length];
+          for (int i = 0; i < valuesTyped.length; i++)
+            valuesCast[i] = valuesTyped[i];
+          f.set(o, valuesCast);
+        } else if (f.getType().getComponentType() == float.class && (value.getClass().getComponentType() == Float.class || value.getClass().getComponentType() == Double.class || value.getClass().getComponentType() == Integer.class || value.getClass().getComponentType() == Long.class)) {
+          Float[] valuesTyped = ((Float[])value);
+          float[] valuesCast = new float[valuesTyped.length];
+          for (int i = 0; i < valuesTyped.length; i++)
+            valuesCast[i] = valuesTyped[i];
+          f.set(o, valuesCast);
+        } else {
+          throw new IllegalArgumentException("setField can't yet convert an array of: " + value.getClass().getComponentType() + " to an array of: " + f.getType().getComponentType());
+        }
       } else if (! f.getType().isPrimitive() && ! f.getType().isAssignableFrom(value.getClass())) {
         // TODO: pull the auto-type-conversion stuff out of copyProperties so we don't have limited copy-paste code here
-        throw new IllegalArgumentException("setField can't yet convert a: " + value.getClass() + " to a: " + f.getType()); //
+        throw new IllegalArgumentException("setField can't yet convert a: " + value.getClass() + " to a: " + f.getType());
       } else {
         // not casting a primitive type
         f.set(o, value);
@@ -557,7 +599,6 @@ public class PojoUtils {
             throw new IllegalArgumentException("Cannot create new child object of type for field: '" + key + "' on object " + o);
           }
         }
-
       } else {
         // Scalar or String, possibly with an automagic type conversion as copyProperties does.
         // TODO: refactor the type conversions out of copyProperties so they all work, and remove

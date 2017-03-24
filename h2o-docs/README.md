@@ -5,7 +5,7 @@
 
 The front page that appears at:
 
-> docs-website/index.html
+> src/product/_build/html/index.html
 
 ---
 
@@ -29,7 +29,7 @@ make html
 ```
 The output goes to:
 
-> docs-website/h2o-docs/index.html
+> src/product/_build/html/index.html
 
 There are also some directories under product from the original h2o-3 pre-sphinx docs build system.
 
@@ -39,6 +39,6 @@ There are also some directories under product from the original h2o-3 pre-sphinx
 
 The various booklet latex source code, built by the gradle 'booklets' target.  The output goes to:
 
-> docs-website/h2o-docs/booklets/
+> src/booklets/v2_2015/source
 
 ---

@@ -1,5 +1,7 @@
 package water.hadoop;
 
+import water.util.StringUtils;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -97,7 +99,7 @@ class AbstractMessage {
   }
 
   protected void writeString(Socket s, String str) throws Exception {
-    byte b[] = str.getBytes("UTF-8");
+    byte b[] = StringUtils.bytesOf(str);
     writeInt(s, b.length);
     writeBytes(s, b);
   }

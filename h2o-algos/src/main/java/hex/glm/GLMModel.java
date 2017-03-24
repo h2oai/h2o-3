@@ -849,6 +849,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
     }
 
+    /**
+     * Variance Covariance matrix accessor. Available only if odel has been built with p-values.
+     * @return
+     */
+    public double [][] vcov(){return _vcov;}
+
+    
     @Override
     public int nclasses() {
       return _nclasses;
@@ -1017,8 +1024,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       for (int c = 0; c < bm.length; ++c) {
         double e = bm[c][bm[c].length-1];
         double [] b = bm[c];
-        for(int i = 0; i < _output._dinfo._cats; ++i)
-          e += b[_output._dinfo.getCategoricalId(i,data[i])];
+        for(int i = 0; i < _output._dinfo._cats; ++i) {
+          int l = _output._dinfo.getCategoricalId(i, data[i]);
+          if (l >= 0) e += b[l];
+        }
         int coff = _output._dinfo._cats;
         int boff = _output._dinfo.numStart();
         for(int i = 0; i < _output._dinfo._nums; ++i) {

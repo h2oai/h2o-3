@@ -13,6 +13,7 @@ import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
+import water.util.FileUtils;
 
 /**
  * This test simulates environment
@@ -27,7 +28,7 @@ public class DeepLearningScoreTest extends TestUtil {
   @Test public void testPubDev928() {
     // Create rebalanced dataset
     Key rebalancedKey = Key.make("rebalanced");
-    NFSFileVec nfs = NFSFileVec.make(find_test_file("smalldata/logreg/prostate.csv"));
+    NFSFileVec nfs = TestUtil.makeNfsFileVec("smalldata/logreg/prostate.csv");
     Frame fr = ParseDataset.parse(Key.make(), nfs._key);
     RebalanceDataSet rb = new RebalanceDataSet(fr, rebalancedKey, (int)(fr.numRows()+1));
     H2O.submitTask(rb);

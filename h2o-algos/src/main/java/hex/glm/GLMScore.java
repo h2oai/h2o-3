@@ -114,10 +114,7 @@ public class GLMScore extends MRTask<GLMScore> {
     if (_generatePredictions) {
       for (int c = 0; c < ncols; c++)  // Output predictions; sized for train only (excludes extra test classes)
         preds[c].addNum(ps[c]);
-      if(_vcov != null) {
-        if(_m._output._dinfo._predictor_transform == DataInfo.TransformType.STANDARDIZE){
-          r.standardize(_m._output._dinfo._normSub,_m._output._dinfo._normMul);
-        }
+      if(_vcov != null) { // compute standard error on prediction
         preds[ncols].addNum(Math.sqrt(r.innerProduct(r.mtrxMul(_vcov, _tmp))));
       }
     }

@@ -174,7 +174,7 @@ Defining a GBM Model
 -  `offset_column <algo-params/offset_column.html>`__: (Not applicable if the **distribution** is
    **multinomial**) Specify a column to use as the offset.
    
-	 **Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__. If the **distribution** is **Bernoulli**, the value must be less than one.
+	 **Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__. 
 
 -  `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation
    weights, which are used for bias correction. The specified
@@ -334,39 +334,6 @@ split points.
 
 For more information about the GBM algorithm, refer to the `Gradient
 Boosting Machine booklet <http://h2o.ai/resources>`__.
-
-Binning In GBM
-~~~~~~~~~~~~~~
-
-**Is the binning range-based or percentile-based?**
-
-It's range based, and re-binned at each tree split. NAs always "go to
-the left" (smallest) bin. There's a minimum observations required value
-(default 10). There has to be at least 1 FP ULP improvement in error to
-split (all-constant predictors won't split). nbins is at least 1024 at
-the top-level, and divides by 2 down each level until you hit the nbins
-parameter (default: 20). Categoricals use a separate, more aggressive,
-binning range.
-
-Re-binning means, eg, suppose your column C1 data is:
-{1,1,2,4,8,16,100,1000}. Then a 20-way binning will use the range from 1
-to 1000, bin by units of 50. The first binning will be a lumpy:
-{1,1,2,4,8,16},{100},{47\_empty\_bins},{1000}. Suppose the split peels
-out the {1000} bin from the rest.
-
-Next layer in the tree for the left-split has value from 1 to 100 (not
-1000!) and so re-bins in units of 5: {1,1,2,4},{8},{},{16},{lots of
-empty bins}{100} (the RH split has the single value 1000).
-
-And so on: important dense ranges with split essentially logarithmically
-at each layer.
-
-**What should I do if my variables are long skewed in the tail and might
-have large outliers?**
-
-You can try adding a new predictor column which is either pre-binned
-(e.g. as a categorical - "small", "median", and "giant" values), or a
-log-transform - plus keep the old column.
 
 Parallel Performance in GBM
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~

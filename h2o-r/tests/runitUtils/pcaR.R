@@ -9,21 +9,27 @@ checkSignedCols <- function(object, expected, tolerance = 1e-6) {
     if(num_true == num_false) return(runif(1) >= 0.5)
     num_true > num_false
   })
-  
   mult <- ifelse(is_flipped, -1, 1)
   sapply(1:ncol(object), function(j) {
-    expect_equal(mult[j] * object[,j], expected[,j], tolerance = tolerance, scale = 1)
+    Log.info(paste("Maximum difference for eigvector ", j, " is:", max(abs(mult[j] * object[,j]-expected[,j])), sep=" "))
+    expect_equal(mult[j] * object[,j], expected[,j], tolerance=tolerance, scale=1)
   })
   return(is_flipped)
 }
-
-checkPCAModel <- function(fitH2O, fitR, tolerance = 1e-6, sort_rows = TRUE) {
+checkPCAModel<- function(fitH2O, fitR, tolerance=1e-6, sort_rows=TRUE, compare_all_importance=TRUE) {
   k <- fitH2O@parameters$k
   pcimpR <- summary(fitR)$importance
   pcimpH2O <- fitH2O@model$importance
   eigvecR <- fitR$rotation
   eigvecH2O <- fitH2O@model$eigenvectors
-  
+  textHeader = "Compare Importance between R and H2O\n"
+  RText = "R Importance of Components:"
+  H2OText = "H2O Importance of Components:"
+
+  checkPCAModelWork(k, pcimpR, pcimpH2O, eigvecR, eigvecH2O, textHeader, RText, H2OText, tolerance, sort_rows=TRUE, compare_all_importance=TRUE)
+}
+
+checkPCAModelWork <- function(k, pcimpR, pcimpH2O, eigvecR, eigvecH2O, textHeader, RImportanceHeader, H2OImportanceHeader, tolerance=1e-6, sort_rows=TRUE, compare_all_importance=TRUE) {
   pcimpR <- pcimpR[,1:k]
   eigvecR <- eigvecR[,1:k]
   
@@ -44,17 +50,27 @@ checkPCAModel <- function(fitH2O, fitR, tolerance = 1e-6, sort_rows = TRUE) {
     colnames(pcimpR) <- "PC1"
   }
   
-  Log.info("Compare Importance between R and H2O\n")
-  Log.info("R Importance of Components:"); print(pcimpR)
-  Log.info("H2O Importance of Components:"); print(pcimpH2O)
+  Log.info(textHeader)
+  Log.info(RImportanceHeader); print(pcimpR)
+  Log.info(H2OImportanceHeader); print(pcimpH2O)
   expect_equal(dim(pcimpH2O), dim(pcimpR))
-  pcimpH2O <- as.matrix(pcimpH2O); dimnames(pcimpH2O) <- dimnames(pcimpR)
-  expect_equal(pcimpH2O, pcimpR, tolerance = tolerance, scale = 1)
-  
+
+  dimnames(pcimpH2O) <- dimnames(pcimpR)
+  pcimpH2O <- as.matrix(pcimpH2O)
+  pcimpR <- as.matrix(pcimpR)
+  if (compare_all_importance) { # compare all: Standard deviation, Proportion of Variance and Cumulative Proportion
+    Log.info(paste("Maximum difference for your importance comparisons is:", max(abs(pcimpH2O-pcimpR)), sep=" "))
+    expect_equal(pcimpH2O, pcimpR, tolerance = tolerance, scale = 1)
+  } else {  # only compare Standard deviation (the actual eigenvalues)
+    for (ind in 1:dim(pcimpH2O)[2]) {
+      expect_equal(pcimpH2O[1,ind], pcimpR[1,ind], tolerance=tolerance)
+    }
+  }
+
   Log.info("Compare Principal Components between R and H2O\n") 
   Log.info("R Principal Components:"); print(eigvecR)
   Log.info("H2O Principal Components:"); print(eigvecH2O)
-  checkSignedCols(as.matrix(eigvecH2O), eigvecR, tolerance = tolerance)
+  checkSignedCols(as.matrix(eigvecH2O), as.matrix(eigvecR), tolerance = tolerance)
 }
 
 # generate the reconstructed datasets using the PCA eigenvectors and the projected datasets with numerical datas only

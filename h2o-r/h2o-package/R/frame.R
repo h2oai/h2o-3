@@ -1094,6 +1094,27 @@ h2o.impute <- function(data, column=0, method=c("mean","median","mode"), # TODO:
 #' @param na.rm ignore missing values
 #' @export
 range.H2OFrame <- function(...,na.rm = TRUE) c(min(...,na.rm=na.rm), max(...,na.rm=na.rm))
+
+#' Pivot the frame designated by the three columns: index, column, and value
+#' Index is a column that will be the row label
+#' Column is a column that contains categorical levels which will each be turned into a column
+#' Value is a column associated with an index and column
+#'
+#' @param x an H2OFrame
+#' @param index the column where pivoted rows should be aligned on
+#' @param column the column to pivot
+#' @param value values of the pivoted table
+#' @return An H2OFrame with columns from the columns arg, aligned on the index arg, with values from values arg
+#' @export
+h2o.pivot <- function(x, index, column, value){
+  if(! index %in% colnames(x)) stop("index column not found in dataframe")
+  if(! column %in% colnames(x)) stop("column column not found in dataframe")
+  if(! value %in% colnames(x)) stop("value column not found in dataframe")
+  if( ! h2o.getTypes(x)[grep(index,colnames(x))] %in% c("enum","time","int")) {
+    stop("index must be enum, time or int")
+  }
+  .newExpr("pivot", x, .quote(index), .quote(column), .quote(value))
+}
 #-----------------------------------------------------------------------------------------------------------------------
 # Time & Date
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1716,7 +1737,7 @@ h2o.tail <- function(x,n=6L,...) {
   if( n==0L ) head(x,n=0L)
   else {
     startidx <- max(1L, endidx - n + 1)
-    as.data.frame(.newExpr("rows",x,paste0("[",startidx-1,":",(endidx-startidx+1),"]")))
+    .fetch.data(.newExpr("rows",x,paste0("[",startidx-1,":",(endidx-startidx+1),"]")),n)
   }
 }
 
@@ -2107,7 +2128,10 @@ h2o.describe <- function(frame) {
                                                           )
                                                           })))
   names(res) <- c("Label", "Type", "Missing", "Zeros", "PosInf", "NegInf", "Min", "Max", "Mean", "Sigma", "Cardinality")
-  res
+
+  res2 <- apply(res[,3:ncol(res)], 2, as.numeric)
+  res2 <- cbind(res[,1:2], res2)
+  return(res2)
 }
 
 #' @rdname h2o.summary
@@ -2310,6 +2334,31 @@ h2o.cor <- function(x, y=NULL,na.rm = FALSE, use){
   expr <- .newExpr("cor",x,y,.quote(use))
   if( (nrow(x)==1L || (ncol(x)==1L && ncol(y)==1L)) ) .eval.scalar(expr)
   else .fetch.data(expr,ncol(x))
+}
+
+#'
+#' Compute a pairwise distance measure between all rows of two numeric H2OFrames.
+#'
+#' @param x An H2OFrame object (large, references).
+#' @param y An H2OFrame object (small, queries).
+#' @param measure An optional string indicating what distance measure to use. Must be one of:
+#'   "l1"                   - Absolute distance (L1-norm, >=0)
+#'   "l2"                   - Euclidean distance (L2-norm, >=0)
+#'   "cosine"               - Cosine similarity (-1...1)
+#'   "cosine_sq"            - Squared Cosine similarity (0...1)
+#' @examples
+#' \donttest{
+#' h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(path = prosPath)
+#' distance(prostate.hex[11:30,], prostate.hex[1:10,], "cosine")
+#' }
+#' @export
+h2o.distance <- function(x, y, measure){
+  if(missing(measure)) {
+    measure <- "l2"
+  }
+  .newExpr("distance",x,y,.quote(measure))
 }
 
 #' @rdname h2o.cor
@@ -3815,6 +3864,7 @@ h2o.isax <- function(x, num_words, max_cardinality, optimize_card = FALSE){
   }
   .newExpr("isax", x, num_words, max_cardinality, optimize_card)
 }
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 # String Operations

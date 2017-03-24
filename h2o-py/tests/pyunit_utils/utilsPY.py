@@ -1357,7 +1357,92 @@ def show_test_results(test_name, curr_test_val, new_test_val):
         return 0
 
 
-def equal_two_arrays(array1, array2, eps, tolerance):
+def assert_H2OTwoDimTable_equal(table1, table2, col_header_list, tolerance=1e-6, check_sign=False, check_all=True,
+                                num_per_dim=10):
+    """
+    This method compares two H2OTwoDimTables and verify that their difference is less than value set in tolerance. It
+    is probably an overkill for I have assumed that the order of col_header_list may not be in the same order as
+    the values in the table.cell_values[ind][0].  In addition, I do not assume an order for the names in the
+    table.cell_values[ind][0] either for there is no reason for an order to exist.
+
+    To limit the test run time, we can test a randomly sampled of points instead of all points
+
+    :param table1: H2OTwoDimTable to be compared
+    :param table2: the other H2OTwoDimTable to be compared
+    :param col_header_list: list of strings denote names that we can the comparison to be performed
+    :param tolerance: default to 1e-6
+    :param check_sign: bool, determine if the sign of values are important or not.  For eigenvectors, they are not.
+    :param check_all: bool, determine if we need to compare every single element
+    :param num_per_dim: integer, number of elements to sample per dimension.  We have 3 here.
+    :return: None if comparison succeed and raise an error if comparison failed for whatever reason
+    """
+    num_comparison = len(set(col_header_list))
+    size1 = len(table1.cell_values)
+    size2 = len(table2.cell_values)
+    worst_error = 0
+
+    assert size1==size2, "The two H2OTwoDimTables are of different size!"
+    assert num_comparison<=size1, "H2OTwoDimTable do not have all the attributes specified in col_header_list."
+    flip_sign_vec = generate_sign_vec(table1, table2) if check_sign else [1]*len(table1.cell_values[0])  # correct for sign change for eigenvector comparisons
+    randRange1 = generate_for_indices(len(table1.cell_values), check_all, num_per_dim, 0)
+    randRange2 = generate_for_indices(len(table2.cell_values), check_all, num_per_dim, 0)
+
+
+    for ind in range(num_comparison):
+        col_name = col_header_list[ind]
+        next_name=False
+
+        for name_ind1 in randRange1:
+            if col_name!=str(table1.cell_values[name_ind1][0]):
+                continue
+
+            for name_ind2 in randRange2:
+                if not(col_name==str(table2.cell_values[name_ind2][0])):
+                    continue
+
+                # now we have the col header names, do the actual comparison
+                if str(table1.cell_values[name_ind1][0])==str(table2.cell_values[name_ind2][0]):
+                    randRange3 = generate_for_indices(len(table2.cell_values[name_ind2]), check_all, num_per_dim,1)
+                    for indC in randRange3:
+                        val1 = table1.cell_values[name_ind1][indC]
+                        val2 = table2.cell_values[name_ind2][indC]*flip_sign_vec[indC]
+
+                        if (type(val1) == float) and (type(val2) == float):
+                            compare_val_ratio = abs(val1-val2)/max(1, abs(val1), abs(val2))
+                            if compare_val_ratio > tolerance:
+                                print("Table entry difference is {0}".format(compare_val_ratio))
+                                assert False, "Table entries are not equal within tolerance."
+
+                            worst_error = max(worst_error, compare_val_ratio)
+                        else:
+                            assert False, "Tables contains non-numerical values.  Comparison is for numericals only!"
+                    next_name=True
+                    break
+                else:
+                    assert False, "Unknown metric names found in col_header_list."
+            if next_name:   # ready to go to the next name in col_header_list
+                break
+    print("******* Congrats!  Test passed.  Maximum difference of your comparison is {0}".format(worst_error))
+
+def generate_for_indices(list_size, check_all, num_per_dim, start_val):
+    if check_all:
+        return list(range(start_val, list_size))
+    else:
+        randomList = list(range(start_val, list_size))
+        shuffle(randomList)
+        return randomList[0:min(list_size, num_per_dim)]
+
+def generate_sign_vec(table1, table2):
+    sign_vec = [1]*len(table1.cell_values[0])
+    for indC in range(1, len(table2.cell_values[0])):
+        if (np.sign(table1.cell_values[0][indC])!=np.sign(table2.cell_values[0][indC])):
+            sign_vec[indC] = -1
+        else:
+            sign_vec[indC] = 1
+
+    return sign_vec
+
+def equal_two_arrays(array1, array2, eps, tolerance, throwError=True):
     """
     This function will compare the values of two python tuples.  First, if the values are below
     eps which denotes the significance level that we care, no comparison is performed.  Next,
@@ -1386,7 +1471,10 @@ def equal_two_arrays(array1, array2, eps, tolerance):
 
         return True                                     # return True, elements of two arrays are close enough
     else:
-        assert False, "The two arrays are of different size!"
+        if throwError:
+            assert False, "The two arrays are of different size!"
+        else:
+            return False
 
 def equal_2D_tables(table1, table2, tolerance=1e-6):
     """
@@ -1417,6 +1505,7 @@ def equal_2D_tables(table1, table2, tolerance=1e-6):
 
     else:
         assert False, "The two arrays are of different size!"
+
 
 def compare_two_arrays(array1, array2, eps, tolerance, comparison_string, array1_string, array2_string, error_string,
                        success_string, template_is_better, just_print=False):
@@ -2598,9 +2687,7 @@ def compare_frames(frame1, frame2, numElements, tol_time=0, tol_numeric=0, stric
         else:
             if str(c2_type) == 'enum':  # orc files do not have enum column type.  We convert it here
                 frame1[col_ind].asfactor()
-            else:
-                assert c1_type == c2_type, "failed column type check! frame1 col type: {0}, frame2 col type: " \
-                                           "{1}".format(c1_type, c2_type)
+
         # compare string
         if (str(c1_type) == 'string') or (str(c1_type) == 'enum'):
             compareOneStringColumn(frame1, frame2, col_ind, rows1, numElements)
@@ -2820,3 +2907,68 @@ def cannaryHDFSTest(hdfs_name_node, file_name):
             return True
         else:       # exception is caused by other reasons.
             return False
+
+def extract_scoring_history_field(aModel, fieldOfInterest):
+    """
+    Given a fieldOfInterest that are found in the model scoring history, this function will extract the list
+    of field values for you from the model.
+
+    :param aModel: H2O model where you want to extract a list of fields from the scoring history
+    :param fieldOfInterest: string representing a field of interest.
+    :return: List of field values or None if it cannot be found
+    """
+
+    allFields = aModel._model_json["output"]["scoring_history"]._col_header
+    if fieldOfInterest in allFields:
+        cellValues = []
+        fieldIndex = allFields.index(fieldOfInterest)
+        for eachCell in aModel._model_json["output"]["scoring_history"].cell_values:
+            cellValues.append(eachCell[fieldIndex])
+        return cellValues
+    else:
+        return None
+
+
+def model_run_time_sorted_by_time(model_list):
+    """
+    This function is written to sort the metrics that we care in the order of when the model was built.  The
+    oldest model metric will be the first element.
+    :param model_list: list of models built sequentially that contains metric of interest among other fields
+    :return: model run time in secs sorted by order of building
+    """
+
+    model_num = len(model_list)
+
+    model_runtime_sec_list = [None] * model_num
+
+
+    for index in range(model_num):
+        model_index = int(model_list[index]._id.split('_')[-1])
+        model_runtime_sec_list[model_index] = \
+            (model_list[index]._model_json["output"]["run_time"]/1000.0)
+
+    return model_runtime_sec_list
+
+
+def model_seed_sorted_by_time(model_list):
+    """
+    This function is written to find the seed used by each model in the order of when the model was built.  The
+    oldest model metric will be the first element.
+    :param model_list: list of models built sequentially that contains metric of interest among other fields
+    :return: model seed sorted by order of building
+    """
+
+    model_num = len(model_list)
+
+    model_seed_list = [None] * model_num
+
+
+    for index in range(model_num):
+        model_index = int(model_list[index]._id.split('_')[-1])
+
+        for pIndex in range(len(model_list.models[0]._model_json["parameters"])):
+            if model_list.models[index]._model_json["parameters"][pIndex]["name"]=="seed":
+                model_seed_list[model_index]=model_list.models[index]._model_json["parameters"][pIndex]["actual_value"]
+                break
+
+    return model_seed_list

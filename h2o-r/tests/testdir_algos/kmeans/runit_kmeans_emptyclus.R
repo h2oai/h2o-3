@@ -18,8 +18,8 @@ test.km.empty <- function() {
   
   # H2O can handle empty clusters, while R throws an error
   Log.info("Check that H2O can handle badly initialized centers")
-  expect_error(kmeans(ozoneScale, init = initCent, iter.max = 1000, algorithm = "Lloyd"))
-  fitKM <- h2o.kmeans(ozoneH2O, init = initCent, standardize = TRUE)
+  expect_warning(kmeans(ozoneScale, centers = initCent, iter.max = 1000, algorithm = "Lloyd"))
+  fitKM <- h2o.kmeans(ozoneH2O, k = 10, user_points = initCent, standardize = TRUE)
   print(fitKM)
   
 }

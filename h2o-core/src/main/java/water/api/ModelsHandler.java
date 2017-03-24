@@ -217,7 +217,9 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
       URI targetUri = FileUtils.getURI(mimport.dir);
       Persist p = H2O.getPM().getPersistForURI(targetUri);
       InputStream is = p.open(targetUri.toString());
-      Model model = (Model)Keyed.readAll(new AutoBuffer(is));
+      final AutoBuffer ab = new AutoBuffer(is);
+      ab.sourceName = targetUri.toString();
+      Model model = (Model)Keyed.readAll(ab);
       s.models = new ModelSchemaV3[]{(ModelSchemaV3) SchemaServer.schema(version, model).fillFromImpl(model)};
     } catch (FSIOException e) {
       throw new H2OIllegalArgumentException("dir", "importModel", mimport.dir);
@@ -252,6 +254,24 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
       mexport.dir = "file".equals(targetUri.getScheme()) ? new File(targetUri).getCanonicalPath() : targetUri.toString();
     } catch (IOException e) {
       throw new H2OIllegalArgumentException("dir", "exportModel", e);
+    }
+    return mexport;
+  }
+
+  public ModelExportV3 exportModelDetails(int version, ModelExportV3 mexport){
+    Model model = getFromDKV("model_id", mexport.model_id.key());
+    try {
+      URI targetUri = FileUtils.getURI(mexport.dir); // Really file, not dir
+      Persist p = H2O.getPM().getPersistForURI(targetUri);
+      //Make model schema before exporting
+      ModelSchemaV3 modelSchema = (ModelSchemaV3)SchemaServer.schema(version, model).fillFromImpl(model);
+      //Output model details to JSON
+      OutputStream os = p.create(targetUri.toString(),mexport.force);
+      os.write(modelSchema.writeJSON(new AutoBuffer()).buf());
+      // Send back
+      mexport.dir = "file".equals(targetUri.getScheme()) ? new File(targetUri).getCanonicalPath() : targetUri.toString();
+    } catch (IOException e) {
+      throw new H2OIllegalArgumentException("dir", "exportModelDetails", e);
     }
     return mexport;
   }

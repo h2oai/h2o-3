@@ -4,10 +4,9 @@ import deepwater.backends.BackendModel;
 import deepwater.backends.BackendParams;
 import deepwater.backends.RuntimeOptions;
 import deepwater.datasets.ImageDataSet;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 import water.parser.BufferedString;
+import water.util.FileUtils;
 import water.util.StringUtils;
 
 import javax.imageio.ImageIO;
@@ -36,6 +35,9 @@ public class DeepWaterMXNetIntegrationTest extends DeepWaterAbstractIntegrationT
 
   @Override
   DeepWaterParameters.Backend getBackend() { return DeepWaterParameters.Backend.mxnet; }
+
+  @BeforeClass
+  public static void checkBackend() { Assume.assumeTrue(DeepWater.haveBackend(DeepWaterParameters.Backend.mxnet)); }
 
   public static String extractFile(String path, String file) throws IOException {
     InputStream in = DeepWaterMXNetIntegrationTest.class.getClassLoader().getResourceAsStream(Paths.get(path, file).toString());
@@ -67,7 +69,7 @@ public class DeepWaterMXNetIntegrationTest extends DeepWaterAbstractIntegrationT
       float[] mean = backend.loadMeanImage(_model, extractFile(path, "mean_224.nd"));
 
       // Turn the image into a vector of the correct size
-      File imgFile = find_test_file("smalldata/deepwater/imagenet/test2.jpg");
+      File imgFile = FileUtils.getFile("smalldata/deepwater/imagenet/test2.jpg");
       BufferedImage img = ImageIO.read(imgFile);
       BufferedImage scaledImg = new BufferedImage(w, h, img.getType());
       Graphics2D g2d = scaledImg.createGraphics();

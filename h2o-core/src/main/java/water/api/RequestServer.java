@@ -244,8 +244,11 @@ public class RequestServer extends HttpServlet {
       final String contentType = request.getContentType();
       Properties parms = new Properties();
       String postBody = null;
+      if (System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.cors") != null) {
+        response.setHeader("Access-Control-Allow-Origin", "*");
+      }
 
-      if ("application/json".equals(contentType)) {
+      if (contentType != null && contentType.startsWith(MIME_JSON)) {
         StringBuffer jb = new StringBuffer();
         String line = null;
         try {
@@ -303,7 +306,9 @@ public class RequestServer extends HttpServlet {
       resp.writeTo(response.getOutputStream());
 
     } catch (IOException e) {
+      e.printStackTrace();
       JettyHTTPD.setResponseStatus(response, 500);
+      Log.err(e);
       // Trying to send an error message or stack trace will produce another IOException...
 
     } finally {
@@ -470,7 +475,7 @@ public class RequestServer extends HttpServlet {
       // some special cases for which we return 400 because it's likely a problem with the client request:
       if (e instanceof IllegalArgumentException || e instanceof FileNotFoundException || e instanceof MalformedURLException)
         error._http_status = HttpResponseStatus.BAD_REQUEST.getCode();
-      Log.err("Caught exception: " + error.toString());
+      Log.err("Caught exception: " + error.toString() +";parms=" + parms);
       return serveError(error);
     }
   }
@@ -733,18 +738,17 @@ public class RequestServer extends HttpServlet {
 
       try {
         // Skip nodes that aren't healthy, since they are likely to cause the entire process to hang.
-        boolean healthy = (System.currentTimeMillis() - members[i]._last_heard_from) < HeartBeatThread.TIMEOUT;
-        if (healthy) {
+        if (members[i].isHealthy()) {
           GetLogsFromNode g = new GetLogsFromNode();
           g.nodeidx = i;
           g.doIt();
           bytes = g.bytes;
         } else {
-          bytes = "Node not healthy".getBytes();
+          bytes = StringUtils.bytesOf("Node not healthy");
         }
       }
       catch (Exception e) {
-        bytes = e.toString().getBytes();
+        bytes = StringUtils.toBytes(e);
       }
       perNodeZipByteArray[i] = bytes;
     }
@@ -758,7 +762,7 @@ public class RequestServer extends HttpServlet {
         bytes = g.bytes;
       }
       catch (Exception e) {
-        bytes = e.toString().getBytes();
+        bytes = StringUtils.toBytes(e);
       }
       clientNodeByteArray = bytes;
     }
@@ -769,7 +773,7 @@ public class RequestServer extends HttpServlet {
       finalZipByteArray = zipLogs(perNodeZipByteArray, clientNodeByteArray, outputFileStem);
     }
     catch (Exception e) {
-      finalZipByteArray = e.toString().getBytes();
+      finalZipByteArray = StringUtils.toBytes(e);
     }
 
     NanoResponse res = new NanoResponse(HTTP_OK, MIME_DEFAULT_BINARY, new ByteArrayInputStream(finalZipByteArray));

@@ -3,6 +3,8 @@ package hex.genmodel.easy;
 import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.algos.deepwater.DeepwaterMojoModel;
+import hex.genmodel.algos.word2vec.Word2VecMojoModel;
+import hex.genmodel.algos.word2vec.WordEmbeddingModel;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.exception.PredictNumberFormatException;
 import hex.genmodel.easy.exception.PredictUnknownCategoricalLevelException;
@@ -221,6 +223,8 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
         return predictRegression(data);
       case DimReduction:
         return predictDimReduction(data);
+      case WordEmbedding:
+        return predictWord2Vec(data);
 
       case Unknown:
         throw new PredictException("Unknown model category");
@@ -255,6 +259,35 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
 
     DimReductionModelPrediction p = new DimReductionModelPrediction();
     p.dimensions = preds;
+
+    return p;
+
+  }
+  /**
+   * Lookup word embeddings for a given word (or set of words).
+   * @param data RawData structure, every key with a String value will be translated to an embedding
+   * @return The prediction
+   * @throws PredictException if model is not a WordEmbedding model
+   */
+  public Word2VecPrediction predictWord2Vec(RowData data) throws PredictException {
+    validateModelCategory(ModelCategory.WordEmbedding);
+
+    if (! (m instanceof WordEmbeddingModel))
+      throw new PredictException("Model is not of the expected type, class = " + m.getClass().getSimpleName());
+    final WordEmbeddingModel weModel = (WordEmbeddingModel) m;
+    final int vecSize = weModel.getVecSize();
+
+    HashMap<String, float[]> embeddings = new HashMap<>(data.size());
+    for (String wordKey : data.keySet()) {
+      Object value = data.get(wordKey);
+      if (value instanceof String) {
+        String word = (String) value;
+        embeddings.put(wordKey, weModel.transform0(word, new float[vecSize]));
+      }
+    }
+
+    Word2VecPrediction p = new Word2VecPrediction();
+    p.wordEmbeddings = embeddings;
 
     return p;
 

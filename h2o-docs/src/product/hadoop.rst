@@ -47,7 +47,9 @@ Optionally specify this port using the ``-driverport`` option in the
 ``hadoop jar`` command (see "Hadoop Launch Parameters" below). This port
 is opened on the driver host (the host where you entered the
 ``hadoop jar`` command). By default, this port is chosen randomly by the
-operating system.
+operating system. If you don't want to specify an exact port but you
+still wish to restrict the port to a certain range of ports, you can use
+the option ``-driverportrange``.
 
 **Path 2: mapper to mapper**
 
@@ -139,6 +141,9 @@ Hadoop Launch Parameters
    driver.
 -  ``-driverport <port of mapper -> callback interface>``: Specify the
    port number for callback messages from the mapper to the driver.
+-  ``-driverportrange <range portX-portY of mapper-> callback interface>``:
+   Specify the allowed port range of the driver callback interface,
+   eg. 50000-55000.
 -  ``-network <IPv4Network1>[,<IPv4Network2>]``: Specify the IPv4
    network(s) to bind to the H2O nodes; multiple networks can be
    specified to force H2O to use the specified host in the Hadoop

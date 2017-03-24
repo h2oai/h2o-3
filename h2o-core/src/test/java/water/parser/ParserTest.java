@@ -9,9 +9,10 @@ import org.junit.Test;
 import water.*;
 import water.api.schemas3.ParseSetupV3;
 import water.fvec.*;
+import water.util.FileUtils;
 import water.util.Log;
+import water.util.StringUtils;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
@@ -34,7 +35,7 @@ public class ParserTest extends TestUtil {
     DKV.put(k,bv,fs);
     for( int i = 0; i < data.length; ++i ) {
       Key ck = bv.chunkKey(i);
-      DKV.put(ck, new Value(ck,new C1NChunk(data[i].getBytes())),fs);
+      DKV.put(ck, new Value(ck,new C1NChunk(StringUtils.bytesOf(data[i]))),fs);
     }
     fs.blockForPending();
     return k;
@@ -845,7 +846,7 @@ public class ParserTest extends TestUtil {
         }) {
           try {
             Log.info("Trying to parse " + f);
-            NFSFileVec nfs = NFSFileVec.make(find_test_file(f));
+            NFSFileVec nfs = TestUtil.makeNfsFileVec(f);
             Frame fr = ParseDataset.parse(Key.make(), new Key[]{nfs._key}, delete_on_done, true /*single quote*/, check_header);
             fr.delete();
           } catch (Throwable t) {
@@ -886,7 +887,7 @@ public class ParserTest extends TestUtil {
 
   @Test
   public void testParserRespectsSpecifiedColNum() {
-    Vec fv = NFSFileVec.make(find_test_file("smalldata/jira/runit_pubdev_3590_unexpected_column.csv"));
+    Vec fv = TestUtil.makeNfsFileVec("smalldata/jira/runit_pubdev_3590_unexpected_column.csv");
     Key fkey = Key.make("data4cols");
     try {
       Key[] keys = new Key[]{fv._key};

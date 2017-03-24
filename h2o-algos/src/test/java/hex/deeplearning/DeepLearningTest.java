@@ -1540,32 +1540,6 @@ public class DeepLearningTest extends TestUtil {
   }
 
   @Test
-  public void testMiniBatch5() {
-    Frame tfr = null;
-    DeepLearningModel dl = null;
-
-    try {
-      tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
-      DeepLearningParameters parms = new DeepLearningParameters();
-      parms._train = tfr._key;
-      parms._response_column = tfr.lastVecName();
-      parms._reproducible = true;
-      parms._hidden = new int[]{20,20};
-      parms._seed = 0xdecaf;
-      parms._mini_batch_size = 5;
-
-      dl = new DeepLearning(parms).trainModel().get();
-
-      Assert.assertEquals(15.594774935758249, dl._output._training_metrics._MSE, 1e-6);
-
-    } finally {
-      if (tfr != null) tfr.delete();
-      if (dl != null) dl.deleteCrossValidationModels();
-      if (dl != null) dl.delete();
-    }
-  }
-
-  @Test
   public void testMiniBatch50() {
     Frame tfr = null;
     DeepLearningModel dl = null;
@@ -1582,7 +1556,7 @@ public class DeepLearningTest extends TestUtil {
 
       dl = new DeepLearning(parms).trainModel().get();
 
-      Assert.assertEquals(22.555132824953393,dl._output._training_metrics._MSE,1e-6);
+      Assert.assertEquals(12.938076268040659,dl._output._training_metrics._MSE,1e-6);
 
     } finally {
       if (tfr != null) tfr.delete();
@@ -2135,7 +2109,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel model = null;
     Scope.enter();
     try {
-      File file = find_test_file("bigdata/laptop/mnist/train.csv.gz");
+      File file = FileUtils.locateFile("bigdata/laptop/mnist/train.csv.gz");
       if (file != null) {
         NFSFileVec trainfv = NFSFileVec.make(file);
         train = ParseDataset.parse(Key.make(), trainfv._key);

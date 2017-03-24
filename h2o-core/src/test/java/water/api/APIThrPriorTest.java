@@ -176,6 +176,7 @@ class Bogus extends ModelBuilder<BogusModel,BogusModel.BogusParameters,BogusMode
   volatile int _state;
   int _driver_priority = -1;
   @Override public ModelCategory[] can_build() { return null; }
+  @Override public boolean isSupervised() { return false; }
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
   public Bogus( BogusModel.BogusParameters parms ) { super(parms); init(false); }
   @Override protected Driver trainModelImpl() { return new BogusDriver(); }

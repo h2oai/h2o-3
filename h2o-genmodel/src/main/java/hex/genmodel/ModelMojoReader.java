@@ -1,8 +1,10 @@
 package hex.genmodel;
 
 import hex.genmodel.utils.ParseUtils;
+import hex.genmodel.utils.StringEscapeUtils;
 
 import java.io.BufferedReader;
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,7 +30,12 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     ModelMojoReader mmr = ModelMojoFactory.getMojoReader(algo);
     mmr._lkv = info;
     mmr._reader = reader;
-    mmr.readAll();
+    try {
+      mmr.readAll();
+    } finally {
+      if (mmr instanceof Closeable)
+        ((Closeable) mmr).close();
+    }
     return mmr._model;
   }
 
@@ -83,17 +90,31 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     return _reader.getBinaryFile(name);
   }
 
+  protected boolean exists(String name) {
+    return _reader.exists(name);
+  }
+
   /**
    * Retrieve text previously saved using `startWritingTextFile` + `writeln` as an array of lines. Each line is
    * trimmed to remove the leading and trailing whitespace.
    */
   protected Iterable<String> readtext(String name) throws IOException {
+    return readtext(name, false);
+  }
+
+  /**
+   * Retrieve text previously saved using `startWritingTextFile` + `writeln` as an array of lines. Each line is
+   * trimmed to remove the leading and trailing whitespace. Removes escaping of the new line characters in enabled.
+   */
+  protected Iterable<String> readtext(String name, boolean unescapeNewlines) throws IOException {
     BufferedReader br = _reader.getTextFile(name);
     String line;
     ArrayList<String> res = new ArrayList<>(50);
     while (true) {
       line = br.readLine();
       if (line == null) break;
+      if (unescapeNewlines)
+        line = StringEscapeUtils.unescapeNewlines(line);
       res.add(line.trim());
     }
     return res;

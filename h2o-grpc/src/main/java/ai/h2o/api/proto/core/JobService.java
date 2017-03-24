@@ -1,5 +1,6 @@
 package ai.h2o.api.proto.core;
 
+import ai.h2o.api.GrpcUtils;
 import io.grpc.stub.StreamObserver;
 import water.*;
 
@@ -17,7 +18,8 @@ public class JobService extends JobGrpc.JobImplBase {
       responseObserver.onNext(fillJobInfo(job));
       responseObserver.onCompleted();
     } catch (Throwable ex) {
-      GrpcCommon.sendError(ex, responseObserver, JobInfo.class);
+      String jobId = request.getJobId();
+      GrpcUtils.sendError(ex, responseObserver, JobInfo.newBuilder().setJobId(jobId).setStatus(FAILED));
     }
   }
 
@@ -29,7 +31,8 @@ public class JobService extends JobGrpc.JobImplBase {
       responseObserver.onNext(fillJobInfo(job));
       responseObserver.onCompleted();
     } catch (Throwable ex) {
-      GrpcCommon.sendError(ex, responseObserver, JobInfo.class);
+      String jobId = request.getJobId();
+      GrpcUtils.sendError(ex, responseObserver, JobInfo.newBuilder().setJobId(jobId).setStatus(FAILED));
     }
   }
 
@@ -55,29 +58,36 @@ public class JobService extends JobGrpc.JobImplBase {
 
 
   public static JobInfo fillJobInfo(water.Job job) {
+    float progress = job.progress();
+
     JobInfo.Builder jb = JobInfo.newBuilder();
-    jb.setJobId(job._key.toString())
-      .setProgress(job.progress())
-      .setMessage(job.progress_msg())
-      .setDuration(job.msec());
+    jb.setJobId(job._key.toString());
+    jb.setDuration(job.msec());
+
+    String message = job.progress_msg();
+    if (message != null)
+      jb.setMessage(message);
 
     if (job.isRunning()) {
       jb.setStatus(job.stop_requested()? STOPPING : RUNNING);
     } else {
       jb.setStatus(job.stop_requested()? CANCELLED : DONE);
     }
+    if (jb.getStatus() == RUNNING && progress >= 1) progress = 0.999f;
+    if (jb.getStatus() == DONE && progress < 1) progress = 1;
+    jb.setProgress(progress);
 
     Throwable ex = job.ex();
     if (ex != null) {
       jb.setStatus(FAILED)
-        .setError(GrpcCommon.buildError(ex, 0));
+        .setError(GrpcUtils.buildError(ex, 0));
     }
 
     if (job._result != null && !job.readyForView())
       jb.setTargetId(job._result.toString());
 
     String ttype = TypeMap.theFreezable(job._typeid).getClass().getSimpleName();
-    jb.setTargetType(JobInfo.TargetType.valueOf(ttype));
+    jb.setTargetType(JobInfo.TargetType.valueOf(ttype.toUpperCase()));
 
     return jb.build();
   }
