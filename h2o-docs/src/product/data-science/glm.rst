@@ -504,8 +504,146 @@ In addition to IRLSM and L-BFGS, H2O's GLM includes options for specifying Coord
 
 Both of the above method are explained in the `glmnet paper <https://core.ac.uk/download/pdf/6287975.pdf>`__. 
 
-Modifying or Creating Custom GLM Model
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Coefficients Table
+~~~~~~~~~~~~~~~~~~
+
+A Coefficients Table is outputted in a GLM model. This table provides the following information: Column names, Coefficients, Standard Error, z-value, p-value, and Standardized Coefficients.
+
+- Coefficients are the predictor weights (i.e. the actual model used for prediction) in a GLM model. 
+
+- Standard error, z-values, and p-values are classical statistical measures of model quality. p-values are essentially hypothesis tests on the values of each coefficient. A high p-value means that a coefficient is unreliable (insiginificant) while a low p-value suggest that the coefficient is statistically significant.
+
+- The standardized coefficients are returned if the ``standardize`` option is enabled (which is the default). These are the predictor weights of the standardized data and are included only for informational purposes (e.g. to compare relative variable importance). In this case, the "normal" coefficients are obtained from the standardized coefficients by reversing the data standardization process (de-scaled, with the intercept adjusted by an added offset) so that they can be applied to data in its original form (i.e.  no standardization prior to scoring). **Note**: These are not the same as coefficients of a model built on non-standardized data. 
+
+Extracting Coefficients Table Information
+'''''''''''''''''''''''''''''''''''''''''
+
+You can extract the columns in the Coefficients Table by specifying ``names``, ``coefficients``, ``std_error``, ``z_value``, ``p_value``, ``standardized_coefficients`` in a retrieve/print statement. (Refer to the example that follows.) In addition, H2O provides the following built-in methods for retrieving standard and non-standard coefficients:
+
+- ``coef()``: Coefficients that can be applied to non-standardized data
+- ``coef_norm()``: Coefficients that can be fitted on the standardized data (requires ``standardized=TRUE``, which is the default)
+
+Example
+'''''''
+
+.. example-code::
+   .. code-block:: r
+
+    library(h2o)
+    h2o.init(nthreads=-1)
+
+    df <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv")
+    df$CAPSULE <- as.factor(df$CAPSULE)
+    df$RACE <- as.factor(df$RACE)
+    df$DCAPS <- as.factor(df$DCAPS)
+    df$DPROS <- as.factor(df$DPROS)
+
+    predictors <- c("AGE", "RACE", "VOL", "GLEASON")
+    response <- "CAPSULE"
+
+    prostate.glm <- h2o.glm(family= "binomial", x= predictors, y=response, training_frame=df, lambda = 0, compute_p_values = TRUE, seed =1234)
+
+    # Coefficients that can be applied to the non-standardized data
+    h2o.coef(prostate.glm)
+      Intercept      RACE.1      RACE.2         AGE         VOL     GLEASON 
+    -6.67515539 -0.44278752 -0.58992326 -0.01788870 -0.01278335  1.25035939
+
+    # Coefficients fitted on the standardized data (requires standardize=TRUE, which is on by default)
+    h2o.coef_norm(prostate.glm)
+       Intercept      RACE.1      RACE.2         AGE         VOL     GLEASON 
+    -0.07610006 -0.44278752 -0.58992326 -0.11676080 -0.23454402  1.36533415 
+
+    # Print the coefficients table
+    prostate.glm@model$coefficients_table
+    Coefficients: glm coefficients
+          names coefficients  std_error   z_value  p_value
+    1 Intercept    -6.675155 115.694554 -0.057696 0.953990
+    2    RACE.1    -0.442788   1.323970 -0.334439 0.738048
+    3    RACE.2    -0.589923   1.373172 -0.429606 0.667482
+    4       AGE    -0.017889   0.018694 -0.956943 0.338596
+    5       VOL    -0.012783   0.007510 -1.702224 0.088713
+    6   GLEASON     1.250359   0.155972  8.016568 0.000000
+      standardized_coefficients
+    1                 -0.076100
+    2                 -0.442788
+    3                 -0.589923
+    4                 -0.116761
+    5                 -0.234544
+    6                  1.365334
+
+    # Print the standard error
+    prostate.glm@model$coefficients_table$std_error
+    [1] 1.156946e+02 1.323970e+00 1.373172e+00 1.869358e-02 7.509794e-03
+    [6] 1.559719e-01
+
+    # Print the p values
+    prostate.glm@model$coefficients_table$p_value
+    [1] 9.539905e-01 7.380481e-01 6.674821e-01 3.385959e-01 8.871347e-02
+    [6] 1.110223e-15
+
+    # Print the z values
+    prostate.glm@model$coefficients_table$z_value
+    [1] -0.05769637 -0.33443925 -0.42960621 -0.95694333 -1.70222353  8.01656767
+
+    # Retrieve a graphical plot of the standardized coefficient magnitudes
+    h2o.std_coef_plot(prostate.glm)
+
+   .. code-block:: python
+
+    import h2o
+    h2o.init()
+    from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+
+    prostate = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv")
+    prostate['CAPSULE'] = prostate['CAPSULE'].asfactor()
+    prostate['RACE'] = prostate['RACE'].asfactor()
+    prostate['DCAPS'] = prostate['DCAPS'].asfactor()
+    prostate['DPROS'] = prostate['DPROS'].asfactor()
+
+    predictors = ["AGE", "RACE", "VOL", "GLEASON"]
+    response_col = "CAPSULE"
+
+    glm_model = H2OGeneralizedLinearEstimator(family= "binomial", lambda_ = 0, compute_p_values = True, seed =1234)
+    glm_model.train(predictors, response_col, training_frame= prostate)
+    
+    # Coefficients that can be applied to the non-standardized data.
+    print(glm_model.coef())
+    {u'GLEASON': 1.2503593867263176, u'VOL': -0.012783348665664449, u'AGE': -0.017888697161812357, u'Intercept': -6.6751553940827195, u'RACE.2': -0.5899232636956354, u'RACE.1': -0.44278751680880707}
+
+    # Coefficients fitted on the standardized data (requires standardize = True, which is on by default)
+    print(glm_model.coef_norm())
+    {u'GLEASON': 1.365334151581163, u'VOL': -0.2345440232267344, u'AGE': -0.11676080128780757, u'Intercept': -0.07610006436753876, u'RACE.2': -0.5899232636956354, u'RACE.1': -0.44278751680880707}
+
+    # Print the Coefficients table
+    glm_model._model_json['output']['coefficients_table']
+    Coefficients: glm coefficients
+    names      coefficients    std_error    z_value    p_value      standardized_coefficients
+    ---------  --------------  -----------  ---------  -----------  ---------------------------
+    Intercept  -6.67516        1.93176      -3.45548   0.000549318  -0.0761001
+    RACE.1     -0.442788       1.32423      -0.334373  0.738098     -0.442788
+    RACE.2     -0.589923       1.37347      -0.429514  0.667549     -0.589923
+    AGE        -0.0178887      0.0187019    -0.956516  0.338812     -0.116761
+    VOL        -0.0127833      0.00751435   -1.70119   0.0889072    -0.234544
+    GLEASON    1.25036         0.156156     8.0071     1.22125e-15  1.36533
+
+    # Print the Standard error
+    print(glm_model._model_json['output']['coefficients_table']['std_error'])
+    [1.9317603626604352, 1.3242308316851008, 1.3734657932878116, 0.01870193337051072, 0.007514353657915356, 0.15615627100850296]
+
+    # Print the p values
+    print(glm_model._model_json['output']['coefficients_table']['p_value'])
+    [0.0005493180609459358, 0.73809783692024, 0.6675489550762566, 0.33881164088847204, 0.0889071809658667, 1.2212453270876722e-15]
+
+    # Print the z values
+    print(glm_model._model_json['output']['coefficients_table']['z_value'])
+    [-3.4554779791058787, -0.3343733631736653, -0.42951434726559384, -0.9565159284557886, -1.7011907141473064, 8.007103260414265]
+
+    # Retrieve a graphical plot of the standardized coefficient magnitudes
+    glm_model.std_coef_plot()
+
+
+Modifying or Creating a Custom GLM Model
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In R and python, the makeGLMModel call can be used to create an H2O model from given coefficients. It needs a source GLM model trained on the same dataset to extract the dataset information. To make a custom GLM model from R or python:
 

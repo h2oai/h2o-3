@@ -106,7 +106,7 @@ These are available in the Bluemix/Softlayer management console.
     </configuration>
 
 Google Cloud Storage Connector for Hadoop & Spark
-~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **Required Library**
 
