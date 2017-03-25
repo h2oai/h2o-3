@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import org.junit.*;
+import static org.junit.Assert.*;
 import water.Job;
 import water.Key;
 import water.Scope;
@@ -58,7 +59,11 @@ public class ParseFolderTestBig extends TestUtil {
     try {
       File f = FileUtils.getFile(fname);
       NFSFileVec nfs = NFSFileVec.make(f);
-      Job<Frame> job = ParseDataset.parse(Key.make("PUBDEV4026.hex"), new Key[]{nfs._key}, true, ParseSetup.guessSetup(new Key[]{nfs._key}, false, ParseSetup.GUESS_HEADER), false)._job;
+      final ParseSetup globalSetup = ParseSetup.guessSetup(new Key[]{nfs._key}, false, ParseSetup.GUESS_HEADER);
+      ParseWriter.ParseErr[] errors = globalSetup._errs;
+      
+      assertTrue("Got errors: " + Arrays.toString(errors), errors.length == 0);
+      Job<Frame> job = ParseDataset.parse(Key.make("PUBDEV4026.hex"), new Key[]{nfs._key}, true, globalSetup, false)._job;
       while (job.progress() < 1.0) {
         System.out.print(((int) (job.progress() * 1000.0)) / 10.0 + "% ");
         try {
@@ -68,8 +73,8 @@ public class ParseFolderTestBig extends TestUtil {
       System.out.println();
       Frame k1 = Scope.track(job.get());
       System.out.println(k1.toString());
-    } catch (IOException ioe) {
-      Assert.fail("File not found: " + fname + " - " + ioe.getMessage());
+    } catch (IOException ignore) {
+      System.out.println("\nFile not found: " + fname + " - not running the test.");
     } finally {
       Scope.exit();
     }
