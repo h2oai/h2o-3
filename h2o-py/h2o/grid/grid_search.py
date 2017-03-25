@@ -230,25 +230,25 @@ class H2OGridSearch(backwards_compatible()):
             return
 
         grid.poll()
-        if rest_ver is not None:
-            grid_json = h2o.api("GET /99/Grids/%s" % (grid.dest_key))
 
-            error_index = 0
-            if len(grid_json["failure_details"]) > 0:
-                print("Errors/Warnings building gridsearch model\n")
+        grid_json = h2o.api("GET /99/Grids/%s" % (grid.dest_key))
+        failure_messages_stacks = ""
+        error_index = 0
+        if len(grid_json["failure_details"]) > 0:
+            print("Errors/Warnings building gridsearch model\n")
+# will raise error if no grid model is returned, store error messages here
 
-                for error_message in grid_json["failure_details"]:
-                    if isinstance(grid_json["failed_params"][error_index], dict):
-                        for h_name in grid_json['hyper_names']:
-                            print("Hyper-parameter: {0}, {1}".format(h_name,
-                                                                     grid_json['failed_params'][error_index][h_name]))
+            for error_message in grid_json["failure_details"]:
+                if isinstance(grid_json["failed_params"][error_index], dict):
+                    for h_name in grid_json['hyper_names']:
+                        print("Hyper-parameter: {0}, {1}".format(h_name,
+                                                                 grid_json['failed_params'][error_index][h_name]))
 
-                    if len(grid_json["failure_stack_traces"]) > error_index:
-                        print("failure_details: {0}\nfailure_stack_traces: "
-                              "{1}\n".format(error_message, grid_json['failure_stack_traces'][error_index]))
-                    error_index += 1
-        else:
-            grid_json = h2o.api("GET /99/Grids/%s" % grid.dest_key)
+                if len(grid_json["failure_stack_traces"]) > error_index:
+                    print("failure_details: {0}\nfailure_stack_traces: "
+                          "{1}\n".format(error_message, grid_json['failure_stack_traces'][error_index]))
+                    failure_messages_stacks += error_message+'\n'
+                error_index += 1
 
         self.models = [h2o.get_model(key['name']) for key in grid_json['model_ids']]
 
@@ -259,7 +259,10 @@ class H2OGridSearch(backwards_compatible()):
                                        (rest_ver or 3, grid_json['model_ids'][0]['name']))['models'][0]
             self._resolve_grid(grid.dest_key, grid_json, first_model_json)
         else:
-            raise ValueError("Gridsearch returns no model due to bad parameter values or other reasons....")
+            if len(failure_messages_stacks)>0:
+                raise ValueError(failure_messages_stacks)
+            else:
+                raise ValueError("Gridsearch returns no model due to bad parameter values or other reasons....")
 
 
     def _resolve_grid(self, grid_id, grid_json, first_model_json):
