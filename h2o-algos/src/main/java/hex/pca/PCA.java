@@ -71,7 +71,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
               + ") - try reducing the number of columns and/or the number of categorical factors.";
       error("_train", msg);
     }
-    if (mem_usage > max_mem) {  // choose the most memory efficient one
+
+    if (mem_usage > mem_usage_w) {  // choose the most memory efficient one
       _wideDataset = true;   // set to true if wide dataset is detected
     }
   }
@@ -250,7 +251,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
                   "TRUE/True/true/... depending on the client language.");
         }
 
-        if (_wideDataset && (!_parms._impute_missing) && tranRebalanced.hasNAs()) { // remove NAs rows
+        if ((!_parms._impute_missing) && tranRebalanced.hasNAs()) { // remove NAs rows
           tinfo = new DataInfo(_train, _valid, 0, _parms._use_all_factor_levels, _parms._transform,
                   DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */
                   _parms._impute_missing, /* missingBucket */ false, /* weights */ false,
@@ -260,6 +261,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           DKV.put(tranRebalanced._key, tranRebalanced);
           _train = Rapids.exec(String.format("(na.omit %s)", tranRebalanced._key)).getFrame(); // remove NA rows
           DKV.remove(tranRebalanced._key);
+
+          checkMemoryFootPrint();   // check memory footprint again to enable wideDataSet
         }
 
         dinfo = new DataInfo(_train, _valid, 0, _parms._use_all_factor_levels, _parms._transform,
@@ -267,6 +270,13 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
                 _parms._impute_missing, /* missingBucket */ false, /* weights */ false,
                   /* offset */ false, /* fold */ false, /* intercept */ false);
         DKV.put(dinfo._key, dinfo);
+
+        if (!_parms._impute_missing && tranRebalanced.hasNAs()) {
+          // fixed the std and mean of dinfo to that of the frame before removing NA rows
+          dinfo._normMul = tinfo._normMul;
+          dinfo._numMeans = tinfo._numMeans;
+          dinfo._normSub = tinfo._normSub;
+        }
 
         if(_parms._pca_method == PCAParameters.Method.GramSVD) {
           // Calculate and save Gram matrix of training data
@@ -276,12 +286,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           GramTask gtsk = null;
 
           if (_wideDataset) {
-            if (!_parms._impute_missing && tranRebalanced.hasNAs()) {
-              // fixed the std and mean of dinfo to that of the frame before removing NA rows
-              dinfo._normMul = tinfo._normMul;
-              dinfo._numMeans = tinfo._numMeans;
-              dinfo._normSub = tinfo._normSub;
-            }
             ogtsk = new OuterGramTask(_job._key, dinfo).doAll(dinfo._adaptedFrame);
 
             gram = ogtsk._gram;

@@ -1407,7 +1407,7 @@ def assert_H2OTwoDimTable_equal(table1, table2, col_header_list, tolerance=1e-6,
                         val1 = table1.cell_values[name_ind1][indC]
                         val2 = table2.cell_values[name_ind2][indC]*flip_sign_vec[indC]
 
-                        if (type(val1) == float) and (type(val2) == float):
+                        if isinstance(val1, float) and isinstance(val2, float):
                             compare_val_ratio = abs(val1-val2)/max(1, abs(val1), abs(val2))
                             if compare_val_ratio > tolerance:
                                 print("Table entry difference is {0}".format(compare_val_ratio))
@@ -1434,11 +1434,15 @@ def generate_for_indices(list_size, check_all, num_per_dim, start_val):
 
 def generate_sign_vec(table1, table2):
     sign_vec = [1]*len(table1.cell_values[0])
-    for indC in range(1, len(table2.cell_values[0])):
-        if (np.sign(table1.cell_values[0][indC])!=np.sign(table2.cell_values[0][indC])):
-            sign_vec[indC] = -1
-        else:
-            sign_vec[indC] = 1
+    for indC in range(1, len(table2.cell_values[0])):   # may need to look at other elements since some may be zero
+        for indR in range(0, len(table2.cell_values)):
+            if (abs(table1.cell_values[indR][indC]) > 0) and (abs(table2.cell_values[indR][indC]) > 0):
+                sign_vec[indC] = int(np.sign(table1.cell_values[indR][indC]) * np.sign(table2.cell_values[indR][indC]))
+                # if (np.sign(table1.cell_values[indR][indC])!=np.sign(table2.cell_values[indR][indC])):
+                #     sign_vec[indC] = -1
+                # else:
+                #     sign_vec[indC] = 1
+                break       # found what we need.  Goto next column
 
     return sign_vec
 
