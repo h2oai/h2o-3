@@ -177,7 +177,7 @@ public class DeepWaterParameters extends Model.Parameters {
    * why the momentum is best ramped up slowly.
    * This parameter is only active if adaptive learning rate is disabled.
    */
-  public double _learning_rate = .005;
+  public double _learning_rate = 1e-3;
 
   /**
    * Learning rate annealing reduces the learning rate to "freeze" into
