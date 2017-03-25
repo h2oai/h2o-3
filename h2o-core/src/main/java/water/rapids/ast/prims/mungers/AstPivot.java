@@ -8,6 +8,7 @@ import water.rapids.ast.AstBuiltin;
 import water.rapids.vals.ValFrame;
 import water.util.VecUtils;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import java.util.Arrays;
 
 public class AstPivot extends AstBuiltin<AstPivot> {
@@ -52,7 +53,7 @@ public class AstPivot extends AstBuiltin<AstPivot> {
       header = (String[]) ArrayUtils.addAll(new String[]{index}, Arrays.toString(classes).split("[\\[\\]]")[1].split(", "));
     } else if (fr.vec(colIdx).isTime()) {
       header = new String[nClass];
-      for (int i=0;i<nClass;i++) header[i] = (new DateTime(classes[i])).toString();
+      for (int i=0;i<nClass;i++) header[i] = (new DateTime(classes[i], DateTimeZone.UTC)).toString();
     } else {
       header = (String[]) ArrayUtils.addAll(new String[]{index}, fr.vec(colIdx).domain());
     }
