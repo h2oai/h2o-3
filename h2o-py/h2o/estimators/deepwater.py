@@ -424,7 +424,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
         """
         Learning rate (higher => less stable, lower => slower convergence).
 
-        Type: ``float``  (default: ``0.005``).
+        Type: ``float``  (default: ``0.001``).
         """
         return self._parms.get("learning_rate")
 
