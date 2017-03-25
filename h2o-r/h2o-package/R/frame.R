@@ -2351,7 +2351,7 @@ h2o.cor <- function(x, y=NULL,na.rm = FALSE, use){
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(path = prosPath)
-#' distance(prostate.hex[11:30,], prostate.hex[1:10,], "cosine")
+#' h2o.distance(prostate.hex[11:30,], prostate.hex[1:10,], "cosine")
 #' }
 #' @export
 h2o.distance <- function(x, y, measure){
