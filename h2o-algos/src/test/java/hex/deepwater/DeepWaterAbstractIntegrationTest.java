@@ -93,7 +93,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
   }
 
   @Test public void trainSamplesPerIteration0() { trainSamplesPerIteration(0,3); }
-  @Test public void trainSamplesPerIteration_auto() { trainSamplesPerIteration(-2,2); }
+  @Test public void trainSamplesPerIteration_auto() { trainSamplesPerIteration(-2,1); }
   @Test public void trainSamplesPerIteration_neg1() { trainSamplesPerIteration(-1,3); }
   @Test public void trainSamplesPerIteration_32() { trainSamplesPerIteration(32,26); }
   @Test public void trainSamplesPerIteration_1000() { trainSamplesPerIteration(1000,1); }
@@ -708,6 +708,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._max_after_balance_size = 2f;
       p._class_sampling_factors = new float[]{3,5};
       p._mini_batch_size = 16;
+      p._learning_rate = 0.005;
       DeepWater j = new DeepWater(p);
       m = j.trainModel().get();
       Assert.assertTrue((m._output._training_metrics).auc_obj()._auc > 0.85);
@@ -809,6 +810,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
         p._backend = getBackend();
         p._train = tr._key;
         p._valid = va._key;
+        p._learning_rate = 5e-3;
         if(getBackend() != DeepWaterParameters.Backend.tensorflow) {
           p._hidden = new int[]{500, 500};
         }
@@ -972,7 +974,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._ignored_columns = new String[]{"ID"};
       p._backend = getBackend();
       p._seed = 12345;
-      p._epochs = 5;
+      p._epochs = 50;
       p._categorical_encoding = categoricalEncodingScheme;
       p._standardize = standardize;
       if(getBackend() != DeepWaterParameters.Backend.tensorflow) {
