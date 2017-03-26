@@ -716,6 +716,7 @@ public final class AutoBuffer {
       // just get twice what is currently needed but not more then max array size (2G)
       // Be careful not to overflow because of integer math!
       int newLen = (int) Math.min(1L << (water.util.MathUtils.log2(needed)+1), Integer.MAX_VALUE - 1L);
+      newLen = Math.min(Integer.MAX_VALUE-100, newLen); // hard stop just below 32bit limit
       int oldpos = _bb.position();
       _bb = ByteBuffer.wrap(MemoryManager.arrayCopyOfRange(ary,0,newLen),oldpos,newLen-oldpos)
           .order(ByteOrder.nativeOrder());

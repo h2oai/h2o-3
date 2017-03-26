@@ -84,7 +84,6 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._learning_rate = 1e-3;
       p._epochs = 3;
       p._train_samples_per_iteration = samples;
-      p._mini_batch_size = 16;
       m = new DeepWater(p).trainModel().get();
       Assert.assertEquals(expected,m.iterations);
     } finally {
@@ -94,7 +93,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
   }
 
   @Test public void trainSamplesPerIteration0() { trainSamplesPerIteration(0,3); }
-  @Test public void trainSamplesPerIteration_auto() { trainSamplesPerIteration(-2,2); }
+  @Test public void trainSamplesPerIteration_auto() { trainSamplesPerIteration(-2,1); }
   @Test public void trainSamplesPerIteration_neg1() { trainSamplesPerIteration(-1,3); }
   @Test public void trainSamplesPerIteration_32() { trainSamplesPerIteration(32,26); }
   @Test public void trainSamplesPerIteration_1000() { trainSamplesPerIteration(1000,1); }
@@ -155,18 +154,16 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     }
   }
 
-  @Ignore // doesn't converge even on MXNet
-  @Test public void convergenceInceptionColor() { checkConvergence(3, DeepWaterParameters.Network.inception_bn, 30); }
-  @Ignore // doesn't converge even on MXNet
-  @Test public void convergenceInceptionGrayScale() { checkConvergence(1, DeepWaterParameters.Network.inception_bn, 30); }
+  @Test public void convergenceInceptionColor() { checkConvergence(3, inception_bn, 500); }
+  @Test public void convergenceInceptionGrayScale() { checkConvergence(1, inception_bn, 500); }
 
   @Ignore //too slow
   @Test public void convergenceGoogleNetColor() { checkConvergence(3, DeepWaterParameters.Network.googlenet, 150); }
   @Ignore //too slow
   @Test public void convergenceGoogleNetGrayScale() { checkConvergence(1, DeepWaterParameters.Network.googlenet, 100); }
 
-  @Test public void convergenceLenetColor() { checkConvergence(3, lenet, 125); }
-  @Test public void convergenceLenetGrayScale() { checkConvergence(1, lenet, 50); }
+  @Test public void convergenceLenetColor() { checkConvergence(3, lenet, 300); }
+  @Test public void convergenceLenetGrayScale() { checkConvergence(1, lenet, 150); }
 
   @Ignore
   @Test public void convergenceVGGColor() { checkConvergence(3, DeepWaterParameters.Network.vgg, 50); }
@@ -174,14 +171,14 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
   @Test public void convergenceVGGGrayScale() { checkConvergence(1, DeepWaterParameters.Network.vgg, 50); }
 
   @Ignore
-  @Test public void convergenceResnetColor() { checkConvergence(3, DeepWaterParameters.Network.resnet, 50); }
+  @Test public void convergenceResnetColor() { checkConvergence(3, resnet, 50); }
   @Ignore
-  @Test public void convergenceResnetGrayScale() { checkConvergence(1, DeepWaterParameters.Network.resnet, 50); }
+  @Test public void convergenceResnetGrayScale() { checkConvergence(1, resnet, 50); }
 
   @Ignore
-  @Test public void convergenceAlexnetColor() { checkConvergence(3, DeepWaterParameters.Network.alexnet, 50); }
+  @Test public void convergenceAlexnetColor() { checkConvergence(3, alexnet, 50); }
   @Ignore
-  @Test public void convergenceAlexnetGrayScale() { checkConvergence(1, DeepWaterParameters.Network.alexnet, 50); }
+  @Test public void convergenceAlexnetGrayScale() { checkConvergence(1, alexnet, 50); }
 
   //FIXME
   @Ignore
@@ -250,11 +247,11 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     }
   }
 
-  @Test public void settingModelInfoAlexnet() { settingModelInfo(DeepWaterParameters.Network.alexnet); }
+  @Test public void settingModelInfoAlexnet() { settingModelInfo(alexnet); }
   @Test public void settingModelInfoLenet() { settingModelInfo(lenet); }
   @Test public void settingModelInfoVGG() { settingModelInfo(DeepWaterParameters.Network.vgg); }
-  @Test public void settingModelInfoInception() { settingModelInfo(DeepWaterParameters.Network.inception_bn); }
-  @Test public void settingModelInfoResnet() { settingModelInfo(DeepWaterParameters.Network.resnet); }
+  @Test public void settingModelInfoInception() { settingModelInfo(inception_bn); }
+  @Test public void settingModelInfoResnet() { settingModelInfo(resnet); }
 
   void settingModelInfo(DeepWaterParameters.Network network) {
     DeepWaterModel m1 = null;
@@ -346,11 +343,11 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       deepWaterLoadSaveTest(network);
     }
   }
-  @Test public void deepWaterLoadSaveTestAlexnet() { deepWaterLoadSaveTest(DeepWaterParameters.Network.alexnet); }
+  @Test public void deepWaterLoadSaveTestAlexnet() { deepWaterLoadSaveTest(alexnet); }
   @Test public void deepWaterLoadSaveTestLenet() { deepWaterLoadSaveTest(lenet); }
   @Test public void deepWaterLoadSaveTestVGG() { deepWaterLoadSaveTest(DeepWaterParameters.Network.vgg); }
-  @Test public void deepWaterLoadSaveTestInception() { deepWaterLoadSaveTest(DeepWaterParameters.Network.inception_bn); }
-  @Test public void deepWaterLoadSaveTestResnet() { deepWaterLoadSaveTest(DeepWaterParameters.Network.resnet); }
+  @Test public void deepWaterLoadSaveTestInception() { deepWaterLoadSaveTest(inception_bn); }
+  @Test public void deepWaterLoadSaveTestResnet() { deepWaterLoadSaveTest(resnet); }
 
   void deepWaterLoadSaveTest(DeepWaterParameters.Network network) {
     DeepWaterModel m = null;
@@ -361,7 +358,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
       p._response_column = "C2";
       p._network = network;
-      p._mini_batch_size = 1;
+      p._mini_batch_size = 2;
       p._epochs = 0.01;
       p._seed = 1234;
       p._score_training_samples = 0;
@@ -458,11 +455,11 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     }
   }
 
-  @Test public void restoreStateAlexnet() { restoreState(DeepWaterParameters.Network.alexnet); }
+  @Test public void restoreStateAlexnet() { restoreState(alexnet); }
   @Test public void restoreStateLenet() { restoreState(lenet); }
-  @Test public void restoreStateVGG() { restoreState(DeepWaterParameters.Network.vgg); }
-  @Test public void restoreStateInception() { restoreState(DeepWaterParameters.Network.inception_bn); }
-  @Test public void restoreStateResnet() { restoreState(DeepWaterParameters.Network.resnet); }
+  @Test public void restoreStateVGG() { restoreState(vgg); }
+  @Test public void restoreStateInception() { restoreState(inception_bn); }
+  @Test public void restoreStateResnet() { restoreState(resnet); }
 
   public void restoreState(DeepWaterParameters.Network network) {
     DeepWaterModel m1 = null;
@@ -507,8 +504,9 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       ModelMetricsMultinomial mm2 = ModelMetricsMultinomial.make(pred, tr.vec(p._response_column));
       Log.info("Restored LL: " + mm2.logloss());
 
-      Assert.assertEquals(((ModelMetricsMultinomial) m1._output._training_metrics).logloss(), mm1.logloss(), 1e-5*mm1.logloss()); //make sure scoring is self-consistent
-      Assert.assertEquals(mm1.logloss(), mm2.logloss(), 1e-5*mm1.logloss());
+      double precision = 1e-5;
+      Assert.assertEquals(((ModelMetricsMultinomial) m1._output._training_metrics).logloss(), mm1.logloss(), precision*mm1.logloss()); //make sure scoring is self-consistent
+      Assert.assertEquals(mm1.logloss(), mm2.logloss(), precision*mm1.logloss());
 
     } finally {
       if (m1 !=null) m1.delete();
@@ -555,6 +553,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       Log.info("Iteration: " + count);
       backend.saveParam(m, f.getAbsolutePath());
     }
+    backend.deleteSavedParam(f.getAbsolutePath());
   }
 
   @Test
@@ -678,6 +677,9 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       DKV.put(tr);
       p._seed = 1234;
       p._epochs = 1000;
+//      p._epochs = 2000;
+//      p._learning_rate = 0.005; //5e-7;
+//      p._momentum_start = 0.9;
       DeepWater j = new DeepWater(p);
       m = j.trainModel().get();
       Assert.assertTrue((m._output._training_metrics).rmse() < 5);
@@ -700,12 +702,9 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._backend = getBackend();
       p._train = (tr = parse_test_file("smalldata/deepwater/imagenet/binomial_image_urls.csv"))._key;
       p._response_column = "C2";
-      p._balance_classes = true;
-      p._epochs = 5;
+      p._network = lenet;
+      p._epochs = 500;
       p._seed = 1234;
-      p._max_after_balance_size = 2f;
-      p._class_sampling_factors = new float[]{3,5};
-      p._mini_batch_size = 16;
       DeepWater j = new DeepWater(p);
       m = j.trainModel().get();
       Assert.assertTrue((m._output._training_metrics).auc_obj()._auc > 0.85);
@@ -807,7 +806,10 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
         p._backend = getBackend();
         p._train = tr._key;
         p._valid = va._key;
-        p._hidden = new int[]{500,500};
+        p._learning_rate = 5e-3;
+        if(getBackend() != DeepWaterParameters.Backend.tensorflow) {
+          p._hidden = new int[]{500, 500};
+        }
         p._sparse = true;
         DeepWater j = new DeepWater(p);
         m = j.trainModel().get();
@@ -843,9 +845,11 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
         DKV.put(va);
 
         p._backend = getBackend();
-        p._hidden = new int[]{1024,1024,2048};
-        p._input_dropout_ratio = 0.1;
-        p._hidden_dropout_ratios = new double[]{0.5,0.5,0.5};
+        if(getBackend() != DeepWaterParameters.Backend.tensorflow) {
+          p._hidden = new int[]{1024, 1024, 2048};
+          p._input_dropout_ratio = 0.1;
+          p._hidden_dropout_ratios = new double[]{0.5, 0.5, 0.5};
+        }
         p._stopping_rounds = 0;
         p._learning_rate = 1e-3;
         p._mini_batch_size = 32;
@@ -933,7 +937,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
   @Test public void MOJOTestImageInception() { MOJOTestImage(inception_bn); }
   @Test public void MOJOTestImageAlexnet() { MOJOTestImage(alexnet); }
   @Ignore @Test public void MOJOTestImageResnet() { MOJOTestImage(resnet); }
-  @Ignore @Test public void MOJOTestImageVGG() { MOJOTestImage(vgg); }
+  @Test public void MOJOTestImageVGG() { MOJOTestImage(vgg); }
   @Ignore @Test public void MOJOTestImageGooglenet() { MOJOTestImage(googlenet); }
 
   private void MOJOTest(Model.Parameters.CategoricalEncodingScheme categoricalEncodingScheme, boolean enumCols, boolean standardize) {
@@ -966,10 +970,12 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._ignored_columns = new String[]{"ID"};
       p._backend = getBackend();
       p._seed = 12345;
-      p._epochs = 5;
+      p._epochs = 50;
       p._categorical_encoding = categoricalEncodingScheme;
       p._standardize = standardize;
-      p._hidden = new int[]{50,50};
+      if(getBackend() != DeepWaterParameters.Backend.tensorflow) {
+        p._hidden = new int[]{50, 50};
+      }
       m = new DeepWater(p).trainModel().get();
 
       // Score original training frame
@@ -1035,7 +1041,9 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._train = tfr._key;
       p._epochs = 10;
       p._response_column = "C5";
-      p._hidden = new int[]{2,2};
+      if(getBackend() != DeepWaterParameters.Backend.tensorflow) {
+        p._hidden = new int[]{2,2};
+      }
       p._seed = 0xdecaf;
       p._stopping_rounds = 0;
 
@@ -1066,7 +1074,9 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._train = tfr._key;
       p._epochs = 10;
       p._response_column = "C5";
-      p._hidden = new int[]{2,2};
+      if(getBackend() != DeepWaterParameters.Backend.tensorflow) {
+        p._hidden = new int[]{2, 2};
+      }
       p._seed = 0xdecaf;
 
       dl = new DeepWater(p).trainModel().get();
@@ -1224,7 +1234,10 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
         parms._response_column = "Class";
         parms._autoencoder = ae;
         parms._train_samples_per_iteration = 10;
-        parms._hidden = new int[]{10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10};
+
+        if(getBackend() == DeepWaterParameters.Backend.tensorflow)
+          continue; //can't make the network unstable with [200,200]
+        parms._hidden = new int[]{10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10};
         parms._learning_rate = 1e10;
         parms._standardize = false;
 
@@ -1392,7 +1405,9 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       parms._valid = valid._key;
       parms._epochs = 1;
       parms._response_column = "C5";
-      parms._hidden = new int[]{50,50};
+      if(getBackend() != DeepWaterParameters.Backend.tensorflow) {
+        parms._hidden = new int[]{50, 50};
+      }
       parms._seed = 0xdecaf;
       parms._train_samples_per_iteration = 0;
       parms._score_duty_cycle = 1;
@@ -1443,7 +1458,9 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       parms._valid = valid._key;
       parms._epochs = 10;
       parms._response_column = "C5";
-      parms._hidden = new int[]{50,50};
+      if(getBackend() != DeepWaterParameters.Backend.tensorflow) {
+        parms._hidden = new int[]{50, 50};
+      }
       parms._seed = 0xdecaf;
       parms._train_samples_per_iteration = 0;
       parms._score_duty_cycle = 1;

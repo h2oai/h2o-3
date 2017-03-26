@@ -838,6 +838,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     return ret;
   }
 
+  @Override
+  public Frame scoreDeepFeatures(Frame frame, String layer, Job j) {
+    throw H2O.unimpl("Cannot extract named hidden layer '" + layer + "' for H2O DeepLearning.");
+  }
+
 
   // Make (potentially expanded) reconstruction
   private double[] score_autoencoder(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds, Neurons[] neurons, boolean reconstruction, boolean reconstruction_error_per_feature) {

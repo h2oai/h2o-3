@@ -4,9 +4,7 @@ import deepwater.backends.BackendModel;
 import deepwater.backends.BackendParams;
 import deepwater.backends.RuntimeOptions;
 import deepwater.datasets.ImageDataSet;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 import water.parser.BufferedString;
 import water.util.FileUtils;
 import water.util.StringUtils;
@@ -37,6 +35,9 @@ public class DeepWaterMXNetIntegrationTest extends DeepWaterAbstractIntegrationT
 
   @Override
   DeepWaterParameters.Backend getBackend() { return DeepWaterParameters.Backend.mxnet; }
+
+  @BeforeClass
+  public static void checkBackend() { Assume.assumeTrue(DeepWater.haveBackend(DeepWaterParameters.Backend.mxnet)); }
 
   public static String extractFile(String path, String file) throws IOException {
     InputStream in = DeepWaterMXNetIntegrationTest.class.getClassLoader().getResourceAsStream(Paths.get(path, file).toString());

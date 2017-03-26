@@ -34,7 +34,6 @@ final public class DeepWaterModelInfo extends Iced {
 
   private TwoDimTable summaryTable;
 
-  //for image classification
   transient BackendTrain _backend; //interface provider
   transient BackendModel _model;  //pointer to C++ process
 
@@ -66,6 +65,17 @@ final public class DeepWaterModelInfo extends Iced {
     assert(_backend !=null);
     assert(_model!=null);
     return _backend.predict(_model, data);
+  }
+
+  float[] extractLayer(String layer, float[] data) {
+    assert(_backend !=null);
+    assert(_model!=null);
+    return _backend.extractLayer(_model, layer, data);
+  }
+  String listAllLayers() {
+    assert(_backend !=null);
+    assert(_model!=null);
+    return _backend.listAllLayers(_model);
   }
 
   @Override
@@ -155,11 +165,14 @@ final public class DeepWaterModelInfo extends Iced {
             break;
           case auto:
           case alexnet:
-          case inception_bn:
           case googlenet:
           case resnet:
             _width = 224;
             _height = 224;
+            break;
+          case inception_bn:
+            _width = 299;
+            _height = 299;
             break;
           case vgg:
             _width = 320;
@@ -246,6 +259,12 @@ final public class DeepWaterModelInfo extends Iced {
       throw new RuntimeException("Unable to initialize the native Deep Learning backend: " + t.getMessage());
     }
   }
+  String getBasePath() {
+//    if (_backend instanceof DeepwaterCaffeBackend)
+//      return System.getProperty("user.dir") + "/caffe/";
+//    else
+      return System.getProperty("java.io.tmpdir");
+  }
 
   void nativeToJava() {
     if (_backend ==null) return;
@@ -255,7 +274,7 @@ final public class DeepWaterModelInfo extends Iced {
     // only overwrite the network definition if it's null
     if (_network==null) {
       try {
-        file = new File(System.getProperty("java.io.tmpdir"), Key.make().toString());
+        file = new File(getBasePath(), Key.make().toString());
         _backend.saveModel(_model, file.toString());
         FileInputStream is = new FileInputStream(file);
         _network = new byte[(int)file.length()];
@@ -263,19 +282,22 @@ final public class DeepWaterModelInfo extends Iced {
         is.close();
       } catch (IOException e) {
         e.printStackTrace();
-      } finally { if (file !=null) file.delete(); }
+      } finally {
+        if (file != null)
+          _backend.deleteSavedModel(file.toString());
+      }
     }
     // always overwrite the parameters (weights/biases)
     try {
-      file = new File(System.getProperty("java.io.tmpdir"), Key.make().toString());
+      file = new File(getBasePath(), Key.make().toString());
       _backend.saveParam(_model, file.toString());
-      FileInputStream is = new FileInputStream(file);
-      _modelparams = new byte[(int)file.length()];
-      is.read(_modelparams);
-      is.close();
+      _modelparams = _backend.readBytes(file);
     } catch (IOException e) {
       e.printStackTrace();
-    } finally { if (file !=null) file.delete(); }
+    } finally {
+      if (file !=null)
+        _backend.deleteSavedParam(file.toString());
+    }
     long time = System.currentTimeMillis() - now;
     Log.info("Took: " + PrettyPrint.msecs(time, true));
   }
@@ -315,7 +337,7 @@ final public class DeepWaterModelInfo extends Iced {
     File file = null;
     // only overwrite the network definition if it's null
     try {
-      file = new File(System.getProperty("java.io.tmpdir"), Key.make().toString() + ".json");
+      file = new File(getBasePath(), Key.make().toString() + ".json");
       FileOutputStream os = new FileOutputStream(file);
       os.write(network);
       os.close();
@@ -323,18 +345,21 @@ final public class DeepWaterModelInfo extends Iced {
       _model = _backend.buildNet(getImageDataSet(), getRuntimeOptions(), getBackendParams(), _classes, file.toString()); //randomizing initial state
     } catch (IOException e) {
       e.printStackTrace();
-    } finally { file.delete(); }
+    } finally {
+      if (file != null)
+        _backend.deleteSavedModel(file.toString());
+    }
     // always overwrite the parameters (weights/biases)
     try {
       file = new File(System.getProperty("java.io.tmpdir"), Key.make().toString());
-      FileOutputStream os = new FileOutputStream(file);
-      os.write(parameters);
-      os.close();
+      _backend.writeBytes(file, parameters);
       _backend.loadParam(_model, file.toString());
     } catch (IOException e) {
       e.printStackTrace();
-    } finally { file.delete(); }
-
+    } finally {
+      if (file != null)
+        _backend.deleteSavedParam(file.toString());
+    }
     long time = System.currentTimeMillis() - now;
     Log.info("Took: " + PrettyPrint.msecs(time, true));
   }

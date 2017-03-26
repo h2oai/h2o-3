@@ -2939,3 +2939,55 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
     return(pps)
   }
 }
+
+#' Feature Generation via H2O Deep Learning or DeepWater Model
+#'
+#' Extract the non-linear feature from an H2O data set using an H2O deep learning
+#' model.
+#' @param object An \linkS4class{H2OModel} object that represents the deep
+#' learning model to be used for feature extraction.
+#' @param data An H2OFrame object.
+#' @param layer Index (for DeepLearning, integer) or Name (for DeepWater, String) of the hidden layer to extract
+#' @return Returns an H2OFrame object with as many features as the
+#'         number of units in the hidden layer of the specified index.
+#' @seealso \code{link{h2o.deeplearning}} for making H2O Deep Learning models.
+#' @seealso \code{link{h2o.deepwater}} for making H2O DeepWater models.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' prosPath = system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate.hex = h2o.importFile(path = prosPath)
+#' prostate.dl = h2o.deeplearning(x = 3:9, y = 2, training_frame = prostate.hex,
+#'                                hidden = c(100, 200), epochs = 5)
+#' prostate.deepfeatures_layer1 = h2o.deepfeatures(prostate.dl, prostate.hex, layer = 1)
+#' prostate.deepfeatures_layer2 = h2o.deepfeatures(prostate.dl, prostate.hex, layer = 2)
+#' head(prostate.deepfeatures_layer1)
+#' head(prostate.deepfeatures_layer2)
+#'
+#' if (h2o.deepwater.available()) {
+#'   prostate.dl = h2o.deepwater(x = 3:9, y = 2, backend="mxnet", training_frame = prostate.hex,
+#'                               hidden = c(100, 200), epochs = 5)
+#'   prostate.deepfeatures_layer1 =
+#'     h2o.deepfeatures(prostate.dl, prostate.hex, layer = "fc1_w")
+#'   prostate.deepfeatures_layer2 =
+#'     h2o.deepfeatures(prostate.dl, prostate.hex, layer = "fc2_w")
+#'   head(prostate.deepfeatures_layer1)
+#'   head(prostate.deepfeatures_layer2)
+#' }
+#' }
+#' @export
+h2o.deepfeatures <- function(object, data, layer) {
+  url <- paste0('Predictions/models/', object@model_id, '/frames/', h2o.getId(data))
+  if (is.null(layer)) layer <- 1
+  if (is.numeric(layer)) {
+    index = layer - 1
+    res <- .h2o.__remoteSend(url, method = "POST", deep_features_hidden_layer=index, h2oRestApiVersion = 4)
+  } else {
+    res <- .h2o.__remoteSend(url, method = "POST", deep_features_hidden_layer_name=layer, h2oRestApiVersion = 4)
+  }
+  job_key <- res$key$name
+  dest_key <- res$dest$name
+  .h2o.__waitOnJob(job_key)
+  h2o.getFrame(dest_key)
+}

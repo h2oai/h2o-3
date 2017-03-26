@@ -46,7 +46,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public interface DeepFeatures {
     Frame scoreAutoEncoder(Frame frame, Key destination_key, boolean reconstruction_error_per_feature);
     Frame scoreDeepFeatures(Frame frame, final int layer);
-    Frame scoreDeepFeatures(Frame frame, final int layer, final Job j);
+    Frame scoreDeepFeatures(Frame frame, final int layer, final Job j); //for Deep Learning
+    Frame scoreDeepFeatures(Frame frame, final String layer, final Job j); //for Deep Water
   }
 
   public interface GLRMArchetypes {

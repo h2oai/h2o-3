@@ -56,43 +56,47 @@ public class DeepwaterMojoReader extends ModelMojoReader<DeepwaterMojoModel> {
       FileOutputStream os = new FileOutputStream(file.toString());
       os.write(_model._network);
       os.close();
+      _model._model = _model._backend.buildNet(_model._imageDataSet, _model._opts, _model._backendParams, _model._nclasses, file.toString());
     } catch (IOException e) {
       e.printStackTrace();
+    } finally {
+      if (file!=null)
+        _model._backend.deleteSavedModel(file.toString());
     }
-    _model._model = _model._backend.buildNet(_model._imageDataSet, _model._opts, _model._backendParams, _model._nclasses, file.toString());
     // 1) read the raw bytes of the mean image file from the MOJO
-    byte[] meanBlob = null;
+    byte[] meanBlob;
     try {
-      meanBlob = readblob("mean_image_file");
-    } catch (IOException e) {
-      // e.printStackTrace();
-    }
-    if (meanBlob!=null) {
+      meanBlob = readblob("mean_image_file"); //throws exception if not found
       // 2) write the mean image file
       File meanFile = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString() + ".mean");
       try {
         FileOutputStream os = new FileOutputStream(meanFile.toString());
         os.write(meanBlob);
         os.close();
+        // 3) tell the backend to use that mean image file (just in case it needs it)
+        _model._imageDataSet.setMeanData(_model._backend.loadMeanImage(_model._model, meanFile.toString()));
+        // 4) keep a float[] version of the mean array to be used during image processing
+        _model._meanImageData = _model._imageDataSet.getMeanData();
       } catch (IOException e) {
         e.printStackTrace();
+      } finally {
+        if (meanFile!=null)
+          meanFile.delete();
       }
-      // 3) tell the backend to use that mean image file (just in case it needs it)
-      _model._imageDataSet.setMeanData(_model._backend.loadMeanImage(_model._model, meanFile.toString()));
-
-      // 4) keep a float[] version of the mean array to be used during image processing
-      _model._meanImageData = _model._imageDataSet.getMeanData();
+    } catch (IOException e) {
+      // e.printStackTrace();
     }
 
     file = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
     try {
-      FileOutputStream os = new FileOutputStream(file.toString());
-      os.write(_model._parameters);
-      os.close();
+      _model._backend.writeBytes(file, _model._parameters);
+      _model._backend.loadParam(_model._model, file.toString());
     } catch (IOException e) {
       e.printStackTrace();
+    } finally {
+      if (file!=null)
+        _model._backend.deleteSavedParam(file.toString());
     }
-    _model._backend.loadParam(_model._model, file.toString());
   }
 
   @Override

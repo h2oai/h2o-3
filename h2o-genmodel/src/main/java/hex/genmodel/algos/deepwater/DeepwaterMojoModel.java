@@ -7,6 +7,7 @@ import deepwater.backends.RuntimeOptions;
 import deepwater.datasets.ImageDataSet;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
+import hex.genmodel.algos.deepwater.caffe.DeepwaterCaffeBackend;
 
 public class DeepwaterMojoModel extends MojoModel {
   public String _problem_type;
@@ -80,10 +81,10 @@ public class DeepwaterMojoModel extends MojoModel {
 
   static public BackendTrain createDeepWaterBackend(String backend) {
     try {
+//      if (backend.equals("caffe"))      return new DeepwaterCaffeBackend();
       if (backend.equals("mxnet"))      backend="deepwater.backends.mxnet.MXNetBackend";
       if (backend.equals("tensorflow")) backend="deepwater.backends.tensorflow.TensorflowBackend";
-      if (backend.equals("caffe"))      backend="deepwater.backends.caffe.CaffeBackend";
-      if (backend.equals("xgrpc"))      backend="deepwater.backends.grpc.XGRPCBackendTrain";
+//      if (backend.equals("xgrpc"))      backend="deepwater.backends.grpc.XGRPCBackendTrain";
       return (BackendTrain)(Class.forName(backend).newInstance());
     } catch (Exception ignored) {
       //ignored.printStackTrace();

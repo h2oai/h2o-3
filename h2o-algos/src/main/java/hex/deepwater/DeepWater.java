@@ -44,6 +44,10 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
     return false;
   }
 
+  static boolean haveBackend(DeepWaterParameters.Backend b) {
+    return DeepwaterMojoModel.createDeepWaterBackend(b.toString()) != null;
+  }
+
   @Override public BuilderVisibility builderVisibility() {
      return haveBackend() ? BuilderVisibility.Stable : BuilderVisibility.Experimental;
   }
@@ -58,7 +62,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
     };
   }
 
-  @Override public boolean haveMojo() { return false; }
+  @Override public boolean haveMojo() { return true; }
   @Override public boolean havePojo() { return false; }
 
   @Override public ToEigenVec getToEigenVec() { return LinearAlgebraUtils.toEigen; }
@@ -315,14 +319,14 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
 
         // decide whether to cache
         long bytes;
-        if (_parms._problem_type == DeepWaterParameters.ProblemType.image) {
+        if (mp._problem_type == DeepWaterParameters.ProblemType.image) {
           bytes = train.numRows() * model.model_info()._width * model.model_info()._height * model.model_info()._channels * 4;
         } else {
           bytes = train.byteSize();
         }
         cache = mp._cache_data;
         if (cache) {
-          if (bytes < H2O.CLOUD.free_mem() / 4) {
+          if (bytes < H2O.CLOUD.free_mem() / 2) {
             Log.info("Automatically enabling data caching, expecting to require " + PrettyPrint.bytes(bytes) + ".");
           } else {
             Log.info("Automatically disabling data caching, since it would require too much space: " + PrettyPrint.bytes(bytes) + ".");
@@ -333,6 +337,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
 
         //main loop
         for(;;) {
+          if (mp._epochs==0) break;
           model.iterations++;
           model.set_model_info(mp._epochs == 0 ? model.model_info() : H2O.CLOUD.size() > 1 && mp._replicate_training_data ? (mp._single_node_mode ?
                   new DeepWaterTask2(_job._key, train, model.model_info(), rowFraction(train, mp, model), model.iterations).doAll(Key.make(H2O.SELF)).model_info() :  // replicated data + single node mode

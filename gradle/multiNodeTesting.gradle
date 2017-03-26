@@ -13,6 +13,20 @@ task testSingleNode(type: Exec) {
     }
     commandLine args
 }
+task testSingleNodeOneProc(type: Exec) {
+    dependsOn jar, testJar
+    if (project.hasProperty("java6Convert")) {
+        environment "TEST_JAVA_HOME", System.getenv("JAVA_6_HOME")
+    }
+    environment "PROJECT_NAME", project.name
+    environment "BUILD_DIR", project.buildDir
+
+    def args = ['bash', './testSingleNodeOneProc.sh']
+    if (project.hasProperty("jacocoCoverage")) {
+        args << 'jacoco'
+    }
+    commandLine args
+}
 task testMultiNode(type: Exec) {
     dependsOn jar, testJar
     if (project.hasProperty("java6Convert")) {
