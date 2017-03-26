@@ -345,7 +345,10 @@ final public class DeepWaterModelInfo extends Iced {
       _model = _backend.buildNet(getImageDataSet(), getRuntimeOptions(), getBackendParams(), _classes, file.toString()); //randomizing initial state
     } catch (IOException e) {
       e.printStackTrace();
-    } finally { if (file!=null) file.delete(); }
+    } finally {
+      if (file != null)
+        _backend.deleteSavedModel(file.toString());
+    }
     // always overwrite the parameters (weights/biases)
     try {
       file = new File(System.getProperty("java.io.tmpdir"), Key.make().toString());
@@ -353,8 +356,10 @@ final public class DeepWaterModelInfo extends Iced {
       _backend.loadParam(_model, file.toString());
     } catch (IOException e) {
       e.printStackTrace();
-    } finally { if (file!=null) file.delete(); }
-
+    } finally {
+      if (file != null)
+        _backend.deleteSavedParam(file.toString());
+    }
     long time = System.currentTimeMillis() - now;
     Log.info("Took: " + PrettyPrint.msecs(time, true));
   }

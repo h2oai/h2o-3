@@ -553,6 +553,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       Log.info("Iteration: " + count);
       backend.saveParam(m, f.getAbsolutePath());
     }
+    backend.deleteSavedParam(f.getAbsolutePath());
   }
 
   @Test
