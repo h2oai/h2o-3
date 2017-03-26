@@ -457,7 +457,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
 
   @Test public void restoreStateAlexnet() { restoreState(alexnet); }
   @Test public void restoreStateLenet() { restoreState(lenet); }
-  @Test public void restoreStateVGG() { restoreState(DeepWaterParameters.Network.vgg); }
+  @Test public void restoreStateVGG() { restoreState(vgg); }
   @Test public void restoreStateInception() { restoreState(inception_bn); }
   @Test public void restoreStateResnet() { restoreState(resnet); }
 
@@ -703,10 +703,11 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._train = (tr = parse_test_file("smalldata/deepwater/imagenet/binomial_image_urls.csv"))._key;
       p._response_column = "C2";
       p._balance_classes = true;
-      p._epochs = 1;
+      p._epochs = 5;
       p._seed = 1234;
       p._max_after_balance_size = 2f;
       p._class_sampling_factors = new float[]{3,5};
+      p._mini_batch_size = 16;
       DeepWater j = new DeepWater(p);
       m = j.trainModel().get();
       Assert.assertTrue((m._output._training_metrics).auc_obj()._auc > 0.85);
@@ -1235,9 +1236,10 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
         parms._response_column = "Class";
         parms._autoencoder = ae;
         parms._train_samples_per_iteration = 10;
-        if(getBackend() != DeepWaterParameters.Backend.tensorflow) {
-          parms._hidden = new int[]{10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10};
-        }
+
+        if(getBackend() == DeepWaterParameters.Backend.tensorflow)
+          continue; //can't make the network unstable with [200,200]
+        parms._hidden = new int[]{10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10};
         parms._learning_rate = 1e10;
         parms._standardize = false;
 
