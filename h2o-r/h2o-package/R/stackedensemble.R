@@ -21,7 +21,7 @@
 #' @param selection_strategy Strategy for choosing which models to stack. Must be one of: "choose_all".
 #' @examples
 #' 
-#' # See example R code here: 
+#' # See example R code here:
 #' # http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html
 #' 
 #' @export

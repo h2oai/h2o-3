@@ -7,6 +7,11 @@ import java.io.IOException;
 public class GlmMojoReader extends ModelMojoReader<GlmMojoModelBase> {
 
   @Override
+  public String getModelName() {
+    return "Generalized Linear Model";
+  }
+
+  @Override
   protected void readModelData() throws IOException {
     _model._useAllFactorLevels = readkv("use_all_factor_levels", false);
 

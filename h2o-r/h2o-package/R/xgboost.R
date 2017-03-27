@@ -123,17 +123,17 @@ h2o.xgboost <- function(x, y, training_frame,
                         gpu_id = 0
                         ) 
 {
-  #If x is missing, then assume user wants to use all columns as features.
-  if(missing(x)){
-     if(is.numeric(y)){
-         x <- setdiff(col(training_frame),y)
-     }else{
-         x <- setdiff(colnames(training_frame),y)
+  # If x is missing, then assume user wants to use all columns as features.
+  if (missing(x)) {
+     if (is.numeric(y)) {
+         x <- setdiff(col(training_frame), y)
+     } else {
+         x <- setdiff(colnames(training_frame), y)
      }
   }
 
   # Required args: training_frame
-  if( missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
+  if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
   # Training_frame must be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
      tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -253,7 +253,7 @@ h2o.xgboost <- function(x, y, training_frame,
   if (!missing(gpu_id))
     parms$gpu_id <- gpu_id
   # Error check and build model
-  .h2o.modelJob('xgboost', parms, h2oRestApiVersion=3) 
+  .h2o.modelJob('xgboost', parms, h2oRestApiVersion = 3) 
 }
 
 #' Ask the H2O server whether a XGBoost model can be built (depends on availability of native backend)

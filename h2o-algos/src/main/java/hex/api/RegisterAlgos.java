@@ -3,6 +3,7 @@ package hex.api;
 import water.H2O;
 import hex.ModelBuilder;
 import water.api.GridSearchHandler;
+import water.api.SchemaServer;
 
 public class RegisterAlgos extends water.api.AbstractRegister {
   // Register the algorithms and their builder handlers:
@@ -20,32 +21,20 @@ public class RegisterAlgos extends water.api.AbstractRegister {
       new hex.tree.gbm    .GBM         (true),
       new hex.aggregator  .Aggregator  (true),
       new hex.deepwater   .DeepWater   (true),
-      new hex.tree.xgboost.XGBoost     (true),
       new hex.word2vec    .Word2Vec    (true),
       new hex.ensemble    .StackedEnsemble(true),
     };
+    
     // "Word2Vec", "Example", "Grep"
     for (ModelBuilder algo : algos) {
       String base = algo.getClass().getSimpleName();
-      String lbase = base.toLowerCase();
-      Class<? extends water.api.Handler> bh_clz = water.api.ModelBuilderHandler.class;
-      int version = 3;
-      if( base.equals("SVD") ) version = 99;  // SVD is experimental still
-      if( base.equals("Aggregator") ) version = 99;  // Aggregator is experimental still
-      if( base.equals("StackedEnsemble") ) version = 99;  // StackedEnsemble is experimental still
-
-      H2O.register("POST /"+version+"/ModelBuilders/"+lbase, bh_clz, "train",
-          "train_" + lbase,
-          "Train a " + base + " model.");
-
-      H2O.register("POST /"+version+"/ModelBuilders/"+lbase+"/parameters", bh_clz, "validate_parameters",
-          "validate_" + lbase,
-          "Validate a set of " + base + " model builder parameters.");
-
-      // Grid search is experimental feature
-      H2O.register("POST /99/Grid/"+lbase, GridSearchHandler.class, "train",
-          "grid_search_" + lbase,
-          "Run grid search for "+base+" model.");
+      int version = 3; // FIXME: how to get the latest stable version?
+      if ( base.equals("SVD") ||
+           base.equals("Aggregator") ||
+           base.equals("StackedEnsemble")) {
+        version = SchemaServer.getExperimentalVersion();
+      }
+      registerModelBuilder(algo, version);
     }
 
     H2O.register("POST /3/MakeGLMModel", MakeGLMModelHandler.class, "make_model", "make_glm_model",

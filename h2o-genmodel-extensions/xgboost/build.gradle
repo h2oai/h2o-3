@@ -1,0 +1,37 @@
+apply plugin: 'com.github.johnrengelman.shadow'
+
+description = "H2O GenModel XGBoost support"
+
+dependencies {
+    compile project(":h2o-genmodel")
+
+    // XGBoost dependencies but not officialy published
+    compile files("lib/xgboost4j-0.7.jar",
+                  "lib/xgboost4j-native-osx-0.7.jar",
+                  "lib/xgboost4j-native-linux-0.7.jar")
+
+    // These are dependencies extracted from xgboost/jvm-packages/pom.xml
+    compile 'com.esotericsoftware.kryo:kryo:2.21'
+}
+
+// Disable default jar
+jar {
+    enabled = false
+}
+
+shadowJar {
+    archiveName = jar.archiveName
+    dependencies {
+        exclude(dependency {
+            // Exclude everything exception the files dependencies
+            true
+        })
+    }
+}
+
+artifacts {
+    archives shadowJar
+}
+jar.dependsOn shadowJar
+build.dependsOn shadowJar
+

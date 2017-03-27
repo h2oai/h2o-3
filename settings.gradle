@@ -7,6 +7,7 @@ include 'h2o-app'
 include 'h2o-r'
 include 'h2o-py'
 include 'h2o-assemblies:main'
+include 'h2o-assemblies:genmodel'
 include 'h2o-persist-hdfs'
 include 'h2o-persist-s3'
 include 'h2o-docs'
@@ -21,6 +22,8 @@ include 'h2o-orc-parser'
 include 'h2o-parquet-parser'
 include 'h2o-jaas-pam'
 include 'h2o-automl'
+include 'h2o-genmodel-ext-xgboost'
+include 'h2o-ext-xgboost'
 
 // GRPC support
 if ("true".equals(System.getenv("H2O_BUILD_GRPC"))) {
@@ -42,6 +45,14 @@ scalaCrossCompile {
 rootProject.children.each { project ->
   if (project.name.startsWith("h2o-") && project.name.endsWith("-parser")) {
     String projectDirName = "h2o-parsers/${project.name}"
+    project.projectDir = new File(settingsDir, projectDirName)
+  }
+  if (project.name.startsWith("h2o-ext-")) {
+    String projectDirName = "h2o-extensions/${project.name - 'h2o-ext-'}"
+    project.projectDir = new File(settingsDir, projectDirName)
+  }
+  if (project.name.startsWith("h2o-genmodel-ext-")) {
+    String projectDirName = "h2o-genmodel-extensions/${project.name - 'h2o-genmodel-ext-'}"
     project.projectDir = new File(settingsDir, projectDirName)
   }
 }
