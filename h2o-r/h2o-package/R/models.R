@@ -2965,16 +2965,16 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
 #' head(prostate.deepfeatures_layer1)
 #' head(prostate.deepfeatures_layer2)
 #'
-#' if (h2o.deepwater.available()) {
-#'   prostate.dl = h2o.deepwater(x = 3:9, y = 2, backend="mxnet", training_frame = prostate.hex,
-#'                               hidden = c(100, 200), epochs = 5)
-#'   prostate.deepfeatures_layer1 =
-#'     h2o.deepfeatures(prostate.dl, prostate.hex, layer = "fc1_w")
-#'   prostate.deepfeatures_layer2 =
-#'     h2o.deepfeatures(prostate.dl, prostate.hex, layer = "fc2_w")
-#'   head(prostate.deepfeatures_layer1)
-#'   head(prostate.deepfeatures_layer2)
-#' }
+#' #if (h2o.deepwater.available()) {
+#' #  prostate.dl = h2o.deepwater(x = 3:9, y = 2, backend="mxnet", training_frame = prostate.hex,
+#' #                              hidden = c(100, 200), epochs = 5)
+#' #  prostate.deepfeatures_layer1 =
+#' #    h2o.deepfeatures(prostate.dl, prostate.hex, layer = "fc1_w")
+#' #  prostate.deepfeatures_layer2 =
+#' #    h2o.deepfeatures(prostate.dl, prostate.hex, layer = "fc2_w")
+#' #  head(prostate.deepfeatures_layer1)
+#' #  head(prostate.deepfeatures_layer2)
+#' #}
 #' }
 #' @export
 h2o.deepfeatures <- function(object, data, layer) {
