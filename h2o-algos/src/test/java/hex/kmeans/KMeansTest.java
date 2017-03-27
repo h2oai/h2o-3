@@ -63,7 +63,7 @@ public class KMeansTest extends TestUtil {
     KMeansModel kmm = null;
     Frame fr = null, fr2= null;
     try {
-      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      fr = parse_test_file("smalldata/iris/iris_wheadecsv");
 
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;
@@ -95,7 +95,7 @@ public class KMeansTest extends TestUtil {
     KMeansModel kmm = null;
     Frame fr = null, fr2= null;
     try {
-      fr = parse_test_file("smalldata/iris/iris_wheader_correct.csv");
+      fr = parse_test_file("smalldata/iris/iris_whead_correct.csv");
 
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;
@@ -125,7 +125,7 @@ public class KMeansTest extends TestUtil {
     KMeansModel kmm2 = null;
     Frame fr = null;
     try {
-      fr = parse_test_file("smalldata/junit/weather.csv");
+      fr = parse_test_file("smalldata/junit/weathecsv");
 
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;

@@ -285,7 +285,7 @@ public class GLMTest  extends TestUtil {
     Frame fr = null;
     DataInfo dinfo = null;
     try {
-      fr = parse_test_file(parsed, "smalldata/junit/mixcat_train.csv");
+      fr = parse_test_file(parsed, "smalldata/junit/mixcat_trn.csv");
       GLMParameters params = new GLMParameters(Family.binomial, Family.binomial.defaultLink, new double[]{0}, new double[]{0}, 0, 0);
       // params._response = fr.find(params._response_column);
       params._train = parsed;
@@ -438,7 +438,7 @@ public class GLMTest  extends TestUtil {
     };
   Vec origRes = null;
     try {
-      fr = parse_test_file(parsed, "smalldata/covtype/covtype.20k.data");
+      fr = parse_test_file(parsed, "smalldata/covtype/covtyp20k.data");
       fr.remove("C21").remove();
       fr.remove("C29").remove();
       GLMParameters params = new GLMParameters(Family.multinomial);
@@ -485,7 +485,7 @@ public class GLMTest  extends TestUtil {
     GLMModel model = null;
     Frame score = null;
     try {
-      fr = parse_test_file(parsed, "smalldata/junit/cars.csv");
+      fr = parse_test_file(parsed, "smalldata/junit/cs.csv");
       GLMParameters params = new GLMParameters(Family.poisson, Family.poisson.defaultLink, new double[]{0}, new double[]{0},0,0);
       params._response_column = "power (hp)";
       // params._response = fr.find(params._response_column);

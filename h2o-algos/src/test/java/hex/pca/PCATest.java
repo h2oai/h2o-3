@@ -230,7 +230,7 @@ public class PCATest extends TestUtil {
     PCAModel model = null;
     Frame train = null, score = null;
     try {
-      train = parse_test_file(Key.make("prostate_cat.hex"), "smalldata/prostate/prostate_cat.csv");
+      train = parse_test_file(Key.make("prostate_cat.hex"), "smalldata/prostate/prostate_cacsv");
       for (int i = train.numCols() - 1; i > 0; i--) {
         Vec v = train.vec(i);
         if (v.get_type() != Vec.T_CAT) {

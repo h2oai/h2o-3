@@ -22,7 +22,7 @@ def emptyclusKmeans():
   # connect to localhost:54321
 
   #Log.info("Importing ozone.csv data...\n")
-  ozone_sci = np.loadtxt(pyunit_utils.locate("smalldata/glm_test/ozone.csv"), delimiter=',', skiprows=1)
+  ozone_sci = np.loadtxt(pyunit_utils.locate("smalldata/glm_test/ozon.csv"), delimiter=',', skiprows=1)
   ozone_h2o = h2o.import_file(path=pyunit_utils.locate("smalldata/glm_test/ozone.csv"))
 
   ncent = 10

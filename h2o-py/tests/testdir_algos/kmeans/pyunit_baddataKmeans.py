@@ -85,7 +85,7 @@ def baddataKmeans():
   assert len(centers[0]) == 10, "expected center to be 10 "+str(len(centers))
 
   # Log.info("Importing iris.csv data...\n")
-  iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
+  iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iri.csv"))
 
   km_model = H2OKMeansEstimator(k=5)
   km_model.train(x=list(range(iris.ncol)), training_frame=iris)

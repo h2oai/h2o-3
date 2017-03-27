@@ -10,7 +10,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 test.glrm.pubdev_3454 <- function() {
 
-	datasets = "/mnt/0xcustomer-datasets/c66/glrm_data_DTolstonogov.csv"
+	datasets = "/mnt/0xcustomer-datasets/c66/glrm_data_DTolston.csv"
 	running_inside_hexdata = file.exists(datasets)
 
 	if (!running_inside_hexdata) {

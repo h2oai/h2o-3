@@ -21,8 +21,8 @@ import static water.TestUtil.parse_test_file;
 	*/
 public class PCAWideDataSetsTests extends TestUtil {
 		public static final double _TOLERANCE = 1e-6;
-		public static final String _smallDataset = "smalldata/pca_test/decathlon.csv";
-		public static final String _prostateDataset = "smalldata/prostate/prostate_cat.csv";
+		public static final String _smallDataset = "smalldata/pca_test/decathn.csv";
+		public static final String _prostateDataset = "smalldata/prostate/prostate_catsv";
 		public static final DataInfo.TransformType[] _transformTypes = {DataInfo.TransformType.NONE,
 										DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.DEMEAN, DataInfo.TransformType.DESCALE};
 		public Random _rand = new Random();

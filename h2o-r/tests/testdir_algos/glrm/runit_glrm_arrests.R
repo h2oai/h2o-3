@@ -5,7 +5,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 test.glrm.arrests <- function() {
   Log.info("Importing arrests.csv data...") 
-  arrestsR <- read.csv(locate("smalldata/pca_test/USArrests.csv"), header = TRUE)
+  arrestsR <- read.csv(locate("smalldata/pca_test/USArrestssv"), header = TRUE)
   arrestsH2O <- h2o.uploadFile(locate("smalldata/pca_test/USArrests.csv"), destination_frame = "arrestsH2O")
   initCent <- scale(arrestsR, center = TRUE, scale = FALSE)[1:4,]
   

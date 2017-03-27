@@ -12,7 +12,7 @@ test.glrm.prostate_miss <- function() {
   colnames(model_stats) <- stats_names
   
   Log.info("Importing prostate_cat.csv data and saving for validation...")
-  prostate.full <- h2o.uploadFile(locate("smalldata/prostate/prostate_cat.csv"), destination_frame= "prostate.hex", na.strings = rep("NA", 8))
+  prostate.full <- h2o.uploadFile(locate("smalldata/prostate/prostate_t.csv"), destination_frame= "prostate.hex", na.strings = rep("NA", 8))
   totobs <- sum(!is.na(prostate.full))
   print(summary(prostate.full))
   
