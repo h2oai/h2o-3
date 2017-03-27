@@ -5,12 +5,10 @@ import water.*;
 import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.Log;
+import water.util.TwoDimTable;
 
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static water.DKV.getGet;
 import static water.Key.make;
@@ -43,9 +41,14 @@ public class Leaderboard extends Keyed<Leaderboard> {
   private Key<Model>[] models;
 
   /**
+   * Sort metrics for the models in this leaderboard, in the same order as the models.
+   */
+  public double[] sort_metrics;
+
+  /**
    * Metric used to sort this leaderboard.
    */
-  private String metric;
+  private String sort_metric;
 
   /**
    * Metric direction used in the sort.
@@ -96,7 +99,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
   }
 
   public void setMetricAndDirection(String metric, boolean sortDecreasing){
-    this.metric = metric;
+    this.sort_metric = metric;
     this.sort_decreasing = sortDecreasing;
   }
 
@@ -119,7 +122,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     if (null == this._key)
       throw new H2OIllegalArgumentException("Can't add models to a Leaderboard which isn't in the DKV.");
 
-    if (this.metric == null) {
+    if (this.sort_metric == null) {
       // lazily set to default for this model category
       setDefaultMetricAndDirection(newModels[0].get());
     }
@@ -143,13 +146,16 @@ public class Leaderboard extends Keyed<Leaderboard> {
         // Sort by metric.
         // TODO: If we want to train on different frames and then compare we need to score all the models and sort on the new metrics.
         try {
-          List<Key<Model>> newModelsSorted = ModelMetrics.sortModelsByMetric(metric, sort_decreasing, Arrays.asList(old.models));
+          List<Key<Model>> newModelsSorted = ModelMetrics.sortModelsByMetric(sort_metric, sort_decreasing, Arrays.asList(old.models));
           old.models = newModelsSorted.toArray(new Key[0]);
         }
         catch (H2OIllegalArgumentException e) {
           Log.warn("ModelMetrics.sortModelsByMetric failed: " + e);
           throw e;
         }
+
+        Model[] models = new Model[old.models.length];
+        old.sort_metrics = old.sortMetrics(modelsForModelKeys(old.models, models));
 
         // NOTE: we've now written over old.models
         // TODO: should take out of the tatomic
@@ -161,8 +167,9 @@ public class Leaderboard extends Keyed<Leaderboard> {
     }.invoke(this._key);
 
     // We've updated the DKV but not this instance, so:
-
     this.models = this.modelKeys();
+    this.sort_metrics = sortMetrics(this.models());
+
     // always
     EckoClient.updateLeaderboard(this);
     if (null != newLeader[0]) {
@@ -248,6 +255,14 @@ public class Leaderboard extends Keyed<Leaderboard> {
     return timestamps;
   }
 
+  public double[] sortMetrics(Model[] models) {
+    double[] sort_metrics = new double[models.length];
+    int i = 0;
+    for (Model m : models)
+      sort_metrics[i++] = defaultMetricForModel(m);
+    return sort_metrics;
+  }
+
   /**
    * Delete everything in the DKV that this points to.  We currently need to be able to call this after deleteWithChildren().
    */
@@ -261,7 +276,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     delete();
   }
 
-  public static double errorForModel(Model m) {
+  public static double defaultMetricForModel(Model m) {
     ModelMetrics mm =
             m._output._cross_validation_metrics != null ?
                     m._output._cross_validation_metrics :
@@ -280,7 +295,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     return Double.NaN;
   }
 
-  public String metricForModel(Model m) {
+  public static String defaultMetricNameForModel(Model m) {
     if (m._output.isBinomialClassifier()) {
       return "auc";
     } else if (m._output.isClassifier()) {
@@ -303,7 +318,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     for (int i = models.length - 1; i >= 0; i--) {
       // TODO: allow the metric to be passed in.  Note that this assumes the validation (or training) frame is the same.
       Model m = models[i];
-      sb.append(errorForModel(m));
+      sb.append(defaultMetricForModel(m));
       sb.append(lineSeparator);
     }
     return sb.toString();
@@ -323,20 +338,77 @@ public class Leaderboard extends Keyed<Leaderboard> {
       sb.append(timestampFormat.format(m._output._end_time));
       sb.append(fieldSeparator);
 
-      sb.append(errorForModel(m));
+      sb.append(defaultMetricForModel(m));
       sb.append(lineSeparator);
     }
     return sb.toString();
   }
-/*
-  public static String toString(Model[] models) {
-    return toString(null, models, " ", "\n");
+
+  protected static final String[] colHeaders = {
+          "model ID",
+          "timestamp",
+          "metric" };
+
+  protected static final String[] colTypes= {
+          "string",
+          "string",
+          "double" };
+
+  protected static final String[] colFormats= {
+          "%s",
+          "%s",
+          "%1.6d" };
+
+  public static final TwoDimTable makeTwoDimTable(String tableHeader, int length) {
+    String[] rowHeaders = new String[length];
+    for (int i = 0; i < length; i++) rowHeaders[i] = "" + i;
+
+    return new TwoDimTable(tableHeader,
+            "models sorted in order of metric, best first",
+            rowHeaders,
+            Leaderboard.colHeaders,
+            Leaderboard.colTypes,
+            Leaderboard.colFormats,
+            "#");
   }
 
-  public static String toString(String project, Model[] models) {
-    return toString(project, models, "\n");
+  public void addTwoDimTableRow(TwoDimTable table, int row, String[] modelIDs, long[] timestamps, double[] errors) {
+    int col = 0;
+    table.set(row, col++, modelIDs[row]);
+    table.set(row, col++, timestampFormat.format(new Date(timestamps[row])));
+    table.set(row, col++, errors[row]);
   }
-  */
+
+  public TwoDimTable toTwoDimTable() {
+    return toTwoDimTable("Leaderboard for project: " + project, false);
+  }
+
+  public TwoDimTable toTwoDimTable(String tableHeader, boolean leftJustifyModelIds) {
+    Model[] models = this.models();
+    long[] timestamps = timestamps(models);
+    String[] modelIDsFormatted = new String[models.length];
+    
+    TwoDimTable table = makeTwoDimTable(tableHeader, models.length);
+
+    // %-s doesn't work in TwoDimTable.toString(), so fake it here:
+    int maxModelIdLen = -1;
+    for (Model m : models)
+      maxModelIdLen = Math.max(maxModelIdLen, m._key.toString().length());
+    for (int i = 0; i < models.length; i++)
+      if (leftJustifyModelIds) {
+        modelIDsFormatted[i] =
+                (models[i]._key.toString() +
+                        "                                                                                         ")
+                        .substring(0, maxModelIdLen);
+      } else {
+        modelIDsFormatted[i] = models[i]._key.toString();
+      }
+
+    for (int i = 0; i < models.length; i++)
+      addTwoDimTableRow(table, i, modelIDsFormatted, timestamps, sort_metrics);
+    return table;
+  }
+
   private static final SimpleDateFormat timestampFormat = new SimpleDateFormat("HH:mm:ss.SSS");
 
   public static String toString(String project, Model[] models, String fieldSeparator, String lineSeparator, boolean includeTitle, boolean includeHeader, boolean includeTimestamp) {
@@ -360,25 +432,20 @@ public class Leaderboard extends Keyed<Leaderboard> {
         sb.append("Model_ID");
         sb.append(fieldSeparator);
 
-        if (m._output.isBinomialClassifier()) {
-          sb.append("auc");
-        } else if (m._output.isClassifier()) {
-          sb.append("mean_per_class_error");
-        } else if (m._output.isSupervised()) {
-          sb.append("mean_residual_deviance");
-        }
-        sb.append(fieldSeparator);
+        sb.append(defaultMetricNameForModel(m));
+
         if (includeTimestamp) {
+          sb.append(fieldSeparator);
           sb.append("timestamp");
-          sb.append(lineSeparator);
         }
+        sb.append(lineSeparator);
         printedHeader = true;
       }
 
       sb.append(m._key.toString());
       sb.append(fieldSeparator);
 
-      sb.append(errorForModel(m));
+      sb.append(defaultMetricForModel(m));
 
       if (includeTimestamp) {
         sb.append(fieldSeparator);
