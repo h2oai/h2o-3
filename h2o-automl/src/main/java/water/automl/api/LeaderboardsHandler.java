@@ -12,8 +12,6 @@ import water.exceptions.H2OKeyWrongTypeArgumentException;
 public class LeaderboardsHandler extends Handler {
   /** Class which contains the internal representation of the leaderboards list and params. */
   public static final class Leaderboards extends Iced {
-    public String project;
-
     public Leaderboard[] leaderboards;
 
     public static Leaderboard[] fetchAll() {
@@ -71,7 +69,4 @@ public class LeaderboardsHandler extends Handler {
 
     return (Leaderboard) ice;
   }
-
-
-
 }

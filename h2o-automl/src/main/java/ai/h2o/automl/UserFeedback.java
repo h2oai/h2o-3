@@ -8,8 +8,8 @@ import water.util.TwoDimTable;
 import static water.Key.make;
 
 public class UserFeedback extends Keyed<UserFeedback> {
-  transient private AutoML autoML; // don't serialize
-  private UserFeedbackEvent[] feedbackEvents; // wish we had IcedArrayList(). . .
+  transient public AutoML autoML; // don't serialize
+  public UserFeedbackEvent[] feedbackEvents; // wish we had IcedArrayList(). . .
 
   public UserFeedback(AutoML autoML) {
     this._key = make(idForRun(autoML._key));

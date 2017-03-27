@@ -774,7 +774,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
     userFeedback.info(Stage.Workflow, "AutoML: build done");
     Log.info(userFeedback.toString("User Feedback for AutoML Run: " + this._key));
-    Log.info(leaderboard.toString("\t", "\n"));
+    Log.info(leaderboard.toTwoDimTable("Leaderboard for project: " + project, true).toString());
 
     possiblyVerifyImmutability();
     // gather more data? build more models? start applying transforms? what next ...?

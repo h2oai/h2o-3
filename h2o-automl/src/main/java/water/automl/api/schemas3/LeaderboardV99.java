@@ -21,10 +21,16 @@ public class LeaderboardV99 extends Schema<Leaderboard, LeaderboardV99> {
   public KeyV3.ModelKeyV3[] models;
 
   /**
+   * Sort metrics for the models in this leaderboard, in the same order as the models.
+   */
+  @API(help="Sort metrics for the models in this leaderboard, in the same order as the models", direction=API.Direction.OUTPUT)
+  public double[] sort_metrics;
+
+  /**
    * Metric used to sort this leaderboard.
    */
   @API(help="Metric used to sort this leaderboard", direction=API.Direction.INOUT)
-  public String metric;
+  public String sort_metric;
 
   /**
    * Metric direction used in the sort.

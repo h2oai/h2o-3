@@ -118,9 +118,6 @@ public class EckoClient {
 
 
   public static final void addEvent(UserFeedbackEvent event) {
-    ProjectStatus status = statuses.get(statuses.get(event.getAutoML().project()));
-    status.lastEvent = event;
-
     if (eckoEnabled && !eckoInitialized) {
       initializeEcko();  // NOTE: can set eckoEnabled to false
     }
@@ -129,6 +126,9 @@ public class EckoClient {
       AutoML autoML = event.getAutoML();
       String project = autoML.project();
       initializeProjectPage(project);
+
+      ProjectStatus status = statuses.get(statuses.get(event.getAutoML().project()));
+      status.lastEvent = event;
 
       int httpStatus = -1;
       try {
@@ -163,18 +163,20 @@ public class EckoClient {
 
 
   public static final void updateLeaderboard(Leaderboard leaderboard) {
-    ProjectStatus status = statuses.get(leaderboard.getProject());
-    status.leaderboard = leaderboard;
-    status.leader = leaderboard.leader();
-    status.leaderError = leaderboard.errorForModel(status.leader);
-    status.leaderMetric = leaderboard.metricForModel(status.leader);
-
     if (eckoEnabled && !eckoInitialized) {
       initializeEcko();  // NOTE: can set eckoEnabled to false
     }
 
-    String project = leaderboard.getProject();
     if (eckoEnabled) {
+      String project = leaderboard.getProject();
+      initializeProjectPage(project);
+
+      ProjectStatus status = statuses.get(project);
+      status.leaderboard = leaderboard;
+      status.leader = leaderboard.leader();
+      status.leaderError = leaderboard.defaultMetricForModel(status.leader);
+      status.leaderMetric = leaderboard.defaultMetricNameForModel(status.leader);
+
       String leaderboardTsv = leaderboard.toString(project, leaderboard.models(), "\\t", "\\n", false, true, true);
       String rankTsv = leaderboard.rankTsv();
       String timeTsv = leaderboard.timeTsv();

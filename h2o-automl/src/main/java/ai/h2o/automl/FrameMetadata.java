@@ -753,6 +753,7 @@ public class FrameMetadata extends Iced {
         _colMeta._thirdMoment = t._thirdMoment / ((_colMeta._v.length() - _colMeta._v.naCnt()) - 1);
         _colMeta._fourthMoment = t._fourthMoment / ((_colMeta._v.length() - _colMeta._v.naCnt()) - 1);
         _colMeta._MRTaskMillis = _elapsed;
+        Log.info("completed MetaPass1 for col number: " + _colMeta._idx);
         //_colMeta._skew = _colMeta._thirdMoment / Math.sqrt(_colMeta._variance*_colMeta._variance*_colMeta._variance);
         //_colMeta._kurtosis = _colMeta._fourthMoment / (_colMeta._variance * _colMeta._variance);
       }
