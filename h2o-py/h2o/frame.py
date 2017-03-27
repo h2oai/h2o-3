@@ -1814,8 +1814,20 @@ class H2OFrame(object):
         if is_type(column, str): column = self.names.index(column)
         if is_type(by, str):     by = self.names.index(by)
 
-        if values is None: values = "_"
+        if values is None:
+            values = "_"
+        else:
+            assert len(values) == len(self.columns), "Length of values does not match length of columns"
+            # convert string values to categorical num values
+            values2 = []
+            for i in range(0,len(values)):
+                if self.type(i) == "enum":
+                    values2.append(self.levels()[i].index(values[i]))
+                else:
+                    values2.append(values[i])
+            values = values2
         if group_by_frame is None: group_by_frame = "_"
+
 
         # This code below is needed to ensure the frame (self) exists on the server. Without it, self._ex._cache.fill()
         # fails with an assertion that ._id is None.

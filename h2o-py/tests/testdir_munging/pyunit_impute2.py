@@ -80,7 +80,12 @@ def impute2():
     assert imputed1 == 3.5, "Wrong value imputed. Expected imputed value of 3.5, but got {0}".format(imputed1)
     assert imputed2 == 9.5, "Wrong value imputed. Expected imputed value of 9.5, but got {0}".format(imputed2)
 
-
+    # Test values on frame with categoricals
+    h2o_data = h2o.create_frame(rows=10,missing_fraction=0.5,seed=123)
+    h2o_data.impute(values=[10.0,1,"c2.l7",10.0,"c4.l8",10.0,10.0,10.0,1,1])
+    sum_data = h2o_data.summary(return_data=True)
+    for c in h2o_data.columns:
+        assert sum_data[c]["missing_count"] == 0, "Column: " + c + " still has missing values"
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(impute2)
