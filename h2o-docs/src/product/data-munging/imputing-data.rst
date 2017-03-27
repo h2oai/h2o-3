@@ -17,7 +17,7 @@ The ``impute`` function accepts the following arguments:
    .. code-block:: r
 
    	#Upload the Airlines dataset
-   	> filePath <- h2o:::.h2o.locate("smalldata/airlines/allyears2k_headers.zip")
+   	> filePath <- "../smalldata/airlines/allyears2k_headers.zip"
    	> air <- h2o.importFile(filePath, "air")
    	> print(dim(air))
    	43978    31

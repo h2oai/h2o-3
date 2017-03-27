@@ -10,11 +10,11 @@ Run the following command to load data that resides on the same machine that is 
 	
 	> library(h2o)
 	> h2o.init(nthreads=-1)
-	> irisPath = "../../../smalldata/iris/iris_wheader.csv"
-	> iris.hex = h2o.uploadFile(path = irisPath, destination_frame = "iris.hex")
+	> irisPath <- "../../../smalldata/iris/iris_wheader.csv"
+	> iris.hex <- h2o.uploadFile(path = irisPath, destination_frame = "iris.hex")
 	  
    .. code-block:: python
    
 	 >>> import h2o
 	 >>> h2o.init()
-	 >>> df = h2o.upload_file("../smalldata/iris/iris_wheader.csv")
+	 >>> iris_df = h2o.upload_file("../smalldata/iris/iris_wheader.csv")
