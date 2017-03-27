@@ -6,8 +6,8 @@ import water.util.Log;
  * Extension used for checking failed nodes
  */
 public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
-    private long watchdogRetryTimeout = 6000;
-    private boolean bullyClient = false;
+    private long watchdogClientRetryTimeout = 6000;
+    private boolean watchDogClient = false;
     @Override
     public String getExtensionName() {
         return "Failed node watchdog";
@@ -17,10 +17,10 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
     public void printHelp() {
         System.out.println(
                 "\nFailed node watchdog extension:\n" +
-                        "    -watchdog_retry_timeout\n" +
+                        "    -watchdog_client_retry_timeout\n" +
                         "          Time in milliseconds specifying in which intervals the failed nodes are checked. If not \n" +
                         "          specified, the default value of 6000 ms is used. \n" +
-                        "    -bully_client\n" +
+                        "    -watchdog_client\n" +
                         "          Same as the client except the that cluster is stopped when this client \n" +
                         "          disconnects from the rest of the cloud or the cloud is stopped when it doesn't \n" +
                         "          hear heartbeat from the client for specified amount of time."
@@ -31,15 +31,15 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
     public String[] parseArguments(String[] args) {
         for (int i = 0; i < args.length - 1; i++) {
             H2O.OptString s = new H2O.OptString(args[i]);
-            if (s.matches("watchdog_retry_timeout")) {
-                watchdogRetryTimeout = s.parseInt(args[i + 1]);
+            if (s.matches("watchdog_client_retry_timeout")) {
+                watchdogClientRetryTimeout = s.parseInt(args[i + 1]);
                 String[] new_args = new String[args.length - 2];
                 System.arraycopy(args, 0, new_args, 0, i);
                 System.arraycopy(args, i + 2, new_args, i, args.length - (i + 2));
                 return new_args;
             }
-            else if(s.matches("bully_client")){
-                bullyClient = true; H2O.ARGS.client = true;
+            else if(s.matches("watchdog_client")){
+                watchDogClient = true; H2O.ARGS.client = true;
                 String[] new_args = new String[args.length - 1];
                 System.arraycopy(args, 0, new_args, 0, i);
                 System.arraycopy(args, i + 1, new_args, i, args.length - (i + 1));
@@ -51,15 +51,15 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
 
 
     public void validateArguments() {
-        if (watchdogRetryTimeout < 0) {
-            H2O.parseFailed("Failed noes watchdog retry timeout has to be positive: " + watchdogRetryTimeout);
+        if (watchdogClientRetryTimeout < 0) {
+            H2O.parseFailed("Watchdog client retry timeout has to be positive: " + watchdogClientRetryTimeout);
         }
     }
 
     @Override
     public void onLocalNodeStarted() {
         new FailedNodeWatchdogThread().start();
-        H2O.SELF._heartbeat._bully_client = bullyClient;
+        H2O.SELF._heartbeat._watchdog_client = watchDogClient;
     }
 
 
@@ -68,12 +68,12 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
      * is unreachable.
      */
     private static void handleClientDisconnect(H2ONode node) {
-        if(node._heartbeat._bully_client){
-            Log.warn("Bully client " + node + " disconnected!");
+        if(node._heartbeat._watchdog_client){
+            Log.warn("Watchdog client " + node + " disconnected!");
             BullyClientGoneTask tsk = new BullyClientGoneTask(node);
-            Log.warn("Asking the rest of the nodes in the cloud if bully client is really gone.");
+            Log.warn("Asking the rest of the nodes in the cloud whether watchdog client is really gone.");
             if(((BullyClientGoneTask)tsk.doAllNodes()).consensus) {
-                Log.fatal("Stopping H2O cloud since bully client is disconnected from all nodes in the cluster!");
+                Log.fatal("Stopping H2O cloud since the watchdog client is disconnected from all nodes in the cluster!");
                 H2O.shutdown(0);
             }
         }else if(node._heartbeat._client) {
@@ -151,6 +151,5 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
             }
         }
     }
-
 
 }

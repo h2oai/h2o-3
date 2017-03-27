@@ -26,7 +26,7 @@ public class UDPClientEvent extends UDP {
           }
           break;
         // Regular disconnect event also doesn't have any effect in multicast mode.
-        // However we need to catch the bully disconnect event in both multicast and flatfile mode.
+        // However we need to catch the watchdog disconnect event in both multicast and flatfile mode.
         case DISCONNECT:
           // handle regular disconnection
           if(H2O.isFlatfileEnabled()) {
@@ -35,9 +35,9 @@ public class UDPClientEvent extends UDP {
             H2O.removeClient(ce.clientNode);
           }
 
-          // In case the disconnection comes from bully client, stop the cloud ( in both multicast and flatfile mode )
-          if(ce.clientNode._heartbeat._bully_client){
-            Log.info("Stopping H2O cloud because bully client is disconnecting from the cloud.");
+          // In case the disconnection comes from the watchdog client, stop the cloud ( in both multicast and flatfile mode )
+          if(ce.clientNode._heartbeat._watchdog_client){
+            Log.info("Stopping H2O cloud because watchdog client is disconnecting from the cloud.");
             // client is sending disconnect message on purpose, we can stop the cloud even without asking
             // the rest of the nodes for consensus on this
             H2O.shutdown(0);
