@@ -2405,6 +2405,7 @@ class H2OFrame(object):
         """
         Pivot the frame designated by the three columns: index, column, and value. Index and column should be
         of type enum, int, or time.
+        For cases of multiple indexes for a column label, the aggregation method is to pick the first occurrence in the data frame
 
         :param index: Index is a column that will be the row label
         :param column: The labels for the columns in the pivoted Frame

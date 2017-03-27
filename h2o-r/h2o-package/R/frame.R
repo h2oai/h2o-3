@@ -1095,10 +1095,9 @@ h2o.impute <- function(data, column=0, method=c("mean","median","mode"), # TODO:
 #' @export
 range.H2OFrame <- function(...,na.rm = TRUE) c(min(...,na.rm=na.rm), max(...,na.rm=na.rm))
 
-#' Pivot the frame designated by the three columns: index, column, and value
-#' Index is a column that will be the row label
-#' Column is a column that contains categorical levels which will each be turned into a column
-#' Value is a column associated with an index and column
+#' Pivot the frame designated by the three columns: index, column, and value. Index and column should be
+#' of type enum, int, or time.
+#' For cases of multiple indexes for a column label, the aggregation method is to pick the first occurrence in the data frame
 #'
 #' @param x an H2OFrame
 #' @param index the column where pivoted rows should be aligned on
