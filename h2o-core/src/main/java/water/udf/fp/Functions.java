@@ -1,5 +1,6 @@
 package water.udf.fp;
 
+import java.util.ArrayList;
 import static water.util.Java7.*;
 
 import java.util.Arrays;
@@ -34,11 +35,11 @@ public class Functions {
 
     @Override public Z apply(X x) { return g.apply(f.apply(x)); }
   }
-  
+
   public static <X,Y,Z> Function<X, Z> compose(final Function<Y, Z> g, final Function<X,Y> f) {
     return new Composition<>(f, g);
   }
-  
+
   public static <X> Function<X, X> identity() {
     return new Function<X, X>() {
       @Override public X apply(X x) { return x; }
@@ -50,7 +51,7 @@ public class Functions {
       public T apply(Long i) { return list.get(i.intValue()); }
     };
   }
-  
+
   public static <X, Y> Iterable<Y> map(Iterable<X> xs, Function<X, Y> f) {
     List<Y> ys = new LinkedList<>();
     for (X x : xs) ys.add(f.apply(x));
@@ -86,9 +87,47 @@ public class Functions {
       return Objects.equals(separator, other.separator);
     }
   }
-  
+
   public static Unfoldable<String, String> splitBy(final String separator) {
     return new StringSplitter(separator);
+  }
+
+  static class OneHotEncoder implements Unfoldable<Integer, Integer> {
+    private String[] domain;
+    private int hashCode;
+
+    OneHotEncoder(String[] domain) {
+      this.domain = domain;
+      hashCode = 911 + Arrays.hashCode(domain);
+    }
+
+    @Override
+    public int hashCode() {
+      return hashCode;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      return (obj instanceof OneHotEncoder) &&
+          Arrays.equals(domain, ((OneHotEncoder)obj).domain);
+    }
+
+    @Override
+    public List<Integer> apply(Integer cat) {
+      List<Integer> bits = new ArrayList<>(domain.length+1);
+
+      for (int i = 0; i < domain.length; i++) bits.add(cat != null && cat == i ? 1 : 0);
+      bits.add(cat == null ? 1 : 0);
+      return bits;
+    }
+  }
+
+  public static Unfoldable<Integer, Integer> oneHotEncode(String[] domain) {
+    return new OneHotEncoder(domain);
+  }
+
+  public static int hashCode(Object x) {
+    return x == null ? 0 : x.hashCode();
   }
 
   /**
