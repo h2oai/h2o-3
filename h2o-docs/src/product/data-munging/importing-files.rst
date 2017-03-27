@@ -16,8 +16,8 @@ The ``importFolder`` (R)/``import_file`` (Python) function can be used to import
 	# To import all .csv files from the prostate_folder directory:
 	> library(h2o)
 	> h2o.init(nthreads=-1)
-	> prosPath = system.file("extdata", "prostate_folder", package = "h2o")
-	> prostate_pattern.hex = h2o.importFolder(path = prosPath, pattern = ".*.csv", destination_frame = "prostate.hex")
+	> prosPath <- system.file("extdata", "prostate_folder", package = "h2o")
+	> prostate_pattern.hex <- h2o.importFolder(path = prosPath, pattern = ".*.csv", destination_frame = "prostate.hex")
 	> class(prostate_pattern.hex)
 	> summary(prostate_pattern.hex)
 	  
