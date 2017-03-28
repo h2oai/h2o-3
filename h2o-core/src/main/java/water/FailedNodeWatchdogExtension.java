@@ -117,8 +117,7 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
     /**
      * Thread used to run disconnect hooks on nodes who disconnects from the cloud
      */
-    private static class FailedNodeWatchdogThread extends Thread {
-        final private int sleepMillis = 6000; // 6 seconds
+    private class FailedNodeWatchdogThread extends Thread {
 
         public FailedNodeWatchdogThread() {
             super("FailedNodeWatchdogThread");
@@ -128,7 +127,6 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
         @Override
         public void run() {
             while (true) {
-
                 // in multicast mode the the _connection_closed is not set on clients so we don't know which client
                 // is still available and which not. We can check the clients to see if they are still available based on
                 // _last_heard_from field
@@ -140,13 +138,13 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
                     }
                 }
 
-                for(H2ONode node : H2O.getMembersAndClients()){
+                for(H2ONode node : H2O.getClients()){
                     if(node._connection_closed){
                         handleClientDisconnect(node);
                     }
                 }
                 try {
-                    Thread.sleep(sleepMillis);
+                    Thread.sleep(watchdogClientRetryTimeout);
                 } catch (InterruptedException ignore) {}
             }
         }
