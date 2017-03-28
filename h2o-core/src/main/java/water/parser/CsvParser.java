@@ -85,7 +85,7 @@ MAIN_LOOP:
         // ---------------------------------------------------------------------
         case SKIP_LINE:
           offset = skipToNewLine(bits, offset);
-          if (isEOL(bits[offset])) {
+          if (offset >= bits.length || isEOL(bits[offset])) {
             state = EOL;
             continue MAIN_LOOP;
           } else {

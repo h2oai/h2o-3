@@ -33,8 +33,8 @@ public abstract class Parser extends Iced {
   static final byte CHAR_TAB = '\t';
   static final byte CHAR_CR = 13;
   static final byte CHAR_LF = 10;
-  static final byte[] CRLF = new byte[]{CHAR_CR, CHAR_LF};
-  static final byte[] LFCR = new byte[]{CHAR_LF, CHAR_CR};
+  static final String CRLF = "\n\r";
+  static final String LFCR = "\r\n";
   static final byte CHAR_SPACE = ' ';
   static final byte CHAR_DOUBLE_QUOTE = '"';
   static final byte CHAR_SINGLE_QUOTE = '\'';

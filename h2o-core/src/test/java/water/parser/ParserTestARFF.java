@@ -81,7 +81,7 @@ public class ParserTestARFF extends TestUtil {
       assertEquals(len, fr.numRows());
       assertEquals(exp.length, fr.numCols());
       for (int j = 0; j < fr.numCols(); ++j) {
-        assertTrue(exp[j].equals(fr.names()[j]));
+        assertEquals(exp[j], fr.name(j));
       }
     } finally {
       fr.delete();
@@ -144,12 +144,8 @@ public class ParserTestARFF extends TestUtil {
             "1",
             "2",
     };
-    byte[] exp_types = new byte[]{
-            Vec.T_NUM
-    };
-    String[] exp_names = new String[]{
-            "numeric"
-    };
+    byte[] exp_types = new byte[]{Vec.T_NUM};
+    String[] exp_names = new String[]{"numeric"};
     final int len = 3;
 
     String[] dataset = ParserTest.getDataForSeparator(',', data);

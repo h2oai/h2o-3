@@ -2,12 +2,10 @@ package water.parser;
 
 import java.util.ArrayList;
 
-import org.eclipse.jetty.util.StringUtil;
 import water.Key;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.BytesStats;
-import water.util.StringUtils;
 
 import static water.parser.DefaultParserProviders.ARFF_INFO;
 
@@ -110,8 +108,7 @@ class ARFFParser extends CsvParser {
     return parseSetup;
   }
 
-  private final static byte[] DATA1 =StringUtils.bytesOf("@DATA");
-  private final static byte[] DATA2 =StringUtils.bytesOf("@data");
+  private final static String DATA_MARKER = "@DATA";
   
   private static int readArffHeader(int offset, ArrayList<String> header, byte[] bits, boolean singleQuotes) {
     while (offset < bits.length) {
@@ -124,7 +121,7 @@ class ARFFParser extends CsvParser {
       if (bits[lineStart] == '#') continue; // Ignore      comment lines
       if (bits[lineStart] == '%') continue; // Ignore ARFF comment lines
       if (lineEnd > lineStart) {
-        if (ArrayUtils.matches(bits, lineStart, DATA1) || ArrayUtils.matches(bits, lineStart, DATA2)) {
+        if (ArrayUtils.matchesInUpperCase(bits, lineStart, DATA_MARKER)) {
           BytesStats bs = new BytesStats(bits, lineEnd); // for debugging
           break;
         }
