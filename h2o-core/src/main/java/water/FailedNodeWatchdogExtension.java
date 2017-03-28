@@ -62,7 +62,6 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
         H2O.SELF._heartbeat._watchdog_client = watchDogClient;
     }
 
-
     /**
      * This method checks whether the client is disconnected from this node due to some problem such as client or network
      * is unreachable.
@@ -70,9 +69,9 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
     private static void handleClientDisconnect(H2ONode node) {
         if(node._heartbeat._watchdog_client){
             Log.warn("Watchdog client " + node + " disconnected!");
-            BullyClientGoneTask tsk = new BullyClientGoneTask(node);
+            WatchdogClientDisconnectedTask tsk = new WatchdogClientDisconnectedTask(node);
             Log.warn("Asking the rest of the nodes in the cloud whether watchdog client is really gone.");
-            if(((BullyClientGoneTask)tsk.doAllNodes()).consensus) {
+            if((tsk.doAllNodes()).clientDisconnectedConsensus) {
                 Log.fatal("Stopping H2O cloud since the watchdog client is disconnected from all nodes in the cluster!");
                 H2O.shutdown(0);
             }
@@ -90,28 +89,40 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
     }
 
     /**
-     * Helper MR task used to detect consensus on the fact that bully client is disconnected from the network
+     * Helper MR task used to detect clientDisconnectedConsensus on the timeout we last heard from the watchdog client
      */
-    private static class BullyClientGoneTask extends MRTask {
-        public boolean consensus = true;
+    private static class WatchdogClientDisconnectedTask extends MRTask<WatchdogClientDisconnectedTask> {
+        private boolean clientDisconnectedConsensus = false;
         private H2ONode clientNode;
 
-        public BullyClientGoneTask(H2ONode clientNode) {
+        WatchdogClientDisconnectedTask(H2ONode clientNode) {
             this.clientNode = clientNode;
         }
 
         @Override
-        public void reduce(MRTask mrt) {
-            if(((BullyClientGoneTask)mrt).consensus) { // don't change the value in case negative consensus
-                for(H2ONode node: H2O.getClients()){
-                    // find the same client node on the other nodes
-                    if(node.equals(clientNode) && node._connection_closed){
-                        consensus = true;
-                        break;
-                    }
+        public void reduce(WatchdogClientDisconnectedTask mrt) {
+            this.clientDisconnectedConsensus = this.clientDisconnectedConsensus && mrt.clientDisconnectedConsensus;
+        }
+
+        @Override
+        protected void setupLocal() {
+            H2ONode desiredClient = null;
+            for (H2ONode client : H2O.getClients()) {
+                if (client.equals(clientNode)) {
+                    desiredClient = client;
                 }
             }
+
+            if (desiredClient == null || isTimeoutExceeded(desiredClient)) {
+                // Agree on the consensus if this node does not see the client at all or if this node sees the client
+                // however the timeout is out
+                clientDisconnectedConsensus = true;
+            }
         }
+    }
+
+    private static boolean isTimeoutExceeded(H2ONode client) {
+        return (System.currentTimeMillis() - client._last_heard_from) >= HeartBeatThread.CLIENT_TIMEOUT;
     }
 
     /**
@@ -127,22 +138,12 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
         @Override
         public void run() {
             while (true) {
-                // in multicast mode the the _connection_closed is not set on clients so we don't know which client
-                // is still available and which not. We can check the clients to see if they are still available based on
-                // _last_heard_from field
-                if(!H2O.isFlatfileEnabled()){
-                    for(H2ONode client: H2O.getClients()){
-                        if((System.currentTimeMillis() - client._last_heard_from) >= HeartBeatThread.CLIENT_TIMEOUT){
-                            client._connection_closed = true;
-                        }
+                for(H2ONode client: H2O.getClients()){
+                    if(isTimeoutExceeded(client)){
+                        handleClientDisconnect(client);
                     }
                 }
 
-                for(H2ONode node : H2O.getClients()){
-                    if(node._connection_closed){
-                        handleClientDisconnect(node);
-                    }
-                }
                 try {
                     Thread.sleep(watchdogClientRetryTimeout);
                 } catch (InterruptedException ignore) {}

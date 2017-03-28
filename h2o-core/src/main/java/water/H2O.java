@@ -2040,10 +2040,4 @@ final public class H2O {
   public static HashSet<H2ONode> getClients(){
     return (HashSet<H2ONode>) CLIENTS.clone();
   }
-
-  public static HashSet<H2ONode> getMembersAndClients(){
-    HashSet<H2ONode> membersAndClients = new HashSet<>(Arrays.asList(H2O.CLOUD.members()));
-    membersAndClients.addAll(CLIENTS);
-    return  (HashSet<H2ONode>) membersAndClients.clone();
-  }
 }
