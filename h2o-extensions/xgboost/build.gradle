@@ -1,4 +1,6 @@
 description = "H2O XGBoost support"
 
 dependencies {
+    compile project(":h2o-core")
+    compile project(":h2o-algos")
 }
