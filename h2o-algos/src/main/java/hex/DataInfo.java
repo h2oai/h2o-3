@@ -63,7 +63,19 @@ public class DataInfo extends Keyed<DataInfo> {
   public int catNAFill(int cid) {return _catNAFill[cid];}
 
   public int[] catMap(int i) {
-    return _catMap == null?null:_catMap[i];
+    if(_catMap != null && _catMap[i] != null) return _catMap[i];
+    if(!_useAllFactorLevels){ // make new catmap
+      int [] catMap = new int[catDomainLen(i)+1];
+      catMap[0] = -1;
+      for(int j = 1; j < catMap.length; j++)
+        catMap[j] = j-1;
+      return catMap;
+    }
+    return null;
+  }
+
+  private int catDomainLen(int i) {
+    return _catOffsets[i+1]-_catOffsets[i];
   }
 
   public double normMul(int i) {
@@ -969,9 +981,8 @@ public class DataInfo extends Keyed<DataInfo> {
       assert _valid:"Categorical value out of bounds, got " + val + ", next cat starts at " + fullCatOffsets()[cid+1];
       val = _catNAFill[cid];
     }
-    if (_catMap != null && _catMap[cid] != null) {  // some levels are ignored?
+    if (_catMap != null && _catMap[cid] != null && val != -1) {  // some levels are ignored?
       val = _catMap[cid][val];
-      assert _useAllFactorLevels;
     }
     return val < 0?-1:val + _catOffsets[cid];
   }

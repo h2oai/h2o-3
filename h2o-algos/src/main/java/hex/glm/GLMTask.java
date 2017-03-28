@@ -1406,20 +1406,16 @@ public abstract class GLMTask  {
     final double _NA;
     final double _bOld; // current old value at j
     final double _bNew; // global beta @ j-1 that was just updated.
-
     double _res;
     int _iter_cnt;
-    double _max; double _min;
 
-    public GLMCoordinateDescentTaskSeqNaiveNumNum(int iter_cnt, double betaOld, double betaNew, double normMul, double normSub, double NA, double max, double min) { // pass it norm mul and norm sup - in the weights already done. norm
+    public GLMCoordinateDescentTaskSeqNaiveNumNum(int iter_cnt, double betaOld, double betaNew, double normMul, double normSub, double NA) { // pass it norm mul and norm sup - in the weights already done. norm
       _iter_cnt = iter_cnt;
       _normMul = normMul;
       _normSub = normSub;
       _bOld = betaOld;
       _bNew = betaNew;
       _NA = NA;
-      _max = max;
-      _min = min;
     }
 
     @Override
@@ -1745,7 +1741,7 @@ public abstract class GLMTask  {
         eta = r.innerProduct(_betaw);
         _glmf.computeWeights(y,eta,0,r.weight,glmw);
         _likelihood += glmw.l;
-        zTilda[i] = eta-_betaw[_betaw.length-1];
+        zTilda[i] = eta - _betaw[_betaw.length-1];
         assert glmw.w >= 0 || Double.isNaN(glmw.w) : "invalid weight " + glmw.w; // allow NaNs - can occur if line-search is needed!
         wChunk[i] = glmw.w;
         zChunk[i] = glmw.z;
@@ -1756,7 +1752,8 @@ public abstract class GLMTask  {
         }
         for(int j = 0; j < r.nNums; ++j){ // num vars
           int id = r.numIds == null?(j + numStart):r.numIds[j];
-          denums[id]+= glmw.w*r.get(id)*r.get(id);
+          double d = r.get(id);
+          denums[id]+= glmw.w*d*d;
         }
       }
     }
@@ -1767,7 +1764,6 @@ public abstract class GLMTask  {
       wsum+=git.wsum;
       wsumu += git.wsumu;
       _likelihood += git._likelihood;
-      super.reduce(git);
     }
 
 
