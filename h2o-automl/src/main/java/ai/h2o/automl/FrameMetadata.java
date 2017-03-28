@@ -713,10 +713,9 @@ public class FrameMetadata extends Iced {
       }
 
       int nbins = (int) Math.ceil(1 + log2(v.length()));  // Sturges nbins
-      if(_colMeta._v.isBad()){
-        Log.info("Skipping all NaN column -> " + _colMeta._name);
-      }
-      if(!(_colMeta._ignored) && !(_colMeta._v.isBad())) {
+      int xbins = (char) ((long) v.max() - (long) v.min());
+
+      if(!(_colMeta._ignored) && !(_colMeta._v.isBad()) && xbins > 0) {
         _colMeta._histo = MetaCollector.DynamicHisto.makeDHistogram(colname, nbins, nbins, (byte) (v.isCategorical() ? 2 : (v.isInt() ? 1 : 0)), v.min(), v.max());
       }
 
@@ -747,7 +746,8 @@ public class FrameMetadata extends Iced {
 
     @Override public void compute2() {
       long start = System.currentTimeMillis();
-      if (!(_colMeta._ignored) && !(_colMeta._v.isBad())) {
+      int xbins = (char) ((long) _colMeta._v.max() - (long) _colMeta._v.min());
+      if (!(_colMeta._ignored) && !(_colMeta._v.isBad()) && xbins > 0) {
         HistTask t = new HistTask(_colMeta._histo, _mean).doAll(_colMeta._v);
         _elapsed = System.currentTimeMillis() - start;
         _colMeta._thirdMoment = t._thirdMoment / ((_colMeta._v.length() - _colMeta._v.naCnt()) - 1);
@@ -755,8 +755,8 @@ public class FrameMetadata extends Iced {
         _colMeta._MRTaskMillis = _elapsed;
         //_colMeta._skew = _colMeta._thirdMoment / Math.sqrt(_colMeta._variance*_colMeta._variance*_colMeta._variance);
         //_colMeta._kurtosis = _colMeta._fourthMoment / (_colMeta._variance * _colMeta._variance);
-        tryComplete();
       }
+      tryComplete();
     }
 
     private static class HistTask extends MRTask<HistTask> {
