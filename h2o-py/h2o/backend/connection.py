@@ -309,7 +309,7 @@ class H2OConnection(backwards_compatible()):
             for name in os.environ:
                 if name.lower() == scheme + "_proxy":
                     warn("Proxy is defined in the environment: %s. "
-                         "This may interfere with your H2O Connection." % os.environ[name])
+                         "This may interfere with your H2O Connection." % name)
 
         try:
             retries = 20 if server else 5
