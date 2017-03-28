@@ -161,10 +161,10 @@ cd h2o-3
 > - Running tests starts five test JVMs that form an H2O cluster and requires at least 8GB of RAM (preferably 16GB of RAM).
 > - Running `./gradlew syncRPackages` is supported on Windows, OS X, and Linux, and is strongly recommended but not required. `./gradlew syncRPackages` ensures a complete and consistent environment with pre-approved versions of the packages required for tests and builds. The packages can be installed manually, but we recommend setting an ENV variable and using `./gradlew syncRPackages`. To set the ENV variable, use the following format (where `${WORKSPACE} can be any path):
 >  
->  ```
+> ```
 > mkdir -p ${WORKSPACE}/Rlibrary
-export R_LIBS_USER=${WORKSPACE}/Rlibrary
-```
+> export R_LIBS_USER=${WORKSPACE}/Rlibrary
+> ```
 
 #### Recipe 3:  Pull, clean, build, and run tests
 
