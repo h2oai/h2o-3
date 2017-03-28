@@ -348,7 +348,12 @@ public class ParseSetup extends Iced {
 
         // Compute the max line length (to help estimate the number of bytes to read per Parse map)
         bytesStats = new BytesStats(bits);
-        _maxLineLength = bytesStats.maxWidth;
+        _maxLineLength = maxLineLength(bits);
+        {
+          if (_maxLineLength != bytesStats.maxWidth) {
+//TODO(vlad): investigate! the length produced by maxLineLength is 1.3 meg, and the line consists of zero chars            throw new IllegalStateException("wtf");
+          }
+        }
         if (_maxLineLength==-1) throw new H2OIllegalArgumentException("The first 4MB of the data don't contain any line breaks. Cannot parse.");
 
         try {
@@ -572,6 +577,35 @@ public class ParseSetup extends Iced {
         throw new ParseDataset.H2OParseException("UTF16 encoding detected, but is not supported.");
       }
     }
+  }
+
+  /**
+   * Compute the longest line length in an array of bytes
+   * @param bytes Array of bytes (containing 0 or more newlines)
+   * @return The longest line length in the given bytes
+   */
+  private static final long maxLineLength(byte[] bytes) {
+    if (bytes.length >= 2) {
+      String st = new String(bytes);
+      StringReader sr = new StringReader(st);
+      BufferedReader br = new BufferedReader(sr);
+      String line;
+      long maxLineLength=0;
+      try {
+        while(true) {
+          line = br.readLine();
+          if (line == null) break;
+          int ll = line.length();
+          if (ll > maxLineLength) {
+            maxLineLength = ll;
+          }
+        }
+      } catch (IOException e) {
+        return -1;
+      }
+      return maxLineLength;
+    }
+    return -1;
   }
 
   /**
