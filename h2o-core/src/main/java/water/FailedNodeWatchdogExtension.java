@@ -2,6 +2,7 @@ package water;
 
 import water.util.Log;
 
+
 /**
  * Extension used for checking failed nodes
  */
@@ -27,26 +28,36 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
         );
     }
 
-    @Override
-    public String[] parseArguments(String[] args) {
-        for (int i = 0; i < args.length - 1; i++) {
+    private String[] parseClient(String[] args){
+        for (int i = 0; i < args.length; i++) {
             H2O.OptString s = new H2O.OptString(args[i]);
-            if (s.matches("watchdog_client_retry_timeout")) {
+                if(s.matches("watchdog_client")){
+                    watchDogClient = true; H2O.ARGS.client = true;
+                    String[] new_args = new String[args.length - 1];
+                    System.arraycopy(args, 0, new_args, 0, i);
+                    System.arraycopy(args, i + 1, new_args, i, args.length - (i + 1));
+                    return new_args;
+            }
+        }
+        return args;
+    }
+
+    private String[] parseTimeout(String args[]){
+        for (int i = 0; i < args.length; i++) {
+            H2O.OptString s = new H2O.OptString(args[i]);
+            if(s.matches("watchdog_client_retry_timeout")){
                 watchdogClientRetryTimeout = s.parseInt(args[i + 1]);
                 String[] new_args = new String[args.length - 2];
                 System.arraycopy(args, 0, new_args, 0, i);
                 System.arraycopy(args, i + 2, new_args, i, args.length - (i + 2));
                 return new_args;
             }
-            else if(s.matches("watchdog_client")){
-                watchDogClient = true; H2O.ARGS.client = true;
-                String[] new_args = new String[args.length - 1];
-                System.arraycopy(args, 0, new_args, 0, i);
-                System.arraycopy(args, i + 1, new_args, i, args.length - (i + 1));
-                return new_args;
-            }
         }
         return args;
+    }
+    @Override
+    public String[] parseArguments(String[] args) {
+        return parseClient(parseTimeout(args));
     }
 
 
@@ -79,7 +90,7 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
             Log.warn("Client "+ node +" disconnected!");
         }
 
-        // in both cases remove the client
+        // in both cases remove the client since the timeout is out
         if(node._heartbeat._client){
             H2O.removeClient(node);
             if(H2O.isFlatfileEnabled()){
