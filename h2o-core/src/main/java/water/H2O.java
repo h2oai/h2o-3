@@ -26,6 +26,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
@@ -1325,7 +1326,7 @@ final public class H2O {
   private static HashSet<H2ONode> STATIC_H2OS = null;
 
   /* List of all clients that ever connected to this cloud */
-  private static HashSet<H2ONode> CLIENTS = new HashSet<>();
+  private static Map<H2ONode.H2Okey, H2ONode> CLIENTS_MAP = new ConcurrentHashMap<>();
 
   // Reverse cloud index to a cloud; limit of 256 old clouds.
   static private final H2O[] CLOUDS = new H2O[256];
@@ -2025,19 +2026,23 @@ final public class H2O {
     return (HashSet<H2ONode>) STATIC_H2OS.clone();
   }
 
-  public static boolean reportClient(H2ONode client){
-    boolean newClient = CLIENTS.add(client);
-    if(newClient){
+  public static H2ONode reportClient(H2ONode client){
+    H2ONode oldClient = CLIENTS_MAP.put(client._key, client);
+    if(oldClient == null){
       Log.info("New client discovered at " + client);
     }
-    return newClient;
+    return oldClient;
   }
 
-  public static boolean removeClient(H2ONode client){
-    return CLIENTS.remove(client);
+  public static H2ONode removeClient(H2ONode client){
+    return CLIENTS_MAP.remove(client._key);
   }
 
   public static HashSet<H2ONode> getClients(){
-    return (HashSet<H2ONode>) CLIENTS.clone();
+    return new HashSet<>(CLIENTS_MAP.values());
+  }
+
+  public static Map<H2ONode.H2Okey, H2ONode> getClientsByKey(){
+    return new HashMap<>(CLIENTS_MAP);
   }
 }

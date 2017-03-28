@@ -118,14 +118,9 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
 
         @Override
         protected void setupLocal() {
-            H2ONode desiredClient = null;
-            for (H2ONode client : H2O.getClients()) {
-                if (client.equals(clientNode)) {
-                    desiredClient = client;
-                }
-            }
+            final H2ONode foundClient = H2O.getClientsByKey().get(clientNode._key);
 
-            if (desiredClient == null || isTimeoutExceeded(desiredClient, watchdogClientRetryTimeout )) {
+            if (foundClient == null || isTimeoutExceeded(foundClient, watchdogClientRetryTimeout )) {
                 // Agree on the consensus if this node does not see the client at all or if this node sees the client
                 // however the timeout is out
                 clientDisconnectedConsensus = true;
