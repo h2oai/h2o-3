@@ -44,7 +44,8 @@ public class ParseSetup extends Iced {
   String[][] _data;           // First few rows of parsed/tokenized data
 
   int tentativeNumLines = -1;
-  
+  int dataOffset = -1;
+
   String [] _fileNames = new String[]{"unknown"};
 
   public void setFileName(String name) {_fileNames[0] = name;}

@@ -20,8 +20,6 @@ class ARFFParser extends CsvParser {
     if (columnNames != null) throw new UnsupportedOperationException("ARFFParser doesn't accept columnNames.");
 
     // Parse all lines starting with @ until EOF or @DATA
-    boolean haveData = false;
-    int offset = 0;
     String[][] data = new String[0][];;
     String[] labels;
     String[][] domains;
@@ -32,9 +30,9 @@ class ARFFParser extends CsvParser {
     
     // header section
     ArrayList<String> header = new ArrayList<>();
-    offset = readArffHeader(offset, header, bits, singleQuotes);
-    if (offset < bits.length && !CsvParser.isEOL(bits[offset]))
-      haveData = true; //more than just the header
+    int dataOffset = readArffHeader(0, header, bits, singleQuotes);
+    
+    boolean haveData = dataOffset < bits.length;
 
     if (header.size() == 0)
       throw new ParseDataset.H2OParseException("No data!");
@@ -52,6 +50,7 @@ class ARFFParser extends CsvParser {
     if (haveData) {
       String[] datalines = new String[0];
       ArrayList<String> datablock = new ArrayList<>();
+      int offset = dataOffset;
       while (offset < bits.length) {
         int lineStart = offset;
         while (offset < bits.length && !CsvParser.isEOL(bits[offset])) ++offset;
@@ -105,6 +104,7 @@ class ARFFParser extends CsvParser {
     // Return the final setup
     final ParseSetup parseSetup = new ParseSetup(ARFF_INFO, sep, singleQuotes, ParseSetup.NO_HEADER, ncols, labels, ctypes, domains, naStrings, data);
     parseSetup.tentativeNumLines = numLines;
+    parseSetup.dataOffset = dataOffset;
     return parseSetup;
   }
 
@@ -122,7 +122,7 @@ class ARFFParser extends CsvParser {
       if (bits[lineStart] == '%') continue; // Ignore ARFF comment lines
       if (lineEnd > lineStart) {
         if (ArrayUtils.matchesInUpperCase(bits, lineStart, DATA_MARKER)) {
-          BytesStats bs = new BytesStats(bits, lineEnd); // for debugging
+  //        BytesStats bs = new BytesStats(bits, lineEnd); // for debugging
           break;
         }
         String str = new String(bits, lineStart, lineEnd - lineStart).trim();

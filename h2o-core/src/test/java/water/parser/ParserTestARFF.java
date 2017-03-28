@@ -795,6 +795,7 @@ public class ParserTestARFF extends TestUtil {
    */
   @Test public void testPUBDEV3281() {
     final String fname = "smalldata/junit/arff/jm1.arff.txt";
+    int expectedLength = 10885;
     NFSFileVec nfs = null;
     try {
       nfs = makeNfsFileVec(fname);
@@ -808,13 +809,15 @@ public class ParserTestARFF extends TestUtil {
       boolean deleteOnDone = true;
       boolean singleQuote = false;
       final ParseSetup globalSetup = ParseSetup.guessSetup(keys, singleQuote, ParseSetup.GUESS_HEADER);
-
+      assertEquals(expectedLength, globalSetup.tentativeNumLines);
+      assertEquals(16021, globalSetup.dataOffset);
       Frame k = ParseDataset.parse(okey, keys, deleteOnDone, globalSetup);
       Scope.track(k);
       final Vec vec = k.anyVec();
       assertNotNull(vec);
-      String s = vec.toString();
-      assertEquals(10885, vec.length());
+      String expectedEspc = "[0, 143, 479, 828, 1159, 1498, 1830, 2143, 2491, 2830, 3177, 3518, 3874, 4208, 4584, 4948, 5347, 5713, 6064, 6414, 6765, 7111, 7445, 7778, 8124, 8469, 8822, 9173, 9516, 9852, 10194, 10529, 10885]";
+      assertEquals(expectedEspc, Arrays.toString(vec.espc()));
+      assertEquals(expectedLength, vec.length());
     }
   }
 }
