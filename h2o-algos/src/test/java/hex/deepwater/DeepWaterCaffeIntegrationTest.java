@@ -20,6 +20,7 @@ public class DeepWaterCaffeIntegrationTest extends DeepWaterAbstractIntegrationT
   @BeforeClass
   public static void checkBackend() { Assume.assumeTrue(DeepWater.haveBackend(DeepWaterParameters.Backend.caffe)); };
 
+  @Ignore
   @Test
   public void run() throws Exception {
     /*
@@ -73,12 +74,6 @@ public class DeepWaterCaffeIntegrationTest extends DeepWaterAbstractIntegrationT
         1234,
         true // GPU
     );
-    model.learning_rate(.01f);
-    model.momentum(.9f);
-
-    model.start();
-    System.out.println("Press enter");
-//    System.in.read();
 
     System.out.println("Train");
 
@@ -94,15 +89,8 @@ public class DeepWaterCaffeIntegrationTest extends DeepWaterAbstractIntegrationT
       model.predict(ps);
     }
 
-    model.saveModel("graph");
-    model.saveParam("params");
-    model.loadParam("params");
-
-//    // Monitor training
-//    final long start = System.nanoTime();
-//    double time = (System.nanoTime() - start) / 1e9;
-//    long processed = 0;
-//    int ps = (int) (processed / time);
-//    String text = (int) time + "s, " + processed + " (" + (ps) + "/s) ";
-  }
+    model.saveModel("/tmp/graph");
+    model.saveParam("/tmp/params");
+    model.loadParam("/tmp/params");
+ }
 }
