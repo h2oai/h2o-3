@@ -4,6 +4,7 @@ import water.H2O;
 import water.Iced;
 import water.Job;
 import water.Key;
+import water.util.ArrayUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,6 +33,8 @@ public abstract class Parser extends Iced {
   static final byte CHAR_TAB = '\t';
   static final byte CHAR_CR = 13;
   static final byte CHAR_LF = 10;
+  static final byte[] CRLF = new byte[]{CHAR_CR, CHAR_LF};
+  static final byte[] LFCR = new byte[]{CHAR_LF, CHAR_CR};
   static final byte CHAR_SPACE = ' ';
   static final byte CHAR_DOUBLE_QUOTE = '"';
   static final byte CHAR_SINGLE_QUOTE = '\'';
@@ -62,8 +65,31 @@ public abstract class Parser extends Iced {
   protected final byte CHAR_SEPARATOR;
 
   protected static final long LARGEST_DIGIT_NUMBER = Long.MAX_VALUE/10;
+  
   protected static boolean isEOL(byte c) { return (c == CHAR_LF) || (c == CHAR_CR); }
+  protected static boolean isCRLF(byte[] bytes, int offset) {
+    return ArrayUtils.matches(bytes, offset, CRLF) ||
+           ArrayUtils.matches(bytes, offset, LFCR); 
+  }
 
+  protected static boolean isCommentChar(byte c) {
+    return c == '#'
+        || isEOL(c)
+        || c == '@' /*also treat as comments leading '@' from ARFF format*/
+        || c == '%'; /*also treat as comments leading '%' from ARFF format*/
+  }
+
+  protected static int skipSpaces(byte[] bits, int offset) {
+    while (offset < bits.length && bits[offset] == CHAR_SPACE) offset++;
+    return Math.max(0, Math.min(offset, bits.length));
+  }
+
+  protected static int skipToNewLine(byte[] bits, int offset) {
+    while (offset < bits.length && !isEOL(bits[offset])) offset++;
+    if (isCRLF(bits, offset)) ++offset;
+    return Math.max(0, Math.min(offset, bits.length));
+  }
+  
   protected final ParseSetup _setup;
   protected final Key<Job> _jobKey;
   protected Parser( ParseSetup setup, Key<Job> jobKey ) { _setup = setup;  CHAR_SEPARATOR = setup._separator; _jobKey = jobKey;}

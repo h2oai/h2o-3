@@ -5,6 +5,7 @@ import water.api.schemas3.ParseSetupV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.*;
 import water.util.ArrayUtils;
+import water.util.BytesStats;
 import water.util.FileUtils;
 import water.util.Log;
 
@@ -42,6 +43,8 @@ public class ParseSetup extends Iced {
   String[][] _na_strings;       // Strings for NA in a given column
   String[][] _data;           // First few rows of parsed/tokenized data
 
+  int tentativeNumLines = -1;
+  
   String [] _fileNames = new String[]{"unknown"};
 
   public void setFileName(String name) {_fileNames[0] = name;}
@@ -288,6 +291,7 @@ public class ParseSetup extends Iced {
 
     // Output
     public ParseSetup _gblSetup;
+    public BytesStats bytesStats;
     public long _totalParseSize;
     public long _maxLineLength;
     String _file;
@@ -343,14 +347,10 @@ public class ParseSetup extends Iced {
         checkEncoding(bits);
 
         // Compute the max line length (to help estimate the number of bytes to read per Parse map)
-        _maxLineLength = maxLineLength(bits);
+        bytesStats = new BytesStats(bits);
+        _maxLineLength = bytesStats.maxWidth;
         if (_maxLineLength==-1) throw new H2OIllegalArgumentException("The first 4MB of the data don't contain any line breaks. Cannot parse.");
 
-        // only preview 1 DFLT_CHUNK_SIZE for ByteVecs, UploadFileVecs, compressed, and small files
-/*        if (ice instanceof ByteVec
-                || ((Frame)ice).vecs()[0] instanceof UploadFileVec
-                || bv.length() <= FileVec.DFLT_CHUNK_SIZE
-                || decompRatio > 1.0) { */
         try {
           _gblSetup = guessSetup(bv, bits, _userSetup);
           for(ParseWriter.ParseErr e:_gblSetup._errs) {
@@ -361,46 +361,6 @@ public class ParseSetup extends Iced {
         } catch (ParseDataset.H2OParseException pse) {
           throw pse.resetMsg(pse.getMessage()+" for "+key);
         }
-/*        } else { // file is aun uncompressed NFSFileVec or HDFSFileVec & larger than the DFLT_CHUNK_SIZE
-          FileVec fv = (FileVec) ((Frame) ice).vecs()[0];
-          // reset chunk size to 1M (uncompressed)
-          int chkSize = (int) ((1<<20) /decompRatio);
-          fv.setChunkSize((Frame) ice, chkSize);
-
-          // guessSetup from first chunk
-          _gblSetup = guessSetup(fv.getPreviewChunkBytes(0), _userSetup);
-          _userSetup._check_header = -1; // remaining chunks shouldn't check for header
-          _userSetup._parse_type = _gblSetup._parse_type; // or guess parse type
-
-          //preview 1M data every 100M
-          int numChunks = fv.nChunks();
-          for (int i=100; i < numChunks;i += 100) {
-            bits = fv.getPreviewChunkBytes(i);
-            if (bits != null)
-              _gblSetup = mergeSetups(_gblSetup, guessSetup(bits, _userSetup));
-          }
-
-          // grab sample at end of file (if not done by prev loop)
-          if (numChunks % 100 > 1){
-            bits = fv.getPreviewChunkBytes(numChunks - 1);
-            if (bits != null)
-              _gblSetup = mergeSetups(_gblSetup, guessSetup(bits, _userSetup));
-          }
-
-          // return chunk size to DFLT
-          fv.setChunkSize((Frame) ice, FileVec.DFLT_CHUNK_SIZE);
-        } */
-        // report if multiple files exist in zip archive
-/*        if (ZipUtil.getFileCount(bv) > 1) {
-          if (_gblSetup._errors != null)
-            _gblSetup._errors = Arrays.copyOf(_gblSetup._errors, _gblSetup._errors.length + 1);
-          else
-            _gblSetup._errors = new String[1];
-
-          _gblSetup._errors[_gblSetup._errors.length - 1] = "Only single file zip " +
-                  "archives are currently supported, only the first file has been parsed.  " +
-                  "Remaining files have been ignored.";
-        }*/
       }
       if (_gblSetup==null)
         throw new RuntimeException("This H2O node couldn't find the file(s) to parse. Please check files and/or working directories.");
@@ -612,32 +572,6 @@ public class ParseSetup extends Iced {
         throw new ParseDataset.H2OParseException("UTF16 encoding detected, but is not supported.");
       }
     }
-  }
-
-  /**
-   * Compute the longest line length in an array of bytes
-   * @param bytes Array of bytes (containing 0 or more newlines)
-   * @return The longest line length in the given bytes
-   */
-  private static final long maxLineLength(byte[] bytes) {
-    if (bytes.length >= 2) {
-      String st = new String(bytes);
-      StringReader sr = new StringReader(st);
-      BufferedReader br = new BufferedReader(sr);
-      String line;
-      long maxLineLength=0;
-      try {
-        while(true) {
-          line = br.readLine();
-          if (line == null) break;
-          maxLineLength = Math.max(line.length(), maxLineLength);
-        }
-      } catch (IOException e) {
-        return -1;
-      }
-      return maxLineLength;
-    }
-    return -1;
   }
 
   /**

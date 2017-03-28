@@ -184,5 +184,18 @@ public class ArrayUtilsTest extends TestUtil {
     assertTrue(result == a);
     assertArrayEquals(new float[]{210.0f, 420.0f, 630.0f}, a, 0.001f);
   }
+  
+  @Test public void testMatches() {
+    byte[] sample = StringUtils.bytesOf("once upon a midnight dreary");
+    byte[] toMatch = StringUtils.bytesOf("on");
+    assertTrue(ArrayUtils.matches(sample, 0, toMatch));
+    assertTrue(ArrayUtils.matches(sample, 7, toMatch));
+    assertTrue(ArrayUtils.matches(sample, 26, new byte[]{'y'}));
+    assertFalse(ArrayUtils.matches(sample, 1, toMatch));
+    assertFalse(ArrayUtils.matches(sample, 99, toMatch));
+    assertTrue(ArrayUtils.matches(sample, 10, new byte[]{}));
+    assertFalse(ArrayUtils.matches(sample, 100, new byte[]{}));
+    assertFalse(ArrayUtils.matches(sample, -1, new byte[]{}));
+  }
 
 }

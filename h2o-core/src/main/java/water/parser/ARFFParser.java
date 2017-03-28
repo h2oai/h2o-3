@@ -2,8 +2,12 @@ package water.parser;
 
 import java.util.ArrayList;
 
+import org.eclipse.jetty.util.StringUtil;
 import water.Key;
 import water.fvec.Vec;
+import water.util.ArrayUtils;
+import water.util.BytesStats;
+import water.util.StringUtils;
 
 import static water.parser.DefaultParserProviders.ARFF_INFO;
 
@@ -26,6 +30,8 @@ class ARFFParser extends CsvParser {
     String[] headerlines = new String[0];
     byte[] ctypes;
 
+    int numLines = 0;
+    
     // header section
     ArrayList<String> header = new ArrayList<>();
     offset = readArffHeader(offset, header, bits, singleQuotes);
@@ -65,6 +71,7 @@ class ARFFParser extends CsvParser {
       if (datablock.size() == 0)
         throw new ParseDataset.H2OParseException("Unexpected line.");
       datalines = datablock.toArray(datalines);
+      numLines = datalines.length;
 
       // process data section
       int nlines2 = Math.min(10, datalines.length);
@@ -98,9 +105,14 @@ class ARFFParser extends CsvParser {
     }
 
     // Return the final setup
-    return new ParseSetup(ARFF_INFO, sep, singleQuotes, ParseSetup.NO_HEADER, ncols, labels, ctypes, domains, naStrings, data);
+    final ParseSetup parseSetup = new ParseSetup(ARFF_INFO, sep, singleQuotes, ParseSetup.NO_HEADER, ncols, labels, ctypes, domains, naStrings, data);
+    parseSetup.tentativeNumLines = numLines;
+    return parseSetup;
   }
 
+  private final static byte[] DATA1 =StringUtils.bytesOf("@DATA");
+  private final static byte[] DATA2 =StringUtils.bytesOf("@data");
+  
   private static int readArffHeader(int offset, ArrayList<String> header, byte[] bits, boolean singleQuotes) {
     while (offset < bits.length) {
       int lineStart = offset;
@@ -112,11 +124,8 @@ class ARFFParser extends CsvParser {
       if (bits[lineStart] == '#') continue; // Ignore      comment lines
       if (bits[lineStart] == '%') continue; // Ignore ARFF comment lines
       if (lineEnd > lineStart) {
-        if (bits[lineStart] == '@' &&
-                (bits[lineStart+1] == 'D' || bits[lineStart+1] =='d' ) &&
-                (bits[lineStart+2] == 'A' || bits[lineStart+2] =='a' ) &&
-                (bits[lineStart+3] == 'T' || bits[lineStart+3] =='t' ) &&
-                (bits[lineStart+4] == 'A' || bits[lineStart+4] =='a' )){
+        if (ArrayUtils.matches(bits, lineStart, DATA1) || ArrayUtils.matches(bits, lineStart, DATA2)) {
+          BytesStats bs = new BytesStats(bits, lineEnd); // for debugging
           break;
         }
         String str = new String(bits, lineStart, lineEnd - lineStart).trim();

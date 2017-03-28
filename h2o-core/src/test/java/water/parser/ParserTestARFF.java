@@ -1,25 +1,24 @@
 package water.parser;
 
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
-import water.DKV;
-import water.H2O;
-import water.Key;
-import water.TestUtil;
+import org.junit.*;
+import static org.junit.Assert.*;
+import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
-import water.util.FileUtils;
 
 import static water.parser.ParserTest.makeByteVec;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 public class ParserTestARFF extends TestUtil {
-  @BeforeClass static public void setup() { stall_till_cloudsize(5); }
+  @BeforeClass static public void setup() { stall_till_cloudsize(1); }
 
+  @Before public void before() { Scope.enter(); }
+
+  @After public void after()   { Scope.exit(); }
+  
   /**
    * Helper to check parsed column types
    */
@@ -31,36 +30,36 @@ public class ParserTestARFF extends TestUtil {
     ParseDataset.parse(r1, k1);
     Frame fr = DKV.get(r1).get();
     try {
-      Assert.assertEquals(len, fr.numRows());
-      Assert.assertEquals(exp.length, fr.numCols());
+      assertEquals(len, fr.numRows());
+      assertEquals(exp.length, fr.numCols());
       for (int j = 0; j < fr.numCols(); ++j) {
         Vec vec = fr.vecs()[j];
         if (exp[j] == Vec.T_TIME) { //Time
-          Assert.assertTrue(vec.isTime());
-//          Assert.assertFalse(vec.isInt()); //FIXME time is encoded as integer, but should isInt() be true?
-          Assert.assertFalse(vec.isCategorical());
-          Assert.assertFalse(vec.isString());
-          Assert.assertFalse(vec.isUUID());
+          assertTrue(vec.isTime());
+//          assertFalse(vec.isInt()); //FIXME time is encoded as integer, but should isInt() be true?
+          assertFalse(vec.isCategorical());
+          assertFalse(vec.isString());
+          assertFalse(vec.isUUID());
         } else if (exp[j] == Vec.T_CAT) { //Categorical
-          Assert.assertTrue(vec.isCategorical());
-//          Assert.assertFalse(vec.isInt()); //FIXME categorical is encoded as integer, but should isInt() be true?
-          Assert.assertFalse(vec.isString());
-          Assert.assertFalse(vec.isTime());
-          Assert.assertFalse(vec.isUUID());
+          assertTrue(vec.isCategorical());
+//          assertFalse(vec.isInt()); //FIXME categorical is encoded as integer, but should isInt() be true?
+          assertFalse(vec.isString());
+          assertFalse(vec.isTime());
+          assertFalse(vec.isUUID());
         } else if (exp[j] == Vec.T_STR) { //String
-          Assert.assertTrue(vec.isString());
-          Assert.assertFalse(vec.isInt());
-          Assert.assertFalse(vec.isCategorical());
-          Assert.assertFalse(vec.isTime());
-          Assert.assertFalse(vec.isUUID());
+          assertTrue(vec.isString());
+          assertFalse(vec.isInt());
+          assertFalse(vec.isCategorical());
+          assertFalse(vec.isTime());
+          assertFalse(vec.isUUID());
         } else if (exp[j] == Vec.T_NUM) { //Numeric (can be Int or not)
-          Assert.assertTrue(!vec.isCategorical() && !vec.isString() && !vec.isUUID() && !vec.isTime());
+          assertTrue(!vec.isCategorical() && !vec.isString() && !vec.isUUID() && !vec.isTime());
         } else if (exp[j] == Vec.T_UUID) { //UUID
-          Assert.assertTrue(vec.isUUID());
-//          Assert.assertFalse(vec.isInt()); //FIXME uuid is encoded as integer, but should isInt() be true?
-          Assert.assertFalse(vec.isCategorical());
-          Assert.assertFalse(vec.isString());
-          Assert.assertFalse(vec.isTime());
+          assertTrue(vec.isUUID());
+//          assertFalse(vec.isInt()); //FIXME uuid is encoded as integer, but should isInt() be true?
+          assertFalse(vec.isCategorical());
+          assertFalse(vec.isString());
+          assertFalse(vec.isTime());
         } else throw H2O.unimpl();
       }
     } finally {
@@ -79,10 +78,10 @@ public class ParserTestARFF extends TestUtil {
     ParseDataset.parse(r1, k1);
     Frame fr = DKV.get(r1).get();
     try {
-      Assert.assertEquals(len, fr.numRows());
-      Assert.assertEquals(exp.length, fr.numCols());
+      assertEquals(len, fr.numRows());
+      assertEquals(exp.length, fr.numCols());
       for (int j = 0; j < fr.numCols(); ++j) {
-        Assert.assertTrue(exp[j].equals(fr.names()[j]));
+        assertTrue(exp[j].equals(fr.names()[j]));
       }
     } finally {
       fr.delete();
@@ -103,7 +102,7 @@ public class ParserTestARFF extends TestUtil {
     try {
       k2 = parse_test_file_single_quotes("smalldata/junit/arff/iris.arff");
       k1 = parse_test_file_single_quotes("smalldata/junit/cars.csv");
-      Assert.assertFalse("parsed values do not match!", TestUtil.isBitIdentical(k1, k2));
+      assertFalse("parsed values do not match!", TestUtil.isBitIdentical(k1, k2));
     } finally {
       if( k1 != null ) k1.delete();
       if( k2 != null ) k2.delete();
@@ -116,8 +115,8 @@ public class ParserTestARFF extends TestUtil {
     try {
       k2 = parse_test_file("smalldata/junit/arff/iris.arff");
       k1 = parse_test_file("smalldata/junit/iris.csv");
-      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1, k2));
-      Assert.assertTrue("column names do not match!", Arrays.equals(k2.names(), k1.names()));
+      assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1, k2));
+      assertTrue("column names do not match!", Arrays.equals(k2.names(), k1.names()));
     } finally {
       if( k1 != null ) k1.delete();
       if( k2 != null ) k2.delete();
@@ -393,8 +392,8 @@ public class ParserTestARFF extends TestUtil {
     try {
       k2 = parse_test_file("smalldata/junit/arff/test_uuid.arff");
       k1 = parse_test_file("smalldata/junit/test_uuid.csv");
-      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1, k2));
-      Assert.assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
+      assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1, k2));
+      assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
     } finally {
       if( k1 != null ) k1.delete();
       if( k2 != null ) k2.delete();
@@ -432,8 +431,8 @@ public class ParserTestARFF extends TestUtil {
     try {
       k2 = parse_test_file("smalldata/junit/arff/iris_spacesep.arff");
       k1 = parse_test_file("smalldata/junit/iris.csv");
-      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1, k2));
-      Assert.assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
+      assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1, k2));
+      assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
     } finally {
       if( k1 != null ) k1.delete();
       if( k2 != null ) k2.delete();
@@ -446,8 +445,8 @@ public class ParserTestARFF extends TestUtil {
     try {
       k2 = parse_test_file("smalldata/junit/arff/iris_weirdsep.arff");
       k1 = parse_test_file("smalldata/junit/iris.csv");
-      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1, k2));
-      Assert.assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
+      assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1, k2));
+      assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
     } finally {
       if( k1 != null ) k1.delete();
       if( k2 != null ) k2.delete();
@@ -460,8 +459,8 @@ public class ParserTestARFF extends TestUtil {
     try {
       k2 = parse_test_file("smalldata/junit/arff/iris_weirdsep2.arff");
       k1 = parse_test_file("smalldata/junit/iris.csv");
-      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1, k2));
-      Assert.assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
+      assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1, k2));
+      assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
     } finally {
       if( k1 != null ) k1.delete();
       if( k2 != null ) k2.delete();
@@ -475,8 +474,8 @@ public class ParserTestARFF extends TestUtil {
     try {
       k2 = parse_test_file("smalldata/junit/arff/time.arff");
       k1 = parse_test_file("smalldata/junit/time.csv");
-      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1, k2));
-      Assert.assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
+      assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1, k2));
+      assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
     } finally {
       if( k1 != null ) k1.delete();
       if( k2 != null ) k2.delete();
@@ -490,8 +489,8 @@ public class ParserTestARFF extends TestUtil {
     try {
       k2 = parse_test_folder("smalldata/junit/arff/folder1/");
       k1 = parse_test_file  ("smalldata/junit/arff/iris.arff");
-      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1, k2));
-      Assert.assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
+      assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1, k2));
+      assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
     } finally {
       if( k1 != null ) k1.delete();
       if( k2 != null ) k2.delete();
@@ -505,8 +504,8 @@ public class ParserTestARFF extends TestUtil {
     try {
       k2 = parse_test_folder("smalldata/junit/arff/folder2/" );
       k1 = parse_test_file("smalldata/junit/arff/iris.arff");
-      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1,k2));
-      Assert.assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
+      assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1,k2));
+      assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
     } finally {
       if( k1 != null ) k1.delete();
       if( k2 != null ) k2.delete();
@@ -520,8 +519,8 @@ public class ParserTestARFF extends TestUtil {
     try {
       k2 = parse_test_folder("smalldata/junit/arff/folder3/" );
       k1 = parse_test_file("smalldata/junit/arff/iris.arff");
-      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1,k2));
-      Assert.assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
+      assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1,k2));
+      assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
     } finally {
       if( k1 != null ) k1.delete();
       if( k2 != null ) k2.delete();
@@ -535,8 +534,8 @@ public class ParserTestARFF extends TestUtil {
     try {
       k2 = parse_test_folder("smalldata/junit/arff/folder4/" );
       k1 = parse_test_file("smalldata/junit/arff/iris.arff");
-      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1,k2));
-      Assert.assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
+      assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1,k2));
+      assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
     } finally {
       if( k1 != null ) k1.delete();
       if( k2 != null ) k2.delete();
@@ -646,9 +645,9 @@ public class ParserTestARFF extends TestUtil {
     Key k2 = ParserTest.makeByteVec(data2);
     Key[] k = new Key[]{k1, k2};
     Frame fr = ParseDataset.parse(Key.make(), k);
-    Assert.assertTrue(fr.anyVec().isCategorical());
-    Assert.assertFalse(fr.anyVec().isString());
-    Assert.assertTrue(fr.anyVec().cardinality() == 6);
+    assertTrue(fr.anyVec().isCategorical());
+    assertFalse(fr.anyVec().isString());
+    assertTrue(fr.anyVec().cardinality() == 6);
     fr.delete();
   }
 
@@ -670,13 +669,13 @@ public class ParserTestARFF extends TestUtil {
     Key k2 = ParserTest.makeByteVec(data2);
     Key[] k = new Key[]{k1, k2};
     Frame fr = ParseDataset.parse(Key.make(), k);
-    Assert.assertTrue(fr.anyVec().isString());
-    Assert.assertFalse(fr.anyVec().isCategorical());
-    Assert.assertFalse(fr.anyVec().isInt());
+    assertTrue(fr.anyVec().isString());
+    assertFalse(fr.anyVec().isCategorical());
+    assertFalse(fr.anyVec().isInt());
     BufferedString tmpStr = new BufferedString();
-    Assert.assertTrue(fr.anyVec().atStr(tmpStr, 3).toString().equals("4"));
-    Assert.assertTrue(fr.anyVec().atStr(tmpStr, 4).toString().equals("5234234234"));
-    Assert.assertTrue(fr.anyVec().atStr(tmpStr, 5).toString().equals("6"));
+    assertTrue(fr.anyVec().atStr(tmpStr, 3).toString().equals("4"));
+    assertTrue(fr.anyVec().atStr(tmpStr, 4).toString().equals("5234234234"));
+    assertTrue(fr.anyVec().atStr(tmpStr, 5).toString().equals("6"));
     fr.delete();
   }
 
@@ -697,11 +696,11 @@ public class ParserTestARFF extends TestUtil {
     Key k2 = ParserTest.makeByteVec(data2);
     Key[] k = new Key[]{k1, k2};
     Frame fr = ParseDataset.parse(Key.make(), k);
-    Assert.assertTrue(fr.anyVec().isUUID());
-    Assert.assertFalse(fr.anyVec().isCategorical());
-    Assert.assertFalse(fr.anyVec().isString());
-    Assert.assertTrue(!fr.anyVec().isNA(0));
-    Assert.assertTrue(!fr.anyVec().isNA(1));
+    assertTrue(fr.anyVec().isUUID());
+    assertFalse(fr.anyVec().isCategorical());
+    assertFalse(fr.anyVec().isString());
+    assertTrue(!fr.anyVec().isNA(0));
+    assertTrue(!fr.anyVec().isNA(1));
     fr.delete();
   }
 
@@ -720,17 +719,17 @@ public class ParserTestARFF extends TestUtil {
     Key k2 = ParserTest.makeByteVec(data1);
     Key[] k = new Key[]{k1, k2};
     Frame fr = ParseDataset.parse(Key.make(), k);
-    Assert.assertFalse(fr.anyVec().isString());
-    Assert.assertFalse(fr.anyVec().isCategorical());
-    Assert.assertFalse(fr.anyVec().isInt());
-    Assert.assertFalse(fr.anyVec().isUUID());
+    assertFalse(fr.anyVec().isString());
+    assertFalse(fr.anyVec().isCategorical());
+    assertFalse(fr.anyVec().isInt());
+    assertFalse(fr.anyVec().isUUID());
 
-    Assert.assertTrue(fr.anyVec().at(0) == 0);
-    Assert.assertTrue(fr.anyVec().at(1) == 1.324e-13);
-    Assert.assertTrue(fr.anyVec().at(2) == -2);
-    Assert.assertTrue(fr.anyVec().at(3) == 0);
-    Assert.assertTrue(fr.anyVec().at(4) == 1.324e-13);
-    Assert.assertTrue(fr.anyVec().at(5) == -2);
+    assertTrue(fr.anyVec().at(0) == 0);
+    assertTrue(fr.anyVec().at(1) == 1.324e-13);
+    assertTrue(fr.anyVec().at(2) == -2);
+    assertTrue(fr.anyVec().at(3) == 0);
+    assertTrue(fr.anyVec().at(4) == 1.324e-13);
+    assertTrue(fr.anyVec().at(5) == -2);
     fr.delete();
   }
 
@@ -749,16 +748,16 @@ public class ParserTestARFF extends TestUtil {
     Key k2 = ParserTest.makeByteVec(data1);
     Key[] k = new Key[]{k1, k2};
     Frame fr = ParseDataset.parse(Key.make(), k);
-    Assert.assertFalse(fr.anyVec().isString());
-    Assert.assertTrue(fr.anyVec().isCategorical());
-    Assert.assertFalse(fr.anyVec().isUUID());
+    assertFalse(fr.anyVec().isString());
+    assertTrue(fr.anyVec().isCategorical());
+    assertFalse(fr.anyVec().isUUID());
 
-    Assert.assertTrue(fr.anyVec().at(0) == 1);
-    Assert.assertTrue(fr.anyVec().at(1) == 2);
-    Assert.assertTrue(fr.anyVec().at(2) == 0);
-    Assert.assertTrue(fr.anyVec().at(3) == 1);
-    Assert.assertTrue(fr.anyVec().at(4) == 2);
-    Assert.assertTrue(fr.anyVec().at(5) == 0);
+    assertTrue(fr.anyVec().at(0) == 1);
+    assertTrue(fr.anyVec().at(1) == 2);
+    assertTrue(fr.anyVec().at(2) == 0);
+    assertTrue(fr.anyVec().at(3) == 1);
+    assertTrue(fr.anyVec().at(4) == 2);
+    assertTrue(fr.anyVec().at(5) == 0);
     fr.delete();
   }
 
@@ -778,19 +777,48 @@ public class ParserTestARFF extends TestUtil {
     Key k3 = ParserTest.makeByteVec(data1);
     Key[] k = new Key[]{k1, k2, k3};
     Frame fr = ParseDataset.parse(Key.make(), k);
-    Assert.assertTrue(fr.anyVec().isString());
-    Assert.assertFalse(fr.anyVec().isCategorical());
-    Assert.assertFalse(fr.anyVec().isInt());
+    assertTrue(fr.anyVec().isString());
+    assertFalse(fr.anyVec().isCategorical());
+    assertFalse(fr.anyVec().isInt());
     BufferedString tmpStr = new BufferedString();
-    Assert.assertTrue(fr.anyVec().atStr(tmpStr, 0).toString().equals("0"));
-    Assert.assertTrue(fr.anyVec().atStr(tmpStr, 1).toString().equals("1.324e-13"));
-    Assert.assertTrue(fr.anyVec().atStr(tmpStr, 2).toString().equals("-2"));
-    Assert.assertTrue(fr.anyVec().atStr(tmpStr, 3).toString().equals("0"));
-    Assert.assertTrue(fr.anyVec().atStr(tmpStr, 4).toString().equals("1.324e-13"));
-    Assert.assertTrue(fr.anyVec().atStr(tmpStr, 5).toString().equals("-2"));
-    Assert.assertTrue(fr.anyVec().atStr(tmpStr, 6).toString().equals("0"));
-    Assert.assertTrue(fr.anyVec().atStr(tmpStr, 7).toString().equals("1.324e-13"));
-    Assert.assertTrue(fr.anyVec().atStr(tmpStr, 8).toString().equals("-2"));
+    assertTrue(fr.anyVec().atStr(tmpStr, 0).toString().equals("0"));
+    assertTrue(fr.anyVec().atStr(tmpStr, 1).toString().equals("1.324e-13"));
+    assertTrue(fr.anyVec().atStr(tmpStr, 2).toString().equals("-2"));
+    assertTrue(fr.anyVec().atStr(tmpStr, 3).toString().equals("0"));
+    assertTrue(fr.anyVec().atStr(tmpStr, 4).toString().equals("1.324e-13"));
+    assertTrue(fr.anyVec().atStr(tmpStr, 5).toString().equals("-2"));
+    assertTrue(fr.anyVec().atStr(tmpStr, 6).toString().equals("0"));
+    assertTrue(fr.anyVec().atStr(tmpStr, 7).toString().equals("1.324e-13"));
+    assertTrue(fr.anyVec().atStr(tmpStr, 8).toString().equals("-2"));
     fr.delete();
+  }
+
+  /**
+   * H2O shows the file has 11219 rows. but original file (from openml) has 10885 rows
+   which is verified by parsing with R.
+   */
+  @Test public void testPUBDEV3281() {
+    final String fname = "smalldata/junit/arff/jm1.arff.txt";
+    NFSFileVec nfs = null;
+    try {
+      nfs = makeNfsFileVec(fname);
+    } catch (Exception ignore) {
+      // ok, no test file
+    }
+    
+    if (nfs != null) {
+      final Key<Keyed> okey = Key.make();
+      Key[] keys = new Key[]{nfs._key};
+      boolean deleteOnDone = true;
+      boolean singleQuote = false;
+      final ParseSetup globalSetup = ParseSetup.guessSetup(keys, singleQuote, ParseSetup.GUESS_HEADER);
+
+      Frame k = ParseDataset.parse(okey, keys, deleteOnDone, globalSetup);
+      Scope.track(k);
+      final Vec vec = k.anyVec();
+      assertNotNull(vec);
+      String s = vec.toString();
+      assertEquals(10885, vec.length());
+    }
   }
 }
