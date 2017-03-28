@@ -3,6 +3,7 @@ package ai.h2o.automl.collectors;
 
 import hex.tree.DHistogram;
 import hex.tree.SharedTreeModel;
+import jsr166y.CountedCompleter;
 import water.H2O;
 import water.MRTask;
 import water.MemoryManager;
@@ -74,12 +75,18 @@ public class MetaCollector {
       _tasks[task].fork();
     }
 
-    private class Callback extends H2O.H2OCallback {
+    private class Callback extends H2O.H2OCallback{
       public Callback(){super(ParallelTasks.this);}
       @Override public void callback(H2O.H2OCountedCompleter cc) {
-        int i = _ctr.incrementAndGet();
-        if( i < _tasks.length )
-          asyncVecTask(i);
+          int i = _ctr.incrementAndGet();
+          if (i < _tasks.length)
+            asyncVecTask(i);
+      }
+
+      @Override
+      public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
+        ex.printStackTrace();
+        return super.onExceptionalCompletion(ex, caller);
       }
     }
   }
@@ -120,7 +127,6 @@ public class MetaCollector {
       // make(String name, final int nbins, byte isInt, double min, double maxEx, long seed, SharedTreeModel.SharedTreeParameters parms, Key globalQuantilesKey) {
       parms._nbins = nbins;
       parms._nbins_cats = nbins_cats;
-
 
       return DHistogram.make(name, nbins, isInt, minIn, maxEx, 0, parms, null);
     }
