@@ -46,7 +46,7 @@ wget https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-py/requirements.tx
 rm requirements.txt 
 
 # Install R dependancies
-R -e 'chooseCRANmirror(graphics=FALSE, ind=49);install.packages(c("R.utils", "AUC", "Hmisc", "flexclust", "randomForest", "bit64", "HDtweedie", "RCurl", "jsonlite", "statmod", "devtools", "roxygen2", "testthat", "Rcpp", "fpc", "RUnit", "ade4", "glmnet", "gbm", "ROCR", "e1071", "LiblineaR"))' 
+R -e 'chooseCRANmirror(graphics=FALSE, ind=49);install.packages(c("R.utils", "AUC", "Hmisc", "flexclust", "randomForest", "bit64", "HDtweedie", "RCurl", "jsonlite", "statmod", "devtools", "roxygen2", "testthat", "Rcpp", "fpc", "RUnit", "ade4", "glmnet", "gbm", "ROCR", "e1071", "ggplot2", "LiblineaR"))' 
 
 ## Workaround for LiblineaR problem
 wget https://s3.amazonaws.com/h2o-r/linux/LiblineaR_1.94-2.tar.gz
