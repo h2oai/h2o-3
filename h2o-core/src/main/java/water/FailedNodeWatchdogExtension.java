@@ -7,7 +7,7 @@ import water.util.Log;
  * Extension used for checking failed nodes
  */
 public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
-    private long watchdogClientRetryTimeout = 6000;
+    private long watchdogClientRetryTimeout = 10000;
     private boolean watchDogClient = false;
     @Override
     public String getExtensionName() {
@@ -20,7 +20,7 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
                 "\nFailed node watchdog extension:\n" +
                         "    -watchdog_client_retry_timeout\n" +
                         "          Time in milliseconds specifying in which intervals the failed nodes are checked. If not \n" +
-                        "          specified, the default value of 6000 ms is used. \n" +
+                        "          specified, the default value of 10000 ms is used. \n" +
                         "    -watchdog_client\n" +
                         "          Same as the client except the that cluster is stopped when this client \n" +
                         "          disconnects from the rest of the cloud or the cloud is stopped when it doesn't \n" +
@@ -77,10 +77,10 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
      * This method checks whether the client is disconnected from this node due to some problem such as client or network
      * is unreachable.
      */
-    private static void handleClientDisconnect(H2ONode node) {
+    private static void handleClientDisconnect(H2ONode node, long watchdogClientRetryTimeout) {
         if(node._heartbeat._watchdog_client){
             Log.warn("Watchdog client " + node + " disconnected!");
-            WatchdogClientDisconnectedTask tsk = new WatchdogClientDisconnectedTask(node);
+            WatchdogClientDisconnectedTask tsk = new WatchdogClientDisconnectedTask(node, watchdogClientRetryTimeout);
             Log.warn("Asking the rest of the nodes in the cloud whether watchdog client is really gone.");
             if((tsk.doAllNodes()).clientDisconnectedConsensus) {
                 Log.fatal("Stopping H2O cloud since the watchdog client is disconnected from all nodes in the cluster!");
@@ -105,9 +105,10 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
     private static class WatchdogClientDisconnectedTask extends MRTask<WatchdogClientDisconnectedTask> {
         private boolean clientDisconnectedConsensus = false;
         private H2ONode clientNode;
-
-        WatchdogClientDisconnectedTask(H2ONode clientNode) {
+        private long watchdogClientRetryTimeout;
+        WatchdogClientDisconnectedTask(H2ONode clientNode, long  watchdogClientRetryTimeout) {
             this.clientNode = clientNode;
+            this.watchdogClientRetryTimeout = watchdogClientRetryTimeout;
         }
 
         @Override
@@ -124,7 +125,7 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
                 }
             }
 
-            if (desiredClient == null || isTimeoutExceeded(desiredClient)) {
+            if (desiredClient == null || isTimeoutExceeded(desiredClient, watchdogClientRetryTimeout )) {
                 // Agree on the consensus if this node does not see the client at all or if this node sees the client
                 // however the timeout is out
                 clientDisconnectedConsensus = true;
@@ -132,8 +133,8 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
         }
     }
 
-    private static boolean isTimeoutExceeded(H2ONode client) {
-        return (System.currentTimeMillis() - client._last_heard_from) >= HeartBeatThread.CLIENT_TIMEOUT;
+    private static boolean isTimeoutExceeded(H2ONode client, long timeout) {
+        return (System.currentTimeMillis() - client._last_heard_from) >= timeout;
     }
 
     /**
@@ -150,8 +151,8 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
         public void run() {
             while (true) {
                 for(H2ONode client: H2O.getClients()){
-                    if(isTimeoutExceeded(client)){
-                        handleClientDisconnect(client);
+                    if(isTimeoutExceeded(client, watchdogClientRetryTimeout)){
+                        handleClientDisconnect(client, watchdogClientRetryTimeout);
                     }
                 }
 
