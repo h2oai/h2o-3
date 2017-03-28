@@ -1664,7 +1664,7 @@ public class GLMTest  extends TestUtil {
       params._train = fr._key;
       params._lambda_search = true;
       params._nfolds = 3;
-      params._standardize = false;
+      params._standardize = true;
       GLM glm = new GLM(params);
       model = glm.trainModel().get();
     } finally {

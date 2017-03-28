@@ -1724,10 +1724,9 @@ public abstract class GLMTask  {
       double [] zTilda = ((C8DVolatileChunk)chunks[chunks.length-5]).getValues();
       chunks = Arrays.copyOf(chunks,chunks.length-7);
       denums = new double[_dinfo.fullN()+1]; // full N is expanded variables with categories
-      Row r = _dinfo.newDenseRow();
-      assert r.weight == 1 || r.weight == 0;
-      for(int i = 0; i < chunks[0]._len; ++i) {
-        _dinfo.extractDenseRow(chunks,i,r);
+      DataInfo.Rows rows = _dinfo.rows(chunks);
+      for(int i = 0; i < rows._nrows; ++i) {
+        Row r = rows.row(i);
         if (r.isBad() || r.weight == 0) {
           wChunk[i] = 0;
           zChunk[i] = Double.NaN; // should not be used!
