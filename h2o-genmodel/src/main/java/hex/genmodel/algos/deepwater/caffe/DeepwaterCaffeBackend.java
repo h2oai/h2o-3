@@ -24,7 +24,6 @@ public class DeepwaterCaffeBackend implements BackendTrain {
   @Override
   public BackendModel buildNet(ImageDataSet dataset, RuntimeOptions opts, BackendParams bparms, int num_classes, String name) {
     if (name.equals("MLP")) {
-      // TODO: add non-MLP Models such as lenet, inception_bn, etc.
       int[] hidden = (int[]) bparms.get("hidden");
       int[] sizes = new int[hidden.length + 2];
       sizes[0] = dataset.getWidth();
@@ -33,8 +32,8 @@ public class DeepwaterCaffeBackend implements BackendTrain {
       System.err.println("Ignoring device_id");
       double[] hdr = new double[sizes.length];
       if (bparms.get("input_dropout_ratio") != null)
-        hdr[0] = (double)bparms.get("input_dropout_ratio");
-      double[] bphdr = (double[])bparms.get("hidden_dropout_ratios");
+        hdr[0] = (double) bparms.get("input_dropout_ratio");
+      double[] bphdr = (double[]) bparms.get("hidden_dropout_ratios");
       if (bphdr != null)
         System.arraycopy(bphdr, 0, hdr, 1, bphdr.length);
       String[] layers = new String[sizes.length];
@@ -50,7 +49,19 @@ public class DeepwaterCaffeBackend implements BackendTrain {
           opts.getSeed(),
           opts.useGPU()
       );
-    } else throw new UnsupportedOperationException("Only MLP is supported for now for Caffe.");
+    } else {
+      return new DeepwaterCaffeModel(
+          name,
+          new int[] {
+              (Integer) bparms.get("mini_batch_size"),
+              dataset.getChannels(),
+              dataset.getWidth(),
+              dataset.getHeight()
+          },
+          opts.getSeed(),
+          opts.useGPU()
+      );
+    }
   }
 
   // graph (model definition) only
