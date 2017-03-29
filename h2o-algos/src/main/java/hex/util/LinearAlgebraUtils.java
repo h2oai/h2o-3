@@ -78,7 +78,15 @@ public class LinearAlgebraUtils {
     }
     return tmp;
   }
-
+  
+  public static double[][] reshape1DArray(double[] arr, int m, int n) {
+    double[][] arr2D = new double[m][n];
+    for (int i = 0; i < m; i++) {
+		System.arraycopy(arr, i * m, arr2D[i], 0, n);
+    }
+    return arr2D;
+  }
+  
   /**
    * Computes B = XY where X is n by k and Y is k by p, saving result in new vecs
    * Input: dinfo = X (large frame) with dinfo._adaptedFrame passed to doAll

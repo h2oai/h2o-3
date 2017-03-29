@@ -15,6 +15,7 @@ import hex.gram.Gram.OuterGramTask;
 import hex.pca.PCAModel.PCAParameters;
 import hex.svd.SVD;
 import hex.svd.SVDModel;
+import hex.util.LinearAlgebraUtils;
 import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.NotConvergedException;
 import water.DKV;
@@ -250,7 +251,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
                                          long nobs) {
       double[] Vt_1D = svd.getVt().getData();
       int dim = svd.getVt().numRows();
-      double[][] Vt_2D = reshape1DArray(Vt_1D, dim, dim);
+      double[][] Vt_2D = LinearAlgebraUtils.reshape1DArray(Vt_1D, dim, dim);
       computeStatsFillModel(pca, dinfo, svd.getS(), Vt_2D, gram, nobs);
     }
 
@@ -353,7 +354,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           // correct for the eigenvector by t(A)*eigenvector for wide dataset
           if (_wideDataset) {
             double[] Vt_1D = svdJ.getVt().getData();
-            double[][] Vt_2D = reshape1DArray(Vt_1D, gramDimension, gramDimension);
+            double[][] Vt_2D = LinearAlgebraUtils.reshape1DArray(Vt_1D, gramDimension, gramDimension);
             double[][] eigenVecs = transformEigenVectors(dinfo, Vt_2D);
             computeStatsFillModel(model, dinfo, svdJ.getS(), eigenVecs, gram, model._output._nobs);
           } else {
@@ -487,11 +488,4 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     }
   }
   
-  private double[][] reshape1DArray(double[] arr, int m, int n) {
-    double[][] arr2D = new double[m][n];
-    for (int i = 0; i < m; i++) {
-		System.arraycopy(arr, i * m, arr2D[i], 0, n);
-    }
-    return arr2D;
-  }
 }
