@@ -41,7 +41,13 @@ public class AutoMLBuildSpec extends Iced {
       stopping_criteria.set_stopping_metric(ScoreKeeper.StoppingMetric.AUTO);
     }
 
-    public String loss = "AUTO";  // TODO: Auto
+    /**
+     * Identifier for models that should be grouped together in the leaderboard
+     * (e.g., "airlines" and "iris").  If the user doesn't set it we use the basename
+     * of the training file name.
+     */
+    public String project = null;
+    public String loss = "AUTO";  // TODO: plumb through
     public HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria stopping_criteria;
   }
 
@@ -97,13 +103,22 @@ public class AutoMLBuildSpec extends Iced {
   // output
   public JobV3 job;
 
+  private transient String project_cached = null;
   public String project() {
-    // TODO: allow the user to set the project via the buildspec
+    if (null != project_cached)
+      return project_cached;
+
+    // allow the user to override:
+    if (null != build_control.project) {
+      project_cached = build_control.project;
+      return project_cached;
+    }
+
     String specified = input_spec.training_path != null ?
             input_spec.training_path.path :
             input_spec.training_frame.toString();
     String[] path = specified.split("/");
-    return path[path.length - 1]
+    project_cached = path[path.length - 1]
             .replace(".hex", "")
             .replace(".CSV", "")
             .replace(".XLS", "")
@@ -117,5 +132,6 @@ public class AutoMLBuildSpec extends Iced {
             .replace(".svmlight", "")
             .replace(".arff", "")
             .replace(".orc", "");
+    return project_cached;
   }
 }
