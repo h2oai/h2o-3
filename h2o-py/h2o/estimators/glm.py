@@ -42,7 +42,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                       "non_negative", "max_iterations", "objective_epsilon", "beta_epsilon", "gradient_epsilon", "link",
                       "prior", "lambda_min_ratio", "beta_constraints", "max_active_predictors", "interactions",
                       "balance_classes", "class_sampling_factors", "max_after_balance_size",
-                      "max_confusion_matrix_size", "max_hit_ratio_k", "max_runtime_secs"}
+                      "max_confusion_matrix_size", "max_hit_ratio_k", "max_runtime_secs", "custom_metric_func"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -754,6 +754,21 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def max_runtime_secs(self, max_runtime_secs):
         assert_is_type(max_runtime_secs, None, numeric)
         self._parms["max_runtime_secs"] = max_runtime_secs
+
+
+    @property
+    def custom_metric_func(self):
+        """
+        Reference to custom evaluation function, format: `language:keyName=funcName`
+
+        Type: ``str``.
+        """
+        return self._parms.get("custom_metric_func")
+
+    @custom_metric_func.setter
+    def custom_metric_func(self, custom_metric_func):
+        assert_is_type(custom_metric_func, None, str)
+        self._parms["custom_metric_func"] = custom_metric_func
 
 
 

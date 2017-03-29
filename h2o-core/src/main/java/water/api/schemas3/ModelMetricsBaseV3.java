@@ -1,5 +1,6 @@
 package water.api.schemas3;
 
+import hex.CustomMetric;
 import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetrics;
@@ -52,6 +53,13 @@ public class ModelMetricsBaseV3<I extends ModelMetrics, S extends ModelMetricsBa
   @API(help="Number of observations.")
   public long nobs;
 
+  @API(help="Name of custom metric", direction = API.Direction.OUTPUT)
+  public String custom_metric_name;
+
+  @API(help="Value of custom metric", direction = API.Direction.OUTPUT)
+  public double custom_metric_value;
+
+
   public ModelMetricsBaseV3() {}
   public ModelMetricsBaseV3(I impl) { super(impl); }
 
@@ -72,8 +80,13 @@ public class ModelMetricsBaseV3<I extends ModelMetrics, S extends ModelMetricsBa
     }
 
     PojoUtils.copyProperties(this, modelMetrics, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES,
-            new String[]{"model", "model_category", "model_checksum", "frame", "frame_checksum"});
+            new String[]{"model", "model_category", "model_checksum", "frame", "frame_checksum", "custom_metric"});
     RMSE=modelMetrics.rmse();
+    // Fill the custom metric
+    if (modelMetrics._custom_metric != null) {
+      custom_metric_name = modelMetrics._custom_metric.name;
+      custom_metric_value = modelMetrics._custom_metric.value;
+    }
 
     return (S) this;
   }

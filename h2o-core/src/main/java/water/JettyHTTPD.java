@@ -9,6 +9,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import water.api.DatasetServlet;
 import water.api.NpsBinServlet;
 import water.api.PostFileServlet;
+import water.api.PutKeyServlet;
 import water.api.RequestServer;
 import water.api.schemas3.H2OErrorV3;
 import water.exceptions.H2OAbstractRuntimeException;
@@ -112,6 +113,8 @@ public class JettyHTTPD extends AbstractHTTPD {
     context.addServlet(PostFileServlet.class, "/3/PostFile");
     context.addServlet(DatasetServlet.class,  "/3/DownloadDataset");
     context.addServlet(DatasetServlet.class,  "/3/DownloadDataset.bin");
+    context.addServlet(PutKeyServlet.class,   "/3/PutKey.bin");
+    context.addServlet(PutKeyServlet.class,   "/3/PutKey");
     context.addServlet(RequestServer.class,   "/");
 
     // Handlers that can only be invoked for an authenticated user (if auth is enabled)

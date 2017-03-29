@@ -138,7 +138,7 @@ public class TestUtil extends Iced {
             (value.isJob() && value.<Job>get().isStopped()) ) {
           leaked_keys--;
         } else {
-          System.out.println(k + " -> " + value.get());
+          System.out.println(k + " -> " + (value.type() != TypeMap.PRIM_B ? value.get() : "byte[]"));
           if( cnt++ < 10 )
             System.err.println("Leaked key: " + k + " = " + TypeMap.className(value.type()));
         }
@@ -666,8 +666,8 @@ public class TestUtil extends Iced {
 
   protected static class Cmp1 extends MRTask<Cmp1> {
     final double _epsilon;
-    Cmp1( double epsilon ) { _epsilon = epsilon; }
-    boolean _unequal;
+    public Cmp1( double epsilon ) { _epsilon = epsilon; }
+    public boolean _unequal;
     @Override public void map( Chunk chks[] ) {
       for( int cols=0; cols<chks.length>>1; cols++ ) {
         Chunk c0 = chks[cols                 ];
@@ -781,4 +781,9 @@ public class TestUtil extends Iced {
     }
   }
 
+  public static class Datasets {
+    public static Frame iris() {
+      return parse_test_file(Key.make("iris.hex"), "smalldata/iris/iris_wheader.csv");
+    }
+  }
 }

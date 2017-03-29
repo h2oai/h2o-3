@@ -13,6 +13,7 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.parser.BufferedString;
+import water.udf.CFuncRef;
 import water.util.FrameUtils;
 import water.util.Log;
 import water.util.PrettyPrint;
@@ -24,7 +25,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static hex.ModelMetrics.calcVarImp;
 import static water.H2O.technote;
@@ -912,12 +912,12 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
       }
     }
     DeepWaterBigScore(String[] domain, int ncols, double[] mean, boolean testHasWeights, boolean computeMetrics, boolean makePreds, Job j) {
-      super(domain, ncols, mean, testHasWeights, computeMetrics, makePreds, j);
+      super(domain, ncols, mean, testHasWeights, computeMetrics, makePreds, j, CFuncRef.NOP);
     }
   }
 
   @Override
-  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics) {
+  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
     final boolean makeNative = model_info()._backend ==null;
     if (makeNative) model_info().javaToNative();
     // Build up the names & domains.

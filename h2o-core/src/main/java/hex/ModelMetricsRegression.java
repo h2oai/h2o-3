@@ -20,8 +20,8 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
   public double mae() { return _mean_absolute_error; }
   public final double _root_mean_squared_log_error;
   public double rmsle() { return _root_mean_squared_log_error; }
-  public ModelMetricsRegression(Model model, Frame frame, long nobs, double mse, double sigma, double mae,double rmsle, double meanResidualDeviance) {
-    super(model, frame, nobs, mse, null, sigma);
+  public ModelMetricsRegression(Model model, Frame frame, long nobs, double mse, double sigma, double mae,double rmsle, double meanResidualDeviance, CustomMetric customMetric) {
+    super(model, frame, nobs, mse, null, sigma, customMetric);
     _mean_residual_deviance = meanResidualDeviance;
     _mean_absolute_error = mae;
     _root_mean_squared_log_error = rmsle;
@@ -161,7 +161,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       } else {
         meanResDeviance = _sumdeviance / _wcount; //mean residual deviance
       }
-      ModelMetricsRegression mm = new ModelMetricsRegression(m, f, _count, mse, weightedSigma(), mae, rmsle, meanResDeviance);
+      ModelMetricsRegression mm = new ModelMetricsRegression(m, f, _count, mse, weightedSigma(), mae, rmsle, meanResDeviance, _customMetric);
       if (m!=null) m.addModelMetrics(mm);
       return mm;
     }

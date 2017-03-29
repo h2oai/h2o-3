@@ -257,7 +257,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
 
   /** Check if the Value's POJO is a subtype of given type integer.  Does not require the POJO.
    *  @return True if the Value's POJO is a subtype. */
-  public static boolean isSubclassOf(int type, Class clz) { return clz.isAssignableFrom(TypeMap.theFreezable(type).getClass()); }
+  public static boolean isSubclassOf(int type, Class clz) { return type != TypeMap.PRIM_B && clz.isAssignableFrom(TypeMap.theFreezable(type).getClass()); }
 
   /** Check if the Value's POJO is a {@link Key} subtype.  Does not require the POJO.
    *  @return True if the Value's POJO is a {@link Key} subtype. */
@@ -308,7 +308,9 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _rwlock = new AtomicInteger(1);
     _replicas = null;
   }
-  Value(Key k, byte[] mem ) { this(k, mem.length, mem, TypeMap.PRIM_B, ICE); }
+  // ---
+  public Value(Key k, byte[] mem ) { this(k, mem.length, mem, TypeMap.PRIM_B, ICE); }
+  // ---
   Value(Key k, String s ) { this(k, StringUtils.bytesOf(s)); }
   Value(Key k, Iced pojo ) { this(k,pojo,ICE); }
   Value(Key k, Iced pojo, byte be ) {

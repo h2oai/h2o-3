@@ -1826,4 +1826,10 @@ public class ArrayUtils {
       if (vals[i - 1] > vals[i]) return false;
     return true;
   }
+
+  public static double[] constAry(int len, double c) {
+    double[] ary = new double[len];
+    Arrays.fill(ary, c);
+    return ary;
+  }
 }

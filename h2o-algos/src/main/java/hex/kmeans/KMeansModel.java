@@ -15,6 +15,7 @@ import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.udf.CFuncRef;
 import water.util.ArrayUtils;
 import water.util.JCodeGen;
 import water.util.SBPrintStream;
@@ -75,9 +76,9 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     return new ModelMetricsClustering.MetricBuilderClustering(_output.nfeatures(),_output._k[_output._k.length-1]);
   }
 
-  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, final Job j, boolean computeMetrics) {
+  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, final Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
     if (!_parms._pred_indicator) {
-      return super.predictScoreImpl(orig, adaptedFr, destination_key, j, computeMetrics);
+      return super.predictScoreImpl(orig, adaptedFr, destination_key, j, computeMetrics, customMetricFunc);
     } else {
       final int len = _output._k[_output._k.length-1];
       String prefix = "cluster_";

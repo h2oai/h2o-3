@@ -163,6 +163,13 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
   @API(help = "Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
   public double stopping_tolerance;
 
+  /*
+   * Custom metric
+   */
+  @API(help = "Reference to custom evaluation function, format: `language:keyName=funcName`", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = false)
+  public String custom_metric_func;
+
+
   protected static String[] append_field_arrays(String[] first, String[] second) {
     String[] appended = new String[first.length + second.length];
     System.arraycopy(first, 0, appended, 0, first.length);
