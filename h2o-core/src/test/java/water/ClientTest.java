@@ -7,7 +7,6 @@ import water.fvec.Frame;
 
 public class ClientTest extends TestUtil {
   @BeforeClass static public void setup() { stall_till_cloudsize(3); }
-  
   // ---
   // Run some basic tests.  Create a key, test that it does not exist, insert a
   // value for it, get the value for it, delete it.
