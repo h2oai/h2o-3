@@ -109,7 +109,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     else if (m._output.isClassifier())
       setMetricAndDirection("mean_per_class_error", false);
     else if (m._output.isSupervised())
-      setMetricAndDirection("mean_residual_deviance", false);
+      setMetricAndDirection("residual_deviance", false);
   }
 
   /**
