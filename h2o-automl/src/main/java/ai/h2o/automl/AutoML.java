@@ -85,12 +85,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private transient ArrayList<Job> jobs;
   private transient ArrayList<Frame> tempFrames;
 
-  /**
-   * Identifier for models that should be grouped together in the leaderboard
-   * (e.g., "airlines" and "iris").
-   */
-  private String project;
-
   private Leaderboard leaderboard;
   private UserFeedback userFeedback;
 
@@ -117,7 +111,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     userFeedback = new UserFeedback(this); // Don't use until we set this.project
 
     this.buildSpec = buildSpec;
-    this.project = buildSpec.project();
 
     userFeedback.info(Stage.Workflow, "AutoML job created: " + fullTimestampFormat.format(startTime));
 
@@ -127,8 +120,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
             buildSpec.build_control.stopping_criteria.seed() +
             (buildSpec.build_control.stopping_criteria.seed() == -1 ? " (random)" : ""));
 
-    userFeedback.info(Stage.Workflow, "Project: " + project);
-    leaderboard = new Leaderboard(project, userFeedback);
+    userFeedback.info(Stage.Workflow, "Project: " + project());
+    leaderboard = new Leaderboard(project(), userFeedback);
 
     /*
     TODO
@@ -774,7 +767,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
     userFeedback.info(Stage.Workflow, "AutoML: build done");
     Log.info(userFeedback.toString("User Feedback for AutoML Run " + this._key));
-    Log.info(leaderboard.toTwoDimTable("Leaderboard for project " + project, true).toString());
+    Log.info(leaderboard.toTwoDimTable("Leaderboard for project " + project(), true).toString());
 
     possiblyVerifyImmutability();
     // gather more data? build more models? start applying transforms? what next ...?
@@ -898,7 +891,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   public UserFeedback userFeedback() { return userFeedback._key.get(); }
 
   public String project() {
-    return project;
+    return buildSpec.project();
   }
 
   // satisfy typing for job return type...
