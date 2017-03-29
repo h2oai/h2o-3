@@ -1,7 +1,5 @@
 package hex.pca;
 
-import Jama.Matrix;
-import Jama.SingularValueDecomposition;
 import hex.DataInfo;
 import hex.ModelBuilder;
 import hex.ModelCategory;
@@ -17,6 +15,8 @@ import hex.gram.Gram.OuterGramTask;
 import hex.pca.PCAModel.PCAParameters;
 import hex.svd.SVD;
 import hex.svd.SVDModel;
+import no.uib.cipr.matrix.DenseMatrix;
+import no.uib.cipr.matrix.NotConvergedException;
 import water.DKV;
 import water.H2O;
 import water.HeartBeat;
@@ -246,9 +246,12 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       buildTables(pca, dinfo.coefNames());
     }
 
-    protected void computeStatsFillModel(PCAModel pca, DataInfo dinfo, SingularValueDecomposition svd, Gram gram,
+    protected void computeStatsFillModel(PCAModel pca, DataInfo dinfo, no.uib.cipr.matrix.SVD svd, Gram gram,
                                          long nobs) {
-      computeStatsFillModel(pca, dinfo, svd.getSingularValues(), svd.getV().getArray(), gram, nobs);
+      double[] Vt_1D = svd.getVt().getData();
+      int dim = svd.getVt().numRows();
+      double[][] Vt_2D = reshape1DArray(Vt_1D, dim, dim);
+      computeStatsFillModel(pca, dinfo, svd.getS(), Vt_2D, gram, nobs);
     }
 
     // Main worker thread
@@ -337,18 +340,27 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           // Compute SVD of Gram A'A/n using JAMA library
           // Note: Singular values ordered in weakly descending order by algorithm
           _job.update(1, "Calculating SVD of Gram matrix locally");
-          Matrix gramJ = _wideDataset ? new Matrix(ogtsk._gram.getXX()) : new Matrix(gtsk._gram.getXX());
-          SingularValueDecomposition svdJ = gramJ.svd();
+          DenseMatrix gramJ = _wideDataset ? new DenseMatrix(ogtsk._gram.getXX()) : new DenseMatrix(gtsk._gram.getXX());
+          int gramDimension = gramJ.numRows();
+          no.uib.cipr.matrix.SVD svdJ;
+          try {
+            // Note: gramJ will be overwritten after this
+            svdJ = new no.uib.cipr.matrix.SVD(gramDimension, gramDimension).factor(gramJ);
+          } catch (NotConvergedException e) {
+            throw new RuntimeException(e);
+          }
           _job.update(1, "Computing stats from SVD");
           // correct for the eigenvector by t(A)*eigenvector for wide dataset
           if (_wideDataset) {
-            double[][] eigenVecs = transformEigenVectors(dinfo, svdJ.getV().getArray());
-            computeStatsFillModel(model, dinfo, svdJ.getSingularValues(), eigenVecs, gram, model._output._nobs);
+            double[] Vt_1D = svdJ.getVt().getData();
+            double[][] Vt_2D = reshape1DArray(Vt_1D, gramDimension, gramDimension);
+            double[][] eigenVecs = transformEigenVectors(dinfo, Vt_2D);
+            computeStatsFillModel(model, dinfo, svdJ.getS(), eigenVecs, gram, model._output._nobs);
           } else {
             computeStatsFillModel(model, dinfo, svdJ, gram, model._output._nobs);
           }
           model._output._training_time_ms.add(System.currentTimeMillis());
-
+          // TODO: replace Jama SVD with MTJ SVD in SVD.java
           // generate variables for scoring_history generation
           LinkedHashMap<String, ArrayList> scoreTable = new LinkedHashMap<String, ArrayList>();
           scoreTable.put("Timestamp", model._output._training_time_ms);
@@ -446,8 +458,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         _job.update(1, "Scoring and computing metrics on training data");
         if (_parms._compute_metrics) {
           model.score(_parms.train()).delete(); // This scores on the training data and appends a ModelMetrics
-          ModelMetrics mm = ModelMetrics.getFromDKV(model,_parms.train());
-          model._output._training_metrics = mm;
+          model._output._training_metrics = ModelMetrics.getFromDKV(model,_parms.train());
         }
 
         // At the end: validation scoring (no need to gather scoring history)
@@ -474,5 +485,13 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         }
       }
     }
+  }
+  
+  private double[][] reshape1DArray(double[] arr, int m, int n) {
+    double[][] arr2D = new double[m][n];
+    for (int i = 0; i < m; i++) {
+		System.arraycopy(arr, i * m, arr2D[i], 0, n);
+    }
+    return arr2D;
   }
 }
