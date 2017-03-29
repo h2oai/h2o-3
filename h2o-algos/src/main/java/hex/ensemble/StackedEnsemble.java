@@ -40,7 +40,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
     };
   }
 
-  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; }
 
   @Override public boolean isSupervised() { return true; }
 
