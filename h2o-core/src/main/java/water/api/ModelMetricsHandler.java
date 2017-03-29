@@ -8,6 +8,7 @@ import water.api.schemas3.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.fvec.Frame;
+import water.udf.CFuncRef;
 import water.util.Log;
 
 class ModelMetricsHandler extends Handler {
@@ -28,6 +29,7 @@ class ModelMetricsHandler extends Handler {
     public boolean _reverse_transform;
     public boolean _leaf_node_assignment;
     public int _exemplar_index = -1;
+    public String _custom_metric_func;
 
     // Fetch all metrics that match model and/or frame
     ModelMetricsList fetch() {
@@ -124,6 +126,9 @@ class ModelMetricsHandler extends Handler {
 
     @API(help = "Compute the deviances per row (optional, only for classification or regression models)", json = false)
     public boolean deviances;
+
+    @API(help = "Reference to custom evaluation function, format: `language:keyName=funcName`", json=false)
+    public String custom_metric_func;
 
     // Output fields
     @API(help = "ModelMetrics", direction = API.Direction.OUTPUT)
@@ -349,7 +354,7 @@ class ModelMetricsHandler extends Handler {
       @Override
       public void compute2() {
         if (s.deep_features_hidden_layer < 0 && s.deep_features_hidden_layer_name == null) {
-          parms._model.score(parms._frame, parms._predictions_name, j, true);
+          parms._model.score(parms._frame, parms._predictions_name, j, true, CFuncRef.from(s.custom_metric_func));
         }
         else if (s.deep_features_hidden_layer_name != null){
           Frame predictions = null;
@@ -403,7 +408,8 @@ class ModelMetricsHandler extends Handler {
         !s.project_archetypes && !s.reconstruct_train && !s.leaf_node_assignment && s.exemplar_index < 0) {
       if (null == parms._predictions_name)
         parms._predictions_name = "predictions" + Key.make().toString().substring(0,5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
-      predictions = parms._model.score(parms._frame, parms._predictions_name);
+      predictions = parms._model.score(parms._frame, parms._predictions_name, null, true, CFuncRef
+          .from(s.custom_metric_func));
       if (s.deviances) {
         if (!parms._model.isSupervised())
           throw new H2OIllegalArgumentException("Deviances can only be computed for supervised models.");

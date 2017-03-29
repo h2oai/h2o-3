@@ -1,13 +1,14 @@
 package hex.aggregator;
 
+import hex.CustomMetric;
 import hex.Model;
 import hex.ModelMetrics;
 import hex.ModelMetricsUnsupervised;
 import water.fvec.Frame;
 
 public class ModelMetricsAggregator extends ModelMetricsUnsupervised {
-  public ModelMetricsAggregator(Model model, Frame frame) {
-    super(model, frame, 0, Double.NaN);
+  public ModelMetricsAggregator(Model model, Frame frame, CustomMetric customMetric) {
+    super(model, frame, 0, Double.NaN, customMetric);
   }
 
   // Aggregator currently does not have any model metrics to compute during scoring
@@ -21,7 +22,7 @@ public class ModelMetricsAggregator extends ModelMetricsUnsupervised {
 
     @Override
     public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
-      return m.addModelMetrics(new hex.aggregator.ModelMetricsAggregator(m, f));
+      return m.addModelMetrics(new hex.aggregator.ModelMetricsAggregator(m, f, _customMetric));
     }
   }
 }

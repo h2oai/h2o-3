@@ -864,7 +864,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
    * @param model, must contain valid statistics from training, such as _betweenss etc.
    */
   private ModelMetricsClustering makeTrainingMetrics(KMeansModel model) {
-    ModelMetricsClustering mm = new ModelMetricsClustering(model, train());
+    ModelMetricsClustering mm = new ModelMetricsClustering(model, train(), CustomMetric.EMPTY);
     mm._size = model._output._size;
     mm._withinss = model._output._withinss;
     mm._betweenss = model._output._betweenss;

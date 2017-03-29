@@ -10,6 +10,7 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.nbhm.NonBlockingHashSet;
+import water.udf.CFuncRef;
 import water.util.Log;
 import water.util.ReflectionUtils;
 
@@ -118,7 +119,9 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       base.adaptTestForTrain(adaptedFrame, true, computeMetrics);
 
       // TODO: parallel scoring for the base_models
-      BigScore baseBs = (BigScore) base.makeBigScoreTask(domains, names, adaptedFrame, computeMetrics, true, j).doAll(names.length, Vec.T_NUM, adaptedFrame);
+      BigScore baseBs = (BigScore) base.makeBigScoreTask(domains, names, adaptedFrame,
+                                                         computeMetrics, true,
+                                                         j, CFuncRef.from(_parms._custom_metric_func)).doAll(names.length, Vec.T_NUM, adaptedFrame);
       Frame basePreds = baseBs.outputFrame(Key.<Frame>make("preds_base_" + this._key.toString() + fr._key), names, domains);
       //Need to remove 'predict' column from multinomial since it contains outcome
       if (base._output.isMultinomialClassifier()) {
@@ -149,7 +152,13 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     String[][] metaDomains = new String[metaNames.length][];
     metaDomains[0] = metaNames.length == 1 ? null : !computeMetrics ? metalearner._output._domains[metalearner._output._domains.length-1] : levelOneAdapted.lastVec().domain();
 
-    BigScore metaBs = (BigScore)metalearner.makeBigScoreTask(metaDomains, metaNames, levelOneAdapted, computeMetrics, true, j).
+    BigScore metaBs = (BigScore) metalearner.makeBigScoreTask(metaDomains,
+                                                              metaNames,
+                                                              levelOneAdapted,
+                                                              computeMetrics,
+                                                              true,
+                                                              j,
+                                                              CFuncRef.from(_parms._custom_metric_func)).
             doAll(metaNames.length, Vec.T_NUM, levelOneAdapted);
 
     if (computeMetrics) {

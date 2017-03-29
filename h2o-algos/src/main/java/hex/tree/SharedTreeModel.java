@@ -280,7 +280,8 @@ public abstract class SharedTreeModel<
   }
 
   @Override
-  protected Frame postProcessPredictions(Frame predictFr) {
+  protected Frame postProcessPredictions(Frame adaptedFrame, Frame predictFr, Job j) {
+    predictFr = super.postProcessPredictions(adaptedFrame, predictFr, j);
     if (_output._calib_model == null)
       return predictFr;
     if (_output.getModelCategory() == Binomial) {
@@ -295,7 +296,7 @@ public abstract class SharedTreeModel<
         predictFr.write_lock();
         for (int i = 0; i < calPredictions.length; i++)
           predictFr.add("cal_" + predictFr.name(1 + i), calPredictions[i]);
-        return predictFr.update();
+        return predictFr.update(j);
       } finally {
         DKV.remove(calibInputKey);
         if (calibOutput != null)

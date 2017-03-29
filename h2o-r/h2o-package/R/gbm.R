@@ -88,6 +88,7 @@
 #' @param calibrate_model \code{Logical}. Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more
 #'        accurate estimates of class probabilities. Defaults to FALSE.
 #' @param calibration_frame Calibration frame for Platt Scaling
+#' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree for GBM, DRF, & XGBoost. Metrics per epoch for Deep Learning). Defaults to FALSE.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @examples
@@ -154,6 +155,7 @@ h2o.gbm <- function(x, y, training_frame,
                     categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                     calibrate_model = FALSE,
                     calibration_frame = NULL,
+                    custom_metric_func = NULL,
                     verbose = FALSE 
                     ) 
 {
@@ -291,6 +293,8 @@ h2o.gbm <- function(x, y, training_frame,
     parms$calibrate_model <- calibrate_model
   if (!missing(calibration_frame))
     parms$calibration_frame <- calibration_frame
+  if (!missing(custom_metric_func))
+    parms$custom_metric_func <- custom_metric_func
   # Error check and build model
   .h2o.modelJob('gbm', parms, h2oRestApiVersion = 3, verbose=verbose) 
 }

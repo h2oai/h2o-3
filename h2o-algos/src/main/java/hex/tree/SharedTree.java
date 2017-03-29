@@ -18,6 +18,7 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.udf.CFuncRef;
 import water.util.*;
 
 import java.io.FileNotFoundException;
@@ -685,7 +686,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // Score on training data
       _job.update(0,"Scoring the model.");
       _model._output._job = _job; // to allow to share the job for quantiles task
-      Score sc = new Score(this,_model._output._ntrees>0/*score 0-tree model from scratch*/,oob,response(),_model._output.getModelCategory(),computeGainsLift,_trainPredsCache);
+      Score sc = new Score(this,_model._output._ntrees>0/*score 0-tree model from scratch*/,oob,response(),_model._output.getModelCategory(),computeGainsLift,_trainPredsCache, CFuncRef.from(_parms._custom_metric_func));
       ModelMetrics mm = sc.scoreAndMakeModelMetrics(_model, _parms.train(), train(), build_tree_one_node);
       out._training_metrics = mm;
       if (oob) out._training_metrics._description = "Metrics reported on Out-Of-Bag training samples";
@@ -700,7 +701,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           sii = new Score.ScoreIncInfo(_lastScoredTree, valid().numCols(), validWorkspace().numCols(), _nclass > 1 ? 1 : 0 /* skip class for classification problems */);
         } else
           sii = null;
-        Score scv = new Score(this, sii,false, vresponse(), _model._output.getModelCategory(), computeGainsLift, _validPredsCache);
+        Score scv = new Score(this, sii,false, vresponse(), _model._output.getModelCategory(), computeGainsLift, _validPredsCache, CFuncRef.from(_parms._custom_metric_func));
         ModelMetrics mmv = scv.scoreAndMakeModelMetrics(_model, _parms.valid(), v, build_tree_one_node);
         _lastScoredTree = _model._output._ntrees;
         out._validation_metrics = mmv;
@@ -708,7 +709,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           out._scored_valid[out._ntrees].fillFrom(mmv);
       }
       out._model_summary = createModelSummaryTable(out._ntrees, out._treeStats);
-      out._scoring_history = createScoringHistoryTable(out, out._scored_train, out._scored_valid, _job, out._training_time_ms);
+      out._scoring_history = createScoringHistoryTable(out, out._scored_train, out._scored_valid, _job, out._training_time_ms, _parms._custom_metric_func != null);
       if( out._ntrees > 0 ) {    // Compute variable importances
         out._varimp = new hex.VarImp(_improvPerVar, out._names);
         out._variable_importances = hex.ModelMetrics.calcVarImp(out._varimp);
@@ -771,7 +772,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       }
   }
 
-  public static TwoDimTable createScoringHistoryTable(Model.Output _output, ScoreKeeper[] _scored_train, ScoreKeeper[] _scored_valid, Job job, long[] _training_time_ms) {
+  public static TwoDimTable createScoringHistoryTable(Model.Output _output,
+                                                      ScoreKeeper[] _scored_train,
+                                                      ScoreKeeper[] _scored_valid,
+                                                      Job job, long[] _training_time_ms,
+                                                      boolean hasCustomMetric) {
     List<String> colHeaders = new ArrayList<>();
     List<String> colTypes = new ArrayList<>();
     List<String> colFormat = new ArrayList<>();
@@ -793,6 +798,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     if (_output.getModelCategory() == ModelCategory.Binomial || _output.getModelCategory() == ModelCategory.Multinomial) {
       colHeaders.add("Training Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
     }
+    if (hasCustomMetric) {
+      colHeaders.add("Training Custom"); colTypes.add("double"); colFormat.add("%.5f");
+    }
 
     if (_output._validation_metrics != null) {
       colHeaders.add("Validation RMSE"); colTypes.add("double"); colFormat.add("%.5f");
@@ -809,6 +817,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       }
       if (_output.isClassifier()) {
         colHeaders.add("Validation Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
+      }
+      if (hasCustomMetric) {
+        colHeaders.add("Validation Custom"); colTypes.add("double"); colFormat.add("%.5f");
       }
     }
 
@@ -844,6 +855,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         table.set(row, col++, st._lift);
       }
       if (_output.isClassifier()) table.set(row, col++, st._classError);
+      if (hasCustomMetric) table.set(row, col++, st._custom_metric);
 
       if (_output._validation_metrics != null) {
         st = _scored_valid[i];
@@ -858,6 +870,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           table.set(row, col++, st._lift);
         }
         if (_output.isClassifier()) table.set(row, col++, st._classError);
+        if (hasCustomMetric) table.set(row, col++, st._custom_metric);
       }
       row++;
     }

@@ -24,8 +24,8 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
   public double tot_withinss() { return _tot_withinss; }
   public double betweenss() { return _betweenss; }
 
-  public ModelMetricsClustering(Model model, Frame frame) {
-    super(model, frame, 0, Double.NaN);
+  public ModelMetricsClustering(Model model, Frame frame, CustomMetric customMetric) {
+    super(model, frame, 0, Double.NaN, customMetric);
     _size = null;
     _withinss = null;
     _totss = _tot_withinss = _betweenss = Double.NaN;
@@ -138,7 +138,7 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
     public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
       assert m instanceof ClusteringModel;
       ClusteringModel clm = (ClusteringModel) m;
-      ModelMetricsClustering mm = new ModelMetricsClustering(m, f);
+      ModelMetricsClustering mm = new ModelMetricsClustering(m, f, _customMetric);
 
       mm._size = _size;
       mm._tot_withinss = _sumsqe;

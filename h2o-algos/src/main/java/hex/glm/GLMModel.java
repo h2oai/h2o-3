@@ -1,7 +1,6 @@
 package hex.glm;
 
 import hex.*;
-import hex.DataInfo.Row;
 import hex.DataInfo.TransformType;
 import hex.api.MakeGLMModelHandler;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
@@ -15,8 +14,8 @@ import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
 import water.fvec.Frame;
-import water.fvec.InteractionWrappedVec;
 import water.fvec.Vec;
+import water.udf.CFuncRef;
 import water.util.*;
 import water.util.ArrayUtils;
 
@@ -1235,7 +1234,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
    * @return A Frame containing the prediction column, and class distribution
    */
   @Override
-  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics) {
+  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
     String [] names = makeScoringNames();
     String [][] domains = new String[names.length][];
     GLMScore gs = makeScoringTask(adaptFrm,true,j);// doAll(names.length,Vec.T_NUM,adaptFrm);

@@ -9,8 +9,11 @@ public class ModelMetricsBinomialGLM extends ModelMetricsBinomial implements GLM
   public final double _nullDev;
   public final double _AIC;
 
-  public ModelMetricsBinomialGLM(Model model, Frame frame, long nobs, double mse, String[] domain, double sigma, AUC2 auc, double logloss, double resDev, double nullDev, double aic, long nDof, long rDof, GainsLift gainsLift) {
-    super(model, frame, nobs, mse, domain, sigma, auc, logloss, gainsLift);
+  public ModelMetricsBinomialGLM(Model model, Frame frame, long nobs, double mse, String[] domain,
+                                 double sigma, AUC2 auc, double logloss, double resDev, double nullDev,
+                                 double aic, long nDof, long rDof, GainsLift gainsLift,
+                                 CustomMetric customMetric) {
+    super(model, frame, nobs, mse, domain, sigma, auc, logloss, gainsLift, customMetric);
     _resDev = resDev;
     _nullDev = nullDev;
     _AIC = aic;
@@ -60,8 +63,11 @@ public class ModelMetricsBinomialGLM extends ModelMetricsBinomial implements GLM
     public final double _nullDev;
     public final double _AIC;
 
-    public ModelMetricsMultinomialGLM(Model model, Frame frame, long nobs, double mse, String[] domain, double sigma, ConfusionMatrix cm, float [] hr, double logloss, double resDev, double nullDev, double aic, long nDof, long rDof) {
-      super(model, frame, nobs,  mse, domain, sigma, cm, hr, logloss);
+    public ModelMetricsMultinomialGLM(Model model, Frame frame, long nobs, double mse, String[] domain,
+                                      double sigma, ConfusionMatrix cm, float [] hr, double logloss,
+                                      double resDev, double nullDev, double aic, long nDof, long rDof,
+                                      CustomMetric customMetric) {
+      super(model, frame, nobs,  mse, domain, sigma, cm, hr, logloss, customMetric);
       _resDev = resDev;
       _nullDev = nullDev;
       _AIC = aic;

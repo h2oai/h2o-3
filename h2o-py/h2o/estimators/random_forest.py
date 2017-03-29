@@ -32,7 +32,8 @@ class H2ORandomForestEstimator(H2OEstimator):
                       "stopping_metric", "stopping_tolerance", "max_runtime_secs", "seed", "build_tree_one_node",
                       "mtries", "sample_rate", "sample_rate_per_class", "binomial_double_trees", "checkpoint",
                       "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
-                      "histogram_type", "categorical_encoding", "calibrate_model", "calibration_frame", "distribution"}
+                      "histogram_type", "categorical_encoding", "calibrate_model", "calibration_frame", "distribution",
+                      "custom_metric_func"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -735,5 +736,20 @@ class H2ORandomForestEstimator(H2OEstimator):
     def distribution(self, distribution):
         assert_is_type(distribution, None, Enum("auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"))
         self._parms["distribution"] = distribution
+
+
+    @property
+    def custom_metric_func(self):
+        """
+        Reference to custom evaluation function, format: `language:keyName=funcName`
+
+        Type: ``str``.
+        """
+        return self._parms.get("custom_metric_func")
+
+    @custom_metric_func.setter
+    def custom_metric_func(self, custom_metric_func):
+        assert_is_type(custom_metric_func, None, str)
+        self._parms["custom_metric_func"] = custom_metric_func
 
 

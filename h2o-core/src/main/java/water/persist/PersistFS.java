@@ -12,7 +12,7 @@ import water.util.Log;
 /**
  * Persistence backend using local file system.
  */
-final class PersistFS extends Persist {
+public final class PersistFS extends Persist {
   final File _root;
   final File _dir;
 
@@ -36,7 +36,13 @@ final class PersistFS extends Persist {
     path.delete();
   }
 
-  private File getFile(Value v) {
+  /**
+   * Get destination file where value is stored
+   *
+   * @param v  any value from K/V
+   * @return  location of file where value is/could be stored
+   */
+  public File getFile(Value v) {
     return new File(_dir, getIceName(v));
   }
 

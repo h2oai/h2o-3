@@ -1,5 +1,6 @@
 package hex.glrm;
 
+import hex.CustomMetric;
 import hex.Model;
 import hex.ModelMetrics;
 import hex.ModelMetricsUnsupervised;
@@ -11,14 +12,14 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
   public long   _numcnt;
   public long   _catcnt;
 
-  public ModelMetricsGLRM(Model model, Frame frame, double numerr, double caterr) {
-    super(model, frame, 0, Double.NaN);
+  public ModelMetricsGLRM(Model model, Frame frame, double numerr, double caterr, CustomMetric customMetric) {
+    super(model, frame, 0, Double.NaN, customMetric);
     _numerr = numerr;
     _caterr = caterr;
   }
 
-  public ModelMetricsGLRM(Model model, Frame frame, double numerr, double caterr, long numcnt, long catcnt) {
-    this(model, frame, numerr, caterr);
+  public ModelMetricsGLRM(Model model, Frame frame, double numerr, double caterr, long numcnt, long catcnt, CustomMetric customMetric) {
+    this(model, frame, numerr, caterr, customMetric);
     _numcnt = numcnt;
     _catcnt = catcnt;
   }
@@ -81,7 +82,7 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
       // double numerr = _numcnt > 0 ? _sumsqe / _numcnt : Double.NaN;
       // double caterr = _catcnt > 0 ? _miscls / _catcnt : Double.NaN;
       // return m._output.addModelMetrics(new ModelMetricsGLRM(m, f, numerr, caterr));
-      return m.addModelMetrics(new ModelMetricsGLRM(m, f, _sumsqe, _miscls, _numcnt, _catcnt));
+      return m.addModelMetrics(new ModelMetricsGLRM(m, f, _sumsqe, _miscls, _numcnt, _catcnt, _customMetric));
     }
   }
 }

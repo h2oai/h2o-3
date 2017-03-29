@@ -38,7 +38,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                       "huber_alpha", "checkpoint", "sample_rate", "sample_rate_per_class", "col_sample_rate",
                       "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
                       "histogram_type", "max_abs_leafnode_pred", "pred_noise_bandwidth", "categorical_encoding",
-                      "calibrate_model", "calibration_frame"}
+                      "calibrate_model", "calibration_frame", "custom_metric_func"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -830,5 +830,20 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     def calibration_frame(self, calibration_frame):
         assert_is_type(calibration_frame, None, H2OFrame)
         self._parms["calibration_frame"] = calibration_frame
+
+
+    @property
+    def custom_metric_func(self):
+        """
+        Reference to custom evaluation function, format: `language:keyName=funcName`
+
+        Type: ``str``.
+        """
+        return self._parms.get("custom_metric_func")
+
+    @custom_metric_func.setter
+    def custom_metric_func(self, custom_metric_func):
+        assert_is_type(custom_metric_func, None, str)
+        self._parms["custom_metric_func"] = custom_metric_func
 
 

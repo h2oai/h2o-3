@@ -927,4 +927,9 @@ public class FrameUtils {
     }
   }
 
+  public static void delete(Lockable ...frs) {
+    for (Lockable l : frs) {
+      if (l != null) l.delete();
+    }
+  }
 }

@@ -27,6 +27,7 @@ public class ScoreKeeper extends Iced {
   public double _AUC = Double.NaN;
   public double _classError = Double.NaN;
   public double _mean_per_class_error = Double.NaN;
+  public double _custom_metric = Double.NaN;
   public float[] _hitratio;
   public double _lift = Double.NaN; //Lift in top group
 
@@ -93,9 +94,11 @@ public class ScoreKeeper extends Iced {
       _mean_per_class_error = ((ModelMetricsMultinomial)m).mean_per_class_error();
       _hitratio = ((ModelMetricsMultinomial)m)._hit_ratios;
     }
+    if (m._custom_metric != null )
+    _custom_metric =  m._custom_metric.value;
   }
 
-  public enum StoppingMetric { AUTO, deviance, logloss, MSE, RMSE,MAE,RMSLE, AUC, lift_top_group, misclassification, mean_per_class_error}
+  public enum StoppingMetric { AUTO, deviance, logloss, MSE, RMSE,MAE,RMSLE, AUC, lift_top_group, misclassification, mean_per_class_error, custom}
   public static boolean moreIsBetter(StoppingMetric criterion) {
     return (criterion == StoppingMetric.AUC || criterion == StoppingMetric.lift_top_group);
   }

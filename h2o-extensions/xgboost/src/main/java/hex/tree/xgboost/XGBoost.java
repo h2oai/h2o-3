@@ -604,7 +604,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         model.computeVarImp(booster.getFeatureScore(new File(tmpModelDir, FEATURE_MAP_FILENAME).getAbsolutePath()));
         XGBoostOutput out = model._output;
         out._model_summary = createModelSummaryTable(out._ntrees, null);
-        out._scoring_history = createScoringHistoryTable(out, model._output._scored_train, out._scored_valid, _job, out._training_time_ms);
+        out._scoring_history = createScoringHistoryTable(out, model._output._scored_train, out._scored_valid, _job, out._training_time_ms, _parms._custom_metric_func != null);
         out._variable_importances = hex.ModelMetrics.calcVarImp(out._varimp);
         model.update(_job);
         Log.info(model);

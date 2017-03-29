@@ -29,6 +29,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   private Key _frameKey;
   private long _frame_checksum;  // when constant column is dropped, frame checksum changed.  Need re-assign for GLRM.
   public final long _scoring_time;
+  public final CustomMetric _custom_metric;
 
   // Cached fields - cached them when needed
   private transient Model _model;
@@ -37,13 +38,14 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   public final double _MSE;     // Mean Squared Error (Every model is assumed to have this, otherwise leave at NaN)
   public final long _nobs;
 
-  public ModelMetrics(Model model, Frame frame, long nobs, double MSE, String desc) {
+  public ModelMetrics(Model model, Frame frame, long nobs, double MSE, String desc, CustomMetric customMetric) {
     super(buildKey(model, frame));
     withModelAndFrame(model, frame);
     _description = desc;
     _MSE = MSE;
     _nobs = nobs;
     _scoring_time = System.currentTimeMillis();
+    _custom_metric = customMetric;
   }
 
   private void setModelAndFrameFields(Model model, Frame frame) {
@@ -401,6 +403,10 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     public double _wY; // (Weighted) sum of the response
     public double _wYY; // (Weighted) sum of the squared response
 
+    // Custom metric holder
+    public CustomMetric _customMetric = null;
+
+
     public  double weightedSigma() {
 //      double sampleCorrection = _count/(_count-1); //sample variance -> depends on the number of ACTUAL ROWS (not the weighted count)
       double sampleCorrection = 1; //this will make the result (and R^2) invariant to globally scaling the weights
@@ -419,7 +425,8 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
       _wYY += mb._wYY;
     }
 
-    public void postGlobal() {}
+    public void postGlobal() {
+    }
 
     /**
      * Having computed a MetricBuilder, this method fills in a ModelMetrics
@@ -429,5 +436,14 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
      *@param preds Predictions of m on f (optional)  @return Filled Model Metrics object
      */
     public abstract ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds);
+
+    /**
+     * Set value of custom metric.
+     * @param name  name of metric
+     * @param value  metric value
+     */
+    public void setCustomMetric(String name, double value) {
+      _customMetric = CustomMetric.from(name, value);
+    }
   }
 }

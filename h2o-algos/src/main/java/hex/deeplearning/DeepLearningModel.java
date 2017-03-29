@@ -14,6 +14,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.udf.CFuncRef;
 import water.util.*;
 
 import java.lang.reflect.Field;
@@ -558,9 +559,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
    * @param computeMetrics
    * @return A frame containing the prediction or reconstruction
    */
-  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, Job j, boolean computeMetrics) {
+  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
     if (!get_params()._autoencoder) {
-      return super.predictScoreImpl(orig, adaptedFr, destination_key, j, computeMetrics);
+      return super.predictScoreImpl(orig, adaptedFr, destination_key, j, computeMetrics, customMetricFunc);
     } else {
       // Reconstruction
       final int len = model_info().data_info().fullN();
@@ -773,7 +774,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
     Frame res = new Frame(destination_key, names, mse.vecs());
     DKV.put(res);
-    addModelMetrics(new ModelMetricsAutoEncoder(this, frame, res.numRows(), res.vecs()[0].mean() /*mean MSE*/));
+    addModelMetrics(new ModelMetricsAutoEncoder(this, frame, res.numRows(), res.vecs()[0].mean() /*mean MSE*/, CustomMetric.EMPTY));
     return res;
   }
 

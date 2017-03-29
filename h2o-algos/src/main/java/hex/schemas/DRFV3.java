@@ -53,7 +53,8 @@ public class DRFV3 extends SharedTreeV3<DRF, DRFV3, DRFV3.DRFParametersV3> {
                 "categorical_encoding",
                 "calibrate_model",
                 "calibration_frame",
-                "distribution"
+                "distribution",
+                "custom_metric_func"
         };
 
         // Input fields

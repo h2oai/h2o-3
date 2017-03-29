@@ -79,6 +79,7 @@
 #' @param calibration_frame Calibration frame for Platt Scaling
 #' @param distribution Distribution function Must be one of: "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma",
 #'        "tweedie", "laplace", "quantile", "huber". Defaults to AUTO.
+#' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree for GBM, DRF, & XGBoost. Metrics per epoch for Deep Learning). Defaults to FALSE.
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
@@ -126,6 +127,7 @@ h2o.randomForest <- function(x, y, training_frame,
                              calibrate_model = FALSE,
                              calibration_frame = NULL,
                              distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
+                             custom_metric_func = NULL,
                              verbose = FALSE 
                              ) 
 {
@@ -248,6 +250,8 @@ h2o.randomForest <- function(x, y, training_frame,
     parms$calibration_frame <- calibration_frame
   if (!missing(distribution))
     parms$distribution <- distribution
+  if (!missing(custom_metric_func))
+    parms$custom_metric_func <- custom_metric_func
   # Error check and build model
   .h2o.modelJob('drf', parms, h2oRestApiVersion = 3, verbose=verbose) 
 }
