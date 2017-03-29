@@ -548,8 +548,8 @@ public class h2odriver extends Configured implements Tool {
                     "             Extra memory for internal JVM use outside of Java heap.\n" +
                     "                 mapreduce.map.memory.mb = mapperXmx * (1 + extramempercent/100)\n" +
                     "          o  -libjars with an h2o.jar is required.\n" +
-                    "          o  -driverif and -driverport/-driverportrange let the user optionally" +
-                    "             specify the network interface and port/port range (on the driver host)" +
+                    "          o  -driverif and -driverport/-driverportrange let the user optionally\n" +
+                    "             specify the network interface and port/port range (on the driver host)\n" +
                     "             for callback messages from the mapper to the driver.\n" +
                     "          o  -network allows the user to specify a list of networks that the\n" +
                     "             H2O nodes can bind to.  Use this if you have multiple network\n" +
