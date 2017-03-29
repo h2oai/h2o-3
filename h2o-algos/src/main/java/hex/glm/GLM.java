@@ -1117,7 +1117,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
         _job.update(_workPerIteration,"iter=" + _state._iter + " lmb=" + lambdaFormatter.format(_state.lambda()) + "deviance trn/tst= " + devFormatter.format(trainDev) + "/" + devFormatter.format(testDev) + " P=" + ArrayUtils.countNonzeros(_state.beta()));
       }
-      if(_state._iter >= _parms._max_iterations)
+      if(_state._iter >= _parms._max_iterations && _parms._max_iterations > 1)
         _job.warn("Reached maximum number of iterations " + _parms._max_iterations + "!");
       if(_parms._nfolds > 1 && !Double.isNaN(_lambdaCVEstimate))
         _model._output.setSubmodel(_lambdaCVEstimate);
