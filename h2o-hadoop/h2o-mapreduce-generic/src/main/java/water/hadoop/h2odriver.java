@@ -1019,6 +1019,10 @@ public class h2odriver extends Configured implements Tool {
         error("invalid session timeout specification (" + sessionTimeout + ")");
       }
     }
+
+    if (client && disown) {
+      error("client mode doesn't support the '-disown' option");
+    }
   }
 
   static String calcMyIp() throws Exception {
@@ -1443,9 +1447,9 @@ public class h2odriver extends Configured implements Tool {
       addMapperConf(conf, "-internal_security_conf", "security.config", securityConf);
     } else if(internal_secure_connections) {
       SecurityUtils.SSLCredentials credentials = SecurityUtils.generateSSLPair();
-      String sslConfigFile = SecurityUtils.generateSSLConfig(credentials);
+      securityConf = SecurityUtils.generateSSLConfig(credentials);
       addMapperConf(conf, "", credentials.jks.name, credentials.jks.getLocation());
-      addMapperConf(conf, "-internal_security_conf", "default-security.config", sslConfigFile);
+      addMapperConf(conf, "-internal_security_conf", "default-security.config", securityConf);
     }
 
     conf.set(h2omapper.H2O_MAPPER_CONF_LENGTH, Integer.toString(mapperConfLength));
@@ -1564,14 +1568,17 @@ public class h2odriver extends Configured implements Tool {
         System.exit(1);
       }
 
-      String[] extraClientArgs = new String[]{
+      String[] generatedClientArgs = new String[]{
               "-client",
               "-flatfile", flatfile.getAbsolutePath(),
               "-md5skip",
               "-user_name", userName
       };
+      if (securityConf != null)
+        generatedClientArgs = ArrayUtils.append(generatedClientArgs, new String[]{"-internal_security_conf", securityConf});
+      generatedClientArgs = ArrayUtils.append(generatedClientArgs, clientArgs);
 
-      H2OStarter.start(ArrayUtils.append(extraClientArgs, clientArgs), true);
+      H2OStarter.start(generatedClientArgs, true);
       reportClusterReady(H2O.SELF_ADDRESS.getHostAddress(), H2O.API_PORT);
     }
 
