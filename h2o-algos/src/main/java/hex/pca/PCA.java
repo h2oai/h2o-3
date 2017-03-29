@@ -246,15 +246,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       pca._output._total_variance = dfcorr * gram.diagSum();  // Since gram = X'X/n, but variance requires n-1 in denominator
       buildTables(pca, dinfo.coefNames());
     }
-
-    protected void computeStatsFillModel(PCAModel pca, DataInfo dinfo, no.uib.cipr.matrix.SVD svd, Gram gram,
-                                         long nobs) {
-      double[] Vt_1D = svd.getVt().getData();
-      int dim = svd.getVt().numRows();
-      double[][] Vt_2D = LinearAlgebraUtils.reshape1DArray(Vt_1D, dim, dim);
-      computeStatsFillModel(pca, dinfo, svd.getS(), Vt_2D, gram, nobs);
-    }
-
+  
     // Main worker thread
     @Override
     public void computeImpl() {
@@ -351,15 +343,11 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
             throw new RuntimeException(e);
           }
           _job.update(1, "Computing stats from SVD");
+          double[] Vt_1D = svdJ.getVt().getData();
+          double[][] Vt_2D = LinearAlgebraUtils.reshape1DArray(Vt_1D, gramDimension, gramDimension);
           // correct for the eigenvector by t(A)*eigenvector for wide dataset
-          if (_wideDataset) {
-            double[] Vt_1D = svdJ.getVt().getData();
-            double[][] Vt_2D = LinearAlgebraUtils.reshape1DArray(Vt_1D, gramDimension, gramDimension);
-            double[][] eigenVecs = transformEigenVectors(dinfo, Vt_2D);
-            computeStatsFillModel(model, dinfo, svdJ.getS(), eigenVecs, gram, model._output._nobs);
-          } else {
-            computeStatsFillModel(model, dinfo, svdJ, gram, model._output._nobs);
-          }
+          double[][] eigenVecs = _wideDataset ? transformEigenVectors(dinfo, Vt_2D) : Vt_2D;
+          computeStatsFillModel(model, dinfo, svdJ.getS(), eigenVecs, gram, model._output._nobs);
           model._output._training_time_ms.add(System.currentTimeMillis());
           // TODO: replace Jama SVD with MTJ SVD in SVD.java
           // generate variables for scoring_history generation
