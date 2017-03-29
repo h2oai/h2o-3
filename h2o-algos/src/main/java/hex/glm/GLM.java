@@ -878,11 +878,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 // sum_i {w_i*(x_i-delta)*(r_i-gamma)}
                 //   := sum_i {w_i*x_i*r_i} - gamma sum_i{w_i*x_i} - delta * sum_i{w_i*r_i} + gamma*delta sum_i {w_i}
                 //   := tsk._res - gamma*sum_i{w_i*x_i} - delta*RES + gamma*delta*wsumx
-                double delta = activeData.normSub(i);
+                double delta = activeData.normSub(i)*activeData.normMul(i);
                 double x = tsk._res - gamma*gt.wx[i] - delta*RES + delta*gamma*wsumx;
                 beta[currIdx] = ADMM.shrinkage(x * wsumuInv,l1pen) * denums[currIdx];
                 double bdiff = beta[currIdx]-betaold[currIdx];
-                gamma -= bdiff*delta*activeData.normMul(i);
+                gamma -= bdiff*delta;
                 beta[currIdx] = ADMM.shrinkage(tsk._res * wsumuInv, l1pen) * denums[currIdx];
               }
               GLMCoordinateDescentTaskSeqNaiveNumSparse tsk = new GLMCoordinateDescentTaskSeqNaiveNumSparse((iter_x = 1 - iter_x), gamma, 0, beta[activeData.numStart() + activeData.numNums() - 1], 0, 0).doAll(fr1);
