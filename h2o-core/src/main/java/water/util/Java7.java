@@ -1,5 +1,7 @@
 package water.util;
 
+import java.util.Arrays;
+
 /**
  * The following code replaces Java 7 Objects class, while Java 7
  * is not always available.
@@ -15,6 +17,10 @@ public class Java7 {
 
     public static int hashCode(Object a) {
       return a == null ? 0 : a.hashCode();
+    }
+
+    public static int hash(Object... a) {
+      return Arrays.hashCode(a);
     }
   }
 }

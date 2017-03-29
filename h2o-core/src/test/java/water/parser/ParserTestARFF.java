@@ -1,16 +1,22 @@
 package water.parser;
 
+import com.google.common.io.LineReader;
 import org.junit.*;
 import static org.junit.Assert.*;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
+import water.util.BytesStats;
 
 import static water.parser.ParserTest.makeByteVec;
 
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class ParserTestARFF extends TestUtil {
   @BeforeClass static public void setup() { stall_till_cloudsize(1); }
@@ -793,7 +799,7 @@ public class ParserTestARFF extends TestUtil {
    * H2O shows the file has 11219 rows. but original file (from openml) has 10885 rows
    which is verified by parsing with R.
    */
-  @Test public void testPUBDEV3281() {
+  @Test public void testPUBDEV3281() throws IOException {
     final String fname = "smalldata/junit/arff/jm1.arff.txt";
     int expectedLength = 10885;
     NFSFileVec nfs = null;
@@ -804,19 +810,37 @@ public class ParserTestARFF extends TestUtil {
     }
     
     if (nfs != null) {
+      LineReader r = new LineReader(new FileReader(fname));
+      List<Double> col1 = new ArrayList<>();
+      int l0 = -1;
+      int l = 0;
+      String s;
+      while ((s = r.readLine()) != null) {
+        if (!s.isEmpty() && Character.isDigit(s.charAt(0))) {
+          if (l0 == -1) l0 = l;
+          String n1 = s.substring(0, s.indexOf(","));
+          col1.add(Double.parseDouble(n1));
+        }
+        l++;
+      }
+      
       final Key<Keyed> okey = Key.make();
       Key[] keys = new Key[]{nfs._key};
       boolean deleteOnDone = true;
       boolean singleQuote = false;
       final ParseSetup globalSetup = ParseSetup.guessSetup(keys, singleQuote, ParseSetup.GUESS_HEADER);
+      assertEquals(new BytesStats(11241, 118, 850348), globalSetup.bytesStats);
       assertEquals(expectedLength, globalSetup.tentativeNumLines);
       assertEquals(16021, globalSetup.dataOffset);
       Frame k = ParseDataset.parse(okey, keys, deleteOnDone, globalSetup);
       Scope.track(k);
       final Vec vec = k.anyVec();
       assertNotNull(vec);
-      String expectedEspc = "[0, 143, 479, 828, 1159, 1498, 1830, 2143, 2491, 2830, 3177, 3518, 3874, 4208, 4584, 4948, 5347, 5713, 6064, 6414, 6765, 7111, 7445, 7778, 8124, 8469, 8822, 9173, 9516, 9852, 10194, 10529, 10885]";
-      assertEquals(expectedEspc, Arrays.toString(vec.espc()));
+
+      for(int i = 0; i < expectedLength; i ++) {
+        assertEquals("At " + i + "(line " + (l0+i) + "): ", col1.get(i), vec.at(i), 0.0001);
+      }
+
       assertEquals(expectedLength, vec.length());
     }
   }

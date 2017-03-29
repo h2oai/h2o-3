@@ -122,7 +122,6 @@ class ARFFParser extends CsvParser {
       if (bits[lineStart] == '%') continue; // Ignore ARFF comment lines
       if (lineEnd > lineStart) {
         if (ArrayUtils.matchesInUpperCase(bits, lineStart, DATA_MARKER)) {
-  //        BytesStats bs = new BytesStats(bits, lineEnd); // for debugging
           break;
         }
         String str = new String(bits, lineStart, lineEnd - lineStart).trim();

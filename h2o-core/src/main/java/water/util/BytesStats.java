@@ -1,6 +1,7 @@
 package water.util;
 
 import java.io.Serializable;
+import water.util.Java7.Objects;
 
 /**
  * Gathers stats for a byte array.
@@ -14,6 +15,27 @@ public class BytesStats implements Serializable {
   public final int numLines;
   public final int maxWidth;
   public final int numChars; // number non-newline bytes till the last NL
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof BytesStats)) return false;
+    BytesStats that = (BytesStats) o;
+    return numLines == that.numLines &&
+        maxWidth == that.maxWidth &&
+        numChars == that.numChars;
+  }
+
+  @Override
+  public int hashCode() {
+    return java.util.Objects.hash(numLines, maxWidth, numChars);
+  }
+
+  public BytesStats(int numLines, int maxWidth, int numChars) {
+    this.numLines = numLines;
+    this.maxWidth = maxWidth;
+    this.numChars = numChars;
+  }
   
   public BytesStats(byte[] bytes, int offset) {
     int nl = 0;
@@ -43,5 +65,14 @@ public class BytesStats implements Serializable {
   public int averageWidth() {
     // the logic is this: number of chars, minus number of NLs, averaging to middle.
     return numChars == 0 || numLines == 0 ? -1 : (numChars + numLines/2) / numLines;
+  }
+
+  @Override
+  public String toString() {
+    return "BytesStats{" +
+        "numLines=" + numLines +
+        ", maxWidth=" + maxWidth +
+        ", numChars=" + numChars +
+        '}';
   }
 }

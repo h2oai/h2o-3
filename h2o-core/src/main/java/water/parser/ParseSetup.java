@@ -28,6 +28,8 @@ public class ParseSetup extends Iced {
   public static final int HAS_HEADER = 1;
   public static final int GUESS_COL_CNT = -1;
 
+  public BytesStats bytesStats;
+
   ParserInfo _parse_type;     // CSV, XLS, XSLX, SVMLight, Auto, ARFF, ORC
   byte _separator;            // Field separator, usually comma ',' or TAB or space ' '
   // Whether or not single-quotes quote a field.  E.g. how do we parse:
@@ -292,7 +294,6 @@ public class ParseSetup extends Iced {
 
     // Output
     public ParseSetup _gblSetup;
-    public BytesStats bytesStats;
     public long _totalParseSize;
     public long _maxLineLength;
     String _file;
@@ -348,17 +349,17 @@ public class ParseSetup extends Iced {
         checkEncoding(bits);
 
         // Compute the max line length (to help estimate the number of bytes to read per Parse map)
-        bytesStats = new BytesStats(bits);
         _maxLineLength = maxLineLength(bits);
-        {
-          if (_maxLineLength != bytesStats.maxWidth) {
-//TODO(vlad): investigate! the length produced by maxLineLength is 1.3 meg, and the line consists of zero chars            throw new IllegalStateException("wtf");
-          }
-        }
         if (_maxLineLength==-1) throw new H2OIllegalArgumentException("The first 4MB of the data don't contain any line breaks. Cannot parse.");
 
         try {
           _gblSetup = guessSetup(bv, bits, _userSetup);
+          _gblSetup.bytesStats = new BytesStats(bits);
+          {
+            if (_maxLineLength != _gblSetup.bytesStats.maxWidth) {
+//TODO(vlad): investigate! the length produced by maxLineLength is 1.3 meg, and the line consists of zero chars            throw new IllegalStateException("wtf");
+            }
+          }
           for(ParseWriter.ParseErr e:_gblSetup._errs) {
             e._byteOffset += e._cidx*Parser.StreamData.bufSz;
             e._cidx = 0;
