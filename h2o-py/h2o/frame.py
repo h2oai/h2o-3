@@ -1822,7 +1822,11 @@ class H2OFrame(object):
             values2 = []
             for i in range(0,len(values)):
                 if self.type(i) == "enum":
-                    values2.append(self.levels()[i].index(values[i]))
+                    try:
+                        values2.append(self.levels()[i].index(values[i]))
+                    except:
+                        raise H2OValueError("Impute value of: " + values[i] + " not found in existing levels of"
+                                            " column: " + self.col_names[i])
                 else:
                     values2.append(values[i])
             values = values2
