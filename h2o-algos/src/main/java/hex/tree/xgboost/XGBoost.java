@@ -484,7 +484,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         }
         fillRatio /= col;
         Log.info("fill ratio: " + fillRatio);
-        model._output._sparse = fillRatio < 0.2 || ((_train.numRows() * (long) _train.numCols()) > Integer.MAX_VALUE);
+        model._output._sparse = fillRatio < 0.5 || ((_train.numRows() * (long) _train.numCols()) > Integer.MAX_VALUE);
       }
 
       try {
