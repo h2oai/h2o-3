@@ -1576,7 +1576,7 @@ h2o.which <- function(x) {
 #' @return Returns an H2OFrame object.
 #' @seealso \code{\link[base]{which.max}} for the base R method.
 #' @export
-h2o.which_max <- function(x,na.rm = FALSE,axis = 0, ...) {
+h2o.which_max <- function(x,na.rm = FALSE,axis = 0) {
   if( !is.H2OFrame(x) ){
     stop("must be an H2OFrame")
   }
@@ -1597,7 +1597,7 @@ which.max.H2OFrame <- h2o.which_max
 #' @return Returns an H2OFrame object.
 #' @seealso \code{\link[base]{which.min}} for the base R method.
 #' @export
-h2o.which_min <- function(x,na.rm = FALSE,axis = 0, ...) {
+h2o.which_min <- function(x,na.rm = FALSE,axis = 0) {
   if( !is.H2OFrame(x) ) stop("must be an H2OFrame")
   else .newExpr("which.min",x,na.rm,axis) + 1
 }
