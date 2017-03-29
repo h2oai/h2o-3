@@ -359,12 +359,12 @@ public class Leaderboard extends Keyed<Leaderboard> {
           "%s",
           "%1.6d" };
 
-  public static final TwoDimTable makeTwoDimTable(String tableHeader, int length) {
+  public static final TwoDimTable makeTwoDimTable(String tableHeader, String sort_metric, int length) {
     String[] rowHeaders = new String[length];
     for (int i = 0; i < length; i++) rowHeaders[i] = "" + i;
 
     return new TwoDimTable(tableHeader,
-            "models sorted in order of metric, best first",
+            "models sorted in order of " + sort_metric + ", best first",
             rowHeaders,
             Leaderboard.colHeaders,
             Leaderboard.colTypes,
@@ -376,7 +376,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     int col = 0;
     table.set(row, col++, modelIDs[row]);
     table.set(row, col++, timestampFormat.format(new Date(timestamps[row])));
-    table.set(row, col++, errors[row]);
+    table.set(row, col++, String.format("%.6f", errors[row]));
   }
 
   public TwoDimTable toTwoDimTable() {
@@ -388,7 +388,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     long[] timestamps = timestamps(models);
     String[] modelIDsFormatted = new String[models.length];
     
-    TwoDimTable table = makeTwoDimTable(tableHeader, models.length);
+    TwoDimTable table = makeTwoDimTable(tableHeader, sort_metric, models.length);
 
     // %-s doesn't work in TwoDimTable.toString(), so fake it here:
     int maxModelIdLen = -1;

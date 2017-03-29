@@ -44,7 +44,7 @@ import static water.Key.make;
 public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   private final static boolean verifyImmutability = true; // check that trainingFrame hasn't been messed with
-  private final static SimpleDateFormat fullTimestampFormat = new SimpleDateFormat("yyyy.MM.ddHH:mm:ss.S");
+  private final static SimpleDateFormat fullTimestampFormat = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss.S");
 
   private AutoMLBuildSpec buildSpec;     // all parameters for doing this AutoML build
   private Frame origTrainingFrame;       // untouched original training frame
@@ -773,8 +773,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       }
     }
     userFeedback.info(Stage.Workflow, "AutoML: build done");
-    Log.info(userFeedback.toString("User Feedback for AutoML Run: " + this._key));
-    Log.info(leaderboard.toTwoDimTable("Leaderboard for project: " + project, true).toString());
+    Log.info(userFeedback.toString("User Feedback for AutoML Run " + this._key));
+    Log.info(leaderboard.toTwoDimTable("Leaderboard for project " + project, true).toString());
 
     possiblyVerifyImmutability();
     // gather more data? build more models? start applying transforms? what next ...?
@@ -982,7 +982,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     for (Map.Entry<String, Object> entry : frameMeta.entrySet()) {
       if (entry.getKey().startsWith("Dummy"))
         continue;
-      userFeedback.info(Stage.FeatureAnalysis, entry.getKey() + ": " + entry.getValue());
+      Object val = entry.getValue();
+      if (val instanceof Double || val instanceof Float)
+        userFeedback.info(Stage.FeatureAnalysis, entry.getKey() + ": " + String.format("%.6f", val));
+      else
+        userFeedback.info(Stage.FeatureAnalysis, entry.getKey() + ": " + entry.getValue());
     }
   }
 }

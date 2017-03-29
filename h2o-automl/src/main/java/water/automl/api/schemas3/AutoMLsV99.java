@@ -12,6 +12,6 @@ public class AutoMLsV99 extends RequestSchemaV3<AutoMLHandler.AutoMLs, AutoMLsV9
 
   // Output fields
   @API(help="AutoMLs", direction=API.Direction.OUTPUT)
-  public AutoMLV99[] autoMLs;
+  public AutoMLV99[] auto_ml_runs;
 
 }
