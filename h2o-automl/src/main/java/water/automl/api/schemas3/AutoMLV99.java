@@ -8,7 +8,7 @@ import water.api.schemas3.TwoDimTableV3;
 
 // TODO: this is about to change from SchemaV3 to RequestSchemaV3:
 public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
-  @API(help="The AutoML ID", direction=API.Direction.INPUT)
+  @API(help="Optional AutoML run ID; omitting this returns all runs", direction=API.Direction.INPUT)
   public AutoML.AutoMLKeyV3 automl_id;
 
   /**

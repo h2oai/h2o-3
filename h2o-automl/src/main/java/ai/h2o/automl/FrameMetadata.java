@@ -617,8 +617,8 @@ public class FrameMetadata extends Iced {
       sumTimeToMRTaskPerCol+= cmt._elapsed;
     }
     _userFeedback.info(Stage.FeatureAnalysis,
-                       "Average time to analyze each column: "+
-                       ((sumTimeToMRTaskPerCol)/(tasks.length))/1000. +
+                       "Average time to analyze each column: " +
+                       String.format("%.5f", (sumTimeToMRTaskPerCol/tasks.length) / 1000.0) +
                        " seconds");
     if( dropCols.size()>0 )
       dropIgnoredCols(intListToA(dropCols));

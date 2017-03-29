@@ -12,7 +12,7 @@ import water.exceptions.H2OKeyWrongTypeArgumentException;
 public class AutoMLHandler extends Handler {
   /** Class which contains the internal representation of the leaderboards list and params. */
   public static final class AutoMLs extends Iced {
-    public AutoML[] autoMLs;
+    public AutoML[] auto_ml_runs;
 
     public static AutoML[] fetchAll() {
       final Key<AutoML>[] autoMLKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
@@ -44,7 +44,7 @@ public class AutoMLHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public AutoMLsV99 list(int version, AutoMLsV99 s) {
     AutoMLs m = s.createAndFillImpl();
-    m.autoMLs = AutoMLs.fetchAll();
+    m.auto_ml_runs = AutoMLs.fetchAll();
     return s.fillFromImpl(m);
   }
 
