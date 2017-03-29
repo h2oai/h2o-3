@@ -18,7 +18,7 @@ dependencies {
   compile "org.eclipse.jetty.aggregate:jetty-servlet:8.1.17.v20150415"
   compile "org.eclipse.jetty:jetty-plus:8.1.17.v20150415"
   compile ("com.github.rwl:jtransforms:2.4.0") { exclude module: "junit" }
-  compile project(":jaas-pam")
+  compile project(":h2o-jaas-pam")
 
   compile("log4j:log4j:1.2.15") { 
     exclude module: "activation" 
