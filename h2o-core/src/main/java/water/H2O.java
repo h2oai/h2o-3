@@ -136,6 +136,9 @@ final public class H2O {
             "    -kerberos_login\n" +
             "          Use Kerberos LoginService\n" +
             "\n" +
+            "    -pam_login\n" +
+            "          Use PAM LoginService\n" +
+            "\n" +
             "    -login_conf <filename>\n" +
             "          LoginService configuration file\n" +
             "\n" +
@@ -279,6 +282,9 @@ final public class H2O {
 
     /** -kerberos_login enables KerberosLoginService */
     public boolean kerberos_login = false;
+
+    /** -pam_login enables PAMLoginService */
+    public boolean pam_login = false;
 
     /** -login_conf is login configuration service file on local filesystem */
     public String login_conf = null;
@@ -522,6 +528,9 @@ final public class H2O {
       else if (s.matches("kerberos_login")) {
         ARGS.kerberos_login = true;
       }
+      else if (s.matches("pam_login")) {
+        ARGS.pam_login = true;
+      }
       else if (s.matches("login_conf")) {
         i = s.incrementAndCheck(i, args);
         ARGS.login_conf = args[i];
@@ -556,11 +565,12 @@ final public class H2O {
     if (ARGS.hash_login) login_arg_count++;
     if (ARGS.ldap_login) login_arg_count++;
     if (ARGS.kerberos_login) login_arg_count++;
+    if (ARGS.pam_login) login_arg_count++;
     if (login_arg_count > 1) {
-      parseFailed("Can only specify one of -hash_login, -ldap_login, and -kerberos_login");
+      parseFailed("Can only specify one of -hash_login, -ldap_login, -kerberos_login and -pam_login");
     }
 
-    if (ARGS.hash_login || ARGS.ldap_login || ARGS.kerberos_login) {
+    if (ARGS.hash_login || ARGS.ldap_login || ARGS.kerberos_login || ARGS.pam_login) {
       if (H2O.ARGS.login_conf == null) {
         parseFailed("Must specify -login_conf argument");
       }

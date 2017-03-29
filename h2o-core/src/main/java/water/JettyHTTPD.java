@@ -174,7 +174,7 @@ public class JettyHTTPD {
   protected void createServer(Connector connector) throws Exception {
     _server.setConnectors(new Connector[]{connector});
 
-    if (H2O.ARGS.hash_login || H2O.ARGS.ldap_login || H2O.ARGS.kerberos_login) {
+    if (H2O.ARGS.hash_login || H2O.ARGS.ldap_login || H2O.ARGS.kerberos_login || H2O.ARGS.pam_login) {
       // REFER TO http://www.eclipse.org/jetty/documentation/9.1.4.v20140401/embedded-examples.html#embedded-secured-hello-handler
       if (H2O.ARGS.login_conf == null) {
         Log.err("Must specify -login_conf argument");
@@ -195,6 +195,11 @@ public class JettyHTTPD {
         Log.info("Configuring JAASLoginService (with Kerberos)");
         System.setProperty("java.security.auth.login.config",H2O.ARGS.login_conf);
         loginService = new JAASLoginService("krb5loginmodule");
+      }
+      else if (H2O.ARGS.pam_login) {
+        Log.info("Configuring JAASLoginService (with PAM)");
+        System.setProperty("java.security.auth.login.config",H2O.ARGS.login_conf);
+        loginService = new JAASLoginService("pamloginmodule");
       }
       else {
         throw H2O.fail();
@@ -363,7 +368,7 @@ public class JettyHTTPD {
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException {
 
-      if (!H2O.ARGS.ldap_login && !H2O.ARGS.kerberos_login) return;
+      if (!H2O.ARGS.ldap_login && !H2O.ARGS.kerberos_login && !H2O.ARGS.pam_login) return;
 
       String loginName = request.getUserPrincipal().getName();
       if (!loginName.equals(H2O.ARGS.user_name)) {
