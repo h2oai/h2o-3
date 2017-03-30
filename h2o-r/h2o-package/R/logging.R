@@ -2,7 +2,11 @@
 #'
 #' @name aaa
 #' @examples
-#' h2o.init()
+#'if(Sys.info()['sysname'] == "Darwin" && Sys.info()['release'] == '13.4.0'){
+#'  quit(save="no")
+#'}else{
+#'  h2o.init()
+#'}
 NULL
 
 #' Shutdown H2O cloud after examples run
@@ -16,7 +20,6 @@ NULL
 NULL
 
 # Initialize functions for R logging
-
 .h2o.calcLogFileName <- function() {
   paste0(tempdir(), "/rest.log")
 }
