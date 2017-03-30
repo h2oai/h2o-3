@@ -1,7 +1,7 @@
 package water.parser;
 
 import org.apache.commons.lang.RandomStringUtils;
-import org.junit.Assert;
+
 import static org.junit.Assert.*;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -9,7 +9,6 @@ import org.junit.Test;
 import water.*;
 import water.api.schemas3.ParseSetupV3;
 import water.fvec.*;
-import water.util.FileUtils;
 import water.util.Log;
 import water.util.StringUtils;
 
@@ -42,10 +41,11 @@ public class ParserTest extends TestUtil {
   }
 
   private static boolean compareDoubles(double a, double b, double threshold) {
-    if( a==b ) return true;
-    if( ( Double.isNaN(a) && !Double.isNaN(b)) ||
-        (!Double.isNaN(a) &&  Double.isNaN(b)) ) return false;
-    return !Double.isInfinite(a) && !Double.isInfinite(b) &&
+    if (a==b) return true;
+    if (Double.isNaN(a)) return Double.isNaN(b);
+    
+    return !Double.isNaN(b) && 
+           !Double.isInfinite(a) && !Double.isInfinite(b) &&
            Math.abs(a-b)/Math.max(Math.abs(a),Math.abs(b)) < threshold;
   }
   private static void testParsed(Key k, double[][] expected) {
@@ -478,10 +478,10 @@ public class ParserTest extends TestUtil {
 
       //spot check value parsing
       BufferedString str = new BufferedString();
-      assertEquals("A2", vecs[0].atStr(str, 2).toString());
-      assertEquals("B7", vecs[1].atStr(str, 7).toString());
-      assertEquals("'C65001'", vecs[2].atStr(str, 65001).toString());
-      assertEquals("E65004", vecs[4].atStr(str, 65004).toString());
+      assertEquals("A2", ""+ vecs[0].atStr(str, 2));
+      assertEquals("B7", ""+ vecs[1].atStr(str, 7));
+      assertEquals("'C65001'", ""+ vecs[2].atStr(str, 65001));
+      assertEquals("E65004", ""+ vecs[4].atStr(str, 65004));
       assertNull(vecs[6].atStr(str, 65004));
 
       fr.delete();
@@ -847,6 +847,7 @@ public class ParserTest extends TestUtil {
           try {
             Log.info("Trying to parse " + f);
             NFSFileVec nfs = TestUtil.makeNfsFileVec(f);
+            assertNotNull(nfs);
             Frame fr = ParseDataset.parse(Key.make(), new Key[]{nfs._key}, delete_on_done, true /*single quote*/, check_header);
             fr.delete();
           } catch (Throwable t) {
@@ -888,6 +889,7 @@ public class ParserTest extends TestUtil {
   @Test
   public void testParserRespectsSpecifiedColNum() {
     Vec fv = TestUtil.makeNfsFileVec("smalldata/jira/runit_pubdev_3590_unexpected_column.csv");
+    assertNotNull(fv);
     Key fkey = Key.make("data4cols");
     try {
       Key[] keys = new Key[]{fv._key};
@@ -919,7 +921,7 @@ public class ParserTest extends TestUtil {
    */
   @Test
   public void testStreamParsePubDev3401() throws IOException {
-    final int chunkSize = 64 * 1024;
+    final int chunkSize = Parser.StreamData.BUFSIZE;
     ParseSetupV3 ps = new ParseSetupV3();
     ps.parse_type = "CSV";
     ps.chunk_size = chunkSize;
