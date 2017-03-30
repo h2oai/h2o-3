@@ -32,21 +32,24 @@ At a minimum, we recommend the following for compatibility with H2O:
    -  Scala 2.10 or later
    -  R version 3 or later
    -  Python 2.7.x or 3.5.x
-   -  Anaconda package for the H2O distribution. This can be installed using the following command:
-      
-      ::
-
-         conda install -c h2oai h2o=3.10.3.4
-
+ 
 -  **Browser**: An internet browser is required to use H2O's web UI, Flow. Supported versions include the latest version of Chrome, Firefox, Safari, or Internet Explorer. 
+
 -  **Hadoop**: Hadoop is not required to run H2O unless you want to deploy H2O on a Hadoop cluster. Supported versions are listed on the `Download page <http://www.h2o.ai/download/>`_ (when you select the Install on Hadoop tab) and include:
 
    -  Cloudera CDH 5.2 or later (5.3 is recommended)
    -  MapR 3.1.1 or later
    -  Hortonworks HDP 2.1 or later 
 
--  **Spark**: Version 1.6 or 2.0. Spark is only required if you want to run
-   `Sparkling Water <https://github.com/h2oai/sparkling-water>`__.
+-  **Conda 2.7 or 3.5 repo**: Conda is not required to run H2O unless you want to run H2O on the Anaconda Cloud. This can be installed using the following command.  
+      
+      ::
+
+         conda install -c h2oai h2o=3.10.4.2
+
+   Note that the H2O version should match the version that you want to download. Go to `https://anaconda.org/h2oai/h2o/files <https://anaconda.org/h2oai/h2o/files>`__ to view a list of available H2O versions.
+
+-  **Spark**: Version 1.6 or 2.0. Spark is only required if you want to run `Sparkling Water <https://github.com/h2oai/sparkling-water>`__.
 
 
 Supported File Formats
