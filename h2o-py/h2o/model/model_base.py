@@ -687,7 +687,7 @@ class ModelBase(backwards_compatible()):
         print("No metalearner for this model")
 
 
-    def download_pojo(self, path="", get_genmodel_jar=False):
+    def download_pojo(self, path="", get_genmodel_jar=False, genmodel_name=""):
         """
         Download the POJO for this model to the directory specified by path.
 
@@ -695,12 +695,13 @@ class ModelBase(backwards_compatible()):
 
         :param path:  An absolute path to the directory where POJO should be saved.
         :param get_genmodel_jar: if True, then also download h2o-genmodel.jar and store it in folder ``path``.
+        :param genmodel_name Custom name of genmodel jar
         :returns: name of the POJO file written.
         """
         assert_is_type(path, str)
         assert_is_type(get_genmodel_jar, bool)
         path = path.rstrip("/")
-        return h2o.download_pojo(self, path, get_jar=get_genmodel_jar)
+        return h2o.download_pojo(self, path, get_jar=get_genmodel_jar, jar_name=genmodel_name)
 
 
     def download_mojo(self, path=".", get_genmodel_jar=False, genmodel_name=""):
