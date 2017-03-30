@@ -40,13 +40,20 @@ def gen_module(schema, algo, module):
             continue
         if algo == "naivebayes":
             if param["name"] == "min_sdev":
-                yield "#' @param threshold The minimum standard deviation to use for observations without enough data. "
+                yield "#' @param threshold This argument is deprecated, use `min_sdev` instead. The minimum standard deviation to use for observations without enough data. "
+                yield "#'                  Must be at least 1e-10."
+                yield "#' @param min_sdev The minimum standard deviation to use for observations without enough data. "
                 yield "#'                  Must be at least 1e-10."
                 continue
             if param["name"] == "eps_sdev":
-                yield "#' @param eps A threshold cutoff to deal with numeric instability, must be positive."
+                yield "#' @param eps This argument is deprecated, use `eps_sdev` instead. A threshold cutoff to deal with numeric instability, must be positive."
+                yield "#' @param eps_sdev A threshold cutoff to deal with numeric instability, must be positive."
                 continue
-            if param["name"] in ["min_prob", "eps_prob"]:
+            if param["name"] == "min_prob":
+                yield "#' @param min_prob Min. probability to use for observations with not enough data."
+                continue
+            if param["name"] == "eps_prob":
+                yield "#' @param eps_prob Cutoff below which probability is replaced with min_prob."
                 continue
         if param["name"] == "seed":
             yield "#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)"
@@ -207,13 +214,21 @@ def gen_module(schema, algo, module):
             yield "      parms$loss <- loss"
             yield "  }"
             continue
-        if param["name"] in ["min_sdev", "min_prob"]:
+        if param["name"] == "min_sdev":
             yield " if (!missing(threshold))"
+            yield "   warning(\"argument 'threshold' is deprecated; use 'min_sdev' instead.\")"
             yield "   parms$%s <- threshold" % param["name"]
+        if param["name"] == "min_prob":
+            yield " if (!missing(min_prob))"
+            yield "   parms$%s <- min_prob" % param["name"]
             continue
-        if param["name"] in ["eps_sdev", "eps_prob"]:
+        if param["name"] == "eps_sdev":
             yield " if (!missing(eps))"
+            yield "   warning(\"argument 'eps' is deprecated; use 'eps_sdev' instead.\")"
             yield "   parms$%s <- eps" % param["name"]
+        if param["name"] == "eps_prob":
+            yield " if (!missing(eps_prob))"
+            yield "   parms$%s <- eps_prob" % param["name"]
             continue
         yield "  if (!missing(%s))" % param["name"]
         yield "    parms$%s <- %s" % (param["name"], param["name"])
