@@ -112,7 +112,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
     public XGBoostParameters() {
       super();
-//      _categorical_encoding = CategoricalEncodingScheme.LabelEncoder; //pending merge of PR-867
+      _categorical_encoding = CategoricalEncodingScheme.LabelEncoder;
     }
 
     public String algoName() { return "XGBoost"; }
