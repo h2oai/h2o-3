@@ -95,12 +95,14 @@ public class Frame extends Lockable<Frame> {
     super(key);
     assert noChecks;
     _vecs = vecs;
-    _names = new String[vecs.length];
+    String[] names = new String[vecs.length];
     _keys = makeVecKeys(vecs.length);
     for (int i = 0; i < vecs.length; i++) {
-      _names[i] = defaultColName(i);
+      names[i] = defaultColName(i);
       _keys[i] = vecs[i]._key;
     }
+    
+    setNames(names);
   }
 
   /** Creates a frame with given key, names and vectors. */
@@ -115,7 +117,7 @@ public class Frame extends Lockable<Frame> {
 
     // Always require names
     if( names==null ) {         // Make default names, all known to be unique
-      _names = new String[vecs.length];
+      setNames(new String[vecs.length]);
       _keys = makeVecKeys(vecs.length);
       _vecs  = vecs;
       for( int i=0; i<vecs.length; i++ ) _names[i] = defaultColName(i);
@@ -134,8 +136,8 @@ public class Frame extends Lockable<Frame> {
   }
 
   public void setNames(String[] columns){
-    if(columns.length!= _vecs.length){
-      throw new IllegalArgumentException("Size of array containing column names does not correspond to the number of vecs!");
+    if (_vecs != null && columns.length != _vecs.length) {
+      throw new IllegalArgumentException("Number of column names=" + columns.length + " must be the number of vecs=" + _vecs.length);
     }
     _names = columns;
   }
@@ -144,7 +146,7 @@ public class Frame extends Lockable<Frame> {
    *  can be freely hacked without disturbing the original Frame. */
   public Frame( Frame fr ) {
     super( Key.<Frame>make() );
-    _names= fr._names.clone();
+    setNames(fr._names.clone());
     _keys = fr._keys .clone();
     _vecs = fr.vecs().clone();
     _lastNameBig = fr._lastNameBig;
@@ -364,7 +366,7 @@ public class Frame extends Lockable<Frame> {
     System.arraycopy(_names,i,names,i+1,_names.length-i);
     System.arraycopy(_vecs,i,vecs,i+1,_vecs.length-i);
     System.arraycopy(_keys,i,keys,i+1,_keys.length-i);
-    _names = names;
+    setNames(names);
     _vecs = vecs;
     _keys = keys;
   }
@@ -539,9 +541,9 @@ public class Frame extends Lockable<Frame> {
       tmpkeys[ncols+i] = vecs[i]._key;
       tmpvecs[ncols+i] = vecs[i];
     }
-    _names = tmpnam;
     _keys = tmpkeys;
     _vecs = tmpvecs;
+    setNames(tmpnam);
   }
 
   /** Append a named Vec to the Frame.  Names are forced unique, by appending a
@@ -554,9 +556,9 @@ public class Frame extends Lockable<Frame> {
     String[] names = Arrays.copyOf(_names,ncols+1);  names[ncols] = name;
     Key<Vec>[] keys = Arrays.copyOf(_keys ,ncols+1);  keys [ncols] = vec._key;
     Vec[] vecs  = Arrays.copyOf(_vecs ,ncols+1);  vecs [ncols] = vec;
-    _names = names;
     _keys = keys;
     _vecs = vecs;
+    setNames(names);
     return vec;
   }
 
@@ -586,9 +588,9 @@ public class Frame extends Lockable<Frame> {
       System.arraycopy(_vecs,  0, _vecs2,  1, len);
       System.arraycopy(_keys,  0, _keys2,  1, len);
     }
-    _names = _names2;
     _vecs  = _vecs2;
     _keys  = _keys2;
+    setNames(_names2);
     return this;
   }
 
@@ -711,8 +713,8 @@ public class Frame extends Lockable<Frame> {
     if (v == null)
       return fs;
 
-    _names = new String[0];
     _vecs = new Vec[0];
+    setNames(new String[0]);
     _keys = makeVecKeys(0);
 
     // Bulk dumb local remove - no JMM, no ordering, no safety.
@@ -802,7 +804,7 @@ public class Frame extends Lockable<Frame> {
       }
     }
     _vecs = rem;
-    _names= names;
+    setNames(names);
     _keys = keys;
     assert l == rem.length && k == idxs.length;
     return res;
@@ -816,7 +818,7 @@ public class Frame extends Lockable<Frame> {
     Vec v = vecs()[idx];
     if( v == _col0 ) _col0 = null;
     _vecs = ArrayUtils.remove(_vecs, idx);
-    _names = ArrayUtils.remove(_names, idx);
+    setNames(ArrayUtils.remove(_names, idx));
     _keys = ArrayUtils.remove(_keys, idx);
     return v;
   }
@@ -852,9 +854,9 @@ public class Frame extends Lockable<Frame> {
     }
 
     Vec[] vecX = Arrays.copyOfRange(_vecs,startIdx,endIdx);
-    _names = names;
     _vecs = vecs;
     _keys = keys;
+    setNames(names);
     _col0 = null;
     return vecX;
   }
@@ -868,9 +870,9 @@ public class Frame extends Lockable<Frame> {
   public void restructure( String[] names, Vec[] vecs, int cols) {
     // Make empty to dodge asserts, then "add()" them all which will check for
     // compatible Vecs & names.
-    _names = new String[0];
     _keys  = makeVecKeys(0);
     _vecs  = new Vec   [0];
+    setNames(new String[0]);
     add(names,vecs,cols);
   }
 
@@ -882,8 +884,8 @@ public class Frame extends Lockable<Frame> {
     // Nuke any prior frame (including freeing storage) & lock this one
     if( _keys != null ) delete_and_lock();
     else write_lock();
-    _names = names;
     _keys = new Vec.VectorGroup().addVecs(names.length);
+    setNames(names);
     // No Vectors tho!!! These will be added *after* the import
   }
 

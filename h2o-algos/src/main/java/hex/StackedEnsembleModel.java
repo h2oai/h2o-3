@@ -308,7 +308,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
         // TODO: set _parms._train to aModel._parms.train()
 
-        _output._names = aModel._output._names;
+        _output.setNames(aModel._output._names);
         this.names = new NonBlockingHashSet<>();
         this.names.addAll(Arrays.asList(aModel._output._names));
 

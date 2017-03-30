@@ -800,7 +800,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial) {
       super(dinfo._weights, dinfo._offset, dinfo._fold);
       _dinfo = dinfo.clone();
-      _names = column_names;
+      setNames(column_names);
       _domains = domains;
       _coefficient_names = coefficient_names;
       _binomial = binomial;
@@ -839,7 +839,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         names = ns;
         domains = ds;
       }
-      _names = names;
+      setNames(names);
       _domains = domains;
       _coefficient_names = Arrays.copyOf(cnames, cnames.length + 1);
       _coefficient_names[_coefficient_names.length-1] = "Intercept";
