@@ -2801,7 +2801,7 @@ class H2OFrame(object):
         """
         return H2OFrame._expr(expr=ExprNode("which", self))
 
-    def idxmax(self,skipna=False, axis=0):
+    def idxmax(self,skipna=True, axis=0):
         """
         Get the index of the max value in a column or row
 
@@ -2815,7 +2815,7 @@ class H2OFrame(object):
         """
         return H2OFrame._expr(expr=ExprNode("which.max", self, skipna, axis))
 
-    def idxmin(self,skipna=False, axis=0):
+    def idxmin(self,skipna=True, axis=0):
         """
         Get the index of the min value in a column or row
 
