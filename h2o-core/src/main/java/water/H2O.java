@@ -26,6 +26,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
@@ -1333,6 +1334,9 @@ final public class H2O {
    * It is updated also when a new client appears. */
   private static HashSet<H2ONode> STATIC_H2OS = null;
 
+  /* List of all clients that ever connected to this cloud */
+  private static Map<H2ONode.H2Okey, H2ONode> CLIENTS_MAP = new ConcurrentHashMap<>();
+
   // Reverse cloud index to a cloud; limit of 256 old clouds.
   static private final H2O[] CLOUDS = new H2O[256];
 
@@ -1976,6 +1980,7 @@ final public class H2O {
     }
   }
 
+
   /** Add node to a manual multicast list.
    *  Note: the method is valid only if -flatfile option was specified on commandline*
    * @param node  h2o node
@@ -1985,6 +1990,16 @@ final public class H2O {
     assert isFlatfileEnabled() : "Trying to use flatfile, but flatfile is not enabled!";
     return STATIC_H2OS.add(node);
   }
+
+  /** Remove node from a manual multicast list.
+    *  Note: the method is valid only if -flatfile option was specified on commandline*
+    * @param node  h2o node
+    * @return true if node was already in the multicast list.
+    */
+  public static boolean removeNodeFromFlatfile(H2ONode node){
+      assert isFlatfileEnabled() : "Trying to use flatfile, but flatfile is not enabled!";
+      return STATIC_H2OS.remove(node);
+    }
 
   /** Check if a node is included in a manual multicast list.
    *  Note: the method is valid only if -flatfile option was specified on commandline
@@ -2020,5 +2035,25 @@ final public class H2O {
    */
   public static HashSet<H2ONode> getFlatfile() {
     return (HashSet<H2ONode>) STATIC_H2OS.clone();
+  }
+
+  public static H2ONode reportClient(H2ONode client){
+    H2ONode oldClient = CLIENTS_MAP.put(client._key, client);
+    if(oldClient == null){
+      Log.info("New client discovered at " + client);
+    }
+    return oldClient;
+  }
+
+  public static H2ONode removeClient(H2ONode client){
+    return CLIENTS_MAP.remove(client._key);
+  }
+
+  public static HashSet<H2ONode> getClients(){
+    return new HashSet<>(CLIENTS_MAP.values());
+  }
+
+  public static Map<H2ONode.H2Okey, H2ONode> getClientsByKey(){
+    return new HashMap<>(CLIENTS_MAP);
   }
 }
