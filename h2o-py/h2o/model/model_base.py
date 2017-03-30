@@ -703,12 +703,13 @@ class ModelBase(backwards_compatible()):
         return h2o.download_pojo(self, path, get_jar=get_genmodel_jar)
 
 
-    def download_mojo(self, path=".", get_genmodel_jar=False):
+    def download_mojo(self, path=".", get_genmodel_jar=False, genmodel_name=""):
         """
         Download the model in MOJO format.
 
         :param path: the path where MOJO file should be saved.
         :param get_genmodel_jar: if True, then also download h2o-genmodel.jar and store it in folder ``path``.
+        :param genmodel_name Custom name of genmodel jar
         :returns: name of the MOJO file written.
         """
         assert_is_type(path, str)
@@ -717,7 +718,10 @@ class ModelBase(backwards_compatible()):
             raise H2OValueError("MOJOs are currently supported for Distributed Random Forest, "
                                 "Gradient Boosting Machine, Deep Water, GLM, GLRM and word2vec models only.")
         if get_genmodel_jar:
-            h2o.api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, "h2o-genmodel.jar"))
+            if genmodel_name == "":
+                h2o.api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, "h2o-genmodel.jar"))
+            else:
+                h2o.api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, genmodel_name))
         return h2o.api("GET /3/Models/%s/mojo" % self.model_id, save_to=path)
 
     def save_mojo(self, path="", force=False):
