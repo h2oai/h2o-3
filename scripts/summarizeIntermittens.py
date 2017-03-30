@@ -36,6 +36,7 @@ will be stored for each intermittent failure:
 g_test_root_dir = os.path.dirname(os.path.realpath(__file__)) # directory where we are running out code from
 g_threshold_failure = 0
 g_summary_dict_name = ''
+g_summary_csv_filename = ''
 g_file_start = []
 
 g_summary_dict_intermittents = dict()
@@ -155,18 +156,25 @@ def extractPrintSaveIntermittens():
         if g_summary_dict_all["TestInfo"][ind]["FailureCount"] >= g_threshold_failure:
             addFailedTests(g_summary_dict_intermittents, g_summary_dict_all, ind)
 
-    for ind in range(len(g_summary_dict_intermittents["TestName"])):
-        testName = g_summary_dict_intermittents["TestName"][ind]
-        numberFailure = g_summary_dict_intermittents["TestInfo"][ind]["FailureCount"]
-        firstFailedTS  = parser.parse(time.ctime(min(g_summary_dict_intermittents["TestInfo"][ind]["Timestamp"]))+ ' '+localtz)
-        firstFailedStr = firstFailedTS.strftime("%a %b %d %H:%M:%S %Y %Z")
-        recentFail = parser.parse(time.ctime(max(g_summary_dict_intermittents["TestInfo"][ind]["Timestamp"]))+ ' '+localtz)
-        recentFailStr = recentFail.strftime("%a %b %d %H:%M:%S %Y %Z")
-        print("Intermittent: {0} last failed at {1} and has failed {2} times since "
-              "{3}.".format(testName, recentFailStr, numberFailure, firstFailedStr))
     # save dict in file
     if len(g_summary_dict_intermittents["TestName"]) > 0:
         json.dump(g_summary_dict_intermittents, open(g_summary_dict_name, 'w'))
+
+        with open(g_summary_csv_filename, 'w') as summaryFile:
+            for ind in range(len(g_summary_dict_intermittents["TestName"])):
+                testName = g_summary_dict_intermittents["TestName"][ind]
+                numberFailure = g_summary_dict_intermittents["TestInfo"][ind]["FailureCount"]
+                firstFailedTS  = parser.parse(time.ctime(min(g_summary_dict_intermittents["TestInfo"][ind]["Timestamp"]))+
+                                              ' '+localtz)
+                firstFailedStr = firstFailedTS.strftime("%a %b %d %H:%M:%S %Y %Z")
+                recentFail = parser.parse(time.ctime(max(g_summary_dict_intermittents["TestInfo"][ind]["Timestamp"]))+
+                                          ' '+localtz)
+                recentFailStr = recentFail.strftime("%a %b %d %H:%M:%S %Y %Z")
+                eachTest = "{0}, {1}, {2}, {3}\n".format(testName, recentFailStr, numberFailure,
+                                                       g_summary_dict_intermittents["TestInfo"][ind]["TestCategory"][0])
+                summaryFile.write(eachTest)
+                print("Intermittent: {0}, Last failed: {1}, Failed {2} times since "
+                      "{3}".format(testName, recentFailStr, numberFailure, firstFailedStr))
 
 def main(argv):
     """
@@ -186,6 +194,7 @@ def main(argv):
     global g_summary_dict_name
     global g_summary_dict_all
     global g_summary_dict_intermittents
+    global g_summary_csv_filename
 
     if len(argv) < 5:
         print "Wrong call.  Not enough arguments.\n"
@@ -194,6 +203,7 @@ def main(argv):
     else:   # we may be in business
         g_threshold_failure = int(argv[1])
         g_summary_dict_name = os.path.join(g_test_root_dir, argv[2])
+        g_summary_csv_filename = g_summary_dict_name+".csv"
 
         for ind in range(3, len(argv)):
             g_file_start.append(argv[ind])
