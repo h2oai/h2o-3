@@ -55,7 +55,7 @@ public class ParseFolderTestBig extends TestUtil {
   @Test
   public void testPUBDEV4026() {
     Scope.enter();
-    String fname = "bigdata/PUBDEV4026.svm";
+    String fname = "smalldata/PUBDEV4026-0.svm";
     try {
       File f = FileUtils.getFile(fname);
       NFSFileVec nfs = NFSFileVec.make(f);
