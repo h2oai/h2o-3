@@ -458,8 +458,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(XGBoost.this);
       buildModel();
       //check that _parms isn't changed during DL model training
-      long cs2 = _parms.checksum();
-      assert(cs == cs2);
+//      long cs2 = _parms.checksum(); //they can change now (when the user specifies a parameter in XGBoost convention) - otherwise, need to check two different parameters everywhere...
+//      assert(cs == cs2);
     }
 
     final void buildModel() {
