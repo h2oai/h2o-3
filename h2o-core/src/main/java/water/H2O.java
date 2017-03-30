@@ -183,6 +183,7 @@ final public class H2O {
     OptArgs {
     // Prefix of hidden system properties
     public static final String SYSTEM_PROP_PREFIX = "sys.ai.h2o.";
+    public static final String SYSTEM_DEBUG_CORS = H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.cors";
     //-----------------------------------------------------------------------------------
     // Help and info
     //-----------------------------------------------------------------------------------
