@@ -800,7 +800,7 @@ public class ParserTestARFF extends TestUtil {
    which is verified by parsing with R.
    */
   @Test public void testPUBDEV3281() throws IOException {
-    final String fname = "smalldata/junit/arff/jm1.arff.txt";
+    final String fname = "smalldata/junit/arff/jm1_arff.txt";
     int expectedLength = 10885;
     NFSFileVec nfs = null;
     try {
