@@ -42,6 +42,8 @@ task setProjectVersion << {
     println "    INIT.path = " + INIT.path
     def txt = INIT.text
     txt = txt.replaceAll("SUBST_PROJECT_VERSION", PROJECT_VERSION)
+            .replaceAll("SUBST_PROJECT_BUILDINFO", bv.toString())
+
     INIT.write(txt)
 }
 
@@ -50,6 +52,7 @@ task resetProjectVersion << {
     println "    INIT.path = " + INIT.path
     def txt = INIT.text
     txt = txt.replaceAll(PROJECT_VERSION, "SUBST_PROJECT_VERSION")
+            .replaceAll("__buildinfo__ = .*", "__buildinfo__ = \"SUBST_PROJECT_BUILDINFO\"")
     INIT.write(txt)
 }
 
