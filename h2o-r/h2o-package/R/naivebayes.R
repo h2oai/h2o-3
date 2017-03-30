@@ -82,7 +82,11 @@ h2o.naiveBayes <- function(x, y, training_frame,
                            max_hit_ratio_k = 0,
                            laplace = 0,
                            threshold = 0.001,
+                           min_sdev = 0.001,
                            eps = 0,
+                           eps_sdev = 0,
+                           min_prob = 0.001,
+                           eps_prob = 0,
                            compute_metrics = TRUE,
                            max_runtime_secs = 0
                            ) 

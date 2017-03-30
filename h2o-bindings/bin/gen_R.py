@@ -95,11 +95,17 @@ def gen_module(schema, algo, module):
         if algo == "naivebayes":
             if param["name"] == "min_sdev":
                 list.append(indent("threshold = %s" % normalize_value(param), 17 + len(module)))
+                list.append(indent("min_sdev = %s" % normalize_value(param), 17 + len(module)))
                 continue
             if param["name"] == "eps_sdev":
                 list.append(indent("eps = %s" % normalize_value(param), 17 + len(module)))
+                list.append(indent("eps_sdev = %s" % normalize_value(param), 17 + len(module)))
                 continue
-            if param["name"] in ["min_prob", "eps_prob"]:
+            if param["name"] == "min_prob":
+                list.append(indent("min_prob = %s" % normalize_value(param), 17 + len(module)))
+                continue
+            if param["name"] == "eps_prob":
+                list.append(indent("eps_prob = %s" % normalize_value(param), 17 + len(module)))
                 continue
         list.append(indent("%s = %s" % (param["name"], normalize_value(param)), 17 + len(module)))
     yield ",\n".join(list)
