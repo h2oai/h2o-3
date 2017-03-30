@@ -71,12 +71,12 @@ def pca_scoring_history_importance():
     pyunit_utils.assert_H2OTwoDimTable_equal(gramSVD._model_json["output"]["importance"],
                                            glrmPCA._model_json["output"]["importance"],
                                            ["Standard deviation", "Cumulative Proportion", "Cumulative Proportion"],
-                                           tolerance=1e-2)
+                                           tolerance=2e-2)
     print("@@@@@@  Comparing eigenvectors between GramSVD and GLRM...\n")
     # compare singular vectors
     pyunit_utils.assert_H2OTwoDimTable_equal(gramSVD._model_json["output"]["eigenvectors"],
                                            glrmPCA._model_json["output"]["eigenvectors"],
-                                           glrmPCA._model_json["output"]["names"], tolerance=1e-1,check_sign=True)
+                                           glrmPCA._model_json["output"]["names"], tolerance=2e-1,check_sign=True)
 
     # make sure we find the scoring history and it is not empty for all the PCA modes
     # just check and make sure the cell_values exceed 0
