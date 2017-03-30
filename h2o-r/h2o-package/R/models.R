@@ -1,7 +1,7 @@
 #'
 #' H2O Model Related Functions
 #'
-#' @importFrom graphics strwidth par legend
+#' @importFrom graphics strwidth par legend polygon
 
 
 # ------------------------------- Helper Functions --------------------------- #
