@@ -129,7 +129,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       AUTO, Random, Modulo, Stratified
     }
     public enum CategoricalEncodingScheme {
-      AUTO, OneHotInternal, OneHotExplicit, Enum, Binary, Eigen, LabelEncoder, SortByResponse
+      AUTO(false), OneHotInternal(false), OneHotExplicit(false), Enum(false), Binary(false), Eigen(false), LabelEncoder(false), SortByResponse(true);
+      CategoricalEncodingScheme(boolean needResponse) { _needResponse = needResponse; }
+      final boolean _needResponse;
+      boolean needsResponse() { return _needResponse; }
     }
     public long _seed = -1;
     public long getOrMakeRealSeed(){

@@ -17,7 +17,7 @@ import java.util.*;
 abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Iced {
 
   public ToEigenVec getToEigenVec() { return null; }
-  public boolean shouldReorder(Vec v) { return _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.SortByResponse; }
+  public boolean shouldReorder(Vec v) { return _parms._categorical_encoding.needsResponse() && isSupervised(); }
 
   transient private IcedHashMap<Key,String> _toDelete = new IcedHashMap<>();
   void cleanUp() { FrameUtils.cleanUp(_toDelete); }
@@ -800,6 +800,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     _train = new Frame(null /* not putting this into KV */, tr._names.clone(), tr.vecs().clone());
     if (expensive) {
       _parms.getOrMakeRealSeed();
+    }
+    if (_parms._categorical_encoding.needsResponse() && !isSupervised()) {
+      error("_categorical_encoding", "Categorical encoding scheme cannot be "
+          + _parms._categorical_encoding.toString() + " - no response column available.");
     }
     if (_parms._nfolds < 0 || _parms._nfolds == 1) {
       error("_nfolds", "nfolds must be either 0 or >1.");
