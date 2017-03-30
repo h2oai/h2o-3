@@ -62,7 +62,7 @@ RUN \
 RUN \
   useradd -m -c "H2o AI" jenkins -s /bin/bash && \
   wget https://s3.amazonaws.com/h2o-r/linux/LiblineaR_1.94-2.tar.gz && \
-  R -e 'chooseCRANmirror(graphics=FALSE, ind=54);install.packages(c("R.utils", "AUC", "Hmisc", "flexclust", "randomForest", "bit64", "HDtweedie", "RCurl", "jsonlite", "statmod", "devtools", "roxygen2", "testthat", "Rcpp", "fpc", "RUnit", "ade4", "glmnet", "gbm", "ROCR", "e1071", "ggplot2", "LiblineaR"))' 
+  R -e 'chooseCRANmirror(graphics=FALSE, ind=54);install.packages(c("R.utils", "AUC", "mlbench", "Hmisc", "flexclust", "randomForest", "bit64", "HDtweedie", "RCurl", "jsonlite", "statmod", "devtools", "roxygen2", "testthat", "Rcpp", "fpc", "RUnit", "ade4", "glmnet", "gbm", "ROCR", "e1071", "ggplot2", "LiblineaR"))' 
 
 RUN \
 ## Workaround for LiblineaR problem
