@@ -8,6 +8,7 @@ import org.junit.runner.Description;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
+import water.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,8 +51,9 @@ public class H2OTestRunner {
 
   public static void main(String[] args) throws Exception {
     H2OTestRunner testRunner = new H2OTestRunner();
-    Result result = null;
-    result = testRunner.run(args);
+    String doonly = System.getenv("DOONLY");
+    if (!StringUtils.isNullOrEmpty(doonly)) args = new String[]{doonly};
+    Result result = testRunner.run(args);
     System.exit(result.wasSuccessful() ? 0 : 1);
   }
 }
