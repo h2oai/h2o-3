@@ -28,7 +28,7 @@ public class BytesStats implements Serializable {
 
   @Override
   public int hashCode() {
-    return java.util.Objects.hash(numLines, maxWidth, numChars);
+    return Objects.hash(numLines, maxWidth, numChars);
   }
 
   public BytesStats(int numLines, int maxWidth, int numChars) {
