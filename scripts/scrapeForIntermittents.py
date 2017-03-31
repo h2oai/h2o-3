@@ -42,6 +42,7 @@ g_failed_tests_dict = ''    # contains the filename that contains failed tests i
 g_failed_tests_info_dict = dict()   # store failed tests info in a dictionary
 g_resource_url = ''
 g_timestring = ''
+g_daily_failure_csv = ''
 
 def init_failed_tests_dict():
     """
@@ -107,11 +108,12 @@ def usage():
     print("")
     print("Usage:  ")
     print("python scrapeForIntermittents timestamp job_name build_id git_sha node_name unit_test_category jenkins_URL "
-          "output_filename output_dict_name month_of_data_to_keep")
+          "output_filename output_dict_name month_of_data_to_keep tests_info_per_build_failure")
     print(" The unit_test_category can be 'junit', 'pyunit' or 'runit'.")
     print(" The ouput_dict_name is the filename that we will save a dictionary structure of the failed unit tests.")
     print(" The month_of_data_to_keep is an integer indicating how many months that we want to kee the data "
           "starting from now.  Any data that is older than the value will be deleted.")
+    print("tests_info_per_build_failure is the file name that will store failed test info per build failure.")
 
 '''
 This function is written to extract the console output that has already been stored
@@ -190,17 +192,17 @@ def save_failed_tests_info():
             init_failed_tests_dict()
 
         with open(g_summary_text_filename, 'a') as failed_file:
-            for index in range(len(g_failed_testnames)):
+            with open(g_daily_failure_csv, 'w') as daily_failure:
+                for index in range(len(g_failed_testnames)):
 
-                testInfo = ','.join([g_timestring, g_job_name, str(g_build_id), g_git_hash, g_node_name,
-                                     g_unit_test_type, g_failed_testnames[index]])
-                failed_file.write(testInfo)
-                failed_file.write('\n')
-                    # update failed tests dictionary
-                update_failed_test_info_dict(g_failed_testnames[index], g_failed_test_paths[index])
+                    testInfo = ','.join([g_timestring, g_job_name, str(g_build_id), g_git_hash, g_node_name,
+                                         g_unit_test_type, g_failed_testnames[index]])
+                    failed_file.write(testInfo+'\n')
+                    daily_failure.write(testInfo+'\n')
+                        # update failed tests dictionary
+                    update_failed_test_info_dict(g_failed_testnames[index], g_failed_test_paths[index])
         json.dump(g_failed_tests_info_dict, open(g_failed_tests_dict, 'w'))
-        # with open(g_failed_tests_dict, 'wb') as error_file:
-        #     pickle.dump(g_failed_tests_info_dict, error_file)
+
 
 
 def update_failed_test_info_dict(failed_testname, failed_test_path):
@@ -324,8 +326,9 @@ def main(argv):
     global g_failed_tests_dict      # store failed test info as a dictionary
     global g_resource_url
     global g_timestring
+    global g_daily_failure_csv
 
-    if len(argv) < 11:
+    if len(argv) < 12:
         print "Wrong call.  Not enough arguments.\n"
         usage()
         sys.exit(1)
@@ -346,6 +349,7 @@ def main(argv):
         g_summary_text_filename = os.path.join(g_test_root_dir, argv[8])
         g_failed_tests_dict = os.path.join(g_test_root_dir, argv[9])
         monthToKeep = float(argv[10])
+        g_daily_failure_csv = os.path.join(g_test_root_dir, argv[11])+'_'+argv[1]+'.csv'
 
         g_resource_url = '/'.join([g_jenkins_url, "job", g_job_name, g_build_id])
         get_console_out(g_resource_url+"/#showFailuresLink/")       # save remote console output in local directory
