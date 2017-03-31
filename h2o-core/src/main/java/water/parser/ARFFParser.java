@@ -4,8 +4,6 @@ import java.util.ArrayList;
 
 import water.Key;
 import water.fvec.Vec;
-import water.util.ArrayUtils;
-import water.util.BytesStats;
 
 import static water.parser.DefaultParserProviders.ARFF_INFO;
 
@@ -20,19 +18,19 @@ class ARFFParser extends CsvParser {
     if (columnNames != null) throw new UnsupportedOperationException("ARFFParser doesn't accept columnNames.");
 
     // Parse all lines starting with @ until EOF or @DATA
+    boolean haveData = false;
+    int offset = 0;
     String[][] data = new String[0][];;
     String[] labels;
     String[][] domains;
     String[] headerlines = new String[0];
     byte[] ctypes;
 
-    int numLines = 0;
-    
     // header section
     ArrayList<String> header = new ArrayList<>();
-    int dataOffset = readArffHeader(0, header, bits, singleQuotes);
-    
-    boolean haveData = dataOffset < bits.length;
+    offset = readArffHeader(offset, header, bits, singleQuotes);
+    if (offset < bits.length && !CsvParser.isEOL(bits[offset]))
+      haveData = true; //more than just the header
 
     if (header.size() == 0)
       throw new ParseDataset.H2OParseException("No data!");
@@ -50,7 +48,6 @@ class ARFFParser extends CsvParser {
     if (haveData) {
       String[] datalines = new String[0];
       ArrayList<String> datablock = new ArrayList<>();
-      int offset = dataOffset;
       while (offset < bits.length) {
         int lineStart = offset;
         while (offset < bits.length && !CsvParser.isEOL(bits[offset])) ++offset;
@@ -68,7 +65,6 @@ class ARFFParser extends CsvParser {
       if (datablock.size() == 0)
         throw new ParseDataset.H2OParseException("Unexpected line.");
       datalines = datablock.toArray(datalines);
-      numLines = datalines.length;
 
       // process data section
       int nlines2 = Math.min(10, datalines.length);
@@ -102,14 +98,9 @@ class ARFFParser extends CsvParser {
     }
 
     // Return the final setup
-    final ParseSetup parseSetup = new ParseSetup(ARFF_INFO, sep, singleQuotes, ParseSetup.NO_HEADER, ncols, labels, ctypes, domains, naStrings, data);
-    parseSetup.tentativeNumLines = numLines;
-    parseSetup.dataOffset = dataOffset;
-    return parseSetup;
+    return new ParseSetup(ARFF_INFO, sep, singleQuotes, ParseSetup.NO_HEADER, ncols, labels, ctypes, domains, naStrings, data);
   }
 
-  private final static String DATA_MARKER = "@DATA";
-  
   private static int readArffHeader(int offset, ArrayList<String> header, byte[] bits, boolean singleQuotes) {
     while (offset < bits.length) {
       int lineStart = offset;
@@ -121,7 +112,11 @@ class ARFFParser extends CsvParser {
       if (bits[lineStart] == '#') continue; // Ignore      comment lines
       if (bits[lineStart] == '%') continue; // Ignore ARFF comment lines
       if (lineEnd > lineStart) {
-        if (ArrayUtils.matchesInUpperCase(bits, lineStart, DATA_MARKER)) {
+        if (bits[lineStart] == '@' &&
+                (bits[lineStart+1] == 'D' || bits[lineStart+1] =='d' ) &&
+                (bits[lineStart+2] == 'A' || bits[lineStart+2] =='a' ) &&
+                (bits[lineStart+3] == 'T' || bits[lineStart+3] =='t' ) &&
+                (bits[lineStart+4] == 'A' || bits[lineStart+4] =='a' )){
           break;
         }
         String str = new String(bits, lineStart, lineEnd - lineStart).trim();

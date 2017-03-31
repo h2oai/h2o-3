@@ -194,7 +194,7 @@ public abstract class FileVec extends ByteVec {
     }
     else {
       // New Heuristic
-      int minNumberRows = 200; // need at least 200 rows (lines) per chunk (core) - that's needed for files with headers
+      int minNumberRows = 10; // need at least 10 rows (lines) per chunk (core)
       int perNodeChunkCountLimit = 1<<21; // don't create more than 2M Chunk POJOs per node
       int minParseChunkSize = 1<<12; // don't read less than this many bytes
       int maxParseChunkSize = (1<<28)-1; // don't read more than this many bytes per map() thread (needs to fit into a Value object)
@@ -204,7 +204,7 @@ public abstract class FileVec extends ByteVec {
 
       // Super small data check - file size is smaller than 64kB
       if (totalSize <= 1<<16) {
-        chunkSize = Math.min(maxParseChunkSize, Math.max(DFLT_CHUNK_SIZE, (int) (minNumberRows * maxLineLength)));
+        chunkSize = Math.max(DFLT_CHUNK_SIZE, (int) (minNumberRows * maxLineLength));
       } else {
 
         //round down to closest power of 2
@@ -212,7 +212,7 @@ public abstract class FileVec extends ByteVec {
 
         // Small data check
         if (chunkSize < DFLT_CHUNK_SIZE && (localParseSize / chunkSize) * numCols < perNodeChunkCountLimit) {
-          chunkSize = Math.min(maxParseChunkSize, Math.max((int)chunkSize, (int) (minNumberRows * maxLineLength)));
+          chunkSize = Math.max((int)chunkSize, (int) (minNumberRows * maxLineLength));
         } else {
           // Adjust chunkSize such that we don't create too many chunks
           int chunkCount = cores * 4 * numCols;
@@ -233,8 +233,8 @@ public abstract class FileVec extends ByteVec {
           }
         }
       }
-      assert chunkSize >= minParseChunkSize : "Chunk size " + chunkSize + ", min " + minParseChunkSize;
-      assert chunkSize <= maxParseChunkSize  : "Chunk size " + chunkSize + ", max " + maxParseChunkSize;
+      assert(chunkSize >= minParseChunkSize);
+      assert(chunkSize <= maxParseChunkSize);
       if (verbose)
         Log.info("ParseSetup heuristic: "
           + "cloudSize: " + cloudsize

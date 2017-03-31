@@ -1675,35 +1675,4 @@ public class ArrayUtils {
       if (vals[i - 1] > vals[i]) return false;
     return true;
   }
-
-  /**
-   * Checks if the array <code>toMatch</code> is equal to the bytes at <code>bytes</code> starting at <code>offset</code>
-   * @param bytes bytes to check
-   * @param offset start position
-   * @param toMatch the array to match
-   * @return true if bytes[offset..offset+toMatch.length-1] is equal to toMatch
-   */
-  public static boolean matches(byte[] bytes, int offset, String toMatch) {
-    if (offset < 0 || offset > bytes.length - toMatch.length()) return false;
-
-    for (int i = 0; i < toMatch.length(); i++) {
-      if (bytes[offset+i] != toMatch.charAt(i)) return false;
-    }
-    return true;
-  }
-
-  /**
-   * Checks if the array <code>toMatch</code> is equal to the bytes at <code>bytes</code> starting at <code>offset</code>, up to the case
-   * @param bytes bytes to check
-   * @param offset start position
-   * @param toMatch the string to match; must be UPPER CASE
-   * @return true if bytes[offset..offset+toMatch.length-1] is equal to toMatch
-   */
-  public static boolean matchesInUpperCase(byte[] bytes, int offset, String toMatch) {
-    if (offset < 0 || offset > bytes.length - toMatch.length()) return false;
-    for (int i = 0; i < toMatch.length(); i++) {
-      if (Character.toUpperCase(bytes[offset+i]) != toMatch.charAt(i)) return false;
-    }
-    return true;
-  }
 }
