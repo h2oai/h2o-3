@@ -184,5 +184,31 @@ public class ArrayUtilsTest extends TestUtil {
     assertTrue(result == a);
     assertArrayEquals(new float[]{210.0f, 420.0f, 630.0f}, a, 0.001f);
   }
+  
+  @Test public void testMatches() {
+    byte[] sample = StringUtils.bytesOf("once upon a midnight dreary");
+    String toMatch = "on";
+    assertTrue(ArrayUtils.matches(sample, 0, toMatch));
+    assertTrue(ArrayUtils.matches(sample, 7, toMatch));
+    assertTrue(ArrayUtils.matches(sample, 26, "y"));
+    assertFalse(ArrayUtils.matches(sample, 1, toMatch));
+    assertFalse(ArrayUtils.matches(sample, 99, toMatch));
+    assertTrue(ArrayUtils.matches(sample, 10, ""));
+    assertFalse(ArrayUtils.matches(sample, 100, ""));
+    assertFalse(ArrayUtils.matches(sample, -1, ""));
+  }
+
+  @Test public void testMatchesInUpperCase() {
+    byte[] sample = StringUtils.bytesOf("Once Upon a Midnight Dreary");
+    String toMatch = "ON";
+    assertTrue(ArrayUtils.matchesInUpperCase(sample, 0, toMatch));
+    assertTrue(ArrayUtils.matchesInUpperCase(sample, 7, toMatch));
+    assertTrue(ArrayUtils.matchesInUpperCase(sample, 26, "Y"));
+    assertFalse(ArrayUtils.matchesInUpperCase(sample, 1, toMatch));
+    assertFalse(ArrayUtils.matchesInUpperCase(sample, 99, toMatch));
+    assertTrue(ArrayUtils.matchesInUpperCase(sample, 10, ""));
+    assertFalse(ArrayUtils.matchesInUpperCase(sample, 100, ""));
+    assertFalse(ArrayUtils.matchesInUpperCase(sample, -1, ""));
+  }
 
 }
