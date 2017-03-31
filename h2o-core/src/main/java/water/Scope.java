@@ -33,17 +33,18 @@ public class Scope {
    *  enter call except for the listed Keys.
    *  @return Returns the list of kept keys. */
   static public Key[] exit(Key... keep) {
-    List<Key> keylist = new ArrayList<>();
-    if( keep != null )
-      for( Key k : keep ) if (k != null) keylist.add(k);
-    Object[] arrkeep = keylist.toArray();
-    Arrays.sort(arrkeep);
+    Set<Key> keepSet = new HashSet<>();
+
+    for (Key k : keep) keepSet.add(k);
+
     Stack<HashSet<Key>> keys = _scope.get()._keys;
     if (keys.size() > 0) {
       Futures fs = new Futures();
-      for (Key key : keys.pop()) {
-        int found = Arrays.binarySearch(arrkeep, key);
-        if ((arrkeep.length == 0 || found < 0) && key != null) Keyed.remove(key, fs);
+      final HashSet<Key> keySet = keys.pop();
+
+      for (Key key : keySet) {
+        if (key != null && !keepSet.contains(key)) Keyed.remove(key, fs);
+        
       }
       fs.blockForPending();
     }
@@ -64,18 +65,16 @@ public class Scope {
     track_impl(scope, k);
   }
 
-  static public <T extends Keyed> Keyed<T> track_generic(Keyed<T> keyed) {
+  static public <T extends Keyed> T track(T keyed) {
     Scope scope = _scope.get();                   // Pay the price of T.L.S. lookup
     assert scope != null;
     track_impl(scope, keyed._key);
     return keyed;
   }
 
-  static public Vec track( Vec vec ) {
-    Scope scope = _scope.get();                   // Pay the price of T.L.S. lookup
-    assert scope != null;
-    track_impl(scope, vec._key);
-    return vec;
+  @Deprecated
+  static public <T extends Keyed> T track_generic(T keyed) {
+    return track(keyed);
   }
 
   /**
@@ -95,7 +94,7 @@ public class Scope {
 
   static private void track_impl(Scope scope, Key key) {
     // key size is 0 when tracked in the past, but no scope now
-    if (scope._keys.size() > 0 && !scope._keys.peek().contains(key))
+    if (scope._keys.size() > 0 && key != null)
       scope._keys.peek().add(key);            // Track key
   }
 

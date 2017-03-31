@@ -2,7 +2,7 @@ package water.userapi
 
 import java.io.{File, IOException}
 
-import water.{Key, Scope}
+import water._
 import water.fvec._
 import water.parser.ParseDataset
 import water.udf.specialized.Enums

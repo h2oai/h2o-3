@@ -5,6 +5,7 @@ description = "H2O Scala API (Scala version ${scalaVersion})"
 
 dependencies {
   compile project(":h2o-core")
+  compile project(":h2o-algos")
   compile "org.scala-lang:scala-library:$scalaVersion"
   
   testCompile project(path: ":h2o-core", configuration: "testArchives")
