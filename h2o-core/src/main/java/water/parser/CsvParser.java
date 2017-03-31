@@ -22,16 +22,6 @@ class CsvParser extends Parser {
 
   CsvParser( ParseSetup ps, Key jobKey ) { super(ps, jobKey); }
   
-  // TODO(vlad): make it package-private, add a test
-  private static int skipHeader(byte[] bits, int offset) {
-    int offsetToNonspace = skipSpaces(bits, offset);
-    while (offsetToNonspace < bits.length && isCommentChar(bits[offsetToNonspace])) {
-      offset = skipToNewLine(bits, offsetToNonspace) + 1;
-      offsetToNonspace = skipSpaces(bits, offset);
-    }
-    return offset;
-  }
-  
   // Parse this one Chunk (in parallel with other Chunks)
   @SuppressWarnings("fallthrough")
   @Override public ParseWriter parseChunk(int cidx, final ParseReader din, final ParseWriter dout) {
@@ -66,11 +56,10 @@ class CsvParser extends Parser {
     int fractionDigits = 0;
     int tokenStart = 0; // used for numeric token to backtrace if not successful
     int colIdx = 0;
-    // skip comments for the first chunk (or if not a chunk)
-    if (cidx == 0) {
-      offset = skipHeader(bits, offset);
-      if (offset >= bits.length) return dout;
-    }
+
+    offset = Math.max(0, (int)(_setup.dataOffset - din.getGlobalByteOffset() - 1));
+
+    if (offset >= bits.length) return dout;
     
     byte c = bits[offset];
     dout.newLine();
