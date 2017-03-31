@@ -352,12 +352,12 @@ public class Leaderboard extends Keyed<Leaderboard> {
   protected static final String[] colTypes= {
           "string",
           "string",
-          "double" };
+          "string" };
 
   protected static final String[] colFormats= {
           "%s",
           "%s",
-          "%1.6d" };
+          "%s" };
 
   public static final TwoDimTable makeTwoDimTable(String tableHeader, String sort_metric, int length) {
     String[] rowHeaders = new String[length];
