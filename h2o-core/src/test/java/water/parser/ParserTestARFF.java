@@ -8,6 +8,7 @@ import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.util.BytesStats;
+import water.util.FileUtils;
 
 import static water.parser.ParserTest.makeByteVec;
 
@@ -810,7 +811,7 @@ public class ParserTestARFF extends TestUtil {
     }
     
     if (nfs != null) {
-      LineReader r = new LineReader(new FileReader(fname));
+      LineReader r = new LineReader(new FileReader(FileUtils.locateFile(fname)));
       List<Double> col1 = new ArrayList<>();
       int l0 = -1;
       int l = 0;
