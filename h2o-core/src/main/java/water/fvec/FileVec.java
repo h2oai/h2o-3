@@ -204,7 +204,7 @@ public abstract class FileVec extends ByteVec {
 
       // Super small data check - file size is smaller than 64kB
       if (totalSize <= 1<<16) {
-        chunkSize = Math.min(maMath.max(DFLT_CHUNK_SIZE, (int) (minNumberRows * maxLineLength)));
+        chunkSize = Math.min(maxParseChunkSize, Math.max(DFLT_CHUNK_SIZE, (int) (minNumberRows * maxLineLength)));
       } else {
 
         //round down to closest power of 2
