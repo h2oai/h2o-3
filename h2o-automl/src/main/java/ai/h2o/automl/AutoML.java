@@ -1,7 +1,6 @@
 package ai.h2o.automl;
 
 import ai.h2o.automl.UserFeedbackEvent.Stage;
-import ai.h2o.automl.strategies.initial.InitModel;
 import ai.h2o.automl.utils.AutoMLUtils;
 import hex.Model;
 import hex.ModelBuilder;
@@ -30,6 +29,7 @@ import water.util.Log;
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static hex.deeplearning.DeepLearningModel.DeepLearningParameters.Activation.RectifierWithDropout;
 import static water.Key.make;
@@ -85,6 +85,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private transient ArrayList<Job> jobs;
   private transient ArrayList<Frame> tempFrames;
 
+  private AtomicInteger modelCount = new AtomicInteger();  // prepare for concurrency
   private Leaderboard leaderboard;
   private UserFeedback userFeedback;
 
@@ -263,9 +264,15 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return Math.max(0, remaining);
   }
 
+  public int remainingModels() {
+    if (buildSpec.build_control.stopping_criteria.max_models() == 0)
+      return Integer.MAX_VALUE;
+    return buildSpec.build_control.stopping_criteria.max_models() - modelCount.get();
+  }
+
   @Override
   public boolean keepRunning() {
-    return timeRemainingMs() > 0;
+    return timeRemainingMs() > 0 && remainingModels() > 0;
   }
 
   private enum JobType {
@@ -298,7 +305,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         if (gridCount > gridLastCount) {
           userFeedback.info(Stage.ModelTraining,
                   "Built: " + gridCount + " models for search: " + name);
-          leaderboard.addModels(grid.getModelKeys());
+          this.addModels(grid.getModelKeys());
           gridLastCount = gridCount;
         }
       }
@@ -319,11 +326,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       if (gridCount > gridLastCount) {
         userFeedback.info(Stage.ModelTraining,
                 "Built: " + gridCount + " models for search: " + name);
-        leaderboard.addModels(grid.getModelKeys());
+        this.addModels(grid.getModelKeys());
         gridLastCount = gridCount;
       }
     } else if (JobType.ModelBuild == subJobType) {
-      leaderboard.addModel((Model)subJob._result.get());
+      this.addModel((Model)subJob._result.get());
     }
 
     // add remaining work
@@ -388,12 +395,23 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   public Job<Grid> hyperparameterSearch(String algoName, Model.Parameters baseParms, Map<String, Object[]> searchParms) {
     setCommonModelBuilderParams(baseParms);
 
+    if (remainingModels() <= 0) {
+      userFeedback.info(Stage.ModelTraining,"AutoML: hit the max_models limit; skipping " + algoName + " hyperparameter search");
+      return null;
+    }
+
     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria = (HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria)buildSpec.build_control.stopping_criteria.clone();
     if (searchCriteria.max_runtime_secs() == 0)
       searchCriteria.set_max_runtime_secs(this.timeRemainingMs() / 1000.0);
     else
       searchCriteria.set_max_runtime_secs(Math.min(searchCriteria.max_runtime_secs(),
-              this.timeRemainingMs() / 1000.0));
+              timeRemainingMs() / 1000.0));
+
+    if (searchCriteria.max_models() == 0)
+      searchCriteria.set_max_models(remainingModels());
+    else
+      searchCriteria.set_max_models(Math.min(searchCriteria.max_models(),
+              remainingModels()));
 
     if (searchCriteria.max_runtime_secs() <= 0.001) {
       userFeedback.info(Stage.ModelTraining,"AutoML: out of time; skipping " + algoName + " hyperparameter search");
@@ -448,13 +466,23 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
       params._keep_cross_validation_predictions = true;
     }
-}
+  }
+
+  private boolean exceededSearchLimits(String whatWeAreSkipping) {
+    if (timeRemainingMs() <= 0.001) {
+      userFeedback.info(Stage.ModelTraining, "AutoML: out of time; skipping " + whatWeAreSkipping);
+      return true;
+    }
+
+    if (remainingModels() <= 0) {
+      userFeedback.info(Stage.ModelTraining, "AutoML: hit the max_models limit; skipping " + whatWeAreSkipping);
+      return true;
+    }
+    return false;
+  }
 
   Job<DRFModel>defaultRandomForest() {
-    if (0.0 == timeRemainingMs()) {
-      userFeedback.info(Stage.ModelTraining, "AutoML: out of time; skipping XRT");
-      return null;
-    }
+    if (exceededSearchLimits("DRF")) return null;
 
     DRFModel.DRFParameters drfParameters = new DRFModel.DRFParameters();
     setCommonModelBuilderParams(drfParameters);
@@ -465,10 +493,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
 
   Job<DRFModel>defaultExtremelyRandomTrees() {
-    if (0.0 == timeRemainingMs()) {
-      userFeedback.info(Stage.ModelTraining, "AutoML: out of time; skipping XRT");
-      return null;
-    }
+    if (exceededSearchLimits("XRT")) return null;
 
     DRFModel.DRFParameters drfParameters = new DRFModel.DRFParameters();
     setCommonModelBuilderParams(drfParameters);
@@ -478,7 +503,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     Job randomForestJob = trainModel(ModelBuilder.defaultKey("XRT"), "drf", drfParameters);
     return randomForestJob;
   }
-
 
   public Job<Grid> defaultSearchGLM() {
     ///////////////////////////////////////////////////////////
@@ -765,7 +789,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build", 50, this.job(), ensembleJob, JobType.ModelBuild);
       }
     }
-    userFeedback.info(Stage.Workflow, "AutoML: build done");
+    userFeedback.info(Stage.Workflow, "AutoML: build done; built " + modelCount + " models");
     Log.info(userFeedback.toString("User Feedback for AutoML Run " + this._key));
     Log.info(leaderboard.toTwoDimTable("Leaderboard for project " + project(), true).toString());
 
@@ -846,37 +870,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
   }
 
+  /*
   private ModelBuilder selectInitial(FrameMetadata fm) {  // may use _isClassification so not static method
     // TODO: handle validation frame if present
     Frame[] trainTest = AutoMLUtils.makeTrainTestFromWeight(fm._fr, fm.weights());
     ModelBuilder mb = InitModel.initRF(trainTest[0], trainTest[1], fm.response()._name);
     mb._parms._ignored_columns = fm.ignoredCols();
     return mb;
-  }
-
-/*
-  // all model builds by AutoML call into this
-  // TODO: who is the caller?!
-  // TODO: remove this restriction!
-  // expected to only ever have a single AutoML instance going at a time
-  Model build(ModelBuilder mb) {
-    Job j;
-    if (null == jobs) throw new AutoMLDoneException();
-    jobs.add(j = mb.trainModel());
-    Model m = (Model) j.get();
-    // save the weights, drop the frames!
-
-    // TODO: don't munge the original Frame!
-    trainingFrame.remove("weight");
-    trainingFrame.delete();
-    if (null != validationFrame) {
-      validationFrame.remove("weight");
-      validationFrame.delete();
-    }
-    if (null == jobs) throw new AutoMLDoneException();
-    jobs.remove(j);
-    leaderboard.addModel(m);
-    return m;
   }
   */
 
@@ -892,6 +892,21 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   public String project() {
     return buildSpec.project();
+  }
+
+  public void addModels(final Key<Model>[] newModels) {
+    modelCount.addAndGet(newModels.length);
+    leaderboard.addModels(newModels);
+  }
+
+  public void addModel(final Key<Model> newModel) {
+    modelCount.addAndGet(1);
+    leaderboard.addModel(newModel);
+  }
+
+  public void addModel(final Model newModel) {
+    modelCount.addAndGet(1);
+    leaderboard.addModel(newModel);
   }
 
   // satisfy typing for job return type...
