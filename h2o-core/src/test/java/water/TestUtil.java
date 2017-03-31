@@ -11,18 +11,16 @@ import water.parser.BufferedString;
 import water.parser.DefaultParserProviders;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
-import water.util.FileUtils;
-import water.util.Log;
+import water.udf.fp.Function;
+import water.udf.fp.Functions;
+import water.util.*;
 import water.util.Timer;
 import water.util.TwoDimTable;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -276,16 +274,19 @@ public class TestUtil extends Iced {
   
   public static Frame parse_test_file( Key outputKey, String fname) {
     NFSFileVec nfs = makeNfsFileVec(fname);
+    assertNotNull(nfs);
     return ParseDataset.parse(outputKey, nfs._key);
   }
 
   protected Frame parse_test_file( Key outputKey, String fname, boolean guessSetup) {
     NFSFileVec nfs = makeNfsFileVec(fname);
+    assertNotNull(nfs);
     return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, ParseSetup.guessSetup(new Key[]{nfs._key},false,1));
   }
 
   protected Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types ) {
     NFSFileVec nfs = makeNfsFileVec(fname);
+    assertNotNull(nfs);
 
     Key[] res = {nfs._key};
 
@@ -320,6 +321,7 @@ public class TestUtil extends Iced {
   protected Frame parse_test_folder( String fname ) {
     File folder = FileUtils.locateFile(fname);
     File[] files = contentsOf(fname, folder);
+    assertNotNull(files);
     Arrays.sort(files);
     ArrayList<Key> keys = new ArrayList<>();
     for( File f : files )
@@ -336,11 +338,12 @@ public class TestUtil extends Iced {
    *
    * @param fname name of folder
    * @param na_string string for NA in a column
-   * @return
+   * @return parsed frame
    */
   protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types ) {
     File folder = FileUtils.locateFile(fname);
     File[] files = contentsOf(fname, folder);
+    assertNotNull(files);
     Arrays.sort(files);
     ArrayList<Key> keys = new ArrayList<>();
     for( File f : files )
@@ -375,6 +378,23 @@ public class TestUtil extends Iced {
 
   }
 
+  public static Vec vec(int size, Function<Integer, Integer> generator) {
+    return vec(null, size, generator);
+  }
+
+  public static Vec vec(String[] domain, int size, Function<Integer, Integer> generator) {
+    Key<Vec> k = Vec.VectorGroup.VG_LEN1.addVec();
+    Futures fs = new Futures();
+    AppendableVec avec = new AppendableVec(k,Vec.T_NUM);
+    avec.setDomain(domain);
+    NewChunk chunk = new NewChunk(avec, 0);
+    for (int i = 0; i < size; i++) chunk.addNum(generator.apply(i));
+    chunk.close(0, fs);
+    Vec vec = avec.layout_and_close(fs);
+    fs.blockForPending();
+    return vec;
+  }
+
 
   /** A Numeric Vec from an array of ints
    *  @param rows Data
@@ -385,16 +405,7 @@ public class TestUtil extends Iced {
    *  @param rows Data
    *  @return The Vec  */
   public static Vec vec(String[] domain, int ...rows) {
-    Key<Vec> k = Vec.VectorGroup.VG_LEN1.addVec();
-    Futures fs = new Futures();
-    AppendableVec avec = new AppendableVec(k,Vec.T_NUM);
-    avec.setDomain(domain);
-    NewChunk chunk = new NewChunk(avec, 0);
-    for( int r : rows ) chunk.addNum(r);
-    chunk.close(0, fs);
-    Vec vec = avec.layout_and_close(fs);
-    fs.blockForPending();
-    return vec;
+    return vec(domain, rows.length, Functions.fromArray(rows));
   }
 
   /** A numeric Vec from an array of ints */
@@ -408,7 +419,12 @@ public class TestUtil extends Iced {
   }
 
   public static Vec cvec(String[] domain, String ...rows) {
-    HashMap<String, Integer> domainMap = new HashMap<>(10);
+    return cvec(domain, rows.length, Functions.fromArray(rows));
+  }
+
+  /** A string Vec from an array of strings */
+  public static Vec cvec(String[] domain, int size, final Function<Integer, String> generator) {
+    final HashMap<String, Integer> domainMap = new HashMap<>(10);
     ArrayList<String> domainList = new ArrayList<>(10);
     if (domain != null) {
       int j = 0;
@@ -417,16 +433,20 @@ public class TestUtil extends Iced {
         domainList.add(s);
       }
     }
-    int[] irows = new int[rows.length];
-    for (int i = 0, j = 0; i < rows.length; i++) {
-      String s = rows[i];
+    for (int i = 0, j = 0; i < size; i++) {
+      String s = generator.apply(i);
       if (!domainMap.containsKey(s)) {
         domainMap.put(s, j++);
         domainList.add(s);
       }
-      irows[i] = domainMap.get(s);
     }
-    return vec(domainList.toArray(new String[]{}), irows);
+    return vec(domainList.toArray(new String[domainList.size()]), size, new Function<Integer, Integer>() {
+      @Override
+      public Integer apply(Integer i) {
+        return domainMap.get(generator.apply(i));
+      }
+    });
+
   }
 
   /** A numeric Vec from an array of doubles */
@@ -459,12 +479,17 @@ public class TestUtil extends Iced {
 
   /** A string Vec from an array of strings */
   public static Vec svec(String...rows) {
+    return svec(rows.length, Functions.fromArray(rows));
+  }
+
+  /** A string Vec from an array of strings */
+  public static Vec svec(int size, Function<Integer, String> generator) {
     Key<Vec> k = Vec.VectorGroup.VG_LEN1.addVec();
     Futures fs = new Futures();
     AppendableVec avec = new AppendableVec(k, Vec.T_STR);
     NewChunk chunk = new NewChunk(avec, 0);
-    for (String r : rows)
-      chunk.addStr(r);
+    for (int i = 0; i < size; i++)
+      chunk.addStr(generator.apply(i));
     chunk.close(0, fs);
     Vec vec = avec.layout_and_close(fs);
     fs.blockForPending();

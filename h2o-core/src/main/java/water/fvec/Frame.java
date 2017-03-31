@@ -747,6 +747,21 @@ public class Frame extends Lockable<Frame> {
     return rv;
   }
 
+  /** Replace one column with another. Caller must perform global update (DKV.put) on
+   *  this updated frame.
+   *  @return The old column, for flow-coding */
+  public Vec replace(String colName, Vec nv) {
+    int col = find(colName);
+    Vec rv = vecs()[col];
+    nv = ((new Frame(rv)).makeCompatible(new Frame(nv)))[0];
+    DKV.put(nv);
+    assert DKV.get(nv._key)!=null; // Already in DKV
+    assert rv.isCompatibleWith(nv);
+    _vecs[col] = nv;
+    _keys[col] = nv._key;
+    return rv;
+  }
+
   /** Create a subframe from given interval of columns.
    *  @param startIdx  index of first column (inclusive)
    *  @param endIdx index of the last column (exclusive)

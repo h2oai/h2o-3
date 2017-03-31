@@ -25,7 +25,7 @@ public abstract class FrameFilter extends Iced<FrameFilter> {
     this.frameKey = FrameUtils.save(frame);
     this.signalColName = signalColName;
     this.signalKey = frame.vec(signalColName)._key;
-    assert signalKey != null : "signal vector shoul dbe in DKV";
+    assert signalKey != null : "signal vector should be in DKV";
   }
 
   public Frame eval() {

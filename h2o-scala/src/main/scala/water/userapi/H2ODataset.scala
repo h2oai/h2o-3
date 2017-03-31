@@ -2,29 +2,25 @@ package water.userapi
 
 import java.io.{File, IOException}
 
-import water.fvec.{Frame, NFSFileVec, Vec}
+import water.fvec._
 import water.parser.ParseDataset
 import water.rapids.ast.prims.advmath.AstStratifiedSplit
 import water.rapids.ast.prims.advmath.AstStratifiedSplit._
 import water.udf.specialized.Enums
-import water.util.{FileUtils, FrameUtils}
+import water.util.{FileUtils, VecUtils}
 import water.{DKV, Iced, Key, Scope}
 
 /**
   * Simplified Frame wrapper for simple usages in Scala world
   * Created by vpatryshev on 3/26/17.
   */
-case class H2ODataset(private val frameKey: Key[Frame]) extends Iced[H2ODataset] {
-  def this(frame: Frame) = this(FrameUtils.save(frame))
-
-  def frame: Option[Frame] = Option(DKV.getGet(frameKey))
+case class H2ODataset(frame: Frame) extends Iced[H2ODataset] {
   
   def oneHotEncode(ignore: String*): H2ODataset = {
     try {
       val res = for {
-        f <- frame
-        hotFrame <- Option(Enums.oneHotEncoding(f, ignore.toArray))
-      } yield new H2ODataset(hotFrame)
+        hotFrame <- Option(Enums.oneHotEncoding(frame, ignore.toArray))
+      } yield H2ODataset(hotFrame)
       
       res getOrElse {throw DataException("Failed to build oneHotEncoding")}
     } catch {
@@ -33,27 +29,101 @@ case class H2ODataset(private val frameKey: Key[Frame]) extends Iced[H2ODataset]
     }
   }
 
-  private def frameClone: Option[Frame] = {
-    val newFrame = frame map (_.clone)
-    newFrame foreach { _._key = null}
-    newFrame foreach (Scope.track(_))
-    newFrame
+  private def frameClone: Frame = {
+    val newFrame = frame.clone
+    newFrame._key = null
+    Scope.track(newFrame)
   }
   
   // the new vec is named (hard-coded so far) "test_train_split"
   def addSplittingColumn(colName: String, ratio: Double, seed: Long): Option[H2ODataset] = {
       for {
-        f <- frame
-        vec <- Option(f.vec(colName))
+        vec <- vec(colName)
         splitter = Scope.track(AstStratifiedSplit.split(vec, ratio, seed, SplittingDom))
-        newFrame <- frameClone
+        newFrame = frameClone
         _ = newFrame.add(splitter.names(), splitter.vecs)
       } yield new H2ODataset(newFrame)
     }
+
+  def stratifiedSplit(colName: String, ratio: Double, seed: Long = System.currentTimeMillis()): Option[(Frame, Frame)] = {
+    val result = for {
+      blend <- addSplittingColumn(colName, ratio, seed)
+      splitMap: Map[String, Frame] = blend.splitBy(TestTrainSplitColName, SplittingDom)
+      trainAndValid: Array[Option[Frame]] = SplittingDom map (splitMap.get)
+      train <- trainAndValid(0)
+      valid <- trainAndValid(1)     
+    } yield (train, valid)
+    
+    result
   }
 
-object H2ODataset {
+  private def select(what: String, colname: String): Option[Frame] = {
+
+    def filter(catIndex: Int) = new FrameFilter(frame, colname) {
+      def accept(c: Chunk, i: Int) = c.at8(i) == catIndex
+    }
+
+    for {
+      vec <- vec(colname)
+      domArray <- Option(vec.domain)
+      domain = domArray.toList 
+      catIndex <- domain.indexOf(what)
+      selected = filter(catIndex).eval()
+    } yield selected
+  }
+
+  private def splitBy(colname: String, splittingDom: Array[String]): Map[String, Frame] = {
+    splittingDom map (cat => cat -> select(cat, colname)) collect {
+      case (k, Some(f)) => k -> f
+    } toMap
+  }
   
+  def domain: Option[Array[String]] = Option(frame.names)
+
+  def vec(name: String): Option[Vec] = Option(frame.vec(name))
+
+  def dropColumn(i: Int) = Option(frame.remove(i))
+
+  def renameColumns(newNames: String*): Unit = {
+    System.arraycopy(newNames, 0, frame._names, 0, Math.min(frame.numCols(), newNames.length))
+  }
+
+  def makeCategorical(colName: String): Unit = {
+    for {
+      srcCol <- vec(colName)
+      colType = srcCol.get_type
+      categorical: Vec = colType match {
+        case Vec.T_STR => VecUtils.stringToCategorical(srcCol)
+        case Vec.T_NUM => VecUtils.numericToCategorical(srcCol)
+        case _ => srcCol
+      }
+    } {
+      frame.replace(colName, Scope.track(categorical))
+      srcCol.remove()
+    }
+  }
+
+  def domainOf(colName: String): Option[Array[String]] = vec(colName) map (_.domain)
+
+  def length: Long = Option(frame.anyVec) map (_.length) getOrElse 0
+
+  def removeColumn(names: String*): Unit = {
+    for {
+      name <- names
+      v <- Option(frame.remove(name))
+    } {
+      v.remove()
+      Scope.untrack(v._key)
+    }
+  }
+
+}
+
+object H2ODataset {
+
+  def get(frameKey: Key[Frame]): Option[H2ODataset] =
+    Option(DKV.getGet(frameKey)) map (new H2ODataset(_))
+
   def readFile(path: String): H2ODataset =
     read(FileUtils.locateFile(path.trim()))
 
