@@ -1440,6 +1440,175 @@ public class GLMTest  extends TestUtil {
     }
   }
 
+
+  @Test
+  public void testGenerateWeightsTask(){
+    Frame frMM = parse_test_file(Key.make("AirlinesMM"), "smalldata/airlines/AirlinesTrainMM.csv.zip");
+    frMM.remove("C1").remove();
+    frMM.add("IsDepDelayed",frMM.remove("IsDepDelayed"));
+    String[] ignoredCols = new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek", "DepTime", "ArrTime", "IsDepDelayed_REC"};
+
+    DataInfo dinfo = new DataInfo(frMM, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, false, true, true, false, false, false);
+    Frame frMMEx = new Frame(dinfo._adaptedFrame);
+    frMMEx.add(new String[]{"w","z","zTilda","d0","d1"}, frMM.anyVec().makeVolatileDoubles(5));
+    frMMEx.add(new String[]{"i0","i1"}, frMM.anyVec().makeVolatileInts(new int[]{0,0}));
+    Frame frMMx = new Frame(new String[] {"w","z","zTilda","d0","d1","i0","i1"},frMMEx.vecs( new String[]{"w","z","zTilda","d0","d1","i0","i1"}));
+    frMMx.add("xx",dinfo._adaptedFrame.vec(0));
+    for(boolean standardize:new boolean[]{false,true}) {
+      dinfo = new DataInfo(frMM, null, 1, true, standardize?TransformType.STANDARDIZE:TransformType.NONE, DataInfo.TransformType.NONE, false, true, true, false, false, false);
+      System.out.println("standardize = " + standardize);
+      GLMParameters parms = new GLMParameters(Family.binomial);
+      parms._response_column = "IsDepDelayed";
+      parms._standardize = standardize;
+      parms._train = frMM._key;
+      GLM glm = new GLM(parms);
+      GLMModel model = glm.trainModel().get();
+      double[] beta = model._output.beta();//model.beta_std(model._output.lambda_selected());
+      GLMGenerateWeightsTask t1 = new GLMGenerateWeightsTask(null, true, dinfo, parms, beta).doAll(frMMEx);
+      double gamma = beta[beta.length - 1]; // scalar offset, can be intercept and/or sparse offset compensation for skipped centering
+      for (int i = 1; i < dinfo.numNums(); i++)
+        gamma -= beta[dinfo.numStart() + i] * dinfo.normSub(i) * dinfo.normMul(i);
+
+      GLMCoordinateDescentTaskSeqNaiveNumSparse tx1 = new GLMTask.GLMCoordinateDescentTaskSeqNaiveNumSparse(0, gamma, beta[0], 0, dinfo.normMul(0), 0).doAll(frMMx);
+      double RES = t1.res; // sum of weighted residual:   sum_i{w_i*(y_i-ytilda_i)}
+      double MSE = t1.mse;// sum of weighted residual^2: sum_i{w_i*(y_i-ytilda_i)^2}
+      RES += tx1._residual - beta[0]*dinfo.normMul(0)*dinfo.normSub(0)*t1.wsum;
+      MSE += tx1._mse;
+      GLMGenerateWeightsTask t2 = new GLMGenerateWeightsTask(null, false, dinfo, parms, beta).doAll(frMMEx);
+      Assert.assertTrue(t1._ranSparse);
+      Assert.assertFalse(t2._ranSparse);
+      System.out.println("likelihood1 = " + t1._likelihood);
+      System.out.println("likelihood2 = " + t2._likelihood);
+      Assert.assertEquals(t2._likelihood, t1._likelihood, t2._likelihood * 1e-11);
+      System.out.println("t1 denums = " + Arrays.toString(t1.denums));
+      System.out.println("t2 denums = " + Arrays.toString(t2.denums));
+      for (int i = 0; i < t2.denums.length; ++i)
+        Assert.assertEquals(t2.denums[i], t1.denums[i], 1e-11 * Math.abs(t2.denums[i]));
+      System.out.println("t1 wsum = " + t1.wsum);
+      System.out.println("t2 wsum = " + t2.wsum);
+      Assert.assertEquals(t2.wsum, t1.wsum, t2.wsum * 1e-11);
+      System.out.println("t1 wsumu = " + t1.wsumu);
+      System.out.println("t2 wsumu = " + t2.wsumu);
+      Assert.assertEquals(t2.wsumu, t1.wsumu, t2.wsumu * 1e-11);
+      System.out.println("t1 res = " + t1.res);
+      System.out.println("t2 res = " + t2.res);
+      Assert.assertEquals(t2.res, t1.res, t2.res * 1e-11);
+      System.out.println("t1 mse = " + t1.mse);
+      System.out.println("t2 mse = " + t2.mse);
+      Assert.assertEquals(t2.mse, t1.mse, t2.mse * 1e-11);
+
+      GLMCoordinateDescentTaskSeqNaiveNum tx3 = new GLMTask.GLMCoordinateDescentTaskSeqNaiveNum(0, beta[beta.length - 1], 0, 0, dinfo.normMul(0), dinfo.normSub(0), 0).doAll(frMMx);
+      GLMCoordinateDescentTaskSeqNaiveNum tx2 = new GLMTask.GLMCoordinateDescentTaskSeqNaiveNum(0, beta[beta.length - 1], beta[0], 0, dinfo.normMul(0), dinfo.normSub(0), 0).doAll(frMMx);
+      // adjust for skipped centering
+      // sum_i {w_i*(x_i-delta)*(r_i-gamma)}
+      //   := sum_i {w_i*x_i*r_i} - gamma sum_i{w_i*x_i} - delta * sum_i{w_i*r_i} + gamma*delta sum_i {w_i}
+      //   := tsk._res - gamma*sum_i{w_i*x_i} - delta*RES + gamma*delta*wsumx
+      double delta = dinfo.normSub(0) * dinfo.normMul(0);
+//      double x = tx1._res - gamma * t1.wx[0] - delta * RES;
+      double x = tx1._res - delta*RES;
+      System.out.println("expected: " + tx2._res);
+      System.out.println("actual  : " + x);
+      System.out.println("diff    : " + Math.abs(tx2._res-x));
+      System.out.println("epsilon : " + tx2._res*1e-10);
+      Assert.assertEquals(tx2._res, x, Math.abs(tx2._res * 1e-10));
+      model.delete();
+      parms = new GLMParameters(Family.binomial);
+      parms._train = frMM._key;
+      parms._response_column = "IsDepDelayed";
+      parms._solver = Solver.COORDINATE_DESCENT;
+      parms._lambda_search = true;
+      GLM glm3 = new GLM(parms);
+      GLMModel model3 = glm3.trainModel().get();
+      parms = new GLMParameters(Family.binomial);
+      parms._train = frMM._key;
+      parms._response_column = "IsDepDelayed";
+      parms._standardize = true;
+      parms._lambda_search = true;
+      parms._solver = Solver.COORDINATE_DESCENT_NAIVE;
+      parms._objective_epsilon = 0;
+      GLM glm2 = new GLM(parms);
+      GLMModel model2 = glm2.trainModel().get();
+
+      model2.delete();
+      model3.delete();
+    }
+//    beta[currIdx] = ADMM.shrinkage(x * wsumuInv,l1pen) * tx2.denums[currIdx];
+//    beta[currIdx] = ADMM.shrinkage(tx2._res * wsumuInv, l1pen) * t2.denums[currIdx];
+
+//    double [] beta2 = beta.clone();
+//    Map<String,Double> coefs = model.coefficients();
+//    System.out.println(Arrays.toString(dinfo.coefNames()));
+//    System.out.println(Arrays.toString(dinfo2.coefNames()));
+//    int k = 0;
+//    int [] map = new int[beta.length];
+//    String [] cnames1 = ArrayUtils.append(dinfo.coefNames(),"Intercept");
+//    String [] cnames2 = ArrayUtils.append(dinfo2.coefNames(),"Intercept");
+//    for(int i = 0; i < cnames2.length; i++){
+//      if(cnames2[i].indexOf('.') >= 0)
+//        cnames2[i] = cnames2[i].substring(0,cnames2[i].indexOf('.')) + cnames2[i].substring(cnames2[i].indexOf('.')+1);
+//    }
+//
+//    for(int i = 0; i < beta.length; ++i)
+//      map[i] = ArrayUtils.find(cnames1,cnames2[i]);
+//    System.out.println("map = " + Arrays.toString(map));
+//
+//    double [] beta2 = ArrayUtils.select(beta,map);
+////    for(String s:dinfo2.coefNames()) {
+////      if(s.indexOf('.') >= 0)
+////        s = s.substring(0,s.indexOf('.')) + s.substring(s.indexOf('.')+1);
+////      else
+////        System.out.println("no . in " + s);
+////      if(!coefs.containsKey(s)) {
+////        System.out.println("missing coef " + s);
+////        continue;
+////      }
+////      beta2[k++] = coefs.get(s);
+////    }
+//
+//    GLMIterationTask t3 = new GLMIterationTask(null,dinfo2,new GLMWeightsFun(parms),beta2).doAll(dinfo2._adaptedFrame);
+//    Frame frEx = new Frame(dinfo2._adaptedFrame);
+//    frEx.add(new String[]{"w","z","zTilda","x0","x1","x2","x3"}, fr.anyVec().makeVolatileDoubles(7));
+//    System.out.println("RUNNING T2");
+//    GLMGenerateWeightsTask t2 = new GLMGenerateWeightsTask(null,dinfo2,parms,beta2).doAll(frEx);
+//    Assert.assertFalse(t2._ranSparse);
+//    System.out.println("likelihood0 = " + t0._likelihood);
+//    System.out.println("likelihood1 = " + t1._likelihood);
+//    System.out.println("likelihood2 = " + t2._likelihood);
+//    System.out.println("likelihood3 = " + t3._likelihood);
+//    Assert.assertEquals(t2._likelihood,t1._likelihood,t2._likelihood*1e-11);
+//    System.out.println("t1 denums = " + Arrays.toString(ArrayUtils.select(t1.denums,map)));
+//    System.out.println("t2 denums = " + Arrays.toString(t2.denums));
+//    for(int i = 0; i < map.length; ++i)
+//      Assert.assertEquals(t2.denums[i],t1.denums[map[i]],1e-11*Math.abs(t2.denums[i]));
+//    System.out.println("t1 wx = " + Arrays.toString(ArrayUtils.select(t1.wx,map)));
+//    System.out.println("t2 wx = " + Arrays.toString(t2.wx));
+//    for(int i = 0; i < map.length; ++i)
+//      Assert.assertEquals(t2.wx[i],t1.wx[map[i]],1e-11*Math.abs(t2.wx[i]));
+//
+//    System.out.println("t1 wsum = " + t1.wsum);
+//    System.out.println("t2 wsum = " + t2.wsum);
+//    Assert.assertEquals(t2.wsum,t1.wsum,t2.wsum*1e-11);
+//    System.out.println("t1 wsumu = " + t1.wsumu);
+//    System.out.println("t2 wsumu = " + t2.wsumu);
+//    Assert.assertEquals(t2.wsumu,t1.wsumu,t2.wsumu*1e-11);
+//    System.out.println("t1 wr = " + t1.wr);
+//    System.out.println("t2 wr = " + t2.wr);
+//    Assert.assertEquals(t2.wr,t1.wr,t2.wr*1e-11);
+//    System.out.println("t1 mse = " + t1.mse);
+//    System.out.println("t2 mse = " + t2.mse);
+//    Assert.assertEquals(t2.mse,t1.mse,t2.mse*1e-11);
+//    Frame frMMx = new Frame(new String[] {"w","z","zTilda","x0","x1","x2","x3"},frMMEx.vecs( new String[]{"w","z","zTilda","x0","x1","x2","x3"}));
+//    frMMx.add("xx",frMM.lastVec());
+//    Frame frx = new Frame(new String[] {"w","z","zTilda","x0","x1","x2","x3"},frMMEx.vecs( new String[]{"w","z","zTilda","x0","x1","x2","x3"}));
+//    frx.add("xx",fr.lastVec());
+//    GLMCoordinateDescentTaskSeqNaiveNum tx1 = new GLMTask.GLMCoordinateDescentTaskSeqNaiveNum(0,beta[beta.length-1],0,beta[beta.length-2],1,0,0).doAll(frMMx);
+//    GLMCoordinateDescentTaskSeqNaiveNum tx2 = new GLMTask.GLMCoordinateDescentTaskSeqNaiveNum(0,beta[beta.length-1],0,beta[beta.length-2],1,0,0).doAll(frx);
+//    frEx.delete();
+    frMMEx.delete();
+    frMMx.delete();
+    frMM.delete();
+  }
+
   /**
    * Simple test for binomial family (no regularization, test both lsm solvers).
    * Runs the classical prostate, using dataset with race replaced by categoricals (probably as it's supposed to be?), in any case,

@@ -1121,6 +1121,8 @@ public class DataInfo extends Keyed<DataInfo> {
    */
   public final Row[] extractSparseRows(Chunk [] chunks) {
     Row[] rows = new Row[chunks[0]._len];
+    double [] sparse_vals = new double[chunks[0]._len];
+    int [] sparse_ids = new int[chunks[0]._len];
     long startOff = chunks[0].start();
     for (int i = 0; i < rows.length; ++i) {
       rows[i] = new Row(true, Math.min(_nums, 16), _cats, _responses, i, startOff);  // if sparse, _nums is the correct number of nonzero values! i.e., do not use numNums()
@@ -1178,16 +1180,13 @@ public class DataInfo extends Keyed<DataInfo> {
         }
         interactionOffset+=nextNumericIdx(cid);
       } else {
-        for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
-          if (c.atd(r) == 0) continue;
+        int len = c.getSparseDoubles(sparse_vals,sparse_ids,_numMeans[cid]);
+        for (int k = 0; k < len; k++) {
+          double d = sparse_vals[k];
+          int r = sparse_ids[k];
+          if(d == 0)continue;
           assert r > oldRow;
           oldRow = r;Row row = rows[r];
-          if (c.isNA(r) && _skipMissing)
-            row.predictors_bad = true;
-          if (row.predictors_bad) continue;
-          double d = c.atd(r);
-          if (Double.isNaN(d))
-            d = _numMeans[cid];
           if (_normMul != null)
             d *= _normMul[interactionOffset];
           row.addNum(numStart()+interactionOffset,d);
