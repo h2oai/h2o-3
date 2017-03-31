@@ -999,8 +999,12 @@ h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 h2o.coef <- function(object) {
   if( is(object, "H2OModel") ) {
     if( is.null(object@model$coefficients_table) ) stop("Can only extract coefficeints from GLMs")
-    coefs <- object@model$coefficients_table$coefficients
-    names(coefs) <- object@model$coefficients_table$names
+    if(object@parameters$family != "multinomial"){
+      coefs <- object@model$coefficients_table$coefficients
+      names(coefs) <- object@model$coefficients_table$names
+    }else{
+      coefs <- object@model$coefficients_table
+    }
     return(coefs)
   } else stop("Can only extract coefficients from GLMs")
 }
@@ -1013,8 +1017,12 @@ h2o.coef <- function(object) {
 h2o.coef_norm <- function(object) {
   if( is(object, "H2OModel") ) {
     if( is.null(object@model$coefficients_table) ) stop("Can only extract coefficeints from GLMs")
-    coefs <- object@model$coefficients_table$standardized_coefficients
-    names(coefs) <- object@model$coefficients_table$names
+    if(object@parameters$family != "multinomial"){
+      coefs <- object@model$coefficients_table$standardized_coefficients
+      names(coefs) <- object@model$coefficients_table$names
+    }else{
+      coefs <- object@model$coefficients_table
+    }
     return(coefs)
   } else stop("Can only extract coefficients from GLMs")
 }
