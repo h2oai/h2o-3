@@ -49,7 +49,7 @@ case class H2ODataset(frame: Frame) extends Iced[H2ODataset] {
     val result = for {
       blend <- addSplittingColumn(colName, ratio, seed)
       splitMap: Map[String, Frame] = blend.splitBy(TestTrainSplitColName, SplittingDom)
-      trainAndValid: Array[Option[Frame]] = SplittingDom map (splitMap.get)
+      trainAndValid: Array[Option[Frame]] = SplittingDom map splitMap.get
       train <- trainAndValid(0)
       valid <- trainAndValid(1)     
     } yield (train, valid)
@@ -57,14 +57,14 @@ case class H2ODataset(frame: Frame) extends Iced[H2ODataset] {
     result
   }
 
-  private def select(what: String, colname: String): Option[Frame] = {
+  private[userapi] def selectCategory(what: String, colName: String): Option[Frame] = {
 
-    def filter(catIndex: Int) = new FrameFilter(frame, colname) {
+    def filter(catIndex: Int) = new FrameFilter(frame, colName) {
       def accept(c: Chunk, i: Int) = c.at8(i) == catIndex
     }
 
     for {
-      vec <- vec(colname)
+      vec <- vec(colName)
       domArray <- Option(vec.domain)
       domain = domArray.toList 
       catIndex <- domain.indexOf(what)
@@ -72,8 +72,8 @@ case class H2ODataset(frame: Frame) extends Iced[H2ODataset] {
     } yield selected
   }
 
-  private def splitBy(colname: String, splittingDom: Array[String]): Map[String, Frame] = {
-    splittingDom map (cat => cat -> select(cat, colname)) collect {
+  private[userapi] def splitBy(colName: String, splittingDom: Array[String]): Map[String, Frame] = {
+    splittingDom map (cat => cat -> selectCategory(cat, colName)) collect {
       case (k, Some(f)) => k -> f
     } toMap
   }
