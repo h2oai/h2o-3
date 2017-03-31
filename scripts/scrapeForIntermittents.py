@@ -349,7 +349,7 @@ def main(argv):
         g_summary_text_filename = os.path.join(g_test_root_dir, argv[8])
         g_failed_tests_dict = os.path.join(g_test_root_dir, argv[9])
         monthToKeep = float(argv[10])
-        g_daily_failure_csv = os.path.join(g_test_root_dir, argv[11])+'_'+argv[1]+'.csv'
+        g_daily_failure_csv = os.path.join(g_test_root_dir, argv[11])
 
         g_resource_url = '/'.join([g_jenkins_url, "job", g_job_name, g_build_id])
         get_console_out(g_resource_url+"/#showFailuresLink/")       # save remote console output in local directory
