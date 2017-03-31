@@ -20,7 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class ParserTestARFF extends TestUtil {
-  @BeforeClass static public void setup() { stall_till_cloudsize(1); }
+  @BeforeClass static public void setup() { stall_till_cloudsize(2); }
 
   @Before public void before() { Scope.enter(); }
 
