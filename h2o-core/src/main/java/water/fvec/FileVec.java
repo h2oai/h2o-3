@@ -64,8 +64,8 @@ public abstract class FileVec extends ByteVec {
     Futures fs = new Futures();
     Keyed.remove(_key, fs);
     fs.blockForPending();
-    if (chunkSize <= 0) throw new IllegalArgumentException("Chunk sizes must be > 0.");
-    if (chunkSize > (1<<30) ) throw new IllegalArgumentException("Chunk sizes must be < 1G.");
+    if (chunkSize <= 0) throw new IllegalArgumentException("Chunk sizes must be > 0; got " + chunkSize);
+    if (chunkSize > (1<<30) ) throw new IllegalArgumentException("Chunk sizes must be < 1G; got " + chunkSize);
     _chunkSize = chunkSize;
     //Now reset the chunk size on each node
     fs = new Futures();
