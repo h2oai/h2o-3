@@ -145,7 +145,7 @@ public abstract class FileVec extends ByteVec {
   public final static int MIN_NUM_ROWS = 10; // need at least 10 rows (lines) per chunk (core) - for files with headers to fit into a Value object)
   public final static int MAX_CHUNKS_PER_NODE = 1<<21; // don't create more than 2M Chunk POJOs per node
   public final static int MIN_PARSE_CHUNK_SIZE = 1<<12; // don't read less than this many bytes
-  public final static int MAX_PARSE_CHUNK_SIZE = (1<<28)-1; // don't read more than this many bytes per map() thread (needs 
+  public final static int MAX_PARSE_CHUNK_SIZE = (1<<27)-1; // don't read more than this many bytes per map() thread (needs 
   
   /**
    * Calculates safe and hopefully optimal chunk sizes.  Four cases
@@ -186,7 +186,7 @@ public abstract class FileVec extends ByteVec {
       // Small data check
       chunkSize = 1L << MathUtils.log2(chunkSize); //closest power of 2
       if (chunkSize < DFLT_CHUNK_SIZE
-              && (localParseSize/chunkSize)*numCols < (1 << 21)) { // ignore if col cnt is high
+          && (localParseSize/chunkSize)*numCols < MAX_CHUNKS_PER_NODE) { // ignore if col cnt is high
         return (int)chunkSize;
       }
       // Big data check
