@@ -224,7 +224,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   }
 
   // the work-horse for the outputFrame calls
-  private Frame closeFrame(Key key, String[] names, String[][] domains, Futures fs) {
+  private Frame closeFrame(Key<Frame> key, String[] names, String[][] domains, Futures fs) {
     if( _output_types == null ) return null;
     final int noutputs = _output_types.length;
     Vec[] vecs = new Vec[noutputs];
@@ -243,7 +243,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
 
   /** Override with your map implementation.  This overload is given a single
    *  <strong>local</strong> input Chunk.  It is meant for map/reduce jobs that use a
-   *  single column in a input Frame.  All map variants are called, but only one is
+   *  single column in an input Frame.  All map variants are called, but only one is
    *  expected to be overridden. */
   public void map( Chunk c ) { }
   public void map( Chunk c, NewChunk nc ) { }
@@ -371,13 +371,39 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   // Support for fluid-programming with strong types
   protected T self() { return (T)this; }
 
-  /** Invokes the map/reduce computation over the given Vecs.  This call is
-   *  blocking. */
-  public final T doAll( Vec... vecs ) { return doAll(null,vecs); }
-  public final T doAll(byte[] types, Vec... vecs ) { return doAll(types,new Frame(vecs), false); }
-  public final T doAll(byte type, Vec... vecs ) { return doAll(new byte[]{type},new Frame(vecs), false); }
-  public final T doAll( Vec vec, boolean run_local ) { return doAll(null,vec, run_local); }
-  public final T doAll(byte[] types, Vec vec, boolean run_local ) { return doAll(types,new Frame(vec), run_local); }
+
+  /**
+   * Invoke the map/reduce computation over the given {@code Vec}s. The vecs
+   * must be compatible. This call is blocking.
+   */
+  public final T doAll(Vec... vecs) {
+    return doAll(null, Frame.vecBundle(vecs), false);
+  }
+
+  /**
+   * Invoke the map/reduce computation over the given {@code Vec}s, producing
+   * a single output {@code Vec} of type {@code type}. The vecs must be
+   * compatible. This call is blocking.
+   */
+  public final T doAll(byte type, Vec... vecs) {
+    return doAll(new byte[]{type}, Frame.vecBundle(vecs), false);
+  }
+
+  /**
+   * Invoke the map/reduce computation over the given {@code Vec}s, producing
+   * outputs described by the {@code types} array. The vecs must be compatible.
+   * This call is blocking.
+   */
+  public final T doAll(byte[] types, Vec... vecs) {
+    return doAll(types, Frame.vecBundle(vecs), false);
+  }
+
+  public final T doAll(Vec vec, boolean run_local) {
+    return doAll(null, Frame.vecBundle(vec), run_local);
+  }
+  public final T doAll(byte[] types, Vec vec, boolean run_local) {
+    return doAll(types, Frame.vecBundle(vec), run_local);
+  }
 
   /** Invokes the map/reduce computation over the given Frame.  This call is
    *  blocking.  */
@@ -631,7 +657,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
         if(_profile!=null)
           _profile._userstart = System.currentTimeMillis();
 
-        int num_fr_vecs = _fr.vecs().length;
+        int num_fr_vecs = _fr.numCols();
         int num_outputs = _output_types == null? 0 : _output_types.length;
         if (num_outputs == 0) {
           if (num_fr_vecs == 1) map(bvs[0]);

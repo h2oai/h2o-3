@@ -3,16 +3,12 @@ package water.fvec;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import water.H2O;
-import water.Key;
-import water.Scope;
-import water.TestUtil;
+import water.*;
 
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.junit.Assert.*;
-
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -83,4 +79,62 @@ public class FrameTest extends TestUtil {
     }
   }
 
+
+  @Test public void testVecBundle() {
+    Scope.enter();
+    try {
+      int N_ROWS = 150;
+      int N_COLS = 10000;
+      int N_ITERS = 100;
+
+      Vec v = Vec.makeCon(1, N_ROWS, Vec.T_NUM);
+      Scope.track(v);
+
+      Vec[] vecs = new Vec[N_COLS];
+      for (int i = 0; i < vecs.length; i++)
+        vecs[i] = v;
+
+      // warmup
+      for (int i = 0; i < 10; i++) {
+        new TestTask().doAll(new Frame(vecs));
+      }
+
+      // First try creating the Frame the old way
+      double t0 = System.currentTimeMillis();
+      for (int i = 0; i < N_ITERS; i++) {
+        TestTask t = new TestTask().doAll(new Frame(vecs));
+        assertEquals(N_COLS * N_ROWS, t.result, 1e-5);
+      }
+      double t1 = System.currentTimeMillis();
+      System.out.println("Time taken if creating the full Frame: " + (int)((t1 - t0)/N_ITERS*1000) + "ns");
+
+      double t2 = System.currentTimeMillis();
+      for (int i = 0; i < N_ITERS; i++) {
+        TestTask t = new TestTask().doAll(Frame.vecBundle(vecs));
+        assertEquals(N_COLS * N_ROWS, t.result, 1e-5);
+      }
+      double t3 = System.currentTimeMillis();
+      System.out.println("Time taken if creating the vec bundle: " + (int)((t3 - t2)/N_ITERS*1000) + "ns");
+
+      assertTrue(t3-t2 < t1-t0);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+
+  private static class TestTask extends MRTask<TestTask> {
+    public double result;
+
+    @Override public void map(Chunk[] cs) {
+      for (Chunk c : cs) {
+        for (int i = 0; i < c._len; i++)
+          result += c.atd(i);
+      }
+    }
+
+    @Override public void reduce(TestTask o) {
+      result += o.result;
+    }
+  }
 }

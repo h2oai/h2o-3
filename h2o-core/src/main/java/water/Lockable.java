@@ -37,6 +37,10 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
   /** Create a Lockable object, if it has a {@link Key}. */
   public Lockable( Key<T> key ) { super(key); }
 
+  /** Create a Lockable object without any key. */
+  public Lockable() {}
+
+
   // -----------
   // Atomic create+overwrite of prior key.
   // If prior key exists, block until acquire a write-lock.
