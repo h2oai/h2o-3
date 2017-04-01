@@ -276,8 +276,9 @@ public class ParseSetup extends Iced {
     if (ice instanceof Frame && ((Frame) ice).vec(0) instanceof UploadFileVec) {
       t._gblSetup._chunk_size = FileVec.DFLT_CHUNK_SIZE;
     } else {
-      t._gblSetup._chunk_size = FileVec.calcOptimalChunkSize(t._totalParseSize, t._gblSetup._number_columns, t._maxLineLength,
-              Runtime.getRuntime().availableProcessors(), H2O.getCloudSize(), false /*use new heuristic*/, true);
+      final int calculatedChunkSize = FileVec.calcOptimalChunkSize(t._totalParseSize, t._gblSetup._number_columns, t._maxLineLength,
+          Runtime.getRuntime().availableProcessors(), H2O.getCloudSize(), false /*use new heuristic*/, true);
+      t._gblSetup._chunk_size = Math.max(calculatedChunkSize, (int)t._maxLineLength * 300);
     }
 
     return t._gblSetup;
@@ -602,12 +603,10 @@ public class ParseSetup extends Iced {
             maxLineLength = ll;
           }
         }
-      } catch (IOException e) {
-        return -1;
-      }
+      } catch (IOException ignore) {}
       return maxLineLength;
     }
-    return -1;
+    return 0;
   }
 
   /**

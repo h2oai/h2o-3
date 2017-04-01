@@ -194,7 +194,7 @@ public abstract class FileVec extends ByteVec {
     }
     else {
       // New Heuristic
-      int minNumberRows = 200; // need at least 200 rows (lines) per chunk (core) - that's needed for files with headers
+      int minNumberRows = 10; // need at least 10 rows (lines) per chunk (core) - for files with headers
       int perNodeChunkCountLimit = 1<<21; // don't create more than 2M Chunk POJOs per node
       int minParseChunkSize = 1<<12; // don't read less than this many bytes
       int maxParseChunkSize = (1<<28)-1; // don't read more than this many bytes per map() thread (needs to fit into a Value object)
