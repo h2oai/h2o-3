@@ -142,6 +142,11 @@ public abstract class FileVec extends ByteVec {
     return val3 == null ? val2 : val3;
   }
 
+  public final static int MIN_NUM_ROWS = 10; // need at least 10 rows (lines) per chunk (core) - for files with headers to fit into a Value object)
+  public final static int MAX_CHUNKS_PER_NODE = 1<<21; // don't create more than 2M Chunk POJOs per node
+  public final static int MIN_PARSE_CHUNK_SIZE = 1<<12; // don't read less than this many bytes
+  public final static int MAX_PARSE_CHUNK_SIZE = (1<<28)-1; // don't read more than this many bytes per map() thread (needs 
+  
   /**
    * Calculates safe and hopefully optimal chunk sizes.  Four cases
    * exist.
@@ -194,47 +199,43 @@ public abstract class FileVec extends ByteVec {
     }
     else {
       // New Heuristic
-      int minNumberRows = 10; // need at least 10 rows (lines) per chunk (core) - for files with headers
-      int perNodeChunkCountLimit = 1<<21; // don't create more than 2M Chunk POJOs per node
-      int minParseChunkSize = 1<<12; // don't read less than this many bytes
-      int maxParseChunkSize = (1<<28)-1; // don't read more than this many bytes per map() thread (needs to fit into a Value object)
-      long chunkSize = Math.max((localParseSize / (4*cores))+1, minParseChunkSize); //lower hard limit
+      long chunkSize = Math.max((localParseSize / (4*cores))+1, MIN_PARSE_CHUNK_SIZE); //lower hard limit
       if(chunkSize > 1024*1024)
         chunkSize = (chunkSize & 0xFFFFFE00) + 512; // align chunk size to 512B
 
       // Super small data check - file size is smaller than 64kB
       if (totalSize <= 1<<16) {
-        chunkSize = Math.min(maxParseChunkSize, Math.max(DFLT_CHUNK_SIZE, (int) (minNumberRows * maxLineLength)));
+        chunkSize = Math.min(MAX_PARSE_CHUNK_SIZE, Math.max(DFLT_CHUNK_SIZE, (int) (MIN_NUM_ROWS * maxLineLength)));
       } else {
 
         //round down to closest power of 2
 //        chunkSize = 1L << MathUtils.log2(chunkSize);
 
         // Small data check
-        if (chunkSize < DFLT_CHUNK_SIZE && (localParseSize / chunkSize) * numCols < perNodeChunkCountLimit) {
-          chunkSize = Math.min(maxParseChunkSize, Math.max((int)chunkSize, (int) (minNumberRows * maxLineLength)));
+        if (chunkSize < DFLT_CHUNK_SIZE && (localParseSize / chunkSize) * numCols < MAX_CHUNKS_PER_NODE) {
+          chunkSize = Math.min(MAX_PARSE_CHUNK_SIZE, Math.max((int)chunkSize, (int) (MIN_NUM_ROWS * maxLineLength)));
         } else {
           // Adjust chunkSize such that we don't create too many chunks
           int chunkCount = cores * 4 * numCols;
-          if (chunkCount > perNodeChunkCountLimit) {
-            double ratio = 1 << Math.max(2, MathUtils.log2((int) (double) chunkCount / perNodeChunkCountLimit)); //this times too many chunks globally on the cluster
+          if (chunkCount > MAX_CHUNKS_PER_NODE) {
+            double ratio = 1 << Math.max(2, MathUtils.log2((int) (double) chunkCount / MAX_CHUNKS_PER_NODE)); //this times too many chunks globally on the cluster
             chunkSize *= ratio; //need to bite off larger chunks
           }
-          chunkSize = Math.min(maxParseChunkSize, chunkSize); // hard upper limit
-          // if we can read at least minNumberRows and we don't create too large Chunk POJOs, we're done
+          chunkSize = Math.min(MAX_PARSE_CHUNK_SIZE, chunkSize); // hard upper limit
+          // if we can read at least MIN_NUM_ROWS and we don't create too large Chunk POJOs, we're done
           // else, fix it with a catch-all heuristic
-          if (chunkSize <= minNumberRows * maxLineLength) {
+          if (chunkSize <= MIN_NUM_ROWS * maxLineLength) {
             // might be more than default, if the max line length needs it, but no more than the size limit(s)
             // also, don't ever create too large chunks
             chunkSize = (int) Math.max(
                 DFLT_CHUNK_SIZE,  //default chunk size is a good lower limit for big data
-                Math.min(maxParseChunkSize, minNumberRows * maxLineLength) //don't read more than 1GB, but enough to read the minimum number of rows
+                Math.min(MAX_PARSE_CHUNK_SIZE, MIN_NUM_ROWS * maxLineLength) //don't read more than 1GB, but enough to read the minimum number of rows
             );
           }
         }
       }
-      assert chunkSize >= minParseChunkSize : "Chunk size " + chunkSize + ", min " + minParseChunkSize;
-      assert chunkSize <= maxParseChunkSize  : "Chunk size " + chunkSize + ", max " + maxParseChunkSize;
+      assert chunkSize >= MIN_PARSE_CHUNK_SIZE : "Chunk size " + chunkSize + ", min " + MIN_PARSE_CHUNK_SIZE;
+      assert chunkSize <= MAX_PARSE_CHUNK_SIZE : "Chunk size " + chunkSize + ", max " + MAX_PARSE_CHUNK_SIZE;
       if (verbose)
         Log.info("ParseSetup heuristic: "
           + "cloudSize: " + cloudsize

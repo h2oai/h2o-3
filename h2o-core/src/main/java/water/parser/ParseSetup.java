@@ -276,9 +276,9 @@ public class ParseSetup extends Iced {
     if (ice instanceof Frame && ((Frame) ice).vec(0) instanceof UploadFileVec) {
       t._gblSetup._chunk_size = FileVec.DFLT_CHUNK_SIZE;
     } else {
-      final int calculatedChunkSize = FileVec.calcOptimalChunkSize(t._totalParseSize, t._gblSetup._number_columns, t._maxLineLength,
+      int calculatedChunkSize = FileVec.calcOptimalChunkSize(t._totalParseSize, t._gblSetup._number_columns, t._maxLineLength,
           Runtime.getRuntime().availableProcessors(), H2O.getCloudSize(), false /*use new heuristic*/, true);
-      t._gblSetup._chunk_size = Math.max(calculatedChunkSize, (int)t._maxLineLength * 300);
+      t._gblSetup._chunk_size = Math.min(FileVec.MAX_PARSE_CHUNK_SIZE, Math.max(calculatedChunkSize, (int)t._maxLineLength * 300));
     }
 
     return t._gblSetup;
