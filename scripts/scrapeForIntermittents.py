@@ -157,17 +157,20 @@ def extract_failed_tests_info():
                 if ("Test Result" in each_line) and ("failure" in each_line): # the next few lines will contain failed tests
                     temp = each_line.split("testReport")
                     if ("Test Result" in temp[1]) and ("failure" in temp[1]):        # grab number of failed tests
-                        tempCount = int(temp[1].split("</a>")[1].split(" ")[0].split("(")[1])
+                        try:
+                            tempCount = int(temp[1].split("</a>")[1].split(" ")[0].split("(")[1])
 
-                        if isinstance(tempCount, int) and tempCount > 0:  # temp[1], temp[2],... should contain failed tests
-                            for findex in range(2,len(temp)):
-                                tempMess = temp[findex].split(">")
-                                g_failed_test_paths.append(tempMess[0].strip('"'))
-                                ftestname = tempMess[1].strip("</a")
-                                nameLen = len(ftestname)
-                                true_testname = ftestname[8:nameLen] if 'r_suite.' in ftestname else ftestname
-                                g_failed_testnames.append(true_testname)
-                            break   # done.  Only one spot contains failed test info.
+                            if isinstance(tempCount, int) and tempCount > 0:  # temp[1], temp[2],... should contain failed tests
+                                for findex in range(2,len(temp)):
+                                    tempMess = temp[findex].split(">")
+                                    g_failed_test_paths.append(tempMess[0].strip('"'))
+                                    ftestname = tempMess[1].strip("</a")
+                                    nameLen = len(ftestname)
+                                    true_testname = ftestname[8:nameLen] if 'r_suite.' in ftestname else ftestname
+                                    g_failed_testnames.append(true_testname)
+                                break   # done.  Only one spot contains failed test info.
+                        except:
+                            break   # file probably does not have failures captured.
         finally:
             console_file.close()
 
