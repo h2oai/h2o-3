@@ -528,12 +528,14 @@ public final class ParseDataset {
                     mergedDom[mbi++] = thisDom[tbi++];
                   tDomLen = UnsafeUtils.get4(thisDom, tbi);
                   tbi += 4;
+                  assert tDomLen > 0 : "Negative tDomLen not acceptable " + tDomLen;
                   tCat.set(thisDom, tbi, tDomLen);
                   ti++;
                   if (x == 0) { // this == other
                     obi += oDomLen;
                     oDomLen = UnsafeUtils.get4(otherDom, obi);
                     obi += 4;
+                    assert oDomLen > 0 : "1. Negative oDomLen not acceptable " + oDomLen;
                     oCat.set(otherDom, obi, oDomLen);
                     oi++;
                   }
@@ -544,6 +546,7 @@ public final class ParseDataset {
                     mergedDom[mbi++] = otherDom[obi++];
                   oDomLen = UnsafeUtils.get4(otherDom, obi);
                   obi += 4;
+                  assert oDomLen > 0 : "2. Negative oDomLen not acceptable " + oDomLen;
                   oCat.set(otherDom, obi, oDomLen);
                   oi++;
                 }

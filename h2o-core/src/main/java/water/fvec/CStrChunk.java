@@ -62,6 +62,7 @@ public class CStrChunk extends Chunk {
     int off = intAt(idx);
     if( off == NA ) return null;
     int len = lengthAtOffset(off);
+    assert len >= 0: "Wrong length at " + off;
     return bStr.set(_mem,_valstart+off,len);
   }
 
