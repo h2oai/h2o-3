@@ -279,7 +279,10 @@ public class ParseSetup extends Iced {
     } else {
       int calculatedChunkSize = FileVec.calcOptimalChunkSize(t._totalParseSize, t._gblSetup._number_columns, t._maxLineLength,
           Runtime.getRuntime().availableProcessors(), H2O.getCloudSize(), false /*use new heuristic*/, true);
-      t._gblSetup._chunk_size = Math.min(FileVec.MAX_PARSE_CHUNK_SIZE, Math.max(calculatedChunkSize, (int)t._maxLineLength * 300));
+      int maxExpectedHeaderSize = Math.max(10000, (int)t._maxLineLength * 300); // to make sure we dont lose bits and get a negative
+      int acceptableHeaderSize = Math.min(500000, maxExpectedHeaderSize); //can't expect half a meg of headers
+      int finalChunkSize = Math.max(calculatedChunkSize, acceptableHeaderSize);
+      t._gblSetup._chunk_size = finalChunkSize;
     }
 
     return t._gblSetup;

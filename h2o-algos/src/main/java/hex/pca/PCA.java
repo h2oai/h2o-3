@@ -312,6 +312,9 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           // Note: Singular values ordered in weakly descending order by algorithm
           _job.update(1, "Calculating SVD of Gram matrix locally");
           Matrix gramJ = _wideDataset ? new Matrix(ogtsk._gram.getXX()) : new Matrix(gtsk._gram.getXX());
+          final String msg = "Matrix dimensions: " + gramJ.getRowDimension() + "x" + gramJ.getColumnDimension();
+          _job.update(1, msg);
+          System.out.println(msg);
           SingularValueDecomposition svdJ = gramJ.svd();
           _job.update(1, "Computing stats from SVD");
           // correct for the eigenvector by t(A)*eigenvector for wide dataset
