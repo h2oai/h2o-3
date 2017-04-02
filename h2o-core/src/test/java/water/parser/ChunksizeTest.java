@@ -106,7 +106,14 @@ public class ChunksizeTest extends TestUtil {
                   FileVec.calcOptimalChunkSize((long) totalSize, numCols, maxLineLength, cores, cloudSize, oldheuristic==1, true);
                   toomany[oldheuristic]++;
                   fail = true;
-                  Assert.assertTrue(totalSize/cloudSize/cores > 1e9); //only for big data, where we have more than 1GB per core
+
+                  final double actual = totalSize / cloudSize / cores;
+                  if (actual < 1e9) {
+                    System.out.println(1);
+                  }
+                  Assert.assertTrue(
+                      "Total " + totalSize + ", cloud size" + cloudSize +", cores " + cores + " => " + actual, 
+                      actual > 1e9); //only for big data, where we have more than 1GB per core
                 }
 
                 if (fail) {
