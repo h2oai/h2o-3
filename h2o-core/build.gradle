@@ -68,7 +68,7 @@ jar {
 // complete cluster of free-running JVMs and redirect all output (at the OS
 // level) to files - then scrape the files later for test results.
 test {
-  dependsOn smalldataCheck, cpLibs, testMultiNode, testJar, testOOM
+  dependsOn smalldataCheck, cpLibs, testMultiNode, testJar
 
   // Defeat task 'test' by running no tests.
   exclude '**'
