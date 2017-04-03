@@ -55,7 +55,7 @@ public class ParseFolderTestBig extends TestUtil {
   @Test
   public void testPUBDEV4026() {
     Scope.enter();
-    String fname = "smalldata/PUBDEV4026-0.svm";
+    String fname = "bigdata/PUBDEV4026.svm";
     try {
       File f = FileUtils.getFile(fname);
       NFSFileVec nfs = NFSFileVec.make(f);
@@ -64,15 +64,19 @@ public class ParseFolderTestBig extends TestUtil {
       
       assertTrue("Got errors: " + Arrays.toString(errors), errors.length == 0);
       Job<Frame> job = ParseDataset.parse(Key.make("PUBDEV4026.hex"), new Key[]{nfs._key}, true, globalSetup, false)._job;
+      int i = 0;
       while (job.progress() < 1.0) {
         System.out.print(((int) (job.progress() * 1000.0)) / 10.0 + "% ");
         try {
           Thread.sleep(1000);
+          i++;
         } catch (InterruptedException ignore) { /*comment to disable ideaJ warning*/}
       }
       System.out.println();
-      Frame k1 = Scope.track(job.get());
+      Frame k1 = Scope.track(job.get()); // will throw on error
       System.out.println(k1.toString());
+      assertEquals(776211, k1.vecs().length);
+      assertEquals(47754, k1.vec(0).length());
     } catch (IOException ignore) {
       System.out.println("\nFile not found: " + fname + " - not running the test.");
     } finally {
