@@ -3919,6 +3919,30 @@ h2o.isax <- function(x, num_words, max_cardinality, optimize_card = FALSE){
 }
 
 
+#'
+#' fillNA
+#'
+#' Fill NA's in a sequential manner up to a specified limit
+#'
+#' @param x an H2OFrame
+#' @param method A String: "forward" or "backward"
+#' @param axis An Integer 0 for column-wise fill, 1 for row-wise fill
+#' @param maxlen An Integer for maximum number of consecutive NA's to fill
+#' @return An H2OFrame after filling missing values
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' fr2 <- h2o.fillna(fr,"forward",0,2)
+#' }
+#' @export
+h2o.fillna <- function(x, method="forward", axis=0, maxlen=1L) {
+  if(! axis %in% c(0,1)) stop("axis must be 0 or 1")
+  if(! method %in% c("forward","backward")) stop("method must be forward or backward")
+  if(! is.integer(maxlen)) stop("max len must be an integer")
+  .newExpr("h2o.fillna", x, .quote(method), axis, maxlen)
+}
+
 #-----------------------------------------------------------------------------------------------------------------------
 # String Operations
 #-----------------------------------------------------------------------------------------------------------------------

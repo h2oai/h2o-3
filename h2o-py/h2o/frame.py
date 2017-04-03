@@ -1796,6 +1796,18 @@ class H2OFrame(object):
                 raise H2OValueError("Sort by column: " + str(c) + " not of enum, time, or int type")
         return H2OFrame._expr(expr=ExprNode("sort",self,by))
 
+    def fillna(self,method="forward",axis=0,maxlen=1):
+        """
+        Return a new Frame that fills NA along a given axis and along a given direction with a maximum fill length
+        :param method: ``"forward"`` or ``"backward"``
+        :param axis:  0 for columnar-wise or 1 for row-wise fill
+        :param maxlen: Max number of consecutive NA's to fill
+        :return: 
+        """
+        assert_is_type(axis, 0, 1)
+        assert_is_type(method,str)
+        assert_is_type(maxlen, int)
+        return H2OFrame._expr(expr=ExprNode("h2o.fillna",self,method,axis,maxlen))
 
     def impute(self, column=-1, method="mean", combine_method="interpolate", by=None, group_by_frame=None, values=None):
         """
