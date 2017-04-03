@@ -1,0 +1,7 @@
+description = "H2O GenModel XGBoost support"
+
+dependencies {
+  if (file("${rootDir}/deps/xgboost4j-0.7-jar-with-dependencies.jar").exists()) {
+      compile files("${rootDir}/lib/xgboost4j-0.7-jar-with-dependencies.jar")
+  }
+}

@@ -20,7 +20,8 @@ include 'h2o-avro-parser'
 include 'h2o-orc-parser'
 include 'h2o-parquet-parser'
 include 'h2o-jaas-pam'
-include 'h2o-extensions-xgboost'
+include 'h2o-genmodel-ext-xgboost'
+include 'h2o-ext-xgboost'
 
 // GRPC support
 if ("true".equals(System.getenv("H2O_BUILD_GRPC"))) { 
@@ -44,10 +45,15 @@ rootProject.children.each { project ->
     String projectDirName = "h2o-parsers/${project.name}"
     project.projectDir = new File(settingsDir, projectDirName)
   }
-  if (project.name.startsWith("h2o-extensions-")) {
-    String projectDirName = "h2o-extensions/${project.name - 'h2o-extensions-'}"
+  if (project.name.startsWith("h2o-ext-")) {
+    String projectDirName = "h2o-extensions/${project.name - 'h2o-ext-'}"
     project.projectDir = new File(settingsDir, projectDirName)
   }
+  if (project.name.startsWith("h2o-genmodel-ext-")) {
+    String projectDirName = "h2o-genmodel-extensions/${project.name - 'h2o-ext-'}"
+    project.projectDir = new File(settingsDir, projectDirName)
+  }
+
 }
 
 //

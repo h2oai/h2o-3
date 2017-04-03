@@ -2,7 +2,7 @@ apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'java'
 
 description = "H2O Application Assembly"
-
+apply plugin: "com.github.hierynomus.license"
 // Exclude unwanted dependencies
 configurations {
     compile.exclude module: 'junit'

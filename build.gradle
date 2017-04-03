@@ -22,6 +22,7 @@ buildscript {
         // Note: Analyze unused/undefined dependencies for each module - good for debugging
         // However, later it should be enabled by default
         //classpath 'ca.cutterslade.gradle:gradle-dependency-analyze:1.1.0'
+        classpath "gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.13.1"
     }
 }
 
@@ -67,8 +68,9 @@ ext {
       project(':h2o-avro-parser'),
       project(':h2o-orc-parser'),
       project(':h2o-parquet-parser'),
-      project(':h2o-jaas-pam')
-      project(':h2o-extensions-xgboost')
+      project(':h2o-jaas-pam'),
+      project(':h2o-genmodel-ext-xgboost'),
+      project(':h2o-ext-xgboost')
     ]
 
     javaProjects = [
@@ -85,8 +87,9 @@ ext {
       project(':h2o-avro-parser'),
       project(':h2o-orc-parser'),
       project(':h2o-parquet-parser'),
-      project(':h2o-jaas-pam')
-      project(':h2o-extensions-xgboost')
+      project(':h2o-jaas-pam'),
+      project(':h2o-genmodel-ext-xgboost'),
+      project(':h2o-ext-xgboost')
     ]
 
     scalaProjects = [
