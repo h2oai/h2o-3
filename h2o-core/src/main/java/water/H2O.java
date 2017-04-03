@@ -597,7 +597,8 @@ final public class H2O {
       }
     } else {
       if (H2O.ARGS.form_auth) {
-        parseFailed("No login method specified. Specify one of hash/ldap/kerberos/pam login methods with -form_auth");
+        parseFailed("No login method was specified. Form-based authentication can only be used in conjunction with of a LoginService.\n" +
+                "Pick a LoginService by specifying '-<method>_login' option.");
       }
     }
 
