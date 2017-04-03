@@ -203,7 +203,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     makeWeightsBiases(destKey);
     _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(scoringInfo, (null != get_params()._valid), false, _output.getModelCategory(), _output.isAutoencoder());
     _output._variable_importances = calcVarImp(last_scored().variable_importances);
-    _output._names = dataInfo._adaptedFrame.names();
+    _output.setNames(dataInfo._adaptedFrame.names());
     _output._domains = dataInfo._adaptedFrame.domains();
     assert(Arrays.equals(_key._kb, destKey._kb));
   }
@@ -221,7 +221,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     super(destKey, parms, output);
     final DataInfo dinfo = makeDataInfo(train, valid, _parms, nClasses);
     DKV.put(dinfo);
-    _output._names = dinfo._adaptedFrame.names();
+    _output.setNames(dinfo._adaptedFrame.names());
     _output._domains = dinfo._adaptedFrame.domains();
     _output._origNames = parms._train.get().names();
     _output._origDomains = parms._train.get().domains();

@@ -988,5 +988,35 @@ public class ParserTest extends TestUtil {
       return this;
     }
   }
+  
+  @Test
+  @Ignore 
+  //TODO(vlad) this test is failing, and the bug has been here since forever; have to fix the stream parser
+  public void testParser2x1000000_real() {
+    Vec fv = TestUtil.makeNfsFileVec("smalldata/jira/2x100000_real.csv.gz");
+    int width = 100000;
+    Key fkey = Key.make("data100000cols");
+    try {
+      Key[] keys = new Key[]{fv._key};
+      ParseSetup guessedSetup = ParseSetup.guessSetup(keys, false, 1);
+      assertEquals(width, guessedSetup._number_columns);
+      assertEquals(0, guessedSetup._errs.length);
+      for (int i = 0; i < width; i++) {
+        assertEquals("C" + (i+1), guessedSetup._column_names[i]);
+        assertEquals("vec#" + i, Vec.T_NUM, guessedSetup._column_types[i]);
+      }
+
+      Frame f = ParseDataset.parse(fkey, keys, true, guessedSetup);
+      assertEquals(width, f.numCols());
+      assertEquals(2, f.vec(123).length());
+      assertFalse(f.vec(70000).isNA(0));
+      assertFalse(f.vec(70000).isNA(1));
+      assertFalse(f.vec(99999).isNA(0));
+      assertFalse(f.vec(99999).isNA(1));
+    } finally {
+      fkey.remove();
+      fv.remove();
+    }
+  }
 
 }
