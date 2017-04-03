@@ -24,7 +24,10 @@ from h2o.h2o import (connect, init, api, connection,
 from h2o.frame import H2OFrame  # NOQA
 
 __version__ = "SUBST_PROJECT_VERSION"
+__buildinfo__ = "SUBST_PROJECT_BUILDINFO"
 
+if (__version__.endswith("99999")):
+    print(__buildinfo__)
 
 __all__ = ("connect", "init", "api", "connection", "upload_file", "lazy_import", "import_file", "import_sql_table",
            "import_sql_select", "parse_setup", "parse_raw", "assign", "deep_copy", "get_model", "get_grid", "get_frame",
