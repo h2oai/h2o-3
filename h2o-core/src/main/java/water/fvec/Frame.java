@@ -366,8 +366,8 @@ public class Frame extends Lockable<Frame> {
     System.arraycopy(_names,i,names,i+1,_names.length-i);
     System.arraycopy(_vecs,i,vecs,i+1,_vecs.length-i);
     System.arraycopy(_keys,i,keys,i+1,_keys.length-i);
-    setNames(names);
     _vecs = vecs;
+    setNames(names);
     _keys = keys;
   }
 
