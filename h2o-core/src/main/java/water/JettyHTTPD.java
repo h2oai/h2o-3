@@ -422,7 +422,7 @@ public class JettyHTTPD {
       String uri = JettyHTTPD.getDecodedUri(request);
       try {
         byte[] bytes;
-        try (InputStream resource = water.init.JarHash.getResource2("login.html")) {
+        try (InputStream resource = water.init.JarHash.getResource2("/login.html")) {
           if (resource == null)
             throw new IllegalStateException("Login form not found");
           ByteArrayOutputStream baos = new ByteArrayOutputStream();
