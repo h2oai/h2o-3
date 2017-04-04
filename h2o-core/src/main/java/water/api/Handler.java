@@ -40,8 +40,10 @@ public class Handler extends H2OCountedCompleter<Handler> {
       schema.fillFromImpl(defaults);
     }
 
+    boolean is_post_of_json = (null != post_body);
+
     // Fill from http request params:
-    schema = schema.fillFromParms(parms);
+    schema = schema.fillFromParms(parms, !is_post_of_json);
     if (schema == null)
       throw H2O.fail("fillFromParms returned a null schema for version: " + version + " in: " + this.getClass() + " with params: " + parms);
 
@@ -50,7 +52,7 @@ public class Handler extends H2OCountedCompleter<Handler> {
     //
     // We use PojoUtils.fillFromJson() rather than just using "schema = Gson.fromJson(post_body)"
     // so that we have defaults: we only overwrite fields that the client has specified.
-    if (null != post_body) {
+    if (is_post_of_json) {
       PojoUtils.fillFromJson(schema, post_body);
     }
 

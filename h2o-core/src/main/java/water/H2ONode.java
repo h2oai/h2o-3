@@ -439,7 +439,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   
     // Open channel on first write attempt
     private ByteChannel openChan() throws IOException {
-      return H2ONode.openChan(TCPReceiverThread.TCP_SMALL,_socketFactory, _key.getAddress(), _key.getPort());
+      return H2ONode.openChan(TCPReceiverThread.TCP_SMALL, _socketFactory, _key.getAddress(), _key.getPort());
     }
   }
 

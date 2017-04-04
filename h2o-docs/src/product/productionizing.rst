@@ -153,6 +153,28 @@ Tutorials    http://docs.h2o.ai/h2o-tutorials/latest-stable/tutorials/hive_udf_t
 =========    ==================================================================================================
 
 
+MOJO as a JAR Resource
+~~~~~~~~~~~~~~~~~~~~~~
+
+==================================================  ============================================================
+Characteristic                                      Value
+==================================================  ============================================================
+Pattern name                                        MOJO JAR
+Example training language                           R
+Example training data source                        Iris
+Example scoring data source                         Single Row
+Scoring environment                                 Portable
+Scoring engine                                      H2O MOJO
+Scoring latency SLA                                 Real-time example, but can be adapted (use in Hive UDF etc.)
+==================================================  ============================================================
+
+=========    ===================================================================================================
+Resource     Location
+=========    ===================================================================================================
+Git repos    https://github.com/h2oai/h2o-tutorials/tree/master/tutorials/mojo-resource
+=========    ===================================================================================================
+
+
 Steam Scoring Server from H2O.ai
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

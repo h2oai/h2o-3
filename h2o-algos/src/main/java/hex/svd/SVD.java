@@ -83,14 +83,14 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   @Override
   protected void checkMemoryFootPrint() {
     HeartBeat hb = H2O.SELF._heartbeat;
-    double p = LinearAlgebraUtils.numColsExp(_train,true);
+    double p = LinearAlgebraUtils.numColsExp(_train, true);
     double r = _train.numRows();
     boolean useGramSVD = _parms._svd_method == SVDParameters.Method.GramSVD;
     boolean usePower = _parms._svd_method == SVDParameters.Method.Power;
-    long mem_usage = (useGramSVD || usePower) ? (long)(hb._cpus_allowed * p*p * 8/*doubles*/
-            * Math.log((double)_train.lastVec().nChunks())/Math.log(2.)) : 1; //one gram per core
-    long mem_usage_w = (useGramSVD || usePower) ? (long)(hb._cpus_allowed * r*r * 8/*doubles*/
-            * Math.log((double)_train.lastVec().nChunks())/Math.log(2.)) : 1; //one gram per core
+    long mem_usage = (useGramSVD || usePower) ? (long) (hb._cpus_allowed * p * p * 8/*doubles*/
+            * Math.log((double) _train.lastVec().nChunks()) / Math.log(2.)) : 1; //one gram per core
+    long mem_usage_w = (useGramSVD || usePower) ? (long) (hb._cpus_allowed * r * r * 8/*doubles*/
+            * Math.log((double) _train.lastVec().nChunks()) / Math.log(2.)) : 1; //one gram per core
     long max_mem = hb.get_free_mem();
 
     if ((mem_usage > max_mem) && (mem_usage_w > max_mem)) {
@@ -124,12 +124,17 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       else
         _ncolExp = LinearAlgebraUtils.numColsExp(_train,_parms._use_all_factor_levels);
     if (_ncolExp > MAX_COLS_EXPANDED)
-      warn("_train", "_train has " + _ncolExp + " columns when categoricals are expanded. Algorithm may be slow.");
+      warn("_train", "_train has " + _ncolExp + " columns when categoricals are expanded. " +
+              "Algorithm may be slow.");
 
     if(_parms._nv < 1 || _parms._nv > _ncolExp)
       error("_nv", "Number of right singular values must be between 1 and " + _ncolExp);
 
-    if (_parms._svd_method != SVDParameters.Method.Randomized && expensive && error_count() == 0) checkMemoryFootPrint();
+    if (_parms._svd_method != SVDParameters.Method.Randomized && expensive && error_count() == 0) {
+      if (!(_train.hasNAs()) || _parms._impute_missing)  {
+        checkMemoryFootPrint();  // perform memory check here if dataset contains no NAs or if impute_missing enabled
+      }
+    }
   }
 
   // Compute ivv_sum - vec * vec' for symmetric array ivv_sum
@@ -218,7 +223,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
       if (err > TOLERANCE) {
         _job.warn("_train: PCA Power method failed to converge.  The eigen vectors/singular values returned" +
-                "may be close but not correct.");
+                " may be close.");
       }
       _estimatedSingularValues[k] = lambda1_calc;
       return v;

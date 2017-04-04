@@ -41,6 +41,7 @@ public class KMeansRandomTest extends TestUtil {
                           KMeans.Initialization.Furthest,
                           KMeans.Initialization.PlusPlus,
                   }) {
+                    if (catEncoding == Model.Parameters.CategoricalEncodingScheme.SortByResponse) continue;
 
                     count++;
 
