@@ -31,7 +31,7 @@ public class ShuffleSplitFrameTest extends TestUtil {
   public void testShuffleSplitOnStringColumn() {
     long[] chunkLayout = ar(2L, 2L, 3L);
     String[][] data = ar(ar("A", "B"), ar(null, "C"), ar("D", "E", "F"));
-    Frame f = createFrame("test1.hex", chunkLayout, data);
+    Frame f = createFrame("ShuffleSplitTest1.hex", chunkLayout, data);
     testScenario(f, flat(data));
 
     chunkLayout = ar(3L, 3L);
@@ -45,7 +45,7 @@ public class ShuffleSplitFrameTest extends TestUtil {
     long[] chunkLayout = ar(2L, 2L, 3L);
     String[][] data = ar(ar("1", "2"), ar(null, "3"), ar("4", "5", "6"));
     Frame f = null;
-    Frame tmpFrm = createFrame("test1.hex", chunkLayout, data);
+    Frame tmpFrm = createFrame("ShuffleSplitMCTest1.hex", chunkLayout, data);
     try {
       f = new MRTask() {
         @Override

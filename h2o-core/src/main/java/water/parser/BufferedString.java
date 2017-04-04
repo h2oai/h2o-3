@@ -26,7 +26,7 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
      _buf = buf;  
      _off = off;  
      _len = len; 
-     assert len >= 0 :  "Bad length " + len;
+     assert len >= 0 :  "Bad length in constructor " + len;
    }
 
    private BufferedString(byte[] buf) { this(buf,0,buf.length); }
@@ -145,7 +145,7 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
     _buf = buf;
     _off = off;
     _len = len;
-    assert len >= 0 : "Bad length " + len;
+    assert len >= 0 : "Bad length in setter " + len;
     return this;
   }
 
