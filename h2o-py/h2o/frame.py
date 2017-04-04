@@ -2801,6 +2801,34 @@ class H2OFrame(object):
         """
         return H2OFrame._expr(expr=ExprNode("which", self))
 
+    def idxmax(self,skipna=True, axis=0):
+        """
+        Get the index of the max value in a column or row
+
+        :param bool skipna: If True (default), then NAs are ignored during the search. Otherwise presence
+            of NAs renders the entire result NA.
+        :param int axis: Direction of finding the max index. If 0 (default), then the max index is searched columnwise, and the
+            result is a frame with 1 row and number of columns as in the original frame. If 1, then the max index is searched
+            rowwise and the result is a frame with 1 column, and number of rows equal to the number of rows in the original frame.
+        :returns: either a list of max index values per-column or an H2OFrame containing max index values
+                  per-row from the original frame.
+        """
+        return H2OFrame._expr(expr=ExprNode("which.max", self, skipna, axis))
+
+    def idxmin(self,skipna=True, axis=0):
+        """
+        Get the index of the min value in a column or row
+
+        :param bool skipna: If True (default), then NAs are ignored during the search. Otherwise presence
+            of NAs renders the entire result NA.
+        :param int axis: Direction of finding the min index. If 0 (default), then the min index is searched columnwise, and the
+            result is a frame with 1 row and number of columns as in the original frame. If 1, then the min index is searched
+            rowwise and the result is a frame with 1 column, and number of rows equal to the number of rows in the original frame.
+        :returns: either a list of min index values per-column or an H2OFrame containing min index values
+                  per-row from the original frame.
+        """
+        return H2OFrame._expr(expr=ExprNode("which.min", self, skipna, axis))
+
 
     def ifelse(self, yes, no):
         """

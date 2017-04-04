@@ -129,6 +129,7 @@ def updateFailedTestInfo(summary_dict, one_test_info, testIndex, testName, newTe
         summary_dict["TestInfo"][testIndex]["NodeName"]=[]
         summary_dict["TestInfo"][testIndex]["FailureCount"]=0
         summary_dict["TestInfo"][testIndex]["TestName"] = testName     # add test name
+        summary_dict["TestInfo"][testIndex]["FailureMessages"] = [] # contains failure messages for the test
 
     summary_dict["TestInfo"][testIndex]["JenkinsJobName"].extend(one_test_info["JenkinsJobName"])
     summary_dict["TestInfo"][testIndex]["BuildID"].extend(one_test_info["BuildID"])
@@ -136,6 +137,7 @@ def updateFailedTestInfo(summary_dict, one_test_info, testIndex, testName, newTe
     summary_dict["TestInfo"][testIndex]["GitHash"].extend(one_test_info["GitHash"])
     summary_dict["TestInfo"][testIndex]["TestCategory"].extend(one_test_info["TestCategory"])
     summary_dict["TestInfo"][testIndex]["NodeName"].extend(one_test_info["NodeName"])
+    summary_dict["TestInfo"][testIndex]["FailureMessages"].extend(one_test_info["FailureMessages"])
     summary_dict["TestInfo"][testIndex]["FailureCount"] += one_test_info["FailureCount"]
 
 

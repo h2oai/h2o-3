@@ -1,4 +1,4 @@
-#R/Python Parity
+# R/Python Parity
 
 The following is a list of R functions alongside the equivalent Python ones. 
 Most methods in Python are member methods of the of the H2OFrame class. H2O does not override native Python `all` or `any` methods but these are included as member methods (e.g., `myFrame[0].any()` not `any(myFrame[0])`). 

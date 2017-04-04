@@ -5,7 +5,6 @@ import java.lang.ProcessBuilder;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.InputStreamReader;
-import java.lang.Runtime;
 import java.lang.RuntimeException;
 import java.util.Date;
 import java.text.DateFormat;
@@ -14,6 +13,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class H2OBuildVersion {
+  // Marker for development build
+  private static final String DEVEL_BUILD_NUMBER = "99999";
+  
   // Passed in by caller.
   File _rootDir;
   String _versionFromGradle;
@@ -25,10 +27,25 @@ public class H2OBuildVersion {
   String _buildIncrementalVersion;
   String _buildNumber;
 
+  @Override
+  public String toString() {
+    return "versionFromGradle='" + _versionFromGradle + '\'' +
+           ",projectVersion='" + getProjectVersion() + '\'' +
+           ",branch='" + getBranch() + '\'' +
+           ",lastCommitHash='" + calcLastCommitHash() + '\'' +
+           ",gitDescribe='" + calcDescribe() + '\'' +
+           ",compiledOn='" + calcCompiledOn() + '\'' +
+           ",compiledBy='" + calcCompiledBy() + '\'';
+  }
+
   H2OBuildVersion(File rootDir, String versionFromGradle) {
     _rootDir = rootDir;
     _versionFromGradle = versionFromGradle;
     calc();
+  }
+
+  public boolean isDevelBuild() {
+    return DEVEL_BUILD_NUMBER.equals(_buildNumber);
   }
 
   private String calcBuildNumber(File rootDir, String versionFromGradle) {
