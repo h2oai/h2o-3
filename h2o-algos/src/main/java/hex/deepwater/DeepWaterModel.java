@@ -165,7 +165,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     _output._scoring_history = DeepWaterScoringInfo.createScoringHistoryTable(scoringInfo, (null != get_params()._valid), false, _output.getModelCategory(), _output.isAutoencoder());
     _output._variable_importances = calcVarImp(last_scored().variable_importances);
     if (dataInfo!=null) {
-      _output._names = dataInfo._adaptedFrame.names();
+      _output.setNames(dataInfo._adaptedFrame.names());
       _output._domains = dataInfo._adaptedFrame.domains();
     }
     assert(_key.equals(destKey));
@@ -174,7 +174,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
   private void setDataInfoToOutput(DataInfo dinfo) {
     if (dinfo == null) return;
     // update the model's expected frame format - needed for train/test adaptation
-    _output._names = dinfo._adaptedFrame.names();
+    _output.setNames(dinfo._adaptedFrame.names());
     _output._domains = dinfo._adaptedFrame.domains();
     _output._nums = dinfo._nums;
     _output._cats = dinfo._cats;

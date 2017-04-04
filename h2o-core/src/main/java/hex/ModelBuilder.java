@@ -132,6 +132,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public final Frame train() { return _train; }
   protected transient Frame _train;
 
+  public void setTrain(Frame train) {
+    _train = train;
+  }
   /** Validation frame: derived from the parameter's validation frame, excluding
    *  all ignored columns, all constant and bad columns, perhaps flipping the
    *  response column to a Categorical, etc.  Is null if no validation key is set.  */
@@ -219,7 +222,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * */
   final public M trainModelNested(Frame fr) {
     if(fr != null) // Use the working copy (e.g. rebalanced) instead of the original K/V store version
-      _train = fr;
+      setTrain(fr);
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     _start_time = System.currentTimeMillis();
@@ -379,13 +382,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
       // Shallow clone - not everything is a private copy!!!
       ModelBuilder<M, P, O> cv_mb = (ModelBuilder)this.clone();
-      cv_mb._train = cvTrain;
+      cv_mb.setTrain(cvTrain);
       cv_mb._result = Key.make(identifier); // Each submodel gets its own key
       cv_mb._parms = (P) _parms.clone();
       // Fix up some parameters of the clone
       cv_mb._parms._is_cv_model = true;
       cv_mb._parms._weights_column = weightName;// All submodels have a weight column, which the main model does not
-      cv_mb._parms._train = cvTrain._key;       // All submodels have a weight column, which the main model does not
+      cv_mb._parms.setTrain(cvTrain._key);       // All submodels have a weight column, which the main model does not
       cv_mb._parms._valid = cvValid._key;
       cv_mb._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
       cv_mb._parms._nfolds = 0; // Each submodel is not itself folded
@@ -696,8 +699,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if(_parms._ignore_const_cols)
       new FilterCols(npredictors) {
         @Override protected boolean filter(Vec v) {
-          return (ignoreConstColumns() && v.isConst()) || v.isBad() || (ignoreStringColumns() && v.isString()); }
-      }.doIt(_train,"Dropping constant columns: ",expensive);
+          boolean isBad = v.isBad();
+          boolean skipConst = ignoreConstColumns() && v.isConst();
+          boolean skipString = ignoreStringColumns() && v.isString();
+          boolean skip = isBad || skipConst || skipString;
+          return skip;
+        }
+      }.doIt(_train,"Dropping bad and constant columns: ",expensive);
   }
 
   /**
@@ -797,7 +805,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     Frame tr = _train != null?_train:_parms.train();
     if( tr == null ) { error("_train", "Missing training frame: "+_parms._train); return; }
-    _train = new Frame(null /* not putting this into KV */, tr._names.clone(), tr.vecs().clone());
+    setTrain(new Frame(null /* not putting this into KV */, tr._names.clone(), tr.vecs().clone()));
     if (expensive) {
       _parms.getOrMakeRealSeed();
     }
@@ -851,7 +859,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     // Rebalance train and valid datasets
     if (expensive && error_count() == 0 && _parms._auto_rebalance) {
-      _train = rebalance(_train, false, _result + ".temporary.train");
+      setTrain(rebalance(_train, false, _result + ".temporary.train"));
       _valid = rebalance(_valid, false, _result + ".temporary.valid");
     }
 
@@ -967,7 +975,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         assert (newtrain._key != null);
         _origNames = _train.names();
         _origDomains = _train.domains();
-        _train = newtrain;
+        setTrain(newtrain);
         if (!_parms._is_cv_model)
           Scope.track(_train);
         else
@@ -1130,7 +1138,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     public void doIt( Frame f, String msg, boolean expensive ) {
       List<Integer> rmcolsList = new ArrayList<>();
       for( int i = 0; i < f.vecs().length - _specialVecs; i++ )
-        if( filter(f.vecs()[i]) ) rmcolsList.add(i);
+        if( filter(f.vec(i)) ) rmcolsList.add(i);
       if( !rmcolsList.isEmpty() ) {
         _removedCols = new HashSet<>(rmcolsList.size());
         int[] rmcols = new int[rmcolsList.size()];

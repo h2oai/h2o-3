@@ -532,7 +532,7 @@ public class FrameUtils {
         }
         OneHotConverter mrtask = new OneHotConverter(categorySizes);
         Frame binaryCols = mrtask.doAll(numOutputColumns, Vec.T_NUM, categoricalFrame).outputFrame();
-        binaryCols._names = catnames.toArray(new String[0]);
+        binaryCols.setNames(catnames.toArray(new String[0]));
         outputFrame.add(binaryCols);
         for (int i=0;i<extraVecs.length;++i) {
           if (extraVecs[i]!=null)
