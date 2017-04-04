@@ -5,10 +5,9 @@ package water.userapi
   * 
   * Created by vpatryshev on 3/26/17.
   */
-case class DataException(val message: String, 
-                         val cause: Option[Exception] = None) 
-  extends RuntimeException {
-
+case class DataException(message: String, 
+                         cause: Option[Exception] = None) 
+  extends RuntimeException(message, cause.orNull) {
   def this(message: String, cause: Exception) = this(message, Some(cause))
   def this(cause: Exception) = this(cause.getMessage, cause)
 }

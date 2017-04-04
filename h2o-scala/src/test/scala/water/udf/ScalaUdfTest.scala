@@ -16,6 +16,7 @@ import water.{Test0, TestUtil}
 import scala.collection.JavaConverters._
 import scala.io.Source
 import scala.language.postfixOps
+import Test0._
 
 /**
   * Scala version of UdfTest
@@ -28,7 +29,8 @@ class ScalaUdfTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
   val sinOpt =
     (i: Long) => Some(i).filter(k => k <= 10 || k >= 20).map(i => math.sin(i.toDouble))
 
-  private def sines: DataColumn[lang.Double] = willDrop(Doubles.newColumnOpt(1L << 20, sinOpt))
+  private def sines: DataColumn[lang.Double] =
+    trackColumn(Doubles.newColumnOpt(1L << 20, sinOpt))
 
   private def sinesShort: DataColumn[lang.Double] = willDrop(Doubles.newColumnOpt(1001590, sinOpt))
 

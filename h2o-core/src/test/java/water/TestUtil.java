@@ -147,6 +147,16 @@ public class TestUtil extends Iced {
     _initial_keycnt = H2O.store_size();
   }
 
+  public static <T> T trackColumn(T vh) {
+    try { // using reflection so that Paula Bean's code is intact
+      Method vec = vh.getClass().getMethod("vec");
+      Scope.track((Vec)vec.invoke(vh));
+    } catch (Exception e) {
+      // just ignore
+    }
+    return vh;
+  }
+
   private static class DKVCleaner extends MRTask<DKVCleaner> {
     @Override public void setupLocal() {  H2O.raw_clear();  water.fvec.Vec.ESPC.clear(); }
   }

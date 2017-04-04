@@ -45,7 +45,7 @@ public class UdfEnumTest extends UdfTestBase {
   private final Enums sampleEnumeration = Enums.enums(new String[]{"Red", "White", "Blue"});
 
   private EnumColumn generate(int n) throws IOException {
-    return willDrop(sampleEnumeration
+    return trackColumn(sampleEnumeration
         .newColumn(n, new Function<Long, Integer>() {
           public Integer apply(Long i) { return (int)( i % 3); }
         }));

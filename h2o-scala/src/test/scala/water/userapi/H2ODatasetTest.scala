@@ -3,7 +3,12 @@ package water.userapi
 import java.io.{File, FileWriter}
 
 import org.junit.BeforeClass
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
+import org.scalatest.Matchers._
+import org.scalatest._
+import water.TestUtil._
+import water.fvec.Vec
+import water.udf.fp.{Function => UFunction}
+import water.util.fp.JavaInterop
 import water.{Test0, TestUtil}
 
 import scala.language.postfixOps
@@ -11,7 +16,9 @@ import scala.language.postfixOps
 /**
   * Test for H2ODataset
   */
-class H2ODatasetTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
+class H2ODatasetTest extends Test0  with BeforeAndAfterAll {
+  
+  
   val A_LOT: Int = 1 << 20
   val testFile1 = new File("DatasetTest.1.tmp")
 
@@ -21,83 +28,66 @@ class H2ODatasetTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
     fw.write("A\tB\tC\na1\tb1\tc1\na2\tb2\tc2\n")
     fw.close()
     testFile1.deleteOnExit()
-    
-  }
-
-  test("IsNA") {
-    assert(1 == 2)
-  }
-  /*
-
-import static org.junit.Assert.*
-
-/**
- * Test suite for Dataset functionality in UserAPI.
- * 
- * Created by vpatryshev on 2/22/17.
- */
-public class DatasetTest extends TestUtil {
-  static File testFile1 = new File("DatasetTest.1.tmp")
-
-  @BeforeClass
-  static public void setup() throws IOException { 
-    stall_till_cloudsize(2)
-    Writer fw = new FileWriter(testFile1)
-    fw.write("A\tB\tC\na1\tb1\tc1\na2\tb2\tc2\n")
-    fw.close()
-    testFile1.deleteOnExit()
   }
   
-  @Before
-  public void hi() { Scope.enter() }
-
-  @After
-  public void bye() { Scope.exit() }
-
-  @Test(expected=DataException.class)
-  public void testNoReadFile() throws Exception {
-      Dataset.read(new File("c:/System.ini"))
-  }
-
-  @Test
-  public void testRead() throws Exception {
-    Dataset sut = Dataset.read(testFile1)
-    Vec v1 = sut.vec("C2")
-    assertEquals("b1", String.valueOf(v1.atStr(new BufferedString(), 1)))
-  }
-
-  final int size = 1000
-
-  private static int whichOne(int i) {
-    return i%100 < 2 ? 0 : i%100 < 20 ? 1 : 2
+  test("if file does not exist") {
+    val notafile = "c:/System.ini"
+    val ex = the [DataException] thrownBy {
+      H2ODataset.read(new File(notafile))
+    }
+    val expected = s"Could not read $notafile"
+    
+    assert(ex.getMessage contains expected)
   }
   
-  @Test
-  public void testOneHotEncode() throws Exception {
-    final String[] domain = {"red", "white", "blue"}
+  test("read test file") {
+    val sut = H2ODataset.read(testFile1)
+    sut.vec("C2") match {
+      case Some(v1) =>
+        assert(v1.stringAt(1) == "b1")
 
-    final Vec vec1 = cvec(domain, size, new Function<Integer, String>() {
-      @Override
-      public String apply(Integer i) {
-        return domain[whichOne(i)]
-      }
-    })
+      case None =>
+        fail("Vector V2 must have been there")
+    }
+  }
+  
+  val size = 1000
 
-    Dataset sut = Dataset.onVecs(new HashMap<String, Vec>() {{put("RGB", vec1)}})
+  private def whichOne(i: Long) =
+    if (i%100 < 2) 0 else if (i%100 < 20) 1 else 2
+
+  test("OneHotEncode") {
+    val domain = Array("red", "white", "blue")
+
+    import JavaInterop._
+
+    val generator: UFunction[Integer, String] = (i: Int) => domain(whichOne(i))
     
-    Dataset actual = sut.oneHotEncode()
+    val vec1 = cvec(domain, size, generator)
+
+    val sut = H2ODataset.onVecs(Map("RGB" -> vec1))
+
+    val actual = sut.oneHotEncode()
     
-    assertArrayEquals(new String[]{"RGB", "RGB.red", "RGB.white", "RGB.blue", "RGB.missing(NA)"}, actual.domain())
+    assert(actual.domain.get.mkString == Array("RGB.red", "RGB.white", "RGB.blue", "RGB.missing(NA)").mkString)
+
+    val dom = actual.domain.get
     
-    for (int i = 0 i < size i++) {
-      for (int j = 1 j < 4 j++) {
-        assertEquals("@(" + i + "," + j + ")", 
-            (j-1) == whichOne(i) ? 1 : 0,
-            actual.vec(actual.domain()[j]).at8(i))
+    for { j <- 0 until 4 } {
+      val name = dom(j)
+      val vec: Option[Vec] = actual.vec(name)
+      for { i <- 0 until size } {
+        val expected = if (whichOne(i) == j) 1 else 0
+        vec match {
+          case Some(v) =>
+            assert(expected == v.at8(i), s"@($i, $j: $name)")
+          case None => fail(s"No vec at $j => ${dom(j)}")
+        }
       }
     }
-    
-  }
+  }  
+  
+  /*
 
   @Test
   public void testAddSplittingColumn() throws Exception {

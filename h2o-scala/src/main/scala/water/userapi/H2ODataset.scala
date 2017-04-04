@@ -1,22 +1,23 @@
 package water.userapi
 
-import language.postfixOps
 import java.io.{File, IOException}
 
+import water.Scope._
 import water.fvec._
 import water.parser.ParseDataset
 import water.rapids.ast.prims.advmath.AstStratifiedSplit
 import water.rapids.ast.prims.advmath.AstStratifiedSplit._
 import water.udf.specialized.Enums
 import water.util.{FileUtils, VecUtils}
-import water.{DKV, Iced, Key, Scope}
+import water.{DKV, Iced, Key}
+
+import scala.language.postfixOps
 
 /**
   * Simplified Frame wrapper for simple usages in Scala world
   * Created by vpatryshev on 3/26/17.
   */
 case class H2ODataset(frame: Frame) extends Iced[H2ODataset] {
-  import H2ODataset._
   
   def oneHotEncode(ignore: String*): H2ODataset = {
     try {
@@ -34,14 +35,14 @@ case class H2ODataset(frame: Frame) extends Iced[H2ODataset] {
   private def frameClone: Frame = {
     val newFrame = frame.clone
     newFrame._key = null
-    track(newFrame)
+    trackFrame(newFrame)
   }
   
   // the new vec is named (hard-coded so far) "test_train_split"
   def addSplittingColumn(colName: String, ratio: Double, seed: Long): Option[H2ODataset] = {
       for {
         vec <- vec(colName)
-        splitter = track(AstStratifiedSplit.split(vec, ratio, seed, SplittingDom))
+        splitter = trackFrame(AstStratifiedSplit.split(vec, ratio, seed, SplittingDom))
         newFrame = frameClone
         _ = newFrame.add(splitter.names(), splitter.vecs)
       } yield new H2ODataset(newFrame)
@@ -115,16 +116,13 @@ case class H2ODataset(frame: Frame) extends Iced[H2ODataset] {
       v <- Option(frame.remove(name))
     } {
       v.remove()
-      untrack(v)
+      untrack(v._key)
     }
   }
 
 }
 
 object H2ODataset {
-  def track(f: Frame) = Scope.trackFrame(f)
-  def track(v: Vec) = Scope.track(v)
-  def untrack(v: Vec) = Scope.untrack(v._key)
 
   def get(frameKey: Key[Frame]): Option[H2ODataset] =
     Option(DKV.getGet(frameKey)) map (new H2ODataset(_))
@@ -137,9 +135,10 @@ object H2ODataset {
       FileUtils.checkFile(file, file.getCanonicalPath)
       val nfs: NFSFileVec = NFSFileVec.make(file)
       val parsed: Frame = ParseDataset.parse(Key.make(), nfs._key)
-      new H2ODataset(track(parsed))
+      new H2ODataset(trackFrame(parsed))
     } catch {
-      case ioe: IOException => throw DataException("Could not read " + file, Some(ioe));
+      case ioe: IOException => 
+        throw DataException("Could not read " + file, Some(ioe));
     }
   }
 
