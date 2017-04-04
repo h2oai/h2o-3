@@ -142,6 +142,13 @@ final public class H2O {
             "    -login_conf <filename>\n" +
             "          LoginService configuration file\n" +
             "\n" +
+            "    -form_auth\n" +
+            "          Enables Form-based authentication for Flow (default is Basic authentication)\n" +
+            "\n" +
+            "    -session_timeout <minutes>\n" +
+            "          Specifies the number of minutes that a session can remain idle before the server invalidates\n" +
+            "          the session and requests a new login. Requires '-form_auth'. Default is no timeout\n" +
+            "\n" +
             "    -internal_security_conf <filename>\n" +
             "          Path (absolute or relative) to a file containing all internal security related configurations\n" +
             "\n" +
@@ -289,6 +296,13 @@ final public class H2O {
 
     /** -login_conf is login configuration service file on local filesystem */
     public String login_conf = null;
+
+    /** -form_auth enables Form-based authentication */
+    public boolean form_auth = false;
+
+    /** -session_timeout maximum duration of session inactivity in minutes **/
+    private String session_timeout_spec = null; // raw value specified by the user
+    public int session_timeout = 0; // parsed value (in minutes)
 
     /** -internal_security_conf path (absolute or relative) to a file containing all internal security related configurations */
     public String internal_security_conf = null;
@@ -534,6 +548,14 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         ARGS.login_conf = args[i];
       }
+      else if (s.matches("form_auth")) {
+        ARGS.form_auth = true;
+      }
+      else if (s.matches("session_timeout")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.session_timeout_spec = args[i];
+        try { ARGS.session_timeout = Integer.parseInt(args[i]); } catch (Exception e) { /* ignored */ }
+      }
       else if (s.matches("internal_security_conf")) {
         i = s.incrementAndCheck(i, args);
         ARGS.internal_security_conf = args[i];
@@ -573,6 +595,19 @@ final public class H2O {
       if (H2O.ARGS.login_conf == null) {
         parseFailed("Must specify -login_conf argument");
       }
+    } else {
+      if (H2O.ARGS.form_auth) {
+        parseFailed("No login method was specified. Form-based authentication can only be used in conjunction with of a LoginService.\n" +
+                "Pick a LoginService by specifying '-<method>_login' option.");
+      }
+    }
+
+    if (ARGS.session_timeout_spec != null) {
+      if (! ARGS.form_auth) {
+        parseFailed("Session timeout can only be enabled for Form based authentication (use -form_auth)");
+      }
+      if (ARGS.session_timeout <= 0)
+        parseFailed("Invalid session timeout specification (" + ARGS.session_timeout + ")");
     }
 
     // Validate extension arguments
