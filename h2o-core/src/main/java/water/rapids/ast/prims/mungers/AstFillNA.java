@@ -1,32 +1,15 @@
 package water.rapids.ast.prims.mungers;
 
-import water.Freezable;
-import water.H2O;
+import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.rapids.*;
-import water.rapids.ast.AstFrame;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
-import water.rapids.ast.params.AstNum;
-import water.rapids.ast.params.AstNumList;
-import water.rapids.ast.params.AstStr;
-import water.rapids.ast.params.AstStrList;
-import water.rapids.ast.prims.mungers.AstGroup;
-import water.rapids.ast.prims.reducers.AstMean;
-import water.rapids.ast.prims.reducers.AstMedian;
 import water.rapids.vals.ValFrame;
-import water.rapids.vals.ValNums;
-import water.util.ArrayUtils;
-import water.util.IcedDouble;
-import water.util.IcedHashMap;
-
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Fill NA's from previous or future values.
@@ -38,7 +21,7 @@ import java.util.Set;
 public class AstFillNA extends AstPrimitive {
   @Override
   public String[] args() {
-    return new String[]{"ary", "col", "method" };
+    return new String[]{"ary", "method", "axis", "limit" };
   }
 
   @Override
@@ -48,7 +31,7 @@ public class AstFillNA extends AstPrimitive {
 
   @Override
   public int nargs() {
-    return 1 + 3;
+    return 1 + 4;
   } // (h2o.impute data col method combine_method groupby groupByFrame values)
 
   @Override
@@ -58,12 +41,11 @@ public class AstFillNA extends AstPrimitive {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
 
     // Column within frame being imputed
-    final int col = (int) asts[2].exec(env).getNum();
-    if (col >= fr.numCols())
-      throw new IllegalArgumentException("Column not -1 or in range 0 to " + fr.numCols());
-    final boolean doAllVecs = col == -1;
-    final Vec vec = doAllVecs ? null : fr.vec(col);
-    Frame res = new FillDirectional("forward",10).doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame();
+    final String method = asts[2].exec(env).getStr();
+    final int axis = (int) asts[3].exec(env).getNum();
+    final int limit = (int) asts[4].exec(env).getNum();
+    Frame res = new FillDirectional("forward",limit).doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame();
+    res._key = Key.<Frame>make();
     return new ValFrame(res);
   }
 
@@ -88,29 +70,58 @@ public class AstFillNA extends AstPrimitive {
               Chunk searchChunk = cs[i];
               int searchStartIdx = j;
               int searchIdx = 0;
+              // find the previous valid value up to maxLen distance
               while (searchChunk != null && searchCount < _maxLen && searchChunk.isNA(searchStartIdx - searchIdx)) {
                 if (searchStartIdx - searchCount == 0) {
                   //reached the start of the chunk
-                  searchChunk = searchChunk.vec().chunkForChunkIdx(searchChunk.cidx() - 1);
-                  searchStartIdx = searchChunk.len() - 1;
-                  searchIdx = 0;
+                  if (searchChunk.cidx() > 0) {
+                    searchChunk = searchChunk.vec().chunkForChunkIdx(searchChunk.cidx() - 1);
+                    searchStartIdx = searchChunk.len() - 1;
+                    searchIdx = 0;
+                    searchCount++;
+                    continue;
+                  } else {
+                    searchChunk = null;
+                  }
                 }
-                searchCount++;
                 searchIdx++;
+                searchCount++;
               }
-              // find the previous valid value up to maxLen distance
-              // fill forward as much as you need and skip j forward by that amount
+              if (searchChunk == null) {
+                nc[i].addNA();
+              } else {
+                // fill forward as much as you need and skip j forward by that amount
+                double fillVal = searchChunk.atd(searchStartIdx - searchIdx);
+                int fillCount = _maxLen - searchCount;
+                fillCount = Math.min(fillCount,cs[i]._len);
+                for (int f = 0; f<fillCount; f++) {
+                  nc[i].addNum(fillVal);
+                  fillCount++;
+                }
+                j += (fillCount - 1);
+              }
 
             } else {
               // otherwise keep moving forward
               nc[i].addNA();
-              continue;
             }
+          } else if (j < cs[i]._len -1 && !cs[i].isNA(j) && cs[i].isNA(j+1)) {
+            // current chunk element not NA but next one is
+            // fill as much as you have to
+            double fillVal = cs[i].atd(j);
+            nc[i].addNum(fillVal);
+            int fillCount = 0; j++;
+            while (j+fillCount < cs[i]._len && fillCount < _maxLen && cs[i].isNA(j+fillCount)) {
+               nc[i].addNum(fillVal);
+               fillCount++;
+            }
+            j += (fillCount - 1);
+
+          } else {
+            // current chunk element not NA next one not NA
+            // keep moving forward
+            nc[i].addNum(cs[i].atd(j));
           }
-          // current chunk element not NA but next one is
-          // fill as much as you have to
-          // current chunk element not NA next one not NA
-          // keep moving forward
         }
       }
     }
