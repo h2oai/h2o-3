@@ -1,6 +1,7 @@
 package hex.deepwater;
 
 import hex.genmodel.algos.deepwater.caffe.DeepwaterCaffeModel;
+
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -15,10 +16,16 @@ import java.util.zip.GZIPInputStream;
 public class DeepWaterCaffeIntegrationTest extends DeepWaterAbstractIntegrationTest {
 
   @Override
-  DeepWaterParameters.Backend getBackend() { return DeepWaterParameters.Backend.caffe; }
+  DeepWaterParameters.Backend getBackend() {
+    return DeepWaterParameters.Backend.caffe;
+  }
 
   @BeforeClass
-  public static void checkBackend() { Assume.assumeTrue(DeepWater.haveBackend(DeepWaterParameters.Backend.caffe)); };
+  public static void checkBackend() {
+    Assume.assumeTrue(DeepWater.haveBackend(DeepWaterParameters.Backend.caffe));
+  }
+
+  ;
 
   @Ignore
   @Test
@@ -72,7 +79,8 @@ public class DeepWaterCaffeIntegrationTest extends DeepWaterAbstractIntegrationT
         new String[] {"data", "relu", "relu", "relu", "loss"},
         new double[] {.9, .5, .5, .5, 0.},
         1234,
-        true // GPU
+        true,
+        false
     );
 
     System.out.println("Train");
@@ -92,5 +100,5 @@ public class DeepWaterCaffeIntegrationTest extends DeepWaterAbstractIntegrationT
     model.saveModel("/tmp/graph");
     model.saveParam("/tmp/params");
     model.loadParam("/tmp/params");
- }
+  }
 }

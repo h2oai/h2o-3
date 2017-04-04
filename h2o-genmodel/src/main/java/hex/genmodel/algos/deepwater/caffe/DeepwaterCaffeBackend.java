@@ -47,19 +47,21 @@ public class DeepwaterCaffeBackend implements BackendTrain {
           layers,
           hdr,
           opts.getSeed(),
-          opts.useGPU()
+          opts.useGPU(),
+          num_classes == 1
       );
     } else {
       return new DeepwaterCaffeModel(
           name,
           new int[] {
               (Integer) bparms.get("mini_batch_size"),
-              dataset.getChannels(),
-              dataset.getWidth(),
-              dataset.getHeight()
+              Math.max(1, dataset.getChannels()),  // Can be 0, ignore
+              Math.max(1, dataset.getWidth()),
+              Math.max(1, dataset.getHeight())
           },
           opts.getSeed(),
-          opts.useGPU()
+          opts.useGPU(),
+          num_classes == 1
       );
     }
   }
@@ -142,7 +144,7 @@ public class DeepwaterCaffeBackend implements BackendTrain {
 
   public byte[] readBytes(File file) throws IOException {
     FileInputStream is = new FileInputStream(file);
-    byte[] params = new byte[(int)file.length()];
+    byte[] params = new byte[(int) file.length()];
     is.read(params);
     is.close();
     return params;

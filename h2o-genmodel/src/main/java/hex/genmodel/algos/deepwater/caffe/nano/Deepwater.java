@@ -56,6 +56,9 @@ public interface Deepwater {
     // bool use_gpu = 106;
     public boolean useGpu;
 
+    // bool regression = 107;
+    public boolean regression;
+
     // repeated int32 sizes = 201;
     public int[] sizes;
 
@@ -84,6 +87,7 @@ public interface Deepwater {
       momentum = 0F;
       randomSeed = 0L;
       useGpu = false;
+      regression = false;
       sizes = com.google.protobuf.nano.WireFormatNano.EMPTY_INT_ARRAY;
       types = com.google.protobuf.nano.WireFormatNano.EMPTY_STRING_ARRAY;
       dropoutRatios = com.google.protobuf.nano.WireFormatNano.EMPTY_DOUBLE_ARRAY;
@@ -123,6 +127,9 @@ public interface Deepwater {
       }
       if (this.useGpu != false) {
         output.writeBool(106, this.useGpu);
+      }
+      if (this.regression != false) {
+        output.writeBool(107, this.regression);
       }
       if (this.sizes != null && this.sizes.length > 0) {
         for (int i = 0; i < this.sizes.length; i++) {
@@ -198,6 +205,10 @@ public interface Deepwater {
       if (this.useGpu != false) {
         size += com.google.protobuf.nano.CodedOutputByteBufferNano
             .computeBoolSize(106, this.useGpu);
+      }
+      if (this.regression != false) {
+        size += com.google.protobuf.nano.CodedOutputByteBufferNano
+            .computeBoolSize(107, this.regression);
       }
       if (this.sizes != null && this.sizes.length > 0) {
         int dataSize = 0;
@@ -344,6 +355,10 @@ public interface Deepwater {
             this.useGpu = input.readBool();
             break;
           }
+          case 856: {
+            this.regression = input.readBool();
+            break;
+          }
           case 1608: {
             int arrayLength = com.google.protobuf.nano.WireFormatNano
                 .getRepeatedFieldArrayLength(input, 1608);
@@ -468,149 +483,6 @@ public interface Deepwater {
             com.google.protobuf.nano.CodedInputByteBufferNano input)
         throws java.io.IOException {
       return new Cmd().mergeFrom(input);
-    }
-  }
-
-  public static final class Saved extends
-      com.google.protobuf.nano.MessageNano {
-
-    private static volatile Saved[] _emptyArray;
-    public static Saved[] emptyArray() {
-      // Lazily initializes the empty array
-      if (_emptyArray == null) {
-        synchronized (
-            com.google.protobuf.nano.InternalNano.LAZY_INIT_LOCK) {
-          if (_emptyArray == null) {
-            _emptyArray = new Saved[0];
-          }
-        }
-      }
-      return _emptyArray;
-    }
-
-    // string solver = 1;
-    public java.lang.String solver;
-
-    // repeated int32 input_shape = 2;
-    public int[] inputShape;
-
-    public Saved() {
-      clear();
-    }
-
-    public Saved clear() {
-      solver = "";
-      inputShape = com.google.protobuf.nano.WireFormatNano.EMPTY_INT_ARRAY;
-      cachedSize = -1;
-      return this;
-    }
-
-    @Override
-    public void writeTo(com.google.protobuf.nano.CodedOutputByteBufferNano output)
-        throws java.io.IOException {
-      if (!this.solver.equals("")) {
-        output.writeString(1, this.solver);
-      }
-      if (this.inputShape != null && this.inputShape.length > 0) {
-        for (int i = 0; i < this.inputShape.length; i++) {
-          output.writeInt32(2, this.inputShape[i]);
-        }
-      }
-      super.writeTo(output);
-    }
-
-    @Override
-    protected int computeSerializedSize() {
-      int size = super.computeSerializedSize();
-      if (!this.solver.equals("")) {
-        size += com.google.protobuf.nano.CodedOutputByteBufferNano
-            .computeStringSize(1, this.solver);
-      }
-      if (this.inputShape != null && this.inputShape.length > 0) {
-        int dataSize = 0;
-        for (int i = 0; i < this.inputShape.length; i++) {
-          int element = this.inputShape[i];
-          dataSize += com.google.protobuf.nano.CodedOutputByteBufferNano
-              .computeInt32SizeNoTag(element);
-        }
-        size += dataSize;
-        size += 1 * this.inputShape.length;
-      }
-      return size;
-    }
-
-    @Override
-    public Saved mergeFrom(
-            com.google.protobuf.nano.CodedInputByteBufferNano input)
-        throws java.io.IOException {
-      while (true) {
-        int tag = input.readTag();
-        switch (tag) {
-          case 0:
-            return this;
-          default: {
-            if (!com.google.protobuf.nano.WireFormatNano.parseUnknownField(input, tag)) {
-              return this;
-            }
-            break;
-          }
-          case 10: {
-            this.solver = input.readString();
-            break;
-          }
-          case 16: {
-            int arrayLength = com.google.protobuf.nano.WireFormatNano
-                .getRepeatedFieldArrayLength(input, 16);
-            int i = this.inputShape == null ? 0 : this.inputShape.length;
-            int[] newArray = new int[i + arrayLength];
-            if (i != 0) {
-              java.lang.System.arraycopy(this.inputShape, 0, newArray, 0, i);
-            }
-            for (; i < newArray.length - 1; i++) {
-              newArray[i] = input.readInt32();
-              input.readTag();
-            }
-            // Last one without readTag.
-            newArray[i] = input.readInt32();
-            this.inputShape = newArray;
-            break;
-          }
-          case 18: {
-            int length = input.readRawVarint32();
-            int limit = input.pushLimit(length);
-            // First pass to compute array length.
-            int arrayLength = 0;
-            int startPos = input.getPosition();
-            while (input.getBytesUntilLimit() > 0) {
-              input.readInt32();
-              arrayLength++;
-            }
-            input.rewindToPosition(startPos);
-            int i = this.inputShape == null ? 0 : this.inputShape.length;
-            int[] newArray = new int[i + arrayLength];
-            if (i != 0) {
-              java.lang.System.arraycopy(this.inputShape, 0, newArray, 0, i);
-            }
-            for (; i < newArray.length; i++) {
-              newArray[i] = input.readInt32();
-            }
-            this.inputShape = newArray;
-            input.popLimit(limit);
-            break;
-          }
-        }
-      }
-    }
-
-    public static Saved parseFrom(byte[] data)
-        throws com.google.protobuf.nano.InvalidProtocolBufferNanoException {
-      return com.google.protobuf.nano.MessageNano.mergeFrom(new Saved(), data);
-    }
-
-    public static Saved parseFrom(
-            com.google.protobuf.nano.CodedInputByteBufferNano input)
-        throws java.io.IOException {
-      return new Saved().mergeFrom(input);
     }
   }
 }
