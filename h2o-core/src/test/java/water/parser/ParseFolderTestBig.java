@@ -4,8 +4,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import org.junit.*;
+import static org.junit.Assert.*;
 import water.Job;
 import water.Key;
+import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
@@ -50,10 +52,42 @@ public class ParseFolderTestBig extends TestUtil {
     }
   }
 
+  @Test
+  public void testPUBDEV4026() {
+    Scope.enter();
+    String fname = "bigdata/PUBDEV4026.svm";
+    try {
+      File f = FileUtils.getFile(fname);
+      NFSFileVec nfs = NFSFileVec.make(f);
+      final ParseSetup globalSetup = ParseSetup.guessSetup(new Key[]{nfs._key}, false, ParseSetup.GUESS_HEADER);
+      ParseWriter.ParseErr[] errors = globalSetup._errs;
+      
+      assertTrue("Got errors: " + Arrays.toString(errors), errors.length == 0);
+      Job<Frame> job = ParseDataset.parse(Key.make("PUBDEV4026.hex"), new Key[]{nfs._key}, true, globalSetup, false)._job;
+      int i = 0;
+      while (job.progress() < 1.0) {
+        System.out.print(((int) (job.progress() * 1000.0)) / 10.0 + "% ");
+        try {
+          Thread.sleep(1000);
+          i++;
+        } catch (InterruptedException ignore) { /*comment to disable ideaJ warning*/}
+      }
+      System.out.println();
+      Frame k1 = Scope.track(job.get()); // will throw on error
+      System.out.println(k1.toString());
+      assertEquals(776211, k1.vecs().length);
+      assertEquals(47754, k1.vec(0).length());
+    } catch (IOException ignore) {
+      System.out.println("\nFile not found: " + fname + " - not running the test.");
+    } finally {
+      Scope.exit();
+    }
+  }
+
   @Test @Ignore
   public void testBIGSVM() {
+    Scope.enter();
     String fname = "bigdata/cust_K/1m.svm";
-    Frame k1 = null;
     try {
       File f = FileUtils.getFile(fname);
       NFSFileVec nfs = NFSFileVec.make(f);
@@ -65,12 +99,12 @@ public class ParseFolderTestBig extends TestUtil {
         } catch (InterruptedException ignore) { /*comment to disable ideaJ warning*/}
       }
       System.out.println();
-      k1 = job.get();
+      Frame k1 = Scope.track(job.get());
       System.out.println(k1.toString());
     } catch (IOException ioe) {
         Assert.fail("File not found: " + fname + " - " + ioe.getMessage());
     } finally {
-      if( k1 != null ) k1.delete();
+      Scope.exit();
     }
   }
 }

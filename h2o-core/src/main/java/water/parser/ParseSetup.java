@@ -354,7 +354,7 @@ public class ParseSetup extends Iced {
         try {
           _gblSetup = guessSetup(bv, bits, _userSetup);
           for(ParseWriter.ParseErr e:_gblSetup._errs) {
-            e._byteOffset += e._cidx*Parser.StreamData.bufSz;
+            e._byteOffset += e._cidx*Parser.StreamData.BUFSIZE;
             e._cidx = 0;
             e._file = _file;
           }
@@ -605,7 +605,7 @@ public class ParseSetup extends Iced {
    *
    * @param bits data to be examined for encoding
    */
-  private static final void checkEncoding(byte[] bits) {
+  private static void checkEncoding(byte[] bits) {
     if (bits.length >= 2) {
       if ((bits[0] == (byte) 0xff && bits[1] == (byte) 0xfe) /* UTF-16, little endian */ ||
               (bits[0] == (byte) 0xfe && bits[1] == (byte) 0xff) /* UTF-16, big endian */) {
@@ -619,7 +619,7 @@ public class ParseSetup extends Iced {
    * @param bytes Array of bytes (containing 0 or more newlines)
    * @return The longest line length in the given bytes
    */
-  private static final long maxLineLength(byte[] bytes) {
+  private static long maxLineLength(byte[] bytes) {
     if (bytes.length >= 2) {
       String st = new String(bytes);
       StringReader sr = new StringReader(st);

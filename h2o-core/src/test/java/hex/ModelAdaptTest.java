@@ -28,7 +28,7 @@ public class ModelAdaptTest extends TestUtil {
     Frame trn = parse_test_file("smalldata/junit/mixcat_train.csv");
     AModel.AParms p = new AModel.AParms();
     AModel.AOutput o = new AModel.AOutput();
-    o._names = trn.names();
+    o.setNames(trn.names());
     o._domains = trn.domains();
     trn.remove();
     AModel am = new AModel(Key.make(),p,o);
@@ -63,7 +63,7 @@ public class ModelAdaptTest extends TestUtil {
     Vec cat = vec(new String[]{"A","B"},0,1,0,1);
     Frame trn = new Frame();
     trn.add("cat",cat);
-    o._names = trn.names();
+    o.setNames(trn.names());
     o._domains = trn.domains();
     trn.remove();
     AModel am = new AModel(Key.make(),p,o);
@@ -86,7 +86,7 @@ public class ModelAdaptTest extends TestUtil {
 
     Frame trn = new Frame();
     trn.add("dog",vec(new String[]{"A","B"},0,1,0,1));
-    o._names = trn.names();
+    o.setNames(trn.names());
     o._domains = trn.domains();
     trn.remove();
     AModel am = new AModel(Key.make(),p,o);
