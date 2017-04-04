@@ -5,7 +5,7 @@
 apply plugin: 'me.champeau.gradle.jmh'
 
 ext {
-    H2OBuildVersion bv = new H2OBuildVersion(rootDir, version);
+    H2OBuildVersion bv = new H2OBuildVersion(rootDir, version)
     String date = new Date().format("yyyyMMddHHmmss", TimeZone.getTimeZone("UTC"))
 
     // Environment for the run
@@ -23,7 +23,7 @@ jmh {
     if (project.hasProperty('ubenchIncludeOnly')) {
         include = project.ubenchIncludeOnly
     }
-    jmhVersion = '1.15'
+    jmhVersion = '1.18'
     resultsFile = project.file("${project.buildDir}/reports/jmh/$jmhResultFileName")
     duplicateClassesStrategy = 'warn'
     resultFormat = 'SCSV'

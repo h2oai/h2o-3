@@ -318,8 +318,12 @@ final class RollupStats extends Iced {
   private static NonBlockingHashMap<Key,RPC> _pendingRollups = new NonBlockingHashMap<>();
 
   static RollupStats get(Vec vec, boolean computeHisto) {
-    if( DKV.get(vec._key)== null ) throw new RuntimeException("Rollups not possible, because Vec was deleted: "+vec._key);
-    if( vec.isString() ) computeHisto = false; // No histogram for string columns
+    if( DKV.get(vec._key)== null ) {
+      throw new RuntimeException("Rollups not possible, because Vec was deleted: " + vec._key);
+    }
+    if( vec.isString() ) {
+      computeHisto = false; // No histogram for string columns
+    }
     final Key rskey = vec.rollupStatsKey();
     RollupStats rs = DKV.getGet(rskey);
     while(rs == null || (!rs.isReady() || (computeHisto && !rs.hasHisto()))){
