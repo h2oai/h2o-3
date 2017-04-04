@@ -7,11 +7,13 @@ import org.scalatest.Matchers._
 import org.scalatest._
 import water.TestUtil._
 import water.fvec.Vec
-import water.udf.fp.{Function => UFunction}
+import water.udf.fp.{Function => UFunction, Functions}
 import water.util.fp.JavaInterop
 import water.{Test0, TestUtil}
 
 import scala.language.postfixOps
+import JavaInterop._
+
 
 /**
   * Test for H2ODataset
@@ -56,16 +58,17 @@ class H2ODatasetTest extends Test0  with BeforeAndAfterAll {
   private def whichOne(i: Long) =
     if (i%100 < 2) 0 else if (i%100 < 20) 1 else 2
 
-  test("OneHotEncode") {
-    val domain = Array("red", "white", "blue")
+  val RGB = Array("red", "white", "blue")
 
-    import JavaInterop._
+  val rgbGenerator: UFunction[Integer, String] = (i: Int) => RGB(whichOne(i))
 
-    val generator: UFunction[Integer, String] = (i: Int) => domain(whichOne(i))
+  def buildTestVec: Vec = cvec(RGB, size, rgbGenerator)
+
+  test("One Hot Encode") {
     
-    val vec1 = cvec(domain, size, generator)
+    val vec1 = buildTestVec
 
-    val sut = H2ODataset.onVecs(Map("RGB" -> vec1))
+    val sut = H2ODataset.onVecs("RGB" -> vec1)
 
     val actual = sut.oneHotEncode()
     
@@ -85,34 +88,31 @@ class H2ODatasetTest extends Test0  with BeforeAndAfterAll {
         }
       }
     }
-  }  
+  }
+
+  test("Add splitting column") {
+
+    val vec1 = buildTestVec
+    val vec2 = vec(size, Functions.identity[Integer])
+
+    val sut = H2ODataset.onVecs("RGB" -> vec1, "Ausweis" -> vec2)
+
+    val actual = sut.addSplittingColumn("RGB", 0.01, 7688714)
+    
+    actual flatMap (_.domain) match {
+      case Some(dom) =>
+        assert(Array("RGB", "Ausweis", "test_train_split").mkString(",") == dom.mkString(","))
+      case None =>
+        fail("Failed to split, oops")
+    }
+    
+  }
+
+  test("stratified split") {
+
+  }
   
   /*
-
-  @Test
-  public void testAddSplittingColumn() throws Exception {
-    final String[] domain = {"red", "white", "blue"}
-
-    final Vec vec1 = cvec(domain, size, new Function<Integer, String>() {
-      @Override
-      public String apply(Integer i) {
-        return domain[whichOne(i)]
-      }
-    })
-
-    final Vec vec2 = vec(size, Functions.<Integer>identity())
-    
-    Dataset sut = Dataset.onVecs(
-        new HashMap<String, Vec>() {{
-          put("RGB", vec1) put("Ausweis", vec2)
-        }})
-
-    Dataset actual = sut.addSplittingColumn("RGB", 0.01, 7688714)
-
-    assertArrayEquals(new String[]{"RGB", "Ausweis", "test_train_split"}, actual.domain())
-
-    // it is hard to test specific values
-  }
 
   @Test
   public void testStratifiedSplit() throws Exception {

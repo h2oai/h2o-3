@@ -144,4 +144,6 @@ object H2ODataset {
 
   def onVecs(map: Map[String, Vec]): H2ODataset = 
     new H2ODataset(new Frame(map.keySet.toArray, map.values.toArray))
+  
+  def onVecs(kvs: (String, Vec)*): H2ODataset = onVecs(kvs.toMap)
 }
