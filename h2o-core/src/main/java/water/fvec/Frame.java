@@ -135,6 +135,10 @@ public class Frame extends Lockable<Frame> {
     assert _names.length == vecs.length;
   }
 
+  void setNamesNoCheck(String[] columns){
+    _names = columns;
+  }
+
   public void setNames(String[] columns){
     if (_vecs != null && columns.length != _vecs.length) {
       throw new IllegalArgumentException("Number of column names=" + columns.length + " must be the number of vecs=" + _vecs.length);
@@ -885,7 +889,7 @@ public class Frame extends Lockable<Frame> {
     if( _keys != null ) delete_and_lock();
     else write_lock();
     _keys = new Vec.VectorGroup().addVecs(names.length);
-    setNames(names);
+    setNamesNoCheck(names);
     // No Vectors tho!!! These will be added *after* the import
   }
 
