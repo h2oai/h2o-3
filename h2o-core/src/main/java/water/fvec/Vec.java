@@ -1067,7 +1067,7 @@ public class Vec extends Keyed<Vec> {
     } else return chunkForRow(i).atStr_abs(bStr, i);
   }
 
-  public String stringAt(int i) {
+  public String stringAt(long i) {
     return String.valueOf(atStr(new BufferedString(), i));
   }
 

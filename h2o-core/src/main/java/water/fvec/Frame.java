@@ -139,7 +139,7 @@ public class Frame extends Lockable<Frame> {
     _names = columns;
   }
 
-  public void setNames(String[] columns){
+  public final void setNames(String[] columns){
     if (_vecs != null && columns.length != _vecs.length) {
       throw new IllegalArgumentException("Number of column names=" + columns.length + " must be the number of vecs=" + _vecs.length);
     }
