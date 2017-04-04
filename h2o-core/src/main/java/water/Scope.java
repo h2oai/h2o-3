@@ -92,6 +92,10 @@ public class Scope {
     return frames[0];
   }
 
+  public static Frame trackFrame(Frame f) {
+    return track(f);
+  }
+  
   static private void track_impl(Scope scope, Key key) {
     // key size is 0 when tracked in the past, but no scope now
     if (scope._keys.size() > 0 && key != null)

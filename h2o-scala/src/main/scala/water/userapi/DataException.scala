@@ -12,3 +12,12 @@ case class DataException(val message: String,
   def this(message: String, cause: Exception) = this(message, Some(cause))
   def this(cause: Exception) = this(cause.getMessage, cause)
 }
+
+object DataException {
+  def apply(message: String, cause: Exception): DataException = 
+    new DataException(message, Some(cause))
+  
+  def apply(cause: Exception): DataException = 
+    apply(cause.getMessage, cause)
+}
+

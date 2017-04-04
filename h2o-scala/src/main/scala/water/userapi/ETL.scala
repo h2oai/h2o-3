@@ -25,7 +25,8 @@ object ETL {
     try {
       FileUtils.checkFile(file, file.getCanonicalPath)
       val nfs = NFSFileVec.make(file)
-      Scope.track(ParseDataset.parse(Key.make(), nfs._key))
+      val parsed: Frame = ParseDataset.parse(Key.make(), nfs._key)
+      Scope.trackFrame(parsed)
     } catch {
       case ioe: IOException =>
           throw new DataException("Could not read " + file, ioe)
@@ -44,7 +45,7 @@ object ETL {
       Enums.oneHotEncoding(frame, ignore.toArray)
     } catch  {
       case ioe: IOException =>
-      throw new DataException("Failed to do oneHotEncoding", ioe)
+      throw DataException("Failed to do oneHotEncoding", ioe)
     }
   }
 

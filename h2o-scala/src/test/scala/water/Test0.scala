@@ -12,6 +12,10 @@ class Test0 extends FunSuite {
     getClass.getClassLoader.setDefaultAssertionStatus(true)
   }
   
+  def startCloud(x: Int): Unit = {
+    TestUtil.stall_till_cloudsize(x)
+  }
+  
   def willDrop[T](t:T) = water.udf.UdfTestBase.willDrop[T](t)
   
   test("just making sure that this code is accepted by gradle") {
@@ -21,7 +25,4 @@ class Test0 extends FunSuite {
   @Test def testSomething(): Unit = {
     Assert.assertTrue(true)
   }
-}
-
-object Test0 extends TestUtil {
 }

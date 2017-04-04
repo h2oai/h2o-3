@@ -1,5 +1,6 @@
 package water.userapi
 
+import language.postfixOps
 import java.io.{File, IOException}
 
 import water.fvec._
@@ -15,6 +16,7 @@ import water.{DKV, Iced, Key, Scope}
   * Created by vpatryshev on 3/26/17.
   */
 case class H2ODataset(frame: Frame) extends Iced[H2ODataset] {
+  import H2ODataset._
   
   def oneHotEncode(ignore: String*): H2ODataset = {
     try {
@@ -32,14 +34,14 @@ case class H2ODataset(frame: Frame) extends Iced[H2ODataset] {
   private def frameClone: Frame = {
     val newFrame = frame.clone
     newFrame._key = null
-    Scope.track(newFrame)
+    track(newFrame)
   }
   
   // the new vec is named (hard-coded so far) "test_train_split"
   def addSplittingColumn(colName: String, ratio: Double, seed: Long): Option[H2ODataset] = {
       for {
         vec <- vec(colName)
-        splitter = Scope.track(AstStratifiedSplit.split(vec, ratio, seed, SplittingDom))
+        splitter = track(AstStratifiedSplit.split(vec, ratio, seed, SplittingDom))
         newFrame = frameClone
         _ = newFrame.add(splitter.names(), splitter.vecs)
       } yield new H2ODataset(newFrame)
@@ -67,7 +69,7 @@ case class H2ODataset(frame: Frame) extends Iced[H2ODataset] {
       vec <- vec(colName)
       domArray <- Option(vec.domain)
       domain = domArray.toList 
-      catIndex <- domain.indexOf(what)
+      catIndex = domain.indexOf(what) if 0 <= catIndex
       selected = filter(catIndex).eval()
     } yield selected
   }
@@ -98,7 +100,7 @@ case class H2ODataset(frame: Frame) extends Iced[H2ODataset] {
         case _ => srcCol
       }
     } {
-      frame.replace(colName, Scope.track(categorical))
+      frame.replace(colName, track(categorical))
       srcCol.remove()
     }
   }
@@ -113,13 +115,16 @@ case class H2ODataset(frame: Frame) extends Iced[H2ODataset] {
       v <- Option(frame.remove(name))
     } {
       v.remove()
-      Scope.untrack(v._key)
+      untrack(v)
     }
   }
 
 }
 
 object H2ODataset {
+  def track(f: Frame) = Scope.trackFrame(f)
+  def track(v: Vec) = Scope.track(v)
+  def untrack(v: Vec) = Scope.untrack(v._key)
 
   def get(frameKey: Key[Frame]): Option[H2ODataset] =
     Option(DKV.getGet(frameKey)) map (new H2ODataset(_))
@@ -131,7 +136,8 @@ object H2ODataset {
     try {
       FileUtils.checkFile(file, file.getCanonicalPath)
       val nfs: NFSFileVec = NFSFileVec.make(file)
-      new H2ODataset(Scope.track(ParseDataset.parse(Key.make(), nfs._key)))
+      val parsed: Frame = ParseDataset.parse(Key.make(), nfs._key)
+      new H2ODataset(track(parsed))
     } catch {
       case ioe: IOException => throw DataException("Could not read " + file, Some(ioe));
     }

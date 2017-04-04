@@ -1,34 +1,28 @@
 package water.userapi
 
+import java.io.{File, FileWriter}
+
 import org.junit.BeforeClass
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
-import water.Test0
+import water.{Test0, TestUtil}
 
 import scala.language.postfixOps
-package water.userapi
-
-import org.junit.After
-import org.junit.Before
-import org.junit.BeforeClass
-import org.junit.Test
-import water.Scope
-import water.TestUtil
-import water.fvec.Frame
-import water.fvec.Vec
-
-import java.io.File
-import java.io.FileWriter
-import java.io.IOException
-import java.io.Writer
-import java.util.HashMap
 
 /**
   * Test for H2ODataset
   */
 class H2ODatasetTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
   val A_LOT: Int = 1 << 20
+  val testFile1 = new File("DatasetTest.1.tmp")
 
-  override def beforeAll: Unit = stall_till_cloudsize(1)
+  override def beforeAll: Unit = {
+    startCloud(2)
+    val fw = new FileWriter(testFile1)
+    fw.write("A\tB\tC\na1\tb1\tc1\na2\tb2\tc2\n")
+    fw.close()
+    testFile1.deleteOnExit()
+    
+  }
 
   test("IsNA") {
     assert(1 == 2)
