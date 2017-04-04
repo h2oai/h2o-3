@@ -93,6 +93,8 @@ public class h2odriver extends Configured implements Tool {
   static boolean kerberosLogin = false;
   static boolean pamLogin = false;
   static String loginConfFileName = null;
+  static boolean formAuth = false;
+  static String sessionTimeout = null;
   static String userName = System.getProperty("user.name");
 
   // Runtime state that might be touched by different threads.
@@ -867,6 +869,13 @@ public class h2odriver extends Configured implements Tool {
         i++; if (i >= args.length) { usage(); }
         loginConfFileName = args[i];
       }
+      else if (s.equals("-form_auth")) {
+        formAuth = true;
+      }
+      else if (s.equals("-session_timeout")) {
+        i++; if (i >= args.length) { usage(); }
+        sessionTimeout = args[i];
+      }
       else if (s.equals("-user_name")) {
         i++; if (i >= args.length) { usage(); }
         userName = args[i];
@@ -961,6 +970,17 @@ public class h2odriver extends Configured implements Tool {
 
     if (driverCallbackPortRange != null)
       driverCallbackPortRange.validate();
+
+    if (sessionTimeout != null) {
+      if (! formAuth) {
+        error("session timeout can only be enabled for Form-based authentication (use the '-form_auth' option)");
+      }
+      int timeout = 0;
+      try { timeout = Integer.parseInt(sessionTimeout); } catch (Exception e) { /* ignored */ }
+      if (timeout <= 0) {
+        error("invalid session timeout specification (" + sessionTimeout + ")");
+      }
+    }
   }
 
   static String calcMyIp() throws Exception {
@@ -1335,6 +1355,12 @@ public class h2odriver extends Configured implements Tool {
     }
     if (pamLogin) {
       addMapperArg(conf, "-pam_login");
+    }
+    if (formAuth) {
+      addMapperArg(conf, "-form_auth");
+    }
+    if (sessionTimeout != null) {
+      addMapperArg(conf, "-session_timeout", sessionTimeout);
     }
     addMapperArg(conf, "-user_name", userName);
 
