@@ -1450,16 +1450,79 @@ After H2O is installed and running, you are ready to use H2O in DSX! Refer to an
 Anaconda Cloud Users
 ~~~~~~~~~~~~~~~~~~~~
 
-This section describes how to set up and run H2O in an Anaconda Cloud environment.
+This section describes how to set up and run H2O in an Anaconda Cloud environment. Conda 2.7 and 3.5 repos are supported as are a number of H2O versions. Refer to `https://anaconda.org/h2oai/h2o/files <https://anaconda.org/h2oai/h2o/files>`__ to view a list of available H2O versions.
 
--  **Conda 2.7 or 3.5 repo**: Conda is not required to run H2O unless you want to run H2O on the Anaconda Cloud. This can be installed using the following command.  
+Installing H2O and Launching Jupyter Notebook
+'''''''''''''''''''''''''''''''''''''''''''''
+
+1. Open a terminal window and run the following command to install H2O on the Anaconda Cloud. 
       
-      ::
+   ::
 
-         conda install -c h2oai h2o=3.10.4.2
+     user$ conda install -c h2oai h2o=3.10.4.3
 
-   Note that the H2O version should match the version that you want to download. Go to `https://anaconda.org/h2oai/h2o/files <https://anaconda.org/h2oai/h2o/files>`__ to view a list of available H2O versions.
+   **Note**: The H2O version in the above command should match the version that you want to download. 
 
+2. Launch jupyter notebook from the Terminal window. 
 
+   ::
 
+     user$ jupyter notebook
+
+3. Create a new Python notebook by selecting the **New** button in the upper left corner. At this point, you can begin using Jupyter Notebook to run H2O Python commands. An example notebook follows.
+
+GBM Example
+'''''''''''
+
+After you successfully launch Jupyter notebook, enter the following commands to run a GBM example. 
+
+1. Import the H2O and GBM modules.
+
+  .. figure:: images/anaconda_import_module.png
+     :alt: Import H2O
+
+2. Initialize H2O.
+
+  .. figure:: images/anaconda_init.png
+     :alt: Initialize H2O
+
+3. Import the Airlines dataset. This dataset will be used to classify whether a flight will be delayed.
+
+  .. figure:: images/anaconda_import_airlines.png
+     :alt: Import dataset
+
+4. Convert columns to factors.
+
+  .. figure:: images/anaconda_convert_columns.png
+     :alt: Convert columns to factors
+
+5. Set the predictor names and the response column name.
+
+  .. figure:: images/anaconda_predictor_response.png
+     :alt: Set predictor names and response column
+
+6. Split the dataset into training and validation sets.
+
+  .. figure:: images/anaconda_split_data.png
+     :alt: Split the dataset
+
+7. Specify the number of bins that will be included in the historgram and then split. 
+
+  .. figure:: images/anaconda_nbins_cats.png
+     :alt: Try a range of nbins_cats
+
+8. Train the models.
+
+  .. figure:: images/anaconda_train_model.png
+     :alt: Train the models
+
+9. Print the AUC scores for the training data and the validation data. 
+
+  .. figure:: images/anaconda_print_auc.png
+     :alt: Print the AUC score
+
+Troubleshooting
+'''''''''''''''
+
+- If your system includes two versions of Anaconda (a global installation and a user-specific installation), be sure to use the User Anaconda. Using the Global Anaconda will result in an error when you attempt to run commands in Jupyter Notebook. You can verify the version that you are using by running ``which pip`` (Mac) or ``where pip`` (Windows). If your system shows that your environment is set up to use Global Anaconda by default, then change the PATH environment variable to use the User Anaconda. 
 
