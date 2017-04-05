@@ -52,20 +52,21 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   @Override public boolean haveMojo() { return false; }
 
   @Override protected void checkMemoryFootPrint() {
+
     HeartBeat hb = H2O.SELF._heartbeat; // todo: Add to H2O object memory information so we don't have to use heartbeat.
- //   int numCPUs= H2O.NUMCPUS;   // proper way to get number of CPUs.
-    double p = hex.util.LinearAlgebraUtils.numColsExp(_train,true);
+    //   int numCPUs= H2O.NUMCPUS;   // proper way to get number of CPUs.
+    double p = hex.util.LinearAlgebraUtils.numColsExp(_train, true);
     double r = _train.numRows();
     boolean useGramSVD = _parms._pca_method == PCAParameters.Method.GramSVD;
-    boolean usePower = _parms._pca_method==PCAParameters.Method.Power;
+    boolean usePower = _parms._pca_method == PCAParameters.Method.Power;
 
-    long mem_usage = (useGramSVD || usePower) ? (long)(hb._cpus_allowed * p*p * 8/*doubles*/ *
-                    Math.log((double)_train.lastVec().nChunks())/Math.log(2.)) : 1; //one gram per core
-    long mem_usage_w = (useGramSVD || usePower) ? (long)(hb._cpus_allowed * r*r *
-            8/*doubles*/ * Math.log((double)_train.lastVec().nChunks())/Math.log(2.)) : 1;
+    long mem_usage = (useGramSVD || usePower) ? (long) (hb._cpus_allowed * p * p * 8/*doubles*/ *
+            Math.log((double) _train.lastVec().nChunks()) / Math.log(2.)) : 1; //one gram per core
+    long mem_usage_w = (useGramSVD || usePower) ? (long) (hb._cpus_allowed * r * r *
+            8/*doubles*/ * Math.log((double) _train.lastVec().nChunks()) / Math.log(2.)) : 1;
     long max_mem = hb.get_free_mem();
 
-    if ((mem_usage > max_mem) && (mem_usage_w > max_mem))  {
+    if ((mem_usage > max_mem) && (mem_usage_w > max_mem)) {
       String msg = "Gram matrices (one per thread) won't fit in the driver node's memory ("
               + PrettyPrint.bytes(mem_usage) + " > " + PrettyPrint.bytes(max_mem)
               + ") - try reducing the number of columns and/or the number of categorical factors.";
@@ -111,7 +112,9 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     }
 
     if (_parms._pca_method != PCAParameters.Method.GLRM && expensive && error_count() == 0) {
-      checkMemoryFootPrint();
+      if (!(_train.hasNAs()) || _parms._impute_missing)  {
+        checkMemoryFootPrint();  // perform memory check here if dataset contains no NAs or if impute_missing enabled
+      }
     }
   }
 

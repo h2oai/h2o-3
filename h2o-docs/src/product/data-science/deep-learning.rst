@@ -150,10 +150,12 @@ recommended, as model performance can vary greatly.
 
 -  **categorical_encoding**: Specify one of the following encoding schemes for handling categorical features:
 
-  - ``auto``: Allow the algorithm to decide. In Deep Learning, the algorithm will perform ``one_hot_internal`` encoding if ``auto`` is specified. 
-  - ``one_hot_internal``: On the fly N+1 new cols for categorical features with N levels (default)
-  - ``binary``: No more than 32 columns per categorical feature
-  - ``eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
+  - ``auto`` or ``AUTO``: Allow the algorithm to decide. In Deep Learning, the algorithm will perform ``one_hot_internal`` encoding if ``auto`` is specified. 
+  - ``one_hot_internal`` or ``OneHotInternal``: On the fly N+1 new cols for categorical features with N levels (default)
+  - ``binary`` or ``Binary``: No more than 32 columns per categorical feature
+  - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
+  - ``label_encoder`` or ``LabelEncoder``: Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.). This is useful for keeping the number of columns small for XGBoost or DeepLearning/DeepWater, where the algorithm otherwise perform ExplicitOneHotEncoding. 
+  - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.).
 
   **Note**: This value defaults to ``one_hot_internal``. Similarly, if ``auto`` is specified, then the algorithm performs ``one_hot_internal`` encoding. 
 

@@ -3,6 +3,7 @@ package water;
 import org.eclipse.jetty.plus.jaas.JAASLoginService;
 import org.eclipse.jetty.security.*;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -11,6 +12,9 @@ import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.server.session.HashSessionIdManager;
+import org.eclipse.jetty.server.session.HashSessionManager;
+import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.server.ssl.SslSocketConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.security.Constraint;
@@ -175,7 +179,7 @@ public class JettyHTTPD {
   protected void createServer(Connector connector) throws Exception {
     _server.setConnectors(new Connector[]{connector});
 
-    if (H2O.ARGS.hash_login || H2O.ARGS.ldap_login || H2O.ARGS.kerberos_login) {
+    if (H2O.ARGS.hash_login || H2O.ARGS.ldap_login || H2O.ARGS.kerberos_login || H2O.ARGS.pam_login) {
       // REFER TO http://www.eclipse.org/jetty/documentation/9.1.4.v20140401/embedded-examples.html#embedded-secured-hello-handler
       if (H2O.ARGS.login_conf == null) {
         Log.err("Must specify -login_conf argument");
@@ -196,6 +200,11 @@ public class JettyHTTPD {
         Log.info("Configuring JAASLoginService (with Kerberos)");
         System.setProperty("java.security.auth.login.config",H2O.ARGS.login_conf);
         loginService = new JAASLoginService("krb5loginmodule");
+      }
+      else if (H2O.ARGS.pam_login) {
+        Log.info("Configuring JAASLoginService (with PAM)");
+        System.setProperty("java.security.auth.login.config",H2O.ARGS.login_conf);
+        loginService = new JAASLoginService("pamloginmodule");
       }
       else {
         throw H2O.fail();
@@ -235,12 +244,30 @@ public class JettyHTTPD {
       security.setConstraintMappings(Collections.singletonList(mapping));
 
       // Authentication / Authorization
-      security.setAuthenticator(new BasicAuthenticator());
+      Authenticator authenticator;
+      if (H2O.ARGS.form_auth) {
+        BasicAuthenticator basicAuthenticator = new BasicAuthenticator();
+        FormAuthenticator formAuthenticator = new FormAuthenticator("/login", "/loginError", false);
+        authenticator = new DelegatingAuthenticator(basicAuthenticator, formAuthenticator);
+      } else {
+        authenticator = new BasicAuthenticator();
+      }
       security.setLoginService(loginService);
+      security.setAuthenticator(authenticator);
+
+      HashSessionIdManager idManager = new HashSessionIdManager();
+      _server.setSessionIdManager(idManager);
+
+      HashSessionManager manager = new HashSessionManager();
+      if (H2O.ARGS.session_timeout > 0)
+        manager.setMaxInactiveInterval(H2O.ARGS.session_timeout * 60);
+
+      SessionHandler sessionHandler = new SessionHandler(manager);
+      sessionHandler.setHandler(security);
 
       // Pass-through to H2O if authenticated.
       registerHandlers(security);
-      _server.setHandler(security);
+      _server.setHandler(sessionHandler);
     } else {
       registerHandlers(_server);
     }
@@ -302,9 +329,10 @@ public class JettyHTTPD {
    * Hook up Jetty handlers.  Do this before start() is called.
    */
   public void registerHandlers(HandlerWrapper handlerWrapper) {
-
+    // Both security and session handlers are already created (Note: we don't want to create a new separate session
+    // handler just for ServletContextHandler - we want to have just one SessionHandler & SessionManager)
     ServletContextHandler context = new ServletContextHandler(
-        ServletContextHandler.SECURITY | ServletContextHandler.SESSIONS
+        ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS
     );
 
     if(null != H2O.ARGS.context_path && !H2O.ARGS.context_path.isEmpty()) {
@@ -320,12 +348,22 @@ public class JettyHTTPD {
     context.addServlet(DatasetServlet.class,  "/3/DownloadDataset.bin");
     context.addServlet(RequestServer.class,   "/");
 
-    HandlerCollection hc = new HandlerCollection();
-    hc.setHandlers(new Handler[]{
-        new GateHandler(),
+    // Handlers that can only be invoked for an authenticated user (if auth is enabled)
+    HandlerCollection authHandlers = new HandlerCollection();
+    authHandlers.setHandlers(new Handler[]{
         new AuthenticationHandler(),
         new ExtensionHandler1(),
         context,
+    });
+
+    // LoginHandler handles directly login requests and delegates the rest to the authHandlers
+    LoginHandler loginHandler = new LoginHandler("/login", "/loginError");
+    loginHandler.setHandler(authHandlers);
+
+    HandlerCollection hc = new HandlerCollection();
+    hc.setHandlers(new Handler[]{
+        new GateHandler(),
+        loginHandler
     });
     handlerWrapper.setHandler(hc);
   }
@@ -359,12 +397,64 @@ public class JettyHTTPD {
     }
   }
 
+  public class LoginHandler extends HandlerWrapper {
+    private String _loginTarget;
+    private String _errorTarget;
+    public LoginHandler(String loginTarget, String errorTarget) {
+      _loginTarget = loginTarget;
+      _errorTarget = errorTarget;
+    }
+    @Override
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException {
+      if (isLoginTarget(target)) {
+        if (isPageRequest(request))
+          sendLoginForm(request, response);
+        else
+          sendResponseError(response, HttpServletResponse.SC_UNAUTHORIZED, "Access denied. Please login.");
+        baseRequest.setHandled(true);
+      } else {
+        // not for us, invoke wrapped handler
+        super.handle(target, baseRequest, request, response);
+      }
+    }
+    private void sendLoginForm(HttpServletRequest request, HttpServletResponse response) {
+      String uri = JettyHTTPD.getDecodedUri(request);
+      try {
+        byte[] bytes;
+        try (InputStream resource = water.init.JarHash.getResource2("/login.html")) {
+          if (resource == null)
+            throw new IllegalStateException("Login form not found");
+          ByteArrayOutputStream baos = new ByteArrayOutputStream();
+          water.util.FileUtils.copyStream(resource, baos, 2048);
+          bytes = baos.toByteArray();
+        }
+        response.setContentType(RequestServer.MIME_HTML);
+        response.setContentLength(bytes.length);
+        setResponseStatus(response, HttpServletResponse.SC_OK);
+        OutputStream os = response.getOutputStream();
+        water.util.FileUtils.copyStream(new ByteArrayInputStream(bytes), os, 2048);
+      } catch (Exception e) {
+        sendErrorResponse(response, e, uri);
+      } finally {
+        logRequest("GET", request, response);
+      }
+    }
+    private boolean isPageRequest(HttpServletRequest request) {
+      String accept = request.getHeader("Accept");
+      return (accept != null) && accept.contains(RequestServer.MIME_HTML);
+    }
+    private boolean isLoginTarget(String target) {
+      return target.equals(_loginTarget) || target.equals(_errorTarget);
+    }
+  }
+
   public class AuthenticationHandler extends AbstractHandler {
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException {
 
-      if (!H2O.ARGS.ldap_login && !H2O.ARGS.kerberos_login) return;
+      if (!H2O.ARGS.ldap_login && !H2O.ARGS.kerberos_login && !H2O.ARGS.pam_login) return;
 
       String loginName = request.getUserPrincipal().getName();
       if (!loginName.equals(H2O.ARGS.user_name)) {

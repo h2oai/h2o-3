@@ -49,6 +49,7 @@ Upload to Anaconda
 
         $ cd conda
         $ conda build h2o
+        $ conda convert ~/path/to/osx-64/h2o-builnum.tar.bz2 -p all  (will build packages for windows and linux)
 
 
 

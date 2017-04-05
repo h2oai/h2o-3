@@ -1814,8 +1814,24 @@ class H2OFrame(object):
         if is_type(column, str): column = self.names.index(column)
         if is_type(by, str):     by = self.names.index(by)
 
-        if values is None: values = "_"
+        if values is None:
+            values = "_"
+        else:
+            assert len(values) == len(self.columns), "Length of values does not match length of columns"
+            # convert string values to categorical num values
+            values2 = []
+            for i in range(0,len(values)):
+                if self.type(i) == "enum":
+                    try:
+                        values2.append(self.levels()[i].index(values[i]))
+                    except:
+                        raise H2OValueError("Impute value of: " + values[i] + " not found in existing levels of"
+                                            " column: " + self.col_names[i])
+                else:
+                    values2.append(values[i])
+            values = values2
         if group_by_frame is None: group_by_frame = "_"
+
 
         # This code below is needed to ensure the frame (self) exists on the server. Without it, self._ex._cache.fill()
         # fails with an assertion that ._id is None.
@@ -2405,6 +2421,7 @@ class H2OFrame(object):
         """
         Pivot the frame designated by the three columns: index, column, and value. Index and column should be
         of type enum, int, or time.
+        For cases of multiple indexes for a column label, the aggregation method is to pick the first occurrence in the data frame
 
         :param index: Index is a column that will be the row label
         :param column: The labels for the columns in the pivoted Frame
@@ -2783,6 +2800,34 @@ class H2OFrame(object):
             that contained non-zero values.
         """
         return H2OFrame._expr(expr=ExprNode("which", self))
+
+    def idxmax(self,skipna=True, axis=0):
+        """
+        Get the index of the max value in a column or row
+
+        :param bool skipna: If True (default), then NAs are ignored during the search. Otherwise presence
+            of NAs renders the entire result NA.
+        :param int axis: Direction of finding the max index. If 0 (default), then the max index is searched columnwise, and the
+            result is a frame with 1 row and number of columns as in the original frame. If 1, then the max index is searched
+            rowwise and the result is a frame with 1 column, and number of rows equal to the number of rows in the original frame.
+        :returns: either a list of max index values per-column or an H2OFrame containing max index values
+                  per-row from the original frame.
+        """
+        return H2OFrame._expr(expr=ExprNode("which.max", self, skipna, axis))
+
+    def idxmin(self,skipna=True, axis=0):
+        """
+        Get the index of the min value in a column or row
+
+        :param bool skipna: If True (default), then NAs are ignored during the search. Otherwise presence
+            of NAs renders the entire result NA.
+        :param int axis: Direction of finding the min index. If 0 (default), then the min index is searched columnwise, and the
+            result is a frame with 1 row and number of columns as in the original frame. If 1, then the min index is searched
+            rowwise and the result is a frame with 1 column, and number of rows equal to the number of rows in the original frame.
+        :returns: either a list of min index values per-column or an H2OFrame containing min index values
+                  per-row from the original frame.
+        """
+        return H2OFrame._expr(expr=ExprNode("which.min", self, skipna, axis))
 
 
     def ifelse(self, yes, no):

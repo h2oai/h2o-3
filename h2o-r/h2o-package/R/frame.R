@@ -1095,10 +1095,9 @@ h2o.impute <- function(data, column=0, method=c("mean","median","mode"), # TODO:
 #' @export
 range.H2OFrame <- function(...,na.rm = TRUE) c(min(...,na.rm=na.rm), max(...,na.rm=na.rm))
 
-#' Pivot the frame designated by the three columns: index, column, and value
-#' Index is a column that will be the row label
-#' Column is a column that contains categorical levels which will each be turned into a column
-#' Value is a column associated with an index and column
+#' Pivot the frame designated by the three columns: index, column, and value. Index and column should be
+#' of type enum, int, or time.
+#' For cases of multiple indexes for a column label, the aggregation method is to pick the first occurrence in the data frame
 #'
 #' @param x an H2OFrame
 #' @param index the column where pivoted rows should be aligned on
@@ -1566,6 +1565,46 @@ h2o.which <- function(x) {
   if( !is.H2OFrame(x) ) stop("must be an H2OFrame")
   else .newExpr("which",x) + 1
 }
+
+#' Which indice contains the max value?
+#'
+#' Get the index of the max value in a column or row
+#'
+#' @param x An H2OFrame object.
+#' @param na.rm \code{logical}. Indicate whether missing values should be removed.
+#' @param axis \code{integer}. Indicate whether to calculate the mean down a column (0) or across a row (1).
+#' @return Returns an H2OFrame object.
+#' @seealso \code{\link[base]{which.max}} for the base R method.
+#' @export
+h2o.which_max <- function(x,na.rm = TRUE,axis = 0) {
+  if( !is.H2OFrame(x) ){
+    stop("must be an H2OFrame")
+  }
+  .newExpr("which.max", chk.H2OFrame(x), na.rm, axis) + 1
+}
+
+#' @rdname h2o.which_max
+#' @export
+which.max.H2OFrame <- h2o.which_max
+
+#' Which index contains the min value?
+#'
+#' Get the index of the min value in a column or row
+#'
+#' @param x An H2OFrame object.
+#' @param na.rm \code{logical}. Indicate whether missing values should be removed.
+#' @param axis \code{integer}. Indicate whether to calculate the mean down a column (0) or across a row (1).
+#' @return Returns an H2OFrame object.
+#' @seealso \code{\link[base]{which.min}} for the base R method.
+#' @export
+h2o.which_min <- function(x,na.rm = TRUE,axis = 0) {
+  if( !is.H2OFrame(x) ) stop("must be an H2OFrame")
+  else .newExpr("which.min",x,na.rm,axis) + 1
+}
+
+#' @rdname h2o.which_max
+#' @export
+which.min.H2OFrame <- h2o.which_min
 
 #' Count of NAs per column
 #'
@@ -3777,6 +3816,10 @@ apply <- function(X, MARGIN, FUN, ...) {
     if( nargs > 0 ) extra_args <- c(extra_args,tail(args,nargs))
     fcn <- if( length(extra_args)==0 ) fname
            else paste0("{ COL . (",fname," COL ",paste(extra_args,collapse=" "),")}")
+
+    if(fname == "which.max" || fname == "which.min"){
+      return(.newExpr("apply",X,MARGIN,fcn) + 1)
+    }
     return(.newExpr("apply",X,MARGIN,fcn))
   }
 

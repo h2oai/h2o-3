@@ -92,7 +92,10 @@ public class h2odriver extends Configured implements Tool {
   static boolean hashLogin = false;
   static boolean ldapLogin = false;
   static boolean kerberosLogin = false;
+  static boolean pamLogin = false;
   static String loginConfFileName = null;
+  static boolean formAuth = false;
+  static String sessionTimeout = null;
   static String userName = System.getProperty("user.name");
 
   // Runtime state that might be touched by different threads.
@@ -547,8 +550,8 @@ public class h2odriver extends Configured implements Tool {
                     "             Extra memory for internal JVM use outside of Java heap.\n" +
                     "                 mapreduce.map.memory.mb = mapperXmx * (1 + extramempercent/100)\n" +
                     "          o  -libjars with an h2o.jar is required.\n" +
-                    "          o  -driverif and -driverport/-driverportrange let the user optionally" +
-                    "             specify the network interface and port/port range (on the driver host)" +
+                    "          o  -driverif and -driverport/-driverportrange let the user optionally\n" +
+                    "             specify the network interface and port/port range (on the driver host)\n" +
                     "             for callback messages from the mapper to the driver.\n" +
                     "          o  -network allows the user to specify a list of networks that the\n" +
                     "             H2O nodes can bind to.  Use this if you have multiple network\n" +
@@ -860,9 +863,19 @@ public class h2odriver extends Configured implements Tool {
       else if (s.equals("-kerberos_login")) {
         kerberosLogin = true;
       }
+      else if (s.equals("-pam_login")) {
+        pamLogin = true;
+      }
       else if (s.equals("-login_conf")) {
         i++; if (i >= args.length) { usage(); }
         loginConfFileName = args[i];
+      }
+      else if (s.equals("-form_auth")) {
+        formAuth = true;
+      }
+      else if (s.equals("-session_timeout")) {
+        i++; if (i >= args.length) { usage(); }
+        sessionTimeout = args[i];
       }
       else if (s.equals("-user_name")) {
         i++; if (i >= args.length) { usage(); }
@@ -958,6 +971,17 @@ public class h2odriver extends Configured implements Tool {
 
     if (driverCallbackPortRange != null)
       driverCallbackPortRange.validate();
+
+    if (sessionTimeout != null) {
+      if (! formAuth) {
+        error("session timeout can only be enabled for Form-based authentication (use the '-form_auth' option)");
+      }
+      int timeout = 0;
+      try { timeout = Integer.parseInt(sessionTimeout); } catch (Exception e) { /* ignored */ }
+      if (timeout <= 0) {
+        error("invalid session timeout specification (" + sessionTimeout + ")");
+      }
+    }
   }
 
   static String calcMyIp() throws Exception {
@@ -1330,6 +1354,15 @@ public class h2odriver extends Configured implements Tool {
     if (kerberosLogin) {
       addMapperArg(conf, "-kerberos_login");
     }
+    if (pamLogin) {
+      addMapperArg(conf, "-pam_login");
+    }
+    if (formAuth) {
+      addMapperArg(conf, "-form_auth");
+    }
+    if (sessionTimeout != null) {
+      addMapperArg(conf, "-session_timeout", sessionTimeout);
+    }
     addMapperArg(conf, "-user_name", userName);
 
     for (String s : extraArguments) {
@@ -1352,6 +1385,15 @@ public class h2odriver extends Configured implements Tool {
               "};"
       );
       addMapperConf(conf, "-login_conf", "login.conf", krbConfData);
+    } else if (pamLogin) {
+      // Use default PAM configuration file
+      final byte[] pamConfData = StringUtils.bytesOf(
+              "pamloginmodule {\n" +
+                      "     de.codedo.jaas.PamLoginModule required\n" +
+                      "     service = h2o;\n" +
+                      "};"
+      );
+      addMapperConf(conf, "-login_conf", "login.conf", pamConfData);
     }
 
     // SSL

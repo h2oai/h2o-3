@@ -2,6 +2,47 @@
 
 ## H2O
 
+### Ueno (3.10.4.3) - 3/31/2017
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3281'>PUBDEV-3281</a>] -         ARFF parser parses attached file incorrectly
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4097'>PUBDEV-4097</a>] -         Proxy warning message displays proxy with username and password.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4165'>PUBDEV-4165</a>] -         h2o.import_sql_table works in R but on python gives error
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4167'>PUBDEV-4167</a>] -         java.lang.IllegalArgumentException with PCA
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4187'>PUBDEV-4187</a>] -         Impute does not handle catgoricals when values is specified
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4219'>PUBDEV-4219</a>] -         Increase number of bins in partial plots
+</li>
+</ul>
+
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4162'>PUBDEV-4162</a>] -         h2o.transform can produce incorrect aggregated sentence embeddings
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3858'>PUBDEV-3858</a>] -         Errors with PCA on wide data for pca_method = Power
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4102'>PUBDEV-4102</a>] -         Introduce mode in which failure of H2O client ensures whole H2O clouds goes down
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4178'>PUBDEV-4178</a>] -         Add support for IBM IOP 4.2
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4186'>PUBDEV-4186</a>] -         Placeholder for: [SW-334]
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4191'>PUBDEV-4191</a>] -         Remove minor version from hadoop distribution in buildinfo.json file
+</li>
+</ul>
+
 ### Ueno (3.10.4.2) - 3/18/2017
 
 <h4>        Bug

@@ -106,12 +106,11 @@ These are available in the Bluemix/Softlayer management console.
     </configuration>
 
 Google Cloud Storage Connector for Hadoop & Spark
-~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **Required Library**
 
-To access the Google Cloud Store Object Store, Google's cloud storage connector, ``gcs-connector-latest-hadoop2.jar`` is required.
-The official documentation and driver can be found here https://cloud.google.com/hadoop/google-cloud-storage-connector
+To access the Google Cloud Store Object Store, Google's cloud storage connector, ``gcs-connector-latest-hadoop2.jar`` is required. The official documentation and driver can be found `here <https://cloud.google.com/hadoop/google-cloud-storage-connector>`__.
 
 **H2O Command Line**
 
@@ -135,8 +134,7 @@ For example,
 
 **core-site.xml Configuration**
 
-core-site.xml needs to be configured for at least the following properties (class, project-id, bucketname) in the example below.
-A full list of configuration options is found here https://github.com/GoogleCloudPlatform/bigdata-interop/blob/master/gcs/conf/gcs-core-default.xml
+core-site.xml must be configured for at least the following properties (class, project-id, bucketname) as shown in the example below. A full list of configuration options is found `here <https://github.com/GoogleCloudPlatform/bigdata-interop/blob/master/gcs/conf/gcs-core-default.xml>`__. 
 
 .. code:: xml
 

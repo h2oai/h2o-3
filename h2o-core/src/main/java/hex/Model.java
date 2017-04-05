@@ -125,11 +125,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public boolean _keep_cross_validation_fold_assignment = false;
     public boolean _parallelize_cross_validation = true;
     public boolean _auto_rebalance = true;
+
+    public void setTrain(Key<Frame> train) {
+      this._train = train;
+    }
+
     public enum FoldAssignmentScheme {
       AUTO, Random, Modulo, Stratified
     }
     public enum CategoricalEncodingScheme {
-      AUTO, OneHotInternal, OneHotExplicit, Enum, Binary, Eigen
+      AUTO(false), OneHotInternal(false), OneHotExplicit(false), Enum(false), Binary(false), Eigen(false), LabelEncoder(false), SortByResponse(true);
+      CategoricalEncodingScheme(boolean needResponse) { _needResponse = needResponse; }
+      final boolean _needResponse;
+      boolean needsResponse() { return _needResponse; }
     }
     public long _seed = -1;
     public long getOrMakeRealSeed(){
@@ -371,6 +379,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** Columns used in the model and are used to match up with scoring data
      *  columns.  The last name is the response column name (if any). */
     public String _names[];
+    
+    public void setNames(String[] names) {
+      _names = names;
+    }
+    
     public String _origNames[];
 
     /** Categorical/factor mappings, per column.  Null for non-categorical cols.
@@ -411,7 +424,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       if (b.error_count() > 0)
         throw new IllegalArgumentException(b.validationErrors());
       // Capture the data "shape" the model is valid on
-      _names = b._train != null ? b._train.names() : new String[0];
+      setNames(b._train != null ? b._train.names() : new String[0]);
       _domains = b._train != null ? b._train.domains() : new String[0][];
       _origNames = b._origNames;
       _origDomains = b._origDomains;
@@ -939,8 +952,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               msgs.add("Test/Validation dataset column '" + names[i] + "' has levels not trained on: " + Arrays.toString(Arrays.copyOfRange(ds, domains[i].length, ds.length)));
             vec = evec;
           }
-        } else if( vec.isCategorical() ) {
-          throw new IllegalArgumentException("Test/Validation dataset has categorical column '" + names[i] + "' which is real-valued in the training data");
+        } else if(vec.isCategorical()) {
+          if (parms._categorical_encoding == Parameters.CategoricalEncodingScheme.LabelEncoder) {
+            Vec evec = vec.toNumericVec();
+            toDelete.put(evec._key, "label encoded vec");
+            vec = evec;
+          } else {
+            throw new IllegalArgumentException("Test/Validation dataset has categorical column '" + names[i] + "' which is real-valued in the training data");
+          }
         }
         good++;      // Assumed compatible; not checking e.g. Strings vs UUID
       }

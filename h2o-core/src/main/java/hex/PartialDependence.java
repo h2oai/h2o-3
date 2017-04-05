@@ -58,8 +58,8 @@ public class PartialDependence extends Lockable<PartialDependence> {
         }
       }
     }
-    if (_nbins < 2 || _nbins > 100) {
-      throw new IllegalArgumentException("_nbins must be in [2, 100].");
+    if (_nbins < 2) {
+      throw new IllegalArgumentException("_nbins must be >=2.");
     }
     final Frame fr = _frame_id.get();
     for (int i = 0; i < _cols.length; ++i) {

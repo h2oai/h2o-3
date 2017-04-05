@@ -11,49 +11,48 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 
 import deepwater.backends.BackendModel;
 import hex.genmodel.algos.deepwater.caffe.nano.Deepwater;
 import hex.genmodel.algos.deepwater.caffe.nano.Deepwater.Cmd;
 
 public class DeepwaterCaffeModel implements BackendModel {
-  private int _batch_size;
-  private int[] _sizes;                    // neurons per layer
-  private String[] _types;                 // layer types
-  private double[] _dropout_ratios;
-  private float _learning_rate;
-  private float _momentum;
+  private int[] _input_shape = new int[0];
+  private int[] _sizes = new int[0];        // neurons per layer
+  private String[] _types = new String[0];  // layer types
+  private double[] _dropout_ratios = new double[0];
   private long _seed;
   private boolean _useGPU;
-  private boolean _useDocker = true;
+  private boolean _useDocker = false;
+  private String _graph = "";
 
   private Process _process;
   private static final ThreadLocal<ByteBuffer> _buffer = new ThreadLocal<>();
 
-  public DeepwaterCaffeModel(int batch_size, int[] sizes, String[] types, double[] dropout_ratios, long seed, boolean useGPU) {
-    _batch_size = batch_size;
+  public DeepwaterCaffeModel(int batch_size, int[] sizes,
+                             String[] types, double[] dropout_ratios,
+                             long seed, boolean useGPU) {
+    _input_shape = new int[] {batch_size, 1, 1, sizes[0]};
     _sizes = sizes;
     _types = types;
     _dropout_ratios = dropout_ratios;
     _seed = seed;
     _useGPU = useGPU;
+
+    start();
   }
 
-  public void learning_rate(float val) {
-    if (_process != null)
-      throw new RuntimeException("Already started");
-    _learning_rate = val;
+  public DeepwaterCaffeModel(String graph, int[] input_shape, long seed, boolean useGPU) {
+    _graph = graph;
+    _input_shape = input_shape;
+    _seed = seed;
+    _useGPU = useGPU;
+
+    start();
   }
 
-  public void momentum(float val) {
-    if (_process != null)
-      throw new RuntimeException("Already started");
-    _momentum = val;
-  }
-
-  //
-
-  private void checkStarted() {
+  private void start() {
     if (_process == null) {
       if (_useDocker) {
         boolean ok = false;
@@ -80,26 +79,21 @@ public class DeepwaterCaffeModel implements BackendModel {
 
       Cmd cmd = new Cmd();
       cmd.type = Deepwater.Create;
-      // proto.graph = _graph;  // TODO
-      cmd.batchSize = _batch_size;
-      cmd.solverType = "SGD";
+      cmd.graph = _graph;
+      cmd.inputShape = _input_shape;
+      cmd.solverType = "Adam";
       cmd.sizes = _sizes;
       cmd.types = _types;
       cmd.dropoutRatios = _dropout_ratios;
-      cmd.learningRate = _learning_rate;
-      cmd.momentum = _momentum;
+      cmd.learningRate = .01f;
+      cmd.momentum = .99f;
       cmd.randomSeed = _seed;
       cmd.useGpu = _useGPU;
       call(cmd);
     }
   }
 
-  public void start() {
-    checkStarted();
-  }
-
   public void saveModel(String model_path) {
-    checkStarted();
     Cmd cmd = new Cmd();
     cmd.type = Deepwater.SaveGraph;
     cmd.path = model_path;
@@ -107,7 +101,6 @@ public class DeepwaterCaffeModel implements BackendModel {
   }
 
   public void saveParam(String param_path) {
-    checkStarted();
     Cmd cmd = new Cmd();
     cmd.type = Deepwater.Save;
     cmd.path = param_path;
@@ -115,14 +108,13 @@ public class DeepwaterCaffeModel implements BackendModel {
   }
 
   public void loadParam(String param_path) {
-    checkStarted();
     Cmd cmd = new Cmd();
     cmd.type = Deepwater.Load;
     cmd.path = param_path;
     call(cmd);
   }
 
-  static void copy(float[] data, byte[] buff) {
+  private static void copy(float[] data, byte[] buff) {
     if (data.length * 4 != buff.length)
       throw new RuntimeException();
     ByteBuffer buffer = _buffer.get();
@@ -135,7 +127,7 @@ public class DeepwaterCaffeModel implements BackendModel {
     buffer.get(buff);
   }
 
-  static void copy(float[][] buffs, Cmd cmd) {
+  private static void copy(float[][] buffs, Cmd cmd) {
     cmd.data = new byte[buffs.length][];
     for (int i = 0; i < buffs.length; i++) {
       cmd.data[i] = new byte[buffs[i].length * 4];
@@ -144,12 +136,13 @@ public class DeepwaterCaffeModel implements BackendModel {
   }
 
   public void train(float[] data, float[] label) {
-    checkStarted();
     Cmd cmd = new Cmd();
     cmd.type = Deepwater.Train;
-    if (data.length != _batch_size * _sizes[0])
+    cmd.inputShape = _input_shape;
+    int len = _input_shape[0] * _input_shape[1] * _input_shape[2] * _input_shape[3];
+    if (data.length != len)
       throw new RuntimeException();
-    if (label.length != _batch_size)
+    if (label.length != _input_shape[0])
       throw new RuntimeException();
     float[][] buffs = new float[][] {data, label};
     copy(buffs, cmd);
@@ -157,11 +150,12 @@ public class DeepwaterCaffeModel implements BackendModel {
   }
 
   public float[] predict(float[] data) {
-    checkStarted();
     Cmd cmd = new Cmd();
     cmd.type = Deepwater.Predict;
-    if (data.length != _batch_size * _sizes[0])
-      throw new RuntimeException();
+    cmd.inputShape = _input_shape;
+//    int len = _input_shape[0] * _input_shape[1] * _input_shape[2] * _input_shape[3];
+//    if (data.length != len)
+//      throw new RuntimeException(data.length + " vs " + len);
     float[][] buffs = new float[][] {data};
     copy(buffs, cmd);
     cmd = call(cmd);
@@ -173,6 +167,7 @@ public class DeepwaterCaffeModel implements BackendModel {
     buffer.clear();
     buffer.put(cmd.data[0]);
     float[] res = new float[cmd.data[0].length / 4];
+    buffer.flip();
     buffer.asFloatBuffer().get(res);
     return res;
   }
@@ -214,7 +209,7 @@ public class DeepwaterCaffeModel implements BackendModel {
     String tmp = System.getProperty("java.io.tmpdir");
     opts += " -v " + tmp + ":" + tmp;
     s = gpu ? "nvidia-docker" : "docker";
-    s += " run " + opts + " " + image + " python /h2o-docker/caffe/backend.py";
+    s += " run " + opts + " " + image + " python3 /h2o-docker/caffe/backend.py";
     pb = new ProcessBuilder(s.split(" "));
     pb.redirectError(ProcessBuilder.Redirect.INHERIT);
     _process = pb.start();
@@ -224,8 +219,8 @@ public class DeepwaterCaffeModel implements BackendModel {
   private void startRegular() throws IOException {
     String home = System.getProperty("user.home");
     String pwd = home + "/h2o-docker/caffe";
-    ProcessBuilder pb = new ProcessBuilder("python backend.py".split(" "));
-    pb.environment().put("PYTHONPATH", home + "/caffe/python");
+    ProcessBuilder pb = new ProcessBuilder("python3 backend.py".split(" "));
+    pb.environment().put("PYTHONPATH", home + "/caffe/python:" + home + "/protobuf/python");
     pb.redirectError(ProcessBuilder.Redirect.INHERIT);
     pb.directory(new File(pwd));
     _process = pb.start();

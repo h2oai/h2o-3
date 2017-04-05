@@ -284,6 +284,10 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
    *
    *  @return String value or null if missing. */
   public final BufferedString atStr(BufferedString bStr, int i) { return _chk2 == null ? atStr_impl(bStr, i) : _chk2.atStr_impl(bStr, i); }
+  
+  public String stringAt(int i) {
+    return atStr(new BufferedString(), i).toString();
+  }
 
 
   /** Write a {@code long} using absolute row numbers.  There is no way to

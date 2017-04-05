@@ -272,7 +272,7 @@ public class GLMTest  extends TestUtil {
       glm.trainModel().get();
       assertFalse("should've thrown IAE", true);
     } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("No rows left in the dataset"));
+      assertTrue(e.getMessage(), e.getMessage().contains("No rows left in the dataset"));
     } finally {
       fr.delete();
     }

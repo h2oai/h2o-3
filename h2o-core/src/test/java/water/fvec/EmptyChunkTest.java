@@ -33,7 +33,7 @@ public class EmptyChunkTest extends TestUtil {
    */
   @Test
   public void testEmptyChunk1() {
-    String fname = "test1.hex";
+    String fname = "EmptyChunkTest1.hex";
     long[] chunkLayout = ar(0L, 0L, 0L, 2L);
     testScenario(fname, chunkLayout);
   }
