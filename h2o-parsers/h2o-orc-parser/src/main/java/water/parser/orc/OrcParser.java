@@ -271,19 +271,28 @@ public class OrcParser extends Parser {
   private void writeStringcolumn(BytesColumnVector col, int cIdx, int rowNumber, ParseWriter dout) {
     BufferedString bs = new BufferedString();
     if(col.isRepeating) {
+      assert col.length[0] >= 0 : getClass().getSimpleName() + ".writeStringcolumn/1: col.length[0]=" + col.length[0] + ", col.start[0]=" + col.start[0];
       dout.addStrCol(cIdx, bs.set(col.vector[0], col.start[0], col.length[0]));
       for (int rowIndex = 1; rowIndex < rowNumber; ++rowIndex)
         dout.addStrCol(cIdx, bs);
-    } else if(col.noNulls){
-      for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++)
-        dout.addStrCol(cIdx, bs.set(col.vector[rowIndex], col.start[rowIndex], col.length[rowIndex]));
+    } else if (col.noNulls) {
+
+      for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++) {
+        int l = col.length[rowIndex];
+        assert l >= 0 : getClass().getSimpleName() + ".writeStringcolumn/2: col.col.length[rowIndex]=" + l + ", rowIndex=" + rowIndex;
+        dout.addStrCol(cIdx, bs.set(col.vector[rowIndex], col.start[rowIndex], l));
+      }
+
     } else {
       boolean [] isNull = col.isNull;
       for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++) {
         if (isNull[rowIndex])
           dout.addInvalidCol(cIdx);
-        else
+        else {
+          int l = col.length[rowIndex];
+          assert l >= 0 : getClass().getSimpleName() + ".writeStringcolumn/3: col.col.length[rowIndex]=" + l + ", rowIndex=" + rowIndex;
           dout.addStrCol(cIdx, bs.set(col.vector[rowIndex], col.start[rowIndex], col.length[rowIndex]));
+        }
       }
     }
   }
