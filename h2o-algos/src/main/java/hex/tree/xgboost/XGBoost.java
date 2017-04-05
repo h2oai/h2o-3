@@ -1,22 +1,18 @@
 package hex.tree.xgboost;
 
-import hex.DataInfo;
-import hex.ModelBuilder;
-import hex.ModelCategory;
-import hex.ScoreKeeper;
+import hex.*;
 import hex.glm.GLMTask;
-import ml.dmlc.xgboost4j.java.Booster;
+import ml.dmlc.xgboost4j.java.*;
 import ml.dmlc.xgboost4j.java.DMatrix;
-import ml.dmlc.xgboost4j.java.XGBoostError;
-import water.H2O;
-import water.Job;
-import water.Key;
+import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.IcedHashMapGeneric;
 import water.util.Log;
 import water.util.Timer;
 
@@ -24,10 +20,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 import static hex.tree.SharedTree.createModelSummaryTable;
 import static hex.tree.SharedTree.createScoringHistoryTable;
@@ -361,9 +354,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       }
     }
 
-    if (H2O.CLOUD.size()>1) {
-      throw new IllegalArgumentException("XGBoost is currently only supported in single-node mode.");
-    }
     if ( _parms._backend == XGBoostModel.XGBoostParameters.Backend.gpu && !hasGPU()) {
       error("_backend", "GPU backend is not functional. Check CUDA_PATH and/or GPU installation.");
     }
@@ -449,6 +439,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
   // ----------------------
   private class XGBoostDriver extends Driver {
+
     @Override
     public void computeImpl() {
       init(true); //this can change the seed if it was set to -1
@@ -488,32 +479,31 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       }
 
       try {
+        // Prepare Rabit
+        RabitTracker rt = new RabitTracker(H2O.getCloudSize());
+        rt.start(0); // Make this settable?
+
+        model.model_info()._booster = new XGBoostTask(
+                model.model_info(),
+                _job,
+                featureMap,
+                model._output,
+                rt.getWorkerEnvs(),
+                _parms
+        ).doAll(train()).booster();
+
+        rt.waitFor(0);
+
         DMatrix trainMat = convertFrametoDMatrix( model.model_info()._dataInfoKey, _train,
-            _parms._response_column, _parms._weights_column, _parms._fold_column, featureMap, model._output._sparse);
+                _parms._response_column, _parms._weights_column, _parms._fold_column, featureMap, model._output._sparse);
 
         DMatrix validMat = _valid != null ? convertFrametoDMatrix(model.model_info()._dataInfoKey, _valid,
-            _parms._response_column, _parms._weights_column, _parms._fold_column, featureMap, model._output._sparse) : null;
+                _parms._response_column, _parms._weights_column, _parms._fold_column, featureMap, model._output._sparse) : null;
 
-        // For feature importances - write out column info
-        OutputStream os;
-        try {
-          os = new FileOutputStream("/tmp/featureMap.txt");
-          os.write(featureMap[0].getBytes());
-          os.close();
-        } catch (FileNotFoundException e) {
-          e.printStackTrace();
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
 
-        HashMap<String, DMatrix> watches = new HashMap<>();
-        if (validMat!=null)
-          watches.put("valid", validMat);
-        else
-          watches.put("train", trainMat);
-
-        // create the backend
-        model.model_info()._booster = ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, model.createParams(), 0, watches, null, null);
+        Map<String, String> rabitEnv = new HashMap<>();
+        rabitEnv.put("XGBOOST_TASK_ID", Thread.currentThread().getName());
+        Rabit.init(rabitEnv);
 
         // train the model
         scoreAndBuildTrees(model, trainMat, validMat);
@@ -521,11 +511,15 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         // final scoring
         doScoring(model, model.model_info()._booster, trainMat, validMat, true);
 
+        Rabit.shutdown();
+
         // save the model to DKV
         model.model_info().nativeToJava();
       } catch (XGBoostError xgBoostError) {
         xgBoostError.printStackTrace();
       }
+
+
       model._output._boosterBytes = model.model_info()._boosterBytes;
       model.unlock(_job);
     }
@@ -644,4 +638,5 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
     return count;
   }
+
 }
