@@ -121,6 +121,44 @@ class H2OCluster(object):
         return self._props["internal_security_enabled"]
 
 
+    def node_info(self,node_idx):
+        """
+        Get information about a particular node in an H2O cluster (node index is 0 based)
+
+        Information includes the following:
+
+        nthreads: Number of threads
+        pid: PID of current H2O process
+        mem_value_size: Data on Node memory
+        max_disk: Max disk
+        free_disk: Free disk
+        open_fds: Open File Descripters
+        swap_mem: Size of data on node's disk
+        tcps_active: Open TCP connections
+        num_cpus: Number of cpus
+        cpus_allowed: CPU's allowed
+        gflops: Linpack GFlops
+        fjthrds: F/J Thread count, by priority
+        mem_bw: Memory bandwith
+        fjqueue: F/J Task count, by priority
+        my_cpu_pct: System CPU percentage used by this H2O process in last interval
+        pojo_mem: Temp (non Data) memory
+        num_keys: Number of local keys
+        ip_port: IP address and port in the form a.b.c.d:e
+        last_ping: Time (in msec) of last ping
+        rpcs_active: Active Remote Procedure Calls
+        max_mem: Maximum memory size for node
+        healthy: (now-last_ping)<HeartbeatThread.TIMEOUT
+        sys_load: System load; average #runnables/#cores
+        sys_cpu_pct: System CPU percentage used by everything in last interval
+        free_mem: Free heap
+        h2o: IP
+
+        :param node_idx: An int value indicating which node to extract information from
+        :returns: Dictionary containing node info
+        """
+        return self.nodes[node_idx]
+
     def shutdown(self, prompt=False):
         """
         Shut down the server.
