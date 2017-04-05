@@ -7,19 +7,9 @@
 Overview
 ========
 
-Welcome to the H2O documentation site! Depending on your area of
-interest, select a learning path from the sidebar, or look at the full
-content outline below.
+Welcome to the H2O documentation site! Depending on your area of interest, select a learning path from the sidebar, or look at the full content outline below.
 
-We're glad you're interested in learning more about H2O.  If you have
-questions or ideas to share, please post them to the open source community
-forum, `h2ostream <https://groups.google.com/forum/#!forum/h2ostream>`__.
-
-**Note**: To join our Google group on h2ostream, you need a Google
-account (such as Gmail or Google+). On the h2ostream page, click the
-**Join group** button, then click the **New Topic** button to post a new
-message. You don't need to request or leave a message to join - you
-should be added to the group automatically.
+We're glad you're interested in learning more about H2O. If you have questions or ideas to share, please post them to the `H2O community site on Stack Overflow <http://stackoverflow.com/questions/tagged/h2o>`__.
 
 .. toctree::
    :maxdepth: 2
@@ -40,22 +30,17 @@ should be added to the group automatically.
    :maxdepth: 2
    
    starting-h2o
-   aws
-   azure
-   ibm-dsx
-   hadoop
-   docker
+
+.. toctree::
+   :maxdepth: 2
+
+   getting-data-into-h2o
 
 .. toctree::
    :maxdepth: 2
 
    data-munging
 
-.. toctree::
-   :maxdepth: 2
-
-   flow
- 
 .. toctree::
    :maxdepth: 2
 
@@ -76,20 +61,21 @@ should be added to the group automatically.
 
    save-and-load-model
 
-.. toctree::
-   :maxdepth: 2
-
-   pojo-quick-start
-   
-.. toctree::
-   :maxdepth: 2
-
-   logs
 
 .. toctree::
    :maxdepth: 2
 
    productionizing
+
+.. toctree::
+   :maxdepth: 2
+
+   flow
+
+.. toctree::
+   :maxdepth: 2
+
+   logs
 
 .. toctree::
    :maxdepth: 2
@@ -101,11 +87,6 @@ should be added to the group automatically.
 
    security
 
-.. toctree::
-   :maxdepth: 2
-
-   data-sources
-   
 .. toctree::
    :maxdepth: 1
 
