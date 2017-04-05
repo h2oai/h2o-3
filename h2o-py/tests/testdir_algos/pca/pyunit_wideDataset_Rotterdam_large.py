@@ -24,16 +24,40 @@ def pca_wideDataset_rotterdam():
     transform_types = ["NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"]
     transformN = transform_types[randint(0, len(transform_types)-1)]
     print("transform used on dataset is {0}.\n".format(transformN))
-
-    gramSVD = H2OPCA(k=8, impute_missing=True, transform=transformN, seed=12345)
-    gramSVD.train(x=x, training_frame=rotterdamH2O)
-
-    buildModel = [False, False]
+    buildModel = [False, False, False]
     buildModel[randint(0, len(buildModel)-1)] = True
 
     expNum = 0
-
     if (buildModel[expNum]):
+        # special test with GLRM.  Need use_all_levels to be true
+        print("------  Testing GLRM PCA --------")
+        gramSVD = H2OPCA(k=8, impute_missing=True, transform=transformN, seed=12345, use_all_factor_levels=True)
+        gramSVD.train(x=x, training_frame=rotterdamH2O)
+        glrmPCA = H2OPCA(k=8, impute_missing=True, transform=transformN, pca_method="GLRM", seed=12345,
+                         use_all_factor_levels=True)  # GLRM
+        glrmPCA.train(x=x, training_frame=rotterdamH2O)
+
+        # compare singular values and stuff with GramSVD
+        print("@@@@@@  Comparing eigenvectors between GramSVD and GLRM...\n")
+        print("@@@@@@  Comparing eigenvalues between GramSVD and GLRM...\n")
+        pyunit_utils.assert_H2OTwoDimTable_equal(gramSVD._model_json["output"]["importance"],
+                                                 glrmPCA._model_json["output"]["importance"],
+                                                 ["Standard deviation", "Cumulative Proportion", "Cumulative Proportion"],
+                                                 tolerance=1, check_all=False)
+
+        # compare singular vectors
+        pyunit_utils.assert_H2OTwoDimTable_equal(gramSVD._model_json["output"]["eigenvectors"],
+                                                 glrmPCA._model_json["output"]["eigenvectors"],
+                                                 glrmPCA._model_json["output"]["names"], tolerance=1e-6,
+                                                 check_sign=True, check_all=False)
+        h2o.remove(gramSVD)
+        h2o.remove(glrmPCA)
+
+    expNum=expNum+1
+    if (buildModel[expNum]):
+        print("------  Testing Power PCA --------")
+        gramSVD = H2OPCA(k=8, impute_missing=True, transform=transformN, seed=12345)
+        gramSVD.train(x=x, training_frame=rotterdamH2O)
         powerPCA = H2OPCA(k=8, impute_missing=True, transform=transformN, pca_method="Power", seed=12345)  # power
         powerPCA.train(x=x, training_frame=rotterdamH2O)
         # compare singular values and stuff with GramSVD
@@ -51,8 +75,10 @@ def pca_wideDataset_rotterdam():
                                              check_all=False)
 
     expNum=expNum+1
-
     if (buildModel[expNum]):
+        print("------  Testing Randomized PCA --------")
+        gramSVD = H2OPCA(k=8, impute_missing=True, transform=transformN, seed=12345)
+        gramSVD.train(x=x, training_frame=rotterdamH2O)
         randomizedPCA = H2OPCA(k=8, impute_missing=True, transform=transformN, pca_method="Randomized", seed=12345)  # power
         randomizedPCA.train(x=x, training_frame=rotterdamH2O)
 
@@ -70,6 +96,7 @@ def pca_wideDataset_rotterdam():
                                                  randomizedPCA._model_json["output"]["names"], tolerance=1e-6,
                                                  check_sign=True, check_all=False)
     h2o.remove_all()
+
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(pca_wideDataset_rotterdam)
