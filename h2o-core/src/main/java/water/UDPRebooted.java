@@ -42,13 +42,15 @@ public class UDPRebooted extends UDP {
     final int _timeout;
     final transient boolean [] _confirmations;
     final int _nodeId;
+    final int _exitCode;
 
-    public ShutdownTsk(H2ONode killer, int nodeId, int timeout, boolean [] confirmations){
+    public ShutdownTsk(H2ONode killer, int nodeId, int timeout, boolean [] confirmations, int exitCode){
       super(H2O.GUI_PRIORITY);
       _nodeId = nodeId;
       _killer = killer;
       _timeout = timeout;
       _confirmations = confirmations;
+      _exitCode = exitCode;
     }
     transient boolean _didShutDown;
     private synchronized void doShutdown(int exitCode, String msg){
@@ -64,7 +66,7 @@ public class UDPRebooted extends UDP {
       new Thread(){
         @Override public void run(){
           try {Thread.sleep(_timeout);} catch (InterruptedException e) {}
-          doShutdown(0,"Orderly shutdown may not have been acknowledged to " + _killer + " (no ackack), still exiting with exit code 0.");
+          doShutdown(_exitCode,"Orderly shutdown may not have been acknowledged to " + _killer + " (no ackack), exiting with exit code " + _exitCode + ".");
         }
       }.start();
       tryComplete();
@@ -73,7 +75,7 @@ public class UDPRebooted extends UDP {
       _confirmations[_nodeId] = true;
     }
     @Override public void onAckAck(){
-      doShutdown(0,"Orderly shutdown acknowledged to " + _killer + ", exiting with exit code 0.");
+      doShutdown(_exitCode,"Orderly shutdown acknowledged to " + _killer + ", exiting with exit code " + _exitCode + ".");
     }
 
   }

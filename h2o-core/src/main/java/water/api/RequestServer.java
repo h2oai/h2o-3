@@ -332,7 +332,7 @@ public class RequestServer extends HttpServlet {
             }
             for(H2ONode n:H2O.CLOUD._memary) {
               if(n != H2O.SELF)
-                new RPC<>(n, new UDPRebooted.ShutdownTsk(H2O.SELF,n.index(), 1000, confirmations)).call();
+                new RPC<>(n, new UDPRebooted.ShutdownTsk(H2O.SELF,n.index(), 1000, confirmations, 0)).call();
             }
             try { Thread.sleep(2000); }
             catch (Exception ignore) {}
