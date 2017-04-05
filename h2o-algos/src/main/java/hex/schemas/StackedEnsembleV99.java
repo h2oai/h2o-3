@@ -14,6 +14,7 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
     static public String[] fields = new String[]{
       "model_id",
       "training_frame",
+      "response_column",
       "validation_frame",
       "base_models",
       "selection_strategy",
