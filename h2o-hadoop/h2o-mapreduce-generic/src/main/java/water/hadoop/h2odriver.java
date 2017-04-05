@@ -1572,7 +1572,8 @@ public class h2odriver extends Configured implements Tool {
               "-client",
               "-flatfile", flatfile.getAbsolutePath(),
               "-md5skip",
-              "-user_name", userName
+              "-user_name", userName,
+              "-name", jobtrackerName
       };
       if (securityConf != null)
         generatedClientArgs = ArrayUtils.append(generatedClientArgs, new String[]{"-internal_security_conf", securityConf});
