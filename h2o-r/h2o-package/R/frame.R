@@ -3151,11 +3151,7 @@ as.h2o.Matrix <- function(x, destination_frame="", ...) {
   
   if( destination_frame=="")
     destination_frame <- deparse(substitute(x))
-  
-  sparse <- .h2o.is.sparse.matrix(x)
-  if(!sparse)
-    return(as.h2o.default(x, destination_frame=destination_frame, ...))
-  
+
   destination_frame <- destination_frame.guess(destination_frame) # filter out invalid i.e. "abc::fun()"
   .key.validate(destination_frame)
   if ( destination_frame=="" ) # .h2o.readSVMLight wont handle ""
@@ -3168,16 +3164,15 @@ as.h2o.Matrix <- function(x, destination_frame="", ...) {
   h2f
 }
 
-.h2o.is.sparse.matrix <- function(x) (attr(class(x), "package") == "Matrix") && inherits(x, "Matrix")
-
 .h2o.write.matrix.svmlight <- function(matrix, file) {
   on.exit(sink())
   sink(file)
-  apply(matrix, 1, function(r) {
+  sapply(1:nrow(matrix), function(i) {
+    r <- matrix[i, ]
     val.indices <- which(r != 0)
     val.indices <- val.indices[val.indices > 1]
     target <- r[1]
-    features <- paste(val.indices - 1, r[val.indices], collapse = " ", sep = ":")
+    features <- paste(sprintf("%d", val.indices - 1), r[val.indices], collapse = " ", sep = ":")
     line <- sprintf("%s %s\n", target, features)
     cat(line)
   })
