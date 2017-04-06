@@ -1,4 +1,4 @@
-package hex.pca;
+/*package hex.pca;
 
 import hex.DataInfo;
 import org.openjdk.jmh.annotations.*;
@@ -19,11 +19,11 @@ import static hex.pca.PCAModel.PCAParameters.Method.GramSVD;
 import static water.TestUtil.parse_test_file;
 import static water.TestUtil.stall_till_cloudsize;
 
-/**
+*//**
  * PCA benchmark
  * Note: Include necessary CSV files to h2o-3/h2o-algos/src/jmh/resources
  * TODO: create benchmarks from the remaining tests in {@link hex.pca.PCATest} and {@link hex.pca.PCAWideDataSetsTests}
- */
+ *//*
 @State(Scope.Benchmark)
 @Warmup(iterations = 0)
 @Measurement(iterations = 1)
@@ -90,9 +90,9 @@ public class PCABenchSuite {
     pcaWideDataSetsBench.tearDown();
   }
 
-  /**
+  *//**
    * interface for benchmarks of machine learning algorithms
-   */
+   *//*
   interface MLBench {
 
     void setup();
@@ -105,9 +105,9 @@ public class PCABenchSuite {
 
   }
 
-  /**
+  *//**
    * micro-benchmark based on hex.pca.PCATest.testImputeMissing()
-   */
+   *//*
   public class PCAImputeMissingBench implements MLBench {
 
     private PCAParameters paramsImputeMissing;
@@ -173,13 +173,13 @@ public class PCABenchSuite {
 
   }
 
-  /**
+  *//**
    * micro-benchmark based on hex.pca.PCAWideDataSetsTest
    *
    * This benchmark will measure the PCA method GramSVD with wide datasets.  It will first build a model
    * using GramSVD under normal setting (_wideDataset is set to false).  Next, it builds a GramSVD model with
    * _wideDataSet set to true.
-   */
+   *//*
   public class PCAWideDataSetsBench implements MLBench {
     private static final int numberOfModels = 6;
     private Frame trainingFrame = null;
@@ -209,7 +209,7 @@ public class PCABenchSuite {
           DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.DEMEAN, DataInfo.TransformType.DESCALE};
       Random _rand = new Random();
 
-      /*
+      *//*
        *  Six cases are measured:
        * case 1. we test with a small dataset with all numerical data columns and make sure it works.
        * case 2. we add NA rows to the	small dataset with all numerical data columns.
@@ -217,7 +217,7 @@ public class PCABenchSuite {
        * case 4. test with the same small dataset with categorical columns and add NA rows;
        * case 5. test with prostate dataset;
        * case 6. test with prostate dataset with NA rows added.
-       */
+       *//*
       switch (dataSetCase) {
         case 1:
           pca = preparePCAModel(_smallDataSet, false, true,
@@ -310,4 +310,4 @@ public class PCABenchSuite {
     }
 
   }
-}
+}*/
