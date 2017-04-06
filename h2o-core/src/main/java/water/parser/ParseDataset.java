@@ -527,6 +527,7 @@ public final class ParseDataset {
                   for (int j = 0; j < tDomLen; j++)
                     mergedDom[mbi++] = thisDom[tbi++];
                   tDomLen = UnsafeUtils.get4(thisDom, tbi);
+                  assert tDomLen >= 0 : getClass().getName() + ".reduce/1: tDomLen=" + tDomLen + ", tbi=" + tbi + "; fi=" + fi + "/" + _catColIdxs.length + "packed size=" + thisDom.length + ", tlen=" + tLen;
                   tbi += 4;
                   tCat.set(thisDom, tbi, tDomLen);
                   ti++;
@@ -534,6 +535,7 @@ public final class ParseDataset {
                     obi += oDomLen;
                     oDomLen = UnsafeUtils.get4(otherDom, obi);
                     obi += 4;
+                    assert oDomLen >= 0 : getClass().getName() + ".reduce/2: oDomLen=" + oDomLen + ", obi=" + obi;
                     oCat.set(otherDom, obi, oDomLen);
                     oi++;
                   }
@@ -544,6 +546,7 @@ public final class ParseDataset {
                     mergedDom[mbi++] = otherDom[obi++];
                   oDomLen = UnsafeUtils.get4(otherDom, obi);
                   obi += 4;
+                  assert oDomLen >= 0 : getClass().getName() + ".reduce/3: oDomLen=" + oDomLen + ", obi=" + obi;
                   oCat.set(otherDom, obi, oDomLen);
                   oi++;
                 }
