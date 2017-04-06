@@ -7,9 +7,14 @@ test.h2o.impute<- function() {
   fr <- as.h2o(iris)
   h2o.insertMissingValues(fr)
 
+  cat("Frame before imputation:\n")
+  print(fr)
+
   # impute all columns
-  res <- h2o.impute(fr)
-  print(res)
+  res <- h2o.impute(fr,values = c(1.2,2.2,1.3,0.2,"setosa"))
+
+  cat("Frame after imputation:\n")
+  print(fr)
 
   fr <- as.h2o(iris)
   h2o.insertMissingValues(fr)
@@ -23,7 +28,7 @@ test.h2o.impute<- function() {
 
 
   # impute the rest of the frame with the values from the original imputation
-  h2o.impute(fr, values=res)
+  h2o.impute(fr, values = c(1.2,2.2,1.3,0.2,"setosa"))
 }
 
 doTest("Test h2o.impute", test.h2o.impute)

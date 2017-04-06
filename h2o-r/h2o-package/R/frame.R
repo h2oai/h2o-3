@@ -1042,10 +1042,25 @@ h2o.impute <- function(data, column=0, method=c("mean","median","mode"), # TODO:
 
   # this AST: (h2o.impute %fr #colidx method combine_method inplace max_gap by)
   chk.H2OFrame(data)
-  if( !is.null(groupByFrame) ) chk.H2OFrame(groupByFrame)
+  if (!is.null(groupByFrame)) chk.H2OFrame(groupByFrame)
   else groupByFrame <- "_"  # NULL value for rapids backend
 
-  if( is.null(values) ) values <- "_"  # TODO: exposes categorical-int mapping! Fix this with an object that hides mapping...
+  if (is.null(values)) {
+    values <- "_"  # TODO: exposes categorical-int mapping! Fix this with an object that hides mapping...
+  } else {
+    if (length(values) != ncol(data)) {
+      stop("Length of values does not match length of columns")
+    } else {
+      values2 <- c()
+      for (i in 1:length(values)) {
+        if (is.factor(data[i]) && !(values[i] %in% h2o.levels(data[i]))) {
+          stop(paste0("Impute value of: ",values[i]," not found in existing levels of column: ",colnames(data[i])))
+        }
+        values2[i] <- values[i]
+      }
+      values <- values2
+    }
+  }
 
   # sanity check `column` then convert to 0-based index.
   if( length(column) > 1L ) stop("`column` must be a single column.")
