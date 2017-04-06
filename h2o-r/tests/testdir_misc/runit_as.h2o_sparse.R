@@ -22,6 +22,7 @@ test.as.h2o.sparse <- function() {
     j <- c(2, 9, 6:10, 46343)
     x <- pi * (1:8)
     m.large <- Matrix::sparseMatrix(i, j, x = x)
+    expect_error(as.matrix(m.large), "Cholmod error 'problem too large'")
 
     Log.info("Loading a large sparse matrix into H2O")
     h2o.large <- as.h2o(m.large, "large_matrix")
