@@ -822,7 +822,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       final Frame fr0 = new Frame(_state.activeData()._adaptedFrame).add(_codVecs);
 //      final Frame frx0 = new Frame(_state.activeData()._adaptedFrame).add(codVecs2);
       long startTimeTotalNaive = System.currentTimeMillis();
-      boolean sparse = FrameUtils.sparseRatio(activeData._adaptedFrame) <= .5;
+      double sparseRatio = FrameUtils.sparseRatio(activeData._adaptedFrame);
+      System.out.println("sparseRatio = " + sparseRatio);
+      boolean sparse =  sparseRatio <= .25;
       GLMGenerateWeightsTask gt = new GLMGenerateWeightsTask(_job._key,sparse, _state.activeData(), _parms, beta).doAll(fr0);
 //      GLMGenerateWeightsTask gtx = new GLMGenerateWeightsTask(_job._key,false, _state.activeData(), _parms, beta).doAll(frx0);
       int iter1Sum = 0;

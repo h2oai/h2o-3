@@ -1545,11 +1545,12 @@ public abstract class GLMTask  {
         int i = 0, j;
         while (i < idPrev.length && (j = idPrev[i]) != -1) {
           double w = wChunk[j];
-          if (w == 0) continue;
-          double x = xPrev[i];
-          double pred = x * _bNew;
-          ztildaChunk[j] += pred;
-          residual -= w * pred;
+          if (w != 0) {
+            double x = xPrev[i];
+            double pred = x * _bNew;
+            ztildaChunk[j] += pred;
+            residual -= w * pred;
+          }
           i++;
         }
       }
@@ -1558,14 +1559,15 @@ public abstract class GLMTask  {
         double res = 0;
         while (i < idCurr.length && (j = idCurr[i]) != -1) {
           double w = wChunk[j];
-          if (w == 0) continue;
-          double x = xCurr[i];// * _normMul;
-          double pred = x * _bOld;
-          double ztilda = ztildaChunk[j] - pred;
-          ztildaChunk[j] = ztilda;
-          double diff = (zChunk[j] - ztilda - _sparseOffset);
-          residual += w * pred;
-          res += w * x * diff;
+          if (w != 0) {
+            double x = xCurr[i];// * _normMul;
+            double pred = x * _bOld;
+            double ztilda = ztildaChunk[j] - pred;
+            ztildaChunk[j] = ztilda;
+            double diff = (zChunk[j] - ztilda - _sparseOffset);
+            residual += w * pred;
+            res += w * x * diff;
+          }
           i++;
         }
         _res = res;
