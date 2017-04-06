@@ -20,6 +20,11 @@ import Test0._
 
 /**
   * Scala version of UdfTest
+  * 
+  * To run it in intellij, you will also need to launch H2OTestNodeStarter
+  * Unlike other modules, you need to set in H2OTestNodeStarter runtime configuration
+  * ("Run"->"Edit Configurations") the classpath of module h2o-scala_2.10 (or 2.11, it's up to you)
+  * 
   */
 class ScalaUdfTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
   val A_LOT: Int = 1 << 20

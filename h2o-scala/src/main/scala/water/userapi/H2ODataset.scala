@@ -18,8 +18,10 @@ import scala.language.postfixOps
   * Created by vpatryshev on 3/26/17.
   */
 case class H2ODataset(frame: Frame) extends Iced[H2ODataset] {
+
+  def oneHotEncode: H2ODataset = oneHotEncodeExcluding()
   
-  def oneHotEncode(ignore: String*): H2ODataset = {
+  def oneHotEncodeExcluding(ignore: String*): H2ODataset = {
     try {
       val res = for {
         hotFrame <- Option(Enums.oneHotEncoding(frame, ignore.toArray))
@@ -126,11 +128,15 @@ object H2ODataset {
 
   def get(frameKey: Key[Frame]): Option[H2ODataset] =
     Option(DKV.getGet(frameKey)) map (new H2ODataset(_))
+  
+  private def fileNamed(path: String) = Option(FileUtils.locateFile(path.trim()))
 
-  def readFile(path: String): H2ODataset =
-    read(FileUtils.locateFile(path.trim()))
+  def readFile(path: String): H2ODataset = {
+    fileNamed(path) map read getOrElse (throw DataException(s"$path not found"))
+  }
 
   def read(file: File): H2ODataset = {
+    if (file == null) throw DataException("file not found")
     try {
       FileUtils.checkFile(file, file.getCanonicalPath)
       val nfs: NFSFileVec = NFSFileVec.make(file)

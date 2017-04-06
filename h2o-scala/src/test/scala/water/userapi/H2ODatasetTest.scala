@@ -2,11 +2,11 @@ package water.userapi
 
 import java.io.{File, FileWriter}
 
-import org.junit.BeforeClass
+import org.junit.{Assert, Test, BeforeClass}
 import org.scalatest.Matchers._
 import org.scalatest._
 import water.TestUtil._
-import water.fvec.Vec
+import water.fvec.{Frame, Vec}
 import water.udf.fp.{Function => UFunction, Functions}
 import water.util.fp.JavaInterop
 import water.{Test0, TestUtil}
@@ -52,8 +52,6 @@ class H2ODatasetTest extends Test0  with BeforeAndAfterAll {
         fail("Vector V2 must have been there")
     }
   }
-  
-  val size = 1000
 
   private def whichOne(i: Long) =
     if (i%100 < 2) 0 else if (i%100 < 20) 1 else 2
@@ -62,17 +60,20 @@ class H2ODatasetTest extends Test0  with BeforeAndAfterAll {
 
   val rgbGenerator: UFunction[Integer, String] = (i: Int) => RGB(whichOne(i))
 
-  def buildTestVec: Vec = cvec(RGB, size, rgbGenerator)
-
+  def buildTestVec(size: Int): Vec = cvec(RGB, size, rgbGenerator)
+  def buildIdentityVec(size: Int): Vec = vec(size, Functions.identity[Integer])
+  
   test("One Hot Encode") {
-    
-    val vec1 = buildTestVec
+
+    val size = 1000
+
+    val vec1 = buildTestVec(size)
 
     val sut = H2ODataset.onVecs("RGB" -> vec1)
 
-    val actual = sut.oneHotEncode()
+    val actual: H2ODataset = sut.oneHotEncode
     
-    assert(actual.domain.get.mkString == Array("RGB.red", "RGB.white", "RGB.blue", "RGB.missing(NA)").mkString)
+    actual.domain.get shouldBe Array("RGB.red", "RGB.white", "RGB.blue", "RGB.missing(NA)")
 
     val dom = actual.domain.get
     
@@ -90,18 +91,24 @@ class H2ODatasetTest extends Test0  with BeforeAndAfterAll {
     }
   }
 
+  def buildTwoVecDataset(size: Int): H2ODataset = {
+    val vec1 = buildTestVec(size)
+    val vec2 = buildIdentityVec(size)
+
+    H2ODataset.onVecs("RGB" -> vec1, "Ausweis" -> vec2)
+  }
+  
   test("Add splitting column") {
 
-    val vec1 = buildTestVec
-    val vec2 = vec(size, Functions.identity[Integer])
+    val size = 1000
 
-    val sut = H2ODataset.onVecs("RGB" -> vec1, "Ausweis" -> vec2)
+    val sut = buildTwoVecDataset(size)
 
     val actual = sut.addSplittingColumn("RGB", 0.01, 7688714)
     
     actual flatMap (_.domain) match {
       case Some(dom) =>
-        assert(Array("RGB", "Ausweis", "test_train_split").mkString(",") == dom.mkString(","))
+        dom shouldBe Array("RGB", "Ausweis", "test_train_split")
       case None =>
         fail("Failed to split, oops")
     }
@@ -110,86 +117,108 @@ class H2ODatasetTest extends Test0  with BeforeAndAfterAll {
 
   test("stratified split") {
 
-  }
-  
-  /*
+    val size = 1000000
+    val sut = buildTwoVecDataset(size)
 
-  @Test
-  public void testStratifiedSplit() throws Exception {
-    final String[] domain = {"red", "white", "blue"}
+    val stratifiedSplit: Option[(Frame, Frame)] = sut.stratifiedSplit("RGB", 0.01, 7688714)
+    stratifiedSplit match {
+      case Some((train, valid)) =>
+        assert(Array[String]("RGB", "Ausweis").mkString(",") == train.names.mkString(","))
+        assert(size == train.vec("Ausweis").length + valid.vec("Ausweis").length)
+        assert( size/100 == valid.vec("Ausweis").length)
+        assert(size/100*99 == train.vec("Ausweis").length)
+        val vrgb: Vec = valid.vec("RGB")
+        val counts = ((0 until 3 map (_ -> 0) toMap) /: (0 until vrgb.length.toInt)) {
+          case (c, i) => {
+            val k = vrgb.at8(i).toInt
+            val v = c(k) + 1
+            c + (k -> v)
+          }
+        }
+        assert(counts(0) == 200)
+        assert(counts(1) == 1800)
+        assert(counts(2) == 8000)
 
-    final int size = 1000000
-    final Vec vec1 = cvec(domain, size, new Function<Integer, String>() {
-      @Override
-      public String apply(Integer i) {
-        return domain[whichOne(i)]
-      }
-    })
-
-    final Vec vec2 = vec(size, Functions.<Integer>identity())
-
-    Dataset sut = Dataset.onVecs(
-        new HashMap<String, Vec>() {{
-          put("RGB", vec1) put("Ausweis", vec2)
-        }})
-
-    TrainAndValid actual = sut.stratifiedSplit("RGB", 0.01, 7688714)
-
-    final Frame train = actual.train
-    assertArrayEquals(new String[]{"RGB", "Ausweis"}, train.names())
-
-    final Frame valid = actual.valid
-    assertArrayEquals(new String[]{"RGB", "Ausweis"}, valid.names())
-
-    assertEquals(size, train.vec("Ausweis").length() + valid.vec("Ausweis").length())
-
-    assertEquals( size/100, valid.vec("Ausweis").length())
-    assertEquals(size/100*99, train.vec("Ausweis").length())
-    
-    Vec trgb = train.vec("RGB")
-    
-    int[] counts = new int[]{0,0,0}
-    
-    for (int i = 0 i < 10000 i++) {
-      counts[(int)trgb.at8(i)]++
+      case None => fail("Failed to do stratified split")
     }
-    assertArrayEquals(new int[]{200, 1802, 7998}, counts)
   }
-  
-  @Test
-  public void testEndToEndInChicago() {
-    String path = "smalldata/chicago/chicagoCensus.csv"
-    Dataset sut = Dataset.readFile(path)
-    String[] expectedDom = "Community Area Number,COMMUNITY AREA NAME,PERCENT OF HOUSING CROWDED,PERCENT HOUSEHOLDS BELOW POVERTY,PERCENT AGED 16+ UNEMPLOYED,PERCENT AGED 25+ WITHOUT HIGH SCHOOL DIPLOMA,PERCENT AGED UNDER 18 OR OVER 64,PER CAPITA INCOME ,HARDSHIP INDEX".split(",")
-    assertArrayEquals(expectedDom, sut.domain())
-    sut.makeCategorical("COMMUNITY AREA NAME")
-    String[] categories = sut.domainOf("COMMUNITY AREA NAME")
-    assertEquals(78, categories.length)
-    Dataset oneHot = sut.oneHotEncode()
-    assertEquals(88, oneHot.domain().length)
-  }
-  
-  @Test
-  public void testEndToEndCitibike() {
-    String path = "smalldata/demos/citibike_20k.csv"
-    Dataset sut = Dataset.readFile(path)
 
-    final int expectedSize = 20000
-    final double ratio = 0.25
-    final int expectedValidSize = (int)(expectedSize * ratio)
-    final int expectedTrainSize = expectedSize - expectedValidSize
-    sut.removeColumn("start station name", "end station name")
-    assertEquals(expectedSize, sut.length())
-    sut.makeCategorical("gender")
-    String[] categories = sut.domainOf("gender")
-    assertEquals(3, categories.length)
-    Dataset oneHot = sut.oneHotEncode()
-    assertEquals(20, oneHot.domain().length)
-    TrainAndValid tav = oneHot.stratifiedSplit("gender", ratio, 55555)
-    assertEquals(expectedTrainSize, ETL.length(tav.train))
-    assertEquals(expectedValidSize, ETL.length(tav.valid))
+  test("Chicago, end to end") {
+    val path = "smalldata/chicago/chicagoCensus.csv"
+    val sut = H2ODataset.readFile(path)
+    val expectedDom: Array[String] = "Community Area Number,COMMUNITY AREA NAME,PERCENT OF HOUSING CROWDED,PERCENT HOUSEHOLDS BELOW POVERTY,PERCENT AGED 16+ UNEMPLOYED,PERCENT AGED 25+ WITHOUT HIGH SCHOOL DIPLOMA,PERCENT AGED UNDER 18 OR OVER 64,PER CAPITA INCOME ,HARDSHIP INDEX".split(",")
+    sut.domain match {
+      case Some(d) =>
+        d shouldBe expectedDom
+      case None => fail("Oops, no domain!")
+    }
+    
+    val columnUT = "COMMUNITY AREA NAME"
+    
+    sut.makeCategorical(columnUT)
+    
+    sut.domainOf(columnUT) match {
+      case Some(categories) => 
+        assert(categories.length == 78)
+      case None =>
+        fail(s"Could not find domain of $columnUT")
+    }
+
+    val oneHot = sut.oneHotEncodeExcluding()
+    assert(Some(87) == oneHot.domain.map(_.length))
+    
   }
-}   */
+
+  /**
+    * An end-to-end sample of categorification, one-hot encoding, and stratified split
+    */
+  test("Citibike, end to end") {
+    // this is the path of the sample we use
+    val path = "smalldata/demos/citibike_20k.csv"
+    // we read the file here, and produce a dataset from it
+    val dataset = H2ODataset.readFile(path)
+
+    // removing these two column that we don't care about
+    dataset.removeColumn("start station name", "end station name")
+
+    // this is the expected number of rows in the dataset
+    val expectedSize = 20000
+    
+    // checking that we got exactly the number of records we expected
+    assert(expectedSize == dataset.length)
+
+    // converting gender column to categorical type
+    dataset.makeCategorical("gender")
+    
+    // the domain should be "male", "female", and "N/A"
+    val categories = dataset.domainOf("gender")
+    assert(Some(3) == categories.map(_.length))
+    
+    // apply oneHot encoding to all applicable columns except gender (we'll need it)
+    val oneHot = dataset.oneHotEncodeExcluding("gender")
+    
+    // we expect 15 possible 
+    assert(Some(15) == oneHot.domain.map(_.length))
+
+    // Planning to do stratified split, so 0.75 go to train, 0.25 go to valid datasets
+    val ratio = 0.25
+    val expectedValidSize = (expectedSize * ratio).toInt
+    val expectedTrainSize = expectedSize - expectedValidSize
+    
+    // do stratified split on gender column; 55555 is the random seed
+    oneHot.stratifiedSplit("gender", ratio, 55555) match {
+      case Some((train, valid)) =>
+        assert(expectedTrainSize == ETL.length(train))
+        assert(expectedValidSize == ETL.length(valid))
+
+      case None =>
+        fail("Failed to stratify by gender")
+    }
+  }
+  
+  test("SomethingElse") {
+    assert(true)
+  }
 }
 
 object H2ODatasetTest extends TestUtil {
