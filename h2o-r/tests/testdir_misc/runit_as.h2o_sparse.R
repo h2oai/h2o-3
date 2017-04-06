@@ -17,7 +17,7 @@ test.as.h2o.sparse <- function() {
     Log.info("Check that data.frame in H2O has the same content as the local matrix")
     expect_equal(h2o.small.df, as.data.frame(as.matrix(m.small)))
 
-    # 2. large sparse matrix (46341 x 46343), too big for as.matrix in R (Cholmod error 'problem too large')
+    # 2. large sparse matrix (46341 x 46343): too big for as.matrix in R (Cholmod error 'problem too large')
     i <- c(1, 3:8, 46341)
     j <- c(2, 9, 6:10, 46343)
     x <- pi * (1:8)
