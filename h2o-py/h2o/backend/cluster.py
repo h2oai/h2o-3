@@ -156,6 +156,12 @@ class H2OCluster(object):
 
         :param node_idx: An int value indicating which node to extract information from
         :returns: Dictionary containing node info
+
+        :examples:
+          >>>import h2o
+          >>>h2o.init()
+          >>>node_one = h2o.cluster().node_info(0)
+          >>>node_one["pid"] #Get PID for first node in H2O Cluster
         """
         return self.nodes[node_idx]
 
