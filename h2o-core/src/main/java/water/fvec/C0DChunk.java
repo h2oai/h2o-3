@@ -62,9 +62,9 @@ public class C0DChunk extends Chunk {
     for (int i = 0; i < _len; ++i) arr[i] = i;
     return _len;
   }
-  @Override public int getSparseDoubles(double [] vals, int [] ids, double NA){
+  @Override public int getSparseDoubles(double [] vals, int [] ids, double NA, double normMul){
     if(_con == 0) return 0;
-    double con = Double.isNaN(_con)?NA:_con;
+    double con = Double.isNaN(_con)?NA:_con*normMul;
     for(int i = 0; i < _len; ++i) {
       vals[i] = con;
       ids[i] = i;

@@ -476,7 +476,7 @@ public abstract class GLMTask  {
       for(int cid = 0; cid < _dinfo._cats; ++cid){
         Chunk c = chks[cid];
         if(c.isSparseZero()) {
-          int nvals = c.getSparseDoubles(vals,ids,_dinfo.catNAFill(cid));
+          int nvals = c.getSparseDoubles(vals,ids,_dinfo.catNAFill(cid),1);
           for(int i = 0; i < nvals; ++i){
             int id = _dinfo.getCategoricalId(cid,(int)vals[i]);
             if(id >=0) etas[ids[i]] += _beta[id];
@@ -496,7 +496,7 @@ public abstract class GLMTask  {
       for(int cid = 0; cid < _dinfo._cats; ++cid){
         Chunk c = chks[cid];
         if(c.isSparseZero()) {
-          int nvals = c.getSparseDoubles(vals,ids,_dinfo.catNAFill(cid));
+          int nvals = c.getSparseDoubles(vals,ids,_dinfo.catNAFill(cid),1);
           for(int i = 0; i < nvals; ++i){
             int id = _dinfo.getCategoricalId(cid,(int)vals[i]);
             if(id >=0) _gradient[id] += etas[ids[i]];
@@ -516,19 +516,20 @@ public abstract class GLMTask  {
       for(int cid = 0; cid < _dinfo._nums; ++cid){
         double scale = _dinfo._normMul != null?_dinfo._normMul[cid]:1;
         double off = _dinfo._normSub != null?_dinfo._normSub[cid]:0;
-        double NA = _dinfo._numMeans[cid];
         Chunk c = chks[cid+_dinfo._cats];
         double b = scale*_beta[numOff+cid];
+        double NA = _dinfo._numMeans[cid];
         if(c.isSparseZero()){
-          int nvals = c.getSparseDoubles(vals,ids,NA);
+          int nvals = c.getSparseDoubles(vals,ids,NA,1);
           for(int i = 0; i < nvals; ++i)
-            etas[ids[i]] += vals[i] * b;
+            etas[ids[i]] += b*vals[i];
         } else if(c.isSparseNA()){
-          int nvals = c.getSparseDoubles(vals,ids,NA);
+          int nvals = c.getSparseDoubles(vals,ids,NA,1);
           for(int i = 0; i < nvals; ++i)
             etas[ids[i]] += (vals[i] - off) * b;
         } else {
-          c.getDoubles(vals,0,vals.length,NA);
+          c.getDoubles(vals,0,vals.length,NA,0,1);
+//          ArrayUtils.add(etas,vals);
           for(int i = 0; i < vals.length; ++i)
             etas[i] += (vals[i] - off) * b;
         }
@@ -543,14 +544,14 @@ public abstract class GLMTask  {
         double scale = _dinfo._normMul == null?1:_dinfo._normMul[cid];
         if(c.isSparseZero()){
           double g = 0;
-          int nVals = c.getSparseDoubles(vals,ids,NA);
+          int nVals = c.getSparseDoubles(vals,ids,NA,1);
           for(int i = 0; i < nVals; ++i)
             g += vals[i]*scale*etas[ids[i]];
           _gradient[numOff+cid] = g;
         } else if(c.isSparseNA()){
           double off = _dinfo._normSub == null?0:_dinfo._normSub[cid];
           double g = 0;
-          int nVals = c.getSparseDoubles(vals,ids,NA);
+          int nVals = c.getSparseDoubles(vals,ids,NA,1);
           for(int i = 0; i < nVals; ++i)
             g += (vals[i]-off)*scale*etas[ids[i]];
           _gradient[numOff+cid] = g;
@@ -761,7 +762,7 @@ public abstract class GLMTask  {
       for(int cid = 0; cid < _dinfo._cats; ++cid){
         Chunk c = chks[cid];
         if(c.isSparseZero()) {
-          int nvals = c.getSparseDoubles(vals,ids,_dinfo.catNAFill(cid));
+          int nvals = c.getSparseDoubles(vals,ids,_dinfo.catNAFill(cid),1);
           for(int i = 0; i < nvals; ++i){
             int id = _dinfo.getCategoricalId(cid,(int)vals[i]);
             if(id >=0)ArrayUtils.add(etas[ids[i]],_beta[id]);
@@ -781,7 +782,7 @@ public abstract class GLMTask  {
       for(int cid = 0; cid < _dinfo._cats; ++cid){
         Chunk c = chks[cid];
         if(c.isSparseZero()) {
-          int nvals = c.getSparseDoubles(vals,ids,_dinfo.catNAFill(cid));
+          int nvals = c.getSparseDoubles(vals,ids,_dinfo.catNAFill(cid),1);
           for(int i = 0; i < nvals; ++i){
             int id = _dinfo.getCategoricalId(cid,(int)vals[i]);
             if(id >=0) ArrayUtils.add(_gradient[id],etas[ids[i]]);
@@ -804,7 +805,7 @@ public abstract class GLMTask  {
         double NA = _dinfo._numMeans[cid];
         Chunk c = chks[cid+_dinfo._cats];
         if(c.isSparseZero() || c.isSparseNA()){
-          int nvals = c.getSparseDoubles(vals,ids,NA);
+          int nvals = c.getSparseDoubles(vals,ids,NA,1);
           for(int i = 0; i < nvals; ++i) {
             double d = vals[i]*scale;
             ArrayUtils.wadd(etas[ids[i]],b,d);
@@ -828,7 +829,7 @@ public abstract class GLMTask  {
         Chunk c = chks[cid+_dinfo._cats];
         double scale = _dinfo._normMul == null?1:_dinfo._normMul[cid];
         if(c.isSparseZero() || c.isSparseNA()){
-          int nVals = c.getSparseDoubles(vals,ids,NA);
+          int nVals = c.getSparseDoubles(vals,ids,NA,1);
           for (int i = 0; i < nVals; ++i)
             ArrayUtils.wadd(g,etas[ids[i]],vals[i] * scale);
         } else {
@@ -1400,6 +1401,7 @@ public abstract class GLMTask  {
     }
   }
 
+
   public static class GLMCoordinateDescentTaskSeqNaiveNum extends MRTask<GLMCoordinateDescentTaskSeqNaiveNum> {
     final double _normMul;
     final double _normSub;
@@ -1409,9 +1411,6 @@ public abstract class GLMTask  {
     final double _bNew; // global beta @ j-1 that was just updated.
     double _res;
     int _iter_cnt;
-    double _residual;
-    double _residual_full;
-    double _mse;
 
 
     public GLMCoordinateDescentTaskSeqNaiveNum(int iter_cnt, double intercept, double betaOld, double betaNew, double normMul, double normSub, double NA) { // pass it norm mul and norm sup - in the weights already done. norm
@@ -1435,77 +1434,87 @@ public abstract class GLMTask  {
       final double[] xPrev = ((C8DVolatileChunk) chunks[cnt + (_iter_cnt & 1)]).getValues();
       final double[] xCurr = ((C8DVolatileChunk) chunks[cnt + 1-(_iter_cnt & 1)]).getValues();
       chunks[chunks.length - 1].getDoubles(xCurr, 0, xCurr.length, _NA, _normSub, _normMul);
-      double res = 0, residual = 0, mse = 0;
-      for (int i = 0; i < chunks[0]._len; ++i) { // going over all the rows in the chunk
-        double w = wChunk[i];
-        if(w == 0)continue;
-        double x = xCurr[i];
-        double ztilda = (ztildaChunk[i] -= x*_bOld - xPrev[i] * _bNew);
-        double diff = (zChunk[i] - ztilda - intercept);
-        res += w * x * diff;
-//        if(_bOld == 0){ // usually the last task
-          residual += w*diff;
-          _residual_full += w*(diff-x*_bOld);
-          mse += w*diff*diff;
-//        }
+      double res = 0;
+      if(Double.isNaN(_bOld)){
+        for (int i = 0; i < chunks[0]._len; ++i) { // going over all the rows in the chunk
+          double w = wChunk[i];
+          if (w == 0) continue;
+          double x = xCurr[i];
+          double ztilda = ztildaChunk[i] + xPrev[i] * _bNew;
+          ztildaChunk[i] = ztilda;
+          double diff = (zChunk[i] - ztilda - intercept);
+          double wdiff = w * diff;
+          res += wdiff * x;
+        }
+      } else {
+        for (int i = 0; i < chunks[0]._len; ++i) { // going over all the rows in the chunk
+          double w = wChunk[i];
+          if (w == 0) continue;
+          double x = xCurr[i];
+          double ztilda = ztildaChunk[i] - x * _bOld + xPrev[i] * _bNew;
+          ztildaChunk[i] = ztilda;
+          double diff = (zChunk[i] - ztilda - intercept);
+          double wdiff = w * diff;
+          res += wdiff * x;
+        }
       }
       _res = res;
-      _residual = residual;
-      _mse = mse;
     }
+
     @Override
-    public void map(Chunk[] chunks, NewChunk nc) {
+    public void reduce(GLMCoordinateDescentTaskSeqNaiveNum git){
+      _res += git._res;
+    }
+  }
+
+  public static class GLMCoordinateDescentTaskSeqNaiveNumIcpt extends MRTask<GLMCoordinateDescentTaskSeqNaiveNumIcpt> {
+    final double intercept;
+    final double _bNew; // global beta @ j-1 that was just updated.
+    double _residual;
+    int _iter_cnt;
+
+    public GLMCoordinateDescentTaskSeqNaiveNumIcpt(int iter_cnt, double intercept, double betaNew) { // pass it norm mul and norm sup - in the weights already done. norm
+      _iter_cnt = iter_cnt;
+      this.intercept = intercept;
+      _bNew = betaNew;
+
+    }
+
+    protected boolean modifiesVolatileVecs(){return false;}
+
+    @Override
+    public void map(Chunk[] chunks) {
       int cnt = 0;
       final double[] wChunk = ((C8DVolatileChunk) chunks[cnt++]).getValues();
       final double[] zChunk = ((C8DVolatileChunk) chunks[cnt++]).getValues();
       final double[] ztildaChunk = ((C8DVolatileChunk) chunks[cnt++]).getValues();
       final double[] xPrev = ((C8DVolatileChunk) chunks[cnt + (_iter_cnt & 1)]).getValues();
-      final double[] xCurr = ((C8DVolatileChunk) chunks[cnt + 1-(_iter_cnt & 1)]).getValues();
-      chunks[chunks.length - 1].getDoubles(xCurr, 0, xCurr.length, _NA, _normSub, _normMul);
-      double res = 0, residual = 0, mse = 0;
+      double res = 0;
       for (int i = 0; i < chunks[0]._len; ++i) { // going over all the rows in the chunk
         double w = wChunk[i];
-        if(w == 0)continue;
-        double x = xCurr[i];
-        double ztilda = (ztildaChunk[i] -= x*_bOld - xPrev[i] * _bNew);
-        double diff = (zChunk[i] - ztilda - intercept);
-        if(chunks[0].start() == 0 && i < 10){
-          System.out.println(i + ": diff = " + diff + ", w = " + w + ", wdiff = " + w*diff);
-        }
-        res += w * x * diff;
-//        if(_bOld == 0){ // usually the last task
-        nc.addNum(w*diff);
-        residual += w*diff;
-        _residual_full += w*(diff-x*_bOld);
-        mse += w*diff*diff;
-//        }
+        if (w == 0) continue;
+        double ztilda = ztildaChunk[i] + xPrev[i] * _bNew;
+        ztildaChunk[i] = ztilda;
+        res += w*(zChunk[i] - ztilda - intercept);
       }
-      _res = res;
-      _residual = residual;
-      _mse = mse;
-      System.out.println("(x) sum at chunk " + chunks[0].start() + " == " + _residual);
+      _residual = res;
     }
     @Override
-    public void reduce(GLMCoordinateDescentTaskSeqNaiveNum git){
-      _res += git._res;
+    public void reduce(GLMCoordinateDescentTaskSeqNaiveNumIcpt git){
       _residual += git._residual;
-      _residual_full += git._residual_full;
-      _mse += git._mse;
     }
   }
 
-  public static class GLMCoordinateDescentTaskSeqNaiveNumSparse extends MRTask<GLMCoordinateDescentTaskSeqNaiveNumSparse> {
+  public static final class GLMCoordinateDescentTaskSeqNaiveNumSparse extends MRTask<GLMCoordinateDescentTaskSeqNaiveNumSparse> {
     final double _normMul;
     final double _NA;
     final double _bOld; // current old value at j
     final double _bNew; // global beta @ j-1 that was just updated.
     double _res;
     double _mse;
-    double _wsum;
     final double _sparseOffset;
     int _iter_cnt;
     double _residual;
-
 
     public GLMCoordinateDescentTaskSeqNaiveNumSparse(int iter_cnt, double sparseOffset, double betaOld, double betaNew, double normMul, double NA) { // pass it norm mul and norm sup - in the weights already done. norm
       _iter_cnt = iter_cnt;
@@ -1527,7 +1536,9 @@ public abstract class GLMTask  {
       final double[] xCurr = ((C8DVolatileChunk) chunks[cnt + 1 - (_iter_cnt & 1)]).getValues();
       final int[] idPrev = ((C4VolatileChunk) chunks[cnt + 2 + (_iter_cnt & 1)]).getValues();
       final int[] idCurr = ((C4VolatileChunk) chunks[cnt + 3 - (_iter_cnt & 1)]).getValues();
-      int currlen = chunks[chunks.length - 1].getSparseDoubles(xCurr, idCurr, _NA);
+      int currlen = chunks[chunks.length - 1].getSparseDoubles(xCurr, idCurr, _NA,_normMul);
+      double residual = 0;
+      double mse = 0;
       if (currlen < idCurr.length)
         idCurr[currlen] = -1;
       if (_bNew != 0) {
@@ -1538,43 +1549,45 @@ public abstract class GLMTask  {
           double x = xPrev[i];
           double pred = x * _bNew;
           ztildaChunk[j] += pred;
-          _residual -= w * pred;
+          residual -= w * pred;
           i++;
         }
       }
       if (!Double.isNaN(_bOld)) {
         int i = 0, j;
+        double res = 0;
         while (i < idCurr.length && (j = idCurr[i]) != -1) {
           double w = wChunk[j];
           if (w == 0) continue;
-          double x = (xCurr[i] *= _normMul);
+          double x = xCurr[i];// * _normMul;
           double pred = x * _bOld;
-          double ztilda = (ztildaChunk[j] -= pred);
+          double ztilda = ztildaChunk[j] - pred;
+          ztildaChunk[j] = ztilda;
           double diff = (zChunk[j] - ztilda - _sparseOffset);
-          _residual += w * pred;
-          _res += w * x * diff;
-          _wsum += w;
+          residual += w * pred;
+          res += w * x * diff;
           i++;
         }
-      } else { // the last numeric task must compute mse and residual
-        _residual = 0;
+        _res = res;
+      } /*else { // the last numeric task must compute mse and residual
+        residual = 0; mse = 0;
         for (int i = 0; i < wChunk.length; ++i) {
           double diff = (zChunk[i] - ztildaChunk[i] - _sparseOffset);
-          _residual += wChunk[i] * diff;
-          _mse += wChunk[i] * diff * diff;
+          residual += wChunk[i] * diff;
+          mse += wChunk[i] * diff * diff;
         }
       }
+      _residual = residual;
+      _mse = mse;*/
+      _residual = residual;
     }
     @Override
     public void reduce(GLMCoordinateDescentTaskSeqNaiveNumSparse git){
-      _wsum += git._wsum;
       _res += git._res;
       _residual += git._residual;
       _mse += git._mse;
     }
   }
-
-
 
   public static class GLMCoordinateDescentTaskSeqNaiveCat extends MRTask<GLMCoordinateDescentTaskSeqNaiveCat> {
     final double [] _bOld; // current old value at j
@@ -1668,6 +1681,7 @@ public abstract class GLMTask  {
     final double [] _betaw;
     double [] denums;
     double [] wx;
+    double [] wxx;
     double wr;
     double res;
     double mse;
@@ -1700,6 +1714,7 @@ public abstract class GLMTask  {
       chunks = Arrays.copyOf(chunks,chunks.length-7);
       denums = new double[_dinfo.fullN()+1]; // full N is expanded variables with categories
       wx = new double[_dinfo.fullN()+1];
+      wxx = new double[_dinfo.fullN()+1];
       DataInfo.Rows rows =_dinfo.rows(chunks,_sparse);
       double sparseOffset = rows._sparse?GLM.sparseOffset(_betaw,_dinfo):0;
       for(int i = 0; i < rows._nrows; ++i) {
@@ -1736,23 +1751,29 @@ public abstract class GLMTask  {
           double d = r.numVals[j];
           denums[id]+= glmw.w*d*d;
           wx[id]+= glmw.w*d;
+          wxx[id]+= glmw.w*d*d;
         }
       }
       if(rows._sparse) { // adjust for skipped centering
         _ranSparse = true;
         int numStart = _dinfo.numStart();
         for (int i = 0; i < _dinfo.numNums(); ++i) {
+          int j = numStart+i;
           double delta = _dinfo.normSub(i)*_dinfo.normMul(i);
-          denums[numStart+i] = (denums[numStart+i] - 2 * delta * wx[numStart+i] + delta * delta * wsum);
+          wxx[j] = wxx[j] - 2*delta*wx[j] + delta*delta*wsum;
+          denums[j] = (denums[j] - 2 * delta * wx[j] + delta * delta * wsum);
         }
       }
-      if(_dinfo._cats > 0)
-        System.arraycopy(denums,0,wx,0, _dinfo.numStart());
+      if(_dinfo._cats > 0) {
+        System.arraycopy(denums, 0, wx, 0, _dinfo.numStart());
+        System.arraycopy(denums, 0, wxx, 0, _dinfo.numStart());
+      }
     }
     @Override
     public void reduce(GLMGenerateWeightsTask git){ // adding contribution of all the chunks
       ArrayUtils.add(denums, git.denums);
       ArrayUtils.add(wx, git.wx);
+      ArrayUtils.add(wxx, git.wxx);
       wr += git.wr;
       res += git.res;
       mse += git.mse;
@@ -1761,7 +1782,6 @@ public abstract class GLMTask  {
       _likelihood += git._likelihood;
       _ranSparse = _ranSparse || git._ranSparse;
     }
-
   }
 
 

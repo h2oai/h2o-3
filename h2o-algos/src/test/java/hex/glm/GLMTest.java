@@ -1502,9 +1502,9 @@ public class GLMTest  extends TestUtil {
       // adjust for skipped centering
       // sum_i {w_i*(x_i-delta)*(r_i-gamma)}
       //   := sum_i {w_i*x_i*r_i} - gamma sum_i{w_i*x_i} - delta * sum_i{w_i*r_i} + gamma*delta sum_i {w_i}
-      //   := tsk._res - gamma*sum_i{w_i*x_i} - delta*RES + gamma*delta*wsumx
+      //   := tsk._residual - gamma*sum_i{w_i*x_i} - delta*RES + gamma*delta*wsumx
       double delta = dinfo.normSub(0) * dinfo.normMul(0);
-//      double x = tx1._res - gamma * t1.wx[0] - delta * RES;
+//      double x = tx1._residual - gamma * t1.wx[0] - delta * RES;
       double x = tx1._res - delta*RES;
       System.out.println("expected: " + tx2._res);
       System.out.println("actual  : " + x);
@@ -1533,7 +1533,7 @@ public class GLMTest  extends TestUtil {
       model3.delete();
     }
 //    beta[currIdx] = ADMM.shrinkage(x * wsumuInv,l1pen) * tx2.denums[currIdx];
-//    beta[currIdx] = ADMM.shrinkage(tx2._res * wsumuInv, l1pen) * t2.denums[currIdx];
+//    beta[currIdx] = ADMM.shrinkage(tx2._residual * wsumuInv, l1pen) * t2.denums[currIdx];
 
 //    double [] beta2 = beta.clone();
 //    Map<String,Double> coefs = model.coefficients();

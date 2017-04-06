@@ -114,6 +114,7 @@ public abstract class ChunkVisitor {
    */
   public static final class SparseDoubleAryVisitor extends ChunkVisitor {
     public final boolean naSparse;
+    public final double normMul;
     public final double [] vals;
     public final int [] ids;
     private int _sparseLen;
@@ -121,15 +122,15 @@ public abstract class ChunkVisitor {
     private final double _na;
 
     public int sparseLen(){return _sparseLen;}
-    SparseDoubleAryVisitor(double [] vals, int [] ids){this(vals,ids,false,Double.NaN);}
-    SparseDoubleAryVisitor(double [] vals, int [] ids, boolean naSparse){this(vals, ids, naSparse, Double.NaN);}
-    SparseDoubleAryVisitor(double [] vals, int [] ids, boolean naSparse, double NA){this.vals = vals; this.ids = ids; _na = NA; this.naSparse = naSparse;}
+    SparseDoubleAryVisitor(double [] vals, int [] ids){this(vals,ids,false,Double.NaN,1);}
+    SparseDoubleAryVisitor(double [] vals, int [] ids, boolean naSparse){this(vals, ids, naSparse, Double.NaN,1);}
+    SparseDoubleAryVisitor(double [] vals, int [] ids, boolean naSparse, double NA, double normMul){this.vals = vals; this.ids = ids; _na = NA; this.naSparse = naSparse; this.normMul =normMul;}
     @Override
-    void addValue(int val) {ids[_sparseLen] = _len++; vals[_sparseLen++] = val;}
+    void addValue(int val) {ids[_sparseLen] = _len++; vals[_sparseLen++] = val*normMul;}
     @Override
-    void addValue(long val) {ids[_sparseLen] = _len++; vals[_sparseLen++] = val;}
+    void addValue(long val) {ids[_sparseLen] = _len++; vals[_sparseLen++] = val*normMul;}
     @Override
-    void addValue(double val) {ids[_sparseLen] = _len++; vals[_sparseLen++] = Double.isNaN(val)?_na:val;}
+    void addValue(double val) {ids[_sparseLen] = _len++; vals[_sparseLen++] = Double.isNaN(val)?_na:val*normMul;}
     @Override
     void addZeros(int zeros) {
       if(naSparse) {

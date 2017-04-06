@@ -544,7 +544,6 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
     if( this  instanceof NewChunk ) _chk2 = this;
     if( _chk2 == null ) return fs;          // No change?
     if( _chk2 instanceof NewChunk ) _chk2 = ((NewChunk)_chk2).new_close();
-
     DKV.put(_vec.chunkKey(cidx),_chk2,fs,true); // Write updated chunk back into K/V
     return fs;
   }
@@ -799,8 +798,10 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
    * @param ids holds extracted chunk-relative row ids, length must be >= this.sparseLen()
    * @return number of extracted (non-zero) elements, equal to sparseLen()
    */
-  public int getSparseDoubles(double[] vals, int[] ids){return getSparseDoubles(vals,ids,Double.NaN);}
-  public int getSparseDoubles(double [] vals, int [] ids, double NA) {
-    return processRows(new ChunkVisitor.SparseDoubleAryVisitor(vals,ids,isSparseNA(),NA),0,_len).sparseLen();
+  public int getSparseDoubles(double[] vals, int[] ids){
+    return getSparseDoubles(vals,ids,Double.NaN,1);
+  }
+  public int getSparseDoubles(double [] vals, int [] ids, double NA, double normMul) {
+    return processRows(new ChunkVisitor.SparseDoubleAryVisitor(vals,ids,isSparseNA(),NA,normMul),0,_len).sparseLen();
   }
 }

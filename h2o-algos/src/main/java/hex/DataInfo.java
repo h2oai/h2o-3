@@ -1180,15 +1180,16 @@ public class DataInfo extends Keyed<DataInfo> {
         }
         interactionOffset+=nextNumericIdx(cid);
       } else {
-        int len = c.getSparseDoubles(sparse_vals,sparse_ids,_numMeans[cid]);
+        double scale = _normMul == null?1:_normMul[interactionOffset];
+        int len = c.getSparseDoubles(sparse_vals,sparse_ids,scale*_numMeans[cid],scale);
         for (int k = 0; k < len; k++) {
           double d = sparse_vals[k];
           int r = sparse_ids[k];
           if(d == 0)continue;
-          assert r > oldRow;
+          assert r > oldRow:"chunk  " + c.getClass() + " " + oldRow + " >= " + r;
           oldRow = r;Row row = rows[r];
-          if (_normMul != null)
-            d *= _normMul[interactionOffset];
+//          if (_normMul != null)
+//            d *= _normMul[interactionOffset];
           row.addNum(numStart()+interactionOffset,d);
         }
         interactionOffset++;

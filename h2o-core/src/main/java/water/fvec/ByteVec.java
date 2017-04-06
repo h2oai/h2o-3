@@ -16,7 +16,23 @@ public class ByteVec extends Vec {
 
   public ByteVec( Key key, int rowLayout ) { super(key, rowLayout); }
 
-  @Override public C1NChunk chunkForChunkIdx(int cidx) { return (C1NChunk)super.chunkForChunkIdx(cidx); }
+  @Override public C1NChunk chunkForChunkIdx(int cidx) {
+    long start = chunk2StartElem(cidx); // Chunk# to chunk starting element#
+    Value dvec = chunkIdx(cidx);        // Chunk# to chunk data
+    Chunk c = dvec.get();               // Chunk data to compression wrapper
+    long cstart = c._start;             // Read once, since racily filled in
+    Vec v = c._vec;
+    int tcidx = c._cidx;
+    if (cstart == start && v != null && tcidx == cidx)
+      return (C1NChunk) c;                       // Already filled-in
+    if (!(cstart == -1 || v == null || tcidx == -1))
+      throw new RuntimeException("Was not filled in (everybody racily writes the same start value:  cstart = " + cstart + " v == null? " + (v == null) + " cidx = " + tcidx + ", chunk = " + c.getClass().getName());
+    assert cstart == -1 || v == null || tcidx == -1 : " cstart = " + cstart + " v == null? " + (v == null) + " cidx = " + tcidx + ", chunk = " + c.getClass().getName(); // Was not filled in (everybody racily writes the same start value)
+    c._vec = this;             // Fields not filled in by unpacking from Value
+    c._start = start;          // Fields not filled in by unpacking from Value
+    c._cidx = cidx;
+    return (C1NChunk) c;
+  }
 
   /** Return column missing-element-count - ByteVecs do not allow any "missing elements" */
   @Override public long naCnt() { return 0; }

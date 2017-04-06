@@ -177,6 +177,29 @@ public class CXIChunk extends Chunk {
   }
 
   @Override
+  public int getSparseDoubles(double [] vals, int [] ids, double NA, double normMul) {
+    if(_isNA) return super.getSparseDoubles(vals,ids,NA,normMul);
+    int x = _OFF;
+    int j = 0;
+    if(_val_sz == 0){
+      for(int i = _OFF; i < _mem.length; i += _elem_sz){
+        int id = getId(i);
+        vals[j] = normMul;
+        ids[j++] = id;
+      }
+      return j;
+    }
+    while(x < _mem.length){
+      int id = getId(x);
+      long val = getVal(x);
+      vals[j] = val ==_NAS[_val_sz]?NA:val*normMul;
+      ids[j++] = id;
+      x+=_elem_sz;
+    }
+    return j;
+  }
+
+  @Override
   public <T extends ChunkVisitor> T processRows(T v, int [] ids){
     int x = _OFF;
     int k = 0;

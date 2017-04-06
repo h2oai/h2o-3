@@ -40,6 +40,7 @@ public class C0LChunk extends Chunk {
     return _len;
   }
 
+
   @Override
   public <T extends ChunkVisitor> T processRows(T v, int from, int to){
     if(_con == 0)
@@ -56,5 +57,15 @@ public class C0LChunk extends Chunk {
     else for(int i = 0; i < ids.length; i++)
         v.addValue(_con);
     return v;
+  }
+
+  @Override public int getSparseDoubles(double [] vals, int [] ids, double NA, double normMul){
+    if(_con == 0) return 0;
+    double con = _con*normMul;
+    for(int i = 0; i < _len; ++i) {
+      vals[i] = con;
+      ids[i] = i;
+    }
+    return _len;
   }
 }

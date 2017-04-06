@@ -59,9 +59,9 @@ public final class C8DVolatileChunk extends Chunk {
 
   @Override
   public Futures close( int cidx, Futures fs ) {
-    if(chk2() != null) return chk2().close(cidx,fs);
-    Value v = new Value(_vec.chunkKey(cidx),this,_len*8,Value.ICE);
-    DKV.put(v._key,v,fs);
+//    if(chk2() != null) return chk2().close(cidx,fs);
+//    Value v = new Value(_vec.chunkKey(cidx),this,_len*8,Value.ICE);
+//    DKV.put(v._key,v,fs);
     return fs;
   }
 

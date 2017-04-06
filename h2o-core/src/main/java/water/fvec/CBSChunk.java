@@ -182,6 +182,19 @@ public class CBSChunk extends Chunk {
     return vals;
   }
 
+  @Override public int getSparseDoubles(double [] vals, int [] ids, double NA, double scale) {
+    int j = 0;
+    for(int i = 0; i < _len; ++i) {
+      int x = read(i);
+      if(x != 0) {
+        ids[j] = i;
+        vals[j] = (x == _NA) ? NA : scale;
+        j++;
+      }
+    }
+    return j;
+  }
+
   @Override
   public boolean hasFloat() {return false;}
 

@@ -1,6 +1,5 @@
 package hex.glm;
 
-import com.google.common.util.concurrent.AtomicDouble;
 import hex.*;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
 import hex.glm.GLMModel.*;
@@ -799,6 +798,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     private Frame _codVecs;
 
 
+    int SUM_ITER = 0;
+    int SUM_TASKS = 0;
+
     private void fitCOD() {
       DataInfo activeData = _state.activeData();
       if(activeData._predictor_transform != DataInfo.TransformType.STANDARDIZE)
@@ -830,6 +832,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           gamma += GLM.sparseOffset(beta,activeData);
       // generate new IRLS iteration
       while (iter2++ < 50) {
+//        GLMIterationTask taskX = new GLMIterationTask(null,activeData,new GLMWeightsFun(_parms),beta).doAll(activeData._adaptedFrame);
+//        double [][] xx = taskX._gram.getXX();
+//        double []diagX =  new double[xx.length];
+//
+//        for(int i = 0; i < xx.length; ++i)
+//          diagX[i] = xx[i][i];
+//        System.out.println("iter2 = " + iter2 + ", diag and wxx =");
+//        System.out.println(Arrays.toString(diagX));
+//        System.out.println(Arrays.toString(gt.wxx));
+
         denums = gt.denums;
         wsumx = gt.wsum;
         wsumux = gt.wsumu;
@@ -880,26 +892,27 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 // adjust for skipped centering
                 // sum_i {w_i*(x_i-delta)*(r_i-gamma)}
                 //   := sum_i {w_i*x_i*r_i} - gamma sum_i{w_i*x_i} - delta * sum_i{w_i*r_i} + gamma*delta sum_i {w_i}
-                //   := tsk._res - gamma*sum_i{w_i*x_i} - delta*RES
-//                double x = tsk._res - gamma*gt.wx[currIdx] - delta*RES;
+                //   := tsk._residual - gamma*sum_i{w_i*x_i} - delta*RES
+//                double x = tsk._residual - gamma*gt.wx[currIdx] - delta*RES;
                 double x = tsk._res - delta*RES;
-//                double y = tsk._res - delta*tskx._residual;
+//                double y = tsk._residual - delta*tskx._residual;
 //                System.out.println(iter2 + ":" + iter1 + ": " + i );
 //                System.out.println("RES = " + RES);
 //                System.out.println("RES1 = " + tskx._residual);
 //                System.out.println("x0 = " + x);
-//                System.out.println("y1 = " + tskx._res);
+//                System.out.println("y1 = " + tskx._residual);
 //                System.out.println("y2 = " + y);
                 beta[currIdx] = ADMM.shrinkage(x * wsumuInv,l1pen) * denums[currIdx];
                 gamma -= beta[currIdx]*delta;
                 RES += delta*beta[currIdx]*wsumx;
               }
               GLMCoordinateDescentTaskSeqNaiveNumSparse tsk = new GLMCoordinateDescentTaskSeqNaiveNumSparse((iter_x = 1 - iter_x), gamma, Double.NaN, beta[activeData.numStart() + activeData.numNums() - 1], 0, 0).doAll(fr1);
+              RES += tsk._residual;
 //              GLMCoordinateDescentTaskSeqNaiveNum tskx = new GLMCoordinateDescentTaskSeqNaiveNum(iter_x, beta[beta.length-1], 0, beta[activeData.numStart() + activeData.numNums() - 1], 0, 0,0).doAll(frx1);
 //              System.out.println("RESX = " + tsk._residual);
 //              System.out.println("RESY = " + tskx._residual);
-              RES = tsk._residual;
-              MSE = tsk._mse;
+
+//              MSE = tsk._mse;
             } else {
               for (int i = 0; i < activeData.numNums(); i++) {
                 int currIdx = i + activeData.numStart();
@@ -908,36 +921,38 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 GLMCoordinateDescentTaskSeqNaiveNum tsk = new GLMCoordinateDescentTaskSeqNaiveNum((iter_x = 1 - iter_x), gamma, betaold[currIdx], prevIdx >= activeData.numStart() ? beta[prevIdx] : 0, activeData.normMul(i), activeData.normSub(i), 0).doAll(fr1);
                 beta[currIdx] = ADMM.shrinkage(tsk._res * wsumuInv, l1pen) * denums[currIdx];
               }
-              GLMCoordinateDescentTaskSeqNaiveNum tsk = new GLMCoordinateDescentTaskSeqNaiveNum((iter_x = 1 - iter_x), gamma, 0, beta[activeData.numStart() + activeData.numNums() - 1], 0, 0, 0).doAll(fr1);
+              GLMCoordinateDescentTaskSeqNaiveNumIcpt tsk = new GLMCoordinateDescentTaskSeqNaiveNumIcpt((iter_x = 1 - iter_x), gamma, beta[activeData.numStart() + activeData.numNums() - 1]).doAll(fr1);
               RES = tsk._residual;
-              System.out.println("RESX = " + tsk._residual);
-              MSE = tsk._mse;
             }
           }
           // compute intercept
           if (!Double.isNaN(RES)) { // TODO handle no intercept case
             beta[beta.length - 1] = RES*wsumInv + betaold[beta.length-1];
             double icptdiff = beta[beta.length - 1] - betaold[beta.length-1];
-            MSE = MSE - 2*icptdiff*RES + icptdiff*icptdiff*wsumx;
+//            MSE = MSE - 2*icptdiff*RES + icptdiff*icptdiff*wsumx;
             gamma += icptdiff;
             RES = 0;
           }
           double maxDiff = 0;
           for(int i = 0; i < beta.length-1; ++i){ // intercept does not count
             double diff = beta[i] - betaold[i];
-            if (diff > maxDiff) maxDiff = diff;
-            else if (-diff > maxDiff) maxDiff = -diff;
+            double d = diff*diff*gt.wxx[i]*wsumuInv;
+            if (d > maxDiff) maxDiff = d;
+            if(-d > maxDiff) maxDiff = -d;
           }
-          if (maxDiff < _parms._beta_epsilon)
-            break;
-          // compute new objective
-          double objx = MSE * wsumuInv * .5  + l1pen * ArrayUtils.l1norm(beta, true) + .5 * l2pen * ArrayUtils.l2norm2(beta, true);
-          double xdiff = (((objx_old - objx) / objx_old));
-          if (xdiff < _parms._objective_epsilon*(_parms._family == Family.gaussian?1:1e-1)) {
-            break;
-          }
-          objx_old = objx;
           System.arraycopy(beta,0,betaold,0,beta.length);
+          if (maxDiff < 1e-7) {
+            System.out.println("iteration " + iter1 + ": maxDiff = " + maxDiff  +"=> break");
+            break;
+          }
+          // compute new objective
+//          double objx = MSE * wsumuInv * .5  + l1pen * ArrayUtils.l1norm(beta, true) + .5 * l2pen * ArrayUtils.l2norm2(beta, true);
+//          double xdiff = (((objx_old - objx) / objx_old));
+//          if (xdiff < _parms._objective_epsilon*(_parms._family == Family.gaussian?1:1e-4)) {
+//            System.out.println("xdiff = " + xdiff + " => break (epsilon = " + _parms._objective_epsilon*(_parms._family == Family.gaussian?1:1e-3) + ")");
+//            break;
+//          }
+//          objx_old = objx;
         }
         iter1Sum += iter1;
         gt = new GLMGenerateWeightsTask(_job._key, sparse, _state.activeData(), _parms, beta).doAll(fr0);
@@ -947,6 +962,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       long endTimeTotalNaive = System.currentTimeMillis();
       Log.info(LogMsg("COD Naive took " + iter2 + ":" + iter1Sum + " iterations, " + (endTimeTotalNaive-startTimeTotalNaive)*0.001 + " seconds"));
+      Log.info(LogMsg("COD took " + (SUM_ITER += iter1Sum) + " passes and " + (SUM_TASKS += iter1Sum*activeData.fullN()) + " tasks so far"));
     }
     private void fitModel() {
       Solver solver = (_parms._solver == Solver.AUTO) ? defaultSolver() : _parms._solver;
