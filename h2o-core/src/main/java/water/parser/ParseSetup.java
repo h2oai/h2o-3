@@ -273,15 +273,12 @@ public class ParseSetup extends Iced {
     //Calc chunk-size
     // FIXME: should be a parser specific - or at least parser should be able to override defaults
     Iced ice = DKV.getGet(fkeys[0]);
-    
     if (ice instanceof Frame && ((Frame) ice).vec(0) instanceof UploadFileVec) {
       t._gblSetup._chunk_size = FileVec.DFLT_CHUNK_SIZE;
     } else {
       int calculatedChunkSize = FileVec.calcOptimalChunkSize(t._totalParseSize, t._gblSetup._number_columns, t._maxLineLength,
           Runtime.getRuntime().availableProcessors(), H2O.getCloudSize(), false /*use new heuristic*/, true);
-      int maxExpectedHeaderSize = Math.max(10000, (int)t._maxLineLength * 300); // to make sure we dont lose bits and get a negative
-      int acceptableHeaderSize = Math.min(500000, maxExpectedHeaderSize); //can't expect half a meg of headers
-      int finalChunkSize = Math.max(calculatedChunkSize, acceptableHeaderSize);
+      int finalChunkSize = Math.max(t._gblSetup.dataOffset + 2, calculatedChunkSize);
       t._gblSetup._chunk_size = finalChunkSize;
     }
 
