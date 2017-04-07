@@ -1450,9 +1450,9 @@ public class GLMTest  extends TestUtil {
 
     DataInfo dinfo = new DataInfo(frMM, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, false, true, true, false, false, false);
     Frame frMMEx = new Frame(dinfo._adaptedFrame);
-    frMMEx.add(new String[]{"w","z","zTilda","d0","d1"}, frMM.anyVec().makeVolatileDoubles(5));
+    frMMEx.add(new String[]{"w","zTilda","d0","d1"}, frMM.anyVec().makeVolatileDoubles(4));
     frMMEx.add(new String[]{"i0","i1"}, frMM.anyVec().makeVolatileInts(new int[]{0,0}));
-    Frame frMMx = new Frame(new String[] {"w","z","zTilda","d0","d1","i0","i1"},frMMEx.vecs( new String[]{"w","z","zTilda","d0","d1","i0","i1"}));
+    Frame frMMx = new Frame(new String[] {"w","zTilda","d0","d1","i0","i1"},frMMEx.vecs( new String[]{"w","zTilda","d0","d1","i0","i1"}));
     frMMx.add("xx",dinfo._adaptedFrame.vec(0));
     for(boolean standardize:new boolean[]{false,true}) {
       dinfo = new DataInfo(frMM, null, 1, true, standardize?TransformType.STANDARDIZE:TransformType.NONE, DataInfo.TransformType.NONE, false, true, true, false, false, false);
@@ -1471,9 +1471,7 @@ public class GLMTest  extends TestUtil {
 
       GLMCoordinateDescentTaskSeqNaiveNumSparse tx1 = new GLMTask.GLMCoordinateDescentTaskSeqNaiveNumSparse(0, gamma, beta[0], 0, dinfo.normMul(0), 0).doAll(frMMx);
       double RES = t1.res; // sum of weighted residual:   sum_i{w_i*(y_i-ytilda_i)}
-      double MSE = t1.mse;// sum of weighted residual^2: sum_i{w_i*(y_i-ytilda_i)^2}
       RES += tx1._residual - beta[0]*dinfo.normMul(0)*dinfo.normSub(0)*t1.wsum;
-      MSE += tx1._mse;
       GLMGenerateWeightsTask t2 = new GLMGenerateWeightsTask(null, false, dinfo, parms, beta).doAll(frMMEx);
       Assert.assertTrue(t1._ranSparse);
       Assert.assertFalse(t2._ranSparse);
@@ -1643,12 +1641,13 @@ public class GLMTest  extends TestUtil {
           params._train = fr._key;
           params._lambda = new double[]{0};
           params._standardize = true;
-          params._solver = s;
           params._objective_epsilon = 0;
+          params._solver = s;
+//          params._objective_epsilon = 0;
           //      params._missing_values_handling = MissingValuesHandling.Skip;
           GLM glm = new GLM(params);
           model = glm.trainModel().get();
-          assertEquals(6,model._output.bestSubmodel().iteration);
+          assertTrue(6 >= model._output.bestSubmodel().iteration);
           model.delete();
           System.out.println(model.coefficients());
           HashMap<String, Double> coefs = model.coefficients();

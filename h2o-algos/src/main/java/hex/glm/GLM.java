@@ -814,7 +814,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       double [] betaold = beta.clone();
       int iter2=0; // total cd iters
       if(_codVecs == null) {
-        _codVecs = new Frame(new String[]{"w", "z", "zTilda", "d0", "d1"}, _state.activeData()._adaptedFrame.anyVec().makeVolatileDoubles(0, 0, 0, 1, 1));
+        _codVecs = new Frame(new String[]{"w", "zTilda", "d0", "d1"}, _state.activeData()._adaptedFrame.anyVec().makeVolatileDoubles(0, 0, 1, 1));
         _codVecs.add(new String[]{"c0", "c1"}, _state.activeData()._adaptedFrame.anyVec().makeVolatileInts(new int[]{0, 0}));
       }
 //      Frame codVecs2 = new Frame(new String[]{"w", "z", "zTilda", "d0", "d1"}, _state.activeData()._adaptedFrame.anyVec().makeVolatileDoubles(0, 0, 0, 1, 1));
@@ -824,7 +824,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       long startTimeTotalNaive = System.currentTimeMillis();
       double sparseRatio = FrameUtils.sparseRatio(activeData._adaptedFrame);
       System.out.println("sparseRatio = " + sparseRatio);
-      boolean sparse =  sparseRatio <= .25;
+      boolean sparse =  sparseRatio <= .125;
       GLMGenerateWeightsTask gt = new GLMGenerateWeightsTask(_job._key,sparse, _state.activeData(), _parms, beta).doAll(fr0);
 //      GLMGenerateWeightsTask gtx = new GLMGenerateWeightsTask(_job._key,false, _state.activeData(), _parms, beta).doAll(frx0);
       int iter1Sum = 0;
@@ -832,6 +832,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       double gamma = beta[beta.length-1]; // scalar offset, can be intercept and/or sparse offset compensation for skipped centering
       if(sparse)
           gamma += GLM.sparseOffset(beta,activeData);
+      double [] beta_old_outer = beta.clone();
       // generate new IRLS iteration
       while (iter2++ < 50) {
 //        GLMIterationTask taskX = new GLMIterationTask(null,activeData,new GLMWeightsFun(_parms),beta).doAll(activeData._adaptedFrame);
@@ -860,7 +861,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 //        frx1.add("xj", /* just a placeholder */ codVecs2.anyVec()); // add current variable col
         double objx_old = Double.POSITIVE_INFINITY;
         double RES = gt.res; // sum of weighted residual:   sum_i{w_i*(y_i-ytilda_i)}
-        double MSE = gt.mse;
         while (iter1++ < 1000) {
           if (activeData._cats > 0) {
             double [] bNew = null, bOld = null;
@@ -875,7 +875,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             }
             GLMCoordinateDescentTaskSeqNaiveCat t = new GLMCoordinateDescentTaskSeqNaiveCat((iter_x = 1-iter_x),gamma,null,bNew,null,Integer.MAX_VALUE).doAll(fr1);
             RES = t._residual;
-            MSE = t._mse;
           }
           if(activeData.numNums() > 0){
             if(sparse){
@@ -940,10 +939,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             double diff = beta[i] - betaold[i];
             double d = diff*diff*gt.wxx[i]*wsumuInv;
             if (d > maxDiff) maxDiff = d;
-            if(-d > maxDiff) maxDiff = -d;
+//            if(-d > maxDiff) maxDiff = -d;
           }
           System.arraycopy(beta,0,betaold,0,beta.length);
-          if (maxDiff < _parms._beta_epsilon*1e-3)
+          if (maxDiff < _parms._beta_epsilon*_parms._beta_epsilon)
             break;
           // compute new objective
 //          double objx = MSE * wsumuInv * .5  + l1pen * ArrayUtils.l1norm(beta, true) + .5 * l2pen * ArrayUtils.l2norm2(beta, true);
@@ -958,6 +957,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         gt = new GLMGenerateWeightsTask(_job._key, sparse, _state.activeData(), _parms, beta).doAll(fr0);
 //        gtx = new GLMGenerateWeightsTask(_job._key,false, _state.activeData(), _parms, beta).doAll(frx0);
         if(!progress(beta.clone(),gt._likelihood))
+          break;
+        double maxDiff = 0;
+        for(int i = 0; i < beta.length-1; ++i){ // intercept does not count
+          double diff = beta[i] - beta_old_outer[i];
+          double d = diff*diff*gt.wxx[i]*wsumuInv;
+          if (d > maxDiff) maxDiff = d;
+//            if(-d > maxDiff) maxDiff = -d;
+        }
+        System.arraycopy(beta,0,beta_old_outer,0,beta.length);
+        if (maxDiff < _parms._beta_epsilon*1e-3)
           break;
       }
       long endTimeTotalNaive = System.currentTimeMillis();
@@ -1386,8 +1395,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         bdiffNeg = bd < bdiffNeg ? bd : bdiffNeg;
         beta[P] = b;
       }
-      if(iter1 < 5)
-        System.out.println("beta[" + iter1 + "] = " + Arrays.toString(beta));
       if (-1e-4 < bdiffNeg && bdiffPos < 1e-4)
         break;
     }
