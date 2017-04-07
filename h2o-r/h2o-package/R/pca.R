@@ -14,7 +14,7 @@
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
 #' @param transform Transformation of training data Must be one of: "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE".
 #'        Defaults to NONE.
-#' @param pca_method Method for computing PCA (Caution: Power and GLRM are currently experimental and unstable) Must be one of:
+#' @param pca_method Method for computing PCA (Caution: GLRM is currently experimental and unstable) Must be one of:
 #'        "GramSVD", "Power", "Randomized", "GLRM". Defaults to GramSVD.
 #' @param k Rank of matrix approximation Defaults to 1.
 #' @param max_iterations Maximum training iterations Defaults to 1000.

@@ -394,7 +394,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     @property
     def svd_method(self):
         """
-        Method for computing SVD during initialization (Caution: Power and Randomized are currently experimental and
+        Method for computing SVD during initialization (Caution: Randomized is currently experimental and
         unstable)
 
         One of: ``"gram_s_v_d"``, ``"power"``, ``"randomized"``  (default: ``"randomized"``).

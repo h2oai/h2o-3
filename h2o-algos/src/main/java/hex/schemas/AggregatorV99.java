@@ -3,9 +3,10 @@ package hex.schemas;
 import hex.DataInfo;
 import hex.aggregator.Aggregator;
 import hex.aggregator.AggregatorModel;
-import static hex.pca.PCAModel.*;
 import water.api.API;
 import water.api.schemas3.ModelParametersSchemaV3;
+
+import static hex.pca.PCAModel.PCAParameters;
 
 public class AggregatorV99 extends ModelBuilderSchema<Aggregator,AggregatorV99,AggregatorV99.AggregatorParametersV99> {
 
@@ -34,7 +35,7 @@ public class AggregatorV99 extends ModelBuilderSchema<Aggregator,AggregatorV99,A
     @API(help = "Transformation of training data", values = { "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE" }, gridable = true, level= API.Level.expert)  // TODO: pull out of categorical class
     public DataInfo.TransformType transform;
 
-    @API(help = "Method for computing PCA (Caution: Power and GLRM are currently experimental and unstable)", values = { "GramSVD", "Power", "Randomized", "GLRM" }, gridable = true, level= API.Level.expert)
+    @API(help = "Method for computing PCA (Caution: GLRM is currently experimental and unstable)", values = { "GramSVD", "Power", "Randomized", "GLRM" }, gridable = true, level= API.Level.expert)
     public PCAParameters.Method pca_method;
 
     @API(help = "Rank of matrix approximation", direction = API.Direction.INOUT, gridable = true, level= API.Level.secondary)

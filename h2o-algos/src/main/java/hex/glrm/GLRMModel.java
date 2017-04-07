@@ -60,7 +60,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     public DataInfo.TransformType _transform = DataInfo.TransformType.NONE;
     public int _k = 1;                       // Rank of resulting XY matrix
     public GlrmInitialization _init = GlrmInitialization.PlusPlus;  // Initialization of Y matrix
-    public SVDParameters.Method _svd_method = SVDParameters.Method.Randomized;  // SVD initialization method (for _init = SVD)
+    public SVDParameters.Method _svd_method = SVDParameters.Method.Power;  // SVD initialization method (for _init = SVD)
     public Key<Frame> _user_y;               // User-specified Y matrix (for _init = User)
     public Key<Frame> _user_x;               // User-specified X matrix (for _init = User)
     public boolean _expand_user_y = true;    // Should categorical columns in _user_y be expanded via one-hot encoding? (for _init = User)
