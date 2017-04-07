@@ -121,7 +121,7 @@ class H2OCluster(object):
         return self._props["internal_security_enabled"]
 
 
-    def node_info(self,node_idx):
+    def node(self,node_idx):
         """
         Get information about a particular node in an H2O cluster (node index is 0 based)
 
@@ -160,7 +160,7 @@ class H2OCluster(object):
         :examples:
           >>>import h2o
           >>>h2o.init()
-          >>>node_one = h2o.cluster().node_info(0)
+          >>>node_one = h2o.cluster().node(0)
           >>>node_one["pid"] #Get PID for first node in H2O Cluster
         """
         return self.nodes[node_idx]
