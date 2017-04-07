@@ -55,7 +55,7 @@ fi
 #   build/resources/main - Main resources (e.g. page.html)
 
 #MAX_MEM=${H2O_JVM_XMX:-2200m}
-MAX_MEM=${H2O_JVM_XMX:-20g}
+MAX_MEM=${H2O_JVM_XMX:-30g}
 
 # Check if coverage should be run
 if [ $JACOCO_ENABLED = true ]
