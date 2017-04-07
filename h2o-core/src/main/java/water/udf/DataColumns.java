@@ -2,8 +2,8 @@ package water.udf;
 
 import water.fvec.Chunk;
 import water.fvec.Vec;
-import water.udf.fp.Function;
-import water.udf.fp.Functions;
+import water.util.fp.Function;
+import water.util.fp.Functions;
 
 import java.io.IOException;
 import java.util.List;

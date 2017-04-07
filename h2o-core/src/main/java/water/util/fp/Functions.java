@@ -1,4 +1,4 @@
-package water.udf.fp;
+package water.util.fp;
 
 import static water.util.Java7.*;
 

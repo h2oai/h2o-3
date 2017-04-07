@@ -4,9 +4,9 @@ import java.util.Date
 import java.{lang, util}
 
 import water.udf.DataColumns._
-import water.udf.fp.{Function => UFunction, Functions}
+import water.util.fp.{Function => UFunction, Functions}
 import water.udf.specialized.{Dates, Doubles, Enums, Strings}
-import water.udf.{fp => F}
+import water.util.{fp => F}
 
 import scala.collection.JavaConverters._
 
@@ -18,7 +18,7 @@ trait ScalaFactory[JavaType,ScalaType] extends Serializable { self: BaseFactory[
 
   def newColumn[U](xs: Iterable[ScalaType]): DataColumn[JavaType] = {
     val jl: util.List[JavaType] = xs.toList.map(conv).asJava
-    val listFunction: fp.Function[lang.Long, JavaType] = Functions.onList(jl)
+    val listFunction: water.util.fp.Function[lang.Long, JavaType] = Functions.onList(jl)
     self.newColumn(xs.size, listFunction)
   }
 
