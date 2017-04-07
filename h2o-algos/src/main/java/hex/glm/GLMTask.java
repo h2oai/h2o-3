@@ -1554,7 +1554,7 @@ public abstract class GLMTask  {
           i++;
         }
       }
-      if (!Double.isNaN(_bOld)) {
+      if (_bOld != 0) {
         int i = 0, j;
         double res = 0;
         while (i < idCurr.length && (j = idCurr[i]) != -1) {
@@ -1571,16 +1571,17 @@ public abstract class GLMTask  {
           i++;
         }
         _res = res;
-      } /*else { // the last numeric task must compute mse and residual
-        residual = 0; mse = 0;
-        for (int i = 0; i < wChunk.length; ++i) {
-          double diff = (zChunk[i] - ztildaChunk[i] - _sparseOffset);
-          residual += wChunk[i] * diff;
-          mse += wChunk[i] * diff * diff;
+      }  else { // the last numeric task must compute mse and residual
+        int i = 0, j = 0;
+        double res = 0;
+        while (i < idCurr.length && (j = idCurr[i]) != -1) {
+          res += xCurr[i]*wChunk[j]*(zChunk[j]-ztildaChunk[j]-_sparseOffset);
+          i++;
         }
+        _res = res;
       }
       _residual = residual;
-      _mse = mse;*/
+      _mse = mse;
       _residual = residual;
     }
     @Override

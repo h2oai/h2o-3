@@ -908,7 +908,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 gamma -= beta[currIdx]*delta;
                 RES += delta*beta[currIdx]*wsumx;
               }
-              GLMCoordinateDescentTaskSeqNaiveNumSparse tsk = new GLMCoordinateDescentTaskSeqNaiveNumSparse((iter_x = 1 - iter_x), gamma, Double.NaN, beta[activeData.numStart() + activeData.numNums() - 1], 0, 0).doAll(fr1);
+              GLMCoordinateDescentTaskSeqNaiveNumSparse tsk = new GLMCoordinateDescentTaskSeqNaiveNumSparse((iter_x = 1 - iter_x), gamma, 0, beta[activeData.numStart() + activeData.numNums() - 1], 0, 0).doAll(fr1);
               RES += tsk._residual;
 //              GLMCoordinateDescentTaskSeqNaiveNum tskx = new GLMCoordinateDescentTaskSeqNaiveNum(iter_x, beta[beta.length-1], 0, beta[activeData.numStart() + activeData.numNums() - 1], 0, 0,0).doAll(frx1);
 //              System.out.println("RESX = " + tsk._residual);
@@ -943,10 +943,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             if(-d > maxDiff) maxDiff = -d;
           }
           System.arraycopy(beta,0,betaold,0,beta.length);
-          if (maxDiff < 1e-7) {
-            System.out.println("iteration " + iter1 + ": maxDiff = " + maxDiff  +"=> break");
+          if (maxDiff < _parms._beta_epsilon*1e-3)
             break;
-          }
           // compute new objective
 //          double objx = MSE * wsumuInv * .5  + l1pen * ArrayUtils.l1norm(beta, true) + .5 * l2pen * ArrayUtils.l2norm2(beta, true);
 //          double xdiff = (((objx_old - objx) / objx_old));
