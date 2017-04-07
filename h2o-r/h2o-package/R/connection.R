@@ -56,38 +56,40 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
                      max_mem_size = NULL, min_mem_size = NULL,
                      ice_root = tempdir(), strict_version_check = TRUE, proxy = NA_character_,
                      https = FALSE, insecure = FALSE, username = NA_character_, password = NA_character_,
-                     cookies = NA_character_, context_path = NA_character_) {
+                     cookies = NA_character_, context_path = NA_character_, ignore_config = FALSE) {
 
-    # Check for .h2oconfig file
-    # Find .h2oconfig file starting from currenting directory and going
-    # up all parent directories until it reaches the root directory.
-    config_path <- .find.config()
+    if(!(ignore_config)){
+      # Check for .h2oconfig file
+      # Find .h2oconfig file starting from currenting directory and going
+      # up all parent directories until it reaches the root directory.
+      config_path <- .find.config()
 
-    #Read in config if available
-    if(!(is.null(config_path))){
+      #Read in config if available
+      if(!(is.null(config_path))){
 
-      h2oconfig = .parse.h2oconfig(config_path,print_path=TRUE)
+        h2oconfig = .parse.h2oconfig(config_path,print_path=TRUE)
 
-      #Check for each `allowed_config_keys` in the config file and set to counterparts in `h2o.init()`
-      if(strict_version_check == TRUE && "init.check_version" %in% colnames(h2oconfig)){
-        strict_version_check = as.logical(trimws(toupper(as.character(h2oconfig$init.check_version))))
+        #Check for each `allowed_config_keys` in the config file and set to counterparts in `h2o.init()`
+        if(strict_version_check == TRUE && "init.check_version" %in% colnames(h2oconfig)){
+          strict_version_check = as.logical(trimws(toupper(as.character(h2oconfig$init.check_version))))
+        }
+        if(is.na(proxy) && "init.proxy" %in% colnames(h2oconfig)){
+          proxy = trimws(as.character(h2oconfig$init.proxy))
+        }
+        if(insecure == FALSE && "init.verify_ssl_certificates" %in% colnames(h2oconfig)){
+          insecure = as.logical(trimws(toupper(as.character(h2oconfig$init.verify_ssl_certificates))))
+        }
+        if(is.na(cookies) && "init.cookies" %in% colnames(h2oconfig)){
+          cookies = as.vector(trimws(strsplit(as.character(h2oconfig$init.cookies),";")[[1]]))
+        }
+        if(is.na(username) && "init.username" %in% colnames(h2oconfig)){
+          username = trimws(as.character(h2oconfig$init.username))
+        }
+        if(is.na(password) && "init.password" %in% colnames(h2oconfig)){
+          password = trimws(as.character(h2oconfig$init.password))
+        }
       }
-      if(is.na(proxy) && "init.proxy" %in% colnames(h2oconfig)){
-        proxy = trimws(as.character(h2oconfig$init.proxy))
-      }
-      if(insecure == FALSE && "init.verify_ssl_certificates" %in% colnames(h2oconfig)){
-        insecure = as.logical(trimws(toupper(as.character(h2oconfig$init.verify_ssl_certificates))))
-      }
-      if(is.na(cookies) && "init.cookies" %in% colnames(h2oconfig)){
-        cookies = as.vector(trimws(strsplit(as.character(h2oconfig$init.cookies),";")[[1]]))
-      }
-      if(is.na(username) && "init.username" %in% colnames(h2oconfig)){
-        username = trimws(as.character(h2oconfig$init.username))
-      }
-      if(is.na(password) && "init.password" %in% colnames(h2oconfig)){
-        password = trimws(as.character(h2oconfig$init.password))
-      }
-  }
+    }
 
   if(!is.character(ip) || length(ip) != 1L || is.na(ip) || !nzchar(ip))
     stop("`ip` must be a non-empty character string")
