@@ -154,7 +154,9 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     }
   }
 
+  @Ignore // too slow takes 1h
   @Test public void convergenceInceptionColor() { checkConvergence(3, inception_bn, 500); }
+  @Ignore // too slow takes 38 min
   @Test public void convergenceInceptionGrayScale() { checkConvergence(1, inception_bn, 500); }
 
   @Ignore //too slow
