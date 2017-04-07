@@ -355,7 +355,6 @@ public class ParseSetup extends Iced {
 
         // Compute the max line length (to help estimate the number of bytes to read per Parse map)
         _maxLineLength = maxLineLength(bits);
-        if (_maxLineLength==-1) throw new H2OIllegalArgumentException("The first 4MB of the data don't contain any line breaks. Cannot parse.");
 
         try {
           _gblSetup = guessSetup(bv, bits, _userSetup);

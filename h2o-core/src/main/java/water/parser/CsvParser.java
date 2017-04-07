@@ -33,8 +33,6 @@ class CsvParser extends Parser {
     return offset;
   }
   
-  private int patience = 20;
-  
   // Parse this one Chunk (in parallel with other Chunks)
   @SuppressWarnings("fallthrough")
   @Override public ParseWriter parseChunk(int cidx, final ParseReader din, final ParseWriter dout) {
