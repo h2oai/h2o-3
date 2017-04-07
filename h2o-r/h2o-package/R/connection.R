@@ -27,6 +27,7 @@
 #' @param password (Optional) Password to login with.
 #' @param cookies (Optional) Vector(or list) of cookies to add to request.
 #' @param context_path (Optional) The last part of connection URL: http://<ip>:<port>/<context_path>
+#' @param ignore_config (Optional) A \code{logical} value indicating whether a search for a .h2oconfig file should be concucted or not.
 #' @return this method will load it and return a \code{H2OConnection} object containing the IP address and port number of the H2O server.
 #' @note Users may wish to manually upgrade their package (rather than waiting until being prompted), which requires
 #' that they fully uninstall and reinstall the H2O package, and the H2O client package. You must unload packages running
