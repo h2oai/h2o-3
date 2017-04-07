@@ -1,7 +1,7 @@
 package water.udf;
 
 import water.fvec.Vec;
-import water.udf.fp.Function;
+import water.util.fp.Function;
 
 /**
  * Generic typed data column

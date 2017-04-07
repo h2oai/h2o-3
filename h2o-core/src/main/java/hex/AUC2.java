@@ -6,8 +6,8 @@ import water.MRTask;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Vec;
-import water.udf.fp.Function;
-import water.udf.fp.Functions;
+import water.util.fp.Function;
+import water.util.fp.Functions;
 
 import static hex.AUC2.ThresholdCriterion.precision;
 import static hex.AUC2.ThresholdCriterion.recall;
@@ -177,7 +177,6 @@ public class AUC2 extends Iced {
       double x1 = recall.exec(this, i);
       if (x0 >= x1) 
         throw new H2OIllegalArgumentException(""+i, "recall", ""+x1 + "<" + x0);
-      x1 = x0;
     }
   }
 

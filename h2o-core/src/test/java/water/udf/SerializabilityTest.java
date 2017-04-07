@@ -2,9 +2,8 @@ package water.udf;
 
 import org.apache.commons.lang.SerializationUtils;
 import org.junit.Test;
-import water.udf.fp.Function;
-import water.udf.fp.Functions;
-import water.udf.fp.PureFunctions;
+import water.util.fp.Function;
+import water.util.fp.PureFunctions;
 import water.udf.specialized.Enums;
 
 import java.util.Arrays;

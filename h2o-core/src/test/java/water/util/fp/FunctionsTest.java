@@ -1,10 +1,10 @@
-package water.udf.fp;
+package water.util.fp;
 
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
-import static water.udf.fp.Functions.*;
+import static water.util.fp.Functions.*;
 
 import static org.junit.Assert.*;
 

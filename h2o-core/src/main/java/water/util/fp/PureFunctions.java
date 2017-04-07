@@ -1,7 +1,4 @@
-package water.udf.fp;
-
-import java.util.Arrays;
-import java.util.List;
+package water.util.fp;
 
 /**
  * Stores stock pure functions, that is those that don't keep any context.
@@ -50,15 +47,15 @@ public class PureFunctions extends Functions {
     };
   }
 
-  abstract static class Function<X,Y> extends JustCode implements water.udf.fp.Function<X, Y> {}
+  abstract static class Function<X,Y> extends JustCode implements water.util.fp.Function<X, Y> {}
 
-  abstract static class Function2<X,Y,Z> extends JustCode implements water.udf.fp.Function2<X, Y, Z> {}
+  abstract static class Function2<X,Y,Z> extends JustCode implements water.util.fp.Function2<X, Y, Z> {}
 
-  abstract static class Function3<X,Y,Z,T> extends JustCode implements water.udf.fp.Function3<X, Y, Z, T> {}
+  abstract static class Function3<X,Y,Z,T> extends JustCode implements water.util.fp.Function3<X, Y, Z, T> {}
 
-  abstract static class Foldable<X, Y> extends JustCode implements water.udf.fp.Foldable<X, Y> {
+  abstract static class Foldable<X, Y> extends JustCode implements water.util.fp.Foldable<X, Y> {
   }
 
-  abstract static class Unfoldable<X, Y> extends JustCode implements water.udf.fp.Unfoldable<X, Y> {
+  abstract static class Unfoldable<X, Y> extends JustCode implements water.util.fp.Unfoldable<X, Y> {
   }
 }
