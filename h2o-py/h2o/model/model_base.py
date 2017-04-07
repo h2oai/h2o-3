@@ -1192,6 +1192,15 @@ class ModelBase(backwards_compatible()):
         if fid is None: return None
         return h2o.get_frame(fid["name"])
 
+    def rotation(self):
+        """
+        Obtain the rotations (eigenvectors) for a PCA model
+
+        :return: H2OFrame
+        """
+        if self._model_json["algo"] != "pca":
+            raise H2OValueError("This function is available for PCA models only")
+        return self._model_json["output"]["eigenvectors"]
 
     def score_history(self):
         """DEPRECATED. Use :meth:`scoring_history` instead."""
