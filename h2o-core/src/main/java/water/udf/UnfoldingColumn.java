@@ -1,8 +1,7 @@
 package water.udf;
 
 import water.H2O;
-import water.udf.fp.Functions;
-import water.udf.fp.Unfoldable;
+import water.util.fp.Unfoldable;
 
 import java.util.ArrayList;
 import java.util.Collections;

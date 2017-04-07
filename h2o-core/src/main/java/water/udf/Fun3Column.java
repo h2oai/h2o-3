@@ -3,7 +3,7 @@ package water.udf;
 import water.fvec.Chunk;
 import water.fvec.RawChunk;
 import water.fvec.Vec;
-import water.udf.fp.Function3;
+import water.util.fp.Function3;
 import static water.util.Java7.*;
 
 /**

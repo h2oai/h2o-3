@@ -4,7 +4,7 @@ import com.google.common.collect.Lists;
 import water.fvec.Chunk;
 import water.fvec.RawChunk;
 import water.fvec.Vec;
-import water.udf.fp.Foldable;
+import water.util.fp.Foldable;
 
 import java.util.Arrays;
 import java.util.LinkedList;

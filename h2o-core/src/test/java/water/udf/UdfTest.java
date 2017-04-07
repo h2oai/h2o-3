@@ -2,9 +2,9 @@ package water.udf;
 
 import com.google.common.io.Files;
 import org.junit.Test;
-import water.udf.fp.Function;
-import water.udf.fp.Predicate;
-import water.udf.fp.PureFunctions;
+import water.util.fp.Function;
+import water.util.fp.Predicate;
+import water.util.fp.PureFunctions;
 import water.udf.specialized.Enums;
 import water.util.StringUtils;
 

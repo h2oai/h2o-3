@@ -9,8 +9,8 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import water.Test0
 import water.TestUtil._
 import water.udf.MoreColumns._
-import water.udf.fp.PureFunctions._
-import water.udf.fp.{Function, Functions, PureFunctions}
+import water.util.fp.PureFunctions._
+import water.util.fp.{Function, Functions, PureFunctions}
 import water.util.FileUtils._
 
 import scala.collection.JavaConverters._

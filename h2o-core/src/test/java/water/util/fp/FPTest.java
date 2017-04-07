@@ -1,4 +1,4 @@
-package water.udf.fp;
+package water.util.fp;
 
 import org.junit.Test;
 
@@ -6,7 +6,7 @@ import java.util.Collections;
 import java.util.Iterator;
 
 import static org.junit.Assert.*;
-import static water.udf.fp.FP.*;
+import static water.util.fp.FP.*;
 
 /**
  * Tests set for FP library
