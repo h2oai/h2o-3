@@ -881,6 +881,7 @@ public class ArrayUtils {
   }
 
   public static boolean isInt(String s) {
+    if (s == null || s.isEmpty()) return false;
     int i = s.charAt(0)=='-' ? 1 : 0;
     for(; i<s.length();i++) if (!Character.isDigit(s.charAt(i))) return false;
     return true;
@@ -918,8 +919,11 @@ public class ArrayUtils {
    * @param a a set of strings
    * @param b a set of strings
    * @return union of arrays
+   * // TODO: add tests
    */
   public static String[] domainUnion(String[] a, String[] b) {
+    if (a == null) return b;
+    if (b == null) return a;
     int cIinA = numInts(a);
     int cIinB = numInts(b);
     // Trivial case - all strings or ints, sorted
@@ -949,7 +953,8 @@ public class ArrayUtils {
    * precondition a!=null &amp;&amp; b!=null
    */
   public static String[] union(String[] a, String[] b, boolean lexo) {
-    assert a!=null && b!=null : "Union expect non-null input!";
+    if (a == null) return b;
+    if (b == null) return a;
     return union(a, b, 0, a.length, 0, b.length, lexo);
   }
   public static String[] union(String[] a, String[] b, int aoff, int alen, int boff, int blen, boolean lexo) {
@@ -1608,8 +1613,22 @@ public class ArrayUtils {
   }
 
   public static int encodeAsInt(byte[] b) {
-    assert b.length == 4 : "Cannot encode more then 4 bytes into int: len = " + b.length;
+    assert b.length == 4 : "Cannot encode more than 4 bytes into int: len = " + b.length;
     return (b[0]&0xFF)+((b[1]&0xFF)<<8)+((b[2]&0xFF)<<16)+((b[3]&0xFF)<<24);
+  }
+
+  public static int encodeAsInt(byte[] bs, int at) {
+    if (at + 4 > bs.length) throw new IndexOutOfBoundsException("Cannot encode more than 4 bytes into int: len = " + bs.length + ", pos=" + at);
+    return (bs[at]&0xFF)+((bs[at+1]&0xFF)<<8)+((bs[at+2]&0xFF)<<16)+((bs[at+3]&0xFF)<<24);
+  }
+
+  public static byte[] decodeAsInt(int what, byte[] bs, int at) {
+    if (bs.length < at + 4) throw new IndexOutOfBoundsException("Wrong position " + at + ", array length is " + bs.length);
+    for (int i = at; i < at+4 && i < bs.length; i++) {
+      bs[i] = (byte)(what&0xFF);
+      what >>= 8;
+    }
+    return bs;
   }
 
   /** Transform given long numbers into byte array.

@@ -96,7 +96,7 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
   // TODO(Vlad): figure out what to do about the buffer being not UTF-8 (who guarantees?)
   @Override
   public String toString() {
-    return _buf == null ? null : new String(_buf, Math.max(0, _off), Math.min(_buf.length, _len), Charsets.UTF_8);
+    return _buf == null ? null : StringUtils.toString(_buf, Math.max(0, _off), Math.min(_buf.length, _len));
   }
 
   public String bytesToString() {
