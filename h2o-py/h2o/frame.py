@@ -2207,6 +2207,18 @@ class H2OFrame(object):
         fr._ex._cache.nrows = self.nrow
         return fr
 
+    def tokenize(self, split):
+        """
+        Tokenize String
+
+        tokenize() is similar to strsplit(), the difference between them is that tokenize() will store the tokenized
+        text into a single column making it easier for additional processing (filtering stop words, word2vec algo, ...).
+
+        :param str split The regular expression to split on.
+        @return An H2OFrame with a single column representing the tokenized Strings. Original rows of the input DF are separated by NA.
+        """
+        fr = H2OFrame._expr(expr=ExprNode("tokenize", self, split))
+        return fr
 
     def countmatches(self, pattern):
         """
@@ -2497,6 +2509,22 @@ class H2OFrame(object):
         """
         return H2OFrame._expr(expr=ExprNode("toupper", self), cache=self._ex._cache)
 
+    def grep(self,pattern, ignore_case = False, invert = False, output_logical = False):
+        """
+        Searches for matches to argument `pattern` within each element
+        of a string column.
+
+        Default behavior is to return indices of the elements matching the pattern. Parameter
+        `output_logical` can be used to return a logical vector indicating if the element matches
+        the pattern (1) or not (0).
+
+        :param str pattern: A character string containing a regular expression.
+        :param bool ignore_case: If True, then case is ignored during matching.
+        :param bool invert:  If True, then identify elements that do not match the pattern.
+        :param bool output_logical: If True, then return logical vector of indicators instead of list of matching positions
+        :return: H2OFrame holding the matching positions or a logical list if `output_logical` is enabled.
+        """
+        return H2OFrame._expr(expr=ExprNode("grep", self, pattern, ignore_case, invert, output_logical))
 
     def tolower(self):
         """

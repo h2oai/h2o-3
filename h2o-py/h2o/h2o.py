@@ -848,13 +848,14 @@ def frames():
     return api("GET /3/Frames")
 
 
-def download_pojo(model, path="", get_jar=True):
+def download_pojo(model, path="", get_jar=True, jar_name=""):
     """
     Download the POJO for this model to the directory specified by path; if path is "", then dump to screen.
 
     :param model: the model whose scoring POJO should be retrieved.
     :param path: an absolute path to the directory where POJO should be saved.
     :param get_jar: retrieve the h2o-genmodel.jar also (will be saved to the same folder ``path``).
+    :param jar_name: Custom name of genmodel jar.
     :returns: location of the downloaded POJO file.
     """
     assert_is_type(model, ModelBase)
@@ -868,7 +869,10 @@ def download_pojo(model, path="", get_jar=True):
     else:
         filename = api("GET /3/Models.java/%s" % model.model_id, save_to=path)
         if get_jar:
-            api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, "h2o-genmodel.jar"))
+            if jar_name == "":
+                api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, "h2o-genmodel.jar"))
+            else:
+                api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, jar_name))
         return filename
 
 

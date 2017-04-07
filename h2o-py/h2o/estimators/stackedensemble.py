@@ -48,7 +48,8 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def __init__(self, **kwargs):
         super(H2OStackedEnsembleEstimator, self).__init__()
         self._parms = {}
-        names_list = {"model_id", "training_frame", "validation_frame", "base_models", "selection_strategy"}
+        names_list = {"model_id", "training_frame", "response_column", "validation_frame", "base_models",
+                      "selection_strategy"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -74,6 +75,21 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def training_frame(self, training_frame):
         assert_is_type(training_frame, None, H2OFrame)
         self._parms["training_frame"] = training_frame
+
+
+    @property
+    def response_column(self):
+        """
+        Response variable column.
+
+        Type: ``str``.
+        """
+        return self._parms.get("response_column")
+
+    @response_column.setter
+    def response_column(self, response_column):
+        assert_is_type(response_column, None, str)
+        self._parms["response_column"] = response_column
 
 
     @property

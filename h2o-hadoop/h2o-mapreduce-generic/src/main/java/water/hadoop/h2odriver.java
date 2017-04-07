@@ -10,7 +10,10 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import water.H2O;
+import water.H2OStarter;
 import water.network.SecurityUtils;
+import water.util.ArrayUtils;
 import water.util.StringUtils;
 
 import java.io.*;
@@ -97,6 +100,7 @@ public class h2odriver extends Configured implements Tool {
   static boolean formAuth = false;
   static String sessionTimeout = null;
   static String userName = System.getProperty("user.name");
+  static boolean client = false;
 
   // Runtime state that might be touched by different threads.
   volatile ServerSocket driverCallbackSocket = null;
@@ -110,6 +114,7 @@ public class h2odriver extends Configured implements Tool {
   volatile AtomicInteger numNodesReportingFullCloudSize = new AtomicInteger();
   volatile String clusterIp = null;
   volatile int clusterPort = -1;
+  volatile String flatfileContent = null;
 
   public void setShutdownRequested() {
     shutdownRequested = true;
@@ -125,8 +130,14 @@ public class h2odriver extends Configured implements Tool {
   }
 
   public String getClusterUrl() {
-    String scheme = (jksFileName == null) ? "http" : "https";
-    return scheme + "://" + clusterIp + ":" + clusterPort;
+    String url;
+    if (client) {
+      url = H2O.getURL(H2O.getJetty().getScheme());
+    } else {
+      String scheme = (jksFileName == null) ? "http" : "https";
+      url = scheme + "://" + clusterIp + ":" + clusterPort;
+    }
+    return url;
   }
 
   public static boolean usingYarn() {
@@ -297,34 +308,52 @@ public class h2odriver extends Configured implements Tool {
     }
   }
 
+  private void reportClientReady(String ip, int port) throws Exception {
+    assert client;
+    if (clusterReadyFileName != null) {
+      createClusterReadyFile(ip, port);
+      System.out.println("Cluster notification file (" + clusterReadyFileName + ") created.");
+    }
+  }
+
+  private void reportClusterReady(String ip, int port) throws Exception {
+    if (client)
+      return; // Hadoop cluster ready but we have to wait for client
+    if (clusterReadyFileName != null) {
+      createClusterReadyFile(ip, port);
+      System.out.println("Cluster notification file (" + clusterReadyFileName + ") created.");
+    }
+    setClusterIpPort(ip, port);
+  }
+
+  private static void createClusterReadyFile(String ip, int port) throws Exception {
+    String fileName = clusterReadyFileName + ".tmp";
+    String text1 = ip + ":" + port + "\n";
+    String text2 = hadoopJobId + "\n";
+    try {
+      File file = new File(fileName);
+      BufferedWriter output = new BufferedWriter(new FileWriter(file));
+      output.write(text1);
+      output.write(text2);
+      output.flush();
+      output.close();
+
+      File file2 = new File(clusterReadyFileName);
+      boolean success = file.renameTo(file2);
+      if (! success) {
+        throw new Exception ("Failed to create file " + clusterReadyFileName);
+      }
+    } catch ( IOException e ) {
+      e.printStackTrace();
+    }
+  }
+
   /**
    * Read and handle one Mapper->Driver Callback message.
    */
   class CallbackHandlerThread extends Thread {
     private Socket _s;
     private CallbackManager _cm;
-
-    private void createClusterReadyFile(String ip, int port) throws Exception {
-      String fileName = clusterReadyFileName + ".tmp";
-      String text1 = ip + ":" + port + "\n";
-      String text2 = hadoopJobId + "\n";
-      try {
-        File file = new File(fileName);
-        BufferedWriter output = new BufferedWriter(new FileWriter(file));
-        output.write(text1);
-        output.write(text2);
-        output.flush();
-        output.close();
-
-        File file2 = new File(clusterReadyFileName);
-        boolean success = file.renameTo(file2);
-        if (! success) {
-          throw new Exception ("Failed to create file " + clusterReadyFileName);
-        }
-      } catch ( IOException e ) {
-        e.printStackTrace();
-      }
-    }
 
     public void setSocket (Socket value) {
       _s = value;
@@ -372,11 +401,7 @@ public class h2odriver extends Configured implements Tool {
               if (! clusterIsUp) {
                 int n = numNodesReportingFullCloudSize.incrementAndGet();
                 if (n == numNodes) {
-                  if (clusterReadyFileName != null) {
-                    createClusterReadyFile(msg.getEmbeddedWebServerIp(), msg.getEmbeddedWebServerPort());
-                    System.out.println("Cluster notification file (" + clusterReadyFileName + ") created.");
-                  }
-                  setClusterIpPort(msg.getEmbeddedWebServerIp(), msg.getEmbeddedWebServerPort());
+                  reportClusterReady(msg.getEmbeddedWebServerIp(), msg.getEmbeddedWebServerPort());
                   clusterIsUp = true;
                 }
               }
@@ -473,6 +498,9 @@ public class h2odriver extends Configured implements Tool {
             System.exit(1);
           }
         }
+
+        // only set if everything went fine
+        flatfileContent = flatfile;
       }
     }
 
@@ -692,9 +720,10 @@ public class h2odriver extends Configured implements Tool {
    * Parse remaining arguments after the ToolRunner args have already been removed.
    * @param args Argument list
    */
-  void parseArgs(String[] args) {
+  String[] parseArgs(String[] args) {
     int i = 0;
-    while (true) {
+    boolean driverArgs = true;
+    while (driverArgs) {
       if (i >= args.length) {
         break;
       }
@@ -881,12 +910,20 @@ public class h2odriver extends Configured implements Tool {
         i++; if (i >= args.length) { usage(); }
         userName = args[i];
       }
+      else if (s.equals("-client")) {
+        client = true;
+        driverArgs = false;
+      }
       else {
         error("Unrecognized option " + s);
       }
 
       i++;
     }
+    String[] otherArgs = new String[Math.max(args.length - i, 0)];
+    for (int j = 0; j < otherArgs.length; j++)
+      otherArgs[j] = args[i++];
+    return otherArgs;
   }
 
   void validateArgs() {
@@ -981,6 +1018,10 @@ public class h2odriver extends Configured implements Tool {
       if (timeout <= 0) {
         error("invalid session timeout specification (" + sessionTimeout + ")");
       }
+    }
+
+    if (client && disown) {
+      error("client mode doesn't support the '-disown' option");
     }
   }
 
@@ -1208,7 +1249,7 @@ public class h2odriver extends Configured implements Tool {
 
     // Parse arguments.
     // ----------------
-    parseArgs(args);
+    String[] clientArgs = parseArgs(args);
     validateArgs();
 
     // Set up callback address and port.
@@ -1369,6 +1410,11 @@ public class h2odriver extends Configured implements Tool {
       addMapperArg(conf, s);
     }
 
+    if (client) {
+      addMapperArg(conf, "-md5skip");
+      addMapperArg(conf, "-disable_web");
+    }
+
     conf.set(h2omapper.H2O_MAPPER_ARGS_LENGTH, Integer.toString(mapperArgsLength));
 
     // Config files.
@@ -1401,9 +1447,9 @@ public class h2odriver extends Configured implements Tool {
       addMapperConf(conf, "-internal_security_conf", "security.config", securityConf);
     } else if(internal_secure_connections) {
       SecurityUtils.SSLCredentials credentials = SecurityUtils.generateSSLPair();
-      String sslConfigFile = SecurityUtils.generateSSLConfig(credentials);
+      securityConf = SecurityUtils.generateSSLConfig(credentials);
       addMapperConf(conf, "", credentials.jks.name, credentials.jks.getLocation());
-      addMapperConf(conf, "-internal_security_conf", "default-security.config", sslConfigFile);
+      addMapperConf(conf, "-internal_security_conf", "default-security.config", securityConf);
     }
 
     conf.set(h2omapper.H2O_MAPPER_CONF_LENGTH, Integer.toString(mapperConfLength));
@@ -1496,7 +1542,49 @@ public class h2odriver extends Configured implements Tool {
       return 0;
     }
 
-    System.out.println("(Note: Use the -disown option to exit the driver after cluster formation)");
+    if (client) {
+      if (flatfileContent == null)
+        throw new IllegalStateException("ERROR: flatfile should have been created by now.");
+
+      final File flatfile = File.createTempFile("h2o", "txt");
+      flatfile.deleteOnExit();
+
+      Writer w = new BufferedWriter(new FileWriter(flatfile));
+      boolean flatfileCreated = false;
+      try {
+        w.write(flatfileContent);
+        w.close();
+        flatfileCreated = true;
+      } catch (IOException e) {
+        e.printStackTrace();
+      } finally {
+        try {
+          w.close();
+        } catch (IOException suppressed) { /* ignore */ }
+      }
+
+      if (!flatfileCreated) {
+        System.out.println("ERROR: Failed to write flatfile.");
+        System.exit(1);
+      }
+
+      String[] generatedClientArgs = new String[]{
+              "-client",
+              "-flatfile", flatfile.getAbsolutePath(),
+              "-md5skip",
+              "-user_name", userName,
+              "-name", jobtrackerName
+      };
+      if (securityConf != null)
+        generatedClientArgs = ArrayUtils.append(generatedClientArgs, new String[]{"-internal_security_conf", securityConf});
+      generatedClientArgs = ArrayUtils.append(generatedClientArgs, clientArgs);
+
+      H2OStarter.start(generatedClientArgs, true);
+      reportClusterReady(H2O.SELF_ADDRESS.getHostAddress(), H2O.API_PORT);
+    }
+
+    if (! client)
+      System.out.println("(Note: Use the -disown option to exit the driver after cluster formation)");
     System.out.println("");
     System.out.println("Open H2O Flow in your web browser: " + getClusterUrl());
     System.out.println("");

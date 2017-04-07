@@ -369,6 +369,7 @@ public class NewChunk extends Chunk {
       int send = nextNotNAIdx < _is.length ? _is[nextNotNAIdx]: _sslen;
       assert send > sidx : "Bad indexes " + sidx + ".." + send;
       int slen = send - sidx -1 /*account for trailing zero byte*/;
+      assert slen >= 0 : getClass().getSimpleName() + ".add2Chunk_impl: slen=" + slen + ", sidx=" + sidx + ", send=" + send;
       // null-BufferedString represents NA value
       BufferedString bStr = sidx == -1 ? null : _bfstr.set(_ss, sidx, slen);
       c.addStr(bStr);
