@@ -571,7 +571,7 @@ public abstract class GLMTask  {
       Chunk response = chks[chks.length-1];
       Chunk weights = _dinfo._weights?chks[_dinfo.weightChunkId()]:new C0DChunk(1,response._len);
       double [] ws = weights.getDoubles(MemoryManager.malloc8d(weights._len),0,weights._len);
-      double [] ys = response.getDoubles(MemoryManager.malloc8d(weights._len),0,response._len);
+      double [] ys = response.getDoubles(MemoryManager.malloc8d(weights._len),0,response._len,Double.NaN,_dinfo.normRespSub(0),_dinfo.normRespMul(0));
       double [] etas = MemoryManager.malloc8d(response._len);
       if(_dinfo._offset)
         chks[_dinfo.offsetChunkId()].getDoubles(etas,0,etas.length);
@@ -1588,13 +1588,7 @@ public abstract class GLMTask  {
     public GLMCoordinateDescentTaskSeqNaiveCat(int iter_cnt, double gamma, double [] betaOld, double [] betaNew, int [] catMap, int NA) { // pass it norm mul and norm sup - in the weights already done. norm
       _iter_cnt = iter_cnt;
       _intercept = gamma;
-      if(catMap != null) {
-        _catMap = catMap.clone();
-        for(int i = 0; i < _catMap.length; ++i)
-          if(_catMap[i] == -1)
-            _catMap[i] = betaOld.length-1;
-      } else
-        _catMap = null;
+     _catMap = catMap;
       _bOld = betaOld;
       _bNew = betaNew;
       _NA = NA;
@@ -1607,8 +1601,11 @@ public abstract class GLMTask  {
       for (int i = 0; i < chunks[0]._len; ++i) { // going over all the rows in the chunk
         if(wChunk[i] == 0)continue;
         int cid = xCurr[i];
-        if (_catMap != null)   // some levels are ignored?
-          xCurr[i] = cid = _catMap[cid];
+        if (_catMap != null) {  // some levels are ignored?
+          cid = _catMap[cid];
+          if(cid == -1) cid = res.length-1;
+          xCurr[i] = cid;
+        }
         double ztilda = (ztildaChunk[i] = ztildaChunk[i] + _bOld[cid] - _bNew[xPrev[i]]);
         if(cid < res.length-1)
           res[cid] += wChunk[i] * (ztilda - _intercept);
@@ -1620,11 +1617,15 @@ public abstract class GLMTask  {
       for (int i = 0; i < chunks[0]._len; ++i) { // going over all the rows in the chunk
         if(wChunk[i] == 0)continue;
         int cid = xCurr[i];
-        if (_catMap != null)   // some levels are ignored?
-          xCurr[i] = cid = _catMap[cid];
-        double ztilda = (ztildaChunk[i] = ztildaChunk[i] + _bOld[cid]);
-        if(cid < res.length-1)
+        if (_catMap != null) {  // some levels are ignored?
+          cid = _catMap[cid];
+          if(cid == -1) cid = res.length-1;
+          xCurr[i] = cid;
+        }
+        if(cid < res.length-1) {
+          double ztilda = (ztildaChunk[i] = ztildaChunk[i] + _bOld[cid]);
           res[cid] += wChunk[i] * (ztilda - _intercept);
+        }
       }
       _res = res;
     }

@@ -81,6 +81,15 @@ public class DataInfo extends Keyed<DataInfo> {
   public double normMul(int i) {
     return _normMul == null?1:_normMul[i];
   }
+
+  public double normRespMul(int i){
+    return _normRespMul == null?1:_normRespMul[i];
+  }
+
+  public double normRespSub(int i){
+    return _normRespSub == null?1:_normRespSub[i];
+  }
+
   public double normSub(int i) {
     return _normSub == null?0:_normSub[i];
   }
@@ -374,6 +383,12 @@ public class DataInfo extends Keyed<DataInfo> {
         beta[off + N - 1] -= norm;
       }
     }
+    if(_response_transform == TransformType.STANDARDIZE){
+      double x = 1.0/_normRespMul[0];
+      for(int i = 0; i < beta.length; ++i)
+        beta[i] *= x;
+      beta[beta.length-1] += _normRespSub[0];
+    }
     return beta;
   }
 
@@ -556,6 +571,8 @@ public class DataInfo extends Keyed<DataInfo> {
         normMul[k-id] = _normMul[cols[k]-off];
     }
     DataInfo dinfo = new DataInfo(this,f,normMul,normSub,catLvls,intLvls,catModes,cols);
+    dinfo._normRespMul = _normRespMul;
+    dinfo._normRespSub = _normRespSub;
     dinfo._nums=f.numCols()-dinfo._cats - dinfo._responses - (dinfo._offset?1:0) - (dinfo._weights?1:0) - (dinfo._fold?1:0);
     dinfo._numMeans=new double[nnums];
     for(int k=id; k < (id+nnums);++k )

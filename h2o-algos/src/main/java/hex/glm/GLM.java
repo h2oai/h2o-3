@@ -344,7 +344,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             _nullBeta[_dinfo.fullN() + i * N] = Math.log(_state._ymu[i]);
       } else {
         _nullBeta = MemoryManager.malloc8d(_dinfo.fullN() + 1);
-        if (_parms._intercept && !(_parms._family == Family.quasibinomial))
+        if (_parms._intercept && !(_parms._family == Family.quasibinomial) && _dinfo._normRespMul == null)
           _nullBeta[_dinfo.fullN()] = new GLMModel.GLMWeightsFun(_parms).link(_state._ymu[0]);
         else
           _nullBeta[_dinfo.fullN()] = 0;
@@ -413,7 +413,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _parms._use_all_factor_levels = true;
       if (_parms._link == Link.family_default)
         _parms._link = _parms._family.defaultLink;
-      _dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, _parms._missing_values_handling == MissingValuesHandling.Skip, _parms._missing_values_handling == MissingValuesHandling.MeanImputation, false, hasWeightCol(), hasOffsetCol(), hasFoldCol(), _parms._interactions);
+      DataInfo.TransformType predictorTransform = _parms._standardize? DataInfo.TransformType.STANDARDIZE: DataInfo.TransformType.NONE;
+      DataInfo.TransformType responseTransform = _parms._family == Family.gaussian?predictorTransform:DataInfo.TransformType.NONE;
+      _dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, predictorTransform, responseTransform, _parms._missing_values_handling == MissingValuesHandling.Skip, _parms._missing_values_handling == MissingValuesHandling.MeanImputation, false, hasWeightCol(), hasOffsetCol(), hasFoldCol(), _parms._interactions);
 
       if (_parms._max_iterations == -1) { // fill in default max iterations
         int numclasses = _parms._family == Family.multinomial?nclasses():1;
@@ -859,18 +861,20 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         final int xjIdx = fr1.numCols();
         fr1.add("xj", /* just a placeholder */ _codVecs.anyVec()); // add current variable col
 //        frx1.add("xj", /* just a placeholder */ codVecs2.anyVec()); // add current variable col
-        double objx_old = Double.POSITIVE_INFINITY;
+//        double objx_old = Double.POSITIVE_INFINITY;
         double RES = gt.res; // sum of weighted residual:   sum_i{w_i*(y_i-ytilda_i)}
         while (iter1++ < 1000) {
           if (activeData._cats > 0) {
             double [] bNew = null, bOld = null;
             for (int i = 0; i < activeData._cats; ++i) {
+              int catStart = activeData._catOffsets[i];
+              int catEnd = activeData._catOffsets[i+1];
               fr1.replace(xjIdx, activeData._adaptedFrame.vec(i)); // add current variable col
-              bOld = Arrays.copyOfRange(betaold, activeData._catOffsets[i], activeData._catOffsets[i + 1] + 1);
-              bOld[bOld.length - 1] = 0;
+              bOld = Arrays.copyOfRange(betaold, catStart, catEnd+1);
+              bOld[bOld.length-1] = 0;
               double [] res = new GLMCoordinateDescentTaskSeqNaiveCat((iter_x = 1-iter_x),gamma,bOld,bNew,activeData.catMap(i),activeData._catNAFill[i]).doAll(fr1)._res;
-              for(int j=0; j < res.length-1; ++j)
-                beta[j] = bOld[j] = ADMM.shrinkage(res[j]*wsumuInv, l1pen) * denums[j];
+              for(int j=0; j < res.length; ++j)
+                beta[catStart+j] = bOld[j] = ADMM.shrinkage(res[j]*wsumuInv, l1pen) * denums[catStart+j];
               bNew = bOld;
             }
             GLMCoordinateDescentTaskSeqNaiveCat t = new GLMCoordinateDescentTaskSeqNaiveCat((iter_x = 1-iter_x),gamma,null,bNew,null,Integer.MAX_VALUE).doAll(fr1);
@@ -966,7 +970,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 //            if(-d > maxDiff) maxDiff = -d;
         }
         System.arraycopy(beta,0,beta_old_outer,0,beta.length);
-        if (maxDiff < _parms._beta_epsilon*1e-3)
+        if (maxDiff < _parms._beta_epsilon*_parms._beta_epsilon)
           break;
       }
       long endTimeTotalNaive = System.currentTimeMillis();
