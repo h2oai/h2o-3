@@ -881,6 +881,7 @@ public class ArrayUtils {
   }
 
   public static boolean isInt(String s) {
+    if (s == null || s.isEmpty()) return false;
     int i = s.charAt(0)=='-' ? 1 : 0;
     for(; i<s.length();i++) if (!Character.isDigit(s.charAt(i))) return false;
     return true;
