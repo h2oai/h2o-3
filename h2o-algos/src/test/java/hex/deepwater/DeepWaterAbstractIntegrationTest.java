@@ -142,6 +142,17 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._learning_rate = 1e-3;
       p._epochs = epochs;
       p._channels = channels;
+      if (network == DeepWaterParameters.Network.vgg) {
+        p._mini_batch_size = 8; //~6GB with mxnet
+      } else if (network == DeepWaterParameters.Network.resnet) {
+        p._mini_batch_size = 16; //~6GB with mxnet
+        p._learning_rate = 1e-4;
+      } else if (network == DeepWaterParameters.Network.alexnet) {
+        p._mini_batch_size = 128; //~3GB with mxnet
+        p._learning_rate = 1e-4;
+      } else {
+        p._mini_batch_size = 32; //<=6GB with mxnet
+      }
       p._problem_type = DeepWaterParameters.ProblemType.image;
 
       m = new DeepWater(p).trainModel().get();
@@ -154,31 +165,23 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     }
   }
 
-  @Test public void convergenceInceptionColor() { checkConvergence(3, inception_bn, 500); }
-  @Test public void convergenceInceptionGrayScale() { checkConvergence(1, inception_bn, 500); }
+  @Test public void convergenceInceptionColor() { checkConvergence(3, inception_bn, 150); }
+  @Test public void convergenceInceptionGrayScale() { checkConvergence(1, inception_bn, 150); }
 
-  @Ignore //too slow
   @Test public void convergenceGoogleNetColor() { checkConvergence(3, DeepWaterParameters.Network.googlenet, 150); }
-  @Ignore //too slow
-  @Test public void convergenceGoogleNetGrayScale() { checkConvergence(1, DeepWaterParameters.Network.googlenet, 100); }
+  @Test public void convergenceGoogleNetGrayScale() { checkConvergence(1, DeepWaterParameters.Network.googlenet, 150); }
 
   @Test public void convergenceLenetColor() { checkConvergence(3, lenet, 300); }
   @Test public void convergenceLenetGrayScale() { checkConvergence(1, lenet, 150); }
 
-  @Ignore
-  @Test public void convergenceVGGColor() { checkConvergence(3, DeepWaterParameters.Network.vgg, 50); }
-  @Ignore
-  @Test public void convergenceVGGGrayScale() { checkConvergence(1, DeepWaterParameters.Network.vgg, 50); }
+  @Test public void convergenceVGGColor() { checkConvergence(3, DeepWaterParameters.Network.vgg, 150); }
+  @Test public void convergenceVGGGrayScale() { checkConvergence(1, DeepWaterParameters.Network.vgg, 150); }
 
-  @Ignore
-  @Test public void convergenceResnetColor() { checkConvergence(3, resnet, 50); }
-  @Ignore
-  @Test public void convergenceResnetGrayScale() { checkConvergence(1, resnet, 50); }
+  @Test public void convergenceResnetColor() { checkConvergence(3, resnet, 150); }
+  @Test public void convergenceResnetGrayScale() { checkConvergence(1, resnet, 150); }
 
-  @Ignore
-  @Test public void convergenceAlexnetColor() { checkConvergence(3, alexnet, 50); }
-  @Ignore
-  @Test public void convergenceAlexnetGrayScale() { checkConvergence(1, alexnet, 50); }
+  @Test public void convergenceAlexnetColor() { checkConvergence(3, alexnet, 150); }
+  @Test public void convergenceAlexnetGrayScale() { checkConvergence(1, alexnet, 150); }
 
   //FIXME
   @Ignore
