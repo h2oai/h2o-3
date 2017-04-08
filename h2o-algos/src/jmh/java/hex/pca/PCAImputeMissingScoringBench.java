@@ -20,7 +20,6 @@ import static water.TestUtil.stall_till_cloudsize;
 
 /**
  * PCA benchmark micro-benchmark based on hex.pca.PCATest.testImputeMissing()
- * Note: Include necessary CSV files to h2o-3/h2o-algos/src/jmh/resources
  */
 @Fork(1)
 @Threads(1)
