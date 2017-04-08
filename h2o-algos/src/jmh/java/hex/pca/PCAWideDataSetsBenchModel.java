@@ -121,7 +121,7 @@ public class PCAWideDataSetsBenchModel {
 	
 	public boolean train() {
 		try {
-			pca.trainModel().get();
+			pcaModel = pca.trainModel().get();
 		} catch (Exception e) {
 			e.printStackTrace();
 			return false;
