@@ -16,9 +16,18 @@ The ``group_by`` function accepts the following parameters:
  - H2O Frame: This specifies the H2OFrame that you want the group by operation to be performed on.
  - ``by``: The ``by`` option can take a list of columns if you want to group by more than one column to compute the summary. 
 
+**Python Only**
+
+- ``na``, which controls treatment of NA values during the calculation. It can be one of:
+
+  - ``all`` (default): any NAs are used in the calculation as-is; which usually results in the final result being NA too.
+  - ``ignore``: NA entries are not included in calculations, but the total number of entries is taken as the total number of rows. For example, ``mean([1, 2, 3, nan], na="ignore")`` will produce ``1.5``.
+  - ``rm``: entries are skipped during the calculations, reducing the total effective count of entries. For example, ``mean([1, 2, 3, nan], na="rm")`` will produce ``2``.
+
 **R Only**
 
  - ``gb.control``: In R, the ``gb.control`` option specifies how to handle NA values in the dataset as well as how to name output columns. Note that to specify a list of column names in the ``gb.control`` list, you must add the ``col.names`` argument. 
+ - ``nrow``: Specify the name of the generated column.
  - ``na.methods``, which controls treatment of NA values during the calculation. It can be one of:
 
   - ``all`` (default): any NAs are used in the calculation as-is; which usually results in the final result being NA too.
@@ -58,7 +67,7 @@ Note that once the aggregation operations are complete, calling the GroupBy obje
     > originFlights <- h2o.group_by(data = airlines.hex, by = "Origin", nrow("Origin"), gb.control=list(na.methods="rm"))
     > originFlights.R <- as.data.frame(originFlights)
     > originFlights.R
-      Origin nrow_Origin
+        Origin nrow_Origin
     1      ABE          59
     2      ABQ         876
     3      ACY          31
@@ -111,8 +120,6 @@ Note that once the aggregation operations are complete, calling the GroupBy obje
     5    AMA      317                4                6
     6    ANC      100                0                1
 
-
-
    .. code-block:: python
 
     >>> import h2o
@@ -127,37 +134,49 @@ Note that once the aggregation operations are complete, calling the GroupBy obje
     >>> originFlights = air.group_by("Origin")
     >>> originFlights.count()
     >>> originFlights.get_frame()
-    Origin      nrow_Year
-    --------  -----------
-    ABE                59
-    ABQ               876
-    ACY                31
+    Origin      nrow
+    --------  ------
+    ABE           59
+    ABQ          876
+    ACY           31
     ...
 
-    # Find number of flights per month
-    >>> flightsByMonth = air.group_by("Month")
-    >>> flightsByMonth.count()
-    >>> flightsByMonth.get_frame()
-      Month    nrow_Year
-    -------  -----------
-          1        41979
-         10         1999
+    # Find number of flights per month based on the origin
+    >>> cols = ["Origin","Month"]
+    >>> flights_by_origin_month = air.group_by(by=cols).count(na ="all")
+    >>> flights_by_origin_month.get_frame()
+    Origin      Month    nrow
+    --------  -------  ------
+    ABE             1      59
+    ABQ             1     846
+    ABQ            10      30
+    ...
 
     # Find months with the highest cancellation ratio
-    >>> cancellationsByMonth = air.group_by("Month")
-    >>> cancellationsByMonth.sum("Cancelled")
-    >>> cancellationsByMonth.get_frame()
+    >>> cancellation_by_month = air.group_by(by='Month').sum('Cancelled', na ="all")
+    >>> flights_by_month = air.group_by('Month').count(na ="all")
+    >>> canceled = cancellation_by_month.get_frame()['sum_Cancelled']
+    >>> flights = flights_by_month.get_frame()['nrow']
+    >>> month_count = flights_by_month.get_frame()['Month']
+    >>> ratio = canceled/flights
+    >>> month_count.cbind(ratio)
       Month    sum_Cancelled
-    -------  ---------------
-          1             1067
-         10               19
+      -------  ---------------
+            1       0.0254175
+           10       0.00950475
 
-    > cancellation_rate = cancellationsByMonth$sum_Cancelled/flightsByMonth$nrow_Month
-    >>> cancellation_rate = cancellationsByMonth.sum("Cancelled")/flightsByMonth.sum("Month")
+    [2 rows x 2 columns]
 
-
-    > rates_table = h2o.cbind(flightsByMonth$Month,cancellation_rate)
-    > rates_table.R = as.data.frame(rates_table)
-    > rates_table.R
-
-
+    # Use group_by with multiple columns. Summarize the destination, arrival delays, and departure delays for an origin
+    >>> cols_1 = ['Origin', 'Dest', 'IsArrDelayed', 'IsDepDelayed']
+    >>> cols_2 = ["Dest", "IsArrDelayed", "IsDepDelayed"]
+    >>> air[cols_1].group_by(by='Origin').sum(cols_2, na ="ignore").get_frame()
+    Origin      sum_Dest    sum_IsDepDelayed    sum_IsArrDelayed
+    --------  ----------  ------------------  ------------------
+    ABE             5884                  30                  40
+    ABQ            84505                 370                 545
+    ACY             3131                   7                   9
+    ALB             3646                  50                  49
+    AMA              317                   6                   4
+    ANC              100                   1                   0
+    ...
