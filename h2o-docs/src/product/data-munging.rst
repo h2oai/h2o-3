@@ -19,6 +19,7 @@ This section provides examples of common tasks performed when preparing data for
    data-munging/importing-data
    data-munging/importing-files
    data-munging/merging-data
+   data-munging/groupby
    data-munging/combining-rows
    data-munging/combining-columns
    data-munging/slicing-rows
