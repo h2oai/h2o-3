@@ -45,15 +45,15 @@ public class PCAWideDataSetsBenchModel {
 			DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.DEMEAN, DataInfo.TransformType.DESCALE};
 		Random _rand = new Random();
 
-    /*
-     *  Six cases are measured:
-     * case 1. we test with a small dataset with all numerical data columns and make sure it works.
-     * case 2. we add NA rows to the	small dataset with all numerical data columns.
-     * case 3. test with the same small dataset while preserving the categorical columns;
-     * case 4. test with the same small dataset with categorical columns and add NA rows;
-     * case 5. test with prostate dataset;
-     * case 6. test with prostate dataset with NA rows added.
-     */
+		/*
+		 *  Six cases are measured:
+		 * case 1. we test with a small dataset with all numerical data columns and make sure it works.
+		 * case 2. we add NA rows to the	small dataset with all numerical data columns.
+		 * case 3. test with the same small dataset while preserving the categorical columns;
+		 * case 4. test with the same small dataset with categorical columns and add NA rows;
+		 * case 5. test with prostate dataset;
+		 * case 6. test with prostate dataset with NA rows added.
+		 */
 		switch (dataSetCase) {
 			case 1:
 				pca = preparePCAModel(_smallDataSet, false, true,
@@ -117,6 +117,15 @@ public class PCAWideDataSetsBenchModel {
 	
 	public void tearDown() {
 //    water.Scope.exit();
+		if (trainingFrame != null) {
+			trainingFrame.delete();
+		}
+		if (pcaModel != null) {
+			pcaModel.delete();
+		}
+		if (pcaScore != null) {
+			pcaScore.delete();
+		}
 	}
 	
 	public boolean train() {
