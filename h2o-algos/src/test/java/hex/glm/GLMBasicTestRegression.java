@@ -1,11 +1,13 @@
 package hex.glm;
 
+import hex.GLMMetrics;
 import hex.ModelMetricsRegressionGLM;
 import hex.deeplearning.DeepLearningModel;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Solver;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
@@ -19,6 +21,7 @@ import water.parser.ParseDataset;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Map;
 
 import water.fvec.*;
 import static water.util.FileUtils.*;
@@ -84,6 +87,29 @@ public class GLMBasicTestRegression extends TestUtil {
     DKV.put(_airlinesMM._key,_airlinesMM);
   }
 
+
+  @Test
+  public void testSingleCatNoIcpt(){
+    Vec cat = Vec.makeVec(new long[]{1,1,1,0,0},new String[]{"black","red"},Vec.newKey());
+    Vec res = Vec.makeVec(new double[]{1,1,0,0,0},cat.group().addVec());
+    Frame fr = new Frame(Key.<Frame>make("fr"),new String[]{"x","y"},new Vec[]{cat,res});
+    DKV.put(fr);
+    GLMParameters parms = new GLMParameters();
+    parms._train = fr._key;
+    parms._alpha = new double[]{0};
+    parms._response_column = "y";
+    parms._intercept = false;
+    parms._family = Family.binomial;
+    // just make sure it runs
+    GLMModel model = new GLM(parms).trainModel().get();
+    Map<String,Double> coefs = model.coefficients();
+    System.out.println("coefs = " + coefs);
+    Assert.assertEquals(coefs.get("Intercept"),0,0);
+    Assert.assertEquals(4.2744474,((GLMMetrics)model._output._training_metrics).residual_deviance(),1e-4);
+    System.out.println();
+    model.delete();
+    fr.delete();
+  }
 
   @Test
   public void testSparse() {

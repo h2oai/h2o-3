@@ -1,11 +1,13 @@
 package hex.glm;
 
+import hex.GLMMetrics;
 import hex.ModelMetricsBinomialGLM;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Solver;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.TestUtil;
@@ -15,6 +17,7 @@ import water.fvec.*;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
@@ -31,7 +34,7 @@ public class GLMBasicTestBinomial extends TestUtil {
   static Frame _abcd; // tiny corner case dataset
   static Frame _airlinesTrain;
   static Frame _airlinesTest;
-
+  
 
   @Test
   public void testOffset() {
