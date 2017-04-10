@@ -490,7 +490,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
                 model._output,
                 rt.getWorkerEnvs(),
                 _parms
-        ).doAll(train()).booster();
+        ).doAllNodes().booster();
 
         rt.waitFor(0);
 
