@@ -11,8 +11,6 @@ This option specifies the minimum standard deviation to use for observations wit
 
 This option defaults to 0.001 and must be at least 1e-10.
 
-
-
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
@@ -24,31 +22,48 @@ Example
 .. example-code::
    .. code-block:: r
 
-	library(h2o)
-	h2o.init()
+    # import the cars dataset
+    cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-	# import the cars dataset:
-	cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+    # Specify model-building exercise (1:binomial, 2:multinomial)
+    problem <- sample(1:2,1)
 
-	# Specify grid search parameters
-	grid_space <- list()
-	grid_space$laplace <- c(1,2)
-	grid_space$min_sdev <- c(0.1,0.2)
-	grid_space$eps_sdev <- c(0.5,0.6)
+    # Specify response column based on predictor value and problem type
+    predictors <- c("displacement","power","weight","acceleration","year")
+    if ( problem == 1 ) { response_col <- "economy_20mpg"} else { response_col <- "cylinders" }
 
-	# Specify model-building exercise (1:binomial, 2:multinomial)
-	problem <- sample(1:2,1)
+    # Convert the response column to a factor
+    cars[,response_col] <- as.factor(cars[,response_col])
 
-	# Specify response column based on predictor value and problem type
-	predictors <- c("displacement","power","weight","acceleration","year")
-	if ( problem == 1 ) { response_col <- "economy_20mpg"} else { response_col <- "cylinders" }
+    # Specify model parameters
+    laplace <- c(1)
+    min_sdev <- c(0.1)
+    eps_sdev <- c(0.5)
 
-	# Convert the response column to a factor
-	cars[,response_col] <- as.factor(cars[,response_col])
+    # Build the model 
+    cars_naivebayes <- h2o.naiveBayes(x=predictors, y=response_col, training_frame=cars, 
+                                      eps_sdev=eps_sdev, min_sdev=min_sdev, laplace=laplace)
+    print(cars_naivebayes)
 
-	# Construct the grid of naive bayes models
-	cars_naivebayes_grid <- h2o.grid("naivebayes", grid_id="naiveBayes_grid_cars_test", x=predictors, y=response_col, training_frame=cars, hyper_params=grid_space, do_hyper_params_check=FALSE)
-	print(cars_naivebayes_grid)
+    # Specify grid search parameters
+    grid_space <- list()
+    grid_space$laplace <- c(1,2)
+    grid_space$min_sdev <- c(0.1,0.2)
+    grid_space$eps_sdev <- c(0.5,0.6)
+
+    # Specify response column based on predictor value and problem type
+    predictors <- c("displacement","power","weight","acceleration","year")
+    if ( problem == 1 ) { response_col <- "economy_20mpg"} else { response_col <- "cylinders" }
+
+    # Convert the response column to a factor
+    cars[,response_col] <- as.factor(cars[,response_col])
+
+    # Construct the grid of naive bayes models
+    cars_naivebayes_grid <- h2o.grid("naivebayes", grid_id="naiveBayes_grid_cars_test", 
+                                     x=predictors, y=response_col, training_frame=cars, 
+                                     hyper_params=grid_space)
+    print(cars_naivebayes_grid)
+
 
    .. code-block:: python
 
@@ -60,9 +75,6 @@ Example
 
     # import the cars dataset:
     cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
-
-    # Specify grid search parameters
-    hyper_params = {'laplace':[1,2], 'min_sdev':[0.1,0.2], 'eps_sdev':[0.5,0.6]}
 
     # Specify model-building exercise (1:binomial, 2:multinomial)
     problem = random.sample(["binomial","multinomial"],1)
@@ -76,6 +88,18 @@ Example
 
     # Convert the response column to a factor
     cars[response_col] = cars[response_col].asfactor()
+
+    # Train the model
+    cars_nb = H2ONaiveBayesEstimator(min_sdev=0.1, eps_sdev=0.5, seed=1234)
+    cars_nb.train(x=predictors, y=response_col, training_frame=cars)
+    cars_nb.show() 
+    
+    # Predict on training data
+    cars_pred = cars_nb.predict(cars)
+    cars_pred.head()
+
+    # Specify grid search parameters
+    hyper_params = {'laplace':[1,2], 'min_sdev':[0.1,0.2], 'eps_sdev':[0.5,0.6]}
 
     # Construct the grid of naive bayes models
     cars_nb = H2ONaiveBayesEstimator(seed = 1234)

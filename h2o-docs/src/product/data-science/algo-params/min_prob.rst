@@ -11,11 +11,6 @@ This option specifies the minimum probability to use for observations without en
 
 This option defaults to 0.001 and must be at least 1e-10.
 
-**Note**: In the H2O R package, cutoff and threshold for probability and standard deviation are the same:
-
-- ``parms$min_prob <- threshold``
-- ``parms$eps_prob <- eps``
-
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
@@ -48,22 +43,25 @@ Example
 	min_prob <- c(0.1)
 	eps_prob <- c(0.5)
 
-	# Build the model 
-	cars_naivebayes <- h2o.naiveBayes(x=predictors, y=response_col, training_frame=cars, eps=eps_prob, threshold=min_prob, laplace=laplace)
-	print(cars_naivebayes)
+    # Build the model 
+    cars_naivebayes <- h2o.naiveBayes(x=predictors, y=response_col, training_frame=cars, 
+                                      eps_prob=eps_prob, min_prob=min_prob, laplace=laplace)
+    print(cars_naivebayes)
 
-	# Predict on training data
-	cars_naivebayes.pred <- predict(cars_naivebayes, cars)
-	print(head(cars_naivebayes.pred))
+    # Predict on training data
+    cars_naivebayes.pred <- predict(cars_naivebayes, cars)
+    print(head(cars_naivebayes.pred))
 
-	# Specify grid search parameters
-	grid_space <- list()
-	grid_space$laplace <- c(1,2)
-	grid_space$min_prob <- c(0.1,0.2)
-	grid_space$eps_prob <- c(0.5,0.6)
+    # Specify grid search parameters
+    grid_space <- list()
+    grid_space$laplace <- c(1,2)
+    grid_space$min_prob <- c(0.1,0.2)
+    grid_space$eps_prob <- c(0.5,0.6)
 
-	# Construct the grid of naive bayes models
-	cars_naivebayes_grid <- h2o.grid("naivebayes", grid_id="naiveBayes_grid_cars_test", x=predictors, y=response_col, training_frame=cars, hyper_params=grid_space, do_hyper_params_check=FALSE)
+    # Construct the grid of naive bayes models
+    cars_naivebayes_grid <- h2o.grid(x=predictors, y=response_col, training_frame=cars, 
+                                    algorithm="naivebayes", grid_id="naiveBayes_grid_cars_test", 
+                                    hyper_params=grid_space)
 	print(cars_naivebayes_grid)
 
    .. code-block:: python
