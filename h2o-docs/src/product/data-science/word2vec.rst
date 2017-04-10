@@ -6,11 +6,6 @@ Introduction
 
 The Word2vec algorithm takes a text `corpus <https://en.wikipedia.org/wiki/Corpus_linguistics>`__ as an input and produces the word vectors as output. The algorithm first creates a vocabulary from the training text data and then learns vector representations of the words. The vector space can include hundreds of dimensions, with each unique word in the sample corpus being assigned a corresponding vector in the space. In addition, words that share similar contexts in the corpus are placed in close proximity to one another in the space. The result is an H2O Word2vec model that can be exported as a binary model or as a MOJO. This file can be used as features in many natural language processing and machine learning applications. 
 
-**Notes**: 
-
-- Word2vec is not currently supported under Python.
-- A Word2vec demo in R using a Craigslist job titles dataset available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.word2vec.craigslistjobtitles.R>`__.
-
 Defining a Word2vec Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -50,10 +45,34 @@ By default, the following output displays:
 -  Column names
 -  Domains (for categorical columns)
 
+Finding Synonyms
+~~~~~~~~~~~~~~~~
+
+A "find synonyms" function can be used to find synonyms in a Word2vec model. This function has the following usage:
+
+.. example-code::
+   .. code-block:: r
+
+    h2o.findSyonyms(word2vec, word, count)
+
+   .. code-block:: python
+
+    h2o.find_synonyms(word2vec, word, count)
+
+- ``word2vec``: A Word2Vec model.
+- ``words``: The word for which you want to find synonyms.
+- ``count``: The number of synonyms that will be returned. The are the first instances that the function finds, and the function will stop running after this count is met. This value defaults to 20. 
+
+More information about this function can be found in the H2O-3 GitHub repository:
+
+- R: `https://github.com/h2oai/h2o-3/blob/master/h2o-r/h2o-package/R/w2vutils.R#L2 <https://github.com/h2oai/h2o-3/blob/master/h2o-r/h2o-package/R/w2vutils.R#L2>`__
+- Python: `https://github.com/h2oai/h2o-3/blob/master/h2o-py/h2o/model/word_embedding.py#L16 <https://github.com/h2oai/h2o-3/blob/master/h2o-py/h2o/model/word_embedding.py#L16>`__
+
+
 Transforming Words to Vectors
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A ``transform`` function is available for use with Word2vec. This function transforms words to vectors using an existing Word2Vec model and has the following usage:
+A ``transform`` function is available for use with Word2vec. This function transforms words to vectors using an existing Word2Vec model and has the following usage (in both R and Python):
 
 ::
 
@@ -63,42 +82,16 @@ A ``transform`` function is available for use with Word2vec. This function trans
 - ``words``: An H2O Frame made of a single column containing source words. Note that you can specify to include a subset of this frame.
 - ``aggregate_method``: Specifies how to aggregate sequences of words. If the method is ``NONE``, then no aggregation is performed, and each input word is mapped to a single word-vector. If the method is ``AVERAGE``, then the input is treated as sequences of words delimited by NA. Each word of a sequences is internally mapped to a vector, and vectors belonging to the same sentence are averaged and returned in the result.
 
-More information about this function can be found in the `H2O-3 GitHub repository <https://github.com/h2oai/h2o-3/blob/master/h2o-r/h2o-package/R/w2vutils.R#L21>`__.
+More information about this function can be found in the H2O-3 GitHub repository:
 
-**Example**
+- R: `https://github.com/h2oai/h2o-3/blob/master/h2o-r/h2o-package/R/w2vutils.R#L21 <https://github.com/h2oai/h2o-3/blob/master/h2o-r/h2o-package/R/w2vutils.R#L21>`__
+- Python: `https://github.com/h2oai/h2o-3/blob/master/h2o-py/h2o/model/word_embedding.py#L28 <https://github.com/h2oai/h2o-3/blob/master/h2o-py/h2o/model/word_embedding.py#L28>`__
 
-.. example-code::
-   .. code-block:: r
+Demos
+~~~~~
 
-    # Build a dummy word2vec model
-    library(h2o)
-    h2o.init(nthread=-1)
-    data <- as.character(as.h2o(c("a", "b", "a")))
-    w2v.model <- h2o.word2vec(data, sent_sample_rate = 0, min_word_freq = 0, epochs = 1, vec_size = 2)
-
-    # Transform words to vectors without aggregation  
-    sentences <- as.character(as.h2o(c("b", "c", "a", NA, "b")))
-    h2o.transform(w2v.model, sentences) # -> 5 rows total, 2 rows NA ("c" is not in the vocabulary)
-
-    # Transform words to vectors and return average vector for each sentence
-    h2o.transform(w2v.model, sentences, aggregate_method = "AVERAGE") # -> 2 rows
-    h2o.transform <- function(word2vec, words, aggregate_method = c("NONE", "AVERAGE")) {
-
-      if (!is(word2vec, "H2OModel")) stop("`word2vec` must be a word2vec model")
-      if (missing(words)) stop("`words` must be specified")
-      if (!is.H2OFrame(words)) stop("`words` must be an H2OFrame")
-      if (ncol(words) != 1) stop("`words` frame must contain a single string column")
-
-      if (length(aggregate_method) > 1)
-        aggregate_method <- aggregate_method[1]
-
-      res <- .h2o.__remoteSend(method="GET", "Word2VecTransform", model = word2vec@model_id,
-                               words_frame = h2o.getId(words))
-                               words_frame = h2o.getId(words), aggregate_method = aggregate_method)
-      key <- res$vectors_frame$name
-      h2o.getFrame(key)
-    }
-
+- A Word2vec demo in R using a Craigslist job titles dataset available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.word2vec.craigslistjobtitles.R>`__.
+- A Word2vec demo in Python using a Craigslist job titles dataset available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/word2vec_craigslistjobtitles.ipynb>`__.
 
 References
 ~~~~~~~~~~
