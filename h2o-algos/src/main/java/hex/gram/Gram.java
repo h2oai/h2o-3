@@ -623,7 +623,7 @@ public final class Gram extends Iced<Gram> {
       for( int k = 0; k < _diag.length; ++k )
         y[k] /= _diag[k];
       // rest
-      final int n = _xx[_xx.length-1].length;
+      final int n = _xx.length == 0?0:_xx[_xx.length-1].length;
       // Solve L*Y = B;
       for( int k = _diag.length; k < n; ++k ) {
         double d = 0;
