@@ -15,16 +15,16 @@ We're glad you're interested in learning more about H2O. If you have questions o
    :maxdepth: 2
    
    welcome
-   
-.. toctree::
-   :maxdepth: 1
-   
-   downloading
-   
+
 .. toctree::
    :maxdepth: 2
 
    quick-start-videos
+   
+.. toctree::
+   :maxdepth: 2
+   
+   downloading
    
 .. toctree::
    :maxdepth: 2
@@ -60,7 +60,6 @@ We're glad you're interested in learning more about H2O. If you have questions o
    :maxdepth: 2
 
    save-and-load-model
-
 
 .. toctree::
    :maxdepth: 2
