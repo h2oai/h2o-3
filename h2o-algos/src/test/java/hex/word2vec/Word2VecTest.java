@@ -105,6 +105,46 @@ public class Word2VecTest extends TestUtil {
   }
 
   @Test
+  public void testW2V_toFrame() {
+    Random r = new Random();
+    String[] words = new String[1000];
+    double[] v1 = new double[words.length];
+    double[] v2 = new double[words.length];
+    for (int i = 0; i < words.length; i++) {
+      words[i] = "word" + i;
+      v1[i] = r.nextDouble();
+      v2[i] = r.nextDouble();
+    }
+    try {
+      Scope.enter();
+      Frame expected = new TestFrameBuilder()
+              .withName("w2v")
+              .withColNames("Word", "V1", "V2")
+              .withVecTypes(Vec.T_STR, Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, words)
+              .withDataForCol(1, v1)
+              .withDataForCol(2, v2)
+              .withChunkLayout(100, 900)
+              .build();
+      Scope.track(expected);
+      Word2VecModel.Word2VecParameters p = new Word2VecModel.Word2VecParameters();
+      p._vec_size = 2;
+      p._pre_trained = expected._key;
+      Word2VecModel w2vm = (Word2VecModel) Scope.track_generic(new Word2Vec(p).trainModel().get());
+
+      // convert to a Frame
+      Frame result = Scope.track(w2vm.toFrame());
+
+      assertArrayEquals(expected._names, result._names);
+      assertStringVecEquals(expected.vec(0), result.vec(0));
+      assertVecEquals(expected.vec(1), result.vec(1), 0.0001);
+      assertVecEquals(expected.vec(2), result.vec(2), 0.0001);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
   public void testW2V_SG_HSM() {
     assumeThat("word2vec test enabled", System.getProperty("testW2V"), is(notNullValue())); // ignored by default
 
