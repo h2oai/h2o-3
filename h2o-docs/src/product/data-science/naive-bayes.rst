@@ -4,10 +4,10 @@ Naïve Bayes
 Introduction
 ~~~~~~~~~~~~
 
-Naïve Bayes (NB) is a classification algorithm that relies on strong
-assumptions of the independence of covariates in applying Bayes Theorem.
-NB models are commonly used as an alternative to decision trees for
-classification problems.
+Naïve Bayes is a classification algorithm that relies on strong assumptions of the independence of covariates in applying Bayes Theorem. The Naïve Bayes classifier assumes independence between predictor variables conditional on the response, and a Gaussian distribution of numeric predictors with mean and standard deviation computed from the training dataset. 
+
+Naïve Bayes models are commonly used as an alternative to decision trees for classification problems. When building a Naïve Bayes classifier, every row in the training dataset that contains at least one NA will be skipped completely. If the test dataset has missing values, then those predictors are omitted in the probability calculation during prediction.
+
 
 Defining a Naïve Bayes Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -63,23 +63,16 @@ Defining a Naïve Bayes Model
 
 -  `min_prob <algo-params/min_prob.html>`__: Specify the minimum probability to use for observations without enough data.
 
--  `eps_prob <algo-params/eps_prob.html>`__: Specify the threshold for standard deviation. If this threshold is not met, the ``min_sdev`` value is used.
+-  `eps_prob <algo-params/eps_prob.html>`__: Cutoff below which probability is replaced with ``min_prob``.
 
--  `compute_metrics <algo-params/compute_metrics.html>`__: Enable this option to compute metrics on training data. The Naïve Bayes classifier assumes independence between predictor variables conditional on the response, and a Gaussian distribution of numeric predictors with mean and standard deviation computed from the training dataset. When building a Naïve Bayes classifier, every row in the training dataset that contains at least one NA will be skipped completely. If the test dataset has missing values, then those predictors are omitted in the probability calculation during prediction.
+-  `compute_metrics <algo-params/compute_metrics.html>`__: Enable this option to compute metrics on training data. 
 
 -  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
 Interpreting a Naïve Bayes Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The output from Naïve Bayes is a list of tables containing the a-priori
-and conditional probabilities of each class of the response. The
-a-priori probability is the estimated probability of a particular class
-before observing any of the predictors. Each conditional probability
-table corresponds to a predictor column. The row headers are the classes
-of the response and the column headers are the classes of the predictor.
-Thus, in the table below, the probability of survival (y) given a person
-is male (x) is 0.91543624.
+The output from Naïve Bayes is a list of tables containing the a-priori and conditional probabilities of each class of the response. The a-priori probability is the estimated probability of a particular class before observing any of the predictors. Each conditional probability table corresponds to a predictor column. The row headers are the classes of the response and the column headers are the classes of the predictor. Thus, in the sample output below, the probability of survival (y) given a person is male (x) is 0.51617440.
 
 ::
 
@@ -88,16 +81,13 @@ is male (x) is 0.91543624.
          No  0.91543624 0.08456376
          Yes 0.51617440 0.48382560
 
-When the predictor is numeric, Naïve Bayes assumes it is sampled from a
-Gaussian distribution given the class of the response. The first column
-contains the mean and the second column contains the standard deviation
-of the distribution.
+When the predictor is numeric, Naïve Bayes assumes it is sampled from a Gaussian distribution given the class of the response. The first column contains the mean and the second column contains the standard deviation of the distribution.
 
 By default, the following output displays:
 
--  Output (model category, model summary, scoring history, training
-   metrics, validation metrics)
+-  Output, including model category, model summary, scoring history, training metrics, and validation metrics
 -  Y-Levels (levels of the response column)
+-  A Priori response probabilities
 -  P-conditionals
 
 FAQ
@@ -126,7 +116,7 @@ FAQ
 
    :math:`\phi_{j|y=0}= \frac{\Sigma_{i=1}^m 1(x_{j}^{(i)} \ = \ 1 \ \bigcap y^{(i)} \ = \ 0) \ + \ 1}{\Sigma_{i \ = \ 1}^{m}1(y^{(i)} \ = \ 0) \ + \ k}`
 
- :math:`x^{(i)}` represents features, :math:`y^{(i)}` represents the response column, and :math:`k` represents the addition of each new categorical level (k functions to balance the added 1 in the numerator)
+ :math:`x^{(i)}` represents features, :math:`y^{(i)}` represents the response column, and :math:`k` represents the addition of each new categorical level. (:math:`k` functions to balance the added 1 in the numerator.)
 
  Laplace smoothing should be used with care; it is generally intended to allow for predictions in rare events. As prediction data becomes increasingly distinct from training data, new models should be trained when possible to account for a broader set of possible feature values.
 
