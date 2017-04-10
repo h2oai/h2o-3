@@ -80,15 +80,11 @@ public class PCAWideDataSetsBenchModel {
 					_transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 6
 				break;
 		}
-
-//    water.Scope.track_generic(pcaModel);
 	}
 	
 	private PCA preparePCAModel(String datafile, boolean addNAs, boolean removeColumns,
 	                            DataInfo.TransformType transformType) {
-//    water.Scope.enter();
 		trainingFrame = parse_test_file(Key.make(datafile), datafile);
-//    water.Scope.track(trainingFrame);
 		if (removeColumns) {
 			trainingFrame.remove(12).remove();    // remove categorical columns
 			trainingFrame.remove(11).remove();
@@ -116,7 +112,6 @@ public class PCAWideDataSetsBenchModel {
 	}
 	
 	public void tearDown() {
-//    water.Scope.exit();
 		if (trainingFrame != null) {
 			trainingFrame.delete();
 		}
@@ -141,7 +136,6 @@ public class PCAWideDataSetsBenchModel {
 	public boolean score() {
 		try {
 			pcaScore = pcaModel.score(trainingFrame);
-//      water.Scope.track(pcaScore);
 		} catch (Exception e) {
 			e.printStackTrace();
 			return false;
