@@ -2,11 +2,12 @@ package water.util.fp;
 
 import water.util.Pair;
 
-import static water.util.Java7.*;
-
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+
+import static water.util.Java7.Objects;
 
 /**
  * Operations on functions
@@ -59,6 +60,16 @@ public class Functions {
     };
   }
   
+  public static <X, Y> Function<X, Y> forMap(final Map<X, Y> map, final Function<X, Y> alt) {
+    return new Function<X, Y>() {
+
+      @Override public Y apply(X x) {
+        Y y = map.get(x);
+        return y != null ? y : alt.apply(x);
+      }
+    };
+  }
+  
   public static <X, Y> Iterable<Y> map(Iterable<X> xs, Function<X, Y> f) {
     List<Y> ys = new LinkedList<>();
     for (X x : xs) ys.add(f.apply(x));
@@ -82,19 +93,42 @@ public class Functions {
     return new Function<Y, Pair<X, Y>>() {
 
       @Override public Pair<X, Y> apply(Y y) {
-        return new Pair<X,Y>(x, y);
+        return new Pair<>(x, y);
       }
     };
   }
 
   public static <X, Y> Function<X, Pair<X, Y>> pair2(final Y y) {
     return new Function<X, Pair<X, Y>>() {
-
       @Override public Pair<X, Y> apply(X x) {
-        return new Pair<X,Y>(x, y);
+        return new Pair<>(x, y);
       }
     };
   }
+
+  public static PartialFunction<String, Integer> parseInt =
+      new PartialFunction<String, Integer>() {
+        @Override
+        public FP.Option<Integer> apply(String s) {
+          try {
+            return FP.Option(Integer.parseInt(s));
+          } catch (Exception ignore) {
+            return FP.none();
+          }
+        }
+      };
+
+  public static PartialFunction<String, Double> parseDouble =
+      new PartialFunction<String, Double>() {
+        @Override
+        public FP.Option<Double> apply(String s) {
+          try {
+            return FP.Option(Double.parseDouble(s));
+          } catch (Exception ignore) {
+            return FP.none();
+          }
+        }
+      };
   
   static class StringSplitter implements Unfoldable<String, String> {
     private final String separator;

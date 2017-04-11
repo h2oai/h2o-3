@@ -2,10 +2,12 @@ package water.util;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
 import water.util.Java7.Objects;
 
 /** Pair class with a clearer name than AbstractMap.SimpleEntry. */
-public class Pair<X, Y> {
+public class Pair<X, Y> implements Map.Entry<X, Y> {
   private X x;
   private Y y;
   
@@ -16,7 +18,22 @@ public class Pair<X, Y> {
   
   public X _1() { return x; }
   public Y _2() { return y; }
-  
+
+  @Override
+  public X getKey() {
+    return x;
+  }
+
+  @Override
+  public Y getValue() {
+    return y;
+  }
+
+  @Override
+  public Y setValue(Y value) {
+    throw new UnsupportedOperationException("Pair is immutable.");
+  }
+
   @SuppressWarnings("unchecked")
   @Override
   public boolean equals(Object o) {

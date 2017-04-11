@@ -1675,14 +1675,9 @@ public class ArrayUtils {
       if (vals[i - 1] > vals[i]) return false;
     return true;
   }
-  
-  public static <T> T headOrNull(Iterable<T> ts) {
-    Iterator<T> it = ts.iterator();
-    return it.hasNext() ? it.next() : null;
-  }
 
   public static <T> Set<T> toSet(T[] arr) {
-    Set<T> s = new HashSet<T>();
+    Set<T> s = new HashSet<>();
     Collections.addAll(s, arr);
     return s;
   }

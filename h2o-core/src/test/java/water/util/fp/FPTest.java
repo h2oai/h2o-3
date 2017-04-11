@@ -61,7 +61,7 @@ public class FPTest {
     assertEquals(None, sut3);
 
     Option<Integer> sut4 = sut1.flatMap(
-        new Function<String, Option<Integer>>() { 
+        new PartialFunction<String, Integer>() { 
           public Option<Integer> apply(String s) { 
             return Option(s.length() - 1); } });
     

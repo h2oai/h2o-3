@@ -1,7 +1,7 @@
 package water.util;
 
-import water.util.fp.FP;
 import water.util.fp.Function;
+import water.util.fp.Functions;
 import water.util.fp.PartialFunction;
 import water.util.fp.Predicate;
 
@@ -48,11 +48,15 @@ public class Props extends PartialFunction<String, String> {
   }
 
   private static List<String> keyAsList(String key) {
-    return new ArrayList<String>(Arrays.asList(key.split("\\.")));
+    return new ArrayList<>(Arrays.asList(key.split("\\.")));
   }
   
   private static Set<String> keyAsSet(String key) {
     return toSet(keyAsArray(key));
+  }
+
+  private static String mkKey(Iterable<String> ks) {
+    return StringUtils.join(".", ks);
   }
   
   public boolean keyMatches(String suggested, String present) {
@@ -99,7 +103,7 @@ public class Props extends PartialFunction<String, String> {
   }
 
   Set<String> matchingKeys(String key) {
-    Set<String> s = new HashSet<String>();
+    Set<String> s = new HashSet<>();
     for (String k : innerMap.keySet()) if (keyMatches(key, k)) s.add(k);
     return s;
   }
@@ -110,6 +114,13 @@ public class Props extends PartialFunction<String, String> {
     for (String k : innerMap.keySet()) if (keyMatches(key, k))  return Some(k);
     for (String k : innerMap.keySet()) if (keyContains(key, k)) return Some(k);
     return none();    
+  }
+
+  public Option<String> findHaving(String key) {
+    if (innerMap.keySet().contains(key))                        return get(key);
+    for (String k : innerMap.keySet()) if (keyMatches(key, k))  return get(k);
+    for (String k : innerMap.keySet()) if (keyContains(key, k)) return get(k);
+    return none();
   }
   
   public Props findAllHaving(String key) {
@@ -170,7 +181,24 @@ public class Props extends PartialFunction<String, String> {
     return innerMap.containsKey(key);
   }
   
-  public Option<String> get(String key) { return apply(key); }
+  public Option<String> get(Object key) { return apply(""+key); }
+  public Option<String> get(Object k1, Object k2) { 
+    return get(""+k1+"."+k2); 
+  }
+  public Option<String> get(Object k1, Object k2, Object k3) { 
+    return get(""+k1+"."+k2+"."+k3); 
+  }
+  public Option<String> get(Object k1, Object k2, Object k3, Object k4) { 
+    return get(""+k1+"."+k2+"."+k3+"."+k4); 
+  }
+
+  public Option<Integer> intAt(Object key) {
+    return get(key).flatMap(Functions.parseInt);
+  }
+
+  public Option<Double> doubleAt(Object key) {
+    return get(key).flatMap(Functions.parseDouble);
+  }
   
   public Option<String> oneOf(String... keys) {
     for (String k : keys) if (isDefinedAt(k)) return apply(k);
@@ -196,14 +224,14 @@ public class Props extends PartialFunction<String, String> {
     for (String k : keys) if (!ArrayUtils.isInt(k) && !k.isEmpty()) out.add(k);
     return out;
   }
-
+  
   private static Map<String, String> dropIndexKeys(Map<String, String> m) { 
     Map<String, String> result = new HashMap<>();
     for (Map.Entry<String, String> kv : m.entrySet()) {
       String[] ks = keyAsArray(kv.getKey());
       List<String> cleanedUp = dropIndexKeysInSequence(ks);
       if (!cleanedUp.isEmpty()) {
-        String newKey = StringUtils.join(".", cleanedUp);
+        String newKey = mkKey(cleanedUp);
         result.put(newKey, kv.getValue());
       }
     }
@@ -222,8 +250,8 @@ public class Props extends PartialFunction<String, String> {
     )+")";
   }
 
-  private String spaces(int n) { return StringUtils.repeat(" ", n); }
-  private String escape(String s) {
+  private static String spaces(int n) { return StringUtils.repeat(" ", n); }
+  private static String escape(String s) {
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < s.length(); i++) {
       char c = s.charAt(i);
@@ -231,164 +259,148 @@ public class Props extends PartialFunction<String, String> {
     }
     return sb.toString();
   }
-  
-  private String formatPf(int pad) {
-    String header = "\n" + spaces(pad);
+
+  private static String quote(String s) { return "\"" + escape(s) + "\""; }
+
+  private String mkString(String separator) {
     String[] keys = innerMap.keySet().toArray(new String[innerMap.size()]);
     Arrays.sort(keys);
     StringBuilder sb = new StringBuilder();
     for (String k : keys) {
-      if (sb.length() > 0) sb.append(header);
-      sb.append("\"").append(escape(k)).append("\"->\"").append(escape(innerMap.get(k))).append("\"");
+      if (sb.length() > 0) sb.append(separator);
+      sb.append(quote(k)).append(" → ").append(quote(innerMap.get(k)));
     }
     
-    return "Map(" + sb + ")";
+    return sb.toString();
   }
 
+  private String formatPf(int pad) {
+    return "Map(" + mkString("\n" + spaces(pad)) + ")";
+  }
+
+  @Override public String toString() {
+    return isEmpty() ? "Empty()": "fp(Map(" + mkString(", ") + "))";
+  }
+  
+  @Override public boolean equals(Object other) {
+    return other instanceof Props && innerMap.equals(((Props) other).innerMap);
+  }
+  
+  @Override public int hashCode() {
+    return 2017*innerMap.hashCode();
+  }
+  
+  public boolean hasKey(String key) { return findKey(key).nonEmpty(); }
+  
+  public Props translateBack(Map<String, String> dictionary) {
+    if (isEmpty()) return this;
+    Function<String, String> mapper = Functions.forMap(dictionary, Functions.<String, String>identity());
+    Map<String, String> newMap = new HashMap<>();
+    for (String k : innerMap.keySet()) {
+      String newKey = mkKey(Functions.map(keyAsList(k), mapper));
+      newMap.put(newKey, innerMap.get(k));
+    }
+    return props(newMap);
+  }
+  
+  public Props translate(Map<String, String> dictionary) {
+    Map<String, String> inverted = new HashMap<>(dictionary.size());
+    for (Map.Entry<String, String> p : dictionary.entrySet()) {
+      inverted.put(p.getValue(), p.getKey());
+    }
+
+    return translateBack(inverted);
+  }
+  
+  public Props translate(Props dictionary) {
+    return isEmpty() ? this : translate(dictionary.innerMap);
+  }
+
+  private static Map<String, String> dropPrefixInMap(Map<String, String> map) {
+    Map<String, String> out = new HashMap<>();
+    for (String k : map.keySet()) {
+      String[] split = keyAsArray(k);
+      if (split.length > 1) {
+        String newKey = StringUtils.join(".", split, 1, split.length);
+        out.put(newKey, map.get(k));
+      }
+    }
+    return out;
+  }
+
+  public Props dropPrefix() {
+    return props(dropPrefixInMap(innerMap));
+  }
+  
+  /*
+
+   */
+  public static Map<String, String> subtreeOfMap(Map<String, String> map, String key) {
+    Map<String, String> out1 = new HashMap<>();
+    for (String k : map.keySet()) {
+      if (k.startsWith(key+".")) out1.put(k.substring(key.length() + 1), map.get(k));
+    }
+    Map<String, String> downOneLevel = dropPrefixInMap(map);
+    if (!downOneLevel.isEmpty()) out1.putAll(subtreeOfMap(downOneLevel, key));
+    
+    return out1;
+  }
+  
+  public Props subtree(String key) {
+    return key.isEmpty() ? this : props(subtreeOfMap(innerMap, key));
+  }
+  
+  public Props dropAllPrefixes() {
+    Map<String, String> out = new HashMap<>();
+    for (String k : innerMap.keySet()) {
+      String[] split = keyAsArray(k);
+      if (split.length > 1) {
+        String newKey = split[split.length - 1];
+        out.put(newKey, innerMap.get(k));
+      }
+    }
+    return props(out);
+  }
+  
+  public Set<String> fullKeys() { return innerMap.keySet(); }
+
+  public Set<String> keySet() {
+    Set<String> out = new HashSet<>();
+    for (String k : fullKeys()) out.add(keyAsArray(k)[0]);
+    return out;
+  }
+  
+  public Set<String> commonKeys(Props other) {
+    Set<String> out = new HashSet<>(fullKeys());
+    out.retainAll(other.fullKeys());
+    return out;
+  }
+  
+  public Props trimPrefixes() {
+    final boolean singleRoot = keySet().size() == 1;
+    final boolean compoundKeys = innerMap.keySet().iterator().next().contains(".");
+    return singleRoot && compoundKeys ? dropPrefix().trimPrefixes() : this;
+  }
+
+  public static String numberKey(int i) {
+    return "[[" + i + "]]";
+  }
+
+  private final static Predicate<String> INDEX_MATCHER = Predicate.matching("\\[\\[(\\d+)\\]\\]\\..*");
+  
+  public Props allIndexed() { return filterKeys(INDEX_MATCHER); }
+
+  public boolean isAnArray() {
+    return fullKeys().equals(INDEX_MATCHER.filter(fullKeys()));
+  }
+  
+  public Props findAllHavingNumber(int i) {
+    return findAllHaving(numberKey(i));
+  }
 }
 /*
-import java.util.Date
 import scala.io.Source
 import scala.util.parsing.combinator.RegexParsers
-
-private def quote(s:String) = Q+escape(s)+Q
-
-    val Q = "\""
-
-private def toStringPf = {
-    val keysAndValues = innerMap.map(kv ⇒ quote(kv._1) + " → " + quote(kv._2)).toList.sorted
-
-    "Map(" + keysAndValues.mkString(", ") + ")"
-    }
-
-    override def toString = if (isEmpty) "Empty()" else s"fp($toStringPf)"
-
-    override def equals(other:Any) = other match {
-    case props: Props ⇒ props.innerMap == self.innerMap
-    case _ ⇒ false
-    }
-
-    def getOr(key: Any, onError: Props ⇒ String) = Result(pfOpt("" + key), {
-    onError(self)
-    })
-
-    def hasKey(key: String) = findKey(key).isDefined
-
-    def @@ (key: Any) = getOr(key, props ⇒ s"Missing '$key' in $props")
-    def @@ (k1: Any, k2: Any)     : Result[String] = @@ (""+k1+"."+k2)
-def @@ (k1: Any, k2: Any, k3: Any) : Result[String] = @@ (""+k1+"."+k2+"."+k3)
-def @@ (k1: Any, k2: Any, k3: Any, k4: Any): Result[String] = @@ (""+k1+"."+k2+"."+k3+"."+k4)
-def @@ (key: (Any, Any))          : Result[String] = @@ (""+key._1+"."+key._2)
-def @@ (key: (Any, Any, Any))     : Result[String] = @@ (""+key._1+"."+key._2+"."+key._3)
-def @@ (key: (Any, Any, Any, Any)): Result[String] = @@ (""+key._1+"."+key._2+"."+key._3+"."+key._4)
-def @?(key: String)(implicit defaultT: String) = Good(get(key).getOrElse(defaultT))
-
-    def valueOf (key: Any)                 : Result[String] = @@(key)
-def valueOf (k1: Any, k2: Any)          : Result[String] = @@(k1,k2)
-def valueOf (k1: Any, k2: Any, k3: Any)     : Result[String] = @@(k1,k2,k3)
-def valueOf (k1: Any, k2: Any, k3: Any, k4: Any): Result[String] = @@(k1,k2,k3,k4)
-def valuesOf(key1:Any, key2:Any): Result[(String, String)] = valueOf(key1) andAlso valueOf(key2)
-    def valuesOf(key1:Any, key2:Any, key3:Any): Result[(String, String, String)] =
-    Result.zip(valueOf(key1), valueOf(key2), valueOf(key3))
-    def valuesOf(key1:Any, key2:Any, key3:Any, key4:Any): Result[(String, String, String, String)] =
-    Result.zip(valueOf(key1), valueOf(key2), valueOf(key3), valueOf(key4))
-    def valuesOf(key1:Any, key2:Any, key3:Any, key4:Any, key5:Any): Result[(String, String, String, String, String)] =
-    Result.zip(valueOf(key1), valueOf(key2), valueOf(key3), valueOf(key4), valueOf(key5))
-    def valuesOf(key1:Any, key2:Any, key3:Any, key4:Any, key5:Any, key6:Any): Result[(String, String, String, String, String, String)] =
-    Result.zip(valueOf(key1), valueOf(key2), valueOf(key3), valueOf(key4), valueOf(key5), valueOf(key6))
-
-
-    def guaranteedValueOf(key: String)(implicit defaultT: String) = @?(key)(defaultT)
-    def intValueOf(key: Any): Result[Int] = @@(key) map(_.toInt)
-//  import DateAndTime._
-// TODO(vlad): implement date extraction some time in the future
-    //  def dateAt(key: Any): Result[Date] =  @@(key) flatMap extractDate
-
-    def translateBack(dictionary:Traversable[(String, String)]):Props = if (isEmpty) this else {
-    val mapper = dictionary.toMap withDefault identity
-    def remap(key: String) = {
-    keyAsArray(key) map mapper mkString "."
-    }
-    Props(innerMap map { case(k,v) ⇒ remap(k) → v })
-    }
-
-    def translate(dictionary:Traversable[(String, String)]):Props = if (isEmpty) this else {
-    translateBack(dictionary.map(_.swap))
-    }
-
-    def translateBack(dictionary: Props):Props = translateBack(dictionary.innerMap)
-
-    def translate(dictionary: Props):Props = translate(dictionary.innerMap)
-
-private def subtreeOfMap(map:PropMap, key: String):PropMap = {
-    val subtreeOnThisLevel: PropMap = map.filterKeys(_.startsWith(key + ".")).map(kv ⇒ (kv._1.substring(key.length + 1), kv._2))
-    val downOneLevel = dropPrefixInMap(map)
-    val newMap = subtreeOnThisLevel ++ (if(downOneLevel.isEmpty) downOneLevel else subtreeOfMap(downOneLevel, key))
-    newMap
-    }
-
-    def subtree(key: String) = if (key.isEmpty) this else {
-    Props(subtreeOfMap(innerMap, key))
-    }
-
-private def dropPrefixInMap(map:PropMap) = {
-    val mapWhereKeysAreSplitIntoPrefixAndTheRest = map map(kv ⇒ (kv._1.split("\\.", 2), kv._2))
-    val mapWithDroppedPrefix = mapWhereKeysAreSplitIntoPrefixAndTheRest map (kv ⇒ (kv._1 drop 1 mkString, kv._2))
-    val mapWithNonemptyKeys  = mapWithDroppedPrefix filter (kv ⇒ !kv._1.isEmpty)
-    mapWithNonemptyKeys
-    }
-
-    def dropPrefix:Props = Props(dropPrefixInMap(innerMap))
-
-    def dropAllPrefixes = Props({
-    val withSplitKeys = innerMap.map(kv ⇒ (kv._1.split('.'), kv._2))
-    val withGoodKeys = withSplitKeys.filter(kv ⇒ kv._1.nonEmpty)
-    val withNewKeys =withGoodKeys.map(kv ⇒ (kv._1.last, kv._2))
-    withNewKeys
-    })
-
-    def keySet:Set[String] = fullKeys map (_.split("\\.", 2)(0))
-
-    def fullKeys:Set[String] = innerMap.keySet
-
-    def commonKeys(other:Props) = fullKeys intersect other.fullKeys
-
-    def trimPrefixes:Props =if (keySet.size == 1  && innerMap.keys.head.contains(".")) dropPrefix.trimPrefixes else self
-
-    def findAllHaving(key: String) = filterKeys (key subsetOf _)
-
-    def filterKeys(predicate: String ⇒ Boolean) = {
-    val subMap = innerMap filterKeys predicate
-    Props(subMap)
-    }
-
-    def findHaving(key:String):Result[String] = {
-    val all = findAllHaving(key)
-    all.value(key) orCommentTheError s"key='$key'"
-    }
-
-    def findHavingOneOf(variants:String*): Result[String] = {
-    for (key <- variants) {
-    val found = findAllHaving(key).value(key) orCommentTheError s"key='$key'"
-    if (found) return found
-    }
-    Result.error(s"Failed to find unique entry for ${variants mkString ", "}")
-    }
-
-private lazy val submapOfIndexes = innerMap.filterKeys(_ matches (sNumberKey + "\\..*"))
-
-    lazy val findAllIndexed:Props = Props(submapOfIndexes)
-
-    lazy val isAnArray:Boolean = {
-    !isEmpty && (submapOfIndexes == innerMap || innerMap.keySet.forall(_ matches sNumberKey))
-    }
-
-    def findAllHavingNumber(i: Int) = {
-    val subMapWithIndexes = innerMap.filterKeys(_ matches (sNumberKey + "\\..*"))
-    val atThisLevel = subMapWithIndexes filterKeys ( _ startsWith( numberKey(i)+"."))
-    if (atThisLevel.nonEmpty || subMapWithIndexes.nonEmpty) Props(atThisLevel)
-    else findAllHaving(numberKey(i))
-    }
 
 private def extractCommonKeyValue(key: String): Result[String] = {
     val found: Set[String] = fullKeys map {

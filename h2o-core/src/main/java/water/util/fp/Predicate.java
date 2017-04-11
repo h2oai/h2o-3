@@ -57,4 +57,11 @@ public abstract class Predicate<X> {
       public Boolean apply(X x) { return Java7.Objects.equals(x0, x); }
     };
   }
+  
+  public static Predicate<String> matching(final String regex) {
+    return new Predicate<String>() {
+      //@Override 
+      public Boolean apply(String s) { return s.matches(regex); }
+    };
+  }
 }
