@@ -1,6 +1,7 @@
 package water.util;
 
 import water.util.fp.FP;
+import water.util.fp.Function;
 import water.util.fp.PartialFunction;
 import water.util.fp.Predicate;
 
@@ -137,11 +138,6 @@ public class Props extends PartialFunction<String, String> {
     return true;
   }
   
-  public Option<String> findKeyAnyOrder(String key) {
-    for (String k : innerMap.keySet()) if (containsKeyBundle(key, k)) return Some(k);
-    return none();
-  }
-
   private PartialFunction<String, String> ForKey = new PartialFunction<String, String>() {
     @Override public Option<String> apply(String s) {
       return Option(innerMap.get(s));
@@ -152,41 +148,110 @@ public class Props extends PartialFunction<String, String> {
   public Option<String> apply(String s) {
     return findKey(s).flatMap(ForKey);
   }
+  
+  public Option<String> forSomeKey(String... collectionOfKeys) {
+    for (String key : collectionOfKeys) 
+      if (innerMap.containsKey(key)) 
+        return Option(innerMap.get(key));
+        
+    return none();    
+  }
+
+  @SuppressWarnings("incomplete-switch")
+  public Option<String> findIgnoringKeyOrder(String key) {
+    for (String k : innerMap.keySet()) 
+      if (containsKeyBundle(key, k)) 
+        return apply(k);
+    
+    return none();
+  }
+  
+  public boolean isDefinedAt(String key) {
+    return innerMap.containsKey(key);
+  }
+  
+  public Option<String> get(String key) { return apply(key); }
+  
+  public Option<String> oneOf(String... keys) {
+    for (String k : keys) if (isDefinedAt(k)) return apply(k);
+    
+    return none();
+  }
+  
+  public String applyOrElse(String key, Function<String, String> otherwise) {
+    String fromMap = innerMap.get(key);
+    return fromMap != null ? fromMap : otherwise.apply(key);
+  }
+
+  public String getOrElse(String key, String otherwise) {
+    String fromMap = innerMap.get(key);
+    return fromMap != null ? fromMap : otherwise;
+  }
+  
+  public boolean  isEmpty() { return  innerMap.isEmpty(); }
+  public boolean nonEmpty() { return !innerMap.isEmpty(); }
+
+  private static List<String> dropIndexKeysInSequence(String[] keys) {
+    List<String> out = new LinkedList<>();
+    for (String k : keys) if (!ArrayUtils.isInt(k) && !k.isEmpty()) out.add(k);
+    return out;
+  }
+
+  private static Map<String, String> dropIndexKeys(Map<String, String> m) { 
+    Map<String, String> result = new HashMap<>();
+    for (Map.Entry<String, String> kv : m.entrySet()) {
+      String[] ks = keyAsArray(kv.getKey());
+      List<String> cleanedUp = dropIndexKeysInSequence(ks);
+      if (!cleanedUp.isEmpty()) {
+        String newKey = StringUtils.join(".", cleanedUp);
+        result.put(newKey, kv.getValue());
+      }
+    }
+    return result;
+  }
+  
+  public Props dropIndexes() {
+    return props(dropIndexKeys(innerMap));
+  }
+  
+  public String toFormattedString() { return formatted(0); }
+
+  protected String formatted(int pad) {
+    return spaces(pad) + (
+    isEmpty()? "Empty()" : "fp(\n" + formatPf(pad + 2) + "\n" + spaces(pad)
+    )+")";
+  }
+
+  private String spaces(int n) { return StringUtils.repeat(" ", n); }
+  private String escape(String s) {
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < s.length(); i++) {
+      char c = s.charAt(i);
+      sb.append(c < 128 ? (""+c) : String.format("\\u%04x", (int)c));
+    }
+    return sb.toString();
+  }
+  
+  private String formatPf(int pad) {
+    String header = "\n" + spaces(pad);
+    String[] keys = innerMap.keySet().toArray(new String[innerMap.size()]);
+    Arrays.sort(keys);
+    StringBuilder sb = new StringBuilder();
+    for (String k : keys) {
+      if (sb.length() > 0) sb.append(header);
+      sb.append("\"").append(escape(k)).append("\"->\"").append(escape(innerMap.get(k))).append("\"");
+    }
+    
+    return "Map(" + sb + ")";
+  }
+
 }
 /*
 import java.util.Date
 import scala.io.Source
 import scala.util.parsing.combinator.RegexParsers
 
-case class Props(private val innerMap: PropMap) extends PartialFunction[String, String] { self ⇒
-
-    def find(collectionOfKeys: String*) = collectionOfKeys find isDefinedAt map apply
-    def forSomeKey(collectionOfKeys: String*) = Result(find(collectionOfKeys:_*)) orCommentTheError s"Failed to find a prop for keys (${collectionOfKeys mkString ","})"
-    def findIgnoringKeyOrder(keys: String):Option[String] = findKeyAnyOrder(keys) map apply
-    def isDefinedAt(key: String): Boolean = innerMap.isDefinedAt(key)
-    def get(key: String): Option[String] = pfOpt(key)
-    def oneOf(keys: String*): Option[String] = keys .map (get) .dropWhile (_.isEmpty) .headOption .flatten
-    def mapValues[U](f:String⇒U) = innerMap andThen f
-    def applyOrElse(key: String, otherwise: String ⇒ String): String = innerMap.applyOrElse(key, otherwise)
-    def getOrElse(key: String, otherwise: String) = applyOrElse(key, (_:String) ⇒ otherwise)
-
-    def isEmpty:Boolean = innerMap.isEmpty
-    def nonEmpty = !isEmpty
-
-    def dropIndexes = Props(dropIndexKeys(innerMap))
-
-    def toFormattedString = formatted(0)
-private def escape(s: String) = s //this part is good for debugging map (c ⇒ ((c < 128) ? (""+c) | (c.toInt.formatted("\\u%04x") ))) mkString ""
-private def spaces(n:Int) =  " " * n
 private def quote(s:String) = Q+escape(s)+Q
-private def formatPf(pad:Int) = {
-    val keysAndValues = innerMap.map(kv ⇒ (escape(kv._1), escape(kv._2))).toList.sorted
-    val pairsFormatted = keysAndValues map { case(k,v) ⇒ "\"" + k + "\" → \"" + v + "\""}
-    pairsFormatted.mkString("Map(\n" + spaces(pad+2), "\n" + spaces(pad+2), "")
-    }
-protected def formatted(pad: Int):String = spaces(pad) + (
-    if (isEmpty) "Empty()" else "fp(\n" + formatPf(pad+2) + "\n" + spaces(pad)
-    ) + ")"
 
     val Q = "\""
 
