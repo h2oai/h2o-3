@@ -1,5 +1,5 @@
-K-Means
--------------
+K-Means Clustering
+------------------
 
 Introduction
 ~~~~~~~~~~~~

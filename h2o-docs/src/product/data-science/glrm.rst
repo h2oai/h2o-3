@@ -1,5 +1,5 @@
-GLRM
-----
+Generalized Low Rank Models (GLRM)
+----------------------------------
 
 Introduction
 ~~~~~~~~~~~~

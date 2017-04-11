@@ -8,8 +8,8 @@ H2O lazily slices out rows of data and will only materialize a shared copy upon 
    
 	> library(h2o)
 	> h2o.init(nthreads=-1)
-	> df <- h2o.importFile(path)
-	> path <- "data/iris/iris_wheader.csv"
+	> path <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv"
+    > df <- h2o.importFile(path)
 
 	# Slice 1 row by index. 
 	> c1 <- df[15,]
@@ -63,7 +63,7 @@ H2O lazily slices out rows of data and will only materialize a shared copy upon 
 
     >>> import h2o
     >>> h2o.init()
-    >>> path = "../smalldata/iris/iris_wheader.csv"
+    >>> path = "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv"
     >>> df = h2o.import_file(path=path)
 
     # Slice 1 row by index.
