@@ -1,4 +1,4 @@
-Deep Learning (Mulilayer Perceptron)
+Deep Learning (Multilayer Perceptron)
 ------------------------------------
 
 Introduction
