@@ -45,7 +45,7 @@ public class ParseSetup extends Iced {
   String[][] _na_strings;       // Strings for NA in a given column
   String[][] _data;           // First few rows of parsed/tokenized data
 
-  int tentativeNumLines = -1;
+//  int tentativeNumLines = -1;
   int dataOffset = -1;
 
   String [] _fileNames = new String[]{"unknown"};
@@ -356,11 +356,11 @@ public class ParseSetup extends Iced {
         try {
           _gblSetup = guessSetup(bv, bits, _userSetup);
           _gblSetup.bytesStats = new BytesStats(bits);
-          {
-            if (_maxLineLength != _gblSetup.bytesStats.maxWidth) {
+//          {
+//            if (_maxLineLength != _gblSetup.bytesStats.maxWidth) {
 //TODO(vlad): investigate! the length produced by maxLineLength is 1.3 meg, and the line consists of zero chars            throw new IllegalStateException("wtf");
-            }
-          }
+//            }
+//          }
           for(ParseWriter.ParseErr e:_gblSetup._errs) {
             e._byteOffset += e._cidx*Parser.StreamData.bufSz;
             e._cidx = 0;

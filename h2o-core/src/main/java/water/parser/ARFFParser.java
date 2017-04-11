@@ -103,7 +103,8 @@ class ARFFParser extends CsvParser {
 
     // Return the final setup
     final ParseSetup parseSetup = new ParseSetup(ARFF_INFO, sep, singleQuotes, ParseSetup.NO_HEADER, ncols, labels, ctypes, domains, naStrings, data);
-    parseSetup.tentativeNumLines = numLines;
+// TODO(vlad): work on this numlines evaluation; there's a case when this one is correct, and the other one is not
+//    parseSetup.tentativeNumLines = numLines;
     parseSetup.dataOffset = dataOffset;
     return parseSetup;
   }

@@ -1,6 +1,8 @@
 package water.util;
 
 import java.io.Serializable;
+
+import water.Iced;
 import water.util.Java7.Objects;
 
 /**
@@ -11,9 +13,9 @@ import water.util.Java7.Objects;
  * 
  * Created by vpatryshev on 3/27/17.
  */
-public class BytesStats implements Serializable {
+public class BytesStats extends Iced<BytesStats> {
   public final int numLines;
-  public final int maxWidth;
+  public final int maxWidth; // number of bytes in a line; we use UTF8 encoding internally.
   public final int numChars; // number non-newline bytes till the last NL
 
   @Override
