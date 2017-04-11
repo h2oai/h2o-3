@@ -2876,12 +2876,12 @@ h2o.cross_validation_predictions <- function(object) {
 #' @examples
 #' \donttest{
 #' library(h2o)
-#' h2o.init(nthreads = -1)
-#' prostate.path = system.file("extdata", "prostate.csv", package="h2o")
-#' prostate.hex = h2o.uploadFile(path = prostate.path, destination_frame = "prostate.hex")
+#' h2o.init()
+#' prostate.path <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(path = prostate.path, destination_frame = "prostate.hex")
 #' prostate.hex[, "CAPSULE"] <- as.factor(prostate.hex[, "CAPSULE"] )
 #' prostate.hex[, "RACE"] <- as.factor(prostate.hex[,"RACE"] )
-#' prostate.gbm = h2o.gbm(x = c("AGE","RACE"),
+#' prostate.gbm <- h2o.gbm(x = c("AGE","RACE"),
 #'                        y = "CAPSULE",
 #'                        training_frame = prostate.hex,
 #'                        ntrees = 10,

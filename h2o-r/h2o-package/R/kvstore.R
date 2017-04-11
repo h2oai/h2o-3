@@ -221,7 +221,7 @@ h2o.getModel <- function(model_id) {
 #' @examples
 #' \donttest{
 #' library(h2o)
-#' h <- h2o.init(nthreads=-1)
+#' h <- h2o.init()
 #' fr <- as.h2o(iris)
 #' my_model <- h2o.gbm(x=1:4, y=5, training_frame=fr)
 #'
@@ -296,7 +296,7 @@ h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE, jar_n
 #' @examples
 #' \donttest{
 #' library(h2o)
-#' h <- h2o.init(nthreads=-1)
+#' h <- h2o.init()
 #' fr <- as.h2o(iris)
 #' my_model <- h2o.gbm(x=1:4, y=5, training_frame=fr)
 #' h2o.download_mojo(my_model)  # save to the current working directory
