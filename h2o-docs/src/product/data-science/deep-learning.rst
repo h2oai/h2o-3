@@ -1,5 +1,5 @@
-Deep Learning (Multilayer Perceptron)
-------------------------------------
+Deep Learning (Neural Networks)
+-------------------------------
 
 Introduction
 ~~~~~~~~~~~~
