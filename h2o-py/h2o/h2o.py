@@ -141,7 +141,7 @@ def version_check():
 
 def init(url=None, ip=None, port=None, https=None, insecure=None, username=None, password=None,
          cookies=None, proxy=None, start_h2o=True, nthreads=-1, ice_root=None, enable_assertions=True,
-         max_mem_size=None, min_mem_size=None, strict_version_check=None,ignore_config=False, **kwargs):
+         max_mem_size=None, min_mem_size=None, strict_version_check=None, ignore_config=False, **kwargs):
     """
     Attempt to connect to a local server, or if not successful start a new server and connect to it.
 
@@ -214,26 +214,26 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     # Apply the config file if ignore_config=False
     if not ignore_config:
         config = H2OConfigReader.get_config()
-    if not ignore_config and url is None and ip is None and port is None and https is None and "init.url" in config:
-        url = config["init.url"]
-    if not ignore_config and proxy is None and "init.proxy" in config:
-        proxy = config["init.proxy"]
-    if not ignore_config and cookies is None and "init.cookies" in config:
-        cookies = config["init.cookies"].split(";")
-    if not ignore_config and auth is None and "init.username" in config and "init.password" in config:
-        auth = (config["init.username"], config["init.password"])
-    if not ignore_config and strict_version_check is None:
-        if "init.check_version" in config:
-            check_version = config["init.check_version"].lower() != "false"
-        elif os.environ.get("H2O_DISABLE_STRICT_VERSION_CHECK"):
-            check_version = False
-    else:
-        check_version = strict_version_check
-    if insecure is None:
-        if not ignore_config and "init.verify_ssl_certificates" in config:
-            verify_ssl_certificates = config["init.verify_ssl_certificates"].lower() != "false"
-    else:
-        verify_ssl_certificates = not insecure
+        if url is None and ip is None and port is None and https is None and "init.url" in config:
+            url = config["init.url"]
+        if proxy is None and "init.proxy" in config:
+            proxy = config["init.proxy"]
+        if cookies is None and "init.cookies" in config:
+            cookies = config["init.cookies"].split(";")
+        if auth is None and "init.username" in config and "init.password" in config:
+            auth = (config["init.username"], config["init.password"])
+        if strict_version_check is None:
+            if "init.check_version" in config:
+                check_version = config["init.check_version"].lower() != "false"
+            elif os.environ.get("H2O_DISABLE_STRICT_VERSION_CHECK"):
+                check_version = False
+            else:
+                check_version = strict_version_check
+        if insecure is None:
+            if "init.verify_ssl_certificates" in config:
+                verify_ssl_certificates = config["init.verify_ssl_certificates"].lower() != "false"
+            else:
+                verify_ssl_certificates = not insecure
 
     if not start_h2o:
         print("Warning: if you don't want to start local H2O server, then use of `h2o.connect()` is preferred.")
