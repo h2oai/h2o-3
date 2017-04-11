@@ -683,6 +683,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       for(int i = 0; i < x.length; ++i)
         x[i] = (x[i] - 2*gramXY.xy[i]);
       double l = .5*(ArrayUtils.innerProduct(x,beta)/_state._obj_reg + gramXY.yy );
+      _state._iter++;
       _state.updateState(beta, l);
     }
 
