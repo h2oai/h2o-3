@@ -1,6 +1,8 @@
 package hex.tree.xgboost;
 
 import hex.*;
+import hex.deeplearning.DeepLearningTask;
+import hex.deeplearning.DeepLearningTask2;
 import hex.glm.GLMTask;
 import ml.dmlc.xgboost4j.java.*;
 import ml.dmlc.xgboost4j.java.DMatrix;
@@ -50,7 +52,14 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
    * @return DMatrix
    * @throws XGBoostError
    */
-  public static DMatrix convertFrametoDMatrix(Key<DataInfo> dataInfoKey, Frame f, String response, String weight, String fold, String[] featureMap, boolean sparse) throws XGBoostError {
+  public static DMatrix convertFrametoDMatrix(Key<DataInfo> dataInfoKey,
+                                              Frame f,
+                                              Chunk[] chunks,
+                                              Chunk response,
+                                              Chunk weight,
+                                              String fold,
+                                              String[] featureMap,
+                                              boolean sparse) throws XGBoostError {
 
     DataInfo di = dataInfoKey.get();
     // set the names for the (expanded) columns
@@ -75,12 +84,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     DMatrix trainMat;
     int nz = 0;
     int actualRows = 0;
-    int nRows = (int) f.numRows();
-    Vec.Reader w = weight == null ? null : f.vec(weight).new Reader();
-    Vec.Reader[] vecs = new Vec.Reader[f.numCols()];
-    for (int i = 0; i < vecs.length; ++i) {
-      vecs[i] = f.vec(i).new Reader();
-    }
+    int nRows = chunks[0]._len;
 
     try {
       if (sparse) {
@@ -113,25 +117,23 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
           // collect non-zeros
           int nzCount=0;
-          for (int i=0;i<nCols;++i) { //TODO: parallelize over columns
-            Vec v = f.vec(i);
-            for (int c=0;c<v.nChunks();++c) {
-              Chunk ck = v.chunkForChunkIdx(c);
-              int[] nnz = new int[ck.sparseLenZero()];
-              int nnzCount = ck.nonzeros(nnz);
-              for (int k=0;k<nnzCount;++k) {
+          for (int i = 0; i < nCols; ++i) { //TODO: parallelize over columns
+            Chunk ck = chunks[i];
+            int[] nnz = new int[ck.sparseLenZero()];
+            int nnzCount = ck.nonzeros(nnz);
+            for (int k = 0; k < nnzCount; ++k) {
                 SparseItem item = new SparseItem();
                 int localIdx = nnz[k];
-                item.pos = (int)ck.start() + localIdx;
+                item.pos = (int) ck.start() + localIdx;
                 // both 0 and NA are omitted in the sparse DMatrix
-                if (w != null && w.at(item.pos) == 0) continue;
+                if (weight != null && weight.atd(item.pos) == 0) continue;
                 if (ck.isNA(localIdx)) continue;
                 item.val = ck.atd(localIdx);
                 col[i].add(item);
                 nzCount++;
-              }
             }
           }
+
           long[] colHeaders = new long[nCols + 1];
           float[] data = new float[nzCount];
           int[] rowIndex = new int[nzCount];
@@ -145,7 +147,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
               data[nz] = (float)si.val;
               assert(si.val != 0);
               assert(!Double.isNaN(si.val));
-              assert(w == null || w.at(si.pos) != 0);
+              assert(weight == null || weight.atd(si.pos) != 0);
               nz++;
             }
           }
@@ -170,7 +172,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           // extract predictors
           rowHeaders[0] = 0;
           for (int i = 0; i < nRows; ++i) {
-            if (w != null && w.at(i) == 0) continue;
+            if (weight != null && weight.atd(i) == 0) continue;
             int nzstart = nz;
             // enlarge final data arrays by 2x if needed
             while (data.length < nz + di._cats + di._nums) {
@@ -183,9 +185,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
               colIndex = Arrays.copyOf(colIndex, newLen);
             }
             for (int j = 0; j < di._cats; ++j) {
-              if (!vecs[j].isNA(i)) {
+              if (!chunks[j].isNA(i)) {
                 data[nz] = 1; //one-hot encoding
-                colIndex[nz] = di.getCategoricalId(j, vecs[j].at8(i));
+                colIndex[nz] = di.getCategoricalId(j, chunks[j].at8(i));
                 nz++;
               } else {
                 // NA == 0 for sparse -> no need to fill
@@ -195,7 +197,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
               }
             }
             for (int j = 0; j < di._nums; ++j) {
-              float val = (float) vecs[di._cats + j].at(i);
+              float val = (float) chunks[di._cats + j].atd(i);
               if (!Float.isNaN(val) && val != 0) {
                 data[nz] = val;
                 colIndex[nz] = di._catOffsets[di._catOffsets.length - 1] + j;
@@ -224,8 +226,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         float[] data = new float[1 << 20];
         int cols = di.fullN();
         int pos = 0;
+
         for (int i = 0; i < nRows; ++i) {
-          if (w != null && w.at(i) == 0) continue;
+          if (weight != null && weight.atd(i) == 0) continue;
           // enlarge final data arrays by 2x if needed
           while (data.length < (actualRows + 1) * cols) {
             int newLen = (int) Math.min((long) data.length << 1L, (long) (Integer.MAX_VALUE - 10));
@@ -236,17 +239,17 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
             data = Arrays.copyOf(data, newLen);
           }
           for (int j = 0; j < di._cats; ++j) {
-            if (vecs[j].isNA(i)) {
+            if (chunks[j].isNA(i)) {
               data[pos + di.getCategoricalId(j, Double.NaN)] = 1; // fill NA bucket
             } else {
-              data[pos + di.getCategoricalId(j, vecs[j].at8(i))] = 1;
+              data[pos + di.getCategoricalId(j, chunks[j].at8(i))] = 1;
             }
           }
           for (int j = 0; j < di._nums; ++j) {
-            if (vecs[di._cats + j].isNA(i))
+            if (chunks[di._cats + j].isNA(i))
               data[pos + di._catOffsets[di._catOffsets.length - 1] + j] = Float.NaN;
             else
-              data[pos + di._catOffsets[di._catOffsets.length - 1] + j] = (float) vecs[di._cats + j].at(i);
+              data[pos + di._catOffsets[di._catOffsets.length - 1] + j] = (float) chunks[di._cats + j].atd(i);
           }
           assert di._catOffsets[di._catOffsets.length - 1] + di._nums == cols;
           pos += cols;
@@ -262,30 +265,30 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
     // extract weight vector
     float[] weights = new float[actualRows];
-    if (w != null) {
+    if (weight != null) {
       int j = 0;
       for (int i = 0; i < nRows; ++i) {
-        if (w.at(i) == 0) continue;
-        weights[j++] = (float) w.at(i);
+        if (weight.atd(i) == 0) continue;
+        weights[j++] = (float) weight.atd(i);
       }
       assert (j == actualRows);
     }
 
     // extract response vector
-    Vec.Reader respVec = f.vec(response).new Reader();
     float[] resp = new float[actualRows];
     int j = 0;
     for (int i = 0; i < nRows; ++i) {
-      if (w != null && w.at(i) == 0) continue;
-      resp[j++] = (float) respVec.at(i);
+      if (weight != null && weight.atd(i) == 0) continue;
+      resp[j++] = (float) response.atd(i);
     }
     assert (j == actualRows);
     resp = Arrays.copyOf(resp, actualRows);
     weights = Arrays.copyOf(weights, actualRows);
 
     trainMat.setLabel(resp);
-    if (w!=null)
-      trainMat.setWeight(weights);
+    if (weight != null){
+        trainMat.setWeight(weights);
+    }
 //    trainMat.setGroup(null); //fold //FIXME - only needed if CV is internally done in XGBoost
     return trainMat;
   }
@@ -485,7 +488,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
         model.model_info()._booster = new XGBoostTask(
                 model.model_info(),
-                _job,
                 featureMap,
                 model._output,
                 rt.getWorkerEnvs(),
@@ -494,11 +496,31 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
         rt.waitFor(0);
 
-        DMatrix trainMat = convertFrametoDMatrix( model.model_info()._dataInfoKey, _train,
-                _parms._response_column, _parms._weights_column, _parms._fold_column, featureMap, model._output._sparse);
+        Chunk[] trainChunks = new Chunk[_train.vecs().length];
+        for(int i = 0; i < _train.vecs().length; i++) {
+            // TODO this should get all the chunks and converFrameToDMatrix should handle it
+            trainChunks[i] = _train.vec(i).chunkForChunkIdx(0);
+        }
+        // TODO this should get all the chunks and converFrameToDMatrix should handle it
+        Chunk response = _train.vec(_parms._response_column).chunkForChunkIdx(0);
+        Chunk weight = _weights == null ? null : _train.vec(_parms._weights_column).chunkForChunkIdx(0);
 
-        DMatrix validMat = _valid != null ? convertFrametoDMatrix(model.model_info()._dataInfoKey, _valid,
-                _parms._response_column, _parms._weights_column, _parms._fold_column, featureMap, model._output._sparse) : null;
+        DMatrix trainMat = convertFrametoDMatrix(model.model_info()._dataInfoKey, _train, trainChunks, response, weight,
+                _parms._fold_column, featureMap, model._output._sparse);
+
+        DMatrix validMat = null;
+        if(null != _valid) {
+            Chunk[] validateChunks = new Chunk[_valid.vecs().length];
+            for (int i = 0; i < _valid.vecs().length; i++) {
+                // TODO this should get all the chunks and converFrameToDMatrix should handle it
+                trainChunks[i] = _valid.vec(i).chunkForChunkIdx(0);
+            }
+            // TODO this should get all the chunks and converFrameToDMatrix should handle it
+            Chunk validResponse = _valid.vec(_parms._response_column).chunkForChunkIdx(0);
+            Chunk validWeight = _weights == null ? null : _valid.vec(_parms._weights_column).chunkForChunkIdx(0);
+            validMat = convertFrametoDMatrix(model.model_info()._dataInfoKey, _valid, validateChunks, validResponse, validWeight,
+                    _parms._fold_column, featureMap, model._output._sparse);
+        }
 
 
         Map<String, String> rabitEnv = new HashMap<>();

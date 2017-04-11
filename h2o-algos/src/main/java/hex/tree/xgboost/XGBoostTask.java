@@ -1,13 +1,12 @@
 package hex.tree.xgboost;
 
-import hex.FrameTask;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.Rabit;
 import ml.dmlc.xgboost4j.java.XGBoostError;
-import water.Job;
+import water.MRTask;
 import water.fvec.Chunk;
-import water.fvec.NewChunk;
+import water.fvec.Frame;
 import water.util.IcedHashMapGeneric;
 
 import java.io.FileNotFoundException;
@@ -17,7 +16,7 @@ import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-public class XGBoostTask extends FrameTask<XGBoostTask> {
+public class XGBoostTask extends MRTask<XGBoostTask> {
 
     private Booster booster = null;
     private XGBoostModelInfo _sharedmodel;
@@ -31,12 +30,11 @@ public class XGBoostTask extends FrameTask<XGBoostTask> {
     private IcedHashMapGeneric.IcedHashMapStringString rabitEnv = new IcedHashMapGeneric.IcedHashMapStringString();
 
     XGBoostTask(XGBoostModelInfo inputModel,
-                Job job,
                 String[] featureMap,
                 XGBoostOutput _output,
                 Map<String, String> rabitEnvOrig,
                 XGBoostModel.XGBoostParameters _parms) {
-        super(job._key, null);
+        super();
         this._sharedmodel = inputModel;
         this._output = _output;
         this._featureMap = featureMap;
@@ -50,13 +48,43 @@ public class XGBoostTask extends FrameTask<XGBoostTask> {
         _localmodel = _sharedmodel;
 
         try {
-            DMatrix trainMat = XGBoost.convertFrametoDMatrix( _localmodel._dataInfoKey, _fr,
-                    _parms._response_column, _parms._weights_column, _parms._fold_column, _featureMap, _output._sparse);
+            // Get the training data for this node
+            Frame _train = _parms.train();
+            Chunk[] trainChunks = new Chunk[_train.vecs().length];
+            for(int i = 0; i < _train.vecs().length; i++) {
+                trainChunks[i] = _train.vec(i).chunkForChunkIdx(this._lo);
+            }
+            Chunk trainResponse = _train.vec(_parms._response_column).chunkForChunkIdx(this._lo);
+            Chunk trainWeights = _parms._weights_column == null ? null : _train.vec(_parms._weights_column).chunkForChunkIdx(this._lo);
+
+            DMatrix trainMat = XGBoost.convertFrametoDMatrix(_localmodel._dataInfoKey,
+                    _parms.train(),
+                    trainChunks,
+                    trainResponse,
+                    trainWeights,
+                    _parms._fold_column,
+                    _featureMap,
+                    _output._sparse);
 
             DMatrix validMat = null;
-            // TODO this won't work = valid will be null!!!
-//            DMatrix validMat = _valid != null ? XGBoost.convertFrametoDMatrix(_localmodel._dataInfoKey, _valid,
-//                    _parms._response_column, _parms._weights_column, _parms._fold_column, _featureMap, _output._sparse) : null;
+            if(null != _parms._valid) {
+                Frame _valid = _parms.valid();
+                Chunk[] validChunks = new Chunk[_valid.vecs().length];
+                for(int i = 0; i < _valid.vecs().length; i++) {
+                    validChunks[i] = _valid.vec(i).chunkForChunkIdx(this._lo);
+                }
+                Chunk validResponse = _valid.vec(_parms._response_column).chunkForChunkIdx(this._lo);
+                Chunk validWeights = _parms._weights_column == null ? null : _valid.vec(_parms._weights_column).chunkForChunkIdx(this._lo);
+
+                validMat = XGBoost.convertFrametoDMatrix(_localmodel._dataInfoKey,
+                        _parms.valid(),
+                        validChunks,
+                        validResponse,
+                        validWeights,
+                        _parms._fold_column,
+                        _featureMap,
+                        _output._sparse);
+            }
 
             // For feature importances - write out column info
             OutputStream os;
@@ -86,8 +114,6 @@ public class XGBoostTask extends FrameTask<XGBoostTask> {
             xgBoostError.printStackTrace();
         }
     }
-
-    @Override public void map(Chunk[] chunks, NewChunk[] outputs) { }
 
     // Do we need a reducer here or can we just put this in setupLocal?
     @Override
