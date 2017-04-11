@@ -22,8 +22,8 @@ Supervised
 
    data-science/deep-learning
    data-science/drf
-   data-science/gbm
    data-science/glm
+   data-science/gbm
    data-science/naive-bayes
    data-science/stacked-ensembles
 

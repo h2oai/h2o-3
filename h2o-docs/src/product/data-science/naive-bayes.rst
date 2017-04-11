@@ -1,5 +1,5 @@
-Naïve Bayes
---------------
+Naïve Bayes Classifier
+----------------------
 
 Introduction
 ~~~~~~~~~~~~

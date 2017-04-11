@@ -1,5 +1,5 @@
-GLM
---------------
+Generalized Linear Model (GLM)
+------------------------------
 
 Introduction
 ~~~~~~~~~~~~

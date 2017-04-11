@@ -1,5 +1,5 @@
-GBM
----
+Gradient Boosting Machine (GBM)
+-------------------------------
 
 Introduction
 ~~~~~~~~~~~~

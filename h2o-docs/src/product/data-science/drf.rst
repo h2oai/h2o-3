@@ -1,5 +1,5 @@
-DRF
---------------
+Distributed Random Forest (DRF)
+-------------------------------
 
 Introduction
 ~~~~~~~~~~~~
