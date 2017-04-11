@@ -161,7 +161,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     :param max_mem_size: Maximum memory to use for the new h2o server.
     :param min_mem_size: Minimum memory to use for the new h2o server.
     :param strict_version_check: If True, an error will be raised if the client and server versions don't match.
-    :param ignore_config: Indicates whether a search for a .h2oconfig file should be conducted or not. Default value is False.
+    :param ignore_config: Indicates whether a processing of a .h2oconfig file should be conducted or not. Default value is False.
     :param kwargs: (all other deprecated attributes)
     """
     global h2oconn
