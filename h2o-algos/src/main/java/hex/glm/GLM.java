@@ -17,6 +17,8 @@ import hex.optimization.ADMM.ProximalSolver;
 import hex.optimization.L_BFGS.*;
 import hex.optimization.OptimizationUtils.*;
 import jsr166y.CountedCompleter;
+import jsr166y.ForkJoinTask;
+import jsr166y.RecursiveAction;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
@@ -586,6 +588,18 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       return (s == Solver.COORDINATE_DESCENT)?COD_solve(t,_state._alpha,_state.lambda()):ADMM_solve(t._gram, t._xy);
     }
 
+    private double [] solveGram(Solver s, ComputationState.GramXY gramXY) {
+      int [] zeros = gramXY.gram.findZeroCols();
+      if(zeros.length > 0) {
+        gramXY.gram.dropCols(zeros);
+        gramXY = new ComputationState.GramXY(gramXY.gram,ArrayUtils.removeIds(gramXY.xy, zeros),gramXY.beta == null?null:ArrayUtils.removeIds(gramXY.beta, zeros),gramXY.activeCols,gramXY.yy);
+        _state.removeCols(zeros);
+      }
+      gramXY.gram.mul(_state._obj_reg);
+      ArrayUtils.mult(gramXY.xy, _state._obj_reg);
+      return (s == Solver.COORDINATE_DESCENT)?COD_solve(gramXY,_state._alpha,_state.lambda()):ADMM_solve(gramXY.gram, gramXY.xy);
+    }
+
     private double[] ADMM_solve(Gram gram, double [] xy) {
       if(_parms._remove_collinear_columns || _parms._compute_p_values) {
         if(!_parms._intercept) throw H2O.unimpl();
@@ -662,15 +676,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
 
     private void fitLSM(Solver s){
-      GLMIterationTask t = new GLMTask.GLMIterationTask(_job._key, _state.activeData(), new GLMWeightsFun(_parms), null).doAll(_state.activeData()._adaptedFrame);
-      double [] beta = solveGram(s,t);
+      ComputationState.GramXY gramXY = _state.computeGram(null);
+      double [] beta = solveGram(s,gramXY);
       // compute mse
-      double [] x = t._gram.mul(beta);
+      double [] x = gramXY.gram.mul(beta);
       for(int i = 0; i < x.length; ++i)
-        x[i] = (x[i] - 2*t._xy[i]);
-      double l = .5*(ArrayUtils.innerProduct(x,beta)/_state._obj_reg + t._yy );
+        x[i] = (x[i] - 2*gramXY.xy[i]);
+      double l = .5*(ArrayUtils.innerProduct(x,beta)/_state._obj_reg + gramXY.yy );
       _state.updateState(beta, l);
     }
+
 
     private void fitIRLSM(Solver s) {
       GLMWeightsFun glmw = new GLMWeightsFun(_parms);
@@ -1063,6 +1078,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _model.addSubmodel(sm = new Submodel(lambda,getNullBeta(),_state._iter,_nullDevTrain,_nullDevTest));
       else {
         _model.addSubmodel(sm = new Submodel(lambda, _state.beta(),_state._iter,-1,-1));
+
         _state.setLambda(lambda);
         checkMemoryFootPrint(_state.activeData());
         do {
@@ -1308,6 +1324,55 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     return res;
   }
 
+
+  private static double [] doUpdateCDInParallel(final double [] grads, final double [] ary, final double diff , final int variable_min, final int variable_max) {
+    ArrayList<RecursiveAction> ras = new ArrayList<>();
+    int x = 0;
+    while(x+1000 < variable_min){
+      final int fx = x;
+      final int y = x + 1000;
+      ras.add(new RecursiveAction() {
+        @Override
+        protected void compute() {
+          for (int i = fx; i < y; i++)
+            grads[i] += diff * ary[i];
+        }
+      });
+      x += 1000;
+    }
+    final int fx = x;
+    ras.add(new RecursiveAction() {
+      @Override
+      protected void compute() {
+        for (int i = fx; i < variable_min; i++)
+          grads[i] += diff * ary[i];
+      }
+    });
+    x = variable_max;
+    while(x+1000 < grads.length){
+      final int fx2 = x;
+      final int y = x + 1000;
+      ras.add(new RecursiveAction() {
+        @Override
+        protected void compute() {
+          for (int i = fx2; i < y; i++)
+            grads[i] += diff * ary[i];
+        }
+      });
+      x += 1000;
+    }
+    final int fx2 = x;
+    ras.add(new RecursiveAction() {
+      @Override
+      protected void compute() {
+        for (int i = fx2; i < grads.length; i++)
+          grads[i] += diff * ary[i];
+      }
+    });
+    ForkJoinTask.invokeAll(ras);
+    return grads;
+  }
+
   private static double [] doUpdateCD(double [] grads, double [] ary, double diff , int variable_min, int variable_max) {
     for (int i = 0; i < variable_min; i++)
       grads[i] += diff * ary[i];
@@ -1321,6 +1386,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     return grads;
   }
   public double [] COD_solve(GLMIterationTask gt, double alpha, double lambda) {
+    long t0 = System.currentTimeMillis();
     double wsumInv = 1.0/(gt.wsum*_state._obj_reg);
     double l1pen = lambda * alpha;
     double l2pen = lambda*(1-alpha);
@@ -1329,6 +1395,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     for(int i = 0; i < diagInv.length; ++i)
       diagInv[i] = 1.0/(xx[i][i] + l2pen);
     int [][] nzs = new int[_state.activeData().numStart()][];
+    long t1 = System.currentTimeMillis();
+    int sparseCnt = 0;
     if(nzs.length > 1000) {
       final int [] nzs_ary = new int[xx.length];
       for (int i = 0; i < nzs.length; ++i) {
@@ -1341,11 +1409,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           }
         }
         if (k < (nzs_ary.length >> 3)) {
+          sparseCnt++;
           nzs[i] = Arrays.copyOf(nzs_ary, k);
           xx[i] = Arrays.copyOf(x,k);
         }
       }
     }
+
     double [] grads = new double [gt._xy.length];
     double [] beta = _state.beta().clone();
     for(int i = 0; i < grads.length; ++i) {
@@ -1370,7 +1440,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       double bdiffNeg = 0;
       for (int i = 0; i < activeData._cats; ++i) {
         for(int j = activeData._catOffsets[i]; j < activeData._catOffsets[i+1]; ++j) { // can do in parallel
-          double b = bc.applyBounds(ADMM.shrinkage(grads[j], l1pen) * diagInv[j],j);
+          double b = /*bc.applyBounds(*/ADMM.shrinkage(grads[j], l1pen) * diagInv[j];//,j);
           double bd = beta[j] - b;
           bdiffPos = bd > bdiffPos?bd:bdiffPos;
           bdiffNeg = bd < bdiffNeg?bd:bdiffNeg;
@@ -1404,6 +1474,98 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
     return beta;
   }
+
+  public double [] COD_solve(ComputationState.GramXY gramXY, double alpha, double lambda) {
+    long t0 = System.currentTimeMillis();
+    double wsumInv = 1.0/(gramXY.gram.getIntercept());
+    double l1pen = lambda * alpha;
+    double l2pen = lambda*(1-alpha);
+    double [][] xx = gramXY.gram.getXX();
+    double [] diagInv = MemoryManager.malloc8d(xx.length);
+    for(int i = 0; i < diagInv.length; ++i)
+      diagInv[i] = 1.0/(xx[i][i] + l2pen);
+    int [][] nzs = new int[_state.activeData().numStart()][];
+    long t1 = System.currentTimeMillis();
+    int sparseCnt = 0;
+    if(nzs.length > 1000) {
+      final int [] nzs_ary = new int[xx.length];
+      for (int i = 0; i < nzs.length; ++i) {
+        double[] x = xx[i].clone();
+        int k = 0;
+        for (int j = 0; j < x.length; ++j) {
+          if (i != j && x[j] != 0) {
+            x[k] = x[j];
+            nzs_ary[k++] = j;
+          }
+        }
+        if (k < (nzs_ary.length >> 3)) {
+          sparseCnt++;
+          nzs[i] = Arrays.copyOf(nzs_ary, k);
+          xx[i] = Arrays.copyOf(x,k);
+        }
+      }
+    }
+    System.out.println("haha");
+    Log.info("COD::nzs done in " + (System.currentTimeMillis()-t1) + "ms, found " + sparseCnt + " sparse columns");
+    double [] grads = new double [gramXY.xy.length];
+    double [] beta = _state.beta().clone();
+    for(int i = 0; i < grads.length; ++i) {
+      double ip = 0;
+      if(i < nzs.length && nzs[i] != null) {
+        int [] ids = nzs[i];
+        double [] x = xx[i];
+        for(int j = 0; j < nzs[i].length; ++j)
+          ip += x[j]*beta[ids[j]];
+        grads[i] =  gramXY.xy[i] - ip;
+      } else {
+        grads[i] =  gramXY.xy[i] - ArrayUtils.innerProduct(xx[i], beta) + xx[i][i] * beta[i];
+      }
+    }
+    int iter1 = 0;
+    int P = gramXY.xy.length - 1;
+    final BetaConstraint bc = _state.activeBC();
+    DataInfo activeData = _state.activeData();
+    // CD loop
+    while (iter1++ < 1000 /*Math.max(P,500)*/) {
+      double maxDiff = 0;
+
+      for (int i = 0; i < activeData._cats; ++i) {
+        for(int j = activeData._catOffsets[i]; j < activeData._catOffsets[i+1]; ++j) { // can do in parallel
+          double b = bc.applyBounds(ADMM.shrinkage(grads[j], l1pen) * diagInv[j],j);
+          double bd = beta[j] - b;
+          double diff = bd*bd*xx[j][j];
+          if(diff > maxDiff) maxDiff = diff;
+          if(nzs[j] == null)
+            doUpdateCD(grads, xx[j], bd, activeData._catOffsets[i], activeData._catOffsets[i + 1]);
+          else
+            doSparseUpdateCD(grads, xx[j], nzs[j], bd, activeData._catOffsets[i], activeData._catOffsets[i + 1]);
+          beta[j] = b;
+        }
+      }
+      int numStart = activeData.numStart();
+      for (int i = numStart; i < P; ++i) {
+        double b = bc.applyBounds(ADMM.shrinkage(grads[i], l1pen) * diagInv[i],i);
+        double bd = beta[i] - b;
+        double diff = bd*bd*xx[i][i];
+        if(diff > maxDiff) maxDiff = diff;
+        doUpdateCD(grads, xx[i], bd, i,i+1);
+        beta[i] = b;
+      }
+      // intercept
+      if(_parms._intercept) {
+        double b = bc.applyBounds(grads[P] * wsumInv,P);
+        double bd = beta[P] - b;
+        doUpdateCD(grads, xx[P], bd, P, P + 1);
+        beta[P] = b;
+      }
+      if (maxDiff < _parms._beta_epsilon*_parms._beta_epsilon)
+        break;
+    }
+    Log.info(LogMsg("COD done after " + iter1 + " iterations and " + (System.currentTimeMillis()-t0) + "ms"));
+    return beta;
+  }
+
+
   /**
    * Created by tomasnykodym on 3/30/15.
    */

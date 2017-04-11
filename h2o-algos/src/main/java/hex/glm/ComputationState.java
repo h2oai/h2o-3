@@ -6,6 +6,7 @@ import hex.glm.GLM.GLMGradientInfo;
 import hex.glm.GLM.GLMGradientSolver;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
+import hex.gram.Gram;
 import hex.optimization.ADMM;
 import hex.optimization.OptimizationUtils.GradientInfo;
 import hex.optimization.OptimizationUtils.GradientSolver;
@@ -66,13 +67,16 @@ public final class ComputationState {
   public void setLambdaMax(double lmax) {
     _lambdaMax = lmax;
   }
+
+
+
   public void setLambda(double lambda) {
     adjustToNewLambda(0, _lambda);
     // strong rules are to be applied on the gradient with no l2 penalty
     // NOTE: we start with lambdaOld being 0, not lambda_max
     // non-recursive strong rules should use lambdaMax instead of _lambda
     // However, it seems tobe working nicely to use 0 instead and be more aggressive on the predictor pruning
-    // (shoudl be safe as we check the KKTs anyways)
+    // (should be safe as we check the KKTs anyways)
     applyStrongRules(lambda, _lambda);
     adjustToNewLambda(lambda, 0);
     _lambda = lambda;
@@ -181,7 +185,7 @@ public final class ComputationState {
       _allIn = active == P;
       if(!_allIn) {
         int [] cols = newCols;
-        assert cols[active-1] == P; // intercept is always selected, even if it is false (it's gonna be dropped later, it is needed for other stuff too)
+        assert cols[active-1] == P:"cols = " + Arrays.toString(cols); // intercept is always selected, even if it is false (it's gonna be dropped later, it is needed for other stuff too)
         _beta = ArrayUtils.select(_beta, cols);
         if(_u != null) _u = ArrayUtils.select(_u,cols);
         _activeData = _dinfo.filterExpandedColumns(cols);
@@ -195,6 +199,132 @@ public final class ComputationState {
       }
     }
     _activeData = _dinfo;
+  }
+
+
+
+
+
+
+  private GLMModel.GLMWeightsFun _glmw;
+
+  GramXY _fullGram;
+  GramXY _currGram;
+
+  public static final class GramXY {
+    public final Gram gram;
+    final double [] beta;
+    final int [] activeCols;
+    public final double[]  xy;
+    public double yy;
+    public GramXY(Gram gram, double [] xy, double [] beta, int [] activeCols, double yy){
+      this.gram = gram;
+      this.xy = xy;
+      this.beta = beta == null?null:beta.clone();
+      this.activeCols = activeCols;
+      this.yy = yy;
+    }
+
+    public boolean match(double[] beta, int[] activeCols) {
+      return Arrays.equals(this.beta,beta) && Arrays.equals(this.activeCols,activeCols);
+    }
+
+    public GramXY deep_clone() {
+      return new GramXY(gram.deep_clone(),xy.clone(),beta==null?null:beta.clone(),activeCols == null?null:activeCols.clone(),yy);
+    }
+  }
+
+
+
+  // get cached gram or incrementally update or compute new one
+  public GramXY computeGram(double [] beta){
+    DataInfo activeData = activeData();
+    int [] activeCols = activeData.activeCols();
+    if(_currGram != null && _currGram.match(beta,activeCols))
+        return _currGram.deep_clone();
+    if(_fullGram != null){
+      assert _parms._family == Family.gaussian;
+      return (_currGram = new GramXY(_fullGram.gram.selectCols(activeCols,true),ArrayUtils.select(_fullGram.xy,activeCols),beta == null?null:beta.clone(),activeCols,_fullGram.yy)).deep_clone();
+    }
+    if(_glmw == null) _glmw = new GLMModel.GLMWeightsFun(_parms);
+    // check if we need full or just incremental matrix update
+    if(_currGram != null && !Arrays.equals(_currGram.activeCols,activeCols)){
+      int [] newCols = ArrayUtils.sorted_set_diff(activeCols,_currGram.activeCols);
+      int [] newColsIds = newCols.clone();
+      // todo: should double check beta matches except for newCols which must be 0s
+      int jj = 0;
+      for(int i = 0; jj < newCols.length && i < activeCols.length; ++i){
+        if(activeCols[i] == newCols[jj]){
+          newColsIds[jj++] = i;
+        }
+      }
+      long t0 = System.currentTimeMillis();
+      GLMTask.GLMIncrementalGramTask gt = new GLMTask.GLMIncrementalGramTask(newColsIds,activeData,_glmw,beta).doAll(activeData._adaptedFrame); // dense
+      Log.info("incremental gram task of size " + gt._gram.length + " x " + gt._gram[0].length + " done in " + (System.currentTimeMillis() - t0) + "ms");
+//      GLMTask.GLMIncrementalGramTask gt1 = new GLMTask.GLMIncrementalGramTask(newColsIds,activeData,_glmw,beta,true).doAll(activeData._adaptedFrame); // dense
+
+//      System.out.println("incremental update dense ");
+//      System.out.println(ArrayUtils.pprint(gt0._gram));
+//      System.out.println("incremental update sparse ");
+//      System.out.println(ArrayUtils.pprint(gt1._gram));
+//      GLMTask.GLMIncrementalGramTask gt = gt0;
+
+      // need to glue the incremental update and old gram together
+      Gram updatedGram = new Gram(activeData.fullN(), activeData.largestCat(), activeData.numNums(), activeData._cats,true);
+      double [] updatedXY = new double[activeData.fullN()+1];
+      int k = 0; // new col counter
+      // start with the diagonal
+      for(int i = 0; i < updatedGram._diagN; ++i){
+        if(k < newCols.length && activeCols[i] == newCols[k]){
+          updatedGram._diag[i] = gt._gram[k][i];
+          k++;
+        } else {
+          updatedGram._diag[i] = _currGram.gram._diag[i-k];
+        }
+      }
+      for(int i = updatedGram._diagN; i < activeData.fullN()+1; i++){
+        if(k < newCols.length && activeCols[i] == newCols[k]) {
+          for (int j = 0; j <= i; j++)
+            updatedGram._xx[i-updatedGram._diagN][j] = gt._gram[k][j];
+          k++;
+        } else {
+          int l = 0;
+          for(int j = 0; j <= i; j++){
+            if(l < newCols.length && activeCols[j] == newCols[l]){
+              updatedGram._xx[i-updatedGram._diagN][j] = gt._gram[l][i];
+              l++;
+            } else {
+              updatedGram._xx[i-updatedGram._diagN][j] = _currGram.gram._xx[i-k-_currGram.gram._diagN][j-l];
+            }
+          }
+        }
+      }
+      // now xy vec
+      k = 0;
+      for(int i = 0; i < updatedXY.length; i++){
+        if(k < newCols.length && activeCols[i] == newCols[k]){
+          updatedXY[i] = gt._xy[k];
+          k++;
+        } else {
+          updatedXY[i] = _currGram.xy[i-k];
+        }
+      }
+//      System.out.println("oldGram" );
+//      System.out.println(ArrayUtils.pprint(_currGram.gram.getXX()));
+      _currGram = new GramXY(updatedGram,updatedXY,beta == null?null:beta,activeCols,_currGram.yy);
+//      GLMTask.GLMIterationTask gt2 = new GLMTask.GLMIterationTask(_job._key, activeData, _glmw, beta).doAll(activeData()._adaptedFrame);
+//
+//      System.out.println("newcols = " + Arrays.toString(newCols));
+//      System.out.println("activeCols = " + Arrays.toString(activeCols));
+//      System.out.println("incremental gram");
+//      System.out.println(ArrayUtils.pprint(updatedGram.getXX()));
+//      System.out.println("fully computed gram");
+//      System.out.println(ArrayUtils.pprint(gt2._gram.getXX()));
+      return _currGram.deep_clone();
+    }
+    GLMTask.GLMIterationTask gt = new GLMTask.GLMIterationTask(_job._key, activeData, _glmw, beta).doAll(activeData()._adaptedFrame);
+    _currGram = new GramXY(gt._gram,gt._xy,beta == null?null:beta,activeCols,gt._yy);
+    return _currGram.deep_clone();
   }
 
   public boolean _lsNeeded = false;

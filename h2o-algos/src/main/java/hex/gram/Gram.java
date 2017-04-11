@@ -22,6 +22,7 @@ public final class Gram extends Iced<Gram> {
   int _fullN;
   final static int MIN_TSKSZ=10000;
 
+
   public Gram(DataInfo dinfo) {
     this(dinfo.fullN(), dinfo.largestCat(), dinfo.numNums(), dinfo._cats,true);
   }
@@ -267,6 +268,19 @@ public final class Gram extends Iced<Gram> {
     return new Cholesky(Rnew,new double[0], true);
   }
 
+  public Gram selectCols(int[] cols, boolean intercept) {
+    assert ArrayUtils.isSorted(cols);
+    Gram res = deep_clone();
+    int [] drop_cols = new int[res.fullN()+1];
+    int j = 0,k = 0;
+    int icpt = intercept?0:1;
+    for(int i = 0; i < res.fullN()+icpt; i++){
+      if(j < cols.length && i == cols[j])j++;
+      else drop_cols[k++] = i;
+    }
+    res.dropCols(Arrays.copyOf(drop_cols,k));
+    return res;
+  }
 
   public void dropCols(int[] cols) {
     int diagCols = 0;
@@ -304,7 +318,7 @@ public final class Gram extends Iced<Gram> {
     }
     _xx = xxNew;
     _diagN = _diag.length;
-    _fullN = _xx[_xx.length-1].length;
+    _fullN = _xx.length == 0?0:_xx[_xx.length-1].length;
   }
 
   public int[] findZeroCols(){
@@ -326,6 +340,11 @@ public final class Gram extends Iced<Gram> {
     if(_fullN >= 1000) return "Gram(" + _fullN + ")";
     else return ArrayUtils.pprint(getXX(true,false));
   }
+
+  public double getIntercept() {
+    return _xx[_xx.length-1][fullN()-1];
+  }
+
 
   static public class InPlaceCholesky {
     final double _xx[][];             // Lower triangle of the symmetric matrix.
@@ -623,6 +642,8 @@ public final class Gram extends Iced<Gram> {
       for( int k = 0; k < _diag.length; ++k )
         y[k] /= _diag[k];
       // rest
+
+//      final int n = _xx.length == 0?0:_xx[_xx.length-1].length;
       final int n = _xx[_xx.length-1].length;
       // Solve L*Y = B;
       for( int k = _diag.length; k < n; ++k ) {

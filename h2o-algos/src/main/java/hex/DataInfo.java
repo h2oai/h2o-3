@@ -973,6 +973,22 @@ public class DataInfo extends Keyed<DataInfo> {
           numVals[i] = (numVals[i] - normSub[j])*normMul[j];
         }
     }
+
+    public void addToArray(double []res) {
+
+    }
+    public void addToArray(double scale, double []res) {
+      for(int i = 0; i < nBins; i++)
+        res[binIds[i]] += scale;
+      int numstart = numStart();
+      if(numIds != null){
+        for(int i = 0; i < nNums; ++i)
+          res[numstart+numIds[i]] += scale*numVals[i];
+      } else for(int i = 0; i < numVals.length; ++i)
+          res[numstart+i] += scale*numVals[i];
+      if(_intercept)
+        res[res.length-1] += scale;
+    }
   }
 
 

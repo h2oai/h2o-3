@@ -702,6 +702,107 @@ public abstract class GLMTask  {
     }
   }
 
+  static class GLMIncrementalGramTask extends MRTask<GLMIncrementalGramTask> {
+    final int[] newCols;
+    final DataInfo _dinfo;
+    double[][] _gram;
+    double [] _xy;
+    final double [] _beta;
+    final GLMWeightsFun _glmf;
+
+
+    public GLMIncrementalGramTask(int [] newCols, DataInfo dinfo, GLMWeightsFun glmf, double [] beta){
+      this.newCols = newCols;
+      _glmf = glmf;
+      _dinfo = dinfo;
+      _beta = beta;
+    }
+    public void map(Chunk[] chks) {
+      GLMWeights glmw = new GLMWeights();
+      // TODO add on the fly weights and xy
+      double [] wsum = new double[_dinfo.fullN()+1];
+      double ywsum = 0;
+      DataInfo.Rows rows = _dinfo.rows(chks);
+      _gram = new double[newCols.length][_dinfo.fullN() + 1];
+      _xy = new double[newCols.length];
+      final int ns = _dinfo.numStart();
+      double sparseOffset = rows._sparse?GLM.sparseOffset(_beta,_dinfo):0;
+      for (int rid = 0; rid < rows._nrows; ++rid) {
+        int j = 0;
+        Row r = rows.row(rid);
+
+        if(_beta != null) {
+          _glmf.computeWeights(r.response(0), r.innerProduct(_beta) + sparseOffset, r.offset, r.weight, glmw);
+        } else {
+          glmw.w = r.weight;
+          glmw.z = r.response(0);
+        }
+        r.addToArray(glmw.w,wsum);
+        ywsum += r.response(0)*glmw.w;
+        // first cats
+        for (int i = 0; i < r.nBins; i++) {
+          while (j < newCols.length && newCols[j] < r.binIds[i])
+            j++;
+          if (j == newCols.length || newCols[j] >= _dinfo.numStart())
+            break;
+          if (r.binIds[i] == newCols[j]) {
+            r.addToArray(glmw.w, _gram[j]);
+            _xy[j] += glmw.w*glmw.z;
+            j++;
+          }
+        }
+        // nums
+        if (r.numIds != null) { // sparse
+          for (int i = 0; i < r.nNums; i++) {
+            while (j < newCols.length && newCols[j] < r.numIds[i])
+              j++;
+            if (j == newCols.length) break;
+            if (r.numIds[i] == newCols[j]) {
+              double wx = glmw.w * r.numVals[i];
+              r.addToArray(wx, _gram[j]);
+              _xy[j] += wx*glmw.z;
+              j++;
+            }
+          }
+        } else { // dense
+          for (; j < newCols.length; j++) {
+            int id = newCols[j];
+            double wx = glmw.w * r.numVals[id - _dinfo.numStart()];
+            r.addToArray(wx, _gram[j]);
+            _xy[j] += wx*glmw.z;
+          }
+          assert j == newCols.length;
+        }
+      }
+      if(rows._sparse && _dinfo._normSub != null){ // adjust for sparse zeros (skipped centering)
+        int start = Arrays.binarySearch(newCols,ns);
+        if(start < 0) start = -start-1;
+        for(int k = start; k < _gram.length; ++k){
+          int i = newCols[k];
+          double mean_i = _dinfo.normSub(i-ns);
+          double scale_i = _dinfo.normMul(i-ns);
+          // categoricals
+          for(int j = 0; j < _dinfo.numStart(); ++j){
+           _gram[k][j]-=mean_i*scale_i*wsum[j];
+          }
+          //nums
+          for(int j = _dinfo.numStart(); j < _gram[k].length-1; ++j){
+            double mean_j = _dinfo.normSub(j-ns);
+            double scale_j = _dinfo.normMul(j-ns);
+            _gram[k][j] = _gram[k][j] - mean_j*scale_j*wsum[i] - mean_i*scale_i*wsum[j] + mean_i*mean_j*scale_i*scale_j*wsum[wsum.length-1];
+          }
+          _gram[k][_gram[k].length-1] -= mean_i*scale_i*wsum[_gram[k].length-1];
+          _xy[k] -= ywsum * mean_i * scale_i;
+        }
+      }
+    }
+
+    public void reduce(GLMIncrementalGramTask gt) {
+      ArrayUtils.add(_xy,gt._xy);
+      for(int i = 0; i< _gram.length; ++i)
+        ArrayUtils.add(_gram[i],gt._gram[i]);
+    }
+  }
   static class GLMGaussianGradientTask extends GLMGradientTask {
     public GLMGaussianGradientTask(Key jobKey, double obj_reg, DataInfo dinfo, GLMParameters parms, double lambda, double [] beta) {
       super(jobKey,dinfo,obj_reg,lambda,beta);
@@ -1370,7 +1471,7 @@ public abstract class GLMTask  {
       super.reduce(git);
     }
 
-    private void adjustForSparseStandardizedZeros(){
+    protected void adjustForSparseStandardizedZeros(){
       if(_sparse && _dinfo._normSub != null) { // need to adjust gram for missing centering!
         int ns = _dinfo.numStart();
         int interceptIdx = _xy.length - 1;
