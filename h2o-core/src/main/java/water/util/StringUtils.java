@@ -142,6 +142,19 @@ public class StringUtils {
    *
    * @param delimiter string to be used as a separator between array elements
    * @param arr the array to join
+   * @param from the first element to include
+   * @param to the first element to ignore
+   * @return a single string containing all elements in `arr` joined together
+   */
+  public static <T> String join(String delimiter, T[] arr, int from, int to) {
+    return join(delimiter, Arrays.asList(arr, new Object[arr.length]), from, to);
+  }
+
+  /**
+   * Join the array with the given delimiter, and return it as a string.
+   *
+   * @param delimiter string to be used as a separator between array elements
+   * @param arr the array to join
    * @return a single string containing all elements in `arr` joined together
    */
   public static String join(String delimiter, String[] arr) {
@@ -155,14 +168,32 @@ public class StringUtils {
    * @param strings the strings to join
    * @return a single string containing all elements in `strings` joined together
    */
-  public static String join(String delimiter, Iterable<String> strings) {
+  public static <T> String join(String delimiter, Iterable<T> strings) {
+    return join(delimiter, strings, 0, Integer.MAX_VALUE);
+  }
+
+  /**
+   * Join the array with the given delimiter, and return it as a string.
+   *
+   * @param delimiter string to be used as a separator between array elements
+   * @param seq the values to join
+   * @param from the first element to include
+   * @param to the first element to ignore
+   * @return a single string containing all elements in `strings` joined together
+   */
+  public static <T> String join(String delimiter, Iterable<T> seq, int from, int to) {
     StringBuilder sb = new StringBuilder();
-    for (String item : strings) {
-      if (sb.length() > 0) sb.append(delimiter);
-      sb.append(item);
+    int i = 0;
+    for (Object item : seq) {
+      if (i >= from) {
+        if (sb.length() > 0) sb.append(delimiter);
+        sb.append(item);
+      }
+      if (i >= to) break;
     }
     return sb.toString();
   }
+
 
   /**
    * Convert a string into the set of its characters.

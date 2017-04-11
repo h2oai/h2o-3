@@ -1,5 +1,7 @@
 package water.util.fp;
 
+import water.util.Pair;
+
 import static water.util.Java7.*;
 
 import java.util.Arrays;
@@ -39,9 +41,15 @@ public class Functions {
     return new Composition<>(f, g);
   }
   
-  public static <X> Function<X, X> identity() {
-    return new Function<X, X>() {
+  public static <Y, X extends Y> Function<X, Y> identity() {
+    return new Function<X, Y>() {
       @Override public X apply(X x) { return x; }
+    };
+  }
+  
+  public static <X, Y> Function<X, Y> forReader(final Reader<Y> r) {
+    return new Function<X, Y>() {
+      @Override public Y apply(X x) { return r.read(); }
     };
   }
 
@@ -58,12 +66,36 @@ public class Functions {
     return ys;
   }
 
+  public static <X> Reader<X> constantReader(final X x) {
+    return new Reader<X>() {
+      public X read() { return x; }
+    };
+  }
+
   public static <X,Y> Function<X,Y> constant(final Y y) {
     return new Function<X, Y>() {
       public Y apply(X x) { return y; }
     };
   }
 
+  public static <X, Y> Function<Y, Pair<X, Y>> pair1(final X x) {
+    return new Function<Y, Pair<X, Y>>() {
+
+      @Override public Pair<X, Y> apply(Y y) {
+        return new Pair<X,Y>(x, y);
+      }
+    };
+  }
+
+  public static <X, Y> Function<X, Pair<X, Y>> pair2(final Y y) {
+    return new Function<X, Pair<X, Y>>() {
+
+      @Override public Pair<X, Y> apply(X x) {
+        return new Pair<X,Y>(x, y);
+      }
+    };
+  }
+  
   static class StringSplitter implements Unfoldable<String, String> {
     private final String separator;
 
