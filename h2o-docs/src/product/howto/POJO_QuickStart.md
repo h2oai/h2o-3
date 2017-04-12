@@ -90,11 +90,12 @@ POJOs allow users to build a model using H2O and then deploy the model to score 
 	$ java -cp .:h2o-genmodel.jar main
 	```
 
- The following output displays: 
+    The following output displays: 
 	
-		Label (aka prediction) is flight departure delayed: YES
-		Class probabilities: 0.4319916897116479,0.5680083102883521
-		
+	```
+	Label (aka prediction) is flight departure delayed: YES
+	Class probabilities: 0.4319916897116479,0.5680083102883521
+	```	
 
 ## Extracting Models from H2O
 
