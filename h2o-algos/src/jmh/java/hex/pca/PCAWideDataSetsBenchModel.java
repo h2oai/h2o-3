@@ -39,7 +39,7 @@ public class PCAWideDataSetsBenchModel {
 	}
 	
 	public void setup() {
-		water.util.Log.init("ERRR", true);
+		water.util.Log.setLogLevel("ERRR");
 		final String _smallDataSet = "smalldata/pca_test/decathlon.csv";
 		final String _prostateDataSet = "smalldata/prostate/prostate_cat.csv";
 		final DataInfo.TransformType[] _transformTypes = {DataInfo.TransformType.NONE,
