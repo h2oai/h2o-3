@@ -63,8 +63,11 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
   }
 
   private static class ConvertToFrameTask extends MRTask<ConvertToFrameTask> {
-    private Word2VecModel _model;
-    public ConvertToFrameTask(Word2VecModel model) { _model = model; }
+    private Key<Word2VecModel> _modelKey;
+    private transient Word2VecModel _model;
+    public ConvertToFrameTask(Word2VecModel model) { _modelKey = model._key; }
+    @Override
+    protected void setupLocal() { _model = DKV.getGet(_modelKey); }
     @Override
     public void map(Chunk[] cs, NewChunk[] ncs) {
       assert cs.length == 1;
