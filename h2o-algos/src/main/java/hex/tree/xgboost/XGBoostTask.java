@@ -45,7 +45,7 @@ public class XGBoostTask extends MRTask<XGBoostTask> {
             DMatrix trainMat = XGBoost.convertFrametoDMatrix(_sharedmodel._dataInfoKey,
                     _parms.train(),
                     this._lo,
-                    this._hi,
+                    this._hi - 1,
                     _parms._response_column,
                     _parms._weights_column,
                     _parms._fold_column,
