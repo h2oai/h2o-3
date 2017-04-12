@@ -10,60 +10,82 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.VecUtils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
+import java.util.*;
 
 import static water.util.RandomUtils.getRNG;
 
 public final class StratifiedSplit {
+
+    public static final String OUTPUT_COLUMN_NAME = "test_train_split";
+    public static final String[] OUTPUT_COLUMN_DOMAIN = new String[]{"train", "test"};
+
     private StratifiedSplit() {
     }
-    public static Frame get(Frame sourceFr, String stratColName, double testFrac, long seed) {
-        Vec stratCol = sourceFr.vec(stratColName);
-        if (!(stratCol.isCategorical() || (stratCol.isNumeric() && stratCol.isInt())))
-            throw new IllegalArgumentException("stratification only applies to integer and categorical columns. Got: " +stratCol.get_type_str());
-        final long[] classes = new VecUtils.CollectDomain().doAll(stratCol).domain();
-        final int nClass =stratCol.isNumeric() ? classes.length :stratCol.domain().length;
-        final String[] domains =stratCol.domain();
-        final long[] seeds = new long[nClass]; // seed for each regular fold column (one per class)
-        for (int i = 0; i < nClass; ++i)
-            seeds[i] = getRNG(seed + i).nextLong();
-        String[] dom = new String[]{"train", "test"};
-        // create sourceFrame with all 0s (default is train)
-        Key<Frame> k1 = Key.make();
-        //Vec resVec = Vec.makeCon(0,sourceFr.anyVec().length());
-        Vec resVec = stratCol.makeCon(0);
-        resVec.setDomain(new String[]{"train","test"});
-        Frame result = new Frame(k1, new String[]{"test_train_split"}, new Vec[]{resVec});
-        //DKV.put(result);
-        // create index sourceFrame
-        ClassIdxTask finTask = new ClassIdxTask(nClass,classes).doAll(stratCol);
-        // loop through each class
+    public static Frame get(Frame frame, String stratColName, double testFrac, long seed) {
+        // It is just a single column
+        //if (frame.numCols() != 1)
+        //    throw new IllegalArgumentException("Must give a single column to stratify against. Got: " + frame.numCols() + " columns.");
+        Vec stratifyingColumn = frame.vec(stratColName);
+        Frame result = new Frame(Key.<Frame>make(),
+                new String[] {OUTPUT_COLUMN_NAME},
+                new Vec[] { split(stratifyingColumn, testFrac, seed, OUTPUT_COLUMN_DOMAIN)}
+        );
+        return result;
+    }
+
+    public static Vec split(Vec stratifyingColumn, double splittingFraction, long randomizationSeed, String[] splittingDom) {
+        checkIfCanStratifyBy(stratifyingColumn);
+        randomizationSeed = randomizationSeed == -1 ? new Random().nextLong() : randomizationSeed;
+        // Collect input vector domain
+        final long[] classes = new VecUtils.CollectDomain().doAll(stratifyingColumn).domain();
+        // Number of output classes
+        final int numClasses = stratifyingColumn.isNumeric() ? classes.length : stratifyingColumn.domain().length;
+
+        // Make a new column based on input column - this needs to follow layout of input vector!
+        // Save vector into DKV
+        Vec outputVec = stratifyingColumn.makeCon(0.0, Vec.T_CAT);
+        outputVec.setDomain(splittingDom);
+        DKV.put(outputVec);
+
+        // Collect index frame
+        // FIXME: This is in fact collecting inverse index class -> {row indices}
+        ClassIdxTask finTask = new ClassIdxTask(numClasses,classes).doAll(stratifyingColumn);
+        // Loop through each class in the input column
         HashSet<Long> usedIdxs = new HashSet<>();
-        for (int classLabel = 0; classLabel < nClass; classLabel++) {
-            // extract sourceFrame with index locations of the minority class
+        for (int classLabel = 0; classLabel < numClasses; classLabel++) {
+            // extract frame with index locations of the minority class
             // calculate target number of this class to go to test
-            long tnum = Math.max(Math.round(finTask._iarray[classLabel].size() * testFrac), 1);
+            final LongAry indexAry = finTask._indexes[classLabel];
+            long tnum = Math.max(Math.round(indexAry.size() * splittingFraction), 1);
 
             HashSet<Long> tmpIdxs = new HashSet<>();
             // randomly select the target number of indexes
             int generated = 0;
             int count = 0;
             while (generated < tnum) {
-                int i = (int) (getRNG(count+seed).nextDouble() * finTask._iarray[classLabel].size());
-                if (tmpIdxs.contains(finTask._iarray[classLabel].get(i))) { count+=1;continue; }
-                tmpIdxs.add(finTask._iarray[classLabel].get(i));
+                int i = (int) (getRNG(count+ randomizationSeed).nextDouble() * indexAry.size());
+
+                if (tmpIdxs.contains(indexAry.get(i))) { count+=1;continue; }
+                tmpIdxs.add(indexAry.get(i));
                 generated += 1;
                 count += 1;
             }
             usedIdxs.addAll(tmpIdxs);
         }
-        new ClassAssignMRTask(usedIdxs).doAll(result.anyVec());
-        // clean up temp sourceFrames
-        return result;
+        // Update class assignments
+        new ClassAssignMRTask(usedIdxs).doAll(outputVec);
+        return outputVec;
     }
-    private static class ClassAssignMRTask extends MRTask<StratifiedSplit.ClassAssignMRTask> {
+
+    static void checkIfCanStratifyBy(Vec vec) {
+        if (!(vec.isCategorical() || (vec.isNumeric() && vec.isInt())))
+            throw new IllegalArgumentException("Stratification only applies to integer and categorical columns. Got: " + vec.get_type_str());
+        if (vec.length() > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("Cannot stratified the frame because it is too long: nrows=" + vec.length());
+        }
+    }
+
+    public static class ClassAssignMRTask extends MRTask<StratifiedSplit.ClassAssignMRTask> {
         HashSet<Long> _idx;
         ClassAssignMRTask(HashSet<Long> idx) {
             _idx = idx;
@@ -75,41 +97,51 @@ public final class StratifiedSplit {
                     ck.set(i,1.0);
                 }
             }
+            _idx = null; // Do not send it back
         }
-
     }
 
-    private static class ClassIdxTask extends MRTask<StratifiedSplit.ClassIdxTask> {
-        LongAry[] _iarray;
-        int _nclasses;
-        ArrayList<Long> _classes;
-        ClassIdxTask(int nclasses, long[] classes) {
+    public static class ClassIdxTask extends MRTask<StratifiedSplit.ClassIdxTask> {
+        LongAry[] _indexes;
+        private final int _nclasses;
+        private long[] _classes;
+        private transient HashMap<Long, Integer> _classMap;
+
+        public ClassIdxTask(int nclasses, long[] classes) {
             _nclasses = nclasses;
-            Long[] boxed = ArrayUtils.toObject(classes);
-            _classes = new ArrayList<Long>(Arrays.asList(boxed));
+            _classes = classes;
         }
 
         @Override
-        public void map(Chunk ck) {
-            _iarray = new LongAry[_nclasses];
-            for (int i = 0; i < _nclasses; i++) { _iarray[i] = new LongAry(); }
-            for (int i = 0; i < ck.len(); i++) {
-                long clas = ck.at8(i);
-                int clas_idx = _classes.indexOf(clas);
-                    _iarray[clas_idx].add(ck.start() + i);
+        protected void setupLocal() {
+            _classMap = new HashMap<>(2*_classes.length);
+            for (int i = 0; i < _classes.length; i++) {
+                _classMap.put(_classes[i], i);
             }
+        }
+
+        @Override
+        public void map(Chunk[] ck) {
+            _indexes = new LongAry[_nclasses];
+            for (int i = 0; i < _nclasses; i++) { _indexes[i] = new LongAry(); }
+            for (int i = 0; i < ck[0].len(); i++) {
+                long clas = ck[0].at8(i);
+                Integer clas_idx = _classMap.get(clas);
+                if (clas_idx != null) _indexes[clas_idx].add(ck[0].start() + i);
+            }
+            _classes = null;
         }
         @Override
         public void reduce(StratifiedSplit.ClassIdxTask c) {
-            for (int i = 0; i < c._iarray.length; i++) {
-                for (int j = 0; j < c._iarray[i].size(); j++) {
-                    _iarray[i].add(c._iarray[i].get(j));
+            for (int i = 0; i < c._indexes.length; i++) {
+                for (int j = 0; j < c._indexes[i].size(); j++) {
+                    _indexes[i].add(c._indexes[i].get(j));
                 }
             }
         }
 
     }
-    private static class LongAry extends Iced<StratifiedSplit.LongAry> {
+    public static class LongAry extends Iced<StratifiedSplit.LongAry>  {
         public LongAry(long ...vals){_ary = vals; _sz = vals.length;}
         long [] _ary = new long[4];
         int _sz;

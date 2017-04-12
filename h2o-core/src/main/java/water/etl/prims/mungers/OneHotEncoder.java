@@ -1,5 +1,6 @@
 package water.etl.prims.mungers;
 
+import water.DKV;
 import water.etl.prims.reducers.CumSum;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -21,6 +22,8 @@ public final class OneHotEncoder {
       oneVec.setNames(new String[]{"h2o_ones"});
       fr.add(oneVec);
       Frame sumVec = CumSum.get(oneVec, 0.0);
+      DKV.remove(sumVec._key);
+      sumVec._key = null;
       sumVec.setNames(new String[]{"h2o_cumsum_tmp"});
       fr.add(sumVec);
       Frame pivoted = Pivot.get(fr, "h2o_cumsum_tmp", col, "h2o_ones");
@@ -36,6 +39,7 @@ public final class OneHotEncoder {
           }
         }
       }.doAll(pivoted);
+
       fr.remove("h2o_cumsum_tmp");
       fr.remove("h2o_ones");
       fr.update();

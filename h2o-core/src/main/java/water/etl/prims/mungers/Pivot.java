@@ -1,62 +1,128 @@
 package water.etl.prims.mungers;
 
+import org.apache.commons.lang.ArrayUtils;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import water.DKV;
 import water.Futures;
 import water.Key;
-import water.fvec.AppendableVec;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.MRTask;
+import water.fvec.*;
 import water.rapids.Rapids;
+import water.rapids.ast.prims.mungers.AstPivot;
 import water.rapids.vals.ValFrame;
 import water.util.VecUtils;
 
+import java.util.Arrays;
+
 public final class Pivot {
   private Pivot() {}
-  public static Frame get(Frame origfr, String index, String column, String value) {
-    Key k1 = Key.<Frame>make();
-    Frame fr = origfr.subframe(new String[]{index,column,value}).deepCopy(k1.toString());
-    DKV.put(fr);
-    int index_colidx = fr.find(index);
-    int value_colidx = fr.find(value);
-    int _col_colidx = fr.find(column);
-
-    String[] column_set = fr.vec(column).domain();
-    long[] indexSet = new VecUtils.CollectDomain().doAll(fr.vec(index)).domain();
-    byte vecType = fr.vec(index_colidx).get_type();
-    Frame indexSetFr = new Frame(Key.<Frame>make(),new String[]{index},new Vec[]{UniqueVec(vecType,indexSet)});
-    Frame res = new Frame(Key.<Frame>make());
-    res.add(indexSetFr.deepCopy(indexSetFr._key.toString()));
-    DKV.put(indexSetFr);
-    for (String _c: column_set) {
-      String rapidsString1 = String.format("(cols (rows " + fr._key + " (== (cols " + fr._key + " " + _col_colidx + ") '" + _c + "')) [%d, %d])",
-              index_colidx,
-              value_colidx);
-      Frame frTmp = Rapids.exec(rapidsString1).getFrame();
-      frTmp._key = Key.<Frame>make();
-      DKV.put(frTmp);
-      String rapidsString2 = String.format("(cols (merge " + indexSetFr._key + " " + frTmp._key + " True False [0] [0] 'auto') 1)");
-      Frame joinedOnAllIdx = Rapids.exec(rapidsString2).getFrame();
-      joinedOnAllIdx.setNames(new String[]{_c});
-      res.add(joinedOnAllIdx);
-      frTmp.delete();
-
+  public static Frame get(Frame fr, String index, String column, String value) {
+    int indexIdx = fr.find(index);
+    int colIdx = fr.find(column);
+    if(fr.vec(column).isConst())
+      throw new IllegalArgumentException("Column: '" + column + "'is constant. Perhaps use transpose?" );
+    if(fr.vec(index).naCnt() > 0)
+      throw new IllegalArgumentException("Index column '" + index + "' has > 0 NAs");
+    // This is the sort then MRTask method.
+    // Create the target Frame
+    // Now sort on the index key, result is that unique keys will be localized
+    Frame fr2 = fr.sort(new int[]{indexIdx});
+    final long[] classes = new VecUtils.CollectDomain().doAll(fr.vec(colIdx)).domain();
+    final int nClass = (fr.vec(colIdx).isNumeric() || fr.vec(colIdx).isTime()) ? classes.length : fr.vec(colIdx).domain().length;
+    String[] header = null;
+    if (fr.vec(colIdx).isNumeric()) {
+      header = (String[]) ArrayUtils.addAll(new String[]{index}, Arrays.toString(classes).split("[\\[\\]]")[1].split(", "));
+    } else if (fr.vec(colIdx).isTime()) {
+      header = new String[nClass];
+      for (int i=0;i<nClass;i++) header[i] = (new DateTime(classes[i], DateTimeZone.UTC)).toString();
+    } else {
+      header = (String[]) ArrayUtils.addAll(new String[]{index}, fr.vec(colIdx).domain());
     }
-    indexSetFr.delete();
-    fr.delete();
-    return res;
 
+    Frame initialPass = new pivotTask(fr2.find(index),fr2.find(column),fr2.find(value),classes)
+            .doAll(nClass+1, Vec.T_NUM, fr2)
+            .outputFrame(null, header, null);
+    fr2.delete();
+    Frame result = new Frame(initialPass.vec(0).makeCopy(fr.vec(indexIdx).domain(),fr.vec(indexIdx).get_type()));
+    result._key = Key.<Frame>make();
+    result.setNames(new String[]{index});
+    initialPass.remove(0).remove();
+    result.add(initialPass);
+    return result;
   }
-  public static Vec UniqueVec(byte vecType,long ...rows) {
-     Key<Vec> k = Vec.VectorGroup.VG_LEN1.addVec();
-     Futures fs = new Futures();
-     AppendableVec avec = new AppendableVec(k,vecType);
-     avec.setDomain(null);
-     NewChunk chunk = new NewChunk(avec, 0);
-     for( long r : rows ) chunk.addNum(r);
-     chunk.close(0, fs);
-     Vec vec = avec.layout_and_close(fs);
-     fs.blockForPending();
-     return vec;
+
+  private static class pivotTask extends MRTask<pivotTask> {
+    int _indexColIdx;
+    int _colColIdx;
+    int _valColIdx;
+    long[] _classes;
+    pivotTask(int indexColIdx, int colColIdx, int valColIdx, long[] classes) {
+      _indexColIdx = indexColIdx; _colColIdx = colColIdx; _valColIdx = valColIdx; _classes=classes;
+    }
+    @Override
+    public void map(Chunk[] cs, NewChunk[] nc) {
+      // skip past the first rows of the first index if we know that the previous chunk will run in here
+      long firstIdx =  cs[_indexColIdx].at8(0);
+      long globalIdx = cs[_indexColIdx].start();
+      int start = 0;
+      if (globalIdx > 0 && cs[_indexColIdx].vec().at8(globalIdx-1)==firstIdx){
+        while(start < cs[_indexColIdx].len() && firstIdx == cs[_indexColIdx].at8(start)) start++;
+      }
+      for (int i=start; i<cs[_indexColIdx]._len; i++) {
+        long currentIdx = cs[_indexColIdx].at8(i);
+        // start with a copy of the current row
+        double[] newRow = new double[nc.length-1];
+        Arrays.fill(newRow,Double.NaN);
+        if (((i == cs[_indexColIdx]._len -1) &&
+                (cs[_indexColIdx].nextChunk() == null || cs[_indexColIdx].nextChunk() != null && currentIdx != cs[_indexColIdx].nextChunk().at8(0)))
+                || (i < cs[_indexColIdx]._len -1 && currentIdx != cs[_indexColIdx].at8(i+1))) {
+
+          newRow[ArrayUtils.indexOf(_classes,cs[_colColIdx].at8(i))] = cs[_valColIdx].atd(i);
+          nc[0].addNum(cs[_indexColIdx].at8(i));
+          for (int j = 1; j < nc.length; j++)  nc[j].addNum(newRow[j - 1]);
+          // were done here since we know the next row has a different index
+          continue;
+        }
+        // here we know we have to search ahead
+        int count = 1;
+        newRow[ArrayUtils.indexOf(_classes,cs[_colColIdx].at8(i))] = cs[_valColIdx].atd(i);
+
+        while ( count + i < cs[_indexColIdx]._len && currentIdx == cs[_indexColIdx].at8(i + count) ) {
+          // merge the forward row, the newRow and the existing row
+          // here would be a good place to apply aggregating function
+          // for now we are aggregating by "first"
+          if (Double.isNaN(newRow[ArrayUtils.indexOf(_classes,cs[_colColIdx].at8(i + count))]))  {
+            newRow[ArrayUtils.indexOf(_classes,cs[_colColIdx].at8(i + count))] = cs[_valColIdx].atd(i + count);
+          }
+          count++;
+        }
+        // need to look if we need to go to next chunk
+        if (i + count == cs[_indexColIdx]._len && cs[_indexColIdx].nextChunk() != null) {
+          Chunk indexNC = cs[_indexColIdx].nextChunk(); // for the index
+          Chunk colNC = cs[_colColIdx].nextChunk(); // for the rest of the columns
+          Chunk valNC = cs[_valColIdx].nextChunk(); // for the rest of the columns
+          int countNC = 0;
+          // If we reach the end of the chunk, we'll update nextChunk and nextChunkArr
+          while (indexNC != null && countNC < indexNC._len && currentIdx == indexNC.at8(countNC)) {
+            if (Double.isNaN(newRow[ArrayUtils.indexOf(_classes, colNC.at8(countNC))])) {
+              newRow[(int) colNC.atd(countNC)] = valNC.atd(countNC);
+            }
+          }
+          countNC++;
+          if (countNC == indexNC._len) { // go to the next chunk again
+            indexNC = indexNC.nextChunk();
+            colNC = colNC.nextChunk();
+            valNC = valNC.nextChunk();
+            countNC = 0;
+          }
+        }
+        nc[0].addNum(currentIdx);
+        for (int j = 1; j < nc.length; j++) {
+          nc[j].addNum(newRow[j - 1]);
+        }
+        i += (count - 1);
+      }
+    }
   }
 }

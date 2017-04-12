@@ -9,6 +9,7 @@ public final class Mungers{
     public static Frame OneHotEncoder(Frame fr, String col) {
         return OneHotEncoder.get(fr,col);
     }
+    public static Frame Pivot(Frame fr, String index, String column, String value) { return Pivot.get(fr,index,column,value);}
     /** Return the same frame with a selection of rows according to a boolean vec
      *
      */
