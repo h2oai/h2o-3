@@ -431,9 +431,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       DMatrix trainMat = convertFrametoDMatrix(
               model_info()._dataInfoKey,
               adaptFr,
-              // TODO should this be 0?
               0,
-              adaptFr.anyVec().nChunks(),
+              adaptFr.anyVec().nChunks() - 1,
               _parms._response_column,
               _parms._weights_column,
               _parms._fold_column,
