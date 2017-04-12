@@ -1,6 +1,5 @@
 package water.rapids.ast.prims.advmath;
 
-import hex.CreateFrame;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -9,7 +8,6 @@ import water.DKV;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.parser.BufferedString;
 import water.rapids.Rapids;
 import water.rapids.Val;
 import water.util.ArrayUtils;
