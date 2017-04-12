@@ -28,7 +28,7 @@ public class EtlTest extends TestUtil {
 
         Frame fr = parse_test_file(Key.<Frame>make(), "smalldata/airlines/AirlinesTest.csv.zip");
         Frame frOH = OneHotEncoder(fr, "Origin");
-        /*fr.add(frOH);
+        fr.add(frOH);
         Frame trainTestCol = StratifiedSplit(fr,"IsDepDelayed",0.2,123);
         Frame idx = Eq(trainTestCol,"train");
         Frame train = fr.deepSlice(idx,null);
@@ -38,18 +38,15 @@ public class EtlTest extends TestUtil {
         System.out.println(fr.toString(0L,10));
         System.out.println(train.toString(0L,10));
         System.out.println(test.toString(0L,10));
-        */
+
 
         fr.delete();
         frOH.delete();
-        /*
         trainTestCol.delete();
         idx.delete();
         idx2.delete();
         train.delete();
         test.delete();
-        */
-
 
     }
 
