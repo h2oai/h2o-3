@@ -90,12 +90,11 @@ POJOs allow users to build a model using H2O and then deploy the model to score 
 	$ java -cp .:h2o-genmodel.jar main
 	```
 
-  The following output displays: 
-
-	```
-	Label (aka prediction) is flight departure delayed: YES
-	Class probabilities: 0.4790490513429604,0.5209509486570396
-	```
+ The following output displays: 
+	
+		Label (aka prediction) is flight departure delayed: YES
+		Class probabilities: 0.4319916897116479,0.5680083102883521
+		
 
 ## Extracting Models from H2O
 
@@ -198,6 +197,8 @@ For more information about in-H2O predictions (as opposed to POJO predictions), 
 
 - **Why did I receive the following error when trying to compile the POJO?**
 
+   The following error is generated when the source file is larger than 1G. 
+
 	```
 	Michals-MBP:b michal$ javac -cp h2o-genmodel.jar -J-Xmx2g -J-XX:MaxPermSize=128m drf_b9b9d3be_cf5a_464a_b518_90701549c12a.java
 	An exception has occurred in the compiler (1.7.0_60). Please file a bug at the Java Developer Connection (http://java.sun.com/webapps/bugreport)  after checking the Bug Parade for duplicates. Include your program and the following diagnostic in your report.  Thank you.
@@ -219,4 +220,3 @@ For more information about in-H2O predictions (as opposed to POJO predictions), 
 	    at com.sun.tools.javac.Main.main(Main.java:61)
 	```
 
- This error is generated when the source file is larger than 1G. 
