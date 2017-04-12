@@ -51,10 +51,17 @@ public abstract class Predicate<X> {
     };
   }
   
-  public static <X> Predicate<X> equal(final X x0) {
+  public static <X> Predicate<X> equal(final X x) {
     return new Predicate<X>() {
       //@Override 
-      public Boolean apply(X x) { return Java7.Objects.equals(x0, x); }
+      public Boolean apply(X y) { return Java7.Objects.equals(x, y); }
+    };
+  }
+
+  public static <X> Predicate<X> notEqual(final X x) {
+    return new Predicate<X>() {
+      //@Override 
+      public Boolean apply(X y) { return !Java7.Objects.equals(x, y); }
     };
   }
   

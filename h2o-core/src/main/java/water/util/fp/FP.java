@@ -20,6 +20,8 @@ public class FP {
     boolean isEmpty();
     boolean nonEmpty();
     <U> Option<U> flatMap(PartialFunction<T, U> f);
+
+    T getOrNull();
   }
   
   public final static Option<?> None = new Option<Object>() {
@@ -32,6 +34,8 @@ public class FP {
     @Override public <U> Option<U> flatMap(PartialFunction<Object, U> f) {
       return (Option<U>) None;
     }
+
+    @Override public Object getOrNull() { return null; }
 
     @Override public Iterator<Object> iterator() {
       return Collections.emptyList().iterator();
@@ -58,6 +62,8 @@ public class FP {
     public <U> Option<U> flatMap(PartialFunction<T, U> f) {
       return f.apply(get());
     }
+
+    @Override public T getOrNull() { return contents.get(0); }
 
     @Override public Iterator<T> iterator() {
       return contents.iterator();
