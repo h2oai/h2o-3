@@ -44,6 +44,7 @@ public class PCAImputeMissingScoringBench {
 
   @Setup(Level.Invocation)
   public void setup() {
+    water.util.Log.init("ERRR", true);
     stall_till_cloudsize(1);
 
     trainingFrame = null;
