@@ -426,11 +426,19 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   @Override
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics) throws IllegalArgumentException {
     Frame adaptFr = new Frame(fr);
-    computeMetrics = computeMetrics && (!isSupervised() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
-    String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
+
     try {
-      DMatrix trainMat = convertFrametoDMatrix( model_info()._dataInfoKey, adaptFr,
-          _parms._response_column, _parms._weights_column, _parms._fold_column, null, _output._sparse);
+      DMatrix trainMat = convertFrametoDMatrix(
+              model_info()._dataInfoKey,
+              adaptFr,
+              // TODO should this be 0?
+              0,
+              adaptFr.anyVec().nChunks(),
+              _parms._response_column,
+              _parms._weights_column,
+              _parms._fold_column,
+              null,
+              _output._sparse);
       ModelMetrics[] mm = new ModelMetrics[1];
       Frame preds = makePreds(model_info()._booster, trainMat, mm, Key.<Frame>make(destination_key));
       DKV.put(preds);
