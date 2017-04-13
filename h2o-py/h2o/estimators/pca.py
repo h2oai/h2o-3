@@ -130,7 +130,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
     @property
     def pca_method(self):
         """
-        Method for computing PCA (Caution: Power and GLRM are currently experimental and unstable)
+        Method for computing PCA (Caution: GLRM is currently experimental and unstable)
 
         One of: ``"gram_s_v_d"``, ``"power"``, ``"randomized"``, ``"glrm"``  (default: ``"gram_s_v_d"``).
         """

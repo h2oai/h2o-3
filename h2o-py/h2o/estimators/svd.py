@@ -130,7 +130,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
     @property
     def svd_method(self):
         """
-        Method for computing SVD (Caution: Power and Randomized are currently experimental and unstable)
+        Method for computing SVD (Caution: Randomized is currently experimental and unstable)
 
         One of: ``"gram_s_v_d"``, ``"power"``, ``"randomized"``  (default: ``"gram_s_v_d"``).
         """
