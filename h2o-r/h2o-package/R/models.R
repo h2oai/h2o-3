@@ -3007,3 +3007,54 @@ h2o.deepfeatures <- function(object, data, layer) {
   .h2o.__waitOnJob(job_key)
   h2o.getFrame(dest_key)
 }
+
+#' Leave One Covariate Out (LOCO)
+#'
+#' Calculates row-wise variable importance's by re-scoring a trained supervised model and measuring the impact of setting
+#' each variable to missing or it’s most central value(mean or median & mode for categorical's)
+#' @param model A supervised H2O model
+#' @param frame An H2OFrame to score
+#' @param loco_frame_id Destination id for this job; auto-generated if not specified.
+#' @param replace_val Value to replace columns ("mean" or "median") by (Default is to set columns to missing).
+#' @return An H2OFrame displaying the base prediction (model scored with all predictors) and the difference in predictions
+#'         when variables are dropped/replaced. The difference displayed is the base prediction substracted from
+#'         the new prediction (when a variable is dropped/replaced with mean/median/mode) for binomial classification
+#'         and regression problems. For multinomial problems, the sum of the absolute value of differences across classes
+#'         is calculated per column dropped/replaced.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' fr <- as.h2o(iris)
+#' g <- h2o.gbm(1:3,4,fr)
+#' h2o.loco(g,fr) #Dropping each column iteratively and score.
+#' h2o.loco(g,fr,replace_val = "mean") #Replace each column by its mean (mode for categoricals) iteratively and score.
+#' h2o.loco(g,fr,replace_val = "median") #Replace each column by its median (mode for categoricals) iteratively and score.
+#' }
+#' @export
+h2o.loco <- function(model, frame, loco_frame_id, replace_val){
+  if(!is(model, "H2OModel")) stop("model must be an H2OModel")
+  if(!is(frame, "H2OFrame")) stop("frame must be an H2OFrame")
+  parms = list()
+  parms$model <- model@model_id
+  parms$frame <- h2o.getId(frame)
+  if(!missing(loco_frame_id)){
+    if(!is.character(loco_frame_id)){
+      stop("loco_frame_id must be of type character")
+    }
+    parms$loco_frame_id = loco_frame_id
+  }
+  if(!missing(replace_val)){
+    if(!(is.character(replace_val))){
+      stop("replace_val must be of type character")
+    }
+    if(!(replace_val %in% c("mean","median"))){
+      stop(paste0("repalce_val must be either mean or median, but got ",replace_val))
+    }
+    parms$replace_val <- replace_val
+  }
+  res <- .h2o.__remoteSend(method = "POST", h2oRestApiVersion = 3, page = "LeaveOneCovarOut", .params = parms)
+  .h2o.__waitOnJob(res$key$name)
+  return(h2o.getFrame(res$dest$name))
+}
+
