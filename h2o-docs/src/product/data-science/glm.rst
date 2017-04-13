@@ -530,7 +530,7 @@ Example
    .. code-block:: r
 
     library(h2o)
-    h2o.init(nthreads=-1)
+    h2o.init()
 
     df <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv")
     df$CAPSULE <- as.factor(df$CAPSULE)

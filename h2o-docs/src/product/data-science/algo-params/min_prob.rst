@@ -22,26 +22,26 @@ Example
 .. example-code::
    .. code-block:: r
 
-	library(h2o)
-	h2o.init()
+    library(h2o)
+    h2o.init()
 
-	# import the cars dataset:
-	cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+    # import the cars dataset
+    cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-	# Specify model-building exercise (1:binomial, 2:multinomial)
-	problem <- sample(1:2,1)
+    # Specify model-building exercise (1:binomial, 2:multinomial)
+    problem <- sample(1:2,1)
 
-	# Specify response column based on predictor value and problem type
-	predictors <- c("displacement","power","weight","acceleration","year")
-	if ( problem == 1 ) { response_col <- "economy_20mpg"} else { response_col <- "cylinders" }
+    # Specify response column based on predictor value and problem type
+    predictors <- c("displacement","power","weight","acceleration","year")
+    if ( problem == 1 ) { response_col <- "economy_20mpg"} else { response_col <- "cylinders" }
 
-	# Convert the response column to a factor
-	cars[,response_col] <- as.factor(cars[,response_col])
+    # Convert the response column to a factor
+    cars[,response_col] <- as.factor(cars[,response_col])
 
-	# Specify model parameters
-	laplace <- c(1)
-	min_prob <- c(0.1)
-	eps_prob <- c(0.5)
+    # Specify model parameters
+    laplace <- c(1)
+    min_prob <- c(0.1)
+    eps_prob <- c(0.5)
 
     # Build the model 
     cars_naivebayes <- h2o.naiveBayes(x=predictors, y=response_col, training_frame=cars, 
@@ -62,7 +62,7 @@ Example
     cars_naivebayes_grid <- h2o.grid(x=predictors, y=response_col, training_frame=cars, 
                                     algorithm="naivebayes", grid_id="naiveBayes_grid_cars_test", 
                                     hyper_params=grid_space)
-	print(cars_naivebayes_grid)
+    print(cars_naivebayes_grid)
 
    .. code-block:: python
 
