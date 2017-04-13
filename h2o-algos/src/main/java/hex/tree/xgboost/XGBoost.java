@@ -490,10 +490,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         RabitTracker rt = new RabitTracker(H2O.getCloudSize());
         rt.start(0); // Make this settable?
 
-        int response = _train.find(_parms._response_column);
-        int weight = _weights == null ? -1 : _train.find(_parms._weights_column);
-
-        model.model_info()._booster = new XGBoostTask(
+        model.model_info()._booster = new XGBoostTrainingTask(
                 model.model_info(),
                 featureMap,
                 model._output,
@@ -501,6 +498,10 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
                 _parms).doAll(_train).booster();
 
         rt.waitFor(0);
+
+        Map<String, String> rabitEnv = new HashMap<>();
+        rabitEnv.put("XGBOOST_TASK_ID", Thread.currentThread().getName());
+        Rabit.init(rabitEnv);
 
         DMatrix trainMat = convertFrametoDMatrix(
                 model.model_info()._dataInfoKey,
@@ -527,17 +528,11 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
                     model._output._sparse);
         }
 
-
-        Map<String, String> rabitEnv = new HashMap<>();
-        rabitEnv.put("XGBOOST_TASK_ID", Thread.currentThread().getName());
-        Rabit.init(rabitEnv);
-
         // train the model
-        scoreAndBuildTrees(model, trainMat, validMat);
+        scoreAndBuildTrees(model, trainMat, validMat, featureMap);
 
         // final scoring
         doScoring(model, model.model_info()._booster, trainMat, validMat, true);
-
         Rabit.shutdown();
 
         // save the model to DKV
@@ -551,9 +546,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       model.unlock(_job);
     }
 
-    protected final void scoreAndBuildTrees(XGBoostModel model, DMatrix trainMat, DMatrix validMat) throws XGBoostError {
-      for( int tid=0; tid< _parms._ntrees; tid++) {
+    protected final void scoreAndBuildTrees(XGBoostModel model, DMatrix trainMat, DMatrix validMat, String[] featureMap) throws XGBoostError {
         // During first iteration model contains 0 trees, then 1-tree, ...
+      for( int tid=0; tid< _parms._ntrees; tid++) {
         boolean scored = doScoring(model, model.model_info()._booster, trainMat, validMat, false);
         if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
           doScoring(model, model.model_info()._booster, trainMat, validMat, true);
@@ -562,12 +557,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         }
 
         Timer kb_timer = new Timer();
-        try {
 //          model.model_info()._booster.setParam("eta", effective_learning_rate(model));
           model.model_info()._booster.update(trainMat, tid);
-        } catch (XGBoostError xgBoostError) {
-          xgBoostError.printStackTrace();
-        }
+
         Log.info((tid + 1) + ". tree was built in " + kb_timer.toString());
         _job.update(1);
         // Optional: for convenience
@@ -579,7 +571,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         model._output._training_time_ms = ArrayUtils.copyAndFillOf(model._output._training_time_ms, model._output._ntrees+1, System.currentTimeMillis());
         if (stop_requested() && !timeout()) throw new Job.JobCancelledException();
         if (timeout()) { //stop after scoring
-          if (!scored) doScoring(model, model.model_info()._booster, trainMat, validMat, true);
+          if (!scored) {
+            doScoring(model, model.model_info()._booster, trainMat, validMat, true);
+          }
           _job.update(_parms._ntrees-model._output._ntrees); //finish
           break;
         }

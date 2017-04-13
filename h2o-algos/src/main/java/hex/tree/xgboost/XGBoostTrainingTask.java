@@ -14,7 +14,7 @@ import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-public class XGBoostTask extends MRTask<XGBoostTask> {
+public class XGBoostTrainingTask extends MRTask<XGBoostTrainingTask> {
 
     private Booster booster = null;
     private XGBoostModelInfo _sharedmodel;
@@ -26,12 +26,11 @@ public class XGBoostTask extends MRTask<XGBoostTask> {
 
     private IcedHashMapGeneric.IcedHashMapStringString rabitEnv = new IcedHashMapGeneric.IcedHashMapStringString();
 
-    XGBoostTask(XGBoostModelInfo inputModel,
-                String[] featureMap,
-                XGBoostOutput _output,
-                Map<String, String> rabitEnvOrig,
-                XGBoostModel.XGBoostParameters _parms) {
-        super();
+    XGBoostTrainingTask(XGBoostModelInfo inputModel,
+                        String[] featureMap,
+                        XGBoostOutput _output,
+                        Map<String, String> rabitEnvOrig,
+                        XGBoostModel.XGBoostParameters _parms) {
         this._sharedmodel = inputModel;
         this._output = _output;
         this._featureMap = featureMap;
@@ -110,7 +109,7 @@ public class XGBoostTask extends MRTask<XGBoostTask> {
 
     // Do we need a reducer here or can we just put this in setupLocal?
     @Override
-    public void reduce(XGBoostTask mrt) {
+    public void reduce(XGBoostTrainingTask mrt) {
         super.reduce(mrt);
         if(null != mrt.booster) {
             this.booster = mrt.booster;

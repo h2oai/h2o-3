@@ -427,6 +427,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics) throws IllegalArgumentException {
     Frame adaptFr = new Frame(fr);
 
+    computeMetrics = computeMetrics && (!isSupervised() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
+    adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
+
     try {
       DMatrix trainMat = convertFrametoDMatrix(
               model_info()._dataInfoKey,
