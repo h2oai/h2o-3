@@ -136,7 +136,7 @@ At this point, determine whether you want to complete this quick start in either
     > library(h2o)
 
     # Run the following command to initialize H2O on your local machine (single-node cluster) using all available CPUs.
-    > h2o.init(nthreads=-1)
+    > h2o.init()
  
     # Import the Iris (with headers) dataset.
     > path <- "smalldata/iris/iris_wheader.csv"
@@ -522,7 +522,7 @@ Hadoop Launch Parameters
 -  ``-mapperXmx <per mapper Java Xmx heap size>``: Specify the amount of memory to allocate to H2O (at least 6g).
 -  ``-extramempercent <0-20>``: Specify the extra memory for internal JVM use outside of the Java heap. This is a percentage of ``mapperXmx``.
 -  ``-n | -nodes <number of H2O nodes>``: Specify the number of nodes.
--  ``-nthreads <maximum number of CPUs>``: Specify the number of CPUs to use. Enter ``-1`` to use all CPUs on the host, or enter a positive integer.
+-  ``-nthreads <maximum number of CPUs>``: Specify the number of CPUs to use. This defaults to using all CPUs on the host, or you can enter a positive integer.
 -  ``-baseport <initialization port for H2O nodes>``: Specify the initialization port for the H2O nodes. The default is ``54321``.
 -  ``-ea``: Enable assertions to verify boolean expressions for error detection.
 -  ``-verbose:gc``: Include heap and garbage collection information in the logs.

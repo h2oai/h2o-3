@@ -56,7 +56,7 @@ Note that once the aggregation operations are complete, calling the GroupBy obje
    .. code-block:: r
 
     > library(h2o)
-    > h2o.init(nthreads=-1)
+    > h2o.init()
 
     # Import the airlines data set and display a summary.
     > airlinesURL <- "https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv"

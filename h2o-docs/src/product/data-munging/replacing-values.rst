@@ -7,7 +7,7 @@ This example shows how to replace numeric values in a frame of data. Note that i
    .. code-block:: r
 
     > library(h2o)
-    > h2o.init(nthreads=-1)
+    > h2o.init()
 
     #Upload the iris dataset
     > path <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv""

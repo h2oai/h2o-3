@@ -17,7 +17,7 @@ The ``impute`` function accepts the following arguments:
    .. code-block:: r
 
 	> library(h2o)
-	> h2o.init(nthreads=-1)
+	> h2o.init()
 
    	#Upload the Airlines dataset
    	> filePath <- "https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv"

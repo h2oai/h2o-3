@@ -58,7 +58,7 @@ Perform the following steps in R to install H2O. Copy and paste these commands o
  ::
 
 	library(h2o)
-	localH2O = h2o.init(nthreads=-1) 
+	localH2O = h2o.init() 
 	demo(h2o.kmeans) 
 
 Installing H2O's R Package from CRAN

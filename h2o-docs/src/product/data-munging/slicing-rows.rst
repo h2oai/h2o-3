@@ -7,7 +7,7 @@ H2O lazily slices out rows of data and will only materialize a shared copy upon 
    .. code-block:: r
    
 	> library(h2o)
-	> h2o.init(nthreads=-1)
+	> h2o.init()
 	> path <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv"
     > df <- h2o.importFile(path)
 
