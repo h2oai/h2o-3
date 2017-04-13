@@ -30,11 +30,13 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
         this.booster = booster;
     }
 
+
     @Override
     protected void setupLocal() {
         try {
-            DMatrix trainMat = XGBoost.convertFrametoDMatrix(_sharedmodel._dataInfoKey,
-                    _parms.train(),
+            DMatrix trainMat = XGBoost.convertFrametoDMatrix(
+                    _sharedmodel._dataInfoKey,
+                    _fr,
                     this._lo,
                     this._hi - 1,
                     _parms._response_column,
@@ -42,6 +44,8 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
                     _parms._fold_column,
                     _featureMap,
                     _output._sparse);
+
+            //booster.setParam("eta", effective_learning_rate(model));
             booster.update(trainMat, tid);
             trainMat.dispose();
         } catch (XGBoostError xgBoostError) {

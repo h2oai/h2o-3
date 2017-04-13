@@ -562,16 +562,14 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         }
 
         Timer kb_timer = new Timer();
-//          model.model_info()._booster.setParam("eta", effective_learning_rate(model));
-          model.model_info()._booster.update(trainMat, tid);
 
-//        model.model_info()._booster = new XGBoostUpdateTask(
-//                model.model_info()._booster,
-//                model.model_info(),
-//                featureMap,
-//                model._output,
-//                _parms,
-//                tid).doAll(_train).booster();
+        model.model_info()._booster = new XGBoostUpdateTask(
+                model.model_info()._booster,
+                model.model_info(),
+                featureMap,
+                model._output,
+                _parms,
+                tid).doAll(_train).booster();
 
         Log.info((tid + 1) + ". tree was built in " + kb_timer.toString());
         _job.update(1);
