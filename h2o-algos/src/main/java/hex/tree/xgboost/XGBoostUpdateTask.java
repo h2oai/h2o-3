@@ -42,8 +42,8 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
                     _parms._fold_column,
                     _featureMap,
                     _output._sparse);
-
             booster.update(trainMat, tid);
+            trainMat.dispose();
         } catch (XGBoostError xgBoostError) {
             xgBoostError.printStackTrace();
         }

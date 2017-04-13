@@ -102,6 +102,11 @@ public class XGBoostTrainingTask extends MRTask<XGBoostTrainingTask> {
             booster = ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, XGBoostModel.createParams(_parms, _output), 0, watches, null, null);
 
             Rabit.shutdown();
+
+            trainMat.dispose();
+            if(null != validMat) {
+                validMat.dispose();
+            }
         } catch (XGBoostError xgBoostError) {
             xgBoostError.printStackTrace();
         }
