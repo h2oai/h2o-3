@@ -17,7 +17,7 @@ public class XGBoostMojoReader extends ModelMojoReader<XGBoostMojoModel> {
     byte[] boosterBytes = readblob("boosterBytes");
     InputStream is = new ByteArrayInputStream(boosterBytes);
     try {
-      _model._booster = Booster.loadModel(is);
+      _model._booster = BoosterHelper.loadModel(is);
     } catch (XGBoostError xgBoostError) {
       xgBoostError.printStackTrace();
     }

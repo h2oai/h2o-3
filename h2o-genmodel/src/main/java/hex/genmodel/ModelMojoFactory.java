@@ -6,10 +6,7 @@ import hex.genmodel.algos.gbm.GbmMojoReader;
 import hex.genmodel.algos.glm.GlmMojoReader;
 import hex.genmodel.algos.glrm.GlrmMojoReader;
 import hex.genmodel.algos.word2vec.Word2VecMojoReader;
-import java.io.IOException;
 import java.util.ServiceLoader;
-
-import hex.genmodel.algos.xgboost.XGBoostMojoReader;
 
 /**
  * Factory class for instantiating specific MojoGenmodel classes based on the algo name.
