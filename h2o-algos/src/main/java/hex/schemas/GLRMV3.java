@@ -99,7 +99,7 @@ public class GLRMV3 extends ModelBuilderSchema<GLRM, GLRMV3, GLRMV3.GLRMParamete
     @API(help = "Initialization mode", values = { "Random", "SVD", "PlusPlus", "User" }, gridable = true) // TODO: pull out of categorical class
     public GlrmInitialization init;
 
-    @API(help = "Method for computing SVD during initialization (Caution: Power and Randomized are currently experimental and unstable)", values = { "GramSVD", "Power", "Randomized" }, gridable = true)   // TODO: pull out of enum class
+    @API(help = "Method for computing SVD during initialization (Caution: Randomized is currently experimental and unstable)", values = { "GramSVD", "Power", "Randomized" }, gridable = true)   // TODO: pull out of enum class
     public SVDParameters.Method svd_method;
 
     @API(help = "User-specified initial Y")

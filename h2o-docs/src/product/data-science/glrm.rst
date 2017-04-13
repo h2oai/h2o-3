@@ -116,7 +116,7 @@ Defining a GLRM Model
 -  **svd\_method**: Specify the method for computing SVD during
    initialization: GramSVD, Power, Randomized.
 
-       **Caution**: Power and Randomized are currently experimental.
+       **Caution**: Randomized is currently experimental.
 
 -  **user\_y**: (Optional) Specify the initial Y value.
 
