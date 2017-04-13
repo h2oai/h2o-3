@@ -499,10 +499,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
         rt.waitFor(0);
 
-        Map<String, String> rabitEnv = new HashMap<>();
-        rabitEnv.put("XGBOOST_TASK_ID", Thread.currentThread().getName());
-        Rabit.init(rabitEnv);
-
         DMatrix trainMat = convertFrametoDMatrix(
                 model.model_info()._dataInfoKey,
                 _train,
@@ -529,12 +525,16 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         }
 
         // train the model
-        scoreAndBuildTrees(model, trainMat, validMat, featureMap);
+        scoreAndBuildTrees(model, trainMat, validMat, featureMap, rt);
+
+        Map<String, String> rabitEnv = new HashMap<>();
+        rabitEnv.put("XGBOOST_TASK_ID", Thread.currentThread().getName());
+        Rabit.init(rabitEnv);
 
         // final scoring
         doScoring(model, model.model_info()._booster, trainMat, validMat, true);
-        Rabit.shutdown();
 
+        Rabit.shutdown();
         trainMat.dispose();
         if(null != validMat) {
           validMat.dispose();
@@ -546,30 +546,39 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         xgBoostError.printStackTrace();
       }
 
-
       model._output._boosterBytes = model.model_info()._boosterBytes;
       model.unlock(_job);
     }
 
-    protected final void scoreAndBuildTrees(XGBoostModel model, DMatrix trainMat, DMatrix validMat, String[] featureMap) throws XGBoostError {
-        // During first iteration model contains 0 trees, then 1-tree, ...
+    protected final void scoreAndBuildTrees(XGBoostModel model, DMatrix trainMat, DMatrix validMat, String[] featureMap, RabitTracker rt) throws XGBoostError {
+      // During first iteration model contains 0 trees, then 1-tree, ...
+      Map<String, String> rabitEnv = new HashMap<>();
+      rabitEnv.put("XGBOOST_TASK_ID", Thread.currentThread().getName());
+
       for( int tid=0; tid< _parms._ntrees; tid++) {
+        Rabit.init(rabitEnv);
         boolean scored = doScoring(model, model.model_info()._booster, trainMat, validMat, false);
         if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
           doScoring(model, model.model_info()._booster, trainMat, validMat, true);
           _job.update(_parms._ntrees-model._output._ntrees); //finish
           return;
         }
+        Rabit.shutdown();
 
         Timer kb_timer = new Timer();
 
+        rt.start(0);
         model.model_info()._booster = new XGBoostUpdateTask(
                 model.model_info()._booster,
                 model.model_info(),
                 featureMap,
                 model._output,
                 _parms,
-                tid).doAll(_train).booster();
+                tid,
+                rt.getWorkerEnvs()).doAll(_train).booster();
+        rt.waitFor(0);
+
+        Rabit.init(rabitEnv);
 
         Log.info((tid + 1) + ". tree was built in " + kb_timer.toString());
         _job.update(1);
@@ -588,8 +597,11 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           _job.update(_parms._ntrees-model._output._ntrees); //finish
           break;
         }
+        Rabit.shutdown();
       }
+      Rabit.init(rabitEnv);
       doScoring(model, model.model_info()._booster, trainMat, validMat, true);
+      Rabit.shutdown();
     }
 
     long _firstScore = 0;
