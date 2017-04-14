@@ -1,31 +1,154 @@
 Starting H2O
 ============
 
-There are a variety of ways to start H2O, depending on which client you
-would like to use.
+There are a variety of ways to start H2O, depending on which client you would like to use. The instructions below assume that you already downloaded and installed H2O. If you have not, then please refer to the `Downloading <downloading.html>`__ section.
 
 From R
 ------
 
-To use H2O in R, follow the instructions on the `R download page <http://www.h2o.ai/download/h2o/r>`_.
+Use the ``h2o.init()`` method to initialize H2O. This method accepts the following options. Note that in most cases, simply using ``h2o.init()`` is all that a user is required to do.
+
+- ``nthreads``: This launches H2O using all available CPUs and is only applicable if you launch H2O locally using R. If you start H2O locally outside of R or start H2O on Hadoop, the nthreads parameter is not applicable.
+- ``ip``: The IP address of the server where H2O is running.
+- ``port``: The port number of the H2O server.
+- ``startH2O``: (Optional) A logical value indicating whether to try to start H2O from R if no connection with H2O is detected. This is only possible if ``ip = "localhost"`` or ``ip = "127.0.0.1"``. If an existing connection is detected, R does not start H2O.
+- ``forceDL``: (Optional) A logical value indicating whether to force download of the H2O executable. This defaults to FALSE, so the executable will only be downloaded if it does not already exist in the H2O R library resources directory at h2o/java/h2o.jar. 
+- ``enable_assertions``:  (Optional) A logical value indicating whether H2O should be launched with assertions enabled. This is used mainly for error checking and debugging purposes. 
+- ``license``: (Optional) A character string value specifying the full path of the license file. 
+- ``max_mem_size``: (Optional) A character string specifying the maximum size, in bytes, of the memory allocation pool to H2O. This value must a multiple of 1024 greater than 2MB. Append the letter ``m`` or ``M`` to indicate megabytes, or ``g`` or ``G`` to indicate gigabytes.
+- ``min_mem_size``: (Optional) A character string specifying the minimum size, in bytes, of the memory allocation pool to H2O. This value must a multiple of 1024 greater than 2MB. Append the letter ``m`` or ``M`` to indicate megabytes, or ``g`` or ``G`` to indicate gigabytes.
+- ``ice_root``: (Optional) A directory to handle object spillage. The default varies by OS.
+- ``strict_version_check``: (Optional) Setting this to FALSE is unsupported and should only be done when advised by technical support.
+- ``ignore_config``: (Optional) This option allows you to specify whether to perform processing of a .h2oconfig file. When h2o.init() is specified, a call to a config reader method is invoked. This call can result in path issues when there is no "root" (for example, with a Windows network drive) because the config file reader searches up to "root." When there is no "root", the path to search will continue to expand, eventually result in an error. This value defaults to False.
+- ``proxy``: (Optional) A character string specifying the proxy path.
+- ``https``: (Optional) Set this to TRUE to use https instead of http.
+- ``insecure``: (Optional) Set this to TRUE to disable SSL certificate checking.
+- ``username``: (Optional) The username to log in with.
+- ``password``: (Optional) The password to log in with.
+- ``cookies``: (Optional) Vector (or list) of cookies to add to request.
+- ``context_path``: (Optional) The last part of connection URL. For example, **http://<ip>:<port>/<context_path>**
+
+By default, ``h2o.init()`` first checks if an H2O instance is connectible. If it cannot connect and ``start = TRUE`` with ``ip = "localhost"``, it will attempt to start an instance of H2O at localhost:54321. If an open ip and port of your choice are passed in, then this method will attempt to start an H2O instance at that specified ip and port.
+
+When initializing H2O locally, this method searches for the h2o.jar file in the R library resources (system.file("java", "h2o.jar", package = "h2o")), and if the file does not exist, it will automatically attempt to download the correct version from Amazon S3. The user must have Internet access for this process to be successful.
+
+Once connected, the ``h2o.init()`` method checks to see if the local H2O R package version matches the version of H2O running on the server. If there is a mismatch and the user indicates he/she wants to upgrade, it will remove the local H2O R package and download/install the H2O R package from the server.
+
+**Note**: You may want to manually upgrade your package rather than waiting until being prompted. This requires that you fully uninstall and reinstall the H2O package and the H2O client package. You must unload packages running in the environment before upgrading. We also recommended that you restart R or R studio after upgrading.
+
+Example
+~~~~~~~
+
+::
+
+  library h2o
+  h2o.init()
+
+  H2O is not running yet, starting it now...
+
+  Note:  In case of errors look at the following log files:
+      /var/folders/yl/cq5nhky53hjcl9wrqxt39kz80000gn/T//RtmpKtZXsy/h2o_techwriter_started_from_r.out
+      /var/folders/yl/cq5nhky53hjcl9wrqxt39kz80000gn/T//RtmpKtZXsy/h2o_techwriter_started_from_r.err
+
+  java version "1.8.0_25"
+  Java(TM) SE Runtime Environment (build 1.8.0_25-b17)
+  Java HotSpot(TM) 64-Bit Server VM (build 25.25-b02, mixed mode)
+
+  Starting H2O JVM and connecting: .. Connection successful!
+
+  R is connected to the H2O cluster: 
+      H2O cluster uptime:         2 seconds 812 milliseconds 
+      H2O cluster version:        3.10.4.3 
+      H2O cluster version age:    9 days  
+      H2O cluster name:           H2O_started_from_R_techwriter_awt197 
+      H2O cluster total nodes:    1 
+      H2O cluster total memory:   3.56 GB 
+      H2O cluster total cores:    8 
+      H2O cluster allowed cores:  8 
+      H2O cluster healthy:        TRUE 
+      H2O Connection ip:          localhost 
+      H2O Connection port:        54321 
+      H2O Connection proxy:       NA 
+      H2O Internal Security:      FALSE 
+      R Version:                  R version 3.2.2 (2015-08-14) 
 
 From Python
 -----------
 
-To use H2O in Python, follow the instructions on the `Python download page <http://www.h2o.ai/download/h2o/python>`_.
+Use the ``h2o.init()`` function to initialize H2O. This function accepts the following options. Note that in most cases, simply using ``h2o.init()`` is all that a user is required to do.
 
-**Note**: When installing H2O from ``pip`` in OS X El Capitan, users must include the ``--user`` flag. For example:
+
+- ``url``: Full URL of the server to connect to. (This can be used instead of ``ip`` + ``port`` + ``https``.)
+- ``ip``: The ip address (or host name) of the server where H2O is running.
+- ``port``: Port number that H2O service is listening to.
+- ``https``: Set to True to connect via https:// instead of http://.
+- ``insecure``: When using https, setting this to True will disable SSL certificates verification.
+- ``username``: The username to log in with when using basic authentication.
+- ``password``: The password to log in with when using basic authentication.
+- ``cookies``: Cookie (or list of) to add to each request.
+- ``proxy``: The proxy server address.
+- ``start_h2o``: If False, do not attempt to start an H2O server when a connection to an existing one failed.
+- ``nthreads``: "Number of threads" option when launching a new H2O server.
+- ``ice_root``: The directory for temporary files for the new H2O server.
+- ``enable_assertions``: Enable assertions in Java for the new H2O server.
+- ``max_mem_size``: Maximum memory to use for the new H2O server.
+- ``min_mem_size``: Minimum memory to use for the new H2O server.
+- ``strict_version_check``: If True, an error will be raised if the client and server versions don't match.
+
+Example
+~~~~~~~
 
 ::
-	
-	pip install --user http://h2o-release.s3.amazonaws.com/h2o/rel-turing/3/Python/h2o-3.10.0.3-py2.py3-none-any.whl
 
-On Spark
---------
+  python
+  import h2o
+  h2o.init(ip="localhost", port=54323)
 
-To use H2O on Spark, follow the instructions on the Sparkling Water
-`download page <http://www.h2o.ai/download/sparkling-water/choose>`__.
+  Checking whether there is an H2O instance running at http://localhost:54323..... not found.
+  Attempting to start a local H2O server...
+    Java Version: java version "1.8.0_25"; Java(TM) SE Runtime Environment (build 1.8.0_25-b17); Java HotSpot(TM) 64-Bit Server VM (build 25.25-b02, mixed mode)
+    Starting server from /Users/techwriter/anaconda/lib/python2.7/site-packages/h2o/backend/bin/h2o.jar
+    Ice root: /var/folders/yl/cq5nhky53hjcl9wrqxt39kz80000gn/T/tmpN2xfkW
+    JVM stdout: /var/folders/yl/cq5nhky53hjcl9wrqxt39kz80000gn/T/tmpN2xfkW/h2o_techwriter_started_from_python.out
+    JVM stderr: /var/folders/yl/cq5nhky53hjcl9wrqxt39kz80000gn/T/tmpN2xfkW/h2o_techwriter_started_from_python.err
+    Server is running at http://127.0.0.1:54323
+  Connecting to H2O server at http://127.0.0.1:54323... successful.
+  --------------------------  ---------------------------------
+  H2O cluster uptime:         02 secs
+  H2O cluster version:        3.10.4.3
+  H2O cluster version age:    9 days
+  H2O cluster name:           H2O_from_python_techwriter_pu6lbs
+  H2O cluster total nodes:    1
+  H2O cluster free memory:    3.556 Gb
+  H2O cluster total cores:    8
+  H2O cluster allowed cores:  8
+  H2O cluster status:         accepting new members, healthy
+  H2O connection url:         http://127.0.0.1:54323
+  H2O connection proxy:
+  H2O internal security:      False
+  Python version:             2.7.12 final
+  --------------------------  ---------------------------------
 
+From Anaconda
+~~~~~~~~~~~~~
+
+This section describes how run H2O in an Anaconda Cloud environment. This section assumes that you have installed H2O on Anaconda using the instructions in the `Install on Anaconda Cloud <downloading.html#install-on-anaconda-cloud>`__ section. 
+
+Launching Jupyter Notebook
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+1. Open a Terminal window and launch jupyter notebook. 
+
+   ::
+
+     user$ jupyter notebook
+
+2. Create a new Python notebook by selecting the **New** button in the upper left corner. At this point, you can begin using Jupyter Notebook to run H2O Python commands. 
+
+Troubleshooting
+^^^^^^^^^^^^^^^
+
+If your system includes two versions of Anaconda (a global installation and a user-specific installation), be sure to use the User Anaconda. Using the Global Anaconda will result in an error when you attempt to run commands in Jupyter Notebook. You can verify the version that you are using by running ``which pip`` (Mac) or ``where pip`` (Windows). If your system shows that your environment is set up to use Global Anaconda by default, then change the PATH environment variable to use the User Anaconda. 
 
 From the Command Line
 ---------------------
@@ -90,11 +213,8 @@ H2O Options
 
 -	``-ice_root <fileSystemPath>``: Specify a directory for H2O to spill temporary data to disk (where ``<fileSystemPath>`` is the file path).
 -  ``-flow_dir <server-side or HDFS directory>``: Specify a directory for saved flows. The default is ``/Users/h2o-<H2OUserName>/h2oflows``(where ``<H2OUserName>`` is your user name).
--  ``-nthreads <#ofThreads>``: Specify the maximum number of threads in
-   the low-priority batch work queue (where ``<#ofThreads>`` is the
-   number of threads). The default is 99.
--  ``-client``: Launch H2O node in client mode. This is used mostly for
-   running Sparkling Water.
+-  ``-nthreads <#ofThreads>``: Specify the maximum number of threads in the low-priority batch work queue (where ``<#ofThreads>`` is the number of threads). 
+-  ``-client``: Launch H2O node in client mode. This is used mostly for running Sparkling Water.
 
 H2O Internal Communication
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -202,3 +322,8 @@ Right now, H2O always prefer IPV4, however the preference can be changed via JVM
 
 - ``-Djava.net.preferIPv6Addresses=true -Djava.net.preferIPv4Addresses=true`` - H2O will try to select IPv4
 - ``-Djava.net.preferIPv6Addresses=true -Djava.net.preferIPv4Addresses=false`` - H2O will try to select IPv6
+
+On Spark
+--------
+
+Refer to the `Getting Started with Sparkling Water <welcome.html#getting-started-with-sparkling-water>`__ section for information on how to launch H2O on Spark. 
