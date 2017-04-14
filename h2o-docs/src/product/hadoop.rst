@@ -18,7 +18,6 @@ Currently supported versions:
 -  HDP 2.4
 -  HDP 2.5
 -  HDP 2.6
--  MapR 3.1
 -  MapR 4.0
 -  MapR 5.0
 -  MapR 5.1
@@ -40,7 +39,7 @@ Prerequisite: Open Communication Paths
 --------------------------------------
 
 H2O communicates using two communication paths. Verify these are open
-and available for use by H2O. 
+and available for use by H2O.
 
 **Path 1: mapper to driver**
 
@@ -125,7 +124,7 @@ and the parameters involved in launching H2O from the command line.
        H2O node 172.16.2.184:54321 requested flatfile
        Sending flatfiles to nodes...
         [Sending flatfile to node 172.16.2.184:54321]
-       H2O node 172.16.2.184:54321 reports H2O cluster size 1 
+       H2O node 172.16.2.184:54321 reports H2O cluster size 1
        H2O cluster (1 nodes) is up
        Blocking until the H2O cluster shuts down...
 
@@ -216,7 +215,7 @@ Then import the data with the S3 URL path:
 
    ::
 
-       importFiles [ "s3n:/path/to/bucket/file/file.tab.gz" ] 
+       importFiles [ "s3n:/path/to/bucket/file/file.tab.gz" ]
 
 -  To import the data from the R API:
 

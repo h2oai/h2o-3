@@ -15,25 +15,25 @@ Requirements
 At a minimum, we recommend the following for compatibility with H2O:
 
 -  **Operating Systems**:
- 
+
    -  Windows 7 or later
    -  OS X 10.9 or later
    -  Ubuntu 12.04
    -  RHEL/CentOS 6 or later
-   
+
 -  **Languages**: Scala, R, and Python are not required to use H2O unless you want to use H2O in those environments, but Java is always required. Supported versions include:
 
    -  Java 7 or later. **Note**: Java 9 is not yet released and is not currently supported.
 
-      - To build H2O or run H2O tests, the 64-bit JDK is required. 
-      - To run the H2O binary using either the command line, R, or Python packages, only 64-bit JRE is required. 
+      - To build H2O or run H2O tests, the 64-bit JDK is required.
+      - To run the H2O binary using either the command line, R, or Python packages, only 64-bit JRE is required.
       - Both of these are available on the `Java download page <http://www.oracle.com/technetwork/java/javase/downloads/index.html>`__.
 
    -  Scala 2.10 or later
    -  R version 3 or later
    -  Python 2.7.x or 3.5.x
- 
--  **Browser**: An internet browser is required to use H2O's web UI, Flow. Supported versions include the latest version of Chrome, Firefox, Safari, or Internet Explorer. 
+
+-  **Browser**: An internet browser is required to use H2O's web UI, Flow. Supported versions include the latest version of Chrome, Firefox, Safari, or Internet Explorer.
 
 Additional Requirements
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -41,12 +41,11 @@ Additional Requirements
 -  **Hadoop**: Hadoop is not required to run H2O unless you want to deploy H2O on a Hadoop cluster. Supported versions are listed on the `Download page <http://www.h2o.ai/download/>`_ (when you select the Install on Hadoop tab) and include:
 
    -  Cloudera CDH 5.2 or later (5.3 is recommended)
-   -  MapR 3.1.1 or later
-   -  Hortonworks HDP 2.1 or later 
-  
+   -  Hortonworks HDP 2.1 or later
+
   Refer to the :ref:`on-hadoop` section for detailed information.
 
--  **Conda 2.7 or 3.5 repo**: Conda is not required to run H2O unless you want to run H2O on the Anaconda Cloud. Refer to the :ref:`anaconda` section for more information. 
+-  **Conda 2.7 or 3.5 repo**: Conda is not required to run H2O unless you want to run H2O on the Anaconda Cloud. Refer to the :ref:`anaconda` section for more information.
 
 -  **Spark**: Version 1.6 or 2.0. Spark is only required if you want to run `Sparkling Water <https://github.com/h2oai/sparkling-water>`__.
 
@@ -75,7 +74,7 @@ learn more:
 
 -  :ref:`Data_Science`: This section describes the science behind our algorithms and provides a detailed, per-algo view of each model type.
 
--  `GitHub Help <https://help.github.com/>`_: The GitHub Help system is a useful resource for becoming familiar with Git. 
+-  `GitHub Help <https://help.github.com/>`_: The GitHub Help system is a useful resource for becoming familiar with Git.
 
 New User Quick Start
 ~~~~~~~~~~~~~~~~~~~~
@@ -87,7 +86,7 @@ New users can follow the steps below to quickly get up and running with H2O dire
  ::
 
    user$ mkdir ~/Desktop/repos
-   
+
 2. Change directories to that new folder, and then clone the repository. Notice that the prompt changes when you change directories.
 
  ::
@@ -102,7 +101,7 @@ New users can follow the steps below to quickly get up and running with H2O dire
     repos user$ cd h2o-3
     h2o-3 user$
 
-4. Run the following command to retrieve sample datasets. These datasets are used throughout this User Guide and within the `Booklets <http://www.h2o.ai/resources/>`_. 
+4. Run the following command to retrieve sample datasets. These datasets are used throughout this User Guide and within the `Booklets <http://www.h2o.ai/resources/>`_.
 
  ::
 
@@ -127,11 +126,11 @@ At this point, determine whether you want to complete this quick start in either
     'help.start()' for an HTML browser interface to help.
     Type 'q()' to quit R.
     >
- 
+
     # Copy and paste the following commands in R to download dependency packages.
     > pkgs <- c("methods","statmod","stats","graphics","RCurl","jsonlite","tools","utils")
     > for (pkg in pkgs) {if (! (pkg %in% rownames(installed.packages()))) { install.packages(pkg) }}
- 
+
     # Run the following command to load the H2O:
     > library(h2o)
 
@@ -171,7 +170,7 @@ At this point, determine whether you want to complete this quick start in either
 
     # Start python
     h2o-3 user$ python
-    >>> 
+    >>>
 
     # Run the following command to import the H2O module:
     >>> import h2o
@@ -394,7 +393,7 @@ After starting multiple "worker" node processes in addition to the JUnit test pr
 -  `H2O Droplet Project Templates <https://github.com/h2oai/h2o-droplets>`_: This page provides template info for projects created in Java, Scala, or Sparkling Water.
 
 -  H2O Scala API Developer Documentation for `Scala 2.11 <../h2o-scala_2.11/scaladoc/index.html>`__ or `Scala 2.10 <../h2o-scala_2.10/scaladoc/index.html>`__: The definitive Scala API guide for H2O.
-   
+
 -  `Hacking Algos <http://blog.h2o.ai/2014/11/hacking-algorithms-in-h2o-with-cliff/>`_: This blog post by Cliff walks you through building a new algorithm, using K-Means, Quantiles, and Grep as examples.
 
 -  `KV Store Guide <http://blog.h2o.ai/2014/05/kv-store-memory-analytics-part-2-2/>`_: Learn more about performance characteristics when implementing new algorithms.
@@ -423,7 +422,6 @@ Supported Versions
 -  HDP 2.3
 -  HDP 2.4
 -  HDP 2.5
--  MapR 3.1
 -  MapR 4.0
 -  MapR 5.0
 -  MapR 5.1
@@ -442,7 +440,7 @@ Supported Versions
 Prerequisite: Open Communication Paths
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-H2O communicates using two communication paths. Verify these are open and available for use by H2O. 
+H2O communicates using two communication paths. Verify these are open and available for use by H2O.
 
 **Path 1: mapper to driver**
 
@@ -498,7 +496,7 @@ The following steps show you how to download or build H2O with Hadoop and the pa
        H2O node 172.16.2.184:54321 requested flatfile
        Sending flatfiles to nodes...
         [Sending flatfile to node 172.16.2.184:54321]
-       H2O node 172.16.2.184:54321 reports H2O cluster size 1 
+       H2O node 172.16.2.184:54321 reports H2O cluster size 1
        H2O cluster (1 nodes) is up
        Blocking until the H2O cluster shuts down...
 
@@ -552,7 +550,7 @@ Then import the data with the S3 URL path:
 
    ::
 
-       importFiles [ "s3n:/path/to/bucket/file/file.tab.gz" ] 
+       importFiles [ "s3n:/path/to/bucket/file/file.tab.gz" ]
 
 -  To import the data from the R API:
 
@@ -840,7 +838,7 @@ EC2 Instances & S3 Storage
 
 To use the Amazon Web Services (AWS) S3 storage solution, you will need to pass your S3 access credentials to H2O. This will allow you to access your data on S3 when importing data frames with path prefixes ``s3n://...``.
 
-To use the `Minio Cloud Storage <https://minio.io/>`__, you will need to pass an endpoint in addition to access credentials. 
+To use the `Minio Cloud Storage <https://minio.io/>`__, you will need to pass an endpoint in addition to access credentials.
 
 For security reasons, we recommend writing a script to read the access credentials that are stored in a separate file. This will not only keep your credentials from propagating to other locations, but it will also make it easier to change the credential information later.
 
@@ -866,7 +864,7 @@ When running H2O in standalone mode using the simple Java launch command, we can
          <name>fs.s3n.awsSecretAccessKey</name>
          <value>[AWS SECRET ACCESS KEY]</value>
        </property>
-  
+
 
    2. Launch with the configuration file ``core-site.xml`` by entering the following in the command line:
 
@@ -891,7 +889,7 @@ When running H2O in standalone mode using the simple Java launch command, we can
     -  To import the data from the Python API:
 
       ::
-  
+
         h2o.import_file(path = "s3n://<AWS_ACCESS_KEY>:<AWS_SECRET_KEY>@bucket/path/to/file.csv")
 
 AWS Multi-Node Instance
@@ -899,47 +897,47 @@ AWS Multi-Node Instance
 
 `Python <http://www.amazon.com/Python-and-AWS-Cookbook-ebook/dp/B005ZTO0UW/ref=sr_1_1?ie=UTF8&qid=1379879111&sr=8-1&keywords=python+aws>`_ and the `boto <http://boto.readthedocs.org/en/latest/>`_ Python library are required to launch a multi-node instance of H2O on EC2. Confirm these dependencies are installed before proceeding.
 
-For more information, refer to the `H2O EC2 repo <https://github.com/h2oai/h2o-3/tree/master/ec2>`_. 
+For more information, refer to the `H2O EC2 repo <https://github.com/h2oai/h2o-3/tree/master/ec2>`_.
 
-Build a cluster of EC2 instances by running the following commands on the host that can access the nodes using a public DNS name. 
+Build a cluster of EC2 instances by running the following commands on the host that can access the nodes using a public DNS name.
 
-1. Edit `h2o-cluster-launch-instances.py` to include your SSH key name and security group name, as well as any other environment-specific variables. 
-        
+1. Edit `h2o-cluster-launch-instances.py` to include your SSH key name and security group name, as well as any other environment-specific variables.
+
  ::
 
     ./h2o-cluster-launch-instances.py
     ./h2o-cluster-distribute-h2o.sh
 
  --OR--
-    
- ::   
+
+ ::
 
     ./h2o-cluster-launch-instances.py
     ./h2o-cluster-download-h2o.sh
 
- **Note**: The second method may be faster than the first because download pulls from S3. 
+ **Note**: The second method may be faster than the first because download pulls from S3.
 
-2. Distribute the credentials using ``./h2o-cluster-distribute-aws-credentials.sh``. 
+2. Distribute the credentials using ``./h2o-cluster-distribute-aws-credentials.sh``.
 
-  **Note**: If you are running H2O using an IAM role, it is not necessary to distribute the AWS credentials to all the nodes in the cluster. The latest version of H2O can access the temporary access key. 
+  **Note**: If you are running H2O using an IAM role, it is not necessary to distribute the AWS credentials to all the nodes in the cluster. The latest version of H2O can access the temporary access key.
 
   **Caution**: Distributing the AWS credentials copies the Amazon `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` to the instances to enable S3 and S3N access. Use caution when adding your security keys to the cloud.
 
-3. Start H2O by launching one H2O node per EC2 instance: 
- 
- :: 
+3. Start H2O by launching one H2O node per EC2 instance:
+
+ ::
 
     ./h2o-cluster-start-h2o.sh
 
- Wait 60 seconds after entering the command before entering it on the next node. 
- 
+ Wait 60 seconds after entering the command before entering it on the next node.
+
 4. In your internet browser, substitute any of the public DNS node addresses for *IP_ADDRESS* in the following example: ``http://IP_ADDRESS:54321``
 
   - To start H2O: ``./h2o-cluster-start-h2o.sh``
   - To stop H2O: ``./h2o-cluster-stop-h2o.sh``
-  - To shut down the cluster, use your `Amazon AWS console <http://docs.aws.amazon.com/ElasticMapReduce/latest/DeveloperGuide/UsingEMR_TerminateJobFlow.html>`_ to shut down the cluster manually. 
+  - To shut down the cluster, use your `Amazon AWS console <http://docs.aws.amazon.com/ElasticMapReduce/latest/DeveloperGuide/UsingEMR_TerminateJobFlow.html>`_ to shut down the cluster manually.
 
-  **Note**: To successfully import data, the data must reside in the same location on all nodes. 
+  **Note**: To successfully import data, the data must reside in the same location on all nodes.
 
 .. _minio:
 
@@ -1033,7 +1031,7 @@ The following is an example core-site.xml file:
             <name>fs.s3n.awsSecretAccessKey</name>
             <value>insert secret key here</value>
         </property>
-        </configuration> 
+        </configuration>
 
 
 Launching H2O
@@ -1076,7 +1074,7 @@ For Windows users who do not have the ability to use ``ssh`` from the terminal, 
 Otherwise, download PuTTY and follow these instructions:
 
 1. Launch the PuTTY Key Generator.
-2. Load your downloaded AWS pem key file. 
+2. Load your downloaded AWS pem key file.
 
  **Note:** To see the file, change the browser file type to "All".
 
@@ -1120,11 +1118,11 @@ Downloading Java and H2O
 Using H2O with Microsoft Azure - BETA
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Microsoft Azure provides an important collection of cloud services, such as serverless computing, virtual machines, storage options, networking, and much more. Azure provides the tools for a user to create a Data Science environment with H2O. 
+Microsoft Azure provides an important collection of cloud services, such as serverless computing, virtual machines, storage options, networking, and much more. Azure provides the tools for a user to create a Data Science environment with H2O.
 
 This section describes the H2O Application for HDInsight on Microsoft Azure.
 
-**Note**: This feature is currently in Beta and should be used for testing purposes only. 
+**Note**: This feature is currently in Beta and should be used for testing purposes only.
 
 H2O Artificial Intelligence for Azure HDInsight
 '''''''''''''''''''''''''''''''''''''''''''''''
@@ -1133,37 +1131,37 @@ The H2O Artificial Intelligence for Azure HDInsight is an application you can in
 
 **Create the H2O AI for Azure HDInsight**
 
-Follow the steps below to create a new H2O Artificial Intelligence for Azure HDInsight. 
+Follow the steps below to create a new H2O Artificial Intelligence for Azure HDInsight.
 
 1. In your Azure portal at `https://portal.azure.com <https://portal.azure.com>`__, search for H2O, and select **H2O Artificial Intelligence for HDInsight**.
 
-2. Click the **Create** button, and follow the UI instructions. 
+2. Click the **Create** button, and follow the UI instructions.
 
-   **Note**: H2O for HDInsight is exclusively for Spark HDI clusters version 3.5 (HDI v3.5). 
+   **Note**: H2O for HDInsight is exclusively for Spark HDI clusters version 3.5 (HDI v3.5).
 
    .. figure:: images/azure_select_h2o_hdinsight.png
       :alt: Select H2O Artificial Intelligence for HDInsight
 
 3. In the next screen, under **Basics**, change the Cluster Type to Spark 2.0.2. Sparkling Water is currently configured to work only on Spark 2.0 and above.
 
-4. On the **Applications** tab, select and accept the Terms of Use for H2O. 
+4. On the **Applications** tab, select and accept the Terms of Use for H2O.
 
    .. figure:: images/azure_terms_of_use.png
       :alt: Terms of Use for H2O
 
-5. On the **Credentials** tab, specify the following: 
+5. On the **Credentials** tab, specify the following:
 
    - Cluster Login username and password. These are used to connect to your cluster.
    - SSH Username and password. These are used to connect direcly to the VM present in the cluster.
 
-6. On the **Data Source** tab, you can configure either a Blob Storage Account or a Data Lake Store. This is where your HDFS system will be located. 
+6. On the **Data Source** tab, you can configure either a Blob Storage Account or a Data Lake Store. This is where your HDFS system will be located.
 
-7. On the **Cluster Size** tab, select the number of workers nodes you want on your HDI Cluster. Note that you can resize your cluster any time after creation. 
+7. On the **Cluster Size** tab, select the number of workers nodes you want on your HDI Cluster. Note that you can resize your cluster any time after creation.
 
-8. Click **Create** to begin the cluster creation. Note that the cluster creation process can take up to 30 minutes. 
+8. Click **Create** to begin the cluster creation. Note that the cluster creation process can take up to 30 minutes.
 
 9. Connect to your Jupyter Notebooks through
-   **https://<ClusterName>.azurehdinsight.net/jupyter**, and log in using the Cluster Login username and password that you previously created. 
+   **https://<ClusterName>.azurehdinsight.net/jupyter**, and log in using the Cluster Login username and password that you previously created.
 
 10. In Jupyter, you will see 3 folders: H2O-PySparkling-Examples, PySpark Examples, and Scala Examples. Select H2O-PySparkling-Examples.
 
@@ -1191,9 +1189,9 @@ Troubleshooting Tips
 Using H2O with IBM Data Science Experience - BETA
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The IBM Data Science Experience (DSX) provides an interactive, collaborative, cloud-based environment where data scientists can use multiple tools to activate their insights. With DSX, Data scientists can use the best of open source tools such as R and Python, tap into IBMs unique features, grow their capabilities, and share their successes. 
+The IBM Data Science Experience (DSX) provides an interactive, collaborative, cloud-based environment where data scientists can use multiple tools to activate their insights. With DSX, Data scientists can use the best of open source tools such as R and Python, tap into IBMs unique features, grow their capabilities, and share their successes.
 
-This section show how simple it is to use H2O R with IBM DSX. 
+This section show how simple it is to use H2O R with IBM DSX.
 
 1. Sign in to `datascience.ibm.com <http://datascience.ibm.com>`__. (Or select **Sign Up** if you do not yet have an account.)
 
@@ -1207,7 +1205,7 @@ This section show how simple it is to use H2O R with IBM DSX.
 
 3. Install and start H2O R using the instructions included on the `H2O Download site <http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html>`__. Note that this page opens by default to the **Download and Run** tab. Be sure to select the **Install in R** tab for R installation instructions. |install|
 
-  You can also view a quick start video of installing and starting H2O in R by clicking `here <https://www.youtube.com/embed/zzV1kTCnmR0?list=PLNtMya54qvOHbBdA1x8FNRSpMBEHmhxr0>`__. 
+  You can also view a quick start video of installing and starting H2O in R by clicking `here <https://www.youtube.com/embed/zzV1kTCnmR0?list=PLNtMya54qvOHbBdA1x8FNRSpMBEHmhxr0>`__.
 
   .. |install| image:: images/ibm_install_in_r.png
      :height: 24
