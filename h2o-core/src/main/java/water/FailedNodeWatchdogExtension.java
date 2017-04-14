@@ -112,32 +112,38 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
     @Override
     public void onLocalNodeStarted() {
         if(watchDogStopWithout){
-            new Thread(){
-                @Override
-                public void run() {
-                    try {
-                        sleep(watchdogClientConnectTimeout);
-                        boolean watchDogConnected = false;
-                        for(H2ONode client: H2O.getClients()){
-                            if(client._heartbeat._watchdog_client){
-                                watchDogConnected = true;
-                                break;
-                            }
-                        }
-                        if(!watchDogConnected){
-                            // in this case we expect the watchdog to connect, however it is still not available
-                            // this is not a planned situation, exit with negative status
-                            Log.fatal("Stopping H2O cloud since the watchdog client never connected");
-                            H2O.shutdown(-1);
-                        }
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }.start();
+            new CheckWatchdogConnectedThread().start();
         }
         new FailedNodeWatchdogThread().start();
         H2O.SELF._heartbeat._watchdog_client = watchDogClient;
+    }
+
+    private class CheckWatchdogConnectedThread extends Thread {
+        public CheckWatchdogConnectedThread() {
+            super("CheckWatchdogConnectedThread");
+        }
+
+        @Override
+        public void run() {
+            try {
+                sleep(watchdogClientConnectTimeout);
+                boolean watchDogConnected = false;
+                for(H2ONode client: H2O.getClients()){
+                    if(client._heartbeat._watchdog_client){
+                        watchDogConnected = true;
+                        break;
+                    }
+                }
+                if(!watchDogConnected){
+                    // in this case we expect the watchdog to connect, however it is still not available
+                    // this is not a planned situation, exit with negative status
+                    Log.fatal("Stopping H2O cloud since the watchdog client never connected");
+                    H2O.shutdown(-1);
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     /**
