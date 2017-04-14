@@ -660,7 +660,7 @@ FAQ
 
 -  **What happens during prediction if the new sample has categorical levels not seen in training?** 
    
-  The value will be filled with either 0 or replaced by the most frequent level present in training (if trained with missing values, and ``missing_value_handling`` was set to **MeanImputation**).
+  The value will be filled with either 0 or replaced by the most frequent level present in training (if ``missing_value_handling`` was set to **MeanImputation**).
 
 -  **How are unseen categorical values treated during scoring?**
 
