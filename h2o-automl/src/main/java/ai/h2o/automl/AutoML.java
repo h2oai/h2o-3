@@ -151,7 +151,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       throw new H2OIllegalArgumentException("No training frame; user specified training_path: " +
               buildSpec.input_spec.training_path +
               " and training_frame: " + buildSpec.input_spec.training_frame);
-
+    if(this.origTrainingFrame.find(buildSpec.input_spec.response_column) == -1){
+      throw new H2OIllegalArgumentException("Response column " + buildSpec.input_spec.response_column + "is not in " +
+              "the training frame.");
+    }
     if (null != this.validationFrame) {
       // don't need to split off a validation_frame ourselves
       this.trainingFrame = new Frame(origTrainingFrame);
@@ -690,10 +693,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     // TODO: Nishant says sometimes frameMetadata is null, so maybe we need to wait for it?
     // null FrameMetadata arises when delete() is called without waiting for start() to finish.
-    if(trainingFrame.find(buildSpec.input_spec.response_column) == -1){
-      throw new H2OIllegalArgumentException("Response column " + buildSpec.input_spec.response_column + "is not in " +
-              "the frame!");
-    }
     frameMetadata = new FrameMetadata(userFeedback, trainingFrame,
             trainingFrame.find(buildSpec.input_spec.response_column),
             trainingFrame._key.toString()).computeFrameMetaPass1();
