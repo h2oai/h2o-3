@@ -1641,13 +1641,13 @@ public class GLMTest  extends TestUtil {
           params._train = fr._key;
           params._lambda = new double[]{0};
           params._standardize = true;
-          params._objective_epsilon = 0;
+          params._objective_epsilon = 1e-6;
           params._solver = s;
 //          params._objective_epsilon = 0;
           //      params._missing_values_handling = MissingValuesHandling.Skip;
           GLM glm = new GLM(params);
           model = glm.trainModel().get();
-          assertTrue(6 >= model._output.bestSubmodel().iteration);
+          assertTrue("iter = " + model._output.bestSubmodel().iteration,6 >= model._output.bestSubmodel().iteration);
           model.delete();
           System.out.println(model.coefficients());
           HashMap<String, Double> coefs = model.coefficients();
