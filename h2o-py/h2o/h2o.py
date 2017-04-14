@@ -227,8 +227,8 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
                 check_version = config["init.check_version"].lower() != "false"
             elif os.environ.get("H2O_DISABLE_STRICT_VERSION_CHECK"):
                 check_version = False
-            else:
-                check_version = strict_version_check
+        else:
+            check_version = strict_version_check
         if insecure is None:
             if "init.verify_ssl_certificates" in config:
                 verify_ssl_certificates = config["init.verify_ssl_certificates"].lower() != "false"
