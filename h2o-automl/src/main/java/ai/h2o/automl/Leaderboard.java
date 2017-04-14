@@ -4,6 +4,8 @@ import hex.*;
 import water.*;
 import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
+import water.fvec.Frame;
+import water.util.IcedHashMap;
 import water.util.Log;
 import water.util.TwoDimTable;
 
@@ -35,15 +37,25 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
   /**
    * List of models for this leaderboard, sorted by metric so that the best is first,
-   * according to the standard metric for the given model type.  NOTE: callers should
-   * access this through #models() to make sure they don't get a stale copy.
+   * according to the standard metric for the given model type.
+   * <p>
+   * Updated inside addModels().
    */
-  private Key<Model>[] models;
+  private Key<Model>[] models = new Key[0];
+
+  /**
+   * Test set ModelMetrics objects for the models.
+   * <p>
+   * Updated inside addModels().
+   */
+  private IcedHashMap<Key<ModelMetrics>, ModelMetrics> test_set_metrics = new IcedHashMap<>();
 
   /**
    * Sort metrics for the models in this leaderboard, in the same order as the models.
+   * <p>
+   * Updated inside addModels().
    */
-  public double[] sort_metrics;
+  public double[] sort_metrics = new double[0];
 
   /**
    * Metric used to sort this leaderboard.
@@ -61,6 +73,11 @@ public class Leaderboard extends Keyed<Leaderboard> {
    */
   private UserFeedback userFeedback;
 
+  /**
+   * Frame for which we return the metrics, by default.
+   */
+  private Frame testFrame;
+
   /** HIDEME! */
   private Leaderboard() {
     throw new UnsupportedOperationException("Do not call the default constructor Leaderboard().");
@@ -69,17 +86,21 @@ public class Leaderboard extends Keyed<Leaderboard> {
   /**
    *
    */
-  public Leaderboard(String project, UserFeedback userFeedback) {
+  public Leaderboard(String project, UserFeedback userFeedback, Frame testFrame) {
     this._key = make(idForProject(project));
-    this.project = project;
-    this.userFeedback = userFeedback;
-
     Leaderboard old = DKV.getGet(this._key);
 
-    if (null == old) {
-      this.models = new Key[0];
-      DKV.put(this);
+    if (null != old) {
+      // pick up where we left off
+      // note that if subsequent runs use a different test frame the models are re-scored
+      this.models = old.models;
+      this.test_set_metrics = old.test_set_metrics;
+      this.sort_metrics = old.sort_metrics;
     }
+    this.project = project;
+    this.userFeedback = userFeedback;
+    this.testFrame = testFrame;
+    DKV.put(this);
   }
 
   // satisfy typing for job return type...
@@ -101,6 +122,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
   public void setMetricAndDirection(String metric, boolean sortDecreasing){
     this.sort_metric = metric;
     this.sort_decreasing = sortDecreasing;
+    DKV.put(this);
   }
 
   public void setDefaultMetricAndDirection(Model m) {
@@ -143,11 +165,34 @@ public class Leaderboard extends Keyed<Leaderboard> {
         uniques.addAll(Arrays.asList(newModels));
         old.models = uniques.toArray(new Key[0]);
 
-        // Sort by metric.
-        // TODO: If we want to train on different frames and then compare we need to score all the models and sort on the new metrics.
+        // TODO: remove from tatomic?
+        // which models are really new?  we need to call score on them
+        Set<Key<Model>> reallyNewModels = new HashSet<>(uniques);
+        reallyNewModels.removeAll(Arrays.asList(oldModels));
+
+        // Try fetching ModelMetrics for *all* models, not just reallyNewModels,
+        // because the testFrame might have changed.
+        old.test_set_metrics = new IcedHashMap<>();
+        for (Key<Model> aKey : old.models) {
+          Model aModel = aKey.get();
+          if (null == aModel) {
+            userFeedback.warn(UserFeedbackEvent.Stage.ModelTraining, "Model in the leaderboard has unexpectedly been deleted from H2O: " + aKey);
+            continue;
+          }
+
+          ModelMetrics mm = ModelMetrics.getFromDKV(aModel, testFrame);
+          if (mm == null) {
+            Frame preds = aModel.score(testFrame);
+            mm = ModelMetrics.getFromDKV(aModel, testFrame);
+          }
+          old.test_set_metrics.put(mm._key, mm);
+        }
+
+        // Sort by metric on the test set.
+        // TODO TODO TODO this sorts by the metrics in Model._output
         try {
-          List<Key<Model>> newModelsSorted = ModelMetrics.sortModelsByMetric(sort_metric, sort_decreasing, Arrays.asList(old.models));
-          old.models = newModelsSorted.toArray(new Key[0]);
+          List<Key<Model>> modelsSorted = ModelMetrics.sortModelsByMetric(testFrame, sort_metric, sort_decreasing, Arrays.asList(old.models));
+          old.models = modelsSorted.toArray(new Key[0]);
         }
         catch (H2OIllegalArgumentException e) {
           Log.warn("ModelMetrics.sortModelsByMetric failed: " + e);
@@ -155,10 +200,10 @@ public class Leaderboard extends Keyed<Leaderboard> {
         }
 
         Model[] models = new Model[old.models.length];
-        old.sort_metrics = old.sortMetrics(modelsForModelKeys(old.models, models));
+        old.sort_metrics = old.getSortMetrics(old.sort_metric, old.test_set_metrics, testFrame, modelsForModelKeys(old.models, models));
 
-        // NOTE: we've now written over old.models
-        // TODO: should take out of the tatomic
+        // If we're updated leader let this know so that it can notify the user
+        // (outside the tatomic, since it can take a long time).
         if (oldLeader == null || ! oldLeader.equals(old.models[0]))
           newLeader[0] = old.models[0];
 
@@ -167,8 +212,10 @@ public class Leaderboard extends Keyed<Leaderboard> {
     }.invoke(this._key);
 
     // We've updated the DKV but not this instance, so:
-    this.models = this.modelKeys();
-    this.sort_metrics = sortMetrics(this.models());
+    Leaderboard updated = DKV.getGet(this._key);
+    this.models = updated.models;
+    this.test_set_metrics = updated.test_set_metrics;
+    this.sort_metrics = updated.sort_metrics;
 
     // always
     EckoClient.updateLeaderboard(this);
@@ -201,15 +248,15 @@ public class Leaderboard extends Keyed<Leaderboard> {
   /**
    * @return list of keys of models sorted by the default metric for the model category, fetched from the DKV
    */
-  public Key<Model>[] modelKeys() {
+  public Key<Model>[] getModelKeys() {
     return ((Leaderboard)DKV.getGet(this._key)).models;
   }
 
   /**
-   * @return list of keys of models sorted by the given metric , fetched from the DKV
+   * @return list of keys of models sorted by the given metric, fetched from the DKV
    */
   public Key<Model>[] modelKeys(String metric, boolean sortDecreasing) {
-    Key<Model>[] models = modelKeys();
+    Key<Model>[] models = getModelKeys();
     List<Key<Model>> newModelsSorted =
             ModelMetrics.sortModelsByMetric(metric, sortDecreasing, Arrays.asList(models));
     return newModelsSorted.toArray(new Key[0]);
@@ -218,8 +265,8 @@ public class Leaderboard extends Keyed<Leaderboard> {
   /**
    * @return list of models sorted by the default metric for the model category
    */
-  public Model[] models() {
-    Key<Model>[] modelKeys = modelKeys();
+  public Model[] getModels() {
+    Key<Model>[] modelKeys = getModelKeys();
 
     if (modelKeys == null || 0 == modelKeys.length) return new Model[0];
 
@@ -230,7 +277,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
   /**
    * @return list of models sorted by the given metric
    */
-  public Model[] models(String metric, boolean sortDecreasing) {
+  public Model[] getModels(String metric, boolean sortDecreasing) {
     Key<Model>[] modelKeys = modelKeys(metric, sortDecreasing);
 
     if (modelKeys == null || 0 == modelKeys.length) return new Model[0];
@@ -239,15 +286,15 @@ public class Leaderboard extends Keyed<Leaderboard> {
     return modelsForModelKeys(modelKeys, models);
   }
 
-  public Model leader() {
-    Key<Model>[] modelKeys = modelKeys();
+  public Model getLeader() {
+    Key<Model>[] modelKeys = getModelKeys();
 
     if (modelKeys == null || 0 == modelKeys.length) return null;
 
     return modelKeys[0].get();
   }
 
-  public long[] timestamps(Model[] models) {
+  public long[] getTimestamps(Model[] models) {
     long[] timestamps = new long[models.length];
     int i = 0;
     for (Model m : models)
@@ -255,11 +302,15 @@ public class Leaderboard extends Keyed<Leaderboard> {
     return timestamps;
   }
 
-  public double[] sortMetrics(Model[] models) {
+  public double[] getSortMetrics() {
+    return getSortMetrics(this.sort_metric, this.test_set_metrics, this.testFrame, this.getModels());
+  }
+
+  public static double[] getSortMetrics(String sort_metric, IcedHashMap<Key<ModelMetrics>, ModelMetrics> test_set_metrics, Frame testFrame, Model[] models) {
     double[] sort_metrics = new double[models.length];
     int i = 0;
     for (Model m : models)
-      sort_metrics[i++] = defaultMetricForModel(m);
+      sort_metrics[i++] = ModelMetrics.getMetricFromModelMetric(test_set_metrics.get(ModelMetrics.buildKey(m, testFrame)), sort_metric);
     return sort_metrics;
   }
 
@@ -271,7 +322,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
   }
 
   public void deleteWithChildren() {
-    for (Model m : models())
+    for (Model m : getModels())
       m.delete();
     delete();
   }
@@ -283,7 +334,10 @@ public class Leaderboard extends Keyed<Leaderboard> {
                     m._output._validation_metrics != null ?
                             m._output._validation_metrics :
                             m._output._training_metrics;
+    return defaultMetricForModel(m, mm);
+  }
 
+  public static double defaultMetricForModel(Model m, ModelMetrics mm) {
     if (m._output.isBinomialClassifier()) {
       return(((ModelMetricsBinomial)mm).auc());
     } else if (m._output.isClassifier()) {
@@ -314,7 +368,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
 //    sb.append("Rank").append(fieldSeparator).append("Error").append(lineSeparator);
     sb.append("Error").append(lineSeparator);
 
-    Model[] models = models();
+    Model[] models = getModels();
     for (int i = models.length - 1; i >= 0; i--) {
       // TODO: allow the metric to be passed in.  Note that this assumes the validation (or training) frame is the same.
       Model m = models[i];
@@ -331,7 +385,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     StringBuffer sb = new StringBuffer();
     sb.append("Time").append(fieldSeparator).append("Error").append(lineSeparator);
 
-    Model[] models = models();
+    Model[] models = getModels();
     for (int i = models.length - 1; i >= 0; i--) {
       // TODO: allow the metric to be passed in.  Note that this assumes the validation (or training) frame is the same.
       Model m = models[i];
@@ -383,10 +437,10 @@ public class Leaderboard extends Keyed<Leaderboard> {
   }
 
   public TwoDimTable toTwoDimTable(String tableHeader, boolean leftJustifyModelIds) {
-    Model[] models = this.models();
-    long[] timestamps = timestamps(models);
+    Model[] models = this.getModels();
+    long[] timestamps = getTimestamps(models);
     String[] modelIDsFormatted = new String[models.length];
-    
+
     TwoDimTable table = makeTwoDimTable(tableHeader, sort_metric, models.length);
 
     // %-s doesn't work in TwoDimTable.toString(), so fake it here:
@@ -457,7 +511,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
   }
 
   public String toString(String fieldSeparator, String lineSeparator) {
-    return toString(project, models(), fieldSeparator, lineSeparator, true, true, false);
+    return toString(project, getModels(), fieldSeparator, lineSeparator, true, true, false);
   }
 
   @Override

@@ -49,6 +49,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private AutoMLBuildSpec buildSpec;     // all parameters for doing this AutoML build
   private Frame origTrainingFrame;       // untouched original training frame
   private boolean didValidationSplit = false;
+  private boolean didTestSplit = false;
 
   public AutoMLBuildSpec getBuildSpec() {
     return buildSpec;
@@ -70,8 +71,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return frameMetadata;
   }
 
-  private Frame trainingFrame;           // munged training frame: can add and remove Vecs, but not mutate Vec data in place
-  private Frame validationFrame;         // optional validation frame
+  private Frame trainingFrame;   // munged training frame: can add and remove Vecs, but not mutate Vec data in place
+  private Frame validationFrame; // optional validation frame; the training_frame is split automagically if it's not specified
+  private Frame testFrame;       // optional test frame used for leaderboard scoring; the validation_frame is split automagically if it's not specified
+
   private Vec responseColumn;
   FrameMetadata frameMetadata;           // metadata for trainingFrame
 
@@ -122,7 +125,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
             (buildSpec.build_control.stopping_criteria.seed() == -1 ? " (random)" : ""));
 
     userFeedback.info(Stage.Workflow, "Project: " + project());
-    leaderboard = new Leaderboard(project(), userFeedback);
+    leaderboard = new Leaderboard(project(), userFeedback, this.testFrame);
 
     /*
     TODO
@@ -138,41 +141,105 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     this.tempFrames = new ArrayList<>();
   }
 
+  /**
+   * If the user hasn't specified validation or test data split it off for them.
+   *                                                             <p>
+   * The user can specify:                                       <p>
+   * 1. training only                                            <p>
+   * 2. training + validation                                    <p>
+   * 3. training + test                                          <p>
+   * 4. training + validation + test                             <p>
+   *                                                             <p>
+   * In the top three cases we auto-split:                       <p>
+   * 1. training -> training:validation:test 70:15:15            <p>
+   * 2. validation -> validation:test 50:50                      <p>
+   * 3. training -> training:validation 70:30, test used as-is   <p>
+   *                                                             <p>
+   * TODO: should the size of the splits adapt to origTrainingFrame.numRows()?
+   */
+  private void optionallySplitDatasets() {
+    if (null == this.validationFrame && null == this.testFrame) {
+      // case 1:
+      Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(origTrainingFrame,
+              new Key[] { Key.make("training_" + origTrainingFrame._key),
+                      Key.make("validation_" + origTrainingFrame._key),
+                      Key.make("test_" + origTrainingFrame._key)},
+              new double[] { 0.7, 0.15, 0.15 },
+              buildSpec.build_control.stopping_criteria.seed());
+      this.trainingFrame = splits[0];
+      this.validationFrame = splits[1];
+      this.testFrame = splits[2];
+      this.didValidationSplit = true;
+      this.didTestSplit = true;
+      userFeedback.info(Stage.DataImport, "Automatically split the training data into training, validation and test datasets in the ratio 0.70:0.15:0.15");
+
+    } else if (null != this.validationFrame && null == this.testFrame) {
+      // case 2:
+      Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(validationFrame,
+              new Key[] { Key.make("validation_" + origTrainingFrame._key),
+                      Key.make("test_" + origTrainingFrame._key)},
+              new double[] { 0.5, 0.5 },
+              buildSpec.build_control.stopping_criteria.seed());
+      this.validationFrame = splits[0];
+      this.testFrame = splits[1];
+      this.didValidationSplit = true;
+      this.didTestSplit = true;
+      userFeedback.info(Stage.DataImport, "Automatically split the validation data into validation and test datasets in the ratio 0.5:0.5");
+
+    } else if (null == this.validationFrame && null != this.testFrame) {
+      // case 3:
+      Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(origTrainingFrame,
+              new Key[] { Key.make("training_" + origTrainingFrame._key),
+                      Key.make("validation_" + origTrainingFrame._key)},
+              new double[] { 0.7, 0.3 },
+              buildSpec.build_control.stopping_criteria.seed());
+
+      this.trainingFrame = splits[0];
+      this.validationFrame = splits[1];
+      this.didValidationSplit = true;
+      this.didTestSplit = false;
+      userFeedback.info(Stage.DataImport, "Automatically split the training data into training and validation datasets in the ratio 0.5:0.5");
+    } else if (null != this.validationFrame && null != this.testFrame) {
+      // case 4: leave things as-is
+      userFeedback.info(Stage.DataImport, "Training, validation and test datasets were all specified; not auto-splitting.");
+    } else {
+      // can't happen
+      throw new UnsupportedOperationException("Bad code in handleDatafileParameters");
+    }
+  }
+
   private void handleDatafileParameters(AutoMLBuildSpec buildSpec) {
     this.origTrainingFrame = DKV.getGet(buildSpec.input_spec.training_frame);
     this.validationFrame = DKV.getGet(buildSpec.input_spec.validation_frame);
+    this.testFrame = DKV.getGet(buildSpec.input_spec.test_frame);
 
     if (null == buildSpec.input_spec.training_frame && null != buildSpec.input_spec.training_path)
       this.origTrainingFrame = importParseFrame(buildSpec.input_spec.training_path, buildSpec.input_spec.parse_setup);
     if (null == buildSpec.input_spec.validation_frame && null != buildSpec.input_spec.validation_path)
       this.validationFrame = importParseFrame(buildSpec.input_spec.validation_path, buildSpec.input_spec.parse_setup);
+    if (null == buildSpec.input_spec.test_frame && null != buildSpec.input_spec.test_path)
+      this.testFrame = importParseFrame(buildSpec.input_spec.test_path, buildSpec.input_spec.parse_setup);
 
     if (null == this.origTrainingFrame)
       throw new H2OIllegalArgumentException("No training frame; user specified training_path: " +
               buildSpec.input_spec.training_path +
               " and training_frame: " + buildSpec.input_spec.training_frame);
-    if(this.origTrainingFrame.find(buildSpec.input_spec.response_column) == -1){
+
+    if (this.origTrainingFrame.find(buildSpec.input_spec.response_column) == -1) {
       throw new H2OIllegalArgumentException("Response column " + buildSpec.input_spec.response_column + "is not in " +
               "the training frame.");
     }
-    if (null != this.validationFrame) {
-      // don't need to split off a validation_frame ourselves
+
+    optionallySplitDatasets();
+
+    if (null == this.trainingFrame) {
+      // we didn't need to split off the validation_frame or test_frame ourselves
       this.trainingFrame = new Frame(origTrainingFrame);
       DKV.put(this.trainingFrame);
-    } else {
-      // TODO: should the size of the splits adapt to origTrainingFrame.numRows()?
-      Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(origTrainingFrame,
-                                                           new Key[] { Key.make("training_" + origTrainingFrame._key),
-                                                                       Key.make("validation_" + origTrainingFrame._key)},
-                                                           new double[] { 0.7, 0.3 },
-                                                           buildSpec.build_control.stopping_criteria.seed());
-
-      this.trainingFrame = splits[0];
-      this.validationFrame = splits[1];
-      this.didValidationSplit = true;
-      userFeedback.info(Stage.DataImport, "Automatically split the data into training and validation datasets");
     }
+
     this.responseColumn = trainingFrame.vec(buildSpec.input_spec.response_column);
+
     if (verifyImmutability) {
       // check that we haven't messed up the original Frame
       originalTrainingFrameVecs = origTrainingFrame.vecs().clone();
@@ -760,7 +827,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     ///////////////////////////////////////////////////////////
     // (optionally) build StackedEnsemble
     ///////////////////////////////////////////////////////////
-    Model[] allModels = leaderboard().models();
+    Model[] allModels = leaderboard().getModels();
 
     if (allModels.length == 0){
       this.job.update(50, "No models built: StackedEnsemble build skipped");
@@ -794,6 +861,18 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
     userFeedback.info(Stage.Workflow, "AutoML: build done; built " + modelCount + " models");
     Log.info(userFeedback.toString("User Feedback for AutoML Run " + this._key));
+    Log.info();
+
+    Leaderboard trainingLeaderboard = new Leaderboard(project() + "_training", userFeedback, this.trainingFrame);
+    trainingLeaderboard.addModels(this.leaderboard.getModelKeys());
+    Log.info(trainingLeaderboard.toTwoDimTable("TRAINING FRAME Leaderboard for project " + project(), true).toString());
+    Log.info();
+
+    Leaderboard validationLeaderboard = new Leaderboard(project() + "_validation", userFeedback, this.validationFrame);
+    validationLeaderboard.addModels(this.leaderboard.getModelKeys());
+    Log.info(validationLeaderboard.toTwoDimTable("VALIDATION FRAME Leaderboard for project " + project(), true).toString());
+    Log.info();
+
     Log.info(leaderboard.toTwoDimTable("Leaderboard for project " + project(), true).toString());
 
     possiblyVerifyImmutability();
@@ -889,7 +968,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   public Leaderboard leaderboard() { return leaderboard._key.get(); }
-  public Model leader() { return (leaderboard == null ? null : leaderboard().leader()); }
+  public Model leader() { return (leaderboard == null ? null : leaderboard().getLeader()); }
 
   public UserFeedback userFeedback() { return userFeedback._key.get(); }
 

@@ -173,11 +173,11 @@ public class EckoClient {
 
       ProjectStatus status = statuses.get(project);
       status.leaderboard = leaderboard;
-      status.leader = leaderboard.leader();
+      status.leader = leaderboard.getLeader();
       status.leaderError = leaderboard.defaultMetricForModel(status.leader);
       status.leaderMetric = leaderboard.defaultMetricNameForModel(status.leader);
 
-      String leaderboardTsv = leaderboard.toString(project, leaderboard.models(), "\\t", "\\n", false, true, true);
+      String leaderboardTsv = leaderboard.toString(project, leaderboard.getModels(), "\\t", "\\n", false, true, true);
       String rankTsv = leaderboard.rankTsv();
       String timeTsv = leaderboard.timeTsv();
 
