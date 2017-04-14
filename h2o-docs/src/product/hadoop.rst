@@ -137,7 +137,7 @@ Hadoop Launch Parameters
 -  ``-h | -help``: Display help
 -  ``-jobname <JobName>``: Specify a job name for the Jobtracker to use;
    the default is ``H2O_nnnnn`` (where n is chosen randomly)
--  ``-principal <kerberos principal> -keytab <keytab path> | -run_as_user <hadoop username>]``: Optionally specify a Kerberos principal and keytab or specify the ``run_as_user`` parameter to avoid using root level privileges to impersonate users at the execution level. Note that using ``run_as_user`` implies that the Hadoop cluster does not have Kerberos.
+-  ``-principal <kerberos principal> -keytab <keytab path> | -run_as_user <hadoop username>]``: Optionally specify a Kerberos principal and keytab or specify the ``run_as_user`` parameter to avoid using root level privileges to impersonate users at the execution level. Note that using ``run_as_user`` implies that the Hadoop cluster does not have Kerberos. Also note that the root level access is mostly for the internal use case. If others were to use this, its main purpose would simply be to start an h2o cluster on behalf of a provided user/principal.
 -  ``-driverif <IP address of mapper -> driver callback interface>``:
    Specify the IP address for callback messages from the mapper to the
    driver.
