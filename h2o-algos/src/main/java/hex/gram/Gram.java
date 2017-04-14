@@ -321,6 +321,7 @@ public final class Gram extends Iced<Gram> {
     _xx = xxNew;
     _diagN = _diag.length;
     _fullN = _xx.length == 0?0:_xx[_xx.length-1].length;
+    _xxCache = null;
   }
 
   public int[] findZeroCols(){

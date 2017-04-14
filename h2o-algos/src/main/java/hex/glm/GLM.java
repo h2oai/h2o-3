@@ -417,7 +417,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (_parms._link == Link.family_default)
         _parms._link = _parms._family.defaultLink;
       DataInfo.TransformType predictorTransform = _parms._standardize? DataInfo.TransformType.STANDARDIZE: DataInfo.TransformType.NONE;
-      DataInfo.TransformType responseTransform = _parms._family == Family.gaussian?predictorTransform:DataInfo.TransformType.NONE;
+      DataInfo.TransformType responseTransform = _parms._family == Family.gaussian && _parms._standardize_response?predictorTransform:DataInfo.TransformType.NONE;
       _dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, predictorTransform, responseTransform, _parms._missing_values_handling == MissingValuesHandling.Skip, _parms._missing_values_handling == MissingValuesHandling.MeanImputation, false, hasWeightCol(), hasOffsetCol(), hasFoldCol(), _parms._interactions);
 
       if (_parms._max_iterations == -1) { // fill in default max iterations
@@ -658,7 +658,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       Log.info(LogMsg("Gram computed in " + (System.currentTimeMillis()-t0) + "ms"));
       double [] beta = s == Solver.COORDINATE_DESCENT?COD_solve(xx,gramXY.xy,_state._alpha,_state.lambda()):ADMM_solve(gramXY.gram,gramXY.xy);
       // compute mse
-      double [] x = ArrayUtils.mmul(xx,beta);
+      double [] x = ArrayUtils.mmul(gramXY.gram.getXX(),beta);
       for(int i = 0; i < x.length; ++i)
         x[i] = (x[i] - 2*xy[i]);
       double l = .5*(ArrayUtils.innerProduct(x,beta)/_state._obj_reg + gramXY.yy );
