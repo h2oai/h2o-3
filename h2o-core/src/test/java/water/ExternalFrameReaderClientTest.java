@@ -23,7 +23,7 @@ public class ExternalFrameReaderClientTest extends TestUtil{
     private volatile AssertionError exc;
 
     @Test
-    public void testReading() throws IOException, InterruptedException {
+    public void testReading() throws IOException, InterruptedException, ExternalFrameConfirmationException {
 
         final String frameName = "testFrame";
         final long[] chunkLayout = {2, 2, 2, 1};
@@ -84,10 +84,12 @@ public class ExternalFrameReaderClientTest extends TestUtil{
 
                             assertEquals("Num or rows read was " + rowsRead + ", expecting " + reader.getNumRows(), rowsRead, reader.getNumRows());
 
-                            reader.waitUntilAllReceived();
+                            reader.waitUntilAllReceived(10);
                             sock.close();
                         } catch (AssertionError e) {
                             exc = e;
+                        } catch (ExternalFrameConfirmationException e){
+                            e.printStackTrace();
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
