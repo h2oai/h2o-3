@@ -540,7 +540,7 @@ public final class Gram extends Iced<Gram> {
     for( int i = 0; i < _xx.length - off; ++i ) {
       double [] xrow = xx[i+_diag.length + off];
       double [] xrowOld = _xx[i];
-      System.arraycopy(xrowOld,0,xrow,off,xrowOld.length-off);
+      System.arraycopy(xrowOld,0,xrow,off,xrowOld.length);
       if(!lowerDiag) {
         int col = xrowOld.length-1;
         int row = i+1;
