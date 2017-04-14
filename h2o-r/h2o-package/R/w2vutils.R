@@ -57,3 +57,25 @@ h2o.transform <- function(word2vec, words, aggregate_method = c("NONE", "AVERAGE
     key <- res$vectors_frame$name
     h2o.getFrame(key)
 }
+
+#'
+#' Converts a given word2vec model into H2OFrame. The frame represents learned word embeddings
+#'
+#' @param word2vec A word2vec model.
+#' @examples
+#' \donttest{
+#' h2o.init()
+#'
+#' # Build a dummy word2vec model
+#' data <- as.character(as.h2o(c("a", "b", "a")))
+#' w2v.model <- h2o.word2vec(data, sent_sample_rate = 0, min_word_freq = 0, epochs = 1, vec_size = 2)
+#'
+#' # Transform words to vectors and return average vector for each sentence
+#' h2o.toFrame(w2v.model) # -> Frame made of 2 rows and 2 columns
+#' }
+#' @export
+h2o.toFrame <- function(word2vec) {
+    if (!is(word2vec, "H2OModel")) stop("`word2vec` must be a word2vec model")
+
+    .newExpr("word2vec.to.frame", word2vec@model_id)
+}
