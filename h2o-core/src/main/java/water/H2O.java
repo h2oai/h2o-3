@@ -679,9 +679,11 @@ final public class H2O {
     H2O.exit(status);
   }
 
+  /** Orderly shutdown with infinite timeout for confirmations from the nodes in the cluster */
   public static int orderlyShutdown() {
     return orderlyShutdown(-1);
   }
+  
   public static int orderlyShutdown(int timeout) {
     boolean [] confirmations = new boolean[H2O.CLOUD.size()];
     if (H2O.SELF.index() >= 0) { // Do not wait for clients to shutdown
@@ -690,7 +692,7 @@ final public class H2O {
     Futures fs = new Futures();
     for(H2ONode n:H2O.CLOUD._memary) {
       if(n != H2O.SELF)
-        fs.add(new RPC(n, new ShutdownTsk(H2O.SELF,n.index(), 1000, confirmations)).call());
+        fs.add(new RPC(n, new ShutdownTsk(H2O.SELF,n.index(), 1000, confirmations, 0)).call());
     }
     if(timeout > 0)
       try { Thread.sleep(timeout); }
@@ -703,6 +705,7 @@ final public class H2O {
       if(!b) failedToShutdown++;
     return failedToShutdown;
   }
+
   private static volatile boolean _shutdownRequested = false;
 
   public static void requestShutdown() {
@@ -1991,7 +1994,7 @@ final public class H2O {
   // Die horribly
   public static void die(String s) {
     Log.fatal(s);
-    H2O.shutdown(-1);
+    H2O.exit(-1);
   }
 
   public static class GAStartupReportThread extends Thread {
