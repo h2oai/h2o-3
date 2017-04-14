@@ -167,6 +167,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     @Override public long progressUnits() { return GLM.WORK_TOTAL; }
     // public int _response; // TODO: the standard is now _response_column in SupervisedModel.SupervisedParameters
     public boolean _standardize = true;
+    public boolean _standardize_response = true;
     public Family _family;
     public Link _link = Link.family_default;
     public Solver _solver = Solver.AUTO;

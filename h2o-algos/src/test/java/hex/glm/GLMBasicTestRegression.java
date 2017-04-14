@@ -101,6 +101,7 @@ public class GLMBasicTestRegression extends TestUtil {
 //    parms._remove_collinear_columns = true;
     parms._response_column = "IsDepDelayed";
     parms._standardize = true;
+    parms._standardize_response = false;
     parms._objective_epsilon = 0;
     parms._gradient_epsilon = 1e-10;
     parms._max_iterations = 1000;
@@ -732,7 +733,7 @@ public class GLMBasicTestRegression extends TestUtil {
 //    GLEASON      0.91750972  0.1963285  4.67333842 2.963429e-06
 
     params._standardize = true;
-
+    params._standardize_response = false;
     try {
       model = new GLM(params).trainModel().get();
       String[] names_expected = new String[]{"Intercept", "ID", "AGE", "RACE.R2", "RACE.R3", "DPROS.b", "DPROS.c", "DPROS.d", "DCAPS.b", "PSA", "VOL", "GLEASON"};
