@@ -87,7 +87,7 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   public double normRespSub(int i){
-    return _normRespSub == null?1:_normRespSub[i];
+    return _normRespSub == null?0:_normRespSub[i];
   }
 
   public double normSub(int i) {

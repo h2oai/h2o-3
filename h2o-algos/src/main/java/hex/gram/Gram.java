@@ -53,6 +53,8 @@ public final class Gram extends Iced<Gram> {
       res._xx = ArrayUtils.deepClone(_xx);
     if(_diag != null)
       res._diag = res._diag.clone();
+    if(_xxCache != null)
+      res._xxCache = ArrayUtils.deepClone(_xxCache);
     return res;
   }
 
@@ -506,7 +508,13 @@ public final class Gram extends Iced<Gram> {
     return chol;
   }
 
-  public double[][] getXX(){return getXX(false, false);}
+  public transient double[][] _xxCache;
+  public double[][] getXX(){
+    if(_xxCache != null) return _xxCache;
+    System.out.println("generating new XX");
+    return _xxCache = getXX(false, false);
+  }
+
   public double[][] getXX(boolean lowerDiag, boolean icptFist) {
     final int N = _fullN;
     double[][] xx = new double[N][];
@@ -520,13 +528,24 @@ public final class Gram extends Iced<Gram> {
         xx[i+1][0] = icptRow[i];
       off = 1;
     }
-    for( int i = 0; i < _diag.length; ++i )
-      xx[i+off][i+off] = _diag[i];
+    for( int i = 0; i < _diag.length; ++i ) {
+      xx[i + off][i + off] = _diag[i];
+      if(!lowerDiag) {
+        int col = i+off;
+        double [] xrow = xx[i+off];
+        for (int j = off; j < _xx.length; ++j)
+          xrow[j+_diagN] = _xx[j][col];
+      }
+    }
     for( int i = 0; i < _xx.length - off; ++i ) {
-      for( int j = 0; j < _xx[i].length; ++j ) {
-        xx[i + _diag.length + off][j + off] = _xx[i][j];
-        if(!lowerDiag)
-          xx[j + off][i + _diag.length + off] = _xx[i][j];
+      double [] xrow = xx[i+_diag.length + off];
+      double [] xrowOld = _xx[i];
+      System.arraycopy(xrowOld,0,xrow,off,xrowOld.length-off);
+      if(!lowerDiag) {
+        int col = xrowOld.length-1;
+        int row = i+1;
+        for (int j = col+1; j < xrow.length; ++j)
+          xrow[j] = _xx[row++][col];
       }
     }
     return xx;

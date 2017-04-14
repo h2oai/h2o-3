@@ -60,13 +60,8 @@ public class ArrayUtils {
 
   public static double [] mmul(double [][] M, double [] V) {
     double [] res = new double[M.length];
-    for(int i = 0; i < M.length; ++i) {
-      double d = 0;
-      for (int j = 0; j < V.length; ++j) {
-        d += M[i][j] * V[j];
-      }
-      res[i] = d;
-    }
+    for(int i = 0; i < M.length; ++i)
+      res[i] = innerProduct(M[i],V);
     return res;
   }
 

@@ -719,7 +719,6 @@ public abstract class GLMTask  {
     }
     public void map(Chunk[] chks) {
       GLMWeights glmw = new GLMWeights();
-      // TODO add on the fly weights and xy
       double [] wsum = new double[_dinfo.fullN()+1];
       double ywsum = 0;
       DataInfo.Rows rows = _dinfo.rows(chks);
@@ -730,7 +729,6 @@ public abstract class GLMTask  {
       for (int rid = 0; rid < rows._nrows; ++rid) {
         int j = 0;
         Row r = rows.row(rid);
-
         if(_beta != null) {
           _glmf.computeWeights(r.response(0), r.innerProduct(_beta) + sparseOffset, r.offset, r.weight, glmw);
         } else {
@@ -743,7 +741,7 @@ public abstract class GLMTask  {
         for (int i = 0; i < r.nBins; i++) {
           while (j < newCols.length && newCols[j] < r.binIds[i])
             j++;
-          if (j == newCols.length || newCols[j] >= _dinfo.numStart())
+          if (j == newCols.length || newCols[j] >= ns)
             break;
           if (r.binIds[i] == newCols[j]) {
             r.addToArray(glmw.w, _gram[j]);
@@ -751,6 +749,8 @@ public abstract class GLMTask  {
             j++;
           }
         }
+        while (j < newCols.length && newCols[j] < ns)
+          j++;
         // nums
         if (r.numIds != null) { // sparse
           for (int i = 0; i < r.nNums; i++) {
