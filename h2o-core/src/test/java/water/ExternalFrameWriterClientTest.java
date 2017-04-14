@@ -88,7 +88,11 @@ public class ExternalFrameWriterClientTest extends TestUtil {
                         writer.sendNA();
                         writer.sendNA();
 
-                        writer.waitUntilAllWritten();
+                        try {
+                            writer.waitUntilAllWritten(10);
+                        }catch (ExternalFrameConfirmationException e){
+                            e.printStackTrace();
+                        }
                         sock.close();
                         rowsPerChunk[currentIndex] = 1000;
                     } catch (IOException ignore) {

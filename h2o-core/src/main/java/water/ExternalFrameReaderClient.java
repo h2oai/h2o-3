@@ -3,17 +3,17 @@ package water;
 import java.io.IOException;
 import java.nio.channels.ByteChannel;
 import java.sql.Timestamp;
+import java.util.concurrent.*;
 
 import static water.ExternalFrameUtils.writeToChannel;
 
 /**
  * <p>This class is used to read data from H2O Frames from non-H2O environments, such as Spark Executors.
  * It is expected that the frame we want to read is already in the DKV. The check for the presence is up on the
- * user of this class.<p>
+ * user of this class.</p>
  *
  * <strong>Example usage of this class:</strong></br>
  *
- * <p>
  * First we need to open the connection to H2O and initialize the reader:</br>
  * <pre>
  * {@code
@@ -72,14 +72,13 @@ final public class ExternalFrameReaderClient {
     private byte[] expectedTypes = null;
 
     /**
-     *
-     * @param channel channel to h2o node
-     * @param frameKey name of frame we want to read from
-     * @param chunkIdx chunk index from we want to read
+     * @param channel               channel to h2o node
+     * @param frameKey              name of frame we want to read from
+     * @param chunkIdx              chunk index from we want to read
      * @param selectedColumnIndices indices of columns we want to read from
-     * @param expectedTypes expected types for
+     * @param expectedTypes         expected types
      */
-    public ExternalFrameReaderClient(ByteChannel channel, String frameKey, int chunkIdx, int[] selectedColumnIndices, byte[] expectedTypes) throws IOException{
+    public ExternalFrameReaderClient(ByteChannel channel, String frameKey, int chunkIdx, int[] selectedColumnIndices, byte[] expectedTypes) throws IOException {
         this.channel = channel;
         this.frameKey = frameKey;
         this.chunkIdx = chunkIdx;
@@ -88,57 +87,65 @@ final public class ExternalFrameReaderClient {
         this.ab = initAndGetAb();
     }
 
-    public int getNumRows(){
+    public int getNumRows() {
         return numRows;
     }
 
-    public boolean readBoolean(){
+    public boolean readBoolean() {
         boolean data = ab.getZ();
         isLastNA = ExternalFrameUtils.isNA(ab, data);
         return data;
     }
 
-    public byte readByte(){
+    public byte readByte() {
         byte data = ab.get1();
         isLastNA = ExternalFrameUtils.isNA(ab, data);
         return data;
     }
-    public char readChar(){
+
+    public char readChar() {
         char data = ab.get2();
         isLastNA = ExternalFrameUtils.isNA(ab, data);
         return data;
     }
-    public short readShort(){
+
+    public short readShort() {
         short data = ab.get2s();
         isLastNA = ExternalFrameUtils.isNA(ab, data);
         return data;
     }
-    public int readInt(){
+
+    public int readInt() {
         int data = ab.getInt();
         isLastNA = ExternalFrameUtils.isNA(ab, data);
         return data;
     }
-    public long readLong(){
+
+    public long readLong() {
         long data = ab.get8();
         isLastNA = ExternalFrameUtils.isNA(ab, data);
         return data;
     }
-    public float readFloat(){
+
+    public float readFloat() {
         float data = ab.get4f();
         isLastNA = ExternalFrameUtils.isNA(data);
         return data;
     }
-    public double readDouble(){
+
+    public double readDouble() {
         double data = ab.get8d();
         isLastNA = ExternalFrameUtils.isNA(data);
         return data;
     }
-    public String readString(){
+
+    public String readString() {
         String data = ab.getStr();
         isLastNA = ExternalFrameUtils.isNA(ab, data);
         return data;
     }
-    public Timestamp readTimestamp(){
+
+    public Timestamp readTimestamp() {
         Timestamp data = new Timestamp(ab.get8());
         isLastNA = ExternalFrameUtils.isNA(ab, data);
         return data;
@@ -147,7 +154,7 @@ final public class ExternalFrameReaderClient {
     /**
      * This method is used to check if the last received value was marked as NA by H2O backend
      */
-    public boolean isLastNA(){
+    public boolean isLastNA() {
         return isLastNA;
     }
 
@@ -156,14 +163,23 @@ final public class ExternalFrameReaderClient {
      * application's control flow.
      *
      * It has to be called at the end of reading.
+     * @param timeout timeout in seconds
+     * @throws ExternalFrameConfirmationException
      */
-    public void waitUntilAllReceived(){
-        // blocking call
-        byte controlByte = ab.get1();
-        assert(controlByte == ExternalFrameHandler.CONFIRM_READING_DONE);
+    public void waitUntilAllReceived(int timeout) throws ExternalFrameConfirmationException {
+        try {
+            byte flag = ExternalFrameConfirmationCheck.getConfirmation(ab, timeout);
+            assert (flag == ExternalFrameHandler.CONFIRM_READING_DONE);
+        } catch (TimeoutException ex) {
+            throw new ExternalFrameConfirmationException("Timeout for confirmation exceeded!");
+        } catch (InterruptedException e) {
+            throw new ExternalFrameConfirmationException("Confirmation thread interrupted!");
+        } catch (ExecutionException e) {
+            throw new ExternalFrameConfirmationException("Confirmation failed!");
+        }
     }
 
-    private AutoBuffer initAndGetAb() throws IOException{
+    private AutoBuffer initAndGetAb() throws IOException {
         AutoBuffer sentAb = new AutoBuffer();
         sentAb.put1(ExternalFrameHandler.INIT_BYTE);
         sentAb.put1(ExternalFrameHandler.DOWNLOAD_FRAME);
