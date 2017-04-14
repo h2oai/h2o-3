@@ -690,6 +690,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     // TODO: Nishant says sometimes frameMetadata is null, so maybe we need to wait for it?
     // null FrameMetadata arises when delete() is called without waiting for start() to finish.
+    if(trainingFrame.find(buildSpec.input_spec.response_column) == -1){
+      throw new H2OIllegalArgumentException("Response column " + buildSpec.input_spec.response_column + "is not in " +
+              "the frame!");
+    }
     frameMetadata = new FrameMetadata(userFeedback, trainingFrame,
             trainingFrame.find(buildSpec.input_spec.response_column),
             trainingFrame._key.toString()).computeFrameMetaPass1();
