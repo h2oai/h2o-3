@@ -19,6 +19,7 @@ Use the ``h2o.init()`` method to initialize H2O. This method accepts the followi
 - ``min_mem_size``: (Optional) A character string specifying the minimum size, in bytes, of the memory allocation pool to H2O. This value must a multiple of 1024 greater than 2MB. Append the letter ``m`` or ``M`` to indicate megabytes, or ``g`` or ``G`` to indicate gigabytes.
 - ``ice_root``: (Optional) A directory to handle object spillage. The default varies by OS.
 - ``strict_version_check``: (Optional) Setting this to FALSE is unsupported and should only be done when advised by technical support.
+- ``ignore_config``: (Optional) This option allows you to specify whether to perform processing of a .h2oconfig file. When h2o.init() is specified, a call to a config reader method is invoked. This call can result in path issues when there is no "root" (for example, with a Windows network drive) because the config file reader searches up to "root." When there is no "root", the path to search will continue to expand, eventually result in an error. This value defaults to False.
 - ``proxy``: (Optional) A character string specifying the proxy path.
 - ``https``: (Optional) Set this to TRUE to use https instead of http.
 - ``insecure``: (Optional) Set this to TRUE to disable SSL certificate checking.
