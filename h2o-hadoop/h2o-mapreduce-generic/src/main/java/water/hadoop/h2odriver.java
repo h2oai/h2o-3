@@ -1035,10 +1035,10 @@ public class h2odriver extends Configured implements Tool {
 
     if (principal != null || keytabPath != null) {
       if (principal == null) {
-        error("principal requires a valid keytab path (use the '-keytab' option)");
+        error("keytab requires a valid principal (use the '-principal' option)");
       }
       if (keytabPath == null) {
-        error("keytab requires a valid principal (use the '-principal' option)");
+        error("principal requires a valid keytab path (use the '-keytab' option)");
       }
       if (runAsUser != null) {
         error("cannot use '-keytab' or '-principal' with '-run_as_user''");
