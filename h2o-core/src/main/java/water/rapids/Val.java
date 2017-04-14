@@ -1,5 +1,6 @@
 package water.rapids;
 
+import hex.Model;
 import water.fvec.Frame;
 import water.Iced;
 import water.rapids.ast.AstPrimitive;
@@ -17,6 +18,7 @@ abstract public class Val extends Iced {
   final public static int FRM = 5;     // Frame, not a Vec.  Can be a Frame of 1 Vec
   final public static int ROW = 6;     // Row of data; limited to a single array of doubles
   final public static int FUN = 7;     // Function
+  final public static int MOD = 8;     // Model
 
   abstract public int type();
 
@@ -28,6 +30,7 @@ abstract public class Val extends Iced {
   public boolean isFrame() { return false; }
   public boolean isRow()   { return false; }
   public boolean isFun()   { return false; }
+  public boolean isModel() { return false; }
 
   // One of these methods is overridden in each subclass
   public double   getNum()   { throw badValue("number"); }
@@ -37,6 +40,7 @@ abstract public class Val extends Iced {
   public Frame    getFrame() { throw badValue("Frame"); }
   public double[] getRow()   { throw badValue("Row"); }
   public AstPrimitive getFun() { throw badValue("function"); }
+  public Model    getModel() { throw badValue("Model"); }
 
   private IllegalArgumentException badValue(String expectedType) {
     return new IllegalArgumentException("Expected a " + expectedType + " but found a " + getClass());

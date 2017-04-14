@@ -2,7 +2,10 @@ package hex;
 
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.fvec.Frame;
+import water.util.IcedHashMap;
+import water.util.Log;
 import water.util.PojoUtils;
 import water.util.TwoDimTable;
 
@@ -96,17 +99,21 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   static public double getMetricFromModel(Key<Model> key, String criterion) {
     Model model = DKV.getGet(key);
     if (null == model) throw new H2OIllegalArgumentException("Cannot find model " + key);
-    if (null == criterion || criterion.equals("")) throw new H2OIllegalArgumentException("Need a valid criterion, but got '" + criterion + "'.");
-    ModelMetrics m =
+    ModelMetrics mm =
             model._output._cross_validation_metrics != null ?
                     model._output._cross_validation_metrics :
                     model._output._validation_metrics != null ?
                             model._output._validation_metrics :
                             model._output._training_metrics;
+    return getMetricFromModelMetric(mm, criterion);
+  }
+
+  static public double getMetricFromModelMetric(ModelMetrics mm, String criterion) {
+    if (null == criterion || criterion.equals("")) throw new H2OIllegalArgumentException("Need a valid criterion, but got '" + criterion + "'.");
     Method method = null;
-    ConfusionMatrix cm = m.cm();
+    ConfusionMatrix cm = mm.cm();
     try {
-      method = m.getClass().getMethod(criterion.toLowerCase());
+      method = mm.getClass().getMethod(criterion.toLowerCase());
     }
     catch (Exception e) {
       // fall through
@@ -125,14 +132,14 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
 
     double c;
     try {
-      c = (double) method.invoke(m);
+      c = (double) method.invoke(mm);
     } catch(Exception fallthru) {
       try {
         c = (double)method.invoke(cm);
       } catch (Exception e) {
         throw new H2OIllegalArgumentException(
-                "Failed to get metric: " + criterion + " from ModelMetrics object: " + m,
-                "Failed to get metric: " + criterion + " from ModelMetrics object: " + m + ", criterion: " + method + ", exception: " + e
+                "Failed to get metric: " + criterion + " from ModelMetrics object: " + mm,
+                "Failed to get metric: " + criterion + " from ModelMetrics object: " + mm + ", criterion: " + method + ", exception: " + e
         );
       }
     }
@@ -152,6 +159,55 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     public int compare(Key<Model> key1, Key<Model> key2) {
       double c1 = getMetricFromModel(key1, _sort_by);
       double c2 = getMetricFromModel(key2, _sort_by);
+      return decreasing ? Double.compare(c2, c1) : Double.compare(c1, c2);
+    }
+  }
+
+  private static class MetricsComparatorForFrame implements Comparator<Key<Model>> {
+    String _sort_by = null;
+    boolean decreasing = false;
+    Frame frame = null;
+    IcedHashMap<Key<Model>, ModelMetrics> cachedMetrics = new IcedHashMap<>();
+
+    public MetricsComparatorForFrame(Frame frame, String sort_by, boolean decreasing) {
+      this._sort_by = sort_by;
+      this.decreasing = decreasing;
+      this.frame = frame;
+    }
+
+    private final ModelMetrics findMetricsForModel(Key<Model> modelKey) {
+      ModelMetrics mm = cachedMetrics.get(modelKey);
+      if (null != mm) {
+        return mm;
+      }
+      Model m = modelKey.get();
+      if (null == m) {
+        Log.warn("Tried to compare metrics for a model which was not found in the DKV: " + modelKey);
+        throw new H2OKeyNotFoundArgumentException(modelKey.toString());
+      }
+
+      Model model = modelKey.get();
+      mm = ModelMetrics.getFromDKV(model, this.frame);
+      if (null == mm) {
+        // call score()
+        Frame preds = model.score(this.frame);
+
+        mm = ModelMetrics.getFromDKV(model, this.frame);
+        if (null == mm) {
+          Log.warn("Tried to compare metrics for a model/frame combination which was not found in the DKV: (" + modelKey + ", " + frame._key.toString() + ")");
+          throw new H2OKeyNotFoundArgumentException(modelKey.toString());
+        }
+      }
+      cachedMetrics.put(modelKey, mm);
+      return mm;
+    }
+
+    public int compare(Key<Model> key1, Key<Model> key2) {
+      ModelMetrics mm1 = findMetricsForModel(key1);
+      ModelMetrics mm2 = findMetricsForModel(key2);
+
+      double c1 = getMetricFromModelMetric(mm1, _sort_by);
+      double c2 = getMetricFromModelMetric(mm2, _sort_by);
       return decreasing ? Double.compare(c2, c1) : Double.compare(c1, c2);
     }
   }
@@ -201,7 +257,8 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   }
 
   /**
-   * Return a new list of models sorted by the named criterion, such as "auc", mse", "hr", "err", "err_count",
+   * Return a new list of models sorted on their xval, validation or training metrics, by the named criterion.
+   * The criterion (metric) can be such things as as "auc", mse", "hr", "err", "err_count",
    * "accuracy", "specificity", "recall", "precision", "mcc", "max_per_class_error", "f1", "f2", "f0point5". . .
    * @param sort_by criterion by which we should sort
    * @param decreasing sort by decreasing metrics or not
@@ -213,6 +270,26 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     sorted.addAll(modelKeys);
 
     Comparator<Key<Model>> c = new MetricsComparator(sort_by, decreasing);
+
+    Collections.sort(sorted, c);
+    return sorted;
+  }
+
+  /**
+   * Return a new list of models sorted on metrics computed on the given frame, by the named criterion.
+   * The criterion (metric) can be such things as as "auc", mse", "hr", "err", "err_count",
+   * "accuracy", "specificity", "recall", "precision", "mcc", "max_per_class_error", "f1", "f2", "f0point5". . .
+   * @param frame frame on which to compute the metrics; looked up in the DKV first to see if it was previously computed
+   * @param sort_by criterion by which we should sort
+   * @param decreasing sort by decreasing metrics or not
+   * @param modelKeys keys of models to sortm
+   * @return keys of the models, sorted by the criterion
+   */
+  public static List<Key<Model>> sortModelsByMetric(Frame frame, String sort_by, boolean decreasing, List<Key<Model>>modelKeys) {
+    List<Key<Model>> sorted = new ArrayList<>();
+    sorted.addAll(modelKeys);
+
+    Comparator<Key<Model>> c = new MetricsComparatorForFrame(frame, sort_by, decreasing);
 
     Collections.sort(sorted, c);
     return sorted;

@@ -530,7 +530,7 @@ Example
    .. code-block:: r
 
     library(h2o)
-    h2o.init(nthreads=-1)
+    h2o.init()
 
     df <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv")
     df$CAPSULE <- as.factor(df$CAPSULE)
@@ -648,20 +648,23 @@ FAQ
 
 -  **How does the algorithm handle missing values during training?**
 
-  Depending on the selected missing value handling policy, they are either imputed mean or the whole row is skipped. The default behavior is mean imputation. Note that categorical variables are imputed by adding an extra "missing" level. Optionally, glm can skip all rows with any missing values.
+  Depending on the selected missing value handling policy, they are either imputed mean or the whole row is skipped. The default behavior is Mean Imputation. Note that unseen categorical levels are replaced by the most frequent level present in training (mod). Optionally, GLM can skip all rows with any missing values.
 
 -  **How does the algorithm handle missing values during testing?** 
 
-  Same as during training. If the missing value handling is set to skip and we are generating predictions, skipped rows will have Na (missing) prediction.
+  Same as during training. If the missing value handling is set to Skip and we are generating predictions, skipped rows will have Na (missing) prediction.
 
 -  **What happens if the response has missing values?**
 
-  The rows with missing response are ignored during model training and validation.
+  The rows with missing responses are ignored during model training and validation.
 
--  **What happens during prediction if the new sample has categorical
-   levels not seen in training?** 
+-  **What happens during prediction if the new sample has categorical levels not seen in training?** 
    
-  The value will be filled with either 0 or a special missing level (if trained with missing values, and ``missing_value_handling`` was set to **MeanImputation**).
+  The value will be filled with either 0 or replaced by the most frequent level present in training (if ``missing_value_handling`` was set to **MeanImputation**).
+
+-  **How are unseen categorical values treated during scoring?**
+
+  Unseen categorical levels are treated based on the missing values handling during training. If your missing value handling was set to Mean Imputation, the unseen levels are replaced by the most frequent level present in training (mod). If your missing value treatment was Skip, the variable is ignored for the given observation.
 
 -  **Does it matter if the data is sorted?**
 

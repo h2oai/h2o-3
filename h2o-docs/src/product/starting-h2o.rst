@@ -6,9 +6,9 @@ There are a variety of ways to start H2O, depending on which client you would li
 From R
 ------
 
-Use the ``h2o.init()`` method to initialize H2O. This method accepts the following options. Note that in most cases, simply using ``h2o.init(nthreads=-1)`` is all that a user is required to do.
+Use the ``h2o.init()`` method to initialize H2O. This method accepts the following options. Note that in most cases, simply using ``h2o.init()`` is all that a user is required to do.
 
-- ``nthreads``: This launches H2O using all available CPUs and is only applicable if you launch H2O locally using R. If you start H2O locally outside of R or start H2O on Hadoop, the nthreads = -1 parameter is not applicable.
+- ``nthreads``: This launches H2O using all available CPUs and is only applicable if you launch H2O locally using R. If you start H2O locally outside of R or start H2O on Hadoop, the nthreads parameter is not applicable.
 - ``ip``: The IP address of the server where H2O is running.
 - ``port``: The port number of the H2O server.
 - ``startH2O``: (Optional) A logical value indicating whether to try to start H2O from R if no connection with H2O is detected. This is only possible if ``ip = "localhost"`` or ``ip = "127.0.0.1"``. If an existing connection is detected, R does not start H2O.
@@ -19,6 +19,7 @@ Use the ``h2o.init()`` method to initialize H2O. This method accepts the followi
 - ``min_mem_size``: (Optional) A character string specifying the minimum size, in bytes, of the memory allocation pool to H2O. This value must a multiple of 1024 greater than 2MB. Append the letter ``m`` or ``M`` to indicate megabytes, or ``g`` or ``G`` to indicate gigabytes.
 - ``ice_root``: (Optional) A directory to handle object spillage. The default varies by OS.
 - ``strict_version_check``: (Optional) Setting this to FALSE is unsupported and should only be done when advised by technical support.
+- ``ignore_config``: (Optional) This option allows you to specify whether to perform processing of a .h2oconfig file. When h2o.init() is specified, a call to a config reader method is invoked. This call can result in path issues when there is no "root" (for example, with a Windows network drive) because the config file reader searches up to "root." When there is no "root", the path to search will continue to expand, eventually result in an error. This value defaults to False.
 - ``proxy``: (Optional) A character string specifying the proxy path.
 - ``https``: (Optional) Set this to TRUE to use https instead of http.
 - ``insecure``: (Optional) Set this to TRUE to disable SSL certificate checking.
@@ -41,7 +42,7 @@ Example
 ::
 
   library h2o
-  h2o.init(nthreads=-1)
+  h2o.init()
 
   H2O is not running yet, starting it now...
 
@@ -262,11 +263,8 @@ H2O Options
 
 -	``-ice_root <fileSystemPath>``: Specify a directory for H2O to spill temporary data to disk (where ``<fileSystemPath>`` is the file path).
 -  ``-flow_dir <server-side or HDFS directory>``: Specify a directory for saved flows. The default is ``/Users/h2o-<H2OUserName>/h2oflows``(where ``<H2OUserName>`` is your user name).
--  ``-nthreads <#ofThreads>``: Specify the maximum number of threads in
-   the low-priority batch work queue (where ``<#ofThreads>`` is the
-   number of threads). The default is 99.
--  ``-client``: Launch H2O node in client mode. This is used mostly for
-   running Sparkling Water.
+-  ``-nthreads <#ofThreads>``: Specify the maximum number of threads in the low-priority batch work queue (where ``<#ofThreads>`` is the number of threads). 
+-  ``-client``: Launch H2O node in client mode. This is used mostly for running Sparkling Water.
 
 H2O Internal Communication
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
