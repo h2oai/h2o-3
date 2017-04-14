@@ -1733,8 +1733,9 @@ public abstract class GLMTask  {
     private void computeCatEnd(Chunk [] chunks, double [] wChunk, double [] ztildaChunk, int [] xPrev){
       double res = 0;
       for (int i = 0; i < chunks[0]._len; ++i) {
-        double ztilda = ztildaChunk[i] -= _bNew[xPrev[i]];
         double w = wChunk[i];
+        if(w == 0) continue;
+        double ztilda = ztildaChunk[i] -= _bNew[xPrev[i]];
         double diff = ztilda - _intercept;
         res += w*diff;
       }
