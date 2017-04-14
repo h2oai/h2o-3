@@ -167,27 +167,15 @@ final public class ExternalFrameReaderClient {
      * @throws ExternalFrameConfirmationException
      */
     public void waitUntilAllReceived(int timeout) throws ExternalFrameConfirmationException {
-
-        Callable<Byte> task = new Callable<Byte>() {
-            public Byte call() {
-                // blocking call
-                return ab.get1();
-            }
-        };
-
-        Future<Byte> future = Executors.newFixedThreadPool(1).submit(task);
         try {
-            Byte result = future.get(timeout, TimeUnit.SECONDS);
-            assert (result == ExternalFrameHandler.CONFIRM_READING_DONE);
-
+            byte flag = ExternalFrameConfirmationCheck.getConfirmation(ab, timeout);
+            assert (flag == ExternalFrameHandler.CONFIRM_READING_DONE);
         } catch (TimeoutException ex) {
             throw new ExternalFrameConfirmationException("Timeout for confirmation exceeded!");
         } catch (InterruptedException e) {
             throw new ExternalFrameConfirmationException("Confirmation thread interrupted!");
         } catch (ExecutionException e) {
             throw new ExternalFrameConfirmationException("Confirmation failed!");
-        } finally {
-            future.cancel(true);
         }
     }
 

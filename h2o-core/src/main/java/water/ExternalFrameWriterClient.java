@@ -149,26 +149,15 @@ final public class ExternalFrameWriterClient {
     public void waitUntilAllWritten(int timeout) throws ExternalFrameConfirmationException {
         try {
             final AutoBuffer confirmAb = new AutoBuffer(channel, null);
-            // confirmAb.getInt() forces this code to wait for result and
-            // forces all the previous work to be done on the recipient side.
-            Callable<Byte> task = new Callable<Byte>() {
-                public Byte call() {
-                    return confirmAb.get1();
-                }
-            };
-
-            Future<Byte> future = Executors.newFixedThreadPool(1).submit(task);
             try {
-                Byte result = future.get(timeout, TimeUnit.SECONDS);
-                assert (result == ExternalFrameHandler.CONFIRM_WRITING_DONE);
+                byte flag = ExternalFrameConfirmationCheck.getConfirmation(confirmAb, timeout);
+                assert (flag == ExternalFrameHandler.CONFIRM_WRITING_DONE);
             } catch (TimeoutException ex) {
                 throw new ExternalFrameConfirmationException("Timeout for confirmation exceeded!");
             } catch (InterruptedException e) {
                 throw new ExternalFrameConfirmationException("Confirmation thread interrupted!");
             } catch (ExecutionException e) {
                 throw new ExternalFrameConfirmationException("Confirmation failed!");
-            } finally {
-                future.cancel(true);
             }
         } catch (IOException e) {
             throw new ExternalFrameConfirmationException("Confirmation failed");
