@@ -2,6 +2,69 @@
 
 ## H2O
 
+### Ueno (3.10.4.4) - 4/15/2017
+
+<h4>        Technical task
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4244'>PUBDEV-4244</a>] -         Add documentation on how to create a config file
+</li>
+</ul>
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2807'>PUBDEV-2807</a>] -         PCA Rotations not displayed in Python API
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4081'>PUBDEV-4081</a>] -         Sparse matrix cannot be converted to H2O
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4229'>PUBDEV-4229</a>] -         Flow/Schema problem, predicting on frame without response returns empty model metrics
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4246'>PUBDEV-4246</a>] -         Proportion of variance in GLRM for single component has a value &gt; 1
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4251'>PUBDEV-4251</a>] -         HDP 2.6 add to the build
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4252'>PUBDEV-4252</a>] -         Set timeout for read/write confirmation in ExternalFrameWriter/ExternalFrameReader
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4261'>PUBDEV-4261</a>] -         GLM default solver gets AIIOB when run on dataset with 1 categorical variable and no intercept
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4285'>PUBDEV-4285</a>] -         Correct exit status reporting ( when running on YARN )
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4287'>PUBDEV-4287</a>] -         Documentation: Update GLM FAQ and missing_values_handling parameter regarding unseen categorical values
+</li>
+</ul>
+
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4175'>PUBDEV-4175</a>] -         H2O Flow UI Authentication
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4226'>PUBDEV-4226</a>] -         Implement session timeout for Flow logins
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4289'>PUBDEV-4289</a>] -         Document a new parameters for h2odriver.
+</li>
+</ul>
+
+<h4>        Task
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4180'>PUBDEV-4180</a>] -         Wrap R examples in code so that they don&#39;t run on Mac OS
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4215'>PUBDEV-4215</a>] -         Export polygon function to fix CRAN note in h2o R package
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4248'>PUBDEV-4248</a>] -         Add a parameter that ignores the config file reader when h2o.init() is called
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4239'>PUBDEV-4239</a>] -         Extend Watchdog client extension so cluster is also stopped when the client doesn&#39;t connect in specified timeout
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4288'>PUBDEV-4288</a>] -         Set hadoop user from h2odriver
+</li>
+</ul>
+
 ### Ueno (3.10.4.3) - 3/31/2017
 
 <h4>        Bug
