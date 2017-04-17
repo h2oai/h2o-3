@@ -507,6 +507,7 @@ Hadoop Launch Parameters
 
 -  ``-h | -help``: Display help
 -  ``-jobname <JobName>``: Specify a job name for the Jobtracker to use; the default is ``H2O_nnnnn`` (where n is chosen randomly)
+-  ``-principal <kerberos principal> -keytab <keytab path> | -run_as_user <hadoop username>``: Optionally specify a Kerberos principal and keytab or specify the ``run_as_user`` parameter to start clusters on behalf of the user/principal. Note that using ``run_as_user`` implies that the Hadoop cluster does not have Kerberos. 
 -  ``-driverif <IP address of mapper -> driver callback interface>``: Specify the IP address for callback messages from the mapper to the driver.
 -  ``-driverport <port of mapper -> callback interface>``: Specify the port number for callback messages from the mapper to the driver.
 -  ``-driverportrange <range portX-portY of mapper-> callback interface>``: Specify the allowed port range of the driver callback interface, eg. 50000-55000.
