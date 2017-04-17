@@ -31,6 +31,12 @@ Supervised
     :show-inheritance:
     :members:
 
+:mod:`H2OKLimeEstimator`
+------------------------
+.. autoclass:: h2o.estimators.klime.H2OKLimeEstimator
+    :show-inheritance:
+    :members:
+
 :mod:`H2ONaiveBayesEstimator`
 -----------------------------
 .. autoclass:: h2o.estimators.naive_bayes.H2ONaiveBayesEstimator

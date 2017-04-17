@@ -29,6 +29,7 @@ from .estimators.kmeans import H2OKMeansEstimator
 from .estimators.naive_bayes import H2ONaiveBayesEstimator
 from .estimators.random_forest import H2ORandomForestEstimator
 from .estimators.stackedensemble import H2OStackedEnsembleEstimator
+from .estimators.klime import H2OKLimeEstimator
 from .expr import ExprNode
 from .frame import H2OFrame
 from .grid.grid_search import H2OGridSearch
@@ -696,6 +697,7 @@ def get_model(model_id):
     elif algo == "glrm":         m = H2OGeneralizedLowRankEstimator()
     elif algo == "glm":          m = H2OGeneralizedLinearEstimator()
     elif algo == "gbm":          m = H2OGradientBoostingEstimator()
+    elif algo == "klime":        m = H2OKLimeEstimator()
     elif algo == "deepwater":    m = H2ODeepWaterEstimator()
     elif algo == "deeplearning":
         if model_json["output"]["model_category"] == "AutoEncoder":

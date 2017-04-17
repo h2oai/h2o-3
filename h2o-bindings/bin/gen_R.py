@@ -110,7 +110,7 @@ def gen_module(schema, algo, module):
         list.append(indent("%s = %s" % (param["name"], normalize_value(param)), 17 + len(module)))
     yield ",\n".join(list)
     yield indent(") \n{", 17 + len(module))
-    if algo in ["deeplearning", "deepwater", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
+    if algo in ["deeplearning", "deepwater", "drf", "gbm", "glm", "naivebayes", "stackedensemble", "klime"]:
         yield "  #If x is missing, then assume user wants to use all columns as features."
         yield "  if(missing(x)){"
         yield "     if(is.numeric(y)){"
@@ -163,7 +163,7 @@ def gen_module(schema, algo, module):
         yield "           error = function(err) {"
         yield "             stop(\"argument \'training_frame\' must be a valid H2OFrame or key\")"
         yield "           })"
-    if algo not in ["stackedensemble", "word2vec"]:
+    if algo not in ["stackedensemble", "word2vec", "klime"]:
         yield "  # Validation_frame must be a key or an H2OFrame object"
         yield "  if (!is.null(validation_frame)) {"
         yield "     if (!is.H2OFrame(validation_frame))"
@@ -178,6 +178,10 @@ def gen_module(schema, algo, module):
     if algo == "glrm":
         yield " if(!missing(cols))"
         yield " parms$ignored_columns <- .verify_datacols(training_frame, cols)$cols_ignore"
+    elif algo == "klime":
+        yield "  args <- .verify_dataxy(training_frame, x, y)"
+        yield "  parms$response_column <- args$y"
+        yield "  parms$ignored_columns <- args$x_ignore"
     elif algo in ["deeplearning", "deepwater", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
         if any(param["name"] == "autoencoder" for param in schema["parameters"]):
             yield "  args <- .verify_dataxy(training_frame, x, y, autoencoder)"
@@ -473,6 +477,8 @@ def get_extra_params_for(algo):
         return "training_frame, x, destination_key"
     elif algo == "word2vec":
         return "training_frame = NULL"
+    elif algo == "klime":
+        return "training_frame, x, y"
     else:
         return "training_frame, x"
 

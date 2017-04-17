@@ -22,6 +22,7 @@ public class RegisterAlgos extends water.api.AbstractRegister {
       new hex.deepwater   .DeepWater   (true),
       new hex.word2vec    .Word2Vec    (true),
       new hex.ensemble    .StackedEnsemble(true),
+      new hex.klime       .KLime       (true),
     };
     // "Word2Vec", "Example", "Grep"
     for (ModelBuilder algo : algos) {
