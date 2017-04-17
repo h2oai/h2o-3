@@ -12,66 +12,21 @@ H2O 3 offers a lot of improvements over H2O 2, including:
 -  Spark integration using Sparkling Water
 -  Improved algorithm accuracy and speed
 
-and much more! Overall, H2O has been retooled for better accuracy and
-performance and to provide additional functionality. If you're a current
-user of H2O, we strongly encourage you to upgrade to the latest version
-to take advantage of the latest features and capabilities.
+and much more! Overall, H2O has been retooled for better accuracy and performance and to provide additional functionality. If you're a current user of H2O, we strongly encourage you to upgrade to the latest version to take advantage of the latest features and capabilities.
 
-Please be aware that H2O 3 supersedes all previous versions of H2O
-as the primary version as of May 15th, 2015. Support for previous
-versions will be offered for a limited time, but there will no longer be
-any significant updates to the previous version of H2O.
+Please be aware that H2O 3 supersedes all previous versions of H2O as the primary version as of May 15th, 2015. Support for previous versions will be offered for a limited time, but there will no longer be any significant updates to the previous version of H2O.
 
-The following information and links will inform you about what's new and
-different and help you prepare to upgrade to H2O 3.
+The following information and links will inform you about what's new and different and help you prepare to upgrade to H2O 3.
 
-Overall, H2O 3 is more stable, elegant, and simplified, with
-additional capabilities not available in previous versions of H2O.
+Overall, H2O 3 is more stable, elegant, and simplified, with additional capabilities not available in previous versions of H2O.
 
 
 Algorithm Changes
 -----------------
 
-Most of the algorithms available in previous versions of H2O have been
-improved in terms of speed and accuracy. Currently available model types
-include:
+Most of the algorithms available in previous versions of H2O have been improved in terms of speed and accuracy, and new algorithms have been and will continue to be added. 
 
-Supervised
-~~~~~~~~~~
-
--  **Generalized Linear Model (GLM)**: Binomial classification,
-   multinomial classification, regression (including logistic
-   regression)
--  **Distributed Random Forest (DRF)**: Binomial classification,
-   multinomial classification, regression
--  **Gradient Boosting Machine (GBM)**: Binomial classification,
-   multinomial classification, regression
--  **Deep Learning (DL)**: Binomial classification, multinomial
-   classification, regression
-
-Unsupervised
-~~~~~~~~~~~~
-
--  K-means
--  Principal Component Analysis
--  Autoencoder
-
-There are a few algorithms that are still being refined to provide these
-same benefits and will be available in a future version of H2O.
-
-Currently, the following algorithms and associated capabilities are
-still in development:
-
--  Naïve Bayes
-
-Check back for updates, as these algorithms will be re-introduced in an
-improved form in a future version of H2O.
-
-**Note**: The SpeeDRF model has been removed, as it was originally
-intended as an optimization for small data only. This optimization will
-be added to the Distributed Random Forest model automatically for small
-data in a future version of H2O.
-
+**Note**: The SpeeDRF model has been removed, as it was originally intended as an optimization for small data only. This optimization will be added to the Distributed Random Forest model automatically for small data in a future version of H2O.
 
 Parsing Changes
 ---------------

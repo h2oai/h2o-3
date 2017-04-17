@@ -6,6 +6,7 @@ import sys
 sys.path.insert(1,"../../")
 from builtins import range
 import h2o
+import pandas
 from tests import pyunit_utils
 
 def pivot():
@@ -18,13 +19,16 @@ def pivot():
                           real_range=100,
                           missing_fraction=0.0,
                           seed=123)
-    dcol = df.moment(year=df["C1"].year(),month=df["C1"].month(),day=df["C1"].day())
-    df2 = df.cbind(dcol)
-    df2.show()
-    df3 = df2.pivot(index="time", column="C2", value="C3")
-    df3.show()
-    assert len(df3) == 18250, "Wrong number of rows. Should be 18250 days of data"
-    assert len(df3.columns) == 11, "Wrong number of columns"
+    # Pandas comparison
+    pdf = df.as_data_frame()
+    ppdf = pdf.pivot(values="C3",index="C1",columns="C2")
+    ppdf = ppdf.fillna(0.0)
+    ppdfh2o = h2o.H2OFrame(ppdf)
+    pivoted = df.pivot(index="C1",column="C2",value="C3")
+    pivoted.impute(values=[0]*11)
+    assert abs((pivoted[:,1:11] - ppdfh2o).sum(return_frame=False)) < 1e-11, "Difference between Pandas pivot too high"
+
+
     print("Testing size: ")
     for s in [100,200,300,400,500,1000,2000,4211,100000]:
         print(str(s))

@@ -137,16 +137,15 @@ Make sure to install the dependencies for the H2O R package as well:
     if (! ("tools" %in% rownames(installed.packages()))) { install.packages("tools") }
     if (! ("utils" %in% rownames(installed.packages()))) { install.packages("utils") }
 
-Finally, install the latest version of the H2O package for R:
+Finally, install the latest stable version of the H2O package for R:
 
 ::
 
-    install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/<branch_name>/<build_number>/R")))
+    install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/latest_stable_R)))
     library(h2o)
-    localH2O = h2o.init(nthreads=-1)
+    localH2O = h2o.init()
 
-If your R version is older than the H2O R package, upgrade your R
-version using ``update.packages(checkBuilt=TRUE, ask=FALSE)``.
+If your R version is older than the H2O R package, upgrade your R version using ``update.packages(checkBuilt=TRUE, ask=FALSE)``.
 
 --------------
 

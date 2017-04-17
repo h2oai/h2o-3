@@ -9,16 +9,16 @@ Note that when using ``rbind``, the two datasets must have the same set of colum
    .. code-block:: r
    
 	> library(h2o)
-	> h2o.init(nthreads=-1)
+	> h2o.init()
 	
 	# Import an existing training dataset
-	> ecg1Path <- "../smalldata/anomaly/ecg_discord_train.csv"
+	> ecg1Path <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/anomaly/ecg_discord_train.csv"
 	> ecg1.hex <- h2o.importFile(path=ecg1Path, destination_frame="ecg1.hex")
 	> print(dim(ecg1.hex))
 	[1] 20 210 
 
 	# Import an existing testing dataset
-	> ecg2Path <- "../smalldata/anomaly/ecg_discord_test.csv"
+	> ecg2Path <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/anomaly/ecg_discord_test.csv"
 	> ecg2.hex <- h2o.importFile(path=ecg2Path, destination_frame="ecg2.hex")
 	> print(dim(ecg2.hex))
 	[1] 23 210

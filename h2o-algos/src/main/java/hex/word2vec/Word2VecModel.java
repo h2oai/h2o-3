@@ -41,6 +41,49 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
   }
 
   /**
+   * Converts this word2vec model to a Frame.
+   * @return Frame made of columns: Word, V1, .., Vn. Word column holds the vocabulary associated
+   * with this word2vec model, and columns V1, .., Vn represent the embeddings in the n-dimensional space.
+   */
+  public Frame toFrame() {
+    Vec zeroVec = null;
+    try {
+      zeroVec = Vec.makeZero(_output._words.length);
+      byte[] types = new byte[1 + _output._vecSize];
+      Arrays.fill(types, Vec.T_NUM);
+      types[0] = Vec.T_STR;
+      String[] colNames = new String[types.length];
+      colNames[0] = "Word";
+      for (int i = 1; i < colNames.length; i++)
+        colNames[i] = "V" + i;
+      return new ConvertToFrameTask(this).doAll(types, zeroVec).outputFrame(colNames, null);
+    } finally {
+      if (zeroVec != null) zeroVec.remove();
+    }
+  }
+
+  private static class ConvertToFrameTask extends MRTask<ConvertToFrameTask> {
+    private Key<Word2VecModel> _modelKey;
+    private transient Word2VecModel _model;
+    public ConvertToFrameTask(Word2VecModel model) { _modelKey = model._key; }
+    @Override
+    protected void setupLocal() { _model = DKV.getGet(_modelKey); }
+    @Override
+    public void map(Chunk[] cs, NewChunk[] ncs) {
+      assert cs.length == 1;
+      assert ncs.length == _model._output._vecSize + 1;
+      Chunk chk = cs[0];
+      int wordOffset = (int) chk.start();
+      int vecPos = _model._output._vecSize * wordOffset;
+      for (int i = 0; i < chk._len; i++) {
+        ncs[0].addStr(_model._output._words[wordOffset + i]);
+        for (int j = 1; j < ncs.length; j++)
+          ncs[j].addNum(_model._output._vecs[vecPos++]);
+      }
+    }
+  }
+
+  /**
    * Takes an input string can return the word vector for that word.
    *
    * @param target - String of desired word

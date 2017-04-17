@@ -1,37 +1,26 @@
-Deep Learning
---------------
+Deep Learning (Neural Networks)
+-------------------------------
 
 Introduction
 ~~~~~~~~~~~~
 
-H2O’s Deep Learning is based on a multi-layer feed-forward artificial
-neural network that is trained with stochastic gradient descent using
-back-propagation. The network can contain a large number of hidden
-layers consisting of neurons with tanh, rectifier and maxout activation
-functions. Advanced features such as adaptive learning rate, rate
-annealing, momentum training, dropout, L1 or L2 regularization,
-checkpointing and grid search enable high predictive accuracy. Each
-compute node trains a copy of the global model parameters on its local
-data with multi-threading (asynchronously), and contributes periodically
-to the global model via model averaging across the network.
+H2O’s Deep Learning is based on a multi-layer `feedforward artificial neural network <https://en.wikipedia.org/wiki/Feedforward_neural_network>`__ that is trained with stochastic gradient descent using back-propagation. The network can contain a large number of hidden layers consisting of neurons with tanh, rectifier, and maxout activation functions. Advanced features such as adaptive learning rate, rate annealing, momentum training, dropout, L1 or L2 regularization, checkpointing, and grid search enable high predictive accuracy. Each compute node trains a copy of the global model parameters on its local data with multi-threading (asynchronously) and contributes periodically to the global model via model averaging across the network.
 
-Quick Start
-~~~~~~~~~~~~
+A feedforward artificial neural network (ANN) model, also known as deep neural network (DNN) or multi-layer perceptron (MLP), is the most common type of Deep Neural Network and the only type that is supported natively in H2O-3. Several other types of DNNs are popular as well, such as Convolutional Neural Networks (CNNs) and Recurrent Neural Networks (RNNs). MLPs work well on transactional (tabular) data; however if you have image data, then CNNs are a great choice. If you have sequential data (e.g. text, audio, time-series), then RNNs are a good choice. The `H2O Deep Water project <https://www.h2o.ai/deep-water/>`__ supports CNNs and RNNs though third-party integrations of other deep learning libraries such as TensorFlow, Caffe and MXNet. To learn more about how to use Deep Water, visit the `H2O Deep Water repository <https://github.com/h2oai/deepwater>`__ and/or follow any of the `available demos <https://github.com/h2oai/h2o-3/tree/master/examples/deeplearning/notebooks>`__.
+
+Quick Start and Additional Resources
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* Deep Learning in H2O Tutorial (R): `[GitHub] <https://htmlpreview.github.io/?https://github.com/ledell/sldm4-h2o/blob/master/sldm4-deeplearning-h2o.html>`__
 * H2O + TensorFlow on AWS GPU Tutorial (Python Notebook) `[Blog] <http://blog.h2o.ai/2016/07/h2o-tensorflow-on-aws-gpu/>`__ `[Github] <https://github.com/h2oai/sparkling-water/blob/master/py/examples/notebooks/TensorFlowDeepLearning.ipynb>`__
 * Deep learning in H2O with Arno Candel (Overview) `[Youtube] <https://www.youtube.com/watch?v=zGdXaRug7LI/>`__
 * Top 10 tips and tricks `[Youtube] <https://www.youtube.com/watch?v=LM255qs8Zsk/>`__
 * NYC Tour Deep Learning Panel: Tensorflow, Mxnet, Caffe `[Youtube] <https://www.youtube.com/watch?v=KWdkVoKJG3U/>`__
-* Deep Water project: `[Github] <http://github.com/h2oai/deepwater/>`__
+* Deep Water project: `[GitHub] <http://github.com/h2oai/deepwater/>`__
 
 Defining a Deep Learning Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-H2O Deep Learning models have many input parameters, many of which are
-only accessible via the expert mode. For most cases, use the default
-values. Please read the following instructions before building extensive
-Deep Learning models. The application of grid search and successive
-continuation of winning models via checkpoint restart is highly
-recommended, as model performance can vary greatly.
+H2O Deep Learning models have many input parameters, many of which are only accessible via the expert mode. For most cases, use the default values. Please read the following instructions before building extensive Deep Learning models. The application of grid search and successive continuation of winning models via checkpoint restart is highly recommended, as model performance can vary greatly.
 
 -  **model\_id**: (Optional) Specify a custom name for the model to use as
    a reference. By default, H2O automatically generates a destination

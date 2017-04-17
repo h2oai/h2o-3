@@ -9,11 +9,6 @@ This Appendix provides detailed descriptions of parameters that can be specified
 
 - This Appendix is a work in progress.
 - For parameters that are supported in multiple algorithms, the included example uses the GBM or GLM algorithm.
-- The examples in this section include datasets that are pulled from GitHub and S3. Alternatively, you can run the following command from within the H2O repository on your local machine to retrieve all datasets in the smalldata folder:
-
- ::
-  
-  ./gradlew syncSmalldata
 
 .. toctree::
    :maxdepth: 2

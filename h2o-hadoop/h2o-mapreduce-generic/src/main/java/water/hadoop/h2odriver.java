@@ -8,6 +8,7 @@ import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import water.H2O;
@@ -101,6 +102,9 @@ public class h2odriver extends Configured implements Tool {
   static String sessionTimeout = null;
   static String userName = System.getProperty("user.name");
   static boolean client = false;
+  static String runAsUser = null;
+  static String principal = null;
+  static String keytabPath = null;
 
   // Runtime state that might be touched by different threads.
   volatile ServerSocket driverCallbackSocket = null;
@@ -545,6 +549,7 @@ public class h2odriver extends Configured implements Tool {
                     "          [-h | -help]\n" +
                     "          [-jobname <name of job in jobtracker (defaults to: 'H2O_nnnnn')>]\n" +
                     "              (Note nnnnn is chosen randomly to produce a unique name)\n" +
+                    "          [-principal <kerberos principal> -keytab <keytab path> | -run_as_user <hadoop username>]\n" +
                     "          [-driverif <ip address of mapper->driver callback interface>]\n" +
                     "          [-driverport <port of mapper->driver callback interface>]\n" +
                     "          [-driverportrange <range portX-portY of mapper->driver callback interface>; eg: 50000-55000]\n" +
@@ -913,8 +918,16 @@ public class h2odriver extends Configured implements Tool {
       else if (s.equals("-client")) {
         client = true;
         driverArgs = false;
-      }
-      else {
+      } else if (s.equals("-run_as_user")) {
+        i++; if (i >= args.length) { usage(); }
+        runAsUser = args[i];
+      } else if (s.equals("-principal")) {
+        i++; if (i >= args.length) { usage(); }
+        principal = args[i];
+      } else if (s.equals("-keytab")) {
+        i++; if (i >= args.length) { usage (); }
+        keytabPath = args[i];
+      } else {
         error("Unrecognized option " + s);
       }
 
@@ -1017,6 +1030,18 @@ public class h2odriver extends Configured implements Tool {
       try { timeout = Integer.parseInt(sessionTimeout); } catch (Exception e) { /* ignored */ }
       if (timeout <= 0) {
         error("invalid session timeout specification (" + sessionTimeout + ")");
+      }
+    }
+
+    if (principal != null || keytabPath != null) {
+      if (principal == null) {
+        error("keytab requires a valid principal (use the '-principal' option)");
+      }
+      if (keytabPath == null) {
+        error("principal requires a valid keytab path (use the '-keytab' option)");
+      }
+      if (runAsUser != null) {
+        error("cannot use '-keytab' or '-principal' with '-run_as_user''");
       }
     }
 
@@ -1271,6 +1296,16 @@ public class h2odriver extends Configured implements Tool {
     // Set up configuration.
     // ---------------------
     Configuration conf = getConf();
+
+    // Run impersonation options
+    if (principal != null && keytabPath != null) {
+      UserGroupInformation.setConfiguration(conf);
+      UserGroupInformation.loginUserFromKeytab(principal, keytabPath);
+    } else if (runAsUser != null) {
+      UserGroupInformation.setConfiguration(conf);
+      UserGroupInformation.setLoginUser(UserGroupInformation.createRemoteUser(runAsUser));
+    }
+
 
     // Set memory parameters.
     long processTotalPhysicalMemoryMegabytes;

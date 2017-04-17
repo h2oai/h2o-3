@@ -7,8 +7,8 @@ H2O lazily slices out columns of data and will only materialize a shared copy up
    .. code-block:: r
 	
 	> library(h2o)
-	> h2o.init(nthreads=-1)
-	> path <- "../smalldata/iris/iris_wheader.csv"
+	> h2o.init()
+	> path <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv"
 	> df <- h2o.importFile(path)
 	> print(df)
 	  sepal_len sepal_wid petal_len petal_wid       class
@@ -79,7 +79,7 @@ H2O lazily slices out columns of data and will only materialize a shared copy up
 	>>> h2o.init()
 	
 	# Import the iris with headers dataset
-	>>> path = "../smalldata/iris/iris_wheader.csv"
+	>>> path = "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv"
 	>>> df = h2o.import_file(path=path)
 	>>> df.describe
 	  sepal_len    sepal_wid    petal_len    petal_wid  class

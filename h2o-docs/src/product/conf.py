@@ -97,6 +97,13 @@ exclude_patterns = [
     "Getting-Started.rst",
     "Trouble-Shooting.rst",
     "ensembles.rst",
+    "pojo-quick-start.rst",
+    "hadoop.rst",
+    "ibm-dsx.rst",
+    "azure.rst",
+    "docker.rst",
+    "aws.rst",
+    "data-sources.rst",
 
     # Exclude directories that were part of the old docs that might still need to be purged.
     "flow",

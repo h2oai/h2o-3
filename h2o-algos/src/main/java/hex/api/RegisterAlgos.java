@@ -1,6 +1,5 @@
 package hex.api;
 
-import hex.word2vec.Word2VecModel;
 import water.H2O;
 import hex.ModelBuilder;
 import water.api.GridSearchHandler;

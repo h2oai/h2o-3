@@ -16,8 +16,11 @@ The ``impute`` function accepts the following arguments:
 .. example-code::
    .. code-block:: r
 
+	> library(h2o)
+	> h2o.init()
+
    	#Upload the Airlines dataset
-   	> filePath <- "../smalldata/airlines/allyears2k_headers.zip"
+   	> filePath <- "https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv"
    	> air <- h2o.importFile(filePath, "air")
    	> print(dim(air))
    	43978    31
@@ -73,8 +76,12 @@ The ``impute`` function accepts the following arguments:
 
    .. code-block:: python
 
-	#Upload the airlines dataset
-	>>> air = h2o.upload_file("../smalldata/airlines/allyears2k_headers.zip")
+    >>> import h2o
+    >>> h2o.init()
+
+	#Import the airlines dataset
+	>>> air_path = "https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv"
+	>>> air = h2o.import_file(path=air_path)
 	>>> air.dim
 	[43978, 31]
 
@@ -97,7 +104,7 @@ The ``impute`` function accepts the following arguments:
 	[1497 rows x 3 columns]
 
 	#Revert imputations
-	>>> air = h2o.upload_file("../smalldata/airlines/allyears2k_headers.zip")
+	>>> air = h2o.import_file(path=air_path)
 
 	#Mode impute the TailNum column
 	>>> mode_impute = air.impute("TailNum", method = "mode")
@@ -105,7 +112,7 @@ The ``impute`` function accepts the following arguments:
 	[nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, 3499.0, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan]
 
 	#Revert imputations
-	>>> air = h2o.upload_file("../smalldata/airlines/allyears2k_headers.zip")
+	>>> air = h2o.import_file(path=air_path)
 
 	#Mode impute the TailNum column based on the Month and Year columns
 	>>> mode_impute = air.impute("TailNum", method = "mode", by=["Month", "Year"])

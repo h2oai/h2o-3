@@ -598,14 +598,17 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       SingularValueDecomposition rrsvd = new SingularValueDecomposition(rrmul);   // RS' = U \Sigma V'
       double[] sval = rrsvd.getSingularValues();  // get singular values as double array
 
-      double dfcorr = nobs/(nobs-1.0);  // find number of observations
-      double oneOverNobsm1 = 1.0/Math.sqrt(nobs-1);
+      double dfcorr = (nobs > 1)?nobs/(nobs-1.0):1.0;  // find number of observations
+      double oneOverNobsm1 = (nobs>1)?1.0/Math.sqrt(nobs-1):1.0;
 
-      model._output._std_deviation = new double[_parms._k];
-      for (int index=0; index<_parms._k; index++)  // calculate std_deviation
-        model._output._std_deviation[index] = oneOverNobsm1*sval[index];
+      model._output._std_deviation = Arrays.copyOf(sval, sval.length);
+      ArrayUtils.mult(model._output._std_deviation, oneOverNobsm1);
+      model._output._total_variance = dfcorr * dgram._gram.diagSum();
 
-      model._output._total_variance = dfcorr*dgram._gram.diagSum();
+      if (Math.abs(model._output._std_deviation[0])>0) {
+          double catScale = Math.sqrt(model._output._total_variance/ArrayUtils.l2norm2(model._output._std_deviation));
+          ArrayUtils.mult(model._output._std_deviation, catScale);
+      }
 
       double[] vars = new double[model._output._std_deviation.length];
       double[] prop_var = new double[vars.length];
@@ -665,6 +668,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         tinfo = new DataInfo(_train, _valid, 0, true, _parms._transform, DataInfo.TransformType.NONE,
                              false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
         DKV.put(tinfo._key, tinfo);
+
 
         tempinfo = new DataInfo(_train, null, 0, true, _parms._transform, DataInfo.TransformType.NONE,
                 false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);

@@ -15,7 +15,7 @@
 #' @param forceDL (Optional) A \code{logical} value indicating whether to force download of the H2O executable. Defaults to FALSE, so the executable will only be downloaded if it does not already exist in the h2o R library resources directory \code{h2o/java/h2o.jar}.  This value is only used when R starts H2O.
 #' @param enable_assertions (Optional) A \code{logical} value indicating whether H2O should be launched with assertions enabled. Used mainly for error checking and debugging purposes.  This value is only used when R starts H2O.
 #' @param license (Optional) A \code{character} string value specifying the full path of the license file.  This value is only used when R starts H2O.
-#' @param nthreads (Optional) Number of threads in the thread pool.  This relates very closely to the number of CPUs used.  -2 means use the CRAN default of 2 CPUs.  -1 means use all CPUs on the host.  A positive integer specifies the number of CPUs directly.  This value is only used when R starts H2O.
+#' @param nthreads (Optional) Number of threads in the thread pool.  This relates very closely to the number of CPUs used. -1 means use all CPUs on the host (Default).  A positive integer specifies the number of CPUs directly.  This value is only used when R starts H2O.
 #' @param max_mem_size (Optional) A \code{character} string specifying the maximum size, in bytes, of the memory allocation pool to H2O. This value must a multiple of 1024 greater than 2MB. Append the letter m or M to indicate megabytes, or g or G to indicate gigabytes.  This value is only used when R starts H2O.
 #' @param min_mem_size (Optional) A \code{character} string specifying the minimum size, in bytes, of the memory allocation pool to H2O. This value must a multiple of 1024 greater than 2MB. Append the letter m or M to indicate megabytes, or g or G to indicate gigabytes.  This value is only used when R starts H2O.
 #' @param ice_root (Optional) A directory to handle object spillage. The defaul varies by OS.
@@ -27,6 +27,7 @@
 #' @param password (Optional) Password to login with.
 #' @param cookies (Optional) Vector(or list) of cookies to add to request.
 #' @param context_path (Optional) The last part of connection URL: http://<ip>:<port>/<context_path>
+#' @param ignore_config (Optional) A \code{logical} value indicating whether a search for a .h2oconfig file should be conducted or not. Default value is FALSE.
 #' @return this method will load it and return a \code{H2OConnection} object containing the IP address and port number of the H2O server.
 #' @note Users may wish to manually upgrade their package (rather than waiting until being prompted), which requires
 #' that they fully uninstall and reinstall the H2O package, and the H2O client package. You must unload packages running
@@ -52,42 +53,44 @@
 #' }
 #' @export
 h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = FALSE,
-                     enable_assertions = TRUE, license = NULL, nthreads = -2,
+                     enable_assertions = TRUE, license = NULL, nthreads = -1,
                      max_mem_size = NULL, min_mem_size = NULL,
                      ice_root = tempdir(), strict_version_check = TRUE, proxy = NA_character_,
                      https = FALSE, insecure = FALSE, username = NA_character_, password = NA_character_,
-                     cookies = NA_character_, context_path = NA_character_) {
+                     cookies = NA_character_, context_path = NA_character_, ignore_config = FALSE) {
 
-    # Check for .h2oconfig file
-    # Find .h2oconfig file starting from currenting directory and going
-    # up all parent directories until it reaches the root directory.
-    config_path <- .find.config()
+    if(!(ignore_config)){
+      # Check for .h2oconfig file
+      # Find .h2oconfig file starting from currenting directory and going
+      # up all parent directories until it reaches the root directory.
+      config_path <- .find.config()
 
-    #Read in config if available
-    if(!(is.null(config_path))){
+      #Read in config if available
+      if(!(is.null(config_path))){
 
-      h2oconfig = .parse.h2oconfig(config_path,print_path=TRUE)
+        h2oconfig = .parse.h2oconfig(config_path,print_path=TRUE)
 
-      #Check for each `allowed_config_keys` in the config file and set to counterparts in `h2o.init()`
-      if(strict_version_check == TRUE && "init.check_version" %in% colnames(h2oconfig)){
-        strict_version_check = as.logical(trimws(toupper(as.character(h2oconfig$init.check_version))))
+        #Check for each `allowed_config_keys` in the config file and set to counterparts in `h2o.init()`
+        if(strict_version_check == TRUE && "init.check_version" %in% colnames(h2oconfig)){
+          strict_version_check = as.logical(trimws(toupper(as.character(h2oconfig$init.check_version))))
+        }
+        if(is.na(proxy) && "init.proxy" %in% colnames(h2oconfig)){
+          proxy = trimws(as.character(h2oconfig$init.proxy))
+        }
+        if(insecure == FALSE && "init.verify_ssl_certificates" %in% colnames(h2oconfig)){
+          insecure = as.logical(trimws(toupper(as.character(h2oconfig$init.verify_ssl_certificates))))
+        }
+        if(is.na(cookies) && "init.cookies" %in% colnames(h2oconfig)){
+          cookies = as.vector(trimws(strsplit(as.character(h2oconfig$init.cookies),";")[[1]]))
+        }
+        if(is.na(username) && "init.username" %in% colnames(h2oconfig)){
+          username = trimws(as.character(h2oconfig$init.username))
+        }
+        if(is.na(password) && "init.password" %in% colnames(h2oconfig)){
+          password = trimws(as.character(h2oconfig$init.password))
+        }
       }
-      if(is.na(proxy) && "init.proxy" %in% colnames(h2oconfig)){
-        proxy = trimws(as.character(h2oconfig$init.proxy))
-      }
-      if(insecure == FALSE && "init.verify_ssl_certificates" %in% colnames(h2oconfig)){
-        insecure = as.logical(trimws(toupper(as.character(h2oconfig$init.verify_ssl_certificates))))
-      }
-      if(is.na(cookies) && "init.cookies" %in% colnames(h2oconfig)){
-        cookies = as.vector(trimws(strsplit(as.character(h2oconfig$init.cookies),";")[[1]]))
-      }
-      if(is.na(username) && "init.username" %in% colnames(h2oconfig)){
-        username = trimws(as.character(h2oconfig$init.username))
-      }
-      if(is.na(password) && "init.password" %in% colnames(h2oconfig)){
-        password = trimws(as.character(h2oconfig$init.password))
-      }
-  }
+    }
 
   if(!is.character(ip) || length(ip) != 1L || is.na(ip) || !nzchar(ip))
     stop("`ip` must be a non-empty character string")
