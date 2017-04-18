@@ -467,11 +467,8 @@ final class RollupStats extends Iced {
               break;
             } catch (Exception e) {
               Log.err(e);
-              if (cleanupStats(nnn))
-                throw e;
-              else
-                throw new IllegalStateException("Unable to clean up RollupStats after an exception (see cause). " +
-                      "This could cause a key leakage, key=" + _rsKey, e);
+              cleanupStats(nnn);
+              throw e;
             }
           } // else someone else is modifying the rollups => try again
         }
