@@ -53,7 +53,7 @@ public class TestFrameBuilder {
   private Key<Frame> key;
   private long numRows = NOT_SET;
   private String[][] domains = null;
-  private HashMap<Integer, int[]> categoriesPerCol = new HashMap<>();
+  private HashMap<Integer, Integer[]> categoriesPerCol = new HashMap<>();
 
   /**
    * Sets the name for the frame. Default name is created if this method is not called.
@@ -183,8 +183,8 @@ public class TestFrameBuilder {
   }
 
   // Utility method to convert domain into categories
-  private int[] getCategories(HashMap<String, Integer> mapping, String[] original){
-    int[] categoricals = new int[original.length];
+  private Integer[] getCategories(HashMap<String, Integer> mapping, String[] original){
+    Integer[] categoricals = new Integer[original.length];
     for(int i = 0; i < original.length; i++) {
       categoricals[i] = mapping.get(original[i]);
     }
@@ -196,7 +196,7 @@ public class TestFrameBuilder {
    HashMap<String, Integer> mapping = new HashMap<>();
     int level = 0;
     for (String item : array) {
-      if (!mapping.containsKey(item)) {
+      if ((item != null) && (! mapping.containsKey(item))) {
         mapping.put(item, level);
         level++;
       }
@@ -209,7 +209,7 @@ public class TestFrameBuilder {
     for (int colIdx = 0; colIdx < vecTypes.length; colIdx++) {
       if(vecTypes[colIdx]==Vec.T_CAT){
         HashMap<String, Integer> mapping = getMapping(stringData.get(colIdx));
-        int[] categories = getCategories(mapping, stringData.get(colIdx));
+        Integer[] categories = getCategories(mapping, stringData.get(colIdx));
         domains[colIdx] = getUniqueValues(mapping);
         categoriesPerCol.put(colIdx, categories);
       }else{
@@ -236,7 +236,11 @@ public class TestFrameBuilder {
             nchunks[colIdx].addNum(numericData.get(colIdx)[i]);
             break;
           case Vec.T_CAT:
-            nchunks[colIdx].addCategorical(categoriesPerCol.get(colIdx)[i]);
+            Integer cat = categoriesPerCol.get(colIdx)[i];
+            if (cat != null)
+              nchunks[colIdx].addCategorical(cat);
+            else
+              nchunks[colIdx].addNA();
             break;
           default:
             throw new UnsupportedOperationException("Unsupported Vector type for the builder");
