@@ -3,7 +3,9 @@ package hex.schemas;
 import hex.tree.SharedTree;
 import hex.tree.SharedTreeModel.SharedTreeParameters;
 import water.api.API;
+import water.api.schemas3.KeyV3.FrameKeyV3;
 import water.api.schemas3.ModelParametersSchemaV3;
+
 
 public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P extends SharedTreeV3.SharedTreeParametersV3> extends ModelBuilderSchema<B,S,P> {
 
@@ -90,5 +92,11 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
 
     @API(help="What type of histogram to use for finding optimal split points", values = { "AUTO", "UniformAdaptive", "Random", "QuantilesGlobal", "RoundRobin"}, level = API.Level.secondary, gridable = true)
     public SharedTreeParameters.HistogramType histogram_type;
+
+    @API(help="Use Platt's Scaling to do model calibration. Ie you would like the classifcation prediction to represent posterior probabilities.", level = API.Level.expert, gridable = false)
+    public boolean calibrate_model;
+
+    @API(help="Calibration frame for Platt's scaling", level = API.Level.expert, direction = API.Direction.INOUT, gridable=false)
+    public FrameKeyV3 calibration_frame;
   }
 }
