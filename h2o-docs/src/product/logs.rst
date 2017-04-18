@@ -80,7 +80,10 @@ If you are not using Hadoop and the job is still running:
 
 --------------
 
--  To view the REST API logs from R:
+Logging in R
+~~~~~~~~~~~~
+
+To view the REST API logs from R:
 
  1. In R, enter ``h2o.startLogging()``. The output displays the location of the REST API logs:
 
@@ -111,11 +114,17 @@ If you are not using Hadoop and the job is still running:
             {"__meta":{"schema_version":    1,"schema_name":"CloudV1","schema_type":"Iced"},"version":"0.1.17.1009","cloud_name":...[truncated]}
             -------------------------------------------------------------
 
---------------
 
--  Download the logs using R. 
+To download the logs using R:
 
-   In R, enter the command ``h2o.downloadAllLogs(filename = "logs.zip")`` (where ``filename`` is the specified filename for the logs).
+   In R, enter the command ``h2o.downloadAllLogs(filename = "logs.zip")``, where ``filename`` is the specified filename for the logs. Note that you must include the .zip extension.
+
+Logging in Python
+~~~~~~~~~~~~~~~~~
+
+To download the logs using Python:
+  
+   In Python, enter the command ``h2o.download_all_logs(dirname='./your_directory_name/', filename = 'autoh2o_log.zip')``, where ``autoh2o_log.zip`` will download to a folder that is one down from where you are currently working into a directory called ``your_directory_name``. Please note that ``your_directory_name`` should be replaced with the name of a directory that you've created and that already exists.
 
 --------------
 
