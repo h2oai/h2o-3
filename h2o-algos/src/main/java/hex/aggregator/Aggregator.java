@@ -116,7 +116,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
       byte[] types = _train.types();
       for (byte b : types) {
         if (b != Vec.T_NUM && b != Vec.T_TIME) {
-          error("_categorical_encoding", "Categorical features must be turned into numeric features. Specify categorical_encoding=\"Eigen\", \"OneHotExplicit\" or \"Binary\"");
+          error("_categorical_encoding", "Categorical features must be turned into numeric features. Specify categorical_encoding=\"Eigen\", \"OneHotExplicit\", \"LabelEncoder\" or \"Binary\"");
         }
       }
     }

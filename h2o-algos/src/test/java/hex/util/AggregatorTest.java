@@ -77,6 +77,35 @@ public class AggregatorTest extends TestUtil {
     agg.remove();
   }
 
+  @Test public void testAggregatorEigenHighCardinality() {
+    CreateFrame cf = new CreateFrame();
+    cf.rows = 10000;
+    cf.cols = 10;
+    cf.categorical_fraction = 0.6;
+    cf.integer_fraction = 0.0;
+    cf.binary_fraction = 0.0;
+    cf.real_range = 100;
+    cf.integer_range = 100;
+    cf.missing_fraction = 0;
+    cf.factors = 1000; //more than 100 - expect to see 'other' in the aggregated frame
+    cf.seed = 1234;
+    Frame frame = cf.execImpl().get();
+
+    AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
+    parms._train = frame._key;
+    parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.Eigen;
+    long start = System.currentTimeMillis();
+    AggregatorModel agg = new Aggregator(parms).trainModel().get();  // 0.905
+    System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");
+    agg.checkConsistency();
+    Frame output = agg._output._output_frame.get();
+    System.out.println(output.toTwoDimTable(0,10));
+    Log.info("Number of exemplars: " + agg._exemplars.length);
+    output.remove();
+    frame.remove();
+    agg.remove();
+  }
+
   @Test public void testAggregatorBinary() {
     CreateFrame cf = new CreateFrame();
     cf.rows = 1000;
