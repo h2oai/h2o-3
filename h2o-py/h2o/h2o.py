@@ -900,9 +900,14 @@ def download_all_logs(dirname=".", filename=None):
     Download H2O log files to disk.
 
     :param dirname: a character string indicating the directory that the log file should be saved in.
-    :param filename: a string indicating the name that the CSV file should be.
+    :param filename: a string indicating the name that the CSV file should be. Note that the saved format is .zip, so the file name must include the .zip extension.
 
-    :returns: path of logs written.
+    :returns: path of logs written in a zip file.
+
+    :examples: The following code will save the zip file `'autoh2o_log.zip'` in a directory that is one down from where you are currently working into a directory called `your_directory_name`. (Please note that `your_directory_name` should be replaced with the name of the directory that you've created and that already exists.)
+
+        >>> h2o.download_all_logs(dirname='./your_directory_name/', filename = 'autoh2o_log.zip')
+
     """
     assert_is_type(dirname, str)
     assert_is_type(filename, str, None)

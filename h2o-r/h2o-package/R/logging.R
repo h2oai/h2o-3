@@ -171,10 +171,14 @@ h2o.logAndEcho <- function(message) {
 
 #' Download H2O Log Files to Disk
 #'
-#' \code{h2o.downloadAllLogs} downloads all H2O log files to local disk. Generally used for debugging purposes.
+#' \code{h2o.downloadAllLogs} downloads all H2O log files to local disk in .zip format. Generally used for debugging purposes.
 #'
 #' @param dirname (Optional) A character string indicating the directory that the log file should be saved in.
-#' @param filename (Optional) A character string indicating the name that the log file should be saved to.
+#' @param filename (Optional) A character string indicating the name that the log file should be saved to. Note that the saved format is .zip, so the file name must include the .zip extension.
+#' @examples
+#' \donttest{
+#' h2o.downloadAllLogs(dirname='./your_directory_name/', filename = 'autoh2o_log.zip')
+#' }
 #' @export
 h2o.downloadAllLogs <- function(dirname = ".", filename = NULL) {
   if(!is.character(dirname) || length(dirname) != 1L || is.na(dirname) || !nzchar(dirname))
