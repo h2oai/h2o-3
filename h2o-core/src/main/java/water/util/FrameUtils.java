@@ -522,9 +522,9 @@ public class FrameUtils {
             categoricalFrame.add(_frame.name(i), frameVecs[i]);
             categorySizes[j] = numCategories + 1/* for NAs */;
             numOutputColumns += categorySizes[j];
-            catnames.add(_frame.name(i) + ".missing(NA)");
             for (int k=0;k<categorySizes[j]-1;++k)
               catnames.add(_frame.name(i) + "." + _frame.vec(i).domain()[k]);
+            catnames.add(_frame.name(i) + ".missing(NA)");
             ++j;
           } else {
             outputFrame.add(_frame.name(i), frameVecs[i].makeCopy());
