@@ -370,6 +370,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if( _parms._weights_column!=null ) cv_fr.remove( _parms._weights_column ); // The CV frames will have their own private weight column
 
     ModelBuilder<M, P, O>[] cvModelBuilders = new ModelBuilder[N];
+    List<Frame> cvFrames = new ArrayList<>();
     for( int i=0; i<N; i++ ) {
       String identifier = origDest + "_cv_" + (i+1);
       // Training/Validation share the same data, but will have exclusive weights
@@ -379,6 +380,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       Frame cvValid = new Frame(Key.<Frame>make(identifier+"_valid"),cv_fr.names(),cv_fr.vecs());
       cvValid.add(weightName, weights[2*i+1]);
       DKV.put(cvValid);
+
+      cvFrames.add(cvTrain);
+      cvFrames.add(cvValid);
 
       // Shallow clone - not everything is a private copy!!!
       ModelBuilder<M, P, O> cv_mb = (ModelBuilder)this.clone();
@@ -400,8 +404,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       cvModelBuilders[i] = cv_mb;
     }
 
-    if( error_count() > 0 )     // Error in any submodel
+    if( error_count() > 0 ) {     // Error in any submodel
+      for (Frame cvf : cvFrames)
+        cvf.delete();
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
+    }
     // check that this Job's original _params haven't changed
     assert old_cs == _parms.checksum();
     return cvModelBuilders;
