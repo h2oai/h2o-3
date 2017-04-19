@@ -1836,7 +1836,7 @@ class H2OFrame(object):
         """
         Merge two datasets based on common column names.
 
-        :param H2OFrame other: The frame to merge to the current one.  Must have at least one column in common with
+        :param H2OFrame other: The frame to merge to the current one. By default, must have at least one column in common with
             this frame, and all columns in common are used as the merge key.  If you want to use only a subset of the
             columns in common, rename the other columns so the columns are unique in the merged result.
         :param bool all_x: If True, include all rows from the left/self frame
@@ -1847,11 +1847,23 @@ class H2OFrame(object):
 
         :returns: New H2OFrame with the result of merging the current frame with the ``other`` frame.
         """
-        common_names = list(set(self.names) & set(other.names))
-        if not common_names:
-            raise H2OValueError("No columns in common to merge on!")
-        if by_x is None: by_x = [self.names.index(c) for c in common_names]
-        if by_y is None: by_y = [other.names.index(c) for c in common_names]
+
+        if by_x is None and by_y is None:
+            common_names = list(set(self.names) & set(other.names))
+            if not common_names:
+                raise H2OValueError("No columns in common to merge on!")
+
+        if by_x is None:
+            by_x = [self.names.index(c) for c in common_names]
+        else:
+            by_x = _getValidCols(by_x,self)
+
+        if by_y is None:
+            by_y = [other.names.index(c) for c in common_names]
+        else:
+            by_y = _getValidCols(by_y,other)
+
+
         return H2OFrame._expr(expr=ExprNode("merge", self, other, all_x, all_y, by_x, by_y, method))
 
 
@@ -2840,6 +2852,19 @@ class H2OFrame(object):
 #-----------------------------------------------------------------------------------------------------------------------
 # Helpers
 #-----------------------------------------------------------------------------------------------------------------------
+
+def _getValidCols(by_idx, fr):  # so user can input names of the columns as well is idx num
+    tmp = []
+    for i in by_idx:
+        if type(i) == str:
+            if i not in fr.names:
+                raise H2OValueError("Column: " + i + " not in frame.")
+            tmp.append(fr.names.index(i))
+        elif type(i) != int:
+            raise H2OValueError("Join on column: " + i + " not of type int")
+        else:
+            tmp.append(i)
+    return list(set(tmp))
 
 def _binop(lhs, op, rhs):
     assert_is_type(lhs, str, numeric, datetime.date, pandas_timestamp, numpy_datetime, H2OFrame)
