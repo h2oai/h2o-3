@@ -2,6 +2,19 @@
 
 ## H2O
 
+### Ueno (3.10.4.5) - 4/19/2017
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4293'>PUBDEV-4293</a>] -         Problem with h2o.merge in python
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4306'>PUBDEV-4306</a>] -         Failing SVM parse
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4308'>PUBDEV-4308</a>] -         Rollups computation errors sometimes get wrapped in a unhelpful exception and the original cause is hidden.
+</li>
+</ul>
+
 ### Ueno (3.10.4.4) - 4/15/2017
 
 <h4>        Technical task
