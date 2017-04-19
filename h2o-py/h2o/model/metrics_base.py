@@ -548,11 +548,17 @@ class H2OBinomialModelMetrics(MetricsBase):
         # make lists out of metrics and thresholds arguments
         if metrics is None and thresholds is None: metrics = ["f1"]
 
+
+
         if isinstance(metrics, list):
+            if 'absolute_MCC' in metrics:   # metrics is a list
+                metrics[metrics.index('absolute_MCC')] = 'absolute_mcc'
             metrics_list = metrics
         elif metrics is None:
             metrics_list = []
         else:
+            if (metrics is not None) and (metrics == 'absolute_MCC'):   # replace element with correct metric name
+                metrics = 'absolute_mcc'
             metrics_list = [metrics]
 
         if isinstance(thresholds, list):
@@ -569,8 +575,8 @@ class H2OBinomialModelMetrics(MetricsBase):
         if not all(m.lower() in ["min_per_class_accuracy", "absolute_mcc", "precision", "recall", "specificity",
                                  "accuracy", "f0point5", "f2", "f1", "mean_per_class_accuracy"] for m in metrics_list):
             raise ValueError(
-                "The only allowable metrics are min_per_class_accuracy, absolute_mcc, precision, accuracy, f0point5, "
-                "f2, f1, mean_per_class_accuracy")
+                "The only allowable metrics are min_per_class_accuracy, absolute_mcc (or absolute_MCC - deprecated), "
+                "precision, accuracy, f0point5, f2, f1, mean_per_class_accuracy")
 
         # make one big list that combines the thresholds and metric-thresholds
         metrics_thresholds = [self.find_threshold_by_max_metric(m) for m in metrics_list]
@@ -612,6 +618,10 @@ class H2OBinomialModelMetrics(MetricsBase):
             "accuracy", "f0point5", "f2", "f1", "mean_per_class_accuracy"}.
         :returns: the threshold at which the given metric is maximal.
         """
+
+        if (metric is not None) and (metric == 'absolute_MCC'):
+            metric = 'absolute_mcc'     # absolute_MCC has been replaced with absolute_mcc now
+
         crit2d = self._metric_json['max_criteria_and_metric_scores']
 
         for e in crit2d.cell_values:
