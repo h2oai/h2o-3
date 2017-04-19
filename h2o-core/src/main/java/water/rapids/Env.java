@@ -1,5 +1,6 @@
 package water.rapids;
 
+import hex.Model;
 import water.*;
 import water.fvec.Frame;
 import water.rapids.ast.*;
@@ -19,6 +20,7 @@ import water.rapids.ast.prims.time.*;
 import water.rapids.ast.prims.timeseries.*;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValFun;
+import water.rapids.vals.ValModel;
 
 import java.io.Closeable;
 import java.util.ArrayList;
@@ -288,6 +290,9 @@ public class Env extends Iced {
     init(new AstSeq());
     init(new AstSeqLen());
 
+    // Custom (eg. algo-specific)
+    for (AstPrimitive prim : PrimsService.INSTANCE.getAllPrims())
+      init(prim);
   }
 
 
@@ -380,8 +385,10 @@ public class Env extends Iced {
     if (value != null) {
       if (value.isFrame())
         return addGlobals((Frame) value.get());
+      if (value.isModel())
+        return new ValModel((Model) value.get());
       // Only understand Frames right now
-      throw new IllegalArgumentException("DKV name lookup of " + id + " yielded an instance of type " + value.className() + ", but only Frame is supported");
+      throw new IllegalArgumentException("DKV name lookup of " + id + " yielded an instance of type " + value.className() + ", but only Frame & Model are supported");
     }
 
     // Now the built-ins

@@ -141,7 +141,7 @@ def version_check():
 
 def init(url=None, ip=None, port=None, https=None, insecure=None, username=None, password=None,
          cookies=None, proxy=None, start_h2o=True, nthreads=-1, ice_root=None, enable_assertions=True,
-         max_mem_size=None, min_mem_size=None, strict_version_check=None, **kwargs):
+         max_mem_size=None, min_mem_size=None, strict_version_check=None, ignore_config=False, **kwargs):
     """
     Attempt to connect to a local server, or if not successful start a new server and connect to it.
 
@@ -161,6 +161,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     :param max_mem_size: Maximum memory to use for the new h2o server.
     :param min_mem_size: Minimum memory to use for the new h2o server.
     :param strict_version_check: If True, an error will be raised if the client and server versions don't match.
+    :param ignore_config: Indicates whether a processing of a .h2oconfig file should be conducted or not. Default value is False.
     :param kwargs: (all other deprecated attributes)
     """
     global h2oconn
@@ -210,28 +211,29 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     check_version = True
     verify_ssl_certificates = True
 
-    # Apply the config file
-    config = H2OConfigReader.get_config()
-    if url is None and ip is None and port is None and https is None and "init.url" in config:
-        url = config["init.url"]
-    if proxy is None and "init.proxy" in config:
-        proxy = config["init.proxy"]
-    if cookies is None and "init.cookies" in config:
-        cookies = config["init.cookies"].split(";")
-    if auth is None and "init.username" in config and "init.password" in config:
-        auth = (config["init.username"], config["init.password"])
-    if strict_version_check is None:
-        if "init.check_version" in config:
-            check_version = config["init.check_version"].lower() != "false"
-        elif os.environ.get("H2O_DISABLE_STRICT_VERSION_CHECK"):
-            check_version = False
-    else:
-        check_version = strict_version_check
-    if insecure is None:
-        if "init.verify_ssl_certificates" in config:
-            verify_ssl_certificates = config["init.verify_ssl_certificates"].lower() != "false"
-    else:
-        verify_ssl_certificates = not insecure
+    # Apply the config file if ignore_config=False
+    if not ignore_config:
+        config = H2OConfigReader.get_config()
+        if url is None and ip is None and port is None and https is None and "init.url" in config:
+            url = config["init.url"]
+        if proxy is None and "init.proxy" in config:
+            proxy = config["init.proxy"]
+        if cookies is None and "init.cookies" in config:
+            cookies = config["init.cookies"].split(";")
+        if auth is None and "init.username" in config and "init.password" in config:
+            auth = (config["init.username"], config["init.password"])
+        if strict_version_check is None:
+            if "init.check_version" in config:
+                check_version = config["init.check_version"].lower() != "false"
+            elif os.environ.get("H2O_DISABLE_STRICT_VERSION_CHECK"):
+                check_version = False
+        else:
+            check_version = strict_version_check
+        if insecure is None:
+            if "init.verify_ssl_certificates" in config:
+                verify_ssl_certificates = config["init.verify_ssl_certificates"].lower() != "false"
+            else:
+                verify_ssl_certificates = not insecure
 
     if not start_h2o:
         print("Warning: if you don't want to start local H2O server, then use of `h2o.connect()` is preferred.")
@@ -898,9 +900,14 @@ def download_all_logs(dirname=".", filename=None):
     Download H2O log files to disk.
 
     :param dirname: a character string indicating the directory that the log file should be saved in.
-    :param filename: a string indicating the name that the CSV file should be.
+    :param filename: a string indicating the name that the CSV file should be. Note that the saved format is .zip, so the file name must include the .zip extension.
 
-    :returns: path of logs written.
+    :returns: path of logs written in a zip file.
+
+    :examples: The following code will save the zip file `'autoh2o_log.zip'` in a directory that is one down from where you are currently working into a directory called `your_directory_name`. (Please note that `your_directory_name` should be replaced with the name of the directory that you've created and that already exists.)
+
+        >>> h2o.download_all_logs(dirname='./your_directory_name/', filename = 'autoh2o_log.zip')
+
     """
     assert_is_type(dirname, str)
     assert_is_type(filename, str, None)

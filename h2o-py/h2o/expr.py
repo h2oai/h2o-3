@@ -21,6 +21,7 @@ from h2o.backend.connection import H2OConnectionError
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import repr2, viewitems, viewvalues
 from h2o.utils.shared_utils import _is_fr, _py_tmp_key
+from h2o.model.model_base import ModelBase
 
 
 class ExprNode(object):
@@ -151,6 +152,8 @@ class ExprNode(object):
                 return "[%d:%s]" % (start, str(stop - start))
             else:
                 return "[%d:%s:%d]" % (start, str((stop - start + step - 1) // step), step)
+        if isinstance(arg, ModelBase):
+            return arg.model_id
         return repr2(arg)
 
     def __del__(self):

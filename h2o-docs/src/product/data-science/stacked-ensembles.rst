@@ -74,7 +74,7 @@ Example
    .. code-block:: r
 
     library(h2o)
-    h2o.init(nthreads = -1)
+    h2o.init()
 
     # Import a sample binary outcome train/test set into H2O
     train <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
@@ -91,15 +91,12 @@ Example
     # Number of CV folds (to generate level-one data for stacking)
     nfolds <- 5
 
-
-
     # There are a few ways to assemble a list of models to stack toegether:
     # 1. Train individual models and put them in a list
     # 2. Train a grid of models
     # 3. Train several grids of models
     # Note: All base models must have the same cross-validation folds and 
     # the cross-validated predicted values must be kept.
-
 
 
     # 1. Generate a 2-model ensemble (GBM + RF)
@@ -148,7 +145,6 @@ Example
 
     # Generate predictions on a test set (if neccessary)
     pred <- h2o.predict(ensemble, newdata = test)
-
 
 
     # 2. Generate a random grid of models and stack them together
@@ -210,9 +206,7 @@ Example
     from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
     from h2o.grid.grid_search import H2OGridSearch
     from __future__ import print_function
-    
-
-    h2o.init(nthreads=-1)
+    h2o.init()
 
     # Import a sample binary outcome train/test set into H2O
     train = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
@@ -230,15 +224,12 @@ Example
     # Number of CV folds (to generate level-one data for stacking)
     nfolds = 5 
 
-
-
-    # There are a few ways to assemble a list of models to stack toegether:
+    # There are a few ways to assemble a list of models to stack together:
     # 1. Train individual models and put them in a list
     # 2. Train a grid of models
     # 3. Train several grids of models
     # Note: All base models must have the same cross-validation folds and 
     # the cross-validated predicted values must be kept.
-
 
 
     # 1. Generate a 2-model ensemble (GBM + RF)
@@ -285,7 +276,6 @@ Example
     pred = ensemble.predict(test)
     
     
-
     # 2. Generate a random grid of models and stack them together
 
     # Specify GBM hyperparameters for the grid
@@ -322,8 +312,6 @@ Example
 
     # Generate predictions on a test set (if neccessary)
     pred = ensemble.predict(test)
-
-
 
 FAQ
 ~~~

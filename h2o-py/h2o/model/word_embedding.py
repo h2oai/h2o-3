@@ -6,6 +6,7 @@ from h2o.utils.compatibility import *  # NOQA
 from .model_base import ModelBase
 from .metrics_base import *  # NOQA
 import h2o
+from h2o.expr import ExprNode
 
 
 class H2OWordEmbeddingModel(ModelBase):
@@ -40,3 +41,11 @@ class H2OWordEmbeddingModel(ModelBase):
         """
         j = h2o.api("GET /3/Word2VecTransform", data={'model': self.model_id, 'words_frame': words.frame_id, 'aggregate_method': aggregate_method})
         return h2o.get_frame(j["vectors_frame"]["name"])
+
+    def to_frame(self):
+        """
+        Converts a given word2vec model into H2OFrame.
+
+        :returns: a frame representing learned word embeddings.
+        """
+        return h2o.H2OFrame._expr(expr=ExprNode("word2vec.to.frame", self))

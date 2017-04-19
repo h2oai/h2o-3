@@ -8,7 +8,7 @@ Unlike the `upload <uploading-data.html>`__ function, which is a push from the c
 	
 	# To import small iris data file from H2O’s package:
 	> library(h2o)
-	> h2o.init(nthreads=-1)
+	> h2o.init()
 	> irisPath <- "https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv" 
 	> iris.hex <- h2o.importFile(path = irisPath, destination_frame = "iris.hex")
 	  

@@ -36,13 +36,13 @@ class Basic(unittest.TestCase):
         h2o.init(1,
             enable_benchmark_log=True,
             use_maprfs=True,
-            hdfs_version='mapr3.1.1',
+            hdfs_version='mapr4.0',
             hdfs_name_node='mr-0x2:7222')
         # mayb these aren't set correctly with -uc and above,. Let's just set them here
         # the import below will use them to form the uri
         h2o.nodes[0].use_maprfs = True
         h2o.nodes[0].use_hdfs = False
-        h2o.nodes[0].hdfs_version = 'mapr3.1.1',
+        h2o.nodes[0].hdfs_version = 'mapr4.0',
         h2o.nodes[0].hdfs_name_node = 'mr-0x2:7222'
 
 
@@ -124,7 +124,7 @@ class Basic(unittest.TestCase):
             a_node = h2o.nodes[0]
             frames_result = a_node.frames(key=k, row_count=5)
             # print "frames_result from the first parseResult key", dump_json(frames_result)
-            
+
             # FIX! switch this to look at the summary result
             parseKeyIndexedCheck(frames_result, multiplyExpected)
             # don't want to spill keys
