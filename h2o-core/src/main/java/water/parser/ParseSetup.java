@@ -437,10 +437,13 @@ public class ParseSetup extends Iced {
         for(ParseWriter.ParseErr err:_gblSetup._errs)
           Log.warn("ParseSetup: " + err.toString());
     }
-
     private ParseSetup mergeSetups(ParseSetup setupA, ParseSetup setupB, String fileA, String fileB) {
       // FIXME: have a merge function defined on a specific parser setup (each parser setup is responsible for merge)
       if (setupA == null) return setupB;
+      if(setupA._parse_type.equals(DefaultParserProviders.SVMLight_INFO) && setupB._parse_type.equals(DefaultParserProviders.SVMLight_INFO)){
+        // no merging for svm light, all columns are numeric and we take the max of number of columns (it's an estimate anyways)
+        return setupA._number_columns >= setupB._number_columns?setupA:setupB;
+      }
       ParseSetup mergedSetup = setupA;
 
       mergedSetup._check_header = unifyCheckHeader(setupA._check_header, setupB._check_header);
@@ -525,7 +528,7 @@ public class ParseSetup extends Iced {
   }
 
   protected boolean isCompatible(ParseSetup setupB) {
-    return _parse_type.equals(setupB._parse_type) && _number_columns == setupB._number_columns;
+    return _parse_type.equals(setupB._parse_type) && _parse_type.equals(DefaultParserProviders.SVMLight_INFO) ||  _number_columns == setupB._number_columns;
   }
 
   /**
