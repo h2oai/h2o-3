@@ -140,7 +140,7 @@ You may encounter problems: e.g. npm missing. Install it:
 brew install npm
 
 # Start H2O
-java -jar build/h2o.jar
+java -jar bin/build/h2o.jar
 
 # Point browser to http://localhost:54321
 
@@ -496,7 +496,7 @@ cd h2o-3
 <a name="Launching"></a>
 ## 5. Launching H2O after Building
 
-    java -jar build/h2o.jar
+    java -jar bin/build/h2o.jar
 
 
 <a name="BuildingHadoop"></a>
