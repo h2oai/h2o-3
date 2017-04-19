@@ -58,8 +58,13 @@ public class KLimeModel extends Model<KLimeModel, KLimeParameters, KLimeOutput> 
 
   @Override
   protected String[] makeScoringNames() {
-    String[] names = ArrayUtils.append(new String[]{"predict_klime", "cluster_klime"}, _output._names);
-    return ArrayUtils.remove(names, names.length - 1); // last item of _output._names is the response column, remove it
+    String[] names = new String[_output._names.length + 1];
+    int offset = 0;
+    names[offset++] = "predict_klime";
+    names[offset++] = "cluster_klime";
+    for (int i = 0; i < _output._names.length - 1; i++) // last item of _output._names is the response column, remove it
+      names[offset++] = "rc_" + _output._names[i];
+    return names;
   }
 
   @Override

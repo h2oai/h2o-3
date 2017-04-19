@@ -34,7 +34,9 @@ public class KLimeTest extends TestUtil {
       Frame scored = Scope.track(klm.score(fr));
 
       assertArrayEquals(
-              new String[]{"predict_klime", "cluster_klime", "Pclass", "Sex", "Age", "SibSp", "Parch"}, scored._names);
+              new String[]{"predict_klime", "cluster_klime", "rc_Pclass", "rc_Sex", "rc_Age", "rc_SibSp", "rc_Parch"},
+              scored._names
+      );
       // check predicted_klime is correct
       assertVecEquals(expected.vec(0), scored.vec(0), 0.0001);
 
