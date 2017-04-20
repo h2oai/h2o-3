@@ -1387,6 +1387,11 @@ public class h2odriver extends Configured implements Tool {
       conf.set("mapred.job.reuse.jvm.num.tasks", "1");
     }
 
+    // don't kill the the job if we're exiting the driver
+    if (disown) {
+      conf.set("mapred.jobclient.killjob.onexit", "false");
+    }
+
     conf.set(h2omapper.H2O_DRIVER_IP_KEY, driverCallbackIp);
     conf.set(h2omapper.H2O_DRIVER_PORT_KEY, Integer.toString(actualDriverCallbackPort));
 
