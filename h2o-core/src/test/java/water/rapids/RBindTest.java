@@ -3,10 +3,13 @@ package water.rapids;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.DKV;
 import water.Key;
 import water.Keyed;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.parser.ParseDataset;
+import water.parser.ParserTest;
 import water.rapids.vals.ValFrame;
 
 public class RBindTest extends TestUtil {
@@ -30,6 +33,30 @@ public class RBindTest extends TestUtil {
       Assert.assertEquals(98, fr.vec(3).at(151), Math.ulp(1)); // last row 98
     } finally {
       if( fr != null ) fr.delete();
+      Keyed.remove(Key.make("a.hex"));
+    }
+  }
+
+  @Test public void testNAChunk() {
+    Frame fr1 = null, fr2 = null, res = null;
+    try {
+      String data1 = "NA\nNA\nNA\nNA\n";
+      Key k1 = ParserTest.makeByteVec(data1);
+      Key r1 = Key.make();
+      fr1 = ParseDataset.parse(r1, k1);
+      fr1.replace(0, fr1.vec(0).toCategoricalVec()).remove();
+      DKV.put(fr1);
+
+      String data2 = "A\nA\nB\nB\n";
+      Key k2 = ParserTest.makeByteVec(data2);
+      Key r2 = Key.make();
+      fr2 = ParseDataset.parse(r2, k2);
+
+      res = checkTree("(rbind "+ fr1._key +" "+ fr2._key +")");
+    } finally {
+      if( fr1 != null ) fr1.delete();
+      if( fr2 != null ) fr2.delete();
+      if( res != null ) res.delete();
       Keyed.remove(Key.make("a.hex"));
     }
   }
