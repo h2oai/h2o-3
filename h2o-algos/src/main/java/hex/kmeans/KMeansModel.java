@@ -209,4 +209,10 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
             _output._centers_std_raw.length * _output._centers_std_raw[0].length > 1e6 :
             _output._centers_raw.length * _output._centers_raw[0].length > 1e6;
   }
+
+  @Override
+  public KMeansMojoWriter getMojo() {
+    return new KMeansMojoWriter(this);
+  }
+
 }
