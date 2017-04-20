@@ -3023,6 +3023,6 @@ def _binop(lhs, op, rhs, rtype=None):
 
     cache = lhs._ex._cache if isinstance(lhs, H2OFrame) else rhs._ex._cache
     res = H2OFrame._expr(expr=ExprNode(op, lhs, rhs), cache=cache)
-    if rtype is not None:
+    if rtype is not None and res._ex._cache._names is not None:
         res._ex._cache._types = {name: rtype for name in res._ex._cache._names}
     return res
