@@ -102,7 +102,7 @@ We're glad you're interested in learning more about H2O. If you have questions o
    migrating
    
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    parameters
 
