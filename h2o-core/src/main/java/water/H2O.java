@@ -948,6 +948,10 @@ final public class H2O {
 
   //-------------------------------------------------------------------------------------------------------------------
 
+  // This piece of state is queried by Steam.
+  // It's used to inform the Admin user the last time each H2O instance did something.
+  // Admins can take this information and decide whether to kill idle clusters to reclaim tied up resources.
+
   private static volatile long lastTimeSomethingHappenedMillis = System.currentTimeMillis();
 
   /**
@@ -964,6 +968,7 @@ final public class H2O {
       }
     }
 
+    // Calculate milliseconds and clamp at zero.
     long now = System.currentTimeMillis();
     long deltaMillis = now - lastTimeSomethingHappenedMillis;
     if (deltaMillis < 0) {
@@ -972,6 +977,10 @@ final public class H2O {
     return deltaMillis;
   }
 
+  /**
+   * Update the last time that something happened to reset the idle timer.
+   * This is meant to be callable safely from almost anywhere.
+   */
   public static void updateNotIdle() {
     lastTimeSomethingHappenedMillis = System.currentTimeMillis();
   }
