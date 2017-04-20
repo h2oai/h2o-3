@@ -948,6 +948,36 @@ final public class H2O {
 
   //-------------------------------------------------------------------------------------------------------------------
 
+  private static volatile long lastTimeSomethingHappenedMillis = System.currentTimeMillis();
+
+  /**
+   * Get the number of milliseconds the H2O cluster has been idle.
+   * @return milliseconds since the last interesting thing happened.
+   */
+  public static long getMillisIdle() {
+    // If there are any running jobs, consider that not idle.
+    Job[] jobs = Job.jobs();
+    for (Job j : jobs) {
+      if (j.isRunning()) {
+        updateNotIdle();
+        break;
+      }
+    }
+
+    long now = System.currentTimeMillis();
+    long deltaMillis = now - lastTimeSomethingHappenedMillis;
+    if (deltaMillis < 0) {
+      deltaMillis = 0;
+    }
+    return deltaMillis;
+  }
+
+  public static void updateNotIdle() {
+    lastTimeSomethingHappenedMillis = System.currentTimeMillis();
+  }
+
+  //-------------------------------------------------------------------------------------------------------------------
+
   // Atomically set once during startup.  Guards against repeated startups.
   public static final AtomicLong START_TIME_MILLIS = new AtomicLong(); // When did main() run
 

@@ -259,6 +259,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     }.invoke(LIST);
     // 4 - Fire off the FJTASK
     H2O.submitTask(fjtask);
+    H2O.updateNotIdle();
     return this;
   }
   transient private Barrier2 _barrier; // Top-level task to block on
@@ -333,8 +334,13 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
   /** Blocks until the Job completes  */
   public T get() {
     Barrier2 bar = _barrier;
-    if( bar != null )           // Barrier may be null if task already completed
-      bar.join(); // Block on the *barrier* task, which blocks until the fjtask on*Completion code runs completely
+    try {
+      if (bar != null)           // Barrier may be null if task already completed
+        bar.join(); // Block on the *barrier* task, which blocks until the fjtask on*Completion code runs completely
+    }
+    finally {
+      H2O.updateNotIdle();
+    }
     assert isStopped();
     if (_ex!=null)
       throw new RuntimeException((Throwable)AutoBuffer.javaSerializeReadPojo(_ex));

@@ -1,5 +1,6 @@
 package water.rapids;
 
+import water.H2O;
 import water.fvec.Frame;
 import water.rapids.ast.AstExec;
 import water.rapids.ast.AstFunction;
@@ -56,6 +57,7 @@ public class Rapids {
    * @param rapids expression to parse
    */
   public static Val exec(String rapids) {
+    H2O.updateNotIdle();
     Session session = new Session();
     try {
       AstRoot ast = Rapids.parse(rapids);
@@ -66,6 +68,9 @@ public class Rapids {
       return session.end(val);
     } catch (Throwable ex) {
       throw session.endQuietly(ex);
+    }
+    finally {
+      H2O.updateNotIdle();
     }
   }
 
@@ -78,6 +83,7 @@ public class Rapids {
    */
   @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
   public static Val exec(String rapids, Session session) {
+    H2O.updateNotIdle();
     AstRoot ast = Rapids.parse(rapids);
     // Synchronize the session, to stop back-to-back overlapping Rapids calls
     // on the same session, which Flow sometimes does
@@ -92,6 +98,7 @@ public class Rapids {
         assert frame._key != null : "Returned frame has no key";
         session.addRefCnt(frame, -1);
       }
+      H2O.updateNotIdle();
       return val;
     }
   }
