@@ -46,6 +46,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   // Limited to 512 random bytes - to fit better in UDP packets.
   static final int KEY_LENGTH = 512;
   public final byte[] _kb;      // Key bytes, wire-line protocol
+  public byte[] bytes() { return _kb.clone(); }
   transient final int _hash;    // Hash on key alone (and not value)
 
   // The user keys must be ASCII, so the values 0..31 are reserved for system
@@ -68,11 +69,11 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
 
   /** True is this is a {@link Vec} Key.
    *  @return True is this is a {@link Vec} Key */
-  public final boolean isVec() { return _kb != null && _kb.length > 0 && _kb[0] == VEC; }
+  public final boolean isVec() { return _kb.length > 0 && _kb[0] == VEC; }
 
   /** True is this is a {@link Chunk} Key.
    *  @return True is this is a {@link Chunk} Key */
-  public final boolean isChunkKey() { return _kb != null && _kb.length > 0 && _kb[0] == CHK; }
+  public final boolean isChunkKey() { return _kb.length > 0 && _kb[0] == CHK; }
 
   /** Returns the {@link Vec} Key from a {@link Chunk} Key.
    *  @return Returns the {@link Vec} Key from a {@link Chunk} Key. */
@@ -82,7 +83,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
    * @return null if the Key is not mapped, or an instance of {@link Keyed} */
   public final T get() {
     Value val = DKV.get(this);
-    return val == null ? null : (T)val.get();
+    return val == null ? null : val.<T>get();
   }
 
   // *Desired* distribution function on keys & replication factor. Replica #0
@@ -177,11 +178,10 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
 
   private static long build_cache( int cidx, int home, int replica, int desired ) {
     return // Build the new cache word
-        ((long)(cidx &0xFF)<< 0) |
+        ((long)(cidx &0xFF)) |
         ((long)(home &0xFFFF)<< 8) |
         ((long)(replica&0xFF)<<24) |
-        ((long)(desired&0xFF)<<32) |
-        ((long)(0 )<<40);
+        ((long)(desired&0xFF)<<32);
   }
 
   int home ( H2O cloud ) { return home (cloud_info(cloud)); }
@@ -242,10 +242,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   // k-v pairs start with this replication factor.
   static final byte DEFAULT_DESIRED_REPLICA_FACTOR = 1;
 
-  // Construct a new Key.
-  private Key(byte[] kb) {
-    if( kb.length > KEY_LENGTH ) throw new IllegalArgumentException("Key length would be "+kb.length);
-    _kb = kb;
+  private static int hash(byte[] kb) {
     // Quicky hash: http://en.wikipedia.org/wiki/Jenkins_hash_function
     int hash = 0;
     for( byte b : kb ) {
@@ -256,14 +253,29 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
     hash += (hash << 3);
     hash ^= (hash >> 11);
     hash += (hash << 15);
+    return hash;
+  }
+
+  // Construct a new Key.
+  private Key(byte[] kb) {
+    this(kb, hash(kb));
+  }
+
+  private Key(byte[] kb, int hash) {
+    if( kb.length > KEY_LENGTH ) throw new IllegalArgumentException("Key length would be "+kb.length);
+    _kb = kb;
     _hash = hash;
+  }
+
+  static <T extends Keyed> Key<T> buildKeyForTestingPurposes(byte[] kb, int hash) {
+    return new Key<>(kb, hash);
   }
 
   // Make new Keys.  Optimistically attempt interning, but no guarantee.
   static <P extends Keyed> Key<P> make(byte[] kb, byte rf) {
     if( rf == -1 ) throw new IllegalArgumentException();
-    Key key = new Key(kb);
-    Key key2 = H2O.getk(key); // Get the interned version, if any
+    Key<P> key = new Key<>(kb/*TODO(vlad): take care of this: .clone()*/);
+    Key<P> key2 = H2O.<P>getk(key); // Get the interned version, if any
     if( key2 != null ) // There is one! Return it instead
       return key2;
 
@@ -405,6 +417,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
 
   static final char MAGIC_CHAR = '$'; // Used to hexalate displayed keys
   private static final char[] HEX = "0123456789abcdef".toCharArray();
+  private static char hex(int n) { return HEX[n & 0xF]; }
 
   /** Converts the key to HTML displayable string.
    *
@@ -417,22 +430,14 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
     int len = _kb.length;
     while( --len >= 0 ) {
       char a = (char) _kb[len];
-      if (' ' <= a && a <= '#') continue;
-      // then we have $ which is not allowed
-      if ('%' <= a && a <= '~') continue;
-      // already in the one above
-      //if( 'a' <= a && a <= 'z' ) continue;
-      //if( 'A' <= a && a <= 'Z' ) continue;
-      //if( '0' <= a && a <= '9' ) continue;
-      break;
+      if (!((' ' <= a && a <= '#') || ('%' <= a && a <= '~'))) break;
     }
     if (len>=0) {
       StringBuilder sb = new StringBuilder();
       sb.append(MAGIC_CHAR);
       for( int i = 0; i <= len; ++i ) {
         byte a = _kb[i];
-        sb.append(HEX[(a >> 4) & 0x0F]);
-        sb.append(HEX[(a >> 0) & 0x0F]);
+        sb.append(hex(a >> 4)).append(hex(a));
       }
       sb.append(MAGIC_CHAR);
       for( int i = len + 1; i < _kb.length; ++i ) sb.append((char)_kb[i]);
@@ -468,12 +473,14 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   }
 
   @Override public int hashCode() { return _hash; }
+
+  public final boolean equals(Key k) {
+    return this == k || (k != null && _hash == k._hash && Arrays.equals(k._kb,_kb));
+  }
+
+  // This method is called on very rare occasions when compiler does not know we have a key to compare.
   @Override public boolean equals( Object o ) {
-    if( this == o ) return true;
-    if( o == null ) return false;
-    Key k = (Key)o;
-    if( _hash != k._hash ) return false;
-    return Arrays.equals(k._kb,_kb);
+    return this == o || (o instanceof Key && equals((Key)o));
   }
 
   /** Lexically ordered Key comparison, so Keys can be sorted.  Modestly expensive. */
@@ -482,10 +489,10 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
     return this.toString().compareTo(o.toString());
   }
 
-  public static final AutoBuffer write_impl(Key k, AutoBuffer ab) {return ab.putA1(k._kb);}
-  public static final Key read_impl(Key k, AutoBuffer ab) {return make(ab.getA1());}
+  public static AutoBuffer write_impl(Key k, AutoBuffer ab) {return ab.putA1(k._kb);}
+  public static Key read_impl(Key k, AutoBuffer ab) {return make(ab.getA1());}
 
-  public static final AutoBuffer writeJSON_impl( Key k, AutoBuffer ab ) {
+  public static AutoBuffer writeJSON_impl( Key k, AutoBuffer ab ) {
     ab.putJSONStr("name",k.toString());
     ab.put1(',');
     ab.putJSONStr("type", ReflectionUtils.findActualClassParameter(k.getClass(), 0).getSimpleName());
