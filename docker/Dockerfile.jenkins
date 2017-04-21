@@ -68,9 +68,7 @@ RUN \
 ## Workaround for LiblineaR problem
   R CMD INSTALL LiblineaR_1.94-2.tar.gz
 
-# Create users
-RUN \
-  useradd -m -c "jenkins" jenkins -s /bin/bash
+# Create Volume
 
 RUN mkdir /data
 VOLUME /data
