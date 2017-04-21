@@ -9,7 +9,7 @@ public class SteamMetricsHandler extends Handler {
     s.version = 0;
 
     // Fields filled in for version 0.
-    s.millis_idle = H2O.getMillisIdle();
+    s.idle_millis = H2O.getIdleTimeMillis();
 
     return s;
   }

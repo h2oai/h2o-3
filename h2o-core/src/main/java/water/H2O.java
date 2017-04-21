@@ -958,7 +958,7 @@ final public class H2O {
    * Get the number of milliseconds the H2O cluster has been idle.
    * @return milliseconds since the last interesting thing happened.
    */
-  public static long getMillisIdle() {
+  public static long getIdleTimeMillis() {
     // If there are any running jobs, consider that not idle.
     Job[] jobs = Job.jobs();
     for (Job j : jobs) {

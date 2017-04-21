@@ -12,5 +12,5 @@ public class SteamMetricsV3 extends RequestSchemaV3<SteamMetricsV3.SteamMetrics,
   public long version;
 
   @API(help="Number of milliseconds that the cluster has been idle", direction = API.Direction.OUTPUT)
-  public long millis_idle;
+  public long idle_millis;
 }
