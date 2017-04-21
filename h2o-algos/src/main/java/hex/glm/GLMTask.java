@@ -722,13 +722,14 @@ public abstract class GLMTask  {
       double [] wsum = new double[_dinfo.fullN()+1];
       double ywsum = 0;
       DataInfo.Rows rows = _dinfo.rows(chks);
-      _gram = new double[newCols.length][_dinfo.fullN() + 1];
-      _xy = new double[newCols.length];
+      double [][] gram = new double[newCols.length][_dinfo.fullN() + 1];
+      double [] xy = new double[newCols.length];
       final int ns = _dinfo.numStart();
       double sparseOffset = rows._sparse?GLM.sparseOffset(_beta,_dinfo):0;
       for (int rid = 0; rid < rows._nrows; ++rid) {
         int j = 0;
         Row r = rows.row(rid);
+        if(r.weight == 0) continue;
         if(_beta != null) {
           _glmf.computeWeights(r.response(0), r.innerProduct(_beta) + sparseOffset, r.offset, r.weight, glmw);
         } else {
@@ -736,7 +737,7 @@ public abstract class GLMTask  {
           glmw.z = r.response(0);
         }
         r.addToArray(glmw.w,wsum);
-        ywsum += r.response(0)*glmw.w;
+        ywsum += glmw.z*glmw.w;
         // first cats
         for (int i = 0; i < r.nBins; i++) {
           while (j < newCols.length && newCols[j] < r.binIds[i])
@@ -744,8 +745,8 @@ public abstract class GLMTask  {
           if (j == newCols.length || newCols[j] >= ns)
             break;
           if (r.binIds[i] == newCols[j]) {
-            r.addToArray(glmw.w, _gram[j]);
-            _xy[j] += glmw.w*glmw.z;
+            r.addToArray(glmw.w, gram[j]);
+            xy[j] += glmw.w*glmw.z;
             j++;
           }
         }
@@ -759,17 +760,19 @@ public abstract class GLMTask  {
             if (j == newCols.length) break;
             if (r.numIds[i] == newCols[j]) {
               double wx = glmw.w * r.numVals[i];
-              r.addToArray(wx, _gram[j]);
-              _xy[j] += wx*glmw.z;
+              r.addToArray(wx, gram[j]);
+              xy[j] += wx*glmw.z;
               j++;
             }
           }
         } else { // dense
           for (; j < newCols.length; j++) {
             int id = newCols[j];
-            double wx = glmw.w * r.numVals[id - _dinfo.numStart()];
-            r.addToArray(wx, _gram[j]);
-            _xy[j] += wx*glmw.z;
+            double x = r.numVals[id - _dinfo.numStart()];
+            if(x == 0) continue;
+            double wx = glmw.w * x;
+            r.addToArray(wx, gram[j]);
+            xy[j] += wx*glmw.z;
           }
           assert j == newCols.length;
         }
@@ -777,24 +780,26 @@ public abstract class GLMTask  {
       if(rows._sparse && _dinfo._normSub != null){ // adjust for sparse zeros (skipped centering)
         int start = Arrays.binarySearch(newCols,ns);
         if(start < 0) start = -start-1;
-        for(int k = start; k < _gram.length; ++k){
+        for(int k = start; k < gram.length; ++k){
           int i = newCols[k];
           double mean_i = _dinfo.normSub(i-ns);
           double scale_i = _dinfo.normMul(i-ns);
           // categoricals
           for(int j = 0; j < _dinfo.numStart(); ++j){
-           _gram[k][j]-=mean_i*scale_i*wsum[j];
+           gram[k][j]-=mean_i*scale_i*wsum[j];
           }
           //nums
-          for(int j = _dinfo.numStart(); j < _gram[k].length-1; ++j){
+          for(int j = _dinfo.numStart(); j < gram[k].length-1; ++j){
             double mean_j = _dinfo.normSub(j-ns);
             double scale_j = _dinfo.normMul(j-ns);
-            _gram[k][j] = _gram[k][j] - mean_j*scale_j*wsum[i] - mean_i*scale_i*wsum[j] + mean_i*mean_j*scale_i*scale_j*wsum[wsum.length-1];
+            gram[k][j] = gram[k][j] - mean_j*scale_j*wsum[i] - mean_i*scale_i*wsum[j] + mean_i*mean_j*scale_i*scale_j*wsum[wsum.length-1];
           }
-          _gram[k][_gram[k].length-1] -= mean_i*scale_i*wsum[_gram[k].length-1];
-          _xy[k] -= ywsum * mean_i * scale_i;
+          gram[k][gram[k].length-1] -= mean_i*scale_i*wsum[gram[k].length-1];
+          xy[k] -= ywsum * mean_i * scale_i;
         }
       }
+      _gram = gram;
+      _xy = xy;
     }
 
     public void reduce(GLMIncrementalGramTask gt) {
@@ -1448,8 +1453,13 @@ public abstract class GLMTask  {
       for(int i = 0; i < r.nNums; ++i){
         int id = r.numIds == null?(i + numStart):r.numIds[i];
         double val = r.numVals[i];
+        if(Double.isNaN(_xy[id] + wz*val)){
+          System.out.println("haha");
+        }
         _xy[id] += wz*val;
+
       }
+
       if(_dinfo._intercept)
         _xy[_xy.length-1] += wz;
       _gram.addRow(r,w);

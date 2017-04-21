@@ -28,22 +28,21 @@ public final class ComputationState {
   final double _alpha;
   double[] _ymu;
   double [] _u;
-  double [] _z;
   boolean _allIn;
   int _iter;
   private double _lambda = 0;
   private double _lambdaMax = Double.NaN;
-  private GLMGradientInfo _ginfo; // gradient info excluding l1 penalty
+  private GLMGradientInfo _ginfo2; // gradient info excluding l1 penalty
+  private double [] _gradient_beta;
   private double _likelihood;
-  private double _gradientErr;
   private DataInfo _activeData;
+  int [] _oldActiveCols;
   private BetaConstraint _activeBC = null;
   private double[] _beta; // vector of coefficients corresponding to active data
   final DataInfo _dinfo;
-  private GLMGradientSolver _gslvr;
   private final Job _job;
   private int _activeClass = -1;
-  protected double _obj_reg;
+  protected double _obj_reg = 1;
 
 
   /**
@@ -60,9 +59,11 @@ public final class ComputationState {
     _intercept = _parms._intercept;
     _nclasses = parms._family == Family.multinomial?nclasses:1;
     _alpha = _parms._alpha[0];
+
   }
 
-  public GLMGradientSolver gslvr(){return _gslvr;}
+  public GLMGradientSolver gslvr(){return new GLMGradientSolver(_job,_obj_reg,_parms,_activeData,(1-_alpha)*_lambda,_activeBC);}
+
   public double lambda(){return _lambda;}
   public void setLambdaMax(double lmax) {
     _lambdaMax = lmax;
@@ -75,19 +76,18 @@ public final class ComputationState {
     // strong rules are to be applied on the gradient with no l2 penalty
     // NOTE: we start with lambdaOld being 0, not lambda_max
     // non-recursive strong rules should use lambdaMax instead of _lambda
-    // However, it seems tobe working nicely to use 0 instead and be more aggressive on the predictor pruning
+    // However, it seems to be working nicely to use 0 instead and be more aggressive on the predictor pruning
     // (should be safe as we check the KKTs anyways)
     applyStrongRules(lambda, _lambda);
     adjustToNewLambda(lambda, 0);
     _lambda = lambda;
-    _gslvr = new GLMGradientSolver(_job,_obj_reg,_parms,_activeData,l2pen(),_activeBC);
   }
   public double [] beta(){
     if(_activeClass != -1)
       return betaMultinomial(_activeClass,_beta);
     return _beta;
   }
-  public GLMGradientInfo ginfo(){return _ginfo == null?(_ginfo = gslvr().getGradient(beta())):_ginfo;}
+
   public BetaConstraint activeBC(){return _activeBC;}
   public double likelihood() {return _likelihood;}
 
@@ -107,8 +107,9 @@ public final class ComputationState {
   }
 
   private void adjustToNewLambda(double lambdaNew, double lambdaOld) {
-    double ldiff = lambdaNew - lambdaOld;
-    if(ldiff == 0 || l2pen() == 0) return;
+    if(_ginfo2 == null) return;
+    double ldiff = (1-_alpha)*(lambdaNew - lambdaOld);
+    if(ldiff == 0) return;
     double l2pen = .5*ArrayUtils.l2norm2(_beta,true);
     if(l2pen > 0) {
       if(_parms._family == Family.multinomial) {
@@ -116,14 +117,13 @@ public final class ComputationState {
         for(int c = 0; c < _nclasses; ++c) {
           DataInfo activeData = activeDataMultinomial(c);
           for (int i = 0; i < activeData.fullN(); ++i)
-            _ginfo._gradient[off+i] += ldiff * _beta[off+i];
+            _ginfo2._gradient[off+i] += ldiff * _beta[off+i];
           off += activeData.fullN()+1;
         }
       } else  for(int i = 0; i < _activeData.fullN(); ++i)
-        _ginfo._gradient[i] += ldiff*_beta[i];
+        _ginfo2._gradient[i] += ldiff*_beta[i];
+      _ginfo2 = new GLMGradientInfo(_ginfo2._likelihood, _ginfo2._objVal + ldiff * l2pen, _ginfo2._gradient);
     }
-    _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal + ldiff * l2pen, _ginfo._gradient);
-
   }
 
   public double l1pen() {return _alpha*_lambda;}
@@ -146,6 +146,7 @@ public final class ComputationState {
    * @return indices of expected active predictors.
    */
   protected void applyStrongRules(double lambdaNew, double lambdaOld) {
+    assert _activeData == _dinfo;
     lambdaNew = Math.min(_lambdaMax,lambdaNew);
     lambdaOld = Math.min(_lambdaMax,lambdaOld);
     if (_parms._family == Family.multinomial /* && _parms._solver != GLMParameters.Solver.L_BFGS */) {
@@ -157,58 +158,66 @@ public final class ComputationState {
     _activeData = _activeData != null?_activeData:_dinfo;
     _allIn = _allIn || _parms._alpha[0]*lambdaNew == 0 || _activeBC.hasBounds();
     if (!_allIn) {
+      final GLMGradientInfo ginfo = computeGradient(_beta);
       int newlySelected = 0;
       final double rhs = Math.max(0,_alpha * (2 * lambdaNew - lambdaOld));
-      int [] newCols = MemoryManager.malloc4(P);
+      int [] newCols = MemoryManager.malloc4(P+1);
       int j = 0;
-      int[] oldActiveCols = _activeData._activeCols == null ? new int[]{P} : _activeData.activeCols();
       for (int i = 0; i < P; ++i) {
-        if(j < oldActiveCols.length && oldActiveCols[j] == i)
+        if(_oldActiveCols != null && _oldActiveCols[j] == i){
+          newCols[newlySelected++] = i;
           j++;
-        else if (_ginfo._gradient[i] > rhs || -_ginfo._gradient[i] > rhs)
+        } else if (_beta[i] != 0 || ginfo._gradient[i] > rhs || -ginfo._gradient[i] > rhs)
           newCols[newlySelected++] = i;
       }
-      if(_parms._max_active_predictors != -1 && (oldActiveCols.length + newlySelected -1) > _parms._max_active_predictors){
+      newCols[newlySelected++] = P;
+      if(_parms._max_active_predictors != -1 && newlySelected > _parms._max_active_predictors){
         Integer [] bigInts = ArrayUtils.toIntegers(newCols, 0, newlySelected);
         Arrays.sort(bigInts, new Comparator<Integer>() {
           @Override
           public int compare(Integer o1, Integer o2) {
-            return (int)Math.signum(_ginfo._gradient[o2.intValue()]*_ginfo._gradient[o2.intValue()] - _ginfo._gradient[o1.intValue()]*_ginfo._gradient[o1.intValue()]);
+            return (int)Math.signum(ginfo._gradient[o2.intValue()]*ginfo._gradient[o2.intValue()] - ginfo._gradient[o1.intValue()]*ginfo._gradient[o1.intValue()]);
           }
         });
-        newCols = ArrayUtils.toInt(bigInts,0,_parms._max_active_predictors - oldActiveCols.length + 1);
+        newCols = ArrayUtils.toInt(bigInts,0,_parms._max_active_predictors);
         Arrays.sort(newCols);
       } else newCols = Arrays.copyOf(newCols,newlySelected);
-      newCols = ArrayUtils.sortedMerge(oldActiveCols,newCols);
-      // merge already active columns in
-      int active = newCols.length;
-      _allIn = active == P;
-      if(!_allIn) {
-        int [] cols = newCols;
-        assert cols[active-1] == P:"cols = " + Arrays.toString(cols); // intercept is always selected, even if it is false (it's gonna be dropped later, it is needed for other stuff too)
-        _beta = ArrayUtils.select(_beta, cols);
-        if(_u != null) _u = ArrayUtils.select(_u,cols);
-        _activeData = _dinfo.filterExpandedColumns(cols);
-        assert _activeData.activeCols().length == _beta.length;
-        assert _u == null || _activeData.activeCols().length == _u.length;
-        _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal, ArrayUtils.select(_ginfo._gradient, cols));
-        _activeBC = _bc.filterExpandedColumns(_activeData.activeCols());
-        _gslvr = new GLMGradientSolver(_job,_obj_reg,_parms,_activeData,(1-_alpha)*_lambda,_bc);
-        assert _beta.length == cols.length;
-        return;
-      }
+      _allIn = newCols.length == _dinfo.fullN()+1;
+      setActiveCols(newCols);
     }
-    _activeData = _dinfo;
   }
 
-
-
-
+  protected void setActiveCols(int [] newCols){
+    _oldActiveCols = _activeData._activeCols;
+    int P = _dinfo.fullN();
+    // merge already active columns in
+    if(newCols != null && newCols.length <= P) {
+      int [] cols = newCols;
+      assert cols[newCols.length-1] == P:"cols = " + Arrays.toString(cols); // intercept is always selected, even if it is false (it's gonna be dropped later, it is needed for other stuff)
+      _beta = ArrayUtils.select(_beta, cols);
+      if(_u != null) _u = ArrayUtils.select(_u,cols);
+      _activeData = _dinfo.filterExpandedColumns(cols);
+      assert _activeData.activeCols().length == _beta.length;
+      assert _u == null || _activeData.activeCols().length == _u.length;
+      if(_ginfo2 != null) // assuming all left out predictors from beta == 0
+        _ginfo2 = new GLMGradientInfo(_ginfo2._likelihood, _ginfo2._objVal, ArrayUtils.select(_ginfo2._gradient, cols));
+      _activeBC = _bc.filterExpandedColumns(_activeData.activeCols());
+      assert _beta.length == cols.length;
+    } else {
+      if(_activeData.fullN() < _dinfo.fullN()){
+        _beta = ArrayUtils.expandAndScatter(_beta, _dinfo.fullN() + 1, _activeData._activeCols);
+        if(_u != null)
+          _u =  ArrayUtils.expandAndScatter(_u, _dinfo.fullN() + 1, _activeData._activeCols);
+        _ginfo2 = null;
+      }
+      _activeData = _dinfo;
+      _activeBC = _bc;
+    }
+  }
 
 
   private GLMModel.GLMWeightsFun _glmw;
 
-  GramXY _fullGram;
   GramXY _currGram;
 
   public static final class GramXY {
@@ -229,108 +238,47 @@ public final class ComputationState {
     public boolean match(double[] beta, int[] activeCols) {
       return Arrays.equals(this.beta,beta) && Arrays.equals(this.activeCols,activeCols);
     }
+
+    public static GramXY addCols(double [] beta, int [] newActiveCols, int [] newCols, GramXY oldGram, double [][] xxUpdate, double [] xyUpdate){
+      if(oldGram.gram._xxCache == null) throw H2O.unimpl();
+      // update the expanded matrix cache
+      double [][] xxCacheNew = new double[newActiveCols.length][newActiveCols.length];
+      double [] xyNew = new double[xxCacheNew.length];
+      int k = 0;
+      for(int i = 0; i < xxCacheNew.length; i++) {
+        double[] xrow = xxCacheNew[i];
+        double[] xrowOld = oldGram.gram._xxCache[i - k];
+        if (k < newCols.length && newActiveCols[i] == newCols[k]) {
+          System.arraycopy(xxUpdate[k], 0, xrow, 0, xxUpdate[k].length);
+          xyNew[i] = xyUpdate[k];
+          k++;
+        } else {
+          xyNew[i] = oldGram.xy[i - k];
+          int l = 0;
+          for (int j = 0; j < xrow.length; j++) {
+            if (l < newCols.length && newActiveCols[j] == newCols[l]) {
+              xrow[j] = xxUpdate[l][i];
+              l++;
+            } else {
+              try {
+                xrow[j] = xrowOld[j - l];
+              } catch(Throwable t){
+                throw t;
+              }
+            }
+          }
+        }
+      }
+      return new GramXY(new Gram(xxCacheNew),xyNew, beta,newActiveCols,oldGram.yy,oldGram.likelihood);
+    }
   }
 
-
-  private int _totalGramsComputed;
-  private int _incrementalGramsComputed;
-  // get cached gram or incrementally update or compute new one
-  public GramXY computeGram(double [] beta, GLMParameters.Solver s){
-    DataInfo activeData = activeData();
-    int [] activeCols = activeData.activeCols();
-    if (_currGram != null && _currGram.match(beta, activeCols))
-      return _currGram;
-    if (_fullGram != null) {
-      assert _parms._family == Family.gaussian;
-      return (_currGram = new GramXY(_fullGram.gram.selectCols(activeCols, true), ArrayUtils.select(_fullGram.xy, activeCols), beta == null ? null : beta.clone(), activeCols, _fullGram.yy, _fullGram.likelihood));
-    }
+  private GramXY computeNewGram(DataInfo activeData, double [] beta, GLMParameters.Solver s){
     if(_glmw == null) _glmw = new GLMModel.GLMWeightsFun(_parms);
-    _totalGramsComputed++;
-    // check if we need full or just incremental matrix update
-    if(s == GLMParameters.Solver.COORDINATE_DESCENT && _parms._family != Family.multinomial && _currGram != null && !Arrays.equals(_currGram.activeCols,activeCols)){
-      _incrementalGramsComputed++;
-      System.out.println("computing incremental gram update, so far, incremental updates were " + _incrementalGramsComputed + " / " + _totalGramsComputed);
-      int [] newCols = ArrayUtils.sorted_set_diff(activeCols,_currGram.activeCols);
-      int [] newColsIds = newCols.clone();
-      // todo: should double check beta matches except for newCols which must be 0s
-      int jj = 0;
-      for(int i = 0; jj < newCols.length && i < activeCols.length; ++i){
-        if(activeCols[i] == newCols[jj])
-          newColsIds[jj++] = i;
-      }
-      long t0 = System.currentTimeMillis();
-      GLMTask.GLMIncrementalGramTask gt = new GLMTask.GLMIncrementalGramTask(newColsIds,activeData,_glmw,beta).doAll(activeData._adaptedFrame); // dense
-      for(double [] d:gt._gram)
-        ArrayUtils.mult(d,_obj_reg);
-      ArrayUtils.mult(gt._xy,_obj_reg);
-      Log.info("incremental gram task of size " + gt._gram.length + " x " + gt._gram[0].length + " done in " + (System.currentTimeMillis() - t0) + "ms");
-      // need to glue the incremental update and old gram together
-      Gram updatedGram = new Gram(activeData.fullN(), activeData.largestCat(), activeData.numNums(), activeData._cats,true);
-      double [] updatedXY = new double[activeData.fullN()+1];
-      int k = 0; // new col counter
-      if(_currGram.gram._xxCache == null) {
-        double [][] xx = _currGram.gram.getXX(true,false);
-        // start with the diagonal
-        for (int i = 0; i < updatedGram._diagN; ++i) {
-          if (k < newCols.length && activeCols[i] == newCols[k]) {
-            updatedGram._diag[i] = gt._gram[k][i];
-            k++;
-          } else {
-            updatedGram._diag[i] = xx[i - k][i-k];
-          }
-        }
-        for (int i = updatedGram._diagN; i < activeData.fullN() + 1; i++) {
-          double [] xrow = updatedGram._xx[i - updatedGram._diagN];
-          if (k < newCols.length && activeCols[i] == newCols[k]) {
-            System.arraycopy(gt._gram[k],0,xrow,0,i);
-            k++;
-          } else {
-            double [] xrowOld =  xx[i-k];
-            int l = 0;
-            for (int j = 0; j <= i; j++) {
-              if (l < newCols.length && activeCols[j] == newCols[l]) {
-                xrow[j] = gt._gram[l][j];
-                l++;
-              } else {
-                xrow[j] = xrowOld[j - l];
-              }
-            }
-          }
-        }
-      }
-      if(_currGram.gram._xxCache != null){ // update the expanded matrix cache
-        updatedGram._xxCache = updatedGram._xx = new double[activeData.fullN()+1][activeData.fullN()+1];
-        k = 0;
-        for(int i = 0; i < updatedGram._xxCache.length; i++){
-          double [] xrow = updatedGram._xxCache[i];
-          double [] xrowOld =  _currGram.gram._xxCache[i-k];
-          if(k < newCols.length && activeCols[i] == newCols[k]){
-            System.arraycopy(gt._gram[k],0,xrow,0,gt._gram[k].length);
-            updatedXY[i] = gt._xy[k];
-            k++;
-          } else {
-            updatedXY[i] = _currGram.xy[i - k];
-            int l = 0;
-            for(int j = 0; j < xrow.length; j++){
-              if(l < newCols.length && activeCols[j] == newCols[l]){
-                xrow[j] = gt._gram[l][i];
-                l++;
-              } else {
-                xrow[j] = xrowOld[j-l];
-              }
-            }
-          }
-          assert updatedGram._xxCache[i].length == activeData.fullN()+1;
-        }
-      }
-      GramXY res = new GramXY(updatedGram,updatedXY,beta == null?null:beta,activeCols,_currGram.yy,_currGram.likelihood);
-      if(s == GLMParameters.Solver.COORDINATE_DESCENT && _parms._family != Family.multinomial)
-        _currGram = res;
-      return res;
-    }
-    GLMTask.GLMIterationTask gt = new GLMTask.GLMIterationTask(_job._key, activeData, _glmw, beta).doAll(activeData._adaptedFrame);
+    GLMTask.GLMIterationTask gt = new GLMTask.GLMIterationTask(_job._key, activeData, _glmw, beta,_activeClass).doAll(activeData._adaptedFrame);
     gt._gram.mul(_obj_reg);
     ArrayUtils.mult(gt._xy,_obj_reg);
+    int [] activeCols = activeData.activeCols();
     int [] zeros = gt._gram.findZeroCols();
     GramXY res;
     if(zeros.length > 0) {
@@ -340,9 +288,49 @@ public final class ComputationState {
     } else res = new GramXY(gt._gram,gt._xy,beta == null?null:beta,activeCols,gt._yy,gt._likelihood);
     if(s == GLMParameters.Solver.COORDINATE_DESCENT) {
       res.gram.getXX();
-      _currGram = res;
     }
     return res;
+  }
+
+  // get cached gram or incrementally update or compute new one
+  public GramXY computeGram(double [] beta, GLMParameters.Solver s){
+    if(_parms._family == Family.multinomial) // no caching
+      return computeNewGram(activeDataMultinomial(_activeClass),beta,s);
+    if(s != GLMParameters.Solver.COORDINATE_DESCENT)
+      return computeNewGram(activeData(),beta,s);
+    DataInfo activeData = activeData();
+    assert beta == null || beta.length == activeData.fullN()+1;
+    int [] activeCols = activeData.activeCols();
+    if (_currGram != null && _currGram.match(beta, activeCols))
+      return _currGram;
+    if(_glmw == null) _glmw = new GLMModel.GLMWeightsFun(_parms);
+    // check if we need full or just incremental update
+    if(_currGram != null && !Arrays.equals(_currGram.activeCols,activeCols)){
+      int [] newCols = ArrayUtils.sorted_set_diff(activeCols,_currGram.activeCols);
+      int [] newColsIds = newCols.clone();
+      int jj = 0;
+      boolean matches = true;
+      int k = 0;
+      for (int i = 0; jj < newCols.length && i < activeCols.length && matches; ++i) {
+        if (activeCols[i] == newCols[jj]) {
+          newColsIds[jj++] = i;
+          matches = matches && (beta == null || beta[i] == 0);
+        } else {
+          matches = matches && (beta == null || beta[i] == _currGram.beta[k++]);
+        }
+      }
+      if(matches && newColsIds.length > 0) {
+        long t0 = System.currentTimeMillis();
+        GLMTask.GLMIncrementalGramTask gt = new GLMTask.GLMIncrementalGramTask(newColsIds, activeData, _glmw, beta).doAll(activeData._adaptedFrame); // dense
+        for (double[] d : gt._gram)
+          ArrayUtils.mult(d, _obj_reg);
+        ArrayUtils.mult(gt._xy, _obj_reg);
+        Log.info("incremental gram task of size " + gt._gram.length + " x " + gt._gram[0].length + " done in " + (System.currentTimeMillis() - t0) + "ms");
+        // glue the update and old gram together
+        return _currGram = GramXY.addCols(beta, activeCols, newCols, _currGram, gt._gram, gt._xy);
+      }
+    }
+    return _currGram = computeNewGram(activeData,beta,s);
   }
 
   public boolean _lsNeeded = false;
@@ -379,7 +367,7 @@ public final class ComputationState {
   public double [] betaMultinomial(int c, double [] beta) {return extractSubRange(_activeData.fullN()+1,c,_activeDataMultinomial[c].activeCols(),beta);}
 
   public GLMSubsetGinfo ginfoMultinomial(int c) {
-    return new GLMSubsetGinfo(_ginfo,(_activeData.fullN()+1),c,_activeDataMultinomial[c].activeCols());
+    return new GLMSubsetGinfo(_ginfo2,(_activeData.fullN()+1),c,_activeDataMultinomial[c].activeCols());
   }
 
   public void setBC(BetaConstraint bc) {
@@ -418,7 +406,7 @@ public final class ComputationState {
       @Override
       public GradientInfo getGradient(double[] beta) {
         fillSubRange(_activeData.fullN()+1,c,_activeDataMultinomial[c].activeCols(),beta,fullbeta);
-        GLMGradientInfo fullGinfo =  _gslvr.getGradient(fullbeta);
+        GLMGradientInfo fullGinfo =  gslvr().getGradient(fullbeta);
         return new GLMSubsetGinfo(fullGinfo,_activeData.fullN()+1,c,_activeDataMultinomial[c].activeCols());
       }
       @Override
@@ -429,49 +417,6 @@ public final class ComputationState {
   public void setBetaMultinomial(int c, double [] beta, double [] bc) {
     if(_u != null) Arrays.fill(_u,0);
     fillSubRange(_activeData.fullN()+1,c,_activeDataMultinomial[c].activeCols(),bc,beta);
-  }
-  /**
-   * Apply strong rules to filter out expected inactive (with zero coefficient) predictors.
-   *
-   * @return indices of expected active predictors.
-   */
-  /**
-   * Apply strong rules to filter out expected inactive (with zero coefficient) predictors.
-   *
-   * @return indices of expected active predictors.
-   */
-  protected int applyStrongRulesMultinomial_old(double lambdaNew, double lambdaOld) {
-    int P = _dinfo.fullN();
-    int N = P+1;
-    int selected = 0;
-    _activeBC = _bc;
-    _activeData = _dinfo;
-    if (!_allIn) {
-      if(_activeDataMultinomial == null)
-        _activeDataMultinomial = new DataInfo[_nclasses];
-      final double rhs = _alpha * (2 * lambdaNew - lambdaOld);
-      int[] oldActiveCols = _activeData._activeCols == null ? new int[0] : _activeData.activeCols();
-      int [] cols = MemoryManager.malloc4(N*_nclasses);
-      int j = 0;
-
-      for(int c = 0; c < _nclasses; ++c) {
-        int start = selected;
-        for (int i = 0; i < P; ++i) {
-          if (j < oldActiveCols.length && i == oldActiveCols[j]) {
-            cols[selected++] = i;
-            ++j;
-          } else if (_ginfo._gradient[c*N+i] > rhs || _ginfo._gradient[c*N+i] < -rhs) {
-            cols[selected++] = i;
-          }
-        }
-        cols[selected++] = P;// intercept
-        _activeDataMultinomial[c] = _dinfo.filterExpandedColumns(Arrays.copyOfRange(cols,start,selected));
-        for(int i = start; i < selected; ++i)
-          cols[i] += c*N;
-      }
-      _allIn = selected == cols.length;
-    }
-    return selected;
   }
 
   /**
@@ -486,6 +431,7 @@ public final class ComputationState {
     _activeBC = _bc;
     _activeData = _dinfo;
     if (!_allIn) {
+      final GLMGradientInfo ginfo = computeGradient(_beta);
       if(_activeDataMultinomial == null)
         _activeDataMultinomial = new DataInfo[_nclasses];
       final double rhs = _alpha * (2 * lambdaNew - lambdaOld);
@@ -499,7 +445,7 @@ public final class ComputationState {
         for (int i = 0; i < P; ++i) {
           if (j < oldActiveCols.length && i == oldActiveCols[j]) {
             ++j;
-          } else if (_ginfo._gradient[c*N+i] > rhs || _ginfo._gradient[c*N+i] < -rhs) {
+          } else if (ginfo._gradient[c*N+i] > rhs || ginfo._gradient[c*N+i] < -rhs) {
             cols[selected++] = c*N + i;
           }
         }
@@ -509,7 +455,7 @@ public final class ComputationState {
         Arrays.sort(bigInts, new Comparator<Integer>() {
           @Override
           public int compare(Integer o1, Integer o2) {
-            return (int) Math.signum(_ginfo._gradient[o2.intValue()] * _ginfo._gradient[o2.intValue()] - _ginfo._gradient[o1.intValue()] * _ginfo._gradient[o1.intValue()]);
+            return (int) Math.signum(ginfo._gradient[o2.intValue()] * ginfo._gradient[o2.intValue()] - ginfo._gradient[o1.intValue()] * ginfo._gradient[o1.intValue()]);
           }
         });
         cols = ArrayUtils.toInt(bigInts, 0, _parms._max_active_predictors - oldActiveColsTotal + _nclasses);
@@ -542,37 +488,16 @@ public final class ComputationState {
   protected boolean checkKKTs() {
     if(_parms._family == Family.multinomial)
       return checkKKTsMultinomial();
-    double [] beta = _beta;
-    double [] u = _u;
-    if(_activeData._activeCols != null) {
-      beta = ArrayUtils.expandAndScatter(beta, _dinfo.fullN() + 1, _activeData._activeCols);
-      if(_u != null)
-        u =  ArrayUtils.expandAndScatter(_u, _dinfo.fullN() + 1, _activeData._activeCols);
-    }
+    if(_activeData.fullN() ==_dinfo.fullN()) // all data is active, nothing to do
+      return true;
     int [] activeCols = _activeData.activeCols();
-    if(beta != _beta || _ginfo == null) {
-      _gslvr = new GLMGradientSolver(_job, _obj_reg, _parms, _dinfo, (1 - _alpha) * _lambda, _bc);
-      _ginfo = _gslvr.getGradient(beta);
-    }
-    double[] grad = _ginfo._gradient.clone();
+    setActiveCols(null);
+    double[] grad = computeGradient(_beta)._gradient.clone();
     double err = 1e-4;
-    if(u != null && u != _u){ // fill in u for missing variables
-      int k = 0;
-      for(int i = 0; i < u.length; ++i) {
-        if(_activeData._activeCols[k] == i){
-          ++k; continue;
-        }
-        assert u[i] == 0;
-        u[i] = -grad[i];
-      }
-    }
-    ADMM.subgrad(_alpha * _lambda, beta, grad);
-    for (int c : activeCols) // set the error tolerance to the highest error og included columns
+    ADMM.subgrad(_alpha * _lambda, _beta, grad);
+    for (int c : activeCols) // set the error tolerance to the highest error
       if (grad[c] > err) err = grad[c];
       else if (grad[c] < -err) err = -grad[c];
-    _gradientErr = err;
-    _beta = beta;
-    _u = u;
     _activeBC = null;
     if(_parms._max_active_predictors == _activeData.fullN()){
       Log.info("skipping KKT check, reached maximum number of active predictors ("  + _parms._max_active_predictors + ")");
@@ -580,7 +505,6 @@ public final class ComputationState {
       int[] failedCols = new int[64];
       int fcnt = 0;
       for (int i = 0; i < grad.length - 1; ++i) {
-        if (Arrays.binarySearch(activeCols, i) >= 0) continue; // always include all previously active columns
         if (grad[i] > err || -grad[i] > err) {
           if (fcnt == failedCols.length)
             failedCols = Arrays.copyOf(failedCols, failedCols.length << 1);
@@ -589,17 +513,7 @@ public final class ComputationState {
       }
       if (fcnt > 0) {
         Log.info(fcnt + " variables failed KKT conditions, adding them to the model and recomputing.");
-        final int n = activeCols.length;
-        int[] newCols = Arrays.copyOf(activeCols, activeCols.length + fcnt);
-        for (int i = 0; i < fcnt; ++i)
-          newCols[n + i] = failedCols[i];
-        Arrays.sort(newCols);
-        _beta = ArrayUtils.select(beta, newCols);
-        if(_u != null) _u = ArrayUtils.select(_u,newCols);
-        _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal, ArrayUtils.select(_ginfo._gradient, newCols));
-        _activeData = _dinfo.filterExpandedColumns(newCols);
-        _activeBC = _bc.filterExpandedColumns(_activeData.activeCols());
-        _gslvr = new GLMGradientSolver(_job, _obj_reg, _parms, _activeData, (1 - _alpha) * _lambda, _activeBC);
+        setActiveCols(ArrayUtils.sortedMerge(activeCols,Arrays.copyOf(failedCols,fcnt)));
         return false;
       }
     }
@@ -611,11 +525,10 @@ public final class ComputationState {
       _beta = ArrayUtils.removeIds(_beta,cols);
     if(_u != null)
       _u = ArrayUtils.removeIds(_u,cols);
-    if(_ginfo != null && _ginfo._gradient != null)
-      _ginfo._gradient = ArrayUtils.removeIds(_ginfo._gradient,cols);
+    if(_ginfo2 != null && _ginfo2._gradient != null)
+      _ginfo2._gradient = ArrayUtils.removeIds(_ginfo2._gradient,cols);
     _activeData = _dinfo.filterExpandedColumns(activeCols);
     _activeBC = _bc.filterExpandedColumns(activeCols);
-    _gslvr = new GLMGradientSolver(_job, _obj_reg, _parms, _activeData, (1 - _alpha) * _lambda, _activeBC);
     return activeCols;
   }
 
@@ -649,10 +562,21 @@ public final class ComputationState {
     _betaDiff = ArrayUtils.linfnorm(_beta == null?beta:ArrayUtils.subtract(_beta,beta),false);
     double objOld = objective();
     _beta = beta;
-    _ginfo = null;
+    _ginfo2 = null;
     _likelihood = likelihood;
     return (_relImprovement = (objOld - objective())/objOld);
   }
+
+  public GLMGradientInfo computeGradient(double [] beta){
+    if(_gradient_beta != null && Arrays.equals(_gradient_beta,beta))
+      return _ginfo2;
+    _ginfo2 = gslvr().getGradient(beta);
+    _gradient_beta = beta.clone();
+    return _ginfo2;
+  }
+
+
+
   private double _betaDiff;
   private double _relImprovement;
 
@@ -676,7 +600,7 @@ public final class ComputationState {
     double objOld = objective();
     if(_beta == null)_beta = beta.clone();
     else System.arraycopy(beta,0,_beta,0,beta.length);
-    _ginfo = ginfo;
+    _ginfo2 = ginfo;
     _likelihood = ginfo._likelihood;
     return (_relImprovement = (objOld - objective())/objOld);
   }

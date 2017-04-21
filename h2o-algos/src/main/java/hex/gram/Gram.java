@@ -3,6 +3,7 @@ package hex.gram;
 
 import hex.DataInfo;
 import hex.FrameTask2;
+import hex.glm.ComputationState;
 import jsr166y.ForkJoinTask;
 import jsr166y.RecursiveAction;
 import water.*;
@@ -23,6 +24,11 @@ public final class Gram extends Iced<Gram> {
   final static int MIN_TSKSZ=10000;
 
 
+  public Gram(double [][] xx){
+    _xx = _xxCache = xx;
+    _denseN = xx.length;
+    _fullN = xx.length;
+  }
   public Gram(DataInfo dinfo) {
     this(dinfo.fullN(), dinfo.largestCat(), dinfo.numNums(), dinfo._cats,true);
   }
@@ -283,7 +289,6 @@ public final class Gram extends Iced<Gram> {
     res.dropCols(Arrays.copyOf(drop_cols,k));
     return res;
   }
-
   public void dropCols(int[] cols) {
     int diagCols = 0;
     for(int i =0; i < cols.length; ++i)
@@ -512,7 +517,6 @@ public final class Gram extends Iced<Gram> {
   public transient double[][] _xxCache;
   public double[][] getXX(){
     if(_xxCache != null) return _xxCache;
-    System.out.println("generating new XX");
     return _xxCache = getXX(false, false);
   }
 

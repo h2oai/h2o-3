@@ -7,6 +7,7 @@ import hex.glm.GLMModel.GLMParameters.Link;
 import hex.glm.GLMModel.GLMParameters.Solver;
 import hex.glm.GLMModel.GLMWeightsFun;
 import hex.glm.GLMTask.*;
+import hex.gram.Gram;
 import org.junit.*;
 
 import hex.glm.GLMModel.GLMParameters;
@@ -964,6 +965,146 @@ public class GLMTest  extends TestUtil {
 //    }
 //  }
 
+
+  private void testGram(DataInfo dinfo, GLMParameters parms, double [] beta,Random rnd){
+    GLMIterationTask gt = new GLMIterationTask(null, dinfo, new GLMWeightsFun(parms),beta).doAll(dinfo._adaptedFrame);
+    double [][] expectedGram = gt._gram.getXX();
+    double []   expectedXY = Arrays.copyOf(gt._xy,dinfo.fullN());
+    // 1) make sure increment builds correct full matrix
+    GLMIncrementalGramTask t0 = new GLMIncrementalGramTask(ArrayUtils.seq(0,dinfo.fullN()),dinfo,new GLMWeightsFun(parms),beta).doAll(dinfo._adaptedFrame);
+    TestUtil.assertDoubleArrayEquals(expectedXY,t0._xy,1e-10);
+    for(int i = 0; i < expectedGram.length-1/*except for intercept*/; ++i) {
+      // need tolerance here since incremental task computes (x[i]*w)*x[j] or (x[i]*(w*x[j]) whereas standard task computes always (x[i]*w)*x[j];
+      TestUtil.assertDoubleArrayEquals(expectedGram[i], t0._gram[i],1e-10);
+    }
+    GLM glm = new GLM(parms);
+    glm._dinfo = dinfo;
+    int P = dinfo.fullN();
+    GLM.BetaConstraint bc = glm.new BetaConstraint();
+    int [] allCols = ArrayUtils.seq(0,dinfo.fullN()+1);
+    // 1 column vs the rest
+    for(boolean inverted:new boolean[]{false,true}) {
+      boolean firstIter = true;
+      System.out.println("inverted = " + inverted);
+      for (int i : new int[]{0, 0, dinfo.fullN() >> 1, dinfo.fullN() - 1}) {
+        int[] activeCols = inverted ? ArrayUtils.sorted_set_diff(allCols, new int[]{i}) : new int[]{i, P};
+        ComputationState state = new ComputationState(new Job(Key.make("job"), "GLMModel", "test glm job"), parms, dinfo, bc, 0);
+        state.updateState(beta, 0);
+        state.computeGradient(beta);
+        state.setActiveCols(activeCols);
+        double[] beta2 = new double[beta.length];
+        for (int id : activeCols)
+          beta2[id] = beta[id];
+        double[] b = firstIter ? beta : beta2;
+        firstIter = false;
+        GLMIterationTask gt2 = new GLMIterationTask(null, dinfo, new GLMWeightsFun(parms), b).doAll(dinfo._adaptedFrame);
+        state.computeGram(ArrayUtils.select(beta, activeCols), Solver.COORDINATE_DESCENT);
+        state.setActiveCols(allCols);
+        ComputationState.GramXY x = state.computeGram(b, Solver.COORDINATE_DESCENT);
+        TestUtil.assertDoubleArrayEquals(gt2._xy, x.xy, 1e-8);
+        for (int j = 0; j < t0._gram.length; ++j) {
+          TestUtil.assertDoubleArrayEquals(gt2._gram.getXX()[j], x.gram.getXX()[j], 1e-8);
+        }
+      }
+    }
+    // add few columns at a time
+
+
+    int [] activeCols = new int[]{P};
+    double [] beta2 = new double[beta.length];
+    ComputationState state = new ComputationState(new Job(Key.make("job"), "GLMModel", "test glm job"), parms, dinfo, bc, 0);
+    state.updateState(beta, 0);
+    state.computeGradient(beta);
+    int [] cols = ArrayUtils.sorted_set_diff(allCols,activeCols);
+    ArrayUtils.shuffleArray(cols,rnd);
+    int rem = dinfo.fullN()+1 - activeCols.length;
+    while(rem > 0){
+      Arrays.fill(beta2,0);
+      for(int i:activeCols)
+        beta2[i] = beta[i];
+      state.setActiveCols(null);
+      state.setActiveCols(activeCols);
+      state.computeGram(ArrayUtils.select(beta2,activeCols),Solver.COORDINATE_DESCENT);
+      // int n = Math.min(25,1 + rnd.nextInt(rem-1));
+      int n = 1 + rnd.nextInt(rem);
+      int [] newActiveCols = new int[n];
+      for(int k = 0; k < n; k++)
+        newActiveCols[k] = cols[cols.length-rem+k];
+      Arrays.sort(newActiveCols);
+      System.out.println("newActiveCols = " + Arrays.toString(newActiveCols));
+      activeCols = ArrayUtils.sortedMerge(activeCols,newActiveCols);
+      System.out.println("activeCols = " + Arrays.toString(activeCols));
+      state.setActiveCols(null);
+      state.setActiveCols(activeCols);
+      double [] b = ArrayUtils.select(beta2,activeCols);
+      ComputationState.GramXY x  = state.computeGram(b,Solver.COORDINATE_DESCENT);
+      GLMIterationTask gtx = new GLMIterationTask(null,state.activeData(),new GLMWeightsFun(parms),b).doAll(state.activeData()._adaptedFrame);
+      TestUtil.assertDoubleArrayEquals(gtx._xy, x.xy, 1e-12);
+      for (int j = 0; j < gtx._gram.getXX().length; ++j) {
+        TestUtil.assertDoubleArrayEquals(gtx._gram.getXX()[j], x.gram.getXX()[j], 1e-12);
+      }
+      rem -= n;
+    }
+  }
+
+  private double [] makeRandomVec(int n){
+    double []  beta = new double[n];
+    Random rnd = new Random(54321);
+    for (int i = 0; i < beta.length; ++i)
+      beta[i] = rnd.nextDouble();
+    return beta;
+  }
+  @Test
+  public void testIncementalGramComputation(){
+    Random rnd = new Random(54321);
+    Frame frMM = parse_test_file(Key.make("AirlinesMM"), "smalldata/airlines/AirlinesTrainMM.csv.zip");
+    frMM.remove("C1").remove();
+    Vec v;
+    frMM.add("IsDepDelayed", (v = frMM.remove("IsDepDelayed")).makeCopy(null));
+    v.remove();
+    DKV.put(frMM._key, frMM);
+    Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"), res = null;
+    fr.add("IsDepDelayed",(v =fr.remove("IsDepDelayed")).makeCopy(null));
+    v.remove();
+    DKV.put(fr._key,fr);
+    try {
+      // categoricals
+      Frame categoricals = new Frame();
+      Frame nums = new Frame();
+      for (int i = 0; i < fr.numCols(); i++)
+        if (fr.vec(i).isCategorical())
+          categoricals.add("cat_" + i, fr.vec(i));
+      else
+          nums.add("num_" + i,fr.vec(i));
+      categoricals.add("response",fr.vec("IsDepDelayed"));
+      DataInfo num_dinfo = new DataInfo(nums, null, 1, true, TransformType.STANDARDIZE, TransformType.NONE, false, true, false, false, false, false, null);
+      DataInfo cats_dinfo = new DataInfo(categoricals, null, 1, true, TransformType.STANDARDIZE, TransformType.NONE, false, true, false, false, false, false, null);
+      DataInfo numcats_dinfo = new DataInfo(fr, null, 1, true, TransformType.STANDARDIZE, TransformType.NONE, false, true, false, false, false, false, null);
+      DataInfo sparsenum_dinfo = new DataInfo(frMM, null, 1, true, TransformType.STANDARDIZE, TransformType.NONE, false, true, false, false, false, false, null);
+      Frame cat_sparsenums = new Frame(categoricals);
+      cat_sparsenums.add(frMM.names(),categoricals.makeCompatible(frMM));
+      DataInfo cat_sparsenum_dinfo = new DataInfo(cat_sparsenums, null, 1, true, TransformType.STANDARDIZE, TransformType.NONE, false, true, false, false, false, false, null);
+      for(DataInfo xdinfo:new DataInfo[]{cats_dinfo,num_dinfo,numcats_dinfo,sparsenum_dinfo,cat_sparsenum_dinfo}) {
+        double[] beta = makeRandomVec(xdinfo.fullN() + 1);
+        for (Family f : new Family[]{Family.gaussian, Family.binomial, Family.poisson}) {
+          GLMParameters parms = new GLMParameters(f);
+          parms._alpha = new double[]{0};
+          parms._lambda = new double[]{0};
+          parms._xobj_regx = 1;
+          testGram(xdinfo, parms, beta,rnd);
+          // public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold, String[] interactions) {
+        }
+      }
+      cat_sparsenums.delete();
+    } finally {
+      if (frMM != null) frMM.delete();
+      if (fr != null) fr.delete();
+    }
+      // dense numbers
+      // sparse numbers
+      // categoricals + dense numbers
+      // categoricals + sparse numbers
+  }
   /**
    * Test we get correct gram on dataset which contains categoricals and sparse and dense numbers
    */
@@ -1077,7 +1218,9 @@ public class GLMTest  extends TestUtil {
       params._alpha = new double[]{0};
       params._standardize = false;
       params._use_all_factor_levels = false;
-      model1 = new GLM(params).trainModel().get();
+
+      model1 = new GLM(params,Key.make("haha")).trainModel().get();
+
       testScoring(model1,fr);
       Frame score1 = model1.score(fr);
       ModelMetricsRegressionGLM mm = (ModelMetricsRegressionGLM) ModelMetrics.getFromDKV(model1, fr);
