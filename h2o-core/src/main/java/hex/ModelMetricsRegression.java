@@ -1,16 +1,20 @@
 package hex;
 
 import hex.genmodel.utils.DistributionFamily;
-import water.AutoBuffer;
 import water.IcedUtils;
 import water.MRTask;
 import water.exceptions.H2OIllegalArgumentException;
-import water.fvec.*;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
 
 public class ModelMetricsRegression extends ModelMetricsSupervised {
+  /** For all algos except GLM this is mean residual deviance.  For GLM it's total residual deviance. */
   public double residual_deviance() { return _mean_residual_deviance; }
+  public double mean_residual_deviance() { return _mean_residual_deviance; }
   public final double _mean_residual_deviance;
   public final double _mean_absolute_error;
   public double mae() { return _mean_absolute_error; }
