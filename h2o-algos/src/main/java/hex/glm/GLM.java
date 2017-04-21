@@ -472,11 +472,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         error("_compute_p_values","P-values can not be computed for constrained problems");
       _state.setBC(bc);
       if(hasOffsetCol() && _parms._intercept) { // fit intercept
-        GLMGradientSolver gslvr = new GLMGradientSolver(_job,_state._obj_reg,_parms, _dinfo.filterExpandedColumns(new int[0]), 0, _state.activeBC());
-        double [] x = new L_BFGS().solve(gslvr,new double[]{-_offset.mean()}).coefs;
+        _state.setActiveCols(new int[0]);
+        double [] x = new L_BFGS().solve(_state.gslvr(),new double[]{-_offset.mean()}).coefs;
         Log.info(LogMsg("fitted intercept = " + x[0]));
         x[0] = _parms.linkInv(x[0]);
         _state._ymu = x;
+        _state.setActiveCols(null);
       }
       if (_parms._prior > 0)
         _iceptAdjust = -Math.log(_state._ymu[0] * (1 - _parms._prior) / (_parms._prior * (1 - _state._ymu[0])));
@@ -485,7 +486,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if(_offset != null) vecs.add(_offset);
       vecs.add(_response);
       double [] beta = getNullBeta();
-      GLMGradientInfo ginfo = new GLMGradientSolver(_job,_state._obj_reg,_parms, _dinfo, 0, _state.activeBC()).getGradient(beta);
+      GLMGradientInfo ginfo = _state.computeGradient(beta);
       _lmax = lmax(ginfo._gradient);
       _state.setLambdaMax(_lmax);
       _model = new GLMModel(_result, _parms, GLM.this, _state._ymu, _dinfo._adaptedFrame.lastVec().sigma(), _lmax, _nobs);
@@ -496,7 +497,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if(_parms._alpha[0] == 0)
           _parms._lambda_min_ratio *= 1e-2; // smalelr lambda min for ridge as we are starting quite high
       }
-
       _state.updateState(beta,ginfo);
       if (_parms._lambda == null) {  // no lambda given, we will base lambda as a fraction of lambda max
         if (_parms._lambda_search) {
@@ -553,6 +553,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   public final class GLMDriver extends Driver implements ProgressMonitor {
     private long _workPerIteration;
     private transient double[][] _vcov;
+
 
 
     private void doCleanup() {
@@ -694,8 +695,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           if(_state._lsNeeded) {
             if(ls == null)
               ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
-                 ? new MoreThuente(_state.gslvr(),_state.beta(), _state.ginfo())
-                 : new SimpleBacktrackingLS(_state.gslvr(),_state.beta().clone(), _state.l1pen(), _state.ginfo());
+                 ? new MoreThuente(_state.gslvr(),_state.beta(), _state.computeGradient(_state.beta()))
+                 : new SimpleBacktrackingLS(_state.gslvr(),_state.beta().clone(), _state.l1pen(), _state.computeGradient(_state.beta()));
             if (!ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd))) {
               Log.info(LogMsg("Ls failed " + ls));
               return;
@@ -733,7 +734,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           beta[beta.length - 1] = glmw.link(_state._ymu[0]);
       }
       L_BFGS lbfgs = new L_BFGS().setObjEps(_parms._objective_epsilon).setGradEps(_parms._gradient_epsilon).setMaxIter(_parms._max_iterations);
-      assert beta.length == _state.ginfo()._gradient.length;
       int P = _dinfo.fullN();
       if (l1pen > 0 || _state.activeBC().hasBounds()) {
         double[] nullBeta = MemoryManager.malloc8d(beta.length); // compute ginfo at null beta to get estimate for rho
@@ -765,7 +765,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         double reltol = L1Solver.DEFAULT_RELTOL;
         double abstol = L1Solver.DEFAULT_ABSTOL;
         double ADMM_gradEps = 1e-3;
-        ProximalGradientSolver innerSolver = new ProximalGradientSolver(gslvr, beta, rho, _parms._objective_epsilon * 1e-1, _parms._gradient_epsilon, _state.ginfo(), this);
+        ProximalGradientSolver innerSolver = new ProximalGradientSolver(gslvr, beta, rho, _parms._objective_epsilon * 1e-1, _parms._gradient_epsilon, _state.computeGradient(beta), this);
 //        new ProgressMonitor() {
 //          @Override
 //          public boolean progress(double[] betaDiff, GradientInfo ginfo) {
@@ -780,7 +780,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       } else {
         if(!_parms._lambda_search && _state._iter == 0)
           updateProgress(false);
-        Result r = lbfgs.solve(gslvr, beta, _state.ginfo(), new ProgressMonitor() {
+        Result r = lbfgs.solve(gslvr, beta, _state.computeGradient(beta), new ProgressMonitor() {
           @Override
           public boolean progress(double[] beta, GradientInfo ginfo) {
             if(_state._iter < 4 || ((_state._iter & 3) == 0))
@@ -1059,7 +1059,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _model.addSubmodel(sm = new Submodel(lambda,getNullBeta(),_state._iter,_nullDevTrain,_nullDevTest));
       else {
         _model.addSubmodel(sm = new Submodel(lambda, _state.beta(),_state._iter,-1,-1));
-
         _state.setLambda(lambda);
         checkMemoryFootPrint(_state.activeData());
         do {
@@ -1145,7 +1144,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         devHistoryTrain[i % devHistoryTrain.length] = (oldDevTrain - trainDev)/oldDevTrain;
         oldDevTrain = trainDev;
         if(_parms._lambda[i] < _lmax && Double.isNaN(_lambdaCVEstimate) /** if we have cv lambda estimate we should use it, can not stop before reaching it */) {
-          if (_parms._early_stopping && _state._iter >= devHistoryTrain.length) {
+          if (_parms._early_stopping && i >= devHistoryTrain.length) {
             double s = ArrayUtils.maxValue(devHistoryTrain);
             System.out.println("improvement on train = " + s);
             if (s < _parms._objective_epsilon) {
@@ -1250,8 +1249,19 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     Solver s = Solver.IRLSM;
     int max_dense = 0;
     int max_active = 0;
-    if(_parms._lambda_search)
-      return Solver.COORDINATE_DESCENT_NAIVE;
+    if(_parms._lambda_search && _parms._alpha[0] > 0) {
+      switch (_parms._family) {
+        case gaussian: // gaussian can reuse the gram, only builds it incrementally so we can go much higher
+          return _state.activeData().fullN() > 12000 ? Solver.COORDINATE_DESCENT_NAIVE : Solver.COORDINATE_DESCENT;
+        case multinomial:
+          return Solver.COORDINATE_DESCENT; // naive not implemented for multinomial yet
+        default:
+          if (H2O.CLOUD.size() == 1) { // single node, no overhead on sending tasks around,
+            return (_state.activeData().fullN() > 1024 || _state.activeData().denseN() > 64) ? Solver.COORDINATE_DESCENT_NAIVE : Solver.COORDINATE_DESCENT;
+          } else // TODO arbitrary numbers, should be based on benchmarks
+            return (_state.activeData().fullN() > 6000 || _state.activeData().denseN() > 512) ? Solver.COORDINATE_DESCENT_NAIVE : Solver.COORDINATE_DESCENT;
+      }
+    }
     if(_parms._family == Family.multinomial ) {
       for (int c = 0; c < _nclass; ++c) {
         DataInfo dinfo = _state.activeDataMultinomial(c);
@@ -1366,6 +1376,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
   public double [] COD_solve(double [][] xx, double [] xy, double alpha, double lambda) {
     double wsumInv = 1.0/(xx[xx.length-1][xx.length-1]);
+    final double betaEpsilon = _parms._beta_epsilon*_parms._beta_epsilon;
     double l1pen = lambda * alpha;
     double l2pen = lambda*(1-alpha);
     long t0 = System.currentTimeMillis();
@@ -1417,7 +1428,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     // CD loop
     long t2 = System.currentTimeMillis();
 //    // CD loop
-    while (iter1++ < 1000 /*Math.max(P,500)*/) {
+    while (iter1++ < Math.max(P,500)) {
       double maxDiff = 0;
       for (int i = 0; i < activeData._cats; ++i) {
         for(int j = activeData._catOffsets[i]; j < activeData._catOffsets[i+1]; ++j) { // can do in parallel
@@ -1440,10 +1451,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       for (int i = numStart; i < P; ++i) {
         double b = bc.applyBounds(ADMM.shrinkage(grads[i], l1pen) * diagInv[i],i);
         double bd = beta[i] - b;
-        double diff = bd*bd*xx[i][i];
-        if(diff > maxDiff) maxDiff = diff;
-        doUpdateCD(grads, xx[i], bd, i,i+1);
-        beta[i] = b;
+        if(bd != 0) {
+          double diff = bd * bd * xx[i][i];
+          if (diff > maxDiff) maxDiff = diff;
+          doUpdateCD(grads, xx[i], bd, i, i + 1);
+          beta[i] = b;
+        }
       }
       // intercept
       if(_parms._intercept) {
@@ -1452,7 +1465,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         doUpdateCD(grads, xx[P], bd, P, P + 1);
         beta[P] = b;
       }
-      if (maxDiff < _parms._beta_epsilon*_parms._beta_epsilon)
+      if (maxDiff < betaEpsilon)
         break;
     }
     long tend = System.currentTimeMillis();

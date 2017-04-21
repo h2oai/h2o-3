@@ -254,7 +254,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         glm.hide("_nlambdas", "only applies if lambda search is on.");
         glm.hide("_early_stopping","only applies if lambda search is on.");
       }
-      if(_link != Link.family_default) { // check we have compatible link
+      if(_link != Link.family_default && _link != _family.defaultLink) { // check we have compatible link
         switch (_family) {
           case gaussian:
             if (_link != Link.identity && _link != Link.log && _link != Link.inverse)
@@ -467,7 +467,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
   } // GLMParameters
 
-  public static class GLMWeights {
+  public static final class GLMWeights {
     public double mu = 0;
     public double w = 1;
     public double z = 0;
@@ -655,12 +655,20 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
     public GLMWeights computeWeights(double y, double eta, double off, double w, GLMWeights x) {
       double etaOff = eta + off;
-      x.mu = linkInv(etaOff);
-      double var = variance(x.mu);//Math.max(1e-5, variance(x.mu)); // avoid numerical problems with 0 variance
-      double d = linkDeriv(x.mu);
-      x.w = w / (var * d * d);
-      x.z = eta + (y - x.mu) * d;
-      likelihoodAndDeviance(y,x,w);
+      if(_family == Family.binomial && _link == Link.logit) { // most common, make special case here to avoid multiple switch statements
+        double mu = x.mu = 1e-15 + 1.0/(Math.exp(-etaOff) + 1.0);
+        x.w = mu*(1-mu);
+        x.z = eta + (y - x.mu) / x.w;
+        x.l = mu == y?0:w*((MathUtils.y_log_y(y, mu)) + MathUtils.y_log_y(1 - y, 1 - mu));
+        x.dev = 2*x.l;
+      } else {
+        x.mu = linkInv(etaOff);
+        double var = variance(x.mu);//Math.max(1e-5, variance(x.mu)); // avoid numerical problems with 0 variance
+        double d = linkDeriv(x.mu);
+        x.w = w / (var * d * d);
+        x.z = eta + (y - x.mu) * d;
+        likelihoodAndDeviance(y, x, w);
+      }
       return x;
     }
   }

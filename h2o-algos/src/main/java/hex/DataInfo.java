@@ -542,7 +542,7 @@ public class DataInfo extends Keyed<DataInfo> {
     // now numerics
     prev=j=_interactionVecs==null?0:_interactionVecs.length;
     for(;i<cols.length;++i){
-      int numsToIgnore = (cols[i]-_numOffsets[j]);
+      int numsToIgnore = ((j < _numOffsets.length)?(cols[i]-_numOffsets[j]):0);
       for(int k=0;k<numsToIgnore;++k){
         ignoredCols[ignoredCnt++] = _cats+prev++;
         ++j;
@@ -974,17 +974,15 @@ public class DataInfo extends Keyed<DataInfo> {
         }
     }
 
-    public void addToArray(double []res) {
 
-    }
     public void addToArray(double scale, double []res) {
       for(int i = 0; i < nBins; i++)
         res[binIds[i]] += scale;
       int numstart = numStart();
       if(numIds != null){
         for(int i = 0; i < nNums; ++i)
-          res[numstart+numIds[i]] += scale*numVals[i];
-      } else for(int i = 0; i < numVals.length; ++i)
+          res[numIds[i]] += scale*numVals[i];
+      } else for(int i = 0; i < numVals.length; ++i) if(numVals[i] != 0)
           res[numstart+i] += scale*numVals[i];
       if(_intercept)
         res[res.length-1] += scale;

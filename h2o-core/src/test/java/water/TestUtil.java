@@ -1,6 +1,7 @@
 package water;
 
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
@@ -11,10 +12,7 @@ import water.parser.BufferedString;
 import water.parser.DefaultParserProviders;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
-import water.util.FileUtils;
-import water.util.Log;
-import water.util.Timer;
-import water.util.TwoDimTable;
+import water.util.*;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
@@ -62,6 +60,17 @@ public class TestUtil extends Iced {
     }
   }
 
+  public static void assertDoubleArrayEquals(double [] x, double [] y, double eps){
+    eps *= Math.max(ArrayUtils.maxValue(x),-ArrayUtils.minValue(x));
+    try {
+      for (int i = 0; i < x.length; ++i)
+        Assert.assertEquals(x[i], y[i], eps);
+    } catch(AssertionError rex){
+      System.out.println("x: " + Arrays.toString(x));
+      System.out.println("y: " + Arrays.toString(y));
+      throw rex;
+    }
+  }
   // ==== Test Setup & Teardown Utilities ====
   // Stall test until we see at least X members of the Cloud
   protected static int getDefaultTimeForClouding() {
