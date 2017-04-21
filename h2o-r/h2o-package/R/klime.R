@@ -2,6 +2,9 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details) 
 #'
 # -------------------------- klime -------------------------- #
+#' 
+#' Fits a k-LIME model on predictions produced by a ML model. Provides explanations/reason codes.
+#' 
 #' @param x A vector containing the \code{character} names of the predictors in the model.
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).

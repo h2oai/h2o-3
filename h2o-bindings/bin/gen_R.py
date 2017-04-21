@@ -319,6 +319,10 @@ def help_preamble_for(algo):
         return """
         Trains a word2vec model on a String column of an H2O data frame.
     """
+    if algo == "klime":
+        return """
+        Fits a k-LIME model on predictions produced by a ML model. Provides explanations/reason codes.
+    """
 
 def help_details_for(algo):
     if algo == "naivebayes":
