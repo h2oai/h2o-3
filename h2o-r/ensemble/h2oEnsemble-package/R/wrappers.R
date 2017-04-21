@@ -51,7 +51,7 @@ h2o.glm.wrapper <- function(x, y, training_frame, model_id = NULL,
                             max_runtime_secs = 0,
                             missing_values_handling = c("MeanImputation", "Skip"), ...) {
   
-  # Also, offset_column, weights_column, intercept not implemented at the moment due to similar bug as beta_constraints
+  # Also, offset_column, intercept not implemented at the moment due to similar bug as beta_constraints
   h2o.glm(x = x, y = y, training_frame = training_frame, model_id = model_id, 
           validation_frame = validation_frame, 
           ignore_const_cols = ignore_const_cols,
@@ -75,7 +75,7 @@ h2o.glm.wrapper <- function(x, y, training_frame, model_id = NULL,
           keep_cross_validation_predictions = keep_cross_validation_predictions, 
           #beta_constraints = beta_constraints,
           #offset_column = offset_column, 
-          #weights_column = weights_column, 
+          weights_column = weights_column, 
           #intercept = intercept, 
           max_active_predictors = max_active_predictors, 
           objective_epsilon = objective_epsilon,
