@@ -71,7 +71,9 @@ RUN \
 # Create users
 RUN \
   useradd -m -c "jenkins" jenkins -s /bin/bash
-  
+
+RUN mkdir /data
+VOLUME /data
 
 # Expose ports for services
 EXPOSE 54321
