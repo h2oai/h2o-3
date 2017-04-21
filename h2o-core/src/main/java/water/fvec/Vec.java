@@ -2,6 +2,7 @@ package water.fvec;
 
 import water.*;
 import water.nbhm.NonBlockingHashMap;
+import water.nbhm.NonBlockingHashMapLong;
 import water.parser.BufferedString;
 import water.util.*;
 
@@ -934,9 +935,20 @@ public class Vec extends Keyed<Vec> {
   }
 
   public transient int [] _cids; // local chunk ids
+
+  private transient NonBlockingHashMapLong<Key> _keys = new NonBlockingHashMapLong<>();
+
   /** Get a Chunk Key from a chunk-index.  Basically the index-to-key map.
    *  @return Chunk Key from a chunk-index */
-  public Key chunkKey(int cidx ) { return chunkKey(_key,cidx); }
+  public Key chunkKey(int cidx ) {
+    // try to reuse keys, keys have precomputed hash also saves allocation
+    Key k = _keys.get(cidx);
+    if(k == null){
+      k = chunkKey(_key,cidx);
+      if(k.home()) _keys.put(cidx,k);
+    }
+    return k;
+  }
 
   /** Get a Chunk Key from a chunk-index and a Vec Key, without needing the
    *  actual Vec object.  Basically the index-to-key map.
