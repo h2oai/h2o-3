@@ -3,9 +3,11 @@ package water;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import water.fvec.*;
+import water.util.ArrayUtils;
 import water.util.DistributedException;
 import water.util.PrettyPrint;
 import water.fvec.Vec.VectorGroup;
+import water.util.VecUtils;
 
 import java.util.Arrays;
 
@@ -503,6 +505,9 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   }
 
   protected boolean modifiesVolatileVecs(){return true;}
+
+
+  private transient int [] _cids;
   /*
    * Set top-level fields and fire off remote work (if there is any to do) to 2 selected
    * child JVM/nodes. Setup for local work: fire off any global work to cloud neighbors; do all
@@ -539,9 +544,13 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     }
 
     if( _fr != null ) {                       // Doing a Frame
-      _lo = 0;  _hi = _fr.numCols()==0 ? 0 : _fr.anyVec().nChunks(); // Do All Chunks
+      if(_run_local){
+        _cids = ArrayUtils.seq(0,_fr.anyVec().nChunks());
+      } else _cids = VecUtils.getLocalChunkIds(_fr.anyVec());
+      _lo = 0;  _hi = _cids.length; // Do All Chunks
       // get the Vecs from the K/V store, to avoid racing fetches from the map calls
       _fr.vecs();
+
     } else if( _keys != null ) {    // Else doing a set of Keys
       _lo = 0;  _hi = _keys.length; // Do All Keys
     }
@@ -604,9 +613,9 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
       }
     } else if( _hi > _lo ) {    // Frame, Single chunk?
       Vec v0 = _fr.anyVec();
-      if( _run_local || v0.chunkKey(_lo).home() ) { // And chunk is homed here?
+//      if( _run_local || v0.chunkKey(_lo).home() ) { // And chunk is homed here?
         assert(_run_local || !H2O.ARGS.client) : "Client node should not process any keys in MRTask!";
-
+        int cidx = _cids[_lo];
         // Make decompression chunk headers for these chunks
         Vec vecs[] = _fr.vecs();
         Chunk bvs[] = new Chunk[vecs.length];
@@ -614,7 +623,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
         for( int i=0; i<vecs.length; i++ )
           if( vecs[i] != null ) {
             assert _run_local || vecs[i].chunkKey(_lo).home()
-              : "Chunk="+_lo+" v0="+v0+", k="+v0.chunkKey(_lo)+"   v["+i+"]="+vecs[i]+", k="+vecs[i].chunkKey(_lo);
+              : "Chunk="+_lo+" v0="+v0+", k="+v0.chunkKey(cidx)+"   v["+i+"]="+vecs[i]+", k="+vecs[i].chunkKey(cidx);
             bvs[i] = vecs[i].chunkForChunkIdx(_lo);
           }
 
@@ -624,7 +633,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
           appendableChunks = new NewChunk[_output_types.length];
           for(int i = 0; i < _appendables.length; ++i) {
             _appendables[i] = new AppendableVec(vg.vecKey(_vid+i),_output_types[i]);
-            appendableChunks[i] = _appendables[i].chunkForChunkIdx(_lo);
+            appendableChunks[i] = _appendables[i].chunkForChunkIdx(cidx);
           }
         }
         // Call all the various map() calls that apply
@@ -660,10 +669,10 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
         // Further D/K/V put any new vec results.
         if(_profile!=null)
           _profile._closestart = System.currentTimeMillis();
-        for( Chunk bv : bvs )  bv.close(_lo,_fs);
-        if( _output_types != null) for(NewChunk nch:appendableChunks)nch.close(_lo, _fs);
+        for( Chunk bv : bvs )  bv.close(cidx,_fs);
+        if( _output_types != null) for(NewChunk nch:appendableChunks)nch.close(cidx, _fs);
       }
-    }
+//    }
     if(_profile!=null)
       _profile._mapdone = System.currentTimeMillis();
     tryComplete();
