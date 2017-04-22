@@ -3,8 +3,10 @@ package water;
 import org.junit.AfterClass;
 import org.junit.Ignore;
 import org.junit.Rule;
+import org.junit.rules.MethodRule;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
+import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.Statement;
 import water.fvec.*;
 import water.parser.BufferedString;
@@ -153,8 +155,16 @@ public class TestUtil extends Iced {
     @Override public void setupLocal() {  H2O.raw_clear();  water.fvec.Vec.ESPC.clear(); }
   }
 
+  abstract class H2OTestRule implements TestRule, MethodRule {
+    @Override
+    public Statement apply(Statement base, FrameworkMethod method, Object target) {
+      return base;
+    }
+
+  }
+  
   /** Execute this rule before each test to print test name and test class */
-  @Rule transient public TestRule logRule = new TestRule() {
+  @Rule transient public H2OTestRule logRule = new H2OTestRule() {
 
     @Override public Statement apply(Statement base, Description description) {
       Log.info("###########################################################");
@@ -163,10 +173,17 @@ public class TestUtil extends Iced {
       Log.info("###########################################################");
       return base;
     }
+    @Override
+    public Statement apply(Statement base, FrameworkMethod method, Object target) {
+      Log.info("...........................................................");
+      Log.info("  * Test method name: " + method.getName());
+      Log.info("...........................................................");
+      return base;
+    }
   };
 
   /* Ignore tests specified in the ignore.tests system property */
-  @Rule transient public TestRule runRule = new TestRule() {
+  @Rule transient public H2OTestRule runRule = new H2OTestRule() {
     @Override public Statement apply(Statement base, Description description) {
       String testName = description.getClassName() + "#" + description.getMethodName();
       boolean ignored = false;
@@ -200,7 +217,7 @@ public class TestUtil extends Iced {
     }
   };
 
-  @Rule transient public TestRule timerRule = new TestRule() {
+  @Rule transient public H2OTestRule timerRule = new H2OTestRule() {
     @Override public Statement apply(Statement base, Description description) {
       return new TimerStatement(base, description.getClassName()+"#"+description.getMethodName());
     }
