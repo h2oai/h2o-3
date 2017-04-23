@@ -35,6 +35,5 @@ data_set_id,uri,respose_col_idx
 34,s3://h2o-public-test-data/smalldata/testng/cars.csv,0
 35,s3://h2o-public-test-data/smalldata/testng/housing.csv,0
 36,s3://h2o-public-test-data/smalldata/testng/computer.csv,0
-TODO: Split Paribas data set into train and test and then remove this comment
 37,/tmp/Paribas.csv,1
 38,/tmp/Paribas.csv,1
