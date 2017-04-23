@@ -1,16 +1,12 @@
 package water.parser;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.junit.Ignore;
 import org.junit.Test;
 import water.AutoBuffer;
-import water.Paxos;
-import water.TestUtil;
-
 import java.util.Arrays;
-
-import static java.util.Arrays.*;
-
 import static org.junit.Assert.*;
+import static water.util.StringUtils.*;
 
 /**
  * This is mostly a skeleton of the tests, feel free to implement the cases
@@ -22,7 +18,7 @@ public class BufferedStringTest {
   public void testWrite_impl() throws Exception {
     final String source = "this is not a string";
     BufferedString sut = new BufferedString(source);
-    assertArrayEquals(source.getBytes(), sut.getBuffer());
+    assertArrayEquals(bytesOf(source), sut.getBuffer());
     AutoBuffer ab = new AutoBuffer();
     sut.write_impl(ab);
     final byte[] expected = ("\u0015" + source).getBytes();
@@ -69,8 +65,8 @@ public class BufferedStringTest {
     // TODO(vlad): fix it; we don't need the cloud
 //    Paxos._commonKnowledge = true; // this is totally stupid; thank you Cliff for the fun
 // TODO(vlad): fix the crash in the next line    
-//    byte[] bytes = sut1.asBytes();
-//    assertArrayEquals(source.getBytes(), bytes);
+//    byte[] bytes = sut1.bytes();
+//    assertArrayEquals(bytesOf(source), bytes);
   }
 
   @Test @Ignore // this is a stub
@@ -175,7 +171,7 @@ public class BufferedStringTest {
   public void testGetBuffer() throws Exception {
     final String source = "not a string\u00f0";
     BufferedString sut = new BufferedString(source);
-    final byte[] expected = source.getBytes("UTF8");
+    final byte[] expected = bytesOf(source);
     final byte[] actual = sut.getBuffer();
     assertArrayEquals("Failed. expected " + Arrays.toString(expected) + 
                       ", got " + Arrays.toString(actual), 

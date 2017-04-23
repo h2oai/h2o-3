@@ -25,7 +25,7 @@ public class FVecParseReader implements ParseReader {
     if(_chk == null)
       return null;
     _goffset = _chk.start();
-    return _chk.getBytes();
+    return _chk.bytes();
   }
   @Override public int  getChunkDataStart(int cidx) { return -1; }
   @Override public void setChunkDataStart(int cidx, int offset) { }

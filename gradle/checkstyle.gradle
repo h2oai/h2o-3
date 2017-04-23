@@ -1,7 +1,7 @@
 apply plugin: 'checkstyle'
 
 checkstyle {
-  configFile = new File(rootDir, "gradle/config/checkstyle/google_checks.xml")
+  configFile = new File(rootDir, "gradle/config/checkstyle/h2o_checks.xml")
   ignoreFailures = true
   showViolations = true
   //toolVersion = "6.8.1"

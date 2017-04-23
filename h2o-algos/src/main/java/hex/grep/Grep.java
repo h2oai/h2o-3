@@ -80,7 +80,7 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
   private class ByteSeq implements CharSequence {
     private final byte _bs0[];
     private final byte _bs1[];
-    ByteSeq( Chunk chk0, Chunk chk1 ) { _bs0 = chk0.getBytes(); _bs1 = chk1==null ? null : chk1.getBytes(); }
+    ByteSeq( Chunk chk0, Chunk chk1 ) { _bs0 = chk0.bytes(); _bs1 = chk1==null ? null : chk1.bytes(); }
 
     @Override public char charAt(int idx ) {
       return (char)(idx < _bs0.length ? _bs0[idx] : _bs1[idx-_bs0.length]);

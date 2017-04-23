@@ -24,6 +24,7 @@ javadoc {
 //
 
 dependencies {
+  testCompile project(":h2o-core")
   testCompile "junit:junit:${junitVersion}"
   compile "net.sf.opencsv:opencsv:2.3"
   compile "com.google.protobuf.nano:protobuf-javanano:3.1.0"
