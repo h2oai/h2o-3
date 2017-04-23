@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/h2oai/h2o-3](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/h2oai/h2o-3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-H2O scales statistics, machine learning, and math over Big Data. 
+H2O scales statistics, machine learning, and math over Big Data.
 
 H2O uses familiar interfaces like R, Python, Scala, the Flow notebook graphical interface, Excel, & JSON so that Big Data enthusiasts & experts can explore, munge, model, and score datasets using a range of algorithms including advanced ones like Deep Learning. H2O is extensible so that developers can add data transformations and model algorithms of their choice and access them through all of those clients.
 
