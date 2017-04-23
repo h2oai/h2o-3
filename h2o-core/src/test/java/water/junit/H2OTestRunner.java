@@ -50,8 +50,9 @@ public class H2OTestRunner {
 
   public static void main(String[] args) throws Exception {
     H2OTestRunner testRunner = new H2OTestRunner();
-    Result result = null;
-    result = testRunner.run(args);
+    String doonly = System.getenv("DOONLY");
+    if (doonly != null && !doonly.isEmpty()) args = new String[]{doonly};
+    Result result = testRunner.run(args);
     System.exit(result.wasSuccessful() ? 0 : 1);
   }
 }
