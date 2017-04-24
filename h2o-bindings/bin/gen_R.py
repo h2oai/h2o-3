@@ -489,7 +489,7 @@ def get_extra_params_for(algo):
 def help_extra_params_for(algo):
     if algo == "glrm":
         return "#' @param cols (Optional) A vector containing the data columns on which k-means operates."
-    elif algo in ["deeplearning", "deepwater","drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
+    elif algo in ["deeplearning", "deepwater","drf", "gbm", "glm", "naivebayes", "stackedensemble", "klime"]:
         return """#' @param x A vector containing the names or indices of the predictor variables to use in building the model.
             #'        If x is missing,then all columns except y are used.
             #' @param y The name of the response variable in the model.If the data does not contain a header, this is the first column
