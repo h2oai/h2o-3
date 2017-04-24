@@ -1,14 +1,12 @@
 package water.util;
 
 import water.*;
-import water.fvec.AppendableVec;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 
 import java.text.DecimalFormat;
 import java.util.*;
 
+import static java.lang.StrictMath.sqrt;
 import static water.util.RandomUtils.getRNG;
 
 /* Bulk Array Utilities */
@@ -79,6 +77,18 @@ public class ArrayUtils {
     return result;
   }
 
+  // return the sqrt of each element of the array.  Will overwrite the original array in this case
+  public static double[] sqrtArr(double [] x){
+    assert (x != null);
+    int len = x.length;
+
+    for (int index = 0; index < len; index++) {
+      assert (x[index]>=0.0);
+      x[index] = sqrt(x[index]);
+    }
+
+    return x;
+  }
   public static double l2norm2(double [] x){ return l2norm2(x, false); }
 
   public static double l2norm2(double [][] xs, boolean skipLast){
@@ -1411,6 +1421,92 @@ public class ArrayUtils {
       if(!x.equals(s))
         res[j++] = x;
     return res;
+  }
+
+  /*
+      This class is written to copy the contents of a frame to a 2-D double array.
+   */
+  public static class FrameToArray extends MRTask<FrameToArray> {
+    int _startColIndex;   // first column index to extract
+    int _endColIndex;     // last column index to extract
+    int _rowNum;          // number of columns in
+    public double[][] _frameContent;
+
+    public FrameToArray(int startCol, int endCol, long rowNum, double[][] frameContent) {
+      assert ((startCol >= 0) && (endCol >= startCol) && (rowNum > 0));
+      _startColIndex = startCol;
+      _endColIndex = endCol;
+      _rowNum = (int) rowNum;
+      int colNum = endCol-startCol+1;
+
+      if (frameContent == null) { // allocate memory here if user has not provided one
+        _frameContent = MemoryManager.malloc8d(_rowNum, colNum);
+      } else {  // make sure we are passed the correct size 2-D double array
+        assert (_rowNum == frameContent.length && frameContent[0].length == colNum);
+        for (int index = 0; index < colNum; index++) { // zero fill use array
+          Arrays.fill(frameContent[index], 0.0);
+        }
+        _frameContent = frameContent;
+      }
+    }
+
+    @Override public void map(Chunk[] c) {
+      assert _endColIndex < c.length;
+      int endCol = _endColIndex+1;
+      int rowOffset = (int) c[0].start();   // real row index
+      int chkRows = c[0]._len;
+
+      for (int rowIndex = 0; rowIndex < chkRows; rowIndex++) {
+        for (int colIndex = _startColIndex; colIndex < endCol; colIndex++) {
+          _frameContent[rowIndex+rowOffset][colIndex-_startColIndex] = c[colIndex].atd(rowIndex);
+        }
+      }
+    }
+
+    @Override public void reduce(FrameToArray other) {
+      ArrayUtils.add(_frameContent, other._frameContent);
+    }
+
+    public double[][] getArray() {
+      return _frameContent;
+    }
+  }
+
+
+  /*
+				This class is written to a 2-D array to the frame instead of allocating new memory every time.
+	*/
+  public static class CopyArrayToFrame extends MRTask<CopyArrayToFrame> {
+    int _startColIndex;   // first column index to extract
+    int _endColIndex;     // last column index to extract
+    int _rowNum;          // number of columns in
+    public double[][] _frameContent;
+
+    public CopyArrayToFrame(int startCol, int endCol, long rowNum, double[][] frameContent) {
+      assert ((startCol >= 0) && (endCol >= startCol) && (rowNum > 0));
+
+      _startColIndex = startCol;
+      _endColIndex = endCol;
+      _rowNum = (int) rowNum;
+
+      int colNum = endCol-startCol+1;
+      assert (_rowNum == frameContent.length && frameContent[0].length == colNum);
+
+      _frameContent = frameContent;
+    }
+
+    @Override public void map(Chunk[] c) {
+      assert _endColIndex < c.length;
+      int endCol = _endColIndex+1;
+      int rowOffset = (int) c[0].start();   // real row index
+      int chkRows = c[0]._len;
+
+      for (int rowIndex = 0; rowIndex < chkRows; rowIndex++) {
+        for (int colIndex = _startColIndex; colIndex < endCol; colIndex++) {
+          c[colIndex].set(rowIndex, _frameContent[rowIndex+rowOffset][colIndex-_startColIndex]);
+        }
+      }
+    }
   }
 
   /** Create a new frame based on given row data.

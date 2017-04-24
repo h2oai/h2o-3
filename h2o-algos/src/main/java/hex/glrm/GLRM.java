@@ -74,8 +74,9 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
   @Override protected void checkMemoryFootPrint() {
     HeartBeat hb = H2O.SELF._heartbeat;
     double p = hex.util.LinearAlgebraUtils.numColsExp(_train,true);
-    long mem_usage = (long)(hb._cpus_allowed * p*_parms._k * 8 * Math.log((double)_train.lastVec().nChunks())/
-            Math.log(2.));  // loose estimation of memory usage
+    double gramSize =  _train.lastVec().nChunks()==1 ? 1 :
+            Math.log((double) _train.lastVec().nChunks()) / Math.log(2.); // gets to zero if nChunks=1
+    long mem_usage = (long)(hb._cpus_allowed * p*_parms._k * 8 * gramSize);  // loose estimation of memory usage
     long max_mem = H2O.SELF._heartbeat.get_free_mem();
     if (mem_usage > max_mem) {
       String msg = "Archtypes in matrix Y cannot fit in the driver node's memory ("

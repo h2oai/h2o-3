@@ -87,6 +87,30 @@ public class PCAWideDataSetsTests extends TestUtil {
 				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.Power, _TOLERANCE, _prostateDataset,
 												true, false, _transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 6
 		}
+
+		/*
+			This unit test will test that pca method Randomized works with wide datasets.  It will first build a model
+			using GramSVD under normal setting (_wideDataset is set to false).  Next, it builds a Randomized model with
+			_wideDataSet set to true.  The eigenvalues and eigenvectors from the two models are compared.  Test will fail
+			if any difference exceeds 1e-6.
+
+			The same six test cases are used here.
+		*/
+		@Test
+		public void testWideDataSetRandomized() throws InterruptedException, ExecutionException {
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.Randomized, _TOLERANCE, _smallDataset,
+												false, true, _transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 1
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.Randomized, _TOLERANCE, _smallDataset,
+												true, true, _transformTypes[_rand.nextInt(_transformTypes.length)]);   // case 2
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.Randomized, _TOLERANCE, _smallDataset,
+												false, false, _transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 3
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.Randomized, _TOLERANCE, _smallDataset,
+												true, false, _transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 4
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.Randomized, _TOLERANCE, _prostateDataset,
+												false, false, _transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 5
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.Randomized, _TOLERANCE, _prostateDataset,
+												true, false, _transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 6
+		}
 }
 
 /*
