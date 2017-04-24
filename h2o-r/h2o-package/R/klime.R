@@ -5,7 +5,11 @@
 #' 
 #' Fits a k-LIME model on predictions produced by a ML model. Provides explanations/reason codes.
 #' 
-#' @param x A vector containing the \code{character} names of the predictors in the model.
+#' @param x A vector containing the names or indices of the predictor variables to use in building the model.
+#'        If x is missing,then all columns except y are used.
+#' @param y The name of the response variable in the model.If the data does not contain a header, this is the first column
+#'        index, and increasing from left to right. (The response must be either an integer or a
+#'        categorical variable).
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
 #' @param max_k Maximum number of clusters to be considered. Defaults to 20.
