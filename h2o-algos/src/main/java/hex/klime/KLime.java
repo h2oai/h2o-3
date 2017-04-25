@@ -52,7 +52,7 @@ public class KLime extends ModelBuilder<KLimeModel, KLimeModel.KLimeParameters, 
     @Override
     public void computeImpl() {
       KLimeModel model = null;
-      Set<Key<Frame>> frameKeys = new HashSet<>();
+      Set<Key<Frame>> frameKeys = new HashSet<>(); // temporary frame key
       try {
         init(true);
 
