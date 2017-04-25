@@ -670,7 +670,7 @@ H2O has been built by a great many number of contributors over the years both wi
 
 ### Team & Committers
 
-```h
+```
 SriSatish Ambati
 Cliff Click
 Tom Kraljevic
