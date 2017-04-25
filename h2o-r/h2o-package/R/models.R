@@ -3011,7 +3011,7 @@ h2o.deepfeatures <- function(object, data, layer) {
 #' Leave One Covariate Out (LOCO)
 #'
 #' Calculates row-wise variable importance's by re-scoring a trained supervised model and measuring the impact of setting
-#' each variable to missing or it’s most central value(mean or median & mode for categorical's)
+#' each variable to missing or it's most central value(mean or median & mode for categorical's)
 #' @param model A supervised H2O model
 #' @param frame An H2OFrame to score
 #' @param loco_frame_id Destination id for this job; auto-generated if not specified.
