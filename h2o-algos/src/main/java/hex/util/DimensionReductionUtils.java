@@ -99,7 +99,6 @@ public class DimensionReductionUtils {
             table.set(row, col++, fmt.print((long) scoreTable.get("Timestamp").get(row)));
             table.set(row, col++, PrettyPrint.msecs((long) scoreTable.get("Timestamp").get(row) - startTime, true));
             table.set(row, col++, row);
-
             // take care of the extra field
             for (int remaining_cols = 0; remaining_cols < otherTableEntries.size(); remaining_cols++) {
                 table.set(row, col++, (double) scoreTable.get(otherTableEntries.get(remaining_cols)).get(row));

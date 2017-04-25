@@ -58,6 +58,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   boolean _wideDataset = false;         // default with wideDataset set to be false.
   private double[] _estimatedSingularValues; // store estimated singular values for power method
   private boolean _matrixRankReached = false; // stop if eigenvector norm becomes too small.  Reach rank of matrix
+  private boolean _failedConvergence = false; // warn if power failed to converge for some eigenvector calculation
 
   @Override protected SVDDriver trainModelImpl() { return new SVDDriver(); }
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ ModelCategory.DimReduction }; }
@@ -198,7 +199,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         double invnorm = 0;
 
         err = 0;
-        if (norm > 0.0) {
+        if (norm > EPS) {   // norm is not too small
           invnorm = 1 / norm;
 
           for (int i = 0; i < v.length; i++) {
@@ -212,9 +213,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           model._output._training_time_ms.add(System.currentTimeMillis());
           model._output._history_err.add(err);
           model._output._history_eigenVectorIndex.add((double) eigIndex);
-        }
-        else {
-          _job.warn("_train: Number of eigenvectors/eigenvalues is less than specified by user.");
+        } else {
+          _job.warn("_train SVD: Dataset is rank deficient.  User specified "+_parms._nv);
           _matrixRankReached = true;
           break;
 
@@ -222,8 +222,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       }
 
       if (err > TOLERANCE) {
-        _job.warn("_train: PCA Power method failed to converge.  The eigen vectors/singular values returned" +
-                " may be close.");
+        _failedConvergence=true;
+        _job.warn("_train: PCA Power method failed to converge within TOLERANCE.  Increase max_iterations or reduce " +
+                "TOLERANCE to mitigate this problem.");
       }
       _estimatedSingularValues[k] = lambda1_calc;
       return v;
@@ -306,22 +307,48 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         RandSubInit rtsk = new RandSubInit(_job._key, dinfo, gt);
         rtsk.doAll(_parms._nv, Vec.T_NUM, dinfo._adaptedFrame);
         ybig = rtsk.outputFrame(Key.<Frame>make(), null, null);
-
-        // Make input frame [A,Q,Y] where A = read-only training data, Y = A \tilde{Q}, Q from Y = QR factorization
-        // Note: If A is n by p (p = num cols with categoricals expanded), then \tilde{Q} is p by k and Q is n by k
-        Frame ayqfrm = new Frame(dinfo._adaptedFrame);
-        ayqfrm.add(ybig);
+        Frame yqfrm = new Frame(ybig);
         for (int i = 0; i < _parms._nv; i++)
-          ayqfrm.add("qcol_" + i, ayqfrm.anyVec().makeZero());
-        Frame ayfrm = ayqfrm.subframe(0, ncolA + _parms._nv);   // [A,Y]
-        Frame yqfrm = ayqfrm.subframe(ncolA, ayqfrm.numCols());   // [Y,Q]
-        Frame aqfrm = ayqfrm.subframe(0, ncolA);
-        aqfrm.add(ayqfrm.subframe(ncolA + _parms._nv, ayqfrm.numCols()));   // [A,Q]
+          yqfrm.add("qcol_" + i, yqfrm.anyVec().makeZero());
+     //   yqfrm.add(LinearAlgebraUtils.generateFrameOfZeros((int) ybig.numRows(), ybig.numCols()));
 
         // Calculate Cholesky of Gram to get R' = L matrix
         _job.update(1, "Computing QR factorization of Y");
         yinfo = new DataInfo(ybig, null, true, DataInfo.TransformType.NONE, true, false, false);
         DKV.put(yinfo._key, yinfo);
+        LinearAlgebraUtils.computeQ(_job._key, yinfo, yqfrm);
+
+        if (yqfrm.hasInfs()) {  // dataset is rank deficient, reduce _nv to fit the true rank better
+          _matrixRankReached=true;  // count when bad infinity or NaNs appear to denote problem;
+          String warnMessage = "_train SVD: Dataset is rank deficient.  _parms._nv was "+_parms._nv;
+          for (int colIndex = ybig.numCols(); colIndex < yqfrm.numCols(); colIndex++) {
+            if (yqfrm.vec(colIndex).pinfs() > 0) {
+              _parms._nv = colIndex-ybig.numCols();
+              break;
+            }
+          }
+          _job.warn(warnMessage+" and is now set to "+_parms._nv);
+          // redo with correct _nv number
+          gt = ArrayUtils.gaussianArray(_parms._nv, _ncolExp, _parms._seed);
+          rtsk = new RandSubInit(_job._key, dinfo, gt);
+          rtsk.doAll(_parms._nv, Vec.T_NUM, dinfo._adaptedFrame);
+          ybig.remove();
+          yinfo.remove();
+          ybig = rtsk.outputFrame(Key.<Frame>make(), null, null);
+          yinfo = new DataInfo(ybig, null, true, DataInfo.TransformType.NONE, true, false, false);
+          DKV.put(yinfo._key, yinfo);
+        }
+        // Make input frame [A,Q,Y] where A = read-only training data, Y = A \tilde{Q}, Q from Y = QR factorization
+        // Note: If A is n by p (p = num cols with categoricals expanded), then \tilde{Q} is p by k and Q is n by k
+        Frame ayqfrm = new Frame(dinfo._adaptedFrame);
+        ayqfrm.add(ybig);
+       // ayqfrm.add(LinearAlgebraUtils.generateFrameOfZeros((int) ybig.numRows(), _parms._nv));
+        for (int i = 0; i < _parms._nv; i++)
+          ayqfrm.add("qcol_" + i, ayqfrm.anyVec().makeZero());
+        Frame ayfrm = ayqfrm.subframe(0, ncolA + _parms._nv);   // [A,Y]
+        Frame aqfrm = ayqfrm.subframe(0, ncolA);
+        aqfrm.add(ayqfrm.subframe(ncolA + _parms._nv, ayqfrm.numCols()));   // [A,Q]
+        yqfrm = ayqfrm.subframe(ncolA, ayqfrm.numCols());   // [Y,Q]
         LinearAlgebraUtils.computeQ(_job._key, yinfo, yqfrm);
 
         model._output._iterations = 0;
@@ -584,10 +611,13 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
           for (int k = 1; k < _parms._nv; k++) {  // loop through for each eigenvalue/eigenvector...
             if (stop_requested()) break;
-            if (_matrixRankReached) {
-              _parms._nv = k-1;   // change number of eigenvector parameters to be the actual number of eigenvectors found
+            if (_matrixRankReached) { // number of eigenvalues found is less than _nv
+              int newk = k-1;
+              _job.warn("_train SVD: Dataset is rank deficient.  _parms._nv was "+_parms._nv+" and is now set to "+newk);
+              _parms._nv = newk;   // change number of eigenvector parameters to be the actual number of eigenvectors found
               break;
             }
+
             _job.update(1, "Iteration " + String.valueOf(k+1) + " of power method");   // One unit of work
 
             // 2) Iterate x_i <- (A_k'A_k/n)x_{i-1} until convergence and set v_k = x_i/||x_i||
@@ -624,7 +654,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             // 4) Normalize output frame columns by singular values to get left singular vectors
             model._output._v = ArrayUtils.transpose(model._output._v);  // Transpose to get V (since vectors were stored as rows)
             if (!_parms._only_v && !_parms._keep_u) {         // Delete U vecs if computed, but user does not want it returned
-              for (Vec uvec : uvecs) uvec.remove();
+              for (int index=0; index < _parms._nv; index++){
+                uvecs[index].remove();
+              }
               model._output._u_key = null;
             } else if (!_parms._only_v && _parms._keep_u) {   // Divide U cols by singular values and save to DKV
               u = new Frame(model._output._u_key, null, uvecs);
@@ -634,6 +666,10 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             }
           }
 
+          if (_failedConvergence) {
+            _job.warn("_train: PCA Power method failed to converge within TOLERANCE.  Increase max_iterations or " +
+                    "reduce TOLERANCE to mitigate this problem.");
+          }
           LinkedHashMap<String, ArrayList> scoreTable = new LinkedHashMap<String, ArrayList>();
           scoreTable.put("Timestamp", model._output._training_time_ms);
           scoreTable.put("err", model._output._history_err);
@@ -656,6 +692,12 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         if (_parms._save_v_frame) {
           model._output._v_key = Key.make(v_name);
           ArrayUtils.frame(model._output._v_key, null, model._output._v);
+        }
+        if (_matrixRankReached) { // need to shorten the correct eigen stuff
+          model._output._d = Arrays.copyOf(model._output._d, _parms._nv);
+          for (int index=0; index < model._output._v.length; index++) {
+            model._output._v[index] = Arrays.copyOf(model._output._v[index],  _parms._nv);
+          }
         }
         model._output._model_summary = createModelSummaryTable(model._output);
         model.update(_job);
@@ -754,7 +796,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     Arrays.fill(colFormats, "%5f");
     for(int i = 0; i < colHeaders.length; i++) colHeaders[i] = "sval" + String.valueOf(i + 1);
     return new TwoDimTable("Singular values", null, new String[1],
-            colHeaders, colTypes, colFormats, "", new String[1][], new double[][]{output._d});
+            colHeaders, colTypes, colFormats, "", new String[1][],
+            new double[][]{output._d});
   }
 
   private static class CalcSigmaU extends FrameTask<CalcSigmaU> {
