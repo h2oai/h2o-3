@@ -2,16 +2,18 @@
 
 [![Join the chat at https://gitter.im/h2oai/h2o-3](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/h2oai/h2o-3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-H2O scales statistics, machine learning, and math over Big Data. 
-
-H2O uses familiar interfaces like R, Python, Scala, the Flow notebook graphical interface, Excel, & JSON so that Big Data enthusiasts & experts can explore, munge, model, and score datasets using a range of algorithms including advanced ones like Deep Learning. H2O is extensible so that developers can add data transformations and model algorithms of their choice and access them through all of those clients.
+H2O is an in-memory platform for distributed, scalable machine learning. H2O uses familiar interfaces like R, Python, Scala, Java, JSON and the Flow notebook/web interface, and works seamlessly with big data technologies like Hadoop and Spark. H2O provides implementations of many popular algorithms such as GBM, Random Forest, Deep Neural Networks, Word2Vec and Stacked Ensembles.  H2O is extensible so that developers can add data transformations and custom algorithms of their choice and access them through all of those clients.  
 
 Data collection is easy. Decision making is hard. H2O makes it fast and easy to derive insights from your data through faster and better predictive modeling. H2O allows online scoring and modeling in a single platform.
+
+H2O-3 (this repository) is the third incarnation of H2O, and the successor to [H2O-2](https://github.com/h2oai/h2o-2).  
+
+### Table of Contents
 
 * [Downloading H2O-3](#Downloading)
 * [Open Source Resources](#Resources)
     * [Issue Tracking and Feature Requests](#IssueTracking) 
-    * [List of Open Source Resources](#OpenSourceResources)
+    * [List of H2O Resources](#OpenSourceResources)
 * [Using H2O-3 Code Artifacts (libraries)](#Artifacts)
 * [Building H2O-3](#Building)
 * [Launching H2O after Building](#Launching)
@@ -24,20 +26,28 @@ Data collection is easy. Decision making is hard. H2O makes it fast and easy to 
 <a name="Downloading"></a>
 ## 1. Downloading H2O-3
 
-While most of this README is written for developers who do their own builds, most H2O users just download and use a pre-built version.  If that's you, just follow these steps:
+While most of this README is written for developers who do their own builds, most H2O users just download and use a pre-built version.  If you are a Python or R user, the easiest way to install H2O is via [PyPI](https://pypi.python.org/pypi/h2o) or [Anaconda](https://anaconda.org/anaconda/h2o) (for Python) or [CRAN](https://CRAN.R-project.org/package=h2o) (for R):  
 
-1.  Point to <http://h2o.ai>
-2.  Click on Download
-3.  Click on Download H2O-3
-4.  Choose a platform
-5.  Follow the instructions on the download page
+#### Python
 
-For documentation, please visit <http://docs.h2o.ai>.
+```bash
+pip install h2o
+```
+
+#### R
+
+```r
+install.packages("h2o")
+```
+
+For the latest stable, nightly, Hadoop (or Spark / Sparkling Water) releases, or the stand-alone H2O jar, please visit: [https://h2o.ai/download](https://h2o.ai/download)
+
+More info on downloading & installing H2O is available in the [H2O User Guide](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/downloading.html).
 
 <a name="Resources"></a>
 ## 2. Open Source Resources
 
-Most people interact with three primary open source resources:  **GitHub** (which you've already found), **JIRA** (for issue tracking), and **h2ostream** (a community discussion forum).
+Most people interact with three or four primary open source resources:  **GitHub** (which you've already found), **JIRA** (for bug reports and issue tracking), **Stack Overflow** for H2O code/software-specific questions, and **h2ostream** (a Google Group / email discussion forum) for questions not suitable for Stack Overflow.  There is also a **Gitter** H2O developer chat group, however for archival purposes & to maximize accessibility, we'd prefer that standard H2O Q&A be conducted on Stack Overflow.
 
 <a name="IssueTracking"></a>
 ### 2.1 Issue Tracking and Feature Requests
@@ -53,7 +63,7 @@ You can browse and create new issues in our open source **JIRA**:  <http://jira.
     1.  Click the `Log In` button on the top right of the screen
     1.  Click `Create an acccount` near the bottom of the login box
     1.  Once you have created an account and logged in, use the `Create` button on the menu to create an issue
-    1.  Create H2O-3 issues in the [PUBDEV](https://0xdata.atlassian.net/projects/PUBDEV/issues) project
+    1.  Create H2O-3 issues in the [PUBDEV](https://0xdata.atlassian.net/projects/PUBDEV/issues) project.  (Note: Sparkling Water questions should be filed under the [SW](https://0xdata.atlassian.net/projects/SW/issues) project.)
 *	You can also vote for feature requests and/or other issues. Voting can help H2O prioritize the features that are included in each release. 
 	1. Go to the [H2O JIRA page](https://0xdata.atlassian.net/).
 	2. Click **Log In** to either log in or create an account if you do not already have one.
@@ -61,25 +71,36 @@ You can browse and create new issues in our open source **JIRA**:  <http://jira.
 	4. Click on the **Vote for this issue** link. This is located on the right side of the issue under the **People** section. 
 
 <a name="OpenSourceResources"></a>
-### 2.2 List of Open Source Resources
+### 2.2 List of H2O Resources
 
 *  GitHub
     * <https://github.com/h2oai/h2o-3>
-*  JIRA - file issues here ([PUBDEV](https://0xdata.atlassian.net/projects/PUBDEV/issues) contains issues for the current H2O-3 project)
-    * <http://jira.h2o.ai>
-*  h2ostream community forum - ask your questions here
+*  JIRA -- file bug reports / track issues here 
+    * The [PUBDEV](https://0xdata.atlassian.net/projects/PUBDEV/issues) project contains issues for the current H2O-3 project)
+*  Stack Overflow -- ask all code/software questions here
+    * <http://stackoverflow.com/questions/tagged/h2o>
+*  Cross Validated (Stack Exchange) -- ask algorithm/theory questions here
+    * <https://stats.stackexchange.com/questions/tagged/h2o> 
+*  h2ostream Google Group -- ask non-code related questions here
     * Web: <https://groups.google.com/d/forum/h2ostream>
     * Mail to: [h2ostream@googlegroups.com](mailto:h2ostream@googlegroups.com)
+* Gitter H2O Developer Chat
+    * <https://gitter.im/h2oai/h2o-3>    
 *  Documentation
-    * Bleeding edge nightly build page: <https://s3.amazonaws.com/h2o-release/h2o/master/latest.html>
-    * FAQ: <http://h2o.ai/product/faq/>
+    * H2O User Guide (main docs): <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/index.html>
+    * All H2O documenation links: <http://docs.h2o.ai> 
+    * Nightly build page (nightly docs linked in page): <https://s3.amazonaws.com/h2o-release/h2o/master/latest.html>
 *  Download (pre-built packages)
     * <http://h2o.ai/download>
-*  Jenkins
+*  Jenkins (H2O build and test system)
     * <http://test.h2o.ai>
 *  Website
     * <http://h2o.ai>
-*  Follow us on Twitter, [@h2oai](https://twitter.com/h2oai)
+*  Twitter -- follow us for updates and H2O news!
+    * <https://twitter.com/h2oai>
+
+*  Awesome H2O -- share your H2O-powered creations with us
+   * <https://github.com/h2oai/awesome-h2o>
 
 
 <a name="Artifacts"></a>
@@ -116,7 +137,6 @@ Refer to the [h2o-droplets GitHub repository](https://github.com/h2oai/h2o-dropl
 
 > Note: Stable H2O-3 artifacts are periodically published to Maven Central ([click here to search](http://search.maven.org/#search%7Cga%7C1%7Cai.h2o)) but may substantially lag behind H2O-3 Bleeding Edge nightly builds.
 
------
 
 <a name="Building"></a>
 ## 4. Building H2O-3
@@ -199,7 +219,7 @@ open target/docs-website/h2o-docs/index.html
 
 ### 4.2. Setup on all Platforms
 
-> **Note**: The following instructions assume you have installed the latest version of [**Pip**](https://pip.pypa.io/en/latest/installing/#install-or-upgrade-pip), which is installed with the latest version of [**Python**](https://www.python.org/downloads/).  
+> **Note**: The following instructions assume you have installed the latest version of [**pip**](https://pip.pypa.io/en/latest/installing/#install-or-upgrade-pip), which is installed with the latest version of [**Python**](https://www.python.org/downloads/).  
 
 ##### Install required Python packages (prepending with `sudo` if unsuccessful)
 
@@ -333,7 +353,6 @@ Otherwise, install from the [NodeJS website](http://nodejs.org/download/).
 Install [R](http://www.r-project.org/) and add the bin directory to your PATH if not already included.
 
 <a name="InstallRPackagesInUnix"></a>
-
 Install the following R packages: 
 
 - [RCurl](http://cran.r-project.org/package=RCurl)
@@ -341,27 +360,19 @@ Install the following R packages:
 - [statmod](http://cran.r-project.org/package=statmod)
 - [devtools](http://cran.r-project.org/package=devtools)
 - [roxygen2](http://cran.r-project.org/package=roxygen2) 
-- [testthat](http://cran.r-project.org/package=testthat).
+- [testthat](http://cran.r-project.org/package=testthat)
 
-```   
-    cd Downloads
-    R CMD INSTALL bitops_x.x-x.tgz
-    R CMD INSTALL RCurl_x.xx-x.x.tgz
-    R CMD INSTALL jsonlite_x.x.xx.tgz
-    R CMD INSTALL statmod_x.x.xx.tgz
-    R CMD INSTALL Rcpp_x.xx.x.tgz
-    R CMD INSTALL digest_x.x.x.tgz
-    R CMD INSTALL testthat_x.x.x.tgz
-    R CMD INSTALL stringr_x.x.x.tgz
-    R CMD INSTALL roxygen2_x.x.x.tgz
-    R CMD INSTALL devtools_x.x.x.tgz
-```
 To install these packages from within an R session:
 
-    R> install.packages("RCurl")
-    R> install.packages("jsonlite")
-    R> install.packages("statmod")
-    R> install.packages(c("devtools", "roxygen2", "testthat"))
+```r
+pkgs <- c("RCurl", "jsonlite", "statmod", "devtools", "roxygen2", "testthat")
+for (pkg in pkgs) {
+  if (! (pkg %in% rownames(installed.packages()))) install.packages(pkg) 
+}
+```
+Note that [libcurl](http://curl.haxx.se) is required for installation of the **RCurl** R package.
+
+
 
 ##### Step 4. Git Clone [h2o-3](https://github.com/h2oai/h2o-3.git)
 
@@ -430,7 +441,7 @@ Download and update h2o-3 source codes:
     sudo apt-get install -y nodejs
    
 
-##### Steps 2-4. Follow steps 2-4 for Ubuntu 14.04
+##### Steps 2-4. Follow steps 2-4 for Ubuntu 14.04 (above)
 
 ### 4.7. Setting up your preferred IDE environment
 
@@ -444,7 +455,7 @@ For users of Eclipse, generate project files with:
 
 
 
-###4.7 Setup on CentOS 7
+### 4.7 Setup on CentOS 7
 
 ```
 cd /opt
@@ -496,8 +507,11 @@ cd h2o-3
 <a name="Launching"></a>
 ## 5. Launching H2O after Building
 
+To start the H2O cluster locally, execute the following on the command line:
+
     java -jar build/h2o.jar
 
+A list of available start-up JVM and H2O options (e.g. `-Xmx`, `-nthreads`, `-ip`), is available in the [H2O User Guide](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/starting-h2o.html#from-the-command-line).
 
 <a name="BuildingHadoop"></a>
 ## 6. Building H2O on Hadoop
@@ -570,28 +584,25 @@ index 41b96b2..6368ea9 100644
  }
 ```
 
------
-
 <a name="Sparkling"></a>
 ## 7. Sparkling Water
 
-Sparkling Water combines two open-source technologies: Apache Spark and H2O, our machine learning engine.  It makes H2O’s library of Advanced Algorithms, including Deep Learning, GLM, GBM, K-Means, and Distributed Random Forest, accessible from Spark workflows. Spark users can select the best features from either platform to meet their Machine Learning needs.  Users can combine Spark's RDD API and Spark MLLib with H2O’s machine learning algorithms, or use H2O independently of Spark for the model building process and post-process the results in Spark. 
+Sparkling Water combines two open-source technologies: Apache Spark and the H2O Machine Learning platform.  It makes H2O’s library of advanced algorithms, including Deep Learning, GLM, GBM, K-Means, and Distributed Random Forest, accessible from Spark workflows. Spark users can select the best features from either platform to meet their Machine Learning needs.  Users can combine Spark's RDD API and Spark MLLib with H2O’s machine learning algorithms, or use H2O independently of Spark for the model building process and post-process the results in Spark. 
 
 **Sparkling Water Resources**:
 
 * [Download page for pre-built packages](http://h2o.ai/download/) (Scroll down for Sparkling Water)
-* [Sparkling Water GitHub repository](https://github.com/h2oai/sparkling-water)
+* [Sparkling Water GitHub repository](https://github.com/h2oai/sparkling-water)  
 * [README](https://github.com/h2oai/sparkling-water/blob/master/README.md)
 * [Developer documentation](https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md)
 
 <a name="Documentation"></a>
 ## 8. Documentation
 
-### Live docs website
+### Documenation Homepage
 
 Visit <http://docs.h2o.ai> for the top-level introduction to documentation on H2O projects.
 
-(Source code for the above page is [here](h2o-docs/src/front/index.html).)
 
 ### Generate REST API documentation 
 
@@ -610,18 +621,17 @@ If the build fails, try `gradlew clean`, then `git clean -f`.
 
 Documentation for each bleeding edge nightly build is available on the [nightly build page](http://s3.amazonaws.com/h2o-release/h2o/master/latest.html).
 
------
 
 <a name="Citing"></a>
 ## 9. Citing H2O
 
-If you use H2O as part of your workflow, please cite your H2O resource(s) using the following BibTex entry:
+If you use H2O as part of your workflow in a publication, please cite your H2O resource(s) using the following BibTex entry:
 
 ### H2O Software
 
 	@Manual{h2o_package_or_module,
 	    title = {package_or_module_title},
-	    author = {The H2O.ai team},
+	    author = {H2O.ai},
 	    year = {year},
 	    month = {month},
 	    note = {version_information},
@@ -630,9 +640,13 @@ If you use H2O as part of your workflow, please cite your H2O resource(s) using 
 
 **Formatted H2O Software citation examples**:
 
-The H2O.ai team (Oct. 2016). _Python Interface for H2O_, Python package version 3.10.0.8. [https://github.com/h2oai/h2o-3].
+- H2O.ai (Oct. 2016). _Python Interface for H2O_, Python module version 3.10.0.8. [https://github.com/h2oai/h2o-3](https://github.com/h2oai/h2o-3).
+- H2O.ai (Oct. 2016). _R Interface for H2O_, R package version 3.10.0.8. [https://github.com/h2oai/h2o-3](https://github.com/h2oai/h2o-3).
+- H2O.ai (Oct. 2016). _H2O_, H2O version 3.10.0.8. [https://github.com/h2oai/h2o-3](https://github.com/h2oai/h2o-3).
 
 ### H2O Booklets
+
+H2O algorithm booklets are available at the [Documentation Homepage](http://docs.h2o.ai/h2o/latest-stable/index.html).
 
 	@Manual{h2o_booklet_name,
 	    title = {booklet_title},
@@ -644,21 +658,19 @@ The H2O.ai team (Oct. 2016). _Python Interface for H2O_, Python package version 
 
 **Formatted booklet citation examples**:
 
-Arora, A., Candel, A., Lanford, J., LeDell, E., and Parmar, V. (Oct. 2016). _Deep Learning with H2O_. [http://h2o.ai/resources]. 
+Arora, A., Candel, A., Lanford, J., LeDell, E., and Parmar, V. (Oct. 2016). _Deep Learning with H2O_. <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/DeepLearningBooklet.pdf>. 
 
-Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _Gradient Boosted Models with H2O_. [http://h2o.ai/resources]. 
+Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _Gradient Boosted Models with H2O_. <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GBMBooklet.pdf>. 
 
------
 
 <a name="Community"></a>
 ## 10. Community
 
-We will breathe & sustain a vibrant community with the focus of taking a software engineering approach to data science and empowering everyone interested in data to be able to hack data using math and algorithms.
-Join us on google groups at [h2ostream](https://groups.google.com/forum/#!forum/h2ostream) and feel free to file issues directly on our [JIRA](http://jira.h2o.ai). 
+H2O has been built by a great many number of contributors over the years both within H2O.ai (the company) and the greater open source community.  You can begin to contribute to H2O by answering [Stack Overflow](http://stackoverflow.com/questions/tagged/h2o) questions or [filing bug reports](https://0xdata.atlassian.net/projects/PUBDEV/issues).  Please join us!  
 
-Team & Committers
+### Team & Committers
 
-```
+```h
 SriSatish Ambati
 Cliff Click
 Tom Kraljevic
