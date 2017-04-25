@@ -24,7 +24,6 @@ public class DeepwaterCaffeModel implements BackendModel {
   private double[] _dropout_ratios = new double[0];
   private long _seed;
   private boolean _useGPU;
-  private boolean _useDocker = false;
   private String _graph = "";
 
   private Process _process;
@@ -54,27 +53,10 @@ public class DeepwaterCaffeModel implements BackendModel {
 
   private void start() {
     if (_process == null) {
-      if (_useDocker) {
-        boolean ok = false;
-        try {
-          startDocker("h2oai/deepwater:gpu", true);
-          ok = true;
-        } catch (IOException e) {
-          // Ignore, retry CPU
-        }
-        if (!ok) {
-          try {
-            startDocker("h2oai/deepwater:cpu", false);
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          }
-        }
-      } else {
-        try {
-          startRegular();
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
+      try {
+        startRegular();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
       }
 
       Cmd cmd = new Cmd();
@@ -174,53 +156,11 @@ public class DeepwaterCaffeModel implements BackendModel {
 
   //
 
-  private void startDocker(String image, boolean gpu) throws IOException {
-    String home = System.getProperty("user.home");
-    int uid = Integer.parseInt(new BufferedReader(new InputStreamReader(
-        Runtime.getRuntime().exec("id -u").getInputStream())).readLine());
-    int gid = Integer.parseInt(new BufferedReader(new InputStreamReader(
-        Runtime.getRuntime().exec("id -g").getInputStream())).readLine());
-    String pwd = System.getProperty("user.dir") + "/caffe";
-
-    /*
-    // nuke all existing docker images! CAREFUL
-    ProcessBuilder pb = new ProcessBuilder("bash", "-c", "'docker stop $(docker ps -a -q)'");
-    pb.redirectError(ProcessBuilder.Redirect.INHERIT);
-    _process = pb.start();
-    try {
-      _process.waitFor();
-    } catch (InterruptedException e) { // Ignore
-    }
-    */
-
-    // Update image first
-    String s = "docker pull " + image;
-    ProcessBuilder pb = new ProcessBuilder(s.split(" "));
-    pb.redirectError(ProcessBuilder.Redirect.INHERIT);
-    _process = pb.start();
-    try {
-      _process.waitFor();
-    } catch (InterruptedException e) { // Ignore
-    }
-
-    // Launch it
-    String opts = "-i --rm --user " + uid + ":" + gid + " -v " + pwd + ":" + pwd + " -w " + pwd;
-    opts += " -v " + home + "/h2o-docker/caffe:/h2o-docker/caffe";
-    String tmp = System.getProperty("java.io.tmpdir");
-    opts += " -v " + tmp + ":" + tmp;
-    s = gpu ? "nvidia-docker" : "docker";
-    s += " run " + opts + " " + image + " python3 /h2o-docker/caffe/backend.py";
-    pb = new ProcessBuilder(s.split(" "));
-    pb.redirectError(ProcessBuilder.Redirect.INHERIT);
-    _process = pb.start();
-  }
-
   // Debug, or if wee find a way to package Caffe without Docker
   private void startRegular() throws IOException {
-    String home = System.getProperty("user.home");
-    String pwd = home + "/h2o-docker/caffe";
+    String pwd = "/opt/caffe-h2o";
     ProcessBuilder pb = new ProcessBuilder("python3 backend.py".split(" "));
-    pb.environment().put("PYTHONPATH", home + "/caffe/python:" + home + "/protobuf/python");
+    pb.environment().put("PYTHONPATH", "/opt/caffe/python");
     pb.redirectError(ProcessBuilder.Redirect.INHERIT);
     pb.directory(new File(pwd));
     _process = pb.start();
