@@ -188,6 +188,7 @@ public abstract class GLMTask  {
 
 
    private double [] _predictorSDs;
+   private final boolean _expandedResponse; // true iff family == multinomial and response has been maually expanded into binary columns
 
    public double [] predictorMeans(){return _basicStats.mean();}
    public double [] predictorSDs(){
@@ -200,7 +201,7 @@ public abstract class GLMTask  {
      return _basicStatsResponse.sigma();
    }
 
-   public YMUTask(DataInfo dinfo, int nclasses, boolean computeWeightedMeanSigmaResponse, boolean skipNAs, boolean haveResponse) {
+   public YMUTask(DataInfo dinfo, int nclasses, boolean computeWeightedMeanSigmaResponse, boolean skipNAs, boolean haveResponse, boolean expandedResponse) {
      _nums = dinfo._nums;
      _numOff = dinfo._cats;
      _responseId = haveResponse ? dinfo.responseChunkId(0) : -1;
@@ -209,6 +210,7 @@ public abstract class GLMTask  {
      _nClasses = nclasses;
      _computeWeightedMeanSigmaResponse = computeWeightedMeanSigmaResponse;
      _skipNAs = skipNAs;
+     _expandedResponse = _nClasses > 1 && expandedResponse;
    }
 
    @Override public void setupLocal(){}
@@ -273,8 +275,17 @@ public abstract class GLMTask  {
          continue;
        if(_computeWeightedMeanSigmaResponse) {
          //FIXME: Add support for subtracting offset from response
-         for(int i = 0; i < _nClasses; ++i)
-           numsResponse[i] = chunks[chunks.length-_nClasses+i].atd(r);
+         if(_expandedResponse) {
+           for (int i = 0; i < _nClasses; ++i)
+             numsResponse[i] = chunks[chunks.length - _nClasses + i].atd(r);
+         } else {
+           Arrays.fill(numsResponse,0);
+           double d = response.atd(r);
+           if(Double.isNaN(d))
+             Arrays.fill(numsResponse,Double.NaN);
+           else
+             numsResponse[(int)d] = 1;
+         }
          _basicStatsResponse.add(numsResponse,w);
        }
        double d = response.atd(r);
