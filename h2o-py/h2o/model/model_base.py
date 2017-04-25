@@ -201,7 +201,7 @@ class ModelBase(backwards_compatible()):
           >>>
           >>> iris_h2o = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
           >>> g = h2o.h2o.H2OGradientBoostingEstimator()
-          >>> g.train(x=range(1,5),y="species",training_frame=fr)
+          >>> g.train(x=list(range(0,4)),y="C5",training_frame=iris_h2o)
           >>> g.loco(fr)
           >>> g.loco(fr, replace_val="mean")
           >>> g.loco(fr,replace_val="median")

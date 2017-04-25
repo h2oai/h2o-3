@@ -3027,9 +3027,12 @@ h2o.deepfeatures <- function(object, data, layer) {
 #' h2o.init()
 #' fr <- as.h2o(iris)
 #' g <- h2o.gbm(1:3,4,fr)
-#' h2o.loco(g,fr) #Dropping each column iteratively and score.
-#' h2o.loco(g,fr,replace_val = "mean") #Replace each column by its mean (mode for categoricals) iteratively and score.
-#' h2o.loco(g,fr,replace_val = "median") #Replace each column by its median (mode for categoricals) iteratively and score.
+#' #Dropping each column iteratively and score.
+#' h2o.loco(g,fr)
+#' #Replace each column by its mean (mode for categoricals) iteratively and score.
+#' h2o.loco(g,fr,replace_val = "mean")
+#' #Replace each column by its median (mode for categoricals) iteratively and score.
+#' h2o.loco(g,fr,replace_val = "median")
 #' }
 #' @export
 h2o.loco <- function(model, frame, loco_frame_id, replace_val){

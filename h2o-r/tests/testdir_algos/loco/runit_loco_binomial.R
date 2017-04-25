@@ -19,6 +19,11 @@ test.loco.binomial <- function(){
 
     expect_equal(as.data.frame(h2o_loco),r_loco)
 
+    #Run LOCO with replace_val set to "mean" and "median"
+    h2o_loco_mean <- h2o.loco(gbm, pros.hex,replace_val="mean")
+    h2o_loco_median <- h2o.loco(gbm, pros.hex,replace_val="median")
+
+
 }
 
 doTest("LOCO Test", test.loco.binomial)

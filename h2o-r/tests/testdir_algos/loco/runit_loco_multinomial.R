@@ -14,6 +14,10 @@ test.loco.multinomial <- function(){
     r_loco <- run_loco_r_mult(gbm,iris.hex)
     expect_equal(as.data.frame(h2o_loco),r_loco)
 
+    #Run LOCO with replace_val set to "mean" and "median"
+    h2o_loco_mean <- h2o.loco(gbm, iris.hex,replace_val="mean")
+    h2o_loco_median <- h2o.loco(gbm, iris.hex,replace_val="median")
+
 }
 
 doTest("LOCO Test", test.loco.multinomial)
