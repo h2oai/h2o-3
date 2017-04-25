@@ -102,10 +102,6 @@ public class GLMScore extends MRTask<GLMScore> {
 
   private void processRow(DataInfo.Row r, float [] res, double [] ps, NewChunk [] preds, int ncols) {
     if(_dinfo._responses != 0)res[0] = (float) r.response[0];
-    if(r.rid == 20 || r.rid == 30)
-      System.out.println("rid = " + r.rid + ", response = " + r.response(0)  + ", isBad = " + r.response_bad);
-    if(r.response_bad)
-      System.out.println("response at " + r.rid + " is bad!");
     if (r.predictors_bad) {
       Arrays.fill(ps,Double.NaN);
     } else if(r.weight == 0) {
@@ -150,10 +146,6 @@ public class GLMScore extends MRTask<GLMScore> {
       DataInfo.Row r = _dinfo.newDenseRow();
       for (int rid = 0; rid < chks[0]._len; ++rid) {
         _dinfo.extractDenseRow(chks, rid, r);
-        if(r.rid == 20) {
-          System.out.println("haha");
-          _dinfo.extractDenseRow(chks, rid, r);
-        }
         processRow(r,res,ps,preds,ncols);
       }
     }

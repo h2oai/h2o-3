@@ -210,7 +210,7 @@ public abstract class GLMTask  {
      _nClasses = nclasses;
      _computeWeightedMeanSigmaResponse = computeWeightedMeanSigmaResponse;
      _skipNAs = skipNAs;
-     _expandedResponse = _nClasses > 1 && expandedResponse;
+     _expandedResponse = _nClasses == 1 || expandedResponse;
    }
 
    @Override public void setupLocal(){}
