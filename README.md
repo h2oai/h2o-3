@@ -265,43 +265,27 @@ Install [Node.js](http://nodejs.org/download/) and add the installed directory `
 
 ##### Step 5. Install R, the required packages, and Rtools:
 
-To install these packages from within an R session, enter:
-```R
-    install.packages("RCurl")
-    install.packages("jsonlite")
-    install.packages("statmod")
-    install.packages(c("devtools", "roxygen2", "testthat"))
-```
-Install [R](http://www.r-project.org/) and add the preferred bin\i386 or bin\x64 directory to your PATH.
+Install [R](http://www.r-project.org/) and add the bin directory to your PATH if not already included.
 
-Note: Acceptable versions of R are >= 2.13 && <= 3.0.0 && >= 3.1.1.
+<a name="InstallRPackagesInUnix"></a>
+Install the following R packages: 
 
-To manually install packages, download the releases of the following R packages: 
-
-- [bitops](http://cran.r-project.org/package=bitops)
-- [devtools](http://cran.r-project.org/package=devtools)
-- [digest](http://cran.r-project.org/package=digest)
-- [Rcpp](http://cran.r-project.org/package=Rcpp)
 - [RCurl](http://cran.r-project.org/package=RCurl)
 - [jsonlite](http://cran.r-project.org/package=jsonlite)
-- [roxygen2](http://cran.r-project.org/package=roxygen2)
 - [statmod](http://cran.r-project.org/package=statmod)
-- [stringr](http://cran.r-project.org/package=stringr)
-- [testthat](http://cran.r-project.org/package=testthat).
+- [devtools](http://cran.r-project.org/package=devtools)
+- [roxygen2](http://cran.r-project.org/package=roxygen2) 
+- [testthat](http://cran.r-project.org/package=testthat)
 
+To install these packages from within an R session:
+
+```r
+pkgs <- c("RCurl", "jsonlite", "statmod", "devtools", "roxygen2", "testthat")
+for (pkg in pkgs) {
+  if (! (pkg %in% rownames(installed.packages()))) install.packages(pkg) 
+}
 ```
-    cd Downloads
-    R CMD INSTALL bitops_x.x-x.zip
-    R CMD INSTALL RCurl_x.xx-x.x.zip
-    R CMD INSTALL jsonlite_x.x.xx.zip
-    R CMD INSTALL statmod_x.x.xx.zip
-    R CMD INSTALL Rcpp_x.xx.x.zip
-    R CMD INSTALL digest_x.x.x.zip
-    R CMD INSTALL testthat_x.x.x.zip
-    R CMD INSTALL stringr_x.x.x.zip
-    R CMD INSTALL roxygen2_x.x.x.zip
-    R CMD INSTALL devtools_x.x.x.zip
-```
+Note that [libcurl](http://curl.haxx.se) is required for installation of the **RCurl** R package.
 
 Finally, install [Rtools](http://cran.r-project.org/bin/windows/Rtools/), which is a collection of command line tools to facilitate R development on Windows.
 >**NOTE**: During Rtools installation, do **not** install Cygwin.dll.
@@ -591,7 +575,7 @@ Sparkling Water combines two open-source technologies: Apache Spark and the H2O 
 
 **Sparkling Water Resources**:
 
-* [Download page for pre-built packages](http://h2o.ai/download/) (Scroll down for Sparkling Water)
+* [Download page for pre-built packages](http://h2o.ai/download/) 
 * [Sparkling Water GitHub repository](https://github.com/h2oai/sparkling-water)  
 * [README](https://github.com/h2oai/sparkling-water/blob/master/README.md)
 * [Developer documentation](https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md)
@@ -601,7 +585,7 @@ Sparkling Water combines two open-source technologies: Apache Spark and the H2O 
 
 ### Documenation Homepage
 
-Visit <http://docs.h2o.ai> for the top-level introduction to documentation on H2O projects.
+The main H2O documentation is the [H2O User Guide](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/index.html).  Visit <http://docs.h2o.ai> for the top-level introduction to documentation on H2O projects. 
 
 
 ### Generate REST API documentation 
