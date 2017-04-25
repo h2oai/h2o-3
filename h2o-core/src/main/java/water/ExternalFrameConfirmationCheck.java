@@ -18,10 +18,11 @@ public class ExternalFrameConfirmationCheck extends H2O.H2OCountedCompleter{
         // confirmAb.get1() forces this code to wait for result and
         // forces all the previous work to be done on the h2o node side.
         confirmByte = ab.get1();
+        tryComplete();
     }
 
     public static byte getConfirmation(AutoBuffer ab, long timeout) throws InterruptedException, TimeoutException, ExecutionException {
-        ExternalFrameConfirmationCheck confirmationCheck = new ExternalFrameConfirmationCheck(ab);
+        ExternalFrameConfirmationCheck confirmationCheck = water.H2O.submitTask(new ExternalFrameConfirmationCheck(ab));
         confirmationCheck.get(timeout, TimeUnit.SECONDS);
         return confirmationCheck.confirmByte;
     }
