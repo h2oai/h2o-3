@@ -10,6 +10,7 @@ A feedforward artificial neural network (ANN) model, also known as deep neural n
 
 Quick Start and Additional Resources
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* `Deep Learning Booklet <http://h2o.ai/resources>`__
 * Deep Learning in H2O Tutorial (R): `[GitHub] <https://htmlpreview.github.io/?https://github.com/ledell/sldm4-h2o/blob/master/sldm4-deeplearning-h2o.html>`__
 * H2O + TensorFlow on AWS GPU Tutorial (Python Notebook) `[Blog] <http://blog.h2o.ai/2016/07/h2o-tensorflow-on-aws-gpu/>`__ `[Github] <https://github.com/h2oai/sparkling-water/blob/master/py/examples/notebooks/TensorFlowDeepLearning.ipynb>`__
 * Deep learning in H2O with Arno Candel (Overview) `[Youtube] <https://www.youtube.com/watch?v=zGdXaRug7LI/>`__
@@ -534,18 +535,13 @@ FAQ
 
  For Deep Learning, variable importance is calculated using the Gedeon method.
 
+-  **How is deviance computed for a Deep Learning regression model?**
+
+ The following formula is used to compute deviance for a Deep Learning regression model:
+
+   Loss = Quadratic -> MSE==Deviance For Absolute/Laplace or Huber -> MSE != Deviance
+
 --------------
-
-Deep Learning Algorithm
-~~~~~~~~~~~~~~~~~~~~~~~
-
-To compute deviance for a Deep Learning regression model, the following
-formula is used:
-
- Loss = Quadratic -> MSE==Deviance For Absolute/Laplace or Huber -> MSE != Deviance
-
-For more information about how the Deep Learning algorithm works, refer
-to the `Deep Learning booklet <http://h2o.ai/resources>`__.
 
 Deep Learning Tuning Guide
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

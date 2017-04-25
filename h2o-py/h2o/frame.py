@@ -553,30 +553,30 @@ class H2OFrame(object):
         return _binop(self, "%", rhs)
 
     def __or__(self, rhs):
-        return _binop(self, "|", rhs)
+        return _binop(self, "|", rhs, rtype="bool")
 
     def __and__(self, rhs):
-        return _binop(self, "&", rhs)
+        return _binop(self, "&", rhs, rtype="bool")
 
     def __ge__(self, rhs):
-        return _binop(self, ">=", rhs)
+        return _binop(self, ">=", rhs, rtype="bool")
 
     def __gt__(self, rhs):
-        return _binop(self, ">", rhs)
+        return _binop(self, ">", rhs, rtype="bool")
 
     def __le__(self, rhs):
-        return _binop(self, "<=", rhs)
+        return _binop(self, "<=", rhs, rtype="bool")
 
     def __lt__(self, rhs):
-        return _binop(self, "<", rhs)
+        return _binop(self, "<", rhs, rtype="bool")
 
     def __eq__(self, rhs):
         if rhs is None: rhs = float("nan")
-        return _binop(self, "==", rhs)
+        return _binop(self, "==", rhs, rtype="bool")
 
     def __ne__(self, rhs):
         if rhs is None: rhs = float("nan")
-        return _binop(self, "!=", rhs)
+        return _binop(self, "!=", rhs, rtype="bool")
 
     def __pow__(self, rhs):
         return _binop(self, "^", rhs)
@@ -595,10 +595,10 @@ class H2OFrame(object):
         return _binop(lhs, "-", self)
 
     def __rand__(self, lhs):
-        return _binop(lhs, "&", self)
+        return _binop(lhs, "&", self, rtype="bool")
 
     def __ror__(self, lhs):
-        return _binop(lhs, "|", self)
+        return _binop(lhs, "|", self, rtype="bool")
 
     def __rtruediv__(self, lhs):
         return _binop(lhs, "/", self)
@@ -607,7 +607,7 @@ class H2OFrame(object):
         return _binop(lhs, "/", self)
 
     def __rfloordiv__(self, lhs):
-        return _binop(lhs, "intDiv", self)
+        return _binop(lhs, "intDiv", self, rtype="int")
 
     def __rmul__(self, lhs):
         return _binop(lhs, "*", self)
@@ -620,7 +620,7 @@ class H2OFrame(object):
         return self._unop("abs")
 
     def __invert__(self):
-        return self._unop("!!")
+        return self._unop("!!", rtype="bool")
 
     def __nonzero__(self):
         if self.nrows > 1 or self.ncols > 1:
@@ -1854,7 +1854,7 @@ class H2OFrame(object):
         """
         Merge two datasets based on common column names.
 
-        :param H2OFrame other: The frame to merge to the current one.  Must have at least one column in common with
+        :param H2OFrame other: The frame to merge to the current one. By default, must have at least one column in common with
             this frame, and all columns in common are used as the merge key.  If you want to use only a subset of the
             columns in common, rename the other columns so the columns are unique in the merged result.
         :param bool all_x: If True, include all rows from the left/self frame
@@ -1865,11 +1865,23 @@ class H2OFrame(object):
 
         :returns: New H2OFrame with the result of merging the current frame with the ``other`` frame.
         """
-        common_names = list(set(self.names) & set(other.names))
-        if not common_names:
-            raise H2OValueError("No columns in common to merge on!")
-        if by_x is None: by_x = [self.names.index(c) for c in common_names]
-        if by_y is None: by_y = [other.names.index(c) for c in common_names]
+
+        if by_x is None and by_y is None:
+            common_names = list(set(self.names) & set(other.names))
+            if not common_names:
+                raise H2OValueError("No columns in common to merge on!")
+
+        if by_x is None:
+            by_x = [self.names.index(c) for c in common_names]
+        else:
+            by_x = _getValidCols(by_x,self)
+
+        if by_y is None:
+            by_y = [other.names.index(c) for c in common_names]
+        else:
+            by_y = _getValidCols(by_y,other)
+
+
         return H2OFrame._expr(expr=ExprNode("merge", self, other, all_x, all_y, by_x, by_y, method))
 
 
@@ -2146,16 +2158,16 @@ class H2OFrame(object):
 
         :returns: new H2OFrame with columns of the "enum" type.
         """
-        
         for colname in self.names:
             t = self.types[colname]
-            if t not in {"int", "string", "enum"}: raise H2OValueError("Only 'int' or 'string' are allowed for asfactor(), got %s:%s " % (colname, t))
-
+            if t not in {"bool", "int", "string", "enum"}:
+                raise H2OValueError("Only 'int' or 'string' are allowed for "
+                                    "asfactor(), got %s:%s " % (colname, t))
         fr = H2OFrame._expr(expr=ExprNode("as.factor", self), cache=self._ex._cache)
         if fr._ex._cache.types_valid():
-          fr._ex._cache.types = {name: "enum" for name in self.types}
+            fr._ex._cache.types = {name: "enum" for name in self.types}
         else:
-          raise H2OTypeError("Types are not available in result")
+            raise H2OTypeError("Types are not available in result")
         
         return fr
 
@@ -2973,7 +2985,20 @@ class H2OFrame(object):
 # Helpers
 #-----------------------------------------------------------------------------------------------------------------------
 
-def _binop(lhs, op, rhs):
+def _getValidCols(by_idx, fr):  # so user can input names of the columns as well is idx num
+    tmp = []
+    for i in by_idx:
+        if type(i) == str:
+            if i not in fr.names:
+                raise H2OValueError("Column: " + i + " not in frame.")
+            tmp.append(fr.names.index(i))
+        elif type(i) != int:
+            raise H2OValueError("Join on column: " + i + " not of type int")
+        else:
+            tmp.append(i)
+    return list(set(tmp))
+
+def _binop(lhs, op, rhs, rtype=None):
     assert_is_type(lhs, str, numeric, datetime.date, pandas_timestamp, numpy_datetime, H2OFrame)
     assert_is_type(rhs, str, numeric, datetime.date, pandas_timestamp, numpy_datetime, H2OFrame)
     if isinstance(lhs, H2OFrame) and isinstance(rhs, H2OFrame) and lhs._is_frame and rhs._is_frame:
@@ -2997,4 +3022,7 @@ def _binop(lhs, op, rhs):
         rhs = H2OFrame.moment(date=rhs)
 
     cache = lhs._ex._cache if isinstance(lhs, H2OFrame) else rhs._ex._cache
-    return H2OFrame._expr(expr=ExprNode(op, lhs, rhs), cache=cache)
+    res = H2OFrame._expr(expr=ExprNode(op, lhs, rhs), cache=cache)
+    if rtype is not None and res._ex._cache._names is not None:
+        res._ex._cache._types = {name: rtype for name in res._ex._cache._names}
+    return res

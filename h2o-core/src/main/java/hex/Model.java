@@ -547,6 +547,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     public synchronized void clearModelMetrics() { _model_metrics = new Key[0]; }
 
+    public synchronized Key<ModelMetrics>[] getModelMetrics() { return Arrays.copyOf(_model_metrics, _model_metrics.length); }
+
     protected long checksum_impl() {
       return (null == _names ? 13 : Arrays.hashCode(_names)) *
               (null == _domains ? 17 : Arrays.deepHashCode(_domains)) *
@@ -732,7 +734,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     ModelMetrics mm = _output._cross_validation_metrics != null ? _output._cross_validation_metrics : _output._validation_metrics != null ? _output._validation_metrics : _output._training_metrics;
     if (mm == null) return Double.NaN;
 
-    return ((ModelMetricsRegression)mm).residual_deviance();
+    return ((ModelMetricsRegression)mm)._mean_residual_deviance;
   }
 
   public double logloss() {

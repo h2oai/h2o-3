@@ -370,6 +370,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if( _parms._weights_column!=null ) cv_fr.remove( _parms._weights_column ); // The CV frames will have their own private weight column
 
     ModelBuilder<M, P, O>[] cvModelBuilders = new ModelBuilder[N];
+    List<Frame> cvFramesForFailedModels = new ArrayList<>();
     for( int i=0; i<N; i++ ) {
       String identifier = origDest + "_cv_" + (i+1);
       // Training/Validation share the same data, but will have exclusive weights
@@ -392,16 +393,32 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       cv_mb._parms._valid = cvValid._key;
       cv_mb._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
       cv_mb._parms._nfolds = 0; // Each submodel is not itself folded
-      cv_mb.init(false);        // Arg check submodels
+      cv_mb.clearValidationErrors(); // each submodel gets its own validation messages and error_count()
+
       // Error-check all the cross-validation Builders before launching any
-      if( cv_mb.error_count() > 0 ) // Gather all submodel error messages
-        for( ValidationMessage vm : cv_mb._messages )
+      cv_mb.init(false);
+      if( cv_mb.error_count() > 0 ) { // Gather all submodel error messages
+        Log.info("Marking frame for failed cv model for removal: " + cvTrain._key);
+        cvFramesForFailedModels.add(cvTrain);
+        Log.info("Marking frame for failed cv model for removal: " + cvValid._key);
+        cvFramesForFailedModels.add(cvValid);
+
+        for (ValidationMessage vm : cv_mb._messages)
           message(vm._log_level, vm._field_name, vm._message);
+      }
       cvModelBuilders[i] = cv_mb;
     }
 
-    if( error_count() > 0 )     // Error in any submodel
+    if( error_count() > 0 ) {               // Found an error in one or more submodels
+      Futures fs = new Futures();
+      for (Frame cvf : cvFramesForFailedModels) {
+        cvf.vec(weightName).remove(fs);     // delete the Vec's chunks
+        DKV.remove(cvf._key, fs);           // delete the Frame from the DKV, leaving its vecs
+        Log.info("Removing frame for failed cv model: " + cvf._key);
+      }
+      fs.blockForPending();
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
+    }
     // check that this Job's original _params haven't changed
     assert old_cs == _parms.checksum();
     return cvModelBuilders;
@@ -744,6 +761,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public void message(byte log_level, String field_name, String message) {
     _messages = Arrays.copyOf(_messages, _messages.length + 1);
     _messages[_messages.length - 1] = new ValidationMessage(log_level, field_name, message);
+
+    if (log_level == Log.ERRR) _error_count++;
   }
 
  /** Get a string representation of only the ERROR ValidationMessages (e.g., to use in an exception throw). */
@@ -1282,6 +1301,34 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     Log.info(table);
     return table;
+  }
+
+  public static void bulkBuildModels(Job job, ModelBuilder[] modelBuilders, int parallelization) {
+    final int N = modelBuilders.length;
+    H2O.H2OCountedCompleter submodel_tasks[] = new H2O.H2OCountedCompleter[N];
+    int nRunning=0;
+    RuntimeException rt = null;
+    for( int i=0; i<N; ++i ) {
+      if (job.stop_requested() ) break; // Stop launching but still must block for all async jobs
+      modelBuilders[i]._start_time = System.currentTimeMillis();
+      submodel_tasks[i] = H2O.submitTask(modelBuilders[i].trainModelImpl());
+      if(++nRunning == parallelization) { //piece-wise advance in training the models
+        while (nRunning > 0) try {
+          submodel_tasks[i + 1 - nRunning--].join();
+          job.update(1); // One job finished
+        } catch (RuntimeException t) {
+          if (rt == null) rt = t;
+        }
+        if(rt != null) throw rt;
+      }
+    }
+    for( int i=0; i<N; ++i ) //all sub-models must be completed before the main model can be built
+      try {
+        submodel_tasks[i].join();
+      } catch(RuntimeException t){
+        if(rt == null) rt = t;
+      }
+    if(rt != null) throw rt;
   }
 
 }

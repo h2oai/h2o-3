@@ -174,7 +174,7 @@ To accomplish this, for a new matrix :math:`C_{y}` with off diagonal entries of 
 
 The rows of :math:`P` are the principal components of :math:`X`.
 
- :math:`C_{y}=\frac{1}{n}YY^{T}=\frac{1}{n}(PX)(PX)^{T}C_{y}=PC_{x}P^{T}`.
+     :math:`C_{y}=\frac{1}{n}YY^{T}=\frac{1}{n}(PX)(PX)^{T}=P(\frac{1}{n}XX^{T})P^{T}=PC_{x}P^{T}`.
 
 Because any symmetric matrix is diagonalized by an orthogonal matrix of its eigenvectors, solve matrix :math:`P` to be a matrix where each row is an eigenvector of :math:`\frac{1}{n}XX^{T}=C_{x}`
 
@@ -182,7 +182,7 @@ Then the principal components of :math:`X` are the eigenvectors of :math:`C_{x}`
 
 Eigenvectors of :math:`C_{x}` are found by first finding the eigenvalues :math:`\lambda` of :math:`C_{x}`.
 
-For each eigenvalue :math:`\lambda(C-{x}-\lambda I)x =0` where :math:`x` is the eigenvector
+For each eigenvalue :math:`(C_{x}-\lambda I)x =0` where :math:`x` is the eigenvector
 associated with :math:`\lambda`.
 
 Solve for :math:`x` by Gaussian elimination.
@@ -190,7 +190,7 @@ Solve for :math:`x` by Gaussian elimination.
 Recovering SVD from GLRM
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-GLRM gives :math:`x` and :math:`y`, where :math:`x\in\rm \Bbb I \!\Bbb R^{n * k}` and :math:`y\in\rm \Bbb I \!\Bbb R ^{k*m}`
+GLRM gives :math:`x` and :math:`y`, where :math:`x\in\rm \Bbb I \!\Bbb R^{n \times k}` and :math:`y\in\rm \Bbb I \!\Bbb R ^{k \times m}`
 
    - :math:`n` = number of rows :math:`A`
 
@@ -216,11 +216,11 @@ It is assumed that the :math:`x` and :math:`y` columns are independent.
   
   :math:`X^TX= (R^TQ^T) QR = R^TR`, since :math:`Q^TQ=I => R=L^T` (transpose lower triangular)
 
-   **Note**: In code, :math:`X^TX \over n = LL^T`
+   **Note**: In code, :math:`\frac{X^TX}{n} = LL^T`
 
     :math:`X^TX = (L \sqrt{n})(L\sqrt{n})^T =R^TR`
 
-    :math:`R = L^T\sqrt{n}\in\rm \Bbb I \! \Bbb R^{k * k}` reduced QR decomposition.
+    :math:`R = L^T\sqrt{n}\in\rm \Bbb I \! \Bbb R^{k \times k}` reduced QR decomposition.
 
     For more information, refer to the `Rectangular matrix <https://en.wikipedia.org/wiki/QR_decomposition#Rectangular_matrix>`__ section of "QR Decomposition" on Wikipedia.
 
@@ -230,19 +230,19 @@ It is assumed that the :math:`x` and :math:`y` columns are independent.
 
 3. Find SVD (locally) of :math:`RS^T`
 
-  :math:`RS^T = U \sum V^T, U^TU = I = V^TV` orthogonal
+  :math:`RS^T = U \Sigma V^T, U^TU = I = V^TV` orthogonal
   
-  :math:`XY = Q(RS^T)Z^T = (QU\sum(V^T Z^T) SVD`
+  :math:`XY = Q(RS^T)Z^T = (QU)\Sigma(V^T Z^T)` SVD
   
-  :math:`(QU)^T(QU) = U^T Q^TQU U^TU = I`
+  :math:`(QU)^T(QU) = U^T Q^TQU = U^TU = I`
   
   :math:`(ZV)^T(ZV) = V^TZ^TZV = V^TV = I`
 
-Right singular vectors: :math:`ZV \in \rm \Bbb I \!\Bbb R^{m * k}`
+Right singular vectors: :math:`ZV \in \rm \Bbb I \!\Bbb R^{m \times k}`
 
-Singular values: :math:`\sum \in \rm \Bbb I \!\Bbb R^{k * k}` diagonal
+Singular values: :math:`\Sigma \in \rm \Bbb I \!\Bbb R^{k \times k}` diagonal
 
-Left singular vectors: :math:`(QU) \in \rm \Bbb I \!\Bbb R^{n * k}`
+Left singular vectors: :math:`QU \in \rm \Bbb I \!\Bbb R^{n \times k}`
 
 References
 ~~~~~~~~~~

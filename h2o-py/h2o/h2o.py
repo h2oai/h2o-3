@@ -29,6 +29,7 @@ from .estimators.kmeans import H2OKMeansEstimator
 from .estimators.naive_bayes import H2ONaiveBayesEstimator
 from .estimators.random_forest import H2ORandomForestEstimator
 from .estimators.stackedensemble import H2OStackedEnsembleEstimator
+from .estimators.klime import H2OKLimeEstimator
 from .expr import ExprNode
 from .frame import H2OFrame
 from .grid.grid_search import H2OGridSearch
@@ -696,6 +697,7 @@ def get_model(model_id):
     elif algo == "glrm":         m = H2OGeneralizedLowRankEstimator()
     elif algo == "glm":          m = H2OGeneralizedLinearEstimator()
     elif algo == "gbm":          m = H2OGradientBoostingEstimator()
+    elif algo == "klime":        m = H2OKLimeEstimator()
     elif algo == "deepwater":    m = H2ODeepWaterEstimator()
     elif algo == "deeplearning":
         if model_json["output"]["model_category"] == "AutoEncoder":
@@ -900,9 +902,14 @@ def download_all_logs(dirname=".", filename=None):
     Download H2O log files to disk.
 
     :param dirname: a character string indicating the directory that the log file should be saved in.
-    :param filename: a string indicating the name that the CSV file should be.
+    :param filename: a string indicating the name that the CSV file should be. Note that the saved format is .zip, so the file name must include the .zip extension.
 
-    :returns: path of logs written.
+    :returns: path of logs written in a zip file.
+
+    :examples: The following code will save the zip file `'autoh2o_log.zip'` in a directory that is one down from where you are currently working into a directory called `your_directory_name`. (Please note that `your_directory_name` should be replaced with the name of the directory that you've created and that already exists.)
+
+        >>> h2o.download_all_logs(dirname='./your_directory_name/', filename = 'autoh2o_log.zip')
+
     """
     assert_is_type(dirname, str)
     assert_is_type(filename, str, None)

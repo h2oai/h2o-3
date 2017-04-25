@@ -524,12 +524,18 @@ class H2OGridSearch(backwards_compatible()):
 
 
     def coef(self):
-        """Return the coefficients for this model."""
+        """Return the coefficients that can be applied to the non-standardized data.
+
+        Note: standardize = True by default. If set to False, then coef() returns the coefficients that are fit directly.
+
+        """
         return {model.model_id: model.coef() for model in self.models}
 
 
     def coef_norm(self):
-        """Return the normalized coefficients."""
+        """Return coefficients fitted on the standardized data (requires standardize = True, which is on by default). These coefficients can be used to evaluate variable importance.
+
+        """
         return {model.model_id: model.coef_norm() for model in self.models}
 
 

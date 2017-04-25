@@ -992,7 +992,9 @@ h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 }
 
 #'
-#' Retrieve the model coefficeints
+#' Return the coefficients that can be applied to the non-standardized data.
+#'
+#' Note: standardize = True by default. If set to False, then coef() returns the coefficients that are fit directly.
 #'
 #' @param object an \linkS4class{H2OModel} object.
 #' @export
@@ -1012,7 +1014,7 @@ h2o.coef <- function(object) {
 }
 
 #'
-#' Retrieve the normalized coefficients
+#' Return coefficients fitted on the standardized data (requires standardize = True, which is on by default). These coefficients can be used to evaluate variable importance.
 #'
 #' @param object an \linkS4class{H2OModel} object.
 #' @export
