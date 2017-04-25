@@ -26,7 +26,7 @@ H2O-3 (this repository) is the third incarnation of H2O, and the successor to [H
 <a name="Downloading"></a>
 ## 1. Downloading H2O-3
 
-While most of this README is written for developers who do their own builds, most H2O users just download and use a pre-built version.  If you are a Python or R user, the easiest way to install H2O is via [PyPI](https://pypi.python.org/pypi/h2o) or [Anaconda](https://anaconda.org/anaconda/h2o) (for Python) or [CRAN](https://CRAN.R-project.org/package=h2o) (for R):  
+While most of this README is written for developers who do their own builds, most H2O users just download and use a pre-built version.  If you are a Python or R user, the easiest way to install H2O is via [PyPI](https://pypi.python.org/pypi/h2o) or [Anaconda](https://anaconda.org/h2oai/h2o) (for Python) or [CRAN](https://CRAN.R-project.org/package=h2o) (for R):  
 
 #### Python
 
