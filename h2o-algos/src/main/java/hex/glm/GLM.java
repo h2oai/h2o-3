@@ -426,7 +426,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _dinfo.setWeights(_generatedWeights = "__glm_gen_weights", wc);
         }
 
-        YMUTask ymt = new YMUTask(_dinfo, _parms._family == Family.multinomial?nclasses():1, setWeights, skippingRows,true).doAll(_dinfo._adaptedFrame);
+        YMUTask ymt = new YMUTask(_dinfo, _parms._family == Family.multinomial?nclasses():1, setWeights, skippingRows,true,false).doAll(_dinfo._adaptedFrame);
         if (ymt.wsum() == 0)
           throw new IllegalArgumentException("No rows left in the dataset after filtering out rows with missing values. Ignore columns with many NAs or impute your missing values prior to calling glm.");
         Log.info(LogMsg("using " + ymt.nobs() + " nobs out of " + _dinfo._adaptedFrame.numRows() + " total"));
@@ -439,7 +439,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (_parms._family == Family.multinomial) {
           _state._ymu = MemoryManager.malloc8d(_nclass);
           for (int i = 0; i < _state._ymu.length; ++i)
-            _state._ymu[i] = _priorClassDist[i];
+            _state._ymu[i] = _priorClassDist[i];//ymt.responseMeans()[i];
         } else
         _state._ymu = _parms._intercept?ymt._yMu:new double[]{_parms.linkInv(0)};
       } else {
