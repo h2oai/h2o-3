@@ -73,7 +73,7 @@
 #'        1). Defaults to 0.9.
 #' @param checkpoint Model checkpoint to resume training with.
 #' @param sample_rate Row sample rate per tree (from 0.0 to 1.0) Defaults to 1.
-#' @param sample_rate_per_class Row sample rate per tree per class (from 0.0 to 1.0)
+#' @param sample_rate_per_class A list/vector of the fraction of rows to sample for each tree, per class (from 0.0 to 1.0)
 #' @param col_sample_rate Column sample rate (from 0.0 to 1.0) Defaults to 1.
 #' @param col_sample_rate_change_per_level Relative change of the column sampling rate for every level (from 0.0 to 2.0) Defaults to 1.
 #' @param col_sample_rate_per_tree Column sample rate per tree (from 0.0 to 1.0) Defaults to 1.

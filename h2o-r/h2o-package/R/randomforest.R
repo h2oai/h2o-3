@@ -62,7 +62,7 @@
 #' @param mtries Number of variables randomly sampled as candidates at each split. If set to -1, defaults to sqrt{p} for
 #'        classification and p/3 for regression (where p is the # of predictors Defaults to -1.
 #' @param sample_rate Row sample rate per tree (from 0.0 to 1.0) Defaults to 0.6320000291.
-#' @param sample_rate_per_class Row sample rate per tree per class (from 0.0 to 1.0)
+#' @param sample_rate_per_class A list/vector of the fraction of rows to sample for each tree, per class (from 0.0 to 1.0)
 #' @param binomial_double_trees \code{Logical}. For binary classification: Build 2x as many trees (one per class) - can lead to higher
 #'        accuracy. Defaults to FALSE.
 #' @param checkpoint Model checkpoint to resume training with.

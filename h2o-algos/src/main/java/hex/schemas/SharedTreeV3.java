@@ -73,7 +73,7 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
     @API(help = "Row sample rate per tree (from 0.0 to 1.0)", gridable = true)
     public double sample_rate;
 
-    @API(help = "Row sample rate per tree per class (from 0.0 to 1.0)", level = API.Level.expert, gridable = true)
+    @API(help = "A list/vector of the fraction of rows to sample for each tree, per class (from 0.0 to 1.0)", level = API.Level.expert, gridable = true)
     public double[] sample_rate_per_class;
 
     @API(help = "Column sample rate per tree (from 0.0 to 1.0)", level = API.Level.secondary, gridable = true)
