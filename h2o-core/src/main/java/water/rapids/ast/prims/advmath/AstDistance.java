@@ -135,9 +135,12 @@ public class AstDistance extends AstBuiltin<AstDistance> {
             for (int c = 0; c < p; ++c) { //cols
               distRQ += cs[c].atd(r) * Qs[c].at(q);
             }
-            distRQ /= denomR[r] * denomQ[q];
-            if (cosine_sq)
+            if (cosine_sq) {
               distRQ *= distRQ;
+              distRQ /= denomR[r] * denomQ[q];
+            } else {
+              distRQ /= Math.sqrt(denomR[r] * denomQ[q]);
+            }
           }
           ncs[q].addNum(distRQ); // one Q distance per Reference
         }
