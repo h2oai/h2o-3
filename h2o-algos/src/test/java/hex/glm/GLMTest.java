@@ -1556,6 +1556,55 @@ public class GLMTest  extends TestUtil {
     }
   }
 
+  @Test public void testQuasibinomial(){
+    GLMParameters params = new GLMParameters(Family.quasibinomial);
+    GLM glm = new GLM(params);
+    params.validate(glm);
+    params._link = Link.log;
+    try {
+      params.validate(glm);
+      Assert.assertTrue("should've thrown IAE", false);
+    } catch(IllegalArgumentException iae){
+      // do nothing
+    }
+
+    // test it behaves like binomial on binary data
+    GLMModel model = null, model2 = null, model3 = null, model4 = null;
+    Frame fr = parse_test_file("smalldata/glm_test/prostate_cat_replaced.csv");
+    try {
+      Scope.enter();
+      // R results
+//      Coefficients:
+//        (Intercept)           ID          AGE       RACER2       RACER3        DPROS        DCAPS          PSA          VOL      GLEASON
+//          -8.894088     0.001588    -0.009589     0.231777    -0.459937     0.556231     0.556395     0.027854    -0.011355     1.010179
+      String[] cfs1 = new String[]{"Intercept", "AGE", "RACE.R2", "RACE.R3", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON"};
+      double[] vals = new double[]{-8.14867, -0.01368, 0.32337, -0.38028, 0.55964, 0.49548, 0.02794, -0.01104, 0.97704};
+      params = new GLMParameters(Family.quasibinomial);
+      params._response_column = "CAPSULE";
+      params._ignored_columns = new String[]{"ID"};
+      params._train = fr._key;
+      params._lambda = new double[]{0};
+      params._standardize = false;
+      params._link = Link.logit;
+//      params._missing_values_handling = MissingValuesHandling.Skip;
+      glm = new GLM(params);
+      model = glm.trainModel().get();
+      HashMap<String, Double> coefs = model.coefficients();
+      System.out.println(coefs);
+      for (int i = 0; i < cfs1.length; ++i)
+        assertEquals(vals[i], coefs.get(cfs1[i]), 1e-4);
+      assertEquals(512.3, nullDeviance(model), 1e-1);
+      assertEquals(378.3, residualDeviance(model), 1e-1);
+      assertEquals(371, resDOF(model), 0);
+    } finally {
+      fr.delete();
+      if(model != null)model.delete();
+      if(model2 != null)model2.delete();
+      if(model3 != null)model3.delete();
+      if(model4 != null)model4.delete();
+      Scope.exit();
+    }
+  }
   @Test public void testSynthetic() throws Exception {
     GLMModel model = null;
     Frame fr = parse_test_file("smalldata/glm_test/glm_test2.csv");
