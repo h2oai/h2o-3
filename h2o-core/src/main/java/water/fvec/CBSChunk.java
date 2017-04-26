@@ -71,7 +71,7 @@ public class CBSChunk extends Chunk {
 
   @Override boolean set_impl(int idx, long l) {
     if (l == 1 || l == 0) {
-      write(idx, (byte) l);
+      set_byte(idx, (byte)l);
       return true;
     }
     return false;

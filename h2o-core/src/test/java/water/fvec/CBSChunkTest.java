@@ -69,24 +69,38 @@ public class CBSChunkTest extends TestUtil {
       vals[i] = x[rnd.nextInt(3)];
 
     Chunk c = Vec.makeVec(vals, Vec.VectorGroup.VG_LEN1.addVec()).chunkForChunkIdx(0);
+    Chunk c2 = c.deepCopy();
+    c2._vec = c._vec;
     assertTrue(c instanceof CBSChunk);
-    for(int i = 0; i < vals.length; ++i)
-      assertEquals(vals[i],c.atd(i),0);
-    for(int i = 0; i < vals.length; ++i)
-      c.set(i,vals[i] = x[rnd.nextInt(3)]);
-    for(int i = 0; i < vals.length; ++i)
-      assertEquals(vals[i],c.atd(i),0);
+    for(int i = 0; i < vals.length; ++i) {
+      assertEquals(vals[i], c.atd(i), 0);
+      assertEquals(vals[i], c2.atd(i), 0);
+    }
+    for(int i = 0; i < vals.length; ++i) {
+      c.set(i, vals[i] = x[rnd.nextInt(3)]);
+      if(Double.isNaN(vals[i]))c2.setNA_impl(i); else c2.set(i, (long)vals[i]);
+    }
+    for(int i = 0; i < vals.length; ++i) {
+      assertEquals(vals[i], c.atd(i), 0);
+      assertEquals(vals[i], c2.atd(i), 0);
+    }
     // without NAS
     for(int i = 0; i < vals.length; ++i)
       vals[i] = x[rnd.nextInt(2)];
     c = Vec.makeVec(vals, Vec.VectorGroup.VG_LEN1.addVec()).chunkForChunkIdx(0);
+    c2 = c.deepCopy();
+    c2._vec = c._vec;
     assertTrue(c instanceof CBSChunk);
     for(int i = 0; i < vals.length; ++i)
       assertEquals(vals[i],c.atd(i),0);
-    for(int i = 0; i < vals.length; ++i)
-      c.set(i,vals[i] = x[rnd.nextInt(2)]);
-    for(int i = 0; i < vals.length; ++i)
-      assertEquals(vals[i],c.atd(i),0);
+    for(int i = 0; i < vals.length; ++i) {
+      c.set(i, vals[i] = x[rnd.nextInt(2)]);
+      c2.set(i, (long)vals[i]);
+    }
+    for(int i = 0; i < vals.length; ++i) {
+      assertEquals(vals[i], c.atd(i), 0);
+      assertEquals(vals[i], c2.at8(i), 0);
+    }
     // set some NAs
     int i = vals.length >> 2;
     int j = vals.length >> 1;
@@ -96,8 +110,9 @@ public class CBSChunkTest extends TestUtil {
     vals[i] = Double.NaN;
     Assert.assertTrue(c.isNA(i));
     Assert.assertTrue(c.isNA(j));
-    for(int k = 0; k < vals.length; ++k)
-      assertEquals(vals[k],c.atd(k),0);
+    for(int k = 0; k < vals.length; ++k) {
+      assertEquals(vals[k], c.atd(k), 0);
+    }
     Scope.exit();
   }
   // Test one bit per value compression which is used
