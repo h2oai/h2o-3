@@ -618,8 +618,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
 
     HashMap<String, Object> params = new HashMap<>();
-    params.put("updater", "grow_gpu");
+    params.put("updater", "grow_gpu_hist");
     params.put("silent", 1);
+//    params.put("gpu_id", 1); // TODO: Pass in GPU ID
     HashMap<String, DMatrix> watches = new HashMap<>();
     watches.put("train", trainMat);
     try {
