@@ -22,11 +22,6 @@ public class PostFileServlet extends HttpServlet {
       if (destination_frame == null) {
         destination_frame = "upload" + Key.rand();
       }
-      if (!JettyHTTPD.validKeyName(destination_frame)) {
-        JettyHTTPD.setResponseStatus(response, HttpServletResponse.SC_BAD_REQUEST);
-        response.getWriter().write("Invalid key name, contains illegal characters");
-        return;
-      }
 
       //
       // Here is an example of how to upload a file from the command line.
