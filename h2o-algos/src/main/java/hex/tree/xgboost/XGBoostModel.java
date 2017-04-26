@@ -215,7 +215,14 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     if ( p._backend == XGBoostParameters.Backend.auto || p._backend == XGBoostParameters.Backend.gpu ) {
       if (XGBoost.hasGPU()) {
         Log.info("Using GPU backend.");
-        params.put("updater", "grow_gpu");
+        if (p._tree_method == XGBoostParameters.TreeMethod.exact) {
+          Log.info("Using grow_gpu (exact) updater.");
+          params.put("updater", "grow_gpu");
+        }
+        else {
+          Log.info("Using grow_gpu_hist (approximate) updater.");
+          params.put("updater", "grow_gpu_hist");
+        }
       } else {
         Log.info("No GPU found. Using CPU backend.");
       }

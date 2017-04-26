@@ -433,7 +433,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     // Checks and adjustments:
     // 1) observation weights (adjust mean/sigmas for predictors and response)
     // 2) NAs (check that there's enough rows left)
-    GLMTask.YMUTask ymt = new GLMTask.YMUTask(dinfo, nClasses,nClasses == 1, parms._missing_values_handling == XGBoostModel.XGBoostParameters.MissingValuesHandling.Skip, true).doAll(dinfo._adaptedFrame);
+    GLMTask.YMUTask ymt = new GLMTask.YMUTask(dinfo, nClasses,nClasses == 1, parms._missing_values_handling == XGBoostModel.XGBoostParameters.MissingValuesHandling.Skip, true, true).doAll(dinfo._adaptedFrame);
     if (ymt.wsum() == 0 && parms._missing_values_handling == XGBoostModel.XGBoostParameters.MissingValuesHandling.Skip)
       throw new H2OIllegalArgumentException("No rows left in the dataset after filtering out rows with missing values. Ignore columns with many NAs or set missing_values_handling to 'MeanImputation'.");
     if (parms._weights_column != null && parms._offset_column != null) {
@@ -507,10 +507,10 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         }
 
         HashMap<String, DMatrix> watches = new HashMap<>();
-        if (validMat!=null)
-          watches.put("valid", validMat);
-        else
-          watches.put("train", trainMat);
+//        if (validMat!=null)
+//          watches.put("valid", validMat);
+//        else
+//          watches.put("train", trainMat);
 
         // create the backend
         model.model_info()._booster = ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, model.createParams(), 0, watches, null, null);
@@ -618,8 +618,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
 
     HashMap<String, Object> params = new HashMap<>();
-    params.put("updater", "grow_gpu");
+    params.put("updater", "grow_gpu_hist");
     params.put("silent", 1);
+//    params.put("gpu_id", 1); // TODO: Pass in GPU ID
     HashMap<String, DMatrix> watches = new HashMap<>();
     watches.put("train", trainMat);
     try {
