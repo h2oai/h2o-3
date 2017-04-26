@@ -538,9 +538,9 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     return score0(data, preds);
   }
 
-  @Override public double[] score0(Chunk chks[], double weight, double offset, int row_in_chunk, double[] tmp, double[] preds ) {
-    throw H2O.unimpl();
-  }
+//  @Override public double[] score0(Chunk chks[], double weight, double offset, int row_in_chunk, double[] tmp, double[] preds ) {
+//    throw H2O.unimpl();
+//  }
 
   @Override protected long checksum_impl() {
     return super.checksum_impl() * _output._run_time + model_info().hashCode();
