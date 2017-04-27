@@ -944,18 +944,18 @@ public class DataInfo extends Keyed<DataInfo> {
   public final int getCategoricalId(int cid, int val) {
     boolean isIWV = isInteractionVec(cid);
     if(val == -1) { // NA
-      if(_skipMissing) return val;
       val = _catNAFill[cid];
     } else if( !_useAllFactorLevels && !isIWV )  // categorical interaction vecs drop reference level in a special way
       val -= 1;
+    if(val < 0) return -1; // column si to be skipped
     int [] offs = fullCatOffsets();
     int expandedVal = val + offs[cid];
     if(expandedVal >= offs[cid+1]) {  // previously unseen level
       assert _valid:"Categorical value out of bounds, got " + val + ", next cat starts at " + fullCatOffsets()[cid+1];
-      if(_skipMissing) return -1;
+      if(_skipMissing)
+        return -1;
       val = _catNAFill[cid];
     }
-    if(val < 0) return -1; // column si to be skipped
     if (_catMap != null && _catMap[cid] != null) {  // some levels are ignored?
       val = _catMap[cid][val];
       assert _useAllFactorLevels;
