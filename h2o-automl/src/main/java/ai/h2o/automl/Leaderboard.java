@@ -398,9 +398,9 @@ public class Leaderboard extends Keyed<Leaderboard> {
     return sb.toString();
   }
 
-  protected static final String[] colHeaders = {
-          "model ID", "timestamp", "metric"
-  };
+  protected static final String[] colHeaders(String metric) {
+    return new String[] {"model ID", "timestamp", metric.toString()};
+  }
 
   protected static final String[] colTypes= {
           "string",
@@ -419,7 +419,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     return new TwoDimTable(tableHeader,
             "models sorted in order of " + sort_metric + ", best first",
             rowHeaders,
-            Leaderboard.colHeaders,
+            Leaderboard.colHeaders(sort_metric),
             Leaderboard.colTypes,
             Leaderboard.colFormats,
             "#");
