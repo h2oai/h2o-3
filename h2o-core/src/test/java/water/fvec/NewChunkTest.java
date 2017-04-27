@@ -7,6 +7,7 @@ import org.junit.Test;
 import water.DKV;
 import water.Futures;
 import water.TestUtil;
+import water.parser.BufferedString;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -39,6 +40,7 @@ public class NewChunkTest extends TestUtil {
     cc.close(0, new Futures()).blockForPending();
   }
   void remove() {if(vec != null)vec.remove();}
+
 
   @Test public void testSparseDoubles(){
     NewChunk nc = new NewChunk(new double[]{Math.PI});
@@ -282,7 +284,11 @@ public class NewChunkTest extends TestUtil {
       for (int k = 0; k < K; ++k) nc.addNA();
       assertEquals(K, nc._len);
       post();
-      for (int k = 0; k < K; ++k) Assert.assertTrue(cc.isNA(k));
+      BufferedString bs = new BufferedString();
+      for (int k = 0; k < K; ++k) {
+        Assert.assertTrue(cc.isNA(k));
+        Assert.assertEquals(null,cc.atStr(bs,k));
+      }
       Assert.assertTrue(cc instanceof C0DChunk);
     } finally { remove(); }
   }
