@@ -2,6 +2,19 @@
 
 ## H2O
 
+### Ueno (3.10.4.6) - 4/26/2017
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4265'>PUBDEV-4265</a>] -         Problem with h2o.uploadFile on Windows
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4339'>PUBDEV-4339</a>] -         glm: get AIOOB exception on attached data
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4341'>PUBDEV-4341</a>] -         External cluster always reports &quot;&quot;Timeout for confirmation exceeded!&quot;
+</li>
+</ul>
+
 ### Ueno (3.10.4.5) - 4/19/2017
 
 <h4>        Bug
