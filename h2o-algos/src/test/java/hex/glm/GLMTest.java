@@ -1873,4 +1873,59 @@ public class GLMTest  extends TestUtil {
       }
     }
   }
+
+  /**
+   * train = data.frame(c('red', 'blue','blue'),c('x','x','y'),c(1,'0','0'))
+   names(train)= c('color', 'letter', 'label')
+   test = data.frame(c('red', 'blue','blue','yellow'),c('x','x','y','y'),c(1,'0','0','0'))
+   names(test)= c('color', 'letter', 'label')
+   htrain = as.h2o(train)
+   htest = as.h2o(test)
+   hh = h2o.glm(x = 1:2,y = 3,training_frame = htrain,family = "binomial",max_iterations = 15,alpha = 1,missing_values_handling = 'Skip')
+   h2o.predict(hh,htest)
+   */
+  @Test
+  public void testUnseenLevels(){
+    Scope.enter();
+    try {
+      Vec v0 = Vec.makeCon(Vec.newKey(), 1, 0, 0, 1,1);
+      v0.setDomain(new String[]{"blue", "red"});
+      Frame trn = new Frame(Key.<Frame>make("train"), new String[]{"color", "label"}, new Vec[]{v0, v0.makeCopy(null)});
+      DKV.put(trn);
+      Vec v3 = Vec.makeCon(Vec.newKey(), 1, 0, 0, 2);
+      v3.setDomain(new String[]{"blue", "red", "yellow"});
+      Vec v5 = Vec.makeCon(v3.group().addVec(), 1, 0, 0, 0);
+      Frame tst = new Frame(Key.<Frame>make("test"), new String[]{"color", "label"}, new Vec[]{v3, v5});
+      DKV.put(tst);
+      GLMParameters parms = new GLMParameters(Family.gaussian);
+      parms._train = trn._key;
+      parms._response_column = "label";
+      parms._missing_values_handling = MissingValuesHandling.Skip;
+      GLMModel m = new GLM(parms).trainModel().get();
+      System.out.println("coefficients = " + m.coefficients());
+      double icpt = m.coefficients().get("Intercept");
+      Frame preds = m.score(tst);
+      Assert.assertEquals(icpt+m.coefficients().get("color.red"), preds.vec(0).at(0), 0);
+      Assert.assertEquals(icpt+m.coefficients().get("color.blue"), preds.vec(0).at(1), 0);
+      Assert.assertEquals(icpt+m.coefficients().get("color.blue"), preds.vec(0).at(2), 0);
+      Assert.assertEquals(icpt, preds.vec(0).at(3), 0);
+      parms._missing_values_handling = MissingValuesHandling.MeanImputation;
+      GLMModel m2 = new GLM(parms).trainModel().get();
+      Frame preds2 = m2.score(tst);
+      icpt = m2.coefficients().get("Intercept");
+      System.out.println("coefficients = " + m2.coefficients());
+      Assert.assertEquals(icpt+m2.coefficients().get("color.red"), preds2.vec(0).at(0), 0);
+      Assert.assertEquals(icpt+m2.coefficients().get("color.blue"), preds2.vec(0).at(1), 0);
+      Assert.assertEquals(icpt+m2.coefficients().get("color.blue"), preds2.vec(0).at(2), 0);
+      Assert.assertEquals(icpt+m2.coefficients().get("color.red"), preds2.vec(0).at(3), 0);
+      trn.delete();
+      tst.delete();
+      m.delete();
+      preds.delete();
+      preds2.delete();
+      m2.delete();
+    }finally {
+      Scope.exit();
+    }
+  }
 }
