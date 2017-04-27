@@ -1339,6 +1339,7 @@ public abstract class GLMTask  {
         double mu = r.response(1);
         double eta = r.response(2);
         double d = mu*(1-mu);
+        if(d == 0) d = 1e-10;
         wz = r.weight * (eta * d + (y-mu));
         w  = r.weight * d;
       } else if(_beta != null) {
