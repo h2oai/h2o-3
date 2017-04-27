@@ -557,14 +557,40 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     private transient Cholesky _chol;
     private transient L1Solver _lslvr;
 
+
+    int [] findZeros(double [] vals){
+      int [] res = new int[4];
+      int cnt = 0;
+      for(int i = 0; i < vals.length; ++i){
+        if(vals[i] == 0){
+          if(res.length == cnt)
+            res = Arrays.copyOf(res,res.length*2);
+          res[cnt++] = i;
+        }
+      }
+      return Arrays.copyOf(res,cnt);
+    }
     private double [] solveGram(Solver s, GLMIterationTask t) {
-      int [] zeros = t._gram.findZeroCols();
-      if(zeros.length > 0) {
-        t._gram.dropCols(zeros);
-        t._xy = ArrayUtils.removeIds(t._xy, zeros);
-        if(t._beta != null)
-          t._beta = ArrayUtils.removeIds(t._beta, zeros);
-        _state.removeCols(zeros);
+      // look for predictors which never appeared (can happen e.g. with weights or ignored NAs)
+      // never occuring columns must have gram[i] == 0 for all j AND XtY[i] == 0
+      if(_parms._family != Family.multinomial) { // don't do this for multinomial family - too many problems resizing the gradient
+        int[] zeros = t._gram.findZeroCols();
+        int falseZeros = 0;
+        for (int i = 0; i < zeros.length; i++) {
+          if (t._xy[zeros[i]] == 0)
+            zeros[i - falseZeros] = zeros[i];
+          else
+            falseZeros++;
+        }
+        zeros = Arrays.copyOf(zeros, zeros.length - falseZeros);
+        if (zeros.length > 0) {
+          _state.removeCols(zeros);
+          // no need to solve with zeros, remove them, solve and extend the result to original size (filling in zeros)
+          t._gram.dropCols(zeros);
+          t._xy = ArrayUtils.removeIds(t._xy, zeros);
+          if (t._beta != null)
+            t._beta = ArrayUtils.removeIds(t._beta, zeros);
+        }
       }
       t._gram.mul(_parms._obj_reg);
       ArrayUtils.mult(t._xy, _parms._obj_reg);
