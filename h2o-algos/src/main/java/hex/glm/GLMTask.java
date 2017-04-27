@@ -487,13 +487,13 @@ public abstract class GLMTask  {
       for(int cid = 0; cid < _dinfo._cats; ++cid){
         Chunk c = chks[cid];
         if(c.isSparseZero()) {
-          int nvals = c.asSparseDoubles(vals,ids,_dinfo.catNAFill(cid));
+          int nvals = c.asSparseDoubles(vals,ids,-1);
           for(int i = 0; i < nvals; ++i){
             int id = _dinfo.getCategoricalId(cid,(int)vals[i]);
             if(id >=0) etas[ids[i]] += _beta[id];
           }
         } else {
-          c.getIntegers(ids, 0, c._len,_dinfo.catNAFill(cid));
+          c.getIntegers(ids, 0, c._len,-1);
           for(int i = 0; i < ids.length; ++i){
             int id = _dinfo.getCategoricalId(cid,ids[i]);
             if(id >=0) etas[i] += _beta[id];
@@ -507,15 +507,15 @@ public abstract class GLMTask  {
       for(int cid = 0; cid < _dinfo._cats; ++cid){
         Chunk c = chks[cid];
         if(c.isSparseZero()) {
-          int nvals = c.asSparseDoubles(vals,ids,_dinfo.catNAFill(cid));
+          int nvals = c.asSparseDoubles(vals,ids,-1);
           for(int i = 0; i < nvals; ++i){
             int id = _dinfo.getCategoricalId(cid,(int)vals[i]);
             if(id >=0) _gradient[id] += etas[ids[i]];
           }
         } else {
-          c.getIntegers(ids, 0, c._len,_dinfo.catNAFill(cid));
+          c.getIntegers(ids, 0, c._len,-1);
           for(int i = 0; i < ids.length; ++i){
-            int id = _dinfo.getCategoricalId(cid,(int)ids[i]);
+            int id = _dinfo.getCategoricalId(cid,ids[i]);
             if(id >=0) _gradient[id] += etas[i];
           }
         }
@@ -772,13 +772,13 @@ public abstract class GLMTask  {
       for(int cid = 0; cid < _dinfo._cats; ++cid){
         Chunk c = chks[cid];
         if(c.isSparseZero()) {
-          int nvals = c.asSparseDoubles(vals,ids,_dinfo.catNAFill(cid));
+          int nvals = c.asSparseDoubles(vals,ids,-1);
           for(int i = 0; i < nvals; ++i){
             int id = _dinfo.getCategoricalId(cid,(int)vals[i]);
             if(id >=0)ArrayUtils.add(etas[ids[i]],_beta[id]);
           }
         } else {
-          c.getIntegers(ids, 0, c._len,_dinfo.catNAFill(cid));
+          c.getIntegers(ids, 0, c._len,-1);
           for(int i = 0; i < ids.length; ++i){
             int id = _dinfo.getCategoricalId(cid,ids[i]);
             if(id >=0) ArrayUtils.add(etas[i],_beta[id]);
@@ -792,13 +792,13 @@ public abstract class GLMTask  {
       for(int cid = 0; cid < _dinfo._cats; ++cid){
         Chunk c = chks[cid];
         if(c.isSparseZero()) {
-          int nvals = c.asSparseDoubles(vals,ids,_dinfo.catNAFill(cid));
+          int nvals = c.asSparseDoubles(vals,ids,-1);
           for(int i = 0; i < nvals; ++i){
             int id = _dinfo.getCategoricalId(cid,(int)vals[i]);
             if(id >=0) ArrayUtils.add(_gradient[id],etas[ids[i]]);
           }
         } else {
-          c.getIntegers(ids, 0, c._len,_dinfo.catNAFill(cid));
+          c.getIntegers(ids, 0, c._len,-1);
           for(int i = 0; i < ids.length; ++i){
             int id = _dinfo.getCategoricalId(cid,ids[i]);
             if(id >=0) ArrayUtils.add(_gradient[id],etas[i]);

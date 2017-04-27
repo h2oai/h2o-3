@@ -931,7 +931,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
           if (!(_binaryColumnIndices.contains(tinfo._permutation[colIndex]))) {
             permutationTemp[newColIndex] = tinfo._permutation[colIndex];
             catMissingTemp[newColIndex] = tinfo._catMissing[colIndex];
-            catNAFillTemp[newColIndex] = tinfo._catNAFill[colIndex];
+            catNAFillTemp[newColIndex] = tinfo.catNAFill(colIndex);
             currentCardinality[newColIndex] = cardinalities[colIndex];
             catOffsetsTemp[newColIndex+1] = catOffsetsTemp[newColIndex]+currentCardinality[newColIndex];
 
@@ -969,7 +969,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         // copy the changed arrays back to tinfo information
         tinfo._catOffsets = Arrays.copyOf(catOffsetsTemp, catOffsetsTemp.length);
         tinfo._catMissing = Arrays.copyOf(catMissingTemp, tinfo._cats);
-        tinfo._catNAFill = Arrays.copyOf(catNAFillTemp, tinfo._cats);
+        tinfo.setCatNAFill(Arrays.copyOf(catNAFillTemp, tinfo._cats));
         tinfo._permutation = Arrays.copyOf(permutationTemp, tinfo._permutation.length);
         tinfo._numOffsets = Arrays.copyOf(numOffsetsTemp, tinfo._nums);
         if (tinfo._normMul != null) {
