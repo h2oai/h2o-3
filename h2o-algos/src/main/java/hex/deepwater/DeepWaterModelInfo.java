@@ -14,10 +14,7 @@ import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.Arrays;
 
 import static hex.genmodel.algos.deepwater.DeepwaterMojoModel.createDeepWaterBackend;
@@ -244,7 +241,7 @@ final public class DeepWaterModelInfo extends Iced {
       final String networkParms = parameters._network_parameters_file;
       if (networkParms != null && !networkParms.isEmpty()) {
         File f = new File(networkParms);
-        if(!f.exists() || f.isDirectory()) {
+        if(!paramFilesExist(networkParms)) {
           throw new RuntimeException("Network parameter file " + f + " not found.");
         } else {
           Log.info("Loading the parameters (weights/biases) from: " + f.getAbsolutePath());
@@ -259,6 +256,18 @@ final public class DeepWaterModelInfo extends Iced {
       throw new RuntimeException("Unable to initialize the native Deep Learning backend: " + t.getMessage());
     }
   }
+
+  static boolean paramFilesExist(final String paramPath) {
+    final File f = new File(paramPath);
+    String[] list = f.getParentFile().list(new FilenameFilter() {
+      @Override
+      public boolean accept(File dir, String name) {
+        return name.contains(f.getName());
+      }
+    });
+    return !f.isDirectory() && (f.exists() || (list != null && list.length > 0));
+  }
+
   String getBasePath() {
 //    if (_backend instanceof DeepwaterCaffeBackend)
 //      return System.getProperty("user.dir") + "/caffe/";
