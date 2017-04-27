@@ -29,6 +29,7 @@ Suggests: ggplot2,
           data.table (>= 1.9.8)
 Collate:
          'astfun.R'
+         'automl.R'
          'classes.R'
          'config.R'
          'connection.R'
