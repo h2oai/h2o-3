@@ -59,8 +59,11 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   public int[] catNAFill() {return _catNAFill;}
-
   public int catNAFill(int cid) {return _catNAFill[cid];}
+
+  public void setCatNAFill(int[] catNAFill) {
+    _catNAFill = catNAFill;
+  }
 
   public enum TransformType {
     NONE, STANDARDIZE, NORMALIZE, DEMEAN, DESCALE;
@@ -99,7 +102,7 @@ public class DataInfo extends Keyed<DataInfo> {
   public int _cats;  // "raw" number of categorical columns as they exist in the frame
   public int [] _catOffsets;   // offset column indices for the 1-hot expanded values (includes enum-enum interaction)
   public boolean [] _catMissing;  // bucket for missing levels
-  public int [] _catNAFill;    // majority class of each categorical col (or last bucket if _catMissing[i] is true)
+  private int [] _catNAFill;    // majority class of each categorical col (or last bucket if _catMissing[i] is true)
   public int [] _permutation; // permutation matrix mapping input col indices to adaptedFrame
   public double [] _normMul;  // scale the predictor column by this value
   public double [] _normSub;  // subtract from the predictor this value
@@ -694,7 +697,7 @@ public class DataInfo extends Keyed<DataInfo> {
           continue;
         res[k++] = _adaptedFrame._names[i] + "." + vecs[i].domain()[j];
       }
-      if (_catMissing[i] && getCategoricalId(i, _catNAFill[i]) >=0)
+      if (_catMissing[i] && getCategoricalId(i, -1) >=0)
         res[k++] = _adaptedFrame._names[i] + ".missing(NA)";
       if( vecs[i] instanceof InteractionWrappedVec ) {
         InteractionWrappedVec iwv = (InteractionWrappedVec)vecs[i];
@@ -927,7 +930,7 @@ public class DataInfo extends Keyed<DataInfo> {
 
 
   public final int getCategoricalId(int cid, double val) {
-    if(Double.isNaN(val)) return getCategoricalId(cid, _catNAFill[cid]);
+    if(Double.isNaN(val)) return getCategoricalId(cid, -1);
     int ival = (int)val;
     if(ival != val) throw new IllegalArgumentException("Categorical id must be an integer or NA (missing).");
     return getCategoricalId(cid,ival);
@@ -940,12 +943,17 @@ public class DataInfo extends Keyed<DataInfo> {
    */
   public final int getCategoricalId(int cid, int val) {
     boolean isIWV = isInteractionVec(cid);
-    if( !_useAllFactorLevels && !isIWV )  // categorical interaction vecs drop reference level in a special way
+    if(val == -1) { // NA
+      val = _catNAFill[cid];
+    } else if( !_useAllFactorLevels && !isIWV )  // categorical interaction vecs drop reference level in a special way
       val -= 1;
+    if(val < 0) return -1; // column si to be skipped
     int [] offs = fullCatOffsets();
     int expandedVal = val + offs[cid];
     if(expandedVal >= offs[cid+1]) {  // previously unseen level
       assert _valid:"Categorical value out of bounds, got " + val + ", next cat starts at " + fullCatOffsets()[cid+1];
+      if(_skipMissing)
+        return -1;
       val = _catNAFill[cid];
     }
     if (_catMap != null && _catMap[cid] != null) {  // some levels are ignored?
@@ -1115,7 +1123,7 @@ public class DataInfo extends Keyed<DataInfo> {
           row.predictors_bad = true;
           continue;
         }         
-        int cid = getCategoricalId(i,isMissing? _catNAFill[i]:(int)chunks[i].at8(r));
+        int cid = getCategoricalId(i,isMissing? -1:(int)chunks[i].at8(r));
         if(cid >=0)
           row.binIds[row.nBins++] = cid;
       }
@@ -1172,7 +1180,6 @@ public class DataInfo extends Keyed<DataInfo> {
         row.response[i-1] = rChunk.atd(r);
         if(Double.isNaN(row.response[i-1])) {
           row.response_bad = true;
-          break;
         }
         if (_normRespMul != null) {
           row.response[i-1] = (row.response[i-1] - _normRespSub[i-1]) * _normRespMul[i-1];

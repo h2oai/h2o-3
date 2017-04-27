@@ -495,16 +495,6 @@ public class JettyHTTPD {
     return new InputStreamWrapper(is, boundary);
   }
 
-  public static boolean validKeyName(String name) {
-    byte[] arr = StringUtils.bytesOf(name);
-    for (byte b : arr) {
-      if (b == '"') return false;
-      if (b == '\\') return false;
-    }
-
-    return true;
-  }
-
   public static void sendErrorResponse(HttpServletResponse response, Exception e, String uri) {
     if (e instanceof H2OFailException) {
       H2OFailException ee = (H2OFailException) e;

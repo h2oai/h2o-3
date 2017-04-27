@@ -39,4 +39,4 @@ then
 fi
 
 # Start H2O disowned in the background.
-nohup java -Xmx${xmxMb}m -jar /opt/h2o.jar -name H2ODemo -flatfile flatfile.txt -port 54321 -ice_root ${d}/ice_root ${hdfs_config_option} ${hdfs_config_value} ${hdfs_option} ${hdfs_option_value} ${hdfs_version} 1> h2o.out 2> h2o.err &
+nohup java -Xmx${xmxMb}m -jar /opt/h2o.jar -name H2ODemo -flatfile flatfile.txt -port 54321 ${hdfs_config_option} ${hdfs_config_value} ${hdfs_option} ${hdfs_option_value} ${hdfs_version} 1> h2o.out 2> h2o.err &

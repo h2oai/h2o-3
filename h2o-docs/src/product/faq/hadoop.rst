@@ -19,6 +19,37 @@ To save the model in HDFS, prepend the save directory with ``hdfs://``:
 
 --------------
 
+**What amount of resources are used and reported back to YARN?**
+
+The following table provides a summary of the YARN resource usage. 
+
+======  ======  ======  ===============  ===========  ========================================  ==============================
+Size    Nodes   Memory  AM Resource      Total Vcore  Total Memory                              Assuming Default Value = 5gb
+======  ======  ======  ===============  ===========  ========================================  ==============================
+Tiny        1   4g      <Default value>  1 + 1 = 2    1.1*(1 * 4g) + <Default value> = 4.4gb+   9.4
+Small       2   4g      <Default value>  2 + 1 = 3    1.1*(2 * 4g) + <Default value> = 8.8gb+   13.8
+Medium      3   8g      <Default value>  3 + 1 = 4    1.1*(3 * 8g) + <Default value> = 26.4gb+  31.4
+Large       5   8g      <Default value>  5 + 1 = 6    1.1*(5 * 8g) + <Default value> = 44gb+    49
+======  ======  ======  ===============  ===========  ========================================  ==============================
+
+
+**Notes**:
+
+- Each time you launch an H2O cluster, you need one container or one vcore for the AM (Application Master). So a tiny cluster actually takes two vcores, not one.
+- H2O will pad the JVM with 10% (default) overhead in the container. So when you request 4gb JVMs, H2O will actually request 4.4gb containers from YARN.
+- The amount of memory requested for the AM container is defined by default in YARN configurations. Specifically you have to look at config param: ``yarn.app.mapreduce.am.resource.mb``. Assuming a value of 5gb for ``yarn.app.mapreduce.am.resource.mb`` and launching one medium and two tiny clusters, you would use 8 vcores and 50.2gb memory.
+
+You can also review the YARN resource manager for more information. Refer to the image below for an example. Note that this example assumes that the user has run the following:
+
+::
+
+  hadoop jar h2odriver.jar -Dyarn.app.mapreduce.am.resource.mb=1024 -nodes 2 -mapperXmx 4g -extramempercent 10 -output outputdir
+
+.. figure:: ../images/YARNResourceConsumption.png
+   :alt: YARN resource consumption
+
+--------------
+
 **How do I specify which nodes should run H2O in a Hadoop cluster?**
 
 After creating and applying the desired node labels and associating them

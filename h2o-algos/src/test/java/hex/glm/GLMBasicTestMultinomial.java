@@ -101,6 +101,7 @@ public class GLMBasicTestMultinomial extends TestUtil {
     }
   }
 
+
   @Test
   public void testCovtypeBasic(){
     GLMParameters params = new GLMParameters(Family.multinomial);
@@ -229,6 +230,72 @@ public class GLMBasicTestMultinomial extends TestUtil {
       preds.delete();
       preds = null;
     } finally{
+      if(model != null)model.delete();
+      if(preds != null)preds.delete();
+    }
+  }
+
+  @Test
+  public void testCovtypeNAs(){
+    GLMParameters params = new GLMParameters(Family.multinomial);
+    GLMModel model = null;
+    Frame preds = null;
+    Frame covtype_subset = null, covtype_copy = null;
+    try {
+      double expected_deviance = 26000;
+      covtype_copy = _covtype.deepCopy("covtype_copy");
+      DKV.put(covtype_copy);
+      Vec.Writer w = covtype_copy.vec(54).open();
+      w.setNA(10);
+      w.setNA(20);
+      w.setNA(30);
+      w.close();
+      covtype_subset = new Frame(Key.<Frame>make("covtype_subset"),new String[]{"C51","C52","C53","C54","C55"},covtype_copy.vecs(new int[]{50,51,52,53,54}));
+      DKV.put(covtype_subset);
+//      params._nlambdas = 3;
+      params._response_column = "C55";
+      params._train = covtype_copy._key;
+      params._valid = covtype_copy._key;
+      params._alpha = new double[]{.99};
+      params._objective_epsilon = 1e-6;
+      params._beta_epsilon = 1e-4;
+      params._max_active_predictors = 50;
+      params._max_iterations = 500;
+      params._solver = Solver.L_BFGS;
+      params._missing_values_handling = DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip;
+//      params._lambda_search = true;
+      model = new GLM(params).trainModel().get();
+      assertEquals(covtype_copy.numRows()-3-1,model._nullDOF);
+      System.out.println(model._output._training_metrics);
+      System.out.println(model._output._validation_metrics);
+      assertTrue(model._output._training_metrics.equals(model._output._validation_metrics));
+      preds = model.score(covtype_copy);
+      ModelMetricsMultinomialGLM mmTrain = (ModelMetricsMultinomialGLM) hex.ModelMetricsMultinomial.getFromDKV(model, covtype_copy);
+      assertTrue(model._output._training_metrics.equals(mmTrain));
+      assertTrue(((ModelMetricsMultinomialGLM) model._output._training_metrics)._resDev <= expected_deviance);
+      System.out.println(model._output._model_summary);
+      model.delete();
+      model = null;
+      preds.delete();
+      preds = null;
+      // now run the same on the subset
+      params._train = covtype_subset._key;
+      model = new GLM(params).trainModel().get();
+      assertEquals(covtype_copy.numRows()-3-1,model._nullDOF);
+      System.out.println(model._output._training_metrics);
+      System.out.println(model._output._validation_metrics);
+      assertTrue(model._output._training_metrics.equals(model._output._validation_metrics));
+      preds = model.score(_covtype);
+      System.out.println(model._output._model_summary);
+      assertTrue(((ModelMetricsMultinomialGLM) model._output._training_metrics)._resDev <= 66000);
+      model.delete();
+      model = null;
+      preds.delete();
+      preds = null;
+
+    } finally{
+      if(covtype_subset != null) covtype_subset.delete();
+      if(covtype_copy != null)covtype_copy.delete();
       if(model != null)model.delete();
       if(preds != null)preds.delete();
     }
