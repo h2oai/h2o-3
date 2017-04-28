@@ -4,6 +4,7 @@ import hex.DataInfo;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
 
@@ -11,6 +12,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 
+import static java.lang.Math.sqrt;
 import static water.util.ArrayUtils.*;
 
 
@@ -37,6 +39,14 @@ public class DimensionReductionUtils {
                 prop_var[i] = vars[i] / totVar;
                 cum_var[i] = i == 0 ? prop_var[0] : cum_var[i-1] + prop_var[i];
             }
+        }
+        double lastCum = cum_var[arrayLen-1];
+        if (lastCum > 1) {  // GLRM sometimes screw up the matrix estimation pretty bad
+            double multF = 1/lastCum;
+            ArrayUtils.mult(prop_var, multF);
+            ArrayUtils.mult(cum_var, multF);
+            ArrayUtils.mult(vars, multF);
+            ArrayUtils.mult(std_deviation, sqrt(multF));
         }
     }
 
