@@ -97,8 +97,8 @@ public class FrameMetadata extends Iced {
     fm.put("NCol", (double)_fr.numCols());
     fm.put("LogNRow", Math.log((double)fm.get("NRow")));
     fm.put("LogNCol", Math.log((double)fm.get("NCol")));
-    fm.put("NACount", (double)naCount());
-    fm.put("NAFraction", (double) naCount() / (double) (_fr.numCols() * _fr.numRows()));
+    fm.put("NACount", _fr.naCount());
+    fm.put("NAFraction", _fr.naFraction());
     fm.put("NumberNumericFeat", (double)numberOfNumericFeatures());
     fm.put("NumberCatFeat", (double) numberOfCategoricalFeatures());
     fm.put("RatioNumericToCatFeat", Double.isInfinite((double) fm.get("NumberCatFeat"))     ? SQLNAN : (double) fm.get("NumberNumericFeat") / (double) fm.get("NumberCatFeat"));
@@ -147,12 +147,6 @@ public class FrameMetadata extends Iced {
     return intListToA(res);
   }
 
-  public long naCount() {
-    if( _naCnt!=-1 ) return _naCnt;
-    long cnt=0;
-    for(Vec v: _fr.vecs()) cnt+=v.naCnt();
-    return (_naCnt=cnt);
-  }
   //count of features with nas
   public long na_FeatureCount() {
     if( _featsWithNa!=-1 ) return _featsWithNa;

@@ -2,6 +2,7 @@ package hex.grid;
 
 import hex.ScoreKeeper;
 import water.Iced;
+import water.fvec.Frame;
 
 /**
  * Search criteria for a hyperparameter search including directives for how to search and
@@ -34,10 +35,10 @@ public class HyperSpaceSearchCriteria extends Iced {
   /**
    * Search criteria for a hyperparameter search including directives for how to search and
    * when to stop the search.
+   * <p>
+   * NOTE: client ought to call set_default_stopping_tolerance_for_frame(Frame) to get a reasonable stopping tolerance, especially for small N.
    */
   public static final class RandomDiscreteValueSearchCriteria extends HyperSpaceSearchCriteria {
-    protected double defaultStoppingTolerance() { return 1e-3; }
-
     private long _seed = -1; // -1 means true random
 
     /////////////////////
@@ -46,7 +47,7 @@ public class HyperSpaceSearchCriteria extends Iced {
     private double _max_runtime_secs = 0;
     private int _stopping_rounds = 0;
     private ScoreKeeper.StoppingMetric _stopping_metric = ScoreKeeper.StoppingMetric.AUTO;
-    public double _stopping_tolerance = defaultStoppingTolerance();
+    public double _stopping_tolerance = 0.001;
 
 
     /** Seed for the random choices of hyperparameter values.  Set to a value other than -1 to get a repeatable pseudorandom sequence. */
@@ -76,6 +77,21 @@ public class HyperSpaceSearchCriteria extends Iced {
 
     /** Relative tolerance for metric-based stopping criterion: stop if relative improvement is not at least this much. */
     public double stopping_tolerance() { return _stopping_tolerance; }
+
+    /** Calculate a reasonable stopping tolerance for the Frame.
+     * Currently uses only the NA percentage and nrows, but later
+     * can take into account the response distribution, response variance, etc.
+     * <p>
+     * <pre>1/Math.sqrt(frame.naFraction() * frame.numRows())</pre>
+     */
+    public static double default_stopping_tolerance_for_frame(Frame frame) {
+      return Math.min(0.05, Math.max(0.001, 1/Math.sqrt(frame.naFraction() * frame.numRows())));
+    }
+
+    public void set_default_stopping_tolerance_for_frame(Frame frame) {
+      _stopping_tolerance = default_stopping_tolerance_for_frame(frame);
+    }
+
 
     public RandomDiscreteValueSearchCriteria() {
       super(Strategy.RandomDiscrete);
