@@ -507,10 +507,10 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         }
 
         HashMap<String, DMatrix> watches = new HashMap<>();
-        if (validMat!=null)
-          watches.put("valid", validMat);
-        else
-          watches.put("train", trainMat);
+//        if (validMat!=null)
+//          watches.put("valid", validMat);
+//        else
+//          watches.put("train", trainMat);
 
         // create the backend
         model.model_info()._booster = ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, model.createParams(), 0, watches, null, null);
