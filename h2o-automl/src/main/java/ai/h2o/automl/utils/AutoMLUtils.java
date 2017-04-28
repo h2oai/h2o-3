@@ -1,6 +1,5 @@
 package ai.h2o.automl.utils;
 
-import ai.h2o.automl.transforms.Expr;
 import water.DKV;
 import water.Key;
 import water.MRTask;
@@ -45,8 +44,7 @@ public class AutoMLUtils {
           }
         }
       }.doAll(Vec.T_NUM, new Frame(responseVec,weights[0])).outputFrame().anyVec();
-    } else
-      weights[1] = Expr.binOp("-",1,weights[0]).toWrappedVec().makeVec();
+    }
     return weights;
   }
 
@@ -76,8 +74,7 @@ public class AutoMLUtils {
           }
         }
       }.doAll(responseVec,weights[0],weights[1]=weights[0].makeZero());
-    } else
-      weights[1] = Expr.binOp("-",1,weights[0]).toWrappedVec().makeVec();
+    }
     return weights;
   }
 

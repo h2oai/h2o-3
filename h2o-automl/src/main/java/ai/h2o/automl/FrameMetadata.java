@@ -1,12 +1,8 @@
 package ai.h2o.automl;
 
 import ai.h2o.automl.UserFeedbackEvent.*;
-import ai.h2o.automl.autocollect.AutoCollect;
 import ai.h2o.automl.collectors.MetaCollector;
 import ai.h2o.automl.colmeta.ColMeta;
-import ai.h2o.automl.tasks.DummyClassifier;
-import ai.h2o.automl.tasks.DummyRegressor;
-import ai.h2o.automl.tasks.VIF;
 import ai.h2o.automl.utils.AutoMLUtils;
 import hex.tree.DHistogram;
 import water.*;
@@ -66,6 +62,8 @@ public class FrameMetadata extends Iced {
 
   private AstNaOmit astNaOmit;
 
+  public static final double SQLNAN = -99999;
+
   public void delete() {
     for(Vec v: _trainTestWeight)
       if( null!=v ) v.remove();
@@ -103,8 +101,8 @@ public class FrameMetadata extends Iced {
     fm.put("NAFraction", (double) naCount() / (double) (_fr.numCols() * _fr.numRows()));
     fm.put("NumberNumericFeat", (double)numberOfNumericFeatures());
     fm.put("NumberCatFeat", (double) numberOfCategoricalFeatures());
-    fm.put("RatioNumericToCatFeat", Double.isInfinite((double) fm.get("NumberCatFeat"))     ? AutoCollect.SQLNAN : (double) fm.get("NumberNumericFeat") / (double) fm.get("NumberCatFeat"));
-    fm.put("RatioCatToNumericFeat", Double.isInfinite((double) fm.get("NumberNumericFeat")) ? AutoCollect.SQLNAN : (double) fm.get("NumberCatFeat")     / (double) fm.get("NumberNumericFeat"));
+    fm.put("RatioNumericToCatFeat", Double.isInfinite((double) fm.get("NumberCatFeat"))     ? SQLNAN : (double) fm.get("NumberNumericFeat") / (double) fm.get("NumberCatFeat"));
+    fm.put("RatioCatToNumericFeat", Double.isInfinite((double) fm.get("NumberNumericFeat")) ? SQLNAN : (double) fm.get("NumberCatFeat")     / (double) fm.get("NumberNumericFeat"));
     fm.put("DatasetRatio", (double) _fr.numCols() / (double) _fr.numRows());
     fm.put("LogDatasetRatio", Math.log((double) fm.get("DatasetRatio")));
     fm.put("InverseDatasetRatio", (double)_fr.numRows() / (double) _fr.numCols() );
@@ -131,19 +129,6 @@ public class FrameMetadata extends Iced {
     fm.put("MeanCardinality", sym[2]);
     fm.put("StdCardinality", sym[3]);
     fm.put("MedianCardinality", sym[4]);
-  }
-
-  public void fillDummies(HashMap<String, Object> fm) {
-    double[][] dummies = getDummies();
-    fm.put("DummyStratMSE", _isClassification?dummies[0][0]: AutoCollect.SQLNAN);
-    fm.put("DummyStratLogLoss", _isClassification?dummies[1][0]: AutoCollect.SQLNAN);
-    fm.put("DummyMostFreqMSE", _isClassification?dummies[0][2]: AutoCollect.SQLNAN);
-    fm.put("DummyMostFreqLogLoss", _isClassification?dummies[1][2]: AutoCollect.SQLNAN);
-    fm.put("DummyRandomMSE", _isClassification?dummies[0][1]: AutoCollect.SQLNAN);
-    fm.put("DummyRandomLogLoss", _isClassification?dummies[1][1]: AutoCollect.SQLNAN);
-    fm.put("DummyMedianMSE", _isClassification? AutoCollect.SQLNAN:dummies[0][1]);
-    fm.put("DummyMeanMSE", _isClassification? AutoCollect.SQLNAN:dummies[0][0]);
-    //fm.put("NClass", _nclass);
   }
 
   /**
@@ -513,17 +498,6 @@ public class FrameMetadata extends Iced {
     return (_catFeat=cnt);
   }
 
-  public double[][] getDummies() {
-    if( _dummies!=null ) return _dummies;
-    DummyClassifier dc=null;
-    _dummies = _isClassification
-            ? DummyClassifier.getDummies(dc=new DummyClassifier(_fr.vec(_response), new String[]{"mse", "logloss"}), _fr.vec(_response), null)
-            : DummyRegressor.getDummies(_fr.vec(_response), null, new String[]{"mse"});
-    assert (_isClassification && dc!=null) || !_isClassification;
-    _nclass = _isClassification?dc._nclass:1;
-    return _dummies;
-  }
-
   public FrameMetadata(UserFeedback userFeedback, Frame fr, int response, String datasetName) {
     _datasetName=datasetName;
     _fr=fr;
@@ -673,16 +647,6 @@ public class FrameMetadata extends Iced {
     _medianCardinality=-1;
 
 
-  }
-
-  public FrameMetadata computeVIFs() {
-    VIF[] vifs = VIF.make(_fr._key, includedCols(), _fr.names());
-    VIF.launchVIFs(vifs);
-    int i=0;
-    for( String col: includedCols() ) {
-      _cols[Arrays.asList(_fr.names()).indexOf(col)]._vif = vifs[i++].vif();
-    }
-    return this;
   }
 
   public static String[] intAtoStringA(int[] select, String[] names) {
