@@ -1,21 +1,9 @@
 package ai.h2o.automl.colmeta;
 
-import ai.h2o.automl.autocollect.AutoCollect;
-import ai.h2o.automl.guessers.column.ColNameScanner;
-import ai.h2o.automl.guessers.column.Guesser;
-import ai.h2o.automl.guessers.column.IgnoreGuesser.IgnoreReason;
-import ai.h2o.automl.guessers.column.SpecialNAGuesser;
 import hex.tree.DHistogram;
-import org.reflections.Reflections;
 import water.Iced;
 import water.fvec.Vec;
-import water.util.Log;
-
-import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Set;
 
 /** Column Meta Data
  *
@@ -27,18 +15,8 @@ public class ColMeta extends Iced {
           "Variance", "Cardinality", "Kurtosis", "Skew", "VIF", "FractionNA",
           "TimeToMRTaskMillis"};
 
-  private static transient Set<Class<? extends Guesser>> _guesserClasses;
+  //private static transient Set<Class<? extends Guesser>> _guesserClasses;
   private static transient String[] _guessers;
-
-  static {
-    Reflections reflections = new Reflections("ai.h2o.automl.guessers.column");
-    _guesserClasses = reflections.getSubTypesOf(ai.h2o.automl.guessers.column.Guesser.class);
-    _guessers = new String[_guesserClasses.size()];
-    Iterator<Class<? extends Guesser>> it = _guesserClasses.iterator();
-    for(int i=0;i<_guesserClasses.size();++i)
-      _guessers[i] = it.next().getName();
-    Arrays.sort(_guessers);
-  }
 
   public final Vec _v;          // the column
   public byte _nameType;  // guessed at by ColNameScanner
@@ -53,10 +31,10 @@ public class ColMeta extends Iced {
   public double[] _dist;        // distribution of classes
   public double[] _weightMult;  // weight multipliers for each class to even out distributions
 
-  public IgnoreReason _ignoredReason; // was this ignored by user, or by automl
   public boolean _isNumeric;    // is this a numeric column
   public boolean _isCategorical; // is this a categorical column
 
+  public static final double SQLNAN = -99999;
   public boolean _isClass;      // is a classification problem, only valid to ask when _response is true
   public boolean isClassification() {
     if( _response ) return _isClass;
@@ -82,7 +60,6 @@ public class ColMeta extends Iced {
   // histos from training and testing data to see if they "match". WTM
   public DHistogram _histo;
   public long _MRTaskMillis;
-  public SpecialNAGuesser.SpecialNA _specialNAs; // found special NAs like 9999 or -1 or 0
   public double _thirdMoment;   // used for skew/kurtosis; NaN if not numeric
   public double _fourthMoment;  // used for skew/kurtosis; NaN if not numeric
   public double _kurtosis;      // the sharpness of the peak of a frequency-distribution curve
@@ -130,9 +107,9 @@ public class ColMeta extends Iced {
     _v = v;
     _name = colname;
     _ignored=ignored;
-    if(_ignored) _ignoredReason = IgnoreReason.user_specified;
+    //if(_ignored) _ignoredReason = IgnoreReason.user_specified;
     _idx = idx;
-    _nameType=ColNameScanner.IGNORED;
+    //_nameType=ColNameScanner.IGNORED;
     _response = response;
     _percentNA = (double) v.naCnt() / (double) v.length();
     _sigma = v.sigma();
@@ -149,14 +126,6 @@ public class ColMeta extends Iced {
       _isCategorical =false;
     }
 
-    Class c=null;
-    try {
-      for (String guesser : _guessers)
-        ((Guesser) (c=Class.forName(guesser)).getConstructor(ColMeta.class).newInstance(this)).guess(_name, _v);
-    } catch ( ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException | InstantiationException e) {
-      Log.err("Could not instantiate guesser: " + c);
-      throw new RuntimeException(e);
-    }
   }
 
   public ColMeta(Vec v, String colname, int idx, boolean response) {
@@ -177,7 +146,6 @@ public class ColMeta extends Iced {
     if( _v.max() - _v.min() > 1e4) return "log";   // take a log if spans more than 2 orders
     if( _v.isNumeric() && !_v.isInt() ) return "recip"; // try the reciprocal!
     return "none";                                 // no transform if not interesting
-    //Transform.basicOps[new Random().nextInt(Transform.basicOps.length)];  // choose a random log to just try
   }
 
   public void fillColMeta(HashMap<String, Object> cm, int idFrame) {
@@ -185,22 +153,22 @@ public class ColMeta extends Iced {
     cm.put("ColumnName", _name);
     cm.put("ColumnType", _v.get_type_str()); // TODO:
     if( !_v.isNumeric() ) {
-      cm.put("Min", AutoCollect.SQLNAN);
-      cm.put("Max", AutoCollect.SQLNAN);
-      cm.put("Mean", AutoCollect.SQLNAN);
-      cm.put("Median", AutoCollect.SQLNAN);
-      cm.put("Variance", AutoCollect.SQLNAN);
+      cm.put("Min", SQLNAN);
+      cm.put("Max", SQLNAN);
+      cm.put("Mean", SQLNAN);
+      cm.put("Median", SQLNAN);
+      cm.put("Variance", SQLNAN);
       cm.put("Cardinality", _v.cardinality());
-      cm.put("Kurtosis", AutoCollect.SQLNAN);
-      cm.put("Skew", AutoCollect.SQLNAN);
-      cm.put("VIF", AutoCollect.SQLNAN);
+      cm.put("Kurtosis", SQLNAN);
+      cm.put("Skew", SQLNAN);
+      cm.put("VIF", SQLNAN);
     } else {
       cm.put("Min", _v.min());
       cm.put("Max", _v.max());
       cm.put("Mean", _v.mean());
       cm.put("Median", _v.pctiles()[8/*p=0.5 pctile; see Vec.PERCENTILES*/]);
       cm.put("Variance", _v.sigma()*_v.sigma());
-      cm.put("Cardinality", AutoCollect.SQLNAN);
+      cm.put("Cardinality", SQLNAN);
       cm.put("Kurtosis", _kurtosis);
       cm.put("Skew", _skew);
       cm.put("VIF", _vif);
