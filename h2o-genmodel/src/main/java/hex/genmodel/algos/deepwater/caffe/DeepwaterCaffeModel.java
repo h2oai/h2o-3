@@ -3,15 +3,12 @@ package hex.genmodel.algos.deepwater.caffe;
 import com.google.protobuf.nano.CodedInputByteBufferNano;
 import com.google.protobuf.nano.CodedOutputByteBufferNano;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Arrays;
 
 import deepwater.backends.BackendModel;
 import hex.genmodel.algos.deepwater.caffe.nano.Deepwater;
@@ -28,6 +25,8 @@ public class DeepwaterCaffeModel implements BackendModel {
 
   private Process _process;
   private static final ThreadLocal<ByteBuffer> _buffer = new ThreadLocal<>();
+
+
 
   public DeepwaterCaffeModel(int batch_size, int[] sizes,
                              String[] types, double[] dropout_ratios,
@@ -154,13 +153,11 @@ public class DeepwaterCaffeModel implements BackendModel {
     return res;
   }
 
-  //
-
   // Debug, or if wee find a way to package Caffe without Docker
   private void startRegular() throws IOException {
-    String pwd = "/opt/caffe-h2o";
+    String pwd = DeepwaterCaffeBackend.CAFFE_H2O_DIR;
     ProcessBuilder pb = new ProcessBuilder("python3 backend.py".split(" "));
-    pb.environment().put("PYTHONPATH", "/opt/caffe/python");
+    pb.environment().put("PYTHONPATH", DeepwaterCaffeBackend.CAFFE_DIR + "python");
     pb.redirectError(ProcessBuilder.Redirect.INHERIT);
     pb.directory(new File(pwd));
     _process = pb.start();

@@ -85,7 +85,7 @@ public class DeepwaterMojoModel extends MojoModel {
   static public BackendTrain createDeepWaterBackend(String backend) {
     try {
       // For Caffe, only instantiate if installed at /opt/caffe, must be linux
-      if (backend.equals("caffe") && Files.exists(Paths.get("/opt/caffe")))
+      if (backend.equals("caffe") && Files.exists(Paths.get(DeepwaterCaffeBackend.CAFFE_H2O_DIR)))
         return new DeepwaterCaffeBackend();
       if (backend.equals("mxnet"))
         backend="deepwater.backends.mxnet.MXNetBackend";
