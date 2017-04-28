@@ -1074,16 +1074,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           double trainDev = _state.deviance() / _nobs;
           double testDev = Double.NaN;
           if (_validDinfo != null) {
-            int j = 0;
+            int k = 0;
 
             double [] beta = _state.beta();
             int [] activeCols = new int[_state.beta().length-1];
             if(_parms._family != Family.multinomial) {
-              for (int x = 0; x < beta.length - 1; ++x)
-                if (beta[x] != 0) activeCols[x++] = i;
+              for (int j = 0; j < beta.length - 1; ++j)
+                if (beta[j] != 0) activeCols[k++] = j;
             }
-            if (j < activeCols.length) {
-              activeCols = Arrays.copyOf(activeCols, j);
+            if (k < activeCols.length) {
+              activeCols = Arrays.copyOf(activeCols, k);
               DataInfo activeValidDinfo = _validDinfo.filterExpandedColumns(activeCols);
               activeCols = ArrayUtils.append(activeCols, _dinfo.fullN());
               testDev = new GLMResDevTask(_job._key, activeValidDinfo, _parms, ArrayUtils.select(_dinfo.denormalizeBeta(_state.beta()),activeCols)).doAll(activeValidDinfo._adaptedFrame).avgDev();
