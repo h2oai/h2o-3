@@ -1333,53 +1333,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   }
 
 
-  private static double [] doUpdateCDInParallel(final double [] grads, final double [] ary, final double diff , final int variable_min, final int variable_max) {
-    ArrayList<RecursiveAction> ras = new ArrayList<>();
-    int x = 0;
-    while(x+1000 < variable_min){
-      final int fx = x;
-      final int y = x + 1000;
-      ras.add(new RecursiveAction() {
-        @Override
-        protected void compute() {
-          for (int i = fx; i < y; i++)
-            grads[i] += diff * ary[i];
-        }
-      });
-      x += 1000;
-    }
-    final int fx = x;
-    ras.add(new RecursiveAction() {
-      @Override
-      protected void compute() {
-        for (int i = fx; i < variable_min; i++)
-          grads[i] += diff * ary[i];
-      }
-    });
-    x = variable_max;
-    while(x+1000 < grads.length){
-      final int fx2 = x;
-      final int y = x + 1000;
-      ras.add(new RecursiveAction() {
-        @Override
-        protected void compute() {
-          for (int i = fx2; i < y; i++)
-            grads[i] += diff * ary[i];
-        }
-      });
-      x += 1000;
-    }
-    final int fx2 = x;
-    ras.add(new RecursiveAction() {
-      @Override
-      protected void compute() {
-        for (int i = fx2; i < grads.length; i++)
-          grads[i] += diff * ary[i];
-      }
-    });
-    ForkJoinTask.invokeAll(ras);
-    return grads;
-  }
+
 
   private static double [] doUpdateCD(double [] grads, double [] ary, double diff , int variable_min, int variable_max) {
     for (int i = 0; i < variable_min; i++)
@@ -1387,6 +1341,36 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     for (int i = variable_max; i < grads.length; i++)
       grads[i] += diff * ary[i];
     return grads;
+  }
+
+  public double [] simpleCOD(double [][] xx, double [] xy, double [] diagInv, double l1pen, double wsumInv, double betaEpsilon){
+    double [] grads = xy.clone();
+    double [] beta = _state.beta().clone();
+    for(int i = 0; i < grads.length; ++i)
+      grads[i] -= ArrayUtils.innerProduct(xx[i], beta) + xx[i][i] * beta[i];
+    int P = beta.length;
+    int iter1 = 0;
+    while (iter1++ < Math.max(P,500)) {
+      double maxDiff = 0;
+      for (int i = 0; i < P; ++i) {
+        double b = ADMM.shrinkage(grads[i], l1pen) * diagInv[i];
+        double bd = beta[i] - b;
+        if(bd != 0) {
+          double diff = bd * bd * xx[i][i];
+          if (diff > maxDiff) maxDiff = diff;
+          doUpdateCD(grads, xx[i], bd, i, i + 1);
+          beta[i] = b;
+        }
+      }
+      // intercept
+      double b = grads[P] * wsumInv;
+      double bd = beta[P] - b;
+      doUpdateCD(grads, xx[P], bd, P, P + 1);
+      beta[P] = b;
+      if (maxDiff < betaEpsilon)
+        break;
+    }
+    return beta;
   }
 
   public double [] COD_solve(double [][] xx, double [] xy, double alpha, double lambda) {
@@ -1399,8 +1383,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     for(int i = 0; i < diagInv.length; ++i)
       diagInv[i] = 1.0/(xx[i][i] + l2pen);
     DataInfo activeData = _state.activeData();
+    if(activeData._cats == 0 && !_state.activeBC().isActive())
+      return simpleCOD(xx,xy,diagInv,l1pen,wsumInv,betaEpsilon);
+
     int [][] nzs = new int[activeData.numStart()][];
     int sparseCnt = 0;
+
     if(nzs.length > 1000) {
       final int [] nzs_ary = new int[xx.length];
       for (int i = 0; i < activeData._cats; ++i) {
@@ -2118,6 +2106,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         res._betaStart = ArrayUtils.select(_betaStart, activeCols);
       return res;
     }
+    public boolean isActive() { return !(hasBounds() || hasProximalPenalty());}
   }
 
 

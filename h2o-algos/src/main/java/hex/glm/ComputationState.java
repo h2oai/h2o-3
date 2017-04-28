@@ -10,6 +10,8 @@ import hex.gram.Gram;
 import hex.optimization.ADMM;
 import hex.optimization.OptimizationUtils.GradientInfo;
 import hex.optimization.OptimizationUtils.GradientSolver;
+import jsr166y.ForkJoinTask;
+import jsr166y.RecursiveAction;
 import water.H2O;
 import water.Job;
 import water.MemoryManager;
@@ -239,32 +241,65 @@ public final class ComputationState {
       return Arrays.equals(this.beta,beta) && Arrays.equals(this.activeCols,activeCols);
     }
 
-    public static GramXY addCols(double [] beta, int [] newActiveCols, int [] newCols, GramXY oldGram, double [][] xxUpdate, double [] xyUpdate){
+    public static GramXY addCols(double [] beta, final int [] newActiveCols, final int [] newCols, final GramXY oldGram, final double [][] xxUpdate, final double [] xyUpdate){
       if(oldGram.gram._xxCache == null) throw H2O.unimpl();
       // update the expanded matrix cache
-      double [][] xxCacheNew = new double[newActiveCols.length][newActiveCols.length];
-      double [] xyNew = new double[xxCacheNew.length];
+      final double [][] xxCacheNew = new double[newActiveCols.length][newActiveCols.length];
+      final double [] xyNew = new double[xxCacheNew.length];
       int k = 0;
-      for(int i = 0; i < xxCacheNew.length; i++) {
-        double[] xrow = xxCacheNew[i];
-        double[] xrowOld = oldGram.gram._xxCache[i - k];
-        if (k < newCols.length && newActiveCols[i] == newCols[k]) {
-          System.arraycopy(xxUpdate[k], 0, xrow, 0, xxUpdate[k].length);
-          xyNew[i] = xyUpdate[k];
-          k++;
-        } else {
-          xyNew[i] = oldGram.xy[i - k];
-          int l = 0;
-          for (int j = 0; j < xrow.length; j++) {
-            if (l < newCols.length && newActiveCols[j] == newCols[l]) {
-              xrow[j] = xxUpdate[l][i];
-              l++;
-            } else {
-              try {
-                xrow[j] = xrowOld[j - l];
-              } catch(Throwable t){
-                throw t;
+      final int par = 128;
+      int n = xxCacheNew.length >> 7;
+      if( n > 0){
+        RecursiveAction [] ras = new RecursiveAction[n+1];
+        for(int i = 0; i < ras.length; ++i){
+          final int start = i*par;
+          ras[i] = new RecursiveAction() {
+            @Override
+            protected void compute() {
+              if(start == newActiveCols.length) return;
+              int kk = Arrays.binarySearch(newCols,newActiveCols[start]);
+              if(kk < 0) kk = -kk-1;
+              int end = Math.min(xxCacheNew.length,start+par);
+              for(int i = start; i < end; ++i){
+                double[] xrow = xxCacheNew[i];
+                double[] xrowOld = oldGram.gram._xxCache[i - kk];
+                if (kk < newCols.length && newActiveCols[i] == newCols[kk]) {
+                  System.arraycopy(xxUpdate[kk], 0, xrow, 0, xxUpdate[kk].length);
+                  xyNew[i] = xyUpdate[kk];
+                  kk++;
+                } else {
+                  xyNew[i] = oldGram.xy[i - kk];
+                  int l = 0;
+                  for (int j = 0; j < xrow.length; j++) {
+                    if (l < newCols.length && newActiveCols[j] == newCols[l]) {
+                      xrow[j] = xxUpdate[l][i];
+                      l++;
+                    } else
+                      xrow[j] = xrowOld[j - l];
+                  }
+                }
               }
+            }
+          };
+        }
+        ForkJoinTask.invokeAll(ras);
+      } else {
+        for (int i = 0; i < xxCacheNew.length; i++) {
+          double[] xrow = xxCacheNew[i];
+          double[] xrowOld = oldGram.gram._xxCache[i - k];
+          if (k < newCols.length && newActiveCols[i] == newCols[k]) {
+            System.arraycopy(xxUpdate[k], 0, xrow, 0, xxUpdate[k].length);
+            xyNew[i] = xyUpdate[k];
+            k++;
+          } else {
+            xyNew[i] = oldGram.xy[i - k];
+            int l = 0;
+            for (int j = 0; j < xrow.length; j++) {
+              if (l < newCols.length && newActiveCols[j] == newCols[l]) {
+                xrow[j] = xxUpdate[l][i];
+                l++;
+              } else
+                xrow[j] = xrowOld[j - l];
             }
           }
         }

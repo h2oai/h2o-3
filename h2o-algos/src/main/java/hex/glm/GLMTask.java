@@ -518,6 +518,7 @@ public abstract class GLMTask  {
         double off = _dinfo._normSub != null?_dinfo._normSub[cid]:0;
         Chunk c = chks[cid+_dinfo._cats];
         double b = scale*_beta[numOff+cid];
+        if(b == 0) continue;
         double NA = _dinfo._numMeans[cid];
         if(c.isSparseZero()){
           int nvals = c.getSparseDoubles(vals,ids,NA,1);
