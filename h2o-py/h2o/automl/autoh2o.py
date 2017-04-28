@@ -1,39 +1,22 @@
-"""
-AutoH2O
-
-H2O AutoML is a package intended to automate parts of the model training process
-
-:copyright: (c) 2017 H2O.ai
-"""
-
+# -*- encoding: utf-8 -*-
 import h2o
 from h2o.job import H2OJob
 from h2o.frame import H2OFrame
+from h2o.utils.typechecks import assert_is_type
 
 class H2OAutoML(object):
     """
-    Primary driver for AutoML
+    AutoML: Automate parts of the model training process
 
     :examples:
-    >>> # Setting up an AutoML object
-    >>> a1 = AutoML(response_column="class", training_path=training_path, build_control=build_control)
+    >>> # Setting up an H2OAutoML object
+    >>> a1 = H2OAutoML(max_runtime_secs=30)
     """
-    #-------------------------------------------------------------------------------------------------------------------
-    # Construction
-    #-------------------------------------------------------------------------------------------------------------------
-    def __init__(self,
-                 response_column=None,
-                 training_path=None, training_frame=None,
-                 validation_path=None, validation_frame=None,
-                 test_path=None, test_frame=None,
-                 ignored_columns=None,
-                 build_control=None,
-                 feature_engineering=None,
-                 build_models=None,
-                 ensemble_parameters=None):
+    def __init__(self,max_runtime_secs = None,build_control=None):
 
+        #Check if H2O jar contains AutoML
         try:
-            h2o.api("GET /3/Metadata/schemas/AutoMLV99") #Check if H2O jar contains AutoML
+            h2o.api("GET /3/Metadata/schemas/AutoMLV99")
         except h2o.exceptions.H2OResponseError as e:
             print e
             print "*******************************************************************\n" \
@@ -41,89 +24,78 @@ class H2OAutoML(object):
                   "*******************************************************************\n" \
                   "\nVerbose Error Message:"
 
-        self.build_control = build_control
+        if max_runtime_secs is None:
+            max_runtime_secs = 600
+            self.max_runtime_secs = max_runtime_secs
+        else:
+            assert_is_type(max_runtime_secs,int)
+            self.max_runtime_secs = max_runtime_secs
 
-        # input_spec:
-        self.response_column = response_column
-        self.training_path = training_path
-        self.training_frame = training_frame.frame_id if isinstance(training_frame, h2o.H2OFrame) else training_frame
-        self.validation_path = validation_path
-        self.validation_frame = validation_frame.frame_id if isinstance(validation_frame, h2o.H2OFrame) else validation_frame
-        self.test_path = test_path
-        self.test_frame = test_frame.frame_id if isinstance(test_frame, h2o.H2OFrame) else test_frame
-        self.ignored_columns = ignored_columns
-
-        if self.training_path is not None and self.training_frame is not None:
-            raise ValueError('Both training_path and training_frame are set; please choose one or the other!  Set training_path to the path to a file or directory (including s3, hdfs, ...), or set training_frame to the ID of a Frame that has already been parsed into H2O.')
-
-        if self.training_path is None and self.training_frame is None:
-            raise ValueError('Neither training_path nor training_frame are set; please choose one or the other!  Set training_path to the path to a file or directory (including s3, hdfs, ...), or set training_frame to the ID of a Frame that has already been parsed into H2O.')
-
-        if self.validation_path is not None and self.validation_frame is not None:
-            raise ValueError('Both validation_path and validation_frame are set; please choose one or the other!  Set validation_path to the path to a file or directory (including s3, hdfs, ...), or set validation_frame to the ID of a Frame that has already been parsed into H2O.')
-
-        if self.test_path is not None and self.test_frame is not None:
-            raise ValueError('Both test_path and test_frame are set; please choose one or the other!  Set test_path to the path to a file or directory (including s3, hdfs, ...), or set test_frame to the ID of a Frame that has already been parsed into H2O.')
-
-        if self.response_column is None:
-            raise ValueError('The response_column is not set; please set it to the name of the column that you are trying to predict in your data.')
-
-        self.feature_engineering = feature_engineering
-        self.build_models = build_models
-        self.ensemble_parameters = ensemble_parameters
+        if build_control is None:
+            self.build_control = {
+                'stopping_criteria': {
+                    'max_runtime_secs': max_runtime_secs,
+                }
+            }
+        else:
+            assert_is_type(build_control,dict)
+            build_control["stopping_criteria"]["max_runtime_secs"] = max_runtime_secs
 
         self._job=None
-        self._automl_key=None # obtained from the job
-        self._user_feedback=None
-        self._leader_key=None  # the leader model key, fetched
-        self._leader_model=None # the leader model
-        self._leaderboard=None # the leaderboard
+        self._automl_key=None
+        self._leader_id=None
+        self._leaderboard=None
 
-    def learn(self, async=False, verbose=False, print_feedback=False):
+    def train(self,x=None,y=None,training_frame=None,validation_frame=None,test_frame=None):
         """
         Begins the automl task, which is a background task that incrementally improves
-        over time (given by max_run_time). At any point, the user may use the "predict"/"performance"
+        over time. At any point, the user may use the "predict"/"performance"
         to inspect the incremental
 
-        :param bool async: Boolean indicating if the process should wait until the job finishes
-        :param bool verbose: Boolean indicating if automl parameters should be printed to the console
-        :param bool print_feedback: Boolean indicating if automl feedback should be printed to the console
+        :param x: A list of column names or indices indicating the predictor columns.
+        :param y: An index or a column name indicating the response column.
+        :param training_frame: The H2OFrame having the columns indicated by x and y (as well as any
+            additional columns specified by fold, offset, and weights).
+        :param validation_frame: H2OFrame with validation data to be scored on while training.
+        :param test_frame: H2OFrame with test data to be scored on in the leaderboard.
 
-        :returns: An AutoML object.
+        :returns: An H2OAutoML object.
 
         :examples:
-        >>> # Set up an AutoML object
-        >>> a1 = AutoML(response_column="class", training_path=training_path, build_control=build_control)
-        >>> # Launch AutoML
-        >>> a1.learn()
+        >>> # Set up an H2OAutoML object
+        >>> a1 = H2OAutoML(response_column="class", training_path=training_path, build_control=build_control)
+        >>> # Launch H2OAutoML
+        >>> a1.train()
         """
 
-        input_spec = {
-            'response_column': self.response_column,
-        }
-        if self.training_path is not None:
-            input_spec['training_path'] = {
-                'path': self.training_path,
+        #Minimal required argumens are training_frame and y (response)
+        if y is None:
+            raise ValueError('The response_column is not set; please set it to the name of the column that you are trying to predict in your data.')
+        else:
+            assert_is_type(y,int,str)
+            input_spec = {
+                'response_column': y,
             }
-        if self.training_frame is not None:
-            input_spec['training_frame'] = self.training_frame
 
-        if self.validation_path is not None:
-            input_spec['validation_path'] = {
-                'path': self.validation_path,
-            }
-        if self.validation_frame is not None:
-            input_spec['validation_frame'] = self.validation_frame
+        if training_frame is None:
+            raise ValueError('The training frame is not set!')
+        else:
+            assert_is_type(training_frame,H2OFrame)
+            input_spec['training_frame'] = training_frame.frame_id
 
-        if self.test_path is not None:
-            input_spec['test_path'] = {
-                'path': self.test_path,
-            }
-        if self.test_frame is not None:
-            input_spec['test_frame'] = self.test_frame
+        if validation_frame is not None:
+            assert_is_type(training_frame,H2OFrame)
+            input_spec['validation_frame'] = validation_frame.frame_id
 
-        if self.ignored_columns is not None:
-            input_spec['ignored_columns'] = self.ignored_columns
+        if test_frame is not None:
+            assert_is_type(training_frame,H2OFrame)
+            input_spec['test_frame'] = test_frame.frame_id
+
+        if x is not None:
+            assert_is_type(x,list)
+            names = training_frame.names
+            ignored_columns = set(names) - {y} - set(x)
+            input_spec['ignored_columns'] = list(ignored_columns)
 
         automl_build_params = {
             'input_spec': input_spec,
@@ -133,15 +105,6 @@ class H2OAutoML(object):
         # This lets the back end use the defaults.
         if None is not self.build_control:
             automl_build_params['build_control'] = self.build_control
-        if None is not self.feature_engineering:
-            automl_build_params['feature_engineering'] = self.feature_engineering
-        if None is not self.build_models:
-            automl_build_params['build_models'] = self.build_models
-        if None is not self.ensemble_parameters:
-            automl_build_params['ensemble_parameters'] = self.ensemble_parameters
-
-        if verbose:
-            print(automl_build_params)
 
         resp = h2o.api('POST /99/AutoMLBuilder',json=automl_build_params)
         if 'job' not in resp:
@@ -151,23 +114,18 @@ class H2OAutoML(object):
 
         self._job = H2OJob(resp['job'], "AutoML")
         self._automl_key = self._job.dest_key
-        if not async:
-            self._job.poll()
-            self.fetch()
-        self._user_feedback = h2o.api("GET /99/AutoML/"+self._automl_key)["user_feedback_table"]
-        if(print_feedback):
-            print("\nFull AutoML Feedback for project " + self.project_name() +"\n")
-            print(self._user_feedback.as_data_frame())
+        self._job.poll()
+        self._fetch()
 
     def project_name(self):
         """
-        Retrieve the project name for an AutoML object
+        Retrieve the project name for an H2OAutoML object
 
-        :return: the project name (a string) of the AutoML object
+        :return: the project name (a string) of the H2OAutoML object
 
         :examples:
-        >>> # Set up an AutoML object
-        >>> a1 = AutoML(response_column="class", training_path=training_path, build_control=build_control)
+        >>> # Set up an H2OAutoML object
+        >>> a1 = H2OAutoML(response_column="class", training_path=training_path, build_control=build_control)
         >>> # Get the project name
         >>> a1.project_name()
         """
@@ -176,33 +134,33 @@ class H2OAutoML(object):
 
     def get_leader(self):
         """
-        Retrieve the top model from an AutoML object
+        Retrieve the top model from an H2OAutoML object
 
         :return: an H2O model
 
         :examples:
-        >>> # Set up an AutoML object
-        >>> a1 = AutoML(response_column="class", training_path=training_path, build_control=build_control)
-        >>> # Launch AutoML
-        >>> a1.learn()
+        >>> # Set up an H2OAutoML object
+        >>> a1 = H2OAutoML(response_column="class", training_path=training_path, build_control=build_control)
+        >>> # Launch H2OAutoML
+        >>> a1.train()
         >>> # Get the top model
         >>> a1.get_leader()
         """
-        leader = h2o.get_model(self._leader_model)
+        leader = h2o.get_model(self._leader_id)
         return leader
 
     def get_leaderboard(self):
         """
-        Retrieve the leaderboard from an AutoML object
+        Retrieve the leaderboard from an H2OAutoML object
 
         :return: an H2OFrame with model ids in the first column and evaluation metric in the second column sorted
                  by the evaluation metric
 
         :examples:
-        >>> # Set up an AutoML object
-        >>> a1 = AutoML(response_column="class", training_path=training_path, build_control=build_control)
-        >>> # Launch AutoML
-        >>> a1.learn()
+        >>> # Set up an H2OAutoML object
+        >>> a1 = H2OAutoML(response_column="class", training_path=training_path, build_control=build_control)
+        >>> # Launch H2OAutoML
+        >>> a1.train()
         >>> # Get the leaderboard
         >>> a1.get_leaderboard()
         """
@@ -218,27 +176,29 @@ class H2OAutoML(object):
         :returns: A new H2OFrame of predictions.
 
         :examples:
-        >>> #Set up an AutoML object
-        >>> a1 = AutoML(response_column="class", training_path=training_path, build_control=build_control)
-        >>> #Launch AutoML
-        >>> a1.learn()
-        >>> #Predict with #1 model from AutoML leaderboard
+        >>> #Set up an H2OAutoML object
+        >>> a1 = H2OAutoML(response_column="class", training_path=training_path, build_control=build_control)
+        >>> #Launch H2OAutoML
+        >>> a1.train()
+        >>> #Predict with #1 model from H2OAutoML leaderboard
         >>> a1.predict()
 
         """
-        if self.fetch():
-            self._model = h2o.get_model(self._leader_model)
+        if self._fetch():
+            self._model = h2o.get_model(self._leader_id)
             return self._model.predict(test_data)
         print("No model built yet...")
 
-    #Helper Functions
-    def fetch(self):
+    #-------------------------------------------------------------------------------------------------------------------
+    # Private
+    #-------------------------------------------------------------------------------------------------------------------
+    def _fetch(self):
         res = h2o.api("GET /99/AutoML/"+self._automl_key)
         self._leaderboard = [key["name"] for key in res['leaderboard']['models']]
 
         if self._leaderboard is not None and len(self._leaderboard) > 0:
-            self._leader_model = self._leaderboard[0]
+            self._leader_id = self._leaderboard[0]
         else:
-            self._leader_model = None
-        return self._leader_model is not None
+            self._leader_id = None
+        return self._leader_id is not None
 
