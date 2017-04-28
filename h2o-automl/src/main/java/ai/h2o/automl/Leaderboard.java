@@ -131,7 +131,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     else if (m._output.isClassifier())
       setMetricAndDirection("mean_per_class_error", false);
     else if (m._output.isSupervised())
-      setMetricAndDirection("residual_deviance", false);
+      setMetricAndDirection("mean_residual_deviance", false);
   }
 
   /**
@@ -343,7 +343,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     } else if (m._output.isClassifier()) {
       return(((ModelMetricsMultinomial)mm).mean_per_class_error());
     } else if (m._output.isSupervised()) {
-      return(((ModelMetricsRegression)mm).residual_deviance());
+      return(((ModelMetricsRegression)mm).mean_residual_deviance());
     }
     Log.warn("Failed to find metric for model: " + m);
     return Double.NaN;
@@ -355,7 +355,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     } else if (m._output.isClassifier()) {
       return "mean per-class error";
     } else if (m._output.isSupervised()) {
-      return "residual deviance";
+      return "mean residual deviance";
     }
     return "unknown";
   }

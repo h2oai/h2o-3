@@ -79,6 +79,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   FrameMetadata frameMetadata;           // metadata for trainingFrame
 
   // TODO: remove dead code
+  // TODO: more than one grid key!
   private Key<Grid> gridKey;             // Grid key from GridSearch
   private boolean isClassification;
 
@@ -123,6 +124,20 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     userFeedback.info(Stage.Workflow, "Build control seed: " +
             buildSpec.build_control.stopping_criteria.seed() +
             (buildSpec.build_control.stopping_criteria.seed() == -1 ? " (random)" : ""));
+
+    // By default, stopping tolerance is adaptive to the training frame
+    if (this.buildSpec.build_control.stopping_criteria._stopping_tolerance == -1) {
+      this.buildSpec.build_control.stopping_criteria.set_default_stopping_tolerance_for_frame(this.trainingFrame);
+      userFeedback.info(Stage.Workflow, "Setting stopping tolerance adaptively based on the training frame: " +
+              this.buildSpec.build_control.stopping_criteria._stopping_tolerance);
+    } else {
+      userFeedback.info(Stage.Workflow, "Stopping tolerance set by the user: " + this.buildSpec.build_control.stopping_criteria._stopping_tolerance);
+
+      double default_tolerance = HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria.default_stopping_tolerance_for_frame(this.trainingFrame);
+      if (this.buildSpec.build_control.stopping_criteria._stopping_tolerance < 0.7 * default_tolerance){
+        userFeedback.warn(Stage.Workflow, "Stopping tolerance set by the user is < 70% of the recommended default of " + default_tolerance + ", so models may take a long time to converge or may not converge at all.");
+      }
+    }
 
     userFeedback.info(Stage.Workflow, "Project: " + project());
     leaderboard = new Leaderboard(project(), userFeedback, this.testFrame);
@@ -513,6 +528,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // then use a sequence starting with the same seed given for the model build.
     // Don't use the same exact seed so that, e.g., if we build two GBMs they don't
     // do the same row and column sampling.
+    gridKey = Key.make(algoName + "_grid_" + this._key.toString());
     Job<Grid> gridJob = GridSearch.startGridSearch(gridKey,
             baseParms,
             searchParms,
@@ -557,6 +573,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     DRFModel.DRFParameters drfParameters = new DRFModel.DRFParameters();
     setCommonModelBuilderParams(drfParameters);
 
+    drfParameters._stopping_tolerance = this.buildSpec.build_control.stopping_criteria.stopping_tolerance();
+
     Job randomForestJob = trainModel(null, "drf", drfParameters);
     return randomForestJob;
   }
@@ -569,6 +587,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     setCommonModelBuilderParams(drfParameters);
 
     drfParameters._histogram_type = SharedTreeModel.SharedTreeParameters.HistogramType.Random;
+
+    drfParameters._stopping_tolerance = this.buildSpec.build_control.stopping_criteria.stopping_tolerance();
 
     Job randomForestJob = trainModel(ModelBuilder.defaultKey("XRT"), "drf", drfParameters);
     return randomForestJob;
@@ -792,6 +812,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // TODO: run for only part of the remaining time?
     Job<Grid>glmJob = defaultSearchGLM();
     pollAndUpdateProgress(Stage.ModelTraining, "GLM hyperparameter search", 50, this.job(), glmJob, JobType.HyperparamSearch);
+
+    // TODO: build GBMs with Arno's default settings, using 1-grid Cartesian searches
+    // into the same grid object as the search below.
+    // Can't do until PUBDEV-4361 is fixed.
 
     ///////////////////////////////////////////////////////////
     // build GBMs with the default search parameters
