@@ -73,6 +73,18 @@ public class Frame extends Lockable<Frame> {
     return false;
   }
 
+  private long _naCnt = -1;
+  synchronized public long naCount() {
+    if (_naCnt !=- 1) return _naCnt;
+    _naCnt = 0;
+    for(Vec v: vecs()) _naCnt += v.naCnt();
+    return _naCnt;
+  }
+
+  public double naFraction() {
+    return naCount() / (numCols() * numRows());
+  }
+
   /** Creates an internal frame composed of the given Vecs and default names.  The frame has no key. */
   public Frame(Vec... vecs){
     this(null, vecs);
