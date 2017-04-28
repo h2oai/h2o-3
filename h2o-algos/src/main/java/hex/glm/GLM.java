@@ -1074,9 +1074,24 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           double trainDev = _state.deviance() / _nobs;
           double testDev = Double.NaN;
           if (_validDinfo != null) {
-            testDev = _parms._family == Family.multinomial
-                ? new GLMResDevTaskMultinomial(_job._key, _validDinfo, _dinfo.denormalizeBeta(_state.beta()), _nclass).doAll(_validDinfo._adaptedFrame).avgDev()
-                : new GLMResDevTask(_job._key, _validDinfo, _parms, _dinfo.denormalizeBeta(_state.beta())).doAll(_validDinfo._adaptedFrame).avgDev();
+            int j = 0;
+
+            double [] beta = _state.beta();
+            int [] activeCols = new int[_state.beta().length-1];
+            if(_parms._family != Family.multinomial) {
+              for (int x = 0; x < beta.length - 1; ++x)
+                if (beta[x] != 0) activeCols[x++] = i;
+            }
+            if (j < activeCols.length) {
+              activeCols = Arrays.copyOf(activeCols, j);
+              DataInfo activeValidDinfo = _validDinfo.filterExpandedColumns(activeCols);
+              activeCols = ArrayUtils.append(activeCols, _dinfo.fullN());
+              testDev = new GLMResDevTask(_job._key, activeValidDinfo, _parms, ArrayUtils.select(_dinfo.denormalizeBeta(_state.beta()),activeCols)).doAll(activeValidDinfo._adaptedFrame).avgDev();
+            } else {
+              testDev = _parms._family == Family.multinomial
+                  ? new GLMResDevTaskMultinomial(_job._key, _validDinfo, _dinfo.denormalizeBeta(_state.beta()), _nclass).doAll(_validDinfo._adaptedFrame).avgDev()
+                  : new GLMResDevTask(_job._key, _validDinfo, _parms, _dinfo.denormalizeBeta(_state.beta())).doAll(_validDinfo._adaptedFrame).avgDev();
+            }
           }
           Log.info(LogMsg("train deviance = " + trainDev + ", test deviance = " + testDev));
           double xvalDev = _xval_test_deviances == null ? -1 : _xval_test_deviances[i];
