@@ -177,26 +177,6 @@ environments.
 
 --------------
 
-**I received the following error message when launching H2O - how do I
-resolve the error?**
-
-::
-
-    Invalid flow_dir illegal character at index 12...
-
-This error message means that there is a space (or other unsupported
-character) in your H2O directory. To resolve this error:
-
--  Create a new folder without unsupported characters to use as the H2O
-   directory (for example, ``C:\h2o``).
-
-or
-
--  Specify a different save directory using the ``-flow_dir`` parameter
-   when launching H2O: ``java -jar h2o.jar -flow_dir test``
-
---------------
-
 **How does ``importFiles()`` work in H2O?**
 
 ``importFiles()`` gets the basic information for the file and then
@@ -351,13 +331,6 @@ If you are using Bibtex:
         note = {version 3.1.0.99999},
         url = {http://www.h2o.ai},
     }
-
---------------
-
-**How can I use Flow to export the prediction results with a dataset?**
-
-After obtaining your results, click the **Combine predictions with
-frame** button, then click the **View Frame** button.
 
 --------------
 
