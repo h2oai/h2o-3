@@ -13,19 +13,19 @@ public class Register extends AbstractRegister{
             "POST /99/AutoMLBuilder", AutoMLBuilderHandler.class, "build",
             "Start an AutoML build process.");
 
-    RequestServer.registerEndpoint("fetch",
-            "GET /99/AutoML/{automl_id}", AutoMLHandler.class, "fetch",
-            "Fetch the specified AutoML object.");
-
-    RequestServer.registerEndpoint("list",
+    RequestServer.registerEndpoint("automls",
             "GET /99/AutoML", AutoMLHandler.class, "list",
             "Return all the AutoML objects.");
 
-    RequestServer.registerEndpoint("list",
+    RequestServer.registerEndpoint("automl",
+            "GET /99/AutoML/{automl_id}", AutoMLHandler.class, "fetch",
+            "Fetch the specified AutoML object.");
+
+    RequestServer.registerEndpoint("leaderboards",
             "GET /99/Leaderboards", LeaderboardsHandler.class, "list",
             "Return all the AutoML leaderboards.");
 
-    RequestServer.registerEndpoint("fetch",
+    RequestServer.registerEndpoint("leaderboard",
             "GET /99/Leaderboards/{project}", LeaderboardsHandler.class, "fetch",
             "Return the AutoML leaderboard for the given project.");
 
