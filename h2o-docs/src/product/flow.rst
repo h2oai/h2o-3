@@ -1725,6 +1725,15 @@ H2O.
 
 --------------
 
+Shutting Down H2O
+^^^^^^^^^^^^^^^^^
+
+To shut down H2O, click the **Admin** menu, then click **Shut Down**. A
+*Shut down complete* message displays in the upper right when the
+cluster has been shut down.
+
+--------------
+
 
 Troubleshooting Flow
 --------------------
@@ -1892,9 +1901,9 @@ notify our team.
 Requesting Help
 ^^^^^^^^^^^^^^^
 
-If you have a Google account, you can submit a request for assistance
-with H2O on our Google Groups page,
-`H2Ostream <https://groups.google.com/forum/#!forum/h2ostream>`__.
+If you have questions or ideas to share, please post them to the `H2O community site on Stack Overflow <http://stackoverflow.com/questions/tagged/h2o>`__.
+
+If you have a Google account, you can submit a request for assistance with H2O on our Google Groups page, `H2Ostream <https://groups.google.com/forum/#!forum/h2ostream>`__.
 
 To access H2Ostream from Flow:
 
@@ -1906,15 +1915,6 @@ To access H2Ostream from Flow:
    include your logs. (Refer to `Downloading Logs`_.)
 
 You can also email your question to h2ostream@googlegroups.com.
-
---------------
-
-Shutting Down H2O
-^^^^^^^^^^^^^^^^^
-
-To shut down H2O, click the **Admin** menu, then click **Shut Down**. A
-*Shut down complete* message displays in the upper right when the
-cluster has been shut down.
 
 --------------
 
