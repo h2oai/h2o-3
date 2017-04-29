@@ -31,6 +31,7 @@ import java.util.List;
 
 import static hex.tree.SharedTree.createModelSummaryTable;
 import static hex.tree.SharedTree.createScoringHistoryTable;
+import static water.H2O.technote;
 
 /** Gradient Boosted Trees
  *
@@ -184,7 +185,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
               int newLen = (int) Math.min((long) data.length << 1L, (long) (Integer.MAX_VALUE - 10));
               Log.info("Enlarging sparse data structure from " + data.length + " bytes to " + newLen + " bytes.");
               if (data.length == newLen) {
-                throw new IllegalArgumentException("Data is too large to fit into the 32-bit Java float[] array that needs to be passed to the XGBoost C++ backend. Use H2O GBM instead.");
+                throw new IllegalArgumentException(technote(11, "Data is too large to fit into the 32-bit Java float[] array that needs to be passed to the XGBoost C++ backend. Use H2O GBM instead."));
               }
               data = Arrays.copyOf(data, newLen);
               colIndex = Arrays.copyOf(colIndex, newLen);
@@ -238,7 +239,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
             int newLen = (int) Math.min((long) data.length << 1L, (long) (Integer.MAX_VALUE - 10));
             Log.info("Enlarging dense data structure from " + data.length + " bytes to " + newLen + " bytes.");
             if (data.length == newLen) {
-              throw new IllegalArgumentException("Data is too large to fit into the 32-bit Java float[] array that needs to be passed to the XGBoost C++ backend. Try setting dmatrix_type to 'sparse' or use H2O GBM instead.");
+              throw new IllegalArgumentException(technote(11, "Data is too large to fit into the 32-bit Java float[] array that needs to be passed to the XGBoost C++ backend. Use H2O GBM instead."));
             }
             data = Arrays.copyOf(data, newLen);
           }
@@ -264,7 +265,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         assert trainMat.rowNum() == actualRows;
       }
     } catch (NegativeArraySizeException e) {
-      throw new UnsupportedOperationException("Data is too large to fit into the 32-bit Java float[] array that needs to be passed to the XGBoost C++ backend. Use H2O GBM instead.");
+      throw new IllegalArgumentException(technote(11, "Data is too large to fit into the 32-bit Java float[] array that needs to be passed to the XGBoost C++ backend. Use H2O GBM instead."));
     }
 
     // extract weight vector
@@ -371,35 +372,35 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     switch( _parms._distribution) {
     case bernoulli:
       if( _nclass != 2 /*&& !couldBeBool(_response)*/)
-        error("_distribution", H2O.technote(2, "Binomial requires the response to be a 2-class categorical"));
+        error("_distribution", technote(2, "Binomial requires the response to be a 2-class categorical"));
       break;
     case modified_huber:
       if( _nclass != 2 /*&& !couldBeBool(_response)*/)
-        error("_distribution", H2O.technote(2, "Modified Huber requires the response to be a 2-class categorical."));
+        error("_distribution", technote(2, "Modified Huber requires the response to be a 2-class categorical."));
       break;
     case multinomial:
-      if (!isClassifier()) error("_distribution", H2O.technote(2, "Multinomial requires an categorical response."));
+      if (!isClassifier()) error("_distribution", technote(2, "Multinomial requires an categorical response."));
       break;
     case huber:
-      if (isClassifier()) error("_distribution", H2O.technote(2, "Huber requires the response to be numeric."));
+      if (isClassifier()) error("_distribution", technote(2, "Huber requires the response to be numeric."));
       break;
     case poisson:
-      if (isClassifier()) error("_distribution", H2O.technote(2, "Poisson requires the response to be numeric."));
+      if (isClassifier()) error("_distribution", technote(2, "Poisson requires the response to be numeric."));
       break;
     case gamma:
-      if (isClassifier()) error("_distribution", H2O.technote(2, "Gamma requires the response to be numeric."));
+      if (isClassifier()) error("_distribution", technote(2, "Gamma requires the response to be numeric."));
       break;
     case tweedie:
-      if (isClassifier()) error("_distribution", H2O.technote(2, "Tweedie requires the response to be numeric."));
+      if (isClassifier()) error("_distribution", technote(2, "Tweedie requires the response to be numeric."));
       break;
     case gaussian:
-      if (isClassifier()) error("_distribution", H2O.technote(2, "Gaussian requires the response to be numeric."));
+      if (isClassifier()) error("_distribution", technote(2, "Gaussian requires the response to be numeric."));
       break;
     case laplace:
-      if (isClassifier()) error("_distribution", H2O.technote(2, "Laplace requires the response to be numeric."));
+      if (isClassifier()) error("_distribution", technote(2, "Laplace requires the response to be numeric."));
       break;
     case quantile:
-      if (isClassifier()) error("_distribution", H2O.technote(2, "Quantile requires the response to be numeric."));
+      if (isClassifier()) error("_distribution", technote(2, "Quantile requires the response to be numeric."));
       break;
     case AUTO:
       break;
