@@ -4,6 +4,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Key;
 import water.api.schemas3.ImportFilesV3;
+import water.fvec.Frame;
 
 public class AutoMLTest extends TestUtil {
 
@@ -11,10 +12,11 @@ public class AutoMLTest extends TestUtil {
 
   @Test public void AirlinesTest() {
     AutoML aml=null;
+    Frame fr=null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      autoMLBuildSpec.input_spec.training_path = new ImportFilesV3.ImportFiles();
-      autoMLBuildSpec.input_spec.training_path.path = "smalldata/airlines/allyears2k_headers.zip";
+      fr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_control.loss = "AUTO";
       autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(5);
