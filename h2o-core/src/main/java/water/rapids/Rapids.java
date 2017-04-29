@@ -57,9 +57,9 @@ public class Rapids {
    * @param rapids expression to parse
    */
   public static Val exec(String rapids) {
-    H2O.incrementActiveRapidsCounter();
     Session session = new Session();
     try {
+      H2O.incrementActiveRapidsCounter();
       AstRoot ast = Rapids.parse(rapids);
       Val val = session.exec(ast, null);
       // Any returned Frame has it's REFCNT raised by +1, and the end(val) call
