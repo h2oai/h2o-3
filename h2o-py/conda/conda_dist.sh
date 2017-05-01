@@ -16,7 +16,7 @@ conda build h2o
 conda convert ~/anaconda3/conda-bld/osx-64/h2o-${PROJECT_VERSION}-0.tar.bz2 -p all
 
 # Upload the different builds
-BUILD_NUMBER=h2o-${PROJECT_VERSION}.tar.bz2
+BUILD_NUMBER=h2o-${PROJECT_VERSION}-0.tar.bz2
 echo $BUILD_NUMBER
 
 anaconda upload linux-32/${BUILD_NUMBER}
