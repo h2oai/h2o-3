@@ -664,7 +664,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     @property
     def sample_rate_per_class(self):
         """
-        A list/vector of the fraction of rows to sample for each tree, per class (from 0.0 to 1.0)
+        A list of row sample rates per class (relative fraction for each class, from 0.0 to 1.0), for each tree
 
         Type: ``List[float]``.
         """
