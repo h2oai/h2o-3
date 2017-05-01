@@ -32,9 +32,7 @@ public class LeaveOneCovarOutHandler extends Handler {
         H2O.H2OCountedCompleter work = new H2O.H2OCountedCompleter() {
                 @Override
                 public void compute2() {
-                    Frame sensitivityAnalysisFrame = LeaveOneCovarOut.leaveOneCovarOut(model,frame,j,replace_val);
-                    sensitivityAnalysisFrame._key = Key.make(dest_frame_id);
-                    DKV.put(sensitivityAnalysisFrame._key,sensitivityAnalysisFrame);
+                    LeaveOneCovarOut.leaveOneCovarOut(model,frame,j,replace_val,Key.make(dest_frame_id));
                     tryComplete();
                 }
             };

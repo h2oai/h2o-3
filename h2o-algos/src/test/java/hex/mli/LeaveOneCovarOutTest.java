@@ -3,6 +3,7 @@ package hex.mli;
 import hex.genmodel.utils.DistributionFamily;
 import hex.mli.loco.LeaveOneCovarOut;
 import hex.tree.gbm.GBM;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
@@ -110,11 +111,14 @@ public class LeaveOneCovarOutTest extends TestUtil {
             gbm = job.trainModel().get();
 
             if(method == null) {
-                loco = LeaveOneCovarOut.leaveOneCovarOut(gbm, fr, job._job, null);
+                loco = LeaveOneCovarOut.leaveOneCovarOut(gbm, fr, job._job, null,null);
+                assert DKV.get(loco._key) != null : "LOCO frame with default transform is not in DKV!";
             } else if(method == "mean"){
-                loco = LeaveOneCovarOut.leaveOneCovarOut(gbm, fr, job._job, "mean");
+                loco = LeaveOneCovarOut.leaveOneCovarOut(gbm, fr, job._job, "mean",null);
+                assert DKV.get(loco._key) != null : "LOCO frame with mean transform is not in DKV!";
             } else{
-                loco = LeaveOneCovarOut.leaveOneCovarOut(gbm, fr, job._job, "median");
+                loco = LeaveOneCovarOut.leaveOneCovarOut(gbm, fr, job._job, "median",null);
+                assert DKV.get(loco._key) != null : "LOCO frame with median transform is not in DKV!";
             }
             return loco;
 

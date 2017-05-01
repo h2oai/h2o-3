@@ -1,7 +1,5 @@
 package water;
 
-import jsr166y.CountedCompleter;
-
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ParallelizationTask<T extends H2O.H2OCountedCompleter<T>> extends H2O.H2OCountedCompleter {
@@ -42,12 +40,6 @@ public class ParallelizationTask<T extends H2O.H2OCountedCompleter<T>> extends H
             int i = _ctr.incrementAndGet();
             if (i < _tasks.length)
                 asyncVecTask(i);
-        }
-
-        @Override
-        public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
-            ex.printStackTrace();
-            return super.onExceptionalCompletion(ex, caller);
         }
     }
 }

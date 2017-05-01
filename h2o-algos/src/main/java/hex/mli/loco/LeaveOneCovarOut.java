@@ -16,6 +16,7 @@ import water.Iced;
 import water.Job;
 import water.rapids.ast.prims.reducers.AstMedian;
 import hex.quantile.QuantileModel.CombineMethod;
+import water.Key;
 
 /**
  * Leave One Covariate Out (LOCO)
@@ -31,14 +32,15 @@ public class LeaveOneCovarOut extends Iced {
      * @param m Supervised H2O model
      * @param fr H2O Frame to score
      * @param job Job to keep track of in terms of progress
-     * @param replaceVal Value to replace column by when conducting LOCO ("mean" or "median"). Default is null
+     * @param replaceVal Value to replace column by when conducting LOCO ("mean" or "median"). Default behavior is to setting to NA
+     * @param frameKey Key of final Leave One Covariate Out(LOCO) Frame.
      * @return  An H2OFrame displaying the base prediction (model scored with all predictors) and the difference in predictions
      *          when variables are dropped/replaced. The difference displayed is the base prediction substracted from
      *          the new prediction (when a variable is dropped/replaced with mean/median/mode) for binomial classification
      *          and regression problems. For multinomial problems, the sum of the absolute value of differences across classes
      *          is calculated per column dropped/replaced.
      */
-    public static Frame leaveOneCovarOut(Model m, Frame fr, Job job, String replaceVal){
+    public static Frame leaveOneCovarOut(Model m, Frame fr, Job job, String replaceVal, Key frameKey){
 
         Frame locoAnalysisFrame = new Frame();
         if(m._output.getModelCategory() != ModelCategory.Multinomial) {
@@ -75,6 +77,13 @@ public class LeaveOneCovarOut extends Iced {
         Log.info("Finished Leave One Covariate Out (LOCO) analysis for model " + m._key + " and frame " + fr._key +
                 " in " + (System.currentTimeMillis()-start)/1000. + " seconds for " + (predictors.length-1) + " columns");
 
+        if(frameKey != null) {
+            locoAnalysisFrame._key = frameKey;
+            DKV.put(locoAnalysisFrame._key, locoAnalysisFrame);
+        } else{
+            locoAnalysisFrame._key = Key.make("loco_"+fr._key.toString() + "_" + m._key.toString());
+            DKV.put(locoAnalysisFrame._key,locoAnalysisFrame);
+        }
         return locoAnalysisFrame;
 
     }
