@@ -45,6 +45,7 @@ def runPerformance(url_csv, numTimes, numRepeats):
         endcsv = time.time()
 
         runtimes.append(endcsv-startcsv)
+        print("All run times {0}".format(runtimes))
         h2o.remove(multi_file_csv)  # remove file to save space
 
     # write out summary run results
