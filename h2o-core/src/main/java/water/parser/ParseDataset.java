@@ -500,10 +500,17 @@ public final class ParseDataset {
       } else if (other._packedDomains != null) { // merge two packed domains
         H2OCountedCompleter[] domtasks = new H2OCountedCompleter[_catColIdxs.length];
         for (int i = 0; i < _catColIdxs.length; i++) {
-          _packedDomains[i] = PackedDomains.merge(_packedDomains[i], other._packedDomains[i]);
+          final int fi = i;
+          domtasks[i] = new H2OCountedCompleter(currThrPriority()) {
+            @Override
+            public void compute2() {
+              _packedDomains[fi] = PackedDomains.merge(_packedDomains[fi], other._packedDomains[fi]);
+              tryComplete();
+            }
+          };
         }
+        ForkJoinTask.invokeAll(domtasks);
       }
-        
       Log.trace("Done merging domains.");
     }
 
