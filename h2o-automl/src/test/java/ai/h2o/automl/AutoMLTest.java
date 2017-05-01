@@ -3,7 +3,6 @@ package ai.h2o.automl;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Key;
-import water.api.schemas3.ImportFilesV3;
 import water.fvec.Frame;
 
 public class AutoMLTest extends TestUtil {
@@ -28,6 +27,7 @@ public class AutoMLTest extends TestUtil {
     } finally {
       // cleanup
       if(aml!=null) aml.deleteWithChildren();
+      if(fr != null) fr.remove();
     }
   }
 }
