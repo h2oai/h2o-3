@@ -47,62 +47,42 @@ h2o.automl <- function(x, y, training_frame,
     message(cond)
   })
   
-  # TO DO: Add more parameter checking 
-  # maybe something like this as well: args <- .verify_dataxy(training_frame, x, y)
-
-  
-  # Required args: training_frame
+  # Required args: training_frame & response column (y)
   if (missing(training_frame)) stop("argument 'training_frame' is missing")
+  if (missing(y)) stop("The response column (y) is not set; please set it to the name of the column that you are trying to predict in your data.")
   
-  # Training frame must be a key or an H2OFrame object
-  if (!is.null(training_frame)) {
-    training_frame <- h2o.getId(training_frame)
+  args <- .verify_dataxy(training_frame, x, y)
+  ignored_columns <- NULL
+  if(!missing(x)){
+    ignored_columns <- setdiff(names(training_frame), c(args$x,args$y))
   }
   
-  # If x is missing, then assume user wants to use all columns as features
-  # TO DO: test that x / ignored_columns is working as expected
-  if (missing(x)) {
-    #if (is.numeric(y)) {
-    #  #x <- setdiff(col(training_frame),y)
-    #  ignored_columns <- setdiff(1:ncol(trainin_frame), y)
-    #} else{
-    #  #x <- setdiff(colnames(training_frame),y)
-    #  ignored_columns <- setdiff(names(training_frame), y)
-    #}
-    ignored_columns <- NULL
-  } else {
-    if (is.numeric(x)) {
-      ignored_columns <- setdiff(1:ncol(training_frame), x)
-      
-    } else {
-      ignored_columns <- setdiff(names(training_frame), x)
-    }
-  }
-  # Maybe just subset the training columns by x and set ignored_columns to NULL
-  #training_frame <- training_frame[,x]  
+  #Training frame id
+  training_frame_id <- h2o.getId(training_frame)
   
   # Validation frame must be a key or an H2OFrame object
+  validation_frame_id <- NULL
   if (!is.null(validation_frame)) {
-    validation_frame <- h2o.getId(validation_frame)
+    validation_frame_id <- h2o.getId(validation_frame)
   }
   
   #Test frame must be a key or an H2OFrame object
+  test_frame_id <- NULL
   if (!is.null(test_frame)) {
-    test_frame <- h2o.getId(test_frame)
+    test_frame_id <- h2o.getId(test_frame)
   }
   
   # Parameter list to send to the AutoML backend
   parms <- list()
   input_spec <- list()
-  input_spec$response_column <- y  #y is called response_column in the REST API
-  input_spec$training_frame <- training_frame
-  input_spec$validation_frame <- validation_frame
-  input_spec$test_frame <- test_frame
-  input_spec$ignored_columns <- ignored_columns  #expose and use x to create this
+  input_spec$response_column <- args$y 
+  input_spec$training_frame <- training_frame_id
+  input_spec$validation_frame <- validation_frame_id
+  input_spec$test_frame <- test_frame_id
+  input_spec$ignored_columns <- ignored_columns  
   
   # Update build_control list with top level args
   build_control$stopping_criteria$max_runtime_secs <- max_runtime_secs
-  # TO DO: Add other top level args and set them here
   
   parms = list(input_spec = input_spec, build_control = build_control)
   
