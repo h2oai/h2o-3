@@ -41,7 +41,8 @@ public class GridSearchHandler<G extends Grid<MP>,
   // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
   // TODO: why does this do its own params filling?
   // TODO: why does this do its own sub-dispatch?
-  @Override S handle(int version, water.api.Route route, Properties parms, String postBody) throws Exception {
+  @Override
+  public S handle(int version, water.api.Route route, Properties parms, String postBody) throws Exception {
     // Only here for train or validate-parms
     if( !route._handler_method.getName().equals("train") )
       throw water.H2O.unimpl();

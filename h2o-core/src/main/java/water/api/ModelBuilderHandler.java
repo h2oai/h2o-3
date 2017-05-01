@@ -15,7 +15,8 @@ import java.util.Properties;
 
 public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchemaV3> extends Handler {
   // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
-  @Override S handle(int version, Route route, Properties parms, String postBody) throws Exception {
+  @Override
+  public S handle(int version, Route route, Properties parms, String postBody) throws Exception {
     // Peek out the desired algo from the URL
     String ss[] = route._url.split("/");
     String algoURLName = ss[3]; // {}/{3}/{ModelBuilders}/{gbm}/{parameters}
