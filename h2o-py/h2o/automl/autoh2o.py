@@ -63,14 +63,14 @@ class H2OAutoML(object):
 
         :examples:
         >>> # Set up an H2OAutoML object
-        >>> a1 = H2OAutoML(response_column="class", training_path=training_path, build_control=build_control)
+        >>> a1 = H2OAutoML(response_column="class", training_frame=training_frame, build_control=build_control)
         >>> # Launch H2OAutoML
         >>> a1.train()
         """
 
         #Minimal required argumens are training_frame and y (response)
         if y is None:
-            raise ValueError('The response_column is not set; please set it to the name of the column that you are trying to predict in your data.')
+            raise ValueError('The response column (y) is not set; please set it to the name of the column that you are trying to predict in your data.')
         else:
             assert_is_type(y,int,str)
             input_spec = {
@@ -125,7 +125,7 @@ class H2OAutoML(object):
 
         :examples:
         >>> # Set up an H2OAutoML object
-        >>> a1 = H2OAutoML(response_column="class", training_path=training_path, build_control=build_control)
+        >>> a1 = H2OAutoML(response_column="class", training_frame=training_frame, build_control=build_control)
         >>> # Get the project name
         >>> a1.project_name()
         """
@@ -140,7 +140,7 @@ class H2OAutoML(object):
 
         :examples:
         >>> # Set up an H2OAutoML object
-        >>> a1 = H2OAutoML(response_column="class", training_path=training_path, build_control=build_control)
+        >>> a1 = H2OAutoML(response_column="class", training_frame=training_frame, build_control=build_control)
         >>> # Launch H2OAutoML
         >>> a1.train()
         >>> # Get the top model
@@ -158,7 +158,7 @@ class H2OAutoML(object):
 
         :examples:
         >>> # Set up an H2OAutoML object
-        >>> a1 = H2OAutoML(response_column="class", training_path=training_path, build_control=build_control)
+        >>> a1 = H2OAutoML(response_column="class", training_frame=training_frame, build_control=build_control)
         >>> # Launch H2OAutoML
         >>> a1.train()
         >>> # Get the leaderboard
@@ -177,7 +177,7 @@ class H2OAutoML(object):
 
         :examples:
         >>> #Set up an H2OAutoML object
-        >>> a1 = H2OAutoML(response_column="class", training_path=training_path, build_control=build_control)
+        >>> a1 = H2OAutoML(response_column="class", training_frame=training_frame, build_control=build_control)
         >>> #Launch H2OAutoML
         >>> a1.train()
         >>> #Predict with #1 model from H2OAutoML leaderboard
