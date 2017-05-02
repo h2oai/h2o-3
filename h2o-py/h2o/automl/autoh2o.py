@@ -2,7 +2,7 @@
 import h2o
 from h2o.job import H2OJob
 from h2o.frame import H2OFrame
-from h2o.utils.typechecks import assert_is_type
+from h2o.utils.typechecks import assert_is_type, is_type
 
 class H2OAutoML(object):
     """
@@ -69,12 +69,20 @@ class H2OAutoML(object):
         >>> # Launch H2OAutoML
         >>> a1.train()
         """
-
+        ncols = training_frame.ncols
+        names = training_frame.names
         #Minimal required argumens are training_frame and y (response)
         if y is None:
             raise ValueError('The response column (y) is not set; please set it to the name of the column that you are trying to predict in your data.')
         else:
             assert_is_type(y,int,str)
+            if is_type(y, int):
+                if not (-ncols <= y < ncols):
+                    raise H2OValueError("Column %d does not exist in the training frame" % y)
+                y = names[y]
+            else:
+                if y not in names:
+                    raise H2OValueError("Column %s does not exist in the training frame" % y)
             input_spec = {
                 'response_column': y,
             }
@@ -95,7 +103,18 @@ class H2OAutoML(object):
 
         if x is not None:
             assert_is_type(x,list)
-            names = training_frame.names
+            xset = set()
+            if is_type(x, int, str): x = [x]
+            for xi in x:
+                if is_type(xi, int):
+                    if not (-ncols <= xi < ncols):
+                        raise H2OValueError("Column %d does not exist in the training frame" % xi)
+                    xset.add(names[xi])
+                else:
+                    if xi not in names:
+                        raise H2OValueError("Column %s not in the training frame" % xi)
+                    xset.add(xi)
+            x = list(xset)
             ignored_columns = set(names) - {y} - set(x)
             input_spec['ignored_columns'] = list(ignored_columns)
 
