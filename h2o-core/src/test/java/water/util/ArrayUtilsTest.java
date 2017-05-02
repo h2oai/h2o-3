@@ -185,4 +185,43 @@ public class ArrayUtilsTest extends TestUtil {
     assertArrayEquals(new float[]{210.0f, 420.0f, 630.0f}, a, 0.001f);
   }
 
+  @Test public void test_encodeAsInt() {
+    byte[]bs = new byte[]{0,0,0,0,1};
+    assertEquals(0, encodeAsInt(bs, 0));
+    assertEquals(0x1000000, encodeAsInt(bs, 1));
+    try {
+      encodeAsInt(bs, 2);
+      fail("Should not work");
+    } catch (Throwable ignore) {}
+    
+    bs[0] = (byte)0xfe;
+    assertEquals(0xfe, encodeAsInt(bs, 0));
+    bs[1] = (byte)0xca;
+    assertEquals(0xcafe, encodeAsInt(bs, 0));
+    bs[2] = (byte)0xde;
+    assertEquals(0xdecafe, encodeAsInt(bs, 0));
+    bs[3] = (byte)0x0a;
+    assertEquals(0xadecafe, encodeAsInt(bs, 0));
+    assertEquals(0x10adeca, encodeAsInt(bs, 1));
+  }
+
+  @Test public void test_decodeAsInt() {
+    byte[]bs = new byte[]{1,2,3,4,5};
+    assertArrayEquals(new byte[]{0,0,0,0,5}, decodeAsInt(0, bs, 0));
+    try {
+      decodeAsInt(1, bs, 3);
+      fail("Should not work");
+    } catch (Throwable ignore) {}
+    
+    try {
+      decodeAsInt(256, bs, 4);
+      fail("Should not work");
+    } catch (Throwable ignore) {}
+
+    assertArrayEquals(new byte[]{(byte)0xfe,0,0,0,5}, decodeAsInt(0xfe, bs, 0));
+    assertArrayEquals(new byte[]{(byte)0xfe,(byte)0xca,0,0,5}, decodeAsInt(0xcafe, bs, 0));
+    assertArrayEquals(new byte[]{(byte)0xfe,(byte)0xca,(byte)0xde,0,5}, decodeAsInt(0xdecafe, bs, 0));
+    assertArrayEquals(new byte[]{(byte)0xfe,(byte)0xca,(byte)0xde,(byte)0x80,5}, decodeAsInt(0x80decafe, bs, 0));
+    
+  }
 }
