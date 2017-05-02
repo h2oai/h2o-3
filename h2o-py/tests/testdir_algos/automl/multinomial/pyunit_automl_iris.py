@@ -7,8 +7,17 @@ from h2o.automl import H2OAutoML
 
 def iris_automl():
 
-    train = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
+    df = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
 
+    #Split frames
+    fr = df.split_frame(ratios=[.8,.1])
+
+    #Set up train, validation, and test sets
+    train = fr[0]
+    valid = fr[1]
+    test = fr[2]
+
+    #Make build control for automl
     build_control = {
         'stopping_criteria': {
             'stopping_rounds': 3,
@@ -16,7 +25,12 @@ def iris_automl():
         }
     }
     aml = H2OAutoML(max_runtime_secs = 30,build_control=build_control)
-    aml.train(y="class", training_frame=train)
+
+    print("AutoML run with x not provided with train, valid, and test")
+    aml.train(y="class", training_frame=train,validation_frame=valid, test_frame=test)
+
+    print("AutoML run with x not provided and y as col idx with train, valid, and test")
+    aml.train(y=4, training_frame=train,validation_frame=valid, test_frame=test)
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(iris_automl)

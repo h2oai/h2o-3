@@ -7,9 +7,17 @@ from h2o.automl import H2OAutoML
 
 def prostate_automl():
 
-    train = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate_train.csv"))
-    valid = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate_test.csv"))
+    df = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
 
+    #Split frames
+    fr = df.split_frame(ratios=[.8,.1])
+
+    #Set up train, validation, and test sets
+    train = fr[0]
+    valid = fr[1]
+    test = fr[2]
+
+    #Make build control for automl
     build_control = {
         'stopping_criteria': {
             'stopping_rounds': 3,
@@ -17,9 +25,17 @@ def prostate_automl():
         }
     }
     aml = H2OAutoML(max_runtime_secs = 30,build_control=build_control)
+
     train["CAPSULE"] = train["CAPSULE"].asfactor()
     valid["CAPSULE"] = valid["CAPSULE"].asfactor()
-    aml.train(y="CAPSULE", training_frame=train,validation_frame=valid)
+    test["CAPSULE"] = test["CAPSULE"].asfactor()
+
+    print("AutoML run with x not provided with train, valid, and test")
+    aml.train(y="CAPSULE", training_frame=train,validation_frame=valid, test_frame=test)
+
+    print("AutoML run with x not provided and y as col idx with train, valid, and test")
+    aml.train(y=1, training_frame=train,validation_frame=valid, test_frame=test)
+
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(prostate_automl)
