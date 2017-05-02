@@ -1,7 +1,7 @@
 package water.parser;
 
 import org.apache.commons.lang.math.NumberUtils;
-import org.apache.http.ParseException;
+import water.fvec.Chunk;
 import water.fvec.Vec;
 import water.fvec.FileVec;
 import water.Key;
@@ -22,7 +22,17 @@ class CsvParser extends Parser {
   private static final int HAS_HEADER = ParseSetup.HAS_HEADER;
 
   CsvParser( ParseSetup ps, Key jobKey ) { super(ps, jobKey); }
-
+  
+  // TODO(vlad): make it package-private, add a test
+  private static int skipHeader(byte[] bits, int offset) {
+    int offsetToNonspace = skipSpaces(bits, offset);
+    while (offsetToNonspace < bits.length && isCommentChar(bits[offsetToNonspace])) {
+      offset = skipToNewLine(bits, offsetToNonspace) + 1;
+      offsetToNonspace = skipSpaces(bits, offset);
+    }
+    return offset;
+  }
+  
   // Parse this one Chunk (in parallel with other Chunks)
   @SuppressWarnings("fallthrough")
   @Override public ParseWriter parseChunk(int cidx, final ParseReader din, final ParseWriter dout) {
@@ -57,25 +67,13 @@ class CsvParser extends Parser {
     int fractionDigits = 0;
     int tokenStart = 0; // used for numeric token to backtrace if not successful
     int colIdx = 0;
-    byte c = bits[offset];
     // skip comments for the first chunk (or if not a chunk)
-    if( cidx == 0 ) {
-      while ( c == '#'
-              || isEOL(c)
-              || c == '@' /*also treat as comments leading '@' from ARFF format*/
-              || c == '%' /*also treat as comments leading '%' from ARFF format*/) {
-        while ((offset   < bits.length) && (bits[offset] != CHAR_CR) && (bits[offset  ] != CHAR_LF)) {
-//          System.out.print(String.format("%c",bits[offset]));
-          ++offset;
-        }
-        if ((offset + 1 < bits.length) && (bits[offset] == CHAR_CR) && (bits[offset + 1] == CHAR_LF)) ++offset;
-        ++offset;
-//        System.out.println();
-        if (offset >= bits.length)
-          return dout;
-        c = bits[offset];
-      }
+    if (cidx == 0) {
+      offset = skipHeader(bits, offset);
+      if (offset >= bits.length) return dout;
     }
+
+    byte c = bits[offset];
     dout.newLine();
 
     final boolean forceable = dout instanceof FVecParseWriter && ((FVecParseWriter)dout)._ctypes != null && _setup._column_types != null;
@@ -87,12 +85,13 @@ MAIN_LOOP:
       switch (state) {
         // ---------------------------------------------------------------------
         case SKIP_LINE:
-          if (isEOL(c)) {
+          offset = skipToNewLine(bits, offset);
+          if (offset >= bits.length || isEOL(bits[offset])) {
             state = EOL;
+            continue MAIN_LOOP;
           } else {
             break;
           }
-          continue MAIN_LOOP;
         // ---------------------------------------------------------------------
         case EXPECT_COND_LF:
           state = POSSIBLE_EMPTY_LINE;
@@ -201,7 +200,7 @@ MAIN_LOOP:
             dout.addInvalidCol(colIdx++);
             break;
           } else if (isEOL(c)) {
-            dout.addInvalidCol(colIdx++);
+// ignore empty strings            dout.addInvalidCol(colIdx++);
             state = EOL;
             continue MAIN_LOOP;
           }

@@ -181,7 +181,7 @@ public abstract class FileVec extends ByteVec {
       // Small data check
       chunkSize = 1L << MathUtils.log2(chunkSize); //closest power of 2
       if (chunkSize < DFLT_CHUNK_SIZE
-              && (localParseSize/chunkSize)*numCols < (1 << 21)) { // ignore if col cnt is high
+          && (localParseSize/chunkSize)*numCols < (1 << 21)) { // ignore if col cnt is high
         return (int)chunkSize;
       }
       // Big data check
@@ -237,16 +237,16 @@ public abstract class FileVec extends ByteVec {
       assert(chunkSize <= maxParseChunkSize);
       if (verbose)
         Log.info("ParseSetup heuristic: "
-          + "cloudSize: " + cloudsize
-          + ", cores: " + cores
-          + ", numCols: " + numCols
-          + ", maxLineLength: " + maxLineLength
-          + ", totalSize: " + totalSize
-          + ", localParseSize: " + localParseSize
-          + ", chunkSize: " + chunkSize
-          + ", numChunks: " + Math.max(1,totalSize/chunkSize)
-          + ", numChunks * cols: " + (Math.max(1,totalSize/chunkSize) * numCols)
-      );
+            + "cloudSize: " + cloudsize
+            + ", cores: " + cores
+            + ", numCols: " + numCols
+            + ", maxLineLength: " + maxLineLength
+            + ", totalSize: " + totalSize
+            + ", localParseSize: " + localParseSize
+            + ", chunkSize: " + chunkSize
+            + ", numChunks: " + Math.max(1,totalSize/chunkSize)
+            + ", numChunks * cols: " + (Math.max(1,totalSize/chunkSize) * numCols)
+        );
       return (int)chunkSize;
     }
   }

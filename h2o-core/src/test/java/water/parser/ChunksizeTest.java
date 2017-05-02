@@ -13,6 +13,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 public class ChunksizeTest extends TestUtil {
+  boolean VERBOSE = false;
   @BeforeClass
   static public void setup() {
     stall_till_cloudsize(1);
@@ -52,7 +53,7 @@ public class ChunksizeTest extends TestUtil {
                 if ((double)maxLineLength / numCols > 100) continue; //can't have more than 100 bytes per column
 
                 // Pretend to be in ParseSetup
-                int chunkSize = FileVec.calcOptimalChunkSize((long) totalSize, numCols, maxLineLength, cores, cloudSize, oldheuristic==1, true);
+                int chunkSize = FileVec.calcOptimalChunkSize((long) totalSize, numCols, maxLineLength, cores, cloudSize, oldheuristic==1, VERBOSE);
 
                 int parseChunkCount = (int) Math.max(1, totalSize/chunkSize);
                 int parseChunkCountPerNode = parseChunkCount/cloudSize;
@@ -74,14 +75,14 @@ public class ChunksizeTest extends TestUtil {
                 // don't cut small data into too many chunks (only 10 numbers per chunk)
                 if (chunkSize < 10*maxLineLength) {
                   msg += "SMALL ";
-                  FileVec.calcOptimalChunkSize((long) totalSize, numCols, maxLineLength, cores, cloudSize, oldheuristic==1, true);
+                  FileVec.calcOptimalChunkSize((long) totalSize, numCols, maxLineLength, cores, cloudSize, oldheuristic==1, VERBOSE);
                   toosmall[oldheuristic]++;
                   fail = true;
                 }
 
                 if (chunkSize >= (1<<28)) { //256MB
                   msg += "LARGE ";
-                  FileVec.calcOptimalChunkSize((long) totalSize, numCols, maxLineLength, cores, cloudSize, oldheuristic==1, true);
+                  FileVec.calcOptimalChunkSize((long) totalSize, numCols, maxLineLength, cores, cloudSize, oldheuristic==1, VERBOSE);
                   toolarge[oldheuristic]++;
                   fail = true;
                 }
@@ -93,7 +94,7 @@ public class ChunksizeTest extends TestUtil {
                       && totalSize/cloudSize/numCols/(4*cores) > 1000 // Only complain about too few chunks if there's enough data to cut it into Chunk POJO of 1kB each, otherwise it's small data and we're fine with fewer chunks
                       ) {
                     msg += "FEW ";
-                    FileVec.calcOptimalChunkSize((long) totalSize, numCols, maxLineLength, cores, cloudSize, oldheuristic==1, true);
+                    FileVec.calcOptimalChunkSize((long) totalSize, numCols, maxLineLength, cores, cloudSize, oldheuristic==1, VERBOSE);
                     toofew[oldheuristic]++;
                     fail = true;
                     Assert.assertTrue(numCols > 1e4); //only for very wide data
@@ -103,14 +104,18 @@ public class ChunksizeTest extends TestUtil {
 
                 if (parseChunkCountPerNode*numCols > (1<<24)) {//no more than 16M chunk POJOs per node
                   msg += "MANY ";
-                  FileVec.calcOptimalChunkSize((long) totalSize, numCols, maxLineLength, cores, cloudSize, oldheuristic==1, true);
+                  FileVec.calcOptimalChunkSize((long) totalSize, numCols, maxLineLength, cores, cloudSize, oldheuristic==1, VERBOSE);
                   toomany[oldheuristic]++;
                   fail = true;
-                  Assert.assertTrue(totalSize/cloudSize/cores > 1e9); //only for big data, where we have more than 1GB per core
+
+                  final double actual = totalSize / cloudSize / cores;
+                  Assert.assertTrue(
+                      "Total " + totalSize + ", cloud size" + cloudSize +", cores " + cores + " => " + actual, 
+                      actual > 1e9); //only for big data, where we have more than 1GB per core
                 }
 
                 if (fail) {
-                  Log.info(msg + (oldheuristic==0?"(New Heuristic)":"(Old Heuristic)"));
+//                  Log.info(msg + (oldheuristic==0?"(New Heuristic)":"(Old Heuristic)"));
                   failed[oldheuristic]++;
                 }
                 counter[oldheuristic]++;
@@ -122,17 +127,17 @@ public class ChunksizeTest extends TestUtil {
     }
     fw.close();
       for (int i : new int[]{0,1}) {
-        Log.info((i==1 ? "Old" : "New") + " heuristic:");
-        Log.info("Total: " + counter[i]);
-        Log.info("Failure rate: " + PrettyPrint.formatPct((double) failed[i] / counter[i]));
-        Log.info("Too small: " + PrettyPrint.formatPct((double) toosmall[i] / counter[i]));
-        Log.info("Too large: " + PrettyPrint.formatPct((double) toolarge[i] / counter[i]));
-        Log.info("Too few: " + PrettyPrint.formatPct((double) toofew[i] / counter[i]));
-        Log.info("Too many: " + PrettyPrint.formatPct((double) toomany[i] / counter[i]));
+//        Log.info((i==1 ? "Old" : "New") + " heuristic:");
+//        Log.info("Total: " + counter[i]);
+//        Log.info("Failure rate: " + PrettyPrint.formatPct((double) failed[i] / counter[i]));
+//        Log.info("Too small: " + PrettyPrint.formatPct((double) toosmall[i] / counter[i]));
+//        Log.info("Too large: " + PrettyPrint.formatPct((double) toolarge[i] / counter[i]));
+//        Log.info("Too few: " + PrettyPrint.formatPct((double) toofew[i] / counter[i]));
+//        Log.info("Too many: " + PrettyPrint.formatPct((double) toomany[i] / counter[i]));
 
         if (i==0) {
-          Assert.assertTrue("Too small means that files cannot be parsed", toosmall[i] == 0);
-          Assert.assertTrue("Too large means that chunks cannot fit in the DKV", toolarge[i] == 0);
+          Assert.assertEquals("Too small means that files cannot be parsed", 0, toosmall[i]);
+          Assert.assertEquals("Too large means that chunks cannot fit in the DKV", 0, toolarge[i]);
           Assert.assertTrue("Too few means that cores aren't utilized", toofew[i] < 1e-3*counter[i]); //extremely rare, only for wide data
           Assert.assertTrue("Too many means that each node has to store more than 8M chunks in its KV store", toomany[i] < 3e-2*counter[i]); //it's very rare to have too many chunks (huge data)
         }
