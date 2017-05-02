@@ -24,7 +24,7 @@ def prostate_automl():
             'stopping_tolerance': 0.001
         }
     }
-    aml = H2OAutoML(max_runtime_secs = 5,build_control=build_control)
+    aml = H2OAutoML(max_runtime_secs = 30,build_control=build_control)
 
     train["CAPSULE"] = train["CAPSULE"].asfactor()
     valid["CAPSULE"] = valid["CAPSULE"].asfactor()
