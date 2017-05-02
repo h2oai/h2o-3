@@ -41,6 +41,8 @@ class H2OAutoML(object):
             assert_is_type(build_control,dict)
             build_control["stopping_criteria"]["max_runtime_secs"] = max_runtime_secs
 
+        self.build_control=build_control
+
         self._job=None
         self._automl_key=None
         self._leader_id=None
@@ -63,7 +65,7 @@ class H2OAutoML(object):
 
         :examples:
         >>> # Set up an H2OAutoML object
-        >>> a1 = H2OAutoML(response_column="class", training_frame=training_frame, build_control=build_control)
+        >>> a1 = H2OAutoML(response_column="class", training_frame=training_frame)
         >>> # Launch H2OAutoML
         >>> a1.train()
         """
