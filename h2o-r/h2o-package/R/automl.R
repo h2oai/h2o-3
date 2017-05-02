@@ -1,22 +1,22 @@
 #' Automatic Machine Learning
 #'
 #' The Automatic Machine Learning (AutoML) function automates the supervised machine learning model training process.
-#' The current version of AutoML trains and cross-validates a Random Forest, an Extremely-Randomized Forest, 
-#' a random grid of Gradient Boosting Machines (GBMs), a random grid of Deep Neural Nets, 
+#' The current version of AutoML trains and cross-validates a Random Forest, an Extremely-Randomized Forest,
+#' a random grid of Gradient Boosting Machines (GBMs), a random grid of Deep Neural Nets,
 #' and a Stacked Ensemble of all the models.
 #'
 #' @param x A vector containing the names or indices of the predictor variables to use in building the model.
-#'        If x is missing,then all columns except y are used.
+#'        If x is missing, then all columns except y are used.
 #' @param y The name of the response variable in the model. If the data does not contain a header, this is the column index
 #'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
 #'        categorical variable).
-#' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
-#' @param validation_frame Id of the validation data frame (Not required).
-#' @param test_frame Id of the test data frame.  The Leaderboard will be scored using this test data.
+#' @param training_frame Training data frame (or ID).
+#' @param validation_frame Validation data frame (or ID); optional.
+#' @param test_frame Test data frame (or ID).  The Leaderboard will be scored using this test data set.
 #' @param build_control List of custom build parameters.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for the entire model training process.  Use 0 to disable. Defaults to 600 secs (10 min).
 #' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
-#'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.  Note that 
+#'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.  Note that
 #'          Stacked Ensemble will be trained for regression and binary classification problems since multiclass stacking is not yet supported.
 #' @return Creates a \linkS4class{H2OAutoML} object.
 #' @examples
@@ -34,7 +34,7 @@ h2o.automl <- function(x, y, training_frame,
                        build_control = NULL,
                        max_runtime_secs = 600)
 {
-  
+
   tryCatch({
     .h2o.__remoteSend(h2oRestApiVersion = 3, method="GET", page = "Metadata/schemas/AutoMLV99")
   },
@@ -46,58 +46,65 @@ h2o.automl <- function(x, y, training_frame,
          \nVerbose Error Message:")
     message(cond)
   })
-  
+
   # Required args: training_frame & response column (y)
   if (missing(training_frame)) stop("argument 'training_frame' is missing")
   if (missing(y)) stop("The response column (y) is not set; please set it to the name of the column that you are trying to predict in your data.")
-  
-  args <- .verify_dataxy(training_frame, x, y)
+
+  #args <- .verify_dataxy(training_frame, x, y)
   ignored_columns <- NULL
-  if(!missing(x)){
-    ignored_columns <- setdiff(names(training_frame), c(args$x,args$y))
+  if (!missing(x)) {
+    #ignored_columns <- setdiff(names(training_frame), c(args$x,args$y))
+    ignored_columns <- setdiff(names(training_frame), c(x, y))  #Remove x and y to create ignored_columns
+  } else {
+    # If x is missing, set as everything except y
+    x <- setdiff(names(training_frame), y)
+    # ignored_columns stays NULL
   }
-  
-  #Training frame id
+
+  args <- .verify_dataxy(training_frame, x, y)
+
+  # Training frame id
   training_frame_id <- h2o.getId(training_frame)
-  
+
   # Validation frame must be a key or an H2OFrame object
   validation_frame_id <- NULL
   if (!is.null(validation_frame)) {
     validation_frame_id <- h2o.getId(validation_frame)
   }
-  
-  #Test frame must be a key or an H2OFrame object
+
+  # Test frame must be a key or an H2OFrame object
   test_frame_id <- NULL
   if (!is.null(test_frame)) {
     test_frame_id <- h2o.getId(test_frame)
   }
-  
+
   # Parameter list to send to the AutoML backend
   parms <- list()
   input_spec <- list()
-  input_spec$response_column <- args$y 
+  input_spec$response_column <- args$y
   input_spec$training_frame <- training_frame_id
   input_spec$validation_frame <- validation_frame_id
   input_spec$test_frame <- test_frame_id
-  input_spec$ignored_columns <- ignored_columns  
-  
+  input_spec$ignored_columns <- ignored_columns
+
   # Update build_control list with top level args
   build_control$stopping_criteria$max_runtime_secs <- max_runtime_secs
-  
-  parms = list(input_spec = input_spec, build_control = build_control)
-  
-  #POST call to AutoMLBuilder
-  res <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "POST", page = "AutoMLBuilder", autoML = TRUE, .params = parms)
+
+  params <- list(input_spec = input_spec, build_control = build_control)
+
+  # POST call to AutoMLBuilder
+  res <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "POST", page = "AutoMLBuilder", autoML = TRUE, .params = params)
   .h2o.__waitOnJob(res$job$key$name)
-  
-  #GET AutoML job and leaderboard for project
-  automl_job <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET",page = paste0("AutoML/",res$job$dest$name))
+
+  # GET AutoML job and leaderboard for project
+  automl_job <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", res$job$dest$name))
   project <- automl_job$project
   leaderboard <- as.data.frame(automl_job["leaderboard_table"]$leaderboard_table)
   user_feedback <- automl_job["user_feedback_table"]
   leader <- automl_job$leaderboard$models[[1]]$name
-  
-  #Make AutoML object
+
+  # Make AutoML object
   new("H2OAutoML",
       project_name = project,
       user_feedback = user_feedback,
