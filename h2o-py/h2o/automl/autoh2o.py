@@ -18,11 +18,11 @@ class H2OAutoML(object):
         try:
             h2o.api("GET /3/Metadata/schemas/AutoMLV99")
         except h2o.exceptions.H2OResponseError as e:
-            print e
-            print "*******************************************************************\n" \
+            print(e)
+            print("*******************************************************************\n" \
                   "*Please verify that your H2O jar has the proper AutoML extensions.*\n" \
                   "*******************************************************************\n" \
-                  "\nVerbose Error Message:"
+                  "\nVerbose Error Message:")
 
         if max_runtime_secs is None:
             max_runtime_secs = 600
