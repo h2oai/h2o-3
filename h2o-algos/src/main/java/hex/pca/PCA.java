@@ -103,7 +103,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   /*
     Set value of wideDataset.  Note that this routine is used for test purposes only and not for users.
  */
-  public void setWideDataset(boolean isWide) {
+  void setWideDataset(boolean isWide) {
     _wideDataset = isWide;
   }
 
@@ -350,7 +350,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
             e.printStackTrace();
             throw e;
           }
-          SVD_MTJ svd = new SVD_MTJ(PCA.this, gramMatrix);
+          SVDInterface svd = new SVD_MTJ(PCA.this, gramMatrix);
           double[][] eigenVectors = svd.getVt_2D();
           if (_wideDataset) {       // correct for the eigenvector by t(A)*eigenvector for wide dataset
             transformEigenVectors(dinfo, eigenVectors);

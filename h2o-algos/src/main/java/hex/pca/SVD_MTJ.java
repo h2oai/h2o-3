@@ -8,22 +8,24 @@ import no.uib.cipr.matrix.NotConvergedException;
  * @author mathemage </ha@h2o.ai>
  * @date 1.5.17
  */
-public class SVD_MTJ {
+public class SVD_MTJ implements SVDInterface {
   private PCA pca;
   private DenseMatrix gramJ;
   private no.uib.cipr.matrix.SVD svdJ;
   private double[][] vt_2D;
 
-  public SVD_MTJ(PCA pca, double[][] gramMatrix) {
+  SVD_MTJ(PCA pca, double[][] gramMatrix) {
     this.pca = pca;
     this.gramJ = new DenseMatrix(gramMatrix);
     runSVD();
   }
 
+  @Override
   public double[] getS() {
     return svdJ.getS();
   }
 
+  @Override
   public double[][] getVt_2D() {
     return vt_2D;
   }
