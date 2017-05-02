@@ -1,0 +1,121 @@
+\documentclass{standalone}
+
+\begin{document}
+
+\section{Installation} 
+\Urlmuskip=0mu plus 1mu\relax %needed to make long URLs break nicely
+
+H2O requires Java; if you do not already have Java installed, install it from {\url{https://java.com/en/download/}} before installing H2O. 
+
+The easiest way to directly install H2O is  via an R or Python package.
+
+
+\subsection{Installation in R}
+
+To load a recent H2O package from CRAN, run:
+
+\begin{lstlisting}[style=R]
+install.packages("h2o")
+\end{lstlisting}
+
+{\bf{Note}}: The version of H2O in CRAN may be one release behind the current version.
+
+For the latest recommended version, download the
+latest stable H2O-3 build from the H2O download page:
+
+\begin{minipage}{\textwidth}
+
+\begin{enumerate}
+\item Go to {\url{http://h2o.ai/download}}.
+\item Choose the latest stable H2O-3 build.
+\item Click the ``Install in R'' tab.
+\item Copy and paste the commands into your R session.
+\end{enumerate}
+
+\end{minipage}
+
+After H2O is installed on your system, verify the installation:
+
+\begin{minipage}{\textwidth}
+
+\begin{lstlisting}[style=R]
+library(h2o)
+
+#Start H2O on your local machine using all available cores.
+#By default, CRAN policies limit use to only 2 cores.
+h2o.init(nthreads = -1)
+
+#Get help
+?h2o.glm
+?h2o.gbm
+?h2o.deeplearning
+
+#Show a demo
+demo(h2o.glm)
+demo(h2o.gbm)
+demo(h2o.deeplearning)
+\end{lstlisting}
+
+\end{minipage}
+
+\subsection{Installation in Python}
+
+To load a recent H2O package from PyPI, run:
+
+\begin{lstlisting}[style=python]
+pip install h2o
+\end{lstlisting}
+
+To download the
+latest stable H2O-3 build from the H2O download page:
+
+\begin{minipage}{\textwidth}
+
+\begin{enumerate}
+\item Go to {\url{http://h2o.ai/download}}.
+\item Choose the latest stable H2O-3 build.
+\item Click the ``Install in Python'' tab.
+\item Copy and paste the commands into your Python session.
+\end{enumerate}
+
+\end{minipage}
+
+\bigskip
+After H2O is installed, verify the installation:
+
+\begin{minipage}{\textwidth}
+
+\begin{lstlisting}[style=python]
+import h2o
+
+# Start H2O on your local machine
+h2o.init()
+
+# Get help
+help(h2o.estimators.glm.H2OGeneralizedLinearEstimator)
+help(h2o.estimators.gbm.H2OGradientBoostingEstimator)
+help(h2o.estimators.deeplearning.H2ODeepLearningEstimator)
+
+# Show a demo
+h2o.demo("glm")
+h2o.demo("gbm")
+h2o.demo("deeplearning")
+
+\end{lstlisting}
+
+\end{minipage}
+
+\subsection{Pointing to a Different H2O Cluster}
+
+The instructions in the previous sections create a one-node H2O cluster on your local machine. 
+
+To connect to an established H2O cluster (in a multi-node Hadoop environment, for example) specify the IP address and port number for the established cluster using the \texttt{ip} and \texttt{port} parameters in the \texttt{h2o.init()} command.  The syntax for this function is identical for R and Python:
+\medskip  
+
+\begin{lstlisting}[style=R]
+h2o.init(ip = "123.45.67.89", port = 54321)
+\end{lstlisting}
+
+%if it's the same, only one is needed
+
+\end{document}

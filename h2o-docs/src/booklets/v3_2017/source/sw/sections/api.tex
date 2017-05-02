@@ -1,0 +1,262 @@
+\section{Programming API}
+
+\subsection{Starting H2O Services}
+
+\begin{lstlisting}[style=Scala]
+val sc: SparkContext = ...
+val hc = H2OContext.getOrCreate(sc)
+\end{lstlisting} 
+or:
+\begin{lstlisting}[style=Scala]
+val sc: SparkContext = ...
+val hc = new H2OContext(sc).start()
+\end{lstlisting}
+
+When the number of Spark nodes is known, it can be specified in the \texttt{getOrCreate} call:
+
+\begin{lstlisting}[style=Scala]
+val hc = H2OContext.getOrCreate(sc, numOfSparkNodes)
+\end{lstlisting}
+or, in start method of \texttt{H2OContext}:
+
+\begin{lstlisting}[style=Scala]
+val hc = new H2OContext(sc).start(numOfSparkNodes)
+\end{lstlisting}
+
+The former variant is preferred, because it initiates and starts \texttt{H2OContext} in one call and can be used to obtain already existing \texttt{H2OContext}. It is semantically the same as the latter variant though.
+
+\subsection{Memory Allocation}
+
+H2O resides in the same executor JVM as Spark. The memory provided for H2O is configured via Spark; refer to Spark configuration for more details.
+
+\textbf{Generic configuration}
+
+\begin{itemize}
+\item Configure the Executor memory (i.e., memory available for H2O) via the Spark configuration property \texttt{spark.executor.memory}. For example, {\lstinline[style=Bash]|bin/sparkling-shell --conf spark.executor.memory=5g|} or configure the property in {\lstinline[style=Bash]|$SPARK_HOME/conf/spark-defaults.conf|}
+\item Configure the Driver memory (i.e., memory available for H2O client running inside the Spark driver) via the Spark configuration property \texttt{spark.driver.memory}. For example, {\lstinline[style=Bash]|bin/sparkling-shell --conf spark.driver.memory=4g|} or configure the property in {\lstinline[style=Bash]|$SPARK_HOME/conf/spark-defaults.conf|}.
+\end{itemize}
+
+\pagebreak
+\textbf{Yarn specific configuration}
+
+\begin{itemize}
+\item Refer to the Spark documentation \url{https://spark.apache.org/docs/latest/running-on-yarn.html}
+\item For JVMs that require a large amount of memory, we strongly recommend configuring the maximum amount of memory available for individual mappers.
+ \end{itemize} 
+ 
+ \subsection{Converting H2OFrame into RDD[T]}
+ 
+ The \texttt{H2OContext} class provides the explicit conversion, \texttt{asRDD}, which creates an RDD-like wrapper around the provided \texttt{H2OFrame}:
+
+\begin{lstlisting}[style=Scala]
+def asRDD[A <: Product: TypeTag: ClassTag](fr: H2OFrame): RDD[A]
+\end{lstlisting}
+
+The call expects the type \texttt{A} to create a correctly-typed RDD. The conversion requires type \texttt{A} to be bound by \texttt{Product} interface. The relationship between the columns of \texttt{H2OFrame} and the attributes of class \texttt{A} is based on name matching.
+
+\textbf{Example}
+
+\begin{lstlisting}[style=Scala]
+val df: H2OFrame = ...
+val rdd = asRDD[Weather](df)
+\end{lstlisting}
+
+\subsection{Converting H2OFrame into DataFrame}
+
+The \texttt{H2OContext} class provides the explicit conversion, \texttt{asDataFrame}, which creates a \texttt{DataFrame}-like wrapper around the provided \texttt{H2OFrame}. Technically, it provides the \texttt{RDD[sql.Row]} RDD API:
+
+\begin{lstlisting}[style=Scala]
+def asDataFrame(fr: H2OFrame)(implicit sqlContext: SQLContext): DataFrame
+\end{lstlisting}
+
+This call does not require any type of parameters, but since it creates \texttt{DataFrame} instances, it requires access to an instance of \texttt{SQLContext}. In this case, the instance is provided as an implicit parameter of the call. The parameter can be passed in two ways: as an explicit parameter or by introducing an implicit variable into the current context.
+
+The schema of the created instance of the \texttt{DataFrame} is derived from the column name and the types of \texttt{H2OFrame} specified.
+
+\textbf{Example}
+
+Using an explicit parameter in the call to pass \texttt{sqlContext}:
+
+\begin{lstlisting}[style=Scala]
+val sqlContext = new SQLContext(sc)
+val schemaRDD = asDataFrame(h2oFrame)(sqlContext)
+\end{lstlisting}
+
+or as implicit variable provided by actual environment:
+
+\begin{lstlisting}[style=Scala]
+implicit val sqlContext = new SQLContext(sc)
+val schemaRDD = asDataFrame(h2oFrame)
+\end{lstlisting}
+
+\subsection{Converting RDD[T] into H2OFrame}
+
+The \texttt{H2OContext} provides implicit conversion from the specified \texttt{RDD[A]} to \texttt{H2OFrame}. As with conversion in the opposite direction, the type \texttt{A} has to satisfy the upper bound expressed by the type \texttt{Product}. The conversion will create a new \texttt{H2OFrame}, transfer data from the specified RDD, and save it to the H2O K/V data store.
+
+\begin{lstlisting}[style=Scala]
+implicit def asH2OFrame[A <: Product: TypeTag](rdd: RDD[A]): H2OFrame
+\end{lstlisting}
+
+The API also provides explicit version which allows for specifying name for resulting \texttt{H2OFrame}.
+
+\begin{lstlisting}[style=Scala]
+def asH2OFrame[A <: Product: TypeTag](rdd: RDD[A], frameName: String): H2OFrame
+\end{lstlisting}
+
+\textbf{Example}
+
+\begin{lstlisting}[style=Scala]
+val rdd: RDD[Weather] = ...
+import h2oContext._
+// Implicit call of H2OContext.asH2OFrame[Weather](rdd) is used 
+val hf: H2OFrame = rdd
+// Explicit call of of H2OContext API with name for resulting H2OFrame
+val hfNamed: H2OFrame = h2oContext.asH2OFrame(rdd, "hfNamed")
+\end{lstlisting}
+
+\subsection{Converting DataFrame into H2OFrame}
+
+The \texttt{H2OContext} provides \textbf{implicit} conversion from the specified \texttt{DataFrame} to \texttt{H2OFrame}. The conversion will create a new \texttt{H2OFrame}, transfer data from the specified \texttt{DataFrame}, and save it to the H2O K/V data store.
+
+\begin{lstlisting}[style=Scala]
+implicit def asH2OFrame(rdd: DataFrame): H2OFrame
+\end{lstlisting}
+
+The API also provides explicit version which allows for specifying name for resulting \texttt{H2OFrame}.
+
+\begin{lstlisting}[style=Scala]
+def asH2OFrame(rdd: DataFrame, frameName: String): H2OFrame
+\end{lstlisting}
+
+\textbf{Example}
+
+\begin{lstlisting}[style=Scala]
+val df: DataFrame = ...
+import h2oContext._
+// Implicit call of H2OContext.asH2OFrame(srdd) is used 
+val hf: H2OFrame = df 
+// Explicit call of H2Context API with name for resulting H2OFrame
+val hfNamed: H2OFrame = h2oContext.asH2OFrame(df, "hfNamed")
+\end{lstlisting}
+
+\subsection{Creating H2OFrame from an Existing Key}
+
+If the H2O cluster already contains a loaded \texttt{H2OFrame} referenced by the key \texttt{train.hex}, it is possible to reference it from Sparkling Water by creating a proxy \texttt{H2OFrame} instance using the key as the input:
+
+\begin{lstlisting}[style=Scala]
+val trainHF = new H2OFrame("train.hex")
+\end{lstlisting}
+
+\subsection{Type Map Between H2OFrame and Spark DataFrame Types}
+
+For all primitive Scala types or Spark SQL types (see \linebreak \texttt{org.apache.spark.sql.types}) which can be part of Spark RDD/DataFrame, we provide mapping into H2O vector types (numeric, categorical, string, time, UUID - see \texttt{water.fvec.Vec}):
+
+\begin{table}[!ht]
+\centering
+\begin{tabular}{l l l}
+\toprule
+Scala type  &	SQL type 	& H2O type \\
+\midrule
+NA & BinaryType & Numeric \\
+Byte 	& ByteType & Numeric \\
+Short & ShortType & Numeric \\
+Integer & IntegerType & Numeric \\
+Long & LongType & Numeric \\
+Float & FloatType & Numeric \\
+Double & DoubleType & Numeric \\
+String & StringType & String \\
+Boolean & BooleanType & Numeric \\
+java.sql.TimeStamp & TimestampType & Time \\
+\bottomrule
+\end{tabular} 
+\end{table}
+
+\subsection{Calling H2O Algorithms}
+
+\begin{enumerate}
+\item Create the parameters object that holds references to input data and parameters specific for the algorithm:
+
+\begin{lstlisting}[style=Scala]
+val train: RDD = ...
+val valid: H2OFrame = ...
+
+val gbmParams = new GBMParameters()
+gbmParams._train = train
+gbmParams._valid = valid
+gbmParams._response_column = 'bikes
+gbmParams._ntrees = 500
+gbmParams._max_depth = 6
+\end{lstlisting}
+
+ \item Create a model builder:
+ \begin{lstlisting}[style=Scala]
+ val gbm = new GBM(gbmParams)
+ \end{lstlisting}
+ 
+ \item Invoke the model build job and block until the end of computation (\texttt{trainModel} is an asynchronous call by default): 
+ \begin{lstlisting}[style=Scala]
+ val gbmModel = gbm.trainModel.get 
+ \end{lstlisting}
+ \end{enumerate}
+
+\subsection{Using Spark Data Sources with H2OFrame}
+Spark SQL provides configurable data source for SQL tables. Sparkling Water enable \texttt{H2OFrame} to be
+used as data source to load/save data from/to Spark SQL table.
+
+\subsubsection{Reading from \texttt{H2OFrame}}
+
+Let's suppose we have a \texttt{H2OFrame}. The shortest way to load a \texttt{DataFrame} from \texttt{H2OFrame} with default settings is:
+\begin{lstlisting}[style=Scala]
+val df = sqlContext.read.h2o(frame.key)
+\end{lstlisting}
+
+There are two more ways to load a \texttt{DataFrame} from \texttt{H2OFrame} allowing us to specify additional options:
+\begin{lstlisting}[style=Scala]
+val df = sqlContext.read.format("h2o").option("key",frame.key.toString).load()
+\end{lstlisting}
+or
+\begin{lstlisting}[style=Scala]
+val df = sqlContext.read.format("h2o").load(frame.key.toString)
+\end{lstlisting}
+
+\subsubsection{Saving to \texttt{H2OFrame}}
+
+Let's suppose we have \texttt{DataFrame} df. The shortest way to save the \texttt{DataFrame} as \texttt{H2OFrame} with default settings is:
+\begin{lstlisting}[style=Scala]
+df.write.h2o("new_key")
+\end{lstlisting}
+
+There are two more ways to save the \texttt{DataFrame} as \texttt{H2OFrame} allowing us to specify additional options:
+\begin{lstlisting}[style=Scala]
+df.write.format("h2o").option("key","new_key").save()
+\end{lstlisting}
+or
+\begin{lstlisting}[style=Scala]
+df.write.format("h2o").save("new_key")
+\end{lstlisting}
+
+All three variants save the \texttt{DataFrame} as \texttt{H2OFrame} with the key "new\_key". They won't succeed if a \texttt{H2OFrame} with the same key already exists.
+
+\subsubsection{Loading and Saving Options}
+
+If the key is specified as 'key' option, and also in the load/save method, the option 'key' is preferred:
+\begin{lstlisting}[style=Scala]
+val df = sqlContext.read.from("h2o").option("key","key_one").load("key_two")
+\end{lstlisting}
+or
+\begin{lstlisting}[style=Scala]
+val df = sqlContext.read.from("h2o").option("key","key_one").save("key_two")
+\end{lstlisting}
+
+In both examples, "key\_one" is used.
+
+\subsubsection{Specifying Saving Mode}
+
+There are four save modes available when saving data using Data Source API- see \url{http://spark.apache.org/docs/latest/sql-programming-guide.html#save-modes}
+
+\begin{itemize}
+\item If "append" mode is used, an existing \texttt{H2OFrame} with the same key is deleted, and a new one created with the same key. The new frame contains the union of all rows from the original \texttt{H2OFrame} and the appended \texttt{DataFrame}.
+\item If "overwrite" mode is used, an existing \texttt{H2OFrame} with the same key is deleted, and new one with the new rows is created with the same key.
+\item If "error" mode is used, and a \texttt{H2OFrame} with the specified key already exists, an exception is thrown.
+\item If "ignore" mode is used, and a \texttt{H2OFrame} with the specified key already exists, no data are changed.
+\end{itemize}
