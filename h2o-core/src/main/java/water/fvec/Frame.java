@@ -68,8 +68,15 @@ public class Frame extends Lockable<Frame> {
   private transient Vec _col0; // First readable vec; fast access to the VectorGroup's Chunk layout
 
   public boolean hasNAs(){
-    for(Vec v:_vecs)
+    for(Vec v:bulkRollups())
       if(v.naCnt() > 0) return true;
+    return false;
+  }
+
+  public boolean hasInfs(){
+    // return if frame contains positive infinity
+    for(Vec v:bulkRollups())
+      if(v.pinfs()>0 || v.ninfs()>0) return true;
     return false;
   }
 

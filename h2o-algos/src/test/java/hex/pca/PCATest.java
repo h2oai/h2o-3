@@ -8,6 +8,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
+import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -261,4 +262,31 @@ public class PCATest extends TestUtil {
     }
   }
 
+  /*
+  Quick test to make sure changes made to PCA for rank deficient matrices do not cause leakage.
+   */
+  @Test public void testPUBDEV3500NoLeakage() throws InterruptedException, ExecutionException {
+    Scope.enter();
+    Frame train = null;
+    try {
+      train = parse_test_file(Key.make("prostate_cat.hex"), "smalldata/prostate/prostate_cat.csv");
+      Scope.track(train);
+
+      PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
+      parms._train = train._key;
+      parms._k = -1;
+      parms._transform = DataInfo.TransformType.NONE;
+      parms._pca_method = PCAModel.PCAParameters.Method.Randomized;
+      parms._impute_missing = true;   // Don't skip rows with NA entries, but impute using mean of column
+      parms._seed = 12345;
+      parms._use_all_factor_levels=true;
+
+      PCAModel pca = null;
+      pca = new PCA(parms).trainModel().get();
+      Scope.track_generic(pca);
+      Assert.assertTrue(pca._parms._k == pca._output._std_deviation.length);
+    } finally {
+      Scope.exit();
+    }
+  }
 }

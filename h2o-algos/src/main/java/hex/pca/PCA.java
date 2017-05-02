@@ -104,7 +104,10 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
     // TODO: Initialize _parms._k = min(ncolExp(_train), nrow(_train)) if not set
     int k_min = (int)Math.min(_ncolExp, _train.numRows());
-    if (_parms._k < 1 || _parms._k > k_min) {
+    if (_parms._k < 1) {
+      _parms._k = k_min;
+      warn("_k", "_k is set to be "+k_min);
+    } else if (_parms._k > k_min) {
       error("_k", "_k must be between 1 and " + k_min);
     }
     if (!_parms._use_all_factor_levels && _parms._pca_method == PCAParameters.Method.GLRM) {
@@ -157,6 +160,11 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       pca._output._ncats = svd._output._ncats;
       pca._output._catOffsets = svd._output._catOffsets;
       pca._output._nobs = svd._output._nobs;
+      if (_parms._k != svd._parms._nv) {  // not enough eigenvalues was found.
+        _job.warn("_train PCA: Dataset is rank deficient.  _parms._k was "+_parms._k+" and is now set to "+svd._parms._nv);
+        pca._parms._k = svd._parms._nv;
+        _parms._k = svd._parms._nv;
+      }
 
       // Fill model with eigenvectors and standard deviations
       pca._output._std_deviation = mult(svd._output._d, 1.0 / Math.sqrt(svd._output._nobs - 1.0));
