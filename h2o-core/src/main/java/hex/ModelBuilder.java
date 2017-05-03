@@ -1103,15 +1103,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return adapted;
   }
 
-  private Frame encodeFrameCategoricals(Frame fr, boolean scopeTrackOrig) {
+  private Frame encodeFrameCategoricals(Frame fr, boolean scopeTrack) {
     String[] skipCols = new String[]{_parms._weights_column, _parms._offset_column, _parms._fold_column, _parms._response_column};
     Frame encoded = FrameUtils.categoricalEncoder(fr, skipCols, _parms._categorical_encoding, getToEigenVec());
     if (encoded != fr) {
       assert encoded._key != null;
-      if (scopeTrackOrig)
-        Scope.track(fr);
+      if (scopeTrack)
+        Scope.track(encoded);
       else
-        _toDelete.put(fr._key, Arrays.toString(Thread.currentThread().getStackTrace()));
+        _toDelete.put(encoded._key, Arrays.toString(Thread.currentThread().getStackTrace()));
     }
     return encoded;
   }
