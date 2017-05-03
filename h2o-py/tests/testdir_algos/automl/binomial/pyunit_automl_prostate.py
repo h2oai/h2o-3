@@ -33,10 +33,6 @@ def prostate_automl():
     print("AutoML run with x not provided with train, valid, and test")
     aml.train(y="CAPSULE", training_frame=train,validation_frame=valid, test_frame=test)
 
-    print("AutoML run with x not provided and y as col idx with train, valid, and test")
-    aml.train(y=1, training_frame=train,validation_frame=valid, test_frame=test)
-
-
 if __name__ == "__main__":
     pyunit_utils.standalone_test(prostate_automl)
 else:
