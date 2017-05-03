@@ -966,52 +966,24 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // Toss out extra columns, complain about missing ones, remap categoricals
     Frame va = _parms.valid();  // User-given validation set
     if (va != null) {
-      if (va.numRows()==0) error("_validation_frame", "Validation frame must have > 0 rows.");
-      _valid = new Frame(null /* not putting this into KV */, va._names.clone(), va.vecs().clone());
-      try {
-        String[] msgs = Model.adaptTestForTrain(_valid, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec(), _toDelete, false);
-        _vresponse = _valid.vec(_parms._response_column);
-        if (_vresponse == null && _parms._response_column != null)
-          error("_validation_frame", "Validation frame must have a response column '" + _parms._response_column + "'.");
-        if (expensive) {
-          for (String s : msgs) {
-            Log.info(s);
-            warn("_valid", s);
-          }
-        }
-      } catch (IllegalArgumentException iae) {
-        error("_valid", iae.getMessage());
-      }
+      _valid = adaptFrameToTrain(va, "Validation Frame", "_validation_frame", expensive);
+      _vresponse = _valid.vec(_parms._response_column);
     } else {
       _valid = null;
       _vresponse = null;
     }
 
     if (expensive) {
-      String[] skipCols = new String[]{_parms._weights_column, _parms._offset_column, _parms._fold_column, _parms._response_column};
-      Frame newtrain = FrameUtils.categoricalEncoder(_train, skipCols, _parms._categorical_encoding, getToEigenVec());
-      if (newtrain!=_train) {
-        assert (newtrain._key != null);
+      Frame newtrain = encodeFrameCategoricals(_train, ! _parms._is_cv_model);
+      if (newtrain != _train) {
         _origNames = _train.names();
         _origDomains = _train.domains();
         setTrain(newtrain);
-        if (!_parms._is_cv_model)
-          Scope.track(_train);
-        else
-          _toDelete.put(_train._key, Arrays.toString(Thread.currentThread().getStackTrace()));
         separateFeatureVecs(); //fix up the pointers to the special vecs
       }
       if (_valid != null) {
-        Frame newvalid = FrameUtils.categoricalEncoder(_valid, skipCols, _parms._categorical_encoding, getToEigenVec());
-        if (newvalid!=_valid) {
-          assert(newvalid._key!=null);
-          _valid=newvalid;
-          if (!_parms._is_cv_model)
-            Scope.track(_valid); //for CV, need to score one more time in outer loop
-          else
-            _toDelete.put(_valid._key, Arrays.toString(Thread.currentThread().getStackTrace()));
-          _vresponse = _valid.vec(_parms._response_column);
-        }
+        _valid = encodeFrameCategoricals(_valid, ! _parms._is_cv_model /* for CV, need to score one more time in outer loop */);
+        _vresponse = _valid.vec(_parms._response_column);
       }
       boolean restructured = false;
       Vec[] vecs = _train.vecs();
@@ -1090,6 +1062,40 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (_parms._max_runtime_secs < 0) {
       error("_max_runtime_secs", "Max runtime (in seconds) must be greater than 0 (or 0 for unlimited).");
     }
+  }
+
+  /**
+  private Frame adaptFrameToTrain(Frame fr, String frDesc, String field, boolean expensive) {
+    if (fr.numRows()==0) error(field, frDesc + " must have > 0 rows.");
+    Frame adapted = new Frame(null /* not putting this into KV */, fr._names.clone(), fr.vecs().clone());
+    try {
+      String[] msgs = Model.adaptTestForTrain(_valid, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec(), _toDelete, false);
+      Vec response = fr.vec(_parms._response_column);
+      if (response == null && _parms._response_column != null)
+        error(field, frDesc + " must have a response column '" + _parms._response_column + "'.");
+      if (expensive) {
+        for (String s : msgs) {
+          Log.info(s);
+          warn(field, s);
+        }
+      }
+    } catch (IllegalArgumentException iae) {
+      error(field, iae.getMessage());
+    }
+    return adapted;
+  }
+
+  private Frame encodeFrameCategoricals(Frame fr, boolean scopeTrackOrig) {
+    String[] skipCols = new String[]{_parms._weights_column, _parms._offset_column, _parms._fold_column, _parms._response_column};
+    Frame encoded = FrameUtils.categoricalEncoder(fr, skipCols, _parms._categorical_encoding, getToEigenVec());
+    if (encoded != fr) {
+      assert encoded._key != null;
+      if (scopeTrackOrig)
+        Scope.track(fr);
+      else
+        _toDelete.put(fr._key, Arrays.toString(Thread.currentThread().getStackTrace()));
+    }
+    return encoded;
   }
 
   /**
