@@ -25,6 +25,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static hex.ModelMetrics.calcVarImp;
 import static water.H2O.technote;
@@ -511,6 +512,31 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     }
   }
 
+  final private AtomicBoolean nukeBackend = new AtomicBoolean(false);
+
+  @Override
+  protected void setupBigScoreLocal() {
+    nukeBackend.set(null == model_info()._backend);
+    if(nukeBackend.get()) {
+      synchronized (nukeBackend) {
+        if(null == model_info()._backend){
+          model_info().javaToNative();
+        }
+      }
+    }
+  }
+
+  @Override
+  protected void closeBigScoreLocal() {
+    if(nukeBackend.get()) {
+      synchronized (nukeBackend) {
+        if(nukeBackend.get()){
+          model_info().nukeBackend();
+          nukeBackend.set(false);
+        }
+      }
+    }
+  }
 
   /**
    * Single-instance scoring - slow, not optimized for mini-batches - do not use unless you know what you're doing

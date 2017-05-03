@@ -1276,8 +1276,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     @Override public void reduce( BigScore bs ) { if(_mb != null )_mb.reduce(bs._mb); }
     @Override protected void postGlobal() { if(_mb != null)_mb.postGlobal(); }
+
+    @Override protected void setupLocal() { setupBigScoreLocal(); }
+    @Override protected void closeLocal() { closeBigScoreLocal(); }
   }
 
+  protected void setupBigScoreLocal() {}
+  protected void closeBigScoreLocal() {}
 
   // OVerride this if your model needs data preprocessing (on the fly standardization, NA handling)
   protected double data(Chunk[] chks, int row, int col) {
