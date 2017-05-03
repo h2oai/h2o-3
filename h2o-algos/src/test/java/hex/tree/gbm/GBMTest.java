@@ -296,12 +296,14 @@ public class GBMTest extends TestUtil {
     try {
       Frame train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
       Frame calib = parse_test_file("smalldata/gbm_test/ecology_eval.csv");
+
       // Fix training set
       train.remove("Site").remove();     // Remove unique ID
       Scope.track(train.vec("Angaus"));
       train.replace(train.find("Angaus"), train.vecs()[train.find("Angaus")].toCategoricalVec());
       Scope.track(train);
       DKV.put(train); // Update frame after hacking it
+
       // Fix calibration set (the same way as training)
       Scope.track(calib.vec("Angaus"));
       calib.replace(calib.find("Angaus"), calib.vecs()[calib.find("Angaus")].toCategoricalVec());
