@@ -365,8 +365,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     if (H2O.CLOUD.size()>1) {
       throw new IllegalArgumentException("XGBoost is currently only supported in single-node mode.");
     }
-    if ( _parms._backend == XGBoostModel.XGBoostParameters.Backend.gpu && !hasGPU()) {
-      error("_backend", "GPU backend is not functional. Check CUDA_PATH and/or GPU installation.");
+    if ( _parms._backend == XGBoostModel.XGBoostParameters.Backend.gpu && !hasGPU(_parms._gpu_id)) {
+      error("_backend", "GPU backend (gpu_id: " + _parms._gpu_id + ") is not functional. Check CUDA_PATH and/or GPU installation.");
     }
 
     switch( _parms._distribution) {
@@ -609,7 +609,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   }
 
   // helper
-  static boolean hasGPU() {
+  static boolean hasGPU(int gpu_id) {
     DMatrix trainMat = null;
     try {
       trainMat = new DMatrix(new float[]{1,2,1,2},2,2);
@@ -621,7 +621,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     HashMap<String, Object> params = new HashMap<>();
     params.put("updater", "grow_gpu_hist");
     params.put("silent", 1);
-//    params.put("gpu_id", 1); // TODO: Pass in GPU ID
+    params.put("gpu_id", gpu_id);
     HashMap<String, DMatrix> watches = new HashMap<>();
     watches.put("train", trainMat);
     try {

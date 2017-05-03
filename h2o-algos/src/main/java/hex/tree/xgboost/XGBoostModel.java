@@ -106,8 +106,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public float _rate_drop = 0;
     public boolean _one_drop = false;
     public float _skip_drop = 0;
-
-
+    public int _gpu_id = 0; // which GPU to use
     public Backend _backend = Backend.auto;
 
     public XGBoostParameters() {
@@ -213,8 +212,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("skip_drop", p._skip_drop);
     }
     if ( p._backend == XGBoostParameters.Backend.auto || p._backend == XGBoostParameters.Backend.gpu ) {
-      if (XGBoost.hasGPU()) {
-        Log.info("Using GPU backend.");
+      if (XGBoost.hasGPU(_parms._gpu_id)) {
+        Log.info("Using GPU backend (gpu_id: " + _parms._gpu_id + ").");
+        params.put("gpu_id", _parms._gpu_id);
         if (p._tree_method == XGBoostParameters.TreeMethod.exact) {
           Log.info("Using grow_gpu (exact) updater.");
           params.put("updater", "grow_gpu");
@@ -224,7 +224,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
           params.put("updater", "grow_gpu_hist");
         }
       } else {
-        Log.info("No GPU found. Using CPU backend.");
+        Log.info("No GPU (gpu_id: "+_parms._gpu_id + ") found. Using CPU backend.");
       }
     } else {
       assert p._backend == XGBoostParameters.Backend.cpu;
