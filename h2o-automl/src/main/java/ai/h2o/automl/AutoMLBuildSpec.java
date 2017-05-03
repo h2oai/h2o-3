@@ -134,6 +134,7 @@ public class AutoMLBuildSpec extends Iced {
             .replace(".svmlight", "")
             .replace(".arff", "")
             .replace(".orc", "");
+    project_cached = "automl_" + project_cached;
     return project_cached;
   }
 }

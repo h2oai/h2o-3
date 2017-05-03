@@ -10,9 +10,17 @@ class H2OAutoML(object):
 
     :examples:
     >>> # Setting up an H2OAutoML object
-    >>> a1 = H2OAutoML(max_runtime_secs=30,build_control=build_control)
+    >>> build_control = {
+    >>>            'stopping_criteria': {
+    >>>              'stopping_rounds': 3,
+    >>>              'stopping_tolerance': 0.001
+    >>>            }
+    >>>        }
+    >>> project_name = "Project1"
+    >>> build_control["project"] = project_name
+    >>> a1 = H2OAutoML(max_runtime_secs=30,project_name=project_name,build_control=build_control)
     """
-    def __init__(self,max_runtime_secs = None,build_control=None):
+    def __init__(self,max_runtime_secs = None,project_name=None,build_control=None):
 
         #Check if H2O jar contains AutoML
         try:
@@ -41,8 +49,13 @@ class H2OAutoML(object):
             assert_is_type(build_control,dict)
             build_control["stopping_criteria"]["max_runtime_secs"] = max_runtime_secs
 
-        self.build_control=build_control
+        if project_name is not None:
+            assert_is_type(project_name,str)
+            build_control["project"]=project_name
+        else:
+            self.project_name = None
 
+        self.build_control=build_control
         self._job=None
         self._automl_key=None
         self._leader_id=None
@@ -65,13 +78,20 @@ class H2OAutoML(object):
 
         :examples:
         >>> # Set up an H2OAutoML object
+        >>> # Setting up an H2OAutoML object
+        >>> build_control = {
+        >>>            'stopping_criteria': {
+        >>>              'stopping_rounds': 3,
+        >>>              'stopping_tolerance': 0.001
+        >>>            }
+        >>>        }
         >>> a1 = H2OAutoML(max_runtime_secs=30,build_control=build_control)
         >>> # Launch H2OAutoML
         >>> a1.train(y=y,training_frame=training_frame)
         """
         ncols = training_frame.ncols
         names = training_frame.names
-        #Minimal required argumens are training_frame and y (response)
+        #Minimal required arguments are training_frame and y (response)
         if y is None:
             raise ValueError('The response column (y) is not set; please set it to the name of the column that you are trying to predict in your data.')
         else:
@@ -137,21 +157,8 @@ class H2OAutoML(object):
         self._automl_key = self._job.dest_key
         self._job.poll()
         self._fetch()
-
-    def project_name(self):
-        """
-        Retrieve the project name for an H2OAutoML object
-
-        :return: the project name (a string) of the H2OAutoML object
-
-        :examples:
-        >>> # Set up an H2OAutoML object
-        >>> a1 = H2OAutoML(max_runtime_secs=30,build_control=build_control)
-        >>> # Get the project name
-        >>> a1.project_name()
-        """
-        res = h2o.api("GET /99/AutoML/"+self._automl_key)
-        return res["project"]
+        if self.project_name is None:
+            self.project_name = "automl_" + training_frame.frame_id
 
     def get_leader(self):
         """
@@ -161,6 +168,12 @@ class H2OAutoML(object):
 
         :examples:
         >>> # Set up an H2OAutoML object
+        >>> build_control = {
+        >>>            'stopping_criteria': {
+        >>>              'stopping_rounds': 3,
+        >>>              'stopping_tolerance': 0.001
+        >>>            }
+        >>>        }
         >>> a1 = H2OAutoML(max_runtime_secs=30,build_control=build_control)
         >>> # Launch H2OAutoML
         >>> a1.train(y=y,training_frame=training_frame)
@@ -179,6 +192,12 @@ class H2OAutoML(object):
 
         :examples:
         >>> # Set up an H2OAutoML object
+        >>> build_control = {
+        >>>            'stopping_criteria': {
+        >>>              'stopping_rounds': 3,
+        >>>              'stopping_tolerance': 0.001
+        >>>            }
+        >>>        }
         >>> a1 = H2OAutoML(max_runtime_secs=30,build_control=build_control)
         >>> # Launch H2OAutoML
         >>> a1.train(y=y,training_frame=training_frame)
@@ -198,8 +217,14 @@ class H2OAutoML(object):
 
         :examples:
         >>> #Set up an H2OAutoML object
+        >>> build_control = {
+        >>>            'stopping_criteria': {
+        >>>              'stopping_rounds': 3,
+        >>>              'stopping_tolerance': 0.001
+        >>>            }
+        >>>        }
         >>> a1 = H2OAutoML(max_runtime_secs=30,build_control=build_control)
-        >>> #Launch H2OAutoML
+        >>> # Launch H2OAutoML
         >>> a1.train(y=y,training_frame=training_frame)
         >>> #Predict with #1 model from H2OAutoML leaderboard
         >>> a1.predict()
@@ -222,4 +247,8 @@ class H2OAutoML(object):
         else:
             self._leader_id = None
         return self._leader_id is not None
+
+    def _get_params(self):
+        res = h2o.api("GET /99/AutoML/"+self._automl_key)
+        return res
 
