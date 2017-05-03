@@ -10,6 +10,8 @@ public class SVDFactory {
     switch (implementation) {
       case MTJ:
         return new SVD_MTJ(gramMatrix);
+      case MTJ_DENSEMATRIX:
+        return new SVD_MTJ_DenseMatrix(gramMatrix);
       case JAMA:
         return new SVD_Jama(gramMatrix);
       default:
@@ -18,6 +20,6 @@ public class SVDFactory {
   }
 
   enum svdImplementation {
-    MTJ, JAMA
+    MTJ, MTJ_DENSEMATRIX, JAMA
   }
 }

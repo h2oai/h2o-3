@@ -28,7 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 
-import static hex.pca.SVDFactory.svdImplementation.MTJ;
+import static hex.pca.SVDFactory.svdImplementation.MTJ_DENSEMATRIX;
 import static hex.util.DimensionReductionUtils.*;
 import static water.util.ArrayUtils.mult;
 
@@ -353,7 +353,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           }
           // Note: uncomment the desired implementation
 //          SVDFactory.svdImplementation svdImplementation = JAMA;
-          SVDFactory.svdImplementation svdImplementation = MTJ;
+//          SVDFactory.svdImplementation svdImplementation = MTJ;
+          SVDFactory.svdImplementation svdImplementation = MTJ_DENSEMATRIX;
           PCA.this._job.update(1, "Computing stats from SVD using " + svdImplementation.toString());
           SVDInterface svd = SVDFactory.createSVDbyName(gramMatrix, svdImplementation);
           double[][] rightEigenvectors = svd.getRightEigenvectors();
