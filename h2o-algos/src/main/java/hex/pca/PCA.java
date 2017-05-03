@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 
+import static hex.pca.SVDFactory.svdImplementation.SVD_MTJ;
 import static hex.util.DimensionReductionUtils.*;
 import static water.util.ArrayUtils.mult;
 
@@ -277,14 +278,14 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
         if (!_parms._impute_missing) {    // added warning to user per request from Nidhi
           _job.warn("_train: Dataset used may contain fewer number of rows due to removal of rows with " +
-                  "NA/missing values.  If this is not desirable, set impute_missing argument in pca call to " +
-                  "TRUE/True/true/... depending on the client language.");
+              "NA/missing values.  If this is not desirable, set impute_missing argument in pca call to " +
+              "TRUE/True/true/... depending on the client language.");
         }
 
         if ((!_parms._impute_missing) && tranRebalanced.hasNAs()) { // remove NAs rows
           tinfo = new DataInfo(_train, _valid, 0, _parms._use_all_factor_levels, _parms._transform,
-                  DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */
-                  _parms._impute_missing, /* missingBucket */ false, /* weights */ false,
+              DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */
+              _parms._impute_missing, /* missingBucket */ false, /* weights */ false,
                     /* offset */ false, /* fold */ false, /* intercept */ false);
           DKV.put(tinfo._key, tinfo);
 
@@ -296,8 +297,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         }
 
         dinfo = new DataInfo(_train, _valid, 0, _parms._use_all_factor_levels, _parms._transform,
-                DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */
-                _parms._impute_missing, /* missingBucket */ false, /* weights */ false,
+            DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */
+            _parms._impute_missing, /* missingBucket */ false, /* weights */ false,
                   /* offset */ false, /* fold */ false, /* intercept */ false);
         DKV.put(dinfo._key, dinfo);
 
@@ -333,8 +334,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           // and if the user specify k to be higher than min(number of columns, number of rows)
           if((model._output._nobs == 0) || (model._output._nobs < _parms._k )) {
             error("_train", "Number of row in _train is less than k. " +
-                    "Consider setting impute_missing = TRUE or using pca_method = 'GLRM' instead or reducing the " +
-                    "value of parameter k.");
+                "Consider setting impute_missing = TRUE or using pca_method = 'GLRM' instead or reducing the " +
+                "value of parameter k.");
           }
           if (error_count() > 0) {
             throw new IllegalArgumentException("Found validation errors: " + validationErrors());
@@ -350,7 +351,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
             e.printStackTrace();
             throw e;
           }
-          SVDInterface svd = new SVD_MTJ(PCA.this, gramMatrix);
+          SVDInterface svd = SVDFactory.createSVDbyName(PCA.this, gramMatrix, SVD_MTJ);
           double[][] eigenVectors = svd.getVt_2D();
           if (_wideDataset) {       // correct for the eigenvector by t(A)*eigenvector for wide dataset
             transformEigenVectors(dinfo, eigenVectors);
@@ -362,11 +363,11 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           LinkedHashMap<String, ArrayList> scoreTable = new LinkedHashMap<>();
           scoreTable.put("Timestamp", model._output._training_time_ms);
           model._output._scoring_history = createScoringHistoryTableDR(scoreTable, "Scoring History for GramSVD",
-                  _job.start_time());
-        //  model._output._scoring_history.tableHeader = "Scoring history from GLRM";
+              _job.start_time());
+          //  model._output._scoring_history.tableHeader = "Scoring history from GLRM";
 
         } else if(_parms._pca_method == PCAParameters.Method.Power ||
-                _parms._pca_method == PCAParameters.Method.Randomized) {
+            _parms._pca_method == PCAParameters.Method.Randomized) {
           SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
           parms._train = _parms._train;
           parms._valid = _parms._valid;
@@ -467,6 +468,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         model.update(_job);
 
 
+      } catch (Exception e) {
+        e.printStackTrace();
       } finally {
         if (model != null) {
           model.unlock(_job);
