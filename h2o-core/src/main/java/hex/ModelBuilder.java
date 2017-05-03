@@ -1087,8 +1087,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (fr.numRows()==0) error(field, frDesc + " must have > 0 rows.");
     Frame adapted = new Frame(null /* not putting this into KV */, fr._names.clone(), fr.vecs().clone());
     try {
-      String[] msgs = Model.adaptTestForTrain(_valid, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec(), _toDelete, false);
-      Vec response = fr.vec(_parms._response_column);
+      String[] msgs = Model.adaptTestForTrain(adapted, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec(), _toDelete, false);
+      Vec response = adapted.vec(_parms._response_column);
       if (response == null && _parms._response_column != null)
         error(field, frDesc + " must have a response column '" + _parms._response_column + "'.");
       if (expensive) {
