@@ -8,10 +8,13 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
-import static water.rapids.SingleThreadRadixOrder.getSortedOXHeaderKey;
 import water.util.ArrayUtils;
+import water.util.Log;
 
+import java.math.BigInteger;
 import java.util.Arrays;
+
+import static water.rapids.SingleThreadRadixOrder.getSortedOXHeaderKey;
 
 class BinaryMerge extends DTask<BinaryMerge> {
   long _numRowsInResult=0;  // returned to caller, so not transient
@@ -49,8 +52,10 @@ class BinaryMerge extends DTask<BinaryMerge> {
     private final long _base[]; // the col.min() of each column in the key
     private final int _fieldSizes[]; // the widths of each column in the key
     private final int _keySize; // the total width in bytes of the key, sum of field sizes
+    private final BigInteger _baseD[];  // the col.min() of each column in double
+    private final boolean _isNumeric[];
 
-    FFSB( Frame frame, int msb, int shift, int fieldSizes[], long base[] ) { 
+    FFSB( Frame frame, int msb, int shift, int fieldSizes[], long base[], BigInteger baseD[], boolean isNumeric[]) {
       assert -1<=msb && msb<=255; // left ranges from 0 to 255, right from -1 to 255
       _frame = frame;
       _msb = msb;
@@ -58,6 +63,8 @@ class BinaryMerge extends DTask<BinaryMerge> {
       _fieldSizes = fieldSizes;
       _keySize = ArrayUtils.sum(fieldSizes);
       _base = base;
+      _baseD = baseD;
+      _isNumeric = isNumeric;
       // Create fast lookups to go from chunk index to node index of that chunk
       Vec vec = _vec = frame.anyVec();
       _chunkNode = vec==null ? null : new int[vec.nChunks()];
@@ -66,8 +73,15 @@ class BinaryMerge extends DTask<BinaryMerge> {
         _chunkNode[i] = vec.chunkKey(i).home_node().index();
     }
 
-    long min() { return (((long)_msb  ) << _shift) + _base[0]-1; } // the first key possible in this bucket
-    long max() { return (((long)_msb+1) << _shift) + _base[0]-2; } // the last  key possible in this bucket
+ //   long min() { return (((long)_msb  ) << _shift) + _base[0]-1; } // the first key possible in this bucket
+ //   long max() { return (((long)_msb+1) << _shift) + _base[0]-2; } // the last  key possible in this bucket
+
+    long min() {
+      return _isNumeric[0]?BigInteger.valueOf(((long)_msb) << _shift).add(_baseD[0].subtract(BigInteger.ONE)).longValue():(((long)_msb) << _shift) + _base[0]-1;
+    }
+    long max() {
+      return _isNumeric[0]?BigInteger.valueOf(((long)_msb+1) << _shift).add(_baseD[0].subtract(BigInteger.ONE).subtract(BigInteger.ONE)).longValue():(((long)_msb+1) << _shift) + _base[0]-1;
+    }
   }
 
   // In X[Y], 'left'=i and 'right'=x
@@ -259,8 +273,10 @@ class BinaryMerge extends DTask<BinaryMerge> {
       int ylen = _riteSB._fieldSizes[i];
       xval = xbatch[xoff] & 0xFFL; while (xlen>1) { xval <<= 8; xval |= xbatch[++xoff] & 0xFFL; xlen--; } xoff++;
       yval = ybatch[yoff] & 0xFFL; while (ylen>1) { yval <<= 8; yval |= ybatch[++yoff] & 0xFFL; ylen--; } yoff++;
-      xval = xval==0 ? Long.MIN_VALUE : xval-1+_leftSB._base[i];
-      yval = yval==0 ? Long.MIN_VALUE : yval-1+_riteSB._base[i];
+
+      xval = xval==0 ? Long.MIN_VALUE : (_leftSB._isNumeric[i]?updateVal(xval,_leftSB._baseD[i]):xval-1+_leftSB._base[i]);
+      yval = yval==0 ? Long.MIN_VALUE : (_riteSB._isNumeric[i]?updateVal(yval,_riteSB._baseD[i]):yval-1+_riteSB._base[i]);
+
       i++;
     }
 
@@ -269,6 +285,11 @@ class BinaryMerge extends DTask<BinaryMerge> {
     // be int so staleness can't be requested over int's limit.
     // Same return value as strcmp in C. <0 => xi<yi.
     long diff = xval-yval;  // could overflow even in long; e.g. joining to a prevailing NA, or very large gaps O(2^62)
+
+    if (_leftSB._isNumeric[i-1]) {
+      if (BigInteger.valueOf(xval).subtract(BigInteger.valueOf(yval)).bitLength() > 63)
+        Log.err("Overflow in BinaryMerge.java");  // detects overflow
+    }
     if (xval>yval) {        // careful not diff>0 here due to overflow
       return( (diff<0 | diff>Integer.MAX_VALUE  ) ? Integer.MAX_VALUE   : (int)diff);
     } else {
@@ -276,8 +297,18 @@ class BinaryMerge extends DTask<BinaryMerge> {
     }
   }
 
+  private long updateVal(Long oldVal, BigInteger baseD) {
+    // we know oldVal is not zero
+    BigInteger xInc = baseD.add(BigInteger.valueOf(oldVal).subtract(BigInteger.ONE));
+    if (xInc.bitLength() > 63) {
+      Log.err("Overflow in BinaryMerge.java");
+      return oldVal;  // should have died sooner or later
+    } else
+      return xInc.longValue();
+  }
+
   // binary search to the left MSB in the 1st column only
-  private long bsearchLeft(long x, boolean returnLow, long upp) {
+  private long bsearchLeft(long x, boolean returnLow, long upp)  {
     long low = -1;
     while (low < upp - 1) {
       long mid = low + (upp - low) / 2;
@@ -288,7 +319,8 @@ class BinaryMerge extends DTask<BinaryMerge> {
       while( len>1 ) { 
         val <<= 8; val |= keyBatch[++off] & 0xFFL; len--; 
       }
-      val = val==0 ? Long.MIN_VALUE : val-1+_leftSB._base[0];
+
+      val = val==0 ? Long.MIN_VALUE : (_leftSB._isNumeric[0]?updateVal(val,_leftSB._baseD[0]):val-1+_leftSB._base[0]);
       if (x<val || (x==val && returnLow)) {
         upp = mid;
       } else {

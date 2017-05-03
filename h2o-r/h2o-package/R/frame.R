@@ -3665,7 +3665,7 @@ h2o.merge <- function(x, y, by=intersect(names(x), names(y)), by.x=by, by.y=by, 
 }
 
 
-#' Sorts H2OFrame by the columns specified. Returns a new H2OFrame, like dplyr::arrange.
+#' Sorts H2OFrame by the columns specified. H2OFrame should not contain any String columns.  Otherwise, an error will be thrown.  Returns a new H2OFrame, like dplyr::arrange.
 #'
 #' @param x The H2OFrame input to be sorted.
 #' @param \dots The column names to sort by.

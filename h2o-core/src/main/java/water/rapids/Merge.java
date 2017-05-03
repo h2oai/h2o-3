@@ -4,6 +4,8 @@ import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+
+import java.math.BigInteger;
 import java.util.ArrayList;
 
 import static water.rapids.SingleThreadRadixOrder.getSortedOXHeaderKey;
@@ -29,6 +31,7 @@ public class Merge {
         for( int j=0; j<domain.length; j++ ) id_maps[i][j] = j;
       }
     }
+
     return Merge.merge(fr, new Frame(new Vec[0]), cols, new int[0], true/*allLeft*/, id_maps);
   }
 
@@ -54,6 +57,7 @@ public class Merge {
     // TODO: retest in future
     RadixOrder leftIndex = createIndex(true ,leftFrame,leftCols,id_maps);
     RadixOrder riteIndex = createIndex(false,riteFrame,riteCols,id_maps);
+
     // TODO: start merging before all indexes had been created. Use callback?
 
     System.out.print("Making BinaryMerge RPC calls ... ");
@@ -65,10 +69,14 @@ public class Merge {
     final int riteShift = hasRite ? riteIndex._shift[0] : -1;
     final long riteBase = hasRite ? riteIndex._base [0] : leftBase;
 
-    long leftMSBfrom = (riteBase - leftBase) >> leftShift;  // which leftMSB does the overlap start
+    // initialize for double columns, may not be used....
+    final BigInteger leftBaseD = leftIndex._isNumeric[0] ? leftIndex._baseD[0] : BigInteger.ZERO;
+    final BigInteger riteBaseD = hasRite ? (riteIndex._isNumeric[0] ? riteIndex._baseD[0] : BigInteger.ZERO) : leftBaseD;
 
+    long leftMSBfrom = leftIndex._isNumeric[0]?riteBaseD.subtract(leftBaseD).shiftRight(leftShift).longValue():(riteBase - leftBase) >> leftShift;
+    boolean riteBaseExceedsleftBase=leftIndex._isNumeric[0]?riteBaseD.compareTo(leftBaseD)>0:(riteBase>leftBase);
     // deal with the left range below the right minimum, if any
-    if (leftBase < riteBase) {
+    if (riteBaseExceedsleftBase) {  // right branch has higher minimum column value
       // deal with the range of the left below the start of the right, if any
       assert leftMSBfrom >= 0;
       if (leftMSBfrom>255) {
@@ -79,9 +87,11 @@ public class Merge {
       // The overlapping one with the right base is dealt with inside
       // BinaryMerge (if _allLeft)
       if (allLeft) for (int leftMSB=0; leftMSB<leftMSBfrom; leftMSB++) {
-          BinaryMerge bm = new BinaryMerge(new BinaryMerge.FFSB(leftFrame,   leftMSB    ,leftShift,leftIndex._bytesUsed,leftIndex._base),
-                                           new BinaryMerge.FFSB(riteFrame,/*rightMSB*/-1,riteShift,riteIndex._bytesUsed,riteIndex._base),
-                                           true);
+        BinaryMerge bm = new BinaryMerge(new BinaryMerge.FFSB(leftFrame, leftMSB, leftShift,
+                leftIndex._bytesUsed, leftIndex._base, leftIndex._baseD,
+                leftIndex._isNumeric), new BinaryMerge.FFSB(riteFrame,/*rightMSB*/-1, riteShift,
+                riteIndex._bytesUsed, riteIndex._base, riteIndex._baseD, riteIndex._isNumeric),
+                true);
           bmList.add(bm);
           fs.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(leftMSB), bm).call());
         }
@@ -91,12 +101,18 @@ public class Merge {
       leftMSBfrom = 0;
     }
 
-    long leftMSBto = (riteBase + (256L<<riteShift) - 1 - leftBase) >> leftShift;
+    BigInteger rightS = BigInteger.valueOf(256L<<riteShift);
+    long leftMSBto = (leftIndex._isNumeric[0])?riteBaseD.add(rightS).subtract(BigInteger.ONE).subtract(leftBaseD).shiftRight(leftShift).longValue():
+            ((riteBase + (256L<<riteShift) - 1 - leftBase) >> leftShift);
     // -1 because the 256L<<riteShift is one after the max extent.  
     // No need -for +1 for NA here because, as for leftMSBfrom above, the NA spot is on -both sides
 
-    // deal with the left range above the right maximum, if any
-    if( (leftBase + (256L<<leftShift)) > (riteBase + (256L<<riteShift)) ) {
+    // deal with the left range above the right maximum, if any.  For doubles, -1 from shift to avoid negative outcome
+    boolean leftRangeAboveRightMax = (leftIndex._isNumeric[0])?
+            (leftBaseD.add(BigInteger.valueOf(256L<<leftShift)).compareTo(riteBaseD.add(rightS)) >= 0) :
+            (leftBase + (256L<<leftShift)) > (riteBase + (256L<<riteShift));
+
+    if (leftRangeAboveRightMax) { //
       assert leftMSBto <= 255;
       if (leftMSBto<0) {
         // The left range starts after the right range ends.  So every left row
@@ -105,8 +121,11 @@ public class Merge {
       }
       // run the merge for the whole lefts that start after the last right
       if (allLeft) for (int leftMSB=(int)leftMSBto+1; leftMSB<=255; leftMSB++) {
-          BinaryMerge bm = new BinaryMerge(new BinaryMerge.FFSB(leftFrame,   leftMSB    ,leftShift,leftIndex._bytesUsed,leftIndex._base),
-                                           new BinaryMerge.FFSB(riteFrame,/*rightMSB*/-1,riteShift,riteIndex._bytesUsed,riteIndex._base),
+          BinaryMerge bm = new BinaryMerge(new BinaryMerge.FFSB(leftFrame,   leftMSB    ,leftShift,
+                  leftIndex._bytesUsed,leftIndex._base, leftIndex._baseD,  leftIndex._isNumeric),
+                                           new BinaryMerge.FFSB(riteFrame,/*rightMSB*/-1,riteShift,
+                                                   riteIndex._bytesUsed,riteIndex._base, riteIndex._baseD,
+                                                   riteIndex._isNumeric),
                                            true);
           bmList.add(bm);
           fs.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(leftMSB), bm).call());
@@ -124,12 +143,12 @@ public class Merge {
       assert leftMSB <= 255;
 
       // calculate the key values at the bin extents:  [leftFrom,leftTo] in terms of keys
-      long leftFrom= (((long)leftMSB  ) << leftShift) -1 + leftBase  ;  // -1 for leading NA spot
-      long leftTo  = (((long)leftMSB+1) << leftShift) -1 + leftBase-1;  // -1 for leading NA spot and another -1 to get last of previous bin
+      long leftFrom= leftIndex._isNumeric[0]?(((long)leftMSB  ) << leftShift) -1 + leftBaseD.longValue():(((long)leftMSB  ) << leftShift) -1 + leftBase  ;  // -1 for leading NA spot
+      long leftTo  = leftIndex._isNumeric[0]?(((long)leftMSB+1) << leftShift) -1 + leftBaseD.longValue()-1:(((long)leftMSB+1) << leftShift) -1 + leftBase-1;  // -1 for leading NA spot and another -1 to get last of previous bin
 
       // which right bins do these left extents occur in (could span multiple, and fall in the middle)
-      int rightMSBfrom = (int)((leftFrom - riteBase + 1) >> riteShift);   // +1 again for the leading NA spot
-      int rightMSBto   = (int)((leftTo   - riteBase + 1) >> riteShift);
+      int rightMSBfrom = riteIndex._isNumeric[0]?(int)((leftFrom - riteBaseD.longValue() + 1) >> riteShift):(int)((leftFrom - riteBase + 1) >> riteShift);   // +1 again for the leading NA spot
+      int rightMSBto   = riteIndex._isNumeric[0]?(int)((leftTo   - riteBaseD.longValue() + 1) >> riteShift):(int)((leftTo   - riteBase + 1) >> riteShift);
 
       // the non-matching part of this region will have been dealt with above when allLeft==true
       if (rightMSBfrom < 0) rightMSBfrom = 0;
@@ -138,8 +157,8 @@ public class Merge {
       assert rightMSBto >= rightMSBfrom;
 
       for (int rightMSB=rightMSBfrom; rightMSB<=rightMSBto; rightMSB++) {
-        BinaryMerge bm = new BinaryMerge(new BinaryMerge.FFSB(leftFrame, leftMSB,leftShift,leftIndex._bytesUsed,leftIndex._base),
-                                         new BinaryMerge.FFSB(riteFrame,rightMSB,riteShift,riteIndex._bytesUsed,riteIndex._base),
+        BinaryMerge bm = new BinaryMerge(new BinaryMerge.FFSB(leftFrame, leftMSB,leftShift,leftIndex._bytesUsed,leftIndex._base,leftIndex._baseD, leftIndex._isNumeric),
+                                         new BinaryMerge.FFSB(riteFrame,rightMSB,riteShift,riteIndex._bytesUsed,riteIndex._base,riteIndex._baseD,riteIndex._isNumeric),
                                          allLeft);
         bmList.add(bm);
         // TODO: choose the bigger side to execute on (where that side of index
