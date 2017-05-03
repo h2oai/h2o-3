@@ -101,6 +101,7 @@ h2o.automl <- function(x, y, training_frame,
   automl_job <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", res$job$dest$name))
   project <- automl_job$project
   leaderboard <- as.data.frame(automl_job["leaderboard_table"]$leaderboard_table)
+  row.names(leaderboard) <- seq(nrow(leaderboard))
   user_feedback <- automl_job["user_feedback_table"]
   leader <- automl_job$leaderboard$models[[1]]$name
 
