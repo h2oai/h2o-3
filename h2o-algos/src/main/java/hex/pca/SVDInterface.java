@@ -5,7 +5,7 @@ package hex.pca;
  * @date 2.5.17
  */
 public interface SVDInterface {
-  double[] getS();
+  double[] getSingularValues();
 
-  double[][] getVt_2D();
+  double[][] getRightEigenvectors();
 }

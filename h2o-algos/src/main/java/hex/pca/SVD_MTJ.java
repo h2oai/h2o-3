@@ -9,37 +9,34 @@ import no.uib.cipr.matrix.NotConvergedException;
  * @date 1.5.17
  */
 public class SVD_MTJ implements SVDInterface {
-  private PCA pca;
-  private DenseMatrix gramJ;
-  private no.uib.cipr.matrix.SVD svdJ;
-  private double[][] vt_2D;
+  private DenseMatrix gramMatrix;
+  private no.uib.cipr.matrix.SVD svd;
+  private double[][] rightEigenvectors;
 
-  SVD_MTJ(PCA pca, double[][] gramMatrix) {
-    this.pca = pca;
-    this.gramJ = new DenseMatrix(gramMatrix);
+  SVD_MTJ(double[][] gramMatrix) {
+    this.gramMatrix = new DenseMatrix(gramMatrix);
     runSVD();
   }
 
   @Override
-  public double[] getS() {
-    return svdJ.getS();
+  public double[] getSingularValues() {
+    return svd.getS();
   }
 
   @Override
-  public double[][] getVt_2D() {
-    return vt_2D;
+  public double[][] getRightEigenvectors() {
+    return rightEigenvectors;
   }
 
   private void runSVD() {
-    int gramDimension = gramJ.numRows();
+    int gramDimension = gramMatrix.numRows();
     try {
-      // Note: gramJ will be overwritten after this
-      svdJ = new no.uib.cipr.matrix.SVD(gramDimension, gramDimension).factor(gramJ);
+      // Note: gramMatrix will be overwritten after this
+      svd = new no.uib.cipr.matrix.SVD(gramDimension, gramDimension).factor(gramMatrix);
     } catch (NotConvergedException e) {
       throw new RuntimeException(e);
     }
-    pca._job.update(1, "Computing stats from SVD");
-    double[] Vt_1D = svdJ.getVt().getData();
-    vt_2D = LinearAlgebraUtils.reshape1DArray(Vt_1D, gramDimension, gramDimension);
+    double[] Vt_1D = svd.getVt().getData();
+    rightEigenvectors = LinearAlgebraUtils.reshape1DArray(Vt_1D, gramDimension, gramDimension);
   }
 }

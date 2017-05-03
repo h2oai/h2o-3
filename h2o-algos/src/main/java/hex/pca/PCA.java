@@ -28,7 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 
-import static hex.pca.SVDFactory.svdImplementation.SVD_MTJ;
+import static hex.pca.SVDFactory.svdImplementation.MTJ;
 import static hex.util.DimensionReductionUtils.*;
 import static water.util.ArrayUtils.mult;
 
@@ -351,12 +351,16 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
             e.printStackTrace();
             throw e;
           }
-          SVDInterface svd = SVDFactory.createSVDbyName(PCA.this, gramMatrix, SVD_MTJ);
-          double[][] eigenVectors = svd.getVt_2D();
+          // Note: uncomment the desired implementation
+//          SVDFactory.svdImplementation svdImplementation = JAMA;
+          SVDFactory.svdImplementation svdImplementation = MTJ;
+          PCA.this._job.update(1, "Computing stats from SVD using " + svdImplementation.toString());
+          SVDInterface svd = SVDFactory.createSVDbyName(gramMatrix, svdImplementation);
+          double[][] rightEigenvectors = svd.getRightEigenvectors();
           if (_wideDataset) {       // correct for the eigenvector by t(A)*eigenvector for wide dataset
-            transformEigenVectors(dinfo, eigenVectors);
+            transformEigenVectors(dinfo, rightEigenvectors);
           }
-          computeStatsFillModel(model, dinfo, svd.getS(), eigenVectors, gram, model._output._nobs);
+          computeStatsFillModel(model, dinfo, svd.getSingularValues(), rightEigenvectors, gram, model._output._nobs);
           model._output._training_time_ms.add(System.currentTimeMillis());
           // TODO: replace Jama SVD with MTJ SVD in SVD.java
           // generate variables for scoring_history generation
