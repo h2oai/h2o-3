@@ -294,6 +294,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     return modelKeys[0].get();
   }
 
+  /*
   public long[] getTimestamps(Model[] models) {
     long[] timestamps = new long[models.length];
     int i = 0;
@@ -301,6 +302,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
       timestamps[i++] = m._output._end_time;
     return timestamps;
   }
+  */
 
   public double[] getSortMetrics() {
     return getSortMetrics(this.sort_metric, this.test_set_metrics, this.testFrame, this.getModels());
@@ -365,7 +367,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     String lineSeparator = "\\n";
 
     StringBuffer sb = new StringBuffer();
-//    sb.append("Rank").append(fieldSeparator).append("Error").append(lineSeparator);
+//  sb.append("Rank").append(fieldSeparator).append("Error").append(lineSeparator);
     sb.append("Error").append(lineSeparator);
 
     Model[] models = getModels();
@@ -383,14 +385,15 @@ public class Leaderboard extends Keyed<Leaderboard> {
     String lineSeparator = "\\n";
 
     StringBuffer sb = new StringBuffer();
-    sb.append("Time").append(fieldSeparator).append("Error").append(lineSeparator);
+    //sb.append("Time").append(fieldSeparator).append("Error").append(lineSeparator);
+    sb.append("Error").append(lineSeparator);
 
     Model[] models = getModels();
     for (int i = models.length - 1; i >= 0; i--) {
       // TODO: allow the metric to be passed in.  Note that this assumes the validation (or training) frame is the same.
       Model m = models[i];
-      sb.append(timestampFormat.format(m._output._end_time));
-      sb.append(fieldSeparator);
+      //sb.append(timestampFormat.format(m._output._end_time));
+      //sb.append(fieldSeparator);
 
       sb.append(defaultMetricForModel(m));
       sb.append(lineSeparator);
@@ -399,17 +402,18 @@ public class Leaderboard extends Keyed<Leaderboard> {
   }
 
   protected static final String[] colHeaders(String metric) {
-    return new String[] {"model ID", "timestamp", metric.toString()};
+    //return new String[] {"model ID", "timestamp", metric.toString()};
+    return new String[] {"model_id", metric.toString()};
   }
 
   protected static final String[] colTypes= {
           "string",
-          "string",
+          //"string",
           "string" };
 
   protected static final String[] colFormats= {
           "%s",
-          "%s",
+          //"%s",
           "%s" };
 
   public static final TwoDimTable makeTwoDimTable(String tableHeader, String sort_metric, int length) {
@@ -425,10 +429,12 @@ public class Leaderboard extends Keyed<Leaderboard> {
             "#");
   }
 
-  public void addTwoDimTableRow(TwoDimTable table, int row, String[] modelIDs, long[] timestamps, double[] errors) {
+
+  //public void addTwoDimTableRow(TwoDimTable table, int row, String[] modelIDs, long[] timestamps, double[] errors) {
+  public void addTwoDimTableRow(TwoDimTable table, int row, String[] modelIDs, double[] errors) {
     int col = 0;
     table.set(row, col++, modelIDs[row]);
-    table.set(row, col++, timestampFormat.format(new Date(timestamps[row])));
+    //table.set(row, col++, timestampFormat.format(new Date(timestamps[row])));
     table.set(row, col++, String.format("%.6f", errors[row]));
   }
 
@@ -438,7 +444,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
   public TwoDimTable toTwoDimTable(String tableHeader, boolean leftJustifyModelIds) {
     Model[] models = this.getModels();
-    long[] timestamps = getTimestamps(models);
+    //long[] timestamps = getTimestamps(models);
     String[] modelIDsFormatted = new String[models.length];
 
     TwoDimTable table = makeTwoDimTable(tableHeader, sort_metric, models.length);
@@ -458,13 +464,15 @@ public class Leaderboard extends Keyed<Leaderboard> {
       }
 
     for (int i = 0; i < models.length; i++)
-      addTwoDimTableRow(table, i, modelIDsFormatted, timestamps, sort_metrics);
+      //addTwoDimTableRow(table, i, modelIDsFormatted, timestamps, sort_metrics);
+      addTwoDimTableRow(table, i, modelIDsFormatted, sort_metrics);
     return table;
   }
 
-  private static final SimpleDateFormat timestampFormat = new SimpleDateFormat("HH:mm:ss.SSS");
+  //private static final SimpleDateFormat timestampFormat = new SimpleDateFormat("HH:mm:ss.SSS");
 
-  public static String toString(String project, Model[] models, String fieldSeparator, String lineSeparator, boolean includeTitle, boolean includeHeader, boolean includeTimestamp) {
+  //public static String toString(String project, Model[] models, String fieldSeparator, String lineSeparator, boolean includeTitle, boolean includeHeader, boolean includeTimestamp) {
+  public static String toString(String project, Model[] models, String fieldSeparator, String lineSeparator, boolean includeTitle, boolean includeHeader) {
     StringBuilder sb = new StringBuilder();
     if (includeTitle) {
       sb.append("Leaderboard for project \"")
@@ -482,15 +490,17 @@ public class Leaderboard extends Keyed<Leaderboard> {
     for (Model m : models) {
       // TODO: allow the metric to be passed in.  Note that this assumes the validation (or training) frame is the same.
       if (includeHeader && ! printedHeader) {
-        sb.append("Model_ID");
+        sb.append("model_id");
         sb.append(fieldSeparator);
 
         sb.append(defaultMetricNameForModel(m));
 
+        /*
         if (includeTimestamp) {
           sb.append(fieldSeparator);
           sb.append("timestamp");
         }
+        */
         sb.append(lineSeparator);
         printedHeader = true;
       }
@@ -500,10 +510,12 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
       sb.append(defaultMetricForModel(m));
 
+      /*
       if (includeTimestamp) {
         sb.append(fieldSeparator);
         sb.append(timestampFormat.format(m._output._end_time));
       }
+      */
 
       sb.append(lineSeparator);
     }
@@ -511,7 +523,8 @@ public class Leaderboard extends Keyed<Leaderboard> {
   }
 
   public String toString(String fieldSeparator, String lineSeparator) {
-    return toString(project, getModels(), fieldSeparator, lineSeparator, true, true, false);
+    //return toString(project, getModels(), fieldSeparator, lineSeparator, true, true, false);
+    return toString(project, getModels(), fieldSeparator, lineSeparator, true, true);
   }
 
   @Override
