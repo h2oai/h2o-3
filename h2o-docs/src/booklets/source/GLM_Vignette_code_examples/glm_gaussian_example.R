@@ -1,0 +1,5 @@
+library(h2o)
+h2o.init()
+path = system.file("extdata", "prostate.csv", package = "h2o")
+h2o_df = h2o.importFile(path)
+gaussian.fit = h2o.glm(y = "VOL", x = c("AGE", "RACE", "PSA", "GLEASON"), training_frame = h2o_df, family = "gaussian")

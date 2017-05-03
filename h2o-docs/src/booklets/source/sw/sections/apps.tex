@@ -1,0 +1,128 @@
+\section{Building a Standalone Application}
+
+\textbf{Sparkling Water Example Project}
+
+This is a simple example project to start coding with Sparkling Water.
+
+\textbf{Dependencies}
+
+This droplet uses Sparkling Water 1.6 which integrates:
+\begin{itemize}
+\item Spark 1.6
+\item H2O 3.8 Tukey
+\end{itemize}
+
+For more details see \texttt{build.gradle}.
+
+\textbf{Project structure}
+
+% Lots of code to draw a basic file structure, examples exist to jazz this up
+\begin{forest}
+  for tree={
+    %font=\ttfamily,
+    grow'=0,
+    child anchor=west,
+    parent anchor=south,
+    anchor=west,
+    calign=first,
+    edge path={
+      \noexpand\path [draw, \forestoption{edge}]
+      (!u.south west) +(7.5pt,0) |- node[fill,inner sep=1.25pt] {} (.child anchor)\forestoption{edge label};
+    },
+    before typesetting nodes={
+      if n=1
+        {insert before={[,phantom]}}
+        {}
+    },
+    fit=band,
+    before computing xy={l=15pt},
+  }
+[
+  [\texttt{gradle/} ........ Gradle definition files]
+  [\texttt{src/} .............. Source code
+    [\texttt{main/} ....... Main implementation code
+      [\texttt{scala/} ]
+    ]
+    [\texttt{test/} ....... Test code
+      [\texttt{scala/}]
+    ]
+  ]
+  [\texttt{build.gradle} ... Build file for this project]
+  [\texttt{gradlew} ........ Gradle wrapper]
+]
+\end{forest}
+
+\textbf{Project building}
+
+For building, please, use provided gradlew command:
+
+\begin{lstlisting}[style=Bash]
+./gradlew build
+\end{lstlisting}
+
+\textbf{Run demo}
+
+For running a simple application:
+
+\begin{lstlisting}[style=Bash]
+./gradlew run
+\end{lstlisting}
+
+\textbf{Starting with IDEA}
+
+There are two ways to open this project in IntelliJ IDEA
+
+Using Gradle build file directly:
+
+\quad Open the project's \texttt{build.gradle} in IDEA via File $\rightarrow$ Open
+
+or using Gradle generated project files:
+
+\begin{enumerate}
+\item Generate Idea configuration files via  {\lstinline[style=Bash]|./gradlew idea|} 
+\item Open project in Idea via File $\rightarrow$ Open
+\end{enumerate}
+
+Note: To clean up Idea project files please launch {\lstinline[style=Bash]|./gradlew cleanIdea|} 
+
+\textbf{Starting with Eclipse}
+
+\begin{enumerate}
+\item Generate Eclipse project files via {\lstinline[style=Bash]|./gradlew eclipse|} 
+\item Open project in Eclipse via File $\rightarrow$ Import $\rightarrow$ Existing Projects into Workspace
+\end{enumerate}
+
+\textbf{Running tests}
+
+To run tests, please, run:
+
+\begin{lstlisting}[style=Bash]
+./gradlew test
+\end{lstlisting}
+
+\textbf{Checking code style}
+
+To check codestyle:
+
+\begin{lstlisting}[style=Bash]
+./gradlew scalaStyle
+\end{lstlisting}
+
+\textbf{Creating and Running Spark Application}
+
+Create application assembly which can be directly submitted to Spark cluster:
+
+\begin{lstlisting}[style=Bash]
+./gradlew shadowJar
+\end{lstlisting}
+
+The command creates jar file \texttt{build/libs/sparkling-water-droplet-app.jar} containing all necessary classes to run application on top of Spark cluster.
+
+Submit application to Spark cluster (in this case, local cluster is used):
+
+\begin{lstlisting}[style=Bash]
+export MASTER='local-cluster[3,2,1024]'
+$SPARK_HOME/bin/spark-submit --class water.droplets.SparklingWaterDroplet build/libs/sparkling-water-droplet-all.jar
+\end{lstlisting}
+
+

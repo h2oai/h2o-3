@@ -1,0 +1,140 @@
+%\input{common/conf_top.tex} % default, for online version
+\input{common/conf_top_print.tex} % for print version
+
+\input{common/conf_titles.tex}
+\input{common/conf_listings.tex}
+%\input{common/conf_listings_colorized.tex} %lacks Scala style setup
+%
+% Use fancy table
+%
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{forest}
+
+\begin{document}
+
+\thispagestyle{empty} %removes page number  
+
+\begin{center}
+\textsc{\large\bf{Machine Learning with Sparkling Water: H2O + Spark}}
+
+\bigskip
+\line(1,0){250}  %inserts  horizontal line 
+\\
+\bigskip
+\textsc{\small{Michal Malohlava\hspace{20pt} Nidhi Mehta}}
+
+\textsc{\small{Edited by: Brandon Hill \&\ Vinod Iyengar}}
+\\
+\bigskip
+\line(1,0){250}  %inserts  horizontal line
+
+
+{\url{http://h2o.ai/resources}}
+
+\bigskip
+\monthname \hspace{1pt}  \the\year: First Edition 
+\\%add front page image here? (wavy lines)
+\bigskip
+\end{center}
+
+\newpage
+\null\vfill %move next text block to lower left of new page
+
+\thispagestyle{empty}%remove pg#
+
+
+{\raggedright\vfill\ 
+
+Machine Learning with Sparkling Water: H2O + Spark\\
+  by Michal Malohlava \&\ Nidhi Mehta\\
+  Edited by: Brandon Hill \&\ Vinod Iyengar
+  
+\bigskip
+  Published by H2O.ai, Inc. \\
+2307 Leghorn St. \\
+Mountain View, CA 94043\\
+\bigskip
+\textcopyright \hspace{1pt} \the\year H2O.ai, Inc. All Rights Reserved. 
+\bigskip
+
+\monthname \hspace{1pt}  \the\year: First Edition
+\bigskip
+
+Photos by \textcopyright H2O.ai, Inc. 
+\bigskip
+
+While every precaution has been taken in the\\
+preparation of this book, the publisher and\\
+authors assume no responsibility for errors or\\
+omissions, or for damages resulting from the\\
+use of the information contained herein.\\
+\bigskip
+Printed in the United States of America. 
+
+
+}\par
+
+\newpage
+\tableofcontents
+
+\newpage
+\input{common/what_is_h2o.tex}
+\input{generated_buildinfo.tex}
+
+%
+% Include introduction for SW
+%
+\input{sw/sections/intro}
+
+%
+% SW design
+%
+\newpage
+\input{sw/sections/design}
+%
+% Exposed public Scala API
+%
+\newpage
+\input{sw/sections/api}
+
+\newpage
+\input{sw/sections/deployment}
+
+%
+% Building standalone applications with Sparkling Water
+%
+\newpage
+\include{sw/sections/apps}
+
+\newpage
+\include{sw/sections/pysparkling}
+
+\newpage
+\include{sw/sections/usecase}
+
+\newpage
+\include{sw/sections/FAQ}
+
+\newpage\section{References}
+
+\bibliographystyle{plainnat}  
+
+\nobibliography{bibliography.bib} 
+
+\bibentry{h2osite}
+
+\bibentry{h2odocs}
+
+\bibentry{h2ogithubrepo}
+
+\bibentry{h2odatasets}
+
+\bibentry{h2ojira}
+
+\bibentry{stream}
+
+\bibentry{rdocs}
+
+\end{document}
+

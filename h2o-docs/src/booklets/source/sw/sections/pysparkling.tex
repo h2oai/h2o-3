@@ -1,0 +1,127 @@
+\section{What is PySparkling Water?}
+
+PySparkling Water is an integration of Python with Sparkling water. It allows the user to start H2O services on a spark cluster from Python API.
+
+In the PySparkling Water driver program, the \texttt{SparkContext} (sc) uses Py4J to start the driver JVM and the JAVA \texttt{SparkContext} is used to create \texttt{H2OContext} (hc).  This in turn starts the H2O cloud in the Spark ecosystem. Once the H2O cluster is up, H2O-Python package is used to interact with the cloud and run H2O algorithms. All pure H2O calls are executed via H2O's REST API interface. Users can easily integrate their regular PySpark workflow with H2O algorithms using PySparkling Water.
+
+PySparkling Water programs can be launched as an application, or in an interactive shell, or notebook environment.
+
+\subsection{Getting Started:}
+
+\begin{enumerate}
+\item Download Spark (if not already installed) from the Spark Downloads Page.
+
+Choose Spark release : 1.6.0
+
+Choose a package type: Pre-built for Hadoop 2.4 and later
+
+\item Point SPARK\_HOME to the existing installation of Spark and export variable MASTER.
+
+\begin{lstlisting}[style=Bash]
+export SPARK_HOME="/path/to/spark/installation" 
+\end{lstlisting}
+
+Launch a local Spark cluster with 3 worker nodes with 2 cores and 1g per node.
+\begin{lstlisting}[style=Bash]
+export MASTER="local-cluster[3,2,1024]" 
+\end{lstlisting}
+
+\item From your terminal, run:
+
+\begin{lstlisting}[style=Bash]
+cd ~/Downloads
+unzip sparkling-water-1.6.1.zip
+cd sparkling-water-1.6.1
+\end{lstlisting}
+
+Start an interactive Python terminal:
+\begin{lstlisting}[style=Bash]
+bin/pysparkling
+\end{lstlisting}
+
+Or start a notebook:
+\begin{lstlisting}[style=Bash]
+IPYTHON_OPTS="notebook" bin/pysparkling
+\end{lstlisting}
+
+\item Create an H2O cloud inside the Spark cluster and import H2O-Python package:
+
+\begin{lstlisting}[style=Scala]
+from pysparkling import *
+hc= H2OContext(sc).start()
+import h2o
+\end{lstlisting}
+
+\item Follow this demo (\url{https://github.com/h2oai/h2o-world-2015-training/blob/master/tutorials/pysparkling/Chicago_Crime_Demo.ipynb}), which imports Chicago crime, census and weather data and predicts the probability of arrest.
+
+\end{enumerate}
+
+Alternatively, to launch on YARN:
+
+\begin{lstlisting}[style=Bash]
+wget http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.6/1/sparkling-water-1.6.1.zip
+unzip sparkling-water-1.6.1.zip
+ 
+export SPARK_HOME="/path/to/spark/installation"
+export HADOOP_CONF_DIR=/etc/hadoop/conf
+export SPARKLING_HOME="/path/to/SparklingWater/installation"
+$SPARKLING_HOME/bin/pysparkling --num-executors 3 --executor-memory 20g --executor-cores 10 --driver-memory 20g --master yarn-client
+\end{lstlisting}
+    
+Then create an H2O cloud inside the Spark cluster and import H2O-Python package:
+\begin{lstlisting}[style=Scala]
+from pysparkling import *
+hc= H2OContext(sc).start()
+import h2o
+\end{lstlisting}
+
+Or to launch as a Spark Package application:
+\begin{lstlisting}[style=Bash]
+$SPARK_HOME/bin/spark-submit --packages ai.h2o:sparkling-water-core_2.10:1.6.1 --py-files $SPARKLING_HOME/py/dist/pySparkling-1.6.1-py2.7.egg
+$SPARKLING_HOME/py/examples/scripts/H2OContextDemo.py 
+\end{lstlisting}
+
+
+\subsection{Using Spark Data Sources}
+
+The way that a \texttt{H2OFrame} can be used as Spark's data source differs a little bit in Python from Scala.
+
+\subsubsection{Reading from \texttt{H2OFrame}}
+
+Let's suppose we have an \texttt{H2OFrame}. There are two ways how the \texttt{DataFrame} can be loaded from \texttt{H2OFrame} in pySparkling:
+\begin{lstlisting}[style=Scala]
+df = sqlContext.read.format("h2o").option("key",frame.frame_id).load()
+\end{lstlisting}
+or
+\begin{lstlisting}[style=Scala]
+df = sqlContext.read.format("h2o").load(frame.frame_id)
+\end{lstlisting}
+
+\subsubsection{Saving to \texttt{H2OFrame}}
+
+Let's suppose we have a \texttt{DataFrame} df. There are two ways how \texttt{DataFrame} can be saved as 
+\texttt{H2OFrame} in pySparkling:
+
+\begin{lstlisting}[style=Scala]
+df.write.format("h2o").option("key","new_key").save()
+\end{lstlisting}
+or
+\begin{lstlisting}[style=Scala]
+df.write.format("h2o").save("new_key")
+\end{lstlisting}
+
+Both variants save \texttt{DataFrame} as a \texttt{H2OFrame} with key \texttt{new\_key}. They won't succeed if a \texttt{H2OFrame} with the same key already exists.
+
+\subsubsection{Loading and Saving Options}
+
+If the key is specified as 'key' option, and also in the load/save method, the option 'key' is preferred:
+\begin{lstlisting}[style=Scala]
+df = sqlContext.read.from("h2o").option("key","key_one").load("key_two")
+\end{lstlisting}
+or
+\begin{lstlisting}[style=Scala]
+df = sqlContext.read.from("h2o").option("key","key_one").save("key_two")
+\end{lstlisting}
+
+In both examples, \texttt{key\_one} is used.
+

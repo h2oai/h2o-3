@@ -1,0 +1,6 @@
+library(h2o)
+h2o.init()
+path = system.file("extdata", "prostate.csv", package = "h2o")
+h2o_df = h2o.importFile(path)
+h2o_df$CAPSULE = as.factor(h2o_df$CAPSULE)
+summary(h2o_df)
