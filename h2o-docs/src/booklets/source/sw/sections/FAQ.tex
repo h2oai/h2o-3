@@ -1,0 +1,55 @@
+\section{FAQ}
+
+
+
+\textbf{Where do I find the Spark logs?}
+
+Spark logs are located in the directory {\lstinline[style=Bash]|$SPARK_HOME/work/app-<AppName>|} (where \texttt{<AppName>} is the name of your application).
+
+\textbf{Spark is very slow during initialization, or H2O does not form a cluster. What should I do?}
+
+Configure the Spark variable \texttt{SPARK\_LOCAL\_IP}. For example:
+       
+\begin{lstlisting}[style=Bash]
+export SPARK_LOCAL_IP='127.0.0.1'
+\end{lstlisting}
+
+\textbf{How do I increase the amount of memory assigned to the Spark executors in Sparkling Shell?}
+
+Sparkling Shell accepts common Spark Shell arguments. For example, to increase the amount of memory allocated by each executor, use the \texttt{spark.executor.memory} parameter: {\lstinline[style=Bash]|bin/sparkling-shell --conf "spark.executor.memory=4g"|}
+
+\textbf{How do I change the base port H2O uses to find available ports?}
+
+The H2O accepts spark.ext.h2o.port.base parameter via Spark configuration properties: {\lstinline[style=Bash]|bin/sparkling-shell --conf "spark.ext.h2o.port.base=13431"|}. For a complete list of configuration options, refer to Devel Documentation.
+
+\textbf{How do I use Sparkling Shell to launch a Scala test.script that I created?}
+
+Sparkling Shell accepts common Spark Shell arguments. To pass your script, please use \texttt{-i} option of Spark Shell: {\lstinline[style=Bash]|bin/sparkling-shell -i test.script|}
+
+\textbf{How do I increase PermGen size for Spark driver?}
+
+Specify {\lstinline[style=Bash]|--conf spark.driver.extraJavaOptions="-XX:MaxPermSize=384m"|}
+
+\textbf{How do I add Apache Spark classes to Python path?}
+
+Configure the Python path variable PYTHONPATH:
+        
+\begin{lstlisting}[style=Bash]
+export PYTHONPATH=$SPARK_HOME/python:$SPARK_HOME/python/build:$PYTHONPATH
+export PYTHONPATH=$SPARK_HOME/python/lib/py4j-0.8.2.1-src.zip:$PYTHONPATH
+\end{lstlisting}
+
+\textbf{Trying to import a class from the hex package in Sparkling Shell but getting weird error:}
+
+\begin{lstlisting}[style=Bash]
+error: missing arguments for method hex in object functions; follow this method with '_' if you want to treat it as a partially applied
+\end{lstlisting}
+
+In this case you are probably using Spark 1.5 which is importing SQL functions into Spark Shell environment. Please use the following syntax to import a class from the hex package:
+\begin{lstlisting}[style=Bash]
+import _root_.hex.tree.gbm.GBM
+\end{lstlisting}
+
+
+
+

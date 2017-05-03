@@ -1,0 +1,12 @@
+h2o.num_iterations(binomial.fit)
+h2o.null_dof(binomial.fit, train = TRUE, valid = TRUE)
+h2o.residual_dof(binomial.fit, train = TRUE, valid = TRUE)
+
+h2o.mse(binomial.fit, train = TRUE, valid = TRUE)
+h2o.r2(binomial.fit, train = TRUE, valid = TRUE)
+h2o.logloss(binomial.fit, train = TRUE, valid = TRUE)
+h2o.auc(binomial.fit, train = TRUE, valid = TRUE)
+h2o.giniCoef(binomial.fit, train = TRUE, valid = TRUE)
+h2o.null_deviance(binomial.fit, train = TRUE, valid = TRUE)
+h2o.residual_deviance(binomial.fit, train = TRUE, valid = TRUE)
+h2o.aic(binomial.fit, train = TRUE, valid = TRUE)
