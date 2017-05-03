@@ -149,6 +149,25 @@ If your R version is older than the H2O R package, upgrade your R version using 
 
 --------------
 
+**I received the following error message after launching H2O in RStudio
+and using ``h2o.init`` - what should I do to resolve this error?**
+
+::
+
+    Server error - server 127.0.0.1 is unreachable at this moment.
+    Please retry the request or contact your administrator.
+
+This error occurs when the proxy is set in your R environment. The resolution is to unset that so that you can access localhost from within R. Run the following to unset the proxy:
+
+::
+
+    Sys.unsetenv("http_proxy")
+    Sys.unsetenv("https_proxy")
+    Sys.unsetenv("http_proxy_user")
+    Sys.unsetenv("https_proxy_user")
+
+--------------
+
 **I received the following error message after trying to run some code -
 what should I do?**
 
