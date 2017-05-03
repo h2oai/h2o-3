@@ -1605,19 +1605,20 @@ public abstract class GLMTask  {
     final double _normMul;
     final double _NA;
     final double _bOld; // current old value at j
-    final double _bNew; // global beta @ j-1 that was just updated.
+    final double _bDiff; // global beta @ j-1 that was just updated.
     double _res;
     double _mse;
     final double _sparseOffset;
     int _iter_cnt;
     double _residual;
+    double _residualNew;
 
-    public GLMCoordinateDescentTaskSeqNaiveNumSparse(int iter_cnt, double sparseOffset, double betaOld, double betaNew, double normMul, double NA) { // pass it norm mul and norm sup - in the weights already done. norm
+    public GLMCoordinateDescentTaskSeqNaiveNumSparse(int iter_cnt, double sparseOffset, double betaOld, double betaDiff, double normMul, double NA) { // pass it norm mul and norm sup - in the weights already done. norm
       _iter_cnt = iter_cnt;
       _normMul = normMul;
       _sparseOffset = sparseOffset;
       _bOld = betaOld;
-      _bNew = betaNew;
+      _bDiff = betaDiff;
       _NA = NA;
     }
 
@@ -1636,20 +1637,22 @@ public abstract class GLMTask  {
       double mse = 0;
       if (currlen < idCurr.length)
         idCurr[currlen] = -1;
-      if (_bNew != 0) {
+      if (_bDiff != 0) {
         int i = 0, j;
         while (i < idPrev.length && (j = idPrev[i]) != -1) {
           double w = wChunk[j];
           if (w != 0) {
             double x = xPrev[i];
-            double pred = x * _bNew;
+            double pred = x * _bDiff;
             ztildaChunk[j] -= pred;
             residual -= w * pred;
           }
           i++;
         }
       }
+      _residual = residual;
       if (_bOld != 0) {
+        double residualNew = 0;
         int i = 0, j;
         double res = 0;
         while (i < idCurr.length && (j = idCurr[i]) != -1) {
@@ -1657,32 +1660,30 @@ public abstract class GLMTask  {
           if (w != 0) {
             double x = xCurr[i];
             double pred = x * _bOld;
-            double ztilda = ztildaChunk[j] + pred;
-            ztildaChunk[j] = ztilda;
-            double diff = (ztilda - _sparseOffset);
-            residual += w * pred;
+            double diff = (ztildaChunk[j] + pred - _sparseOffset);
             res += w * x * diff;
+            residualNew += w*pred;
           }
           i++;
         }
         _res = res;
+        _residualNew = residualNew;
       }  else { // the last numeric task must compute mse and residual
         int i = 0, j = 0;
         double res = 0;
         while (i < idCurr.length && (j = idCurr[i]) != -1) {
-          res += xCurr[i]*wChunk[j]*(ztildaChunk[j]-_sparseOffset);
+          res += xCurr[i] * wChunk[j] * (ztildaChunk[j] - _sparseOffset);
           i++;
         }
         _res = res;
+        _mse = mse;
       }
-      _residual = residual;
-      _mse = mse;
-      _residual = residual;
     }
     @Override
     public void reduce(GLMCoordinateDescentTaskSeqNaiveNumSparse git){
       _res += git._res;
       _residual += git._residual;
+      _residualNew += git._residualNew;
       _mse += git._mse;
     }
   }

@@ -292,6 +292,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _stopping_rounds = 3;
       _stopping_metric = ScoreKeeper.StoppingMetric.deviance;
       _stopping_tolerance = 1e-4;
+      _auto_rebalance = false;
     }
 
     public GLMParameters(Family f){this(f,f.defaultLink);}
@@ -308,6 +309,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _interactions=interactions;
       _family = f;
       _link = l;
+      _auto_rebalance = false;
     }
 
     public final double variance(double mu){
