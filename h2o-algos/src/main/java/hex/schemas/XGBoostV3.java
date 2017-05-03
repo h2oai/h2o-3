@@ -61,7 +61,8 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "reg_lambda",
         "reg_alpha",
         "dmatrix_type",
-        "backend"
+        "backend",
+        "gpu_id"
     };
 
     @API(help="(same as n_estimators) Number of trees.", gridable = true)
@@ -169,5 +170,8 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
 
     @API(help="Backend. By default (auto), a GPU is used if available.", values = { "auto", "gpu", "cpu" }, level = API.Level.expert, gridable = true)
     public XGBoostParameters.Backend backend;
+
+    @API(help="Which GPU to use. ", level = API.Level.expert, gridable = false)
+    public int gpu_id;
   }
 }

@@ -33,7 +33,7 @@ class H2OXGBoostEstimator(H2OEstimator):
                       "col_sample_rate_per_tree", "colsample_bytree", "max_abs_leafnode_pred", "max_delta_step",
                       "score_tree_interval", "min_split_improvement", "max_bin", "num_leaves",
                       "min_sum_hessian_in_leaf", "min_data_in_leaf", "tree_method", "grow_policy", "booster", "gamma",
-                      "reg_lambda", "reg_alpha", "dmatrix_type", "backend"}
+                      "reg_lambda", "reg_alpha", "dmatrix_type", "backend", "gpu_id"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -769,6 +769,21 @@ class H2OXGBoostEstimator(H2OEstimator):
     def backend(self, backend):
         assert_is_type(backend, None, Enum("auto", "gpu", "cpu"))
         self._parms["backend"] = backend
+
+
+    @property
+    def gpu_id(self):
+        """
+        Which GPU to use.
+
+        Type: ``int``  (default: ``0``).
+        """
+        return self._parms.get("gpu_id")
+
+    @gpu_id.setter
+    def gpu_id(self, gpu_id):
+        assert_is_type(gpu_id, None, int)
+        self._parms["gpu_id"] = gpu_id
 
 
 
