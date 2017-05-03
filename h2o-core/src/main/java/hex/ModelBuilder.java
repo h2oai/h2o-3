@@ -1065,6 +1065,24 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   /**
+   * Adapts a given frame to the same schema as the training frame.
+   * This includes encoding of categorical variables (if expensive is enabled).
+   *
+   * Note: This method should only be used during ModelBuilder initialization - it should be called in init(..) method.
+   *
+   * @param fr input frame
+   * @param frDesc frame description, eg. "Validation Frame" - will be shown in validation error messages
+   * @param field name of a field for validation errors
+   * @param expensive indicates full ("expensive") processing
+   * @return adapted frame
+   */
+  protected Frame init_adaptFrameToTrain(Frame fr, String frDesc, String field, boolean expensive) {
+    Frame adapted = adaptFrameToTrain(fr, frDesc, field, expensive);
+    if (expensive)
+      adapted = encodeFrameCategoricals(adapted, true);
+    return adapted;
+  }
+
   private Frame adaptFrameToTrain(Frame fr, String frDesc, String field, boolean expensive) {
     if (fr.numRows()==0) error(field, frDesc + " must have > 0 rows.");
     Frame adapted = new Frame(null /* not putting this into KV */, fr._names.clone(), fr.vecs().clone());

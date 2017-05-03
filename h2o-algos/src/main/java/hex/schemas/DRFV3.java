@@ -51,8 +51,8 @@ public class DRFV3 extends SharedTreeV3<DRF,DRFV3, DRFV3.DRFParametersV3> {
         "min_split_improvement",
         "histogram_type",
         "categorical_encoding",
-			"calibrate_model",
-			"calibration_frame"
+		"calibrate_model",
+		"calibration_frame"
     };
 
     // Input fields

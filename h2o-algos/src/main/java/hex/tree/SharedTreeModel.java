@@ -1,7 +1,12 @@
 package hex.tree;
 
 import hex.*;
+
+import static hex.ModelCategory.Binomial;
 import static hex.genmodel.GenModel.createAuxKey;
+import static hex.glm.GLMModel.GLMParameters.Family.binomial;
+
+import hex.glm.GLMModel;
 import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.codegen.CodeGenerator;
@@ -70,8 +75,10 @@ public abstract class SharedTreeModel<
 
     public double[] _sample_rate_per_class; //fraction of rows to sample for each tree, per class
 
-    public boolean _calibrate_model = false; // Use Platt's Scaling
+    public boolean _calibrate_model = false; // Use Platt Scaling
     public Key<Frame> _calibration_frame;
+
+    public Frame calib() { return _calibration_frame == null ? null : _calibration_frame.get(); }
 
     @Override public long progressUnits() { return _ntrees + (_histogram_type==HistogramType.QuantilesGlobal || _histogram_type==HistogramType.RoundRobin ? 1 : 0); }
 
@@ -162,6 +169,8 @@ public abstract class SharedTreeModel<
      */
     public TwoDimTable _variable_importances;
     public VarImp _varimp;
+
+    public GLMModel _calib_model;
 
     public SharedTreeOutput( SharedTree b) {
       super(b);
@@ -271,6 +280,32 @@ public abstract class SharedTreeModel<
     return res;
   }
 
+  @Override
+  protected Frame postProcessPredictions(Frame predictFr) {
+    if (_output._calib_model == null)
+      return predictFr;
+    if (_output.getModelCategory() == Binomial) {
+      Key<Frame> calibInputKey = Key.make();
+      Frame calibOutput = null;
+      try {
+        Frame calibInput = new Frame(calibInputKey, new String[]{"p"}, new Vec[]{predictFr.vec(1)});
+        calibOutput = _output._calib_model.score(calibInput);
+        assert calibOutput._names.length == 3;
+        Vec[] calPredictions = calibOutput.remove(new int[]{1, 2});
+        // append calibrated probabilities to the prediction frame
+        predictFr.write_lock();
+        for (int i = 0; i < calPredictions.length; i++)
+          predictFr.add("cal_" + predictFr.name(1 + i), calPredictions[i]);
+        return predictFr.update();
+      } finally {
+        DKV.remove(calibInputKey);
+        if (calibOutput != null)
+          calibOutput.remove();
+      }
+    } else
+      throw H2O.unimpl("Calibration is only supported for binomial models");
+  }
+
   @Override protected double[] score0(double[] data, double[] preds, double weight, double offset) {
     return score0(data, preds, weight, offset, _output._treeKeys.length);
   }
@@ -341,6 +376,8 @@ public abstract class SharedTreeModel<
     for (Key[] ks : _output._treeKeysAux)
       for (Key k : ks)
         if( k != null ) k.remove(fs);
+    if (_output._calib_model != null)
+      _output._calib_model.remove(fs);
     return super.remove_impl(fs);
   }
 
