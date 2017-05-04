@@ -3,6 +3,8 @@ package hex.tree;
 import hex.*;
 import hex.genmodel.GenModel;
 import hex.genmodel.utils.DistributionFamily;
+import hex.glm.GLM;
+import hex.glm.GLMModel;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import hex.util.LinearAlgebraUtils;
@@ -58,6 +60,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   private transient float[/*nfeatures*/] _improvPerVar;
 
   protected Random _rand;
+
+  protected final Frame calib() { return _calib; }
+  protected transient Frame _calib;
 
   public boolean isSupervised(){return true;}
 
@@ -163,6 +168,20 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
     if( _train != null )
       _ncols = _train.numCols()-1-numSpecialCols();
+
+    // Calibration
+    Frame cf = _parms.calib();  // User-given calibration set
+    if (cf != null) {
+      if (! _parms._calibrate_model)
+        warn("_calibration_frame", "Calibration frame was specified but calibration was not requested.");
+      _calib = init_adaptFrameToTrain(cf, "Calibration Frame", "_calibration_frame", expensive);
+    }
+    if (_parms._calibrate_model) {
+      if (nclasses() != 2)
+        error("_calibrate_model", "Model calibration is only currently supported for binomial models.");
+      if (cf == null)
+        error("_calibrate_model", "Calibration frame was not specified.");
+    }
   }
 
   // --------------------------------------------------------------------------
@@ -666,6 +685,36 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
     // Double update - after either scoring or variable importance
     if( updated ) _model.update(_job);
+
+    // Model Calibration (only for the final model, not CV models)
+    if (finalScoring && _parms._calibrate_model && (! _parms._is_cv_model)) {
+      Key<Frame> calibInputKey = Key.make();
+      try {
+        Scope.enter();
+        _job.update(0, "Calibrating probabilities");
+        Frame calibPredict = Scope.track(_model.score(calib(), null, _job, false));
+
+        Frame calibInput = new Frame(calibInputKey,
+                new String[]{"p", "response"}, new Vec[]{calibPredict.vec(1), calib().vec(_parms._response_column)});
+        DKV.put(calibInput);
+
+        Key<Model> calibModelKey = Key.make();
+        Job calibJob = new Job<>(calibModelKey, ModelBuilder.javaName("glm"), "Platt Scaling (GLM)");
+        GLM calibBuilder = ModelBuilder.make("GLM", calibJob, calibModelKey);
+        calibBuilder._parms._intercept = true;
+        calibBuilder._parms._response_column = "response";
+        calibBuilder._parms._train = calibInput._key;
+        calibBuilder._parms._family = GLMModel.GLMParameters.Family.binomial;
+        calibBuilder._parms._lambda = new double[] {0.0};
+
+        _model._output._calib_model = calibBuilder.trainModel().get();
+        _model.update(_job);
+      } finally {
+        Scope.exit();
+        DKV.remove(calibInputKey);
+      }
+    }
+
     return updated;
   }
 

@@ -73,6 +73,9 @@
 #'        "Random", "QuantilesGlobal", "RoundRobin". Defaults to AUTO.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse". Defaults to AUTO.
+#' @param calibrate_model \code{Logical}. Use Platt Scaling to do model calibration. Transforms the outputs of a classification model
+#'        into a probability distribution over classes Defaults to FALSE.
+#' @param calibration_frame Calibration frame for Platt Scaling
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @export
@@ -115,7 +118,9 @@ h2o.randomForest <- function(x, y, training_frame,
                              col_sample_rate_per_tree = 1,
                              min_split_improvement = 1e-05,
                              histogram_type = c("AUTO", "UniformAdaptive", "Random", "QuantilesGlobal", "RoundRobin"),
-                             categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse")
+                             categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse"),
+                             calibrate_model = FALSE,
+                             calibration_frame = NULL
                              ) 
 {
   #If x is missing, then assume user wants to use all columns as features.
@@ -231,6 +236,10 @@ h2o.randomForest <- function(x, y, training_frame,
     parms$histogram_type <- histogram_type
   if (!missing(categorical_encoding))
     parms$categorical_encoding <- categorical_encoding
+  if (!missing(calibrate_model))
+    parms$calibrate_model <- calibrate_model
+  if (!missing(calibration_frame))
+    parms$calibration_frame <- calibration_frame
   # Error check and build model
   .h2o.modelJob('drf', parms, h2oRestApiVersion=3) 
 }
