@@ -1,1 +1,0 @@
-model = H2ODeepWaterEstimator(epochs=100, image_shape=[28,28], backend="tensorflow", network="user", network_definition_file="/path/to/lenet_28x28x3_3.meta", network_parameters_file="/path/to/lenet-100epochs")

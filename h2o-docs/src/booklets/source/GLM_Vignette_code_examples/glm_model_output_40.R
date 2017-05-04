@@ -1,1 +1,0 @@
-binomial.fit@model$standardized_coefficient_magnitudes
