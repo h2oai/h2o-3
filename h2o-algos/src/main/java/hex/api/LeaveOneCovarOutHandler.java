@@ -11,7 +11,6 @@ import water.fvec.Frame;
 import water.api.Handler;
 import water.api.ModelsHandler;
 import water.Key;
-import water.DKV;
 
 public class LeaveOneCovarOutHandler extends Handler {
 

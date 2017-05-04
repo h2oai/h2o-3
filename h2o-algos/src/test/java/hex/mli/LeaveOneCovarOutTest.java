@@ -3,7 +3,6 @@ package hex.mli;
 import hex.genmodel.utils.DistributionFamily;
 import hex.mli.loco.LeaveOneCovarOut;
 import hex.tree.gbm.GBM;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
