@@ -67,5 +67,8 @@ public class RegisterAlgos extends water.api.AbstractRegister {
 
     H2O.register("POST /3/DataInfoFrame",MakeGLMModelHandler.class, "getDataInfoFrame", "glm_datainfo_frame",
         "Test only");
+
+    H2O.register("POST /3/LeaveOneCovarOut", LeaveOneCovarOutHandler.class, "getLoco","loco",
+            "Conduct Leave One Covariate Out (LOCO) Analysis");
   }
 }
