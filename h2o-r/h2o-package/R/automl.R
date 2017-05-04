@@ -51,18 +51,11 @@ h2o.automl <- function(x, y, training_frame,
   if (missing(training_frame)) stop("argument 'training_frame' is missing")
   if (missing(y)) stop("The response column (y) is not set; please set it to the name of the column that you are trying to predict in your data.")
 
-  #args <- .verify_dataxy(training_frame, x, y)
   ignored_columns <- NULL
   if (!missing(x)) {
-    #ignored_columns <- setdiff(names(training_frame), c(args$x,args$y))
-    ignored_columns <- setdiff(names(training_frame), c(x, y))  #Remove x and y to create ignored_columns
-  } else {
-    # If x is missing, set as everything except y
-    x <- setdiff(names(training_frame), y)
-    # ignored_columns stays NULL
+    args <- .verify_dataxy(training_frame, x, y)
+    ignored_columns <- setdiff(names(training_frame), c(args$x,args$y)) #Remove x and y to create ignored_columns
   }
-
-  args <- .verify_dataxy(training_frame, x, y)
 
   # Training frame id
   training_frame_id <- h2o.getId(training_frame)
@@ -82,11 +75,11 @@ h2o.automl <- function(x, y, training_frame,
   # Parameter list to send to the AutoML backend
   parms <- list()
   input_spec <- list()
-  input_spec$response_column <- args$y
+  input_spec$response_column <- ifelse(is.numeric(y),names(training_frame[y]),y)
   input_spec$training_frame <- training_frame_id
   input_spec$validation_frame <- validation_frame_id
   input_spec$test_frame <- test_frame_id
-  input_spec$ignored_columns <- ignored_columns
+  input_spec$ignored_columns <- list(ignored_columns)
 
   # Update build_control list with top level args
   build_control$stopping_criteria$max_runtime_secs <- max_runtime_secs
