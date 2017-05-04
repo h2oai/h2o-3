@@ -19,26 +19,26 @@ public class LeaveOneCovarOutHandler extends Handler {
 
         final Frame frame = FramesHandler.getFromDKV("frame", args.frame.key());
         final Model model= ModelsHandler.getFromDKV("model",args.model.key());
-        String loco_frame_id = args.loco_frame_id;
-        final String replace_val = args.replace_val;
         assert model.isSupervised() : "Model " + model._key + " is not supervised.";
+        String locoFrameId = args.loco_frame_id;
+        final String replaceVal = args.replace_val;
 
-        if(loco_frame_id == null){
-            loco_frame_id = "loco_"+frame._key.toString() + "_" + model._key.toString();
+        if(locoFrameId == null){
+            locoFrameId = "loco_"+frame._key.toString() + "_" + model._key.toString();
         }
 
-        final Job<Frame> j = new Job(Key.make(loco_frame_id), Frame.class.getName(), "loco_prediction");
-        final String dest_frame_id = loco_frame_id;
+        final Job<Frame> job = new Job(Key.make(locoFrameId), Frame.class.getName(), "Conduct Leave One Covariate Out for each column in the frame");
+        final String dest_frame_id = locoFrameId;
         H2O.H2OCountedCompleter work = new H2O.H2OCountedCompleter() {
                 @Override
                 public void compute2() {
-                    LeaveOneCovarOut.leaveOneCovarOut(model,frame,j,replace_val,Key.make(dest_frame_id));
+                    LeaveOneCovarOut.leaveOneCovarOut(model,frame,job,replaceVal,Key.make(dest_frame_id));
                     tryComplete();
                 }
             };
 
-        j.start(work, model._output._names.length);
-        return new JobV3().fillFromImpl(j);
+        job.start(work, model._output._names.length);
+        return new JobV3().fillFromImpl(job);
     }
 
 }

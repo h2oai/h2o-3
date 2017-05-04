@@ -42,17 +42,17 @@ public class LeaveOneCovarOut extends Iced {
      */
     public static Frame leaveOneCovarOut(Model m, Frame fr, Job job, String replaceVal, Key frameKey){
 
-        Frame locoAnalysisFrame = new Frame();
+        Frame locoAnalysisFrame = new Frame(); //Set up initial LOCO frame
         if(m._output.getModelCategory() != ModelCategory.Multinomial) {
-            locoAnalysisFrame.add("base_pred", getBasepredictions(m, fr)[0]);
+            locoAnalysisFrame.add("base_pred", getBasepredictions(m, fr)[0]); //If not multinomial, then predictions are one column
         } else {
             locoAnalysisFrame.add(new Frame(getBasepredictions(m, fr)));
             locoAnalysisFrame._names[0] = "base_pred";
         }
 
-        String[] predictors = m._output._names;
+        String[] predictors = m._output._names; //Get predictors
 
-        LeaveOneCovariateOutDriver[] tasks = new LeaveOneCovariateOutDriver[predictors.length-1];
+        LeaveOneCovariateOutDriver[] tasks = new LeaveOneCovariateOutDriver[predictors.length-1]; //Set up tasks. Last column is not needed as its the response
 
         for(int i = 0; i < tasks.length; i++){
             tasks[i] = new LeaveOneCovariateOutDriver(locoAnalysisFrame,fr,m,predictors[i],replaceVal);
@@ -63,6 +63,7 @@ public class LeaveOneCovarOut extends Iced {
         Log.info("Starting Leave One Covariate Out (LOCO) analysis for model " + m._key + " and frame " + fr._key);
         H2O.submitTask(locoCollector).join();
 
+        //If multinomial, then we need to remove predicted probabilities for each class. We only want the final class predicted as the first column
         if(m._output.getModelCategory() == ModelCategory.Multinomial){
             int[] colsToRemove = new int[locoAnalysisFrame.numCols()-1];
             for(int i =0; i<colsToRemove.length; i++){
@@ -77,6 +78,7 @@ public class LeaveOneCovarOut extends Iced {
         Log.info("Finished Leave One Covariate Out (LOCO) analysis for model " + m._key + " and frame " + fr._key +
                 " in " + (System.currentTimeMillis()-start)/1000. + " seconds for " + (predictors.length-1) + " columns");
 
+        //Put final frame into DKV
         if(frameKey != null) {
             locoAnalysisFrame._key = frameKey;
             DKV.put(locoAnalysisFrame._key, locoAnalysisFrame);
@@ -88,7 +90,7 @@ public class LeaveOneCovarOut extends Iced {
 
     }
 
-    private static class LeaveOneCovariateOutDriver extends H2O.H2OCountedCompleter<LeaveOneCovariateOutDriver>{
+    public static class LeaveOneCovariateOutDriver extends H2O.H2OCountedCompleter<LeaveOneCovariateOutDriver>{
 
         private final Frame _locoFrame;
         private final Frame _frame;
@@ -111,7 +113,7 @@ public class LeaveOneCovarOut extends Iced {
                 Vec[] predTmp = getNewPredictions(_model,_frame,_predictor,_replaceVal);
                 Frame tmpFrame = new Frame().add(_locoFrame).add(new Frame(predTmp));
                 _result = new MultiDiffTask(_model._output.nclasses()).doAll(Vec.T_NUM, tmpFrame).outputFrame().vecs();
-                for (Vec v : predTmp) v.remove();
+                for (Vec v : predTmp) v.remove(); //Clean up DKV, otherwise we will get leaked keys
             } else {
                 _result = getNewPredictions(_model, _frame, _predictor,_replaceVal);
                 new DiffTask().doAll(_locoFrame.vec(0), _result[0]);
