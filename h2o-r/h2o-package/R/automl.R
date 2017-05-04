@@ -18,7 +18,7 @@
 #' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
 #'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.  Note that
 #'          Stacked Ensemble will be trained for regression and binary classification problems since multiclass stacking is not yet supported.
-#' @return Creates a \linkS4class{H2OAutoML} object.
+#' @return An \linkS4class{H2OAutoML} object.
 #' @examples
 #' \donttest{
 #' library(h2o)
@@ -103,7 +103,7 @@ h2o.automl <- function(x, y, training_frame,
   leaderboard <- as.data.frame(automl_job["leaderboard_table"]$leaderboard_table)
   row.names(leaderboard) <- seq(nrow(leaderboard))
   user_feedback <- automl_job["user_feedback_table"]
-  leader <- automl_job$leaderboard$models[[1]]$name
+  leader <- h2o.getModel(automl_job$leaderboard$models[[1]]$name)
 
   # Make AutoML object
   new("H2OAutoML",
