@@ -23,7 +23,6 @@ from h2o.utils.compatibility import repr2, viewitems, viewvalues
 from h2o.utils.shared_utils import _is_fr, _py_tmp_key
 from h2o.model.model_base import ModelBase
 
-
 class ExprNode(object):
     """
     Composable Expressions: This module contains code for the lazy expression DAG.
@@ -73,7 +72,7 @@ class ExprNode(object):
 
     # Magical count-of-5:   (get 2 more when looking at it in debug mode)
     #  2 for _get_ast_str frame, 2 for _get_ast_str local dictionary list, 1 for parent
-    MAGIC_REF_COUNT = 5 if sys.gettrace() is None else 7  # M = debug ? 7 : 5
+    MAGIC_REF_COUNT = 4 if sys.gettrace() is None else 6  # M = debug ? 6 : 4
 
     def __init__(self, op="", *args):
         # assert isinstance(op, str), op
@@ -121,24 +120,45 @@ class ExprNode(object):
     # the timezone change, so cannot be lazy.
     #
     def _get_ast_str(self, top):
-        if not self._cache.is_empty():  # Data already computed and cached; could a "false-like" cached value
-            return str(self._cache._data) if self._cache.is_scalar() else self._cache._id
-        if self._cache._id is not None:
-            return self._cache._id  # Data already computed under ID, but not cached
-        # assert isinstance(self._children,tuple)
-        exec_str = "({} {})".format(self._op, " ".join([ExprNode._arg_to_expr(ast) for ast in self._children]))
-        gc_ref_cnt = len(gc.get_referrers(self))
-        if top or gc_ref_cnt >= ExprNode.MAGIC_REF_COUNT:
-            self._cache._id = _py_tmp_key(append=h2o.connection().session_id)
-            exec_str = "(tmp= {} {})".format(self._cache._id, exec_str)
-        return exec_str
+        stack = collections.deque()
+        # Append self and evaluate
+        stack.append(self)
+        r = collections.deque()
+        while len(stack) > 0:
+            head = stack.pop()
+            #print("\n{}: {}\n".format(len(stack), r))
+            s = None
+            if isinstance(head, ExprNode):
+                if not head._cache.is_empty():  # Data already computed and cached; could a "false-like" cached value
+                    s = str(head._cache._data) if head._cache.is_scalar() else head._cache._id
+                elif head._cache._id is not None:
+                    s = head._cache._id  # Data already computed under ID, but not cached
+                else:
+                    s = "({}".format(head._op)
+                    gc_ref_cnt = len(gc.get_referrers(head))
+                    if head == self or gc_ref_cnt >= ExprNode.MAGIC_REF_COUNT:
+                        head._cache._id = _py_tmp_key(append=h2o.connection().session_id)
+                        s = "(tmp= {} {}".format(head._cache._id, s)
+                        stack.append('^@^')
+                    stack.append('^@^')
+                    stack.extend(reversed(head._children))
+            elif head == '^@^':
+                s = ')'
+            else:
+                s = ExprNode._arg_to_expr(head)
+            # Append
+            r.append(s)
+
+        return " ".join(r)
 
     @staticmethod
     def _arg_to_expr(arg):
+        """
+        Return string representation of primitive expression. 
+        It does not accept instance of Expr! 
+        """
         if arg is None:
             return "[]"  # empty list
-        if isinstance(arg, ExprNode):
-            return arg._get_ast_str(False)
         if isinstance(arg, ASTId):
             return str(arg)
         if isinstance(arg, (list, tuple, range)):
