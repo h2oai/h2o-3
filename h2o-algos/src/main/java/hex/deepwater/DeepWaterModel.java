@@ -23,9 +23,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static hex.ModelMetrics.calcVarImp;
 import static water.H2O.technote;
@@ -512,28 +511,32 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     }
   }
 
-  final private AtomicBoolean nukeBackend = new AtomicBoolean(false);
+  private int backendCount = 0;
 
   @Override
-  protected void setupBigScoreLocal() {
-    nukeBackend.set(null == model_info()._backend);
-    if(nukeBackend.get()) {
-      synchronized (nukeBackend) {
-        if(null == model_info()._backend){
-          model_info().javaToNative();
-        }
+  protected void setupBigScorePredict() {
+    synchronized (model_info()) {
+      backendCount++;
+      // Initial init of backend + model, backend is shared across threads
+      if (null == model_info()._backend) {
+        model_info().javaToNative();
+      }
+      // Backend already initialized, initialize model per thread
+      if (null == model_info().getModel().get()) {
+        model_info().initModel();
       }
     }
   }
 
   @Override
-  protected void closeBigScoreLocal() {
-    if(nukeBackend.get()) {
-      synchronized (nukeBackend) {
-        if(nukeBackend.get()){
-          model_info().nukeBackend();
-          nukeBackend.set(false);
-        }
+  protected void closeBigScorePredict() {
+    synchronized (model_info()) {
+      if (0 == --backendCount) {
+        // No more threads using the backend, nuke backend + model
+        model_info().nukeBackend();
+      } else if (null != model_info().getModel().get()) {
+        // Backend still used by other threads, nuke only model
+        model_info().nukeModel();
       }
     }
   }
@@ -549,7 +552,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     float[] f = new float[_parms._mini_batch_size * data.length];
     for (int i=0; i<data.length; ++i) f[i] = (float)data[i]; //only fill the first observation
     //float[] predFloats = model_info().predict(f);
-    float[] predFloats = model_info._backend.predict(model_info._model, f);
+    float[] predFloats = model_info._backend.predict(model_info.getModel().get(), f);
     if (_output.nclasses()>=2) {
       for (int i = 1; i < _output.nclasses()+1; ++i) preds[i] = predFloats[i];
     } else {
