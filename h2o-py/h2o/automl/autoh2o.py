@@ -6,7 +6,12 @@ from h2o.utils.typechecks import assert_is_type, is_type
 
 class H2OAutoML(object):
     """
-    AutoML: Automate parts of the model training process
+    Automatic Machine Learning
+
+    The Automatic Machine Learning (AutoML) function automates the supervised machine learning model training process.
+    The current version of AutoML trains and cross-validates a Random Forest, an Extremely-Randomized Forest,
+    a random grid of Gradient Boosting Machines (GBMs), a random grid of Deep Neural Nets,
+    and a Stacked Ensemble of all the models.
 
     :examples:
     >>> # Setting up an H2OAutoML object
@@ -32,6 +37,7 @@ class H2OAutoML(object):
                   "*******************************************************************\n" \
                   "\nVerbose Error Message:")
 
+        #If max_runtime_secs is not provided, then it is set to default (600 secs)
         if max_runtime_secs is None:
             max_runtime_secs = 600
             self.max_runtime_secs = max_runtime_secs
@@ -39,23 +45,25 @@ class H2OAutoML(object):
             assert_is_type(max_runtime_secs,int)
             self.max_runtime_secs = max_runtime_secs
 
+        #If build_control is not provided, then a minimum build_control is constructed with just max_runtime_secs
         if build_control is None:
             self.build_control = {
                 'stopping_criteria': {
-                    'max_runtime_secs': max_runtime_secs,
+                    'max_runtime_secs': self.max_runtime_secs,
                 }
             }
         else:
             assert_is_type(build_control,dict)
-            build_control["stopping_criteria"]["max_runtime_secs"] = max_runtime_secs
+            self.build_control = build_control
+            self.build_control["stopping_criteria"]["max_runtime_secs"] = self.max_runtime_secs
 
+        #Set project name if provided. It None, then we set in .train() to "automl_" + training_frame.frame_id
         if project_name is not None:
             assert_is_type(project_name,str)
-            build_control["project"] = project_name
+            self.build_control["project"] = project_name
         else:
             self.project_name = None
 
-        self.build_control = build_control
         self._job = None
         self._automl_key = None
         self._leader_id = None
@@ -138,14 +146,11 @@ class H2OAutoML(object):
             ignored_columns = set(names) - {y} - set(x)
             input_spec['ignored_columns'] = list(ignored_columns)
 
-        automl_build_params = {
-            'input_spec': input_spec,
-        }
+        automl_build_params = dict(input_spec = input_spec)
 
         # NOTE: if the user hasn't specified some block of parameters don't send them!
         # This lets the back end use the defaults.
-        if None is not self.build_control:
-            automl_build_params['build_control'] = self.build_control
+        automl_build_params['build_control'] = self.build_control
 
         resp = h2o.api('POST /99/AutoMLBuilder', json=automl_build_params)
         if 'job' not in resp:
