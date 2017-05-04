@@ -48,9 +48,8 @@ public abstract class Paxos {
       return 0;
     }
     
-    if(H2O.isFlatfileEnabled() && h2o._heartbeat._cloud_name_hash != H2O.SELF._heartbeat._cloud_name_hash){
+    if(h2o._heartbeat._cloud_name_hash != H2O.SELF._heartbeat._cloud_name_hash){
       // ignore requests from this node as they are coming from different cluster
-      // it's fine to check for this only in flat file mode as it is already handled in the multi-cast mode
       return 0;
     }
 
