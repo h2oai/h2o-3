@@ -1,0 +1,61 @@
+Checking whether there is an H2O instance running at http://localhost:54321. connected.
+--------------------------  ----------------------
+H2O cluster uptime:         6 hours 19 mins
+H2O cluster version:        3.11.0.157
+H2O cluster version age:    11 days
+H2O cluster name:           ubuntu
+H2O cluster total nodes:    1
+H2O cluster free memory:    25.09 Gb
+H2O cluster total cores:    4
+H2O cluster allowed cores:  4
+H2O cluster status:         locked, healthy
+H2O connection url:         http://localhost:54321
+H2O connection proxy:
+H2O internal security:      False
+Python version:             2.7.12 final
+--------------------------  ----------------------
+Parse progress: [#########################################################] 100%
+deepwater Model Build progress: [#########################################] 100%
+deepfeatures progress: [##################################################] 100%
+(267, 1024)
+  DF.global_pool_output.C1    DF.global_pool_output.C2    DF.global_pool_output.C3
+--------------------------  --------------------------  --------------------------
+                  0.801623                    0.42203                     0.416217
+                  1.09336                     0.704138                    0.420898
+                  0.594622                    0.161074                    0.357225
+                  0.875428                    0.865322                    0.532098
+                  1.11859                     0.625728                    0.348317
+
+[5 rows x 3 columns]
+
+glm Model Build progress: [###############################################] 100%
+Model Details
+=============
+H2OGeneralizedLinearEstimator :  Generalized Linear Modeling
+Model Key:  GLM_model_python_1493573673457_17
+
+
+ModelMetricsMultinomialGLM: glm
+** Reported on train data. **
+
+MSE: 0.0425545264331
+RMSE: 0.206287484916
+
+ModelMetricsMultinomialGLM: glm
+** Reported on validation data. **
+
+MSE: 0.0866111645905
+RMSE: 0.294297748191
+Scoring History: 
+    timestamp            duration    iteration    negative_log_likelihood    objective
+--  -------------------  ----------  -----------  -------------------------  -----------
+    2017-04-30 23:54:07  0.000 sec   0            240.555                    1.09843
+    2017-04-30 23:54:07  0.278 sec   1            50.0144                    0.493649
+    2017-04-30 23:54:07  0.522 sec   2            41.0141                    0.47165
+    2017-04-30 23:54:07  0.762 sec   3            43.0139                    0.46968
+    2017-04-30 23:54:08  1.009 sec   4            41.6715                    0.469092
+    2017-04-30 23:54:08  1.253 sec   5            42.8286                    0.468845
+    2017-04-30 23:54:08  1.500 sec   6            42.0566                    0.468731
+    2017-04-30 23:54:08  1.734 sec   7            42.5905                    0.468679
+    2017-04-30 23:54:08  1.975 sec   8            42.244                     0.468654
+H2O session _sid_a06b closed.
