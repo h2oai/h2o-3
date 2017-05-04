@@ -4,8 +4,10 @@ import deepwater.backends.BackendModel;
 import deepwater.backends.BackendParams;
 import deepwater.backends.BackendTrain;
 import deepwater.backends.RuntimeOptions;
+import deepwater.backends.tensorflow.models.TensorflowModel;
 import deepwater.datasets.ImageDataSet;
 import hex.DataInfo;
+import org.tensorflow.Graph;
 import water.H2O;
 import water.Iced;
 import water.Key;
@@ -55,7 +57,14 @@ final public class DeepWaterModelInfo extends Iced {
 
   void nukeModel() {
     if (_backend != null && getModel() != null) {
-      _backend.delete(getModel().get());
+      // TODO move this to Deepwater, change the API from delete() to deleteModel() and deleteBackend()
+      if(DeepWaterParameters.Backend.tensorflow.equals(parameters._backend)) {
+        TensorflowModel actualModel = (TensorflowModel) getModel().get();
+        actualModel.getGraph().close();
+        actualModel.setGraph(null);
+      } else {
+        _backend.delete(getModel().get());
+      }
     }
     getModel().set(null);
   }
