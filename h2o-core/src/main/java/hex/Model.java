@@ -1247,6 +1247,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
       double[] preds = _mb._work;  // Sized for the union of test and train classes
       int len = chks[0]._len;
+
+      setupBigScorePredict();
+
       for (int row = 0; row < len; row++) {
         double weight = weightsChunk!=null?weightsChunk.atd(row):1;
         if (weight == 0) {
@@ -1272,17 +1275,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             cpreds[c].addNum(p[c]);
         }
       }
+
+      closeBigScorePredict();
+
       if ( _j != null) _j.update(1);
     }
     @Override public void reduce( BigScore bs ) { if(_mb != null )_mb.reduce(bs._mb); }
     @Override protected void postGlobal() { if(_mb != null)_mb.postGlobal(); }
-
-    @Override protected void setupLocal() { setupBigScoreLocal(); }
-    @Override protected void closeLocal() { closeBigScoreLocal(); }
   }
 
-  protected void setupBigScoreLocal() {}
-  protected void closeBigScoreLocal() {}
+  protected void setupBigScorePredict() {}
+  protected void closeBigScorePredict() {}
 
   // OVerride this if your model needs data preprocessing (on the fly standardization, NA handling)
   protected double data(Chunk[] chks, int row, int col) {
