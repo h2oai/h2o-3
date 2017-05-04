@@ -171,14 +171,14 @@ By default, the following output displays:
 Classification and Regression
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-GLM can produce two categories of models: classication (binary classication only) and regression. Logistic regression is the GLM performing binary classication.
+GLM can produce two categories of models: classification and regression. Logistic regression is the GLM performing binary classification.
 
-The data type of the response column determines the model category. If the response is a categorical variable (also called a factor or an enum), then a classication model is created. If the response column data type is numeric (either integer or real), then a regression model is created.
+The data type of the response column determines the model category. If the response is a categorical variable (also called a factor or an enum), then a classification model is created. If the response column data type is numeric (either integer or real), then a regression model is created.
 
 Handling of Categorical Variables
 '''''''''''''''''''''''''''''''''
 
-If the response column is categorical, then a classication model is created. GLM only supports binary classication, so the response column can only have two levels. Categorical predictor columns may have more than two levels. We recommend letting GLM handle categorical columns, as it can take advantage of the categorical column for better performance and memory utilization.
+If the response column is categorical, then a classification model is created. GLM supports both binary and multinomial classification. For binary classification, the response column can only have two levels; for multinomial classification, the response column will have more than two levels. We recommend letting GLM handle categorical columns, as it can take advantage of the categorical column for better performance and memory utilization.
 
 We strongly recommend avoiding one-hot encoding categorical columns with any levels into many binary columns, as this is very inefficient. This is especially true for Python users who are used to expanding their categorical variables manually for other frameworks.
 
@@ -727,6 +727,24 @@ FAQ
    - for LBFGS, the default is number of classes (1 if not classification) * max(20, number of predictors /4 ) if no lambda search; it is number of classes * 100 * n-lambdas with lambda search.
    
   You will receive a warning if you reach the maximum number of iterations. In some cases, GLM  can end prematurely if it can not progress forward via line search. This typically happens when running a lambda search with IRLSM solver. Note that using CoordinateDescent solver fixes the issue.
+
+-  **Why do I receive different results when I run R's glm and H2O's glm?**
+
+  H2O's glm and R's glm do not run the same way and, thus, will provide different results. This is mainly due to the fact that H2O’s glm uses H2O math, H2O objects, and H2O distributed computing. Additionally, H2O's glm by default adds regularization, so it is essentially solving a different problem.
+
+-  **How can I get H2O's GLM to match R's `glm()` function?**
+
+  There are a few arguments you need to set in order to get H2O's GLM to match R's GLM because by default, they do not function the same way. To match R's GLM, you must set the following in H2O's GLM:
+
+  ::
+
+   solver = "IRLSM"
+   lambda = 0
+   remove_collinear_columns = TRUE
+   compute_p_values = TRUE
+
+  **Note:** ``beta_constraints`` must not be set.
+
 
 GLM Algorithm
 ~~~~~~~~~~~~~
