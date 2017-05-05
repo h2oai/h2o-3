@@ -26,7 +26,7 @@ def iris_automl():
     }
     aml = H2OAutoML(max_runtime_secs = 30,build_control=build_control)
 
-    print("AutoML run with x not provided with train, valid, and test")
+    print("AutoML (Multinomial) run with x not provided with train, valid, and test")
     aml.train(y="class", training_frame=train,validation_frame=valid, test_frame=test)
 
 if __name__ == "__main__":

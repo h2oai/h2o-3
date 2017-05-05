@@ -30,7 +30,7 @@ def prostate_automl():
     valid["CAPSULE"] = valid["CAPSULE"].asfactor()
     test["CAPSULE"] = test["CAPSULE"].asfactor()
 
-    print("AutoML run with x not provided with train, valid, and test")
+    print("AutoML (Binomial) run with x not provided with train, valid, and test")
     aml.train(y="CAPSULE", training_frame=train,validation_frame=valid, test_frame=test)
 
 if __name__ == "__main__":
