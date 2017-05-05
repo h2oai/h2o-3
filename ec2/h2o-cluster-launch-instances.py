@@ -42,7 +42,7 @@ instanceType = 'm3.2xlarge'
 instanceNameRoot = 'h2o-instance'
 # set to a string USD amount if you'd like to request spot instances
 # read more about spot here: https://aws.amazon.com/ec2/spot/
-spotBid = '0.01'
+spotBid = None
 
 
 # Options to help debugging.
