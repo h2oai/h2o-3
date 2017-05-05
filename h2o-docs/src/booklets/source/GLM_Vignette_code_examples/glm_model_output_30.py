@@ -1,1 +1,0 @@
-binomial_fit.pprint_coef()

@@ -10,6 +10,8 @@
 \usepackage{tabularx}
 \usepackage{booktabs}
 \usepackage{forest}
+\usepackage{url}
+\def\UrlBreaks{\do\/\do-\do_\do.}
 
 \begin{document}
 
@@ -33,7 +35,7 @@
 {\url{http://h2o.ai/resources}}
 
 \bigskip
-\monthname \hspace{1pt}  \the\year: First Edition 
+\monthname \hspace{1pt}  \the\year: Second Edition 
 \\%add front page image here? (wavy lines)
 \bigskip
 \end{center}
@@ -58,7 +60,7 @@ Mountain View, CA 94043\\
 \textcopyright \hspace{1pt} \the\year H2O.ai, Inc. All Rights Reserved. 
 \bigskip
 
-\monthname \hspace{1pt}  \the\year: First Edition
+\monthname \hspace{1pt}  \the\year: Second Edition
 \bigskip
 
 Photos by \textcopyright H2O.ai, Inc. 
@@ -110,13 +112,11 @@ Printed in the United States of America.
 \newpage
 \include{sw/sections/pysparkling}
 
-\newpage
 \include{sw/sections/usecase}
 
-\newpage
 \include{sw/sections/FAQ}
 
-\newpage\section{References}
+\section{References}
 
 \bibliographystyle{plainnat}  
 
