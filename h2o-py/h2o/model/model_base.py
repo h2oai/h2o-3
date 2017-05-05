@@ -977,7 +977,7 @@ class ModelBase(backwards_compatible()):
         """
         Plot the variable importance for a trained model.
 
-        :param num_of_features: the number of features shown in the plot.
+        :param num_of_features: the number of features shown in the plot (default is 10 or all if less than 10).
         :param server: ?
 
         :returns: None.
@@ -1006,9 +1006,13 @@ class ModelBase(backwards_compatible()):
         # specify the bar lengths
         val = scaled_importances
 
-        # check that num_of_features is an integer
+        # # check that num_of_features is an integer
+        # if num_of_features is None:
+        #     num_of_features = len(val)
+
+        # default to 10 or less features if num_of_features is not specified
         if num_of_features is None:
-            num_of_features = len(val)
+            num_of_features = min(len(val), 10)
 
         fig, ax = plt.subplots(1, 1, figsize=(14, 10))
         # create separate plot for the case where num_of_features == 1
@@ -1038,7 +1042,8 @@ class ModelBase(backwards_compatible()):
             ax.yaxis.set_ticks_position("left")
             ax.xaxis.set_ticks_position("bottom")
             plt.yticks(pos[0:num_of_features], feature_labels[0:num_of_features])
-            ax.margins(y=0.5)
+            plt.ylim([min(pos[0:num_of_features])- 1, max(pos[0:num_of_features])+1])
+            # ax.margins(y=0.5)
 
         # check which algorithm was used to select right plot title
         if self._model_json["algo"] == "gbm":
