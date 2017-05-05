@@ -98,7 +98,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       Frame specTrainFrame = _hyperSpaceWalker.getParams().train();
       Frame oldTrainFrame = grid.getTrainingFrame();
       if (oldTrainFrame != null && !specTrainFrame._key.equals(oldTrainFrame._key) ||
-          specTrainFrame.checksum() != oldTrainFrame.checksum())
+          oldTrainFrame != null && specTrainFrame.checksum() != oldTrainFrame.checksum())
         throw new H2OIllegalArgumentException("training_frame", "grid", "Cannot append new models to a grid with different training input");
       grid.write_lock(_job);
     } else {
