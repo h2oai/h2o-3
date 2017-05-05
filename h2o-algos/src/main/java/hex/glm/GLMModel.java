@@ -910,7 +910,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       int N = _dinfo.fullN()+1;
       double [] beta = sm.beta;
       if(sm.idxs != null)
-        beta = ArrayUtils.expandAndScatter(beta,nclasses()*(_dinfo.fullN()+1),sm.idxs);
+        beta = ArrayUtils.scatter(nclasses()*(_dinfo.fullN()+1),beta,sm.idxs);
       for(int i = 0; i < res.length; ++i)
         res[i] = Arrays.copyOfRange(beta,i*N,(i+1)*N);
       return res;

@@ -779,9 +779,18 @@ public abstract class GLMTask  {
         }
       }
       if(rows._sparse && _dinfo._normSub != null){ // adjust for sparse zeros (skipped centering)
-        int start = Arrays.binarySearch(newCols,ns);
-        if(start < 0) start = -start-1;
-        for(int k = start; k < gram.length; ++k){
+        int numstart = Arrays.binarySearch(newCols,ns);
+        if(numstart < 0) numstart = -numstart-1;
+        for(int k = 0; k < numstart; ++k){
+          int i = newCols[k];
+          double [] row = gram[k];
+          for(int j = ns; j < row.length-1; ++j){
+            double mean_j = _dinfo.normSub(j-ns);
+            double scale_j = _dinfo.normMul(j-ns);
+            gram[k][j] = gram[k][j] - mean_j*scale_j*wsum[i];
+          }
+        }
+        for(int k = numstart; k < gram.length; ++k){
           int i = newCols[k];
           double mean_i = _dinfo.normSub(i-ns);
           double scale_i = _dinfo.normMul(i-ns);
@@ -790,7 +799,7 @@ public abstract class GLMTask  {
            gram[k][j]-=mean_i*scale_i*wsum[j];
           }
           //nums
-          for(int j = _dinfo.numStart(); j < gram[k].length-1; ++j){
+          for(int j = ns; j < gram[k].length-1; ++j){
             double mean_j = _dinfo.normSub(j-ns);
             double scale_j = _dinfo.normMul(j-ns);
             gram[k][j] = gram[k][j] - mean_j*scale_j*wsum[i] - mean_i*scale_i*wsum[j] + mean_i*mean_j*scale_i*scale_j*wsum[wsum.length-1];
