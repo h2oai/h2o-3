@@ -204,6 +204,16 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     throw new UnsupportedOperationException("`offset` column is not supported");
   }
 
+  /** Subclasses implement calibration of class probabilities. The input is array of
+   *  predictions returned by the scoring function (score0). Supports classification
+   *  models that were trained with calibration enabled. Original probabilities
+   *  in the predictions array are overwritten by their corresponding calibrated
+   *  counterparts. Return false if model doesn't support calibration.
+   */
+  public boolean calibrateClassProbabilities(double preds[]) {
+    return false;
+  }
+
   /*
   // Does the mapping lookup for every row, no allocation.
   // data and preds arrays are pre-allocated and can be re-used for every row.
