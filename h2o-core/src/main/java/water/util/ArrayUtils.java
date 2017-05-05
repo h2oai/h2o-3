@@ -1235,12 +1235,6 @@ public class ArrayUtils {
     return res;
   }
 
-  public static double [] expandAndScatter(double [] ary, int N, int [] ids) {
-    assert ary.length == ids.length:"ary.length = " + ary.length + " != " + ids.length + " = ids.length";
-    double [] res = MemoryManager.malloc8d(N);
-    for(int i = 0; i < ids.length; ++i) res[ids[i]] = ary[i];
-    return res;
-  }
 
 
   /**
@@ -1682,5 +1676,19 @@ public class ArrayUtils {
         res[k++] = x[i];
     }
     return Arrays.copyOf(res,k);
+  }
+
+  public static double[] scatter(int N, double[] vals, int[] ids) {
+    double [] res = new double[N];
+    for(int i = 0; i < ids.length; ++i)
+      res[ids[i]] = vals[i];
+    return res;
+  }
+  public static double[] scatter(int N, double[] vals, int[] ids, double filler) {
+    double [] res = new double[N];
+    Arrays.fill(res,filler);
+    for(int i = 0; i < ids.length; ++i)
+      res[ids[i]] = vals[i];
+    return res;
   }
 }

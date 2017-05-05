@@ -213,7 +213,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
   private transient DataInfo _validDinfo;
   // time per iteration in ms
-
   private static class ScoringHistory {
     private ArrayList<Integer> _scoringIters = new ArrayList<>();
     private ArrayList<Long> _scoringTimes = new ArrayList<>();
@@ -651,13 +650,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       } while(progress(beta,_state.gslvr().getGradient(beta)));
     }
 
-    long _gramAccum;
-    private void fitLSM(Solver s){long t0 = System.currentTimeMillis();
+    private void fitLSM(Solver s){
+      long t0 = System.currentTimeMillis();
       ComputationState.GramXY gramXY = _state.computeGram(null,s);
-      double [][] xx = gramXY.gram.getXX();
       double [] xy = gramXY.xy;
-      long tdelta = (System.currentTimeMillis()-t0);
-      Log.info(LogMsg("Gram computed in " + tdelta + "ms" + ", overall gram time accumulation = " + (_gramAccum+=tdelta)));
+      Log.info(LogMsg("Gram computed in " + (System.currentTimeMillis()-t0) + "ms"));
       double [] beta = s == Solver.COORDINATE_DESCENT?COD_solve(gramXY,_state._alpha,_state.lambda()):ADMM_solve(gramXY.gram,gramXY.xy);
       // compute mse
       double [] x = ArrayUtils.mmul(gramXY.gram.getXX(),beta);
@@ -680,7 +677,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           iterCnt++;
           long t1 = System.currentTimeMillis();
           ComputationState.GramXY gram = _state.computeGram(betaCnd,s);
-//          GLMIterationTask t = new GLMTask.GLMIterationTask(_job._key, _state.activeData(), glmw, betaCnd).doAll(_state.activeData()._adaptedFrame);
           long t2 = System.currentTimeMillis();
           if (!_state._lsNeeded && (Double.isNaN(gram.likelihood) || _state.objective(gram.beta, gram.likelihood) > _state.objective() + _parms._objective_epsilon)) {
             _state._lsNeeded = true;
@@ -814,25 +810,18 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       double wsumInv, wsumuInv;
       double [] denums;
       double [] betaold = beta.clone();
-      int numStart = activeData.numStart();
       int iter2=0; // total cd iters
       if(_codVecs == null) {
         _codVecs = new Frame(new String[]{"w", "zTilda", "d0", "d1"}, _state.activeData()._adaptedFrame.anyVec().makeVolatileDoubles(0, 0, 1, 1));
         _codVecs.add(new String[]{"c0", "c1"}, _state.activeData()._adaptedFrame.anyVec().makeVolatileInts(new int[]{0, 0}));
       }
-//      Frame codVecs2 = new Frame(new String[]{"w", "z", "zTilda", "d0", "d1"}, _state.activeData()._adaptedFrame.anyVec().makeVolatileDoubles(0, 0, 0, 1, 1));
-//      codVecs2.add(new String[]{"c0", "c1"}, _state.activeData()._adaptedFrame.anyVec().makeVolatileInts(new int[]{0, 0}));
       final Frame fr0 = new Frame(_state.activeData()._adaptedFrame).add(_codVecs);
-//      final Frame frx0 = new Frame(_state.activeData()._adaptedFrame).add(codVecs2);
       long startTimeTotalNaive = System.currentTimeMillis();
       double sparseRatio = FrameUtils.sparseRatio(activeData._adaptedFrame);
-      System.out.println("sparseRatio = " + sparseRatio);
       boolean sparse =  sparseRatio <= .125;
       long t0 = System.currentTimeMillis();
       GLMGenerateWeightsTask gt = new GLMGenerateWeightsTask(_job._key,sparse, _state.activeData(), _parms, beta).doAll(fr0);
       long tdelta = System.currentTimeMillis() - t0;
-      System.out.println("gen weights done in " + tdelta + " ms, cumulative sum = " + (SUM_GENW += tdelta) + "ms");
-//      GLMGenerateWeightsTask gtx = new GLMGenerateWeightsTask(_job._key,false, _state.activeData(), _parms, beta).doAll(frx0);
       int iter1Sum = 0;
       int iter_x = 0;
       double gamma = beta[beta.length-1]; // scalar offset, can be intercept and/or sparse offset compensation for skipped centering
@@ -841,15 +830,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       double [] beta_old_outer = beta.clone();
       // generate new IRLS iteration
       while (iter2++ < 50) {
-//        GLMIterationTask taskX = new GLMIterationTask(null,activeData,new GLMWeightsFun(_parms),beta).doAll(activeData._adaptedFrame);
-//        double [][] xx = taskX._gram.getXX();
-//        double []diagX =  new double[xx.length];
-//
-//        for(int i = 0; i < xx.length; ++i)
-//          diagX[i] = xx[i][i];
-//        System.out.println("iter2 = " + iter2 + ", diag and wxx =");
-//        System.out.println(Arrays.toString(diagX));
-//        System.out.println(Arrays.toString(gt.wxx));
         denums = gt.denums;
         wsumx = gt.wsum;
         wsumux = gt.wsumu;
@@ -860,11 +840,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           denums[i] = 1.0/(denums[i]*wsumuInv + l2pen);
         int iter1 = 0;
         final Frame fr1 = new Frame(_codVecs);
-//        final Frame frx1 = new Frame(codVecs2);
         final int xjIdx = fr1.numCols();
         fr1.add("xj", /* just a placeholder */ _codVecs.anyVec()); // add current variable col
-//        frx1.add("xj", /* just a placeholder */ codVecs2.anyVec()); // add current variable col
-//        double objx_old = Double.POSITIVE_INFINITY;
         double RES = gt.res; // sum of weighted residual:   sum_i{w_i*(y_i-ytilda_i)}
         while (iter1++ < 1000) {
           if (activeData._cats > 0) {
@@ -892,26 +869,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 gamma += delta*betaold[currIdx];
                 fr1.replace(xjIdx, activeData._adaptedFrame.vec(activeData._cats + i)); // add current variable col
                 beta[currIdx] = 0;
-//                frx1.replace(xjIdx, activeData._adaptedFrame.vec(activeData._cats + i)); // add current variable col
-//                GLMCoordinateDescentTaskSeqNaiveNum tskx = new GLMCoordinateDescentTaskSeqNaiveNum((1 - iter_x), beta[beta.length-1], betaold[currIdx], prevIdx >= activeData.numStart() ? beta[prevIdx] : 0, activeData.normMul(i), activeData.normSub(i),0).doAll(frx1);
                 GLMCoordinateDescentTaskSeqNaiveNumSparse tsk = new GLMCoordinateDescentTaskSeqNaiveNumSparse((iter_x = 1 - iter_x), gamma, betaold[currIdx], prevIdx >= activeData.numStart() ? beta[prevIdx]-betaold[prevIdx] : 0, activeData.normMul(i), 0).doAll(fr1);
                 // sparse task calculates only residual updates across the non-zeros
-
                 double RES_NEW = RES + tsk._residual + tsk._residualNew - delta*betaold[currIdx]*wsumx;
                 // adjust for skipped centering
                 // sum_i {w_i*(x_i-delta)*(r_i-gamma)}
                 //   := sum_i {w_i*x_i*r_i} - gamma sum_i{w_i*x_i} - delta * sum_i{w_i*r_i} + gamma*delta sum_i {w_i}
                 //   := tsk._residual - gamma*sum_i{w_i*x_i} - delta*RES
-//                double x = tsk._residual - gamma*gt.wx[currIdx] - delta*RES;
                 double x = tsk._res - delta*RES_NEW;
-//                System.out.println("x[" + i   + "] = " + x + ", _res = " + tsk._res + " RES_NEW = " + RES_NEW);
-//                double y = tsk._residual - delta*tskx._residual;
-//                System.out.println(iter2 + ":" + iter1 + ": " + i );
-//                System.out.println("RES = " + RES);
-//                System.out.println("RES1 = " + tskx._residual);
-//                System.out.println("x0 = " + x);
-//                System.out.println("y1 = " + tskx._residual);
-//                System.out.println("y2 = " + y);
                 double bnew = ADMM.shrinkage(x * wsumuInv,l1pen) * denums[currIdx];
                 RES += tsk._residual + delta*wsumx*(bnew-betaold[currIdx]);
                 beta[currIdx] = bnew;
@@ -922,11 +887,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 GLMCoordinateDescentTaskSeqNaiveNumSparse tsk = new GLMCoordinateDescentTaskSeqNaiveNumSparse((iter_x = 1 - iter_x), gamma, 0, beta[activeData.numStart() + activeData.numNums() - 1] - betaold[activeData.numStart() + activeData.numNums() - 1], 0, 0).doAll(fr1);
                 RES += tsk._residual;
               }
-//              GLMCoordinateDescentTaskSeqNaiveNum tskx = new GLMCoordinateDescentTaskSeqNaiveNum(iter_x, beta[beta.length-1], 0, beta[activeData.numStart() + activeData.numNums() - 1], 0, 0,0).doAll(frx1);
-//              System.out.println("RESX = " + tsk._residual);
-//              System.out.println("RESY = " + tskx._residual);
-
-//              MSE = tsk._mse;
             } else {
               for (int i = 0; i < activeData.numNums(); i++) {
                 int currIdx = i + activeData.numStart();
@@ -943,7 +903,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           if (_parms._family != Family.gaussian && !Double.isNaN(RES)) { // TODO handle no intercept case
             beta[beta.length - 1] = RES*wsumInv + betaold[beta.length-1];
             double icptdiff = beta[beta.length - 1] - betaold[beta.length-1];
-//            MSE = MSE - 2*icptdiff*RES + icptdiff*icptdiff*wsumx;
             gamma += icptdiff;
             RES = 0;
           }
@@ -1024,7 +983,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _vcov = inv;
         for(int i = 0; i < zvalues.length; ++i)
           zvalues[i] = beta[i]/Math.sqrt(inv[i][i]);
-        _model.setZValues(expandVec(zvalues,_state.activeData()._activeCols,_dinfo.fullN()+1,Double.NaN),se, seEst);
+        _model.setZValues(ArrayUtils.scatter(_dinfo.fullN()+1, zvalues,_state.activeData()._activeCols,Double.NaN),se, seEst);
       }
     }
 
@@ -1319,9 +1278,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private String  LogMsg(String msg) {return "GLM[dest=" + dest() + ", " + _state + "] " + msg;}
 
 
-  private static final double[] expandVec(double[] beta, final int[] activeCols, int fullN) {
-    return expandVec(beta, activeCols, fullN, 0);
-  }
+
 
   private static final double[] expandVec(double[] beta, final int[] activeCols, int fullN, double filler) {
     assert beta != null;
@@ -1386,9 +1343,19 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   }
 
   long COD_time;
+
   public double [] COD_solve(ComputationState.GramXY gram, double alpha, double lambda) {
-    double [][] xx = gram.gram.getXX();
-    double [] xy = gram.xy;
+    double [] res = COD_solve(gram.gram.getXX(),gram.xy,gram.grads,gram.newCols,alpha,lambda);
+    gram.newCols = new int[0];
+    return res;
+  }
+
+  public double [] COD_solve(ComputationState.CovariateMatrix cm, double alpha, double lambda) {
+    return COD_solve(cm._xx,cm._xy,cm._grads,cm._newCols,alpha,lambda);
+  }
+
+
+  private double [] COD_solve(double [][] xx, double [] xy, double [] grads, int [] newCols, double alpha, double lambda) {
     double wsumInv = 1.0/(xx[xx.length-1][xx.length-1]);
     final double betaEpsilon = _parms._beta_epsilon*_parms._beta_epsilon;
     double l1pen = lambda * alpha;
@@ -1421,11 +1388,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
     Log.info("COD::nzs done in " + (System.currentTimeMillis()-t0) + "ms, found " + sparseCnt + " sparse columns");
     final BetaConstraint bc = _state.activeBC();
-    double [] grads = gram.grads;
     double [] beta = _state.beta().clone();
     int numStart = activeData.numStart();
-    if(gram.newCols != null) {
-      for (int id : gram.newCols) {
+    if(newCols != null) {
+      for (int id : newCols) {
         grads[id] += xy[id] - ArrayUtils.innerProduct(xx[id], beta) + xx[id][id] * beta[id];
         double b = bc.applyBounds(ADMM.shrinkage(grads[id], l1pen) * diagInv[id], id);
         if (b != 0) {
@@ -1433,7 +1399,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           beta[id] = b;
         }
       }
-      gram.newCols = new int[0];
     } else {
       for(int i = 0; i < nzs.length; ++i) {
         if (nzs[i] != null) {

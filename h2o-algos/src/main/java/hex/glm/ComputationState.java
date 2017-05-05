@@ -38,13 +38,14 @@ public final class ComputationState {
   private double [] _gradient_beta;
   private double _likelihood;
   private DataInfo _activeData;
-  int [] _oldActiveCols;
   private BetaConstraint _activeBC = null;
   private double[] _beta; // vector of coefficients corresponding to active data
   final DataInfo _dinfo;
   private final Job _job;
   private int _activeClass = -1;
   protected double _obj_reg = 1;
+  int [] _oldActiveCols;
+
 
 
   /**
@@ -207,9 +208,9 @@ public final class ComputationState {
       assert _beta.length == cols.length;
     } else {
       if(_activeData.fullN() < _dinfo.fullN()){
-        _beta = ArrayUtils.expandAndScatter(_beta, _dinfo.fullN() + 1, _activeData._activeCols);
+        _beta = ArrayUtils.scatter(_dinfo.fullN() + 1,_beta , _activeData._activeCols);
         if(_u != null)
-          _u =  ArrayUtils.expandAndScatter(_u, _dinfo.fullN() + 1, _activeData._activeCols);
+          _u =  ArrayUtils.scatter(_dinfo.fullN() + 1, _u, _activeData._activeCols);
         _ginfo2 = null;
       }
       _activeData = _dinfo;
@@ -220,9 +221,48 @@ public final class ComputationState {
 
   private GLMModel.GLMWeightsFun _glmw;
 
+  GramXY _fulGram;
   GramXY _currGram;
 
 
+  public static class CovariateMatrix {
+    final double [][] _xx;
+    final double [] _xy;
+    public final double[] _grads;
+    public final int [] _newCols;
+
+    public CovariateMatrix(double [][] xx, double [] xy, double [] grads, int [] newCols){
+      _xx = xx;
+      _xy = xy;
+      _grads = grads;
+      _newCols = newCols;
+    }
+
+    public CovariateMatrix select(final int [] ids, int [] newIds){
+      final double [][] xx = new double[ids.length][];
+      double [] xy = ArrayUtils.select(_xy,ids);
+      double [] grads = ArrayUtils.select(_grads,ids);
+      for(int i = 0; i < ids.length; ++i)
+        xx[i] = ArrayUtils.select(_xx[ids[i]],ids);
+      return new CovariateMatrix(xx,xy,grads,newIds);
+    }
+
+    public void set(double [][] xx, double [] xy,int [] newids, int [] allids){
+      int k = 0;
+      for(int i = 0; i < allids.length; ++i){
+        int rowId = allids[i];
+        if(_xx[rowId] != null){
+          double [] x = _xx[rowId];
+          for(int j = 0; j < newids.length; ++j)
+            x[newids[j]] = xx[j][i];
+        } else if(allids[i] == newids[k]){
+          _xx[rowId] = ArrayUtils.scatter(_xx.length,xx[k],allids);
+          _xy[rowId] = xy[k];
+          k++;
+        }
+      }
+    }
+  }
   public static final class GramXY {
     public final Gram gram;
     final double[] beta;
@@ -232,6 +272,7 @@ public final class ComputationState {
     public final double [] grads;
     public double yy;
     public final double likelihood;
+
 
 
     public GramXY(Gram gram, double[] xy, double [] grads, double[] beta, int[] activeCols, int [] newActiveCols, double yy, double likelihood) {
@@ -266,58 +307,26 @@ public final class ComputationState {
       final double[][] xxCacheNew = new double[newActiveCols.length][];
       final double[] xyNew = new double[xxCacheNew.length];
       final double[] gradsNew = new double[xxCacheNew.length];
-      if(newColsIds.length > 1 && newActiveCols.length >= 100){
-        RecursiveAction [] ras = new RecursiveAction[newColsIds.length+1];
-        for (int k = 0; k < newColsIds.length; ++k) {
-          final int fk = k;
-          ras[k] = new RecursiveAction() {
-            @Override
-            protected void compute() {
-              int j = newColsIds[fk];
-              xxCacheNew[j] = xxUpdate[fk];
-              xyNew[j] = xyUpdate[fk];
-              for (int i = fk == 0 ? 0 : newColsIds[fk - 1] + 1; i < j; i++) {
-                xxCacheNew[i] = mergeRow(i, oldGram.gram._xxCache[i - fk], new double[newActiveCols.length], newColsIds, xxUpdate);
-                xyNew[i] = oldGram.xy[i - fk];
-                gradsNew[i] = oldGram.grads[i - fk];
-              }
-            }
-          };
-        }
-        ras[ras.length-1] = new RecursiveAction() {
-          @Override
-          protected void compute() {
-            int k = newColsIds.length;
-            for (int i = newColsIds[newColsIds.length - 1] + 1; i < gradsNew.length; ++i) {
-              xxCacheNew[i] = mergeRow(i, oldGram.gram._xxCache[i - k], new double[newActiveCols.length], newColsIds, xxUpdate);
-              xyNew[i] = oldGram.xy[i - k];
-              gradsNew[i] = oldGram.grads[i - k];
-            }
-          }
-        };
-        ForkJoinTask.invokeAll(ras);
-      } else {
-        for (int k = 0; k < newColsIds.length; ++k) {
-          int j = newColsIds[k];
-          xxCacheNew[j] = xxUpdate[k];
-          xyNew[j] = xyUpdate[k];
-          for (int i = k == 0 ? 0 : newColsIds[k - 1] + 1; i < j; i++) {
-            xxCacheNew[i] = mergeRow(i, oldGram.gram._xxCache[i - k], new double[newActiveCols.length], newColsIds, xxUpdate);
-            xyNew[i] = oldGram.xy[i - k];
-            gradsNew[i] = oldGram.grads[i - k];
-          }
-        }
-        int k = newColsIds.length;
-        for (int i = newColsIds[newColsIds.length - 1] + 1; i < gradsNew.length; ++i) {
+      for (int k = 0; k < newColsIds.length; ++k) {
+        int j = newColsIds[k];
+        xxCacheNew[j] = xxUpdate[k];
+        xyNew[j] = xyUpdate[k];
+        for (int i = k == 0 ? 0 : newColsIds[k - 1] + 1; i < j; i++) {
           xxCacheNew[i] = mergeRow(i, oldGram.gram._xxCache[i - k], new double[newActiveCols.length], newColsIds, xxUpdate);
           xyNew[i] = oldGram.xy[i - k];
           gradsNew[i] = oldGram.grads[i - k];
         }
       }
+      int k = newColsIds.length;
+      for (int i = newColsIds[newColsIds.length - 1] + 1; i < gradsNew.length; ++i) {
+        xxCacheNew[i] = mergeRow(i, oldGram.gram._xxCache[i - k], new double[newActiveCols.length], newColsIds, xxUpdate);
+        xyNew[i] = oldGram.xy[i - k];
+        gradsNew[i] = oldGram.grads[i - k];
+      }
       return new GramXY(new Gram(xxCacheNew), xyNew, gradsNew, beta, newActiveCols, newColsIds, oldGram.yy, oldGram.likelihood);
     }
   }
-  private GramXY computeNewGram(DataInfo activeData, double [] beta, GLMParameters.Solver s){
+  protected GramXY computeNewGram(DataInfo activeData, double [] beta, GLMParameters.Solver s){
     if(_glmw == null) _glmw = new GLMModel.GLMWeightsFun(_parms);
     GLMTask.GLMIterationTask gt = new GLMTask.GLMIterationTask(_job._key, activeData, _glmw, beta,_activeClass).doAll(activeData._adaptedFrame);
     gt._gram.mul(_obj_reg);
@@ -325,11 +334,10 @@ public final class ComputationState {
     int [] activeCols = activeData.activeCols();
     int [] zeros = gt._gram.findZeroCols();
     GramXY res;
-    if(zeros.length > 0) {
-      throw H2O.unimpl();
-//      gt._gram.dropCols(zeros);
-//      res = new ComputationState.GramXY(gt._gram,ArrayUtils.removeIds(gt._xy, zeros),gt._beta == null?null:ArrayUtils.removeIds(gt._beta, zeros),activeCols,gt._yy,gt._likelihood);
-//      removeCols(zeros);
+    if(_parms._family != Family.multinomial && zeros.length > 0) {
+      gt._gram.dropCols(zeros);
+      res = new ComputationState.GramXY(gt._gram,ArrayUtils.removeIds(gt._xy, zeros),new double [gt._xy.length],gt._beta == null?null:ArrayUtils.removeIds(gt._beta, zeros),activeCols,null,gt._yy,gt._likelihood);
+      removeCols(zeros);
     } else res = new GramXY(gt._gram,gt._xy,new double [gt._xy.length],beta == null?null:beta,activeCols,null,gt._yy,gt._likelihood);
     if(s == GLMParameters.Solver.COORDINATE_DESCENT) {
       res.gram.getXX();
@@ -337,7 +345,7 @@ public final class ComputationState {
     return res;
   }
 
-  long _incrementalGramTimeAccum;
+
   // get cached gram or incrementally update or compute new one
   public GramXY computeGram(double [] beta, GLMParameters.Solver s){
     if(_parms._family == Family.multinomial) // no caching
@@ -366,13 +374,10 @@ public final class ComputationState {
         }
       }
       if(matches && newColsIds.length > 0) {
-        long t0 = System.currentTimeMillis();
         GLMTask.GLMIncrementalGramTask gt = new GLMTask.GLMIncrementalGramTask(newColsIds, activeData, _glmw, beta).doAll(activeData._adaptedFrame); // dense
         for (double[] d : gt._gram)
           ArrayUtils.mult(d, _obj_reg);
         ArrayUtils.mult(gt._xy, _obj_reg);
-        long tdelta = (System.currentTimeMillis() - t0);
-        Log.info("incremental gram task of size " + gt._gram.length + " x " + gt._gram[0].length + " done in " + tdelta + "ms, overall incremental gram time = " + (_incrementalGramTimeAccum += tdelta));
         // glue the update and old gram together
         return _currGram = GramXY.addCols(beta, activeCols, newColsIds, _currGram, gt._gram, gt._xy);
       }
@@ -383,8 +388,6 @@ public final class ComputationState {
   public boolean _lsNeeded = false;
 
   private DataInfo [] _activeDataMultinomial;
-//  private int [] _classOffsets = new int[]{0};
-
 
   public DataInfo activeDataMultinomial(int c) {return _activeDataMultinomial != null?_activeDataMultinomial[c]:_dinfo;}
 
@@ -655,7 +658,6 @@ public final class ComputationState {
   public double [] expandBeta(double [] beta) {
     if(_activeData._activeCols == null)
       return beta;
-    return ArrayUtils.expandAndScatter(beta, (_dinfo.fullN() + 1) * _nclasses,_activeData._activeCols);
+    return ArrayUtils.scatter((_dinfo.fullN() + 1) * _nclasses, beta,_activeData._activeCols);
   }
-
 }
