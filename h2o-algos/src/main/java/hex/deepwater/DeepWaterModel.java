@@ -511,33 +511,33 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     }
   }
 
-  final private AtomicInteger backendCount = new AtomicInteger(0);
+  private int backendCount = 0;
 
   @Override
   protected void setupBigScorePredict() {
-    backendCount.incrementAndGet();
-    if(null == model_info()._backend) {
-      synchronized (backendCount) {
-        if(null == model_info()._backend){
-          model_info().javaToNative();
-        }
+    synchronized (model_info()) {
+      backendCount++;
+      // Initial init of backend + model, backend is shared across threads
+      if (null == model_info()._backend) {
+        model_info().javaToNative();
       }
-    }
-    if(null == model_info().getModel().get()) {
-      model_info().initModel();
+      // Backend already initialized, initialize model per thread
+      if (null == model_info().getModel().get()) {
+        model_info().initModel();
+      }
     }
   }
 
   @Override
   protected void closeBigScorePredict() {
-    if(0 == backendCount.decrementAndGet()) {
-      synchronized (backendCount) {
-        if(0 == backendCount.get()){
-          model_info().nukeBackend();
-        }
+    synchronized (model_info()) {
+      if (0 == --backendCount) {
+        // No more threads using the backend, nuke backend + model
+        model_info().nukeBackend();
+      } else if (null != model_info().getModel().get()) {
+        // Backend still used by other threads, nuke only model
+        model_info().nukeModel();
       }
-    } else if(null != model_info().getModel().get()) {
-      model_info().nukeModel();
     }
   }
 

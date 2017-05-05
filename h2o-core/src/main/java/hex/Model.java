@@ -1248,35 +1248,38 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       double[] preds = _mb._work;  // Sized for the union of test and train classes
       int len = chks[0]._len;
 
-      setupBigScorePredict();
+      try {
+        setupBigScorePredict();
 
-      for (int row = 0; row < len; row++) {
-        double weight = weightsChunk!=null?weightsChunk.atd(row):1;
-        if (weight == 0) {
+        for (int row = 0; row < len; row++) {
+          double weight = weightsChunk != null ? weightsChunk.atd(row) : 1;
+          if (weight == 0) {
+            if (_makePreds) {
+              for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
+                cpreds[c].addNum(0);
+            }
+            continue;
+          }
+          double offset = offsetChunk != null ? offsetChunk.atd(row) : 0;
+          double[] p = score0(chks, weight, offset, row, tmp, preds);
+          if (_computeMetrics) {
+            if (isSupervised()) {
+              actual[0] = (float) responseChunk.atd(row);
+            } else {
+              for (int i = 0; i < actual.length; ++i)
+                actual[i] = (float) data(chks, row, i);
+            }
+            _mb.perRow(preds, actual, weight, offset, Model.this);
+          }
           if (_makePreds) {
             for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
-              cpreds[c].addNum(0);
+              cpreds[c].addNum(p[c]);
           }
-          continue;
         }
-        double offset = offsetChunk!=null?offsetChunk.atd(row):0;
-        double [] p = score0(chks, weight, offset, row, tmp, preds);
-        if (_computeMetrics) {
-          if(isSupervised()) {
-            actual[0] = (float)responseChunk.atd(row);
-          } else {
-            for(int i = 0; i < actual.length; ++i)
-              actual[i] = (float)data(chks,row,i);
-          }
-          _mb.perRow(preds, actual, weight, offset, Model.this);
-        }
-        if (_makePreds) {
-          for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
-            cpreds[c].addNum(p[c]);
-        }
+      } finally {
+        closeBigScorePredict();
       }
 
-      closeBigScorePredict();
 
       if ( _j != null) _j.update(1);
     }

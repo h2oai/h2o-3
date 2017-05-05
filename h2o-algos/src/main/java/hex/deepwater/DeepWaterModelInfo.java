@@ -56,25 +56,15 @@ final public class DeepWaterModelInfo extends Iced {
   volatile boolean _unstable = false;
 
   void nukeModel() {
-    if (_backend != null && getModel() != null) {
-      // TODO move this to Deepwater, change the API from delete() to deleteModel() and deleteBackend()
-      if(DeepWaterParameters.Backend.tensorflow.equals(parameters._backend)) {
-        TensorflowModel actualModel = (TensorflowModel) getModel().get();
-        actualModel.getGraph().close();
-        actualModel.setGraph(null);
-      } else {
-        _backend.delete(getModel().get());
-      }
+    if (_backend != null && getModel() != null && getModel().get() != null) {
+      _backend.delete(getModel().get());
     }
     getModel().set(null);
   }
 
   void nukeBackend() {
-    if (_backend != null && getModel() != null) {
-      _backend.delete(getModel().get());
-    }
+    nukeModel();
     _backend = null;
-    getModel().set(null);
   }
 
   void saveNativeState(String path, int iteration) {
