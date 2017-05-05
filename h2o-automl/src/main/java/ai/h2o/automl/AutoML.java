@@ -382,6 +382,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     int gridLastCount = 0;
 
     while (subJob.isRunning()) {
+      if(parentJob.stop_requested()){
+        Log.info("Skipping " + name + " due to Job cancel");
+        subJob.stop();
+      }
       long workedSoFar = Math.round(subJob.progress() * workContribution);
       cumulative += workedSoFar;
 
@@ -425,6 +429,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     parentJob.update(workContribution - lastWorkedSoFar);
 
     userFeedback.info(stage, name + " complete");
+    //FIXME Bad call here. Should revist later
     try { jobs.remove(subJob); } catch (NullPointerException npe) {} // stop() can null jobs; can't just do a pre-check, because there's a race
 
   }
