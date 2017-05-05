@@ -12,6 +12,7 @@ import water.util.Log;
 
 import javax.imageio.ImageIO;
 import java.io.File;
+import java.io.FilenameFilter;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.Arrays;
@@ -323,8 +324,9 @@ public class DeepWaterParameters extends Model.Parameters {
         dl.error("_network_definition_file", "network_definition_file cannot be provided if a pre-defined network is chosen.");
     }
     if (_network_parameters_file != null && !_network_parameters_file.isEmpty()) {
-      if (!new File(_network_parameters_file).exists())
+      if (!DeepWaterModelInfo.paramFilesExist(_network_parameters_file)) {
         dl.error("_network_parameters_file", "network_parameters_file " + _network_parameters_file + " not found.");
+      }
     }
     if (_checkpoint!=null) {
       DeepWaterModel other = (DeepWaterModel) _checkpoint.get();
