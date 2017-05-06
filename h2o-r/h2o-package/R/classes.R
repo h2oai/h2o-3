@@ -612,3 +612,15 @@ setMethod("summary", "H2OGrid",
               cat("\nNote: To see exception stack traces please pass parameter `show_stack_traces = T` to this function.\n")
             }
 })
+
+#'
+#' The H2OAutoML class.
+#'
+#' This class represents an H2OAutoML object
+#'
+#' @aliases H2OAutoML
+#' @export
+setClass("H2OAutoML",slots = c(project_name="character",
+                               user_feedback="list",
+                               leader="H2OModel",
+                               leaderboard="data.frame"))

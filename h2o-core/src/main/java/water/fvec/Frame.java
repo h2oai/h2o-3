@@ -73,11 +73,22 @@ public class Frame extends Lockable<Frame> {
     return false;
   }
 
-  public boolean hasInfs(){
+  public boolean hasInfs() {
     // return if frame contains positive infinity
-    for(Vec v:bulkRollups())
-      if(v.pinfs()>0 || v.ninfs()>0) return true;
+    for (Vec v : bulkRollups())
+      if (v.pinfs() > 0 || v.ninfs() > 0) return true;
     return false;
+  }
+  private long _naCnt = -1;
+  synchronized public long naCount() {
+    if (_naCnt !=- 1) return _naCnt;
+    _naCnt = 0;
+    for(Vec v: vecs()) _naCnt += v.naCnt();
+    return _naCnt;
+  }
+
+  public double naFraction() {
+    return naCount() / (numCols() * numRows());
   }
 
   /** Creates an internal frame composed of the given Vecs and default names.  The frame has no key. */

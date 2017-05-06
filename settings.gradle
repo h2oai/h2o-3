@@ -20,6 +20,7 @@ include 'h2o-avro-parser'
 include 'h2o-orc-parser'
 include 'h2o-parquet-parser'
 include 'h2o-jaas-pam'
+include 'h2o-automl'
 
 // GRPC support
 if ("true".equals(System.getenv("H2O_BUILD_GRPC"))) {

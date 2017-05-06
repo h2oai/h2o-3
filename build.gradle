@@ -67,7 +67,8 @@ ext {
       project(':h2o-avro-parser'),
       project(':h2o-orc-parser'),
       project(':h2o-parquet-parser'),
-      project(':h2o-jaas-pam')
+      project(':h2o-jaas-pam'),
+      project(':h2o-automl')
     ]
 
     javaProjects = [
@@ -84,7 +85,8 @@ ext {
       project(':h2o-avro-parser'),
       project(':h2o-orc-parser'),
       project(':h2o-parquet-parser'),
-      project(':h2o-jaas-pam')
+      project(':h2o-jaas-pam'),
+      project(':h2o-automl')
     ]
 
     scalaProjects = [

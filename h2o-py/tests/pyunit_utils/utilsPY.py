@@ -2976,3 +2976,11 @@ def model_seed_sorted_by_time(model_list):
                 break
 
     return model_seed_list
+
+def check_ignore_cols_automl(models,names,x,y):
+    for model in models:
+        if "StackedEnsemble" in model:
+            continue
+        else:
+            assert set(h2o.get_model(model).params["ignored_columns"]["actual"]) == set(names) - {y} - set(x), \
+                "ignored columns are not honored for model " + model
