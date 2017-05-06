@@ -1134,7 +1134,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   // Remove temp keys.  TODO: Really should use Scope but Scope does not
   // currently allow nested-key-keepers.
-  static protected void cleanup_adapt( Frame adaptFr, Frame fr ) {
+  static public void cleanup_adapt( Frame adaptFr, Frame fr ) {
     Key[] keys = adaptFr.keys();
     for( int i=0; i<keys.length; i++ )
       if( fr.find(keys[i]) == -1 ) //only delete vecs that aren't shared
