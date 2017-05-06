@@ -11,9 +11,9 @@
 #'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
 #'        categorical variable).
 #' @param training_frame Training data frame (or ID).
-#' @param validation_frame Validation data frame (or ID); optional.
-#' @param test_frame Test data frame (or ID).  The Leaderboard will be scored using this test data set.
-#' @param build_control List of custom build parameters.
+#' @param validation_frame Validation data frame (or ID); Optional.
+#' @param test_frame Test data frame (or ID).  The Leaderboard will be scored using this test data set. Optional.
+#' @param build_control List of custom build parameters. Optional. 
 #' @param max_runtime_secs Maximum allowed runtime in seconds for the entire model training process.  Use 0 to disable. Defaults to 600 secs (10 min).
 #' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
 #'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.  Note that
@@ -66,28 +66,28 @@ h2o.automl <- function(x, y, training_frame,
     test_frame_id <- h2o.getId(test_frame)
   }
 
-  # Parameter list to send to the AutoML backend
-  parms <- list()
+  # Input/data parameters to send to the AutoML backend
   input_spec <- list()
   input_spec$response_column <- ifelse(is.numeric(y),names(training_frame[y]),y)
   input_spec$training_frame <- training_frame_id
   input_spec$validation_frame <- validation_frame_id
   input_spec$test_frame <- test_frame_id
 
-  # If x is specified, set ignored_columns
+  # If x is specified, set ignored_columns; otherwise do not send ignored_columns in the POST
   if (!missing(x)) {
     args <- .verify_dataxy(training_frame, x, y)
     ignored_columns <- setdiff(names(training_frame), c(args$x,args$y)) #Remove x and y to create ignored_columns
-    if (length(ignored_columns)==0) {
-      input_spec$ignored_columns <- NULL
-    } else {
+    if (length(ignored_columns) == 1) {
       input_spec$ignored_columns <- list(ignored_columns)
-    }
-  } # else: ignored_columns not sent
-
+    } else if (length(ignored_columns) > 1) {
+      input_spec$ignored_columns <- ignored_columns
+    } # else: length(ignored_columns) == 0; don't send ignored_columns
+  }
+  
   # Update build_control list with top level args
   build_control$stopping_criteria$max_runtime_secs <- max_runtime_secs
 
+  # Create the parameter list to POST to the AutoMLBuilder 
   params <- list(input_spec = input_spec, build_control = build_control)
 
   # POST call to AutoMLBuilder
