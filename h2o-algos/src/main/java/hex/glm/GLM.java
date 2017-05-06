@@ -334,7 +334,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             _nullBeta[_dinfo.fullN() + i * N] = Math.log(_state._ymu[i]);
       } else {
         _nullBeta = MemoryManager.malloc8d(_dinfo.fullN() + 1);
-        if (_parms._intercept && !(_parms._family == Family.quasibinomial))
+        if (_parms._intercept && (_parms._family != Family.quasibinomial))
           _nullBeta[_dinfo.fullN()] = new GLMModel.GLMWeightsFun(_parms).link(_state._ymu[0]);
         else
           _nullBeta[_dinfo.fullN()] = 0;
@@ -403,8 +403,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _parms._use_all_factor_levels = true;
       if (_parms._link == Link.family_default)
         _parms._link = _parms._family.defaultLink;
-      _dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, _parms._missing_values_handling == MissingValuesHandling.Skip, _parms._missing_values_handling == MissingValuesHandling.MeanImputation, false, hasWeightCol(), hasOffsetCol(), hasFoldCol(), _parms._interactions);
-
+      DataInfo.TransformType predictorTransform = _parms._standardize? DataInfo.TransformType.STANDARDIZE: DataInfo.TransformType.NONE;
+      DataInfo.TransformType responseTransform = _parms._family == Family.gaussian && _parms._standardize_response?predictorTransform:DataInfo.TransformType.NONE;
+      if(responseTransform == DataInfo.TransformType.STANDARDIZE) _parms._intercept = false;
+      _dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, predictorTransform, responseTransform, _parms._missing_values_handling == MissingValuesHandling.Skip, _parms._missing_values_handling == MissingValuesHandling.MeanImputation, false, hasWeightCol(), hasOffsetCol(), hasFoldCol(), _parms._interactions);
       if (_parms._max_iterations == -1) { // fill in default max iterations
         int numclasses = _parms._family == Family.multinomial?nclasses():1;
         if (_parms._solver == Solver.L_BFGS) {
@@ -1322,7 +1324,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     int numStart = activeData.numStart();
     if(newCols != null) {
       for (int id : newCols) {
-        grads[id] += xy[id] - ArrayUtils.innerProduct(xx[id], beta) + xx[id][id] * beta[id];
+        grads[id] = xy[id] - ArrayUtils.innerProduct(xx[id], beta) + xx[id][id] * beta[id];
         double b = bc.applyBounds(ADMM.shrinkage(grads[id], l1pen) * diagInv[id], id);
         if (b != 0) {
           doUpdateCD(grads, xx[id], b, id, id + 1);
@@ -1382,7 +1384,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
       }
       // intercept
-      if(_parms._family != Family.gaussian && _parms._intercept) {
+      if(_parms._intercept) {
         double b = bc.applyBounds(grads[P] * wsumInv,P);
         double bd = beta[P] - b;
         double diff = bd * bd * xx[P][P];

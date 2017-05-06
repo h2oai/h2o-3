@@ -582,6 +582,12 @@ public abstract class GLMTask  {
       Chunk weights = _dinfo._weights?chks[_dinfo.weightChunkId()]:new C0DChunk(1,response._len);
       double [] ws = weights.getDoubles(MemoryManager.malloc8d(weights._len),0,weights._len);
       double [] ys = response.getDoubles(MemoryManager.malloc8d(weights._len),0,response._len);
+      if(_dinfo._response_transform != DataInfo.TransformType.NONE){
+        double off = _dinfo.normRespSub(0);
+        double scale = _dinfo.normRespMul(0);
+        for(int i = 0; i < ys.length; ++i)
+          ys[i] = (ys[i] - off)*scale;
+      }
       double [] etas = MemoryManager.malloc8d(response._len);
       if(_dinfo._offset)
         chks[_dinfo.offsetChunkId()].getDoubles(etas,0,etas.length);
