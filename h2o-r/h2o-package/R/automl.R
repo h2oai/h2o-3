@@ -73,12 +73,18 @@ h2o.automl <- function(x, y, training_frame,
   input_spec$training_frame <- training_frame_id
   input_spec$validation_frame <- validation_frame_id
   input_spec$test_frame <- test_frame_id
+
+  # If x is specified, set ignored_columns
   if (!missing(x)) {
     args <- .verify_dataxy(training_frame, x, y)
     ignored_columns <- setdiff(names(training_frame), c(args$x,args$y)) #Remove x and y to create ignored_columns
-    input_spec$ignored_columns <- list(ignored_columns)
-  }
-  
+    if (length(ignored_columns)==0) {
+      input_spec$ignored_columns <- NULL
+    } else {
+      input_spec$ignored_columns <- list(ignored_columns)
+    }
+  } # else: ignored_columns not sent
+
   # Update build_control list with top level args
   build_control$stopping_criteria$max_runtime_secs <- max_runtime_secs
 
