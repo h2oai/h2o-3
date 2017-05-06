@@ -360,6 +360,22 @@ public class DataInfo extends Keyed<DataInfo> {
   private int [] _fullCatOffsets;
   private int [][] _catMap;
 
+  public double normMul(int i) {
+    return _normMul == null?1:_normMul[i];
+  }
+
+  public double normRespMul(int i){
+    return _normRespMul == null?1:_normRespMul[i];
+  }
+
+  public double normRespSub(int i){
+    return _normRespSub == null?0:_normRespSub[i];
+  }
+
+  public double normSub(int i) {
+    return _normSub == null?0:_normSub[i];
+  }
+
   protected int [] fullCatOffsets(){ return _fullCatOffsets == null?_catOffsets:_fullCatOffsets;}
   // private constructor called by filterExpandedColumns
   private DataInfo(DataInfo dinfo,Frame fr, double [] normMul, double [] normSub, int[][] catLevels, int[][] intLvls, int [] catModes, int[] activeCols) {
@@ -790,6 +806,19 @@ public class DataInfo extends Keyed<DataInfo> {
       return res;
     }
 
+    public void addToArray(double scale, double []res) {
+      for (int i = 0; i < nBins; i++)
+        res[binIds[i]] += scale;
+      int numstart = numStart();
+      if (numIds != null) {
+        for (int i = 0; i < nNums; ++i)
+          res[numIds[i]] += scale * numVals[i];
+      } else for (int i = 0; i < numVals.length; ++i)
+        if (numVals[i] != 0)
+          res[numstart + i] += scale * numVals[i];
+      if (_intercept)
+        res[res.length - 1] += scale;
+    }
     public Row(boolean sparse, int nNums, int nBins, int nresponses, int i, long start) {
       binIds = MemoryManager.malloc4(nBins);
       numVals = MemoryManager.malloc8d(nNums);

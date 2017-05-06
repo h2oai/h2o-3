@@ -1798,4 +1798,122 @@ public abstract class GLMTask  {
     public void reduce(ComputeSETsk c){_sumsqe += c._sumsqe; _wsum += c._wsum;}
   }
 
+
+  static class GLMIncrementalGramTask extends MRTask<GLMIncrementalGramTask> {
+    final int[] newCols;
+    final DataInfo _dinfo;
+    double[][] _gram;
+    double [] _xy;
+    final double [] _beta;
+    final GLMWeightsFun _glmf;
+
+
+    public GLMIncrementalGramTask(int [] newCols, DataInfo dinfo, GLMWeightsFun glmf, double [] beta){
+      this.newCols = newCols;
+      _glmf = glmf;
+      _dinfo = dinfo;
+      _beta = beta;
+    }
+    public void map(Chunk[] chks) {
+      GLMWeights glmw = new GLMWeights();
+      double [] wsum = new double[_dinfo.fullN()+1];
+      double ywsum = 0;
+      DataInfo.Rows rows = _dinfo.rows(chks);
+      double [][] gram = new double[newCols.length][_dinfo.fullN() + 1];
+      double [] xy = new double[newCols.length];
+      final int ns = _dinfo.numStart();
+      double sparseOffset = rows._sparse?GLM.sparseOffset(_beta,_dinfo):0;
+      for (int rid = 0; rid < rows._nrows; ++rid) {
+        int j = 0;
+        Row r = rows.row(rid);
+        if(r.weight == 0) continue;
+        if(_beta != null) {
+          _glmf.computeWeights(r.response(0), r.innerProduct(_beta) + sparseOffset, r.offset, r.weight, glmw);
+        } else {
+          glmw.w = r.weight;
+          glmw.z = r.response(0);
+        }
+        r.addToArray(glmw.w,wsum);
+        ywsum += glmw.z*glmw.w;
+        // first cats
+        for (int i = 0; i < r.nBins; i++) {
+          while (j < newCols.length && newCols[j] < r.binIds[i])
+            j++;
+          if (j == newCols.length || newCols[j] >= ns)
+            break;
+          if (r.binIds[i] == newCols[j]) {
+            r.addToArray(glmw.w, gram[j]);
+            xy[j] += glmw.w*glmw.z;
+            j++;
+          }
+        }
+        while (j < newCols.length && newCols[j] < ns)
+          j++;
+        // nums
+        if (r.numIds != null) { // sparse
+          for (int i = 0; i < r.nNums; i++) {
+            while (j < newCols.length && newCols[j] < r.numIds[i])
+              j++;
+            if (j == newCols.length) break;
+            if (r.numIds[i] == newCols[j]) {
+              double wx = glmw.w * r.numVals[i];
+              r.addToArray(wx, gram[j]);
+              xy[j] += wx*glmw.z;
+              j++;
+            }
+          }
+        } else { // dense
+          for (; j < newCols.length; j++) {
+            int id = newCols[j];
+            double x = r.numVals[id - _dinfo.numStart()];
+            if(x == 0) continue;
+            double wx = glmw.w * x;
+            r.addToArray(wx, gram[j]);
+            xy[j] += wx*glmw.z;
+          }
+          assert j == newCols.length;
+        }
+      }
+      if(rows._sparse && _dinfo._normSub != null){ // adjust for sparse zeros (skipped centering)
+        int numstart = Arrays.binarySearch(newCols,ns);
+        if(numstart < 0) numstart = -numstart-1;
+        for(int k = 0; k < numstart; ++k){
+          int i = newCols[k];
+          double [] row = gram[k];
+          for(int j = ns; j < row.length-1; ++j){
+            double mean_j = _dinfo.normSub(j-ns);
+            double scale_j = _dinfo.normMul(j-ns);
+            gram[k][j] = gram[k][j] - mean_j*scale_j*wsum[i];
+          }
+        }
+        for(int k = numstart; k < gram.length; ++k){
+          int i = newCols[k];
+          double mean_i = _dinfo.normSub(i-ns);
+          double scale_i = _dinfo.normMul(i-ns);
+          // categoricals
+          for(int j = 0; j < _dinfo.numStart(); ++j){
+            gram[k][j]-=mean_i*scale_i*wsum[j];
+          }
+          //nums
+          for(int j = ns; j < gram[k].length-1; ++j){
+            double mean_j = _dinfo.normSub(j-ns);
+            double scale_j = _dinfo.normMul(j-ns);
+            gram[k][j] = gram[k][j] - mean_j*scale_j*wsum[i] - mean_i*scale_i*wsum[j] + mean_i*mean_j*scale_i*scale_j*wsum[wsum.length-1];
+          }
+          gram[k][gram[k].length-1] -= mean_i*scale_i*wsum[gram[k].length-1];
+          xy[k] -= ywsum * mean_i * scale_i;
+        }
+      }
+      _gram = gram;
+      _xy = xy;
+    }
+
+    public void reduce(GLMIncrementalGramTask gt) {
+      ArrayUtils.add(_xy,gt._xy);
+      for(int i = 0; i< _gram.length; ++i)
+        ArrayUtils.add(_gram[i],gt._gram[i]);
+    }
+  }
+
+
 }
