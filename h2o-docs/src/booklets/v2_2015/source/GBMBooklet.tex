@@ -5,6 +5,9 @@
 
 \input{common/conf_titles.tex}
 
+\usepackage{url}
+\def\UrlBreaks{\do\/\do-\do_\do.}
+
 \begin{document}
 
 \input{common/conf_listings.tex} %see note for `conf_top_print.tex` above
@@ -23,11 +26,9 @@
 \\
 \bigskip
 \small
-\textsc{Cliff Click  \hspace{10pt} Michal Malohlava \hspace{10pt} Arno Candel}
+\textsc{Michal Malohlava \hspace{10pt} Arno Candel}
 
-\textsc{Hank Roark \hspace{10pt} Viraj Parmar}
-
-\textsc{Edited by: Jessica Lanford}
+\textsc{Edited by: Angela Bartz}
 
 \normalsize
 
@@ -37,7 +38,7 @@
 
 \bigskip
 
-\monthname \hspace{1pt}  \the\year: Sixth Edition
+\monthname \hspace{1pt}  \the\year: Seventh Edition
 
 \bigskip
 \end{center}
@@ -60,9 +61,9 @@
 
 Gradient Boosting Machine with H2O\\
 
-  by Cliff Click, Michal Malohlava, \\
-Arno Candel, Hank Roark \&\  Viraj Parmar\\
-Edited by: Jessica Lanford
+ by Michal Malohlava \&\  Arno Candel\\
+ with assitance from Cliff Click, Hank Roark, \&\ Viraj Parmar \\
+Edited by: Angela Bartz
 
 \bigskip
   Published by H2O.ai, Inc. \\
@@ -72,7 +73,7 @@ Mountain View, CA 94043\\
 \textcopyright \the\year \hspace{1pt} H2O.ai, Inc. All Rights Reserved. 
 \bigskip
 
-\monthname \hspace{1pt}  \the\year: Sixth Edition
+\monthname \hspace{1pt}  \the\year: Seventh Edition
 \bigskip
 
 Photos by \textcopyright H2O.ai, Inc.
@@ -257,6 +258,7 @@ Values greater than 1024 (the maximum number of levels supported in R) are suppo
 The value of \texttt{nbins\_cats} for categorical factors has a much greater impact on the generalization error rate than \texttt{nbins} for real- or integer-valued columns (where higher values mainly lead to more accurate numerical split points).
 For columns with many factors, a small \texttt{nbins\_cats} value can add randomness to the split decisions (since the columns are grouped together somewhat arbitrarily), while large values can lead to perfect splits, resulting in overfitting.
 
+\newpage
 \subsection{Key Parameters}
 \label{ssec:Key parameters}
 \raggedbottom
@@ -350,6 +352,7 @@ Let's run again with row and column sampling:
 \waterExampleInPython
 \lstinputlisting[style=python]{GBM_Vignette_code_examples/gbm_examplerun_stochastic.py}
 
+\newpage
 \subsection{Extracting and Handling the Results}
 
 Now, extract the parameters of the model, examine the scoring process, and make predictions on the new data.
@@ -407,7 +410,7 @@ The following algorithm outputs are supported:
 \end{itemize}
 \end{minipage}
 
-
+\newpage
 \subsection{Java Models}
 
 To access Java code to use to build the current model in Java, click the \textsc{Preview POJO} button at the bottom of the model results. This button generates a POJO model that can be used in a Java application independently of H2O. If the model is small enough, the code for the model displays within the GUI; larger models can be inspected after downloading the model.
@@ -453,13 +456,12 @@ If the search space is too large (i.e., you don't want to restrict the parameter
 
 \waterExampleInR
 \lstinputlisting[style=R]{GBM_Vignette_code_examples/gbm_gridsearch_random.R}
+
+\newpage
 \waterExampleInPython
 \lstinputlisting[style=python]{GBM_Vignette_code_examples/gbm_gridsearch_random.py}
 
 
-
-
-\newpage
 \section{Model Parameters}
 \label{ssec:Model Parameters}
 This section describes the functions of the parameters for GBM. 
@@ -521,6 +523,9 @@ This section describes the functions of the parameters for GBM.
 \item \texttt{model\_id}: The unique ID assigned to the generated model. If not specified, an ID is generated automatically.
 \end{itemize}
 
+\section{Acknowledgments}
+We would like to acknowledge the following individuals for their contributions to this booklet: Cliff Click, Hank Roark, Viraj Parmar, and Jessica Lanford.
+
 \newpage
 \section{References}
 \bibliographystyle{plainnat}  %alphadin}
@@ -565,29 +570,17 @@ This section describes the functions of the parameters for GBM.
 
 \section{Authors}
 
-\textbf{Cliff Click}
-
-Cliff Click is the CTO and Co-Founder of H2O, makers of H2O, the open-source math and machine learning engine for Big Data. Cliff is invited to speak regularly at industry and academic conferences and has published many papers about HotSpot technology. He holds a PhD in Computer Science from Rice University and about 15 patents.
-
 \textbf{Michal Malohlava}
 
-Michal is a geek, developer, Java, Linux, programming languages enthusiast developing software for over 10 years. He obtained PhD from the Charles University in Prague in 2012 and post-doc at Purdue University. He participated in design and development of various systems including SOFA and Fractal component systems or jPapabench control system.
+Michal is a geek, developer, Java, Linux, programming languages enthusiast developing software for over 10 years. He obtained PhD from the Charles University in Prague in 2012 and post-doc at Purdue University. He participated in design and development of various systems including SOFA and Fractal component systems or jPapabench control system. Follow him on Twitter: @MMalohlava
 
 \textbf{Arno Candel}
 
 Arno is the Chief Architect of H2O, a distributed and scalable open-source machine learning platform and the main author of H2O Deep Learning.  Arno holds a PhD and Masters summa cum laude in Physics from ETH Zurich, Switzerland. He has authored dozens of scientific papers and is a sought-after conference speaker. Arno was named “2014 Big Data All-Star” by Fortune Magazine. Follow him on Twitter: @ArnoCandel.
 
-\textbf{Viraj Parmar}
+\textbf{Angela Bartz}
 
-Prior to joining H2O as a data and math hacker intern, Viraj worked in a research group at the MIT Center for Technology and Design. His interests are in software engineering and large-scale machine learning. 
-
-\textbf{Hank Roark}
-
-Hank is a Data Scientist and Hacker at H2O. Hank comes to H2O with a background turning data into products and system solutions and loves helping others find value in their data.  Hank has an SM from MIT in Engineering and Management and BS Physics from Georgia Tech.
-
-\textbf{Jessica Lanford}
-
-Jessica is a word hacker and seasoned technical communicator at H2O.ai. She brings our product to life by documenting the many features and functionality of H2O. Having worked for some of the top companies in technology including Dell, AT$\&$T, and Lam Research, she is an expert at translating complex ideas to digestible articles.
+Angela is the doc whisperer at H2O.ai. With extensive experience in technical communication, she brings our products to life by documenting the many features and functionality of H2O. Having worked for companies both large and small, she is an expert at understanding her audience and translating complex ideas to user-friendly content. Follow her on Twitter: @abartztweet.
 
 
 \end{document}

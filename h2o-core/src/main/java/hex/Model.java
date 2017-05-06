@@ -1192,9 +1192,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     if (computeMetrics)
       bs._mb.makeModelMetrics(this, fr, adaptFrm, bs.outputFrame());
-    return bs.outputFrame(Key.<Frame>make(destination_key), names, domains);
+    Frame predictFr = bs.outputFrame(Key.<Frame>make(destination_key), names, domains);
+    return postProcessPredictions(predictFr);
   }
 
+  protected Frame postProcessPredictions(Frame predictFr) {
+    // nothing by default
+    return predictFr;
+  }
 
   /** Score an already adapted frame.  Returns a MetricBuilder that can be used to make a model metrics.
    * @param adaptFrm Already adapted frame

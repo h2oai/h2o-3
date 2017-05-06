@@ -73,7 +73,7 @@
 #'        1). Defaults to 0.9.
 #' @param checkpoint Model checkpoint to resume training with.
 #' @param sample_rate Row sample rate per tree (from 0.0 to 1.0) Defaults to 1.
-#' @param sample_rate_per_class Row sample rate per tree per class (from 0.0 to 1.0)
+#' @param sample_rate_per_class A list of row sample rates per class (relative fraction for each class, from 0.0 to 1.0), for each tree
 #' @param col_sample_rate Column sample rate (from 0.0 to 1.0) Defaults to 1.
 #' @param col_sample_rate_change_per_level Relative change of the column sampling rate for every level (from 0.0 to 2.0) Defaults to 1.
 #' @param col_sample_rate_per_tree Column sample rate per tree (from 0.0 to 1.0) Defaults to 1.
@@ -84,6 +84,9 @@
 #' @param pred_noise_bandwidth Bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions Defaults to 0.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse". Defaults to AUTO.
+#' @param calibrate_model \code{Logical}. Use Platt Scaling to do model calibration. Transforms the outputs of a classification model
+#'        into a probability distribution over classes Defaults to FALSE.
+#' @param calibration_frame Calibration frame for Platt Scaling
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @examples
 #' \donttest{
@@ -146,7 +149,9 @@ h2o.gbm <- function(x, y, training_frame,
                     histogram_type = c("AUTO", "UniformAdaptive", "Random", "QuantilesGlobal", "RoundRobin"),
                     max_abs_leafnode_pred = 1.797693135e+308,
                     pred_noise_bandwidth = 0,
-                    categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse")
+                    categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse"),
+                    calibrate_model = FALSE,
+                    calibration_frame = NULL
                     ) 
 {
   #If x is missing, then assume user wants to use all columns as features.
@@ -279,6 +284,10 @@ h2o.gbm <- function(x, y, training_frame,
     parms$pred_noise_bandwidth <- pred_noise_bandwidth
   if (!missing(categorical_encoding))
     parms$categorical_encoding <- categorical_encoding
+  if (!missing(calibrate_model))
+    parms$calibrate_model <- calibrate_model
+  if (!missing(calibration_frame))
+    parms$calibration_frame <- calibration_frame
   # Error check and build model
   .h2o.modelJob('gbm', parms, h2oRestApiVersion=3) 
 }

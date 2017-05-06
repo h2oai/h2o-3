@@ -2440,7 +2440,7 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
 #' @param model A trained model (accepts a trained random forest, GBM,
 #' or deep learning model, will use \code{\link{h2o.std_coef_plot}}
 #' for a trained GLM
-#' @param num_of_features The number of features to be shown in the plot
+#' @param num_of_features The number of features shown in the plot (default is 10 or all if less than 10).
 #' @seealso \code{\link{h2o.std_coef_plot}} for GLM.
 #' @examples
 #' \donttest{
@@ -2467,8 +2467,13 @@ h2o.varimp_plot <- function(model, num_of_features = NULL){
   vi <- h2o.varimp(model)
 
   # check if num_of_features was passed as an integer, otherwise use all features
-  if(is.null(num_of_features)) {num_of_features = length(vi$variable)}
-  else if ((num_of_features != round(num_of_features)) || (num_of_features <= 0)) stop("num_of_features must be an integer greater than 0")
+  # default to 10 or less features if num_of_features is not specified
+  #  if(is.null(num_of_features)) {num_of_features = length(vi$variable)}
+  #  else if ((num_of_features != round(num_of_features)) || (num_of_features <= 0)) stop("num_of_features must be an integer greater than 0")
+  if(is.null(num_of_features)) {
+    feature_count = length(vi$variable)
+    num_of_features = ifelse(feature_count <= 10, length(vi$variable), 10)
+  } else if ((num_of_features != round(num_of_features)) || (num_of_features <= 0)) stop("num_of_features must be an integer greater than 0")
 
   # check the model type and then update the model title
   if(model@algorithm[1] == "deeplearning") {title = "Variable Importance: Deep Learning"}
@@ -2929,17 +2934,19 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
       type = col_types[which(col_names == names(pp)[1])]
       if(type == "enum") pp[,1] = as.factor( pp[,1])
       
-      ## Added upper and lower std dev confidence bound
-      upper = pp[,2] + pp[,3]
-      lower = pp[,2] - pp[,3]
-      plot(pp[,1:2], type = "l", main = attr(x,"description"), ylim  = c(min(lower), max(upper)))
-      
       ## Plot one standard deviation above and below the mean
       if( plot_stddev) {
+        ## Added upper and lower std dev confidence bound
+        upper = pp[,2] + pp[,3]
+        lower = pp[,2] - pp[,3]
+        plot(pp[,1:2], type = "l", main = attr(x,"description"), ylim  = c(min(lower), max(upper)))
+
         polygon(c(pp[,1], rev(pp[,1])), c(lower, rev(upper)), col = "grey75", border = F)
         lines(pp[,1], pp[,2], lwd = 2)
         lines(pp[,1], lower, col = "blue", lty = 2)
         lines(pp[,1], upper, col = "blue", lty = 2) 
+      } else {
+        plot(pp[,1:2], type = "l", main = attr(x,"description") )
       }
     } else {
       print("Partial Dependence not calculated--make sure nbins is as high as the level count")
@@ -3005,3 +3012,57 @@ h2o.deepfeatures <- function(object, data, layer) {
   .h2o.__waitOnJob(job_key)
   h2o.getFrame(dest_key)
 }
+
+#' Leave One Covariate Out (LOCO)
+#'
+#' Calculates row-wise variable importance's by re-scoring a trained supervised model and measuring the impact of setting
+#' each variable to missing or it's most central value(mean or median & mode for categorical's)
+#' @param model A supervised H2O model
+#' @param frame An H2OFrame to score
+#' @param loco_frame_id Destination id for this job; auto-generated if not specified.
+#' @param replace_val Value to replace columns ("mean" or "median") by (Default is to set columns to missing).
+#' @return An H2OFrame displaying the base prediction (model scored with all predictors) and the difference in predictions
+#'         when variables are dropped/replaced. The difference displayed is the base prediction substracted from
+#'         the new prediction (when a variable is dropped/replaced with mean/median/mode) for binomial classification
+#'         and regression problems. For multinomial problems, the sum of the absolute value of differences across classes
+#'         is calculated per column dropped/replaced.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' fr <- as.h2o(iris)
+#' g <- h2o.gbm(1:3,4,fr)
+#' #Dropping each column iteratively and score.
+#' h2o.loco(g,fr)
+#' #Replace each column by its mean (mode for categoricals) iteratively and score.
+#' h2o.loco(g,fr,replace_val = "mean")
+#' #Replace each column by its median (mode for categoricals) iteratively and score.
+#' h2o.loco(g,fr,replace_val = "median")
+#' }
+#' @export
+h2o.loco <- function(model, frame, loco_frame_id, replace_val){
+  if(!is(model, "H2OModel")) stop("model must be an H2OModel")
+  if(!is(frame, "H2OFrame")) stop("frame must be an H2OFrame")
+  parms = list()
+  parms$model <- model@model_id
+  parms$frame <- h2o.getId(frame)
+  if(!missing(loco_frame_id)){
+    if(!is.character(loco_frame_id)){
+      stop("loco_frame_id must be of type character")
+    }
+    parms$loco_frame_id = loco_frame_id
+  }
+  if(!missing(replace_val)){
+    if(!(is.character(replace_val))){
+      stop("replace_val must be of type character")
+    }
+    if(!(replace_val %in% c("mean","median"))){
+      stop(paste0("repalce_val must be either mean or median, but got ",replace_val))
+    }
+    parms$replace_val <- replace_val
+  }
+  res <- .h2o.__remoteSend(method = "POST", h2oRestApiVersion = 3, page = "LeaveOneCovarOut", .params = parms)
+  .h2o.__waitOnJob(res$key$name)
+  return(h2o.getFrame(res$dest$name))
+}
+

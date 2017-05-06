@@ -1830,6 +1830,26 @@ public class GLMTest  extends TestUtil {
   }
 
   @Test
+  public void testZeroedColumn(){
+    Vec x = Vec.makeCon(Vec.newKey(),1,2,3,4,5);
+    Vec y = Vec.makeCon(x.group().addVec(),0,1,0,1,0);
+    Vec z = Vec.makeCon(Vec.newKey(),1,2,3,4,5);
+    Vec w = Vec.makeCon(x.group().addVec(),1,0,1,0,1);
+    Frame fr = new Frame(Key.<Frame>make("test"),new String[]{"x","y","z","w"},new Vec[]{x,y,z,w});
+    DKV.put(fr);
+    GLMParameters parms = new GLMParameters(Family.gaussian);
+    parms._train = fr._key;
+    parms._lambda = new double[]{0};
+    parms._alpha = new double[]{0};
+    parms._compute_p_values = true;
+    parms._response_column = "z";
+    parms._weights_column = "w";
+    GLMModel m = new GLM(parms).trainModel().get();
+    System.out.println(m.coefficients());
+    m.delete();
+    fr.delete();
+  }
+  @Test
   public void testDeviances() {
     for (Family fam : Family.values()) {
       if(fam == Family.quasibinomial) continue;

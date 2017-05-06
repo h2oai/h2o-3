@@ -14,7 +14,11 @@
 
 %\input{common/conf_top.tex}
 \input{common/conf_top_print.tex}  %settings for printed booklets - comment out by default, uncomment for print and comment out line above. don't save this change! "conf_top" should be default
+
 \usepackage{bibentry}
+\usepackage{url}
+\def\UrlBreaks{\do\/\do-\do_}
+
 \input{common/conf_titles.tex}
 
 \begin{document}
@@ -36,9 +40,9 @@
 
 \bigskip
 
-\textsc{\small{Arno Candel \hspace{10pt} Viraj Parmar \hspace{10pt} Erin LeDell  \hspace{10pt} Anisha Arora}}
+\textsc{\small{Arno Candel \hspace{10pt} Erin LeDell}}
 
-\textsc{\small{Edited by: Jessica Lanford}}
+\textsc{\small{Edited by: Angela Bartz}}
 
 \line(1,0){250}  %inserts  horizontal line
 
@@ -46,7 +50,7 @@
 
 \normalsize
 \bigskip
-\monthname \hspace{1pt}  \the\year: Fifth Edition
+\monthname \hspace{1pt}  \the\year: Sixth Edition
 
 \bigskip
 \end{center}
@@ -69,9 +73,9 @@
 
 Deep Learning with H2O\\
 
-by Arno Candel, Erin LeDell,\\
-Viraj Parmar,  \&\ Anisha Arora  \\
-Edited by: Jessica Lanford
+by Arno Candel  \&\ Erin LeDell\\
+with assistance from Viraj Parmar \&\ Anisha Arora\\
+Edited by: Angela Bartz
 
 \bigskip
   Published by H2O.ai, Inc. \\
@@ -81,7 +85,7 @@ Mountain View, CA 94043\\
 \textcopyright 2016 H2O.ai, Inc. All Rights Reserved. 
 \bigskip
 
-\monthname \hspace{1pt}  \the\year: Fifth Edition
+\monthname \hspace{1pt}  \the\year: Sixth Edition
 \bigskip
 
 Photos by \textcopyright H2O.ai, Inc. 
@@ -133,7 +137,7 @@ R and Python code for the examples in this document can be found here:
 The document source itself can be found here:
 
 \url{https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/booklets/v2_2015/source/DeepLearning_Vignette.tex}
-\newpage
+
 \subsection{Citation}
 
 To cite this booklet, use the following: 
@@ -523,14 +527,14 @@ The \href{http://yann.lecun.com/exdb/mnist/}{MNIST database} is a well-known aca
 \caption{Example MNIST digit images \label{overflow}}
 \end{figure}
 
-This example downloads and imports the training and testing datasets from a public Amazon S3 bucket (\url{https://h2o-public-test-data.s3.amazonaws.com/bigdata/laptop/mnist/train.csv.gz} and same for \texttt{test.csv.gz}).
-The training file is 13MB and the testing file is 2.1MB. The data is downloaded directly, so the data import speed is dependent on download speed.  Files can be imported from a variety of sources, including local file systems or shared file systems such as NFS, S3 and HDFS.
-
 \newpage
+This example downloads and imports the training and testing datasets from a public Amazon S3 bucket (available at \url{https://h2o-public-test-data.s3.amazonaws.com/bigdata/laptop/mnist/train.csv.gz} and same for \texttt{test.csv.gz}). The training file is 13MB, and the testing file is 2.1MB. The data is downloaded directly, so the data import speed is dependent on download speed.  Files can be imported from a variety of sources, including local file systems or shared file systems such as NFS, S3 and HDFS.
+
 \waterExampleInR
 To run the MNIST example in R, use the following: 
 \lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_importfile_example.R}
 
+\newpage
 \waterExampleInPython
 To run the MNIST example in Python, use the following: 
 \lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_importfile_example.py}
@@ -744,7 +748,6 @@ To save a model in Python, use the following:
 \noindent
 After restarting  H2O, load the saved model by specifying the host and saved model file path. \textbf{Note}: The saved model must be reloaded using a compatible H2O version (i.e., the same version used to save the model).
 
-\newpage
 To load a saved model in R, use the following: 
 
 \waterExampleInR
@@ -769,6 +772,7 @@ To retrieve a model in Python using its key, use the following:
 \waterExampleInPython
 \lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_getmodel.py}
 
+\newpage
 \subsection{Achieving World-Record Performance}
 
 Without distortions, convolutions, or other advanced image processing techniques, the best-ever published test set error for the MNIST dataset is $0.83$\% by Microsoft. After training for $2,000$ epochs (which took about four hours) on four compute nodes, we obtain a test set error of $0.87\%$. 
@@ -781,7 +785,7 @@ After training for $8,000$ epochs (which took about ten hours) on ten nodes, we 
 \subsection{Computational Performance}
 There are many parameters that affect the computational performance of H2O Deep Learning, but the default values should result in good performance for most problems. 
 
-An in-depth study of the computational performance characteristics of H2O Deep Learning with complete code examples and results can be found in our blog post, \textbf{Definitive Performance Tuning Guide for Deep Learning}, available at \url{http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/deep-learning.html#deep-learning-tuning-guide}.
+An in-depth study of the computational performance characteristics of H2O Deep Learning with complete code examples and results can be found in our blog post, \textbf{Definitive Performance Tuning Guide for Deep Learning}, available at \small{\url{http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/deep-learning.html#deep-learning-tuning-guide}}.
 
 The parallel scalability of H2O for the MNIST dataset on 1 to 63 compute nodes is shown in the figure below.
 \begin{figure}[h!]
@@ -849,7 +853,7 @@ To run the anomaly detection example in Python, use the following:
 \subsubsection{Stacked Autoencoder}
 It can be difficult to obtain convergence for deep autoencoders, especially since H2O attempts to train all layers at once without imposing symmetry conditions on the network topology (arbitrary configuration of layers is allowed). To train a deep autoencoder layer by layer, follow the \texttt{R} code example here:
 
-\url{https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplearning/runit_deeplearning_stacked_autoencoder_large.R}.
+\small{\url{https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplearning/runit_deeplearning_stacked_autoencoder_large.R}}
 
 \subsubsection{Unsupervised Pretraining with Supervised Fine-Tuning}
 Sometimes, there's much more unlabeled data than labeled data. It this case, it might make sense to train an autoencoder model on the unlabeled data and then fine-tune the learned model with the available labels. In H2O, you would train an autoencoder model with \texttt{autoencoder} enabled, and then you can transfer its state to a supervised regular Deep Learning model by specifying \texttt{pretrained\_autoencoder}. You can seen an \texttt{R} example here:
@@ -857,7 +861,8 @@ Sometimes, there's much more unlabeled data than labeled data. It this case, it 
 \url{https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplearning/runit_deeplearning_autoencoder_large.R},
 
 and the corresponding \texttt{Python} example here:
-\url{https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/deeplearning/pyunit_autoencoderDeepLearning_large.py}.
+
+\url{https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/deeplearning/pyunit_autoencoderDeepLearning_large.py}
 
 \section{Parameters}
 \label{sec:Parameters}
@@ -967,9 +972,9 @@ Refer to {\textbf{\nameref{sssec:AdaptiveLearning}}} for more details.
 
 \item \texttt{regression\_stop}: Specifies the stopping criterion for regression error (MSE) on the training data scoring dataset. When the error is at or below this threshold, training stops. The default is 1e-6.  To disable, specify \texttt{-1}.
 
-\item \texttt{stopping\_rounds}: Early stopping based on convergence of \\\texttt{stopping\_metric}. Stop if simple moving average of length k of the \texttt{stopping\_metric} does not improve for k:=\texttt{stopping\_rounds} scoring events. Can only trigger after at least 2k scoring events. To disable, specify \texttt{0}.
+\item \texttt{stopping\_rounds}: Early stopping based on convergence of \\\texttt{stopping\_metric}. Stop if simple moving average of length k of the\\ \texttt{stopping\_metric} does not improve for k:=\texttt{stopping\_rounds} scoring events. Can only trigger after at least 2k scoring events. To disable, specify \texttt{0}.
 
-\item \texttt{stopping\_metric}: Metric to use for early stopping (\texttt{AUTO}: \texttt{logloss} for classification, \texttt{deviance} for regression). Can be any of \texttt{AUTO}, \texttt{deviance}, \texttt{logloss}, \texttt{misclassification}, \texttt{lift\_top\_gain}, \texttt{MSE}, \texttt{AUC}, and \texttt{mean\_per\_class\_error}.
+\item \texttt{stopping\_metric}: Metric to use for early stopping (\texttt{AUTO}: \texttt{logloss} for classification, \texttt{deviance} for regression). Can be any of \texttt{AUTO}, \texttt{deviance}, \texttt{logloss}, \texttt{misclassification}, \texttt{lift\_top\_gain}, \texttt{MSE}, \texttt{AUC}, and\\ \texttt{mean\_per\_class\_error}.
 
 \item \texttt{stopping\_tolerance}: Relative tolerance for metric-based stopping criterion Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much).
 
@@ -1088,6 +1093,9 @@ The default is 0, which disables cross-validation.
 
 \end{itemize}
 
+\section{Acknowledgments}
+We would like to acknowledge the following individuals for their contributions to this booklet: Viraj Parmar and Anisha Arora.
+
 \newpage
 
 \section{References}
@@ -1156,24 +1164,15 @@ The default is 0, which disables cross-validation.
 
 \textbf{Arno Candel}
 
-Arno is the Chief Architect of H2O, a distributed and scalable open-source machine learning platform. He is also the main author of H2O Deep Learning.  Arno holds a PhD and Masters summa cum laude in Physics from ETH Zurich, Switzerland. He has authored dozens of scientific papers and is a sought-after conference speaker. Arno was named ‚Äú2014 Big Data All-Star‚Äù by Fortune Magazine. Follow him on Twitter: @ArnoCandel.
+Arno is the Chief Architect of H2O, a distributed and scalable open-source machine learning platform. He is also the main author of H2O Deep Learning.  Arno holds a PhD and Masters summa cum laude in Physics from ETH Zurich, Switzerland. He has authored dozens of scientific papers and is a sought-after conference speaker. Arno was named 2014 Big Data All-StarÄù by Fortune Magazine. Follow him on Twitter: @ArnoCandel.
 
 \textbf{Erin LeDell}
 
 Erin is a Statistician and Machine Learning Scientist at H2O.ai. She is the main author of H2O Ensemble. 
-Erin received her Ph.D. in Biostatistics with a Designated Emphasis in Computational Science and Engineering from University of California, Berkeley. Her research focuses on ensemble machine learning, learning from imbalanced binary-outcome data, influence curve based variance estimation and statistical computing. She also holds a B.S. and M.A. in Mathematics.
+Erin received her Ph.D. in Biostatistics with a Designated Emphasis in Computational Science and Engineering from University of California, Berkeley. Her research focuses on ensemble machine learning, learning from imbalanced binary-outcome data, influence curve based variance estimation and statistical computing. She also holds a B.S. and M.A. in Mathematics. Follow her on Twitter: @ledell.
 
-\textbf{Viraj Parmar}
+\textbf{Angela Bartz}
 
-Viraj is studying applied mathematics at Princeton. Prior to joining H2O.ai as a former data and math hacker intern, Viraj worked in a research group at the MIT Center for Technology and Design. His interests are in software engineering and large-scale machine learning. Apart from work, Viraj enjoys reading, sampling new cuisines, and traveling with his family.
-
-\textbf{Anisha Arora}
-
-Anisha is a software intern who is a senior at Cupertino High School. She enjoys programming and is interested in machine learning. She likes to swim, play the piano and violin, and tutor in science and math subjects at her school.
-
-
-\textbf{Jessica Lanford}
-
-Jessica is a word hacker and seasoned technical communicator at H2O.ai. She brings our product to life by documenting the many features and functionality of H2O. Having worked for some of the top companies in technology including Dell, AT$\&$T, and Lam Research, she is an expert at translating complex ideas to digestible articles.
+Angela is the doc whisperer at H2O.ai. With extensive experience in technical communication, she brings our products to life by documenting the many features and functionality of H2O. Having worked for companies both large and small, she is an expert at understanding her audience and translating complex ideas to user-friendly content. Follow her on Twitter: @abartztweet.
 
 \end{document}

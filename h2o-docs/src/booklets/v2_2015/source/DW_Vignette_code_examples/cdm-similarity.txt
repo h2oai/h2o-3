@@ -1,0 +1,38 @@
+Checking whether there is an H2O instance running at http://localhost:54321. connected.
+--------------------------  ----------------------
+H2O cluster uptime:         6 hours 18 mins
+H2O cluster version:        3.11.0.157
+H2O cluster version age:    11 days
+H2O cluster name:           ubuntu
+H2O cluster total nodes:    1
+H2O cluster free memory:    25.18 Gb
+H2O cluster total cores:    4
+H2O cluster allowed cores:  4
+H2O cluster status:         locked, healthy
+H2O connection url:         http://localhost:54321
+H2O connection proxy:
+H2O internal security:      False
+Python version:             2.7.12 final
+--------------------------  ----------------------
+Parse progress: [#########################################################] 100%
+deepwater Model Build progress: [#########################################] 100%
+deepfeatures progress: [##################################################] 100%
+references: (262, 1024)
+queries: (3, 1024)
+similarity: (262, 3)
+         C1           C2           C3
+-----------  -----------  -----------
+0.000700166  0.000890456  0.00115243
+0.000714771  0.000971895  0.00114015
+0.000725556  0.000886771  0.00108941
+0.000583118  0.000677621  0.000848235
+0.000709113  0.00075652   0.000968125
+0.000779529  0.00103488   0.00124044
+0.000725078  0.00103037   0.00122527
+0.00077362   0.000987806  0.00126681
+0.000733625  0.000879774  0.00120423
+0.000823687  0.000976036  0.00123983
+
+[10 rows x 3 columns]
+
+H2O session _sid_9ccb closed.

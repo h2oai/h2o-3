@@ -16,6 +16,9 @@ import java.io.IOException;
  * Caffe interface. C.f h20-docker/caffe for more information.
  */
 public class DeepwaterCaffeBackend implements BackendTrain {
+  static public final String CAFFE_DIR = "/opt/caffe/";
+  static public final String CAFFE_H2O_DIR = "/opt/caffe-h2o/";
+
   @Override
   public void delete(BackendModel m) {
     ((DeepwaterCaffeModel) m).close();

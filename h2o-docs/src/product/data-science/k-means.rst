@@ -111,7 +111,7 @@ The steps below describe the method that K-Means uses in order to estimate `k`.
 
 H2O uses proportional reduction in error (:math:`PRE`) to determine when to stop splitting. The :math:`PRE` value is calculated based on the sum of squares within (:math:`SSW`). 
 
- :math:`PRE=\frac{(SSW\text{[after split]} - SSW\text{[before split]})} {SSW\text{[before split]}}`
+ :math:`PRE=\frac{(SSW\text{[before split]} - SSW\text{[after split]})} {SSW\text{[before split]}}`
 
 H2O stops splitting when :math:`PRE` falls below a :math:`threshold`, which is a function of the number of variables and the number of cases as described below:
 
