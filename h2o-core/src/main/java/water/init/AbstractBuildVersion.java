@@ -10,6 +10,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.regex.Pattern;
 
+import water.H2O;
 import water.util.FileUtils;
 
 abstract public class AbstractBuildVersion {
@@ -22,6 +23,8 @@ abstract public class AbstractBuildVersion {
   static String LATEST_STABLE_URL = " http://h2o-release.s3.amazonaws.com/h2o/latest_stable";
   // Pattern to extract version from URL
   static Pattern VERSION_EXTRACT_PATTERN = Pattern.compile(".*h2o-(.*).zip");
+  // Devel version has a specific patch number X.Y.Z.99999
+  public static String DEVEL_VERSION_PATCH_NUMBER = "99999";
 
   abstract public String branchName();
   abstract public String lastCommitHash();
@@ -35,8 +38,8 @@ abstract public class AbstractBuildVersion {
 
   public String buildNumber() {
     String pv = projectVersion();
-    if (pv.equals("(unknown")) {
-      return "(unknown)";
+    if (pv.equals(UNKNOWN_VERSION_MARKER)) {
+      return UNKNOWN_VERSION_MARKER;
     }
 
     String[] split_pv = pv.split("\\.");
@@ -90,14 +93,19 @@ abstract public class AbstractBuildVersion {
       return "unknown";
     }
   }
+
+  public boolean isDevVersion() {
+    return projectVersion().equals(UNKNOWN_VERSION_MARKER) || projectVersion().endsWith(DEVEL_VERSION_PATCH_NUMBER);
+  }
   
   /** Dummy version of H2O. */
+  private static final String UNKNOWN_VERSION_MARKER = "(unknown)";
   public static final AbstractBuildVersion UNKNOWN_VERSION = new AbstractBuildVersion() {
-      @Override public String projectVersion() { return "(unknown)"; }
-      @Override public String lastCommitHash() { return "(unknown)"; }
-      @Override public String describe()   { return "(unknown)"; }
-      @Override public String compiledOn() { return "(unknown)"; }
-      @Override public String compiledBy() { return "(unknown)"; }
-      @Override public String branchName() { return "(unknown)"; }
+      @Override public String projectVersion() { return UNKNOWN_VERSION_MARKER; }
+      @Override public String lastCommitHash() { return UNKNOWN_VERSION_MARKER; }
+      @Override public String describe()   { return UNKNOWN_VERSION_MARKER; }
+      @Override public String compiledOn() { return UNKNOWN_VERSION_MARKER; }
+      @Override public String compiledBy() { return UNKNOWN_VERSION_MARKER; }
+      @Override public String branchName() { return UNKNOWN_VERSION_MARKER; }
     };
 }
