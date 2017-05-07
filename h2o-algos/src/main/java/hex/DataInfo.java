@@ -1204,7 +1204,7 @@ public class DataInfo extends Keyed<DataInfo> {
         interactionOffset+=nextNumericIdx(cid);
       } else {
         double scale = _normMul == null?1:_normMul[interactionOffset];
-        int len = c.getSparseDoubles(sparse_vals,sparse_ids,scale*_numMeans[cid]);
+        int len = c.getSparseDoubles(sparse_vals,sparse_ids,_skipMissing?Double.NaN:scale*_numMeans[cid]);
         for (int k = 0; k < len; k++) {
           double d = scale*sparse_vals[k];
           int r = sparse_ids[k];
@@ -1213,7 +1213,8 @@ public class DataInfo extends Keyed<DataInfo> {
           oldRow = r;Row row = rows[r];
 //          if (_normMul != null)
 //            d *= _normMul[interactionOffset];
-          row.addNum(numStart()+interactionOffset,d);
+          if(_skipMissing && Double.isNaN(d)) row.predictors_bad = true;
+          else row.addNum(numStart()+interactionOffset,d);
         }
         interactionOffset++;
       }
