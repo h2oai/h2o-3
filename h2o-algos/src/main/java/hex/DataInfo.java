@@ -1227,7 +1227,6 @@ public class DataInfo extends Keyed<DataInfo> {
         row.response[i-1] = rChunk.atd(r);
         if(Double.isNaN(row.response[i-1])) {
           row.response_bad = true;
-          break;
         }
         if (_normRespMul != null) {
           row.response[i-1] = (row.response[i-1] - _normRespSub[i-1]) * _normRespMul[i-1];

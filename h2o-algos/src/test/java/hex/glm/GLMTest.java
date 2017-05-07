@@ -527,9 +527,11 @@ public class GLMTest  extends TestUtil {
       params._ignored_columns = new String[]{"name"};
       params._train = parsed;
       params._lambda = new double[]{0};
+      params._standardize = true;
       params._missing_values_handling = MissingValuesHandling.Skip;
       model = new GLM( params).trainModel().get();
       coefs = model.coefficients();
+      System.out.println("coefs " + model.coefficients());
       for (int i = 0; i < cfs1.length; ++i)
         assertEquals(vls3[i], coefs.get(cfs1[i]), 1e-4);
       // test scoring

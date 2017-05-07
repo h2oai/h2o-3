@@ -207,7 +207,7 @@ public final class Gram extends Iced<Gram> {
       int jchunk = Math.max(1,MIN_PAR/(Z.length-j));
       int nchunks = (Z.length - j - 1)/jchunk;
       nchunks = Math.min(nchunks,H2O.NUMCPUS);
-      if(nchunks <= 1) { // single trheaded update
+      if(nchunks <= 1) { // single threaded update
         updateZ(gamma,Z,j);
       } else { // multi-threaded update
         final int fjchunk = (Z.length - 1 - j)/nchunks;
@@ -252,7 +252,7 @@ public final class Gram extends Iced<Gram> {
       ForkJoinTask.invokeAll(ras);
     }
     // drop the ignored cols
-    if(dropped_cols.isEmpty()) return new Cholesky(R,new double[0], true);
+    if(dropped_cols.isEmpty()) return new Cholesky(R,new double[0], _hasIntercept);
     double [][] Rnew = new double[R.length-dropped_cols.size()][];
     for(int i = 0; i < Rnew.length; ++i)
       Rnew[i] = new double[i+1];
@@ -269,7 +269,7 @@ public final class Gram extends Iced<Gram> {
       }
       ++j;
     }
-    return new Cholesky(Rnew,new double[0], true);
+    return new Cholesky(Rnew,new double[0], _hasIntercept);
   }
 
 
@@ -504,7 +504,7 @@ public final class Gram extends Iced<Gram> {
     for( int i = 0; i < N; ++i )
       xx[i] = MemoryManager.malloc8d(lowerDiag?i+1:N);
     int off = 0;
-    if(icptFist) {
+    if(_hasIntercept && icptFist) {
       double [] icptRow = _xx[_xx.length-1];
       xx[0][0] = icptRow[icptRow.length-1];
       for(int i = 0; i < icptRow.length-1; ++i)

@@ -180,8 +180,8 @@ public class GLMBasicTestMultinomial extends TestUtil {
       System.out.println(model._output._model_summary);
       System.out.println(model._output._training_metrics);
       System.out.println(model._output._validation_metrics);
-      System.out.println("rank = " + model._output.rank() + ", max active preds = " + params._max_active_predictors);
-      assertTrue(model._output.rank() < params._max_active_predictors + model._output.nclasses());
+      System.out.println("rank = " + model._output.rank() + ", max active preds = " + (params._max_active_predictors + model._output.nclasses()));
+      assertTrue(model._output.rank() <= params._max_active_predictors + model._output.nclasses());
       assertTrue(model._output._training_metrics.equals(model._output._validation_metrics));
       assertTrue(((ModelMetricsMultinomialGLM) model._output._training_metrics)._resDev <= expected_deviance * 1.1);
       preds = model.score(_covtype);
@@ -271,6 +271,8 @@ public class GLMBasicTestMultinomial extends TestUtil {
       assertTrue(model._output._training_metrics.equals(model._output._validation_metrics));
       preds = model.score(covtype_copy);
       ModelMetricsMultinomialGLM mmTrain = (ModelMetricsMultinomialGLM) hex.ModelMetricsMultinomial.getFromDKV(model, covtype_copy);
+      System.out.println("coefs = ");
+      for(double [] x:model._output.get_global_beta_multinomial()) System.out.println(Arrays.toString(x));
       assertTrue(model._output._training_metrics.equals(mmTrain));
       assertTrue(((ModelMetricsMultinomialGLM) model._output._training_metrics)._resDev <= expected_deviance);
       System.out.println(model._output._model_summary);

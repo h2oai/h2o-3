@@ -405,7 +405,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _parms._link = _parms._family.defaultLink;
       DataInfo.TransformType predictorTransform = _parms._standardize? DataInfo.TransformType.STANDARDIZE: DataInfo.TransformType.NONE;
       DataInfo.TransformType responseTransform = _parms._family == Family.gaussian && _parms._standardize_response?predictorTransform:DataInfo.TransformType.NONE;
-      if(responseTransform == DataInfo.TransformType.STANDARDIZE) _parms._intercept = false;
+      if(responseTransform == DataInfo.TransformType.STANDARDIZE && _parms._weights_column == null && !_parms._compute_p_values)
+        _parms._intercept = false;
       _dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, predictorTransform, responseTransform, _parms._missing_values_handling == MissingValuesHandling.Skip, _parms._missing_values_handling == MissingValuesHandling.MeanImputation, false, hasWeightCol(), hasOffsetCol(), hasFoldCol(), _parms._interactions);
       if (_parms._max_iterations == -1) { // fill in default max iterations
         int numclasses = _parms._family == Family.multinomial?nclasses():1;
@@ -428,7 +429,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _dinfo.setWeights(_generatedWeights = "__glm_gen_weights", wc);
         }
 
-        YMUTask ymt = new YMUTask(_dinfo, _parms._family == Family.multinomial?nclasses():1, setWeights, skippingRows,true,false).doAll(_dinfo._adaptedFrame);
+        YMUTask ymt = new YMUTask(_dinfo, _parms._family == Family.multinomial?nclasses():1, _dinfo._predictor_transform != DataInfo.TransformType.NONE, skippingRows,true,false).doAll(_dinfo._adaptedFrame);
         if (ymt.wsum() == 0)
           throw new IllegalArgumentException("No rows left in the dataset after filtering out rows with missing values. Ignore columns with many NAs or impute your missing values prior to calling glm.");
         Log.info(LogMsg("using " + ymt.nobs() + " nobs out of " + _dinfo._adaptedFrame.numRows() + " total"));
@@ -436,8 +437,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _nobs = ymt.nobs();
         if (_parms._obj_reg == -1)
           _parms._obj_reg = 1.0 / ymt.wsum();
-        if(!_parms._stdOverride)
+        if(!_parms._stdOverride) {
           _dinfo.updateWeightedSigmaAndMean(ymt.predictorSDs(), ymt.predictorMeans());
+          if(_dinfo._response_transform != DataInfo.TransformType.NONE)
+            _dinfo.updateWeightedSigmaAndMeanForResponse(ymt.responseSDs(),ymt.responseMeans());
+        }
         if (_parms._family == Family.multinomial) {
           _state._ymu = MemoryManager.malloc8d(_nclass);
           for (int i = 0; i < _state._ymu.length; ++i)
@@ -575,8 +579,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     private double[] ADMM_solve(Gram gram, double [] xy) {
       if(_parms._remove_collinear_columns || _parms._compute_p_values) {
-        if(!_parms._intercept) throw H2O.unimpl();
         ArrayList<Integer> ignoredCols = new ArrayList<>();
+        if(!_parms._intercept) {
+          gram = gram.deep_clone();
+          gram.dropIntercept();
+          xy[xy.length-1] = 0;
+        }
         Cholesky chol = ((_state._iter == 0)?gram.qrCholesky(ignoredCols, _parms._standardize):gram.cholesky(null));
         if(!ignoredCols.isEmpty() && !_parms._remove_collinear_columns) {
           int [] collinear_cols = new int[ignoredCols.size()];
@@ -963,23 +971,33 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         boolean seEst = false;
         double [] beta = _state.beta();
 
-        if(_parms._family != Family.binomial && _parms._family != Family.poisson) {
-          seEst = true;
-          ComputeSETsk ct = new ComputeSETsk(null, _state.activeData(), _job._key, beta, _parms).doAll(_state.activeData()._adaptedFrame);
-          se = ct._sumsqe / (_nobs - 1 - _state.activeData().fullN());
-        }
+
         double [] zvalues = MemoryManager.malloc8d(_state.activeData().fullN()+1);
         Cholesky chol = _chol;
         if(_parms._standardize){ // compute non-standardized t(X)%*%W%*%X
           DataInfo activeData = _state.activeData();
           double [] beta_nostd = activeData.denormalizeBeta(beta);
           DataInfo.TransformType transform = activeData._predictor_transform;
+          DataInfo.TransformType responseTransform = activeData._response_transform;
           activeData.setPredictorTransform(DataInfo.TransformType.NONE);
+          activeData.setResponseTransform(DataInfo.TransformType.NONE);
+          if(_parms._family != Family.binomial && _parms._family != Family.poisson) {
+            seEst = true;
+            ComputeSETsk ct = new ComputeSETsk(null, activeData, _job._key, beta_nostd, _parms).doAll(activeData._adaptedFrame);
+            se = ct._sumsqe / (_nobs - 1 - _state.activeData().fullN());
+          }
           Gram g = new GLMIterationTask(_job._key,activeData,new GLMWeightsFun(_parms),beta_nostd).doAll(activeData._adaptedFrame)._gram;
           activeData.setPredictorTransform(transform); // just in case, restore the trasnform
+          activeData.setResponseTransform(responseTransform);
           g.mul(_parms._obj_reg);
           chol = g.cholesky(null);
           beta = beta_nostd;
+        } else {
+          if(_parms._family != Family.binomial && _parms._family != Family.poisson) {
+            seEst = true;
+            ComputeSETsk ct = new ComputeSETsk(null, _state.activeData(), _job._key, beta, _parms).doAll(_state.activeData()._adaptedFrame);
+            se = ct._sumsqe / (_nobs - 1 - _state.activeData().fullN());
+          }
         }
         double [][] inv = chol.getInv();
         ArrayUtils.mult(inv,_parms._obj_reg*se);
@@ -1046,7 +1064,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               for (int x = 0; x < beta.length - 1; ++x)
                 if (beta[x] != 0) activeCols[x++] = i;
             }
-            if (j < activeCols.length) {
+            if (_parms._family != Family.multinomial && j < activeCols.length) {
               activeCols = Arrays.copyOf(activeCols, j);
               DataInfo activeValidDinfo = _validDinfo.filterExpandedColumns(activeCols);
               activeCols = ArrayUtils.append(activeCols, _dinfo.fullN());
@@ -1738,7 +1756,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         return new GLMGradientInfo(gt._likelihood, gt._likelihood * _parms._obj_reg + .5 * _l2pen * l2pen, grad);
       } else {
         assert beta.length == _dinfo.fullN() + 1;
-        assert _parms._intercept || (beta[beta.length-1] == 0);
+        assert _parms._intercept || (beta[beta.length-1] == 0):"intercept = " + beta[beta.length-1];
         GLMGradientTask gt;
         if(_parms._family == Family.binomial && _parms._link == Link.logit)
           gt = new GLMBinomialGradientTask(_job == null?null:_job._key,_dinfo,_parms,_l2pen, beta).doAll(_dinfo._adaptedFrame);
