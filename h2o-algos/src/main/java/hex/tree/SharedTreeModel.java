@@ -305,6 +305,9 @@ public abstract class SharedTreeModel<
       throw H2O.unimpl("Calibration is only supported for binomial models");
   }
 
+  @Override protected double[] score0(double[] data, double[] preds, double offset) {
+    return score0(data, preds, offset, _output._treeKeys.length);
+  }
   @Override protected double[] score0(double[/*ncols*/] data, double[/*nclasses+1*/] preds) {
     return score0(data, preds, 0.0);
   }
