@@ -174,8 +174,8 @@ public class EckoClient {
       ProjectStatus status = statuses.get(project);
       status.leaderboard = leaderboard;
       status.leader = leaderboard.getLeader();
-      status.leaderError = leaderboard.defaultMetricForModel(status.leader);
-      status.leaderMetric = leaderboard.defaultMetricNameForModel(status.leader);
+      status.leaderError = leaderboard.defaultMetricForModel(status.leader)[0]; //First value is sort metric
+      status.leaderMetric = leaderboard.defaultMetricNameForModel(status.leader)[0]; //First value is sort metric
 
       //String leaderboardTsv = leaderboard.toString(project, leaderboard.getModels(), "\\t", "\\n", false, true, true);
       String leaderboardTsv = leaderboard.toString(project, leaderboard.getModels(), "\\t", "\\n", false, true);
