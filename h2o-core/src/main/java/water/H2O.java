@@ -1849,7 +1849,7 @@ final public class H2O {
             || (new File(System.getProperty("user.home")+File.separator+".h2o_no_collect")).exists()
             || ARGS.ga_opt_out
             || (gaidList = JarHash.getResourcesList("gaid")).contains("CRAN")
-            || H2O.ABV.projectVersion().split("\\.")[3].equals("99999")) { // dev build has minor version 99999
+            || H2O.ABV.isDevVersion()) {
       GA = null;
       Log.info("Opted out of sending usage metrics.");
     } else {
