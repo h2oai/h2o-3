@@ -691,8 +691,8 @@ class H2ORandomForestEstimator(H2OEstimator):
     @property
     def calibrate_model(self):
         """
-        Use Platt Scaling to do model calibration. Transforms the outputs of a classification model into a probability
-        distribution over classes
+        Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more accurate estimates
+        of class probabilities.
 
         Type: ``bool``  (default: ``False``).
         """
