@@ -73,8 +73,8 @@
 #'        "Random", "QuantilesGlobal", "RoundRobin". Defaults to AUTO.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse". Defaults to AUTO.
-#' @param calibrate_model \code{Logical}. Use Platt Scaling to do model calibration. Transforms the outputs of a classification model
-#'        into a probability distribution over classes Defaults to FALSE.
+#' @param calibrate_model \code{Logical}. Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more
+#'        accurate estimates of class probabilities. Defaults to FALSE.
 #' @param calibration_frame Calibration frame for Platt Scaling
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction

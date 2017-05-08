@@ -303,13 +303,16 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     double[] preds = preamble(ModelCategory.Binomial, data);
 
     BinomialModelPrediction p = new BinomialModelPrediction();
-    p.classProbabilities = new double[m.getNumResponseClasses()];
     double d = preds[0];
     p.labelIndex = (int) d;
     String[] domainValues = m.getDomainValues(m.getResponseIdx());
     p.label = domainValues[p.labelIndex];
+    p.classProbabilities = new double[m.getNumResponseClasses()];
     System.arraycopy(preds, 1, p.classProbabilities, 0, p.classProbabilities.length);
-
+    if (m.calibrateClassProbabilities(preds)) {
+      p.calibratedClassProbabilities = new double[m.getNumResponseClasses()];
+      System.arraycopy(preds, 1, p.calibratedClassProbabilities, 0, p.calibratedClassProbabilities.length);
+    }
     return p;
   }
 

@@ -93,7 +93,7 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
     @API(help="What type of histogram to use for finding optimal split points", values = { "AUTO", "UniformAdaptive", "Random", "QuantilesGlobal", "RoundRobin"}, level = API.Level.secondary, gridable = true)
     public SharedTreeParameters.HistogramType histogram_type;
 
-    @API(help="Use Platt Scaling to do model calibration. Transforms the outputs of a classification model into a probability distribution over classes", level = API.Level.expert)
+    @API(help="Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more accurate estimates of class probabilities.", level = API.Level.expert)
     public boolean calibrate_model;
 
     @API(help="Calibration frame for Platt Scaling", level = API.Level.expert, direction = API.Direction.INOUT)
