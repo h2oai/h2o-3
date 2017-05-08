@@ -1477,6 +1477,7 @@ final public class H2O {
     // Create the starter Cloud with 1 member
     SELF._heartbeat._jar_md5 = JarHash.JARHASH;
     SELF._heartbeat._client = ARGS.client;
+    SELF._heartbeat._cloud_name_hash = ARGS.name.hashCode();
   }
 
   /** Starts the worker threads, receiver threads, heartbeats and all other

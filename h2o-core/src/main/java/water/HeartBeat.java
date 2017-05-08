@@ -10,6 +10,7 @@ import water.init.JarHash;
 public class HeartBeat extends Iced<HeartBeat> {
   char _hb_version;             // Incrementing counter for sorting timelines better.
   int _cloud_hash;              // Cloud-membership hash
+  int _cloud_name_hash;         // Hash of this cloud's name
   boolean _common_knowledge;    // Cloud shares common knowledge
   char _cloud_size;             // Cloud-size this guy is reporting
   long _jvm_boot_msec;          // Boot time of JVM
