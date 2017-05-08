@@ -2,6 +2,15 @@
 
 ## H2O
 
+### Ueno (3.10.4.7) - 5/8/2017
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4392'>PUBDEV-4392</a>] -         h2o on yarn:  H2O does not respect the cloud name in case of flatfile mode
+</li>
+</ul>
+
 ### Ueno (3.10.4.6) - 4/26/2017
 
 <h4>        Bug
