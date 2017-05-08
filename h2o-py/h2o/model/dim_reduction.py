@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
+from h2o.utils.shared_utils import can_use_pandas
 from h2o.utils.compatibility import *  # NOQA
 
 from .model_base import ModelBase
@@ -11,6 +12,25 @@ class H2ODimReductionModel(ModelBase):
     """
     Dimension reduction model, such as PCA or GLRM.
     """
+
+
+    def varimp(self, use_pandas=False):
+        """
+        Return the Importance of components associcated with a pca model
+
+        Type: ``bool``  (default: ``True``).
+        """
+        model = self._model_json["output"]
+        if "importance" in list(model.keys()) and model["importance"]:
+            vals = model["importance"].cell_values
+            header = model["importance"].col_header
+            if use_pandas and can_use_pandas():
+                import pandas
+                return pandas.DataFrame(vals, columns=header)
+            else:
+                return vals
+        else:
+            print("Warning: This model doesn't have importances of components.")
 
     def num_iterations(self):
         """Get the number of iterations that it took to converge or reach max iterations."""
