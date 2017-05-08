@@ -124,6 +124,9 @@ ext {
     jets3tVersion = '0.7.1'
     awsJavaSdkVersion = '1.8.3'
 
+    // Our components
+    visDataServerVersion = '1.0.0-SNAPSHOT'
+
     //
     // H2O's REST API version
     //

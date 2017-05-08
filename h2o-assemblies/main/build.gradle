@@ -23,6 +23,28 @@ dependencies {
     }
     compile project(":h2o-parquet-parser")
     compile "org.slf4j:slf4j-log4j12:1.7.5"
+
+    
+}
+
+//
+// Bundle additional modules
+// 
+if (project.hasProperty("withVisDataServer") && project.withVisDataServer == "true") {
+    dependencies {
+        compile "ai.h2o:vis-data-server-library:${visDataServerVersion}"
+        compile "ai.h2o:vis-data-server-integrated:${visDataServerVersion}"
+    }
+
+    repositories {
+        maven {
+            if (visDataServerVersion.endsWith("-SNAPSHOT")) {
+                url "http://172.17.0.53:8081/nexus/content/repositories/snapshots"
+            } else {
+                url "http://172.17.0.53:8081/nexus/content/repositories/releases"
+            }
+        }
+    }
 }
 
 shadowJar {
