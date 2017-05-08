@@ -79,8 +79,11 @@ class DeepWaterDatasetIterator extends DeepWaterIterator {
           _destData[start+i] = (float)row.get(i);
 //        System.err.println("Row: " + _dinfo._adaptedFrame.vec(0).domain()[(int)_dinfo._adaptedFrame.vec(0).at8(_globalIndex)] + " -> " + Arrays.toString(_destData));
 //        System.err.println(Arrays.toString(Arrays.copyOfRange(_destData, start, start + _dinfo.fullN())));
-        if (_cache)
-          DKV.put(rowKey, new IcedRow(Arrays.copyOfRange(_destData, start, start + _dinfo.fullN())));
+        if (_cache) {
+          Value v = new Value(rowKey, new IcedRow(Arrays.copyOfRange(_destData, start, start + _dinfo.fullN())));
+          DKV.put(rowKey, v);
+          v.freeMem();
+        }
       }
       tryComplete();
     }

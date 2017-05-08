@@ -37,9 +37,9 @@ class H2ODeepWaterEstimator(H2OEstimator):
                       "score_duty_cycle", "classification_stop", "regression_stop", "stopping_rounds",
                       "stopping_metric", "stopping_tolerance", "max_runtime_secs", "ignore_const_cols",
                       "shuffle_training_data", "mini_batch_size", "clip_gradient", "network", "backend", "image_shape",
-                      "channels", "sparse", "gpu", "device_id", "network_definition_file", "network_parameters_file",
-                      "mean_image_file", "export_native_parameters_prefix", "activation", "hidden",
-                      "input_dropout_ratio", "hidden_dropout_ratios", "problem_type"}
+                      "channels", "sparse", "gpu", "device_id", "cache_data", "network_definition_file",
+                      "network_parameters_file", "mean_image_file", "export_native_parameters_prefix", "activation",
+                      "hidden", "input_dropout_ratio", "hidden_dropout_ratios", "problem_type"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -826,6 +826,21 @@ class H2ODeepWaterEstimator(H2OEstimator):
     def device_id(self, device_id):
         assert_is_type(device_id, None, [int])
         self._parms["device_id"] = device_id
+
+
+    @property
+    def cache_data(self):
+        """
+        Whether to cache the data in memory (automatically disabled if data size is too large).
+
+        Type: ``bool``  (default: ``True``).
+        """
+        return self._parms.get("cache_data")
+
+    @cache_data.setter
+    def cache_data(self, cache_data):
+        assert_is_type(cache_data, None, bool)
+        self._parms["cache_data"] = cache_data
 
 
     @property

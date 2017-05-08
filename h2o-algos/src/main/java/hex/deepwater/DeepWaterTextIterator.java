@@ -1,9 +1,6 @@
 package hex.deepwater;
 
-import water.DKV;
-import water.Futures;
-import water.H2O;
-import water.Key;
+import water.*;
 import water.fvec.C4FChunk;
 import water.util.StringUtils;
 import water.util.UnsafeUtils;
@@ -102,7 +99,9 @@ class DeepWaterTextIterator extends DeepWaterIterator {
           byte[] mem = new byte[_wordsPerLine *4];
           for (int i = 0; i< _wordsPerLine; ++i)
             UnsafeUtils.set4f(mem,i<<2, _destData[start + i]);
-          DKV.put(txtKey, new C4FChunk(mem));
+          Value v = new Value(txtKey,new C4FChunk(mem));
+          DKV.put(txtKey, v);
+          v.freeMem();
         }
       }
       tryComplete();

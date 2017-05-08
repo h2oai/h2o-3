@@ -265,7 +265,7 @@ public class DeepWaterParameters extends Model.Parameters {
 
   public int _mini_batch_size = 32;
 
-  protected boolean _cache_data = true;
+  public boolean _cache_data = true;
 
   /**
    * Validate model parameters
@@ -464,6 +464,7 @@ public class DeepWaterParameters extends Model.Parameters {
         "_gpu",
         "_sparse",
         "_device_id",
+        "_cache_data",
         "_input_dropout_ratio",
         "_hidden_dropout_ratios",
         "_cache_data",
