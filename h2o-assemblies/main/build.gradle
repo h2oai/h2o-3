@@ -28,23 +28,26 @@ dependencies {
 }
 
 //
-// Bundle additional modules
-// 
-if (project.hasProperty("withVisDataServer") && project.withVisDataServer == "true") {
-    dependencies {
-        compile "ai.h2o:vis-data-server-library:${visDataServerVersion}"
-        compile "ai.h2o:vis-data-server-integrated:${visDataServerVersion}"
-    }
+// Bundle optional modules
+// The process is defined by convention. There are two flags:
+//  - -Pwith${componentName}=true - enables component "componentName" and includes it in assembly
+//  - -P${componentName}Version=3.14 - overrides default component version
+//
+for (comp in optionalComponents) {
+    def compName = comp['name']
+    def compVersion = comp['version']
+    def compEnabled = comp['enabled']
+    def compPropName = "with${compName.capitalize()}"
+    def compPropVersionName = "${compName}Version"
 
-    repositories {
-        maven {
-            if (visDataServerVersion.endsWith("-SNAPSHOT")) {
-                url "http://172.17.0.53:8081/nexus/content/repositories/snapshots"
-            } else {
-                url "http://172.17.0.53:8081/nexus/content/repositories/releases"
-            }
-        }
+    if (!project.hasProperty(compPropVersionName)) {
+        project.ext.set(compPropVersionName, compVersion)
     }
+    if (compEnabled || project.hasProperty(compPropName) && project.property(compPropName)) {
+        logger.lifecycle("== Using optional component: ${compName}, version ${project.findProperty(compPropVersionName)}")
+        apply from: "$rootDir/gradle/components/${compName}.gradle"
+    }
+    
 }
 
 shadowJar {

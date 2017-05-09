@@ -1,0 +1,14 @@
+dependencies {
+    compile "ai.h2o:vis-data-server-library:${visDataServerVersion}"
+    compile "ai.h2o:vis-data-server-integrated:${visDataServerVersion}"
+}
+
+repositories {
+    maven {
+        if (visDataServerVersion.endsWith("-SNAPSHOT")) {
+            url "http://172.17.0.53:8081/nexus/content/repositories/snapshots"
+        } else {
+            url "http://172.17.0.53:8081/nexus/content/repositories/releases"
+        }
+    }
+}
