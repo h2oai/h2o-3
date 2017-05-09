@@ -9,7 +9,6 @@ import water.util.IcedHashMap;
 import water.util.Log;
 import water.util.TwoDimTable;
 
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static water.DKV.getGet;
