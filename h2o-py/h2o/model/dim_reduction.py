@@ -16,9 +16,9 @@ class H2ODimReductionModel(ModelBase):
 
     def varimp(self, use_pandas=False):
         """
-        Return the Importance of components associcated with a pca model
+        Return the Importance of components associcated with a pca model.
 
-        Type: ``bool``  (default: ``True``).
+        use_pandas: ``bool``  (default: ``False``).
         """
         model = self._model_json["output"]
         if "importance" in list(model.keys()) and model["importance"]:
