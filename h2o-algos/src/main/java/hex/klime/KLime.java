@@ -60,10 +60,25 @@ public class KLime extends ModelBuilder<KLimeModel, KLimeModel.KLimeParameters, 
         model = new KLimeModel(dest(), _parms, new KLimeModel.KLimeOutput(KLime.this));
         model.delete_and_lock(_job);
 
+        _job.update(0, "Building global k-LIME regression model");
+        Key<Frame> globalKey = Key.make("klime_train_global_" + _parms._train);
+        frameKeys.add(globalKey);
+        DKV.put(globalKey, train());
+        Key<Model> globalRegressionKey = Key.make("klime_glm_global_" + model._key);
+        Job globalJob = new Job<>(globalRegressionKey, ModelBuilder.javaName("glm"), "k-LIME Regression (Global GLM)");
+        GLM globalBuilder = ModelBuilder.make("GLM", globalJob, globalRegressionKey);
+        _parms.fillRegressionParms(globalBuilder._parms, globalKey, false);
+
+        final GLMModel globalRegressionModel = globalBuilder.trainModel().get();
+        _job.update(1); // global regression done
+        final Frame adaptedTrain = new Frame(globalRegressionModel.names(), train().vecs(globalRegressionModel.names()));
+        model._output.setNames(adaptedTrain._names);
+        model._output._domains = adaptedTrain.domains();
+
         Key<Frame> clusteringTrainKey = Key.<Frame>make("klime_clustering_" + _parms._train);
         frameKeys.add(clusteringTrainKey);
         Frame clusteringTrain = new Frame(clusteringTrainKey);
-        clusteringTrain.add(train());
+        clusteringTrain.add(adaptedTrain);
         clusteringTrain.remove(_parms._response_column);
         DKV.put(clusteringTrain);
 
@@ -111,28 +126,16 @@ public class KLime extends ModelBuilder<KLimeModel, KLimeModel.KLimeParameters, 
           localBuilders[i] = glmBuilder;
         }
 
-        Key<Frame> key = Key.<Frame>make("klime_train_global_" + _parms._train);
-        frameKeys.add(key);
-        DKV.put(key, train());
-        Key<Model> globalKey = Key.<Model>make("klime_glm_global_" + model._key);
-        Job globalJob = new Job<>(globalKey, ModelBuilder.javaName("glm"), "k-LIME Regression (Global GLM)");
-        DKV.put(globalJob);
-        Scope.track_generic(globalJob);
-        GLM globalBuilder = ModelBuilder.make("GLM", globalJob, globalKey);
-        _parms.fillRegressionParms(globalBuilder._parms, key, false);
-
-        ModelBuilder[] allBuilders = new ModelBuilder[localBuilderCnt + 1];
+        ModelBuilder[] allBuilders = new ModelBuilder[localBuilderCnt];
         int localIdx = 0;
         for (ModelBuilder localBuilder : localBuilders) {
           if (localBuilder != null)
             allBuilders[localIdx++] = localBuilder;
         }
         assert localIdx == localBuilderCnt;
-        allBuilders[localIdx] = globalBuilder;
 
         bulkBuildModels(_job, allBuilders, 1);
 
-        GLMModel globalRegressionModel = DKV.getGet(globalBuilder._job._result);
         double global_r2 = ((ModelMetricsSupervised) globalRegressionModel._output._training_metrics).r2();
         GLMModel[] regressionModels = new GLMModel[K];
         for (int i = 0; i < localBuilders.length; i++) {
