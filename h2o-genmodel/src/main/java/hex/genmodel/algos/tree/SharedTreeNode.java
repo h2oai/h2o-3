@@ -268,7 +268,7 @@ class SharedTreeNode {
     return (domainValues != null);
   }
 
-  private String escapeQuotes(String s) {
+  public static String escapeQuotes(String s) {
     return s.replace("\"", "\\\"");
   }
 
