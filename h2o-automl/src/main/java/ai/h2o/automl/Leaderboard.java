@@ -73,9 +73,9 @@ public class Leaderboard extends Keyed<Leaderboard> {
   private String sort_metric;
 
   /**
-   * Other metric reported in leaderboard (logloss for binomial, rmse,mae,and rmsle for regression)
+   * Other metrics reported in leaderboard (logloss for binomial, rmse, mae, and rmsle for regression)
    */
-  private String[] other_metric;
+  private String[] other_metrics;
 
   /**
    * Metric direction used in the sort.
@@ -134,9 +134,9 @@ public class Leaderboard extends Keyed<Leaderboard> {
     return project;
   }
 
-  public void setMetricAndDirection(String metric,String[] otherMetric, boolean sortDecreasing){
+  public void setMetricAndDirection(String metric,String[] otherMetrics, boolean sortDecreasing){
     this.sort_metric = metric;
-    this.other_metric = otherMetric;
+    this.other_metrics = otherMetrics;
     this.sort_decreasing = sortDecreasing;
     DKV.put(this);
   }
@@ -555,7 +555,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     //long[] timestamps = getTimestamps(models);
     String[] modelIDsFormatted = new String[models.length];
 
-    TwoDimTable table = makeTwoDimTable(tableHeader, sort_metric, other_metric, models.length);
+    TwoDimTable table = makeTwoDimTable(tableHeader, sort_metric, other_metrics, models.length);
 
     // %-s doesn't work in TwoDimTable.toString(), so fake it here:
     int maxModelIdLen = -1;
