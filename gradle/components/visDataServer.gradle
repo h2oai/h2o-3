@@ -6,9 +6,9 @@ dependencies {
 repositories {
     maven {
         if (visDataServerVersion.endsWith("-SNAPSHOT")) {
-            url "http://172.17.0.53:8081/nexus/content/repositories/snapshots"
+            url "$localNexusLocation/snapshots"
         } else {
-            url "http://172.17.0.53:8081/nexus/content/repositories/releases"
+            url "$localNexusLocation/releases"
         }
     }
 }
