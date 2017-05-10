@@ -85,7 +85,7 @@ class SharedTreeSubgraph {
     rootNode.printEdges();
   }
 
-  void printDot(PrintStream os, int maxLevelsToPrintPerEdge, boolean detail) {
+  void printDot(PrintStream os, int maxLevelsToPrintPerEdge, boolean detail, String optionalTitle) {
     os.println("");
     os.println("subgraph " + "cluster_" + subgraphNumber + " {");
     os.println("/* Nodes */");
@@ -112,7 +112,8 @@ class SharedTreeSubgraph {
     }
     os.println("");
     os.println("fontsize=40");
-    os.println("label=\"" + name + "\"");
+    String title = SharedTreeNode.escapeQuotes((optionalTitle != null) ? optionalTitle : name);
+    os.println("label=\"" + title + "\"");
     os.println("}");
   }
 }
