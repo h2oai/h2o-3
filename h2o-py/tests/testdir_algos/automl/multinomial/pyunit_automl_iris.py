@@ -28,6 +28,7 @@ def iris_automl():
 
     print("AutoML (Multinomial) run with x not provided with train, valid, and test")
     aml.train(y="class", training_frame=train,validation_frame=valid, test_frame=test)
+    assert set(aml.get_leaderboard().col_header) == set(["","model_id","mean_per_class_error"])
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(iris_automl)

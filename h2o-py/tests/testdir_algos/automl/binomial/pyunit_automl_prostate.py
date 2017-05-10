@@ -32,6 +32,7 @@ def prostate_automl():
 
     print("AutoML (Binomial) run with x not provided with train, valid, and test")
     aml.train(y="CAPSULE", training_frame=train,validation_frame=valid, test_frame=test)
+    assert set(aml.get_leaderboard().col_header) == set(["","model_id","auc","logloss"])
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(prostate_automl)

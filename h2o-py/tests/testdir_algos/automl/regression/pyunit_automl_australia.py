@@ -28,6 +28,7 @@ def australia_automl():
 
     print("AutoML (Regression) run with x not provided with train, valid, and test")
     aml.train(y="runoffnew", training_frame=train,validation_frame=valid, test_frame=test)
+    assert set(aml.get_leaderboard().col_header) == set(["","model_id", "mean_residual_deviance","rmse", "mae", "rmsle"])
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(australia_automl)
