@@ -146,7 +146,13 @@ public class KLimeModel extends Model<KLimeModel, KLimeParameters, KLimeOutput> 
     return super.remove_impl(fs);
   }
 
+  @Override
+  public KLimeMojoWriter getMojo() {
+    return new KLimeMojoWriter(this);
+  }
+
   private static class KLimeMetricBuilder extends ModelMetricsRegression.MetricBuilderRegression<KLimeMetricBuilder> {
+    public KLimeMetricBuilder() {} // externalizable constructor
     private KLimeMetricBuilder(int numCodes) {
       _work = new double[1 /*predict_klime*/ + 1 /*cluster_klime*/ + numCodes];
     }

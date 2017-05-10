@@ -10,10 +10,7 @@ import water.util.StringUtils;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.StringWriter;
-import java.io.Writer;
 import java.nio.ByteOrder;
-import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -51,6 +48,7 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
   /** Reference to the model being written. Use this in the subclasses to retreive information from your model. */
   protected M model;
 
+  private String targetdir;
   private StringBuilder tmpfile;
   private String tmpname;
   private ZipOutputStream zos;
@@ -105,7 +103,7 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
 
   /** Write a binary file to the MOJO archive. */
   protected final void writeblob(String filename, byte[] blob) throws IOException {
-    ZipEntry archiveEntry = new ZipEntry(filename);
+    ZipEntry archiveEntry = new ZipEntry(targetdir + filename);
     archiveEntry.setSize(blob.length);
     zos.putNextEntry(archiveEntry);
     zos.write(blob);
@@ -155,18 +153,32 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
    * Each domain file is a plain text file with one line per category (not quoted).
    */
   @Override public final void writeTo(OutputStream os) {
-    zos = new ZipOutputStream(os);
+    ZipOutputStream zos = new ZipOutputStream(os);
     try {
-      addCommonModelInfo();
-      writeModelData();
-      writeModelInfo();
-      writeDomains();
-      writeModelDetails();
-      writeModelDetailsReadme();
+      writeTo(zos);
       zos.close();
     } catch (IOException e) {
       e.printStackTrace();
     }
+  }
+
+  protected void writeTo(ZipOutputStream zos) throws IOException {
+    writeTo(zos, "");
+  }
+
+  public final void writeTo(ZipOutputStream zos, String zipDirectory) throws IOException {
+    initWriting(zos, zipDirectory);
+    addCommonModelInfo();
+    writeModelData();
+    writeModelInfo();
+    writeDomains();
+    writeModelDetails();
+    writeModelDetailsReadme();
+  }
+
+  private void initWriting(ZipOutputStream zos, String targetdir) {
+    this.zos = zos;
+    this.targetdir = targetdir;
   }
 
   private void addCommonModelInfo() throws IOException {
