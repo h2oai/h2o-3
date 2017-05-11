@@ -409,6 +409,25 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     return p;
   }
 
+  /**
+   * Make a prediction on a new data point using a k-LIME model.
+   *
+   * @param data A new data point.
+   * @return The prediction.
+   * @throws PredictException
+   */
+  public KLimeModelPrediction predictKLime(RowData data) throws PredictException {
+    double[] preds = preamble(ModelCategory.Regression, data);
+
+    KLimeModelPrediction p = new KLimeModelPrediction();
+    p.value = preds[0];
+    p.cluster = (int) preds[1];
+    p.reasonCodes = new double[preds.length - 2];
+    System.arraycopy(preds, 2, p.reasonCodes, 0, p.reasonCodes.length);
+
+    return p;
+  }
+
   //----------------------------------------------------------------------
   // Transparent methods passed through to GenModel.
   //----------------------------------------------------------------------

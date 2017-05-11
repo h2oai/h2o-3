@@ -44,6 +44,11 @@ public class KLime extends ModelBuilder<KLimeModel, KLimeModel.KLimeParameters, 
   }
 
   @Override
+  public boolean haveMojo() {
+    return true;
+  }
+
+  @Override
   protected Driver trainModelImpl() {
     return new KLimeDriver();
   }
