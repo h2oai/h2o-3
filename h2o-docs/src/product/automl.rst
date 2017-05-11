@@ -64,6 +64,19 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
     # 9  GLM_grid__99d1689ffa54427987452fbfe0b34e14_model_1 0.685216
     # 10 GLM_grid__99d1689ffa54427987452fbfe0b34e14_model_0 0.685216
 
+    # The leader model is stored here
+    aml@leader
+
+
+    # If you need to generate predictions on a test set, you can make 
+    # predictions directly on the `"H2OAutoML"` object, or on the leader 
+    # model object directly
+
+    pred <- h2o.predict(aml, test)  #Not working yet: https://0xdata.atlassian.net/browse/PUBDEV-4428
+
+    # or:
+    pred <- h2o.predict(aml@leader, test)
+
 
 
    .. code-block:: python
@@ -93,7 +106,7 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
               test_frame = test)
 
     # View the AutoML Leaderboard
-    lb = aml.get_leaderboard()
+    lb = aml.leaderboard
     lb
 
     #     model_id                                            auc
@@ -108,7 +121,18 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
     # 7   GLM_grid__baf3426712644306cd5c78e4156343ab_model_1  0.685216
     # 8   GLM_grid__baf3426712644306cd5c78e4156343ab_model_0  0.685216
 
+    # The leader model is stored here
+    aml.leader
 
+
+    # If you need to generate predictions on a test set, you can make 
+    # predictions directly on the `"H2OAutoML"` object, or on the leader 
+    # model object directly
+
+    preds = aml.predict(test)
+
+    # or:
+    preds = aml.leader.predict(test)
 
 
 
