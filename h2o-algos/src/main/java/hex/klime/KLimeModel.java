@@ -27,6 +27,11 @@ public class KLimeModel extends Model<KLimeModel, KLimeParameters, KLimeOutput> 
   }
 
   @Override
+  public GridSortBy getDefaultGridSortBy() {
+    return GridSortBy.R2;
+  }
+
+  @Override
   public double[] score0(Chunk[] chks, double weight, double offset, int row_in_chunk, double[] tmp, double[] preds) {
     final double[] ps = _output._clustering.score0(chks, weight, offset, row_in_chunk, tmp, preds);
     final int cluster = (int) ps[0];
