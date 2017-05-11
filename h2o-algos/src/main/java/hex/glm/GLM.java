@@ -1058,18 +1058,23 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           double testDev = Double.NaN;
           if (_validDinfo != null) {
             int j = 0;
-
             double [] beta = _state.beta();
             int [] activeCols = new int[_state.beta().length-1];
             if(_parms._family != Family.multinomial) {
               for (int x = 0; x < beta.length - 1; ++x)
-                if (beta[x] != 0) activeCols[x++] = i;
+                if (beta[x] != 0) activeCols[j++] = x;
             }
             if (_parms._family != Family.multinomial && j < activeCols.length) {
               activeCols = Arrays.copyOf(activeCols, j);
               DataInfo activeValidDinfo = _validDinfo.filterExpandedColumns(activeCols);
               activeCols = ArrayUtils.append(activeCols, _dinfo.fullN());
               testDev = new GLMResDevTask(_job._key, activeValidDinfo, _parms, ArrayUtils.select(_dinfo.denormalizeBeta(_state.beta()),activeCols)).doAll(activeValidDinfo._adaptedFrame).avgDev();
+              double testDev2 = _parms._family == Family.multinomial
+                  ? new GLMResDevTaskMultinomial(_job._key, _validDinfo, _dinfo.denormalizeBeta(_state.beta()), _nclass).doAll(_validDinfo._adaptedFrame).avgDev()
+                  : new GLMResDevTask(_job._key, _validDinfo, _parms, _dinfo.denormalizeBeta(_state.beta())).doAll(_validDinfo._adaptedFrame).avgDev();
+              if(testDev != testDev2){
+                System.out.println("haha");
+              }
             } else {
               testDev = _parms._family == Family.multinomial
                   ? new GLMResDevTaskMultinomial(_job._key, _validDinfo, _dinfo.denormalizeBeta(_state.beta()), _nclass).doAll(_validDinfo._adaptedFrame).avgDev()
@@ -1314,7 +1319,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     return grads;
   }
   public double [] COD_solve(ComputationState.GramXY gram, double alpha, double lambda) {
-    double [] res = COD_solve(gram.gram.getXX(),gram.xy,gram.grads,gram.newCols,alpha,lambda);
+    double [] res = COD_solve(gram.gram.getXX(),gram.xy,gram.getCODGradients(),gram.newCols,alpha,lambda);
     gram.newCols = new int[0];
     return res;
   }
@@ -1358,28 +1363,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     int numStart = activeData.numStart();
     if(newCols != null) {
       for (int id : newCols) {
-        grads[id] = xy[id] - ArrayUtils.innerProduct(xx[id], beta) + xx[id][id] * beta[id];
         double b = bc.applyBounds(ADMM.shrinkage(grads[id], l1pen) * diagInv[id], id);
         if (b != 0) {
           doUpdateCD(grads, xx[id], b, id, id + 1);
           beta[id] = b;
         }
       }
-    } else {
-      for(int i = 0; i < nzs.length; ++i) {
-        if (nzs[i] != null) {
-          double ip = 0;
-          double[] x = xx[i];
-          for (int j:nzs[i])
-            ip += x[j] * beta[j];
-          for(int j = activeData.numStart(); j < x.length; ++j)
-            ip += x[j] * beta[j];
-          grads[i] = xy[i] - ip;
-        } else
-          grads[i] = xy[i] - ArrayUtils.innerProduct(xx[i], beta) + xx[i][i] * beta[i];
-      }
-      for(int i = nzs.length; i < grads.length; ++i)
-        grads[i] =  xy[i] - ArrayUtils.innerProduct(xx[i], beta) + xx[i][i] * beta[i];
     }
     int iter1 = 0;
     int P = xy.length - 1;
@@ -1431,7 +1420,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
     long tend = System.currentTimeMillis();
     long tdelta = (tend-t0);
-    Log.info(LogMsg("COD done after " + iter1 + " iterations and " + tdelta + "ms") + ", main loop took " + (tend-t2) + "ms, overall COD time = " + (COD_time += tdelta));
+    Log.info(LogMsg("COD done after " + iter1 + " iterations and " + tdelta + "ms") + ", main loop took " + (tend-t2) + "ms, overall COD time = " + (COD_time += tdelta) + ", beta = " + Arrays.toString(beta));
     return beta;
   }
   /**
