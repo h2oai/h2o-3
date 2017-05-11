@@ -450,7 +450,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       ModelMetrics[] mm = new ModelMetrics[1];
       Frame preds = makePreds(model_info()._booster, trainMat, mm, Key.<Frame>make(destination_key));
       DKV.put(preds);
-      trainMat.dispose();
       return preds;
     } catch (XGBoostError xgBoostError) {
       xgBoostError.printStackTrace();

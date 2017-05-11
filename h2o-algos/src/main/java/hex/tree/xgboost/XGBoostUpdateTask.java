@@ -6,6 +6,7 @@ import ml.dmlc.xgboost4j.java.Rabit;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import water.MRTask;
 import water.util.IcedHashMapGeneric;
+import water.util.Log;
 
 import java.util.Map;
 
@@ -40,27 +41,33 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
     @Override
     protected void setupLocal() {
         try {
-            DMatrix trainMat = XGBoost.convertFrametoDMatrix(
-                    _sharedmodel._dataInfoKey,
-                    _fr,
-                    this._lo,
-                    this._hi - 1,
-                    _parms._response_column,
-                    _parms._weights_column,
-                    _parms._fold_column,
-                    _featureMap,
-                    _output._sparse);
-
-            rabitEnv.put("XGBOOST_TASK_ID", Thread.currentThread().getName());
-            Rabit.init(rabitEnv);
-
-            //booster.setParam("eta", effective_learning_rate(model));
-            booster.update(trainMat, tid);
-            Rabit.shutdown();
-            trainMat.dispose();
+            update();
         } catch (XGBoostError xgBoostError) {
             xgBoostError.printStackTrace();
         }
+    }
+
+    private void update() throws XGBoostError {
+        DMatrix trainMat = XGBoost.convertFrametoDMatrix(
+                _sharedmodel._dataInfoKey,
+                _fr,
+                this._lo,
+                this._hi - 1,
+                _parms._response_column,
+                _parms._weights_column,
+                _parms._fold_column,
+                _featureMap,
+                _output._sparse);
+
+        rabitEnv.put("DMLC_TASK_ID", Thread.currentThread().getName());
+
+        Rabit.init(rabitEnv);
+
+        //booster.setParam("eta", effective_learning_rate(model));
+
+        booster.update(trainMat, tid);
+
+        Rabit.shutdown();
     }
 
     Booster booster() {

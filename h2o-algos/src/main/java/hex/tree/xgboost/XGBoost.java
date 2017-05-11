@@ -1,11 +1,9 @@
 package hex.tree.xgboost;
 
-import hex.DataInfo;
-import hex.ModelBuilder;
-import hex.ModelCategory;
-import hex.ScoreKeeper;
+import hex.*;
 import hex.glm.GLMTask;
 import ml.dmlc.xgboost4j.java.*;
+import ml.dmlc.xgboost4j.java.DMatrix;
 import water.H2O;
 import water.Job;
 import water.Key;
@@ -448,6 +446,10 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     return dinfo;
   }
 
+  public static Object lockForGpu(int gpu_id) {
+    return Integer.valueOf(gpu_id);
+  }
+
   // ----------------------
   private class XGBoostDriver extends Driver {
     @Override
@@ -464,7 +466,19 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
 
     final void buildModel() {
-      XGBoostModel model = new XGBoostModel(_result,_parms,new XGBoostOutput(XGBoost.this),_train,_valid);
+      if( (XGBoostModel.XGBoostParameters.Backend.auto.equals(_parms._backend) ||
+              XGBoostModel.XGBoostParameters.Backend.gpu.equals(_parms._backend) ) &&
+              XGBoost.hasGPU(_parms._gpu_id) ) {
+        synchronized (XGBoostGPULock.lock(_parms._gpu_id)) {
+          buildModelImpl();
+        }
+      } else {
+        buildModelImpl();
+      }
+    }
+
+    final void buildModelImpl() {
+      XGBoostModel model = new XGBoostModel(_result, _parms, new XGBoostOutput(XGBoost.this), _train, _valid);
       model.write_lock(_job);
       String[] featureMap = new String[]{""};
 
@@ -514,7 +528,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
                 model._output._sparse);
 
         DMatrix validMat = null;
-        if(null != _valid) {
+        if (null != _valid) {
           validMat = convertFrametoDMatrix(
                   model.model_info()._dataInfoKey,
                   _valid,
@@ -531,14 +545,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         scoreAndBuildTrees(model, trainMat, validMat, featureMap, rt);
 
         Map<String, String> rabitEnv = new HashMap<>();
-        rabitEnv.put("XGBOOST_TASK_ID", Thread.currentThread().getName());
+        rabitEnv.put("DMLC_TASK_ID", Thread.currentThread().getName());
         // final scoring
         doScoring(model, model.model_info()._booster, trainMat, validMat, true, rabitEnv);
-
-        trainMat.dispose();
-        if(null != validMat) {
-          validMat.dispose();
-        }
 
         // save the model to DKV
         model.model_info().nativeToJava();
@@ -551,7 +560,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
     protected final void scoreAndBuildTrees(XGBoostModel model, DMatrix trainMat, DMatrix validMat, String[] featureMap, RabitTracker rt) throws XGBoostError {
       Map<String, String> rabitEnv = new HashMap<>();
-      rabitEnv.put("XGBOOST_TASK_ID", Thread.currentThread().getName());
+      rabitEnv.put("DMLC_TASK_ID", Thread.currentThread().getName());
 
       for( int tid=0; tid< _parms._ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
@@ -574,6 +583,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
                 tid,
                 rt.getWorkerEnvs()).doAll(_train).booster();
         rt.waitFor(0);
+
 
         Log.info((tid + 1) + ". tree was built in " + kb_timer.toString());
         _job.update(1);
@@ -639,8 +649,14 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     return _parms._learn_rate * Math.pow(_parms._learn_rate_annealing, (model._output._ntrees-1));
   }
 
+  private static Set<Integer> GPUS = new HashSet<>();
+
   // helper
-  static boolean hasGPU(int gpu_id) {
+  static synchronized boolean hasGPU(int gpu_id) {
+    if(GPUS.contains(gpu_id)) {
+      return true;
+    }
+
     DMatrix trainMat = null;
     try {
       trainMat = new DMatrix(new float[]{1,2,1,2},2,2);
@@ -657,6 +673,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     watches.put("train", trainMat);
     try {
       ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, params, 1, watches, null, null);
+      GPUS.add(gpu_id);
       return true;
     } catch (XGBoostError xgBoostError) {
       return false;
