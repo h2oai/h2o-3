@@ -31,6 +31,9 @@ def pca_wideDataset_rotterdam():
     powerPCA = H2OPCA(k=8, impute_missing=True, transform=transformN, pca_method="Power", seed=12345)  # power
     powerPCA.train(x=x, training_frame=rotterdamH2O)
 
+    randomizedPCA = H2OPCA(k=8, impute_missing=True, transform=transformN, pca_method="Randomized", seed=12345)  # power
+    randomizedPCA.train(x=x, training_frame=rotterdamH2O)
+
     # compare singular values and stuff with GramSVD
     print("@@@@@@  Comparing eigenvalues between GramSVD and Power...\n")
     pyunit_utils.assert_H2OTwoDimTable_equal(gramSVD._model_json["output"]["importance"],
@@ -44,6 +47,21 @@ def pca_wideDataset_rotterdam():
                                              powerPCA._model_json["output"]["eigenvectors"],
                                              powerPCA._model_json["output"]["names"], tolerance=1e-6, check_sign=True,
                                              check_all=False)
+
+    # compare singular values and stuff with GramSVD
+    print("@@@@@@  Comparing eigenvalues between GramSVD and Randomized...\n")
+    pyunit_utils.assert_H2OTwoDimTable_equal(gramSVD._model_json["output"]["importance"],
+                                             randomizedPCA._model_json["output"]["importance"],
+                                             ["Standard deviation", "Cumulative Proportion", "Cumulative Proportion"],
+                                             tolerance=1e-3, check_all=False)
+
+    print("@@@@@@  Comparing eigenvectors between GramSVD and Power...\n")
+    # compare singular vectors
+    pyunit_utils.assert_H2OTwoDimTable_equal(gramSVD._model_json["output"]["eigenvectors"],
+                                             randomizedPCA._model_json["output"]["eigenvectors"],
+                                             randomizedPCA._model_json["output"]["names"], tolerance=1e-6,
+                                             check_sign=True, check_all=False)
+
 if __name__ == "__main__":
     pyunit_utils.standalone_test(pca_wideDataset_rotterdam)
 else:

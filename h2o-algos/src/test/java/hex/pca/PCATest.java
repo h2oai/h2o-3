@@ -274,7 +274,7 @@ public class PCATest extends TestUtil {
 
       PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
       parms._train = train._key;
-      parms._k = -1;
+      parms._k = 3;
       parms._transform = DataInfo.TransformType.NONE;
       parms._pca_method = PCAModel.PCAParameters.Method.Randomized;
       parms._impute_missing = true;   // Don't skip rows with NA entries, but impute using mean of column

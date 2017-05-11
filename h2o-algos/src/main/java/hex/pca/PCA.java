@@ -59,17 +59,22 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     double r = _train.numRows();
     boolean useGramSVD = _parms._pca_method == PCAParameters.Method.GramSVD;
     boolean usePower = _parms._pca_method == PCAParameters.Method.Power;
+    boolean useRandomized = _parms._pca_method == PCAParameters.Method.Randomized;
+    double gramSize =  _train.lastVec().nChunks()==1 ? 1 :
+            Math.log((double) _train.lastVec().nChunks()) / Math.log(2.); // gets to zero if nChunks=1
 
-    long mem_usage = (useGramSVD || usePower) ? (long) (hb._cpus_allowed * p * p * 8/*doubles*/ *
-            Math.log((double) _train.lastVec().nChunks()) / Math.log(2.)) : 1; //one gram per core
-    long mem_usage_w = (useGramSVD || usePower) ? (long) (hb._cpus_allowed * r * r *
-            8/*doubles*/ * Math.log((double) _train.lastVec().nChunks()) / Math.log(2.)) : 1;
+    long mem_usage = (useGramSVD || usePower || useRandomized) ? (long) (hb._cpus_allowed * p * p * 8/*doubles*/ *
+            gramSize) : 1; //one gram per core
+    long mem_usage_w = (useGramSVD || usePower || useRandomized) ? (long) (hb._cpus_allowed * r * r *
+            8/*doubles*/ * gramSize) : 1;
+
     long max_mem = hb.get_free_mem();
 
     if ((mem_usage > max_mem) && (mem_usage_w > max_mem)) {
       String msg = "Gram matrices (one per thread) won't fit in the driver node's memory ("
               + PrettyPrint.bytes(mem_usage) + " > " + PrettyPrint.bytes(max_mem)
               + ") - try reducing the number of columns and/or the number of categorical factors.";
+
       error("_train", msg);
     }
 
@@ -170,7 +175,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       pca._output._std_deviation = mult(svd._output._d, 1.0 / Math.sqrt(svd._output._nobs - 1.0));
       pca._output._eigenvectors_raw = svd._output._v;
       // Since gram = X'X/n, but variance requires n-1 in denominator
-      pca._output._total_variance = gram.diagSum()*pca._output._nobs/(pca._output._nobs-1.0);
+      pca._output._total_variance = gram != null?gram.diagSum()*pca._output._nobs/(pca._output._nobs-1.0):svd._output._total_variance;
       buildTables(pca, svd._output._names_expanded);
     }
 
@@ -304,7 +309,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
           if (_wideDataset) {
             ogtsk = new OuterGramTask(_job._key, dinfo).doAll(dinfo._adaptedFrame);
-
             gram = ogtsk._gram;
             model._output._nobs = ogtsk._nobs;
           } else {
@@ -386,9 +390,14 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
           // Recover PCA results from SVD model
           _job.update(1, "Computing stats from SVD");
-          GramTask gtsk = new GramTask(_job._key, dinfo).doAll(dinfo._adaptedFrame);
-          gram = gtsk._gram;   // TODO: This ends up with all NaNs if training data has too many missing values
-          computeStatsFillModel(model, svd, gram);
+
+          if (_parms._pca_method == PCAParameters.Method.Randomized) {  // okay to use it here.
+            GramTask gtsk = new GramTask(_job._key, dinfo).doAll(dinfo._adaptedFrame);
+            gram = gtsk._gram;   // TODO: This ends up with all NaNs if training data has too many missing values*/
+            computeStatsFillModel(model, svd, gram);
+          } else {
+            computeStatsFillModel(model, svd, null);
+          }
           model._output._scoring_history = svd._output._scoring_history;
         } else if(_parms._pca_method == PCAParameters.Method.GLRM) {
           GLRMModel.GLRMParameters parms = new GLRMModel.GLRMParameters();
