@@ -144,7 +144,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
 
   HashMap<String, Object> createParams() {
-    XGBoostParameters p = _parms;
+    return createParams(_parms, _output);
+  }
+
+  static HashMap<String, Object> createParams(XGBoostParameters p, XGBoostOutput output) {
     HashMap<String, Object> params = new HashMap<>();
 
     // Common parameters with H2O GBM
@@ -212,9 +215,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("skip_drop", p._skip_drop);
     }
     if ( p._backend == XGBoostParameters.Backend.auto || p._backend == XGBoostParameters.Backend.gpu ) {
-      if (XGBoost.hasGPU(_parms._gpu_id)) {
-        Log.info("Using GPU backend (gpu_id: " + _parms._gpu_id + ").");
-        params.put("gpu_id", _parms._gpu_id);
+      if (XGBoost.hasGPU(p._gpu_id)) {
+        Log.info("Using GPU backend (gpu_id: " + p._gpu_id + ").");
+        params.put("gpu_id", p._gpu_id);
         if (p._tree_method == XGBoostParameters.TreeMethod.exact) {
           Log.info("Using grow_gpu (exact) updater.");
           params.put("updater", "grow_gpu");
@@ -224,7 +227,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
           params.put("updater", "grow_gpu_hist");
         }
       } else {
-        Log.info("No GPU (gpu_id: "+_parms._gpu_id + ") found. Using CPU backend.");
+        Log.info("No GPU (gpu_id: "+p._gpu_id + ") found. Using CPU backend.");
       }
     } else {
       assert p._backend == XGBoostParameters.Backend.cpu;
@@ -248,9 +251,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     params.put("lambda", p._reg_lambda);
     params.put("alpha", p._reg_alpha);
 
-    if (_output.nclasses()==2) {
+    if (output.nclasses()==2) {
       params.put("objective", "binary:logistic");
-    } else if (_output.nclasses()==1) {
+    } else if (output.nclasses()==1) {
       if (p._distribution == DistributionFamily.gamma) {
         params.put("objective", "reg:gamma");
       } else if (p._distribution == DistributionFamily.tweedie) {
@@ -265,7 +268,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       }
     } else {
       params.put("objective", "multi:softprob");
-      params.put("num_class", _output.nclasses());
+      params.put("num_class", output.nclasses());
     }
     Log.info("XGBoost Parameters:");
     for (Map.Entry<String,Object> s : params.entrySet()) {
@@ -438,6 +441,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       ModelMetrics[] mm = new ModelMetrics[1];
       Frame preds = makePreds(model_info()._booster, trainMat, mm, Key.<Frame>make(destination_key));
       DKV.put(preds);
+      trainMat.dispose();
       return preds;
     } catch (XGBoostError xgBoostError) {
       xgBoostError.printStackTrace();
