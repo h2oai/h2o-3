@@ -354,11 +354,33 @@ public class DataInfo extends Keyed<DataInfo> {
         beta[off + N - 1] -= norm;
       }
     }
+    if(_response_transform == TransformType.STANDARDIZE){
+      double x = 1.0/_normRespMul[0];
+      for(int i = 0; i < beta.length; ++i)
+        beta[i] *= x;
+      beta[beta.length-1] += _normRespSub[0];
+    }
     return beta;
   }
 
   private int [] _fullCatOffsets;
   private int [][] _catMap;
+
+  public double normMul(int i) {
+    return _normMul == null?1:_normMul[i];
+  }
+
+  public double normRespMul(int i){
+    return _normRespMul == null?1:_normRespMul[i];
+  }
+
+  public double normRespSub(int i){
+    return _normRespSub == null?0:_normRespSub[i];
+  }
+
+  public double normSub(int i) {
+    return _normSub == null?0:_normSub[i];
+  }
 
   protected int [] fullCatOffsets(){ return _fullCatOffsets == null?_catOffsets:_fullCatOffsets;}
   // private constructor called by filterExpandedColumns
@@ -507,7 +529,7 @@ public class DataInfo extends Keyed<DataInfo> {
     // now numerics
     prev=j=_interactionVecs==null?0:_interactionVecs.length;
     for(;i<cols.length;++i){
-      int numsToIgnore = (cols[i]-_numOffsets[j]);
+      int numsToIgnore = ((j < _numOffsets.length)?(cols[i]-_numOffsets[j]):0);
       for(int k=0;k<numsToIgnore;++k){
         ignoredCols[ignoredCnt++] = _cats+prev++;
         ++j;
@@ -536,6 +558,8 @@ public class DataInfo extends Keyed<DataInfo> {
         normMul[k-id] = _normMul[cols[k]-off];
     }
     DataInfo dinfo = new DataInfo(this,f,normMul,normSub,catLvls,intLvls,catModes,cols);
+    dinfo._normRespMul = _normRespMul;
+    dinfo._normRespSub = _normRespSub;
     dinfo._nums=f.numCols()-dinfo._cats - dinfo._responses - (dinfo._offset?1:0) - (dinfo._weights?1:0) - (dinfo._fold?1:0);
     dinfo._numMeans=new double[nnums];
     for(int k=id; k < (id+nnums);++k )
@@ -645,6 +669,16 @@ public class DataInfo extends Keyed<DataInfo> {
       return Arrays.binarySearch(_interactionVecs,colid) >= 0;
   }
 
+  public int numDense(){
+    int res = 0;
+    Vec [] v = _adaptedFrame.bulkRollups();
+    long sparseThreshold = _adaptedFrame.numRows() >> 4;
+    for(int i = _cats; i < _cats + _nums; i++)
+      if(v[i].nzCnt() > sparseThreshold)
+        res++;
+    return res;
+  }
+  public final int denseN()     { return numCats() + numDense();      }
   /**
    *
    * Get the fully expanded number of predictor columns.
@@ -790,6 +824,19 @@ public class DataInfo extends Keyed<DataInfo> {
       return res;
     }
 
+    public void addToArray(double scale, double []res) {
+      for (int i = 0; i < nBins; i++)
+        res[binIds[i]] += scale;
+      int numstart = numStart();
+      if (numIds != null) {
+        for (int i = 0; i < nNums; ++i)
+          res[numIds[i]] += scale * numVals[i];
+      } else for (int i = 0; i < numVals.length; ++i)
+        if (numVals[i] != 0)
+          res[numstart + i] += scale * numVals[i];
+      if (_intercept)
+        res[res.length - 1] += scale;
+    }
     public Row(boolean sparse, int nNums, int nBins, int nresponses, int i, long start) {
       binIds = MemoryManager.malloc4(nBins);
       numVals = MemoryManager.malloc8d(nNums);
@@ -1097,6 +1144,8 @@ public class DataInfo extends Keyed<DataInfo> {
    */
   public final Row[] extractSparseRows(Chunk [] chunks) {
     Row[] rows = new Row[chunks[0]._len];
+    double [] sparse_vals = new double[chunks[0]._len];
+    int [] sparse_ids = new int[chunks[0]._len];
     long startOff = chunks[0].start();
     for (int i = 0; i < rows.length; ++i) {
       rows[i] = new Row(true, Math.min(_nums, 16), _cats, _responses, i, startOff);  // if sparse, _nums is the correct number of nonzero values! i.e., do not use numNums()
@@ -1154,19 +1203,18 @@ public class DataInfo extends Keyed<DataInfo> {
         }
         interactionOffset+=nextNumericIdx(cid);
       } else {
-        for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
-          if (c.atd(r) == 0) continue;
-          assert r > oldRow;
+        double scale = _normMul == null?1:_normMul[interactionOffset];
+        int len = c.getSparseDoubles(sparse_vals,sparse_ids,_skipMissing?Double.NaN:scale*_numMeans[cid]);
+        for (int k = 0; k < len; k++) {
+          double d = scale*sparse_vals[k];
+          int r = sparse_ids[k];
+          if(d == 0)continue;
+          assert r > oldRow:"chunk  " + c.getClass() + " " + oldRow + " >= " + r;
           oldRow = r;Row row = rows[r];
-          if (c.isNA(r) && _skipMissing)
-            row.predictors_bad = true;
-          if (row.predictors_bad) continue;
-          double d = c.atd(r);
-          if (Double.isNaN(d))
-            d = _numMeans[cid];
-          if (_normMul != null)
-            d *= _normMul[interactionOffset];
-          row.addNum(numStart()+interactionOffset,d);
+//          if (_normMul != null)
+//            d *= _normMul[interactionOffset];
+          if(_skipMissing && Double.isNaN(d)) row.predictors_bad = true;
+          else row.addNum(numStart()+interactionOffset,d);
         }
         interactionOffset++;
       }

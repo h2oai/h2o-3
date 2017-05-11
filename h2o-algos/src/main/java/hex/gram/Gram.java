@@ -22,6 +22,11 @@ public final class Gram extends Iced<Gram> {
   int _fullN;
   final static int MIN_TSKSZ=10000;
 
+  public Gram(double [][] xx){
+    _xx = _xxCache = xx;
+    _denseN = xx.length;
+    _fullN = xx.length;
+  }
   public Gram(DataInfo dinfo) {
     this(dinfo.fullN(), dinfo.largestCat(), dinfo.numNums(), dinfo._cats,true);
   }
@@ -202,7 +207,7 @@ public final class Gram extends Iced<Gram> {
       int jchunk = Math.max(1,MIN_PAR/(Z.length-j));
       int nchunks = (Z.length - j - 1)/jchunk;
       nchunks = Math.min(nchunks,H2O.NUMCPUS);
-      if(nchunks <= 1) { // single trheaded update
+      if(nchunks <= 1) { // single threaded update
         updateZ(gamma,Z,j);
       } else { // multi-threaded update
         final int fjchunk = (Z.length - 1 - j)/nchunks;
@@ -247,7 +252,7 @@ public final class Gram extends Iced<Gram> {
       ForkJoinTask.invokeAll(ras);
     }
     // drop the ignored cols
-    if(dropped_cols.isEmpty()) return new Cholesky(R,new double[0], true);
+    if(dropped_cols.isEmpty()) return new Cholesky(R,new double[0], _hasIntercept);
     double [][] Rnew = new double[R.length-dropped_cols.size()][];
     for(int i = 0; i < Rnew.length; ++i)
       Rnew[i] = new double[i+1];
@@ -264,7 +269,7 @@ public final class Gram extends Iced<Gram> {
       }
       ++j;
     }
-    return new Cholesky(Rnew,new double[0], true);
+    return new Cholesky(Rnew,new double[0], _hasIntercept);
   }
 
 
@@ -487,27 +492,43 @@ public final class Gram extends Iced<Gram> {
     return chol;
   }
 
-  public double[][] getXX(){return getXX(false, false);}
+  public transient double[][] _xxCache;
+  public double[][] getXX(){
+    if(_xxCache != null) return _xxCache;
+    return _xxCache = getXX(false, false);
+  }
+
   public double[][] getXX(boolean lowerDiag, boolean icptFist) {
     final int N = _fullN;
     double[][] xx = new double[N][];
     for( int i = 0; i < N; ++i )
       xx[i] = MemoryManager.malloc8d(lowerDiag?i+1:N);
     int off = 0;
-    if(icptFist) {
+    if(_hasIntercept && icptFist) {
       double [] icptRow = _xx[_xx.length-1];
       xx[0][0] = icptRow[icptRow.length-1];
       for(int i = 0; i < icptRow.length-1; ++i)
         xx[i+1][0] = icptRow[i];
       off = 1;
     }
-    for( int i = 0; i < _diag.length; ++i )
-      xx[i+off][i+off] = _diag[i];
+    for( int i = 0; i < _diag.length; ++i ) {
+      xx[i + off][i + off] = _diag[i];
+      if(!lowerDiag) {
+        int col = i+off;
+        double [] xrow = xx[i+off];
+        for (int j = off; j < _xx.length; ++j)
+          xrow[j+_diagN] = _xx[j][col];
+      }
+    }
     for( int i = 0; i < _xx.length - off; ++i ) {
-      for( int j = 0; j < _xx[i].length; ++j ) {
-        xx[i + _diag.length + off][j + off] = _xx[i][j];
-        if(!lowerDiag)
-          xx[j + off][i + _diag.length + off] = _xx[i][j];
+      double [] xrow = xx[i+_diag.length + off];
+      double [] xrowOld = _xx[i];
+      System.arraycopy(xrowOld,0,xrow,off,xrowOld.length);
+      if(!lowerDiag) {
+        int col = xrowOld.length-1;
+        int row = i+1;
+        for (int j = col+1; j < xrow.length; ++j)
+          xrow[j] = _xx[row++][col];
       }
     }
     return xx;

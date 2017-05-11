@@ -19,8 +19,11 @@ test.glm_reg_path <- function() {
     for(i in 1:length(regpath$lambdas)){
       coefs_net = m_net$beta[,i]
       coefs_h2o = regpath$coefficients[i,]
-      diff = max(abs((coefs_h2o[names(coefs_net)] - coefs_net)/max(1,coefs_net)))
-      expect_false(diff > 1e-3)
+      h2o_coefs = coefs_h2o[names(coefs_net)]
+      diff = abs(h2o_coefs-coefs_net)
+      cat('lambda ',i,max(diff),'\n')
+      print(cbind(coefs_net,h2o_coefs,diff))
+      expect_false(max(diff) > 1e-3)
     }
     print("with validation")
     # now make sure we can run with validation
