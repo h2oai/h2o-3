@@ -7,11 +7,6 @@ description = "H2O GenModel"
 
 apply from: "$rootDir/gradle/dataCheck.gradle"
 
-//
-// Keep code of genmodel Java 6 compatible
-//
-sourceCompatibility = 1.6
-
 javadoc {
   options.overview = "src/main/java/overview.html" // relative to source root
 
