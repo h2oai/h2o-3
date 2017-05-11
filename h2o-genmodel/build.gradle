@@ -28,6 +28,9 @@ dependencies {
   compile "net.sf.opencsv:opencsv:2.3"
   compile "com.google.protobuf.nano:protobuf-javanano:3.1.0"
   compile "ai.h2o:deepwater-backend-api:1.0.3"
+  if (file("${rootDir}/lib/xgboost4j-0.7-jar-with-dependencies.jar").exists()) {
+      compile files("${rootDir}/lib/xgboost4j-0.7-jar-with-dependencies.jar")
+  }
 }
 
 build.dependsOn shadowJar

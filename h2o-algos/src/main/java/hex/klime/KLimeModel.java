@@ -27,13 +27,13 @@ public class KLimeModel extends Model<KLimeModel, KLimeParameters, KLimeOutput> 
   }
 
   @Override
-  public double[] score0(Chunk[] chks, double weight, double offset, int row_in_chunk, double[] tmp, double[] preds) {
-    final double[] ps = _output._clustering.score0(chks, weight, offset, row_in_chunk, tmp, preds);
+  public double[] score0(Chunk[] chks, double weight, int row_in_chunk, double[] tmp, double[] preds) {
+    final double[] ps = _output._clustering.score0(chks, weight, row_in_chunk, tmp, preds);
     final int cluster = (int) ps[0];
     final GLMModel m = _output.getClusterModel(cluster);
 
     // preds[0] = value predicted by regression
-    m.score0(chks, weight, offset, row_in_chunk, tmp, preds);
+    m.score0(chks, weight, row_in_chunk, tmp, preds);
 
     // preds[1] = cluster id
     preds[1] = cluster;

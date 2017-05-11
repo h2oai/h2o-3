@@ -6,8 +6,8 @@ import hex.genmodel.algos.gbm.GbmMojoReader;
 import hex.genmodel.algos.glm.GlmMojoReader;
 import hex.genmodel.algos.glrm.GlrmMojoReader;
 import hex.genmodel.algos.word2vec.Word2VecMojoReader;
-
 import java.io.IOException;
+import hex.genmodel.algos.xgboost.XGBoostMojoReader;
 
 /**
  * Factory class for instantiating specific MojoGenmodel classes based on the algo name.
@@ -28,6 +28,9 @@ public class ModelMojoFactory {
 
       case "Deep Water":
         return new DeepwaterMojoReader();
+
+      case "XGBoost":
+        return new XGBoostMojoReader();
 
       case "Generalized Low Rank Modeling":
       case "Generalized Low Rank Model":

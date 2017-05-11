@@ -60,7 +60,7 @@ public class Score extends MRTask<Score> {
       if( _is_train ) // Passed in the model-specific columns
         _bldr.score2(chks, weight, offset, cdists, row); // Use the training data directly (per-row predictions already made)
       else            // Must score "the hard way"
-        m.score0(chks, weight, offset, row, tmp, cdists);
+        m.score0(chks, offset, row, tmp, cdists);
 
       // fill tmp with training data for null model - to have proper tie breaking
       if (_is_train && _bldr._ntrees == 0)

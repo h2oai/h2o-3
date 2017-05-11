@@ -9,6 +9,9 @@ dependencies {
   if (file("${rootDir}/lib/deepwater-all.jar").exists()) {
       compile files("${rootDir}/lib/deepwater-all.jar")
   }
+  if (file("${rootDir}/lib/xgboost4j-0.7-jar-with-dependencies.jar").exists()) {
+      compile files("${rootDir}/lib/xgboost4j-0.7-jar-with-dependencies.jar")
+  }
   // Test dependencies only
   testCompile "junit:junit:${junitVersion}"
   testCompile project(path: ":h2o-core", configuration: "testArchives")
