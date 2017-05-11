@@ -83,6 +83,30 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   public final boolean isSupervised() { return _output.isSupervised(); }
 
+  /**
+   * Identifies the default ordering method for models returned from Grid Search
+   * @return default sort-by
+   */
+  public GridSortBy getDefaultGridSortBy() {
+    if (! isSupervised())
+      return null;
+    else if (_output.nclasses() > 1)
+      return GridSortBy.LOGLOSS;
+    else
+      return GridSortBy.RESDEV;
+  }
+
+  public static class GridSortBy { // intentionally not an enum to allow 3rd party extensions
+    public static final GridSortBy LOGLOSS = new GridSortBy("logloss", false);
+    public static final GridSortBy RESDEV = new GridSortBy("residual_deviance", false);
+    public static final GridSortBy R2 = new GridSortBy("r2", true);
+
+    public final String _name;
+    public final boolean _decreasing;
+
+    GridSortBy(String name, boolean decreasing) { _name = name; _decreasing = decreasing; }
+  }
+
   public ToEigenVec getToEigenVec() { return null; }
 
   /** Model-specific parameter class.  Each model sub-class contains

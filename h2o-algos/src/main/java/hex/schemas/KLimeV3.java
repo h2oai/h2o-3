@@ -19,7 +19,7 @@ public class KLimeV3 extends ModelBuilderSchema<KLime, KLimeV3, KLimeV3.KLimePar
             "seed",
     };
 
-    @API(help = "Maximum number of clusters to be considered.", direction = API.Direction.INOUT)
+    @API(help = "Maximum number of clusters to be considered.", direction = API.Direction.INOUT, gridable = true)
     public int max_k;
 
     @API(help = "Automatically determine the number of clusters in an unsupervised manner.", direction = API.Direction.INOUT)
