@@ -436,8 +436,17 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     computeMetrics = computeMetrics && (!isSupervised() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
     String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
     try {
-      DMatrix trainMat = convertFrametoDMatrix( model_info()._dataInfoKey, adaptFr,
-          _parms._response_column, _parms._weights_column, _parms._fold_column, null, _output._sparse);
+      DMatrix trainMat = convertFrametoDMatrix(
+              model_info()._dataInfoKey,
+              adaptFr,
+              0,
+              adaptFr.anyVec().nChunks() - 1,
+              _parms._response_column,
+              _parms._weights_column,
+              _parms._fold_column,
+              null,
+              _output._sparse
+      );
       ModelMetrics[] mm = new ModelMetrics[1];
       Frame preds = makePreds(model_info()._booster, trainMat, mm, Key.<Frame>make(destination_key));
       DKV.put(preds);

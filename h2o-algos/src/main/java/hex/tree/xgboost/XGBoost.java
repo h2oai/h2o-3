@@ -18,10 +18,6 @@ import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.Timer;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.*;
 
 import static hex.tree.SharedTree.createModelSummaryTable;
@@ -536,12 +532,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
         Map<String, String> rabitEnv = new HashMap<>();
         rabitEnv.put("XGBOOST_TASK_ID", Thread.currentThread().getName());
-        Rabit.init(rabitEnv);
-
         // final scoring
-        doScoring(model, model.model_info()._booster, trainMat, validMat, true);
+        doScoring(model, model.model_info()._booster, trainMat, validMat, true, rabitEnv);
 
-        Rabit.shutdown();
         trainMat.dispose();
         if(null != validMat) {
           validMat.dispose();
@@ -561,16 +554,13 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       rabitEnv.put("XGBOOST_TASK_ID", Thread.currentThread().getName());
 
       for( int tid=0; tid< _parms._ntrees; tid++) {
-        Rabit.init(rabitEnv);
         // During first iteration model contains 0 trees, then 1-tree, ...
-        boolean scored = doScoring(model, model.model_info()._booster, trainMat, validMat, false);
+        boolean scored = doScoring(model, model.model_info()._booster, trainMat, validMat, false, rabitEnv);
         if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
-          doScoring(model, model.model_info()._booster, trainMat, validMat, true);
+          doScoring(model, model.model_info()._booster, trainMat, validMat, true, rabitEnv);
           _job.update(_parms._ntrees-model._output._ntrees); //finish
-          Rabit.shutdown();
           return;
         }
-        Rabit.shutdown();
 
         Timer kb_timer = new Timer();
 
@@ -585,8 +575,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
                 rt.getWorkerEnvs()).doAll(_train).booster();
         rt.waitFor(0);
 
-        Rabit.init(rabitEnv);
-
         Log.info((tid + 1) + ". tree was built in " + kb_timer.toString());
         _job.update(1);
         // Optional: for convenience
@@ -598,21 +586,20 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         model._output._training_time_ms = ArrayUtils.copyAndFillOf(model._output._training_time_ms, model._output._ntrees+1, System.currentTimeMillis());
         if (stop_requested() && !timeout()) throw new Job.JobCancelledException();
         if (timeout()) { //stop after scoring
-          if (!scored) doScoring(model, model.model_info()._booster, trainMat, validMat, true);
+          if (!scored) doScoring(model, model.model_info()._booster, trainMat, validMat, true, rabitEnv);
           _job.update(_parms._ntrees-model._output._ntrees); //finish
           break;
         }
-        Rabit.shutdown();
       }
-      Rabit.init(rabitEnv);
-      doScoring(model, model.model_info()._booster, trainMat, validMat, true);
-      Rabit.shutdown();
+      doScoring(model, model.model_info()._booster, trainMat, validMat, true, rabitEnv);
     }
 
     long _firstScore = 0;
     long _timeLastScoreStart = 0;
     long _timeLastScoreEnd = 0;
-    private boolean doScoring(XGBoostModel model, Booster booster, DMatrix trainMat, DMatrix validMat, boolean finalScoring) throws XGBoostError {
+    private boolean doScoring(XGBoostModel model, Booster booster, DMatrix trainMat, DMatrix validMat, boolean finalScoring, Map<String, String> rabitEnv) throws XGBoostError {
+      Rabit.init(rabitEnv);
+
       boolean scored = false;
       long now = System.currentTimeMillis();
       if (_firstScore == 0) _firstScore = now;
@@ -642,6 +629,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         Log.info(model);
         scored = true;
       }
+
+      Rabit.shutdown();
       return scored;
     }
   }
