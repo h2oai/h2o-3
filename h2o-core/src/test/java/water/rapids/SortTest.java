@@ -169,7 +169,7 @@ public class SortTest extends TestUtil {
   @Test public void TestSortTimes() throws IOException {
     Frame fr=null, sorted=null;
     try {
-      fr = parse_test_file("sort_crash.csv");
+      fr = parse_test_file("smalldata/synthetic/sort_crash.csv");
       sorted = fr.sort(new int[]{0});
       Vec vec = sorted.vec(0);
       int len = (int)vec.length();
