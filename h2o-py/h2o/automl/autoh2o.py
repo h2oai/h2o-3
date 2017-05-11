@@ -166,7 +166,8 @@ class H2OAutoML(object):
         if self.project_name is None:
             self.project_name = "automl_" + training_frame.frame_id
 
-    def get_leader(self):
+    @property
+    def leader(self):
         """
         Retrieve the top model from an H2OAutoML object
 
@@ -184,12 +185,12 @@ class H2OAutoML(object):
         >>> # Launch H2OAutoML
         >>> aml.train(y=y, training_frame=training_frame)
         >>> # Get the top model
-        >>> aml.get_leader()
+        >>> aml.leader
         """
-        leader = h2o.get_model(self._leader_id)
-        return leader
+        return h2o.get_model(self._leader_id)
 
-    def get_leaderboard(self):
+    @property
+    def leaderboard(self):
         """
         Retrieve the leaderboard from an H2OAutoML object
 
@@ -208,10 +209,9 @@ class H2OAutoML(object):
         >>> # Launch H2OAutoML
         >>> aml.train(y=y, training_frame=training_frame)
         >>> # Get the leaderboard
-        >>> aml.get_leaderboard()
+        >>> aml.leaderboard
         """
-        res = h2o.api("GET /99/AutoML/" + self._automl_key)
-        return res["leaderboard_table"]
+        return self._leaderboard
 
     def predict(self, test_data):
         """
@@ -233,7 +233,7 @@ class H2OAutoML(object):
         >>> # Launch H2OAutoML
         >>> aml.train(y=y, training_frame=training_frame)
         >>> #Predict with #1 model from H2OAutoML leaderboard
-        >>> aml.predict()
+        >>> aml.predict(test_data)
 
         """
         if self._fetch():
@@ -246,12 +246,13 @@ class H2OAutoML(object):
     #-------------------------------------------------------------------------------------------------------------------
     def _fetch(self):
         res = h2o.api("GET /99/AutoML/" + self._automl_key)
-        self._leaderboard = [key["name"] for key in res['leaderboard']['models']]
+        leaderboard_list = [key["name"] for key in res['leaderboard']['models']]
 
-        if self._leaderboard is not None and len(self._leaderboard) > 0:
-            self._leader_id = self._leaderboard[0]
+        if leaderboard_list is not None and len(leaderboard_list) > 0:
+            self._leader_id = leaderboard_list[0]
         else:
             self._leader_id = None
+        self._leaderboard = res["leaderboard_table"]
         return self._leader_id is not None
 
     def _get_params(self):

@@ -67,9 +67,9 @@ def prostate_automl():
     build_control["project"] = "Project6"
     aml.train(y="CAPSULE", training_frame=train)
     print("Check leader")
-    aml.get_leader()
+    aml.leader
     print("Check leaderboard")
-    aml.get_leaderboard()
+    aml.leaderboard
     print("Check predictions")
     aml.predict(train)
 
