@@ -659,7 +659,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     private void fitLSM(Solver s){
       long t0 = System.currentTimeMillis();
-      ComputationState.GramXY gramXY = _state.computeGram(null,s);
+      ComputationState.GramXY gramXY = _state.computeGram(_state.beta(),s);
       double [] xy = gramXY.xy;
       Log.info(LogMsg("Gram computed in " + (System.currentTimeMillis()-t0) + "ms"));
       double [] beta = s == Solver.COORDINATE_DESCENT?COD_solve(gramXY,_state._alpha,_state.lambda()):ADMM_solve(gramXY.gram,gramXY.xy);
