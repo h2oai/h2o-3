@@ -7,8 +7,6 @@ import water.parser.BufferedString;
 import water.util.IcedHashMap;
 import water.util.IcedLong;
 
-import java.util.HashMap;
-
 /**
  * Reduce a string column of a given Vec to a set of unique words
  * and their frequency counts

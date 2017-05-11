@@ -293,11 +293,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       int count = 0;
       Field[] fields = Weaver.getWovenFields(this.getClass());
       Arrays.sort(fields,
-                  new Comparator<Field>() {
-                    public int compare(Field field1, Field field2) {
-                      return field1.getName().compareTo(field2.getName());
-                    }
-                  });
+              new Comparator<Field>() {
+                public int compare(Field field1, Field field2) {
+                  return field1.getName().compareTo(field2.getName());
+                }
+              });
 
       for (Field f : fields) {
         final long P = MathUtils.PRIMES[count % MathUtils.PRIMES.length];
@@ -379,11 +379,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** Columns used in the model and are used to match up with scoring data
      *  columns.  The last name is the response column name (if any). */
     public String _names[];
-    
+
     public void setNames(String[] names) {
       _names = names;
     }
-    
+
     public String _origNames[];
 
     /** Categorical/factor mappings, per column.  Null for non-categorical cols.
@@ -869,9 +869,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     // whether we need to be careful with categorical encoding - the test frame could be either in original state or in encoded state
     final boolean checkCategoricals =
-        parms._categorical_encoding == Parameters.CategoricalEncodingScheme.OneHotExplicit ||
-        parms._categorical_encoding == Parameters.CategoricalEncodingScheme.Eigen ||
-        parms._categorical_encoding == Parameters.CategoricalEncodingScheme.Binary;
+            parms._categorical_encoding == Parameters.CategoricalEncodingScheme.OneHotExplicit ||
+                    parms._categorical_encoding == Parameters.CategoricalEncodingScheme.Eigen ||
+                    parms._categorical_encoding == Parameters.CategoricalEncodingScheme.Binary;
 
     // test frame matches the user-given frame (before categorical encoding, if applicable)
     if( checkCategoricals && origNames != null ) {
@@ -1163,13 +1163,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   /** Allow subclasses to define their own BigScore class. */
   protected BigScore makeBigScoreTask(String[][] domains, String[] names , Frame adaptFrm, boolean computeMetrics, boolean makePrediction, Job j) {
     return new BigScore(domains[0],
-                        names != null ? names.length : 0,
-                        adaptFrm.means(),
-                        _output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,
-                        computeMetrics,
-                        makePrediction,
-                        j);
-        //.doAll(names.length, Vec.T_NUM, adaptFrm);
+            names != null ? names.length : 0,
+            adaptFrm.means(),
+            _output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,
+            computeMetrics,
+            makePrediction,
+            j);
+    //.doAll(names.length, Vec.T_NUM, adaptFrm);
   }
 
   /** Score an already adapted frame.  Returns a new Frame with new result
@@ -1266,7 +1266,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             continue;
           }
           double offset = offsetChunk != null ? offsetChunk.atd(row) : 0;
-          double[] p = score0(chks, weight, offset, row, tmp, preds);
+          double[] p = score0(chks, offset, row, tmp, preds);
           if (_computeMetrics) {
             if (isSupervised()) {
               actual[0] = (float) responseChunk.atd(row);
@@ -1284,9 +1284,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       } finally {
         closeBigScorePredict();
       }
-
-
-      if ( _j != null) _j.update(1);
     }
     @Override public void reduce( BigScore bs ) { if(_mb != null )_mb.reduce(bs._mb); }
     @Override protected void postGlobal() { if(_mb != null)_mb.postGlobal(); }
@@ -1306,14 +1303,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  Default method is to just load the data into the tmp array, then call
    *  subclass scoring logic. */
   public double[] score0( Chunk chks[], int row_in_chunk, double[] tmp, double[] preds ) {
-    return score0(chks, 1, 0, row_in_chunk, tmp, preds);
+    return score0(chks, 0, row_in_chunk, tmp, preds);
   }
 
-  public double[] score0( Chunk chks[], double weight, double offset, int row_in_chunk, double[] tmp, double[] preds ) {
+  public double[] score0( Chunk chks[], double offset, int row_in_chunk, double[] tmp, double[] preds ) {
     assert(_output.nfeatures() == tmp.length);
     for( int i=0; i< tmp.length; i++ )
       tmp[i] = chks[i].atd(row_in_chunk);
-    double [] scored = score0(tmp, preds, weight, offset);
+    double [] scored = score0(tmp, preds, offset);
     if(isSupervised()) {
       // Correct probabilities obtained from training on oversampled data back to original distribution
       // C.f. http://gking.harvard.edu/files/0s.pdf Eq.(27)
@@ -1333,8 +1330,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   protected abstract double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]);
 
   /**Override scoring logic for models that handle weight/offset**/
-  protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/], double weight, double offset) {
-    assert (weight == 1 && offset == 0) : "Override this method for non-trivial weight/offset!";
+  protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/], double offset) {
+    assert (offset == 0) : "Override this method for non-trivial offset!";
     return score0(data, preds);
   }
   // Version where the user has just ponied-up an array of data to be scored.
@@ -1426,7 +1423,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     sb.p("  ").p(H2O.ABV.projectVersion()).nl();
     sb.p("  ").nl();
     sb.p("  Standalone prediction code with sample test data for ").p(this.getClass().getSimpleName()).p(" named ").p(modelName)
-        .nl();
+            .nl();
     sb.nl();
     sb.p("  How to download, compile and execute:").nl();
     sb.p("      mkdir tmpdir").nl();
@@ -1463,7 +1460,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     sb.p("@ModelPojo(name=\"").p(modelName).p("\", algorithm=\"").p(algo).p("\")").nl();
     sb.p("public class ").p(modelName).p(" extends GenModel {").nl().ii(1);
     sb.ip("public hex.ModelCategory getModelCategory() { return hex.ModelCategory." + _output
-        .getModelCategory() + "; }").nl();
+            .getModelCategory() + "; }").nl();
     toJavaInit(sb, fileCtx).nl();
     toJavaNAMES(sb, fileCtx);
     toJavaNCLASSES(sb);
@@ -1494,7 +1491,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       public void generate(JCodeSB out) {
         out.i().p("// The class representing training column names").nl();
         JCodeGen.toClassWithArray(out, null, namesHolderClassName,
-                                  Arrays.copyOf(_output._names, _output.nfeatures()));
+                Arrays.copyOf(_output._names, _output.nfeatures()));
       }
     });
 
@@ -1503,9 +1500,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   protected SBPrintStream toJavaNCLASSES(SBPrintStream sb ) {
     return _output.isClassifier() ? JCodeGen.toStaticVar(sb, "NCLASSES",
-                                                         _output.nclasses(),
-                                                         "Number of output classes included in training data response column.")
-                                  : sb;
+            _output.nclasses(),
+            "Number of output classes included in training data response column.")
+            : sb;
   }
 
   private SBPrintStream toJavaDOMAINS(SBPrintStream sb, CodeGeneratorPipeline fileCtx) {
@@ -1703,10 +1700,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             } else {
               double val = dvecs[col].at(row);
               rowData.put(
-                  genmodel._names[col],
-                  genmodel._domains[col] == null ? (Double) val
-                      : Double.isNaN(val) ? val  // missing categorical values are kept as NaN, the score0 logic passes it on to bitSetContains()
-                      : (int) val < genmodel._domains[col].length ? genmodel._domains[col][(int) val] : "UnknownLevel"); //unseen levels are treated as such
+                      genmodel._names[col],
+                      genmodel._domains[col] == null ? (Double) val
+                              : Double.isNaN(val) ? val  // missing categorical values are kept as NaN, the score0 logic passes it on to bitSetContains()
+                              : (int) val < genmodel._domains[col].length ? genmodel._domains[col][(int) val] : "UnknownLevel"); //unseen levels are treated as such
             }
           }
 
@@ -1770,7 +1767,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
       if (num_errors != 0)
         System.err.println("Number of errors: " + num_errors + (num_errors > 20 ? " (only first 20 are shown)": "") +
-                           " out of " + num_total + " rows tested.");
+                " out of " + num_total + " rows tested.");
       return num_errors == 0;
     } finally {
       cleanup_adapt(fr, data);  // Remove temp keys.

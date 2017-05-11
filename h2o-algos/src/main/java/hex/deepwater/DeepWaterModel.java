@@ -77,11 +77,11 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
   Key actual_best_model_key;
 
   static final String unstable_msg = technote(4,
-      "\n\nTrying to predict with an unstable model." +
-          "\nJob was aborted due to observed numerical instability (exponential growth)."
-          + "\nEither the weights or the bias values are unreasonably large or lead to large activation values."
-          + "\nTry a different network architecture, a bounded activation function (tanh), adding regularization"
-          + "\n(via dropout) or use a smaller learning rate and/or momentum.");
+          "\n\nTrying to predict with an unstable model." +
+                  "\nJob was aborted due to observed numerical instability (exponential growth)."
+                  + "\nEither the weights or the bias values are unreasonably large or lead to large activation values."
+                  + "\nTry a different network architecture, a bounded activation function (tanh), adding regularization"
+                  + "\n(via dropout) or use a smaller learning rate and/or momentum.");
 
   public DeepWaterScoringInfo last_scored() { return (DeepWaterScoringInfo) super.last_scored(); }
 
@@ -107,18 +107,18 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     double x = 0.782347234;
     boolean identityLink = new Distribution(parms).link(x) == x;
     return new DataInfo(
-        train,
-        valid,
-        parms._autoencoder ? 0 : 1, //nResponses
-        parms._autoencoder || parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
-        parms._standardize ? (parms._autoencoder ? DataInfo.TransformType.NORMALIZE : parms._sparse ? DataInfo.TransformType.DESCALE : DataInfo.TransformType.STANDARDIZE) : DataInfo.TransformType.NONE, //transform predictors
-        !parms._standardize || train.lastVec().isCategorical() ? DataInfo.TransformType.NONE : identityLink ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, //transform response for regression with identity link
-        parms._missing_values_handling == DeepWaterParameters.MissingValuesHandling.Skip, //whether to skip missing
-        false, // do not replace NAs in numeric cols with mean
-        true,  // always add a bucket for missing values
-        parms._weights_column != null, // observation weights
-        parms._offset_column != null,
-        parms._fold_column != null
+            train,
+            valid,
+            parms._autoencoder ? 0 : 1, //nResponses
+            parms._autoencoder || parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
+            parms._standardize ? (parms._autoencoder ? DataInfo.TransformType.NORMALIZE : parms._sparse ? DataInfo.TransformType.DESCALE : DataInfo.TransformType.STANDARDIZE) : DataInfo.TransformType.NONE, //transform predictors
+            !parms._standardize || train.lastVec().isCategorical() ? DataInfo.TransformType.NONE : identityLink ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, //transform response for regression with identity link
+            parms._missing_values_handling == DeepWaterParameters.MissingValuesHandling.Skip, //whether to skip missing
+            false, // do not replace NAs in numeric cols with mean
+            true,  // always add a bucket for missing values
+            parms._weights_column != null, // observation weights
+            parms._offset_column != null,
+            parms._fold_column != null
     );
   }
 
@@ -220,7 +220,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
         }
         if (dinfo.fullN() != parms._image_shape[0] * parms._image_shape[1] * parms._channels) {
           throw new IllegalArgumentException("Data input size mismatch: Expect image_shape[0] x image_shape[1] x channels == #cols(H2OFrame), but got: "
-              + parms._image_shape[0] + " x " + parms._image_shape[1] + " x " + parms._channels + " != " + dinfo.fullN() + ". Check these parameters, or disable ignore_const_cols.");
+                  + parms._image_shape[0] + " x " + parms._image_shape[1] + " x " + parms._channels + " != " + dinfo.fullN() + ". Check these parameters, or disable ignore_const_cols.");
         }
       }
     }
@@ -327,8 +327,8 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
 
     // this is potentially slow - only do every so often
     if( !keep_running || get_params()._score_each_iteration ||
-        (sinceLastScore > get_params()._score_interval *1000 //don't score too often
-            &&(double)(_timeLastScoreEnd-_timeLastScoreStart)/sinceLastScore < get_params()._score_duty_cycle) ) { //duty cycle
+            (sinceLastScore > get_params()._score_interval *1000 //don't score too often
+                    &&(double)(_timeLastScoreEnd-_timeLastScoreStart)/sinceLastScore < get_params()._score_duty_cycle) ) { //duty cycle
       Log.info(logNvidiaStats());
       jobKey.get().update(0,"Scoring on " + fTrain.numRows() + " training samples" +(fValid != null ? (", " + fValid.numRows() + " validation samples") : ""));
       final boolean printme = !get_params()._quiet_mode;
@@ -494,9 +494,9 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     assert(speed >= 0) : "negative speed computed! (total_run_time: " + total_training_time_ms + ", total_scoring_time: " + total_scoring_time_ms + ", total_setup_time: " + total_setup_time_ms + ")";
     String msg =
             "Iterations: " + String.format("%,d", iterations)
-            + ". Epochs: " + String.format("%g", epoch_counter)
-            + ". Speed: " + (speed>10 ? String.format("%d", (int)speed) : String.format("%g", speed)) + " samples/sec."
-            + (progress == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long) (total_training_time_ms * (1. - progress) / progress), true));
+                    + ". Epochs: " + String.format("%g", epoch_counter)
+                    + ". Speed: " + (speed>10 ? String.format("%d", (int)speed) : String.format("%g", speed)) + " samples/sec."
+                    + (progress == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long) (total_training_time_ms * (1. - progress) / progress), true));
     job.update(actual_train_samples_per_iteration,msg); //mark the amount of work done for the progress bar
     long now = System.currentTimeMillis();
     long sinceLastPrint = now -_timeLastPrintStart;
@@ -505,7 +505,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
       if (!get_params()._quiet_mode) {
         Log.info(
                 "Training time: " + PrettyPrint.msecs(total_training_time_ms, true) + " (scoring: " + PrettyPrint.msecs(total_scoring_time_ms, true) + "). "
-                + "Processed " + String.format("%,d", model_info().get_processed_total()) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs).\n");
+                        + "Processed " + String.format("%,d", model_info().get_processed_total()) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs).\n");
         Log.info(msg);
       }
     }
@@ -630,7 +630,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
         continue;
       }
       if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.image
-          || model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.text) {
+              || model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.text) {
         BufferedString file = _fr.vec(dataIdx).atStr(bs, i);
         if (file!=null)
           score_data.add(file.toString());
@@ -791,7 +791,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
           continue;
         }
         if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.image
-            || model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.text) {
+                || model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.text) {
           BufferedString file = _fr.vec(dataIdx).atStr(bs, i);
           if (file!=null)
             score_data.add(file.toString());
@@ -853,7 +853,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
 //          System.err.println("preds: " + Arrays.toString(predFloats));
 //          Log.info("Scoring on " + batch_size + " samples (rows " + row + " and up): " + Arrays.toString(((DeepWaterImageIterator)iter).getFiles()));
 
-            // fill the pre-created output Frame
+          // fill the pre-created output Frame
           boolean unstable = false;
           for (int j = 0; j < batch_size; ++j) {
             while (row==skippedRow) {
@@ -1002,7 +1002,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
       @Override
       public boolean filter(KeySnapshot.KeyInfo k) {
         return Value.isSubclassOf(k._type, DeepWaterImageIterator.IcedImage.class) && k._key.toString().contains(CACHE_MARKER)
-        || Value.isSubclassOf(k._type, DeepWaterDatasetIterator.IcedRow.class) && k._key.toString().contains(CACHE_MARKER);
+                || Value.isSubclassOf(k._type, DeepWaterDatasetIterator.IcedRow.class) && k._key.toString().contains(CACHE_MARKER);
       }
     }).keys();
     if (fs==null) fs = new Futures();
@@ -1026,4 +1026,3 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
 
   static private String logNvidiaStats() { try { return (getNvidiaStats()); } catch (IOException e) { return null; } }
 }
-

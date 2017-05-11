@@ -403,7 +403,7 @@ public class Vec extends Keyed<Vec> {
     for(Vec v:res)
       DKV.put(v,fs);
     fs.blockForPending();
-    System.out.println("made vecs " + Arrays.toString(res));
+//    System.out.println("made vecs " + Arrays.toString(res));
     return res;
   }
 
@@ -491,6 +491,18 @@ public class Vec extends Keyed<Vec> {
     NewChunk nc = new NewChunk(v,0);
     Futures fs = new Futures();
     for(double d:vals)
+      nc.addNum(d);
+    nc.close(fs);
+    DKV.put(v._key, v, fs);
+    fs.blockForPending();
+    return v;
+  }
+
+  public static Vec makeVec(float [] vals, Key<Vec> vecKey){
+    Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey,new long[]{0,vals.length}));
+    NewChunk nc = new NewChunk(v,0);
+    Futures fs = new Futures();
+    for(float d:vals)
       nc.addNum(d);
     nc.close(fs);
     DKV.put(v._key, v, fs);
