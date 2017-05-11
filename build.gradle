@@ -125,6 +125,14 @@ ext {
     awsJavaSdkVersion = '1.8.3'
 
     //
+    // Optional H2O modules which can be included h2o.jar assembly
+    // They can be enabled by passing parameter "-Pwith{componentName}=true"
+    // For example, `-PwithVisDataServer=true -PvisDataServerVersion=3.14.27`
+    optionalComponents = [
+            [name: "visDataServer", version : "1.0.0-SNAPSHOT", enabled: false ]
+    ]
+
+    //
     // H2O's REST API version
     //
     h2oRESTApiVersion = '3'
