@@ -69,9 +69,9 @@ class MetricsBase(backwards_compatible()):
         types_w_clustering = ['ModelMetricsClustering']
         types_w_mult = ['ModelMetricsMultinomial']
         types_w_bin = ['ModelMetricsBinomial', 'ModelMetricsBinomialGLM']
-        types_w_r2 = ['ModelMetricsRegressionGLM']
-        types_w_mean_residual_deviance = ['ModelMetricsRegressionGLM', 'ModelMetricsRegression']
-        types_w_mean_absolute_error = ['ModelMetricsRegressionGLM', 'ModelMetricsRegression']
+        types_w_r2 = ['ModelMetricsRegressionGLM', 'ModelMetricsKLime']
+        types_w_mean_residual_deviance = ['ModelMetricsRegressionGLM', 'ModelMetricsRegression', 'ModelMetricsKLime']
+        types_w_mean_absolute_error = ['ModelMetricsRegressionGLM', 'ModelMetricsRegression', 'ModelMetricsKLime']
         types_w_logloss = types_w_bin + types_w_mult
         types_w_dim = ["ModelMetricsGLRM"]
 

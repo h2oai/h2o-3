@@ -94,6 +94,16 @@ public class KLime extends ModelBuilder<KLimeModel, KLimeModel.KLimeParameters, 
         Frame clusterLabels = Scope.track(clusteringModel.score(clusteringTrain));
 
         final int K = clusteringModel._output._k[clusteringModel._output._k.length - 1];
+
+        model._output._clustering = clusteringModel;
+        model._output._globalRegressionModel = globalRegressionModel;
+        model._output._regressionModels = new GLMModel[K];
+        model.update(_job);
+
+        // this calculates R2 on each cluster using a global model
+        model.score(_parms.train()).delete(); // This scores on the training data and appends a ModelMetrics
+        model._output._training_metrics = ModelMetrics.getFromDKV(model, _parms.train());
+
         String[] clusterNames = new String[K];
         for (int i = 0; i < K; i++)
           clusterNames[i] = "cluster" + i;
@@ -154,9 +164,6 @@ public class KLime extends ModelBuilder<KLimeModel, KLimeModel.KLimeParameters, 
           } else
             _job.update(1); // model won't be built
         }
-
-        model._output._clustering = clusteringModel;
-        model._output._globalRegressionModel = globalRegressionModel;
         model._output._regressionModels = regressionModels;
 
         model.score(_parms.train()).delete(); // This scores on the training data and appends a ModelMetrics

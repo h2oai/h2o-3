@@ -8,7 +8,6 @@ import hex.kmeans.KMeansModel;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.util.ArrayUtils;
 
 import java.util.*;
 
@@ -23,7 +22,7 @@ public class KLimeModel extends Model<KLimeModel, KLimeParameters, KLimeOutput> 
 
   @Override
   public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-    return new KLimeMetricBuilder(_output._names.length - 1);
+    return new KLimeMetricBuilder(_output._regressionModels.length, _output._names.length - 1);
   }
 
   @Override
@@ -156,10 +155,52 @@ public class KLimeModel extends Model<KLimeModel, KLimeParameters, KLimeOutput> 
     return new KLimeMojoWriter(this);
   }
 
+  public static class ModelMetricsKLime extends ModelMetricsRegression {
+    public ModelMetricsRegression[] _clusterMetrics;
+    public boolean[] _usesGlobalModel;
+    public ModelMetricsKLime(Model model, Frame frame,
+                             ModelMetricsRegression globalMetrics, ModelMetricsRegression[] clusterMetrics,
+                             boolean[] usesGlobalModel) {
+      super(model, frame,
+              globalMetrics._nobs, globalMetrics.mse(), globalMetrics._sigma, globalMetrics.mae(), globalMetrics.rmsle(),
+              globalMetrics._mean_residual_deviance);
+      _clusterMetrics = clusterMetrics;
+      _usesGlobalModel = usesGlobalModel;
+    }
+  }
+
   private static class KLimeMetricBuilder extends ModelMetricsRegression.MetricBuilderRegression<KLimeMetricBuilder> {
+
+    private ModelMetricsRegression.MetricBuilderRegression[] _clusterMBs;
+
     public KLimeMetricBuilder() {} // externalizable constructor
-    private KLimeMetricBuilder(int numCodes) {
+    private KLimeMetricBuilder(int k, int numCodes) {
+      _clusterMBs = new ModelMetricsRegression.MetricBuilderRegression[k];
+      for (int i = 0; i < k; i++)
+        _clusterMBs[i] = new ModelMetricsRegression.MetricBuilderRegression();
       _work = new double[1 /*predict_klime*/ + 1 /*cluster_klime*/ + numCodes];
+    }
+
+    @Override
+    public double[] perRow(double[] ds, float[] yact, double w, double o, Model m) {
+      int cluster = (int) ds[1];
+      assert cluster == ds[1] && cluster >= 0 && cluster < _clusterMBs.length;
+      _clusterMBs[cluster].perRow(ds, yact, w, o, m);
+      return super.perRow(ds, yact, w, o, m);
+    }
+
+    @Override
+    public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
+      ModelMetricsRegression globalMetrics = (ModelMetricsRegression) super.makeModelMetrics(null, f, null, null);
+      ModelMetricsRegression[] clusterMetrics = new ModelMetricsRegression[_clusterMBs.length];
+      boolean[] usesGlobalModel = new boolean[_clusterMBs.length];
+      for (int i = 0; i < _clusterMBs.length; i++) {
+        clusterMetrics[i] = (ModelMetricsRegression) _clusterMBs[i].makeModelMetrics(null, f, null, null);
+        usesGlobalModel[i] = (m != null) && (((KLimeModel) m)._output._regressionModels[i] == null);
+      }
+      ModelMetricsKLime mm = new ModelMetricsKLime(m, f, globalMetrics, clusterMetrics, usesGlobalModel);
+      if (m != null) m.addModelMetrics(mm);
+      return mm;
     }
   }
 
