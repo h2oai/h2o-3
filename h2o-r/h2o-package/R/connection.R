@@ -768,9 +768,7 @@ h2o.networkTest <- function() {
 #'
 #' Open H2O Flow in your browser
 #'
-#' @param ip Object of class \code{character} representing the IP address of the server where H2O is running.
-#' @param port Object of class \code{numeric} representing the port number of the H2O server.
 #' @export
-h2o.flow <- function(ip = "localhost", port=54321){
-  browseURL(paste0("http://",ip,":",port))
+h2o.flow <- function(){
+  browseURL(.h2o.calcBaseURL(urlSuffix=""))
 }

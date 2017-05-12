@@ -12,6 +12,7 @@ import os
 import warnings
 import webbrowser
 
+
 from h2o.backend import H2OConnection
 from h2o.backend import H2OConnectionConf
 from h2o.backend import H2OLocalServer
@@ -1248,7 +1249,7 @@ def make_metrics(predicted, actual, domain=None, distribution=None):
               data={"domain": domain, "distribution": distribution})
     return res["model_metrics"]
 
-def flow(ip="localhost",port=54321,new = 1):
+def flow():
     """
     Open H2O Flow in your browser.
 
@@ -1259,7 +1260,7 @@ def flow(ip="localhost",port=54321,new = 1):
                          If browser_type is 2, a new browser page (“tab”) is opened if possible.
                          Default is 1 (a new browser window is opened if possible).
     """
-    webbrowser.open("http://" + ip + ":" + str(port), new = new)
+    webbrowser.open(connection().base_url, new = 1)
 #-----------------------------------------------------------------------------------------------------------------------
 # Private
 #-----------------------------------------------------------------------------------------------------------------------
