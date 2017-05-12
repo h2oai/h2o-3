@@ -763,3 +763,14 @@ h2o.networkTest <- function() {
 .h2o.garbageCollect <- function() {
   res <- .h2o.__remoteSend("GarbageCollect", method = "POST")
 }
+
+#' Open H2O Flow
+#'
+#' Open H2O Flow in your browser
+#'
+#' @param ip Object of class \code{character} representing the IP address of the server where H2O is running.
+#' @param port Object of class \code{numeric} representing the port number of the H2O server.
+#' @export
+h2o.flow <- function(ip = "localhost", port=54321){
+  browseURL(paste0("http://",ip,":",port))
+}
