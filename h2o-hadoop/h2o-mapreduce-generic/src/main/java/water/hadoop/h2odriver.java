@@ -549,7 +549,7 @@ public class h2odriver extends Configured implements Tool {
                     "          [-h | -help]\n" +
                     "          [-jobname <name of job in jobtracker (defaults to: 'H2O_nnnnn')>]\n" +
                     "              (Note nnnnn is chosen randomly to produce a unique name)\n" +
-                    "          [-principal <kerberos principal> -keytab <keytab path> | -run_as_user <hadoop username>]\n" +
+                    "          [-principal <kerberos principal> -keytab <keytab path> [-run_as_user <impersonated hadoop username>] | -run_as_user <hadoop username>]\n" +
                     "          [-driverif <ip address of mapper->driver callback interface>]\n" +
                     "          [-driverport <port of mapper->driver callback interface>]\n" +
                     "          [-driverportrange <range portX-portY of mapper->driver callback interface>; eg: 50000-55000]\n" +
@@ -1041,7 +1041,7 @@ public class h2odriver extends Configured implements Tool {
         error("principal requires a valid keytab path (use the '-keytab' option)");
       }
       if (runAsUser != null) {
-        error("cannot use '-keytab' or '-principal' with '-run_as_user''");
+        warning("will attempt secure impersonation with user from '-run_as_user', " + runAsUser);
       }
     }
 
@@ -1301,6 +1301,13 @@ public class h2odriver extends Configured implements Tool {
     if (principal != null && keytabPath != null) {
       UserGroupInformation.setConfiguration(conf);
       UserGroupInformation.loginUserFromKeytab(principal, keytabPath);
+      // performs user impersonation (will only work if core-site.xml has hadoop.proxy.*.* props set on name node
+      if (runAsUser != null) {
+        System.out.println("Attempting to securely impersonate user, " + runAsUser);
+        UserGroupInformation currentEffUser = UserGroupInformation.getLoginUser();
+        UserGroupInformation proxyUser = UserGroupInformation.createProxyUser(runAsUser, currentEffUser);
+        UserGroupInformation.setLoginUser(proxyUser);
+      }
     } else if (runAsUser != null) {
       UserGroupInformation.setConfiguration(conf);
       UserGroupInformation.setLoginUser(UserGroupInformation.createRemoteUser(runAsUser));
