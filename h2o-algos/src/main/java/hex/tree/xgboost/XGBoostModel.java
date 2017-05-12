@@ -5,6 +5,7 @@ import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
+import ml.dmlc.xgboost4j.java.Rabit;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import water.*;
 import water.fvec.Chunk;
@@ -436,6 +437,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     computeMetrics = computeMetrics && (!isSupervised() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
     String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
     try {
+      Map<String,String> rabitEnv = new HashMap<>();
+      rabitEnv.put("DMLC_TASK_ID", Thread.currentThread().getName());
+      Rabit.init(rabitEnv);
       DMatrix trainMat = convertFrametoDMatrix(
               model_info()._dataInfoKey,
               adaptFr,
@@ -450,6 +454,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       ModelMetrics[] mm = new ModelMetrics[1];
       Frame preds = makePreds(model_info()._booster, trainMat, mm, Key.<Frame>make(destination_key));
       DKV.put(preds);
+      Rabit.shutdown();
       return preds;
     } catch (XGBoostError xgBoostError) {
       xgBoostError.printStackTrace();
