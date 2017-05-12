@@ -1,5 +1,6 @@
 package water.bindings.examples.retrofit;
 
+import java.io.File;
 import water.bindings.H2oApi;
 import water.bindings.pojos.*;
 
@@ -98,6 +99,17 @@ public class GBM_Example {
 
         ModelMetricsListSchemaV3 predictions = h2o.predict(predict_params);
         System.out.println("predictions: " + predictions);
+        
+        // STEP 9 (optional): export model as binary
+        // Fails...
+        ModelExportV3 model_export = new ModelExportV3();
+        model_export.modelId = model_key;
+        
+        File f = File.createTempFile("model", ".h2o");
+        model_export.dir = File.createTempFile("model", ".h2o").getPath();
+        f.deleteOnExit();
+        
+        h2o.exportModel(model_export);
 
         // STEP 99: end the session
         h2o.endSession();
