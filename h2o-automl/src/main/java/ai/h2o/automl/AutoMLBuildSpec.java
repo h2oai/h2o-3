@@ -122,18 +122,29 @@ public class AutoMLBuildSpec extends Iced {
     String[] path = specified.split("/");
     project_cached = path[path.length - 1]
             .replace(".hex", "")
+
             .replace(".CSV", "")
+            .replace(".ZIP", "")
+            .replace(".GZ", "")
+            .replace(".TXT", "")
             .replace(".XLS", "")
             .replace(".XSLX", "")
+            .replace(".SVM", "")
             .replace(".SVMLight", "")
-            .replace(".ARFF", "")
             .replace(".ORC", "")
+            .replace(".ARFF", "")
+
             .replace(".csv", "")
+            .replace(".zip", "")
+            .replace(".gz", "")
+            .replace(".txt", "")
             .replace(".xls", "")
             .replace(".xslx", "")
             .replace(".svmlight", "")
-            .replace(".arff", "")
-            .replace(".orc", "");
+            .replace(".svm", "")
+            .replace(".orc", "")
+            .replace(".arff", "");
+    project_cached = "automl_" + project_cached;
     return project_cached;
   }
 }
