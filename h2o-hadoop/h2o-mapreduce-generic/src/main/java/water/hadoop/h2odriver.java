@@ -1301,7 +1301,7 @@ public class h2odriver extends Configured implements Tool {
     if (principal != null && keytabPath != null) {
       UserGroupInformation.setConfiguration(conf);
       UserGroupInformation.loginUserFromKeytab(principal, keytabPath);
-      // performs user impersonation (will only work if core-site.xml has hadoop.proxy.*.* props set on name node
+      // performs user impersonation (will only work if core-site.xml has hadoop.proxyuser.*.* props set on name node
       if (runAsUser != null) {
         System.out.println("Attempting to securely impersonate user, " + runAsUser);
         UserGroupInformation currentEffUser = UserGroupInformation.getLoginUser();
