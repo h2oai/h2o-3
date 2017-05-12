@@ -18,7 +18,7 @@ public class KLimeMojoWriter extends MultiModelMojoWriter<KLimeModel, KLimeModel
 
   @Override
   public String mojoVersion() {
-    return "1.0";
+    return "1.00";
   }
 
   @Override
