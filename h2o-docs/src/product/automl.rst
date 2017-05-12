@@ -1,11 +1,12 @@
 AutoML: Automatic Machine Learning
 ==================================
 
-In recent years, the demand for machine learning experts has outpaced the supply, despite the surge of people entering the field.  To address this gap, there have been big strides in the development of user-friendly machine learning software that can be used by non-experts.  The first steps toward simplifying machine learning involved developing simple, unified interfaces to a variety of machine learning algorithms, like is provided by H2O.  
+In recent years, the demand for machine learning experts has outpaced the supply, despite the surge of people entering the field.  To address this gap, there have been big strides in the development of user-friendly machine learning software that can be used by non-experts.  The first steps toward simplifying machine learning involved developing simple, unified interfaces to a variety of machine learning algorithms (e.g. H2O).
 
-Although H2O has made it easy for non-experts to experiment with machine learning, there is still a fair bit of knowledge and background in data science that is required to produce high-performing machine learning models.  Deep Neural Networks in particular are notoriously difficult for a non-expert to tune properly.  In order for machine learning software to truly be accessible to non-experts, such systems must be able to automatically perform proper data pre-processing steps and return a highly optimized machine learning model.
+Although H2O has made it easy for non-experts to experiment with machine learning, there is still a fair bit of knowledge and background in data science that is required to produce high-performing machine learning models.  Deep Neural Networks in particular are notoriously difficult for a non-expert to tune properly.  In order for machine learning software to truly be accessible to non-experts, we have designed an easy-to-use interface which automates the process of training a large selection of candidate models.  H2O's AutoML can also be a helpful tool for the advanced user, by providing a simple wrapper function that performs a large number of modeling-related tasks that would typically require many lines of code, and by freeing up their time to focus on other aspects of the data science pipeline tasks such as data-preprocessing, feature engineering and model deployment.
 
-H2O's AutoML can be used for automating the machine learning workflow, which includes automatic training and tuning of many models within a user-specified time-limit.  The user can also specify which model performance metric that they'd like to optimize and use a metric-based stopping criterion for the AutoML process rather than a specific time constraint.  Stacked ensembles will automatically trained on subset of the individual models to produce a highly predictive ensemble model, although this can be turned off if the user prefers to return singleton models only.  Stacked ensembles are not yet available for multiclass classification problems, so in that case, only singleton models will be trained. 
+H2O's AutoML can be used for automating the machine learning workflow, which includes automatic training and tuning of many models within a user-specified time-limit.  The user can also use a performance metric-based stopping criterion for the AutoML process rather than a specific time constraint.  `Stacked ensembles <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html>`__ will be automatically trained on the collection individual models to produce a highly predictive ensemble model which, in most cases, will be the top performing model in the AutoML Leaderboard.  Stacked ensembles are not yet available for multiclass classification problems, so in that case, only singleton models will be trained. 
+
 
 AutoML Interface
 ----------------
@@ -174,7 +175,7 @@ FAQ
 
 -  **How do I save AutoML runs?**
 
-  Rather than saving an AutoML object itself, currently, the best thing to do is to save the models you want to keep, individually.  This feature will be improved in a future release.
+  Rather than saving an AutoML object itself, currently, the best thing to do is to save the models you want to keep, individually.  This will be improved in a future release.
 
 
 -  **Why is there no Stacked Ensemble on my Leaderboard?**
@@ -185,13 +186,5 @@ FAQ
 Additional Information
 ~~~~~~~~~~~~~~~~~~~~~~
 
-- The H2OAutoML class is currently in experimental mode ("V99" in the REST API).  This means that the API (REST, R, Python or otherwise) may change.
-
-
-References
-~~~~~~~~~~
-
-`Matthias Feurer, Aaron Klein, Katharina Eggensperger, Jost Springenberg, Manuel Blum, Frank Hutter. "Efficient and Robust Automated Machine Learning." Advances in Neural Information Processing Systems 28 (2015) <https://papers.nips.cc/paper/5872-efficient-and-robust-automated-machine-learning.pdf>`__
-
-
+- AutoML is currently in experimental mode ("V99" in the REST API).  This means that the API (REST, R, Python or otherwise) may be subject to breaking changes.
 
