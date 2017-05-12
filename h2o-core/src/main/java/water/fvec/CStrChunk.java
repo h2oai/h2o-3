@@ -23,7 +23,7 @@ public class CStrChunk extends Chunk {
 
     Arrays.fill(_mem,_OFF,_valstart,(byte)-1); // Indicate All Is NA's
     for( int i = 0; i < sparseLen; ++i ) // Copy the sparse indices
-      UnsafeUtils.set4(_mem, idx(id==null ? i : id[i]), is[i]);
+      UnsafeUtils.set4(_mem, idx(id==null ? i : id[i]), is==null ? 0 : is[i]);
     UnsafeUtils.copyMemory(ss,0,_mem,_valstart,sslen);
     _isAllASCII = true;
     for(int i = _valstart; i < _mem.length; ++i) {
