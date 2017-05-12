@@ -190,6 +190,14 @@ public class KLimeModel extends Model<KLimeModel, KLimeParameters, KLimeOutput> 
     }
 
     @Override
+    @SuppressWarnings("unchecked")
+    public void reduce(KLimeMetricBuilder mb) {
+      for (int i = 0; i < _clusterMBs.length; i++)
+        _clusterMBs[i].reduce(mb._clusterMBs[i]);
+      super.reduce(mb);
+    }
+
+    @Override
     public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
       ModelMetricsRegression globalMetrics = (ModelMetricsRegression) super.makeModelMetrics(null, f, null, null);
       ModelMetricsRegression[] clusterMetrics = new ModelMetricsRegression[_clusterMBs.length];
