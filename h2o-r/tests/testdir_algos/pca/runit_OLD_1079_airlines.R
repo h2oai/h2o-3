@@ -5,10 +5,10 @@ source("../../../scripts/h2o-r-test-setup.R")
 test.pca.airline<- function() {
   browser()
   dimD = 234
-  pp = h2o.importFile("smalldata/airlines/AirlinesTest.csv.zip")
+  pp = h2o.uploadFile(locate("smalldata/airlines/AirlinesTest.csv.zip"))
   aa = h2o.prcomp(pp, k=dimD, transform="STANDARDIZE")
 
-  dd = h2o.importFile("smalldata/airlines/AirlinesTrain.csv.zip")
+  dd = h2o.uploadFile(locate("smalldata/airlines/AirlinesTrain.csv.zip"))
   predH2O <- predict(aa, newdata=dd)
 
   expect_true(h2o.ncol(predH2O)==dimD)   # projected data should have same column as dimD
