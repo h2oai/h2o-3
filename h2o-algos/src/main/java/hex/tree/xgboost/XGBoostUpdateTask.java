@@ -56,7 +56,8 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
                 _sharedmodel._dataInfoKey,
                 _fr,
                 this._lo,
-                this._hi - 1,
+                // TODO fix this, should be _hi?
+                this._nhi - 1,
                 _parms._response_column,
                 _parms._weights_column,
                 _parms._fold_column,

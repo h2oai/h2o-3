@@ -49,13 +49,15 @@ public class XGBoostTrainingTask extends MRTask<XGBoostTrainingTask> {
     }
 
     private void train() throws XGBoostError {
-        rabitEnv.put("DMLC_TASK_ID", Thread.currentThread().getName());
-        Rabit.init(rabitEnv);
+        Map<String, String> localRabitEnv = new HashMap<>();
+        localRabitEnv.put("DMLC_TASK_ID", Thread.currentThread().getName());
+        Rabit.init(localRabitEnv);
 
         DMatrix trainMat = XGBoost.convertFrametoDMatrix(_sharedmodel._dataInfoKey,
                 _parms.train(),
                 this._lo,
-                this._hi - 1,
+                // TODO fix this, should be _hi?
+                this._nhi - 1,
                 _parms._response_column,
                 _parms._weights_column,
                 _parms._fold_column,
@@ -75,9 +77,13 @@ public class XGBoostTrainingTask extends MRTask<XGBoostTrainingTask> {
         }
 
         HashMap<String, DMatrix> watches = new HashMap<>();
+        HashMap<String, Object> params = XGBoostModel.createParams(_parms, _output);
+        Rabit.shutdown();
 
+        rabitEnv.put("DMLC_TASK_ID", Thread.currentThread().getName());
+        Rabit.init(rabitEnv);
         // create the backend
-        booster = ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, XGBoostModel.createParams(_parms, _output), 0, watches, null, null);
+        booster = ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, params, 0, watches, null, null);
         Rabit.shutdown();
     }
 
