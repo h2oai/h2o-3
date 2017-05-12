@@ -15,7 +15,7 @@ public class KMeansMojoWriter extends ModelMojoWriter<KMeansModel, KMeansModel.K
 
   @Override
   public String mojoVersion() {
-    return "1.0";
+    return "1.00";
   }
 
   @Override
