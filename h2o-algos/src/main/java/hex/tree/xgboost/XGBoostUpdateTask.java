@@ -48,6 +48,10 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
     }
 
     private void update() throws XGBoostError {
+        rabitEnv.put("DMLC_TASK_ID", Thread.currentThread().getName());
+
+        Rabit.init(rabitEnv);
+
         DMatrix trainMat = XGBoost.convertFrametoDMatrix(
                 _sharedmodel._dataInfoKey,
                 _fr,
@@ -59,9 +63,6 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
                 _featureMap,
                 _output._sparse);
 
-        rabitEnv.put("DMLC_TASK_ID", Thread.currentThread().getName());
-
-        Rabit.init(rabitEnv);
 
         //booster.setParam("eta", effective_learning_rate(model));
 

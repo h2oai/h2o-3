@@ -49,6 +49,9 @@ public class XGBoostTrainingTask extends MRTask<XGBoostTrainingTask> {
     }
 
     private void train() throws XGBoostError {
+        rabitEnv.put("DMLC_TASK_ID", Thread.currentThread().getName());
+        Rabit.init(rabitEnv);
+
         DMatrix trainMat = XGBoost.convertFrametoDMatrix(_sharedmodel._dataInfoKey,
                 _parms.train(),
                 this._lo,
@@ -72,9 +75,6 @@ public class XGBoostTrainingTask extends MRTask<XGBoostTrainingTask> {
         }
 
         HashMap<String, DMatrix> watches = new HashMap<>();
-
-        rabitEnv.put("DMLC_TASK_ID", Thread.currentThread().getName());
-        Rabit.init(rabitEnv);
 
         // create the backend
         booster = ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, XGBoostModel.createParams(_parms, _output), 0, watches, null, null);
