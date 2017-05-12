@@ -147,6 +147,10 @@ h2o.getModel <- function(model_id) {
   model$training_metrics   <- new(MetricsClass, algorithm=json$algo, on_train=TRUE, on_valid=FALSE, on_xval=FALSE, metrics=model$training_metrics)
   model$validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE, on_valid=TRUE, on_xval=FALSE, metrics=model$validation_metrics)
   model$cross_validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE, on_valid=FALSE, on_xval=TRUE, metrics=model$cross_validation_metrics)
+  if (model_category %in% c("Binomial", "Multinomial", "Regression")) { # add the missing metrics manually where
+    model$coefficients <- model$coefficients_table[,2]
+    names(model$coefficients) <- model$coefficients_table[,1]
+  }
   parameters <- list()
   allparams  <- list()
   lapply(json$parameters, function(param) {
