@@ -177,6 +177,28 @@ Use ``model.varimp(return_list=True)`` as shown in the following example:
 
 --------------
 
+**How can I get the H2O Python Client to work with third-party plotting libraries for plotting metrics outside of Flow?**
+
+In Flow, plots are created using the H2O UI and using specific RESTful commands that are issued from the UI. You can obtain similar plotting specific data in Python using a third-party plotting library such as Pandas or Matplotlib. In addition, every metric that H2O displays in the Flow is calculated on the backend and stored for each model. So you can inspect any metric after getting the data from H2O and then using a plotting library in Python to create the graphs. 
+
+The example below shows how to plot the logloss for training and validation using Pandas to store the data and also generate the plot. Pandas has a simplified but limited plotting API, and it is also based on Matplotlib. 
+
+::
+
+    # import pandas and matplotlib
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    %matplotlib inline 
+
+    # get the scoring history for the model
+    scoring_history = pd.DataFrame(model.score_history())
+
+    # plot the validation and training logloss
+    scoring_history.plot(x='number_of_trees', y = ['validation_logloss', 'training_logloss'])
+
+
+--------------
+
 **What is PySparkling? How can I use it for grid search or early stopping?**
 
 PySparkling basically calls H2O Python functions for all operations on H2O data frames. You can perform all H2O Python operations available in H2O Python version 3.6.0.3 or later from PySparkling.
