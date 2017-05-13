@@ -38,6 +38,9 @@ dependencies {
   // !! This should be replaced by regular maven dependency of reflections 0.9.11 or higher when it's available
   compile 'ai.h2o:reflections:0.9.11-h2o-custom'
 
+  // Duke library: collection of String comparators
+  compile ('no.priv.garshol.duke:duke:1.2') { transitive = false }
+
   // Jets3t is required by S3N support
   // compile 'net.java.dev.jets3t:jets3t:0.6.1'
 
