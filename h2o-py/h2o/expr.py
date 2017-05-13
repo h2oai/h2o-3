@@ -152,7 +152,7 @@ class ExprNode(object):
                 else:
                     s = "({}".format(head._op)
                     gc_ref_cnt = len(gc.get_referrers(head))
-                    if head == self or gc_ref_cnt >= ExprNode.MAGIC_REF_COUNT:
+                    if (top and head == self) or gc_ref_cnt >= ExprNode.MAGIC_REF_COUNT:
                         head._cache._id = _py_tmp_key(append=h2o.connection().session_id)
                         s = "(tmp= {} {}".format(head._cache._id, s)
                         stack.append('^@^')
