@@ -24,7 +24,7 @@ In both the R and Python API, AutoML uses the same data-related arguments, `x, y
 Code Examples
 ~~~~~~~~~~~~~
 
-Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* and the ``H2OAutoML`` class in *Python*:
+Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* and the ``H2OAutoML`` class in *Python*.  For demonstration purposes only, we explicitly specify the the `x` argument, even though on this dataset, that's not required.  With this dataset, the set of predictors is all columns other than the response.  Like other H2O algorithms, the default value of `x` is "all columns, excluding `y`", so that will produce the same result.
 
 .. example-code::
    .. code-block:: r
@@ -51,19 +51,19 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
                       max_runtime_secs = 30)
 
     # View the AutoML Leaderboard
-    aml@leaderboard
+    lb <- aml@leaderboard
+    lb
 
-    #                                              model_id      auc
-    # 1            StackedEnsemble_model_1494131714454_2450 0.781019
-    # 2  GBM_grid__99d1689ffa54427987452fbfe0b34e14_model_2 0.772083
-    # 3  GBM_grid__99d1689ffa54427987452fbfe0b34e14_model_0 0.767674
-    # 4  GBM_grid__99d1689ffa54427987452fbfe0b34e14_model_4 0.761287
-    # 5  GBM_grid__99d1689ffa54427987452fbfe0b34e14_model_3 0.754231
-    # 6                         DRF_model_1494131714454_601 0.741244
-    # 7                        XRT_model_1494131714454_1055 0.732022
-    # 8  GBM_grid__99d1689ffa54427987452fbfe0b34e14_model_1 0.719469
-    # 9  GLM_grid__99d1689ffa54427987452fbfe0b34e14_model_1 0.685216
-    # 10 GLM_grid__99d1689ffa54427987452fbfe0b34e14_model_0 0.685216
+    #                                             model_id      auc  logloss
+    # 1           StackedEnsemble_model_1494643945817_1709 0.780384 0.561501
+    # 2 GBM_grid__95ebce3d26cd9d3997a3149454984550_model_0 0.764791 0.664823
+    # 3 GBM_grid__95ebce3d26cd9d3997a3149454984550_model_2 0.758109 0.593887
+    # 4                          DRF_model_1494643945817_3 0.736786 0.614430
+    # 5                        XRT_model_1494643945817_461 0.735946 0.602142
+    # 6 GBM_grid__95ebce3d26cd9d3997a3149454984550_model_3 0.729492 0.667036
+    # 7 GBM_grid__95ebce3d26cd9d3997a3149454984550_model_1 0.727456 0.675624
+    # 8 GLM_grid__95ebce3d26cd9d3997a3149454984550_model_1 0.685216 0.635137
+    # 9 GLM_grid__95ebce3d26cd9d3997a3149454984550_model_0 0.685216 0.635137
 
     # The leader model is stored here
     aml@leader
@@ -73,7 +73,7 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
     # predictions directly on the `"H2OAutoML"` object, or on the leader 
     # model object directly
 
-    pred <- h2o.predict(aml, test)  #Not working yet: https://0xdata.atlassian.net/browse/PUBDEV-4428
+    #pred <- h2o.predict(aml, test)  #Not functional yet: https://0xdata.atlassian.net/browse/PUBDEV-4428
 
     # or:
     pred <- h2o.predict(aml@leader, test)
@@ -110,17 +110,18 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
     lb = aml.leaderboard
     lb
 
-    #     model_id                                            auc
-    # --  --------------------------------------------------  --------
-    # 0   StackedEnsemble_model_1494220587649_3147            0.780276
-    # 1   GBM_grid__baf3426712644306cd5c78e4156343ab_model_1  0.766559
-    # 2   GBM_grid__baf3426712644306cd5c78e4156343ab_model_0  0.764055
-    # 3   GBM_grid__baf3426712644306cd5c78e4156343ab_model_2  0.75778
-    # 4   DRF_model_1494220587649_1417                        0.732011
-    # 5   XRT_model_1494220587649_1871                        0.731159
-    # 6   GBM_grid__baf3426712644306cd5c78e4156343ab_model_3  0.723212
-    # 7   GLM_grid__baf3426712644306cd5c78e4156343ab_model_1  0.685216
-    # 8   GLM_grid__baf3426712644306cd5c78e4156343ab_model_0  0.685216
+    # model_id                                            auc       logloss
+    # --------------------------------------------------  --------  ---------
+    #           StackedEnsemble_model_1494643945817_1709  0.780384  0.561501
+    # GBM_grid__95ebce3d26cd9d3997a3149454984550_model_0  0.764791  0.664823
+    # GBM_grid__95ebce3d26cd9d3997a3149454984550_model_2  0.758109  0.593887
+    #                          DRF_model_1494643945817_3  0.736786  0.614430
+    #                        XRT_model_1494643945817_461  0.735946  0.602142
+    # GBM_grid__95ebce3d26cd9d3997a3149454984550_model_3  0.729492  0.667036
+    # GBM_grid__95ebce3d26cd9d3997a3149454984550_model_1  0.727456  0.675624
+    # GLM_grid__95ebce3d26cd9d3997a3149454984550_model_1  0.685216  0.635137
+    # GLM_grid__95ebce3d26cd9d3997a3149454984550_model_0  0.685216  0.635137
+
 
     # The leader model is stored here
     aml.leader
@@ -140,33 +141,31 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
 AutoML Output
 -------------
 
-The AutoML object includes a history of all the data-processing and modeling steps that were taken, and will return a "leaderboard" of models that were trained in the process, ranked by a default metric based on the problem type.  In binary classification problems, that metric is AUC, and in multiclass classification problems, the metric is mean per-class error.  In regression problems, the metric is root mean squared error (RMSE).
+The AutoML object includes a history of all the data-processing and modeling steps that were taken, and will return a "leaderboard" of models that were trained in the process, ranked by a default metric based on the problem type (the second column of the leaderboard).  In binary classification problems, that metric is AUC, and in multiclass classification problems, the metric is mean per-class error.  In regression problems, the default sort metric is root mean squared error (RMSE).  Some additional metrics are also provided, for convenience.
 
-An example leaderboard for a binary classification task:
+Here is an example leaderboard for a binary classification task:
 
-+----------------------------------------------------+----------+
-|                                          model_id  | auc      |
-+====================================================+==========+
-| StackedEnsemble_model_1494131714454_2450           | 0.781019 |
-+----------------------------------------------------+----------+
-| GBM_grid__99d1689ffa54427987452fbfe0b34e14_model_2 | 0.772083 |
-+----------------------------------------------------+----------+
-| GBM_grid__99d1689ffa54427987452fbfe0b34e14_model_0 | 0.767674 |
-+----------------------------------------------------+----------+
-| GBM_grid__99d1689ffa54427987452fbfe0b34e14_model_4 | 0.761287 |
-+----------------------------------------------------+----------+
-| GBM_grid__99d1689ffa54427987452fbfe0b34e14_model_3 | 0.754231 |
-+----------------------------------------------------+----------+
-| DRF_model_1494131714454_601                        | 0.741244 |
-+----------------------------------------------------+----------+
-| XRT_model_1494131714454_1055                       | 0.732022 |
-+----------------------------------------------------+----------+
-| GBM_grid__99d1689ffa54427987452fbfe0b34e14_model_1 | 0.719469 |
-+----------------------------------------------------+----------+
-| GLM_grid__99d1689ffa54427987452fbfe0b34e14_model_1 | 0.685216 |
-+----------------------------------------------------+----------+
-| GLM_grid__99d1689ffa54427987452fbfe0b34e14_model_0 | 0.685216 |
-+----------------------------------------------------+----------+
++----------------------------------------------------+----------+----------+
+|                                           model_id |      auc |  logloss |
++====================================================+==========+==========+
+| StackedEnsemble_model_1494643945817_1709           | 0.780384 | 0.561501 | 
++----------------------------------------------------+----------+----------+
+| GBM_grid__95ebce3d26cd9d3997a3149454984550_model_0 | 0.764791 | 0.664823 |
++----------------------------------------------------+----------+----------+
+| GBM_grid__95ebce3d26cd9d3997a3149454984550_model_2 | 0.758109 | 0.593887 |
++----------------------------------------------------+----------+----------+
+| DRF_model_1494643945817_3                          | 0.736786 | 0.614430 |
++----------------------------------------------------+----------+----------+
+| XRT_model_1494643945817_461                        | 0.735946 | 0.602142 |
++----------------------------------------------------+----------+----------+
+| GBM_grid__95ebce3d26cd9d3997a3149454984550_model_3 | 0.729492 | 0.667036 |
++----------------------------------------------------+----------+----------+
+| GBM_grid__95ebce3d26cd9d3997a3149454984550_model_1 | 0.727456 | 0.675624 |
++----------------------------------------------------+----------+----------+
+| GLM_grid__95ebce3d26cd9d3997a3149454984550_model_1 | 0.685216 | 0.635137 |
++----------------------------------------------------+----------+----------+
+| GLM_grid__95ebce3d26cd9d3997a3149454984550_model_0 | 0.685216 | 0.635137 |
++----------------------------------------------------+----------+----------+
 
 
 
