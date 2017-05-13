@@ -112,23 +112,59 @@ public class LogsHandler extends Handler {
     }
   }
 
+
+  private static H2ONode getH2ONode(String nodeIdx){
+      try
+      {
+        int nodeidx = Integer.parseInt(nodeIdx);
+
+        if ((nodeidx < -1) || (nodeidx >= H2O.CLOUD.size())) {
+          throw new IllegalArgumentException("H2O node with the specified index does not exist!");
+        }else if(nodeidx == -1){
+              return H2O.SELF;
+          }else{
+              return H2O.CLOUD._memary[nodeidx];
+          }
+      }
+      catch(NumberFormatException nfe)
+      {
+        // not a number, try to parse for ipPort
+        if (nodeIdx.equals("self")) {
+          return H2O.SELF;
+        } else {
+          H2ONode node = H2O.CLOUD.getNodeByIPPort(nodeIdx);
+          if (node != null){
+            return node;
+          } else {
+            // it still can be client
+            H2ONode client = H2O.getClientByIPPort(nodeIdx);
+            if (client != null) {
+              return client;
+            } else {
+              // the ipport does not represent any existing h2o cloud member or client
+              throw new IllegalArgumentException("No H2O node running as part of this cloud on " + nodeIdx + " does not exist!");
+            }
+          }
+        }
+      }
+
+  }
+
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public LogsV3 fetch(int version, LogsV3 s) {
-    int nodeidx = s.nodeidx;
-    if ((nodeidx < -1) || (nodeidx >= H2O.CLOUD.size())) {
-      throw new IllegalArgumentException("node does not exist");
-    }
 
+
+    H2ONode node = getH2ONode(s.nodeidx);
     String filename = s.name;
     if (filename != null) {
       if (filename.contains(File.separator)) {
-        throw new IllegalArgumentException("filename may not contain File.separator character");
+        throw new IllegalArgumentException("Filename may not contain File.separator character.");
       }
     }
 
     GetLogTask t = new GetLogTask();
     t.name = filename;
-    if (nodeidx == -1) {
+    if (H2O.SELF.equals(node)) {
       // Local node.
       try {
         t.doIt();
@@ -136,16 +172,14 @@ public class LogsHandler extends Handler {
       catch (Exception e) {
         Log.err(e);
       }
-    }
-    else {
+    } else {
       // Remote node.
-      Log.trace("GetLogTask starting to node " + nodeidx + "...");
-      H2ONode node = H2O.CLOUD._memary[nodeidx];
+      Log.trace("GetLogTask starting to node  " + node._key + " ...");
       new RPC<>(node, t).call().get();
-      Log.trace("GetLogTask completed to node " + nodeidx);
+      Log.trace("GetLogTask completed to node " + node._key);
     }
 
-    if (! t.success) {
+    if (!t.success) {
       throw new RuntimeException("GetLogTask failed");
     }
 
