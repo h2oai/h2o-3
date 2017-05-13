@@ -9,6 +9,8 @@ import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 
+import java.util.Arrays;
+
 import static org.junit.Assert.*;
 
 public class KLimeTest extends TestUtil {
@@ -50,6 +52,11 @@ public class KLimeTest extends TestUtil {
           sum += scored.vec(j).at(i);
         assertEquals("Reason codes are correct for row " + i, scored.vec(0).at(i), sum + intercept, 0.0001);
       }
+
+      assertTrue(klm._output._training_metrics instanceof KLimeModel.ModelMetricsKLime);
+      KLimeModel.ModelMetricsKLime tm = (KLimeModel.ModelMetricsKLime) klm._output._training_metrics;
+      assertArrayEquals(new boolean[]{false, true, true}, tm._usesGlobalModel);
+      assertEquals(3, tm._clusterMetrics.length);
     } finally {
       Scope.exit();
     }
