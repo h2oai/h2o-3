@@ -14,8 +14,13 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
+import water.util.StringUtils;
 import water.util.Timer;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.*;
 
 import static hex.tree.SharedTree.createModelSummaryTable;
@@ -505,16 +510,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       try {
         // Prepare Rabit
         RabitTracker rt = new RabitTracker(H2O.getCloudSize());
-        rt.start(0); // Make this settable?
-
-        model.model_info()._booster = new XGBoostTrainingTask(
-                model.model_info(),
-                featureMap,
-                model._output,
-                rt.getWorkerEnvs(),
-                _parms).doAll(_train).booster();
-
-        rt.waitFor(0);
 
         DMatrix trainMat = convertFrametoDMatrix(
                 model.model_info()._dataInfoKey,
@@ -526,6 +521,18 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
                 _parms._fold_column,
                 featureMap,
                 model._output._sparse);
+
+        // For feature importances - write out column info
+        OutputStream os;
+        try {
+          os = new FileOutputStream("/tmp/featureMap.txt");
+          os.write(featureMap[0].getBytes());
+          os.close();
+        } catch (FileNotFoundException e) {
+          e.printStackTrace();
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
 
         DMatrix validMat = null;
         if (null != _valid) {
@@ -562,19 +569,26 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       Map<String, String> rabitEnv = new HashMap<>();
       rabitEnv.put("DMLC_TASK_ID", Thread.currentThread().getName());
 
+      String taskName = UUID.randomUUID().toString();
+
+      boolean scored = false;
       for( int tid=0; tid< _parms._ntrees; tid++) {
-        // During first iteration model contains 0 trees, then 1-tree, ...
-        boolean scored = doScoring(model, model.model_info()._booster, trainMat, validMat, false, rabitEnv);
-        if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
-          doScoring(model, model.model_info()._booster, trainMat, validMat, true, rabitEnv);
-          _job.update(_parms._ntrees-model._output._ntrees); //finish
-          return;
+        if( tid > 0) {
+          // During first iteration model contains 0 trees, then 1-tree, ...
+          scored = doScoring(model, model.model_info()._booster, trainMat, validMat, false, rabitEnv);
+          if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
+            doScoring(model, model.model_info()._booster, trainMat, validMat, true, rabitEnv);
+            _job.update(_parms._ntrees - model._output._ntrees); //finish
+            return;
+          }
         }
 
         Timer kb_timer = new Timer();
 
         rt.start(0);
+
         model.model_info()._booster = new XGBoostUpdateTask(
+                taskName,
                 model.model_info()._booster,
                 model.model_info(),
                 featureMap,
@@ -583,7 +597,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
                 tid,
                 rt.getWorkerEnvs()).doAll(_train).booster();
         rt.waitFor(0);
-
 
         Log.info((tid + 1) + ". tree was built in " + kb_timer.toString());
         _job.update(1);
@@ -666,9 +679,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
 
     HashMap<String, Object> params = new HashMap<>();
-    params.put("updater", "grow_gpu_hist");
+//    params.put("updater", "grow_gpu_hist");
     params.put("silent", 1);
-    params.put("gpu_id", gpu_id);
+//    params.put("gpu_id", gpu_id);
     HashMap<String, DMatrix> watches = new HashMap<>();
     watches.put("train", trainMat);
     try {
