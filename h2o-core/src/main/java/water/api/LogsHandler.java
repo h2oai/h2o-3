@@ -132,7 +132,7 @@ public class LogsHandler extends Handler {
         if (nodeIdx.equals("self")) {
           return H2O.SELF;
         } else {
-          H2ONode node = H2O.CLOUD.getNodeByIPPort(nodeIdx);
+          H2ONode node = H2O.CLOUD.getNodeByIpPort(nodeIdx);
           if (node != null){
             return node;
           } else {

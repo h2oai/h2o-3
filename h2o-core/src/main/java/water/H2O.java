@@ -1559,7 +1559,7 @@ final public class H2O {
   private final HashMap<String, Integer> _node_ip_to_index;
   final int _hash;
 
-  public H2ONode getNodeByIPPort(String ipPort){
+  public H2ONode getNodeByIpPort(String ipPort){
     if(_node_ip_to_index != null) {
       Integer index = _node_ip_to_index.get(ipPort);
       if (index != null && index > -1 && index < _memary.length) {
