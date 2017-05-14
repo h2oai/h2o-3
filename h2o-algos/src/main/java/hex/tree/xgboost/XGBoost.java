@@ -54,18 +54,22 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
    */
   public static DMatrix convertFrametoDMatrix(Key<DataInfo> dataInfoKey,
                                               Frame f,
-                                              int chLo,
-                                              int chHi,
+                                              boolean onlyLocal,
                                               String response,
                                               String weight,
                                               String fold,
                                               String[] featureMap,
                                               boolean sparse) throws XGBoostError {
-    // chLo and chHi are assumed to be proper values i.e. assuming that the user calling this method made sure a NPE won't be thrown below
-    long chRowLo = f.anyVec().chunkForChunkIdx(chLo).start();
-    Chunk lastChunk = f.anyVec().chunkForChunkIdx(chHi);
-    long chRowHi = lastChunk.start() + lastChunk._len;
-    int nRows = (int) (chRowHi - chRowLo);
+
+    List<Integer> chunks = new ArrayList<>();
+    long nRows = 0;
+    for(int i = 0; i < f.anyVec().nChunks(); i++) {
+      Key key = f.anyVec().chunkKey(i);
+      if(!onlyLocal || key.home()) {
+        chunks.add(i);
+        nRows += f.anyVec().chunkLen(i);
+      }
+    }
 
     DataInfo di = dataInfoKey.get();
     // set the names for the (expanded) columns
@@ -122,7 +126,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           List<SparseItem>[] col = new List[nCols]; //TODO: use more efficient storage (no GC)
           // allocate
           for (int i=0;i<nCols;++i) {
-            col[i] = new ArrayList<>(Math.min(nRows, 10000));
+            col[i] = new ArrayList<>((int)Math.min(nRows, 10000));
           }
 
           // collect non-zeros
@@ -176,54 +180,56 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 //    float[] data = new float[]     {1f,2f,  4f,3f,  3f,1f,2f};     //non-zeros across each row
 //    int[] colIndex = new int[]     {0, 2,   0, 3,   0, 1, 2};      //col index for each non-zero
 
-          long[] rowHeaders = new long[nRows + 1];
+          long[] rowHeaders = new long[(int)nRows + 1];
           int initial_size = 1 << 20;
           float[] data = new float[initial_size];
           int[] colIndex = new int[initial_size];
 
           // extract predictors
           rowHeaders[0] = 0;
-          for (long i = chRowLo; i < nRows; ++i) {
-            if (w != null && w.at(i) == 0) continue;
-            int nzstart = nz;
-            // enlarge final data arrays by 2x if needed
-            while (data.length < nz + di._cats + di._nums) {
-              int newLen = (int) Math.min((long) data.length << 1L, (long) (Integer.MAX_VALUE - 10));
-              Log.info("Enlarging sparse data structure from " + data.length + " bytes to " + newLen + " bytes.");
-              if (data.length == newLen) {
-                throw new IllegalArgumentException(technote(11, "Data is too large to fit into the 32-bit Java float[] array that needs to be passed to the XGBoost C++ backend. Use H2O GBM instead."));
+          for (Integer chunk : chunks) {
+            for(long i = f.anyVec().espc()[chunk]; i < f.anyVec().espc()[chunk+1]; i++) {
+              if (w != null && w.at(i) == 0) continue;
+              int nzstart = nz;
+              // enlarge final data arrays by 2x if needed
+              while (data.length < nz + di._cats + di._nums) {
+                int newLen = (int) Math.min((long) data.length << 1L, (long) (Integer.MAX_VALUE - 10));
+                Log.info("Enlarging sparse data structure from " + data.length + " bytes to " + newLen + " bytes.");
+                if (data.length == newLen) {
+                  throw new IllegalArgumentException(technote(11, "Data is too large to fit into the 32-bit Java float[] array that needs to be passed to the XGBoost C++ backend. Use H2O GBM instead."));
+                }
+                data = Arrays.copyOf(data, newLen);
+                colIndex = Arrays.copyOf(colIndex, newLen);
               }
-              data = Arrays.copyOf(data, newLen);
-              colIndex = Arrays.copyOf(colIndex, newLen);
-            }
-            for (int j = 0; j < di._cats; ++j) {
-              if (!vecs[j].isNA(i)) {
-                data[nz] = 1; //one-hot encoding
-                colIndex[nz] = di.getCategoricalId(j, vecs[j].at8(i));
-                nz++;
-              } else {
-                // NA == 0 for sparse -> no need to fill
+              for (int j = 0; j < di._cats; ++j) {
+                if (!vecs[j].isNA(i)) {
+                  data[nz] = 1; //one-hot encoding
+                  colIndex[nz] = di.getCategoricalId(j, vecs[j].at8(i));
+                  nz++;
+                } else {
+                  // NA == 0 for sparse -> no need to fill
 //            data[nz] = 1; //one-hot encoding
 //            colIndex[nz] = di.getCategoricalId(j, Double.NaN); //Fill NA bucket
 //            nz++;
+                }
               }
-            }
-            for (int j = 0; j < di._nums; ++j) {
-              float val = (float) vecs[di._cats + j].at(i);
-              if (!Float.isNaN(val) && val != 0) {
-                data[nz] = val;
-                colIndex[nz] = di._catOffsets[di._catOffsets.length - 1] + j;
+              for (int j = 0; j < di._nums; ++j) {
+                float val = (float) vecs[di._cats + j].at(i);
+                if (!Float.isNaN(val) && val != 0) {
+                  data[nz] = val;
+                  colIndex[nz] = di._catOffsets[di._catOffsets.length - 1] + j;
+                  nz++;
+                }
+              }
+              if (nz == nzstart) {
+                // for the corner case where there are no categorical values, and all numerical values are 0, we need to
+                // assign a 0 value to any one column to have a consistent number of rows between the predictors and the special vecs (weight/response/etc.)
+                data[nz] = 0;
+                colIndex[nz] = 0;
                 nz++;
               }
+              rowHeaders[++actualRows] = nz;
             }
-            if (nz == nzstart) {
-              // for the corner case where there are no categorical values, and all numerical values are 0, we need to
-              // assign a 0 value to any one column to have a consistent number of rows between the predictors and the special vecs (weight/response/etc.)
-              data[nz] = 0;
-              colIndex[nz] = 0;
-              nz++;
-            }
-            rowHeaders[++actualRows] = nz;
           }
           data = Arrays.copyOf(data, nz);
           colIndex = Arrays.copyOf(colIndex, nz);
@@ -238,33 +244,35 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         float[] data = new float[1 << 20];
         int cols = di.fullN();
         int pos = 0;
-        for (long i = chRowLo; i < nRows; ++i) {
-          if (w != null && w.at(i) == 0) continue;
-          // enlarge final data arrays by 2x if needed
-          while (data.length < (actualRows + 1) * cols) {
-            int newLen = (int) Math.min((long) data.length << 1L, (long) (Integer.MAX_VALUE - 10));
-            Log.info("Enlarging dense data structure from " + data.length + " bytes to " + newLen + " bytes.");
-            if (data.length == newLen) {
-              throw new IllegalArgumentException(technote(11, "Data is too large to fit into the 32-bit Java float[] array that needs to be passed to the XGBoost C++ backend. Use H2O GBM instead."));
+        for (Integer chunk : chunks) {
+          for(long i = f.anyVec().espc()[chunk]; i < f.anyVec().espc()[chunk+1]; i++) {
+            if (w != null && w.at(i) == 0) continue;
+            // enlarge final data arrays by 2x if needed
+            while (data.length < (actualRows + 1) * cols) {
+              int newLen = (int) Math.min((long) data.length << 1L, (long) (Integer.MAX_VALUE - 10));
+              Log.info("Enlarging dense data structure from " + data.length + " bytes to " + newLen + " bytes.");
+              if (data.length == newLen) {
+                throw new IllegalArgumentException(technote(11, "Data is too large to fit into the 32-bit Java float[] array that needs to be passed to the XGBoost C++ backend. Use H2O GBM instead."));
+              }
+              data = Arrays.copyOf(data, newLen);
             }
-            data = Arrays.copyOf(data, newLen);
-          }
-          for (int j = 0; j < di._cats; ++j) {
-            if (vecs[j].isNA(i)) {
-              data[pos + di.getCategoricalId(j, Double.NaN)] = 1; // fill NA bucket
-            } else {
-              data[pos + di.getCategoricalId(j, vecs[j].at8(i))] = 1;
+            for (int j = 0; j < di._cats; ++j) {
+              if (vecs[j].isNA(i)) {
+                data[pos + di.getCategoricalId(j, Double.NaN)] = 1; // fill NA bucket
+              } else {
+                data[pos + di.getCategoricalId(j, vecs[j].at8(i))] = 1;
+              }
             }
+            for (int j = 0; j < di._nums; ++j) {
+              if (vecs[di._cats + j].isNA(i))
+                data[pos + di._catOffsets[di._catOffsets.length - 1] + j] = Float.NaN;
+              else
+                data[pos + di._catOffsets[di._catOffsets.length - 1] + j] = (float) vecs[di._cats + j].at(i);
+            }
+            assert di._catOffsets[di._catOffsets.length - 1] + di._nums == cols;
+            pos += cols;
+            actualRows++;
           }
-          for (int j = 0; j < di._nums; ++j) {
-            if (vecs[di._cats + j].isNA(i))
-              data[pos + di._catOffsets[di._catOffsets.length - 1] + j] = Float.NaN;
-            else
-              data[pos + di._catOffsets[di._catOffsets.length - 1] + j] = (float) vecs[di._cats + j].at(i);
-          }
-          assert di._catOffsets[di._catOffsets.length - 1] + di._nums == cols;
-          pos += cols;
-          actualRows++;
         }
         data = Arrays.copyOf(data, actualRows * cols);
         trainMat = new DMatrix(data, actualRows, cols, Float.NaN);
@@ -278,9 +286,11 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     float[] weights = new float[actualRows];
     if (w != null) {
       int j = 0;
-      for (long i = chRowLo; i < nRows; ++i) {
-        if (w.at(i) == 0) continue;
-        weights[j++] = (float) w.at(i);
+      for (Integer val : chunks) {
+        for (long i = f.anyVec().espc()[val]; i < f.anyVec().espc()[val + 1]; i++) {
+          if (w.at(i) == 0) continue;
+          weights[j++] = (float) w.at(i);
+        }
       }
       assert (j == actualRows);
     }
@@ -514,8 +524,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         DMatrix trainMat = convertFrametoDMatrix(
                 model.model_info()._dataInfoKey,
                 _train,
-                0,
-                _train.anyVec().nChunks() - 1,
+                false,
                 _parms._response_column,
                 _parms._weights_column,
                 _parms._fold_column,
@@ -539,8 +548,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           validMat = convertFrametoDMatrix(
                   model.model_info()._dataInfoKey,
                   _valid,
-                  0,
-                  _valid.anyVec().nChunks() - 1,
+                  false,
                   _parms._response_column,
                   _parms._weights_column,
                   _parms._fold_column,

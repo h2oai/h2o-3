@@ -6,4 +6,7 @@ public class BoosterUtils {
         booster.saveRabitCheckpoint();
     }
 
+    public static int loadRabitCheckpoint(Booster booster) throws XGBoostError {
+        return booster.loadRabitCheckpoint();
+    }
 }

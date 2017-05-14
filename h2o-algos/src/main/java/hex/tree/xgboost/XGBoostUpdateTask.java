@@ -1,16 +1,12 @@
 package hex.tree.xgboost;
 
 import ml.dmlc.xgboost4j.java.*;
+import water.H2O;
 import water.MRTask;
 import water.util.IcedHashMapGeneric;
-import water.util.Log;
 
 import java.io.File;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
 
@@ -58,17 +54,14 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
         DMatrix trainMat = XGBoost.convertFrametoDMatrix(
                 _sharedmodel._dataInfoKey,
                 _fr,
-                this._lo,
-                // TODO fix this, should be _hi?
-                this._nhi - 1,
+                true,
                 _parms._response_column,
                 _parms._weights_column,
                 _parms._fold_column,
                 _featureMap,
                 _output._sparse);
 
-
-        String boosterModelPath = "/tmp/booster" + taskName + "/";
+        String boosterModelPath = "/tmp/booster" + taskName + H2O.SELF.index() + "/";
         String boosterModel = boosterModelPath + taskName;
 
         if(booster == null) {
@@ -84,8 +77,10 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
             booster = ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, params, 0, watches, null, null);
         } else {
             Rabit.init(rabitEnv);
-            booster.loadModel(boosterModel);
+            booster = Booster.loadModel(boosterModel);
+            BoosterUtils.loadRabitCheckpoint(booster);
             booster.update(trainMat, tid);
+            BoosterUtils.saveRabitCheckpoint(booster);
         }
 
         File modelFile = new File(boosterModelPath);

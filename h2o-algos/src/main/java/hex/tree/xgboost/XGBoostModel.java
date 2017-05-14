@@ -443,8 +443,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       DMatrix trainMat = convertFrametoDMatrix(
               model_info()._dataInfoKey,
               adaptFr,
-              0,
-              adaptFr.anyVec().nChunks() - 1,
+              false,
               _parms._response_column,
               _parms._weights_column,
               _parms._fold_column,
