@@ -68,6 +68,9 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
                 _output._sparse);
 
 
+        String boosterModelPath = "/tmp/booster" + taskName + "/";
+        String boosterModel = boosterModelPath + taskName;
+
         if(booster == null) {
             // Done in local Rabit mode b/c createParams calls train() which isn't supposed to be distributed
             Map<String, String> localRabitEnv = new HashMap<>();
@@ -81,17 +84,17 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
             booster = ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, params, 0, watches, null, null);
         } else {
             Rabit.init(rabitEnv);
-            booster.loadModel("/tmp/booster/" + taskName);
+            booster.loadModel(boosterModel);
             booster.update(trainMat, tid);
         }
 
-        File modelFile = new File("/tmp/booster" + taskName + "/");
+        File modelFile = new File(boosterModelPath);
         if(!modelFile.exists()) {
             modelFile.mkdirs();
             modelFile.deleteOnExit();
         }
 
-        booster.saveModel("/tmp/booster" + taskName + "/" + taskName);
+        booster.saveModel(boosterModel);
 
         Rabit.shutdown();
     }
