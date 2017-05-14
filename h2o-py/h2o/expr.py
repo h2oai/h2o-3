@@ -126,7 +126,6 @@ class ExprNode(object):
         r = collections.deque()
         while len(stack) > 0:
             head = stack.pop()
-            #print("\n{}: {}\n".format(len(stack), r))
             s = None
             if isinstance(head, ExprNode):
                 if not head._cache.is_empty():  # Data already computed and cached; could a "false-like" cached value
