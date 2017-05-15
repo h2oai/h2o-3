@@ -116,14 +116,14 @@ public class LogsHandler extends Handler {
   private static H2ONode getH2ONode(String nodeIdx){
       try
       {
-        int nodeidx = Integer.parseInt(nodeIdx);
+        int numNodeIdx = Integer.parseInt(nodeIdx);
 
-        if ((nodeidx < -1) || (nodeidx >= H2O.CLOUD.size())) {
+        if ((numNodeIdx < -1) || (numNodeIdx >= H2O.CLOUD.size())) {
           throw new IllegalArgumentException("H2O node with the specified index does not exist!");
-        }else if(nodeidx == -1){
+        }else if(numNodeIdx == -1){
               return H2O.SELF;
           }else{
-              return H2O.CLOUD._memary[nodeidx];
+              return H2O.CLOUD._memary[numNodeIdx];
           }
       }
       catch(NumberFormatException nfe)
@@ -147,7 +147,6 @@ public class LogsHandler extends Handler {
           }
         }
       }
-
   }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
