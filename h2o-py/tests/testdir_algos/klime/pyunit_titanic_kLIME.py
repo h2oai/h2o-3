@@ -28,13 +28,14 @@ def kLIMEtitanic():
     predicted_p1 = titanic_predicted["predict_klime"]
     mse_manual = ((titanic_input["p1"] - predicted_p1) * (titanic_input["p1"] - predicted_p1)).mean()[0,0]
     assert abs(klime.mse() - mse_manual) < 1e-6
-    assert abs(klime.mse() - 0.00937167549983) < 1e-6
+    assert abs(klime.mse() - 0.00447654691449) < 1e-6
 
     # Clusters are the same
     assert (abs(titanic_predicted["cluster_klime"] - titanic_expected["cluster_klime"])).sum()[0,0] == 0
 
-    # K-Lime prediction are almost the same as expected predictions
-    assert (abs(titanic_predicted["predict_klime"] - titanic_expected["predict_klime"]) > 0.005).sum()[0,0] == 0
+    # K-Lime prediction are almost the same as expected predictions (on cluster = 0)
+    assert (abs(titanic_predicted[titanic_predicted["cluster_klime"] == 0, "predict_klime"] -
+                titanic_expected[titanic_expected["cluster_klime"] == 0, "predict_klime"]) > 0.005).sum()[0,0] == 0
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(kLIMEtitanic)

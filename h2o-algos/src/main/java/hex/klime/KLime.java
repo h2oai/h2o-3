@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static hex.kmeans.KMeansModel.KMeansParameters;
+import static hex.klime.KLimeModel.ModelMetricsKLime;
 
 public class KLime extends ModelBuilder<KLimeModel, KLimeModel.KLimeParameters, KLimeModel.KLimeOutput> {
 
@@ -151,11 +152,11 @@ public class KLime extends ModelBuilder<KLimeModel, KLimeModel.KLimeParameters, 
 
         bulkBuildModels(_job, allBuilders, 1);
 
-        double global_r2 = ((ModelMetricsSupervised) globalRegressionModel._output._training_metrics).r2();
         GLMModel[] regressionModels = new GLMModel[K];
         for (int i = 0; i < localBuilders.length; i++) {
           if (localBuilders[i] != null) {
             GLMModel localModel = DKV.getGet(localBuilders[i]._job._result);
+            double global_r2 = ((ModelMetricsKLime) model._output._training_metrics)._clusterMetrics[i].r2();
             double local_r2 = ((ModelMetricsSupervised) localModel._output._training_metrics).r2();
             if (local_r2 > global_r2)
               regressionModels[i] = localModel; // local model is better, keep it
