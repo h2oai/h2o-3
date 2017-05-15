@@ -10,6 +10,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import os
 import warnings
+import webbrowser
+
 
 from h2o.backend import H2OConnection
 from h2o.backend import H2OConnectionConf
@@ -1247,7 +1249,12 @@ def make_metrics(predicted, actual, domain=None, distribution=None):
               data={"domain": domain, "distribution": distribution})
     return res["model_metrics"]
 
+def flow():
+    """
+    Open H2O Flow in your browser.
 
+    """
+    webbrowser.open(connection().base_url, new = 1)
 #-----------------------------------------------------------------------------------------------------------------------
 # Private
 #-----------------------------------------------------------------------------------------------------------------------

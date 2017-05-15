@@ -763,3 +763,12 @@ h2o.networkTest <- function() {
 .h2o.garbageCollect <- function() {
   res <- .h2o.__remoteSend("GarbageCollect", method = "POST")
 }
+
+#' Open H2O Flow
+#'
+#' Open H2O Flow in your browser
+#'
+#' @export
+h2o.flow <- function(){
+  browseURL(.h2o.calcBaseURL(urlSuffix=""))
+}
