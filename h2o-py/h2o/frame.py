@@ -2152,6 +2152,35 @@ class H2OFrame(object):
         return H2OFrame._expr(expr=ExprNode("distance", self, y, measure))._frame()
 
 
+    def strdistance(self, y, measure=None):
+        """
+        Compute element-wise string distances between two H2OFrames. Both frames need to have the same
+        shape and only contain string/factor columns.
+
+        :param H2OFrame y: A comparison frame.
+        :param str measure: A string identifier indicating what string distance measure to use. Must be one of:
+
+            - ``"lv"``:        Levenshtein distance
+            - ``"lcs"``:       Longest common substring distance
+            - ``"qgram"``:     q-gram distance
+            - ``"jaccard"``:   Jaccard distance between q-gram profiles
+            - ``"jw"``:        Jaro, or Jaro-Winker distance
+            - ``"soundex"``:   Distance based on soundex encoding
+
+        :examples:
+          >>>
+          >>> x = h2o.H2OFrame.from_python(['Martha', 'Dwayne', 'Dixon'], column_types=['factor'])
+          >>> y = h2o.H2OFrame.from_python(['Marhta', 'Duane', 'Dicksonx'], column_types=['string'])
+          >>> x.strdistance(y, measure="jw")
+
+        :returns: An H2OFrame of the matrix containing element-wise distance between the
+            strings of this frame and ``y``. The returned frame has the same shape as the input frames.
+        """
+        assert_is_type(y, H2OFrame)
+        assert_is_type(measure, Enum('lv', 'lcs', 'qgram', 'jaccard', 'jw', 'soundex'))
+        return H2OFrame._expr(expr=ExprNode("strDistance", self, y, measure))._frame()
+
+
     def asfactor(self):
         """
         Convert columns in the current frame to categoricals.
