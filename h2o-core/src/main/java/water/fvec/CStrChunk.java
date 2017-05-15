@@ -8,6 +8,9 @@ import water.parser.BufferedString;
 
 import java.util.Arrays;
 
+/**
+ * The empty-compression function, where data is in 'string's.
+ */
 public class CStrChunk extends Chunk {
   static final int NA = -1;
   static protected final int _OFF=4+1;
@@ -16,6 +19,11 @@ public class CStrChunk extends Chunk {
 
   public CStrChunk() {}
 
+  /**
+   * Empty-compression function, where data is a constant string
+   * @param s Constant string
+   * @param len Chunk length
+   */
   public CStrChunk(String s, int len){
     byte[] sBytes = StringUtils.bytesOf(s);
     sBytes = Arrays.copyOf(sBytes,sBytes.length+1);
@@ -23,6 +31,15 @@ public class CStrChunk extends Chunk {
     init(sBytes.length, StringUtils.bytesOf(s),len,len,null,null);
   }
 
+  /**
+   * Empty-compression function, where data is in 'string's.
+   * @param sslen Next offset into ss for placing next String
+   * @param ss Bytes of appended strings, including trailing 0
+   * @param sparseLen Length of sparse chunk (number of extracted (non-zero) elements)
+   * @param idxLen Length of chunk
+   * @param id Indices (row numbers) of stored values, used for sparse
+   * @param is Index of strings - holds offsets into ss[]. is[i] == -1 means NA/sparse
+   */
   public CStrChunk(int sslen, byte[] ss, int sparseLen, int idxLen, int[] id, int[] is) {
     init(sslen,ss,sparseLen,idxLen,id,is);
   }
