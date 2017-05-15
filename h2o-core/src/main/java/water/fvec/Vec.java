@@ -567,6 +567,25 @@ public class Vec extends Keyed<Vec> {
     return v0;
   }
 
+  public Vec makeCon(final String s){ return makeCon(s, group(), _rowLayout, T_STR);}
+
+  private static Vec makeCon( final String s, VectorGroup group, int rowLayout, byte type ) {
+    final Vec v0 = new Vec(group.addVec(), rowLayout, null, type);
+    final int nchunks = v0.nChunks();
+    new MRTask() {              // Body of all zero chunks
+      @Override protected void setupLocal() {
+        for( int i=0; i<nchunks; i++ ) {
+          Key k = v0.chunkKey(i);
+          if( k.home() ) {
+            DKV.put(k,new CStrChunk(s,v0.chunkLen(i)),_fs);
+          }
+        }
+      }
+    }.doAllNodes();
+    DKV.put(v0._key, v0);        // Header last
+    return v0;
+  }
+
   public Vec [] makeZeros(int n){return makeZeros(n,null,null);}
 
   /**
