@@ -6,17 +6,17 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 test.klime.titanic <- function() {
   # Load Titanic dataset (with predictions of 'Survived' made by GBM)
-  titanic_input = h2o.importFile(path = locate("smalldata/klime_test/titanic_input.csv"),
-                                   col.types = c("enum","enum","real","real","real","enum","real","real","real","real"))
-  titanic_expected = h2o.importFile(path = locate("smalldata/klime_test/titanic_3_expected.csv"),
-                                    col.types = c("real","real","real","real","real","real","real","real","real"))
+  titanic_input <- h2o.importFile(path = locate("smalldata/klime_test/titanic_input.csv"),
+                                  col.types = c("enum","enum","real","real","real","enum","real","real","real","real"))
+  titanic_expected <- h2o.importFile(path = locate("smalldata/klime_test/titanic_3_expected.csv"),
+                                     col.types = c("real","real","real","real","real","real","real","real","real"))
 
   titanic_age <- titanic_input$Age
   titanic_input$Age <- NULL
   titanic_input <- h2o.cbind(titanic_age, titanic_input)
 
   # Train a k-LIME model
-  klime = h2o.klime(training_frame = titanic_input,
+  klime <- h2o.klime(training_frame = titanic_input,
                     x = c("Age", "Pclass", "Sex", "SibSp", "Parch"), y = "p1",
                     max_k = 3, estimate_k = FALSE,
                     seed = 12345)
