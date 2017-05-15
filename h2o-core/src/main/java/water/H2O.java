@@ -1559,10 +1559,14 @@ final public class H2O {
   private final HashMap<String, Integer> _node_ip_to_index;
   final int _hash;
 
-  public H2ONode getNodeByIpPort(String ipPort){
+  public H2ONode getNodeByIpPort(String ipPort) {
     if(_node_ip_to_index != null) {
       Integer index = _node_ip_to_index.get(ipPort);
-      if (index != null && index > -1 && index < _memary.length) {
+      if (index != null) {
+        if(index <= -1 || index >= _memary.length){
+          throw new RuntimeException("Mapping from node id to node index contains: " + index + ", however this node" +
+                  "does not exist!");
+        }
         return _memary[index];
       } else {
         // no node with such ip:port
