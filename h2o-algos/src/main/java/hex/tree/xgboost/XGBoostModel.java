@@ -222,6 +222,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
         }
         else {
           Log.info("Using grow_gpu_hist (approximate) updater.");
+          params.put("max_bin", p._max_bin);
           params.put("tree_method", "exact");
           params.put("updater", "grow_gpu_hist");
         }
