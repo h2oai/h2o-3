@@ -43,9 +43,9 @@ public class AstStrDistance extends AstPrimitive {
     if ((frX.numCols() != frY.numCols()) || (frX.numRows() != frY.numRows()))
       throw new IllegalArgumentException("strDistance() requires the frames to have the same number of columns and rows.");
     for (int i = 0; i < frX.numCols(); i++)
-      if ((frX.vec(i).get_type() != Vec.T_STR) || (frY.vec(i).get_type() != Vec.T_STR))
-        throw new IllegalArgumentException("Types of columns of both frames need to be String");
-    // check that comparator name is correct
+      if (! (isCharacterType(frX.vec(i)) && isCharacterType(frY.vec(i))))
+        throw new IllegalArgumentException("Types of columns of both frames need to be String/Factor");
+    // make sure that name of the comparator comparator method is correct and it can be constructed
     makeComparator(measure);
 
     byte[] outputTypes = new byte[frX.numCols()];
@@ -60,6 +60,10 @@ public class AstStrDistance extends AstPrimitive {
     return new ValFrame(distFr);
   }
 
+  private static boolean isCharacterType(Vec v) {
+    return v.get_type() == Vec.T_STR || v.get_type() == Vec.T_CAT;
+  }
+
   private static class StringDistanceComparator extends MRTask<StringDistanceComparator> {
     private final String _measure;
     private StringDistanceComparator(String measure) { _measure = measure; }
@@ -71,18 +75,26 @@ public class AstStrDistance extends AstPrimitive {
       assert N * 2 == cs.length;
       for (int i = 0; i < N; i++) {
         Chunk cX = cs[i];
+        String[] domainX = _fr.vec(i).domain();
         Chunk cY = cs[i + N];
+        String[] domainY = _fr.vec(i + N).domain();
         for (int row = 0; row < cX._len; row++) {
           if (cX.isNA(row) || cY.isNA(row))
             nc[i].addNA();
           else {
-            String strX = cX.atStr(tmpStr, row).toString();
-            String strY = cY.atStr(tmpStr, row).toString();
+            String strX = getString(tmpStr, cX, row, domainX);
+            String strY = getString(tmpStr, cY, row, domainY);
             double dist = cmp.compare(strX, strY);
             nc[i].addNum(dist);
           }
         }
       }
+    }
+    private static String getString(BufferedString tmpStr, Chunk chk, int row, String[] domain) {
+      if (domain != null)
+        return domain[(int) chk.at8(row)];
+      else
+        return chk.atStr(tmpStr, row).toString();
     }
   }
 

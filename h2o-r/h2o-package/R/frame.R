@@ -4180,11 +4180,12 @@ h2o.entropy <- function(x) .newExpr("entropy", x)
 h2o.num_valid_substrings <- function(x, path) .newExpr("num_valid_substrings", x, .quote(path))
 
 #'
-#' Compute element-wise string distances between two H2OFrames.
+#' Compute element-wise string distances between two H2OFrames. Both frames need to have the same
+#' shape (N x M) and only contain string/factor columns. Return a matrix (H2OFrame) of shape N x M.
 #'
 #' @param x An H2OFrame
-#' @param y An H2OFrame, must have same number of string columns as frame `x`
-#' @param method A string indicating what string distance measure to use. Must be one of:
+#' @param y A comparison H2OFrame
+#' @param method A string identifier indicating what string distance measure to use. Must be one of:
 #'   "lv"                   - Levenshtein distance
 #'   "lcs"                  - Longest common substring distance
 #'   "qgram"                - q-gram distance
@@ -4194,7 +4195,7 @@ h2o.num_valid_substrings <- function(x, path) .newExpr("num_valid_substrings", x
 #' @examples
 #' \donttest{
 #' h2o.init()
-#' x <- as.character(as.h2o(c("Martha", "Dwayne", "Dixon")))
+#' x <- as.h2o(c("Martha", "Dwayne", "Dixon"))
 #' y <- as.character(as.h2o(c("Marhta", "Duane", "Dicksonx")))
 #' h2o.stringdist(x, y, method = "jw")
 #' }

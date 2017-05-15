@@ -4,7 +4,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.string.distance <- function() {
-    x <- as.character(as.h2o(c("Martha", "Dwayne", "Dixon", NA, NA)))
+    x <- as.h2o(c("Martha", "Dwayne", "Dixon", NA, NA))
     y <- as.character(as.h2o(c("Marhta", "Duane", "Dicksonx", "xxx", NA)))
 
     dist <- h2o.stringdist(x, y, method = "jw")

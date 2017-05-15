@@ -6,7 +6,7 @@ from numpy import testing as tst
 
 def distance_check():
 
-    x = h2o.H2OFrame.from_python(['Martha', 'Dwayne', 'Dixon'], column_types=['string'])
+    x = h2o.H2OFrame.from_python(['Martha', 'Dwayne', 'Dixon'], column_types=['factor'])
     y = h2o.H2OFrame.from_python(['Marhta', 'Duane', 'Dicksonx'], column_types=['string'])
     dist = x.strdistance(y, measure="jw")
     dist_list = h2o.as_list(dist, use_pandas=False, header=False)

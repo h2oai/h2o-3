@@ -2154,10 +2154,11 @@ class H2OFrame(object):
 
     def strdistance(self, y, measure=None):
         """
-        Compute element-wise string distances between two H2OFrames.
+        Compute element-wise string distances between two H2OFrames. Both frames need to have the same
+        shape and only contain string/factor columns.
 
-        :param H2OFrame y: A comparison frame, must have same number of string columns as this frame
-        :param str measure: A string indicating what string distance measure to use. Must be one of:
+        :param H2OFrame y: A comparison frame.
+        :param str measure: A string identifier indicating what string distance measure to use. Must be one of:
 
             - ``"lv"``:        Levenshtein distance
             - ``"lcs"``:       Longest common substring distance
@@ -2168,12 +2169,12 @@ class H2OFrame(object):
 
         :examples:
           >>>
-          >>> x = h2o.H2OFrame.from_python(['Martha', 'Dwayne', 'Dixon'], column_types=['string'])
+          >>> x = h2o.H2OFrame.from_python(['Martha', 'Dwayne', 'Dixon'], column_types=['factor'])
           >>> y = h2o.H2OFrame.from_python(['Marhta', 'Duane', 'Dicksonx'], column_types=['string'])
           >>> x.strdistance(y, measure="jw")
 
         :returns: An H2OFrame of the matrix containing element-wise distance between the
-            strings of this frame and ``y``.
+            strings of this frame and ``y``. The returned frame has the same shape as the input frames.
         """
         assert_is_type(y, H2OFrame)
         assert_is_type(measure, Enum('lv', 'lcs', 'qgram', 'jaccard', 'jw', 'soundex'))
