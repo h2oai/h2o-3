@@ -2,6 +2,7 @@ package water.fvec;
 
 import water.*;
 import water.util.SetOfBytes;
+import water.util.StringUtils;
 import water.util.UnsafeUtils;
 import water.parser.BufferedString;
 
@@ -14,7 +15,19 @@ public class CStrChunk extends Chunk {
   public boolean _isAllASCII = false;
 
   public CStrChunk() {}
+
+  public CStrChunk(String s, int len){
+    byte[] sBytes = StringUtils.bytesOf(s);
+    sBytes = Arrays.copyOf(sBytes,sBytes.length+1);
+    sBytes[sBytes.length-1] = 0;
+    init(sBytes.length, StringUtils.bytesOf(s),len,len,null,null);
+  }
+
   public CStrChunk(int sslen, byte[] ss, int sparseLen, int idxLen, int[] id, int[] is) {
+    init(sslen,ss,sparseLen,idxLen,id,is);
+  }
+
+  private void init (int sslen, byte[] ss, int sparseLen, int idxLen, int[] id, int[] is) {
     _start = -1;
     _valstart = idx(idxLen);
     _len = idxLen;

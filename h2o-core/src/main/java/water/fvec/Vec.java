@@ -577,10 +577,7 @@ public class Vec extends Keyed<Vec> {
         for( int i=0; i<nchunks; i++ ) {
           Key k = v0.chunkKey(i);
           if( k.home() ) {
-            byte[] sBytes = StringUtils.bytesOf(s);
-            sBytes = Arrays.copyOf(sBytes,sBytes.length+1);
-            sBytes[sBytes.length-1] = 0;
-            DKV.put(k,new CStrChunk(sBytes.length,sBytes,v0.chunkLen(i),v0.chunkLen(i),null,null),_fs);
+            DKV.put(k,new CStrChunk(s,v0.chunkLen(i)),_fs);
           }
         }
       }
