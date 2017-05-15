@@ -560,7 +560,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         scoreAndBuildTrees(model, trainMat, validMat, featureMap, rt);
 
         Map<String, String> rabitEnv = new HashMap<>();
-        rabitEnv.put("DMLC_TASK_ID", Thread.currentThread().getName());
+        rabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
         // final scoring
         doScoring(model, model.model_info()._booster, trainMat, validMat, true, rabitEnv);
 
@@ -575,7 +575,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
     protected final void scoreAndBuildTrees(XGBoostModel model, DMatrix trainMat, DMatrix validMat, String[] featureMap, RabitTracker rt) throws XGBoostError {
       Map<String, String> rabitEnv = new HashMap<>();
-      rabitEnv.put("DMLC_TASK_ID", Thread.currentThread().getName());
+      rabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
 
       String taskName = UUID.randomUUID().toString();
 

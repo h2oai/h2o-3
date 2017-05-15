@@ -438,7 +438,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
     try {
       Map<String,String> rabitEnv = new HashMap<>();
-      rabitEnv.put("DMLC_TASK_ID", Thread.currentThread().getName());
+      rabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
       Rabit.init(rabitEnv);
       DMatrix trainMat = convertFrametoDMatrix(
               model_info()._dataInfoKey,

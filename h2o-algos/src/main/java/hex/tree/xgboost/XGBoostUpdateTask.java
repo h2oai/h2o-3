@@ -49,7 +49,7 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
     }
 
     private void update() throws XGBoostError {
-        rabitEnv.put("DMLC_TASK_ID", Thread.currentThread().getName());
+        rabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
 
         DMatrix trainMat = XGBoost.convertFrametoDMatrix(
                 _sharedmodel._dataInfoKey,
@@ -67,7 +67,7 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
         if(booster == null) {
             // Done in local Rabit mode b/c createParams calls train() which isn't supposed to be distributed
             Map<String, String> localRabitEnv = new HashMap<>();
-            localRabitEnv.put("DMLC_TASK_ID", Thread.currentThread().getName());
+            localRabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
             Rabit.init(localRabitEnv);
             HashMap<String, Object> params = XGBoostModel.createParams(_parms, _output);
             Rabit.shutdown();

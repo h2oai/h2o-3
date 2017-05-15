@@ -58,7 +58,7 @@ public final class XGBoostMojoModel extends MojoModel {
     float[][] out = null;
     try {
       Map<String, String> rabitEnv = new HashMap<>();
-      rabitEnv.put("DMLC_TASK_ID", Thread.currentThread().getName());
+      rabitEnv.put("DMLC_TASK_ID", "0");
       Rabit.init(rabitEnv);
       DMatrix dmat = new DMatrix(floats,1,floats.length, _sparse ? 0 : Float.NaN);
 //      dmat.setWeight(new float[]{(float)weight});
