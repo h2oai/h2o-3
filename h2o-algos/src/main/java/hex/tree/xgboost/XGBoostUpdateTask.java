@@ -5,12 +5,11 @@ import water.H2O;
 import water.MRTask;
 import water.util.IcedHashMapGeneric;
 
-import java.io.File;
+import java.io.*;
 import java.util.*;
 
 public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
 
-    private final String[] _featureMap;
     private final String taskName;
     private final XGBoostModelInfo _sharedmodel;
     private final XGBoostOutput _output;
@@ -24,14 +23,12 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
     XGBoostUpdateTask(String taskName,
                       Booster booster,
                       XGBoostModelInfo inputModel,
-                      String[] featureMap,
                       XGBoostOutput _output,
                       XGBoostModel.XGBoostParameters _parms,
                       int tid, Map<String, String> workerEnvs) {
         this.taskName = taskName;
         this._sharedmodel = inputModel;
         this._output = _output;
-        this._featureMap = featureMap;
         this._parms = _parms;
         this.tid = tid;
         this.booster = booster;
@@ -50,6 +47,7 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
 
     private void update() throws XGBoostError {
         rabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
+        String[] featureMap = new String[]{""};
 
         DMatrix trainMat = XGBoost.convertFrametoDMatrix(
                 _sharedmodel._dataInfoKey,
@@ -58,19 +56,27 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
                 _parms._response_column,
                 _parms._weights_column,
                 _parms._fold_column,
-                _featureMap,
+                featureMap,
                 _output._sparse);
+
+        // For feature importances - write out column info
+        OutputStream os;
+        try {
+          os = new FileOutputStream("/tmp/featureMap.txt");
+          os.write(featureMap[0].getBytes());
+          os.close();
+        } catch (FileNotFoundException e) {
+          e.printStackTrace();
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+
 
         String boosterModelPath = "/tmp/booster" + taskName + H2O.SELF.index() + "/";
         String boosterModel = boosterModelPath + taskName;
 
         if(booster == null) {
-            // Done in local Rabit mode b/c createParams calls train() which isn't supposed to be distributed
-            Map<String, String> localRabitEnv = new HashMap<>();
-            localRabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
-            Rabit.init(localRabitEnv);
             HashMap<String, Object> params = XGBoostModel.createParams(_parms, _output);
-            Rabit.shutdown();
 
             Rabit.init(rabitEnv);
             HashMap<String, DMatrix> watches = new HashMap<>();

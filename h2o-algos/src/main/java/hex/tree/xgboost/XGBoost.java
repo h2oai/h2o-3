@@ -14,13 +14,8 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
-import water.util.StringUtils;
 import water.util.Timer;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.*;
 
 import static hex.tree.SharedTree.createModelSummaryTable;
@@ -495,7 +490,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     final void buildModelImpl() {
       XGBoostModel model = new XGBoostModel(_result, _parms, new XGBoostOutput(XGBoost.this), _train, _valid);
       model.write_lock(_job);
-      String[] featureMap = new String[]{""};
 
       if (_parms._dmatrix_type == XGBoostModel.XGBoostParameters.DMatrixType.sparse) {
         model._output._sparse = true;
@@ -521,48 +515,13 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         // Prepare Rabit
         RabitTracker rt = new RabitTracker(H2O.getCloudSize());
 
-        DMatrix trainMat = convertFrametoDMatrix(
-                model.model_info()._dataInfoKey,
-                _train,
-                false,
-                _parms._response_column,
-                _parms._weights_column,
-                _parms._fold_column,
-                featureMap,
-                model._output._sparse);
-
-        // For feature importances - write out column info
-        OutputStream os;
-        try {
-          os = new FileOutputStream("/tmp/featureMap.txt");
-          os.write(featureMap[0].getBytes());
-          os.close();
-        } catch (FileNotFoundException e) {
-          e.printStackTrace();
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
-
-        DMatrix validMat = null;
-        if (null != _valid) {
-          validMat = convertFrametoDMatrix(
-                  model.model_info()._dataInfoKey,
-                  _valid,
-                  false,
-                  _parms._response_column,
-                  _parms._weights_column,
-                  _parms._fold_column,
-                  featureMap,
-                  model._output._sparse);
-        }
-
         // train the model
-        scoreAndBuildTrees(model, trainMat, validMat, featureMap, rt);
+        scoreAndBuildTrees(model, rt);
 
         Map<String, String> rabitEnv = new HashMap<>();
         rabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
         // final scoring
-        doScoring(model, model.model_info()._booster, trainMat, validMat, true, rabitEnv);
+        doScoring(model, model.model_info()._booster, true, rabitEnv);
 
         // save the model to DKV
         model.model_info().nativeToJava();
@@ -573,7 +532,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       model.unlock(_job);
     }
 
-    protected final void scoreAndBuildTrees(XGBoostModel model, DMatrix trainMat, DMatrix validMat, String[] featureMap, RabitTracker rt) throws XGBoostError {
+    protected final void scoreAndBuildTrees(XGBoostModel model, RabitTracker rt) throws XGBoostError {
       Map<String, String> rabitEnv = new HashMap<>();
       rabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
 
@@ -583,9 +542,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       for( int tid=0; tid< _parms._ntrees; tid++) {
         if( tid > 0) {
           // During first iteration model contains 0 trees, then 1-tree, ...
-          scored = doScoring(model, model.model_info()._booster, trainMat, validMat, false, rabitEnv);
+          scored = doScoring(model, model.model_info()._booster, false, rabitEnv);
           if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
-            doScoring(model, model.model_info()._booster, trainMat, validMat, true, rabitEnv);
+            doScoring(model, model.model_info()._booster, true, rabitEnv);
             _job.update(_parms._ntrees - model._output._ntrees); //finish
             return;
           }
@@ -599,7 +558,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
                 taskName,
                 model.model_info()._booster,
                 model.model_info(),
-                featureMap,
                 model._output,
                 _parms,
                 tid,
@@ -617,18 +575,18 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         model._output._training_time_ms = ArrayUtils.copyAndFillOf(model._output._training_time_ms, model._output._ntrees+1, System.currentTimeMillis());
         if (stop_requested() && !timeout()) throw new Job.JobCancelledException();
         if (timeout()) { //stop after scoring
-          if (!scored) doScoring(model, model.model_info()._booster, trainMat, validMat, true, rabitEnv);
+          if (!scored) doScoring(model, model.model_info()._booster, true, rabitEnv);
           _job.update(_parms._ntrees-model._output._ntrees); //finish
           break;
         }
       }
-      doScoring(model, model.model_info()._booster, trainMat, validMat, true, rabitEnv);
+      doScoring(model, model.model_info()._booster, true, rabitEnv);
     }
 
     long _firstScore = 0;
     long _timeLastScoreStart = 0;
     long _timeLastScoreEnd = 0;
-    private boolean doScoring(XGBoostModel model, Booster booster, DMatrix trainMat, DMatrix validMat, boolean finalScoring, Map<String, String> rabitEnv) throws XGBoostError {
+    private boolean doScoring(XGBoostModel model, Booster booster, boolean finalScoring, Map<String, String> rabitEnv) throws XGBoostError {
       Rabit.init(rabitEnv);
 
       boolean scored = false;
@@ -649,7 +607,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           (timeToScore && _parms._score_tree_interval == 0) || // use time-based duty-cycle heuristic only if the user didn't specify _score_tree_interval
           manualInterval) {
         _timeLastScoreStart = now;
-        model.doScoring(booster, trainMat, validMat);
+        model.doScoring(booster);
         _timeLastScoreEnd = System.currentTimeMillis();
         model.computeVarImp(booster.getFeatureScore("/tmp/featureMap.txt"));
         XGBoostOutput out = model._output;

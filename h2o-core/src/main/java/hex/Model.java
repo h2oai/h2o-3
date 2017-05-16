@@ -72,6 +72,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @return threshold in 0...1
    */
   public double defaultThreshold() {
+    return defaultThreshold(_output);
+  }
+
+  public static <O1 extends Model.Output> double defaultThreshold(O1 _output) {
     if (_output.nclasses() != 2 || _output._training_metrics == null)
       return 0.5;
     if (_output._validation_metrics != null && ((ModelMetricsBinomial)_output._validation_metrics)._auc != null)
@@ -1143,12 +1147,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   protected String [] makeScoringNames(){
-    final int nc = _output.nclasses();
+    return makeScoringNames(_output);
+  }
+
+  public static <O1 extends Model.Output> String[] makeScoringNames(O1 output){
+    final int nc = output.nclasses();
     final int ncols = nc==1?1:nc+1; // Regression has 1 predict col; classification also has class distribution
     String [] names = new String[ncols];
     names[0] = "predict";
     for(int i = 1; i < names.length; ++i) {
-      names[i] = _output.classNames()[i - 1];
+      names[i] = output.classNames()[i - 1];
       // turn integer class labels such as 0, 1, etc. into p0, p1, etc.
       try {
         Integer.valueOf(names[i]);

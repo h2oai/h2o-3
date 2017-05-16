@@ -4,20 +4,15 @@ import hex.*;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import ml.dmlc.xgboost4j.java.Booster;
-import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.Rabit;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import water.*;
-import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
 import water.util.Log;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static hex.tree.xgboost.XGBoost.convertFrametoDMatrix;
 import static hex.tree.xgboost.XGBoost.makeDataInfo;
 
 public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> {
@@ -293,97 +288,31 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   // Fast scoring using the C++ data structures
   // However, we need to bring the data back to Java to compute the metrics
   // For multinomial, we also need to transpose the data - which is slow
-  private ModelMetrics makeMetrics(Booster booster, DMatrix data) throws XGBoostError {
+  private ModelMetrics makeMetrics(Booster booster, Frame data) throws XGBoostError {
     ModelMetrics[] mm = new ModelMetrics[1];
     makePreds(booster, data, mm, Key.<Frame>make()).remove();
     return mm[0];
   }
 
-  private Frame makePreds(Booster booster, DMatrix data, ModelMetrics[] mm, Key<Frame> destinationKey) throws XGBoostError {
-    Frame predFrame;
-    final float[][] preds = booster.predict(data);
-    Vec resp = Vec.makeVec(data.getLabel(), Vec.newKey());
-    float[] weights = data.getWeight();
-    if (_output.nclasses()==1) {
-      double[] dpreds = new double[preds.length];
-      for (int j = 0; j < dpreds.length; ++j)
-        dpreds[j] = preds[j][0];
-//      if (weights.length>0)
-//        for (int j = 0; j < dpreds.length; ++j)
-//          assert weights[j] == 1.0;
-      Vec pred = Vec.makeVec(dpreds, Vec.newKey());
-      mm[0] = ModelMetricsRegression.make(pred, resp, DistributionFamily.gaussian);
-      predFrame = new Frame(destinationKey, new Vec[]{pred}, true);
-    }
-    else if (_output.nclasses()==2) {
-      double[] dpreds = new double[preds.length];
-      for (int j = 0; j < dpreds.length; ++j)
-        dpreds[j] = preds[j][0];
-      if (weights.length>0)
-        for (int j = 0; j < dpreds.length; ++j)
-          assert weights[j] == 1.0;
-      Vec p1 = Vec.makeVec(dpreds, Vec.newKey());
-      Vec p0 = p1.makeCon(0);
-      Vec label = p1.makeCon(0., Vec.T_CAT);
-      new MRTask() {
-        public void map(Chunk l, Chunk p0, Chunk p1) {
-          for (int i=0; i<l._len; ++i) {
-            double p = p1.atd(i);
-            p0.set(i, 1. - p);
-            double[] row = new double[]{0, 1-p, p};
-            l.set(i, hex.genmodel.GenModel.getPrediction(row, _output._priorClassDist, null, defaultThreshold()));
-          }
-        }
-      }.doAll(label,p0,p1);
-      mm[0] = ModelMetricsBinomial.make(p1, resp);
-      label.setDomain(new String[]{"N","Y"}); // ignored
-      predFrame = new Frame(destinationKey, new Vec[]{label,p0,p1}, true);
-    }
-
-    else {
-      String[] names = makeScoringNames();
-      String[][] domains = new String[names.length][];
-      domains[0] = _output.classNames();
-      Frame input = new Frame(resp); //has the right size
-      predFrame = new MRTask() {
-        public void map(Chunk[] chk, NewChunk[] nc) {
-          for (int i=0; i<chk[0]._len; ++i) {
-            double[] row = new double[nc.length];
-            for (int j=1;j<row.length;++j) {
-              double val = preds[i][j-1];
-              nc[j].addNum(val);
-              row[j] = val;
-            }
-            nc[0].addNum(hex.genmodel.GenModel.getPrediction(row, _output._priorClassDist, null, defaultThreshold()));
-          }
-        }
-      }.doAll(_output.nclasses()+1, Vec.T_NUM, input).outputFrame(destinationKey, names, domains);
-
-      Frame pp = new Frame(predFrame);
-      pp.remove(0);
-      Scope.enter();
-      mm[0] = ModelMetricsMultinomial.make(pp, resp, resp.toCategoricalVec().domain());
-      Scope.exit();
-    }
-    resp.remove();
-    return predFrame;
+  private Frame makePreds(Booster booster, Frame data, ModelMetrics[] mm, Key<Frame> destinationKey) throws XGBoostError {
+    XGBoostScore score = new XGBoostScore(model_info(), _output, _parms, booster, destinationKey).doAll(data);
+    mm[0] = score.mm;
+    return score.predFrame;
   }
 
   /**
    * Score an XGBoost model on training and validation data (optional)
    * Note: every row is scored, all observation weights are assumed to be equal
    * @param booster xgboost model
-   * @param train training data
-   * @param valid validation data (optional, can be null)
    * @throws XGBoostError
    */
-  public void doScoring(Booster booster, DMatrix train, DMatrix valid) throws XGBoostError {
-    ModelMetrics mm = makeMetrics(booster, train);
+  public void doScoring(Booster booster) throws XGBoostError {
+    ModelMetrics mm = makeMetrics(booster, _parms.train());
     mm._description = "Metrics reported on training frame";
     _output._training_metrics = mm;
     _output._scored_train[_output._ntrees].fillFrom(mm);
-    if (valid!=null) {
-      mm = makeMetrics(booster, valid);
+    if (_parms.valid()!=null) {
+      mm = makeMetrics(booster, _parms.valid());
       mm._description = "Metrics reported on validation frame";
       _output._validation_metrics = mm;
       _output._scored_valid[_output._ntrees].fillFrom(mm);
@@ -437,21 +366,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     computeMetrics = computeMetrics && (!isSupervised() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
     String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
     try {
-      Map<String,String> rabitEnv = new HashMap<>();
-      rabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
-      Rabit.init(rabitEnv);
-      DMatrix trainMat = convertFrametoDMatrix(
-              model_info()._dataInfoKey,
-              adaptFr,
-              false,
-              _parms._response_column,
-              _parms._weights_column,
-              _parms._fold_column,
-              null,
-              _output._sparse
-      );
       ModelMetrics[] mm = new ModelMetrics[1];
-      Frame preds = makePreds(model_info()._booster, trainMat, mm, Key.<Frame>make(destination_key));
+      Frame preds = makePreds(model_info()._booster, adaptFr, mm, Key.<Frame>make(destination_key));
       DKV.put(preds);
       Rabit.shutdown();
       return preds;
