@@ -1,6 +1,5 @@
 package water.util;
 
-import org.eclipse.jetty.io.EofException;
 import water.Key;
 import water.fvec.NFSFileVec;
 
@@ -32,7 +31,7 @@ public class FileUtils {
         os.write(bytes, 0, count);
       }
     }
-    catch(EofException eofe) {
+    catch(EOFException eofe) {
       // no problem
     }
     catch(Exception ex) {

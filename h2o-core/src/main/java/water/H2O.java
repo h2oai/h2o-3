@@ -908,7 +908,10 @@ final public class H2O {
     sb.append(desc).append("_model_");
 
     // Append user agent string if we can figure it out.
-    String source = JettyHTTPD.getUserAgent();
+    String source = null;
+    if(!ARGS.disable_web) {
+      source = JettyHTTPD.getUserAgent();
+    }
     if (source != null) {
       StringBuilder ua = new StringBuilder();
 
