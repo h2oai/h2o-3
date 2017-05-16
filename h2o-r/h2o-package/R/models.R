@@ -2929,17 +2929,19 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
       type = col_types[which(col_names == names(pp)[1])]
       if(type == "enum") pp[,1] = as.factor( pp[,1])
       
-      ## Added upper and lower std dev confidence bound
-      upper = pp[,2] + pp[,3]
-      lower = pp[,2] - pp[,3]
-      plot(pp[,1:2], type = "l", main = attr(x,"description"), ylim  = c(min(lower), max(upper)))
-      
       ## Plot one standard deviation above and below the mean
       if( plot_stddev) {
+        ## Added upper and lower std dev confidence bound
+        upper = pp[,2] + pp[,3]
+        lower = pp[,2] - pp[,3]
+        plot(pp[,1:2], type = "l", main = attr(x,"description"), ylim  = c(min(lower), max(upper)))
+
         polygon(c(pp[,1], rev(pp[,1])), c(lower, rev(upper)), col = "grey75", border = F)
         lines(pp[,1], pp[,2], lwd = 2)
         lines(pp[,1], lower, col = "blue", lty = 2)
         lines(pp[,1], upper, col = "blue", lty = 2) 
+      } else {
+        plot(pp[,1:2], type = "l", main = attr(x,"description") )
       }
     } else {
       print("Partial Dependence not calculated--make sure nbins is as high as the level count")

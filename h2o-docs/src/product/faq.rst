@@ -15,5 +15,6 @@ FAQ
    faq/java
    faq/python
    faq/r
+   faq/flow
    faq/sparkling-water
    faq/tunneling
