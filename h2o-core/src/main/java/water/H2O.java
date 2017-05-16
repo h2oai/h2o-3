@@ -29,6 +29,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -945,6 +946,79 @@ final public class H2O {
     sb.append(Long.toString(CLUSTER_ID)).append("_").append(Long.toString(n));
 
     return sb.toString();
+  }
+
+  //-------------------------------------------------------------------------------------------------------------------
+
+  // This piece of state is queried by Steam.
+  // It's used to inform the Admin user the last time each H2O instance did something.
+  // Admins can take this information and decide whether to kill idle clusters to reclaim tied up resources.
+
+  private static volatile long lastTimeSomethingHappenedMillis = System.currentTimeMillis();
+
+  private static volatile AtomicInteger activeRapidsExecs = new AtomicInteger();
+
+  /**
+   * Get the number of milliseconds the H2O cluster has been idle.
+   * @return milliseconds since the last interesting thing happened.
+   */
+  public static long getIdleTimeMillis() {
+    long latestEndTimeMillis = -1;
+
+    // If there are any running rapids queries, consider that not idle.
+    if (activeRapidsExecs.get() > 0) {
+      updateNotIdle();
+    }
+    else {
+      // If there are any running jobs, consider that not idle.
+      // Remember the latest job ending time as well.
+      Job[] jobs = Job.jobs();
+      for (int i = jobs.length - 1; i >= 0; i--) {
+        Job j = jobs[i];
+        if (j.isRunning()) {
+          updateNotIdle();
+          break;
+        }
+
+        if (j.end_time() > latestEndTimeMillis) {
+          latestEndTimeMillis = j.end_time();
+        }
+      }
+    }
+
+    long latestTimeMillis = Math.max(latestEndTimeMillis, lastTimeSomethingHappenedMillis);
+
+    // Calculate milliseconds and clamp at zero.
+    long now = System.currentTimeMillis();
+    long deltaMillis = now - latestTimeMillis;
+    if (deltaMillis < 0) {
+      deltaMillis = 0;
+    }
+    return deltaMillis;
+  }
+
+  /**
+   * Update the last time that something happened to reset the idle timer.
+   * This is meant to be callable safely from almost anywhere.
+   */
+  public static void updateNotIdle() {
+    lastTimeSomethingHappenedMillis = System.currentTimeMillis();
+  }
+
+  /**
+   * Increment the current number of active Rapids exec calls.
+   */
+  public static void incrementActiveRapidsCounter() {
+    updateNotIdle();
+    activeRapidsExecs.incrementAndGet();
+  }
+
+  /**
+   * Decrement the current number of active Rapids exec calls.
+   */
+  public static void decrementActiveRapidsCounter() {
+    updateNotIdle();
+    activeRapidsExecs.decrementAndGet();
   }
 
   //-------------------------------------------------------------------------------------------------------------------

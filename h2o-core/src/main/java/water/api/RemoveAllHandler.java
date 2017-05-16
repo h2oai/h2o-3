@@ -29,6 +29,7 @@ public class RemoveAllHandler extends Handler {
     }.doAllNodes();
     // Wipe the backing store without regard as well
     H2O.getPM().getIce().cleanUp();
+    H2O.updateNotIdle();
     Log.info("Finished removing objects");
     return u;
   }
