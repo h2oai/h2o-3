@@ -222,12 +222,9 @@ currently used in your flow; essentially, a command history.
 Saving Flows
 ^^^^^^^^^^^^
 
-You can save your flow for later reuse. To save your flow as a notebook,
-click the "Save" button (the first button in the row of buttons below
-the flow name), or click the drop-down "Flow" menu and select "Save
-Flow." To enter a custom name for the flow, click the default flow name
-("Untitled Flow") and type the desired flow name. A pencil icon
-indicates where to enter the desired name.
+You can save your flow for later reuse. After a Flow is saved, you can load it by clicking on the **Flows** tab in the right sidebar. Then in the pop-up confirmation window that appears, select **Load Notebook**. Refer to `Loading Flows <flow.html#loading-flows>`__ for more information. 
+
+To save your flow as a notebook, click the "Save" button (the first button in the row of buttons below the flow name), or click the drop-down "Flow" menu and select "Save Flow." To enter a custom name for the flow, click the default flow name ("Untitled Flow") and type the desired flow name. A pencil icon indicates where to enter the desired name.
 
 .. figure:: images/Flow_rename.png
    :alt: Renaming Flows
@@ -244,7 +241,6 @@ right of the flow name.
 
 .. figure:: images/Flow_flows.png
    :alt: Flows
-
 
 Finding Saved Flows on Your Disk
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
