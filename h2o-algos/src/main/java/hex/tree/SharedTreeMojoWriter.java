@@ -1,6 +1,7 @@
 package hex.tree;
 
 import hex.ModelMojoWriter;
+import hex.glm.GLMModel;
 import water.DKV;
 import water.Key;
 import water.Value;
@@ -30,12 +31,19 @@ public abstract class SharedTreeMojoWriter<
     int ntreesPerClass = model.binomialOpt() && nclasses == 2 ? 1 : nclasses;
     writekv("n_trees", model._output._ntrees);
     writekv("n_trees_per_class", ntreesPerClass);
+    if (model._output._calib_model != null) {
+      GLMModel calibModel = model._output._calib_model;
+      double[] beta = calibModel.beta();
+      assert beta.length == nclasses; // n-1 coefficients + 1 intercept
+      writekv("calib_method", "platt");
+      writekv("calib_glm_beta", beta);
+    }
     for (int i = 0; i < model._output._ntrees; i++) {
       for (int j = 0; j < ntreesPerClass; j++) {
         Key<CompressedTree> key = model._output._treeKeys[i][j];
         Value ctVal = key != null ? DKV.get(key) : null;
         if (ctVal == null)
-          throw new H2OKeyNotFoundArgumentException("CompressedTree " + key + " not found");
+          continue; //throw new H2OKeyNotFoundArgumentException("CompressedTree " + key + " not found");
         CompressedTree ct = ctVal.get();
         assert ct._nclass == nclasses;
         // assume ct._seed is useless and need not be persisted

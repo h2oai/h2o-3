@@ -6,7 +6,7 @@ import java.util.zip.ZipFile;
 
 /**
  */
-class ZipfileMojoReaderBackend implements MojoReaderBackend {
+class ZipfileMojoReaderBackend implements MojoReaderBackend, Closeable {
   private ZipFile zf;
 
   public ZipfileMojoReaderBackend(String archivename) throws IOException {
@@ -28,6 +28,20 @@ class ZipfileMojoReaderBackend implements MojoReaderBackend {
     DataInputStream dis = new DataInputStream(zf.getInputStream(za));
     dis.readFully(out);
     return out;
+  }
+
+  @Override
+  public boolean exists(String filename) {
+    return zf.getEntry(filename) != null;
+  }
+
+  @Override
+  public void close() throws IOException {
+    if (zf != null) {
+      ZipFile f = zf;
+      zf = null;
+      f.close();
+    }
   }
 
 }

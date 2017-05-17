@@ -1540,32 +1540,6 @@ public class DeepLearningTest extends TestUtil {
   }
 
   @Test
-  public void testMiniBatch5() {
-    Frame tfr = null;
-    DeepLearningModel dl = null;
-
-    try {
-      tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
-      DeepLearningParameters parms = new DeepLearningParameters();
-      parms._train = tfr._key;
-      parms._response_column = tfr.lastVecName();
-      parms._reproducible = true;
-      parms._hidden = new int[]{20,20};
-      parms._seed = 0xdecaf;
-      parms._mini_batch_size = 5;
-
-      dl = new DeepLearning(parms).trainModel().get();
-
-      Assert.assertEquals(15.594774935758249, dl._output._training_metrics._MSE, 1e-6);
-
-    } finally {
-      if (tfr != null) tfr.delete();
-      if (dl != null) dl.deleteCrossValidationModels();
-      if (dl != null) dl.delete();
-    }
-  }
-
-  @Test
   public void testMiniBatch50() {
     Frame tfr = null;
     DeepLearningModel dl = null;
@@ -1582,7 +1556,7 @@ public class DeepLearningTest extends TestUtil {
 
       dl = new DeepLearning(parms).trainModel().get();
 
-      Assert.assertEquals(22.555132824953393,dl._output._training_metrics._MSE,1e-6);
+      Assert.assertEquals(12.938076268040659,dl._output._training_metrics._MSE,1e-6);
 
     } finally {
       if (tfr != null) tfr.delete();
@@ -1994,7 +1968,9 @@ public class DeepLearningTest extends TestUtil {
       Assert.assertEquals(0.94696  , ((ModelMetricsBinomial)dl._output._training_metrics)._auc._auc,1e-4);
       Assert.assertEquals(0.94696  , ((ModelMetricsBinomial)dl._output._validation_metrics)._auc._auc,1e-4);
       Assert.assertEquals(0.86556613, ((ModelMetricsBinomial)dl._output._cross_validation_metrics)._auc._auc,1e-4);
-      Assert.assertEquals(0.86556613, Double.parseDouble((String)(dl._output._cross_validation_metrics_summary).get(1,0)), 1e-2);
+
+      int auc_row = Arrays.binarySearch(dl._output._cross_validation_metrics_summary.getRowHeaders(), "auc");
+      Assert.assertEquals(0.86556613, Double.parseDouble((String)(dl._output._cross_validation_metrics_summary).get(auc_row,0)), 1e-2);
 
     } finally {
       if (tfr != null) tfr.remove();
@@ -2078,7 +2054,9 @@ public class DeepLearningTest extends TestUtil {
       Assert.assertEquals(0.9521718170580964, ((ModelMetricsBinomial)dl._output._training_metrics)._auc._auc,1e-4);
       Assert.assertEquals(0.9521656365883807, ((ModelMetricsBinomial)dl._output._validation_metrics)._auc._auc,1e-4);
       Assert.assertEquals(0.9115080346106303, ((ModelMetricsBinomial)dl._output._cross_validation_metrics)._auc._auc,1e-4);
-      Assert.assertEquals(0.913637, Double.parseDouble((String)(dl._output._cross_validation_metrics_summary).get(1,0)), 1e-4);
+
+      int auc_row = Arrays.binarySearch(dl._output._cross_validation_metrics_summary.getRowHeaders(), "auc");
+      Assert.assertEquals(0.913637, Double.parseDouble((String)(dl._output._cross_validation_metrics_summary).get(auc_row,0)), 1e-4);
 
     } finally {
       if (tfr != null) tfr.remove();
@@ -2117,7 +2095,9 @@ public class DeepLearningTest extends TestUtil {
       Assert.assertEquals(87.26206135855, ((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-4);
       Assert.assertEquals(87.26206135855, ((ModelMetricsRegression)dl._output._validation_metrics)._mean_residual_deviance,1e-4);
       Assert.assertEquals(117.8014, ((ModelMetricsRegression)dl._output._cross_validation_metrics)._mean_residual_deviance,1e-4);
-      Assert.assertEquals(117.8014, Double.parseDouble((String)(dl._output._cross_validation_metrics_summary).get(3,0)), 1);
+
+      int mean_residual_deviance_row = Arrays.binarySearch(dl._output._cross_validation_metrics_summary.getRowHeaders(), "mean_residual_deviance");
+      Assert.assertEquals(117.8014, Double.parseDouble((String)(dl._output._cross_validation_metrics_summary).get(mean_residual_deviance_row,0)), 1);
 
     } finally {
       if (tfr != null) tfr.remove();
@@ -2135,7 +2115,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel model = null;
     Scope.enter();
     try {
-      File file = find_test_file("bigdata/laptop/mnist/train.csv.gz");
+      File file = FileUtils.locateFile("bigdata/laptop/mnist/train.csv.gz");
       if (file != null) {
         NFSFileVec trainfv = NFSFileVec.make(file);
         train = ParseDataset.parse(Key.make(), trainfv._key);

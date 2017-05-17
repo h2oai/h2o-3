@@ -1,11 +1,20 @@
 
+#-------------------------------------------------------------------------------------------------------------------
+# Helper Functions responsible for reading h2o config files.
+#-------------------------------------------------------------------------------------------------------------------
+
 # R Parser for an h2o config file
 #
-# Input is the path to an .h2oconfig file
-# Returns the .h2oconfig file as a data frame with respective key-value pairs as headers
+# Input is the path to an .h2oconfig file along with a `print_path` flag, which signifies if a message regarding the path of
+# the read config file should be printed to the console.
+# Returns the .h2oconfig file as a data frame with a respective key-value store where the `key` is a column name.
 #' @importFrom utils read.table
-.parse.h2oconfig <- function(h2oconfig_filename){
-    cat(paste0("Reading in config file: ",h2oconfig_filename,"\n"))
+.parse.h2oconfig <- function(h2oconfig_filename, print_path = FALSE){
+
+    #Only show this output when connecting to H2O
+    if(print_path == TRUE){
+      cat(paste0("Reading in config file: ",h2oconfig_filename,"\n"))
+    }
 
     #Need to allocate some value for V1 & V2, which are used down the function for parsing.
     #This is to help with the CRAN NOTE check.
@@ -14,7 +23,8 @@
 
     #Allowed config keys
     allowed_config_keys = c("init.check_version", "init.proxy","init.cluster_id",
-    "init.verify_ssl_certificates","init.cookies","general.allow_breaking_changes")
+    "init.verify_ssl_certificates","init.cookies","general.allow_breaking_changes",
+    "init.username","init.password")
 
     #Read in config line by line
     connection <- file(h2oconfig_filename)
@@ -105,14 +115,14 @@
 }
 
 
-#Helper function responsible for reading h2o config files.
+# Read h2o config files.
 
-#This function will look for file(s) named ".h2oconfig" in the current folder, in all parent folders (up to root), and finally in
-#the user's home directory. The first such file found will be used for configuration purposes. The format for such
-#file is a simple "key = value" store, with possible section names in square brackets. Single-line comments starting
-#with '#' are also allowed.
-#Input is a list of file names or a single file name.
-#Returns path to first file found in files. Otherwise it returns NULL
+# This function will look for file(s) named ".h2oconfig" in the current folder, in all parent folders (up to root), and finally in
+# the user's home directory. The first such file found will be used for configuration purposes. The format for such
+# file is a simple "key = value" store, with possible section names in square brackets. Single-line comments starting
+# with '#' are also allowed.
+# Input is a list of file names or a single file name.
+# Returns path to first file found in files. Otherwise it returns NULL
 .find.config <- function(files = ".h2oconfig") {
   windows <- .Platform$OS.type == "windows" #Are we dealing with a Windows OS?
 
@@ -148,4 +158,19 @@
  }
 
  return(ans.file)
+}
+
+# Return config value corresponding to the provided `key`
+.get.config.value <- function(key,default = NULL){
+    config_path <- .find.config()
+    if(is.null(config_path)){
+      return(default)
+    }else{
+      h2oconfig = .parse.h2oconfig(config_path)
+      if(key %in% colnames(h2oconfig)){
+        return(h2oconfig[,key])
+      }else{
+        return(default)
+      }
+    }
 }

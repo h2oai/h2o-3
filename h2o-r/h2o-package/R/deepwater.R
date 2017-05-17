@@ -8,8 +8,8 @@
 #' 
 #' @param x A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing,then all columns except y are used.
-#' @param y The name of the response variable in the model.If the data does not contain a header, this is the column index
-#'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
+#' @param y The name of the response variable in the model.If the data does not contain a header, this is the first column
+#'        index, and increasing from left to right. (The response must be either an integer or a
 #'        categorical variable).
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param checkpoint Model checkpoint to resume training with.
@@ -35,7 +35,7 @@
 #'        weights are not allowed.
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
-#'        "Binary", "Eigen". Defaults to AUTO.
+#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse". Defaults to AUTO.
 #' @param overwrite_with_best_model \code{Logical}. If enabled, override the final model with the best model found during training. Defaults to
 #'        TRUE.
 #' @param epochs How many times the dataset should be iterated (streamed), can be fractional. Defaults to 10.
@@ -48,11 +48,11 @@
 #'        Defaults to -1 (time-based random number).
 #' @param standardize \code{Logical}. If enabled, automatically standardize the data. If disabled, the user must provide properly
 #'        scaled input data. Defaults to TRUE.
-#' @param learning_rate Learning rate (higher => less stable, lower => slower convergence). Defaults to 0.005.
+#' @param learning_rate Learning rate (higher => less stable, lower => slower convergence). Defaults to 0.001.
 #' @param learning_rate_annealing Learning rate annealing: rate / (1 + rate_annealing * samples). Defaults to 1e-06.
 #' @param momentum_start Initial momentum at the beginning of training (try 0.5). Defaults to 0.9.
 #' @param momentum_ramp Number of training samples for which momentum increases. Defaults to 10000.
-#' @param momentum_stable Final momentum after the ramp is over (try 0.99). Defaults to 0.99.
+#' @param momentum_stable Final momentum after the ramp is over (try 0.99). Defaults to 0.9.
 #' @param distribution Distribution function Must be one of: "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma",
 #'        "tweedie", "laplace", "quantile", "huber". Defaults to AUTO.
 #' @param score_interval Shortest time interval (in seconds) between model scoring. Defaults to 5.
@@ -81,6 +81,8 @@
 #' @param sparse \code{Logical}. Sparse data handling (more efficient for data with lots of 0 values). Defaults to FALSE.
 #' @param gpu \code{Logical}. Whether to use a GPU (if available). Defaults to TRUE.
 #' @param device_id Device IDs (which GPUs to use). Defaults to [0].
+#' @param cache_data \code{Logical}. Whether to cache the data in memory (automatically disabled if data size is too large).
+#'        Defaults to TRUE.
 #' @param network_definition_file Path of file containing network definition (graph, architecture).
 #' @param network_parameters_file Path of file containing network (initial) parameters (weights, biases).
 #' @param mean_image_file Path of file containing the mean image data for data normalization.
@@ -95,7 +97,7 @@
 #'        the path (URI or URL) to the images in the first column. If set to text, the H2OFrame must contain a string
 #'        column containing the text in the first column. If set to dataset, Deep Water behaves just like any other H2O
 #'        Model and builds a model on the provided H2OFrame (non-String columns). Must be one of: "auto", "image",
-#'        "text", "dataset". Defaults to auto.
+#'        "dataset". Defaults to auto.
 #' @export
 h2o.deepwater <- function(x, y, training_frame,
                           model_id = NULL,
@@ -113,18 +115,18 @@ h2o.deepwater <- function(x, y, training_frame,
                           offset_column = NULL,
                           weights_column = NULL,
                           score_each_iteration = FALSE,
-                          categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen"),
+                          categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse"),
                           overwrite_with_best_model = TRUE,
                           epochs = 10,
                           train_samples_per_iteration = -2,
                           target_ratio_comm_to_comp = 0.05,
                           seed = -1,
                           standardize = TRUE,
-                          learning_rate = 0.005,
+                          learning_rate = 0.001,
                           learning_rate_annealing = 1e-06,
                           momentum_start = 0.9,
                           momentum_ramp = 10000,
-                          momentum_stable = 0.99,
+                          momentum_stable = 0.9,
                           distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
                           score_interval = 5,
                           score_training_samples = 10000,
@@ -147,6 +149,7 @@ h2o.deepwater <- function(x, y, training_frame,
                           sparse = FALSE,
                           gpu = TRUE,
                           device_id = c(0),
+                          cache_data = TRUE,
                           network_definition_file = NULL,
                           network_parameters_file = NULL,
                           mean_image_file = NULL,
@@ -155,7 +158,7 @@ h2o.deepwater <- function(x, y, training_frame,
                           hidden = NULL,
                           input_dropout_ratio = 0,
                           hidden_dropout_ratios = NULL,
-                          problem_type = c("auto", "image", "text", "dataset")
+                          problem_type = c("auto", "image", "dataset")
                           ) 
 {
   #If x is missing, then assume user wants to use all columns as features.
@@ -291,6 +294,8 @@ h2o.deepwater <- function(x, y, training_frame,
     parms$gpu <- gpu
   if (!missing(device_id))
     parms$device_id <- device_id
+  if (!missing(cache_data))
+    parms$cache_data <- cache_data
   if (!missing(network_definition_file))
     parms$network_definition_file <- network_definition_file
   if (!missing(network_parameters_file))

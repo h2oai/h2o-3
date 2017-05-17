@@ -20,10 +20,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     Fits a generalized linear model, specified by a response variable, a set of predictors, and a
     description of the error distribution.
 
-    Returns
-    -------
-    A subclass of ModelBase is returned. The specific subclass depends on the machine learning task at hand
-    (if it's binomial classification, then an H2OBinomialModel is returned, if it's regression then a
+    A subclass of :class:`ModelBase` is returned. The specific subclass depends on the machine learning task
+    at hand (if it's binomial classification, then an H2OBinomialModel is returned, if it's regression then a
     H2ORegressionModel is returned). The default print-out of the models is shown, but further GLM-specific
     information can be queried out of the object. Upon completion of the GLM, the resulting object has
     coefficients, normalized coefficients, residual/null deviance, aic, and a host of model metrics including
@@ -58,7 +56,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @property
     def training_frame(self):
-        """str: Id of the training data frame (Not required, to allow initial validation of model parameters)."""
+        """
+        Id of the training data frame (Not required, to allow initial validation of model parameters).
+
+        Type: ``H2OFrame``.
+        """
         return self._parms.get("training_frame")
 
     @training_frame.setter
@@ -69,7 +71,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @property
     def validation_frame(self):
-        """str: Id of the validation data frame."""
+        """
+        Id of the validation data frame.
+
+        Type: ``H2OFrame``.
+        """
         return self._parms.get("validation_frame")
 
     @validation_frame.setter
@@ -80,7 +86,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @property
     def nfolds(self):
-        """int: Number of folds for N-fold cross-validation (0 to disable or >= 2). (Default: 0)"""
+        """
+        Number of folds for N-fold cross-validation (0 to disable or >= 2).
+
+        Type: ``int``  (default: ``0``).
+        """
         return self._parms.get("nfolds")
 
     @nfolds.setter
@@ -91,7 +101,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @property
     def seed(self):
-        """int: Seed for pseudo random number generator (if applicable) (Default: -1)"""
+        """
+        Seed for pseudo random number generator (if applicable)
+
+        Type: ``int``  (default: ``-1``).
+        """
         return self._parms.get("seed")
 
     @seed.setter
@@ -102,7 +116,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @property
     def keep_cross_validation_predictions(self):
-        """bool: Whether to keep the predictions of the cross-validation models. (Default: False)"""
+        """
+        Whether to keep the predictions of the cross-validation models.
+
+        Type: ``bool``  (default: ``False``).
+        """
         return self._parms.get("keep_cross_validation_predictions")
 
     @keep_cross_validation_predictions.setter
@@ -113,7 +131,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @property
     def keep_cross_validation_fold_assignment(self):
-        """bool: Whether to keep the cross-validation fold assignment. (Default: False)"""
+        """
+        Whether to keep the cross-validation fold assignment.
+
+        Type: ``bool``  (default: ``False``).
+        """
         return self._parms.get("keep_cross_validation_fold_assignment")
 
     @keep_cross_validation_fold_assignment.setter
@@ -125,9 +147,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def fold_assignment(self):
         """
-        Enum["auto", "random", "modulo", "stratified"]: Cross-validation fold assignment scheme, if fold_column is not
-        specified. The 'Stratified' option will stratify the folds based on the response variable, for classification
-        problems. (Default: "auto")
+        Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify
+        the folds based on the response variable, for classification problems.
+
+        One of: ``"auto"``, ``"random"``, ``"modulo"``, ``"stratified"``  (default: ``"auto"``).
         """
         return self._parms.get("fold_assignment")
 
@@ -139,7 +162,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @property
     def fold_column(self):
-        """str: Column with cross-validation fold index assignment per observation."""
+        """
+        Column with cross-validation fold index assignment per observation.
+
+        Type: ``str``.
+        """
         return self._parms.get("fold_column")
 
     @fold_column.setter
@@ -150,7 +177,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @property
     def response_column(self):
-        """str: Response variable column."""
+        """
+        Response variable column.
+
+        Type: ``str``.
+        """
         return self._parms.get("response_column")
 
     @response_column.setter
@@ -161,7 +192,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @property
     def ignored_columns(self):
-        """List[str]: Names of columns to ignore for training."""
+        """
+        Names of columns to ignore for training.
+
+        Type: ``List[str]``.
+        """
         return self._parms.get("ignored_columns")
 
     @ignored_columns.setter
@@ -172,7 +207,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @property
     def ignore_const_cols(self):
-        """bool: Ignore constant columns. (Default: True)"""
+        """
+        Ignore constant columns.
+
+        Type: ``bool``  (default: ``True``).
+        """
         return self._parms.get("ignore_const_cols")
 
     @ignore_const_cols.setter
@@ -183,7 +222,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @property
     def score_each_iteration(self):
-        """bool: Whether to score during each iteration of model training. (Default: False)"""
+        """
+        Whether to score during each iteration of model training.
+
+        Type: ``bool``  (default: ``False``).
+        """
         return self._parms.get("score_each_iteration")
 
     @score_each_iteration.setter
@@ -195,7 +238,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def offset_column(self):
         """
-        str: Offset column. This will be added to the combination of columns before applying the link function.
+        Offset column. This will be added to the combination of columns before applying the link function.
+
+        Type: ``str``.
         """
         return self._parms.get("offset_column")
 
@@ -208,9 +253,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def weights_column(self):
         """
-        str: Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it
-        from the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice.
-        Negative weights are not allowed.
+        Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from the
+        dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
+        weights are not allowed.
+
+        Type: ``str``.
         """
         return self._parms.get("weights_column")
 
@@ -223,8 +270,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def family(self):
         """
-        Enum["gaussian", "binomial", "quasibinomial", "multinomial", "poisson", "gamma", "tweedie"]: Family. Use
-        binomial for classification with logistic regression, others are for regression problems. (Default: "gaussian")
+        Family. Use binomial for classification with logistic regression, others are for regression problems.
+
+        One of: ``"gaussian"``, ``"binomial"``, ``"quasibinomial"``, ``"multinomial"``, ``"poisson"``, ``"gamma"``,
+        ``"tweedie"``  (default: ``"gaussian"``).
         """
         return self._parms.get("family")
 
@@ -236,7 +285,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @property
     def tweedie_variance_power(self):
-        """float: Tweedie variance power (Default: 0)"""
+        """
+        Tweedie variance power
+
+        Type: ``float``  (default: ``0``).
+        """
         return self._parms.get("tweedie_variance_power")
 
     @tweedie_variance_power.setter
@@ -247,7 +300,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @property
     def tweedie_link_power(self):
-        """float: Tweedie link power (Default: 1)"""
+        """
+        Tweedie link power
+
+        Type: ``float``  (default: ``1``).
+        """
         return self._parms.get("tweedie_link_power")
 
     @tweedie_link_power.setter
@@ -259,10 +316,12 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def solver(self):
         """
-        Enum["auto", "irlsm", "l_bfgs", "coordinate_descent_naive", "coordinate_descent"]: AUTO will set the solver
-        based on given data and the other parameters. IRLSM is fast on on problems with small number of predictors and
-        for lambda-search with L1 penalty, L_BFGS scales better for datasets with many columns. Coordinate descent is
-        experimental (beta). (Default: "auto")
+        AUTO will set the solver based on given data and the other parameters. IRLSM is fast on on problems with small
+        number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for datasets with many columns.
+        Coordinate descent is experimental (beta).
+
+        One of: ``"auto"``, ``"irlsm"``, ``"l_bfgs"``, ``"coordinate_descent_naive"``, ``"coordinate_descent"``
+        (default: ``"auto"``).
         """
         return self._parms.get("solver")
 
@@ -275,8 +334,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def alpha(self):
         """
-        List[float]: distribution of regularization between L1 and L2. Default value of alpha is 0 when SOLVER =
-        'L-BFGS', 0.5 otherwise
+        distribution of regularization between L1 and L2. Default value of alpha is 0 when SOLVER = 'L-BFGS', 0.5
+        otherwise
+
+        Type: ``List[float]``.
         """
         return self._parms.get("alpha")
 
@@ -288,7 +349,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @property
     def lambda_(self):
-        """List[float]: regularization strength"""
+        """
+        regularization strength
+
+        Type: ``List[float]``.
+        """
         return self._parms.get("lambda")
 
     @lambda_.setter
@@ -300,7 +365,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def lambda_search(self):
         """
-        bool: use lambda search starting at lambda max, given lambda is then interpreted as lambda min (Default: False)
+        use lambda search starting at lambda max, given lambda is then interpreted as lambda min
+
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("lambda_search")
 
@@ -313,7 +380,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def early_stopping(self):
         """
-        bool: stop early when there is no more relative improvement on train or validation (if provided) (Default: True)
+        stop early when there is no more relative improvement on train or validation (if provided)
+
+        Type: ``bool``  (default: ``True``).
         """
         return self._parms.get("early_stopping")
 
@@ -326,9 +395,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def nlambdas(self):
         """
-        int: Number of lambdas to be used in a search. Default indicates: If alpha is zero, with lambda search set to
-        True, the value of nlamdas is set to 30 (fewer lambdas are needed for ridge regression) otherwise it is set to
-        100. (Default: -1)
+        Number of lambdas to be used in a search. Default indicates: If alpha is zero, with lambda search set to True,
+        the value of nlamdas is set to 30 (fewer lambdas are needed for ridge regression) otherwise it is set to 100.
+
+        Type: ``int``  (default: ``-1``).
         """
         return self._parms.get("nlambdas")
 
@@ -340,7 +410,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @property
     def standardize(self):
-        """bool: Standardize numeric columns to have zero mean and unit variance (Default: True)"""
+        """
+        Standardize numeric columns to have zero mean and unit variance
+
+        Type: ``bool``  (default: ``True``).
+        """
         return self._parms.get("standardize")
 
     @standardize.setter
@@ -352,8 +426,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def missing_values_handling(self):
         """
-        Enum["mean_imputation", "skip"]: Handling of missing values. Either MeanImputation or Skip. (Default:
-        "mean_imputation")
+        Handling of missing values. Either MeanImputation or Skip.
+
+        One of: ``"mean_imputation"``, ``"skip"``  (default: ``"mean_imputation"``).
         """
         return self._parms.get("missing_values_handling")
 
@@ -366,7 +441,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def compute_p_values(self):
         """
-        bool: request p-values computation, p-values work only with IRLSM solver and no regularization (Default: False)
+        request p-values computation, p-values work only with IRLSM solver and no regularization
+
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("compute_p_values")
 
@@ -378,7 +455,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @property
     def remove_collinear_columns(self):
-        """bool: in case of linearly dependent columns remove some of the dependent columns (Default: False)"""
+        """
+        in case of linearly dependent columns remove some of the dependent columns
+
+        Type: ``bool``  (default: ``False``).
+        """
         return self._parms.get("remove_collinear_columns")
 
     @remove_collinear_columns.setter
@@ -389,7 +470,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @property
     def intercept(self):
-        """bool: include constant term in the model (Default: True)"""
+        """
+        include constant term in the model
+
+        Type: ``bool``  (default: ``True``).
+        """
         return self._parms.get("intercept")
 
     @intercept.setter
@@ -400,7 +485,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @property
     def non_negative(self):
-        """bool: Restrict coefficients (not intercept) to be non-negative (Default: False)"""
+        """
+        Restrict coefficients (not intercept) to be non-negative
+
+        Type: ``bool``  (default: ``False``).
+        """
         return self._parms.get("non_negative")
 
     @non_negative.setter
@@ -411,7 +500,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @property
     def max_iterations(self):
-        """int: Maximum number of iterations (Default: -1)"""
+        """
+        Maximum number of iterations
+
+        Type: ``int``  (default: ``-1``).
+        """
         return self._parms.get("max_iterations")
 
     @max_iterations.setter
@@ -423,10 +516,12 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def objective_epsilon(self):
         """
-        float: Converge if  objective value changes less than this. Default indicates: If lambda_search is set to True
-        the value of objective_epsilon is set to .0001. If the lambda_search is set to False and lambda is equal to
-        zero, the value of objective_epsilon is set to .000001, for any other value of lambda the default value of
-        objective_epsilon is set to .0001. (Default: -1)
+        Converge if  objective value changes less than this. Default indicates: If lambda_search is set to True the
+        value of objective_epsilon is set to .0001. If the lambda_search is set to False and lambda is equal to zero,
+        the value of objective_epsilon is set to .000001, for any other value of lambda the default value of
+        objective_epsilon is set to .0001.
+
+        Type: ``float``  (default: ``-1``).
         """
         return self._parms.get("objective_epsilon")
 
@@ -439,8 +534,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def beta_epsilon(self):
         """
-        float: converge if  beta changes less (using L-infinity norm) than beta esilon, ONLY applies to IRLSM solver
-        (Default: 0.0001)
+        converge if  beta changes less (using L-infinity norm) than beta esilon, ONLY applies to IRLSM solver
+
+        Type: ``float``  (default: ``0.0001``).
         """
         return self._parms.get("beta_epsilon")
 
@@ -453,10 +549,12 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def gradient_epsilon(self):
         """
-        float: Converge if  objective changes less (using L-infinity norm) than this, ONLY applies to L-BFGS solver.
-        Default indicates: If lambda_search is set to False and lambda is equal to zero, the default value of
-        gradient_epsilon is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True, the
-        conditional values above are 1E-8 and 1E-6 respectively. (Default: -1)
+        Converge if  objective changes less (using L-infinity norm) than this, ONLY applies to L-BFGS solver. Default
+        indicates: If lambda_search is set to False and lambda is equal to zero, the default value of gradient_epsilon
+        is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True, the conditional
+        values above are 1E-8 and 1E-6 respectively.
+
+        Type: ``float``  (default: ``-1``).
         """
         return self._parms.get("gradient_epsilon")
 
@@ -469,7 +567,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def link(self):
         """
-        Enum["family_default", "identity", "logit", "log", "inverse", "tweedie"]:  (Default: "family_default")
+        
+
+        One of: ``"family_default"``, ``"identity"``, ``"logit"``, ``"log"``, ``"inverse"``, ``"tweedie"``  (default:
+        ``"family_default"``).
         """
         return self._parms.get("link")
 
@@ -482,8 +583,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def prior(self):
         """
-        float: prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the
-        mean of response does not reflect reality. (Default: -1)
+        prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
+        of response does not reflect reality.
+
+        Type: ``float``  (default: ``-1``).
         """
         return self._parms.get("prior")
 
@@ -496,9 +599,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def lambda_min_ratio(self):
         """
-        float: Min lambda used in lambda search, specified as a ratio of lambda_max. Default indicates: if the number of
+        Min lambda used in lambda search, specified as a ratio of lambda_max. Default indicates: if the number of
         observations is greater than the number of variables then lambda_min_ratio is set to 0.0001; if the number of
-        observations is less than the number of variables then lambda_min_ratio is set to 0.01. (Default: -1)
+        observations is less than the number of variables then lambda_min_ratio is set to 0.01.
+
+        Type: ``float``  (default: ``-1``).
         """
         return self._parms.get("lambda_min_ratio")
 
@@ -510,7 +615,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @property
     def beta_constraints(self):
-        """str: beta constraints"""
+        """
+        beta constraints
+
+        Type: ``H2OFrame``.
+        """
         return self._parms.get("beta_constraints")
 
     @beta_constraints.setter
@@ -522,9 +631,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def max_active_predictors(self):
         """
-        int: Maximum number of active predictors during computation. Use as a stopping criterion to prevent expensive
-        model building with many predictors. Default indicates: If the IRLSM solver is used, the value of
-        max_active_predictors is set to 7000 otherwise it is set to 100000000. (Default: -1)
+        Maximum number of active predictors during computation. Use as a stopping criterion to prevent expensive model
+        building with many predictors. Default indicates: If the IRLSM solver is used, the value of
+        max_active_predictors is set to 7000 otherwise it is set to 100000000.
+
+        Type: ``int``  (default: ``-1``).
         """
         return self._parms.get("max_active_predictors")
 
@@ -537,8 +648,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def interactions(self):
         """
-        List[str]: A list of predictor column indices to interact. All pairwise combinations will be computed for the
-        list.
+        A list of predictor column indices to interact. All pairwise combinations will be computed for the list.
+
+        Type: ``List[str]``.
         """
         return self._parms.get("interactions")
 
@@ -551,7 +663,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def balance_classes(self):
         """
-        bool: Balance training data class counts via over/under-sampling (for imbalanced data). (Default: False)
+        Balance training data class counts via over/under-sampling (for imbalanced data).
+
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("balance_classes")
 
@@ -564,8 +678,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def class_sampling_factors(self):
         """
-        List[float]: Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling
-        factors will be automatically computed to obtain class balance during training. Requires balance_classes.
+        Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
+        be automatically computed to obtain class balance during training. Requires balance_classes.
+
+        Type: ``List[float]``.
         """
         return self._parms.get("class_sampling_factors")
 
@@ -578,8 +694,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def max_after_balance_size(self):
         """
-        float: Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
-        balance_classes. (Default: 5)
+        Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
+        balance_classes.
+
+        Type: ``float``  (default: ``5``).
         """
         return self._parms.get("max_after_balance_size")
 
@@ -592,7 +710,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def max_confusion_matrix_size(self):
         """
-        int: [Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs (Default: 20)
+        [Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs
+
+        Type: ``int``  (default: ``20``).
         """
         return self._parms.get("max_confusion_matrix_size")
 
@@ -605,8 +725,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def max_hit_ratio_k(self):
         """
-        int: Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
-        (Default: 0)
+        Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
+
+        Type: ``int``  (default: ``0``).
         """
         return self._parms.get("max_hit_ratio_k")
 
@@ -618,7 +739,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @property
     def max_runtime_secs(self):
-        """float: Maximum allowed runtime in seconds for model training. Use 0 to disable. (Default: 0)"""
+        """
+        Maximum allowed runtime in seconds for model training. Use 0 to disable.
+
+        Type: ``float``  (default: ``0``).
+        """
         return self._parms.get("max_runtime_secs")
 
     @max_runtime_secs.setter
@@ -630,19 +755,19 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @property
     def Lambda(self):
-        """[DEPRECATED] Use self.lambda_ instead"""
+        """DEPRECATED. Use ``self.lambda_`` instead"""
         return self._parms["lambda"] if "lambda" in self._parms else None
 
     @Lambda.setter
-    def lambda_(self, value):
-        """[DEPRECATED] Use self.lambda_ instead"""
+    def Lambda(self, value):
         self._parms["lambda"] = value
 
     @staticmethod
     def getGLMRegularizationPath(model):
         """
         Extract full regularization path explored during lambda search from glm model.
-        @param model - source lambda search model
+
+        :param model: source lambda search model
         """
         x = h2o.api("GET /3/GetGLMRegPath", data={"model": model._model_json["model_id"]["name"]})
         ns = x.pop("coefficient_names")
@@ -660,10 +785,12 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def makeGLMModel(model, coefs, threshold=.5):
         """
         Create a custom GLM model using the given coefficients.
+
         Needs to be passed source model trained on the dataset to extract the dataset information from.
-          @param model - source model, used for extracting dataset information
-          @param coefs - dictionary containing model coefficients
-          @param threshold - (optional, only for binomial) decision threshold used for classification
+
+        :param model: source model, used for extracting dataset information
+        :param coefs: dictionary containing model coefficients
+        :param threshold: (optional, only for binomial) decision threshold used for classification
         """
         model_json = h2o.api(
             "POST /3/MakeGLMModel",

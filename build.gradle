@@ -1,10 +1,41 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
+// The build script settings to fetch plugins and put them on
+// classpath
+buildscript {
+    repositories {
+        maven { url 'https://plugins.gradle.org/m2/' }
+        mavenCentral()
+        jcenter()
+    }
+
+    //noinspection GroovyAssignabilityCheck
+    dependencies {
+        classpath 'org.ow2.asm:asm:5.1'
+        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.4'
+        classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.7.1'
+        classpath 'com.github.townsfolk:gradle-release:1.2'
+        classpath 'com.adaptc.gradle:nexus-workflow:0.6'
+        classpath 'org.testng:testng:6.8'
+        classpath "be.insaneprogramming.gradle:animalsniffer-gradle-plugin:+"
+        classpath 'me.champeau.gradle:jmh-gradle-plugin:0.3.1'
+        // Note: Analyze unused/undefined dependencies for each module - good for debugging
+        // However, later it should be enabled by default
+        //classpath 'ca.cutterslade.gradle:gradle-dependency-analyze:1.1.0'
+    }
+}
+
+plugins {
+    id "java"
+}
+
 //
 // The top-level h2o-3 project does not have any java pieces itself, but
 // apply from the standard java.gradle so that 'gradle idea' generates IDE
 // files with the right settings.
 //
 // The top-level jar file that gets produced is empty and not usable
-// for anything.  Use the jar file produced by the h2o-assembly subproject.
+// for anything.  Use the jar file produced by the :h2o-assemblies:main subproject.
 //
 apply from: 'gradle/java.gradle'
 
@@ -15,31 +46,6 @@ if (project.hasProperty("doRelease")) {
 
 // Print out time taken for each task so we find things that are slow.
 apply from: 'gradle/timing.gradle'
-
-// The build script settings to fetch plugins and put them on
-// classpath
-buildscript {
-    repositories {
-        maven {
-            url 'https://plugins.gradle.org/m2/'
-        }
-        mavenCentral()
-        jcenter()
-    }
-
-    dependencies {
-        classpath 'org.ow2.asm:asm:5.1'
-        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.2'
-        classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.7.1'
-        classpath 'com.github.townsfolk:gradle-release:1.2'
-        classpath 'de.undercouch:gradle-download-task:2.1.0'
-        classpath 'joda-time:joda-time:2.3'
-        classpath 'com.adaptc.gradle:nexus-workflow:0.6'
-        classpath 'org.testng:testng:6.8'
-        classpath "be.insaneprogramming.gradle:animalsniffer-gradle-plugin:+"
-        classpath 'me.champeau.gradle:jmh-gradle-plugin:0.3.1'
-    }
-}
 
 //
 // Common configuration
@@ -60,7 +66,9 @@ ext {
       project(':h2o-bindings'),
       project(':h2o-avro-parser'),
       project(':h2o-orc-parser'),
-      project(':h2o-parquet-parser')
+      project(':h2o-parquet-parser'),
+      project(':h2o-jaas-pam'),
+      project(':h2o-automl')
     ]
 
     javaProjects = [
@@ -76,7 +84,9 @@ ext {
       project(':h2o-bindings'),
       project(':h2o-avro-parser'),
       project(':h2o-orc-parser'),
-      project(':h2o-parquet-parser')
+      project(':h2o-parquet-parser'),
+      project(':h2o-jaas-pam'),
+      project(':h2o-automl')
     ]
 
     scalaProjects = [
@@ -106,15 +116,31 @@ ext {
 
     //
     // Versions of libraries shared cross all projects
+    // The version of protoc must match protobuf-java. If you don't depend on
+    // protobuf-java directly, you will be transitively depending on the
+    // protobuf-java version that grpc depends on.
     //
     junitVersion  = '4.12'
     jets3tVersion = '0.7.1'
     awsJavaSdkVersion = '1.8.3'
 
     //
+    // Optional H2O modules which can be included h2o.jar assembly
+    // They can be enabled by passing parameter "-Pwith{componentName}=true"
+    // For example, `-PwithVisDataServer=true -PvisDataServerVersion=3.14.27`
+    optionalComponents = [
+            [name: "visDataServer", version : "1.0.0-SNAPSHOT", enabled: false ]
+    ]
+
+    //
     // H2O's REST API version
     //
     h2oRESTApiVersion = '3'
+
+    getOsSpecificCommandLine = { List<GString> args ->
+        return Os.isFamily(Os.FAMILY_WINDOWS) ? ['cmd', '/c'] + args : args
+    }
+
 }
 
 //
@@ -122,7 +148,11 @@ ext {
 //
 allprojects {
     group = 'ai.h2o'
+    // By default inject debugging support
+    apply plugin: 'project-report'
+    apply from: "$rootDir/gradle/debug.gradle"
 
+    // Support different IDEs
     apply plugin: 'idea'
     apply plugin: 'eclipse'
     apply from: "$rootDir/gradle/artifacts.gradle"
@@ -205,6 +235,8 @@ subprojects {
             logger.warn("The project $project needs CI for running tests! You can pass `-PdoCI=true` to force CI behaviour.")
             project.testMultiNode.enabled = project.ext.isCi
         }
+        // Analyze dependencies 
+        //apply plugin: 'ca.cutterslade.analyze'
     }
 
     // Configure Scala projects
@@ -233,7 +265,7 @@ subprojects {
 }
 
 task wrapper(type: Wrapper) {
-  gradleVersion = '2.9'
+  gradleVersion = '3.3'
 }
 
 //

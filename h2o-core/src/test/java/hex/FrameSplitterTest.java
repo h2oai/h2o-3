@@ -41,7 +41,7 @@ public class FrameSplitterTest extends TestUtil {
   /** Test for [PUB-410] - AIOOBE in NewChunk if there are NA in String chunks. */
   @Test public void splitStringFrame() {
     // NA in data
-    String fname = "test1.hex";
+    String fname = "FrameSplitterTest1.hex";
     long[] chunkLayout = ar(2L, 2L, 3L);
     String[][] data = ar(ar("A", "B"), ar(null, "C"), ar("D", "E", "F"));
     testScenario(fname, chunkLayout, data);

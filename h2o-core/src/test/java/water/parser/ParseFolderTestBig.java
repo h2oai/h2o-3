@@ -1,6 +1,7 @@
 package water.parser;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import org.junit.*;
 import water.Job;
@@ -9,6 +10,7 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
+import water.util.FileUtils;
 
 public class ParseFolderTestBig extends TestUtil {
   @BeforeClass static public void setup() { stall_till_cloudsize(1); }
@@ -53,18 +55,20 @@ public class ParseFolderTestBig extends TestUtil {
     String fname = "bigdata/cust_K/1m.svm";
     Frame k1 = null;
     try {
-      File f = find_test_file(fname);
-      assert f != null && f.exists():" file not found: " + fname;
+      File f = FileUtils.getFile(fname);
       NFSFileVec nfs = NFSFileVec.make(f);
-      Job<Frame> job = ParseDataset.parse(Key.make("BIGSVM.hex"),new Key[]{nfs._key},true,ParseSetup.guessSetup(new Key[]{nfs._key}, false, ParseSetup.GUESS_HEADER),false)._job;
-      while( job.progress() < 1.0 ) {
-        System.out.print(((int)(job.progress()*1000.0))/10.0 + "% ");
-        try { Thread.sleep(1000); } catch (InterruptedException ignore) { /*comment to disable ideaJ warning*/}
+      Job<Frame> job = ParseDataset.parse(Key.make("BIGSVM.hex"), new Key[]{nfs._key}, true, ParseSetup.guessSetup(new Key[]{nfs._key}, false, ParseSetup.GUESS_HEADER), false)._job;
+      while (job.progress() < 1.0) {
+        System.out.print(((int) (job.progress() * 1000.0)) / 10.0 + "% ");
+        try {
+          Thread.sleep(1000);
+        } catch (InterruptedException ignore) { /*comment to disable ideaJ warning*/}
       }
       System.out.println();
       k1 = job.get();
       System.out.println(k1.toString());
-
+    } catch (IOException ioe) {
+        Assert.fail("File not found: " + fname + " - " + ioe.getMessage());
     } finally {
       if( k1 != null ) k1.delete();
     }

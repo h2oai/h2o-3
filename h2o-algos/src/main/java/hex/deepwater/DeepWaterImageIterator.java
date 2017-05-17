@@ -101,14 +101,17 @@ class DeepWaterImageIterator extends DeepWaterIterator {
           if (isURL) img = ImageIO.read(new URL(_file.trim()));
           else       img = ImageIO.read(new File(_file.trim()));
           GenModel.img2pixels(img, _conv._dim._width, _conv._dim._height, _conv._dim._channels, _destData, start, _meanData);
-          if (_cache)
-            DKV.put(imgKey, new IcedImage(_conv._dim, Arrays.copyOfRange(_destData, start, start + _conv.len())));
+          if (_cache) {
+              Value v = new Value(imgKey, new IcedImage(_conv._dim, Arrays.copyOfRange(_destData, start, start + _conv.len())));
+              DKV.put(imgKey, v);
+              v.freeMem();
+          }
         }
-      } catch (IOException e) {
-        Log.warn(e.getMessage());
       } catch (NullPointerException e) {
         e.printStackTrace();
         // ignored: ImageIO's ICC_Profile can fail with NPEs - unclear why
+      } catch (Throwable e) {
+        Log.warn(e.getMessage());
       }
       tryComplete();
     }

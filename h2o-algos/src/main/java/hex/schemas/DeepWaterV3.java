@@ -65,6 +65,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
         "sparse",
         "gpu",
         "device_id",
+        "cache_data",
         "network_definition_file",
         "network_parameters_file",
         "mean_image_file",
@@ -402,6 +403,10 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
         help = "Device IDs (which GPUs to use).")
     public int[] device_id;
 
+    @API(level = API.Level.expert, direction=API.Direction.INOUT,
+            help = "Whether to cache the data in memory (automatically disabled if data size is too large).")
+    public boolean cache_data;
+
     @API(level = API.Level.secondary, direction=API.Direction.INOUT,
         help = "Path of file containing network definition (graph, architecture).")
     public String network_definition_file;
@@ -448,5 +453,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
         help = "Maximum relative size of the training data after balancing class counts (can be less than 1.0). " +
             "Requires balance_classes.")
     public float max_after_balance_size;
+
+
   }
 }

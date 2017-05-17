@@ -45,6 +45,11 @@ public abstract class SharedTreeMojoModel extends MojoModel {
      */
     protected byte[][] _compressed_trees_aux;
 
+    /**
+     * GLM's beta used for calibrating output probabilities using Platt Scaling.
+     */
+    protected double[] _calib_glm_beta;
+
 
   /**
    * Highly efficient (critical path) tree scoring
@@ -56,7 +61,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
    * Note: this function is also used from the `hex.tree.CompressedTree` class in `h2o-algos` project.
    */
   @SuppressWarnings("ConstantConditions")  // Complains that the code is too complex. Well duh!
-    public static double scoreTree(byte[] tree, double[] row, int nclasses, boolean computeLeafAssignment) {
+    public static double scoreTree(byte[] tree, double[] row, int nclasses, boolean computeLeafAssignment, String[][] domains) {
         ByteBufferWrapper ab = new ByteBufferWrapper(tree);
         GenmodelBitSet bs = null;
         long bitsRight = 0;
@@ -91,12 +96,12 @@ public abstract class SharedTreeMojoModel extends MojoModel {
           // This logic:
           //
           //        double d = row[colId];
-          //        if (Double.isNaN(d) || ( equal != 0 && bs != null && !bs.isInRange((int)d) )
+          //        if (Double.isNaN(d) || ( equal != 0 && bs != null && !bs.isInRange((int)d) ) || (domains != null && domains[colId] != null && domains[colId].length <= (int)d)
           //              ? !leftward : !naVsRest && (equal == 0? d >= splitVal : bs.contains((int)d))) {
 
           // Really does this:
           //
-          //        if (value is NaN or value is not in the range of the bitset) {
+          //        if (value is NaN or value is not in the range of the bitset or is outside the domain map length (but an integer) ) {
           //            if (leftward) {
           //                go left
           //            }
@@ -129,7 +134,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
           //        }
 
             double d = row[colId];
-            if (Double.isNaN(d) || ( equal != 0 && bs != null && !bs.isInRange((int)d) )
+            if (Double.isNaN(d) || ( equal != 0 && bs != null && !bs.isInRange((int)d) ) || (domains != null && domains[colId] != null && domains[colId].length <= (int)d)
                     ? !leftward : !naVsRest && (equal == 0? d >= splitVal : bs.contains((int)d))) {
                 // go RIGHT
                 switch (lmask) {
@@ -160,10 +165,6 @@ public abstract class SharedTreeMojoModel extends MojoModel {
                 }
             }
         }
-    }
-
-    public static double scoreTree(byte[] tree, double[] row, int nclasses) {
-        return scoreTree(tree, row, nclasses, false);
     }
 
     public static String getDecisionPath(double leafAssignment) {
@@ -442,10 +443,14 @@ public abstract class SharedTreeMojoModel extends MojoModel {
             int k = _nclasses == 1? 0 : i + 1;
             for (int j = 0; j < _ntree_groups; j++) {
                 int itree = treeIndex(j, i);
-                if (_mojo_version == null || _mojo_version.equals(1.0)) { //First version
+                // Skip all empty trees
+                if (_compressed_trees[itree] == null) continue;
+                if (_mojo_version.equals(1.0)) { //First version
                     preds[k] += scoreTree0(_compressed_trees[itree], row, _nclasses, false);
-                } else if (_mojo_version.equals(1.1)) { //CURRENT VERSION
-                    preds[k] += scoreTree(_compressed_trees[itree], row, _nclasses);
+                } else if (_mojo_version.equals(1.1)) { //Second version
+                    preds[k] += scoreTree1(_compressed_trees[itree], row, _nclasses, false);
+                } else if (_mojo_version.equals(1.2)) { //CURRENT VERSION
+                    preds[k] += scoreTree(_compressed_trees[itree], row, _nclasses, false, _domains);
                 }
             }
         }
@@ -501,7 +506,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
           if (equal == 8)
             bs.fill2(tree, ab);
           else
-            bs.fill3(tree, ab);
+            bs.fill3_1(tree, ab);
         }
       }
 
@@ -536,6 +541,93 @@ public abstract class SharedTreeMojoModel extends MojoModel {
         }
       }
     }
+  }
+
+  /**
+   * SET IN STONE FOR MOJO VERSION "1.10" - DO NOT CHANGE
+   * @param tree
+   * @param row
+   * @param nclasses
+   * @param computeLeafAssignment
+   * @return
+   */
+  @SuppressWarnings("ConstantConditions")  // Complains that the code is too complex. Well duh!
+  public static double scoreTree1(byte[] tree, double[] row, int nclasses, boolean computeLeafAssignment) {
+    ByteBufferWrapper ab = new ByteBufferWrapper(tree);
+    GenmodelBitSet bs = null;
+    long bitsRight = 0;
+    int level = 0;
+    while (true) {
+      int nodeType = ab.get1U();
+      int colId = ab.get2();
+      if (colId == 65535) return ab.get4f();
+      int naSplitDir = ab.get1U();
+      boolean naVsRest = naSplitDir == NsdNaVsRest;
+      boolean leftward = naSplitDir == NsdNaLeft || naSplitDir == NsdLeft;
+      int lmask = (nodeType & 51);
+      int equal = (nodeType & 12);  // Can be one of 0, 8, 12
+      assert equal != 4;  // no longer supported
+
+      float splitVal = -1;
+      if (!naVsRest) {
+        // Extract value or group to split on
+        if (equal == 0) {
+          // Standard float-compare test (either < or ==)
+          splitVal = ab.get4f();  // Get the float to compare
+        } else {
+          // Bitset test
+          if (bs == null) bs = new GenmodelBitSet(0);
+          if (equal == 8)
+            bs.fill2(tree, ab);
+          else
+            bs.fill3_1(tree, ab);
+        }
+      }
+
+      double d = row[colId];
+      if (Double.isNaN(d) || ( equal != 0 && bs != null && !bs.isInRange((int)d) )
+              ? !leftward : !naVsRest && (equal == 0? d >= splitVal : bs.contains((int)d))) {
+        // go RIGHT
+        switch (lmask) {
+          case 0:  ab.skip(ab.get1U());  break;
+          case 1:  ab.skip(ab.get2());  break;
+          case 2:  ab.skip(ab.get3());  break;
+          case 3:  ab.skip(ab.get4());  break;
+          case 16: ab.skip(nclasses < 256? 1 : 2);  break;  // Small leaf
+          case 48: ab.skip(4);  break;  // skip the prediction
+          default:
+            assert false : "illegal lmask value " + lmask + " in tree " + Arrays.toString(tree);
+        }
+        if (computeLeafAssignment && level < 64) bitsRight |= 1 << level;
+        lmask = (nodeType & 0xC0) >> 2;  // Replace leftmask with the rightmask
+      } else {
+        // go LEFT
+        if (lmask <= 3)
+          ab.skip(lmask + 1);
+      }
+
+      level++;
+      if ((lmask & 16) != 0) {
+        if (computeLeafAssignment) {
+          bitsRight |= 1 << level;  // mark the end of the tree
+          return Double.longBitsToDouble(bitsRight);
+        } else {
+          return ab.get4f();
+        }
+      }
+    }
+  }
+
+  @Override
+  public boolean calibrateClassProbabilities(double[] preds) {
+    if (_calib_glm_beta == null)
+      return false;
+    assert _nclasses == 2; // only supported for binomial classification
+    assert preds.length == _nclasses + 1;
+    double p = GLM_logitInv((preds[1] * _calib_glm_beta[0]) + _calib_glm_beta[1]);
+    preds[1] = 1 - p;
+    preds[2] = p;
+    return true;
   }
 
 }

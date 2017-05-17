@@ -65,7 +65,7 @@ public class GetLogsFromNode extends Iced {
         _bytes = baos.toByteArray();
       }
       catch (Exception e) {
-        _bytes = e.toString().getBytes();
+        _bytes = StringUtils.toBytes(e);
       }
     }
 

@@ -4,10 +4,13 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Futures;
+import water.Scope;
 import water.TestUtil;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.Random;
+import java.util.TreeSet;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -54,6 +57,64 @@ public class CBSChunkTest extends TestUtil {
     vv.remove();
   }
 
+
+  @Test
+  public void testSet(){
+    Scope.enter();
+    // with NAs
+    double [] x = new double[]{0,1,Double.NaN};
+    double [] vals = new double[1024];
+    Random rnd = new Random(54321);
+    for(int i = 0; i < vals.length; ++i)
+      vals[i] = x[rnd.nextInt(3)];
+
+    Chunk c = Vec.makeVec(vals, Vec.VectorGroup.VG_LEN1.addVec()).chunkForChunkIdx(0);
+    Chunk c2 = c.deepCopy();
+    c2._vec = c._vec;
+    assertTrue(c instanceof CBSChunk);
+    for(int i = 0; i < vals.length; ++i) {
+      assertEquals(vals[i], c.atd(i), 0);
+      assertEquals(vals[i], c2.atd(i), 0);
+    }
+    for(int i = 0; i < vals.length; ++i) {
+      c.set(i, vals[i] = x[rnd.nextInt(3)]);
+      if(Double.isNaN(vals[i]))c2.setNA_impl(i); else c2.set(i, (long)vals[i]);
+    }
+    for(int i = 0; i < vals.length; ++i) {
+      assertEquals(vals[i], c.atd(i), 0);
+      assertEquals(vals[i], c2.atd(i), 0);
+    }
+    // without NAS
+    for(int i = 0; i < vals.length; ++i)
+      vals[i] = x[rnd.nextInt(2)];
+    c = Vec.makeVec(vals, Vec.VectorGroup.VG_LEN1.addVec()).chunkForChunkIdx(0);
+    c2 = c.deepCopy();
+    c2._vec = c._vec;
+    assertTrue(c instanceof CBSChunk);
+    for(int i = 0; i < vals.length; ++i)
+      assertEquals(vals[i],c.atd(i),0);
+    for(int i = 0; i < vals.length; ++i) {
+      c.set(i, vals[i] = x[rnd.nextInt(2)]);
+      c2.set(i, (long)vals[i]);
+    }
+    for(int i = 0; i < vals.length; ++i) {
+      assertEquals(vals[i], c.atd(i), 0);
+      assertEquals(vals[i], c2.at8(i), 0);
+    }
+    // set some NAs
+    int i = vals.length >> 2;
+    int j = vals.length >> 1;
+    c.setNA(i);
+    c.set(j,Double.NaN);
+    vals[j] = Double.NaN;
+    vals[i] = Double.NaN;
+    Assert.assertTrue(c.isNA(i));
+    Assert.assertTrue(c.isNA(j));
+    for(int k = 0; k < vals.length; ++k) {
+      assertEquals(vals[k], c.atd(k), 0);
+    }
+    Scope.exit();
+  }
   // Test one bit per value compression which is used
   // for data without NAs
   @Test public void test1BPV() {
@@ -99,7 +160,7 @@ public class CBSChunkTest extends TestUtil {
       if (l==1) nc.addNA();
       for (int v : vals) nc.addNum(v);
       nc.addNA();
-
+      int len = nc.len();
       Chunk cc = nc.compress();
       Assert.assertEquals(vals.length + 1 + l, cc._len);
       Assert.assertTrue(cc instanceof CBSChunk);
@@ -109,14 +170,9 @@ public class CBSChunkTest extends TestUtil {
       Assert.assertTrue(cc.isNA_abs(vals.length + l));
 
       nc = new NewChunk(null, 0);
-      cc.inflate_impl(nc);
-      nc.values(0, nc._len);
+      cc.extractRows(nc, 0,len);
       Assert.assertEquals(vals.length+l+1, nc._sparseLen);
       Assert.assertEquals(vals.length+l+1, nc._len);
-
-      Iterator<NewChunk.Value> it = nc.values(0, vals.length+1+l);
-      for (int i = 0; i < vals.length+1+l; ++i) Assert.assertTrue(it.next().rowId0() == i);
-      Assert.assertTrue(!it.hasNext());
 
       if (l==1) {
         Assert.assertTrue(nc.isNA(0));
@@ -172,14 +228,9 @@ public class CBSChunkTest extends TestUtil {
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA_abs(notna));
 
     NewChunk nc = new NewChunk(null, 0);
-    cc.inflate_impl(nc);
-    nc.values(0, nc._len);
+    cc.extractRows(nc, 0,(int)vec.length());
     Assert.assertEquals(vals.length, nc._sparseLen);
     Assert.assertEquals(vals.length, nc._len);
-
-    Iterator<NewChunk.Value> it = nc.values(0, vals.length);
-    for (int i = 0; i < vals.length; ++i) Assert.assertTrue(it.next().rowId0() == i);
-    Assert.assertTrue(!it.hasNext());
 
     for (int na : NAs) Assert.assertTrue(cc.isNA(na));
     for (int na : NAs) Assert.assertTrue(cc.isNA_abs(na));
@@ -198,5 +249,24 @@ public class CBSChunkTest extends TestUtil {
     vec.remove();
   }
 
+  @Test public void testSparseAndVisitorInterface(){
+    double [] vals = new double[1024];
+    double [] valsNA = new double[1024];
+    TreeSet<Integer> nzs = new TreeSet<>();
+    Random rnd = new Random(54321);
+    for(int i = 0; i < 512; i++) {
+      int x = rnd.nextInt(vals.length);
+      if(nzs.add(x)) {
+        vals[x] = 1;
+        valsNA[x] =   rnd.nextDouble() < .95?1:Double.NaN;
+      }
+    }
+    int [] nzs_ary = new int[nzs.size()];
+    int k = 0;
+    for(Integer i:nzs)
+      nzs_ary[k++] = i;
+    SparseTest.makeAndTestSparseChunk(CBSChunk.class,vals,nzs_ary,false,false);
+    SparseTest.makeAndTestSparseChunk(CBSChunk.class,valsNA,nzs_ary,false,false);
+  }
 
 }

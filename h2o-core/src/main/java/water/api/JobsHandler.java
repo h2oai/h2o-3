@@ -3,6 +3,8 @@ package water.api;
 import water.*;
 import water.api.schemas3.JobV3;
 import water.api.schemas3.JobsV3;
+import water.api.schemas4.input.JobIV4;
+import water.api.schemas4.output.JobV4;
 import water.exceptions.H2ONotFoundArgumentException;
 
 public class JobsHandler extends Handler {
@@ -50,5 +52,33 @@ public class JobsHandler extends Handler {
     }
     j.stop(); // Request Job stop
     return c;
+  }
+
+
+  public static class FetchJob extends RestApiHandler<JobIV4, JobV4> {
+
+    @Override public String name() {
+      return "getJob4";
+    }
+
+    @Override public String help() {
+      return "Retrieve information about the current state of a job.";
+    }
+
+    @Override
+    public JobV4 exec(int ignored, JobIV4 input) {
+      Key<Job> key = Key.make(input.job_id);
+      Value val = DKV.get(key);
+      if (val == null)
+        throw new IllegalArgumentException("Job " + input.job_id + " is missing");
+      Iced iced = val.get();
+      if (!(iced instanceof Job))
+        throw new IllegalArgumentException("Id " + input.job_id + " references a " + iced.getClass() + " not a Job");
+
+      Job job = (Job) iced;
+      JobV4 out = new JobV4();
+      out.fillFromImpl(job);
+      return out;
+    }
   }
 }

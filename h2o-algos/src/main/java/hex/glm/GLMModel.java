@@ -15,6 +15,7 @@ import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
 import water.fvec.Frame;
+import water.fvec.InteractionWrappedVec;
 import water.fvec.Vec;
 import water.util.*;
 import water.util.ArrayUtils;
@@ -37,6 +38,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     _nobs = nobs;
     _nullDOF = nobs - (parms._intercept?1:0);
   }
+
+  public void setVcov(double[][] inv) {_output._vcov = inv;}
 
   public static class RegularizationPath extends Iced {
     public double []   _lambdas;
@@ -67,7 +70,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         rp._coefficients_std[i] = rp._coefficients[i];
         rp._coefficients[i] = _output._dinfo.denormalizeBeta(rp._coefficients_std[i]);
       }
-      rp._explained_deviance_train[i] = 1 - _output._training_metrics._nobs*sm.devianceTrain/((GLMMetrics)_output._training_metrics).null_deviance();
+      rp._explained_deviance_train[i] = 1 - (_output._training_metrics._nobs*sm.devianceTrain)/((GLMMetrics)_output._training_metrics).null_deviance();
       if (rp._explained_deviance_valid != null)
         rp._explained_deviance_valid[i] = 1 - _output._validation_metrics._nobs*sm.devianceTest/((GLMMetrics)_output._validation_metrics).null_deviance();
     }
@@ -256,9 +259,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
             if (_link != Link.identity && _link != Link.log && _link != Link.inverse)
               throw new IllegalArgumentException("Incompatible link function for selected family. Only identity, log and inverse links are allowed for family=gaussian.");
             break;
+          case quasibinomial:
           case binomial:
             if (_link != Link.logit) // fixme: R also allows log, but it's not clear when can be applied and what should we do in case the predictions are outside of 0/1.
-              throw new IllegalArgumentException("Incompatible link function for selected family. Only logit is allowed for family=binomial. Got " + _link);
+              throw new IllegalArgumentException("Incompatible link function for selected family. Only logit is allowed for family=" + _family + ". Got " + _link);
             break;
           case poisson:
             if (_link != Link.log && _link != Link.identity)
@@ -461,7 +465,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       if(mu < Double.MIN_NORMAL) mu = Double.MIN_NORMAL;
       return y * Math.log(y / mu);
     }
-  }
+  } // GLMParameters
 
   public static class GLMWeights {
     public double mu = 0;
@@ -744,6 +748,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double lambda_selected(){return _submodels[_selected_lambda_idx].lambda_value;}
     double[] _global_beta;
     private double[] _zvalues;
+    double [][] _vcov;
     private double _dispersion;
     private boolean _dispersionEstimated;
 
@@ -796,8 +801,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial) {
       super(dinfo._weights, dinfo._offset, dinfo._fold);
       _dinfo = dinfo.clone();
-      _dinfo._adaptedFrame = new Frame(dinfo._adaptedFrame.names().clone(),dinfo._adaptedFrame.vecs().clone());
-      _names = column_names;
+      setNames(column_names);
       _domains = domains;
       _coefficient_names = coefficient_names;
       _binomial = binomial;
@@ -820,14 +824,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public GLMOutput(GLM glm) {
       super(glm);
       _dinfo = glm._dinfo.clone();
-      _dinfo._adaptedFrame = new Frame(glm._dinfo._adaptedFrame.names().clone(),glm._dinfo._adaptedFrame.vecs().clone());
-      if(!glm.hasWeightCol())
-        _dinfo.dropWeights();
+      _dinfo._adaptedFrame = null;
       String[] cnames = glm._dinfo.coefNames();
-      String [] names = _dinfo._adaptedFrame._names;
-      String [][] domains = _dinfo._adaptedFrame.domains();
+      String [] names = glm._dinfo._adaptedFrame._names;
+      String [][] domains = glm._dinfo._adaptedFrame.domains();
       int id = glm._generatedWeights == null?-1:ArrayUtils.find(names, glm._generatedWeights);
       if(id >= 0) {
+        _dinfo._weights = false;
         String [] ns = new String[names.length-1];
         String[][] ds = new String[domains.length-1][];
         System.arraycopy(names,0,ns,0,id);
@@ -837,15 +840,23 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         names = ns;
         domains = ds;
       }
-      _names = names;
+      setNames(names);
       _domains = domains;
       _coefficient_names = Arrays.copyOf(cnames, cnames.length + 1);
       _coefficient_names[_coefficient_names.length-1] = "Intercept";
       _binomial = glm._parms._family == Family.binomial;
       _nclasses = glm.nclasses();
       _multinomial = _nclasses > 2;
+
     }
 
+    /**
+     * Variance Covariance matrix accessor. Available only if odel has been built with p-values.
+     * @return
+     */
+    public double [][] vcov(){return _vcov;}
+
+    
     @Override
     public int nclasses() {
       return _nclasses;
@@ -1000,36 +1011,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return super.checksum_impl();
   }
 
-  public double [] scoreRow(Row r, double o, double [] preds) {
-    if(_parms._family == Family.multinomial) {
-      double[] eta = _eta.get();
-      if(eta == null || eta.length != _output.nclasses()) _eta.set(eta = MemoryManager.malloc8d(_output.nclasses()));
-      final double[][] bm = _output._global_beta_multinomial;
-      double sumExp = 0;
-      double maxRow = 0;
-      for (int c = 0; c < bm.length; ++c) {
-        eta[c] = r.innerProduct(bm[c]) + o;
-        if(eta[c] > maxRow)
-          maxRow = eta[c];
-      }
-      for (int c = 0; c < bm.length; ++c)
-        sumExp += eta[c] = Math.exp(eta[c]-maxRow); // intercept
-      sumExp = 1.0 / sumExp;
-      for (int c = 0; c < bm.length; ++c)
-        preds[c + 1] = eta[c] * sumExp;
-      preds[0] = ArrayUtils.maxIndex(eta);
-    } else {
-      double mu = _parms.linkInv(r.innerProduct(beta()) + o);
-      if (_parms._family == Family.binomial) { // threshold for prediction
-        preds[0] = mu >= defaultThreshold()?1:0;
-        preds[1] = 1.0 - mu; // class 0
-        preds[2] = mu; // class 1
-      } else
-        preds[0] = mu;
-    }
-    return preds;
-  }
-
   private static ThreadLocal<double[]> _eta = new ThreadLocal<>();
 
   @Override protected double[] score0(double[] data, double[] preds){return score0(data,preds,1,0);}
@@ -1044,8 +1025,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       for (int c = 0; c < bm.length; ++c) {
         double e = bm[c][bm[c].length-1];
         double [] b = bm[c];
-        for(int i = 0; i < _output._dinfo._cats; ++i)
-          e += b[_output._dinfo.getCategoricalId(i,data[i])];
+        for(int i = 0; i < _output._dinfo._cats; ++i) {
+          int l = _output._dinfo.getCategoricalId(i, data[i]);
+          if (l >= 0) e += b[l];
+        }
         int coff = _output._dinfo._cats;
         int boff = _output._dinfo.numStart();
         for(int i = 0; i < _output._dinfo._nums; ++i) {
@@ -1196,7 +1179,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     final boolean computeMetrics = adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad();
     String [] domain = _output.nclasses()<=1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
-    return new GLMScore(j, this, _output._dinfo.scoringInfo(adaptFrm),domain,computeMetrics, generatePredictions);
+    return new GLMScore(j, this, _output._dinfo.scoringInfo(_output._names,adaptFrm),domain,computeMetrics, generatePredictions);
   }
   /** Score an already adapted frame.  Returns a new Frame with new result
    *  vectors, all in the DKV.  Caller responsible for deleting.  Input is
@@ -1211,20 +1194,29 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics) {
     String [] names = makeScoringNames();
     String [][] domains = new String[names.length][];
-    GLMScore gs = makeScoringTask(adaptFrm,true,j).doAll(names.length,Vec.T_NUM,adaptFrm);
+    GLMScore gs = makeScoringTask(adaptFrm,true,j);// doAll(names.length,Vec.T_NUM,adaptFrm);
+    assert gs._dinfo._valid:"_valid flag should be set on data info when doing scoring";
+    gs.doAll(names.length,Vec.T_NUM,gs._dinfo._adaptedFrame);
     if (gs._computeMetrics)
       gs._mb.makeModelMetrics(this, fr, adaptFrm, gs.outputFrame());
     domains[0] = gs._domain;
     return gs.outputFrame(Key.<Frame>make(destination_key),names, domains);
   }
 
+  @Override public String [] makeScoringNames(){
+    String [] res = super.makeScoringNames();
+    if(_output._vcov != null) res = ArrayUtils.append(res,"StdErr");
+    return res;
+  }
   /** Score an already adapted frame.  Returns a MetricBuilder that can be used to make a model metrics.
    * @param adaptFrm Already adapted frame
    * @return MetricBuilder
    */
   @Override
   protected ModelMetrics.MetricBuilder scoreMetrics(Frame adaptFrm) {
-    return makeScoringTask(adaptFrm,false,null).doAll(adaptFrm)._mb;
+    GLMScore gs = makeScoringTask(adaptFrm,false,null);// doAll(names.length,Vec.T_NUM,adaptFrm);
+    assert gs._dinfo._valid:"_valid flag should be set on data info when doing scoring";
+    return gs.doAll(gs._dinfo._adaptedFrame)._mb;
   }
 
   @Override

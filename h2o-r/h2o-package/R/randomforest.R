@@ -7,8 +7,8 @@
 #' 
 #' @param x A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing,then all columns except y are used.
-#' @param y The name of the response variable in the model.If the data does not contain a header, this is the column index
-#'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
+#' @param y The name of the response variable in the model.If the data does not contain a header, this is the first column
+#'        index, and increasing from left to right. (The response must be either an integer or a
 #'        categorical variable).
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
@@ -62,7 +62,7 @@
 #' @param mtries Number of variables randomly sampled as candidates at each split. If set to -1, defaults to sqrt{p} for
 #'        classification and p/3 for regression (where p is the # of predictors Defaults to -1.
 #' @param sample_rate Row sample rate per tree (from 0.0 to 1.0) Defaults to 0.6320000291.
-#' @param sample_rate_per_class Row sample rate per tree per class (from 0.0 to 1.0)
+#' @param sample_rate_per_class A list of row sample rates per class (relative fraction for each class, from 0.0 to 1.0), for each tree
 #' @param binomial_double_trees \code{Logical}. For binary classification: Build 2x as many trees (one per class) - can lead to higher
 #'        accuracy. Defaults to FALSE.
 #' @param checkpoint Model checkpoint to resume training with.
@@ -72,7 +72,10 @@
 #' @param histogram_type What type of histogram to use for finding optimal split points Must be one of: "AUTO", "UniformAdaptive",
 #'        "Random", "QuantilesGlobal", "RoundRobin". Defaults to AUTO.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
-#'        "Binary", "Eigen". Defaults to AUTO.
+#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse". Defaults to AUTO.
+#' @param calibrate_model \code{Logical}. Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more
+#'        accurate estimates of class probabilities. Defaults to FALSE.
+#' @param calibration_frame Calibration frame for Platt Scaling
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @export
@@ -115,7 +118,9 @@ h2o.randomForest <- function(x, y, training_frame,
                              col_sample_rate_per_tree = 1,
                              min_split_improvement = 1e-05,
                              histogram_type = c("AUTO", "UniformAdaptive", "Random", "QuantilesGlobal", "RoundRobin"),
-                             categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen")
+                             categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse"),
+                             calibrate_model = FALSE,
+                             calibration_frame = NULL
                              ) 
 {
   #If x is missing, then assume user wants to use all columns as features.
@@ -231,6 +236,10 @@ h2o.randomForest <- function(x, y, training_frame,
     parms$histogram_type <- histogram_type
   if (!missing(categorical_encoding))
     parms$categorical_encoding <- categorical_encoding
+  if (!missing(calibrate_model))
+    parms$calibrate_model <- calibrate_model
+  if (!missing(calibration_frame))
+    parms$calibration_frame <- calibration_frame
   # Error check and build model
   .h2o.modelJob('drf', parms, h2oRestApiVersion=3) 
 }

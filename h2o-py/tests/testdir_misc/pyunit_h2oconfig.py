@@ -32,19 +32,13 @@ def test_h2oconfig(results_dir):
         [init]
         check_version = False
         proxy = http://127.12.34.99.10000
-        cluster_id = 3
-    """, {"init.check_version": "False", "init.proxy": "http://127.12.34.99.10000", "init.cluster_id": "3"})
+    """, {"init.check_version": "False", "init.proxy": "http://127.12.34.99.10000"})
 
     test_single_config("""
         init.check_version = anything!  # rly?
         init.cookies=A
-        r:init.cluster_id=7
         # more comment
     """, {"init.cookies": "A", "init.check_version": "anything!  # rly?"})
-
-    test_single_config("""
-        py:init.cluster_id=asf
-    """, {"init.cluster_id": "asf"})
 
     test_single_config("hbwltqert", {}, n_errors=1)
 

@@ -15,8 +15,8 @@
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
 #' @param transform Transformation of training data Must be one of: "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE".
 #'        Defaults to NONE.
-#' @param svd_method Method for computing SVD (Caution: Power and Randomized are currently experimental and unstable) Must be one
-#'        of: "GramSVD", "Power", "Randomized". Defaults to GramSVD.
+#' @param svd_method Method for computing SVD (Caution: Randomized is currently experimental and unstable) Must be one of:
+#'        "GramSVD", "Power", "Randomized". Defaults to GramSVD.
 #' @param nv Number of right singular vectors Defaults to 1.
 #' @param max_iterations Maximum iterations Defaults to 1000.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)

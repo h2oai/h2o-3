@@ -1,6 +1,5 @@
 package hex.api;
 
-import hex.word2vec.Word2VecModel;
 import water.H2O;
 import hex.ModelBuilder;
 import water.api.GridSearchHandler;
@@ -22,6 +21,8 @@ public class RegisterAlgos extends water.api.AbstractRegister {
       new hex.aggregator  .Aggregator  (true),
       new hex.deepwater   .DeepWater   (true),
       new hex.word2vec    .Word2Vec    (true),
+      new hex.ensemble    .StackedEnsemble(true),
+      new hex.klime       .KLime       (true),
     };
     // "Word2Vec", "Example", "Grep"
     for (ModelBuilder algo : algos) {
@@ -31,6 +32,7 @@ public class RegisterAlgos extends water.api.AbstractRegister {
       int version = 3;
       if( base.equals("SVD") ) version = 99;  // SVD is experimental still
       if( base.equals("Aggregator") ) version = 99;  // Aggregator is experimental still
+      if( base.equals("StackedEnsemble") ) version = 99;  // StackedEnsemble is experimental still
 
       H2O.register("POST /"+version+"/ModelBuilders/"+lbase, bh_clz, "train",
           "train_" + lbase,
@@ -65,5 +67,8 @@ public class RegisterAlgos extends water.api.AbstractRegister {
 
     H2O.register("POST /3/DataInfoFrame",MakeGLMModelHandler.class, "getDataInfoFrame", "glm_datainfo_frame",
         "Test only");
+
+    H2O.register("POST /3/LeaveOneCovarOut", LeaveOneCovarOutHandler.class, "getLoco","loco",
+            "Conduct Leave One Covariate Out (LOCO) Analysis");
   }
 }

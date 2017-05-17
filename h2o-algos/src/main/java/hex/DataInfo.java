@@ -59,8 +59,11 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   public int[] catNAFill() {return _catNAFill;}
-
   public int catNAFill(int cid) {return _catNAFill[cid];}
+
+  public void setCatNAFill(int[] catNAFill) {
+    _catNAFill = catNAFill;
+  }
 
   public enum TransformType {
     NONE, STANDARDIZE, NORMALIZE, DEMEAN, DESCALE;
@@ -99,7 +102,7 @@ public class DataInfo extends Keyed<DataInfo> {
   public int _cats;  // "raw" number of categorical columns as they exist in the frame
   public int [] _catOffsets;   // offset column indices for the 1-hot expanded values (includes enum-enum interaction)
   public boolean [] _catMissing;  // bucket for missing levels
-  public int [] _catNAFill;    // majority class of each categorical col (or last bucket if _catMissing[i] is true)
+  private int [] _catNAFill;    // majority class of each categorical col (or last bucket if _catMissing[i] is true)
   public int [] _permutation; // permutation matrix mapping input col indices to adaptedFrame
   public double [] _normMul;  // scale the predictor column by this value
   public double [] _normSub;  // subtract from the predictor this value
@@ -332,37 +335,6 @@ public class DataInfo extends Keyed<DataInfo> {
     return res;
   }
 
-  public DataInfo scoringInfo(Frame adaptFrame){
-    DataInfo res = IcedUtils.deepCopy(this);
-    res._normMul = null;
-    res._normRespSub = null;
-    res._normRespMul = null;
-    res._normRespSub = null;
-    res._predictor_transform = TransformType.NONE;
-    res._response_transform = TransformType.NONE;
-    res._adaptedFrame = adaptFrame;
-    res._weights = _weights && adaptFrame.find(_adaptedFrame.name(weightChunkId())) != -1;
-    res._offset = _offset && adaptFrame.find(_adaptedFrame.name(offsetChunkId())) != -1;
-    res._fold = _fold && adaptFrame.find(_adaptedFrame.name(foldChunkId())) != -1;
-    int resId = adaptFrame.find((_adaptedFrame.name(responseChunkId(0))));
-    if(resId == -1 || adaptFrame.vec(resId).isBad())
-      res._responses = 0;
-    else // NOTE: DataInfo can have extra columns encoded as response, e.g. helper columns when doing Multinomail IRLSM, don't need those for scoring!.
-      res._responses = 1;
-    res._valid = true;
-    res._interactions=_interactions;
-    res._interactionColumns=_interactionColumns;
-
-    // ensure that vecs are in the DKV, may have been swept up in the Scope.exit call
-    for( Vec v: res._adaptedFrame.vecs() )
-      if( v instanceof InteractionWrappedVec ) {
-        ((InteractionWrappedVec)v)._useAllFactorLevels=_useAllFactorLevels;
-        ((InteractionWrappedVec)v)._skipMissing=_skipMissing;
-        DKV.put(v);
-      }
-    return res;
-  }
-
   public double[] denormalizeBeta(double [] beta) {
     int N = fullN()+1;
     assert (beta.length % N) == 0:"beta len = " + beta.length + " expected multiple of" + N;
@@ -386,6 +358,7 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   private int [] _fullCatOffsets;
+  private int [][] _catMap;
 
   protected int [] fullCatOffsets(){ return _fullCatOffsets == null?_catOffsets:_fullCatOffsets;}
   // private constructor called by filterExpandedColumns
@@ -397,6 +370,8 @@ public class DataInfo extends Keyed<DataInfo> {
       for (int i = 0; i < _fullCatOffsets.length; ++i)
         _fullCatOffsets[i] += i; // add for the skipped zeros.
     }
+    _cats = catLevels.length;
+    _catMap = new int[_cats][];
     _offset = dinfo._offset;
     _weights = dinfo._weights;
     _fold = dinfo._fold;
@@ -423,6 +398,13 @@ public class DataInfo extends Keyed<DataInfo> {
     Arrays.fill(_catMissing,!(dinfo._imputeMissing || dinfo._skipMissing));
     int s = 0;
     for(int i = 0; i < catLevels.length; ++i){
+      if(catLevels[i] != null) {
+        _catMap[i] = new int[_adaptedFrame.vec(i).cardinality()];
+        Arrays.fill(_catMap[i],-1);
+        for (int j = 0; j < catLevels[i].length; j++) {
+          _catMap[i][catLevels[i][j]] = j;
+        }
+      }
       _catOffsets[i] = s;
       s += catLevels[i].length;
     }
@@ -430,7 +412,7 @@ public class DataInfo extends Keyed<DataInfo> {
     _catLvls = catLevels;
     _intLvls = intLvls;
     _responses = dinfo._responses;
-    _cats = catLevels.length;
+
     _useAllFactorLevels = true;//dinfo._useAllFactorLevels;
     _normMul = normMul;
     _normSub = normSub;
@@ -715,7 +697,7 @@ public class DataInfo extends Keyed<DataInfo> {
           continue;
         res[k++] = _adaptedFrame._names[i] + "." + vecs[i].domain()[j];
       }
-      if (_catMissing[i] && getCategoricalId(i, _catNAFill[i]) >=0)
+      if (_catMissing[i] && getCategoricalId(i, -1) >=0)
         res[k++] = _adaptedFrame._names[i] + ".missing(NA)";
       if( vecs[i] instanceof InteractionWrappedVec ) {
         InteractionWrappedVec iwv = (InteractionWrappedVec)vecs[i];
@@ -802,6 +784,12 @@ public class DataInfo extends Keyed<DataInfo> {
     public final boolean isSparse(){return numIds != null;}
 
 
+    public double[] mtrxMul(double [][] m, double [] res){
+       for(int i = 0; i < m.length; ++i)
+        res[i] = innerProduct(m[i],false);
+      return res;
+    }
+
     public Row(boolean sparse, int nNums, int nBins, int nresponses, int i, long start) {
       binIds = MemoryManager.malloc4(nBins);
       numVals = MemoryManager.malloc8d(nNums);
@@ -856,19 +844,49 @@ public class DataInfo extends Keyed<DataInfo> {
       numVals[i] = val;
     }
 
-    public final double innerProduct(double [] vec) {
+    /*
+    This method will perform an inner product of rows.  It will be able to handle categorical data
+    as well as numerical data.  However, the two rows must have exactly the same column types.  This
+    is used in a situation where the rows are coming from the same dataset.
+     */
+    public final double dotSame(Row rowj) {
+      // nums
+      double elementij = 0.0;
+      for(int i = 0; i < this.nNums; ++i)  {
+        elementij += this.numVals[i]*rowj.numVals[i]; // multiply numerical parts of columns
+      }
+
+      // cat X cat
+      if (this.binIds.length > 0) { // categorical columns exists
+        for (int j = 0; j < this.nBins; ++j) {
+          if (this.binIds[j] == rowj.binIds[j]) {
+            elementij += 1;
+          }
+        }
+      }
+      return elementij*this.weight*rowj.weight;
+    }
+
+    public final double innerProduct(double [] vec) { return innerProduct(vec,false);}
+    public final double innerProduct(double [] vec, boolean icptFirst) {
       double res = 0;
-      int numStart = numStart();
+      int off = 0;
+      if(icptFirst) {
+        off = 1;
+        res = vec[0];
+      }
+      int numStart = off + numStart();
+
       for(int i = 0; i < nBins; ++i)
-        res += vec[binIds[i]];
+        res += vec[off+binIds[i]];
       if(numIds == null) {
         for (int i = 0; i < numVals.length; ++i)
           res += numVals[i] * vec[numStart + i];
       } else {
         for (int i = 0; i < nNums; ++i)
-          res += numVals[i] * vec[numIds[i]];
+          res += numVals[i] * vec[off+numIds[i]];
       }
-      if(_intercept)
+      if(_intercept && !icptFirst)
         res += vec[vec.length-1];
       return res;
     }
@@ -897,11 +915,22 @@ public class DataInfo extends Keyed<DataInfo> {
       return this.rid + Arrays.toString(Arrays.copyOf(binIds,nBins)) + ", " + Arrays.toString(numVals);
     }
     public void setResponse(int i, double z) {response[i] = z;}
+
+    public void standardize(double[] normSub, double[] normMul) {
+      if(numIds == null){
+        for(int i = 0; i < numVals.length; ++i)
+          numVals[i] = (numVals[i] - normSub[i])*normMul[i];
+      } else
+        for(int i = 0; i < nNums; ++i) {
+          int j = numIds[i];
+          numVals[i] = (numVals[i] - normSub[j])*normMul[j];
+        }
+    }
   }
 
 
   public final int getCategoricalId(int cid, double val) {
-    if(Double.isNaN(val)) return getCategoricalId(cid, _catNAFill[cid]);
+    if(Double.isNaN(val)) return getCategoricalId(cid, -1);
     int ival = (int)val;
     if(ival != val) throw new IllegalArgumentException("Categorical id must be an integer or NA (missing).");
     return getCategoricalId(cid,ival);
@@ -914,16 +943,22 @@ public class DataInfo extends Keyed<DataInfo> {
    */
   public final int getCategoricalId(int cid, int val) {
     boolean isIWV = isInteractionVec(cid);
-    if( !_useAllFactorLevels && !isIWV )  // categorical interaction vecs drop reference level in a special way
+    if(val == -1) { // NA
+      val = _catNAFill[cid];
+    } else if( !_useAllFactorLevels && !isIWV )  // categorical interaction vecs drop reference level in a special way
       val -= 1;
+    if(val < 0) return -1; // column si to be skipped
     int [] offs = fullCatOffsets();
-    if(val + offs[cid] >= offs[cid+1]) {  // previously unseen level
-      assert _valid:"categorical value out of bounds, got " + val + ", next cat starts at " + fullCatOffsets()[cid+1];
+    int expandedVal = val + offs[cid];
+    if(expandedVal >= offs[cid+1]) {  // previously unseen level
+      assert _valid:"Categorical value out of bounds, got " + val + ", next cat starts at " + fullCatOffsets()[cid+1];
+      if(_skipMissing)
+        return -1;
       val = _catNAFill[cid];
     }
-    if (_catLvls[cid] != null) {  // some levels are ignored?
+    if (_catMap != null && _catMap[cid] != null) {  // some levels are ignored?
+      val = _catMap[cid][val];
       assert _useAllFactorLevels;
-      val = Arrays.binarySearch(_catLvls[cid], val);
     }
     return val < 0?-1:val + _catOffsets[cid];
   }
@@ -1088,7 +1123,7 @@ public class DataInfo extends Keyed<DataInfo> {
           row.predictors_bad = true;
           continue;
         }         
-        int cid = getCategoricalId(i,isMissing? _catNAFill[i]:(int)chunks[i].at8(r));
+        int cid = getCategoricalId(i,isMissing? -1:(int)chunks[i].at8(r));
         if(cid >=0)
           row.binIds[row.nBins++] = cid;
       }
@@ -1145,7 +1180,6 @@ public class DataInfo extends Keyed<DataInfo> {
         row.response[i-1] = rChunk.atd(r);
         if(Double.isNaN(row.response[i-1])) {
           row.response_bad = true;
-          break;
         }
         if (_normRespMul != null) {
           row.response[i-1] = (row.response[i-1] - _normRespSub[i-1]) * _normRespMul[i-1];
@@ -1153,5 +1187,36 @@ public class DataInfo extends Keyed<DataInfo> {
       }
     }
     return rows;
+  }
+
+  public DataInfo scoringInfo(String [] names, Frame adaptFrame){
+    DataInfo res = IcedUtils.deepCopy(this);
+    res._normMul = null;
+    res._normRespSub = null;
+    res._normRespMul = null;
+    res._normRespSub = null;
+    res._predictor_transform = TransformType.NONE;
+    res._response_transform = TransformType.NONE;
+    res._adaptedFrame = adaptFrame;
+    res._weights = _weights && adaptFrame.find(names[weightChunkId()]) != -1;
+    res._offset = _offset && adaptFrame.find(names[offsetChunkId()]) != -1;
+    res._fold = _fold && adaptFrame.find(names[foldChunkId()]) != -1;
+    int resId = adaptFrame.find(names[responseChunkId(0)]);
+    if(resId == -1 || adaptFrame.vec(resId).isBad())
+      res._responses = 0;
+    else // NOTE: DataInfo can have extra columns encoded as response, e.g. helper columns when doing Multinomail IRLSM, don't need those for scoring!.
+      res._responses = 1;
+    res._valid = true;
+    res._interactions=_interactions;
+    res._interactionColumns=_interactionColumns;
+
+    // ensure that vecs are in the DKV, may have been swept up in the Scope.exit call
+    for( Vec v: res._adaptedFrame.vecs() )
+      if( v instanceof InteractionWrappedVec) {
+        ((InteractionWrappedVec)v)._useAllFactorLevels=_useAllFactorLevels;
+        ((InteractionWrappedVec)v)._skipMissing=_skipMissing;
+        DKV.put(v);
+      }
+    return res;
   }
 }

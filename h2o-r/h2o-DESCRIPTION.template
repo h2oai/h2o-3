@@ -29,6 +29,7 @@ Suggests: ggplot2,
           data.table (>= 1.9.8)
 Collate:
          'astfun.R'
+         'automl.R'
          'classes.R'
          'config.R'
          'connection.R'
@@ -50,11 +51,13 @@ Collate:
          'pca.R'
          'svd.R'
          'deeplearning.R'
+         'stackedensemble.R'
          'deepwater.R'
          'randomforest.R'
          'naivebayes.R'
          'word2vec.R'
          'w2vutils.R'
+         'klime.R'
          'locate.R'
          'grid.R'
          'predict.R'

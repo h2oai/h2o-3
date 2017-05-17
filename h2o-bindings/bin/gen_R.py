@@ -40,13 +40,20 @@ def gen_module(schema, algo, module):
             continue
         if algo == "naivebayes":
             if param["name"] == "min_sdev":
-                yield "#' @param threshold The minimum standard deviation to use for observations without enough data. "
+                yield "#' @param threshold This argument is deprecated, use `min_sdev` instead. The minimum standard deviation to use for observations without enough data. "
+                yield "#'                  Must be at least 1e-10."
+                yield "#' @param min_sdev The minimum standard deviation to use for observations without enough data. "
                 yield "#'                  Must be at least 1e-10."
                 continue
             if param["name"] == "eps_sdev":
-                yield "#' @param eps A threshold cutoff to deal with numeric instability, must be positive."
+                yield "#' @param eps This argument is deprecated, use `eps_sdev` instead. A threshold cutoff to deal with numeric instability, must be positive."
+                yield "#' @param eps_sdev A threshold cutoff to deal with numeric instability, must be positive."
                 continue
-            if param["name"] in ["min_prob", "eps_prob"]:
+            if param["name"] == "min_prob":
+                yield "#' @param min_prob Min. probability to use for observations with not enough data."
+                continue
+            if param["name"] == "eps_prob":
+                yield "#' @param eps_prob Cutoff below which probability is replaced with min_prob."
                 continue
         if param["name"] == "seed":
             yield "#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)"
@@ -88,16 +95,22 @@ def gen_module(schema, algo, module):
         if algo == "naivebayes":
             if param["name"] == "min_sdev":
                 list.append(indent("threshold = %s" % normalize_value(param), 17 + len(module)))
+                list.append(indent("min_sdev = %s" % normalize_value(param), 17 + len(module)))
                 continue
             if param["name"] == "eps_sdev":
                 list.append(indent("eps = %s" % normalize_value(param), 17 + len(module)))
+                list.append(indent("eps_sdev = %s" % normalize_value(param), 17 + len(module)))
                 continue
-            if param["name"] in ["min_prob", "eps_prob"]:
+            if param["name"] == "min_prob":
+                list.append(indent("min_prob = %s" % normalize_value(param), 17 + len(module)))
+                continue
+            if param["name"] == "eps_prob":
+                list.append(indent("eps_prob = %s" % normalize_value(param), 17 + len(module)))
                 continue
         list.append(indent("%s = %s" % (param["name"], normalize_value(param)), 17 + len(module)))
     yield ",\n".join(list)
     yield indent(") \n{", 17 + len(module))
-    if algo in ["deeplearning", "deepwater", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
+    if algo in ["deeplearning", "deepwater", "drf", "gbm", "glm", "naivebayes", "stackedensemble", "klime"]:
         yield "  #If x is missing, then assume user wants to use all columns as features."
         yield "  if(missing(x)){"
         yield "     if(is.numeric(y)){"
@@ -125,16 +138,32 @@ def gen_module(schema, algo, module):
             yield "    beta_constraints <- as.h2o(beta_constraints)"
             yield "  }"
     yield ""
-    yield "  # Required args: training_frame"
-    yield "  if( missing(training_frame) ) stop(\"argument \'training_frame\' is missing, with no default\")"
-    # yield "  if( missing(validation_frame) ) validation_frame = NULL"
-    yield "  # Training_frame must be a key or an H2OFrame object"
-    yield "  if (!is.H2OFrame(training_frame))"
-    yield "     tryCatch(training_frame <- h2o.getFrame(training_frame),"
-    yield "           error = function(err) {"
-    yield "             stop(\"argument \'training_frame\' must be a valid H2OFrame or key\")"
-    yield "           })"
-    if algo not in ["stackedensemble", "word2vec"]:
+    if algo == "word2vec":
+        yield "  # training_frame is required if pre_trained frame is not specified"
+        yield "  if( missing(pre_trained) && missing(training_frame) ) stop(\"argument \'training_frame\' is missing, with no default\")"
+        yield "  # training_frame must be a key or an H2OFrame object"
+        yield "  if (!missing(training_frame) && !is.H2OFrame(training_frame))"
+        yield "    tryCatch(training_frame <- h2o.getFrame(training_frame),"
+        yield "             error = function(err) {"
+        yield "               stop(\"argument \'training_frame\' must be a valid H2OFrame or key\")"
+        yield "             })"
+        yield "  # pre_trained must be a key or an H2OFrame object"
+        yield "  if (!missing(pre_trained) && !is.H2OFrame(pre_trained))"
+        yield "    tryCatch(pre_trained <- h2o.getFrame(pre_trained),"
+        yield "             error = function(err) {"
+        yield "               stop(\"argument \'pre_trained\' must be a valid H2OFrame or key\")"
+        yield "             })"
+    else:
+        yield "  # Required args: training_frame"
+        yield "  if( missing(training_frame) ) stop(\"argument \'training_frame\' is missing, with no default\")"
+        # yield "  if( missing(validation_frame) ) validation_frame = NULL"
+        yield "  # Training_frame must be a key or an H2OFrame object"
+        yield "  if (!is.H2OFrame(training_frame))"
+        yield "     tryCatch(training_frame <- h2o.getFrame(training_frame),"
+        yield "           error = function(err) {"
+        yield "             stop(\"argument \'training_frame\' must be a valid H2OFrame or key\")"
+        yield "           })"
+    if algo not in ["stackedensemble", "word2vec", "klime"]:
         yield "  # Validation_frame must be a key or an H2OFrame object"
         yield "  if (!is.null(validation_frame)) {"
         yield "     if (!is.H2OFrame(validation_frame))"
@@ -149,6 +178,10 @@ def gen_module(schema, algo, module):
     if algo == "glrm":
         yield " if(!missing(cols))"
         yield " parms$ignored_columns <- .verify_datacols(training_frame, cols)$cols_ignore"
+    elif algo == "klime":
+        yield "  args <- .verify_dataxy(training_frame, x, y)"
+        yield "  parms$response_column <- args$y"
+        yield "  parms$ignored_columns <- args$x_ignore"
     elif algo in ["deeplearning", "deepwater", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
         if any(param["name"] == "autoencoder" for param in schema["parameters"]):
             yield "  args <- .verify_dataxy(training_frame, x, y, autoencoder)"
@@ -191,13 +224,21 @@ def gen_module(schema, algo, module):
             yield "      parms$loss <- loss"
             yield "  }"
             continue
-        if param["name"] in ["min_sdev", "min_prob"]:
+        if param["name"] == "min_sdev":
             yield " if (!missing(threshold))"
+            yield "   warning(\"argument 'threshold' is deprecated; use 'min_sdev' instead.\")"
             yield "   parms$%s <- threshold" % param["name"]
+        if param["name"] == "min_prob":
+            yield " if (!missing(min_prob))"
+            yield "   parms$%s <- min_prob" % param["name"]
             continue
-        if param["name"] in ["eps_sdev", "eps_prob"]:
+        if param["name"] == "eps_sdev":
             yield " if (!missing(eps))"
+            yield "   warning(\"argument 'eps' is deprecated; use 'eps_sdev' instead.\")"
             yield "   parms$%s <- eps" % param["name"]
+        if param["name"] == "eps_prob":
+            yield " if (!missing(eps_prob))"
+            yield "   parms$%s <- eps_prob" % param["name"]
             continue
         yield "  if (!missing(%s))" % param["name"]
         yield "    parms$%s <- %s" % (param["name"], param["name"])
@@ -221,7 +262,7 @@ def help_preamble_for(algo):
         """
     if algo == "stackedensemble":
         return """
-            This function  creates a “Super Learner” (stacked ensemble) using the H2O base
+            Build a stacked ensemble (aka. Super Learner) using the H2O base
             learning algorithms specified by the user.
         """
     if algo == "deepwater":
@@ -277,6 +318,10 @@ def help_preamble_for(algo):
     if algo == "word2vec":
         return """
         Trains a word2vec model on a String column of an H2O data frame.
+    """
+    if algo == "klime":
+        return """
+        Fits a k-LIME model on predictions produced by a ML model. Provides explanations/reason codes.
     """
 
 def help_details_for(algo):
@@ -421,42 +466,39 @@ def help_example_for(algo):
         australia.hex <- h2o.uploadFile(path = ausPath)
         h2o.svd(training_frame = australia.hex, nv = 8)
         }"""
+    if algo == "stackedensemble":
+        return """
+        # See example R code here: 
+        # http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html
+        """        
 
 def get_extra_params_for(algo):
     if algo == "glrm":
         return "training_frame, cols = NULL"
-    elif algo in ["deeplearning", "deepwater", "drf", "gbm", "glm", "naivebayes"]:
+    elif algo in ["deeplearning", "deepwater", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
         return "x, y, training_frame"
     elif algo == "svd":
         return "training_frame, x, destination_key"
-    elif algo == "stackedensemble":
-        return "x, y, training_frame, model_id"
     elif algo == "word2vec":
-        return "training_frame"
+        return "training_frame = NULL"
+    elif algo == "klime":
+        return "training_frame, x, y"
     else:
         return "training_frame, x"
 
 def help_extra_params_for(algo):
     if algo == "glrm":
         return "#' @param cols (Optional) A vector containing the data columns on which k-means operates."
-    elif algo in ["deeplearning", "deepwater","drf", "gbm", "glm", "naivebayes"]:
+    elif algo in ["deeplearning", "deepwater","drf", "gbm", "glm", "naivebayes", "stackedensemble", "klime"]:
         return """#' @param x A vector containing the names or indices of the predictor variables to use in building the model.
             #'        If x is missing,then all columns except y are used.
-            #' @param y The name of the response variable in the model.If the data does not contain a header, this is the column index
-            #'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
+            #' @param y The name of the response variable in the model.If the data does not contain a header, this is the first column
+            #'        index, and increasing from left to right. (The response must be either an integer or a
             #'        categorical variable)."""
     elif algo == "svd":
         return """#' @param x A vector containing the \code{character} names of the predictors in the model.
             #' @param destination_key (Optional) The unique hex key assigned to the resulting model.
             #'                        Automatically generated if none is provided."""
-    elif algo == "stackedensemble":
-        return """#' @param x A vector containing the names or indices of the predictor variables to use in building the model.
-            #'        If x is missing,then all columns except y are used.
-            #' @param y The name of the response variable in the model.If the data does not contain a header, this is the column index
-            #'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
-            #'        categorical variable).
-            #' @param model_id Destination id for this model; auto-generated if not specified.
-            #' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters)."""
     elif algo == "word2vec":
         return None
     else:
@@ -526,26 +568,32 @@ def help_extra_checks_for(algo):
         """
     if algo == "kmeans":
         return """
-  # Check if init is an acceptable set of user-specified starting points
-  if( is.data.frame(init) || is.matrix(init) || is.list(init) || is.H2OFrame(init) ) {
-  parms[["init"]] <- "User"
+  # Check if user_points is an acceptable set of user-specified starting points
+  if( is.data.frame(user_points) || is.matrix(user_points) || is.list(user_points) || is.H2OFrame(user_points) ) {
+    if ( length(init) > 1 || init == 'User') {
+      parms[["init"]] <- "User"
+    } else {
+      warning(paste0("Parameter init must equal 'User' when user_points is set. Ignoring init = '", init, "'. Setting init = 'User'."))
+    }
+
+    parms[["init"]] <- "User"
   # Convert user-specified starting points to H2OFrame
-  if( is.data.frame(init) || is.matrix(init) || is.list(init) ) {
-    if( !is.data.frame(init) && !is.matrix(init) ) init <- t(as.data.frame(init))
-    init <- as.h2o(init)
+  if( is.data.frame(user_points) || is.matrix(user_points) || is.list(user_points) ) {
+    if( !is.data.frame(user_points) && !is.matrix(user_points) ) user_points <- t(as.data.frame(user_points))
+    user_points <- as.h2o(user_points)
   }
-  parms[["user_points"]] <- init
+  parms[["user_points"]] <- user_points
   # Set k
-  if( !(missing(k)) && k!=as.integer(nrow(init)) ) {
+  if( !(missing(k)) && k!=as.integer(nrow(user_points)) ) {
     warning("Parameter k is not equal to the number of user-specified starting points. Ignoring k. Using specified starting points.")
   }
-  parms[["k"]] <- as.numeric(nrow(init))
-  }
-  else if ( is.character(init) ) { # Furthest, Random, PlusPlus
-  parms[["user_points"]] <- NULL
-  }
-  else{
-  stop ("argument init must be set to Furthest, Random, PlusPlus, or a valid set of user-defined starting points.")
+  parms[["k"]] <- as.numeric(nrow(user_points))
+
+  } else if ( is.character(init) ) { # Furthest, Random, PlusPlus{
+    parms[["user_points"]] <- NULL
+
+  } else{
+    stop ("argument init must be set to Furthest, Random, PlusPlus, or a valid set of user-defined starting points.")
   }
         """
 
@@ -583,41 +631,6 @@ def help_afterword_for(algo):
               res <- .h2o.__remoteSend(url, method = "POST", reconstruction_error=TRUE, reconstruction_error_per_feature=per_feature)
               key <- res$model_metrics[[1L]]$predictions$frame_id$name
               h2o.getFrame(key)
-            }
-
-            #' Feature Generation via H2O Deep Learning Model
-            #'
-            #' Extract the non-linear feature from an H2O data set using an H2O deep learning
-            #' model.
-            #' @param object An \linkS4class{H2OModel} object that represents the deep
-            #' learning model to be used for feature extraction.
-            #' @param data An H2OFrame object.
-            #' @param layer Index of the hidden layer to extract.
-            #' @return Returns an H2OFrame object with as many features as the
-            #'         number of units in the hidden layer of the specified index.
-            #' @seealso \code{link{h2o.deeplearning}} for making deep learning models.
-            #' @examples
-            #' \donttest{
-            #' library(h2o)
-            #' h2o.init()
-            #' prosPath = system.file("extdata", "prostate.csv", package = "h2o")
-            #' prostate.hex = h2o.importFile(path = prosPath)
-            #' prostate.dl = h2o.deeplearning(x = 3:9, y = 2, training_frame = prostate.hex,
-            #'                                hidden = c(100, 200), epochs = 5)
-            #' prostate.deepfeatures_layer1 = h2o.deepfeatures(prostate.dl, prostate.hex, layer = 1)
-            #' prostate.deepfeatures_layer2 = h2o.deepfeatures(prostate.dl, prostate.hex, layer = 2)
-            #' head(prostate.deepfeatures_layer1)
-            #' head(prostate.deepfeatures_layer2)
-            #' }
-            #' @export
-            h2o.deepfeatures <- function(object, data, layer = 1) {
-              index = layer - 1
-              url <- paste0('Predictions/models/', object@model_id, '/frames/', h2o.getId(data))
-              res <- .h2o.__remoteSend(url, method = "POST", deep_features_hidden_layer=index, h2oRestApiVersion = 4)
-              job_key <- res$key$name
-              dest_key <- res$dest$name
-              .h2o.__waitOnJob(job_key)
-              h2o.getFrame(dest_key)
             }
         """
     if algo == "deepwater":
@@ -853,7 +866,7 @@ def indent(string, n):
     return " " * n + string
 
 def normalize_value(param, is_help = False):
-    if not(is_help) and param["type"][:4] == "enum":
+    if not(is_help) and param["type"][:4] == "enum":  
         return "c(%s)" % ", ".join('"%s"' % p for p in param["values"])
     if param["default_value"] is None:
         if param["type"] in ["short", "int", "long", "double"]:
@@ -861,7 +874,10 @@ def normalize_value(param, is_help = False):
         else:
             return "NULL"
     if not(is_help) and "[]" in param["type"]:
-        return "c(%s)" % ", ".join('%s' % p for p in param["default_value"])
+        if param["name"] == "base_models":
+            return "list()"
+        else:    
+            return "c(%s)" % ", ".join('%s' % p for p in param["default_value"])
     if param["type"] == "boolean":
         return str(param["default_value"]).upper()
     if param["type"] == "double":

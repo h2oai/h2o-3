@@ -48,7 +48,11 @@ class H2ONaiveBayesEstimator(H2OEstimator):
 
     @property
     def nfolds(self):
-        """int: Number of folds for N-fold cross-validation (0 to disable or >= 2). (Default: 0)"""
+        """
+        Number of folds for N-fold cross-validation (0 to disable or >= 2).
+
+        Type: ``int``  (default: ``0``).
+        """
         return self._parms.get("nfolds")
 
     @nfolds.setter
@@ -60,8 +64,9 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     @property
     def seed(self):
         """
-        int: Seed for pseudo random number generator (only used for cross-validation and fold_assignment="Random" or
-        "AUTO") (Default: -1)
+        Seed for pseudo random number generator (only used for cross-validation and fold_assignment="Random" or "AUTO")
+
+        Type: ``int``  (default: ``-1``).
         """
         return self._parms.get("seed")
 
@@ -74,9 +79,10 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     @property
     def fold_assignment(self):
         """
-        Enum["auto", "random", "modulo", "stratified"]: Cross-validation fold assignment scheme, if fold_column is not
-        specified. The 'Stratified' option will stratify the folds based on the response variable, for classification
-        problems. (Default: "auto")
+        Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify
+        the folds based on the response variable, for classification problems.
+
+        One of: ``"auto"``, ``"random"``, ``"modulo"``, ``"stratified"``  (default: ``"auto"``).
         """
         return self._parms.get("fold_assignment")
 
@@ -88,7 +94,11 @@ class H2ONaiveBayesEstimator(H2OEstimator):
 
     @property
     def fold_column(self):
-        """str: Column with cross-validation fold index assignment per observation."""
+        """
+        Column with cross-validation fold index assignment per observation.
+
+        Type: ``str``.
+        """
         return self._parms.get("fold_column")
 
     @fold_column.setter
@@ -99,7 +109,11 @@ class H2ONaiveBayesEstimator(H2OEstimator):
 
     @property
     def keep_cross_validation_predictions(self):
-        """bool: Whether to keep the predictions of the cross-validation models. (Default: False)"""
+        """
+        Whether to keep the predictions of the cross-validation models.
+
+        Type: ``bool``  (default: ``False``).
+        """
         return self._parms.get("keep_cross_validation_predictions")
 
     @keep_cross_validation_predictions.setter
@@ -110,7 +124,11 @@ class H2ONaiveBayesEstimator(H2OEstimator):
 
     @property
     def keep_cross_validation_fold_assignment(self):
-        """bool: Whether to keep the cross-validation fold assignment. (Default: False)"""
+        """
+        Whether to keep the cross-validation fold assignment.
+
+        Type: ``bool``  (default: ``False``).
+        """
         return self._parms.get("keep_cross_validation_fold_assignment")
 
     @keep_cross_validation_fold_assignment.setter
@@ -121,7 +139,11 @@ class H2ONaiveBayesEstimator(H2OEstimator):
 
     @property
     def training_frame(self):
-        """str: Id of the training data frame (Not required, to allow initial validation of model parameters)."""
+        """
+        Id of the training data frame (Not required, to allow initial validation of model parameters).
+
+        Type: ``H2OFrame``.
+        """
         return self._parms.get("training_frame")
 
     @training_frame.setter
@@ -132,7 +154,11 @@ class H2ONaiveBayesEstimator(H2OEstimator):
 
     @property
     def validation_frame(self):
-        """str: Id of the validation data frame."""
+        """
+        Id of the validation data frame.
+
+        Type: ``H2OFrame``.
+        """
         return self._parms.get("validation_frame")
 
     @validation_frame.setter
@@ -143,7 +169,11 @@ class H2ONaiveBayesEstimator(H2OEstimator):
 
     @property
     def response_column(self):
-        """str: Response variable column."""
+        """
+        Response variable column.
+
+        Type: ``str``.
+        """
         return self._parms.get("response_column")
 
     @response_column.setter
@@ -154,7 +184,11 @@ class H2ONaiveBayesEstimator(H2OEstimator):
 
     @property
     def ignored_columns(self):
-        """List[str]: Names of columns to ignore for training."""
+        """
+        Names of columns to ignore for training.
+
+        Type: ``List[str]``.
+        """
         return self._parms.get("ignored_columns")
 
     @ignored_columns.setter
@@ -165,7 +199,11 @@ class H2ONaiveBayesEstimator(H2OEstimator):
 
     @property
     def ignore_const_cols(self):
-        """bool: Ignore constant columns. (Default: True)"""
+        """
+        Ignore constant columns.
+
+        Type: ``bool``  (default: ``True``).
+        """
         return self._parms.get("ignore_const_cols")
 
     @ignore_const_cols.setter
@@ -176,7 +214,11 @@ class H2ONaiveBayesEstimator(H2OEstimator):
 
     @property
     def score_each_iteration(self):
-        """bool: Whether to score during each iteration of model training. (Default: False)"""
+        """
+        Whether to score during each iteration of model training.
+
+        Type: ``bool``  (default: ``False``).
+        """
         return self._parms.get("score_each_iteration")
 
     @score_each_iteration.setter
@@ -188,7 +230,9 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     @property
     def balance_classes(self):
         """
-        bool: Balance training data class counts via over/under-sampling (for imbalanced data). (Default: False)
+        Balance training data class counts via over/under-sampling (for imbalanced data).
+
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("balance_classes")
 
@@ -201,8 +245,10 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     @property
     def class_sampling_factors(self):
         """
-        List[float]: Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling
-        factors will be automatically computed to obtain class balance during training. Requires balance_classes.
+        Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
+        be automatically computed to obtain class balance during training. Requires balance_classes.
+
+        Type: ``List[float]``.
         """
         return self._parms.get("class_sampling_factors")
 
@@ -215,8 +261,10 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     @property
     def max_after_balance_size(self):
         """
-        float: Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
-        balance_classes. (Default: 5)
+        Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
+        balance_classes.
+
+        Type: ``float``  (default: ``5``).
         """
         return self._parms.get("max_after_balance_size")
 
@@ -229,7 +277,9 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     @property
     def max_confusion_matrix_size(self):
         """
-        int: [Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs (Default: 20)
+        [Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs
+
+        Type: ``int``  (default: ``20``).
         """
         return self._parms.get("max_confusion_matrix_size")
 
@@ -242,8 +292,9 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     @property
     def max_hit_ratio_k(self):
         """
-        int: Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
-        (Default: 0)
+        Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
+
+        Type: ``int``  (default: ``0``).
         """
         return self._parms.get("max_hit_ratio_k")
 
@@ -255,7 +306,11 @@ class H2ONaiveBayesEstimator(H2OEstimator):
 
     @property
     def laplace(self):
-        """float: Laplace smoothing parameter (Default: 0)"""
+        """
+        Laplace smoothing parameter
+
+        Type: ``float``  (default: ``0``).
+        """
         return self._parms.get("laplace")
 
     @laplace.setter
@@ -266,7 +321,11 @@ class H2ONaiveBayesEstimator(H2OEstimator):
 
     @property
     def min_sdev(self):
-        """float: Min. standard deviation to use for observations with not enough data (Default: 0.001)"""
+        """
+        Min. standard deviation to use for observations with not enough data
+
+        Type: ``float``  (default: ``0.001``).
+        """
         return self._parms.get("min_sdev")
 
     @min_sdev.setter
@@ -277,7 +336,11 @@ class H2ONaiveBayesEstimator(H2OEstimator):
 
     @property
     def eps_sdev(self):
-        """float: Cutoff below which standard deviation is replaced with min_sdev (Default: 0)"""
+        """
+        Cutoff below which standard deviation is replaced with min_sdev
+
+        Type: ``float``  (default: ``0``).
+        """
         return self._parms.get("eps_sdev")
 
     @eps_sdev.setter
@@ -288,7 +351,11 @@ class H2ONaiveBayesEstimator(H2OEstimator):
 
     @property
     def min_prob(self):
-        """float: Min. probability to use for observations with not enough data (Default: 0.001)"""
+        """
+        Min. probability to use for observations with not enough data
+
+        Type: ``float``  (default: ``0.001``).
+        """
         return self._parms.get("min_prob")
 
     @min_prob.setter
@@ -299,7 +366,11 @@ class H2ONaiveBayesEstimator(H2OEstimator):
 
     @property
     def eps_prob(self):
-        """float: Cutoff below which probability is replaced with min_prob (Default: 0)"""
+        """
+        Cutoff below which probability is replaced with min_prob
+
+        Type: ``float``  (default: ``0``).
+        """
         return self._parms.get("eps_prob")
 
     @eps_prob.setter
@@ -310,7 +381,11 @@ class H2ONaiveBayesEstimator(H2OEstimator):
 
     @property
     def compute_metrics(self):
-        """bool: Compute metrics on training data (Default: True)"""
+        """
+        Compute metrics on training data
+
+        Type: ``bool``  (default: ``True``).
+        """
         return self._parms.get("compute_metrics")
 
     @compute_metrics.setter
@@ -321,7 +396,11 @@ class H2ONaiveBayesEstimator(H2OEstimator):
 
     @property
     def max_runtime_secs(self):
-        """float: Maximum allowed runtime in seconds for model training. Use 0 to disable. (Default: 0)"""
+        """
+        Maximum allowed runtime in seconds for model training. Use 0 to disable.
+
+        Type: ``float``  (default: ``0``).
+        """
         return self._parms.get("max_runtime_secs")
 
     @max_runtime_secs.setter

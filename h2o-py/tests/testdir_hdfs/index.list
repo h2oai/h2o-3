@@ -7,6 +7,5 @@ pyunit_INTERNAL_HDFS_iris_import_types_orc.py
 pyunit_INTERNAL_HDFS_milsongs_orc_large.py
 pyunit_INTERNAL_HDFS_orc_parser.py
 pyunit_INTERNAL_HDFS_prostate_orc.py
-pyunit_INTERNAL_HDFS_timestamp_date_orc.py
 pyunit_INTERNAL_HDFS_import_folder_orc.py
 pyunit_INTERNAL_HDFS_baddata_orc.py

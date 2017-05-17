@@ -7,7 +7,7 @@
 Description
 ~~~~~~~~~~~
 
-This option is used to specify the way that the algorithm will treat missing values. In H2O, the Deep Learning and GLM algorithms will either skip or mean-impute rows with NA values. This option defaults to MeanImputation. Note that categorical variables are imputed by adding an extra “missing” level. Optionally, the algorithm can skip all rows with any missing values.
+This option is used to specify the way that the algorithm will treat missing values. In H2O, the Deep Learning and GLM algorithms will either skip or mean-impute rows with NA values. This option defaults to MeanImputation. Note that in Deep Learning, unseen categorical variables are imputed by adding an extra “missing” level. In GLM, unseen categorical levels are replaced by the most frequent level present in training (mod). Optionally, either algorithm can skip all rows with any missing values.
  
 The fewer the NA values in your training data, the better. Always check degrees of freedom in the output model. Degrees of freedom is the number of observations used to train the model minus the size of the model (i.e., the number of features). If this number is much smaller than expected, it is likely that too many rows have been excluded due to missing values:
 

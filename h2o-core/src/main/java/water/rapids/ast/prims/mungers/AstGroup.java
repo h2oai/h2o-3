@@ -294,8 +294,13 @@ public class AstGroup extends AstPrimitive {
 
     // Build the output!
     String[] fcnames = new String[aggs.length];
-    for (int i = 0; i < aggs.length; i++)
-      fcnames[i] = aggs[i]._fcn.toString() + "_" + fr.name(aggs[i]._col);
+    for (int i = 0; i < aggs.length; i++) {
+      if(aggs[i]._fcn.toString() != "nrow") {
+        fcnames[i] = aggs[i]._fcn.toString() + "_" + fr.name(aggs[i]._col);
+      }else{
+        fcnames[i] = aggs[i]._fcn.toString();
+      }
+    }
 
     MRTask mrfill = new MRTask() {
       @Override

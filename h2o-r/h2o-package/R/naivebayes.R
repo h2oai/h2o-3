@@ -14,8 +14,8 @@
 #' 
 #' @param x A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing,then all columns except y are used.
-#' @param y The name of the response variable in the model.If the data does not contain a header, this is the column index
-#'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
+#' @param y The name of the response variable in the model.If the data does not contain a header, this is the first column
+#'        index, and increasing from left to right. (The response must be either an integer or a
 #'        categorical variable).
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param nfolds Number of folds for N-fold cross-validation (0 to disable or >= 2). Defaults to 0.
@@ -40,9 +40,14 @@
 #' @param max_hit_ratio_k Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
 #'        Defaults to 0.
 #' @param laplace Laplace smoothing parameter Defaults to 0.
-#' @param threshold The minimum standard deviation to use for observations without enough data. 
+#' @param threshold This argument is deprecated, use `min_sdev` instead. The minimum standard deviation to use for observations without enough data. 
 #'                  Must be at least 1e-10.
-#' @param eps A threshold cutoff to deal with numeric instability, must be positive.
+#' @param min_sdev The minimum standard deviation to use for observations without enough data. 
+#'                  Must be at least 1e-10.
+#' @param eps This argument is deprecated, use `eps_sdev` instead. A threshold cutoff to deal with numeric instability, must be positive.
+#' @param eps_sdev A threshold cutoff to deal with numeric instability, must be positive.
+#' @param min_prob Min. probability to use for observations with not enough data.
+#' @param eps_prob Cutoff below which probability is replaced with min_prob.
 #' @param compute_metrics \code{Logical}. Compute metrics on training data Defaults to TRUE.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @details The naive Bayes classifier assumes independence between predictor variables conditional         on the
@@ -77,7 +82,11 @@ h2o.naiveBayes <- function(x, y, training_frame,
                            max_hit_ratio_k = 0,
                            laplace = 0,
                            threshold = 0.001,
+                           min_sdev = 0.001,
                            eps = 0,
+                           eps_sdev = 0,
+                           min_prob = 0.001,
+                           eps_prob = 0,
                            compute_metrics = TRUE,
                            max_runtime_secs = 0
                            ) 
@@ -148,13 +157,19 @@ h2o.naiveBayes <- function(x, y, training_frame,
   if (!missing(laplace))
     parms$laplace <- laplace
  if (!missing(threshold))
+   warning("argument 'threshold' is deprecated; use 'min_sdev' instead.")
    parms$min_sdev <- threshold
+  if (!missing(min_sdev))
+    parms$min_sdev <- min_sdev
  if (!missing(eps))
+   warning("argument 'eps' is deprecated; use 'eps_sdev' instead.")
    parms$eps_sdev <- eps
- if (!missing(threshold))
-   parms$min_prob <- threshold
- if (!missing(eps))
-   parms$eps_prob <- eps
+  if (!missing(eps_sdev))
+    parms$eps_sdev <- eps_sdev
+ if (!missing(min_prob))
+   parms$min_prob <- min_prob
+ if (!missing(eps_prob))
+   parms$eps_prob <- eps_prob
   if (!missing(compute_metrics))
     parms$compute_metrics <- compute_metrics
   if (!missing(max_runtime_secs))

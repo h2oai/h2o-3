@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import org.junit.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import static water.util.FileUtils.*;
 import water.util.Log;
 
 @Ignore
@@ -93,8 +94,8 @@ public class OOMTest extends TestUtil {
   @Test @Ignore
   public void testParseMemoryStress() {
     // "bigdata directory is not always available"
-    if( find_test_file_static("bigdata/laptop/usecases/cup98LRN_z.csv") == null ) return;
-    if( find_test_file_static("bigdata/laptop/usecases/cup98VAL_z.csv") == null ) return;
+    if( locateFile("bigdata/laptop/usecases/cup98LRN_z.csv") == null ) return;
+    if( locateFile("bigdata/laptop/usecases/cup98VAL_z.csv") == null ) return;
     ArrayList<Frame> frames = new ArrayList<>();
     File ice = new File(water.H2O.ICE_ROOT.toString(),"ice" + water.H2O.API_PORT);
     String[] dirs = ice.list();
@@ -126,7 +127,8 @@ public class OOMTest extends TestUtil {
   public static void main(String[] args) {
     stall_till_cloudsize(args, 1);
     try {
-      new OOMTest().testParseMemoryStress();    // Throws on assertion error
+      // Disabling for good - it's not relevant anymore
+      //new OOMTest().testParseMemoryStress();    // Throws on assertion error
     } catch( Throwable e ) {
       Log.err(e);
       StringWriter sw = new StringWriter();

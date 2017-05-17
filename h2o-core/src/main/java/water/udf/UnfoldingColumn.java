@@ -1,12 +1,12 @@
 package water.udf;
 
 import water.H2O;
-import water.udf.fp.Functions;
-import water.udf.fp.Unfoldable;
+import water.util.fp.Unfoldable;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import static water.util.Java7.*;
 
 /**
  * This column depends a plurality of columns
@@ -88,14 +88,14 @@ public class UnfoldingColumn<X, Y> extends FunColumnBase<List<Y>> {
       UnfoldingColumn<?, ?> that = (UnfoldingColumn<?, ?>) o;
 
       return (requiredSize == that.requiredSize) &&
-          Functions.equal(f, that.f) &&
+          Objects.equals(f, that.f) &&
           column.equals(that.column);
     } else return false;
   }
 
   @Override
   public int hashCode() {
-    int result = 61 * column.hashCode() + Functions.hashCode(f);
+    int result = 61 * column.hashCode() + Objects.hashCode(f);
     return 19 * result + requiredSize;
   }
 }

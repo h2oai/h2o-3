@@ -9,11 +9,6 @@ This Appendix provides detailed descriptions of parameters that can be specified
 
 - This Appendix is a work in progress.
 - For parameters that are supported in multiple algorithms, the included example uses the GBM or GLM algorithm.
-- The examples in this section include datasets that are pulled from GitHub and S3. Alternatively, you can run the following command from within the H2O repository on your local machine to retrieve all datasets in the smalldata folder:
-
- ::
-  
-  ./gradlew syncSmalldata
 
 .. toctree::
    :maxdepth: 2
@@ -29,9 +24,13 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/col_sample_rate
    data-science/algo-params/col_sample_rate_change_per_level
    data-science/algo-params/col_sample_rate_per_tree
+   data-science/algo-params/compute_metrics
    data-science/algo-params/compute_p_values
    data-science/algo-params/distribution
    data-science/algo-params/early_stopping
+   data-science/algo-params/eps_prob
+   data-science/algo-params/eps_sdev
+   data-science/algo-params/estimate_k
    data-science/algo-params/family
    data-science/algo-params/fold_assignment
    data-science/algo-params/fold_column
@@ -40,13 +39,16 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/huber_alpha
    data-science/algo-params/ignore_const_cols
    data-science/algo-params/ignored_columns
+   data-science/algo-params/init
    data-science/algo-params/interactions
    data-science/algo-params/intercept
+   data-science/algo-params/k
    data-science/algo-params/keep_cross_validation_fold_assignment
    data-science/algo-params/keep_cross_validation_predictions
    data-science/algo-params/lambda
    data-science/algo-params/lambda_min_ratio
    data-science/algo-params/lambda_search
+   data-science/algo-params/laplace
    data-science/algo-params/learn_rate
    data-science/algo-params/learn_rate_annealing
    data-science/algo-params/link
@@ -57,7 +59,9 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/max_hit_ratio_k
    data-science/algo-params/max_iterations
    data-science/algo-params/max_runtime_secs
+   data-science/algo-params/min_prob
    data-science/algo-params/min_rows
+   data-science/algo-params/min_sdev
    data-science/algo-params/min_split_improvement
    data-science/algo-params/missing_values_handling
    data-science/algo-params/model_id
@@ -88,6 +92,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/tweedie_link_power
    data-science/algo-params/tweedie_power
    data-science/algo-params/tweedie_variance_power
+   data-science/algo-params/user_points
    data-science/algo-params/validation_frame
    data-science/algo-params/weights_column
    data-science/algo-params/y

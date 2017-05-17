@@ -12,5 +12,6 @@ public enum ModelCategory {
   Regression,
   Clustering,
   AutoEncoder,
-  DimReduction
+  DimReduction,
+  WordEmbedding
 }

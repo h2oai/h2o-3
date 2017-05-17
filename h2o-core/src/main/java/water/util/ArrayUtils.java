@@ -6,6 +6,7 @@ import water.fvec.*;
 import java.text.DecimalFormat;
 import java.util.*;
 
+import static java.lang.StrictMath.sqrt;
 import static water.util.RandomUtils.getRNG;
 
 /* Bulk Array Utilities */
@@ -76,6 +77,18 @@ public class ArrayUtils {
     return result;
   }
 
+  // return the sqrt of each element of the array.  Will overwrite the original array in this case
+  public static double[] sqrtArr(double [] x){
+    assert (x != null);
+    int len = x.length;
+
+    for (int index = 0; index < len; index++) {
+      assert (x[index]>=0.0);
+      x[index] = sqrt(x[index]);
+    }
+
+    return x;
+  }
   public static double l2norm2(double [] x){ return l2norm2(x, false); }
 
   public static double l2norm2(double [][] xs, boolean skipLast){
@@ -270,6 +283,12 @@ public class ArrayUtils {
     for (int i=0; i<ds.length; i++) div(ds[i],n[i]);
     return ds;
   }
+
+  public static double[][] div(double[][] ds, double[] n) {
+    for (int i=0; i<ds.length; i++) div(ds[i],n[i]);
+    return ds;
+  }
+
   public static double[] div(double[] ds, long[] n) {
     for (int i=0; i<ds.length; i++) ds[i]/=n[i];
     return ds;
@@ -278,6 +297,12 @@ public class ArrayUtils {
     for (int i=0; i<ds.length; i++) ds[i]/=n[i];
     return ds;
   }
+
+  public static double[][] mult(double[][] ds, double[] n) {
+    for (int i=0; i<ds.length; i++) mult(ds[i],n[i]);
+    return ds;
+  }
+
   public static float[] mult(float[] nums, float n) {
 //    assert !Float.isInfinite(n) : "Trying to multiply " + Arrays.toString(nums) + " by  " + n; // Almost surely not what you want
     for (int i=0; i<nums.length; i++) nums[i] *= n;
@@ -306,9 +331,14 @@ public class ArrayUtils {
   }
 
   public static double[] multArrVec(double[][] ary, double[] nums) {
+    if(ary == null) return null;
+    double[] res = new double[ary.length];
+    return multArrVec(ary, nums, res);
+  }
+
+  public static double[] multArrVec(double[][] ary, double[] nums, double[] res) {
     if(ary == null || nums == null) return null;
     assert ary[0].length == nums.length : "Inner dimensions must match: Got " + ary[0].length + " != " + nums.length;
-    double[] res = new double[ary.length];
     for(int i = 0; i < ary.length; i++)
       res[i] = innerProduct(ary[i], nums);
     return res;
@@ -326,10 +356,13 @@ public class ArrayUtils {
     return res;
   }
 
-  public static double[][] multArrArr(double[][] ary1, double[][] ary2) {
+  /*
+  with no memory allocation for results.  We assume the memory is already allocated.
+   */
+  public static double[][] multArrArr(double[][] ary1, double[][] ary2, double[][] res) {
     if(ary1 == null || ary2 == null) return null;
-    assert ary1[0].length == ary2.length : "Inner dimensions must match: Got " + ary1[0].length + " != " + ary2.length;   // Inner dimensions must match
-    double[][] res = new double[ary1.length][ary2[0].length];
+    // Inner dimensions must match
+    assert ary1[0].length == ary2.length : "Inner dimensions must match: Got " + ary1[0].length + " != " + ary2.length;
 
     for(int i = 0; i < ary1.length; i++) {
       for(int j = 0; j < ary2[0].length; j++) {
@@ -340,6 +373,16 @@ public class ArrayUtils {
       }
     }
     return res;
+  }
+
+  /*
+  with memory allocation for results
+   */
+  public static double[][] multArrArr(double[][] ary1, double[][] ary2) {
+    if(ary1 == null || ary2 == null) return null;
+    double[][] res = new double[ary1.length][ary2[0].length];
+
+    return multArrArr(ary1, ary2, res);
   }
 
   public static double[][] transpose(double[][] ary) {
@@ -820,11 +863,24 @@ public class ArrayUtils {
   public static double[] gaussianVector(int n, long seed) { return gaussianVector(n, getRNG(seed)); }
   public static double[] gaussianVector(int n, Random random) {
     if(n <= 0) return null;
-    double[] result = new double[n];
+    double[] result = new double[n];  // ToDo: Get rid of this new action.
 
     for(int i = 0; i < n; i++)
       result[i] = random.nextGaussian();
     return result;
+  }
+
+  /** Remove the array allocation in this one */
+  public static double[] gaussianVector(long seed, double[] vseed) {
+    if (vseed == null)
+      return null;
+
+    Random random = getRNG(seed);
+    int arraySize = vseed.length;
+    for (int i=0; i < arraySize; i++) {
+      vseed[i] = random.nextGaussian();
+    }
+    return vseed;
   }
 
   /** Returns number of strings which represents a number. */
@@ -835,6 +891,7 @@ public class ArrayUtils {
   }
 
   public static boolean isInt(String s) {
+    if (s == null || s.isEmpty()) return false;
     int i = s.charAt(0)=='-' ? 1 : 0;
     for(; i<s.length();i++) if (!Character.isDigit(s.charAt(i))) return false;
     return true;
@@ -872,8 +929,11 @@ public class ArrayUtils {
    * @param a a set of strings
    * @param b a set of strings
    * @return union of arrays
+   * // TODO: add tests
    */
   public static String[] domainUnion(String[] a, String[] b) {
+    if (a == null) return b;
+    if (b == null) return a;
     int cIinA = numInts(a);
     int cIinB = numInts(b);
     // Trivial case - all strings or ints, sorted
@@ -903,7 +963,8 @@ public class ArrayUtils {
    * precondition a!=null &amp;&amp; b!=null
    */
   public static String[] union(String[] a, String[] b, boolean lexo) {
-    assert a!=null && b!=null : "Union expect non-null input!";
+    if (a == null) return b;
+    if (b == null) return a;
     return union(a, b, 0, a.length, 0, b.length, lexo);
   }
   public static String[] union(String[] a, String[] b, int aoff, int alen, int boff, int blen, boolean lexo) {
@@ -1187,6 +1248,12 @@ public class ArrayUtils {
       res[i] = ary[idxs[i]];
     return res;
   }
+  public static int[] select(int[] ary, int[] idxs) {
+    int [] res = MemoryManager.malloc4(idxs.length);
+    for(int i = 0; i < res.length; ++i)
+      res[i] = ary[idxs[i]];
+    return res;
+  }
 
   public static double [] expandAndScatter(double [] ary, int N, int [] ids) {
     assert ary.length == ids.length:"ary.length = " + ary.length + " != " + ids.length + " = ids.length";
@@ -1354,6 +1421,92 @@ public class ArrayUtils {
       if(!x.equals(s))
         res[j++] = x;
     return res;
+  }
+
+  /*
+      This class is written to copy the contents of a frame to a 2-D double array.
+   */
+  public static class FrameToArray extends MRTask<FrameToArray> {
+    int _startColIndex;   // first column index to extract
+    int _endColIndex;     // last column index to extract
+    int _rowNum;          // number of columns in
+    public double[][] _frameContent;
+
+    public FrameToArray(int startCol, int endCol, long rowNum, double[][] frameContent) {
+      assert ((startCol >= 0) && (endCol >= startCol) && (rowNum > 0));
+      _startColIndex = startCol;
+      _endColIndex = endCol;
+      _rowNum = (int) rowNum;
+      int colNum = endCol-startCol+1;
+
+      if (frameContent == null) { // allocate memory here if user has not provided one
+        _frameContent = MemoryManager.malloc8d(_rowNum, colNum);
+      } else {  // make sure we are passed the correct size 2-D double array
+        assert (_rowNum == frameContent.length && frameContent[0].length == colNum);
+        for (int index = 0; index < colNum; index++) { // zero fill use array
+          Arrays.fill(frameContent[index], 0.0);
+        }
+        _frameContent = frameContent;
+      }
+    }
+
+    @Override public void map(Chunk[] c) {
+      assert _endColIndex < c.length;
+      int endCol = _endColIndex+1;
+      int rowOffset = (int) c[0].start();   // real row index
+      int chkRows = c[0]._len;
+
+      for (int rowIndex = 0; rowIndex < chkRows; rowIndex++) {
+        for (int colIndex = _startColIndex; colIndex < endCol; colIndex++) {
+          _frameContent[rowIndex+rowOffset][colIndex-_startColIndex] = c[colIndex].atd(rowIndex);
+        }
+      }
+    }
+
+    @Override public void reduce(FrameToArray other) {
+      ArrayUtils.add(_frameContent, other._frameContent);
+    }
+
+    public double[][] getArray() {
+      return _frameContent;
+    }
+  }
+
+
+  /*
+				This class is written to a 2-D array to the frame instead of allocating new memory every time.
+	*/
+  public static class CopyArrayToFrame extends MRTask<CopyArrayToFrame> {
+    int _startColIndex;   // first column index to extract
+    int _endColIndex;     // last column index to extract
+    int _rowNum;          // number of columns in
+    public double[][] _frameContent;
+
+    public CopyArrayToFrame(int startCol, int endCol, long rowNum, double[][] frameContent) {
+      assert ((startCol >= 0) && (endCol >= startCol) && (rowNum > 0));
+
+      _startColIndex = startCol;
+      _endColIndex = endCol;
+      _rowNum = (int) rowNum;
+
+      int colNum = endCol-startCol+1;
+      assert (_rowNum == frameContent.length && frameContent[0].length == colNum);
+
+      _frameContent = frameContent;
+    }
+
+    @Override public void map(Chunk[] c) {
+      assert _endColIndex < c.length;
+      int endCol = _endColIndex+1;
+      int rowOffset = (int) c[0].start();   // real row index
+      int chkRows = c[0]._len;
+
+      for (int rowIndex = 0; rowIndex < chkRows; rowIndex++) {
+        for (int colIndex = _startColIndex; colIndex < endCol; colIndex++) {
+          c[colIndex].set(rowIndex, _frameContent[rowIndex+rowOffset][colIndex-_startColIndex]);
+        }
+      }
+    }
   }
 
   /** Create a new frame based on given row data.
@@ -1556,8 +1709,22 @@ public class ArrayUtils {
   }
 
   public static int encodeAsInt(byte[] b) {
-    assert b.length == 4 : "Cannot encode more then 4 bytes into int: len = " + b.length;
+    assert b.length == 4 : "Cannot encode more than 4 bytes into int: len = " + b.length;
     return (b[0]&0xFF)+((b[1]&0xFF)<<8)+((b[2]&0xFF)<<16)+((b[3]&0xFF)<<24);
+  }
+
+  public static int encodeAsInt(byte[] bs, int at) {
+    if (at + 4 > bs.length) throw new IndexOutOfBoundsException("Cannot encode more than 4 bytes into int: len = " + bs.length + ", pos=" + at);
+    return (bs[at]&0xFF)+((bs[at+1]&0xFF)<<8)+((bs[at+2]&0xFF)<<16)+((bs[at+3]&0xFF)<<24);
+  }
+
+  public static byte[] decodeAsInt(int what, byte[] bs, int at) {
+    if (bs.length < at + 4) throw new IndexOutOfBoundsException("Wrong position " + at + ", array length is " + bs.length);
+    for (int i = at; i < at+4 && i < bs.length; i++) {
+      bs[i] = (byte)(what&0xFF);
+      what >>= 8;
+    }
+    return bs;
   }
 
   /** Transform given long numbers into byte array.
@@ -1618,4 +1785,9 @@ public class ArrayUtils {
     return res;
   }
 
+  public static boolean isSorted(int[] vals) {
+    for (int i = 1; i < vals.length; ++i)
+      if (vals[i - 1] > vals[i]) return false;
+    return true;
+  }
 }

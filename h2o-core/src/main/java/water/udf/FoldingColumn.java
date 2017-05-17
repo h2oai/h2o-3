@@ -4,10 +4,13 @@ import com.google.common.collect.Lists;
 import water.fvec.Chunk;
 import water.fvec.RawChunk;
 import water.fvec.Vec;
-import water.udf.fp.Foldable;
-import water.udf.fp.Functions;
+import water.util.fp.Foldable;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+
+import static water.util.Java7.*;
 
 /**
  * This column depends a plurality of columns
@@ -100,7 +103,7 @@ public class FoldingColumn<X, Y> extends FunColumnBase<Y> {
     if (this == o) return true;
     if (o instanceof FoldingColumn) {
       FoldingColumn other = (FoldingColumn) o;
-      return Functions.equal(f, other.f) && Arrays.equals(columns, other.columns);
+      return Objects.equals(f, other.f) && Arrays.equals(columns, other.columns);
     }
     return false;
 
@@ -108,6 +111,6 @@ public class FoldingColumn<X, Y> extends FunColumnBase<Y> {
 
   @Override
   public int hashCode() {
-    return 61 * Arrays.hashCode(columns) + Functions.hashCode(f);
+    return 61 * Arrays.hashCode(columns) + Objects.hashCode(f);
   }
 }

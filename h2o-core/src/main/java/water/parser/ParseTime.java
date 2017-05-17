@@ -5,12 +5,15 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.DateTimeFormatterBuilder;
+
+import water.MRTask;
 import water.util.Log;
 
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import static water.util.StringUtils.*;
 
 public abstract class ParseTime {
   // Deduce if we are looking at a Date/Time value, or not.
@@ -27,18 +30,18 @@ public abstract class ParseTime {
   }
 
   private static final byte MMS[][][] = new byte[][][] {
-    {"jan".getBytes(),"january"  .getBytes()},
-    {"feb".getBytes(),"february" .getBytes()},
-    {"mar".getBytes(),"march"    .getBytes()},
-    {"apr".getBytes(),"april"    .getBytes()},
-    {"may".getBytes(),"may"      .getBytes()},
-    {"jun".getBytes(),"june"     .getBytes()},
-    {"jul".getBytes(),"july"     .getBytes()},
-    {"aug".getBytes(),"august"   .getBytes()},
-    {"sep".getBytes(),"september".getBytes()},
-    {"oct".getBytes(),"october"  .getBytes()},
-    {"nov".getBytes(),"november" .getBytes()},
-    {"dec".getBytes(),"december" .getBytes()}
+    {bytesOf("jan"),bytesOf("january")},
+    {bytesOf("feb"),bytesOf("february")},
+    {bytesOf("mar"),bytesOf("march")},
+    {bytesOf("apr"),bytesOf("april")},
+    {bytesOf("may"),bytesOf("may")},
+    {bytesOf("jun"),bytesOf("june")},
+    {bytesOf("jul"),bytesOf("july")},
+    {bytesOf("aug"),bytesOf("august")},
+    {bytesOf("sep"),bytesOf("september")},
+    {bytesOf("oct"),bytesOf("october")},
+    {bytesOf("nov"),bytesOf("november")},
+    {bytesOf("dec"),bytesOf("december")}
   };
 
   public static long attemptTimeParse( BufferedString str ) {
@@ -343,12 +346,25 @@ public abstract class ParseTime {
 
   private static DateTimeZone _timezone;
 
-  public static void setTimezone(String tz) {
+  /**
+   * Set the Time Zone on the H2O Cloud
+   *
+   * @param tz Timezone
+   * @throws IllegalArgumentException if the timezone(tz) is invalid
+   */
+  public static void setTimezone(final String tz) {
     Set<String> idSet = DateTimeZone.getAvailableIDs();
-    if(idSet.contains(tz))
-      _timezone = DateTimeZone.forID(tz);
-    else
+    if (idSet.contains(tz)) {
+      new MRTask() {
+        @Override
+        protected void setupLocal() {
+          ParseTime._timezone = DateTimeZone.forID(tz);
+        }
+      }.doAllNodes();
+    } else {
       Log.err("Attempted to set unrecognized timezone: "+ tz);
+      throw new IllegalArgumentException("Attempted to set unrecognized timezone: "+ tz);
+    }
   }
 
   public static DateTimeZone getTimezone() {

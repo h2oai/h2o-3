@@ -18,40 +18,50 @@ class TransformAttributeError(AttributeError):
 
 
 class H2OTransformer(object):
-    """H2O Transforms
+    """
+    H2O Transforms.
 
-    H2O Transforms implement the following methods
-      * fit
-      * transform
-      * fit_transform
-      * inverse_transform
-      * export
+    H2O Transforms implement the following methods:
+
+      - fit
+      - transform
+      - fit_transform
+      - inverse_transform
+      - export
+      - to_rest
     """
 
     # def __init__(self):
     #   self.parms=None
 
+
     def fit(self, X, y=None, **params):
         raise TransformAttributeError(self, "fit")
+
 
     def transform(self, X, y=None, **params):
         raise TransformAttributeError(self, "transform")
 
+
     def inverse_transform(self, X, y=None, **params):
         raise TransformAttributeError(self, "inverse_transform")
+
 
     def export(self, X, y, **params):
         raise TransformAttributeError(self, "export")
 
+
     def fit_transform(self, X, y=None, **params):
         return self.fit(X, y, **params).transform(X, **params)
+
 
     def get_params(self, deep=True):
         """
         Get parameters for this estimator.
 
-        :param deep: (Optional) boolean; if True, return parameters of all subobjects that are estimators.
-        :return: A dict of parameters.
+        :param bool deep: if True, return parameters of all subobjects that are estimators.
+
+        :returns: A dict of parameters.
         """
         out = dict()
         for key, value in self.parms.items():
@@ -61,16 +71,20 @@ class H2OTransformer(object):
             out[key] = value
         return out
 
+
     def set_params(self, **params):
         self.parms.update(params)
         return self
 
+
     @staticmethod
     def _dummy_frame():
         fr = H2OFrame._expr(expr.ExprNode())
+        fr._is_frame = False
         fr._ex._children = None
         fr._ex._cache.dummy_fill()
         return fr
+
 
     def to_rest(self, args):
         return "__".join(str(a) for a in args)

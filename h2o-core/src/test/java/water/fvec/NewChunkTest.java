@@ -7,6 +7,7 @@ import org.junit.Test;
 import water.DKV;
 import water.Futures;
 import water.TestUtil;
+import water.parser.BufferedString;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -39,6 +40,7 @@ public class NewChunkTest extends TestUtil {
     cc.close(0, new Futures()).blockForPending();
   }
   void remove() {if(vec != null)vec.remove();}
+
 
   @Test public void testSparseDoubles(){
     NewChunk nc = new NewChunk(new double[]{Math.PI});
@@ -282,7 +284,11 @@ public class NewChunkTest extends TestUtil {
       for (int k = 0; k < K; ++k) nc.addNA();
       assertEquals(K, nc._len);
       post();
-      for (int k = 0; k < K; ++k) Assert.assertTrue(cc.isNA(k));
+      BufferedString bs = new BufferedString();
+      for (int k = 0; k < K; ++k) {
+        Assert.assertTrue(cc.isNA(k));
+        Assert.assertEquals(null,cc.atStr(bs,k));
+      }
       Assert.assertTrue(cc instanceof C0DChunk);
     } finally { remove(); }
   }
@@ -469,16 +475,16 @@ public class NewChunkTest extends TestUtil {
       nc.addNum(0);
       nc.addNA();
       nc.addZeros(2);
-      assertTrue(nc.isSparseZero());
-      assertEquals(nc._sparseLen, 2);
-      assertEquals(nc.sparseLenZero(), 2);
-      assertEquals(nc.sparseLenNA(), K);
+      assertTrue("Must be sparseZero", nc.isSparseZero());
+      assertEquals("Wrong sparseLen", nc._sparseLen, 2);
+      assertEquals("Wrong sparseLenZro", nc.sparseLenZero(), 2);
+      assertEquals("Wrong sparseLenNA", nc.sparseLenNA(), K);
 
-      for (int i = 0; i < K-5; i++) assertEquals(0, nc.atd(0), Math.ulp(0));
-      assertEquals(extra, nc.atd(K-5), Math.ulp(extra));
-      assertEquals(0, nc.atd(K-4), Math.ulp(0));
-      assertEquals(Double.NaN, nc.atd(K-3), Math.ulp(Double.NaN));
-      for (int i = K-2; i < K; i++) assertEquals(0, nc.atd(i), Math.ulp(0));
+      for (int i = 0; i < K-5; i++) assertEquals("Wrong (1) at " + i, 0, nc.atd(0), Math.ulp(0));
+      assertEquals("Wrong (2) at " + (K-5), extra, nc.atd(K-5), Math.ulp(extra));
+      assertEquals("Wrong (3) at " + (K-4), 0, nc.atd(K-4), Math.ulp(0));
+      assertEquals("Wrong (4) at " + (K-3), Double.NaN, nc.atd(K-3), Math.ulp(Double.NaN)); // this is weird: ulp(NaN) is NaN)
+      for (int i = K-2; i < K; i++) assertEquals("Wrong (5) at " + i, 0, nc.atd(i), Math.ulp(0));
       
       post();
       cc.set(K-5, 0);
@@ -518,7 +524,6 @@ public class NewChunkTest extends TestUtil {
       post_write();
       assertEquals(K, nc._len);
       assertEquals(0, cc.atd(K - 3), Math.ulp(0));
-      assertTrue(cc.chk2() instanceof CNAXDChunk);
 
       for (int i = 0; i < K - 5; i++) assertEquals(Double.NaN, cc.atd(i), Math.ulp(0));
       assertEquals(extra, cc.atd(K - 5), Math.ulp(extra));

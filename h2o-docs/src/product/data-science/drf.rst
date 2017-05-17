@@ -1,5 +1,5 @@
-DRF
---------------
+Distributed Random Forest (DRF)
+-------------------------------
 
 Introduction
 ~~~~~~~~~~~~
@@ -202,8 +202,8 @@ Defining a DRF Model
    This option is disabled by default.
 
 -  `checkpoint <algo-params/checkpoint.html>`__: Enter a model key associated with a
-   previously-trained model. Use this option to build a new model as a
-   continuation of a previously-generated model.
+   previously trained model. Use this option to build a new model as a
+   continuation of a previously generated model.
 
 -  `col_sample_rate_change_per_level <algo-params/col_sample_rate_change_per_level.html>`__: This option specifies to change the column sampling rate as a function of the depth in the tree. For example:
 
@@ -233,11 +233,13 @@ Defining a DRF Model
 
 - `categorical_encoding <algo-params/categorical_encoding.html>`__: Specify one of the following encoding schemes for handling categorical features:
 
-  - ``auto``: Allow the algorithm to decide (default)
-  - ``enum``: 1 column per categorical feature
-  - ``one_hot_explicit``: N+1 new columns for categorical features with N levels
-  - ``binary``: No more than 32 columns per categorical feature
-  - ``eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
+  - ``auto`` or ``AUTO``: Allow the algorithm to decide (default). In DRF, the algorithm will automatically perform ``enum`` encoding.
+  - ``enum`` or ``Enum``: 1 column per categorical feature
+  - ``one_hot_explicit`` or ``OneHotExplicit``: N+1 new columns for categorical features with N levels
+  - ``binary`` or ``Binary``: No more than 32 columns per categorical feature
+  - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
+  - ``label_encoder`` or ``LabelEncoder``:  Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.)
+  - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.). This is useful in GBM/DRF, for example, when you have more levels than ``nbins_cats``, and where the top level splits now have a chance at separating the data with a split. 
 
 Interpreting a DRF Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -246,7 +248,7 @@ By default, the following output displays:
 
 -  Model parameters (hidden)
 -  A graph of the scoring history (number of trees vs. training MSE)
--  A graph of the ROC curve (TPR vs. FPR)
+-  A graph of the `ROC curve <https://en.wikipedia.org/wiki/Receiver_operating_characteristic>`__ (TPR vs. FPR)
 -  A graph of the variable importances
 -  Output (model category, validation metrics, initf)
 -  Model summary (number of trees, min. depth, max. depth, mean depth,

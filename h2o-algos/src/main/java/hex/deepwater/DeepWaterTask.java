@@ -172,18 +172,20 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
 //        if(!_localmodel.get_params()._quiet_mode)
 //          Log.info("Trained " + n + " samples. Training on " + Arrays.toString(((DeepWaterImageIterator)iter).getFiles()));
 
-        _localmodel._backend.setParameter(_localmodel._model, "learning_rate", _localmodel.get_params().learningRate((double) n));
-        _localmodel._backend.setParameter(_localmodel._model, "momentum", _localmodel.get_params().momentum((double) n));
+        _localmodel._backend.setParameter(_localmodel.getModel().get(), "learning_rate", _localmodel.get_params().learningRate((double) n));
+        _localmodel._backend.setParameter(_localmodel.getModel().get(), "momentum", _localmodel.get_params().momentum((double) n));
 
         //fork off GPU work, but let the iterator.Next() wait on completion before swapping again
         //System.err.println("data: " + Arrays.toString(iter.getData()));
+        /*
         float[] preds = _localmodel._backend.predict(_localmodel._model, iter.getData());
         if (Float.isNaN(ArrayUtils.sum(preds))) {
           Log.err(DeepWaterModel.unstable_msg);
           throw new UnsupportedOperationException(DeepWaterModel.unstable_msg);
         }
+        */
 //        System.err.println("pred: " + Arrays.toString(preds));
-        ntt = new NativeTrainTask(_localmodel._backend, _localmodel._model, iter.getData(), iter.getLabel());
+        ntt = new NativeTrainTask(_localmodel._backend, _localmodel.getModel().get(), iter.getData(), iter.getLabel());
         fs.add(H2O.submitTask(ntt));
         _localmodel.add_processed_local(iter._batch_size);
       }

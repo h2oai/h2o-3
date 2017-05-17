@@ -17,6 +17,7 @@ import java.util.*;
 abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Iced {
 
   public ToEigenVec getToEigenVec() { return null; }
+  public boolean shouldReorder(Vec v) { return _parms._categorical_encoding.needsResponse() && isSupervised(); }
 
   transient private IcedHashMap<Key,String> _toDelete = new IcedHashMap<>();
   void cleanUp() { FrameUtils.cleanUp(_toDelete); }
@@ -131,6 +132,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public final Frame train() { return _train; }
   protected transient Frame _train;
 
+  public void setTrain(Frame train) {
+    _train = train;
+  }
   /** Validation frame: derived from the parameter's validation frame, excluding
    *  all ignored columns, all constant and bad columns, perhaps flipping the
    *  response column to a Categorical, etc.  Is null if no validation key is set.  */
@@ -218,7 +222,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * */
   final public M trainModelNested(Frame fr) {
     if(fr != null) // Use the working copy (e.g. rebalanced) instead of the original K/V store version
-      _train = fr;
+      setTrain(fr);
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     _start_time = System.currentTimeMillis();
@@ -366,6 +370,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if( _parms._weights_column!=null ) cv_fr.remove( _parms._weights_column ); // The CV frames will have their own private weight column
 
     ModelBuilder<M, P, O>[] cvModelBuilders = new ModelBuilder[N];
+    List<Frame> cvFramesForFailedModels = new ArrayList<>();
     for( int i=0; i<N; i++ ) {
       String identifier = origDest + "_cv_" + (i+1);
       // Training/Validation share the same data, but will have exclusive weights
@@ -378,26 +383,42 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
       // Shallow clone - not everything is a private copy!!!
       ModelBuilder<M, P, O> cv_mb = (ModelBuilder)this.clone();
-      cv_mb._train = cvTrain;
+      cv_mb.setTrain(cvTrain);
       cv_mb._result = Key.make(identifier); // Each submodel gets its own key
       cv_mb._parms = (P) _parms.clone();
       // Fix up some parameters of the clone
       cv_mb._parms._is_cv_model = true;
       cv_mb._parms._weights_column = weightName;// All submodels have a weight column, which the main model does not
-      cv_mb._parms._train = cvTrain._key;       // All submodels have a weight column, which the main model does not
+      cv_mb._parms.setTrain(cvTrain._key);       // All submodels have a weight column, which the main model does not
       cv_mb._parms._valid = cvValid._key;
       cv_mb._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
       cv_mb._parms._nfolds = 0; // Each submodel is not itself folded
-      cv_mb.init(false);        // Arg check submodels
+      cv_mb.clearValidationErrors(); // each submodel gets its own validation messages and error_count()
+
       // Error-check all the cross-validation Builders before launching any
-      if( cv_mb.error_count() > 0 ) // Gather all submodel error messages
-        for( ValidationMessage vm : cv_mb._messages )
+      cv_mb.init(false);
+      if( cv_mb.error_count() > 0 ) { // Gather all submodel error messages
+        Log.info("Marking frame for failed cv model for removal: " + cvTrain._key);
+        cvFramesForFailedModels.add(cvTrain);
+        Log.info("Marking frame for failed cv model for removal: " + cvValid._key);
+        cvFramesForFailedModels.add(cvValid);
+
+        for (ValidationMessage vm : cv_mb._messages)
           message(vm._log_level, vm._field_name, vm._message);
+      }
       cvModelBuilders[i] = cv_mb;
     }
 
-    if( error_count() > 0 )     // Error in any submodel
+    if( error_count() > 0 ) {               // Found an error in one or more submodels
+      Futures fs = new Futures();
+      for (Frame cvf : cvFramesForFailedModels) {
+        cvf.vec(weightName).remove(fs);     // delete the Vec's chunks
+        DKV.remove(cvf._key, fs);           // delete the Frame from the DKV, leaving its vecs
+        Log.info("Removing frame for failed cv model: " + cvf._key);
+      }
+      fs.blockForPending();
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
+    }
     // check that this Job's original _params haven't changed
     assert old_cs == _parms.checksum();
     return cvModelBuilders;
@@ -557,7 +578,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
   protected boolean logMe() { return true; }
 
-  public boolean isSupervised(){return false;}
+  abstract public boolean isSupervised();
 
   protected transient Vec _response; // Handy response column
   protected transient Vec _vresponse; // Handy response column
@@ -695,9 +716,22 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if(_parms._ignore_const_cols)
       new FilterCols(npredictors) {
         @Override protected boolean filter(Vec v) {
-          return (ignoreConstColumns() && v.isConst()) || v.isBad() || (ignoreStringColumns() && v.isString()); }
-      }.doIt(_train,"Dropping constant columns: ",expensive);
+          boolean isBad = v.isBad();
+          boolean skipConst = ignoreConstColumns() && v.isConst();
+          boolean skipString = ignoreStringColumns() && v.isString();
+          boolean skip = isBad || skipConst || skipString;
+          return skip;
+        }
+      }.doIt(_train,"Dropping bad and constant columns: ",expensive);
   }
+
+  /**
+   * Ignore invalid columns (columns that have a very high max value, which can cause issues in DHistogram)
+   * @param npredictors
+   * @param expensive
+   */
+  protected void ignoreInvalidColumns(int npredictors, boolean expensive){}
+
   /**
    * Override this method to call error() if the model is expected to not fit in memory, and say why
    */
@@ -727,6 +761,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public void message(byte log_level, String field_name, String message) {
     _messages = Arrays.copyOf(_messages, _messages.length + 1);
     _messages[_messages.length - 1] = new ValidationMessage(log_level, field_name, message);
+
+    if (log_level == Log.ERRR) _error_count++;
   }
 
  /** Get a string representation of only the ERROR ValidationMessages (e.g., to use in an exception throw). */
@@ -788,9 +824,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     Frame tr = _train != null?_train:_parms.train();
     if( tr == null ) { error("_train", "Missing training frame: "+_parms._train); return; }
-    _train = new Frame(null /* not putting this into KV */, tr._names.clone(), tr.vecs().clone());
+    setTrain(new Frame(null /* not putting this into KV */, tr._names.clone(), tr.vecs().clone()));
     if (expensive) {
       _parms.getOrMakeRealSeed();
+    }
+    if (_parms._categorical_encoding.needsResponse() && !isSupervised()) {
+      error("_categorical_encoding", "Categorical encoding scheme cannot be "
+          + _parms._categorical_encoding.toString() + " - no response column available.");
     }
     if (_parms._nfolds < 0 || _parms._nfolds == 1) {
       error("_nfolds", "nfolds must be either 0 or >1.");
@@ -838,7 +878,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     // Rebalance train and valid datasets
     if (expensive && error_count() == 0 && _parms._auto_rebalance) {
-      _train = rebalance(_train, false, _result + ".temporary.train");
+      setTrain(rebalance(_train, false, _result + ".temporary.train"));
       _valid = rebalance(_valid, false, _result + ".temporary.valid");
     }
 
@@ -847,6 +887,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // them.  Text algos (grep, word2vec) take raw text columns - which are
     // numeric (arrays of bytes).
     ignoreBadColumns(separateFeatureVecs(), expensive);
+    ignoreInvalidColumns(separateFeatureVecs(), expensive);
     // Check that at least some columns are not-constant and not-all-NAs
     if( _train.numCols() == 0 )
       error("_train","There are no usable columns to generate model");
@@ -925,53 +966,58 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // Toss out extra columns, complain about missing ones, remap categoricals
     Frame va = _parms.valid();  // User-given validation set
     if (va != null) {
-      if (va.numRows()==0) error("_validation_frame", "Validation frame must have > 0 rows.");
-      _valid = new Frame(null /* not putting this into KV */, va._names.clone(), va.vecs().clone());
-      try {
-        String[] msgs = Model.adaptTestForTrain(_valid, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec(), _toDelete, false);
-        _vresponse = _valid.vec(_parms._response_column);
-        if (_vresponse == null && _parms._response_column != null)
-          error("_validation_frame", "Validation frame must have a response column '" + _parms._response_column + "'.");
-        if (expensive) {
-          for (String s : msgs) {
-            Log.info(s);
-            warn("_valid", s);
-          }
-        }
-      } catch (IllegalArgumentException iae) {
-        error("_valid", iae.getMessage());
-      }
+      _valid = adaptFrameToTrain(va, "Validation Frame", "_validation_frame", expensive);
+      _vresponse = _valid.vec(_parms._response_column);
     } else {
       _valid = null;
       _vresponse = null;
     }
 
     if (expensive) {
-      String[] skipCols = new String[]{_parms._weights_column, _parms._offset_column, _parms._fold_column, _parms._response_column};
-      Frame newtrain = FrameUtils.categoricalEncoder(_train, skipCols, _parms._categorical_encoding, getToEigenVec());
-      if (newtrain!=_train) {
-        assert(newtrain._key!=null);
+      Frame newtrain = encodeFrameCategoricals(_train, ! _parms._is_cv_model);
+      if (newtrain != _train) {
         _origNames = _train.names();
         _origDomains = _train.domains();
-        _train = newtrain;
-        if (!_parms._is_cv_model)
-          Scope.track(_train);
-        else
-          _toDelete.put(_train._key, Arrays.toString(Thread.currentThread().getStackTrace()));
+        setTrain(newtrain);
         separateFeatureVecs(); //fix up the pointers to the special vecs
       }
       if (_valid != null) {
-        Frame newvalid = FrameUtils.categoricalEncoder(_valid, skipCols, _parms._categorical_encoding, getToEigenVec());
-        if (newvalid!=_valid) {
-          assert(newvalid._key!=null);
-          _valid=newvalid;
-          if (!_parms._is_cv_model)
-            Scope.track(_valid); //for CV, need to score one more time in outer loop
-          else
-            _toDelete.put(_valid._key, Arrays.toString(Thread.currentThread().getStackTrace()));
-          _vresponse = _valid.vec(_parms._response_column);
+        _valid = encodeFrameCategoricals(_valid, ! _parms._is_cv_model /* for CV, need to score one more time in outer loop */);
+        _vresponse = _valid.vec(_parms._response_column);
+      }
+      boolean restructured = false;
+      Vec[] vecs = _train.vecs();
+      for (int j = 0; j < vecs.length; ++j) {
+        Vec v = vecs[j];
+        if (v == _response || v == _fold) continue;
+        if (v.isCategorical() && shouldReorder(v)) {
+          final int len = v.domain().length;
+          Log.info("Reordering categorical column " + _train.name(j) + " (" + len + " levels) based on the mean (weighted) response per level.");
+          VecUtils.MeanResponsePerLevelTask mrplt = new VecUtils.MeanResponsePerLevelTask(len).doAll(v,
+                  _parms._weights_column != null ? _train.vec(_parms._weights_column) : v.makeCon(1.0),
+                  _train.vec(_parms._response_column));
+          double[] meanWeightedResponse  = mrplt.meanWeightedResponse;
+//          for (int i=0;i<len;++i)
+//            Log.info(v.domain()[i] + " -> " + meanWeightedResponse[i]);
+
+          // Option 1: Order the categorical column by response to make better splits
+          int[] idx=new int[len];
+          for (int i=0;i<len;++i) idx[i] = i;
+          ArrayUtils.sort(idx, meanWeightedResponse);
+          int[] invIdx=new int[len];
+          for (int i=0;i<len;++i) invIdx[idx[i]] = i;
+          Vec vNew = new VecUtils.ReorderTask(invIdx).doAll(1, Vec.T_NUM, new Frame(v)).outputFrame().anyVec();
+          String[] newDomain = new String[len];
+          for (int i = 0; i < len; ++i) newDomain[i] = v.domain()[idx[i]];
+          vNew.setDomain(newDomain);
+//          for (int i=0;i<len;++i)
+//            Log.info(vNew.domain()[i] + " -> " + meanWeightedResponse[idx[i]]);
+          vecs[j] = vNew;
+          restructured = true;
         }
       }
+      if (restructured)
+        _train.restructure(_train.names(), vecs);
     }
     assert (!expensive || _valid==null || Arrays.equals(_train._names, _valid._names) || _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.Binary);
     if (_valid!=null && !Arrays.equals(_train._names, _valid._names) && _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.Binary) {
@@ -1016,6 +1062,58 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (_parms._max_runtime_secs < 0) {
       error("_max_runtime_secs", "Max runtime (in seconds) must be greater than 0 (or 0 for unlimited).");
     }
+  }
+
+  /**
+   * Adapts a given frame to the same schema as the training frame.
+   * This includes encoding of categorical variables (if expensive is enabled).
+   *
+   * Note: This method should only be used during ModelBuilder initialization - it should be called in init(..) method.
+   *
+   * @param fr input frame
+   * @param frDesc frame description, eg. "Validation Frame" - will be shown in validation error messages
+   * @param field name of a field for validation errors
+   * @param expensive indicates full ("expensive") processing
+   * @return adapted frame
+   */
+  protected Frame init_adaptFrameToTrain(Frame fr, String frDesc, String field, boolean expensive) {
+    Frame adapted = adaptFrameToTrain(fr, frDesc, field, expensive);
+    if (expensive)
+      adapted = encodeFrameCategoricals(adapted, true);
+    return adapted;
+  }
+
+  private Frame adaptFrameToTrain(Frame fr, String frDesc, String field, boolean expensive) {
+    if (fr.numRows()==0) error(field, frDesc + " must have > 0 rows.");
+    Frame adapted = new Frame(null /* not putting this into KV */, fr._names.clone(), fr.vecs().clone());
+    try {
+      String[] msgs = Model.adaptTestForTrain(adapted, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec(), _toDelete, false);
+      Vec response = adapted.vec(_parms._response_column);
+      if (response == null && _parms._response_column != null)
+        error(field, frDesc + " must have a response column '" + _parms._response_column + "'.");
+      if (expensive) {
+        for (String s : msgs) {
+          Log.info(s);
+          warn(field, s);
+        }
+      }
+    } catch (IllegalArgumentException iae) {
+      error(field, iae.getMessage());
+    }
+    return adapted;
+  }
+
+  private Frame encodeFrameCategoricals(Frame fr, boolean scopeTrack) {
+    String[] skipCols = new String[]{_parms._weights_column, _parms._offset_column, _parms._fold_column, _parms._response_column};
+    Frame encoded = FrameUtils.categoricalEncoder(fr, skipCols, _parms._categorical_encoding, getToEigenVec());
+    if (encoded != fr) {
+      assert encoded._key != null;
+      if (scopeTrack)
+        Scope.track(encoded);
+      else
+        _toDelete.put(encoded._key, Arrays.toString(Thread.currentThread().getStackTrace()));
+    }
+    return encoded;
   }
 
   /**
@@ -1074,16 +1172,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   transient public HashSet<String> _removedCols = new HashSet<>();
-  abstract class FilterCols {
+  public abstract class FilterCols {
     final int _specialVecs; // special vecs to skip at the end
     public FilterCols(int n) {_specialVecs = n;}
 
     abstract protected boolean filter(Vec v);
 
-    void doIt( Frame f, String msg, boolean expensive ) {
+    public void doIt( Frame f, String msg, boolean expensive ) {
       List<Integer> rmcolsList = new ArrayList<>();
       for( int i = 0; i < f.vecs().length - _specialVecs; i++ )
-        if( filter(f.vecs()[i]) ) rmcolsList.add(i);
+        if( filter(f.vec(i)) ) rmcolsList.add(i);
       if( !rmcolsList.isEmpty() ) {
         _removedCols = new HashSet<>(rmcolsList.size());
         int[] rmcols = new int[rmcolsList.size()];
@@ -1227,6 +1325,34 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     Log.info(table);
     return table;
+  }
+
+  public static void bulkBuildModels(Job job, ModelBuilder[] modelBuilders, int parallelization) {
+    final int N = modelBuilders.length;
+    H2O.H2OCountedCompleter submodel_tasks[] = new H2O.H2OCountedCompleter[N];
+    int nRunning=0;
+    RuntimeException rt = null;
+    for( int i=0; i<N; ++i ) {
+      if (job.stop_requested() ) break; // Stop launching but still must block for all async jobs
+      modelBuilders[i]._start_time = System.currentTimeMillis();
+      submodel_tasks[i] = H2O.submitTask(modelBuilders[i].trainModelImpl());
+      if(++nRunning == parallelization) { //piece-wise advance in training the models
+        while (nRunning > 0) try {
+          submodel_tasks[i + 1 - nRunning--].join();
+          job.update(1); // One job finished
+        } catch (RuntimeException t) {
+          if (rt == null) rt = t;
+        }
+        if(rt != null) throw rt;
+      }
+    }
+    for( int i=0; i<N; ++i ) //all sub-models must be completed before the main model can be built
+      try {
+        submodel_tasks[i].join();
+      } catch(RuntimeException t){
+        if(rt == null) rt = t;
+      }
+    if(rt != null) throw rt;
   }
 
 }

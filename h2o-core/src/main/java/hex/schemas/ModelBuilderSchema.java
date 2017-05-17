@@ -5,10 +5,12 @@ import hex.ModelBuilder;
 import hex.ModelCategory;
 import water.AutoBuffer;
 import water.H2O;
-import water.Job;
-import water.api.*;
+import water.api.API;
+import water.api.SpecifiesHttpResponseCode;
 import water.api.schemas3.*;
-import water.util.*;
+import water.util.IcedSortedHashMap;
+import water.util.ReflectionUtils;
+
 import java.util.Properties;
 
 public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends
@@ -31,6 +33,9 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
 
   @API(help="Model categories this ModelBuilder can build.", values={ "Unknown", "Binomial", "Multinomial", "Regression", "Clustering", "AutoEncoder", "DimReduction" }, direction = API.Direction.OUTPUT)
   public ModelCategory[] can_build;
+
+  @API(help="Indicator whether the model is supervised or not.", direction=API.Direction.OUTPUT)
+  public boolean supervised;
 
   @API(help="Should the builder always be visible, be marked as beta, or only visible if the user starts up with the experimental flag?", values = { "Experimental", "Beta", "AlwaysVisible" }, direction = API.Direction.OUTPUT)
   public ModelBuilder.BuilderVisibility visibility;
@@ -98,6 +103,7 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
 
     this.algo = builder._parms.algoName().toLowerCase();
     this.algo_full_name = builder._parms.fullName();
+    this.supervised = builder.isSupervised();
 
     this.can_build = builder.can_build();
     this.visibility = builder.builderVisibility();
@@ -136,6 +142,8 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
     ab.putJSONAEnum("can_build", can_build);
     ab.put1(',');
     ab.putJSONEnum("visibility", visibility);
+    ab.put1(',');
+    ab.putJSONZ("supervised", supervised);
     ab.put1(',');
     ab.putJSONA("messages", messages);
     ab.put1(',');

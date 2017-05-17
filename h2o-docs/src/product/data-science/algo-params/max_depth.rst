@@ -7,9 +7,18 @@
 Description
 ~~~~~~~~~~~
 
-This specifies the maximum depth to which each tree will be built. In general, deeper trees can seem to provide better accuracy on a training set because deeper trees can overfit your model to your data. Also, the deeper the algorithm goes, the more computing time is required. This is especially true at depths greater than 10. At depth 4, 8 nodes, for example, you need ``8 * 100 * 20`` trials to complete this splitting for the layer.
+This specifies the maximum depth to which each tree will be built. A single tree will stop splitting when there are no more splits that satisfy the ``min_rows`` parameter, if it reaches ``max_depth``, or if there are no splits that satisfy this ``min_split_improvement`` parameter.
+
+In general, deeper trees can seem to provide better accuracy on a training set because deeper trees can overfit your model to your data. Also, the deeper the algorithm goes, the more computing time is required. This is especially true at depths greater than 10. At depth 4, 8 nodes, for example, you need ``8 * 100 * 20`` trials to complete this splitting for the layer.
 
 One way to determine an appropriate value for ``max_depth`` is to run a quick Cartesian grid search. Each model in the grid search will use early stopping to tune the number of trees using the validation set AUC, as before. The examples below are also available in the `GBM Tuning Tutorials <https://github.com/h2oai/h2o-3/tree/master/h2o-docs/src/product/tutorials/gbm>`__  folder on GitHub.
+
+
+Related Parameters
+~~~~~~~~~~~~~~~~~~
+
+- `min_rows <min_rows.html>`__
+- `min_split_improvement <min_split_improvement.html>`__
 
 Example
 ~~~~~~~

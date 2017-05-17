@@ -1,8 +1,8 @@
 package water.fvec;
 
+import water.parser.BufferedString;
 import water.util.UnsafeUtils;
 
-import java.util.Arrays;
 import java.util.UUID;
 
 /**
@@ -33,21 +33,10 @@ public class C0DChunk extends Chunk {
   @Override boolean setNA_impl(int i) { return Double.isNaN(_con); }
   @Override double min() { return _con; }
   @Override double max() { return _con; }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    if(Double.isNaN(_con)) {
-      nc.set_sparseLen(nc.set_len(0));//so that addNAs(_len) can add _len
-      nc.set_sparse(0, NewChunk.Compress.NA); //so that sparseNA() is true in addNAs()
-      nc.addNAs(_len);
-    } else if (_con == 0) {
-      nc.set_len(nc.set_sparseLen(0)); //so that addZeros(_len) can add _len
-      nc.set_sparse(0, NewChunk.Compress.ZERO);//so that sparseZero() is true in addZeros()
-      nc.addZeros(_len);
-    } else {
-      nc.alloc_doubles(_len);
-      Arrays.fill(nc.doubles(), _con);
-      nc.set_len(nc.set_sparseLen(_len));
-    }
-    return nc;
+
+  BufferedString atStr_impl(BufferedString bStr, int idx) {
+    if(Double.isNaN(_con)) return null; // speciall all missing case
+    return super.atStr_impl(bStr,idx);
   }
   // 3.3333333e33
 //  public int pformat_len0() { return 22; }
@@ -78,7 +67,7 @@ public class C0DChunk extends Chunk {
     for (int i = 0; i < _len; ++i) arr[i] = i;
     return _len;
   }
-  @Override public int asSparseDoubles(double [] vals, int [] ids, double NA){
+  @Override public int getSparseDoubles(double [] vals, int [] ids, double NA){
     if(_con == 0) return 0;
     double con = Double.isNaN(_con)?NA:_con;
     for(int i = 0; i < _len; ++i) {
@@ -89,29 +78,26 @@ public class C0DChunk extends Chunk {
   }
 
 
-  /**
-   * Dense bulk interface, fetch values from the given range
-   * @param vals
-   * @param from
-   * @param to
-   */
   @Override
-  public double [] getDoubles(double [] vals, int from, int to, double NA){
-    double con = Double.isNaN(_con)?NA:_con;
-    for(int i = from; i < to; ++i)
-      vals[i-from] = con;
-    return vals;
+  public <T extends ChunkVisitor> T processRows(T v, int from, int to){
+    if(_con == 0)
+      v.addZeros(to-from);
+    else if(Double.isNaN(_con))
+      v.addNAs(to-from);
+    else for(int i = from; i < to; i++)
+        v.addValue(_con);
+    return v;
   }
-  /**
-   * Dense bulk interface, fetch values from the given ids
-   * @param vals
-   * @param ids
-   */
+
   @Override
-  public double [] getDoubles(double [] vals, int [] ids){
-    int j = 0;
-    for(int i:ids) vals[j++] = _con;
-    return vals;
+  public <T extends ChunkVisitor> T processRows(T v, int [] ids){
+    if(_con == 0)
+      v.addZeros(ids.length);
+    else if(Double.isNaN(_con))
+      v.addNAs(ids.length);
+    else for(int i = 0; i < ids.length; i++)
+        v.addValue(_con);
+    return v;
   }
 
 }

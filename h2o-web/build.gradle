@@ -96,6 +96,15 @@ task installBowerPackages(type: Exec) {
   }
 }
 
+task deleteLegacyFlowBundleFromWebRoot(type: Delete) {
+  delete 'lib/h2o-flow/build/js/flow.js'
+}
+
+task copyFlowBundleFromDrift() << {
+  def f = new File('h2o-web/lib/h2o-flow/build/js/flow.js')
+  new URL('https://cdn.rawgit.com/h2oai/drift/664a4870e576e1c58a0e47fa557a7cb29dbf47dc/build/flow.js').withInputStream{ i -> f.withOutputStream{ it << i }}
+}
+
 task copyFlowToWebRoot(type: Copy) {
   from 'lib/h2o-flow/build'
   into 'src/main/resources/www/flow'
@@ -167,6 +176,9 @@ task cleanUpSmokeTest << {
 }
 
 task compileAndInstallDocFiles(type: Exec) {
+    doFirst {
+        standardOutput = new FileOutputStream("build/tmp/h2o-web_compileAndInstallDocFiles.out")
+    }
     H2OBuildVersion bv = new H2OBuildVersion(rootDir, version);
     def projectVersion = bv.getProjectVersion()
     def branchName = bv.getBranch()
@@ -186,6 +198,9 @@ task deleteDocFiles(type: Delete) {
 
 installNpmPackages.dependsOn checkClientPrerequisites
 installBowerPackages.dependsOn installNpmPackages
+// deleteLegacyFlowBundleFromWebRoot.dependsOn installBowerPackages
+// copyFlowBundleFromDrift.dependsOn deleteLegacyFlowBundleFromWebRoot
+// copyFlowToWebRoot.dependsOn copyFlowBundleFromDrift
 copyFlowToWebRoot.dependsOn installBowerPackages
 
 compileHelpFiles.dependsOn installNpmPackages
@@ -204,4 +219,3 @@ build.dependsOn compileAndInstallDocFiles
 
 // Hook clean stage
 clean.dependsOn deleteFlowFromWebRoot, cleanUpSmokeTest, deleteGenModelJarFromWebRoot, deleteDeepWaterJarFromWebRoot, deleteDocFiles
-

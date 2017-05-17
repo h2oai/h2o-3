@@ -203,7 +203,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     makeWeightsBiases(destKey);
     _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(scoringInfo, (null != get_params()._valid), false, _output.getModelCategory(), _output.isAutoencoder());
     _output._variable_importances = calcVarImp(last_scored().variable_importances);
-    _output._names = dataInfo._adaptedFrame.names();
+    _output.setNames(dataInfo._adaptedFrame.names());
     _output._domains = dataInfo._adaptedFrame.domains();
     assert(Arrays.equals(_key._kb, destKey._kb));
   }
@@ -221,7 +221,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     super(destKey, parms, output);
     final DataInfo dinfo = makeDataInfo(train, valid, _parms, nClasses);
     DKV.put(dinfo);
-    _output._names = dinfo._adaptedFrame.names();
+    _output.setNames(dinfo._adaptedFrame.names());
     _output._domains = dinfo._adaptedFrame.domains();
     _output._origNames = parms._train.get().names();
     _output._origDomains = parms._train.get().domains();
@@ -836,6 +836,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     Frame ret = adaptFrm.extractFrame(x, y);
     Scope.exit();
     return ret;
+  }
+
+  @Override
+  public Frame scoreDeepFeatures(Frame frame, String layer, Job j) {
+    throw H2O.unimpl("Cannot extract named hidden layer '" + layer + "' for H2O DeepLearning.");
   }
 
 
@@ -2164,6 +2169,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
             Log.info("_categorical_encoding: Automatically enabling OneHotInternal categorical encoding.");
           toParms._categorical_encoding = CategoricalEncodingScheme.OneHotInternal;
          }
+        if (fromParms._mini_batch_size > 1) {
+          Log.warn("_mini_batch_size", "Only mini-batch size = 1 is supported right now.");
+          toParms._mini_batch_size = 1;
+        }
         if (fromParms._adaptive_rate) {
           if (!fromParms._quiet_mode)
             Log.info("_adaptive_rate: Using automatic learning rate. Ignoring the following input parameters: "

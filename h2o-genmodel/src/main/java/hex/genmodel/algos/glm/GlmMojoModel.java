@@ -63,6 +63,37 @@ public class GlmMojoModel extends GlmMojoModelBase {
     return preds;
   }
 
+  /**
+   * Applies GLM coefficients to a given row of data to calculate
+   * feature contributions.
+   *
+   * Note: for internal purposes only (k-LIME)
+   *
+   * @param data input row of data (same input as to glmScore0)
+   * @param output target output array
+   * @param destPos index to the output array where the result should start
+   * @return feature contributions, prediction = linkFunction(sum(output) + intercept)
+   */
+  public double[] applyCoefficients(double[] data, double[] output, int destPos) {
+    final int offset = _useAllFactorLevels ? 0 : -1;
+    for (int i = 0; i < _catOffsets.length - 1; i++) {
+      int ival = (int) data[i] - offset;
+      if (ival < 0) continue;
+      ival += _catOffsets[i];
+      if (ival < _catOffsets[i + 1])
+        output[i + destPos] = _beta[ival];
+    }
+    int p = destPos + _catOffsets.length - 1;
+    int noff = _catOffsets[_cats] - _cats;
+    for (int i = _cats; i < _beta.length - 1 - noff; i++)
+      output[p++] = _beta[noff + i] * data[i];
+    return output;
+  }
+
+  public double getIntercept() {
+    return _beta[_beta.length - 1];
+  }
+
   private interface Function1 extends Serializable {
     double eval(double x);
   }

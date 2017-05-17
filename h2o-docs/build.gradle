@@ -3,7 +3,7 @@ description = "H2O Documentation"
 apply plugin: 'java'
 
 dependencies {
-    compile project(":h2o-assembly")
+    compile project(":h2o-assemblies:main")
 }
 
 
@@ -19,7 +19,8 @@ def bookletList = [
             "DeepLearningBooklet",
             "SparklingWaterBooklet",
             "RBooklet",
-            "PythonBooklet"]
+            "PythonBooklet",
+            "DeepWaterBooklet"]
 
 task(createBuildInfoTex) << {
     H2OBuildVersion bv = new H2OBuildVersion(rootDir, version);
@@ -88,7 +89,7 @@ bookletList.eachWithIndex {
 //   phase 2 pdflatex
 //   phase 3 pdflatex
 //
-task compileBooklets(dependsOn: ["compile_0_3", "compile_1_3", "compile_2_3", "compile_3_3", "compile_4_3", "compile_5_3"])
+task compileBooklets(dependsOn: ["compile_0_3", "compile_1_3", "compile_2_3", "compile_3_3", "compile_4_3", "compile_5_3", "compile_6_3"])
 
 task cleanBooklets(type: Delete) {
     delete bookletOutputPath,

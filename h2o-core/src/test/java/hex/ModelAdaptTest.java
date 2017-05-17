@@ -28,7 +28,7 @@ public class ModelAdaptTest extends TestUtil {
     Frame trn = parse_test_file("smalldata/junit/mixcat_train.csv");
     AModel.AParms p = new AModel.AParms();
     AModel.AOutput o = new AModel.AOutput();
-    o._names = trn.names();
+    o.setNames(trn.names());
     o._domains = trn.domains();
     trn.remove();
     AModel am = new AModel(Key.make(),p,o);
@@ -49,7 +49,7 @@ public class ModelAdaptTest extends TestUtil {
     // Response: merged test & train domains
     Assert.assertArrayEquals(adapt.vec("Response").domain(),new String[]{"X","Y","Z","W"});
 
-    Model.cleanup_adapt( adapt, tst );
+    Model.cleanup_adapt(adapt, tst );
     tst.remove();
   }
 
@@ -63,7 +63,7 @@ public class ModelAdaptTest extends TestUtil {
     Vec cat = vec(new String[]{"A","B"},0,1,0,1);
     Frame trn = new Frame();
     trn.add("cat",cat);
-    o._names = trn.names();
+    o.setNames(trn.names());
     o._domains = trn.domains();
     trn.remove();
     AModel am = new AModel(Key.make(),p,o);
@@ -74,7 +74,7 @@ public class ModelAdaptTest extends TestUtil {
     String[] warns = am.adaptTestForTrain(adapt,true, true);
     Assert.assertTrue(warns.length == 0); // No errors during adaption
 
-    Model.cleanup_adapt( adapt, tst );
+    Model.cleanup_adapt(adapt, tst );
     tst.remove();
   }
 
@@ -86,7 +86,7 @@ public class ModelAdaptTest extends TestUtil {
 
     Frame trn = new Frame();
     trn.add("dog",vec(new String[]{"A","B"},0,1,0,1));
-    o._names = trn.names();
+    o.setNames(trn.names());
     o._domains = trn.domains();
     trn.remove();
     AModel am = new AModel(Key.make(),p,o);
@@ -99,7 +99,7 @@ public class ModelAdaptTest extends TestUtil {
     catch( IllegalArgumentException iae ) { saw_iae = true; }
     Assert.assertTrue(saw_iae);
 
-    Model.cleanup_adapt( adapt, tst );
+    Model.cleanup_adapt(adapt, tst );
     tst.remove();
   }
 

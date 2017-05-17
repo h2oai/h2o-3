@@ -39,7 +39,11 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
 
     @property
     def training_frame(self):
-        """str: Id of the training data frame (Not required, to allow initial validation of model parameters)."""
+        """
+        Id of the training data frame (Not required, to allow initial validation of model parameters).
+
+        Type: ``H2OFrame``.
+        """
         return self._parms.get("training_frame")
 
     @training_frame.setter
@@ -50,7 +54,11 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
 
     @property
     def validation_frame(self):
-        """str: Id of the validation data frame."""
+        """
+        Id of the validation data frame.
+
+        Type: ``H2OFrame``.
+        """
         return self._parms.get("validation_frame")
 
     @validation_frame.setter
@@ -61,7 +69,11 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
 
     @property
     def ignored_columns(self):
-        """List[str]: Names of columns to ignore for training."""
+        """
+        Names of columns to ignore for training.
+
+        Type: ``List[str]``.
+        """
         return self._parms.get("ignored_columns")
 
     @ignored_columns.setter
@@ -72,7 +84,11 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
 
     @property
     def ignore_const_cols(self):
-        """bool: Ignore constant columns. (Default: True)"""
+        """
+        Ignore constant columns.
+
+        Type: ``bool``  (default: ``True``).
+        """
         return self._parms.get("ignore_const_cols")
 
     @ignore_const_cols.setter
@@ -83,7 +99,11 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
 
     @property
     def score_each_iteration(self):
-        """bool: Whether to score during each iteration of model training. (Default: False)"""
+        """
+        Whether to score during each iteration of model training.
+
+        Type: ``bool``  (default: ``False``).
+        """
         return self._parms.get("score_each_iteration")
 
     @score_each_iteration.setter
@@ -95,7 +115,9 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
     @property
     def transform(self):
         """
-        Enum["none", "standardize", "normalize", "demean", "descale"]: Transformation of training data (Default: "none")
+        Transformation of training data
+
+        One of: ``"none"``, ``"standardize"``, ``"normalize"``, ``"demean"``, ``"descale"``  (default: ``"none"``).
         """
         return self._parms.get("transform")
 
@@ -108,8 +130,9 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
     @property
     def svd_method(self):
         """
-        Enum["gram_s_v_d", "power", "randomized"]: Method for computing SVD (Caution: Power and Randomized are currently
-        experimental and unstable) (Default: "gram_s_v_d")
+        Method for computing SVD (Caution: Randomized is currently experimental and unstable)
+
+        One of: ``"gram_s_v_d"``, ``"power"``, ``"randomized"``  (default: ``"gram_s_v_d"``).
         """
         return self._parms.get("svd_method")
 
@@ -121,7 +144,11 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
 
     @property
     def nv(self):
-        """int: Number of right singular vectors (Default: 1)"""
+        """
+        Number of right singular vectors
+
+        Type: ``int``  (default: ``1``).
+        """
         return self._parms.get("nv")
 
     @nv.setter
@@ -132,7 +159,11 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
 
     @property
     def max_iterations(self):
-        """int: Maximum iterations (Default: 1000)"""
+        """
+        Maximum iterations
+
+        Type: ``int``  (default: ``1000``).
+        """
         return self._parms.get("max_iterations")
 
     @max_iterations.setter
@@ -143,7 +174,11 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
 
     @property
     def seed(self):
-        """int: RNG seed for k-means++ initialization (Default: -1)"""
+        """
+        RNG seed for k-means++ initialization
+
+        Type: ``int``  (default: ``-1``).
+        """
         return self._parms.get("seed")
 
     @seed.setter
@@ -154,7 +189,11 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
 
     @property
     def keep_u(self):
-        """bool: Save left singular vectors? (Default: True)"""
+        """
+        Save left singular vectors?
+
+        Type: ``bool``  (default: ``True``).
+        """
         return self._parms.get("keep_u")
 
     @keep_u.setter
@@ -165,7 +204,11 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
 
     @property
     def u_name(self):
-        """str: Frame key to save left singular vectors"""
+        """
+        Frame key to save left singular vectors
+
+        Type: ``str``.
+        """
         return self._parms.get("u_name")
 
     @u_name.setter
@@ -176,7 +219,11 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
 
     @property
     def use_all_factor_levels(self):
-        """bool: Whether first factor level is included in each categorical expansion (Default: True)"""
+        """
+        Whether first factor level is included in each categorical expansion
+
+        Type: ``bool``  (default: ``True``).
+        """
         return self._parms.get("use_all_factor_levels")
 
     @use_all_factor_levels.setter
@@ -187,7 +234,11 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
 
     @property
     def max_runtime_secs(self):
-        """float: Maximum allowed runtime in seconds for model training. Use 0 to disable. (Default: 0)"""
+        """
+        Maximum allowed runtime in seconds for model training. Use 0 to disable.
+
+        Type: ``float``  (default: ``0``).
+        """
         return self._parms.get("max_runtime_secs")
 
     @max_runtime_secs.setter

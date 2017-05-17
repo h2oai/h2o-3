@@ -69,14 +69,8 @@ Assumptions (Threat Model)
    -  Certificate checking on the client side for R/python is not yet
       implemented.
 
-5. Internal binary H2O node-to-H2O node traffic does not need to be
-   secured.
-
-   -  The customer is responsible for the H2O cluster's perimeter
-      security if this is a concern.
-   -  An example would be putting the nodes for an H2O cluster in a VLAN
-      and opening up one port so user clients can reach the H2O cluster
-      on the embedded web port.
+5. You may want to secure internal binary H2O node-to-H2O node traffic
+   via encryption.
 
 6. You trust the person that starts H2O to start it correctly.
 
@@ -147,10 +141,8 @@ What is being Secured Today
 
 **Note**: Embedded web port HTTPS and authentication may be used separately or together.
 
-What is Specifically not being Secured Today
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+3. Internal H2O node-to-H2O node communication can be encrypted.
 
--  Internal H2O node-to-H2O node communication.
 
 File Security in H2O
 --------------------

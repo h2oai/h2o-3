@@ -3,8 +3,14 @@ package hex;
 import java.util.Arrays;
 import water.Iced;
 import water.MRTask;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Vec;
+import water.util.fp.Function;
+import water.util.fp.Functions;
+
+import static hex.AUC2.ThresholdCriterion.precision;
+import static hex.AUC2.ThresholdCriterion.recall;
 
 /** One-pass approximate AUC
  *
@@ -114,6 +120,14 @@ public class AUC2 extends Iced {
 
   /** @return maximum F1 */
   public double maxF1() { return ThresholdCriterion.f1.max_criterion(this); }
+  
+  public Function<Integer, Double> forCriterion(final ThresholdCriterion tc) {
+    return new Function<Integer, Double>() {
+      public Double apply(Integer i) {
+        return tc.exec(AUC2.this, i);
+      }
+    };
+  }
 
   /** Default bins, good answers on a highly unbalanced sorted (and reverse
    *  sorted) datasets */
@@ -148,6 +162,22 @@ public class AUC2 extends Iced {
     _auc = compute_auc();
     _gini = 2*_auc-1;
     _max_idx = DEFAULT_CM.max_criterion_idx(this);
+  }
+  
+  public double pr_auc() {
+    checkRecallValidity();
+    return Functions.integrate(forCriterion(recall), forCriterion(precision), 0, _nBins-1);
+  }
+
+  // Checks that recall is monotonic function.
+  // According to Leland, it should be; otherwise it's an error.
+  void checkRecallValidity() {
+    double x0 = recall.exec(this, 0);
+    for (int i = 1; i < _nBins; i++) {
+      double x1 = recall.exec(this, i);
+      if (x0 >= x1) 
+        throw new H2OIllegalArgumentException(""+i, "recall", ""+x1 + "<" + x0);
+    }
   }
 
   // Compute the Area Under the Curve, where the curve is defined by (TPR,FPR)

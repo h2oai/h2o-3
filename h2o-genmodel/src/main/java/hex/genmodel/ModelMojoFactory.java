@@ -5,8 +5,9 @@ import hex.genmodel.algos.drf.DrfMojoReader;
 import hex.genmodel.algos.gbm.GbmMojoReader;
 import hex.genmodel.algos.glm.GlmMojoReader;
 import hex.genmodel.algos.glrm.GlrmMojoReader;
-
-import java.io.IOException;
+import hex.genmodel.algos.klime.KLimeMojoReader;
+import hex.genmodel.algos.kmeans.KMeansMojoReader;
+import hex.genmodel.algos.word2vec.Word2VecMojoReader;
 
 /**
  * Factory class for instantiating specific MojoGenmodel classes based on the algo name.
@@ -35,6 +36,15 @@ public class ModelMojoFactory {
       case "Generalized Linear Modeling":
       case "Generalized Linear Model":
         return new GlmMojoReader();
+
+      case "Word2Vec":
+        return new Word2VecMojoReader();
+
+      case "K-means":
+        return new KMeansMojoReader();
+
+      case "k-LIME":
+        return new KLimeMojoReader();
 
       default:
         throw new IllegalStateException("Unsupported MOJO algorithm: " + algo);

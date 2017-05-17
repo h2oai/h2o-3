@@ -1,3 +1,5 @@
+apply plugin: 'java'
+
 //
 // H2O Core Module
 //
@@ -11,13 +13,12 @@ dependencies {
   compile "gov.nist.math:jama:1.0.3"
   compile 'org.javassist:javassist:3.18.2-GA'
   compile "org.apache.commons:commons-math3:3.3"
-  compile "org.apache.directory.studio:org.apache.commons.lang:2.6"
   compile "commons-io:commons-io:2.4"
   compile "ai.h2o:google-analytics-java:1.1.2-H2O-CUSTOM"
   compile "org.eclipse.jetty.aggregate:jetty-servlet:8.1.17.v20150415"
-  compile "org.eclipse.jetty:jetty-server:8.1.17.v20150415"
   compile "org.eclipse.jetty:jetty-plus:8.1.17.v20150415"
   compile ("com.github.rwl:jtransforms:2.4.0") { exclude module: "junit" }
+  compile project(":h2o-jaas-pam")
 
   compile("log4j:log4j:1.2.15") { 
     exclude module: "activation" 
@@ -29,19 +30,22 @@ dependencies {
 
   // guava only needed by hadoop now, not by H2O
   compile 'com.google.guava:guava:16.0.1'
-  compile 'commons-logging:commons-logging:1.1.1'
-  compile 'commons-collections:commons-collections:3.0'
   compile "com.google.code.gson:gson:2.3.1"
+  compile 'commons-lang:commons-lang:2.6'
 
   // org.Reflections library is replaced by H2O specific version of library which was published into Maven Central
   // In this case the library is same as library available at reflections' github repository from commit 527e8ba8851406a66376086ff81b5a44ea53b0ed
   // !! This should be replaced by regular maven dependency of reflections 0.9.11 or higher when it's available
   compile 'ai.h2o:reflections:0.9.11-h2o-custom'
 
+  // Duke library: collection of String comparators
+  compile ('no.priv.garshol.duke:duke:1.2') { transitive = false }
+
   // Jets3t is required by S3N support
   // compile 'net.java.dev.jets3t:jets3t:0.6.1'
 
   testCompile "junit:junit:${junitVersion}"
+  testCompile "org.mockito:mockito-core:2.6.2"
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"
@@ -57,25 +61,6 @@ jar {
   }
 }
 
-// Run a single small JVM under heavy memory load, and confirm spilling works
-task testOOM(type: Exec) {
-    dependsOn cpLibs, jar, testJar
-    String iceRoot = project.projectDir.toString() + File.separator + "OOMsandbox" + File.separator + "iceRoot"
-            commandLine 'java', '-ea', '-Xmx1500m', '-Xms1500m', '-XX:+PrintGC', '-Dai.h2o.cleaner', '-cp',
-            'build/libs/h2o-core.jar'+File.pathSeparator+'build/libs/h2o-core-test.jar'+File.pathSeparator+'../lib/*',
-            'water.OOMTest', '-ice_root', iceRoot
-    // This is first action for Exec task
-    doFirst {
-      File sandbox = new File(project.projectDir, "OOMsandbox")
-      if (sandbox.exists()) { sandbox.deleteDir() }
-      sandbox.mkdir()
-      FileOutputStream fos = new FileOutputStream(new File(project.projectDir, "OOMsandbox" + File.separator +
-              "water.OOMTest.out"))
-      standardOutput = fos;
-      errorOutput = fos;
-    }
-}
-
 // The default 'test' behavior is broken in that it does not grok clusters.
 // For H2O, all tests need to be run on a cluster, where each JVM is
 // "free-running" - it's stdout/stderr are NOT hooked by another process.  If
@@ -86,7 +71,7 @@ task testOOM(type: Exec) {
 // complete cluster of free-running JVMs and redirect all output (at the OS
 // level) to files - then scrape the files later for test results.
 test {
-  dependsOn smalldataCheck, cpLibs, testMultiNode, testJar, testOOM
+  dependsOn smalldataCheck, cpLibs, testMultiNode, testJar
 
   // Defeat task 'test' by running no tests.
   exclude '**'

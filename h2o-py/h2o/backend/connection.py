@@ -36,12 +36,146 @@ from h2o.utils.typechecks import (assert_is_type, assert_matches, assert_satisfi
 from h2o.model.metrics_base import (H2ORegressionModelMetrics, H2OClusteringModelMetrics, H2OBinomialModelMetrics,
                                     H2OMultinomialModelMetrics, H2OAutoEncoderModelMetrics)
 
-__all__ = ("H2OConnection", )
+__all__ = ("H2OConnection", "H2OConnectionConf", )
 
 if tuple(int(x) for x in requests.__version__.split('.')) < (2, 10):
     print("[WARNING] H2O requires requests module of version 2.10 or newer. You have version %s.\n"
           "You can upgrade to the newest version of the module running from the command line\n"
           "    $ pip%s install --upgrade requests" % (requests.__version__, sys.version_info[0]))
+
+class H2OConnectionConf(object):
+    """
+    Configuration of connection to H2O.
+
+    The main goal of this class is to specify location of running
+    H2O instance and properties of connection. The location of running instance
+    is given by schema, ip, port, context_path parameters forming connection URL in
+    the following way: ``schema://ip:port/context_path``
+    """
+
+    def __init__(self, config = None):
+        self._ip = None
+        self._port = None
+        self._https = None
+        self._context_path = ''
+        self._verify_ssl_certificates = True
+        self._proxy = None
+        self._auth = None
+        self._cookies = None
+        self._verbose = True
+        # Fill from config if it is specified
+        if config is not None:
+            self._fill_from_config(config)
+
+    """List of allowed property names exposed by this class"""
+    allowed_properties = ["ip", "port", "https", "context_path", "verify_ssl_certificates",
+                          "proxy", "auth", "cookies", "verbose"]
+    
+    def _fill_from_config(self, config):
+        """
+        Fill this instance from given dictionary.
+        The method only uses keys which corresponds to properties
+        this class, throws exception on unknown property name.
+        :param conf:  dictionary of parameters
+        :return:  a new instance of this class filled with values from given dictionary
+        :raises H2OValueError: if input config contains unknown property name.
+        """
+        for k,v in config.items():
+            if k in H2OConnectionConf.allowed_properties:
+                setattr(self, k, v)
+            else:
+                raise H2OValueError(message="Unsupported name of property: %s!" % k, var_name="config")
+
+    @property
+    def ip(self):
+        return self._ip
+
+    @ip.setter
+    def ip(self, value):
+        assert_is_type(value, str)
+        self._ip = value
+
+    @property
+    def port(self):
+        return self._port
+
+    @port.setter
+    def port(self, value):
+        assert_is_type(value, int)
+        self._port = value
+
+    @property
+    def https(self):
+        return self._https
+
+    @https.setter
+    def https(self, value):
+        assert_is_type(value, bool)
+        self._https = value
+
+    @property
+    def context_path(self):
+        return self._context_path
+
+    @context_path.setter
+    def context_path(self, value):
+        assert_is_type(value, str)
+        self._context_path = value
+
+    @property
+    def verify_ssl_certificates(self):
+        return self._verify_ssl_certificates
+
+    @verify_ssl_certificates.setter
+    def verify_ssl_certificates(self, value):
+        assert_is_type(value, bool)
+        self._verify_ssl_certificates = value
+
+    @property
+    def proxy(self):
+        return self._proxy
+
+    @proxy.setter
+    def proxy(self, value):
+        assert_is_type(value, str, None)
+        self._proxy = value
+
+    @property
+    def auth(self):
+        return self._auth
+
+    @auth.setter
+    def auth(self, value):
+        assert_is_type(value, AuthBase, (str, str), None)
+        self._auth = value
+
+    @property
+    def cookies(self):
+        return self._cookies
+
+    @cookies.setter
+    def cookies(self, value):
+        assert_is_type(value, [str], None)
+        self._cookies = value
+
+    @property
+    def verbose(self):
+        return self._verbose
+
+    @verbose.setter
+    def verbose(self, value):
+        assert_is_type(value, bool)
+        self._verbose = value
+
+    @property
+    def url(self):
+        if self.https:
+            schema = "https"
+        else:
+            schema = "http"
+
+        curl = "{}://{}:{}/{}".format(schema, self.ip, self.port, self.context_path)
+        return curl
 
 
 class H2OConnection(backwards_compatible()):
@@ -69,9 +203,14 @@ class H2OConnection(backwards_compatible()):
     Once the connection is established, you can send REST API requests to the server using :meth:`request`.
     """
 
+    """
+    Defines pattern matching URL in the following form ``schema://ip:port/context_path``.
+    """
+    url_pattern = r"^(https?)://((?:[\w-]+\.)*[\w-]+):(\d+)/?((/[\w-]+)+)?$"
+
     @staticmethod
     def open(server=None, url=None, ip=None, port=None, https=None, auth=None, verify_ssl_certificates=True,
-             proxy=None, cluster_id=None, cookies=None, verbose=True, _msgs=None):
+             proxy=None, cookies=None, verbose=True, _msgs=None):
         r"""
         Establish connection to an existing H2O server.
 
@@ -105,7 +244,6 @@ class H2OConnection(backwards_compatible()):
             will attempt to use a proxy specified in the environment (in HTTP_PROXY / HTTPS_PROXY variables). We
             check for the presence of these variables and issue a warning if they are found. In order to suppress
             that warning and use proxy from the environment, pass ``proxy="(default)"``.
-        :param cluster_id: name of the H2O cluster to connect to. This option is used from Steam only.
         :param cookies: Cookie (or list of) to add to requests
         :param verbose: if True, then connection progress info will be printed to the stdout.
         :param _msgs: custom messages to display during connection. This is a tuple (initial message, success message,
@@ -125,14 +263,16 @@ class H2OConnection(backwards_compatible()):
             ip = server.ip
             port = server.port
             scheme = server.scheme
+            context_path = ''
         elif url is not None:
             assert_is_type(url, str)
             assert_is_type(ip, None, "`ip` should be None when `url` parameter is supplied")
             # We don't allow any Unicode characters in the URL. Maybe some day we will...
-            match = assert_matches(url, r"^(https?)://((?:[\w-]+\.)*[\w-]+):(\d+)/?$")
+            match = assert_matches(url, H2OConnection.url_pattern)
             scheme = match.group(1)
             ip = match.group(2)
             port = int(match.group(3))
+            context_path = '' if match.group(4) is None else "%s" % (match.group(4))
         else:
             if ip is None: ip = str("localhost")
             if port is None: port = 54321
@@ -144,22 +284,21 @@ class H2OConnection(backwards_compatible()):
             assert_matches(ip, r"(?:[\w-]+\.)*[\w-]+")
             assert_satisfies(port, 1 <= port <= 65535)
             scheme = "https" if https else "http"
+            context_path = ''
 
         if verify_ssl_certificates is None: verify_ssl_certificates = True
         assert_is_type(verify_ssl_certificates, bool)
         assert_is_type(proxy, str, None)
         assert_is_type(auth, AuthBase, (str, str), None)
-        assert_is_type(cluster_id, int, None)
         assert_is_type(cookies, str, [str], None)
         assert_is_type(_msgs, None, (str, str, str))
 
         conn = H2OConnection()
         conn._verbose = bool(verbose)
         conn._local_server = server
-        conn._base_url = "%s://%s:%d" % (scheme, ip, port)
+        conn._base_url = "%s://%s:%d%s" % (scheme, ip, port, context_path)
         conn._verify_ssl_cert = bool(verify_ssl_certificates)
         conn._auth = auth
-        conn._cluster_id = cluster_id
         conn._cookies = cookies
         conn._proxies = None
         if proxy and proxy != "(default)":
@@ -170,7 +309,7 @@ class H2OConnection(backwards_compatible()):
             for name in os.environ:
                 if name.lower() == scheme + "_proxy":
                     warn("Proxy is defined in the environment: %s. "
-                         "This may interfere with your H2O Connection." % os.environ[name])
+                         "This may interfere with your H2O Connection." % name)
 
         try:
             retries = 20 if server else 5
@@ -310,7 +449,8 @@ class H2OConnection(backwards_compatible()):
         issued, the session id will stay the same until the connection is closed.
         """
         if self._session_id is None:
-            self._session_id = self.request("POST /4/sessions")["session_key"]
+            req = self.request("POST /4/sessions")
+            self._session_id = req.get("session_key") or req.get("session_id")
         return CallableString(self._session_id)
 
     @property
@@ -495,7 +635,9 @@ class H2OConnection(backwards_compatible()):
         msg += "[%s] %s\n" % (time.strftime("%H:%M:%S"), endpoint)
         if params is not None: msg += "     params: {%s}\n" % ", ".join("%s:%s" % item for item in viewitems(params))
         if data is not None:   msg += "     body: {%s}\n" % ", ".join("%s:%s" % item for item in viewitems(data))
-        if json is not None:   msg += "     json: %s\n" % json.dumps(json)
+        if json is not None:
+            import json as j
+            msg += "     json: %s\n" % j.dumps(json)
         if files is not None:  msg += "     file: %s\n" % ", ".join(f.name for f in viewvalues(files))
         self._log_message(msg + "\n")
 

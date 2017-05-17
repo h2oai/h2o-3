@@ -41,7 +41,8 @@ public class GridSearchHandler<G extends Grid<MP>,
   // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
   // TODO: why does this do its own params filling?
   // TODO: why does this do its own sub-dispatch?
-  @Override S handle(int version, water.api.Route route, Properties parms, String postBody) throws Exception {
+  @Override
+  public S handle(int version, water.api.Route route, Properties parms, String postBody) throws Exception {
     // Only here for train or validate-parms
     if( !route._handler_method.getName().equals("train") )
       throw water.H2O.unimpl();
@@ -57,7 +58,7 @@ public class GridSearchHandler<G extends Grid<MP>,
     // Ok, i'm replacing one hack with another hack here, because SchemaServer.schema*() calls are getting eliminated.
     // There probably shouldn't be any reference to algoVersion here at all... TODO: unhack all of this
     int algoVersion = 3;
-    if (algoName.equals("SVD") || algoName.equals("Aggregator")) algoVersion = 99;
+    if (algoName.equals("SVD") || algoName.equals("Aggregator") || algoName.equals("StackedEnsemble")) algoVersion = 99;
 
     // TODO: this is a horrible hack which is going to cause maintenance problems:
     String paramSchemaName = schemaDir+algoName+"V"+algoVersion+"$"+ModelBuilder.paramName(algoURLName)+"V"+algoVersion;

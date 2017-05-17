@@ -1,9 +1,11 @@
 package water.util;
 
+import com.google.common.base.Charsets;
 import water.parser.BufferedString;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.charset.Charset;
 import java.util.*;
 
 /**
@@ -187,5 +189,17 @@ public class StringUtils {
       res = (res << 4) + hexCode.get(c);
     }
     return res;
+  }
+
+  public static byte[] bytesOf(CharSequence str) {
+    return str.toString().getBytes(Charsets.UTF_8);
+  }
+
+  public static byte[] toBytes(Object value) {
+    return bytesOf(String.valueOf(value));
+  }
+  
+  public static String toString(byte[] bytes, int from, int length) {
+    return new String(bytes, from, length, Charsets.UTF_8);
   }
 }

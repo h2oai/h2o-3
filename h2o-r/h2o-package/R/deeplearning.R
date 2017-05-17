@@ -8,8 +8,8 @@
 #' 
 #' @param x A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing,then all columns except y are used.
-#' @param y The name of the response variable in the model.If the data does not contain a header, this is the column index
-#'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
+#' @param y The name of the response variable in the model.If the data does not contain a header, this is the first column
+#'        index, and increasing from left to right. (The response must be either an integer or a
 #'        categorical variable).
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
@@ -126,7 +126,7 @@
 #' @param export_weights_and_biases \code{Logical}. Whether to export Neural Network weights and biases to H2O Frames. Defaults to FALSE.
 #' @param mini_batch_size Mini-batch size (smaller leads to better fit, larger can speed up and generalize better). Defaults to 1.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
-#'        "Binary", "Eigen". Defaults to AUTO.
+#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse". Defaults to AUTO.
 #' @param elastic_averaging \code{Logical}. Elastic averaging between compute nodes can improve distributed model convergence.
 #'        #Experimental Defaults to FALSE.
 #' @param elastic_averaging_moving_rate Elastic averaging moving rate (only if elastic averaging is enabled). Defaults to 0.9.
@@ -223,7 +223,7 @@ h2o.deeplearning <- function(x, y, training_frame,
                              reproducible = FALSE,
                              export_weights_and_biases = FALSE,
                              mini_batch_size = 1,
-                             categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen"),
+                             categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse"),
                              elastic_averaging = FALSE,
                              elastic_averaging_moving_rate = 0.9,
                              elastic_averaging_regularization = 0.001
@@ -470,40 +470,5 @@ url <- paste0('Predictions/models/', object@model_id, '/frames/',h2o.getId(data)
 res <- .h2o.__remoteSend(url, method = "POST", reconstruction_error=TRUE, reconstruction_error_per_feature=per_feature)
 key <- res$model_metrics[[1L]]$predictions$frame_id$name
 h2o.getFrame(key)
-}
-
-#' Feature Generation via H2O Deep Learning Model
-#'
-#' Extract the non-linear feature from an H2O data set using an H2O deep learning
-#' model.
-#' @param object An \linkS4class{H2OModel} object that represents the deep
-#' learning model to be used for feature extraction.
-#' @param data An H2OFrame object.
-#' @param layer Index of the hidden layer to extract.
-#' @return Returns an H2OFrame object with as many features as the
-#'         number of units in the hidden layer of the specified index.
-#' @seealso \code{link{h2o.deeplearning}} for making deep learning models.
-#' @examples
-#' \donttest{
-#' library(h2o)
-#' h2o.init()
-#' prosPath = system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate.hex = h2o.importFile(path = prosPath)
-#' prostate.dl = h2o.deeplearning(x = 3:9, y = 2, training_frame = prostate.hex,
-#'                                hidden = c(100, 200), epochs = 5)
-#' prostate.deepfeatures_layer1 = h2o.deepfeatures(prostate.dl, prostate.hex, layer = 1)
-#' prostate.deepfeatures_layer2 = h2o.deepfeatures(prostate.dl, prostate.hex, layer = 2)
-#' head(prostate.deepfeatures_layer1)
-#' head(prostate.deepfeatures_layer2)
-#' }
-#' @export
-h2o.deepfeatures <- function(object, data, layer = 1) {
-index = layer - 1
-url <- paste0('Predictions/models/', object@model_id, '/frames/', h2o.getId(data))
-res <- .h2o.__remoteSend(url, method = "POST", deep_features_hidden_layer=index, h2oRestApiVersion = 4)
-job_key <- res$key$name
-dest_key <- res$dest$name
-.h2o.__waitOnJob(job_key)
-h2o.getFrame(dest_key)
 }
 

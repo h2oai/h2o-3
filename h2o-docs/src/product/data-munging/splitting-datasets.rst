@@ -9,13 +9,19 @@ Note that when splitting frames, H2O does not give an exact split. It's designed
    .. code-block:: r
    
 	> library(h2o)
-	> h2o.init(nthreads=-1)
+	> h2o.init()
 	
 	# Import the prostate dataset
 	> prostate.hex <- h2o.importFile(path = "https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv", destination_frame = "prostate.hex")
+	> print(dim(prostate.hex))
+	[1] 380   9 
 	
 	# Split dataset giving the training dataset 75% of the data
 	> prostate.split <- h2o.splitFrame(data=prostate.hex, ratios=0.75)
+	> print(dim(prostate.split[[1]]))
+	[1] 291   9
+	> print(dim(prostate.split[[2]]))
+	[1] 89  9
 	
 	# Create a training set from the 1st dataset in the split
 	> prostate.train <- prostate.split[[1]]

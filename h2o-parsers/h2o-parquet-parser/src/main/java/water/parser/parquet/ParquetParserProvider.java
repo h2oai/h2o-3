@@ -23,7 +23,7 @@ import java.lang.reflect.Field;
 public class ParquetParserProvider extends ParserProvider {
 
   /* Setup for this parser */
-  static ParserInfo PARQUET_INFO = new ParserInfo("PARQUET", DefaultParserProviders.MAX_CORE_PRIO + 30, true, false);
+  static ParserInfo PARQUET_INFO = new ParserInfo("PARQUET", DefaultParserProviders.MAX_CORE_PRIO + 30, true, false, false);
 
   @Override
   public ParserInfo info() {

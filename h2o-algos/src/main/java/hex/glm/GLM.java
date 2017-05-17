@@ -329,8 +329,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (_parms._family == Family.multinomial) {
         _nullBeta = MemoryManager.malloc8d((_dinfo.fullN() + 1) * nclasses());
         int N = _dinfo.fullN() + 1;
-        for (int i = 0; i < nclasses(); ++i)
-          _nullBeta[_dinfo.fullN() + i * N] = Math.log(_state._ymu[i]);
+        if(_parms._intercept)
+          for (int i = 0; i < nclasses(); ++i)
+            _nullBeta[_dinfo.fullN() + i * N] = Math.log(_state._ymu[i]);
       } else {
         _nullBeta = MemoryManager.malloc8d(_dinfo.fullN() + 1);
         if (_parms._intercept && !(_parms._family == Family.quasibinomial))
@@ -425,7 +426,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _dinfo.setWeights(_generatedWeights = "__glm_gen_weights", wc);
         }
 
-        YMUTask ymt = new YMUTask(_dinfo, _parms._family == Family.multinomial?nclasses():1, setWeights, skippingRows,true).doAll(_dinfo._adaptedFrame);
+        YMUTask ymt = new YMUTask(_dinfo, _parms._family == Family.multinomial?nclasses():1, setWeights, skippingRows,true,false).doAll(_dinfo._adaptedFrame);
         if (ymt.wsum() == 0)
           throw new IllegalArgumentException("No rows left in the dataset after filtering out rows with missing values. Ignore columns with many NAs or impute your missing values prior to calling glm.");
         Log.info(LogMsg("using " + ymt.nobs() + " nobs out of " + _dinfo._adaptedFrame.numRows() + " total"));
@@ -435,6 +436,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _parms._obj_reg = 1.0 / ymt.wsum();
         if(!_parms._stdOverride)
           _dinfo.updateWeightedSigmaAndMean(ymt.predictorSDs(), ymt.predictorMeans());
+        if (_parms._family == Family.multinomial) {
+          _state._ymu = MemoryManager.malloc8d(_nclass);
+          for (int i = 0; i < _state._ymu.length; ++i)
+            _state._ymu[i] = _priorClassDist[i];//ymt.responseMeans()[i];
+        } else
         _state._ymu = _parms._intercept?ymt._yMu:new double[]{_parms.linkInv(0)};
       } else {
         _nobs = _train.numRows();
@@ -535,6 +541,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
    */
   public final class GLMDriver extends Driver implements ProgressMonitor {
     private long _workPerIteration;
+    private transient double[][] _vcov;
 
 
     private void doCleanup() {
@@ -550,14 +557,40 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     private transient Cholesky _chol;
     private transient L1Solver _lslvr;
 
+
+    int [] findZeros(double [] vals){
+      int [] res = new int[4];
+      int cnt = 0;
+      for(int i = 0; i < vals.length; ++i){
+        if(vals[i] == 0){
+          if(res.length == cnt)
+            res = Arrays.copyOf(res,res.length*2);
+          res[cnt++] = i;
+        }
+      }
+      return Arrays.copyOf(res,cnt);
+    }
     private double [] solveGram(Solver s, GLMIterationTask t) {
-      int [] zeros = t._gram.findZeroCols();
-      if(zeros.length > 0) {
-        t._gram.dropCols(zeros);
-        t._xy = ArrayUtils.removeIds(t._xy, zeros);
-        if(t._beta != null)
-          t._beta = ArrayUtils.removeIds(t._beta, zeros);
-        _state.removeCols(zeros);
+      // look for predictors which never appeared (can happen e.g. with weights or ignored NAs)
+      // never occuring columns must have gram[i] == 0 for all j AND XtY[i] == 0
+      if(_parms._family != Family.multinomial) { // don't do this for multinomial family - too many problems resizing the gradient
+        int[] zeros = t._gram.findZeroCols();
+        int falseZeros = 0;
+        for (int i = 0; i < zeros.length; i++) {
+          if (t._xy[zeros[i]] == 0)
+            zeros[i - falseZeros] = zeros[i];
+          else
+            falseZeros++;
+        }
+        zeros = Arrays.copyOf(zeros, zeros.length - falseZeros);
+        if (zeros.length > 0) {
+          _state.removeCols(zeros);
+          // no need to solve with zeros, remove them, solve and extend the result to original size (filling in zeros)
+          t._gram.dropCols(zeros);
+          t._xy = ArrayUtils.removeIds(t._xy, zeros);
+          if (t._beta != null)
+            t._beta = ArrayUtils.removeIds(t._beta, zeros);
+        }
       }
       t._gram.mul(_parms._obj_reg);
       ArrayUtils.mult(t._xy, _parms._obj_reg);
@@ -696,11 +729,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       final double l1pen = _state.l1pen();
       GLMGradientSolver gslvr = _state.gslvr();
       GLMWeightsFun glmw = new GLMWeightsFun(_parms);
-      if (_parms._family == Family.multinomial) {
+      if (beta == null && _parms._family == Family.multinomial) {
         beta = MemoryManager.malloc8d((_state.activeData().fullN() + 1) * _nclass);
         int P = _state.activeData().fullN() + 1;
-        for (int i = 0; i < _nclass; ++i)
-          beta[i * P + P - 1] = glmw.link(_state._ymu[i]);
+        if(_parms._intercept)
+          for (int i = 0; i < _nclass; ++i)
+            beta[i * P + P - 1] = glmw.link(_state._ymu[i]);
       }
       if (beta == null) {
         beta = MemoryManager.malloc8d(_state.activeData().fullN() + 1);
@@ -942,15 +976,30 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         double se = 1;
         boolean seEst = false;
         double [] beta = _state.beta();
+
         if(_parms._family != Family.binomial && _parms._family != Family.poisson) {
           seEst = true;
           ComputeSETsk ct = new ComputeSETsk(null, _state.activeData(), _job._key, beta, _parms).doAll(_state.activeData()._adaptedFrame);
           se = ct._sumsqe / (_nobs - 1 - _state.activeData().fullN());
         }
         double [] zvalues = MemoryManager.malloc8d(_state.activeData().fullN()+1);
-        double [] gInvDiag = _chol.getInvDiag();
+        Cholesky chol = _chol;
+        if(_parms._standardize){ // compute non-standardized t(X)%*%W%*%X
+          DataInfo activeData = _state.activeData();
+          double [] beta_nostd = activeData.denormalizeBeta(beta);
+          DataInfo.TransformType transform = activeData._predictor_transform;
+          activeData.setPredictorTransform(DataInfo.TransformType.NONE);
+          Gram g = new GLMIterationTask(_job._key,activeData,new GLMWeightsFun(_parms),beta_nostd).doAll(activeData._adaptedFrame)._gram;
+          activeData.setPredictorTransform(transform); // just in case, restore the trasnform
+          g.mul(_parms._obj_reg);
+          chol = g.cholesky(null);
+          beta = beta_nostd;
+        }
+        double [][] inv = chol.getInv();
+        ArrayUtils.mult(inv,_parms._obj_reg*se);
+        _vcov = inv;
         for(int i = 0; i < zvalues.length; ++i)
-          zvalues[i] = beta[i]/Math.sqrt(_parms._obj_reg*gInvDiag[i]*se);
+          zvalues[i] = beta[i]/Math.sqrt(inv[i][i]);
         _model.setZValues(expandVec(zvalues,_state.activeData()._activeCols,_dinfo.fullN()+1,Double.NaN),se, seEst);
       }
     }
@@ -1101,6 +1150,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       else
         _model._output.pickBestModel();
       scoreAndUpdateModel();
+      if(_vcov != null) {
+        _model.setVcov(_vcov);
+        _model.update(_job._key);
+      }
       if(!(_parms)._lambda_search && _state._iter < _parms._max_iterations){
         _job.update(_workPerIteration*(_parms._max_iterations - _state._iter));
       }
@@ -1639,7 +1692,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         double l2pen = 0;
         for (double[] b : _betaMultinomial)
           l2pen += ArrayUtils.l2norm2(b, _dinfo._intercept);
-        return new GLMGradientInfo(gt._likelihood, gt._likelihood * _parms._obj_reg + .5 * _l2pen * l2pen, gt.gradient());
+        double [] grad = gt.gradient();
+        if(!_parms._intercept){
+          for(int i = _dinfo.fullN(); i < beta.length; i += _dinfo.fullN()+1)
+            grad[i] = 0;
+        }
+        return new GLMGradientInfo(gt._likelihood, gt._likelihood * _parms._obj_reg + .5 * _l2pen * l2pen, grad);
       } else {
         assert beta.length == _dinfo.fullN() + 1;
         assert _parms._intercept || (beta[beta.length-1] == 0);

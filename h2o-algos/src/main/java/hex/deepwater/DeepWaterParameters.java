@@ -12,6 +12,7 @@ import water.util.Log;
 
 import javax.imageio.ImageIO;
 import java.io.File;
+import java.io.FilenameFilter;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.Arrays;
@@ -177,7 +178,7 @@ public class DeepWaterParameters extends Model.Parameters {
    * why the momentum is best ramped up slowly.
    * This parameter is only active if adaptive learning rate is disabled.
    */
-  public double _learning_rate = .005;
+  public double _learning_rate = 1e-3;
 
   /**
    * Learning rate annealing reduces the learning rate to "freeze" into
@@ -207,7 +208,7 @@ public class DeepWaterParameters extends Model.Parameters {
    * The momentum used for training will remain the same for training beyond reaching that point.
    * This parameter is only active if adaptive learning rate is disabled.
    */
-  public double _momentum_stable = 0.99;
+  public double _momentum_stable = 0.9;
 
 
   /**
@@ -264,7 +265,7 @@ public class DeepWaterParameters extends Model.Parameters {
 
   public int _mini_batch_size = 32;
 
-  protected boolean _cache_data = true;
+  public boolean _cache_data = true;
 
   /**
    * Validate model parameters
@@ -286,10 +287,10 @@ public class DeepWaterParameters extends Model.Parameters {
     if (_clip_gradient<=0)
       dl.error("_clip_gradient", "Clip gradient must be >= 0");
 
-    if (_hidden != null && _network_definition_file != null)
+    if (_hidden != null && _network_definition_file != null && !_network_definition_file.isEmpty())
       dl.error("_hidden", "Cannot provide hidden layers and a network definition file at the same time.");
 
-    if (_activation != null && _network_definition_file != null)
+    if (_activation != null && _network_definition_file != null && !_network_definition_file.isEmpty())
       dl.error("_activation", "Cannot provide activation functions and a network definition file at the same time.");
 
     if (_problem_type == ProblemType.image) {
@@ -323,8 +324,9 @@ public class DeepWaterParameters extends Model.Parameters {
         dl.error("_network_definition_file", "network_definition_file cannot be provided if a pre-defined network is chosen.");
     }
     if (_network_parameters_file != null && !_network_parameters_file.isEmpty()) {
-      if (!new File(_network_parameters_file).exists())
+      if (!DeepWaterModelInfo.paramFilesExist(_network_parameters_file)) {
         dl.error("_network_parameters_file", "network_parameters_file " + _network_parameters_file + " not found.");
+      }
     }
     if (_checkpoint!=null) {
       DeepWaterModel other = (DeepWaterModel) _checkpoint.get();
@@ -462,6 +464,7 @@ public class DeepWaterParameters extends Model.Parameters {
         "_gpu",
         "_sparse",
         "_device_id",
+        "_cache_data",
         "_input_dropout_ratio",
         "_hidden_dropout_ratios",
         "_cache_data",

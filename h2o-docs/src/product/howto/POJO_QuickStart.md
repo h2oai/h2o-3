@@ -1,32 +1,40 @@
-#POJO Quick Start
+# POJO Quick Start
 
 This document describes how to build and implement a POJO to use predictive scoring. Java developers should refer to the [Javadoc](http://docs.h2o.ai/h2o/latest-stable/h2o-genmodel/javadoc/index.html) for more information, including packages. 
 
  >**Note**: POJOs are not supported for source files larger than 1G. For more information, refer to the [FAQ](#POJO_Err) below. 
  
  
-##What is a POJO? 
+## What is a POJO? 
 
 H2O allows you to convert the models you have built to a Plain Old Java Object (POJO), which can then be easily deployed within your Java app and scheduled to run on a specified dataset.
 
 POJOs allow users to build a model using H2O and then deploy the model to score in real-time, using the POJO model or a REST API call to a scoring server.
 
-0. Start H2O in terminal window #1:
+1. Start H2O in terminal window #1:
 
    `$ java -jar h2o.jar`
 
-0. Build a model using your web browser: 
+2. Build a model using your web browser: 
 
-    0. Go to http://localhost:54321
-    0. Click **view example Flows** near the right edge of the screen. Here is a screenshot of what to look for:
-    0. Click `GBM_Airlines_Classification.flow`
-    0. If a confirmation prompt appears asking you to "Load Notebook", click it
-    0. From the "Flow" menu choose the "Run all cells" option
-    0. Scroll down and find the "Model" cell in the notebook. Click on the Download POJO button as shown in the following screenshot:
+    1. Go to http://localhost:54321
+    2. Click **view example Flows** near the right edge of the screen. Here is a screenshot of what to look for:
+
+      <img src=images/view_example_flows.png height=163>
+    
+    3. Click `GBM_Airlines_Classification.flow`
+    
+    4. If a confirmation prompt appears asking you to "Load Notebook", click it
+    
+    5. From the "Flow" menu choose the "Run all cells" option
+    
+    6. Scroll down and find the "Model" cell in the notebook. Click on the Download POJO button as shown in the following screenshot:
+    
+     ![Download POJO](images/download_pojo.png)
 
   >**Note**: The instructions below assume that the POJO model was downloaded to the "Downloads" folder. 
 
-0. Download model pieces in a *new* terminal window - H2O must still be running in terminal window #1:
+3. Download model pieces in a *new* terminal window - H2O must still be running in terminal window #1:
 
 	```
 	$ mkdir experiment
@@ -35,7 +43,7 @@ POJOs allow users to build a model using H2O and then deploy the model to score 
 	$ curl http://localhost:54321/3/h2o-genmodel.jar > h2o-genmodel.jar
 	```
 
-0. Create your main program in terminal window #2 by creating a new file called main.java (`vim main.java`) with the following contents:
+4. Create your main program in terminal window #2 by creating a new file called main.java (`vim main.java`) with the following contents:
 
 	```
 	import java.io.*;
@@ -75,21 +83,21 @@ POJOs allow users to build a model using H2O and then deploy the model to score 
 	}
 	```
 
-0. Compile and run in terminal window 2:
+5. Compile and run in terminal window 2:
 
 	```
 	$ javac -cp h2o-genmodel.jar -J-Xmx2g -J-XX:MaxPermSize=128m gbm_pojo_test.java main.java
 	$ java -cp .:h2o-genmodel.jar main
 	```
 
-  The following output displays: 
-
+    The following output displays: 
+	
 	```
 	Label (aka prediction) is flight departure delayed: YES
-	Class probabilities: 0.4790490513429604,0.5209509486570396
-	```
+	Class probabilities: 0.4319916897116479,0.5680083102883521
+	```	
 
-##Extracting Models from H2O
+## Extracting Models from H2O
 
 Generated models can be extracted from H2O in the following ways:
 
@@ -123,13 +131,14 @@ Generated models can be extracted from H2O in the following ways:
 	```
 	import h2o
 	h2o.init()
-	path = h2o.system_file("prostate.csv")
+	from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+	path = "http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip"
 	h2o_df = h2o.import_file(path)
 	h2o_df['CAPSULE'] = h2o_df['CAPSULE'].asfactor()
-	model = h2o.glm(y = "CAPSULE",
-	                x = ["AGE", "RACE", "PSA", "GLEASON"],
-	                training_frame = h2o_df,
-	                family = "binomial")
+	model = H2OGeneralizedLinearEstimator(family = "binomial")
+	model.train(y = "CAPSULE",
+	            x = ["AGE", "RACE", "PSA", "GLEASON"],
+	            training_frame = h2o_df)
 	h2o.download_pojo(model)
 	```
 
@@ -143,7 +152,7 @@ TODO: provide pointer of doing this from Sparkling Water
 
 -->
 
-##Use Cases
+## Use Cases
 The following use cases are demonstrated with code examples:
 
 - **Reading new data from a CSV file and predicting on it**:
@@ -152,7 +161,7 @@ The PredictCsv class is used by the H2O test harness to make predictions on new 
 - **Getting a new observation from a JSON request and returning a prediction**
 - **Calling a user-defined function directly from hive**: See the [H2O-3 training github repository](https://github.com/h2oai/h2o-world-2015-training/tree/master/tutorials/hive_udf_template).
 
-##FAQ
+## FAQ
 
 - **How do I score new cases in real-time in a production environment?**
 
@@ -189,25 +198,26 @@ For more information about in-H2O predictions (as opposed to POJO predictions), 
 
 - **Why did I receive the following error when trying to compile the POJO?**
 
-```
-Michals-MBP:b michal$ javac -cp h2o-genmodel.jar -J-Xmx2g -J-XX:MaxPermSize=128m drf_b9b9d3be_cf5a_464a_b518_90701549c12a.java
-An exception has occurred in the compiler (1.7.0_60). Please file a bug at the Java Developer Connection (http://java.sun.com/webapps/bugreport)  after checking the Bug Parade for duplicates. Include your program and the following diagnostic in your report.  Thank you.
-java.lang.IllegalArgumentException
-    at java.nio.ByteBuffer.allocate(ByteBuffer.java:330)
-    at com.sun.tools.javac.util.BaseFileManager$ByteBufferCache.get(BaseFileManager.java:308)
-    at com.sun.tools.javac.util.BaseFileManager.makeByteBuffer(BaseFileManager.java:280)
-    at com.sun.tools.javac.file.RegularFileObject.getCharContent(RegularFileObject.java:112)
-    at com.sun.tools.javac.file.RegularFileObject.getCharContent(RegularFileObject.java:52)
-    at com.sun.tools.javac.main.JavaCompiler.readSource(JavaCompiler.java:571)
-    at com.sun.tools.javac.main.JavaCompiler.parse(JavaCompiler.java:632)
-    at com.sun.tools.javac.main.JavaCompiler.parseFiles(JavaCompiler.java:909)
-    at com.sun.tools.javac.main.JavaCompiler.compile(JavaCompiler.java:824)
-    at com.sun.tools.javac.main.Main.compile(Main.java:439)
-    at com.sun.tools.javac.main.Main.compile(Main.java:353)
-    at com.sun.tools.javac.main.Main.compile(Main.java:342)
-    at com.sun.tools.javac.main.Main.compile(Main.java:333)
-    at com.sun.tools.javac.Main.compile(Main.java:76)
-    at com.sun.tools.javac.Main.main(Main.java:61)
-```
+   The following error is generated when the source file is larger than 1G. 
 
-This error is generated when the source file is larger than 1G. 
+	```
+	Michals-MBP:b michal$ javac -cp h2o-genmodel.jar -J-Xmx2g -J-XX:MaxPermSize=128m drf_b9b9d3be_cf5a_464a_b518_90701549c12a.java
+	An exception has occurred in the compiler (1.7.0_60). Please file a bug at the Java Developer Connection (http://java.sun.com/webapps/bugreport)  after checking the Bug Parade for duplicates. Include your program and the following diagnostic in your report.  Thank you.
+	java.lang.IllegalArgumentException
+	    at java.nio.ByteBuffer.allocate(ByteBuffer.java:330)
+	    at com.sun.tools.javac.util.BaseFileManager$ByteBufferCache.get(BaseFileManager.java:308)
+	    at com.sun.tools.javac.util.BaseFileManager.makeByteBuffer(BaseFileManager.java:280)
+	    at com.sun.tools.javac.file.RegularFileObject.getCharContent(RegularFileObject.java:112)
+	    at com.sun.tools.javac.file.RegularFileObject.getCharContent(RegularFileObject.java:52)
+	    at com.sun.tools.javac.main.JavaCompiler.readSource(JavaCompiler.java:571)
+	    at com.sun.tools.javac.main.JavaCompiler.parse(JavaCompiler.java:632)
+	    at com.sun.tools.javac.main.JavaCompiler.parseFiles(JavaCompiler.java:909)
+	    at com.sun.tools.javac.main.JavaCompiler.compile(JavaCompiler.java:824)
+	    at com.sun.tools.javac.main.Main.compile(Main.java:439)
+	    at com.sun.tools.javac.main.Main.compile(Main.java:353)
+	    at com.sun.tools.javac.main.Main.compile(Main.java:342)
+	    at com.sun.tools.javac.main.Main.compile(Main.java:333)
+	    at com.sun.tools.javac.Main.compile(Main.java:76)
+	    at com.sun.tools.javac.Main.main(Main.java:61)
+	```
+

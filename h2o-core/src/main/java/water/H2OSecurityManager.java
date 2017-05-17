@@ -42,14 +42,19 @@ import java.nio.channels.SocketChannel;
  */
 public class H2OSecurityManager {
 
-    public boolean securityEnabled = false;
+    private volatile static H2OSecurityManager INSTANCE = null;
+
+    public final boolean securityEnabled;
     private SSLSocketChannelFactory sslSocketChannelFactory;
 
-    H2OSecurityManager() {
+    private H2OSecurityManager() {
+        this.securityEnabled = H2O.ARGS.internal_security_conf != null;
         try {
             if (null != H2O.ARGS.internal_security_conf) {
                 this.sslSocketChannelFactory = new SSLSocketChannelFactory();
-                this.securityEnabled = true;
+                Log.info("H2O node running in encrypted mode using config file [" + H2O.ARGS.internal_security_conf + "]");
+            } else {
+                Log.info("H2O node running in unencrypted mode.");
             }
         } catch (SSLContextException e) {
             Log.err("Node initialized with SSL enabled but failed to create SSLContext. " +
@@ -65,5 +70,16 @@ public class H2OSecurityManager {
 
     public ByteChannel wrapClientChannel(SocketChannel channel, String host, int port) throws IOException {
         return sslSocketChannelFactory.wrapClientChannel(channel, host, port);
+    }
+
+    public static H2OSecurityManager instance() {
+        if(null == INSTANCE) {
+            synchronized (H2OSecurityManager.class) {
+                if (null == INSTANCE) {
+                    INSTANCE = new H2OSecurityManager();
+                }
+            }
+        }
+        return INSTANCE;
     }
 }

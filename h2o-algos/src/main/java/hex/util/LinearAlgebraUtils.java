@@ -1,6 +1,5 @@
 package hex.util;
 
-import Jama.CholeskyDecomposition;
 import Jama.EigenvalueDecomposition;
 import Jama.Matrix;
 import hex.DataInfo;
@@ -174,13 +173,13 @@ public class LinearAlgebraUtils {
     public SMulTask(DataInfo ainfo, int ncolQ, int ncolExp) {
       _ainfo = ainfo;
       _ncolA = ainfo._adaptedFrame.numCols();
-      _ncolExp = ncolExp;   // when call from GLRM
+      _ncolExp = ncolExp;   // when call from GLRM or PCA
       _ncolQ = ncolQ;
     }
 
     @Override public void map(Chunk cs[]) {
       assert (_ncolA + _ncolQ) == cs.length;
-      _atq = new double[_ncolExp][_ncolQ];
+      _atq = new double[_ncolExp][_ncolQ];  // not okay to share.
 
       for(int k = _ncolA; k < (_ncolA + _ncolQ); k++) {
         // Categorical columns
@@ -233,17 +232,15 @@ public class LinearAlgebraUtils {
    * @param transpose Should result be transposed to get L?
    * @return L or R matrix from Cholesky of Y Gram
    */
-  public static double[][] computeR(Key<Job> jobKey, DataInfo yinfo, boolean transpose) {
+  public static double[][] computeR(Key<Job> jobKey, DataInfo yinfo, boolean transpose, double[][] xx) {
     // Calculate Cholesky of Y Gram to get R' = L matrix
     Gram.GramTask gtsk = new Gram.GramTask(jobKey, yinfo);  // Gram is Y'Y/n where n = nrow(Y)
     gtsk.doAll(yinfo._adaptedFrame);
-    // Gram.Cholesky chol = gtsk._gram.cholesky(null);   // If Y'Y = LL' Cholesky, then R = L'
-    Matrix ygram = new Matrix(gtsk._gram.getXX());
-    CholeskyDecomposition chol = new CholeskyDecomposition(ygram);
-
-    double[][] L = chol.getL().getArray();
+    Gram.Cholesky chol = gtsk._gram.cholesky(null);   // If Y'Y = LL' Cholesky, then R = L'
+    double[][] L = chol.getL();
     ArrayUtils.mult(L, Math.sqrt(gtsk._nobs));  // Must scale since Cholesky of Y'Y/n where nobs = nrow(Y)
     return transpose ? L : ArrayUtils.transpose(L);
+
   }
 
   /**
@@ -253,8 +250,8 @@ public class LinearAlgebraUtils {
    * @param ywfrm Input frame [Y,W] where we write into W
    * @return l2 norm of Q - W, where W is old matrix in frame, Q is computed factorization
    */
-  public static double computeQ(Key<Job> jobKey, DataInfo yinfo, Frame ywfrm) {
-    double[][] cholL = computeR(jobKey, yinfo, true);
+  public static double computeQ(Key<Job> jobKey, DataInfo yinfo, Frame ywfrm, double[][] xx) {
+    double[][] cholL = computeR(jobKey, yinfo, true, xx);
     ForwardSolve qrtsk = new ForwardSolve(yinfo, cholL);
     qrtsk.doAll(ywfrm);
     return qrtsk._sse;      // \sum (Q_{i,j} - W_{i,j})^2
@@ -266,7 +263,7 @@ public class LinearAlgebraUtils {
    * @param yinfo DataInfo for Y matrix
    */
   public static void computeQInPlace(Key<Job> jobKey, DataInfo yinfo) {
-    double[][] cholL = computeR(jobKey, yinfo, true);
+    double[][] cholL = computeR(jobKey, yinfo, true, null);
     ForwardSolveInPlace qrtsk = new ForwardSolveInPlace(yinfo, cholL);
     qrtsk.doAll(yinfo._adaptedFrame);
   }

@@ -15,7 +15,7 @@
 #' @param forceDL (Optional) A \code{logical} value indicating whether to force download of the H2O executable. Defaults to FALSE, so the executable will only be downloaded if it does not already exist in the h2o R library resources directory \code{h2o/java/h2o.jar}.  This value is only used when R starts H2O.
 #' @param enable_assertions (Optional) A \code{logical} value indicating whether H2O should be launched with assertions enabled. Used mainly for error checking and debugging purposes.  This value is only used when R starts H2O.
 #' @param license (Optional) A \code{character} string value specifying the full path of the license file.  This value is only used when R starts H2O.
-#' @param nthreads (Optional) Number of threads in the thread pool.  This relates very closely to the number of CPUs used.  -2 means use the CRAN default of 2 CPUs.  -1 means use all CPUs on the host.  A positive integer specifies the number of CPUs directly.  This value is only used when R starts H2O.
+#' @param nthreads (Optional) Number of threads in the thread pool.  This relates very closely to the number of CPUs used. -1 means use all CPUs on the host (Default).  A positive integer specifies the number of CPUs directly.  This value is only used when R starts H2O.
 #' @param max_mem_size (Optional) A \code{character} string specifying the maximum size, in bytes, of the memory allocation pool to H2O. This value must a multiple of 1024 greater than 2MB. Append the letter m or M to indicate megabytes, or g or G to indicate gigabytes.  This value is only used when R starts H2O.
 #' @param min_mem_size (Optional) A \code{character} string specifying the minimum size, in bytes, of the memory allocation pool to H2O. This value must a multiple of 1024 greater than 2MB. Append the letter m or M to indicate megabytes, or g or G to indicate gigabytes.  This value is only used when R starts H2O.
 #' @param ice_root (Optional) A directory to handle object spillage. The defaul varies by OS.
@@ -25,8 +25,9 @@
 #' @param insecure (Optional) Set this to TRUE to disable SSL certificate checking.
 #' @param username (Optional) Username to login with.
 #' @param password (Optional) Password to login with.
-#' @param cluster_id (Optional) Cluster to login to. Used for Steam connections.
 #' @param cookies (Optional) Vector(or list) of cookies to add to request.
+#' @param context_path (Optional) The last part of connection URL: http://<ip>:<port>/<context_path>
+#' @param ignore_config (Optional) A \code{logical} value indicating whether a search for a .h2oconfig file should be conducted or not. Default value is FALSE.
 #' @return this method will load it and return a \code{H2OConnection} object containing the IP address and port number of the H2O server.
 #' @note Users may wish to manually upgrade their package (rather than waiting until being prompted), which requires
 #' that they fully uninstall and reinstall the H2O package, and the H2O client package. You must unload packages running
@@ -52,38 +53,44 @@
 #' }
 #' @export
 h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = FALSE,
-                     enable_assertions = TRUE, license = NULL, nthreads = -2,
+                     enable_assertions = TRUE, license = NULL, nthreads = -1,
                      max_mem_size = NULL, min_mem_size = NULL,
                      ice_root = tempdir(), strict_version_check = TRUE, proxy = NA_character_,
-                     https = FALSE, insecure = FALSE, username = NA_character_, password = NA_character_, cluster_id = NA_integer_, cookies = NA_character_) {
+                     https = FALSE, insecure = FALSE, username = NA_character_, password = NA_character_,
+                     cookies = NA_character_, context_path = NA_character_, ignore_config = FALSE) {
 
-    # Check for .h2oconfig file
-    # Find .h2oconfig file starting from currenting directory and going
-    # up all parent directories until it reaches the root directory.
-    config_path <- .find.config()
+    if(!(ignore_config)){
+      # Check for .h2oconfig file
+      # Find .h2oconfig file starting from currenting directory and going
+      # up all parent directories until it reaches the root directory.
+      config_path <- .find.config()
 
-    #Read in config if available
-    if(!(is.null(config_path))){
+      #Read in config if available
+      if(!(is.null(config_path))){
 
-      h2oconfig = .parse.h2oconfig(config_path)
+        h2oconfig = .parse.h2oconfig(config_path,print_path=TRUE)
 
-      #Check for each `allowed_config_keys` in the config file and set to counterparts in `h2o.init()`
-      if(strict_version_check != TRUE && "init.check_version" %in% colnames(h2oconfig)){
-        strict_version_check = as.logical(trimws(toupper(as.character(h2oconfig$init.check_version))))
+        #Check for each `allowed_config_keys` in the config file and set to counterparts in `h2o.init()`
+        if(strict_version_check == TRUE && "init.check_version" %in% colnames(h2oconfig)){
+          strict_version_check = as.logical(trimws(toupper(as.character(h2oconfig$init.check_version))))
+        }
+        if(is.na(proxy) && "init.proxy" %in% colnames(h2oconfig)){
+          proxy = trimws(as.character(h2oconfig$init.proxy))
+        }
+        if(insecure == FALSE && "init.verify_ssl_certificates" %in% colnames(h2oconfig)){
+          insecure = as.logical(trimws(toupper(as.character(h2oconfig$init.verify_ssl_certificates))))
+        }
+        if(is.na(cookies) && "init.cookies" %in% colnames(h2oconfig)){
+          cookies = as.vector(trimws(strsplit(as.character(h2oconfig$init.cookies),";")[[1]]))
+        }
+        if(is.na(username) && "init.username" %in% colnames(h2oconfig)){
+          username = trimws(as.character(h2oconfig$init.username))
+        }
+        if(is.na(password) && "init.password" %in% colnames(h2oconfig)){
+          password = trimws(as.character(h2oconfig$init.password))
+        }
       }
-      if(is.na(proxy) && "init.proxy" %in% colnames(h2oconfig)){
-        proxy = trimws(as.character(h2oconfig$init.proxy))
-      }
-      if(is.na(cluster_id) && "init.cluster_id" %in% colnames(h2oconfig)){
-        cluster_id = as.numeric(as.character(h2oconfig$init.cluster_id))
-      }
-      if(insecure == FALSE && "init.verify_ssl_certificates" %in% colnames(h2oconfig)){
-        insecure = as.logical(trimws(toupper(as.character(h2oconfig$init.verify_ssl_certificates))))
-      }
-      if(is.na(cookies) && "init.cookies" %in% colnames(h2oconfig)){
-        cookies = as.vector(trimws(strsplit(as.character(h2oconfig$init.cookies),";")[[1]]))
     }
-  }
 
   if(!is.character(ip) || length(ip) != 1L || is.na(ip) || !nzchar(ip))
     stop("`ip` must be a non-empty character string")
@@ -127,11 +134,10 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
     stop("`password` must be a character string or NA_character_")
   if (is.na(username) != is.na(password))
     stop("Must provide both `username` and `password`")
-  if (!is.na(cluster_id) && 
-      (!is.numeric(cluster_id) || cluster_id < 0))
-    stop("`cluster_id` must be an integer value greater than 0")
   if (!is.na(cookies) && (!is.vector(cookies)))
     stop("`cookies` must be a vector of cookie values")
+  if(!is.character(context_path) || !nzchar(context_path))
+    stop("`context_path` must be a character string or NA_character_")
 
   if ((R.Version()$major == "3") && (R.Version()$minor == "1.0")) {
     stop("H2O is not compatible with R 3.1.0\n",
@@ -146,8 +152,8 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
   if (nchar(doc_port)) port <- as.numeric(doc_port)
 
   warnNthreads <- FALSE
-  tmpConn <- new("H2OConnection", ip = ip, port = port, proxy = proxy, https = https, insecure = insecure, 
-    username = username, password = password, cluster_id = cluster_id, cookies = cookies)
+  tmpConn <- new("H2OConnection", ip = ip, port = port, proxy = proxy, https = https, insecure = insecure,
+    username = username, password = password,cookies = cookies, context_path = context_path)
   if (!h2o.clusterIsUp(tmpConn)) {
     if (!startH2O)
       stop("Cannot connect to H2O server. Please check that H2O is running at ", h2o.getBaseURL(tmpConn))
@@ -187,8 +193,8 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
       stop("Can only start H2O launcher if IP address is localhost.")
   }
 
-  conn <- new("H2OConnection", ip = ip, port = port, proxy = proxy, https = https, insecure = insecure, 
-    username = username, password = password, cluster_id = cluster_id, cookies = cookies)
+  conn <- new("H2OConnection", ip = ip, port = port, proxy = proxy, https = https, insecure = insecure,
+    username = username, password = password,cookies = cookies, context_path = context_path)
   assign("SERVER", conn, .pkg.env)
   cat(" Connection successful!\n\n")
   .h2o.jar.env$port <- port #Ensure right port is called when quitting R
@@ -233,6 +239,55 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
   invisible(conn)
 }
 
+#' Connect to a running H2O instance.
+#'
+#' @param ip Object of class \code{character} representing the IP address of the server where H2O is running.
+#' @param port Object of class \code{numeric} representing the port number of the H2O server.
+#' @param strict_version_check (Optional) Setting this to FALSE is unsupported and should only be done when advised by technical support.
+#' @param proxy (Optional) A \code{character} string specifying the proxy path.
+#' @param https (Optional) Set this to TRUE to use https instead of http.
+#' @param insecure (Optional) Set this to TRUE to disable SSL certificate checking.
+#' @param username (Optional) Username to login with.
+#' @param password (Optional) Password to login with.
+#' @param cookies (Optional) Vector(or list) of cookies to add to request.
+#' @param context_path (Optional) The last part of connection URL: http://<ip>:<port>/<context_path>
+#' @param config (Optional) A \code{list} describing connection parameters.
+#' @return an instance of \code{H2OConnection} object representing a connection to the running H2O instance.
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' # Try to connect to a H2O instance running at http://localhost:54321/cluster_X
+#' # If not found, start a local H2O instance from R with the default settings.
+#' #h2o.connect(ip = "localhost", port = 54321, context_path = "cluster_X")
+#' # Or
+#' #config = list(ip = "localhost", port = 54321, context_path = "cluster_X")
+#' #h2o.connect(config = config)
+#'
+#' # Skip strict version check during connecting to the instance
+#' #h2o.connect(config = c(strict_version_check = FALSE, config))
+#' }
+#' @export
+h2o.connect <- function(ip = "localhost", port = 54321, strict_version_check = TRUE,
+                        proxy = NA_character_ , https = FALSE, insecure = FALSE,
+                        username = NA_character_, password = NA_character_,
+                        cookies = NA_character_,
+                        context_path = NA_character_,
+                        config = NULL) {
+ if (!is.null(config)) {
+   # Check first if config has a special connect_params embedded object
+   if (!is.null(config$connect_params)) {
+      config <- config$connect_params
+   }
+   # Directly pass the config to h2o.init and let R and H2O.init decide about parameters validity
+   do.call(h2o.init, c(startH2O=FALSE, config))
+ } else {
+   # Pass arguments directly
+   h2o.init(ip=ip, port=port, strict_version_check=strict_version_check,
+            proxy=proxy, https=https, insecure=insecure, password=password,
+            username=username, cookies=cookies, context_path=context_path)
+ }
+}
+
 #' Retrieve an H2O Connection
 #'
 #' Attempt to recover an h2o connection.
@@ -257,7 +312,7 @@ h2o.getConnection <- function() {
     # Try to recover an H2OConnection object from a saved session
     for (objname in ls(parent.frame(), all.names = TRUE)) {
       object <- get(objname, globalenv())
-      if (is(object, "H2OConnection") && h2o.clusterIsUp(object)) {      
+      if (is(object, "H2OConnection") && h2o.clusterIsUp(object)) {
         conn <- object
         assign("SERVER", conn, .pkg.env)
         break
@@ -332,9 +387,9 @@ h2o.clusterStatus <- function() {
   res <- .h2o.fromJSON(jsonlite::fromJSON(.h2o.doSafeGET(urlSuffix = .h2o.__CLOUD), simplifyDataFrame=FALSE))
 
   cat("Version:", res$version, "\n")
-  cat("Cloud name:", res$cloud_name, "\n")
-  cat("Cloud size:", res$cloud_size, "\n")
-  if(res$locked) cat("Cloud is locked\n\n") else cat("Accepting new members\n\n")
+  cat("Cluster name:", res$cloud_name, "\n")
+  cat("Cluster size:", res$cloud_size, "\n")
+  if(res$locked) cat("Cluster is locked\n\n") else cat("Accepting new members\n\n")
   if(is.null(res$nodes) || length(res$nodes) == 0L) stop("No nodes found")
 
   # Calculate how many seconds ago we last contacted cloud
@@ -344,8 +399,8 @@ h2o.clusterStatus <- function() {
     time_diff <- cur_time - as.POSIXct(last_contact_sec, origin = "1970-01-01")
     res$nodes[[i]]$last_contact <- as.numeric(time_diff)
   }
-  cnames <- c("h2o", "healthy", "last_ping", "num_cpus", "sys_load", 
-              "mem_value_size", "free_mem", "pojo_mem", "swap_mem", 
+  cnames <- c("h2o", "healthy", "last_ping", "num_cpus", "sys_load",
+              "mem_value_size", "free_mem", "pojo_mem", "swap_mem",
               "free_disk", "max_disk", "pid", "num_keys", "tcps_active", "open_fds", "rpcs_active")
   temp <- data.frame(t(sapply(res$nodes, c)))
   temp[,cnames]
@@ -459,8 +514,8 @@ h2o.clusterStatus <- function() {
   if (.Platform$OS.type == "windows") {
     command <- normalizePath(gsub("\"","",command))
   }
-  
-  jver <- tryCatch({system2(command, "-version", stdout = TRUE, stderr = TRUE)}, 
+
+  jver <- tryCatch({system2(command, "-version", stdout = TRUE, stderr = TRUE)},
       error = function(err) {
         print(err)
         stop("You have a 32-bit version of Java. H2O works best with 64-bit Java.\n",
@@ -468,7 +523,7 @@ h2o.clusterStatus <- function() {
         "http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html")
       }
     )
-    
+
   if(any(grepl("GNU libgcj", jver))) {
     stop("Sorry, GNU Java is not supported for H2O.\n",
          "Please download the latest Java SE JDK 7 from the following URL:\n",
@@ -594,7 +649,7 @@ h2o.clusterStatus <- function() {
 # It will download a jar file if it needs to.
 .h2o.downloadJar <- function(overwrite = FALSE) {
   if(!is.logical(overwrite) || length(overwrite) != 1L || is.na(overwrite)) stop("`overwrite` must be TRUE or FALSE")
-  
+
   # PUBDEV-3534 hook to use arbitrary h2o.jar
   own_jar = Sys.getenv("H2O_JAR_PATH")
   is_url = function(x) any(grepl("^(http|ftp)s?://", x), grepl("^(http|ftp)s://", x))
@@ -603,7 +658,7 @@ h2o.clusterStatus <- function() {
       stop(sprintf("Environment variable H2O_JAR_PATH is set to '%s' but file does not exists, unset environment variable or provide valid path to h2o.jar file.", own_jar))
     return(own_jar)
   }
-  
+
   if (is.null(.h2o.pkg.path)) {
     pkg_path = dirname(system.file(".", package = "h2o"))
   } else {
@@ -637,7 +692,7 @@ h2o.clusterStatus <- function() {
 
   buildnumFile <- file.path(pkg_path, "buildnum.txt")
   version <- readLines(buildnumFile)
-  
+
   # mockup h2o package as CRAN release (no java/h2o.jar) hook h2o.jar url - PUBDEV-3534
   jarFile <- file.path(pkg_path, "jar.txt")
   if (file.exists(jarFile) && !nzchar(own_jar))
@@ -669,18 +724,18 @@ h2o.clusterStatus <- function() {
   md5_check <- readLines(md5_file, n = 1L)
   if (nchar(md5_check) != 32) stop("md5 malformed, must be 32 characters (see ", md5_url, ")")
   unlink(md5_file)
-  
+
   # Save to temporary file first to protect against incomplete downloads
   temp_file <- paste(dest_file, "tmp", sep = ".")
   cat("Performing one-time download of h2o.jar from\n")
   cat("    ", h2o_url, "\n")
   cat("(This could take a few minutes, please be patient...)\n")
   download.file(url = h2o_url, destfile = temp_file, mode = "wb", cacheOK = FALSE, quiet = TRUE)
-  
+
   # Apply sanity checks
   if(!file.exists(temp_file))
     stop("Error: Transfer failed. Please download ", h2o_url, " and place h2o.jar in ", dest_folder)
-  
+
   md5_temp_file = md5sum(temp_file)
   md5_temp_file_as_char = as.character(md5_temp_file)
   if(md5_temp_file_as_char != md5_check) {
@@ -688,7 +743,7 @@ h2o.clusterStatus <- function() {
     cat("Error: Actual MD5  : ", md5_temp_file_as_char, "\n")
     stop("Error: MD5 checksum of ", temp_file, " does not match ", md5_check)
   }
-  
+
   # Move good file into final position
   file.rename(temp_file, dest_file)
   return(dest_file[file.exists(dest_file)])
@@ -707,4 +762,13 @@ h2o.networkTest <- function() {
 # Trigger an explicit garbage collection across all nodes in the H2O cluster.
 .h2o.garbageCollect <- function() {
   res <- .h2o.__remoteSend("GarbageCollect", method = "POST")
+}
+
+#' Open H2O Flow
+#'
+#' Open H2O Flow in your browser
+#'
+#' @export
+h2o.flow <- function(){
+  browseURL(.h2o.calcBaseURL(urlSuffix=""))
 }

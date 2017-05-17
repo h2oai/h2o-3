@@ -1,5 +1,5 @@
-PCA
---------------
+Principal Compent Analysis (PCA)
+--------------------------------
 
 Introduction
 ~~~~~~~~~~~~
@@ -17,68 +17,38 @@ since PCA guarantees that all dimensions of a manifold are orthogonal.
 Defining a PCA Model
 ~~~~~~~~~~~~~~~~~~~~
 
--  **model\_id**: (Optional) Specify a custom name for the model to use as
-   a reference. By default, H2O automatically generates a destination
-   key.
+-  `model_id <algo-params/model_id.html>`__: (Optional) Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
 
--  **training\_frame**: (Required) Specify the dataset used to build the
-   model. **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
+-  `training_frame <algo-params/training_frame.html>`__: (Required) Specify the dataset used to build the model. **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
 
--  **validation\_frame**: (Optional) Specify the dataset used to evaluate
-   the accuracy of the model.
+-  `validation_frame <algo-params/validation_frame.html>`__: (Optional) Specify the dataset used to evaluate the accuracy of the model.
 
--  **ignored\_columns**: (Optional) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column
-   name to add it to the list of columns excluded from the model. To add
-   all columns, click the **All** button. To remove a column from the
-   list of ignored columns, click the X next to the column name. To
-   remove all columns from the list of ignored columns, click the
-   **None** button. To search for a specific column, type the column
-   name in the **Search** field above the column list. To only show
-   columns with a specific percentage of missing values, specify the
-   percentage in the **Only show columns with more than 0% missing
-   values** field. To change the selections for the hidden columns, use
-   the **Select Visible** or **Deselect Visible** buttons.
+-  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
 
--  **ignore\_const\_cols**: Specify whether to ignore constant
-   training columns, since no information can be gained from them. This
-   option is enabled by default.
+-  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Specify whether to ignore constant training columns, since no information can be gained from them. This option is enabled by default.
 
--  **transform**: Specify the transformation method for the training
-   data: None, Standardize, Normalize, Demean, or Descale. The default
-   is None.
+-  `transform <algo-params/transform.html>`__: Specify the transformation method for the training data: None, Standardize, Normalize, Demean, or Descale. The default is None.
 
--  **pca\_method**: Specify the algorithm to use for computing the principal components:
+-  `pca_method <algo-params/pca_method>`__: Specify the algorithm to use for computing the principal components:
 
    -  **GramSVD**: Uses a distributed computation of the Gram matrix, followed by a local SVD using the JAMA package
    -  **Power**: Computes the SVD using the power iteration method (experimental)
    -  **Randomized**: Uses randomized subspace iteration method
    -  **GLRM**: Fits a generalized low-rank model with L2 loss function and no regularization and solves for the SVD using local matrix algebra (experimental)
 
--  **k**\ \*: Specify the rank of matrix approximation. The default is 1.
+-  `k <algo-params/k.html>`__: Specify the rank of matrix approximation. The default is 1.
 
--  **max\_iterations**: Specify the number of training iterations. The
-   value must be between 1 and 1e6 and the default is 1000.
+-  `max_iterations <algo-params/max_iterations.html>`__: Specify the number of training iterations. The value must be between 1 and 1e6 and the default is 1000.
 
--  **seed**: Specify the random number generator (RNG) seed for
-   algorithm components dependent on randomization. The seed is
-   consistent for each H2O instance so that you can create models with
-   the same starting conditions in alternative configurations.
+-  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations.
 
--  **use\_all\_factor\_levels**: Specify whether to use all factor
-   levels in the possible set of predictors; if you enable this option,
-   sufficient regularization is required. By default, the first factor
-   level is skipped. For PCA models, this option ignores the first
-   factor level of each categorical column when expanding into indicator
-   columns.
+-  `use_all_factor_levels <algo-params/use_all_factor_levels.html>`__: Specify whether to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. For PCA models, this option ignores the first  factor level of each categorical column when expanding into indicator columns.
 
--  **compute\_metrics**: Enable metrics computations on the training
-   data.
+-  `compute_metrics <algo-params/compute_metrics.html>`__: Enable metrics computations on the training  data.
 
--  **score\_each\_iteration**: (Optional) Specify whether to score
-   during each iteration of the model training.
+-  `score_each_iteration <algo-params/score_each_iteration.html>`__: (Optional) Specify whether to score during each iteration of the model training.
 
--  **max\_runtime\_secs**: Maximum allowed runtime in seconds for model
-   training. Use 0 to disable.
+-  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
 Interpreting a PCA Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -174,7 +144,7 @@ To accomplish this, for a new matrix :math:`C_{y}` with off diagonal entries of 
 
 The rows of :math:`P` are the principal components of :math:`X`.
 
- :math:`C_{y}=\frac{1}{n}YY^{T}=\frac{1}{n}(PX)(PX)^{T}C_{y}=PC_{x}P^{T}`.
+     :math:`C_{y}=\frac{1}{n}YY^{T}=\frac{1}{n}(PX)(PX)^{T}=P(\frac{1}{n}XX^{T})P^{T}=PC_{x}P^{T}`.
 
 Because any symmetric matrix is diagonalized by an orthogonal matrix of its eigenvectors, solve matrix :math:`P` to be a matrix where each row is an eigenvector of :math:`\frac{1}{n}XX^{T}=C_{x}`
 
@@ -182,7 +152,7 @@ Then the principal components of :math:`X` are the eigenvectors of :math:`C_{x}`
 
 Eigenvectors of :math:`C_{x}` are found by first finding the eigenvalues :math:`\lambda` of :math:`C_{x}`.
 
-For each eigenvalue :math:`\lambda(C-{x}-\lambda I)x =0` where :math:`x` is the eigenvector
+For each eigenvalue :math:`(C_{x}-\lambda I)x =0` where :math:`x` is the eigenvector
 associated with :math:`\lambda`.
 
 Solve for :math:`x` by Gaussian elimination.
@@ -190,7 +160,7 @@ Solve for :math:`x` by Gaussian elimination.
 Recovering SVD from GLRM
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-GLRM gives :math:`x` and :math:`y`, where :math:`x\in\rm \Bbb I \!\Bbb R^{n * k}` and :math:`y\in\rm \Bbb I \!\Bbb R ^{k*m}`
+GLRM gives :math:`x` and :math:`y`, where :math:`x\in\rm \Bbb I \!\Bbb R^{n \times k}` and :math:`y\in\rm \Bbb I \!\Bbb R ^{k \times m}`
 
    - :math:`n` = number of rows :math:`A`
 
@@ -216,11 +186,11 @@ It is assumed that the :math:`x` and :math:`y` columns are independent.
   
   :math:`X^TX= (R^TQ^T) QR = R^TR`, since :math:`Q^TQ=I => R=L^T` (transpose lower triangular)
 
-   **Note**: In code, :math:`X^TX \over n = LL^T`
+   **Note**: In code, :math:`\frac{X^TX}{n} = LL^T`
 
     :math:`X^TX = (L \sqrt{n})(L\sqrt{n})^T =R^TR`
 
-    :math:`R = L^T\sqrt{n}\in\rm \Bbb I \! \Bbb R^{k * k}` reduced QR decomposition.
+    :math:`R = L^T\sqrt{n}\in\rm \Bbb I \! \Bbb R^{k \times k}` reduced QR decomposition.
 
     For more information, refer to the `Rectangular matrix <https://en.wikipedia.org/wiki/QR_decomposition#Rectangular_matrix>`__ section of "QR Decomposition" on Wikipedia.
 
@@ -230,19 +200,19 @@ It is assumed that the :math:`x` and :math:`y` columns are independent.
 
 3. Find SVD (locally) of :math:`RS^T`
 
-  :math:`RS^T = U \sum V^T, U^TU = I = V^TV` orthogonal
+  :math:`RS^T = U \Sigma V^T, U^TU = I = V^TV` orthogonal
   
-  :math:`XY = Q(RS^T)Z^T = (QU\sum(V^T Z^T) SVD`
+  :math:`XY = Q(RS^T)Z^T = (QU)\Sigma(V^T Z^T)` SVD
   
-  :math:`(QU)^T(QU) = U^T Q^TQU U^TU = I`
+  :math:`(QU)^T(QU) = U^T Q^TQU = U^TU = I`
   
   :math:`(ZV)^T(ZV) = V^TZ^TZV = V^TV = I`
 
-Right singular vectors: :math:`ZV \in \rm \Bbb I \!\Bbb R^{m * k}`
+Right singular vectors: :math:`ZV \in \rm \Bbb I \!\Bbb R^{m \times k}`
 
-Singular values: :math:`\sum \in \rm \Bbb I \!\Bbb R^{k * k}` diagonal
+Singular values: :math:`\Sigma \in \rm \Bbb I \!\Bbb R^{k \times k}` diagonal
 
-Left singular vectors: :math:`(QU) \in \rm \Bbb I \!\Bbb R^{n * k}`
+Left singular vectors: :math:`QU \in \rm \Bbb I \!\Bbb R^{n \times k}`
 
 References
 ~~~~~~~~~~

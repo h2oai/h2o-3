@@ -388,13 +388,16 @@ class H2OCloudNode(object):
                                           cwd=there)
             os.chdir(cwd)
         else:
-            self.child = subprocess.Popen(args=cmd,
-                                          stdout=f,
-                                          stderr=subprocess.STDOUT,
-                                          cwd=self.output_dir)
+            try: 
+              self.child = subprocess.Popen(args=cmd,
+                                            stdout=f,
+                                            stderr=subprocess.STDOUT,
+                                            cwd=self.output_dir)
+              self.pid = self.child.pid
+              print("+ CMD: " + ' '.join(cmd))
 
-        self.pid = self.child.pid
-        print("+ CMD: " + ' '.join(cmd))
+            except OSError:
+                raise "Failed to spawn %s in %s" % (cmd, self.output_dir)
 
 
     def scrape_port_from_stdout(self):
@@ -934,10 +937,12 @@ class Test(object):
         return cmd
 
     def _javascript_cmd(self, test_name, ip, port):
+        # return ["phantomjs", test_name]
         if g_perf:
             return ["phantomjs", test_name, "--host", ip + ":" + str(port), "--timeout", str(g_phantomjs_to),
                     "--packs", g_phantomjs_packs, "--perf", g_date, str(g_build_id), g_git_hash, g_git_branch,
-                    str(g_ncpu), g_os, g_job_name, g_output_dir, "--excludeFlows", self.exclude_flows]
+                   str(g_ncpu), g_os, g_job_name, g_output_dir, "--excludeFlows", self.exclude_flows]
+        
         else:
             return ["phantomjs", test_name, "--host", ip + ":" + str(port), "--timeout", str(g_phantomjs_to),
                     "--packs", g_phantomjs_packs, "--excludeFlows", self.exclude_flows]
@@ -1410,8 +1415,11 @@ class TestRunner(object):
         time.sleep(3)
         print("Checking cloud health...")
         for c in self.clouds:
-            self._h2o_exists_and_healthy(c.get_ip(), c.get_port())
-            print("Node {} healthy.".format(c))
+            if self._h2o_exists_and_healthy(c.get_ip(), c.get_port()):
+                print("Node {} healthy.".format(c))
+            else:
+                print("Node with IP {} and port {} NOT HEALTHY" .format(c.get_ip(),c.get_port()))
+                # should an exception be thrown?
 
     def stop_clouds(self):
         """
@@ -1806,7 +1814,7 @@ class TestRunner(object):
                     failure_message += "\n\n"
                     failure_message += "#" * 83 + "\n"
                     failure_message += "########### Problems encountered extracting Java messages. " \
-                                       "Please alert the QA team.\n"
+                                       "Massive Jenkins or test failure.\n"
                     failure_message += "#" * 83 + "\n\n"
 
                 if failure_message:
@@ -1816,13 +1824,14 @@ class TestRunner(object):
                     else:
                         failure = ""
 
+    # fixed problem with test name repeated in Jenkins job test report.
         xml_report = """<?xml version="1.0" encoding="UTF-8"?>
 <testsuite name="{testsuiteName}" tests="1" errors="{errors}" failures="{failures}" skip="{skip}">
-  <testcase classname="{testcaseClassName}" name="{testcaseName}" time="{testcaseRuntime}">
+  <testcase name="{testcaseName}" time="{testcaseRuntime}">
   {failure}
   </testcase>
 </testsuite>
-""".format(testsuiteName=testsuite_name, testcaseClassName=testcase_name, testcaseName=testcase_name,
+""".format(testsuiteName=testsuite_name, testcaseName=testcase_name,
            testcaseRuntime=testcase_runtime, failure=failure,
            errors=errors, failures=failures, skip=skip)
 
@@ -1882,6 +1891,8 @@ class TestRunner(object):
         """
         check if connection to h2o exists, and that h2o is healthy.
         """
+        if not port or int(port) <= 0:
+            return False
         h2o_okay = False
         try:
             http = requests.get("http://{}:{}/3/Cloud?skip_ticks=true".format(ip, port))

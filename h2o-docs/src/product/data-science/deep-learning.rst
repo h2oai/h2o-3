@@ -1,37 +1,27 @@
-Deep Learning
---------------
+Deep Learning (Neural Networks)
+-------------------------------
 
 Introduction
 ~~~~~~~~~~~~
 
-H2O’s Deep Learning is based on a multi-layer feed-forward artificial
-neural network that is trained with stochastic gradient descent using
-back-propagation. The network can contain a large number of hidden
-layers consisting of neurons with tanh, rectifier and maxout activation
-functions. Advanced features such as adaptive learning rate, rate
-annealing, momentum training, dropout, L1 or L2 regularization,
-checkpointing and grid search enable high predictive accuracy. Each
-compute node trains a copy of the global model parameters on its local
-data with multi-threading (asynchronously), and contributes periodically
-to the global model via model averaging across the network.
+H2O’s Deep Learning is based on a multi-layer `feedforward artificial neural network <https://en.wikipedia.org/wiki/Feedforward_neural_network>`__ that is trained with stochastic gradient descent using back-propagation. The network can contain a large number of hidden layers consisting of neurons with tanh, rectifier, and maxout activation functions. Advanced features such as adaptive learning rate, rate annealing, momentum training, dropout, L1 or L2 regularization, checkpointing, and grid search enable high predictive accuracy. Each compute node trains a copy of the global model parameters on its local data with multi-threading (asynchronously) and contributes periodically to the global model via model averaging across the network.
 
-Quick Start
-~~~~~~~~~~~~
+A feedforward artificial neural network (ANN) model, also known as deep neural network (DNN) or multi-layer perceptron (MLP), is the most common type of Deep Neural Network and the only type that is supported natively in H2O-3. Several other types of DNNs are popular as well, such as Convolutional Neural Networks (CNNs) and Recurrent Neural Networks (RNNs). MLPs work well on transactional (tabular) data; however if you have image data, then CNNs are a great choice. If you have sequential data (e.g. text, audio, time-series), then RNNs are a good choice. The `H2O Deep Water project <https://www.h2o.ai/deep-water/>`__ supports CNNs and RNNs though third-party integrations of other deep learning libraries such as TensorFlow, Caffe and MXNet. To learn more about how to use Deep Water, visit the `H2O Deep Water repository <https://github.com/h2oai/deepwater>`__ and/or follow any of the `available demos <https://github.com/h2oai/h2o-3/tree/master/examples/deeplearning/notebooks>`__.
+
+Quick Start and Additional Resources
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* `Deep Learning Booklet <http://h2o.ai/resources>`__
+* Deep Learning in H2O Tutorial (R): `[GitHub] <https://htmlpreview.github.io/?https://github.com/ledell/sldm4-h2o/blob/master/sldm4-deeplearning-h2o.html>`__
 * H2O + TensorFlow on AWS GPU Tutorial (Python Notebook) `[Blog] <http://blog.h2o.ai/2016/07/h2o-tensorflow-on-aws-gpu/>`__ `[Github] <https://github.com/h2oai/sparkling-water/blob/master/py/examples/notebooks/TensorFlowDeepLearning.ipynb>`__
 * Deep learning in H2O with Arno Candel (Overview) `[Youtube] <https://www.youtube.com/watch?v=zGdXaRug7LI/>`__
 * Top 10 tips and tricks `[Youtube] <https://www.youtube.com/watch?v=LM255qs8Zsk/>`__
 * NYC Tour Deep Learning Panel: Tensorflow, Mxnet, Caffe `[Youtube] <https://www.youtube.com/watch?v=KWdkVoKJG3U/>`__
-* Deep Water project: `[Github] <http://github.com/h2oai/deepwater/>`__
+* Deep Water project: `[GitHub] <http://github.com/h2oai/deepwater/>`__
 
 Defining a Deep Learning Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-H2O Deep Learning models have many input parameters, many of which are
-only accessible via the expert mode. For most cases, use the default
-values. Please read the following instructions before building extensive
-Deep Learning models. The application of grid search and successive
-continuation of winning models via checkpoint restart is highly
-recommended, as model performance can vary greatly.
+H2O Deep Learning models have many input parameters, many of which are only accessible via the expert mode. For most cases, use the default values. Please read the following instructions before building extensive Deep Learning models. The application of grid search and successive continuation of winning models via checkpoint restart is highly recommended, as model performance can vary greatly.
 
 -  **model\_id**: (Optional) Specify a custom name for the model to use as
    a reference. By default, H2O automatically generates a destination
@@ -150,10 +140,14 @@ recommended, as model performance can vary greatly.
 
 -  **categorical_encoding**: Specify one of the following encoding schemes for handling categorical features:
 
-  - ``auto``: Allow the algorithm to decide
-  - ``one_hot_internal``: On the fly N+1 new cols for categorical features with N levels (default)
-  - ``binary``: No more than 32 columns per categorical feature
-  - ``eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
+  - ``auto`` or ``AUTO``: Allow the algorithm to decide. In Deep Learning, the algorithm will perform ``one_hot_internal`` encoding if ``auto`` is specified. 
+  - ``one_hot_internal`` or ``OneHotInternal``: On the fly N+1 new cols for categorical features with N levels (default)
+  - ``binary`` or ``Binary``: No more than 32 columns per categorical feature
+  - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
+  - ``label_encoder`` or ``LabelEncoder``: Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.). This is useful for keeping the number of columns small for XGBoost or DeepLearning/DeepWater, where the algorithm otherwise perform ExplicitOneHotEncoding. 
+  - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.).
+
+  **Note**: This value defaults to ``one_hot_internal``. Similarly, if ``auto`` is specified, then the algorithm performs ``one_hot_internal`` encoding. 
 
 -  **l1**: Specify the L1 regularization to add stability and improve
    generalization; sets the value of many weights to 0.
@@ -397,18 +391,15 @@ and testing sets:
 
 -  Model parameters (hidden)
 -  A chart of the variable importances
--  A graph of the scoring history (training MSE and validation MSE vs
-   epochs)
+-  A graph of the scoring history (training MSE and validation MSE vs epochs)
+-  Training and validation metrics confusion matrix
 -  Output (model category, weights, biases)
 -  Status of neuron layers (layer number, units, type, dropout, L1, L2,
    mean rate, rate RMS, momentum, mean weight, weight RMS, mean bias,
    bias RMS)
 -  Scoring history in tabular format
--  Training metrics (model name, model checksum name, frame name, frame
-   checksum name, description, model category, duration in ms, scoring
-   time, predictions, MSE, R2, logloss)
--  Top-K Hit Ratios (for multi-class classification)
--  Confusion matrix (for classification)
+-  Training and validation metrics (model name, model checksum name, frame name, frame checksum name, description, model category, duration in ms, scoring time, predictions, MSE, R2, logloss)
+-  Top-K Hit Ratios for training and validation (for multi-class classification)
 
 FAQ
 ~~~
@@ -544,18 +535,13 @@ FAQ
 
  For Deep Learning, variable importance is calculated using the Gedeon method.
 
+-  **How is deviance computed for a Deep Learning regression model?**
+
+ The following formula is used to compute deviance for a Deep Learning regression model:
+
+   Loss = Quadratic -> MSE==Deviance For Absolute/Laplace or Huber -> MSE != Deviance
+
 --------------
-
-Deep Learning Algorithm
-~~~~~~~~~~~~~~~~~~~~~~~
-
-To compute deviance for a Deep Learning regression model, the following
-formula is used:
-
- Loss = Quadratic -> MSE==Deviance For Absolute/Laplace or Huber -> MSE != Deviance
-
-For more information about how the Deep Learning algorithm works, refer
-to the `Deep Learning booklet <http://h2o.ai/resources>`__.
 
 Deep Learning Tuning Guide
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

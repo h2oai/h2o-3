@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package core;
+option java_package = "ai.h2o.api.proto.core";
+option java_multiple_files = true;
+
+
+message Empty {
+    // Empty message that can be reused for any RPC that takes / returns
+    // no values
+}
+
+
+message Error {
+    //
+    string name = 1;
+    string message = 2;
+    string stacktrace = 3;
+    Error cause = 4;
+}
+

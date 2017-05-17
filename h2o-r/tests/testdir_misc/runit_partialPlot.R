@@ -8,6 +8,19 @@ source("../../scripts/h2o-r-test-setup.R")
 # Check error messages for failure cases.
 ##
 
+## PUBDEV-3764
+# Run random forest on the prostate dataset and calculate the partial dependence of categorical feature "RACE"
+# Check to make sure the manually calculated mean response when running h2o.predict matches results from
+# h2o.partialPlot function. There is two issues here:
+# 1) Numerically wrong: Dataset with only one present level of the entire domain returns wrong meanResponse
+# 2) Unexpected Behavior: Parital plots should be scored with the level present in the dataset or with all
+# available levels extracted from the model, not the first level listed in the domain
+##
+
+## PUBDEV-3782
+# Partial Plot errors out and doesn't compute partial plots if nbins < cardinality of categorical column.
+##
+
 test <- function() {
   # To examine results of partialPlot from the package randomForest
   # library(randomForest)
@@ -26,11 +39,7 @@ test <- function() {
   ## Run Random Forest in H2O
   seed = .Random.seed[1]
   Log.info(paste0("Random seed used = ", seed))
-  prostate_drf = h2o.randomForest(x = c("AGE", "RACE"), y = "CAPSULE", training_frame = prostate_hex, ntrees = 50, seed = seed)
-  
-  ## Calculate partial dependence using h2o.partialPlot for columns "AGE" and "RACE"
-  h2o_race_pp = h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = "RACE", plot = F)
-  h2o_age_pp = h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = "AGE", plot = F)
+  prostate_drf = h2o.randomForest(x = c("AGE", "RACE"), y = "CAPSULE", training_frame = prostate_hex, ntrees = 25, seed = seed)
   
   ## Calculate the partial dependence manually using breaks from results of h2o.partialPlot
   ## Define function
@@ -61,11 +70,46 @@ test <- function() {
     return(data.frame(xname = x.pt, mean_response = y.pt))
   }
   
+  ## Calculate partial dependence using h2o.partialPlot for columns "AGE" and "RACE"
+  h2o_race_pp = h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = "RACE", plot = F)
+  h2o_age_pp = h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = "AGE", plot = F)
   ## Check that the mean response checks out
   h2o_age_pp_2 = partialDependence(object = prostate_drf, pred.data = prostate_hex, xname = "AGE", h2o.pp = h2o_age_pp)
   h2o_race_pp_2 = partialDependence(object = prostate_drf, pred.data = prostate_hex, xname = "RACE", h2o.pp = h2o_race_pp)
   checkEqualsNumeric(h2o_age_pp_2[,"mean_response"], h2o_age_pp[,"mean_response"])
   checkEqualsNumeric(h2o_race_pp_2[,"mean_response"], h2o_race_pp[,"mean_response"])
+  
+  ## Check spliced/subsetted datasets
+  prostate_hex[, "RACE"] = as.factor(prostate_hex[, "RACE"])
+  prostate_drf = h2o.randomForest(x = c("AGE", "RACE"), y = "CAPSULE", training_frame = prostate_hex, ntrees = 25, seed = seed)
+  
+  ## Subset prostate_hex by RACE
+  prostate_hex_race_0 <- prostate_hex[prostate_hex$RACE == "0", ]
+  prostate_hex_race_1 <- prostate_hex[prostate_hex$RACE == "1", ]
+  prostate_hex_race_2 <- prostate_hex[prostate_hex$RACE == "2", ]
+  
+  ## Calculate partial plot on the subsetted dataset
+  h2o_pp_race_0 = h2o.partialPlot(object = prostate_drf, data = prostate_hex_race_0, cols = "RACE", plot = F)
+  h2o_pp_race_1 = h2o.partialPlot(object = prostate_drf, data = prostate_hex_race_1, cols = "RACE", plot = F)
+  h2o_pp_race_2 = h2o.partialPlot(object = prostate_drf, data = prostate_hex_race_2, cols = "RACE", plot = F)
+  
+  ## Calculate the partial dependence manually
+  check_pp_race_0 = partialDependence(object = prostate_drf, pred.data = prostate_hex_race_0, xname = "RACE", h2o.pp = h2o_pp_race_0)
+  check_pp_race_1 = partialDependence(object = prostate_drf, pred.data = prostate_hex_race_1, xname = "RACE", h2o.pp = h2o_pp_race_1)
+  check_pp_race_2 = partialDependence(object = prostate_drf, pred.data = prostate_hex_race_2, xname = "RACE", h2o.pp = h2o_pp_race_2)
+  
+  ## Check the partial plot from h2o 
+  checkEqualsNumeric(check_pp_race_0[,"mean_response"], h2o_pp_race_0[,"mean_response"])
+  checkEqualsNumeric(check_pp_race_1[,"mean_response"], h2o_pp_race_1[,"mean_response"])
+  checkEqualsNumeric(check_pp_race_2[,"mean_response"], h2o_pp_race_2[,"mean_response"])
+  
+  ## H2O partial plot on the entire dataset
+  h2o_pp_race   = h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = "RACE", plot = F)
+  
+  ## Dataset with only one level only scores with the first level in the column domain based off of the model
+  checkEquals(h2o_pp_race_0$RACE, "0")
+  checkEquals(h2o_pp_race_1$RACE, "1")
+  checkEquals(h2o_pp_race_2$RACE, "2")
   
   ## Check column name and column type matches using test dataset iris
   iris_hex = as.h2o(iris[1:100,])
@@ -83,6 +127,11 @@ test <- function() {
   iris_hex = as.h2o( iris)
   iris_gbm = h2o.gbm(x = 1:4, y = 5, training_frame = iris_hex)
   expect_error(h2o.partialPlot(object = iris_gbm, data = iris_hex, "Sepal.Length"), "object must be a regression model or binary classfier")
+  
+  ## 3) Nbins is smaller than cardinality of a categorical column
+  prostate_hex[ ,"AGE"] = as.factor(prostate_hex[ ,"AGE"])
+  prostate_gbm = h2o.gbm(x = c("AGE", "RACE"), y = "CAPSULE", training_frame = prostate_hex, ntrees = 10, seed = seed)
+  expect_error(h2o.partialPlot(object = prostate_gbm, data = prostate_hex),"Column AGE's cardinality")
   
 }
 

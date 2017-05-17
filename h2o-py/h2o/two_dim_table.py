@@ -1,9 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
 A two dimensional table having row and column headers.
-
-:copyright: (c) 2016 H2O.ai
-:license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -43,6 +40,7 @@ class H2OTwoDimTable(object):
         self._col_header = col_header
         self._cell_values = cell_values or self._parse_values(raw_cell_values, col_types)
 
+
     @staticmethod
     def make(keyvals):
         """
@@ -63,16 +61,17 @@ class H2OTwoDimTable(object):
             if key == "data": kwargs["raw_cell_values"] = value
         return H2OTwoDimTable(**kwargs)
 
+
     @property
     def cell_values(self):
         """The contents of the table, as a list of rows."""
         return self._cell_values
 
+
     @property
     def col_header(self):
         """Array of column names."""
         return self._col_header
-
 
 
     def as_data_frame(self):
@@ -82,6 +81,7 @@ class H2OTwoDimTable(object):
             pandas.options.display.max_colwidth = 70
             return pandas.DataFrame(self._cell_values, columns=self._col_header)
         return self
+
 
     def show(self, header=True):
         """Print the contents of this table."""
@@ -108,10 +108,12 @@ class H2OTwoDimTable(object):
         H2ODisplay(table, self._col_header, numalign="left", stralign="left")
         if nr > 20 and can_use_pandas(): print('\nSee the whole table with table.as_data_frame()')
 
+
     def __repr__(self):
         # FIXME: should return a string rather than printing it
         self.show()
         return ""
+
 
     def _parse_values(self, values, types):
         if self._col_header[0] is None:
@@ -129,6 +131,7 @@ class H2OTwoDimTable(object):
                 else:  # string?
                     continue
         return list(zip(*values))  # transpose the values! <3 splat ops
+
 
     def __getitem__(self, item):
         if is_type(item, int, str):
@@ -154,6 +157,7 @@ class H2OTwoDimTable(object):
             return [self[i] for i in item]
         else:
             raise TypeError('can not support getting item for ' + str(item))
+
 
     def __setitem__(self, key, value):
         # This is not tested, and probably not used anywhere... That's why it's so horrible.

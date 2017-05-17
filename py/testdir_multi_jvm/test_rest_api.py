@@ -17,12 +17,12 @@ import requests
 sys.path.insert(1, '../rest_tests')
 
 #################
-# Config 
+# Config
 #################
 
 clean_up_after = False
 
-algos = ['kmeans', 'deeplearning', 'deepwater', 'drf', 'glm', 'gbm', 'pca', 'naivebayes', 'glrm', 'svd', 'aggregator', 'word2vec']
+algos = ['kmeans', 'deeplearning', 'deepwater', 'drf', 'glm', 'gbm', 'pca', 'naivebayes', 'glrm', 'svd', 'aggregator', 'word2vec', 'stackedensemble', 'klime']
 algo_additional_default_params = { 'grep' : { 'regex' : '.*' },
                                    'kmeans' : { 'k' : 2 }
                                  } # additional params to add to the default params
@@ -85,7 +85,7 @@ import test_models
 test_models.build_and_test(a_node, pp, datasets, algos, algo_additional_default_params)
 
 # Metadata used to get corrupted, so test again
-test_metadata.test(a_node, pp)  
+test_metadata.test(a_node, pp)
 
 import test_predict_and_model_metrics
 test_predict_and_model_metrics.test(a_node, pp)

@@ -2,7 +2,6 @@
 # -*- encoding: utf-8 -*-
 from __future__ import unicode_literals
 import bindings as bi
-import re
 import sys
 PY3 = sys.version_info[0] == 3
 str_type = str if PY3 else (str, unicode)
@@ -24,7 +23,7 @@ class PythonTypeTranslatorForCheck(bi.TypeTranslator):
         self.make_array = lambda vtype: "[%s]" % vtype
         self.make_array2 = lambda vtype: "[[%s]]" % vtype
         self.make_map = lambda ktype, vtype: "{%s: %s}" % (ktype, vtype)
-        self.make_key = lambda itype, schema: "str"
+        self.make_key = lambda itype, schema: "H2OFrame" if schema == "Key<Frame>" else "str"
         self.make_enum = lambda schema, values: \
             "Enum(%s)" % ", ".join(stringify(v) for v in values) if values else schema
 
@@ -50,7 +49,7 @@ class PythonTypeTranslatorForDoc(bi.TypeTranslator):
         self.make_array = lambda vtype: "List[%s]" % vtype
         self.make_array2 = lambda vtype: "List[List[%s]]" % vtype
         self.make_map = lambda ktype, vtype: "Dict[%s, %s]" % (ktype, vtype)
-        self.make_key = lambda itype, schema: "str"
+        self.make_key = lambda itype, schema: "H2OFrame" if schema == "Key<Frame>" else "str"
         self.make_enum = lambda schema, values: \
             "Enum[%s]" % ", ".join(stringify(v) for v in values) if values else schema
 
@@ -114,7 +113,6 @@ def gen_module(schema, algo):
     init_extra = init_extra_for(algo)
     class_extra = class_extra_for(algo)
     module_extra = module_extra_for(algo)
-    pattern = re.compile(r"[^a-z]+")
 
     param_names = []
     for param in schema["parameters"]:
@@ -184,25 +182,29 @@ def gen_module(schema, algo):
         ptype = param["ptype"]
         if pname == "model_id": continue  # The getter is already defined in ModelBase
         sname = pname[:-1] if pname[-1] == '_' else pname
-        phelp = param["dtype"] + ": " + param["help"]
-        if param["default_value"] is not None:
-            phelp += " (Default: %s)" % stringify(param["default_value"])
+
+        if param["dtype"].startswith("Enum"):
+            vals = param["dtype"][5:-1].split(", ")
+            extrahelp = "One of: " + ", ".join("``%s``" % v for v in vals)
+        else:
+            extrahelp = "Type: ``%s``" % param["dtype"]
+        if param["default_value"] is None:
+            extrahelp += "."
+        else:
+            extrahelp += "  (default: ``%s``)." % stringify(param["default_value"])
+
         yield "    @property"
         yield "    def %s(self):" % pname
-        if len(phelp) > 100:
-            yield '        """'
-            yield "        %s" % bi.wrap(phelp, indent=(" " * 8), indent_first=False)
-            yield '        """'
-        else:
-            yield '        """%s"""' % phelp
+        yield '        """'
+        yield "        %s" % bi.wrap(param["help"], indent=(" " * 8), indent_first=False)
+        yield ""
+        yield "        %s" % bi.wrap(extrahelp, indent=(" " * 8), indent_first=False)
+        yield '        """'
         yield "        return self._parms.get(\"%s\")" % sname
         yield ""
         yield "    @%s.setter" % pname
         yield "    def %s(self, %s):" % (pname, pname)
-        if pname in {"training_frame", "validation_frame", "user_x", "user_y", "user_points", "beta_constraints"}:
-            assert param["ptype"] == "str"
-            yield "        assert_is_type(%s, None, H2OFrame)" % pname
-        elif pname in {"initial_weights", "initial_biases"}:
+        if pname in {"initial_weights", "initial_biases"}:
             yield "        assert_is_type(%s, None, [H2OFrame, None])" % pname
         elif pname in {"alpha", "lambda_"} and ptype == "[numeric]":
             # For `alpha` and `lambda` the server reports type float[], while in practice simple floats are also ok
@@ -233,6 +235,8 @@ def algo_to_classname(algo):
     if algo == "drf": return "H2ORandomForestEstimator"
     if algo == "svd": return "H2OSingularValueDecompositionEstimator"
     if algo == "pca": return "H2OPrincipalComponentAnalysisEstimator"
+    if algo == "stackedensemble": return "H2OStackedEnsembleEstimator"
+    if algo == "klime": return "H2OKLimeEstimator"
     return "H2O" + algo.capitalize() + "Estimator"
 
 def extra_imports_for(algo):
@@ -270,6 +274,12 @@ def help_preamble_for(algo):
             Bayes classifier, every row in the training dataset that contains at least one NA will
             be skipped completely. If the test dataset has missing values, then those predictors
             are omitted in the probability calculation during prediction."""
+    if algo == "stackedensemble":
+        return """
+            Builds a stacked ensemble (aka "super learner") machine learning method that uses two
+            or more H2O learning algorithms to improve predictive performance. It is a loss-based
+            supervised learning method that finds the optimal combination of a collection of prediction
+            algorithms.This method supports regression and binary classification. """
 
 def help_epilogue_for(algo):
     if algo == "deeplearning":
@@ -283,12 +293,31 @@ def help_epilogue_for(algo):
                          >>> fr[4] = fr[4].asfactor()
                          >>> model = H2ODeepLearningEstimator()
                          >>> model.train(x=range(4), y=4, training_frame=fr)"""
+    if algo == "stackedensemble":
+        return """Examples
+                       --------
+                         >>> import h2o
+                         >>> h2o.init()
+                         >>> from h2o.estimators.random_forest import H2ORandomForestEstimator
+                         >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+                         >>> from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
+                         >>> col_types = ["numeric", "numeric", "numeric", "enum", "enum", "numeric", "numeric", "numeric", "numeric"]
+                         >>> data = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv", col_types=col_types)
+                         >>> train, test = data.split_frame(ratios=[.8], seed=1)
+                         >>> x = ["CAPSULE","GLEASON","RACE","DPROS","DCAPS","PSA","VOL"]
+                         >>> y = "AGE"
+                         >>> nfolds = 5
+                         >>> my_gbm = H2OGradientBoostingEstimator(nfolds=nfolds, fold_assignment="Modulo", keep_cross_validation_predictions=True)
+                         >>> my_gbm.train(x=x, y=y, training_frame=train)
+                         >>> my_rf = H2ORandomForestEstimator(nfolds=nfolds, fold_assignment="Modulo", keep_cross_validation_predictions=True)
+                         >>> my_rf.train(x=x, y=y, training_frame=train)
+                         >>> stack = H2OStackedEnsembleEstimator(model_id="my_ensemble", training_frame=train, validation_frame=test, base_models=[my_gbm.model_id, my_rf.model_id])
+                         >>> stack.train(x=x, y=y, training_frame=train, validation_frame=test)
+                         >>> stack.model_performance()"""
     if algo == "glm":
         return """
-            Returns
-            -------
-            A subclass of ModelBase is returned. The specific subclass depends on the machine learning task at hand
-            (if it's binomial classification, then an H2OBinomialModel is returned, if it's regression then a
+            A subclass of :class:`ModelBase` is returned. The specific subclass depends on the machine learning task
+            at hand (if it's binomial classification, then an H2OBinomialModel is returned, if it's regression then a
             H2ORegressionModel is returned). The default print-out of the models is shown, but further GLM-specific
             information can be queried out of the object. Upon completion of the GLM, the resulting object has
             coefficients, normalized coefficients, residual/null deviance, aic, and a host of model metrics including
@@ -299,6 +328,8 @@ def init_extra_for(algo):
         return "if isinstance(self, H2OAutoEncoderEstimator): self._parms['autoencoder'] = True"
     if algo == "glrm":
         return """self._parms["_rest_version"] = 3"""
+    if algo == "stackedensemble":
+        return """self._parms["_rest_version"] = 99"""
 
 def class_extra_for(algo):
     if algo == "glm":
@@ -307,19 +338,19 @@ def class_extra_for(algo):
         return """
             @property
             def Lambda(self):
-                \"""[DEPRECATED] Use self.lambda_ instead\"""
+                \"""DEPRECATED. Use ``self.lambda_`` instead\"""
                 return self._parms["lambda"] if "lambda" in self._parms else None
 
             @Lambda.setter
-            def lambda_(self, value):
-                \"""[DEPRECATED] Use self.lambda_ instead\"""
+            def Lambda(self, value):
                 self._parms["lambda"] = value
 
             @staticmethod
             def getGLMRegularizationPath(model):
                 \"\"\"
                 Extract full regularization path explored during lambda search from glm model.
-                @param model - source lambda search model
+
+                :param model: source lambda search model
                 \"\"\"
                 x = h2o.api("GET /3/GetGLMRegPath", data={"model": model._model_json["model_id"]["name"]})
                 ns = x.pop("coefficient_names")
@@ -337,10 +368,12 @@ def class_extra_for(algo):
             def makeGLMModel(model, coefs, threshold=.5):
                 \"\"\"
                 Create a custom GLM model using the given coefficients.
+
                 Needs to be passed source model trained on the dataset to extract the dataset information from.
-                  @param model - source model, used for extracting dataset information
-                  @param coefs - dictionary containing model coefficients
-                  @param threshold - (optional, only for binomial) decision threshold used for classification
+
+                :param model: source model, used for extracting dataset information
+                :param coefs: dictionary containing model coefficients
+                :param threshold: (optional, only for binomial) decision threshold used for classification
                 \"\"\"
                 model_json = h2o.api(
                     "POST /3/MakeGLMModel",
@@ -358,12 +391,10 @@ def class_extra_for(algo):
         # Ask the H2O server whether a Deep Water model can be built (depends on availability of native backends)
         @staticmethod
         def available():
-            \"\"\"
-            Returns True if a deep water model can be built, or False otherwise.
-            \"\"\"
+            \"\"\"Returns True if a deep water model can be built, or False otherwise.\"\"\"
             builder_json = h2o.api("GET /3/ModelBuilders", data={"algo": "deepwater"})
             visibility = builder_json["model_builders"]["deepwater"]["visibility"]
-            if (visibility == "Experimental"):
+            if visibility == "Experimental":
                 print("Cannot build a Deep Water model - no backend found.")
                 return False
             else:
@@ -396,12 +427,41 @@ def gen_init(modules):
     yield "# This file is auto-generated by h2o-3/h2o-bindings/bin/gen_python.py"
     yield "# Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)"
     yield "#"
-    for module, clz in sorted(modules):
+    module_strs = []
+    for module, clz, category in sorted(modules):
+        if clz == "H2OGridSearch": continue
+        module_strs.append('"%s"' % clz)
         yield "from .%s import %s" % (module, clz)
     yield ""
     yield "__all__ = ("
-    yield bi.wrap(", ".join('"%s"' % clz for _, clz in sorted(modules)), indent="    ")
+    yield bi.wrap(", ".join(module_strs), indent="    ")
     yield ")"
+
+
+def gen_models_docs(modules):
+    yield ".. This file is autogenerated from gen_python.py, DO NOT MODIFY"
+    yield ":tocdepth: 3"
+    yield ""
+    yield "Modeling In H2O"
+    yield "==============="
+    for cat in ["Supervised", "Unsupervised", "Miscellaneous"]:
+        yield ""
+        yield cat
+        yield "+" * len(cat)
+        yield ""
+        for module, clz, category in sorted(modules):
+            if category != cat: continue
+            fullmodule = "h2o.estimators.%s.%s" % (module, clz)
+            if clz == "H2OGridSearch":
+                fullmodule = "h2o.grid.grid_search.H2OGridSearch"
+            yield ":mod:`%s`" % clz
+            yield "-" * (7 + len(clz))
+            yield ".. autoclass:: %s" % fullmodule
+            yield "    :show-inheritance:"
+            yield "    :members:"
+            yield ""
+
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 #   MAIN:
@@ -409,17 +469,22 @@ def gen_init(modules):
 def main():
     bi.init("Python", "../../../h2o-py/h2o/estimators", clear_dir=False)
 
-    modules = [("deeplearning", "H2OAutoEncoderEstimator"),  # deeplearning module contains 2 classes in it...
-               ("estimator_base", "H2OEstimator")]
+    modules = [("deeplearning", "H2OAutoEncoderEstimator", "Unsupervised"),
+               ("estimator_base", "H2OEstimator", "Miscellaneous"),
+               ("grid_search", "H2OGridSearch", "Miscellaneous")]
     for name, mb in bi.model_builders().items():
         module = name
         if name == "drf": module = "random_forest"
         if name == "naivebayes": module = "naive_bayes"
         bi.vprint("Generating model: " + name)
         bi.write_to_file("%s.py" % module, gen_module(mb, name))
-        modules.append((module, algo_to_classname(name)))
+        category = "Supervised" if mb["supervised"] else "Unsupervised"
+        if name in {"svd", "word2vec"}:
+            category = "Miscellaneous"
+        modules.append((module, algo_to_classname(name), category))
 
     bi.write_to_file("__init__.py", gen_init(modules))
+    bi.write_to_file("../../docs/modeling.rst", gen_models_docs(modules))
 
     type_adapter1.vprint_translation_map()
 

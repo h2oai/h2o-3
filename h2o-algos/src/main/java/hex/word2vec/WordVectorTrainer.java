@@ -1,6 +1,7 @@
 package hex.word2vec;
 
 import water.DKV;
+import water.Job;
 import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
@@ -19,6 +20,9 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
   private static final int MAX_EXP = 6;
   private static final float[] _expTable = calcExpTable();
   private static final float LEARNING_RATE_MIN_FACTOR = 0.0001F; // learning rate stops decreasing at (initLearningRate * this factor)
+
+  // Job
+  private final Job<Word2VecModel> _job;
 
   // Params
   private final int _wordVecSize, _windowSize, _epochs;
@@ -49,8 +53,10 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
   private float _curLearningRate;
   private long _seed = System.nanoTime();
 
-  public WordVectorTrainer(Word2VecModelInfo input) {
+  public WordVectorTrainer(Job<Word2VecModel> job, Word2VecModelInfo input) {
     super(null);
+    _job = job;
+
     _treeKey = input._treeKey;
     _vocabKey = input._vocabKey;
     _wordCountsKey = input._wordCountsKey;
@@ -124,6 +130,7 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
     } // while more sentences
     _processedWords = wordCount;
     _nodeProcessedWords._val += wordCount % 10000;
+    _job.update(1);
   }
 
   @Override public void reduce(WordVectorTrainer other) {

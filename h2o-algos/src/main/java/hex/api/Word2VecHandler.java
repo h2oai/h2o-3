@@ -50,7 +50,10 @@ public class Word2VecHandler extends Handler {
       throw new IllegalArgumentException("words frame is expected to have a single string column, got" + words.numCols());
     }
 
-    Frame vectors = model.transform(words.vec(0));
+    if (args.aggregate_method == null)
+      args.aggregate_method = Word2VecModel.AggregateMethod.NONE;
+
+    Frame vectors = model.transform(words.vec(0), args.aggregate_method);
     args.vectors_frame = new KeyV3.FrameKeyV3(vectors._key);
     return args;
   }

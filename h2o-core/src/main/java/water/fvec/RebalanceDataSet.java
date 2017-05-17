@@ -7,7 +7,6 @@ import water.Key;
 import water.MRTask;
 
 import java.util.Arrays;
-import java.util.Iterator;
 
 /**
  *  Created by tomasnykodym on 3/28/14.
@@ -104,42 +103,26 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
 
     @Override public boolean logVerbose() { return false; }
 
-    private void rebalanceChunk(Vec srcVec, Chunk chk){
-      NewChunk dst = new NewChunk(chk);
-      int rem = chk._len;
-      while(rem > 0 && dst._len < chk._len){
-        Chunk srcRaw = srcVec.chunkForRow(chk._start+ dst._len);
-        NewChunk src = new NewChunk((srcRaw));
-        src = srcRaw.inflate_impl(src);
-        assert src._len == srcRaw._len;
-        int srcFrom = (int)(chk._start+ dst._len - src._start);
-        final int srcTo = srcFrom + rem;
-        int off = srcFrom-1;
-        Iterator<NewChunk.Value> it = src.values(Math.max(0,srcFrom),srcTo);
-        while(it.hasNext()){
-          NewChunk.Value v = it.next();
-          final int rid = v.rowId0();
-          assert  rid < srcTo;
-          int add = rid - off;
-          off = rid;
-          if (src.isSparseZero()) dst.addZeros(add-1);
-          else dst.addNAs(add-1);
-          v.add2Chunk(dst);
-          rem -= add;
-          assert rem >= 0;
-        }
-        int trailingZeros = Math.min(rem, src._len - off -1);
-        if (src.isSparseZero()) dst.addZeros(trailingZeros);
-        else dst.addNAs(trailingZeros);
-        rem -= trailingZeros;
+    private void rebalanceChunk(int i, Chunk c, NewChunk nc){
+      int N = c._len;
+      int len = 0;
+      int lastId = -1;
+      while(N > len) {
+        Chunk srcRaw = _srcVecs[i].chunkForRow(c._start+len);
+        assert lastId == -1 || lastId == srcRaw.cidx()-1;
+        lastId = srcRaw.cidx();
+        int off = (int)((c._start+len) - srcRaw._start);
+        assert off >=0 && off < srcRaw._len;
+        int x = Math.min(N-len,srcRaw._len-off);
+        srcRaw.extractRows(nc, off,off+x);
+        len += x;
       }
-      assert rem == 0:"rem = " + rem;
-      assert dst._len == chk._len :"len = " + dst._len + ", _len = " + chk._len;
-      dst.close(dst.cidx(),_fs);
+      nc.close(_fs);
     }
     @Override public void map(Chunk [] chks){
-      for(int i = 0; i < chks.length; ++i)
-        rebalanceChunk(_srcVecs[i],chks[i]);
+      for(int c = 0; c < chks.length; ++c){
+        rebalanceChunk(c,chks[c],new NewChunk(chks[c]));
+      }
     }
   }
 }

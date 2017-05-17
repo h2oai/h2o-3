@@ -60,7 +60,7 @@ abstract public class MemoryManager {
   private static volatile boolean MEM_LOW_CRITICAL = false;
 
   // Lock for blocking on allocations
-  private static Object _lock = new Object();
+  private static final Object _lock = new Object();
 
   // A monotonically increasing total count memory allocated via MemoryManager.
   // Useful in tracking total memory consumed by algorithms - just ask for the
@@ -222,6 +222,7 @@ abstract public class MemoryManager {
     return malloc(elems,bytes,type,orig,from,false);
   }
   static Object malloc(int elems, long bytes, int type, Object orig, int from , boolean force) {
+    assert elems >= 0 : "Bad size " + elems; // is 0 okay?!
     // Do not assert on large-size here.  RF's temp internal datastructures are
     // single very large arrays.
     //assert bytes < Value.MAX : "malloc size=0x"+Long.toHexString(bytes);
@@ -256,8 +257,10 @@ abstract public class MemoryManager {
       catch( OutOfMemoryError e ) {
         // Do NOT log OutOfMemory, it is expected and unavoidable and handled
         // in most cases by spilling to disk.
-        if( Cleaner.isDiskFull() )
+        if( Cleaner.isDiskFull() ) {
+          Log.err("Disk full, space left = " + Cleaner.availableDiskSpace());
           UDPRebooted.suicide(UDPRebooted.T.oom, H2O.SELF);
+        }
       }
       set_goals("OOM",true, bytes); // Low memory; block for swapping
     }

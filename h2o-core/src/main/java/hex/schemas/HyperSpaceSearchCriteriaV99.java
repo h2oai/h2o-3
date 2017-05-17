@@ -80,5 +80,4 @@ public class HyperSpaceSearchCriteriaV99<I extends HyperSpaceSearchCriteria, S e
 
     return (S) this;
   }
-
 }

@@ -13,7 +13,8 @@ from .utils.compatibility import *  # NOQA
 
 
 class H2ODisplay(object):
-    """Pretty printing for H2O Objects.
+    """
+    Pretty printing for H2O Objects.
 
     Handles both IPython and vanilla console display
     """

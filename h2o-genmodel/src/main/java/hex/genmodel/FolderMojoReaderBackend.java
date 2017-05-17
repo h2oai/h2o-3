@@ -26,4 +26,9 @@ class FolderMojoReaderBackend implements MojoReaderBackend {
     dis.readFully(out);
     return out;
   }
+
+  @Override
+  public boolean exists(String filename) {
+    return new File(root, filename).exists();
+  }
 }

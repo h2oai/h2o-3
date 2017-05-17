@@ -7,6 +7,7 @@ import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
+import water.util.FileUtils;
 import water.util.Log;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import java.io.File;
@@ -53,8 +54,8 @@ public class DeepLearningMNIST extends TestUtil {
     Frame frame=null;
     Frame vframe=null;
     try {
-      File file = find_test_file("bigdata/laptop/mnist/train.csv.gz");
-      File valid = find_test_file("bigdata/laptop/mnist/test.csv.gz");
+      File file = FileUtils.locateFile("bigdata/laptop/mnist/train.csv.gz");
+      File valid = FileUtils.locateFile("bigdata/laptop/mnist/test.csv.gz");
       if (file != null) {
         NFSFileVec trainfv = NFSFileVec.make(file);
         frame = ParseDataset.parse(Key.make(), trainfv._key);

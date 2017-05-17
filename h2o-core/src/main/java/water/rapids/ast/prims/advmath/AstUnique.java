@@ -6,11 +6,10 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
-import water.rapids.Val;
-import water.rapids.ast.prims.mungers.AstGroup;
-import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
+import water.rapids.ast.prims.mungers.AstGroup;
+import water.rapids.vals.ValFrame;
 import water.util.IcedHashMap;
 
 public class AstUnique extends AstPrimitive {
@@ -32,18 +31,19 @@ public class AstUnique extends AstPrimitive {
   @Override
   public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    Vec vec0 = fr.vec(0);
     Vec v;
     if (fr.numCols() != 1)
       throw new IllegalArgumentException("Unique applies to a single column only.");
-    if (fr.anyVec().isCategorical()) {
-      v = Vec.makeSeq(0, (long) fr.anyVec().domain().length, true);
-      v.setDomain(fr.anyVec().domain());
+    if (vec0.isCategorical()) {
+      v = Vec.makeSeq(0, (long) vec0.domain().length, true);
+      v.setDomain(vec0.domain());
       DKV.put(v);
     } else {
       UniqTask t = new UniqTask().doAll(fr);
       int nUniq = t._uniq.size();
       final AstGroup.G[] uniq = t._uniq.keySet().toArray(new AstGroup.G[nUniq]);
-      v = Vec.makeZero(nUniq);
+      v = Vec.makeZero(nUniq, vec0.get_type());
       new MRTask() {
         @Override
         public void map(Chunk c) {

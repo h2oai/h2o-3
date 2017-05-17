@@ -18,6 +18,10 @@ import water.util.ArrayUtils;
 import water.util.JCodeGen;
 import water.util.SBPrintStream;
 
+import java.util.Arrays;
+
+import static hex.genmodel.GenModel.Kmeans_preprocessData;
+
 public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
   @Override public ToEigenVec getToEigenVec() { return LinearAlgebraUtils.toEigen; }
 
@@ -85,6 +89,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
           double tmp [] = new double[_output._names.length];
           double preds[] = new double[len];
           for(int row = 0; row < chks[0]._len; row++) {
+            Arrays.fill(preds,0);
             double p[] = score_indicator(chks, row, tmp, preds);
             for(int c = 0; c < preds.length; c++)
               chks[_output._names.length + c].set(row, p[c]);
@@ -113,7 +118,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     double[] clus = new double[1];
     score0(tmp, clus);   // this saves cluster number into clus[0]
 
-    assert preds != null && ArrayUtils.l2norm2(preds) == 0 : "preds must be a vector of all zeros";
+    assert preds != null && ArrayUtils.l2norm2(preds) == 0 : "preds must be a vector of all zeros, got " + Arrays.toString(preds);
     assert clus[0] >= 0 && clus[0] < preds.length : "Cluster number must be an integer in [0," + String.valueOf(preds.length) + ")";
     preds[(int)clus[0]] = 1;
     return preds;
@@ -126,7 +131,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
       tmp[i] = chks[i].atd(row_in_chunk);
 
     double[][] centers = _parms._standardize ? _output._centers_std_raw : _output._centers_raw;
-    double[] preds = hex.genmodel.GenModel.KMeans_simplex(centers,tmp,_output._domains,_output._normSub,_output._normMul);
+    double[] preds = hex.genmodel.GenModel.KMeans_simplex(centers,tmp,_output._domains);
     assert preds.length == _output._k[_output._k.length-1];
     assert Math.abs(ArrayUtils.sum(preds) - 1) < 1e-6 : "Sum of k-means distance ratios should equal 1";
     return preds;
@@ -141,10 +146,14 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
 
   @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {
     double[][] centers = _parms._standardize ? _output._centers_std_raw : _output._centers_raw;
-    preds[0] = hex.genmodel.GenModel.KMeans_closest(centers,data,_output._domains,_output._normSub,_output._normMul);
+    Kmeans_preprocessData(data, _output._normSub, _output._normMul, _output._mode);
+    preds[0] = hex.genmodel.GenModel.KMeans_closest(centers,data,_output._domains);
     return preds;
   }
 
+  @Override protected double data(Chunk[] chks, int row, int col){
+    return Kmeans_preprocessData(chks[col].atd(row),col,_output._normSub,_output._normMul,_output._mode);
+  }
   // Override in subclasses to provide some top-level model-specific goodness
   @Override protected void toJavaPredictBody(SBPrintStream body,
                                              CodeGeneratorPipeline classCtx,
@@ -161,17 +170,23 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
                                     "Column means of training data");
           JCodeGen.toClassWithArray(out, null, mname + "_MULTS", _output._normMul,
                                     "Reciprocal of column standard deviations of training data");
+          JCodeGen.toClassWithArray(out, null, mname + "_MODES", _output._mode,
+                                    "Mode for categorical columns");
           JCodeGen.toClassWithArray(out, null, mname + "_CENTERS", _output._centers_std_raw,
                                     "Normalized cluster centers[K][features]");
         }
       });
 
+      // Predict function body: Standardize data first
+      body.ip("Kmeans_preprocessData(data,")
+              .pj(mname + "_MEANS", "VALUES,")
+              .pj(mname + "_MULTS", "VALUES,")
+              .pj(mname + "_MODES", "VALUES")
+              .p(");").nl();
       // Predict function body: main work function is a utility in GenModel class.
       body.ip("preds[0] = KMeans_closest(")
           .pj(mname + "_CENTERS", "VALUES")
-          .p(", data, DOMAINS, ")
-          .pj(mname + "_MEANS", "VALUES").p(", ")
-          .pj(mname + "_MULTS", "VALUES").p(");").nl(); // at function level
+          .p(", data, DOMAINS); ").nl(); // at function level
     } else {
       fileCtx.add(new CodeGenerator() {
         @Override
@@ -184,7 +199,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
       // Predict function body: main work function is a utility in GenModel class.
       body.ip("preds[0] = KMeans_closest(")
           .pj(mname + "_CENTERS", "VALUES")
-          .p(",data, DOMAINS, null, null);").nl(); // at function level
+          .p(",data, DOMAINS);").nl(); // at function level
     }
   }
 
@@ -194,4 +209,10 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
             _output._centers_std_raw.length * _output._centers_std_raw[0].length > 1e6 :
             _output._centers_raw.length * _output._centers_raw[0].length > 1e6;
   }
+
+  @Override
+  public KMeansMojoWriter getMojo() {
+    return new KMeansMojoWriter(this);
+  }
+
 }

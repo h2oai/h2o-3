@@ -1,0 +1,129 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
+plugins {
+    id "com.google.protobuf" version "0.8.0"
+}
+
+apply plugin: 'java'
+apply plugin: 'com.google.protobuf'
+
+repositories {
+    mavenCentral()
+}
+
+def grpcVersion = '1.0.3'
+def protocVersion = '3.0.2'
+
+// Detect the correct version of python executable to use
+def pythonexe = "python"
+if (System.env.VIRTUAL_ENV) {
+    pythonexe = "${System.env.VIRTUAL_ENV}/bin/python"
+}
+
+
+dependencies {
+    compile project(":h2o-core")
+    compile "com.google.protobuf:protobuf-java:${protocVersion}"
+    compile "io.grpc:grpc-netty:${grpcVersion}"
+    compile "io.grpc:grpc-protobuf:${grpcVersion}"
+    compile "io.grpc:grpc-stub:${grpcVersion}"
+}
+
+task verifyDependencies(type: Exec) {
+    commandLine getOsSpecificCommandLine([
+            pythonexe, "../h2o-py/scripts/verify_requirements.py", "--metayaml", "meta.yaml"
+    ])
+}
+
+
+
+//----------------------------------------------------------------------------------------------------------------------
+// Compile Java Protobuf+GRPC objects
+//----------------------------------------------------------------------------------------------------------------------
+
+protobuf {
+    // Configure the protoc executable (for compiling the *.proto files)
+    protoc {
+        artifact = "com.google.protobuf:protoc:${protocVersion}"
+    }
+
+    // Configure the codegen plugins
+    plugins {
+        grpc {
+            artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}"
+        }
+    }
+
+    generateProtoTasks {
+        ofSourceSet('main').each { task ->
+            task.builtins {
+                java {}
+            }
+            task.plugins {
+                // Add grpc output without any option.  grpc must have been defined in the
+                // protobuf.plugins block.
+                grpc {}
+            }
+        }
+    }
+
+    generatedFilesBaseDir = "${projectDir}/proto-gen"
+}
+
+
+//----------------------------------------------------------------------------------------------------------------------
+// Compile Python Protobuf+GRPC classes
+//----------------------------------------------------------------------------------------------------------------------
+def pyProtoDir = "${projectDir}/proto-gen/main/python"
+
+
+task makeProtoOutputDir(type: Exec) {
+    if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+        commandLine 'cmd', '/c', 'mkdir', pyProtoDir
+    } else {
+        commandLine 'mkdir', '-p', pyProtoDir
+    }
+}
+
+task generatePyProtoFiles(type: Exec) {
+    dependsOn makeProtoOutputDir
+
+    commandLine getOsSpecificCommandLine([
+            pythonexe, "-m", "grpc_tools.protoc",
+            "-I${projectDir}/src/main/proto",
+            "--python_out=${pyProtoDir}",
+            "--grpc_python_out=${pyProtoDir}",
+            // TODO: auto-detect the list of files and process them all at once
+            "${projectDir}/src/main/proto/common.proto",
+            "${projectDir}/src/main/proto/job.proto",
+            "${projectDir}/src/main/proto/cluster.proto",
+            "${projectDir}/src/main/proto/create_frame.proto",
+    ])
+}
+
+build.dependsOn verifyDependencies
+build.dependsOn generatePyProtoFiles
+
+
+//----------------------------------------------------------------------------------------------------------------------
+// Instruct IDEA to use the generated files as sources
+//----------------------------------------------------------------------------------------------------------------------
+
+idea {
+    module {
+        sourceDirs += file("${protobuf.generatedFilesBaseDir}/main/java");
+        sourceDirs += file("${protobuf.generatedFilesBaseDir}/main/grpc");
+        sourceDirs += file("${protobuf.generatedFilesBaseDir}/main/python");
+    }
+}
+
+
+//----------------------------------------------------------------------------------------------------------------------
+// Clean up
+//----------------------------------------------------------------------------------------------------------------------
+
+task cleanGeneratedProtoClasses(type: Delete) {
+    delete protobuf.generatedFilesBaseDir
+}
+
+clean.dependsOn cleanGeneratedProtoClasses

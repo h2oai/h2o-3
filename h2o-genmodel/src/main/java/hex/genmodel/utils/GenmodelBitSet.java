@@ -31,7 +31,7 @@ public class GenmodelBitSet {
         if (nbits < 0) throw new NegativeArraySizeException("nbits < 0: " + nbits);
         if (byteoff < 0) throw new IndexOutOfBoundsException("byteoff < 0: "+ byteoff);
         if (bitoff < 0) throw new IndexOutOfBoundsException("bitoff < 0: " + bitoff);
-        assert v == null || byteoff + ((nbits-1) >> 3) + 1 <= v.length;
+        assert v == null || byteoff + bytes(nbits) <= v.length;
         _val = v;
         _nbits = nbits;
         _bitoff = bitoff;
@@ -57,9 +57,9 @@ public class GenmodelBitSet {
     // Reload IcedBitSet from AutoBuffer
     public void fill3(byte[] bits, ByteBufferWrapper ab) {
         int bitoff = ab.get2();
-        int nbytes = ab.get2();
-        fill(bits, ab.position(), nbytes<<3, bitoff);
-        ab.skip(nbytes);  // Skip inline bitset
+        int nbits = ab.get4();
+        fill(bits, ab.position(), nbits, bitoff);
+        ab.skip(bytes(nbits));  // Skip inline bitset
     }
 
     private static int bytes(int nbits) {
@@ -72,5 +72,25 @@ public class GenmodelBitSet {
       idx -= _bitoff;
       return (idx >= 0) && (idx < _nbits) &&
               (_val[_byteoff + (idx >> 3)] & ((byte)1 << (idx & 7))) != 0;
+    }
+
+    /* SET IN STONE FOR MOJO VERSION "1.10" AND OLDER - DO NOT CHANGE */
+    public void fill3_1(byte[] bits, ByteBufferWrapper ab) {
+      int bitoff = ab.get2();
+      int nbytes = ab.get2();
+      fill_1(bits, ab.position(), nbytes<<3, bitoff);
+      ab.skip(nbytes);  // Skip inline bitset
+    }
+
+    /* SET IN STONE FOR MOJO VERSION "1.10" AND OLDER - DO NOT CHANGE */
+    public void fill_1(byte[] v, int byteoff, int nbits, int bitoff) {
+      if (nbits < 0) throw new NegativeArraySizeException("nbits < 0: " + nbits);
+      if (byteoff < 0) throw new IndexOutOfBoundsException("byteoff < 0: "+ byteoff);
+      if (bitoff < 0) throw new IndexOutOfBoundsException("bitoff < 0: " + bitoff);
+      assert v == null || byteoff + ((nbits-1) >> 3) + 1 <= v.length;
+      _val = v;
+      _nbits = nbits;
+      _bitoff = bitoff;
+      _byteoff = byteoff;
     }
 }

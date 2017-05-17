@@ -2,6 +2,7 @@ package hex.word2vec;
 
 import hex.ModelCategory;
 import hex.ModelMetrics;
+import hex.ModelMojoWriter;
 import water.*;
 import water.fvec.*;
 import water.parser.BufferedString;
@@ -34,6 +35,54 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     throw H2O.unimpl();
   }
 
+  @Override
+  public Word2VecMojoWriter getMojo() {
+    return new Word2VecMojoWriter(this);
+  }
+
+  /**
+   * Converts this word2vec model to a Frame.
+   * @return Frame made of columns: Word, V1, .., Vn. Word column holds the vocabulary associated
+   * with this word2vec model, and columns V1, .., Vn represent the embeddings in the n-dimensional space.
+   */
+  public Frame toFrame() {
+    Vec zeroVec = null;
+    try {
+      zeroVec = Vec.makeZero(_output._words.length);
+      byte[] types = new byte[1 + _output._vecSize];
+      Arrays.fill(types, Vec.T_NUM);
+      types[0] = Vec.T_STR;
+      String[] colNames = new String[types.length];
+      colNames[0] = "Word";
+      for (int i = 1; i < colNames.length; i++)
+        colNames[i] = "V" + i;
+      return new ConvertToFrameTask(this).doAll(types, zeroVec).outputFrame(colNames, null);
+    } finally {
+      if (zeroVec != null) zeroVec.remove();
+    }
+  }
+
+  private static class ConvertToFrameTask extends MRTask<ConvertToFrameTask> {
+    private Key<Word2VecModel> _modelKey;
+    private transient Word2VecModel _model;
+    public ConvertToFrameTask(Word2VecModel model) { _modelKey = model._key; }
+    @Override
+    protected void setupLocal() { _model = DKV.getGet(_modelKey); }
+    @Override
+    public void map(Chunk[] cs, NewChunk[] ncs) {
+      assert cs.length == 1;
+      assert ncs.length == _model._output._vecSize + 1;
+      Chunk chk = cs[0];
+      int wordOffset = (int) chk.start();
+      int vecPos = _model._output._vecSize * wordOffset;
+      for (int i = 0; i < chk._len; i++) {
+        ncs[0].addStr(_model._output._words[wordOffset + i]);
+        for (int j = 1; j < ncs.length; j++)
+          ncs[j].addNum(_model._output._vecs[vecPos++]);
+      }
+    }
+  }
+
   /**
    * Takes an input string can return the word vector for that word.
    *
@@ -52,13 +101,17 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     return Arrays.copyOfRange(_output._vecs, wordIdx * _output._vecSize, (wordIdx + 1) * _output._vecSize);
   }
 
-  public Frame transform(Vec wordVec) {
+  public enum AggregateMethod { NONE, AVERAGE }
+
+  public Frame transform(Vec wordVec, AggregateMethod aggregateMethod) {
     if (wordVec.get_type() != Vec.T_STR) {
       throw new IllegalArgumentException("Expected a string vector, got " + wordVec.get_type_str() + " vector.");
     }
     byte[] types = new byte[_output._vecSize];
     Arrays.fill(types, Vec.T_NUM);
-    return new Word2VecTransformTask(this).doAll(types, wordVec).outputFrame(Key.<Frame>make(), null, null);
+    MRTask<?> transformTask = aggregateMethod == AggregateMethod.AVERAGE ?
+            new Word2VecAggregateTask(this) : new Word2VecTransformTask(this);
+    return transformTask.doAll(types, wordVec).outputFrame(Key.<Frame>make(), null, null);
   }
 
   private static class Word2VecTransformTask extends MRTask<Word2VecTransformTask> {
@@ -82,6 +135,66 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
               ncs[j].addNum(vs[j]);
         }
       }
+    }
+  }
+
+  private static class Word2VecAggregateTask extends MRTask<Word2VecAggregateTask> {
+    private Word2VecModel _model;
+    public Word2VecAggregateTask(Word2VecModel model) { _model = model; }
+    @Override
+    public void map(Chunk[] cs, NewChunk[] ncs) {
+      assert cs.length == 1;
+      Chunk chk = cs[0];
+      // skip words that belong to a sequence started in a previous chunk
+      int offset = 0;
+      if (chk.cidx() > 0) { // first chunk doesn't have an offset
+        int naPos = findNA(chk);
+        if (naPos < 0)
+          return; // chunk doesn't contain an end of sequence and should not be processed
+        offset = naPos + 1;
+      }
+      // process this chunk, if the last sequence is not terminated in this chunk, roll-over to the next chunk
+      float[] aggregated = new float[ncs.length];
+      int seqLength = 0;
+      boolean seqOpen = false;
+      BufferedString tmp = new BufferedString();
+      chunkLoop: do {
+        for (int i = offset; i < chk._len; i++) {
+          if (chk.isNA(i)) {
+            writeAggregate(seqLength, aggregated, ncs);
+            Arrays.fill(aggregated, 0.0f);
+            seqLength = 0;
+            seqOpen = false;
+            if (chk != cs[0])
+              break chunkLoop; // we just closed a sequence that was left open in one of the previous chunks
+          } else {
+            BufferedString word = chk.atStr(tmp, i);
+            float[] vs = _model.transform(word);
+            if (vs != null) {
+              for (int j = 0; j < ncs.length; j++)
+                aggregated[j] += vs[j];
+              seqLength++;
+            }
+            seqOpen = true;
+          }
+        }
+        offset = 0;
+      } while ((chk = chk.nextChunk()) != null);
+      // last sequence doesn't have to be terminated by NA
+      if (seqOpen)
+        writeAggregate(seqLength, aggregated, ncs);
+    }
+    private void writeAggregate(int seqLength, float[] aggregated, NewChunk[] ncs) {
+      if (seqLength == 0)
+        for (NewChunk nc : ncs) nc.addNA();
+      else
+        for (int j = 0; j < ncs.length; j++)
+          ncs[j].addNum(aggregated[j] / seqLength);
+    }
+    private int findNA(Chunk chk) {
+      for (int i = 0; i < chk._len; i++)
+        if (chk.isNA(i)) return i;
+      return -1;
     }
   }
 
@@ -147,15 +260,24 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
   }
 
   void buildModelOutput(Word2VecModelInfo modelInfo) {
-    final int vecSize = _parms._vec_size;
-
     IcedHashMapGeneric<BufferedString, Integer> vocab = ((Vocabulary) DKV.getGet(modelInfo._vocabKey))._data;
     BufferedString[] words = new BufferedString[vocab.size()];
     for (BufferedString str : vocab.keySet())
       words[vocab.get(str)] = str;
 
-    _output._vecSize = vecSize;
+    _output._vecSize = _parms._vec_size;
     _output._vecs = modelInfo._syn0;
+    _output._words = words;
+    _output._vocab = vocab;
+  }
+
+  void buildModelOutput(BufferedString[] words, float[] syn0) {
+    IcedHashMapGeneric<BufferedString, Integer> vocab = new IcedHashMapGeneric<>();
+    for (int i = 0; i < words.length; i++)
+      vocab.put(words[i], i);
+
+    _output._vecSize = _parms._vec_size;
+    _output._vecs = syn0;
     _output._words = words;
     _output._vocab = vocab;
   }
@@ -169,7 +291,9 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     public String algoName() { return "Word2Vec"; }
     public String fullName() { return "Word2Vec"; }
     public String javaName() { return Word2VecModel.class.getName(); }
-    @Override public long progressUnits() { return _epochs; }
+    @Override public long progressUnits() {
+      return isPreTrained() ? _pre_trained.get().anyVec().nChunks() : train().vec(0).nChunks() * _epochs;
+    }
     static final int MAX_VEC_SIZE = 10000;
 
     public Word2Vec.WordModel _word_model = Word2Vec.WordModel.SkipGram;
@@ -180,6 +304,8 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     public int _epochs = 5;
     public float _init_learning_rate = 0.025f;
     public float _sent_sample_rate = 1e-3f;
+    public Key<Frame> _pre_trained;  // key of a frame that contains a pre-trained word2vec model
+    boolean isPreTrained() { return _pre_trained != null; }
     Vec trainVec() { return train().vec(0); }
   }
 
@@ -193,7 +319,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     public IcedHashMapGeneric<BufferedString, Integer> _vocab;
 
     @Override public ModelCategory getModelCategory() {
-      return ModelCategory.Unknown;
+      return ModelCategory.WordEmbedding;
     }
   }
 

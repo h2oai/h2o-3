@@ -1,8 +1,6 @@
 package water;
 
-import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
@@ -13,23 +11,28 @@ import water.parser.BufferedString;
 import water.parser.DefaultParserProviders;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
+import water.util.FileUtils;
 import water.util.Log;
-import water.util.StringUtils;
 import water.util.Timer;
 import water.util.TwoDimTable;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @Ignore("Support for tests, but no actual tests here")
 public class TestUtil extends Iced {
+  { // we need assertions to be checked at least when tests are running
+    ClassLoader loader = getClass().getClassLoader();
+    loader.setDefaultAssertionStatus(true);
+  }
+
   public final static boolean JACOCO_ENABLED = Boolean.parseBoolean(System.getProperty("test.jacocoEnabled", "false"));
   private static boolean _stall_called_before = false;
   private static String[] ignoreTestsNames;
@@ -88,6 +91,36 @@ public class TestUtil extends Iced {
     }
     H2O.waitForCloudSize(x, timeout);
     _initial_keycnt = H2O.store_size();
+    // Finalize registration of REST API to enable tests which are touching Schemas.
+    H2O.finalizeRegistration();
+  }
+
+
+  /**
+   * Converts a H2OFrame to a csv file for debugging purposes.
+   *
+   * @param fileNameWithPath: String containing filename with path that will contain the H2O Frame
+   * @param h2oframe: H2O Frame to be saved as CSV file.
+   * @param header: boolean to decide if column names should be saved.  Set to false if don't care.
+   * @param hex_string: boolean to decide if the double values are written in hex.  Set to false if don't care.
+   * @throws IOException
+   */
+  public static void writeFrameToCSV(String fileNameWithPath, Frame h2oframe, boolean header, boolean hex_string)
+          throws IOException {
+    InputStream frameToStream = h2oframe.toCSV(header, hex_string);    // read in frame as Inputstream
+    // write Inputstream to a real file
+    File targetFile = new File(fileNameWithPath);
+    OutputStream outStream = new FileOutputStream(targetFile);
+
+    byte[] buffer = new byte[1<<20];
+    int bytesRead;
+
+    while((bytesRead=frameToStream.read(buffer)) > 0) { // for our toCSV stream, return 0 as EOF, not -1
+      outStream.write(buffer, 0, bytesRead);
+    }
+    frameToStream.close();
+    outStream.flush();
+    outStream.close();
   }
 
   @AfterClass
@@ -136,15 +169,34 @@ public class TestUtil extends Iced {
   @Rule transient public TestRule runRule = new TestRule() {
     @Override public Statement apply(Statement base, Description description) {
       String testName = description.getClassName() + "#" + description.getMethodName();
-      if ((ignoreTestsNames != null && Arrays.asList(ignoreTestsNames).contains(testName)) ||
-          (doonlyTestsNames != null && !Arrays.asList(doonlyTestsNames).contains(testName))) {
+      boolean ignored = false;
+      if (ignoreTestsNames != null && ignoreTestsNames.length > 0) {
+        for (String tn : ignoreTestsNames) {
+          if (testName.startsWith(tn)) {
+            ignored = true;
+            break;
+          }
+        }
+      }
+      if (doonlyTestsNames != null && doonlyTestsNames.length > 0) {
+        ignored = true;
+        for (String tn : doonlyTestsNames) {
+          if (testName.startsWith(tn)) {
+            ignored = false;
+            break;
+          }
+        }
+      }
+      if (ignored) {
         // Ignored tests trump do-only tests
         Log.info("#### TEST " + testName + " IGNORED");
         return new Statement() {
           @Override
           public void evaluate() throws Throwable {}
         };
-      } else { return base; }
+      } else {
+        return base;
+      }
     }
   };
 
@@ -173,28 +225,6 @@ public class TestUtil extends Iced {
 
   // ==== Data Frame Creation Utilities ====
 
-  /** Hunt for test files in likely places.  Null if cannot find.
-   *  @param fname Test filename
-   *  @return      Found file or null */
-  public static File find_test_file_static(String fname) {
-    // When run from eclipse, the working directory is different.
-    // Try pointing at another likely place
-    File file = new File(fname);
-    if( !file.exists() )
-      file = new File("target/" + fname);
-    if( !file.exists() )
-      file = new File("../" + fname);
-    if( !file.exists() )
-      file = new File("../../" + fname);
-    if( !file.exists() )
-      file = new File("../target/" + fname);
-    if( !file.exists() )
-      file = new File(StringUtils.expandPath(fname));
-    if( !file.exists() )
-      file = null;
-    return file;
-  }
-
   /** Compare 2 frames
    *  @param fr1 Frame
    *  @param fr2 Frame
@@ -219,53 +249,43 @@ public class TestUtil extends Iced {
     return isIdenticalUpToRelTolerance(fr1,fr2,0);
   }
 
-  /** Hunt for test files in likely places.  Null if cannot find.
-   *  @param fname Test filename
-   *  @return      Found file or null */
-  protected File find_test_file(String fname) {
-    return find_test_file_static(fname);
-  }
-
-  private static void checkFileEntry(String name, File file) {
-    assertNotNull("File not found: " + name, file);
-    assertTrue("File should exist: " + name, file.exists());
-  }
-
-  public static void checkFile(String name, File file) {
-    checkFileEntry(name, file);
-    assertTrue("Expected a readable file: " + name, file.canRead());
-  }
-
-  static File[] checkFolder(String name, File folder) {
-    checkFileEntry(name, folder);
-    assertTrue("Expected a folder: " + name, folder.isDirectory());
-    File[] files = folder.listFiles();
-    assertNotNull("No files found in " + folder, files);
-    return files;
+  static File[] contentsOf(String name, File folder) {
+    try {
+      return FileUtils.contentsOf(folder, name);
+    } catch (IOException ioe) {
+      fail(ioe.getMessage());
+      return null;
+    }
   }
 
   /** Find & parse a CSV file.  NPE if file not found.
    *  @param fname Test filename
    *  @return      Frame or NPE */
-  public static Frame parse_test_file( String fname ) { return parse_test_file(Key.make(),fname); }
+  public static Frame parse_test_file( String fname ) { 
+    return parse_test_file(Key.make(),fname); 
+  }
+
+  public static NFSFileVec makeNfsFileVec(String fname) {
+    try {
+      return NFSFileVec.make(fname);
+    } catch (IOException ioe) {
+      fail(ioe.getMessage());
+      return null;
+    }
+  }
+  
   public static Frame parse_test_file( Key outputKey, String fname) {
-    File f = find_test_file_static(fname);
-    checkFile(fname, f);
-    NFSFileVec nfs = NFSFileVec.make(f);
+    NFSFileVec nfs = makeNfsFileVec(fname);
     return ParseDataset.parse(outputKey, nfs._key);
   }
 
-  protected Frame parse_test_file( Key outputKey, String fname , boolean guessSetup) {
-    File f = find_test_file(fname);
-    checkFile(fname, f);
-    NFSFileVec nfs = NFSFileVec.make(f);
+  protected Frame parse_test_file( Key outputKey, String fname, boolean guessSetup) {
+    NFSFileVec nfs = makeNfsFileVec(fname);
     return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, ParseSetup.guessSetup(new Key[]{nfs._key},false,1));
   }
 
   protected Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types ) {
-    File f = find_test_file_static(fname);
-    checkFile(fname, f);
-    NFSFileVec nfs = NFSFileVec.make(f);
+    NFSFileVec nfs = makeNfsFileVec(fname);
 
     Key[] res = {nfs._key};
 
@@ -298,8 +318,8 @@ public class TestUtil extends Iced {
    *  @param fname Test filename
    *  @return      Frame or NPE */
   protected Frame parse_test_folder( String fname ) {
-    File folder = find_test_file(fname);
-    File[] files = checkFolder(fname, folder);
+    File folder = FileUtils.locateFile(fname);
+    File[] files = contentsOf(fname, folder);
     Arrays.sort(files);
     ArrayList<Key> keys = new ArrayList<>();
     for( File f : files )
@@ -319,8 +339,8 @@ public class TestUtil extends Iced {
    * @return
    */
   protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types ) {
-    File folder = find_test_file_static(fname);
-    File[] files = checkFolder(fname, folder);
+    File folder = FileUtils.locateFile(fname);
+    File[] files = contentsOf(fname, folder);
     Arrays.sort(files);
     ArrayList<Key> keys = new ArrayList<>();
     for( File f : files )
@@ -534,13 +554,13 @@ public class TestUtil extends Iced {
 
   public static void checkStddev(double[] expected, double[] actual, double threshold) {
     for(int i = 0; i < actual.length; i++)
-      Assert.assertEquals(expected[i], actual[i], threshold);
+      assertEquals(expected[i], actual[i], threshold);
   }
 
   public static void checkIcedArrays(IcedWrapper[][] expected, IcedWrapper[][] actual, double threshold) {
     for(int i = 0; i < actual.length; i++)
       for (int j = 0; j < actual[0].length; j++)
-      Assert.assertEquals(expected[i][j].d, actual[i][j].d, threshold);
+      assertEquals(expected[i][j].d, actual[i][j].d, threshold);
   }
 
   public static boolean[] checkEigvec(double[][] expected, double[][] actual, double threshold) {
@@ -552,7 +572,7 @@ public class TestUtil extends Iced {
       // flipped[j] = Math.abs(expected[0][j] - actual[0][j]) > threshold;
       flipped[j] = Math.abs(expected[0][j] - actual[0][j]) > Math.abs(expected[0][j] + actual[0][j]);
       for(int i = 0; i < nfeat; i++) {
-        Assert.assertEquals(expected[i][j], flipped[j] ? -actual[i][j] : actual[i][j], threshold);
+        assertEquals(expected[i][j], flipped[j] ? -actual[i][j] : actual[i][j], threshold);
       }
     }
     return flipped;
@@ -566,7 +586,21 @@ public class TestUtil extends Iced {
     for(int j = 0; j < ncomp; j++) {
       flipped[j] = Math.abs(expected[0][j] - (double)actual.get(0,j)) > threshold;
       for(int i = 0; i < nfeat; i++) {
-        Assert.assertEquals(expected[i][j], flipped[j] ? -(double)actual.get(i,j) : (double)actual.get(i,j), threshold);
+        assertEquals(expected[i][j], flipped[j] ? -(double)actual.get(i,j) : (double)actual.get(i,j), threshold);
+      }
+    }
+    return flipped;
+  }
+
+  public static boolean[] checkEigvec(TwoDimTable expected, TwoDimTable actual, double threshold) {
+    int nfeat = actual.getRowDim();
+    int ncomp = actual.getColDim();
+    boolean[] flipped = new boolean[ncomp];
+
+    for(int j = 0; j < ncomp; j++) {
+      flipped[j] = Math.abs((double)expected.get(0,j) - (double)actual.get(0,j)) > threshold;
+      for(int i = 0; i < nfeat; i++) {
+        assertEquals((double) expected.get(i,j), flipped[j] ? -(double)actual.get(i,j) : (double)actual.get(i,j), threshold);
       }
     }
     return flipped;
@@ -581,9 +615,14 @@ public class TestUtil extends Iced {
     for(int j = 0; j < ncomp; j++) {
       Vec.Reader vexp = expected.vec(j).new Reader();
       Vec.Reader vact = actual.vec(j).new Reader();
-      Assert.assertEquals(vexp.length(), vact.length());
+      assertEquals(vexp.length(), vact.length());
       for (int i = 0; i < nfeat; i++) {
-        Assert.assertEquals(vexp.at8(i), flipped[j] ? -vact.at8(i) : vact.at8(i), threshold);
+        if (vexp.isNA(i) || vact.isNA(i)) {
+          continue;
+        }
+        // only perform comparison when data is not NAN
+        assertEquals(vexp.at8(i), flipped[j] ? -vact.at8(i) : vact.at8(i), threshold);
+
       }
     }
     return flipped;
@@ -623,29 +662,37 @@ public class TestUtil extends Iced {
         Chunk c0 = chks[cols                 ];
         Chunk c1 = chks[cols+(chks.length>>1)];
         for( int rows = 0; rows < chks[0]._len; rows++ ) {
-          if (c0 instanceof C16Chunk && c1 instanceof C16Chunk) {
-            if (! (c0.isNA(rows) && c1.isNA(rows))) {
+          if (c0.isNA(rows) != c1.isNA(rows)) {
+            _unequal = true;
+            return;
+          } else if (!(c0.isNA(rows) && c1.isNA(rows))) {
+            if (c0 instanceof C16Chunk && c1 instanceof C16Chunk) {
               long lo0 = c0.at16l(rows), lo1 = c1.at16l(rows);
               long hi0 = c0.at16h(rows), hi1 = c1.at16h(rows);
               if (lo0 != lo1 || hi0 != hi1) {
                 _unequal = true;
                 return;
               }
-            }
-          } else if (c0 instanceof CStrChunk && c1 instanceof CStrChunk) {
-            if (!(c0.isNA(rows) && c1.isNA(rows))) {
+            } else if (c0 instanceof CStrChunk && c1 instanceof CStrChunk) {
               BufferedString s0 = new BufferedString(), s1 = new BufferedString();
-              c0.atStr(s0, rows); c1.atStr(s1, rows);
+              c0.atStr(s0, rows);
+              c1.atStr(s1, rows);
               if (s0.compareTo(s1) != 0) {
                 _unequal = true;
                 return;
               }
-            }
-          }else {
-            double d0 = c0.atd(rows), d1 = c1.atd(rows);
-            if (!(Double.isNaN(d0) && Double.isNaN(d1)) && !(Math.abs(d0-d1)<=Math.abs(d0+d1)*_epsilon) ) {
-              _unequal = true;
-              return;
+            } else if ((c0 instanceof C8Chunk) && (c1 instanceof C8Chunk)) {
+              long d0 = c0.at8(rows), d1 = c1.at8(rows);
+              if (d0 != d1) {
+                _unequal = true;
+                return;
+              }
+            } else {
+              double d0 = c0.atd(rows), d1 = c1.atd(rows);
+              if (!(Math.abs(d0 - d1) <= Math.abs(d0 + d1) * _epsilon)) {
+                _unequal = true;
+                return;
+              }
             }
           }
         }
@@ -718,7 +765,7 @@ public class TestUtil extends Iced {
     public void done(Frame frame) {
       if (generatedFile != null) {
         generatedFile.deleteOnExit();
-        FileUtils.deleteQuietly(generatedFile);
+        org.apache.commons.io.FileUtils.deleteQuietly(generatedFile);
       }
     }
   }

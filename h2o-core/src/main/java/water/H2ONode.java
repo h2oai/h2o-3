@@ -1,5 +1,14 @@
 package water;
 
+import water.RPC.RPCCall;
+import water.nbhm.NonBlockingHashMap;
+import water.nbhm.NonBlockingHashMapLong;
+import water.network.SocketChannelFactory;
+import water.util.ArrayUtils;
+import water.util.Log;
+import water.util.MathUtils;
+import water.util.UnsafeUtils;
+
 import java.io.IOException;
 import java.net.*;
 import java.nio.ByteBuffer;
@@ -10,15 +19,6 @@ import java.nio.channels.SocketChannel;
 import java.util.*;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import water.RPC.RPCCall;
-import water.nbhm.NonBlockingHashMap;
-import water.nbhm.NonBlockingHashMapLong;
-import water.util.ArrayUtils;
-import water.network.SocketChannelFactory;
-import water.util.Log;
-import water.util.MathUtils;
-import water.util.UnsafeUtils;
 
 /**
  * A <code>Node</code> in an <code>H2O</code> Cloud.
@@ -124,8 +124,13 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     _last_heard_from = System.currentTimeMillis();
     _heartbeat = new HeartBeat();
 
-    _security = new H2OSecurityManager();
-    _socketFactory = new SocketChannelFactory(_security);
+    _security = H2OSecurityManager.instance();
+    _socketFactory = SocketChannelFactory.instance(_security);
+  }
+
+  public boolean isHealthy() { return isHealthy(System.currentTimeMillis()); }
+  public boolean isHealthy(long now) {
+    return (now - _last_heard_from) < HeartBeatThread.TIMEOUT;
   }
 
   // ---------------
@@ -322,12 +327,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     ByteBuffer bb = ByteBuffer.allocate(4).order(ByteOrder.nativeOrder());
     bb.put(tcpType).putChar((char) H2O.H2O_PORT).put((byte) 0xef).flip();
 
-    ByteChannel wrappedSocket;
-    if(socketFactory != null){
-      wrappedSocket = socketFactory.clientChannel(sock, isa.getHostName(), isa.getPort());
-    }else{
-      wrappedSocket = sock;
-    }
+    ByteChannel wrappedSocket = socketFactory.clientChannel(sock, isa.getHostName(), isa.getPort());
 
     while (bb.hasRemaining()) {  // Write out magic startup sequence
       wrappedSocket.write(bb);
@@ -398,6 +398,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
               bb = _msgQ.poll();  // Go get more, same batch
             }
             sendBuffer();         // Send final trailing BBs
+          } catch (IllegalMonitorStateException imse) { /* ignore */
           } catch (InterruptedException e) { /*ignore*/ }
         }
       } catch(Throwable t) { throw Log.throwErr(t); }
@@ -438,7 +439,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   
     // Open channel on first write attempt
     private ByteChannel openChan() throws IOException {
-      return H2ONode.openChan(TCPReceiverThread.TCP_SMALL,_socketFactory, _key.getAddress(), _key.getPort());
+      return H2ONode.openChan(TCPReceiverThread.TCP_SMALL, _socketFactory, _key.getAddress(), _key.getPort());
     }
   }
 

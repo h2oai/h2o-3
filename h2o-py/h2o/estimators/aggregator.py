@@ -24,7 +24,7 @@ class H2OAggregatorEstimator(H2OEstimator):
         super(H2OAggregatorEstimator, self).__init__()
         self._parms = {}
         names_list = {"model_id", "training_frame", "response_column", "ignored_columns", "ignore_const_cols",
-                      "radius_scale", "transform", "categorical_encoding"}
+                      "target_num_exemplars", "rel_tol_num_exemplars", "transform", "categorical_encoding"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -38,7 +38,11 @@ class H2OAggregatorEstimator(H2OEstimator):
 
     @property
     def training_frame(self):
-        """str: Id of the training data frame (Not required, to allow initial validation of model parameters)."""
+        """
+        Id of the training data frame (Not required, to allow initial validation of model parameters).
+
+        Type: ``H2OFrame``.
+        """
         return self._parms.get("training_frame")
 
     @training_frame.setter
@@ -49,7 +53,11 @@ class H2OAggregatorEstimator(H2OEstimator):
 
     @property
     def response_column(self):
-        """str: Response variable column."""
+        """
+        Response variable column.
+
+        Type: ``str``.
+        """
         return self._parms.get("response_column")
 
     @response_column.setter
@@ -60,7 +68,11 @@ class H2OAggregatorEstimator(H2OEstimator):
 
     @property
     def ignored_columns(self):
-        """List[str]: Names of columns to ignore for training."""
+        """
+        Names of columns to ignore for training.
+
+        Type: ``List[str]``.
+        """
         return self._parms.get("ignored_columns")
 
     @ignored_columns.setter
@@ -71,7 +83,11 @@ class H2OAggregatorEstimator(H2OEstimator):
 
     @property
     def ignore_const_cols(self):
-        """bool: Ignore constant columns. (Default: True)"""
+        """
+        Ignore constant columns.
+
+        Type: ``bool``  (default: ``True``).
+        """
         return self._parms.get("ignore_const_cols")
 
     @ignore_const_cols.setter
@@ -81,21 +97,41 @@ class H2OAggregatorEstimator(H2OEstimator):
 
 
     @property
-    def radius_scale(self):
-        """float: Radius scaling (Default: 1)"""
-        return self._parms.get("radius_scale")
+    def target_num_exemplars(self):
+        """
+        Targeted number of exemplars
 
-    @radius_scale.setter
-    def radius_scale(self, radius_scale):
-        assert_is_type(radius_scale, None, numeric)
-        self._parms["radius_scale"] = radius_scale
+        Type: ``int``  (default: ``5000``).
+        """
+        return self._parms.get("target_num_exemplars")
+
+    @target_num_exemplars.setter
+    def target_num_exemplars(self, target_num_exemplars):
+        assert_is_type(target_num_exemplars, None, int)
+        self._parms["target_num_exemplars"] = target_num_exemplars
+
+
+    @property
+    def rel_tol_num_exemplars(self):
+        """
+        Relative tolerance for number of exemplars (e.g, 0.5 is +/- 50%)
+
+        Type: ``float``  (default: ``0.5``).
+        """
+        return self._parms.get("rel_tol_num_exemplars")
+
+    @rel_tol_num_exemplars.setter
+    def rel_tol_num_exemplars(self, rel_tol_num_exemplars):
+        assert_is_type(rel_tol_num_exemplars, None, numeric)
+        self._parms["rel_tol_num_exemplars"] = rel_tol_num_exemplars
 
 
     @property
     def transform(self):
         """
-        Enum["none", "standardize", "normalize", "demean", "descale"]: Transformation of training data (Default:
-        "normalize")
+        Transformation of training data
+
+        One of: ``"none"``, ``"standardize"``, ``"normalize"``, ``"demean"``, ``"descale"``  (default: ``"normalize"``).
         """
         return self._parms.get("transform")
 
@@ -108,14 +144,16 @@ class H2OAggregatorEstimator(H2OEstimator):
     @property
     def categorical_encoding(self):
         """
-        Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen"]: Encoding scheme for categorical
-        features (Default: "auto")
+        Encoding scheme for categorical features
+
+        One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``,
+        ``"label_encoder"``, ``"sort_by_response"``  (default: ``"auto"``).
         """
         return self._parms.get("categorical_encoding")
 
     @categorical_encoding.setter
     def categorical_encoding(self, categorical_encoding):
-        assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen"))
+        assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response"))
         self._parms["categorical_encoding"] = categorical_encoding
 
 

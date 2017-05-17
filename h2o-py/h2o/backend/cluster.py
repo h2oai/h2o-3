@@ -116,6 +116,54 @@ class H2OCluster(object):
     def version(self):
         return self._props["version"]
 
+    @property
+    def internal_security_enabled(self):
+        return self._props["internal_security_enabled"]
+
+
+    def node(self,node_idx):
+        """
+        Get information about a particular node in an H2O cluster (node index is 0 based)
+
+        Information includes the following:
+
+        nthreads: Number of threads
+        pid: PID of current H2O process
+        mem_value_size: Data on Node memory
+        max_disk: Max disk
+        free_disk: Free disk
+        open_fds: Open File Descripters
+        swap_mem: Size of data on node's disk
+        tcps_active: Open TCP connections
+        num_cpus: Number of cpus
+        cpus_allowed: CPU's allowed
+        gflops: Linpack GFlops
+        fjthrds: F/J Thread count, by priority
+        mem_bw: Memory bandwith
+        fjqueue: F/J Task count, by priority
+        my_cpu_pct: System CPU percentage used by this H2O process in last interval
+        pojo_mem: Temp (non Data) memory
+        num_keys: Number of local keys
+        ip_port: IP address and port in the form a.b.c.d:e
+        last_ping: Time (in msec) of last ping
+        rpcs_active: Active Remote Procedure Calls
+        max_mem: Maximum memory size for node
+        healthy: (now-last_ping)<HeartbeatThread.TIMEOUT
+        sys_load: System load; average #runnables/#cores
+        sys_cpu_pct: System CPU percentage used by everything in last interval
+        free_mem: Free heap
+        h2o: IP
+
+        :param node_idx: An int value indicating which node to extract information from
+        :returns: Dictionary containing node info
+
+        :examples:
+          >>>import h2o
+          >>>h2o.init()
+          >>>node_one = h2o.cluster().node(0)
+          >>>node_one["pid"] #Get PID for first node in H2O Cluster
+        """
+        return self.nodes[node_idx]
 
     def shutdown(self, prompt=False):
         """
@@ -183,6 +231,7 @@ class H2OCluster(object):
             ["H2O cluster status:",        status],
             ["H2O connection url:",        h2o.connection().base_url],
             ["H2O connection proxy:",      h2o.connection().proxy],
+            ["H2O internal security:",     self.internal_security_enabled],
             ["Python version:",            "%d.%d.%d %s" % tuple(sys.version_info[:4])],
         ])
 
@@ -239,4 +288,4 @@ class H2OCluster(object):
 
 _cloud_v3_valid_keys = {"is_client", "build_number", "cloud_name", "locked", "node_idx", "consensus", "branch_name",
                         "version", "cloud_uptime_millis", "cloud_healthy", "bad_nodes", "cloud_size", "skip_ticks",
-                        "nodes", "build_age", "build_too_old"}
+                        "nodes", "build_age", "build_too_old", "internal_security_enabled"}

@@ -1,21 +1,21 @@
 package hex.pca;
 
-import hex.pca.PCAModel.PCAParameters;
 import hex.DataInfo;
 import hex.SplitFrame;
+import hex.pca.PCAModel.PCAParameters;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
+import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
 
 import java.util.concurrent.ExecutionException;
-
-import static org.junit.Assert.assertEquals;
 
 public class PCATest extends TestUtil {
   public static final double TOLERANCE = 1e-6;
@@ -104,6 +104,8 @@ public class PCATest extends TestUtil {
       if (model != null) model.delete();
     }
   }
+
+
 
   @Test public void testIrisScoring() throws InterruptedException, ExecutionException {
     // Results with original training frame
@@ -222,5 +224,69 @@ public class PCATest extends TestUtil {
     double[][] xtgram_glrm = ArrayUtils.formGram(x, true);
     Assert.assertArrayEquals(xgram, xgram_glrm);
     Assert.assertArrayEquals(xtgram, xtgram_glrm);
+  }
+
+  /* Make sure POJO works if the model is only built from categorical variables (no numeric columns) */
+  @Test public void testCatOnlyPUBDEV3988() throws InterruptedException, ExecutionException {
+    PCAModel model = null;
+    Frame train = null, score = null;
+    try {
+      train = parse_test_file(Key.make("prostate_cat.hex"), "smalldata/prostate/prostate_cat.csv");
+      for (int i = train.numCols() - 1; i > 0; i--) {
+        Vec v = train.vec(i);
+        if (v.get_type() != Vec.T_CAT) {
+          train.remove(i);
+          Vec.remove(v._key);
+        }
+      }
+      DKV.put(train);
+      PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
+      parms._train = train._key;
+      parms._k = 2;
+      parms._transform = DataInfo.TransformType.STANDARDIZE;
+      parms._use_all_factor_levels = true;
+      parms._pca_method = PCAParameters.Method.GramSVD;
+      parms._impute_missing = false;
+      parms._seed = 12345;
+
+      PCA pcaParms = new PCA(parms);
+      model = pcaParms.trainModel().get(); // get normal data
+      score = model.score(train);
+
+      // Build a POJO, check results with original PCA
+      Assert.assertTrue(model.testJavaScoring(train,score,TOLERANCE));
+    } finally {
+      if (train != null) train.delete();
+      if (score != null) score.delete();
+      if (model != null) model.delete();
+    }
+  }
+
+  /*
+  Quick test to make sure changes made to PCA for rank deficient matrices do not cause leakage.
+   */
+  @Test public void testPUBDEV3500NoLeakage() throws InterruptedException, ExecutionException {
+    Scope.enter();
+    Frame train = null;
+    try {
+      train = parse_test_file(Key.make("prostate_cat.hex"), "smalldata/prostate/prostate_cat.csv");
+      Scope.track(train);
+
+      PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
+      parms._train = train._key;
+      parms._k = 3;
+      parms._transform = DataInfo.TransformType.NONE;
+      parms._pca_method = PCAModel.PCAParameters.Method.Randomized;
+      parms._impute_missing = true;   // Don't skip rows with NA entries, but impute using mean of column
+      parms._seed = 12345;
+      parms._use_all_factor_levels=true;
+
+      PCAModel pca = null;
+      pca = new PCA(parms).trainModel().get();
+      Scope.track_generic(pca);
+      Assert.assertTrue(pca._parms._k == pca._output._std_deviation.length);
+    } finally {
+      Scope.exit();
+    }
   }
 }

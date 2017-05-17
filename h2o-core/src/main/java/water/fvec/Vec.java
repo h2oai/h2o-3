@@ -567,6 +567,25 @@ public class Vec extends Keyed<Vec> {
     return v0;
   }
 
+  public Vec makeCon(final String s){ return makeCon(s, group(), _rowLayout, T_STR);}
+
+  private static Vec makeCon( final String s, VectorGroup group, int rowLayout, byte type ) {
+    final Vec v0 = new Vec(group.addVec(), rowLayout, null, type);
+    final int nchunks = v0.nChunks();
+    new MRTask() {              // Body of all zero chunks
+      @Override protected void setupLocal() {
+        for( int i=0; i<nchunks; i++ ) {
+          Key k = v0.chunkKey(i);
+          if( k.home() ) {
+            DKV.put(k,new CStrChunk(s,v0.chunkLen(i)),_fs);
+          }
+        }
+      }
+    }.doAllNodes();
+    DKV.put(v0._key, v0);        // Header last
+    return v0;
+  }
+
   public Vec [] makeZeros(int n){return makeZeros(n,null,null);}
 
   /**
@@ -1017,7 +1036,9 @@ public class Vec extends Keyed<Vec> {
     int tcidx = c._cidx;
     if( cstart == start && v != null && tcidx == cidx)
       return c;                       // Already filled-in
-    assert cstart == -1 || v == null || tcidx == -1; // Was not filled in (everybody racily writes the same start value)
+    if(!(cstart == -1 || v == null || tcidx == -1))
+      throw new RuntimeException("Was not filled in (everybody racily writes the same start value:  cstart = " + cstart + " v == null? " + (v == null) + " cidx = " + tcidx + ", chunk = " + c.getClass().getName());
+    assert cstart == -1 || v == null || tcidx == -1:" cstart = " + cstart + " v == null? " + (v == null) + " cidx = " + tcidx + ", chunk = " + c.getClass().getName(); // Was not filled in (everybody racily writes the same start value)
     c._vec = this;             // Fields not filled in by unpacking from Value
     c._start = start;          // Fields not filled in by unpacking from Value
     c._cidx = cidx;
@@ -1063,6 +1084,10 @@ public class Vec extends Keyed<Vec> {
       if (isNA(i)) return null;
       return bStr.set(_domain[(int)at8(i)]);
     } else return chunkForRow(i).atStr_abs(bStr, i);
+  }
+
+  public String stringAt(long i) {
+    return String.valueOf(atStr(new BufferedString(), i));
   }
 
   /** A more efficient way to read randomly to a Vec - still single-threaded,

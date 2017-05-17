@@ -39,7 +39,11 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
 
     @property
     def training_frame(self):
-        """str: Id of the training data frame (Not required, to allow initial validation of model parameters)."""
+        """
+        Id of the training data frame (Not required, to allow initial validation of model parameters).
+
+        Type: ``H2OFrame``.
+        """
         return self._parms.get("training_frame")
 
     @training_frame.setter
@@ -50,7 +54,11 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
 
     @property
     def validation_frame(self):
-        """str: Id of the validation data frame."""
+        """
+        Id of the validation data frame.
+
+        Type: ``H2OFrame``.
+        """
         return self._parms.get("validation_frame")
 
     @validation_frame.setter
@@ -61,7 +69,11 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
 
     @property
     def ignored_columns(self):
-        """List[str]: Names of columns to ignore for training."""
+        """
+        Names of columns to ignore for training.
+
+        Type: ``List[str]``.
+        """
         return self._parms.get("ignored_columns")
 
     @ignored_columns.setter
@@ -72,7 +84,11 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
 
     @property
     def ignore_const_cols(self):
-        """bool: Ignore constant columns. (Default: True)"""
+        """
+        Ignore constant columns.
+
+        Type: ``bool``  (default: ``True``).
+        """
         return self._parms.get("ignore_const_cols")
 
     @ignore_const_cols.setter
@@ -83,7 +99,11 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
 
     @property
     def score_each_iteration(self):
-        """bool: Whether to score during each iteration of model training. (Default: False)"""
+        """
+        Whether to score during each iteration of model training.
+
+        Type: ``bool``  (default: ``False``).
+        """
         return self._parms.get("score_each_iteration")
 
     @score_each_iteration.setter
@@ -95,7 +115,9 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
     @property
     def transform(self):
         """
-        Enum["none", "standardize", "normalize", "demean", "descale"]: Transformation of training data (Default: "none")
+        Transformation of training data
+
+        One of: ``"none"``, ``"standardize"``, ``"normalize"``, ``"demean"``, ``"descale"``  (default: ``"none"``).
         """
         return self._parms.get("transform")
 
@@ -108,8 +130,9 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
     @property
     def pca_method(self):
         """
-        Enum["gram_s_v_d", "power", "randomized", "glrm"]: Method for computing PCA (Caution: Power and GLRM are
-        currently experimental and unstable) (Default: "gram_s_v_d")
+        Method for computing PCA (Caution: GLRM is currently experimental and unstable)
+
+        One of: ``"gram_s_v_d"``, ``"power"``, ``"randomized"``, ``"glrm"``  (default: ``"gram_s_v_d"``).
         """
         return self._parms.get("pca_method")
 
@@ -121,7 +144,11 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
 
     @property
     def k(self):
-        """int: Rank of matrix approximation (Default: 1)"""
+        """
+        Rank of matrix approximation
+
+        Type: ``int``  (default: ``1``).
+        """
         return self._parms.get("k")
 
     @k.setter
@@ -132,7 +159,11 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
 
     @property
     def max_iterations(self):
-        """int: Maximum training iterations (Default: 1000)"""
+        """
+        Maximum training iterations
+
+        Type: ``int``  (default: ``1000``).
+        """
         return self._parms.get("max_iterations")
 
     @max_iterations.setter
@@ -143,7 +174,11 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
 
     @property
     def use_all_factor_levels(self):
-        """bool: Whether first factor level is included in each categorical expansion (Default: False)"""
+        """
+        Whether first factor level is included in each categorical expansion
+
+        Type: ``bool``  (default: ``False``).
+        """
         return self._parms.get("use_all_factor_levels")
 
     @use_all_factor_levels.setter
@@ -154,7 +189,11 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
 
     @property
     def compute_metrics(self):
-        """bool: Whether to compute metrics on the training data (Default: True)"""
+        """
+        Whether to compute metrics on the training data
+
+        Type: ``bool``  (default: ``True``).
+        """
         return self._parms.get("compute_metrics")
 
     @compute_metrics.setter
@@ -165,7 +204,11 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
 
     @property
     def impute_missing(self):
-        """bool: Whether to impute missing entries with the column mean (Default: False)"""
+        """
+        Whether to impute missing entries with the column mean
+
+        Type: ``bool``  (default: ``False``).
+        """
         return self._parms.get("impute_missing")
 
     @impute_missing.setter
@@ -176,7 +219,11 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
 
     @property
     def seed(self):
-        """int: RNG seed for initialization (Default: -1)"""
+        """
+        RNG seed for initialization
+
+        Type: ``int``  (default: ``-1``).
+        """
         return self._parms.get("seed")
 
     @seed.setter
@@ -187,7 +234,11 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
 
     @property
     def max_runtime_secs(self):
-        """float: Maximum allowed runtime in seconds for model training. Use 0 to disable. (Default: 0)"""
+        """
+        Maximum allowed runtime in seconds for model training. Use 0 to disable.
+
+        Type: ``float``  (default: ``0``).
+        """
         return self._parms.get("max_runtime_secs")
 
     @max_runtime_secs.setter

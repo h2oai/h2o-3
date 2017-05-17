@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import static hex.util.DimensionReductionUtils.generateIPC;
 
 import static hex.genmodel.algos.glrm.GlrmLoss.Quadratic;
 
@@ -65,12 +66,17 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
 
   @Override protected GLRMDriver trainModelImpl() { return new GLRMDriver(); }
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ModelCategory.Clustering}; }
+  @Override public boolean isSupervised() { return false; }
 
   @Override public boolean havePojo() { return false; }
   @Override public boolean haveMojo() { return true; }
 
   @Override protected void checkMemoryFootPrint() {
-    long mem_usage = 8 /*doubles*/ * (_parms._k * _train.numCols() + _parms._k );  // loose estimation of memory usage
+    HeartBeat hb = H2O.SELF._heartbeat;
+    double p = hex.util.LinearAlgebraUtils.numColsExp(_train,true);
+    double gramSize =  _train.lastVec().nChunks()==1 ? 1 :
+            Math.log((double) _train.lastVec().nChunks()) / Math.log(2.); // gets to zero if nChunks=1
+    long mem_usage = (long)(hb._cpus_allowed * p*_parms._k * 8 * gramSize);  // loose estimation of memory usage
     long max_mem = H2O.SELF._heartbeat.get_free_mem();
     if (mem_usage > max_mem) {
       String msg = "Archtypes in matrix Y cannot fit in the driver node's memory ("
@@ -579,11 +585,12 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       GramTask xgram = new GramTask(_job._key, xinfo).doAll(xinfo._adaptedFrame);
       GramTask dgram = new GramTask(_job._key, dinfo).doAll(dinfo._adaptedFrame);
       Cholesky xxchol = regularizedCholesky(xgram._gram);
+      long nobs = xgram._nobs;
 
       // R from QR decomposition of X = QR is upper triangular factor of Cholesky of X'X
       // Gram = X'X/n = LL' -> X'X = (L*sqrt(n))(L'*sqrt(n))
       Matrix x_r = new Matrix(xxchol.getL()).transpose();
-      x_r = x_r.times(Math.sqrt(_train.numRows()));
+      x_r = x_r.times(Math.sqrt(nobs));
 
       Matrix yt = new Matrix(model._output._archetypes_raw.getY(true));
       QRDecomposition yt_qr = new QRDecomposition(yt);
@@ -591,26 +598,23 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       Matrix rrmul = x_r.times(yt_r.transpose());
       SingularValueDecomposition rrsvd = new SingularValueDecomposition(rrmul);   // RS' = U \Sigma V'
       double[] sval = rrsvd.getSingularValues();  // get singular values as double array
-      long nobs = _train.numRows();
-      double dfcorr = nobs/(nobs-1.0);  // find number of observations
-      double oneOverNobsm1 = 1.0/Math.sqrt(nobs-1);
 
-      model._output._std_deviation = new double[_parms._k];
-      for (int index=0; index<_parms._k; index++)  // calculate std_deviation
-        model._output._std_deviation[index] = oneOverNobsm1*sval[index];
+      double dfcorr = (nobs > 1)?nobs/(nobs-1.0):1.0;  // find number of observations
+      double oneOverNobsm1 = (nobs>1)?1.0/Math.sqrt(nobs-1):1.0;
 
-      model._output._total_variance = dfcorr*dgram._gram.diagSum();
+      model._output._std_deviation = Arrays.copyOf(sval, sval.length);
+      ArrayUtils.mult(model._output._std_deviation, oneOverNobsm1);
+      model._output._total_variance = dfcorr * dgram._gram.diagSum();
+
+      if (Math.abs(model._output._std_deviation[0])>0) {
+          double catScale = Math.sqrt(model._output._total_variance/ArrayUtils.l2norm2(model._output._std_deviation));
+          ArrayUtils.mult(model._output._std_deviation, catScale);
+      }
 
       double[] vars = new double[model._output._std_deviation.length];
-      for (int i = 0; i < vars.length; i++)
-        vars[i] = model._output._std_deviation[i]*model._output._std_deviation[i];
-
       double[] prop_var = new double[vars.length];
       double[] cum_var = new double[vars.length];
-      for (int i = 0; i < vars.length; i++) {
-        prop_var[i] = vars[i]/model._output._total_variance;
-        cum_var[i] = i == 0 ? prop_var[0] : cum_var[i-1] + prop_var[i];
-      }
+      generateIPC(model._output._std_deviation, model._output._total_variance, vars, prop_var, cum_var);
 
       String[] colTypes = new String[_parms._k];
       String[] colFormats = new String[_parms._k];
@@ -665,6 +669,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         tinfo = new DataInfo(_train, _valid, 0, true, _parms._transform, DataInfo.TransformType.NONE,
                              false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
         DKV.put(tinfo._key, tinfo);
+
 
         tempinfo = new DataInfo(_train, null, 0, true, _parms._transform, DataInfo.TransformType.NONE,
                 false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
@@ -814,7 +819,6 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
           model._output._training_time_ms.add(System.currentTimeMillis());
           model._output._history_step_size.add(step);
           model._output._history_objective.add(model._output._objective);
-          model._output._scoring_history = createScoringHistoryTable(model._output);
           model.update(_job); // Update model in K/V store
         }
 
@@ -855,6 +859,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         model._output._training_metrics = model.scoreMetricsOnly(_parms.train());
         model._output._validation_metrics = model.scoreMetricsOnly(_parms.valid());
         model._output._model_summary = createModelSummaryTable(model._output);
+        model._output._scoring_history = createScoringHistoryTable(model._output);  //no need to call this per iteration
         model.update(_job);
       } finally {
         List<Key<Vec>> keep = new ArrayList<>();
@@ -866,7 +871,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         if (tinfo != null) tinfo.remove();
         if (dinfo != null) dinfo.remove();
         if (xinfo != null) xinfo.remove();
-        if (tempinfo != null) xinfo.remove();
+        if (tempinfo != null) tempinfo.remove();
 
         // if (x != null && !_parms._keep_loading) x.delete();
         // Clean up unused copy of X matrix
@@ -927,7 +932,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
           if (!(_binaryColumnIndices.contains(tinfo._permutation[colIndex]))) {
             permutationTemp[newColIndex] = tinfo._permutation[colIndex];
             catMissingTemp[newColIndex] = tinfo._catMissing[colIndex];
-            catNAFillTemp[newColIndex] = tinfo._catNAFill[colIndex];
+            catNAFillTemp[newColIndex] = tinfo.catNAFill(colIndex);
             currentCardinality[newColIndex] = cardinalities[colIndex];
             catOffsetsTemp[newColIndex+1] = catOffsetsTemp[newColIndex]+currentCardinality[newColIndex];
 
@@ -965,7 +970,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         // copy the changed arrays back to tinfo information
         tinfo._catOffsets = Arrays.copyOf(catOffsetsTemp, catOffsetsTemp.length);
         tinfo._catMissing = Arrays.copyOf(catMissingTemp, tinfo._cats);
-        tinfo._catNAFill = Arrays.copyOf(catNAFillTemp, tinfo._cats);
+        tinfo.setCatNAFill(Arrays.copyOf(catNAFillTemp, tinfo._cats));
         tinfo._permutation = Arrays.copyOf(permutationTemp, tinfo._permutation.length);
         tinfo._numOffsets = Arrays.copyOf(numOffsetsTemp, tinfo._nums);
         if (tinfo._normMul != null) {

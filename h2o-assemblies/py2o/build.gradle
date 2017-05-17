@@ -1,0 +1,60 @@
+apply plugin: 'java'
+apply plugin: 'com.github.johnrengelman.shadow'
+
+description = "H2O Core Java library for use with python"
+
+// Exclude unwanted dependencies
+configurations {
+    compile.exclude module: 'junit'
+    compile.exclude module: 'mockito-all'
+    compile.exclude module: 'zookeeper'
+    compile.exclude module: "javax.mail.glassfish"
+}
+
+// Dependencies
+dependencies {
+    compile project(":h2o-app")
+    compile project(":h2o-grpc")
+    compile "org.slf4j:slf4j-log4j12:1.7.5"
+}
+
+shadowJar {
+    mergeServiceFiles()
+    classifier = ''
+    exclude 'META-INF/*.DSA'
+    exclude 'META-INF/*.SF'
+    exclude 'synchronize.properties'
+    exclude 'uploader.properties'
+    exclude 'test.properties'
+    exclude 'cockpitlite.properties'
+    exclude 'devpay_products.properties'
+    manifest {
+        attributes 'Main-Class': 'water.H2OApp'
+    }
+}
+
+artifacts {
+    archives shadowJar
+}
+
+//
+// Support make infrastructure by copying the resulting assembly into parent
+// project build directory
+//
+
+def assembly = "py2o.jar"
+def allInOne = "h2o-py.jar"
+
+task copyJar(type: Copy) {
+    from ("${project.buildDir}/libs"){
+        include assembly
+    }
+    into "${project.parent.parent.buildDir}"
+    rename { it.replace(assembly, allInOne) }
+}
+// Execute always copyJar
+shadowJar.finalizedBy copyJar
+// Run shadowJar as par of build
+jar.finalizedBy shadowJar
+
+build.dependsOn ":h2o-grpc:build"

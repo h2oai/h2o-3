@@ -70,7 +70,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def training_frame(self):
-        """str: Id of the training data frame (Not required, to allow initial validation of model parameters)."""
+        """
+        Id of the training data frame (Not required, to allow initial validation of model parameters).
+
+        Type: ``H2OFrame``.
+        """
         return self._parms.get("training_frame")
 
     @training_frame.setter
@@ -81,7 +85,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def validation_frame(self):
-        """str: Id of the validation data frame."""
+        """
+        Id of the validation data frame.
+
+        Type: ``H2OFrame``.
+        """
         return self._parms.get("validation_frame")
 
     @validation_frame.setter
@@ -92,7 +100,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def nfolds(self):
-        """int: Number of folds for N-fold cross-validation (0 to disable or >= 2). (Default: 0)"""
+        """
+        Number of folds for N-fold cross-validation (0 to disable or >= 2).
+
+        Type: ``int``  (default: ``0``).
+        """
         return self._parms.get("nfolds")
 
     @nfolds.setter
@@ -103,7 +115,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def keep_cross_validation_predictions(self):
-        """bool: Whether to keep the predictions of the cross-validation models. (Default: False)"""
+        """
+        Whether to keep the predictions of the cross-validation models.
+
+        Type: ``bool``  (default: ``False``).
+        """
         return self._parms.get("keep_cross_validation_predictions")
 
     @keep_cross_validation_predictions.setter
@@ -114,7 +130,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def keep_cross_validation_fold_assignment(self):
-        """bool: Whether to keep the cross-validation fold assignment. (Default: False)"""
+        """
+        Whether to keep the cross-validation fold assignment.
+
+        Type: ``bool``  (default: ``False``).
+        """
         return self._parms.get("keep_cross_validation_fold_assignment")
 
     @keep_cross_validation_fold_assignment.setter
@@ -126,9 +146,10 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def fold_assignment(self):
         """
-        Enum["auto", "random", "modulo", "stratified"]: Cross-validation fold assignment scheme, if fold_column is not
-        specified. The 'Stratified' option will stratify the folds based on the response variable, for classification
-        problems. (Default: "auto")
+        Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify
+        the folds based on the response variable, for classification problems.
+
+        One of: ``"auto"``, ``"random"``, ``"modulo"``, ``"stratified"``  (default: ``"auto"``).
         """
         return self._parms.get("fold_assignment")
 
@@ -140,7 +161,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def fold_column(self):
-        """str: Column with cross-validation fold index assignment per observation."""
+        """
+        Column with cross-validation fold index assignment per observation.
+
+        Type: ``str``.
+        """
         return self._parms.get("fold_column")
 
     @fold_column.setter
@@ -151,7 +176,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def response_column(self):
-        """str: Response variable column."""
+        """
+        Response variable column.
+
+        Type: ``str``.
+        """
         return self._parms.get("response_column")
 
     @response_column.setter
@@ -162,7 +191,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def ignored_columns(self):
-        """List[str]: Names of columns to ignore for training."""
+        """
+        Names of columns to ignore for training.
+
+        Type: ``List[str]``.
+        """
         return self._parms.get("ignored_columns")
 
     @ignored_columns.setter
@@ -173,7 +206,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def ignore_const_cols(self):
-        """bool: Ignore constant columns. (Default: True)"""
+        """
+        Ignore constant columns.
+
+        Type: ``bool``  (default: ``True``).
+        """
         return self._parms.get("ignore_const_cols")
 
     @ignore_const_cols.setter
@@ -184,7 +221,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def score_each_iteration(self):
-        """bool: Whether to score during each iteration of model training. (Default: False)"""
+        """
+        Whether to score during each iteration of model training.
+
+        Type: ``bool``  (default: ``False``).
+        """
         return self._parms.get("score_each_iteration")
 
     @score_each_iteration.setter
@@ -196,9 +237,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def weights_column(self):
         """
-        str: Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it
-        from the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice.
-        Negative weights are not allowed.
+        Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from the
+        dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
+        weights are not allowed.
+
+        Type: ``str``.
         """
         return self._parms.get("weights_column")
 
@@ -211,7 +254,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def offset_column(self):
         """
-        str: Offset column. This will be added to the combination of columns before applying the link function.
+        Offset column. This will be added to the combination of columns before applying the link function.
+
+        Type: ``str``.
         """
         return self._parms.get("offset_column")
 
@@ -224,7 +269,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def balance_classes(self):
         """
-        bool: Balance training data class counts via over/under-sampling (for imbalanced data). (Default: False)
+        Balance training data class counts via over/under-sampling (for imbalanced data).
+
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("balance_classes")
 
@@ -237,8 +284,10 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def class_sampling_factors(self):
         """
-        List[float]: Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling
-        factors will be automatically computed to obtain class balance during training. Requires balance_classes.
+        Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
+        be automatically computed to obtain class balance during training. Requires balance_classes.
+
+        Type: ``List[float]``.
         """
         return self._parms.get("class_sampling_factors")
 
@@ -251,8 +300,10 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def max_after_balance_size(self):
         """
-        float: Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
-        balance_classes. (Default: 5)
+        Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
+        balance_classes.
+
+        Type: ``float``  (default: ``5``).
         """
         return self._parms.get("max_after_balance_size")
 
@@ -265,7 +316,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def max_confusion_matrix_size(self):
         """
-        int: [Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs. (Default: 20)
+        [Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs.
+
+        Type: ``int``  (default: ``20``).
         """
         return self._parms.get("max_confusion_matrix_size")
 
@@ -278,8 +331,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def max_hit_ratio_k(self):
         """
-        int: Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable).
-        (Default: 0)
+        Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable).
+
+        Type: ``int``  (default: ``0``).
         """
         return self._parms.get("max_hit_ratio_k")
 
@@ -291,7 +345,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def checkpoint(self):
-        """str: Model checkpoint to resume training with."""
+        """
+        Model checkpoint to resume training with.
+
+        Type: ``str``.
+        """
         return self._parms.get("checkpoint")
 
     @checkpoint.setter
@@ -302,7 +360,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def pretrained_autoencoder(self):
-        """str: Pretrained autoencoder model to initialize this model with."""
+        """
+        Pretrained autoencoder model to initialize this model with.
+
+        Type: ``str``.
+        """
         return self._parms.get("pretrained_autoencoder")
 
     @pretrained_autoencoder.setter
@@ -314,7 +376,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def overwrite_with_best_model(self):
         """
-        bool: If enabled, override the final model with the best model found during training. (Default: True)
+        If enabled, override the final model with the best model found during training.
+
+        Type: ``bool``  (default: ``True``).
         """
         return self._parms.get("overwrite_with_best_model")
 
@@ -327,8 +391,10 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def use_all_factor_levels(self):
         """
-        bool: Use all factor levels of categorical variables. Otherwise, the first factor level is omitted (without loss
-        of accuracy). Useful for variable importances and auto-enabled for autoencoder. (Default: True)
+        Use all factor levels of categorical variables. Otherwise, the first factor level is omitted (without loss of
+        accuracy). Useful for variable importances and auto-enabled for autoencoder.
+
+        Type: ``bool``  (default: ``True``).
         """
         return self._parms.get("use_all_factor_levels")
 
@@ -341,8 +407,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def standardize(self):
         """
-        bool: If enabled, automatically standardize the data. If disabled, the user must provide properly scaled input
-        data. (Default: True)
+        If enabled, automatically standardize the data. If disabled, the user must provide properly scaled input data.
+
+        Type: ``bool``  (default: ``True``).
         """
         return self._parms.get("standardize")
 
@@ -355,8 +422,10 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def activation(self):
         """
-        Enum["tanh", "tanh_with_dropout", "rectifier", "rectifier_with_dropout", "maxout", "maxout_with_dropout"]:
-        Activation function. (Default: "rectifier")
+        Activation function.
+
+        One of: ``"tanh"``, ``"tanh_with_dropout"``, ``"rectifier"``, ``"rectifier_with_dropout"``, ``"maxout"``,
+        ``"maxout_with_dropout"``  (default: ``"rectifier"``).
         """
         return self._parms.get("activation")
 
@@ -368,7 +437,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def hidden(self):
-        """List[int]: Hidden layer sizes (e.g. [100, 100]). (Default: [200, 200])"""
+        """
+        Hidden layer sizes (e.g. [100, 100]).
+
+        Type: ``List[int]``  (default: ``[200, 200]``).
+        """
         return self._parms.get("hidden")
 
     @hidden.setter
@@ -379,7 +452,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def epochs(self):
-        """float: How many times the dataset should be iterated (streamed), can be fractional. (Default: 10)"""
+        """
+        How many times the dataset should be iterated (streamed), can be fractional.
+
+        Type: ``float``  (default: ``10``).
+        """
         return self._parms.get("epochs")
 
     @epochs.setter
@@ -391,8 +468,10 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def train_samples_per_iteration(self):
         """
-        int: Number of training samples (globally) per MapReduce iteration. Special values are 0: one epoch, -1: all
-        available data (e.g., replicated training data), -2: automatic. (Default: -2)
+        Number of training samples (globally) per MapReduce iteration. Special values are 0: one epoch, -1: all
+        available data (e.g., replicated training data), -2: automatic.
+
+        Type: ``int``  (default: ``-2``).
         """
         return self._parms.get("train_samples_per_iteration")
 
@@ -405,8 +484,10 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def target_ratio_comm_to_comp(self):
         """
-        float: Target ratio of communication overhead to computation. Only for multi-node operation and
-        train_samples_per_iteration = -2 (auto-tuning). (Default: 0.05)
+        Target ratio of communication overhead to computation. Only for multi-node operation and
+        train_samples_per_iteration = -2 (auto-tuning).
+
+        Type: ``float``  (default: ``0.05``).
         """
         return self._parms.get("target_ratio_comm_to_comp")
 
@@ -419,8 +500,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def seed(self):
         """
-        int: Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded.
-        (Default: -1)
+        Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded.
+
+        Type: ``int``  (default: ``-1``).
         """
         return self._parms.get("seed")
 
@@ -432,7 +514,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def adaptive_rate(self):
-        """bool: Adaptive learning rate. (Default: True)"""
+        """
+        Adaptive learning rate.
+
+        Type: ``bool``  (default: ``True``).
+        """
         return self._parms.get("adaptive_rate")
 
     @adaptive_rate.setter
@@ -443,7 +529,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def rho(self):
-        """float: Adaptive learning rate time decay factor (similarity to prior updates). (Default: 0.99)"""
+        """
+        Adaptive learning rate time decay factor (similarity to prior updates).
+
+        Type: ``float``  (default: ``0.99``).
+        """
         return self._parms.get("rho")
 
     @rho.setter
@@ -455,7 +545,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def epsilon(self):
         """
-        float: Adaptive learning rate smoothing factor (to avoid divisions by zero and allow progress). (Default: 1e-08)
+        Adaptive learning rate smoothing factor (to avoid divisions by zero and allow progress).
+
+        Type: ``float``  (default: ``1e-08``).
         """
         return self._parms.get("epsilon")
 
@@ -467,7 +559,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def rate(self):
-        """float: Learning rate (higher => less stable, lower => slower convergence). (Default: 0.005)"""
+        """
+        Learning rate (higher => less stable, lower => slower convergence).
+
+        Type: ``float``  (default: ``0.005``).
+        """
         return self._parms.get("rate")
 
     @rate.setter
@@ -478,7 +574,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def rate_annealing(self):
-        """float: Learning rate annealing: rate / (1 + rate_annealing * samples). (Default: 1e-06)"""
+        """
+        Learning rate annealing: rate / (1 + rate_annealing * samples).
+
+        Type: ``float``  (default: ``1e-06``).
+        """
         return self._parms.get("rate_annealing")
 
     @rate_annealing.setter
@@ -490,7 +590,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def rate_decay(self):
         """
-        float: Learning rate decay factor between layers (N-th layer: rate * rate_decay ^ (n - 1). (Default: 1)
+        Learning rate decay factor between layers (N-th layer: rate * rate_decay ^ (n - 1).
+
+        Type: ``float``  (default: ``1``).
         """
         return self._parms.get("rate_decay")
 
@@ -502,7 +604,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def momentum_start(self):
-        """float: Initial momentum at the beginning of training (try 0.5). (Default: 0)"""
+        """
+        Initial momentum at the beginning of training (try 0.5).
+
+        Type: ``float``  (default: ``0``).
+        """
         return self._parms.get("momentum_start")
 
     @momentum_start.setter
@@ -513,7 +619,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def momentum_ramp(self):
-        """float: Number of training samples for which momentum increases. (Default: 1000000)"""
+        """
+        Number of training samples for which momentum increases.
+
+        Type: ``float``  (default: ``1000000``).
+        """
         return self._parms.get("momentum_ramp")
 
     @momentum_ramp.setter
@@ -524,7 +634,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def momentum_stable(self):
-        """float: Final momentum after the ramp is over (try 0.99). (Default: 0)"""
+        """
+        Final momentum after the ramp is over (try 0.99).
+
+        Type: ``float``  (default: ``0``).
+        """
         return self._parms.get("momentum_stable")
 
     @momentum_stable.setter
@@ -535,7 +649,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def nesterov_accelerated_gradient(self):
-        """bool: Use Nesterov accelerated gradient (recommended). (Default: True)"""
+        """
+        Use Nesterov accelerated gradient (recommended).
+
+        Type: ``bool``  (default: ``True``).
+        """
         return self._parms.get("nesterov_accelerated_gradient")
 
     @nesterov_accelerated_gradient.setter
@@ -546,7 +664,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def input_dropout_ratio(self):
-        """float: Input layer dropout ratio (can improve generalization, try 0.1 or 0.2). (Default: 0)"""
+        """
+        Input layer dropout ratio (can improve generalization, try 0.1 or 0.2).
+
+        Type: ``float``  (default: ``0``).
+        """
         return self._parms.get("input_dropout_ratio")
 
     @input_dropout_ratio.setter
@@ -558,8 +680,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def hidden_dropout_ratios(self):
         """
-        List[float]: Hidden layer dropout ratios (can improve generalization), specify one value per hidden layer,
-        defaults to 0.5.
+        Hidden layer dropout ratios (can improve generalization), specify one value per hidden layer, defaults to 0.5.
+
+        Type: ``List[float]``.
         """
         return self._parms.get("hidden_dropout_ratios")
 
@@ -572,8 +695,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def l1(self):
         """
-        float: L1 regularization (can add stability and improve generalization, causes many weights to become 0).
-        (Default: 0)
+        L1 regularization (can add stability and improve generalization, causes many weights to become 0).
+
+        Type: ``float``  (default: ``0``).
         """
         return self._parms.get("l1")
 
@@ -586,8 +710,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def l2(self):
         """
-        float: L2 regularization (can add stability and improve generalization, causes many weights to be small.
-        (Default: 0)
+        L2 regularization (can add stability and improve generalization, causes many weights to be small.
+
+        Type: ``float``  (default: ``0``).
         """
         return self._parms.get("l2")
 
@@ -600,7 +725,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def max_w2(self):
         """
-        float: Constraint for squared sum of incoming weights per unit (e.g. for Rectifier). (Default: 3.4028235e+38)
+        Constraint for squared sum of incoming weights per unit (e.g. for Rectifier).
+
+        Type: ``float``  (default: ``3.4028235e+38``).
         """
         return self._parms.get("max_w2")
 
@@ -613,7 +740,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def initial_weight_distribution(self):
         """
-        Enum["uniform_adaptive", "uniform", "normal"]: Initial weight distribution. (Default: "uniform_adaptive")
+        Initial weight distribution.
+
+        One of: ``"uniform_adaptive"``, ``"uniform"``, ``"normal"``  (default: ``"uniform_adaptive"``).
         """
         return self._parms.get("initial_weight_distribution")
 
@@ -625,7 +754,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def initial_weight_scale(self):
-        """float: Uniform: -value...value, Normal: stddev. (Default: 1)"""
+        """
+        Uniform: -value...value, Normal: stddev.
+
+        Type: ``float``  (default: ``1``).
+        """
         return self._parms.get("initial_weight_scale")
 
     @initial_weight_scale.setter
@@ -636,7 +769,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def initial_weights(self):
-        """List[str]: A list of H2OFrame ids to initialize the weight matrices of this model with."""
+        """
+        A list of H2OFrame ids to initialize the weight matrices of this model with.
+
+        Type: ``List[H2OFrame]``.
+        """
         return self._parms.get("initial_weights")
 
     @initial_weights.setter
@@ -647,7 +784,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def initial_biases(self):
-        """List[str]: A list of H2OFrame ids to initialize the bias vectors of this model with."""
+        """
+        A list of H2OFrame ids to initialize the bias vectors of this model with.
+
+        Type: ``List[H2OFrame]``.
+        """
         return self._parms.get("initial_biases")
 
     @initial_biases.setter
@@ -659,8 +800,10 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def loss(self):
         """
-        Enum["automatic", "cross_entropy", "quadratic", "huber", "absolute", "quantile"]: Loss function. (Default:
-        "automatic")
+        Loss function.
+
+        One of: ``"automatic"``, ``"cross_entropy"``, ``"quadratic"``, ``"huber"``, ``"absolute"``, ``"quantile"``
+        (default: ``"automatic"``).
         """
         return self._parms.get("loss")
 
@@ -673,8 +816,10 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def distribution(self):
         """
-        Enum["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile",
-        "huber"]: Distribution function (Default: "auto")
+        Distribution function
+
+        One of: ``"auto"``, ``"bernoulli"``, ``"multinomial"``, ``"gaussian"``, ``"poisson"``, ``"gamma"``,
+        ``"tweedie"``, ``"laplace"``, ``"quantile"``, ``"huber"``  (default: ``"auto"``).
         """
         return self._parms.get("distribution")
 
@@ -686,7 +831,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def quantile_alpha(self):
-        """float: Desired quantile for Quantile regression, must be between 0 and 1. (Default: 0.5)"""
+        """
+        Desired quantile for Quantile regression, must be between 0 and 1.
+
+        Type: ``float``  (default: ``0.5``).
+        """
         return self._parms.get("quantile_alpha")
 
     @quantile_alpha.setter
@@ -697,7 +846,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def tweedie_power(self):
-        """float: Tweedie power for Tweedie regression, must be between 1 and 2. (Default: 1.5)"""
+        """
+        Tweedie power for Tweedie regression, must be between 1 and 2.
+
+        Type: ``float``  (default: ``1.5``).
+        """
         return self._parms.get("tweedie_power")
 
     @tweedie_power.setter
@@ -709,8 +862,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def huber_alpha(self):
         """
-        float: Desired quantile for Huber/M-regression (threshold between quadratic and linear loss, must be between 0
-        and 1). (Default: 0.9)
+        Desired quantile for Huber/M-regression (threshold between quadratic and linear loss, must be between 0 and 1).
+
+        Type: ``float``  (default: ``0.9``).
         """
         return self._parms.get("huber_alpha")
 
@@ -722,7 +876,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def score_interval(self):
-        """float: Shortest time interval (in seconds) between model scoring. (Default: 5)"""
+        """
+        Shortest time interval (in seconds) between model scoring.
+
+        Type: ``float``  (default: ``5``).
+        """
         return self._parms.get("score_interval")
 
     @score_interval.setter
@@ -733,7 +891,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def score_training_samples(self):
-        """int: Number of training set samples for scoring (0 for all). (Default: 10000)"""
+        """
+        Number of training set samples for scoring (0 for all).
+
+        Type: ``int``  (default: ``10000``).
+        """
         return self._parms.get("score_training_samples")
 
     @score_training_samples.setter
@@ -744,7 +906,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def score_validation_samples(self):
-        """int: Number of validation set samples for scoring (0 for all). (Default: 0)"""
+        """
+        Number of validation set samples for scoring (0 for all).
+
+        Type: ``int``  (default: ``0``).
+        """
         return self._parms.get("score_validation_samples")
 
     @score_validation_samples.setter
@@ -756,7 +922,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def score_duty_cycle(self):
         """
-        float: Maximum duty cycle fraction for scoring (lower: more training, higher: more scoring). (Default: 0.1)
+        Maximum duty cycle fraction for scoring (lower: more training, higher: more scoring).
+
+        Type: ``float``  (default: ``0.1``).
         """
         return self._parms.get("score_duty_cycle")
 
@@ -769,7 +937,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def classification_stop(self):
         """
-        float: Stopping criterion for classification error fraction on training data (-1 to disable). (Default: 0)
+        Stopping criterion for classification error fraction on training data (-1 to disable).
+
+        Type: ``float``  (default: ``0``).
         """
         return self._parms.get("classification_stop")
 
@@ -782,7 +952,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def regression_stop(self):
         """
-        float: Stopping criterion for regression error (MSE) on training data (-1 to disable). (Default: 1e-06)
+        Stopping criterion for regression error (MSE) on training data (-1 to disable).
+
+        Type: ``float``  (default: ``1e-06``).
         """
         return self._parms.get("regression_stop")
 
@@ -795,8 +967,10 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def stopping_rounds(self):
         """
-        int: Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
-        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) (Default: 5)
+        Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
+        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
+
+        Type: ``int``  (default: ``5``).
         """
         return self._parms.get("stopping_rounds")
 
@@ -809,9 +983,10 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def stopping_metric(self):
         """
-        Enum["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "lift_top_group", "misclassification",
-        "mean_per_class_error"]: Metric to use for early stopping (AUTO: logloss for classification, deviance for
-        regression) (Default: "auto")
+        Metric to use for early stopping (AUTO: logloss for classification, deviance for regression)
+
+        One of: ``"auto"``, ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``,
+        ``"lift_top_group"``, ``"misclassification"``, ``"mean_per_class_error"``  (default: ``"auto"``).
         """
         return self._parms.get("stopping_metric")
 
@@ -824,8 +999,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def stopping_tolerance(self):
         """
-        float: Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
-        much) (Default: 0)
+        Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
+
+        Type: ``float``  (default: ``0``).
         """
         return self._parms.get("stopping_tolerance")
 
@@ -837,7 +1013,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def max_runtime_secs(self):
-        """float: Maximum allowed runtime in seconds for model training. Use 0 to disable. (Default: 0)"""
+        """
+        Maximum allowed runtime in seconds for model training. Use 0 to disable.
+
+        Type: ``float``  (default: ``0``).
+        """
         return self._parms.get("max_runtime_secs")
 
     @max_runtime_secs.setter
@@ -849,7 +1029,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def score_validation_sampling(self):
         """
-        Enum["uniform", "stratified"]: Method used to sample validation dataset for scoring. (Default: "uniform")
+        Method used to sample validation dataset for scoring.
+
+        One of: ``"uniform"``, ``"stratified"``  (default: ``"uniform"``).
         """
         return self._parms.get("score_validation_sampling")
 
@@ -861,7 +1043,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def diagnostics(self):
-        """bool: Enable diagnostics for hidden layers. (Default: True)"""
+        """
+        Enable diagnostics for hidden layers.
+
+        Type: ``bool``  (default: ``True``).
+        """
         return self._parms.get("diagnostics")
 
     @diagnostics.setter
@@ -872,7 +1058,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def fast_mode(self):
-        """bool: Enable fast mode (minor approximation in back-propagation). (Default: True)"""
+        """
+        Enable fast mode (minor approximation in back-propagation).
+
+        Type: ``bool``  (default: ``True``).
+        """
         return self._parms.get("fast_mode")
 
     @fast_mode.setter
@@ -884,8 +1074,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def force_load_balance(self):
         """
-        bool: Force extra load balancing to increase training speed for small datasets (to keep all cores busy).
-        (Default: True)
+        Force extra load balancing to increase training speed for small datasets (to keep all cores busy).
+
+        Type: ``bool``  (default: ``True``).
         """
         return self._parms.get("force_load_balance")
 
@@ -898,8 +1089,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def variable_importances(self):
         """
-        bool: Compute variable importances for input features (Gedeon method) - can be slow for large networks.
-        (Default: False)
+        Compute variable importances for input features (Gedeon method) - can be slow for large networks.
+
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("variable_importances")
 
@@ -912,8 +1104,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def replicate_training_data(self):
         """
-        bool: Replicate the entire training dataset onto every node for faster training on small datasets. (Default:
-        True)
+        Replicate the entire training dataset onto every node for faster training on small datasets.
+
+        Type: ``bool``  (default: ``True``).
         """
         return self._parms.get("replicate_training_data")
 
@@ -925,7 +1118,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def single_node_mode(self):
-        """bool: Run on a single node for fine-tuning of model parameters. (Default: False)"""
+        """
+        Run on a single node for fine-tuning of model parameters.
+
+        Type: ``bool``  (default: ``False``).
+        """
         return self._parms.get("single_node_mode")
 
     @single_node_mode.setter
@@ -937,8 +1134,10 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def shuffle_training_data(self):
         """
-        bool: Enable shuffling of training data (recommended if training data is replicated and
-        train_samples_per_iteration is close to #nodes x #rows, of if using balance_classes). (Default: False)
+        Enable shuffling of training data (recommended if training data is replicated and train_samples_per_iteration is
+        close to #nodes x #rows, of if using balance_classes).
+
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("shuffle_training_data")
 
@@ -951,8 +1150,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def missing_values_handling(self):
         """
-        Enum["mean_imputation", "skip"]: Handling of missing values. Either MeanImputation or Skip. (Default:
-        "mean_imputation")
+        Handling of missing values. Either MeanImputation or Skip.
+
+        One of: ``"mean_imputation"``, ``"skip"``  (default: ``"mean_imputation"``).
         """
         return self._parms.get("missing_values_handling")
 
@@ -964,7 +1164,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def quiet_mode(self):
-        """bool: Enable quiet mode for less output to standard output. (Default: False)"""
+        """
+        Enable quiet mode for less output to standard output.
+
+        Type: ``bool``  (default: ``False``).
+        """
         return self._parms.get("quiet_mode")
 
     @quiet_mode.setter
@@ -975,7 +1179,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def autoencoder(self):
-        """bool: Auto-Encoder. (Default: False)"""
+        """
+        Auto-Encoder.
+
+        Type: ``bool``  (default: ``False``).
+        """
         return self._parms.get("autoencoder")
 
     @autoencoder.setter
@@ -986,7 +1194,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def sparse(self):
-        """bool: Sparse data handling (more efficient for data with lots of 0 values). (Default: False)"""
+        """
+        Sparse data handling (more efficient for data with lots of 0 values).
+
+        Type: ``bool``  (default: ``False``).
+        """
         return self._parms.get("sparse")
 
     @sparse.setter
@@ -998,8 +1210,10 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def col_major(self):
         """
-        bool: #DEPRECATED Use a column major weight matrix for input layer. Can speed up forward propagation, but might
-        slow down backpropagation. (Default: False)
+        #DEPRECATED Use a column major weight matrix for input layer. Can speed up forward propagation, but might slow
+        down backpropagation.
+
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("col_major")
 
@@ -1011,7 +1225,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def average_activation(self):
-        """float: Average activation for sparse auto-encoder. #Experimental (Default: 0)"""
+        """
+        Average activation for sparse auto-encoder. #Experimental
+
+        Type: ``float``  (default: ``0``).
+        """
         return self._parms.get("average_activation")
 
     @average_activation.setter
@@ -1022,7 +1240,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def sparsity_beta(self):
-        """float: Sparsity regularization. #Experimental (Default: 0)"""
+        """
+        Sparsity regularization. #Experimental
+
+        Type: ``float``  (default: ``0``).
+        """
         return self._parms.get("sparsity_beta")
 
     @sparsity_beta.setter
@@ -1033,7 +1255,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def max_categorical_features(self):
-        """int: Max. number of categorical features, enforced via hashing. #Experimental (Default: 2147483647)"""
+        """
+        Max. number of categorical features, enforced via hashing. #Experimental
+
+        Type: ``int``  (default: ``2147483647``).
+        """
         return self._parms.get("max_categorical_features")
 
     @max_categorical_features.setter
@@ -1044,7 +1270,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def reproducible(self):
-        """bool: Force reproducibility on small data (will be slow - only uses 1 thread). (Default: False)"""
+        """
+        Force reproducibility on small data (will be slow - only uses 1 thread).
+
+        Type: ``bool``  (default: ``False``).
+        """
         return self._parms.get("reproducible")
 
     @reproducible.setter
@@ -1055,7 +1285,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def export_weights_and_biases(self):
-        """bool: Whether to export Neural Network weights and biases to H2O Frames. (Default: False)"""
+        """
+        Whether to export Neural Network weights and biases to H2O Frames.
+
+        Type: ``bool``  (default: ``False``).
+        """
         return self._parms.get("export_weights_and_biases")
 
     @export_weights_and_biases.setter
@@ -1067,7 +1301,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def mini_batch_size(self):
         """
-        int: Mini-batch size (smaller leads to better fit, larger can speed up and generalize better). (Default: 1)
+        Mini-batch size (smaller leads to better fit, larger can speed up and generalize better).
+
+        Type: ``int``  (default: ``1``).
         """
         return self._parms.get("mini_batch_size")
 
@@ -1080,22 +1316,25 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def categorical_encoding(self):
         """
-        Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen"]: Encoding scheme for categorical
-        features (Default: "auto")
+        Encoding scheme for categorical features
+
+        One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``,
+        ``"label_encoder"``, ``"sort_by_response"``  (default: ``"auto"``).
         """
         return self._parms.get("categorical_encoding")
 
     @categorical_encoding.setter
     def categorical_encoding(self, categorical_encoding):
-        assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen"))
+        assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response"))
         self._parms["categorical_encoding"] = categorical_encoding
 
 
     @property
     def elastic_averaging(self):
         """
-        bool: Elastic averaging between compute nodes can improve distributed model convergence. #Experimental (Default:
-        False)
+        Elastic averaging between compute nodes can improve distributed model convergence. #Experimental
+
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("elastic_averaging")
 
@@ -1107,7 +1346,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def elastic_averaging_moving_rate(self):
-        """float: Elastic averaging moving rate (only if elastic averaging is enabled). (Default: 0.9)"""
+        """
+        Elastic averaging moving rate (only if elastic averaging is enabled).
+
+        Type: ``float``  (default: ``0.9``).
+        """
         return self._parms.get("elastic_averaging_moving_rate")
 
     @elastic_averaging_moving_rate.setter
@@ -1119,7 +1362,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def elastic_averaging_regularization(self):
         """
-        float: Elastic averaging regularization strength (only if elastic averaging is enabled). (Default: 0.001)
+        Elastic averaging regularization strength (only if elastic averaging is enabled).
+
+        Type: ``float``  (default: ``0.001``).
         """
         return self._parms.get("elastic_averaging_regularization")
 

@@ -3,6 +3,7 @@ package water.parser;
 import com.google.common.base.Charsets;
 import water.AutoBuffer;
 import water.Iced;
+import water.util.StringUtils;
 
 import java.util.Arrays;
 import java.util.Formatter;
@@ -21,14 +22,20 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
    private int _off;
    private int _len;
 
-   BufferedString(byte[] buf, int off, int len) { _buf = buf;  _off = off;  _len = len; }
+   public BufferedString(byte[] buf, int off, int len) { 
+     _buf = buf;  
+     _off = off;  
+     _len = len; 
+     assert len >= 0 :  "Bad length in constructor " + len;
+   }
+
    private BufferedString(byte[] buf) { this(buf,0,buf.length); }
    // Cloning constructing used during collecting unique categoricals
    BufferedString(BufferedString from) {
      this(Arrays.copyOfRange(from._buf,from._off,from._off+from._len));
    }
 
-   public BufferedString(String from) { this(from.getBytes(Charsets.UTF_8)); }
+   public BufferedString(String from) { this(StringUtils.bytesOf(from)); }
    // Used to make a temp recycling BufferedString in hot loops
    public BufferedString() { }
 
@@ -44,6 +51,11 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
     return this;
   }
 
+  /**
+   * Comparison, according to Comparable interface
+   * @param o other string to compare
+   * @return -1 or 0 or 1, as specified in Comparable
+   */
    @Override public int compareTo( BufferedString o ) {
      int len = Math.min(_len,o._len);
      for( int i=0; i<len; i++ ) {
@@ -61,6 +73,7 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
      return hash;
    }
 
+   // TODO(vlad): make sure that this method is not as destructive as it now is (see tests) 
    void addChar() {
      _len++;
    }
@@ -83,7 +96,7 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
   // TODO(Vlad): figure out what to do about the buffer being not UTF-8 (who guarantees?)
   @Override
   public String toString() {
-    return _buf == null ? null : new String(_buf, Math.max(0, _off), Math.min(_buf.length, _len), Charsets.UTF_8);
+    return _buf == null ? null : StringUtils.toString(_buf, Math.max(0, _off), Math.min(_buf.length, _len));
   }
 
   public String bytesToString() {
@@ -132,11 +145,12 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
     _buf = buf;
     _off = off;
     _len = len;
+    assert len >= 0 : "Bad length in setter " + len;
     return this;
   }
 
   public final BufferedString set(String s) {
-    return set(s.getBytes(Charsets.UTF_8));
+    return set(StringUtils.bytesOf(s));
   }
 
   public void setOff(int off) {
@@ -150,17 +164,24 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
       for (int i = 0; i < _len; ++i)
         if (_buf[_off + i] != str._buf[str._off + i]) return false;
       return true;
-    } // FIXME: Called in NA_String detection during CsvParser, UTF-8 sensitive
-     else if (o instanceof String) {
-      String str = (String) o;
-      if (str.length() != _len) return false;
-      for (int i = 0; i < _len; ++i)
-        if (_buf[_off + i] != str.charAt(i)) return false;
-      return true;
     }
-    return false; //FIXME find out if this is required for some case or if an exception can be thrown
+    return false;
   }
-
+ 
+  public boolean sameString(String str) {
+    if (str == null || str.length() != _len) return false;
+    for (int i = 0; i < _len; ++i)
+      if ((0xFF&_buf[_off + i]) != str.charAt(i)) return false;
+    return true;
+  }
+  
+  public boolean isOneOf(String[] samples) {
+    if (samples != null) {
+      for (String sample : samples) if (sameString(sample)) return true;
+    }
+    return false;
+  }
+  
   // Thou Shalt Not use accessors in performance critical code - because it
   // obfuscates the code's cost model.  All file-local uses of the accessors
   // has been stripped, please do not re-insert them.  In particular, the

@@ -1,6 +1,5 @@
 from .transform_base import H2OTransformer
 import warnings
-from ..assembly import H2OCol
 
 
 class H2OScaler(H2OTransformer):
@@ -16,15 +15,14 @@ class H2OScaler(H2OTransformer):
     def __init__(self, center=True, scale=True):
         """
         :param center: A boolean or list of numbers. If True, then columns will be demeaned before scaling.
-                        If False, then columns will not be demeaned before scaling.
-                        If centers is an array of numbers, then len(centers) must match the number of
-                        columns in the dataset. Each value is removed from the respective column
-                        before scaling.
-        :param scale: A boolean or list of numbers. If True, then columns will be scaled by the column's standard deviation.
-                       If False, then columns will not be scaled.
-                       If scales is an array, then len(scales) must match the number of columns in
-                       the dataset. Each column is scaled by the respective value in this array.
-        :return: An instance of H2OScaler.
+            If False, then columns will not be demeaned before scaling.
+            If centers is an array of numbers, then len(centers) must match the number of
+            columns in the dataset. Each value is removed from the respective column
+            before scaling.
+        :param scale: A boolean or list of numbers. If True, then columns will be scaled by the column's standard
+            deviation. If False, then columns will not be scaled. If scales is an array, then len(scales) must match
+            the number of columns in the dataset. Each column is scaled by the respective value in this array.
+        :returns: An instance of H2OScaler.
         """
         self.parms = locals()
         self.parms = {k: v for k, v in self.parms.items() if k != "self"}
@@ -32,23 +30,25 @@ class H2OScaler(H2OTransformer):
         self._means = None
         self._stds = None
 
+
     @property
     def means(self):
         return self._means
+
 
     @property
     def stds(self):
         return self._stds
 
+
     def fit(self, X, y=None, **params):
         """
-        Fit this object by computing the means and standard deviations used by the transform
-        method.
+        Fit this object by computing the means and standard deviations used by the transform method.
 
         :param X: An H2OFrame; may contain NAs and/or categoricals.
         :param y: None (Ignored)
         :param params: Ignored
-        :return: This H2OScaler instance
+        :returns: This H2OScaler instance
         """
         if isinstance(self.parms["center"], (tuple, list)): self._means = self.parms["center"]
         if isinstance(self.parms["scale"], (tuple, list)): self._stds = self.parms["scale"]
@@ -62,6 +62,7 @@ class H2OScaler(H2OTransformer):
             self._stds = False
         return self
 
+
     def transform(self, X, y=None, **params):
         """
         Scale an H2OFrame with the fitted means and standard deviations.
@@ -69,9 +70,10 @@ class H2OScaler(H2OTransformer):
         :param X: An H2OFrame; may contain NAs and/or categoricals.
         :param y: None (Ignored)
         :param params: (Ignored)
-        :return: A scaled H2OFrame.
+        :returns: A scaled H2OFrame.
         """
         return X.scale(self.means, self.stds)
+
 
     def inverse_transform(self, X, y=None, **params):
         """
@@ -80,26 +82,35 @@ class H2OScaler(H2OTransformer):
         :param X: An H2OFrame; may contain NAs and/or categoricals.
         :param y: None (Ignored)
         :param params: (Ignored)
-        :return: An H2OFrame
+        :returns: An H2OFrame
         """
         for i in range(X.ncol):
             X[i] = self.means[i] + self.stds[i] * X[i]
         return X
 
 
+
+
 class H2OColSelect(H2OTransformer):
+
     def __init__(self, cols):
         self.cols = cols
+
 
     def fit(self, X, y=None, **params):
         return self
 
+
     def transform(self, X, y=None, **params):
         return X[self.cols]
 
+
     def to_rest(self, step_name):
-        ast = self._dummy_frame()[self.cols]._ex._to_string()
-        return super(H2OColSelect, self).to_rest([step_name, "H2OColSelect", ast, False, "|"])
+        args = [step_name, "H2OColSelect", ("(cols_py dummy %r)" % self.cols), False, "|"]
+        return super(H2OColSelect, self).to_rest(args)
+
+
+
 
 
 class H2OColOp(H2OTransformer):
@@ -153,6 +164,8 @@ class H2OColOp(H2OTransformer):
             [step_name, self.__class__.__name__, ast, self.inplace, "|".join(new_col_names)])
 
 
+
+
 class H2OBinaryOp(H2OColOp):
     """Perform a binary operation on a column.
 
@@ -174,3 +187,17 @@ class H2OBinaryOp(H2OColOp):
     def _transform_helper(self, X, **params):
         if self.left is None: return self.fun(X[self.col], X[self.right.col] if self.right_is_col else self.right)
         return self.fun(X[self.left.col] if self.left_is_col else self.left, X[self.col])
+
+
+
+class H2OCol(object):
+    """
+    Wrapper class for H2OBinaryOp step's left/right args.
+
+    Use if you want to signal that a column actually comes from the train to be fitted on.
+    """
+
+    def __init__(self, column):
+        self.col = column
+
+        # TODO: handle arbitrary (non H2OFrame) inputs -- sql, web, file, generated

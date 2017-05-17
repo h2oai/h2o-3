@@ -32,7 +32,7 @@ class H2ORandomForestEstimator(H2OEstimator):
                       "stopping_metric", "stopping_tolerance", "max_runtime_secs", "seed", "build_tree_one_node",
                       "mtries", "sample_rate", "sample_rate_per_class", "binomial_double_trees", "checkpoint",
                       "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
-                      "histogram_type", "categorical_encoding"}
+                      "histogram_type", "categorical_encoding", "calibrate_model", "calibration_frame"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -46,7 +46,11 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @property
     def training_frame(self):
-        """str: Id of the training data frame (Not required, to allow initial validation of model parameters)."""
+        """
+        Id of the training data frame (Not required, to allow initial validation of model parameters).
+
+        Type: ``H2OFrame``.
+        """
         return self._parms.get("training_frame")
 
     @training_frame.setter
@@ -57,7 +61,11 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @property
     def validation_frame(self):
-        """str: Id of the validation data frame."""
+        """
+        Id of the validation data frame.
+
+        Type: ``H2OFrame``.
+        """
         return self._parms.get("validation_frame")
 
     @validation_frame.setter
@@ -68,7 +76,11 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @property
     def nfolds(self):
-        """int: Number of folds for N-fold cross-validation (0 to disable or >= 2). (Default: 0)"""
+        """
+        Number of folds for N-fold cross-validation (0 to disable or >= 2).
+
+        Type: ``int``  (default: ``0``).
+        """
         return self._parms.get("nfolds")
 
     @nfolds.setter
@@ -79,7 +91,11 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @property
     def keep_cross_validation_predictions(self):
-        """bool: Whether to keep the predictions of the cross-validation models. (Default: False)"""
+        """
+        Whether to keep the predictions of the cross-validation models.
+
+        Type: ``bool``  (default: ``False``).
+        """
         return self._parms.get("keep_cross_validation_predictions")
 
     @keep_cross_validation_predictions.setter
@@ -90,7 +106,11 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @property
     def keep_cross_validation_fold_assignment(self):
-        """bool: Whether to keep the cross-validation fold assignment. (Default: False)"""
+        """
+        Whether to keep the cross-validation fold assignment.
+
+        Type: ``bool``  (default: ``False``).
+        """
         return self._parms.get("keep_cross_validation_fold_assignment")
 
     @keep_cross_validation_fold_assignment.setter
@@ -101,7 +121,11 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @property
     def score_each_iteration(self):
-        """bool: Whether to score during each iteration of model training. (Default: False)"""
+        """
+        Whether to score during each iteration of model training.
+
+        Type: ``bool``  (default: ``False``).
+        """
         return self._parms.get("score_each_iteration")
 
     @score_each_iteration.setter
@@ -112,7 +136,11 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @property
     def score_tree_interval(self):
-        """int: Score the model after every so many trees. Disabled if set to 0. (Default: 0)"""
+        """
+        Score the model after every so many trees. Disabled if set to 0.
+
+        Type: ``int``  (default: ``0``).
+        """
         return self._parms.get("score_tree_interval")
 
     @score_tree_interval.setter
@@ -124,9 +152,10 @@ class H2ORandomForestEstimator(H2OEstimator):
     @property
     def fold_assignment(self):
         """
-        Enum["auto", "random", "modulo", "stratified"]: Cross-validation fold assignment scheme, if fold_column is not
-        specified. The 'Stratified' option will stratify the folds based on the response variable, for classification
-        problems. (Default: "auto")
+        Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify
+        the folds based on the response variable, for classification problems.
+
+        One of: ``"auto"``, ``"random"``, ``"modulo"``, ``"stratified"``  (default: ``"auto"``).
         """
         return self._parms.get("fold_assignment")
 
@@ -138,7 +167,11 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @property
     def fold_column(self):
-        """str: Column with cross-validation fold index assignment per observation."""
+        """
+        Column with cross-validation fold index assignment per observation.
+
+        Type: ``str``.
+        """
         return self._parms.get("fold_column")
 
     @fold_column.setter
@@ -149,7 +182,11 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @property
     def response_column(self):
-        """str: Response variable column."""
+        """
+        Response variable column.
+
+        Type: ``str``.
+        """
         return self._parms.get("response_column")
 
     @response_column.setter
@@ -160,7 +197,11 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @property
     def ignored_columns(self):
-        """List[str]: Names of columns to ignore for training."""
+        """
+        Names of columns to ignore for training.
+
+        Type: ``List[str]``.
+        """
         return self._parms.get("ignored_columns")
 
     @ignored_columns.setter
@@ -171,7 +212,11 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @property
     def ignore_const_cols(self):
-        """bool: Ignore constant columns. (Default: True)"""
+        """
+        Ignore constant columns.
+
+        Type: ``bool``  (default: ``True``).
+        """
         return self._parms.get("ignore_const_cols")
 
     @ignore_const_cols.setter
@@ -183,7 +228,9 @@ class H2ORandomForestEstimator(H2OEstimator):
     @property
     def offset_column(self):
         """
-        str: Offset column. This will be added to the combination of columns before applying the link function.
+        Offset column. This will be added to the combination of columns before applying the link function.
+
+        Type: ``str``.
         """
         return self._parms.get("offset_column")
 
@@ -196,9 +243,11 @@ class H2ORandomForestEstimator(H2OEstimator):
     @property
     def weights_column(self):
         """
-        str: Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it
-        from the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice.
-        Negative weights are not allowed.
+        Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from the
+        dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
+        weights are not allowed.
+
+        Type: ``str``.
         """
         return self._parms.get("weights_column")
 
@@ -211,7 +260,9 @@ class H2ORandomForestEstimator(H2OEstimator):
     @property
     def balance_classes(self):
         """
-        bool: Balance training data class counts via over/under-sampling (for imbalanced data). (Default: False)
+        Balance training data class counts via over/under-sampling (for imbalanced data).
+
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("balance_classes")
 
@@ -224,8 +275,10 @@ class H2ORandomForestEstimator(H2OEstimator):
     @property
     def class_sampling_factors(self):
         """
-        List[float]: Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling
-        factors will be automatically computed to obtain class balance during training. Requires balance_classes.
+        Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
+        be automatically computed to obtain class balance during training. Requires balance_classes.
+
+        Type: ``List[float]``.
         """
         return self._parms.get("class_sampling_factors")
 
@@ -238,8 +291,10 @@ class H2ORandomForestEstimator(H2OEstimator):
     @property
     def max_after_balance_size(self):
         """
-        float: Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
-        balance_classes. (Default: 5)
+        Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
+        balance_classes.
+
+        Type: ``float``  (default: ``5``).
         """
         return self._parms.get("max_after_balance_size")
 
@@ -252,7 +307,9 @@ class H2ORandomForestEstimator(H2OEstimator):
     @property
     def max_confusion_matrix_size(self):
         """
-        int: [Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs (Default: 20)
+        [Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs
+
+        Type: ``int``  (default: ``20``).
         """
         return self._parms.get("max_confusion_matrix_size")
 
@@ -265,8 +322,9 @@ class H2ORandomForestEstimator(H2OEstimator):
     @property
     def max_hit_ratio_k(self):
         """
-        int: Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
-        (Default: 0)
+        Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
+
+        Type: ``int``  (default: ``0``).
         """
         return self._parms.get("max_hit_ratio_k")
 
@@ -278,7 +336,11 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @property
     def ntrees(self):
-        """int: Number of trees. (Default: 50)"""
+        """
+        Number of trees.
+
+        Type: ``int``  (default: ``50``).
+        """
         return self._parms.get("ntrees")
 
     @ntrees.setter
@@ -289,7 +351,11 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @property
     def max_depth(self):
-        """int: Maximum tree depth. (Default: 20)"""
+        """
+        Maximum tree depth.
+
+        Type: ``int``  (default: ``20``).
+        """
         return self._parms.get("max_depth")
 
     @max_depth.setter
@@ -300,7 +366,11 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @property
     def min_rows(self):
-        """float: Fewest allowed (weighted) observations in a leaf. (Default: 1)"""
+        """
+        Fewest allowed (weighted) observations in a leaf.
+
+        Type: ``float``  (default: ``1``).
+        """
         return self._parms.get("min_rows")
 
     @min_rows.setter
@@ -312,8 +382,9 @@ class H2ORandomForestEstimator(H2OEstimator):
     @property
     def nbins(self):
         """
-        int: For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best
-        point (Default: 20)
+        For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point
+
+        Type: ``int``  (default: ``20``).
         """
         return self._parms.get("nbins")
 
@@ -326,8 +397,10 @@ class H2ORandomForestEstimator(H2OEstimator):
     @property
     def nbins_top_level(self):
         """
-        int: For numerical columns (real/int), build a histogram of (at most) this many bins at the root level, then
-        decrease by factor of two per level (Default: 1024)
+        For numerical columns (real/int), build a histogram of (at most) this many bins at the root level, then decrease
+        by factor of two per level
+
+        Type: ``int``  (default: ``1024``).
         """
         return self._parms.get("nbins_top_level")
 
@@ -340,8 +413,10 @@ class H2ORandomForestEstimator(H2OEstimator):
     @property
     def nbins_cats(self):
         """
-        int: For categorical columns (factors), build a histogram of this many bins, then split at the best point.
-        Higher values can lead to more overfitting. (Default: 1024)
+        For categorical columns (factors), build a histogram of this many bins, then split at the best point. Higher
+        values can lead to more overfitting.
+
+        Type: ``int``  (default: ``1024``).
         """
         return self._parms.get("nbins_cats")
 
@@ -354,9 +429,11 @@ class H2ORandomForestEstimator(H2OEstimator):
     @property
     def r2_stopping(self):
         """
-        float: r2_stopping is no longer supported and will be ignored if set - please use stopping_rounds,
-        stopping_metric and stopping_tolerance instead. Previous version of H2O would stop making trees when the R^2
-        metric equals or exceeds this (Default: 1.797693135e+308)
+        r2_stopping is no longer supported and will be ignored if set - please use stopping_rounds, stopping_metric and
+        stopping_tolerance instead. Previous version of H2O would stop making trees when the R^2 metric equals or
+        exceeds this
+
+        Type: ``float``  (default: ``1.797693135e+308``).
         """
         return self._parms.get("r2_stopping")
 
@@ -369,8 +446,10 @@ class H2ORandomForestEstimator(H2OEstimator):
     @property
     def stopping_rounds(self):
         """
-        int: Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
-        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) (Default: 0)
+        Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
+        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
+
+        Type: ``int``  (default: ``0``).
         """
         return self._parms.get("stopping_rounds")
 
@@ -383,9 +462,10 @@ class H2ORandomForestEstimator(H2OEstimator):
     @property
     def stopping_metric(self):
         """
-        Enum["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "lift_top_group", "misclassification",
-        "mean_per_class_error"]: Metric to use for early stopping (AUTO: logloss for classification, deviance for
-        regression) (Default: "auto")
+        Metric to use for early stopping (AUTO: logloss for classification, deviance for regression)
+
+        One of: ``"auto"``, ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``,
+        ``"lift_top_group"``, ``"misclassification"``, ``"mean_per_class_error"``  (default: ``"auto"``).
         """
         return self._parms.get("stopping_metric")
 
@@ -398,8 +478,9 @@ class H2ORandomForestEstimator(H2OEstimator):
     @property
     def stopping_tolerance(self):
         """
-        float: Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
-        much) (Default: 0.001)
+        Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
+
+        Type: ``float``  (default: ``0.001``).
         """
         return self._parms.get("stopping_tolerance")
 
@@ -411,7 +492,11 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @property
     def max_runtime_secs(self):
-        """float: Maximum allowed runtime in seconds for model training. Use 0 to disable. (Default: 0)"""
+        """
+        Maximum allowed runtime in seconds for model training. Use 0 to disable.
+
+        Type: ``float``  (default: ``0``).
+        """
         return self._parms.get("max_runtime_secs")
 
     @max_runtime_secs.setter
@@ -422,7 +507,11 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @property
     def seed(self):
-        """int: Seed for pseudo random number generator (if applicable) (Default: -1)"""
+        """
+        Seed for pseudo random number generator (if applicable)
+
+        Type: ``int``  (default: ``-1``).
+        """
         return self._parms.get("seed")
 
     @seed.setter
@@ -434,8 +523,9 @@ class H2ORandomForestEstimator(H2OEstimator):
     @property
     def build_tree_one_node(self):
         """
-        bool: Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets. (Default:
-        False)
+        Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.
+
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("build_tree_one_node")
 
@@ -448,8 +538,10 @@ class H2ORandomForestEstimator(H2OEstimator):
     @property
     def mtries(self):
         """
-        int: Number of variables randomly sampled as candidates at each split. If set to -1, defaults to sqrt{p} for
-        classification and p/3 for regression (where p is the # of predictors (Default: -1)
+        Number of variables randomly sampled as candidates at each split. If set to -1, defaults to sqrt{p} for
+        classification and p/3 for regression (where p is the # of predictors
+
+        Type: ``int``  (default: ``-1``).
         """
         return self._parms.get("mtries")
 
@@ -461,7 +553,11 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @property
     def sample_rate(self):
-        """float: Row sample rate per tree (from 0.0 to 1.0) (Default: 0.6320000291)"""
+        """
+        Row sample rate per tree (from 0.0 to 1.0)
+
+        Type: ``float``  (default: ``0.6320000291``).
+        """
         return self._parms.get("sample_rate")
 
     @sample_rate.setter
@@ -472,7 +568,11 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @property
     def sample_rate_per_class(self):
-        """List[float]: Row sample rate per tree per class (from 0.0 to 1.0)"""
+        """
+        A list of row sample rates per class (relative fraction for each class, from 0.0 to 1.0), for each tree
+
+        Type: ``List[float]``.
+        """
         return self._parms.get("sample_rate_per_class")
 
     @sample_rate_per_class.setter
@@ -484,8 +584,9 @@ class H2ORandomForestEstimator(H2OEstimator):
     @property
     def binomial_double_trees(self):
         """
-        bool: For binary classification: Build 2x as many trees (one per class) - can lead to higher accuracy. (Default:
-        False)
+        For binary classification: Build 2x as many trees (one per class) - can lead to higher accuracy.
+
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("binomial_double_trees")
 
@@ -497,7 +598,11 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @property
     def checkpoint(self):
-        """str: Model checkpoint to resume training with."""
+        """
+        Model checkpoint to resume training with.
+
+        Type: ``str``.
+        """
         return self._parms.get("checkpoint")
 
     @checkpoint.setter
@@ -508,7 +613,11 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @property
     def col_sample_rate_change_per_level(self):
-        """float: Relative change of the column sampling rate for every level (from 0.0 to 2.0) (Default: 1)"""
+        """
+        Relative change of the column sampling rate for every level (from 0.0 to 2.0)
+
+        Type: ``float``  (default: ``1``).
+        """
         return self._parms.get("col_sample_rate_change_per_level")
 
     @col_sample_rate_change_per_level.setter
@@ -519,7 +628,11 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @property
     def col_sample_rate_per_tree(self):
-        """float: Column sample rate per tree (from 0.0 to 1.0) (Default: 1)"""
+        """
+        Column sample rate per tree (from 0.0 to 1.0)
+
+        Type: ``float``  (default: ``1``).
+        """
         return self._parms.get("col_sample_rate_per_tree")
 
     @col_sample_rate_per_tree.setter
@@ -531,7 +644,9 @@ class H2ORandomForestEstimator(H2OEstimator):
     @property
     def min_split_improvement(self):
         """
-        float: Minimum relative improvement in squared error reduction for a split to happen (Default: 1e-05)
+        Minimum relative improvement in squared error reduction for a split to happen
+
+        Type: ``float``  (default: ``1e-05``).
         """
         return self._parms.get("min_split_improvement")
 
@@ -544,8 +659,10 @@ class H2ORandomForestEstimator(H2OEstimator):
     @property
     def histogram_type(self):
         """
-        Enum["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin"]: What type of histogram to use for
-        finding optimal split points (Default: "auto")
+        What type of histogram to use for finding optimal split points
+
+        One of: ``"auto"``, ``"uniform_adaptive"``, ``"random"``, ``"quantiles_global"``, ``"round_robin"``  (default:
+        ``"auto"``).
         """
         return self._parms.get("histogram_type")
 
@@ -558,14 +675,47 @@ class H2ORandomForestEstimator(H2OEstimator):
     @property
     def categorical_encoding(self):
         """
-        Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen"]: Encoding scheme for categorical
-        features (Default: "auto")
+        Encoding scheme for categorical features
+
+        One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``,
+        ``"label_encoder"``, ``"sort_by_response"``  (default: ``"auto"``).
         """
         return self._parms.get("categorical_encoding")
 
     @categorical_encoding.setter
     def categorical_encoding(self, categorical_encoding):
-        assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen"))
+        assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response"))
         self._parms["categorical_encoding"] = categorical_encoding
+
+
+    @property
+    def calibrate_model(self):
+        """
+        Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more accurate estimates
+        of class probabilities.
+
+        Type: ``bool``  (default: ``False``).
+        """
+        return self._parms.get("calibrate_model")
+
+    @calibrate_model.setter
+    def calibrate_model(self, calibrate_model):
+        assert_is_type(calibrate_model, None, bool)
+        self._parms["calibrate_model"] = calibrate_model
+
+
+    @property
+    def calibration_frame(self):
+        """
+        Calibration frame for Platt Scaling
+
+        Type: ``H2OFrame``.
+        """
+        return self._parms.get("calibration_frame")
+
+    @calibration_frame.setter
+    def calibration_frame(self, calibration_frame):
+        assert_is_type(calibration_frame, None, H2OFrame)
+        self._parms["calibration_frame"] = calibration_frame
 
 

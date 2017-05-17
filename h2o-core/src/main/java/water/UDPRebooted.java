@@ -11,6 +11,8 @@ import water.util.Log;
  */
 
 public class UDPRebooted extends UDP {
+  public static boolean BIG_DEBUG = false;
+  
   public static enum T {
     none,
     reboot,
@@ -40,13 +42,15 @@ public class UDPRebooted extends UDP {
     final int _timeout;
     final transient boolean [] _confirmations;
     final int _nodeId;
+    final int _exitCode;
 
-    public ShutdownTsk(H2ONode killer, int nodeId, int timeout, boolean [] confirmations){
+    public ShutdownTsk(H2ONode killer, int nodeId, int timeout, boolean [] confirmations, int exitCode){
       super(H2O.GUI_PRIORITY);
       _nodeId = nodeId;
       _killer = killer;
       _timeout = timeout;
       _confirmations = confirmations;
+      _exitCode = exitCode;
     }
     transient boolean _didShutDown;
     private synchronized void doShutdown(int exitCode, String msg){
@@ -62,7 +66,7 @@ public class UDPRebooted extends UDP {
       new Thread(){
         @Override public void run(){
           try {Thread.sleep(_timeout);} catch (InterruptedException e) {}
-          doShutdown(0,"Orderly shutdown may not have been acknowledged to " + _killer + " (no ackack), still exiting with exit code 0.");
+          doShutdown(_exitCode,"Orderly shutdown may not have been acknowledged to " + _killer + " (no ackack), exiting with exit code " + _exitCode + ".");
         }
       }.start();
       tryComplete();
@@ -71,7 +75,7 @@ public class UDPRebooted extends UDP {
       _confirmations[_nodeId] = true;
     }
     @Override public void onAckAck(){
-      doShutdown(0,"Orderly shutdown acknowledged to " + _killer + ", exiting with exit code 0.");
+      doShutdown(_exitCode,"Orderly shutdown acknowledged to " + _killer + ", exiting with exit code " + _exitCode + ".");
     }
 
   }
@@ -84,7 +88,8 @@ public class UDPRebooted extends UDP {
       Log.warn("Orderly shutdown should be handled via ShutdownTsk. Message is from outside of the cloud? Ignoring it.");
       return;
     case oom:      m = "Out of Memory, Heap Space exceeded, increase Heap Size,";                                break;
-    case error:    m = "Error leading to a cloud kill";                                                          break;
+    case error:    if (BIG_DEBUG) Thread.dumpStack();
+                   m = "Error leading to a cloud kill";                                                          break;
     case locked:   m = "Attempting to join an H2O cloud that is no longer accepting new H2O nodes";              break;
     case mismatch: m = "Attempting to join an H2O cloud with a different H2O version (is H2O already running?)"; break;
     default:       m = "Received kill " + cause;                                                                 break;

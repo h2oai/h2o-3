@@ -234,6 +234,7 @@ def endpoints(raw=False):
             if path == "/3/ModelMetrics/frames/{frame}": continue
             if path == "/3/ModelMetrics/models/{model}": continue
             if path == "/3/ModelMetrics": continue
+            if "AutoML" in path: continue  # Generation code doesn't know how to deal with defaults for complex objects yet
             if apiname.endswith("_deprecated"): continue
 
             # Resolve one name conflict
@@ -243,6 +244,8 @@ def endpoints(raw=False):
             mm = classname_pattern.match(path)
             assert mm, "Cannot determine class name in URL " + path
             e["class_name"] = mm.group(1)
+            if e["class_name"].islower():
+                e["class_name"] = e["class_name"].capitalize()
 
             # Resolve input/output schemas into actual objects
             assert e["input_schema"] in schmap, "Encountered unknown schema %s in %s" % (e["input_schema"], path)
@@ -317,7 +320,11 @@ def schemas(raw=False):
 
     def translate_name(name):
         if name is None: return
-        if name == "Apischemas3TimelineV3EventV3EventType": return "ApiTimelineEventTypeV3"
+        if name.startswith("Apischemas3"): name = name[len("Apischemas3"):]
+        if name.startswith("Apischemas4input"): name = name[len("Apischemas4input"):]
+        if name.startswith("Apischemas4output"): name = name[len("Apischemas4output"):]
+        if "V3" in name: name = name.replace("V3", "") + "V3"  # force multiple "V3"s at the end
+        if "V4" in name: name = name.replace("V4", "") + "V4"  # force multiple "V4"s at the end
         if name == "CreateframerecipesSimpleCreateFrameRecipeResponseType": return "SimpleRecipeResponseType"
         assert not pattern0.match(name), "Bad schema name %s (version number in the middle)" % name
         mm = pattern1.match(name) or pattern2.match(name)
@@ -337,6 +344,8 @@ def schemas_map(add_generics=False):
     """
     m = {}
     for schema in schemas():
+        if schema["name"].startswith('AutoML'): continue  # Generation code doesn't know how to deal with defaults for complex objects yet
+        if schema["name"].startswith('UserFeedback'): continue  # UserFeedback schema contains an AutoMLKeyV3
         m[schema["name"]] = schema
 
     def find_field(fields, field_name):
@@ -349,11 +358,11 @@ def schemas_map(add_generics=False):
     # Add information about the generics. This is rather hacky at the moment.
     if add_generics:
         for base, generics in [
-                # Note: derived classes must come before base classes here
-                ("SharedTreeModelV3", [("P", "ModelParametersSchemaV3"), ("O", "ModelOutputSchemaV3")]),
-                ("ModelSchemaV3", [("P", "ModelParametersSchemaV3"), ("O", "ModelOutputSchemaV3")]),
-                ("SharedTreeV3", [("P", "ModelParametersSchemaV3")]),
-                ("ModelBuilderSchema", [("P", "ModelParametersSchemaV3")]),
+            # Note: derived classes must come before base classes here
+            ("SharedTreeModelV3", [("P", "ModelParametersSchemaV3"), ("O", "ModelOutputSchemaV3")]),
+            ("ModelSchemaV3", [("P", "ModelParametersSchemaV3"), ("O", "ModelOutputSchemaV3")]),
+            ("SharedTreeV3", [("P", "ModelParametersSchemaV3")]),
+            ("ModelBuilderSchema", [("P", "ModelParametersSchemaV3")]),
         ]:
             # Write the generic information about the base class
             schema = m[base]

@@ -1,16 +1,24 @@
 package water.util;
 
 import hex.CreateFrame;
+import hex.Model;
 import hex.ToEigenVec;
 import org.junit.Assert;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.hamcrest.CoreMatchers;
 import water.DKV;
 import water.Key;
+import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+
+import java.util.HashMap;
 
 
 /**
@@ -90,4 +98,42 @@ public class FrameUtilsTest extends TestUtil {
           f.delete();
     }
   }
+
+  @Test
+  public void testOneHotExplicitEncoder() {
+    Scope.enter();
+    try {
+      Frame f = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("NumCol", "CatCol1", "CatCol2")
+              .withVecTypes(Vec.T_NUM, Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ard(Double.NaN, 1, 2, 3, 4, 5.6, 7))
+              .withDataForCol(1, ar("A", "B", "C", "E", "F", "I", "J"))
+              .withDataForCol(2, ar("A", "B", "A", "C", null, "B", "A"))
+              .withChunkLayout(2, 2, 2, 1)
+              .build();
+      Frame result = FrameUtils.categoricalEncoder(f, new String[]{"CatCol1"},
+              Model.Parameters.CategoricalEncodingScheme.OneHotExplicit, null);
+      Scope.track(result);
+      assertArrayEquals(
+              new String[]{"NumCol", "CatCol2.A", "CatCol2.B", "CatCol2.C", "CatCol2.missing(NA)", "CatCol1"},
+              result.names());
+      // check that original columns are the same
+      assertVecEquals(f.vec("NumCol"), result.vec("NumCol"), 1e-6);
+      assertCatVecEquals(f.vec("CatCol1"), result.vec("CatCol1"));
+      // validate 1-hot encoding
+      Vec catVec = f.vec("CatCol2");
+      for (long i = 0; i < catVec.length(); i++) {
+        String hotCol = "CatCol2." + (catVec.isNA(i) ? "missing(NA)" : catVec.domain()[(int) catVec.at8(i)]);
+        for (String col : result.names())
+          if (col.startsWith("CatCol2.")) {
+            long expectedVal = hotCol.equals(col) ? 1 : 0;
+            assertEquals("Value of column " + col + " in row = " + i + " matches", expectedVal, result.vec(col).at8(i));
+          }
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
 }

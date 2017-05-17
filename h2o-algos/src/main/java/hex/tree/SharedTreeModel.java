@@ -1,7 +1,12 @@
 package hex.tree;
 
 import hex.*;
+
+import static hex.ModelCategory.Binomial;
 import static hex.genmodel.GenModel.createAuxKey;
+import static hex.glm.GLMModel.GLMParameters.Family.binomial;
+
+import hex.glm.GLMModel;
 import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.codegen.CodeGenerator;
@@ -69,6 +74,11 @@ public abstract class SharedTreeModel<
     public double _sample_rate = 0.632; //fraction of rows to sample for each tree
 
     public double[] _sample_rate_per_class; //fraction of rows to sample for each tree, per class
+
+    public boolean _calibrate_model = false; // Use Platt Scaling
+    public Key<Frame> _calibration_frame;
+
+    public Frame calib() { return _calibration_frame == null ? null : _calibration_frame.get(); }
 
     @Override public long progressUnits() { return _ntrees + (_histogram_type==HistogramType.QuantilesGlobal || _histogram_type==HistogramType.RoundRobin ? 1 : 0); }
 
@@ -160,6 +170,8 @@ public abstract class SharedTreeModel<
     public TwoDimTable _variable_importances;
     public VarImp _varimp;
 
+    public GLMModel _calib_model;
+
     public SharedTreeOutput( SharedTree b) {
       super(b);
       _ntrees = 0;              // No trees yet
@@ -183,11 +195,11 @@ public abstract class SharedTreeModel<
       Key[] keysAux = _treeKeysAux[_ntrees] = new Key[trees.length];
       Futures fs = new Futures();
       for( int i=0; i<nclasses(); i++ ) if( trees[i] != null ) {
-        CompressedTree ct = trees[i].compress(_ntrees,i);
+        CompressedTree ct = trees[i].compress(_ntrees,i,_domains);
         DKV.put(keys[i]=ct._key,ct,fs);
         _treeStats.updateBy(trees[i]); // Update tree shape stats
 
-        CompressedTree ctAux = new CompressedTree(trees[i]._abAux.buf(),-1,-1,-1,-1);
+        CompressedTree ctAux = new CompressedTree(trees[i]._abAux.buf(),-1,-1,-1,-1,_domains);
         keysAux[i] = ctAux._key = Key.make(createAuxKey(ct._key.toString()));
         DKV.put(ctAux);
       }
@@ -268,6 +280,32 @@ public abstract class SharedTreeModel<
     return res;
   }
 
+  @Override
+  protected Frame postProcessPredictions(Frame predictFr) {
+    if (_output._calib_model == null)
+      return predictFr;
+    if (_output.getModelCategory() == Binomial) {
+      Key<Frame> calibInputKey = Key.make();
+      Frame calibOutput = null;
+      try {
+        Frame calibInput = new Frame(calibInputKey, new String[]{"p"}, new Vec[]{predictFr.vec(1)});
+        calibOutput = _output._calib_model.score(calibInput);
+        assert calibOutput._names.length == 3;
+        Vec[] calPredictions = calibOutput.remove(new int[]{1, 2});
+        // append calibrated probabilities to the prediction frame
+        predictFr.write_lock();
+        for (int i = 0; i < calPredictions.length; i++)
+          predictFr.add("cal_" + predictFr.name(1 + i), calPredictions[i]);
+        return predictFr.update();
+      } finally {
+        DKV.remove(calibInputKey);
+        if (calibOutput != null)
+          calibOutput.remove();
+      }
+    } else
+      throw H2O.unimpl("Calibration is only supported for binomial models");
+  }
+
   @Override protected double[] score0(double[] data, double[] preds, double weight, double offset) {
     return score0(data, preds, weight, offset, _output._treeKeys.length);
   }
@@ -338,6 +376,8 @@ public abstract class SharedTreeModel<
     for (Key[] ks : _output._treeKeysAux)
       for (Key k : ks)
         if( k != null ) k.remove(fs);
+    if (_output._calib_model != null)
+      _output._calib_model.remove(fs);
     return super.remove_impl(fs);
   }
 
@@ -404,25 +444,33 @@ public abstract class SharedTreeModel<
       fileCtx.add(new CodeGenerator() {
         @Override
         public void generate(JCodeSB out) {
-          // Generate a class implementing a tree
-          out.nl();
-          toJavaForestName(out.ip("class "), mname, treeIdx).p(" {").nl().ii(1);
-          out.ip("public static void score0(double[] fdata, double[] preds) {").nl().ii(1);
-          for (int c = 0; c < nclass; c++)
-            if (!(binomialOpt() && c == 1 && nclass == 2)) // Binomial optimization
-              toJavaTreeName(out.ip("preds[").p(nclass==1?0:c+1).p("] += "), mname, treeIdx, c).p(".score0(fdata);").nl();
-          out.di(1).ip("}").nl(); // end of function
-          out.di(1).ip("}").nl(); // end of forest class
-
-          // Generate the pre-tree classes afterwards
-          for (int c = 0; c < nclass; c++) {
-            if (!(binomialOpt() && c == 1 && nclass == 2)) { // Binomial optimization
-              String javaClassName = toJavaTreeName(new SB(), mname, treeIdx, c).toString();
-              CompressedTree ct = _output.ctree(treeIdx, c);
-              SB sb = new SB();
-              new TreeJCodeGen(SharedTreeModel.this, ct, sb, javaClassName, verboseCode).generate();
-              out.p(sb);
+          try {
+            // Generate a class implementing a tree
+            out.nl();
+            toJavaForestName(out.ip("class "), mname, treeIdx).p(" {").nl().ii(1);
+            out.ip("public static void score0(double[] fdata, double[] preds) {").nl().ii(1);
+            for (int c = 0; c < nclass; c++) {
+              if (_output._treeKeys[treeIdx][c] == null) continue;
+              if (!(binomialOpt() && c == 1 && nclass == 2)) // Binomial optimization
+                toJavaTreeName(out.ip("preds[").p(nclass == 1 ? 0 : c + 1).p("] += "), mname, treeIdx, c).p(".score0(fdata);").nl();
             }
+            out.di(1).ip("}").nl(); // end of function
+            out.di(1).ip("}").nl(); // end of forest class
+
+            // Generate the pre-tree classes afterwards
+            for (int c = 0; c < nclass; c++) {
+              if (_output._treeKeys[treeIdx][c] == null) continue;
+              if (!(binomialOpt() && c == 1 && nclass == 2)) { // Binomial optimization
+                String javaClassName = toJavaTreeName(new SB(), mname, treeIdx, c).toString();
+                CompressedTree ct = _output.ctree(treeIdx, c);
+                SB sb = new SB();
+                new TreeJCodeGen(SharedTreeModel.this, ct, sb, javaClassName, verboseCode).generate();
+                out.p(sb);
+              }
+            }
+          } catch (Throwable t) {
+            t.printStackTrace();
+            throw new IllegalArgumentException("Internal error creating the POJO.", t);
           }
         }
       });

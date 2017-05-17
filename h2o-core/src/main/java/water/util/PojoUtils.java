@@ -12,6 +12,7 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -439,10 +440,17 @@ public class PojoUtils {
    */
   public static void setField(Object o, String fieldName, Object value) {
     try {
-      Field f = o.getClass().getField(fieldName);
+      Field f = PojoUtils.getFieldEvenInherited(o, fieldName);
+      f.setAccessible(true);
 
       if (null == value) {
         f.set(o, null);
+        return;
+      }
+
+      if (List.class.isAssignableFrom(value.getClass()) && f.getType().isArray() && f.getType().getComponentType() == String.class) {
+        // convert ArrayList to array and try again
+        setField(o, fieldName, ((List)value).toArray(new String[0]));
         return;
       }
 
@@ -454,13 +462,48 @@ public class PojoUtils {
           f.set(o, ((Double) value).intValue());
         else if (f.getType() == long.class && (value.getClass() == Double.class || value.getClass() == Float.class))
           f.set(o, ((Double) value).longValue());
+        else if (f.getType() == int.class && value.getClass() == Integer.class)
+          f.set(o, ((Integer) value).intValue());
+        else if (f.getType() == long.class && (value.getClass() == Long.class || value.getClass() == Integer.class))
+          f.set(o, ((Long) value).longValue());
         else {
           // Double -> double, Integer -> int will work:
           f.set(o, value);
         }
+      } else if (f.getType().isArray() && value.getClass().isArray()) {
+        if (f.getType().getComponentType() == value.getClass().getComponentType()) {
+          // array of the same type on both sides
+          f.set(o, value);
+        } else if (f.getType().getComponentType() == int.class && value.getClass().getComponentType() == Integer.class) {
+          Integer[] valuesTyped = ((Integer[])value);
+          int[] valuesCast = new int[valuesTyped.length];
+          for (int i = 0; i < valuesTyped.length; i++)
+            valuesCast[i] = valuesTyped[i];
+          f.set(o, valuesCast);
+        } else if (f.getType().getComponentType() == long.class && value.getClass().getComponentType() == Long.class) {
+          Long[] valuesTyped = ((Long[])value);
+          long[] valuesCast = new long[valuesTyped.length];
+          for (int i = 0; i < valuesTyped.length; i++)
+            valuesCast[i] = valuesTyped[i];
+          f.set(o, valuesCast);
+        } else if (f.getType().getComponentType() == double.class && (value.getClass().getComponentType() == Float.class || value.getClass().getComponentType() == Double.class || value.getClass().getComponentType() == Integer.class || value.getClass().getComponentType() == Long.class)) {
+          Double[] valuesTyped = ((Double[])value);
+          double[] valuesCast = new double[valuesTyped.length];
+          for (int i = 0; i < valuesTyped.length; i++)
+            valuesCast[i] = valuesTyped[i];
+          f.set(o, valuesCast);
+        } else if (f.getType().getComponentType() == float.class && (value.getClass().getComponentType() == Float.class || value.getClass().getComponentType() == Double.class || value.getClass().getComponentType() == Integer.class || value.getClass().getComponentType() == Long.class)) {
+          Float[] valuesTyped = ((Float[])value);
+          float[] valuesCast = new float[valuesTyped.length];
+          for (int i = 0; i < valuesTyped.length; i++)
+            valuesCast[i] = valuesTyped[i];
+          f.set(o, valuesCast);
+        } else {
+          throw new IllegalArgumentException("setField can't yet convert an array of: " + value.getClass().getComponentType() + " to an array of: " + f.getType().getComponentType());
+        }
       } else if (! f.getType().isPrimitive() && ! f.getType().isAssignableFrom(value.getClass())) {
         // TODO: pull the auto-type-conversion stuff out of copyProperties so we don't have limited copy-paste code here
-        throw new IllegalArgumentException("setField can't yet convert a: " + value.getClass() + " to a: " + f.getType()); //
+        throw new IllegalArgumentException("setField can't yet convert a: " + value.getClass() + " to a: " + f.getType());
       } else {
         // not casting a primitive type
         f.set(o, value);
@@ -470,6 +513,26 @@ public class PojoUtils {
     } catch (IllegalAccessException e) {
       throw new IllegalArgumentException("Field=" + fieldName + " cannot be set to value=" + value, e);
     }
+  }
+
+  /**
+   * Gets a public, protected or private Field of an object, even if it's inherited.  Neither Class.getField nor
+   * Class.getDeclaredField do this.  NOTE: the caller must call f.setAccessible(true) if they want to make private
+   * fields accessible.
+   */
+  public static Field getFieldEvenInherited(Object o, String name) throws NoSuchFieldException, SecurityException {
+    Class clazz = o.getClass();
+
+    while (clazz != Object.class) {
+      try {
+        return clazz.getDeclaredField(name);
+      }
+      catch (Exception e) {
+        // ignore
+      }
+      clazz = clazz.getSuperclass();
+    }
+    throw new NoSuchFieldException("Failed to find field: " + name + " in object: " + o);
   }
 
   /**
@@ -486,7 +549,7 @@ public class PojoUtils {
     if (o == null) throw new IllegalArgumentException("Cannot get the field from null object!");
     String destName = fieldNaming.toDest(name);
     try {
-      Field f = o.getClass().getField(destName); // failing with fields declared in superclasses
+      Field f = PojoUtils.getFieldEvenInherited(o, destName); // failing with fields declared in superclasses
       return f.get(o);
     } catch (NoSuchFieldException e) {
       throw new IllegalArgumentException("Field not found: '" + name + "/" + destName + "' on object " + o);
@@ -516,7 +579,7 @@ public class PojoUtils {
       if (value instanceof Map) {
         // handle nested objects
         try {
-          Field f = o.getClass().getField(key);
+          Field f = PojoUtils.getFieldEvenInherited(o, key);
           f.setAccessible(true);
 
           // In some cases, the target object has children already (e.g., defaults), while in other cases it doesn't.
@@ -529,19 +592,19 @@ public class PojoUtils {
           throw new IllegalArgumentException("Cannot get value of the field: '" + key + "' on object " + o);
         } catch (InstantiationException e) {
           try {
-            throw new IllegalArgumentException("Cannot create new child object of type: " + o.getClass().getField(key).getClass().getCanonicalName() + " for field: '" + key + "' on object " + o);
+            throw new IllegalArgumentException("Cannot create new child object of type: " +
+                    PojoUtils.getFieldEvenInherited(o, key).getClass().getCanonicalName() + " for field: '" + key + "' on object " + o);
           } catch (NoSuchFieldException ee) {
             // Can't happen: we've already checked for this.
             throw new IllegalArgumentException("Cannot create new child object of type for field: '" + key + "' on object " + o);
           }
         }
-
       } else {
         // Scalar or String, possibly with an automagic type conversion as copyProperties does.
         // TODO: refactor the type conversions out of copyProperties so they all work, and remove
         // this now-redundant code:
         try {
-          Field f = o.getClass().getField(key);
+          Field f = PojoUtils.getFieldEvenInherited(o, key);
           f.setAccessible(true);
 
           if (f.getType().isAssignableFrom(FrameV3.ColSpecifierV3.class)) {

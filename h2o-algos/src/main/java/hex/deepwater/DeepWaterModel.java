@@ -7,6 +7,7 @@ import hex.schemas.DeepWaterModelV3;
 import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.api.schemas3.ModelSchemaV3;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
@@ -23,6 +24,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static hex.ModelMetrics.calcVarImp;
 import static water.H2O.technote;
@@ -32,7 +34,7 @@ import static water.H2O.technote;
  * It contains a DeepWaterModelInfo with the most up-to-date model,
  * a scoring history, as well as some helpers to indicate the progress
  */
-public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,DeepWaterModelOutput> {
+public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,DeepWaterModelOutput> implements Model.DeepFeatures {
 
   @Override public DeepwaterMojoWriter getMojo() { return new DeepwaterMojoWriter(this); }
 
@@ -163,7 +165,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     _output._scoring_history = DeepWaterScoringInfo.createScoringHistoryTable(scoringInfo, (null != get_params()._valid), false, _output.getModelCategory(), _output.isAutoencoder());
     _output._variable_importances = calcVarImp(last_scored().variable_importances);
     if (dataInfo!=null) {
-      _output._names = dataInfo._adaptedFrame.names();
+      _output.setNames(dataInfo._adaptedFrame.names());
       _output._domains = dataInfo._adaptedFrame.domains();
     }
     assert(_key.equals(destKey));
@@ -172,7 +174,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
   private void setDataInfoToOutput(DataInfo dinfo) {
     if (dinfo == null) return;
     // update the model's expected frame format - needed for train/test adaptation
-    _output._names = dinfo._adaptedFrame.names();
+    _output.setNames(dinfo._adaptedFrame.names());
     _output._domains = dinfo._adaptedFrame.domains();
     _output._nums = dinfo._nums;
     _output._cats = dinfo._cats;
@@ -509,6 +511,35 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     }
   }
 
+  private int backendCount = 0;
+
+  @Override
+  protected void setupBigScorePredict() {
+    synchronized (model_info()) {
+      backendCount++;
+      // Initial init of backend + model, backend is shared across threads
+      if (null == model_info()._backend) {
+        model_info().javaToNative();
+      }
+      // Backend already initialized, initialize model per thread
+      if (null == model_info().getModel().get()) {
+        model_info().initModel();
+      }
+    }
+  }
+
+  @Override
+  protected void closeBigScorePredict() {
+    synchronized (model_info()) {
+      if (0 == --backendCount) {
+        // No more threads using the backend, nuke backend + model
+        model_info().nukeBackend();
+      } else if (null != model_info().getModel().get()) {
+        // Backend still used by other threads, nuke only model
+        model_info().nukeModel();
+      }
+    }
+  }
 
   /**
    * Single-instance scoring - slow, not optimized for mini-batches - do not use unless you know what you're doing
@@ -521,7 +552,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     float[] f = new float[_parms._mini_batch_size * data.length];
     for (int i=0; i<data.length; ++i) f[i] = (float)data[i]; //only fill the first observation
     //float[] predFloats = model_info().predict(f);
-    float[] predFloats = model_info._backend.predict(model_info._model, f);
+    float[] predFloats = model_info._backend.predict(model_info.getModel().get(), f);
     if (_output.nclasses()>=2) {
       for (int i = 1; i < _output.nclasses()+1; ++i) preds[i] = predFloats[i];
     } else {
@@ -536,12 +567,178 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     return score0(data, preds);
   }
 
-  @Override public double[] score0(Chunk chks[], double weight, double offset, int row_in_chunk, double[] tmp, double[] preds ) {
+  @Override protected long checksum_impl() {
+    return super.checksum_impl() * _output._run_time + model_info().hashCode();
+  }
+
+  @Override
+  public Frame scoreAutoEncoder(Frame frame, Key destination_key, boolean reconstruction_error_per_feature) {
     throw H2O.unimpl();
   }
 
-  @Override protected long checksum_impl() {
-    return super.checksum_impl() * _output._run_time + model_info().hashCode();
+  @Override
+  public Frame scoreDeepFeatures(Frame frame, int layer) {
+    throw H2O.unimpl();
+  }
+
+  @Override
+  public Frame scoreDeepFeatures(Frame frame, int layer, Job j) {
+    throw H2O.unimpl();
+  }
+
+  @Override
+  public Frame scoreDeepFeatures(Frame frame, String layer, Job job) {
+    if (layer == null)
+      throw new H2OIllegalArgumentException("must give hidden layer (symbol) name to extract - cannot be null");
+    if (isSupervised()) {
+      int ridx = frame.find(_output.responseName());
+      if (ridx != -1) { // drop the response for scoring!
+        frame = new Frame(frame);
+        frame.remove(ridx);
+      }
+    }
+    Frame adaptFrm = new Frame(frame);
+    Scope.enter();
+    adaptTestForTrain(adaptFrm, true, false);
+    Frame _fr = adaptFrm;
+
+    DataInfo di = model_info()._dataInfo;
+    if (di != null) {
+      di = IcedUtils.deepCopy(di);
+      di._adaptedFrame = _fr; //dinfo logic on _adaptedFrame is what we'll need for extracting standardized features from the data for scoring
+    }
+    final int dataIdx = 0; //FIXME
+    final int weightIdx =_fr.find(get_params()._weights_column);
+    final int batch_size = get_params()._mini_batch_size;
+
+    ArrayList score_data = new ArrayList(); //for binary data (path to data)
+    ArrayList<Integer> skipped = new ArrayList();
+
+    // randomly add more rows to fill up to a multiple of batch_size
+    long seed = 0xDECAF + 0xD00D * model_info().get_processed_global();
+    Random rng = RandomUtils.getRNG(seed);
+
+    //make predictions for all rows - even those with weights 0 for now (easier to deal with minibatch)
+    BufferedString bs = new BufferedString();
+    if ((int)_fr.numRows() != _fr.numRows()) {
+      throw new IllegalArgumentException("Cannot handle datasets with more than 2 billion rows.");
+    }
+    for (int i=0; i<_fr.numRows(); ++i) {
+      double weight = weightIdx == -1 ? 1 : _fr.vec(weightIdx).at(i);
+      if (weight == 0) { //don't send observations with weight 0 to the GPU
+        skipped.add(i);
+        continue;
+      }
+      if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.image
+          || model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.text) {
+        BufferedString file = _fr.vec(dataIdx).atStr(bs, i);
+        if (file!=null)
+          score_data.add(file.toString());
+      } else if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.dataset) {
+        score_data.add(i);
+      } else throw H2O.unimpl();
+    }
+
+    while (score_data.size() % batch_size != 0) {
+      int pick = rng.nextInt(score_data.size());
+      score_data.add(score_data.get(pick));
+    }
+
+    assert(isSupervised()); //not yet implemented for autoencoder
+    final boolean makeNative = model_info()._backend ==null;
+    if (makeNative) model_info().javaToNative();
+
+    Frame _predFrame = null;
+    DeepWaterIterator iter;
+    try {
+      // first, figure out hidden layer dimensionality - do this the hard way
+      int cols;
+      {
+        if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.image) {
+          int width = model_info()._width;
+          int height = model_info()._height;
+          int channels = model_info()._channels;
+          iter = new DeepWaterImageIterator(score_data, null /*no labels*/, model_info()._meanData, batch_size, width, height, channels, model_info().get_params()._cache_data);
+        } else if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.dataset) {
+          iter = new DeepWaterDatasetIterator(score_data, null /*no labels*/, di, batch_size, model_info().get_params()._cache_data);
+        } else if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.text) {
+          iter = new DeepWaterTextIterator(score_data, null /*no labels*/, batch_size, 56 /*FIXME*/, model_info().get_params()._cache_data);
+        } else {
+          throw H2O.unimpl();
+        }
+        float[] data = iter.getData();
+        float[] predFloats = model_info().extractLayer(layer, data); //just to see how big this gets
+        if (predFloats.length == 0) {
+          throw new IllegalArgumentException(model_info().listAllLayers());
+        }
+        cols = predFloats.length;
+        assert (cols % batch_size == 0);
+        cols /= batch_size;
+      }
+
+      // allocate the predictions Vec/Frame
+      Vec[] predVecs = new Vec[cols];
+      for (int i = 0; i < cols; ++i)
+        predVecs[i] = _fr.anyVec().makeZero();
+      _predFrame = new Frame(predVecs);
+      String[] names = new String[cols];
+      for (int j=0; j<cols; ++j) {
+        names[j]= "DF."+layer+".C" + (j+1);
+      }
+      _predFrame.setNames(names);
+
+      Vec.Writer[] vw = new Vec.Writer[cols];
+      // prep predictions vec for writing
+      for (int i = 0; i < vw.length; ++i)
+        vw[i] = _predFrame.vec(i).open();
+
+      // re-create the iterators
+      long row=0;
+      int skippedIdx=0;
+      int skippedRow=skipped.isEmpty()?-1:skipped.get(skippedIdx);
+      if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.image) {
+        int width = model_info()._width;
+        int height = model_info()._height;
+        int channels = model_info()._channels;
+        iter = new DeepWaterImageIterator(score_data, null /*no labels*/, model_info()._meanData, batch_size, width, height, channels, model_info().get_params()._cache_data);
+      } else if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.dataset) {
+        iter = new DeepWaterDatasetIterator(score_data, null /*no labels*/, di, batch_size, model_info().get_params()._cache_data);
+      } else if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.text) {
+        iter = new DeepWaterTextIterator(score_data, null /*no labels*/, batch_size, 56 /*FIXME*/, model_info().get_params()._cache_data);
+      } else {
+        throw H2O.unimpl();
+      }
+
+      // extract actual hidden layer data
+      Futures fs=new Futures();
+      while(iter.Next(fs)) {
+        float[] data = iter.getData();
+        float[] predFloats = model_info().extractLayer(layer, data);
+//        System.err.println("preds: " + Arrays.toString(predFloats));
+
+        // fill the pre-created output Frame
+        for (int j = 0; j < batch_size; ++j) {
+          while (row==skippedRow) {
+            assert(weightIdx == -1 ||_fr.vec(weightIdx).at(row)==0);
+            if (skipped.size()>skippedIdx+1) {
+              skippedRow = skipped.get(++skippedIdx);
+            }
+            row++;
+          }
+          if (row >= _fr.numRows()) break;
+          for (int i = 0; i < cols; ++i)
+            vw[i].set(row, predFloats[j*cols + i]);
+          row++;
+        }
+        for (Vec.Writer aVw : vw) aVw.close(fs);
+        fs.blockForPending();
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    } finally {
+      if (makeNative) model_info().nukeBackend();
+      return _predFrame;
+    }
   }
 
   class DeepWaterBigScore extends BigScore {

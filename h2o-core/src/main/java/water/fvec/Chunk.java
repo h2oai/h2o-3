@@ -115,61 +115,10 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
   public Chunk() {}
   private Chunk(byte [] bytes) {_mem = bytes;initFromBytes();}
 
-  /**
-   * Sparse bulk interface, stream through the compressed values and extract them into dense double array.
-   * @param vals holds extracted values, length must be >= this.sparseLen()
-   * @param ids holds extracted chunk-relative row ids, length must be >= this.sparseLen()
-   * @return number of extracted (non-zero) elements, equal to sparseLen()
-   */
-  public int asSparseDoubles(double[] vals, int[] ids){return asSparseDoubles(vals,ids,Double.NaN);}
-  public int asSparseDoubles(double [] vals, int [] ids, double NA) {
-    if(vals.length < sparseLenZero())
-      throw new IllegalArgumentException();
-    getDoubles(vals,0,_len);
-    for(int i = 0; i < _len; ++i) ids[i] = i;
-    return len();
-  }
-
-  /**
-   * Dense bulk interface, fetch values from the given range
-   * @param vals
-   * @param from
-   * @param to
-   */
-  public double [] getDoubles(double[] vals, int from, int to){ return getDoubles(vals,from,to, Double.NaN);}
-  public double [] getDoubles(double [] vals, int from, int to, double NA){
-    for(int i = from; i < to; ++i) {
-      vals[i - from] = atd(i);
-      if(Double.isNaN(vals[i-from]))
-        vals[i - from] = NA;
-    }
-    return vals;
-  }
-
-  public int [] getIntegers(int [] vals, int from, int to, int NA){
-    for(int i = from; i < to; ++i) {
-      double d = atd(i);
-      if(Double.isNaN(d))
-        vals[i] = NA;
-      else {
-        vals[i] = (int)d;
-        if(vals[i] != d) throw new IllegalArgumentException("Calling getIntegers on non-integer column");
-      }
-    }
-    return vals;
-  }
 
 
-  /**
-   * Dense bulk interface, fetch values from the given ids
-   * @param vals
-   * @param ids
-   */
-  public double[] getDoubles(double [] vals, int [] ids){
-    int j = 0;
-    for(int i:ids) vals[j++] = atd(i);
-    return vals;
-  }
+
+
   /** Global starting row for this local Chunk; a read-only field. */
   transient long _start = -1;
   /** Global starting row for this local Chunk */
@@ -177,7 +126,7 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
   /** Global index of this chunk filled during chunk load */
   transient int _cidx = -1;
 
-  /** Number of rows in this Chunk; publically a read-only field.  Odd API
+  /** Number of rows in this Chunk; publicly a read-only field.  Odd API
    *  design choice: public, not-final, read-only, NO-ACCESSOR.
    *
    *  <p>NO-ACCESSOR: This is a high-performance field, and must have a known
@@ -335,6 +284,10 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
    *
    *  @return String value or null if missing. */
   public final BufferedString atStr(BufferedString bStr, int i) { return _chk2 == null ? atStr_impl(bStr, i) : _chk2.atStr_impl(bStr, i); }
+  
+  public String stringAt(int i) {
+    return atStr(new BufferedString(), i).toString();
+  }
 
 
   /** Write a {@code long} using absolute row numbers.  There is no way to
@@ -432,11 +385,13 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
   }
 
   public Chunk deepCopy() {
-    Chunk c2 = (Chunk)clone();
+    Chunk c2 = clone();
     c2._vec=null;
     c2._start=-1;
     c2._cidx=-1;
     c2._mem = _mem.clone();
+    c2.initFromBytes();
+    assert len() == c2._len;
     return c2;
   }
 
@@ -470,7 +425,7 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
   public final long set(int idx, long l) {
     setWrite();
     if( _chk2.set_impl(idx,l) ) return l;
-    (_chk2 = inflate_impl(new NewChunk(this))).set_impl(idx,l);
+    (_chk2 = inflate()).set_impl(idx,l);
     return l;
   }
 
@@ -493,7 +448,7 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
   public final double set(int idx, double d) {
     setWrite();
     if( _chk2.set_impl(idx,d) ) return d;
-    (_chk2 = inflate_impl(new NewChunk(this))).set_impl(idx,d);
+    (_chk2 = inflate()).set_impl(idx,d);
     return d;
   }
 
@@ -511,7 +466,7 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
   public final float set(int idx, float f) {
     setWrite();
     if( _chk2.set_impl(idx,f) ) return f;
-    (_chk2 = inflate_impl(new NewChunk(this))).set_impl(idx,f);
+    (_chk2 = inflate()).set_impl(idx,f);
     return f;
   }
 
@@ -528,7 +483,7 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
   public final boolean setNA(int idx) {
     setWrite();
     if( _chk2.setNA_impl(idx) ) return true;
-    (_chk2 = inflate_impl(new NewChunk(this))).setNA_impl(idx);
+    (_chk2 = inflate()).setNA_impl(idx);
     return true;
   }
 
@@ -546,7 +501,7 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
   public final String set(int idx, String str) {
     setWrite();
     if( _chk2.set_impl(idx,str) ) return str;
-    (_chk2 = inflate_impl(new NewChunk(this))).set_impl(idx,str);
+    (_chk2 = inflate()).set_impl(idx,str);
     return str;
   }
 
@@ -556,7 +511,7 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
     long hi = uuid.getMostSignificantBits();
 
     if( _chk2.set_impl(idx, lo, hi) ) return uuid;
-    _chk2 = inflate_impl(new NewChunk(this));
+    _chk2 = inflate();
     _chk2.set_impl(idx,lo, hi);
     return uuid;
   }
@@ -708,13 +663,8 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
   double max() { return Double.NaN; }
 
 
-  public NewChunk inflate(){
-    return inflate_impl(new NewChunk(this));
-  }
-  /** Chunk-specific bulk inflater back to NewChunk.  Used when writing into a
-   *  chunk and written value is out-of-range for an update-in-place operation.
-   *  Bulk copy from the compressed form into the nc._ls8 array.   */
-  public abstract NewChunk inflate_impl(NewChunk nc);
+  public final NewChunk inflate(){ return extractRows(new NewChunk(this), 0,_len);}
+
 
   /** Return the next Chunk, or null if at end.  Mostly useful for parsers or
    *  optimized stencil calculations that want to "roll off the end" of a
@@ -809,4 +759,49 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
     throw new RuntimeException(sb.toString());
   }
 
+  public abstract <T extends ChunkVisitor> T processRows(T v, int from, int to);
+  public abstract <T extends ChunkVisitor> T processRows(T v, int [] ids);
+
+  // convenience methods wrapping around visitor interface
+  public NewChunk extractRows(NewChunk nc, int from, int to){
+    return processRows(new ChunkVisitor.NewChunkVisitor(nc),from,to)._nc;
+  }
+  public NewChunk extractRows(NewChunk nc, int[] rows){
+    return processRows(new ChunkVisitor.NewChunkVisitor(nc),rows)._nc;
+  }
+  public NewChunk extractRows(NewChunk nc, int row){
+    return processRows(new ChunkVisitor.NewChunkVisitor(nc),row,row+1)._nc;
+  }
+
+  /**
+   * Dense bulk interface, fetch values from the given range
+   * @param vals
+   * @param from
+   * @param to
+   */
+  public double [] getDoubles(double[] vals, int from, int to){ return getDoubles(vals,from,to, Double.NaN);}
+  public double [] getDoubles(double [] vals, int from, int to, double NA){
+    return processRows(new ChunkVisitor.DoubleAryVisitor(vals,NA),from,to).vals;
+  }
+  public int [] getIntegers(int [] vals, int from, int to, int NA){
+    return processRows(new ChunkVisitor.IntAryVisitor(vals,NA),from,to).vals;
+  }
+  /**
+   * Dense bulk interface, fetch values from the given ids
+   * @param vals
+   * @param ids
+   */
+  public double[] getDoubles(double [] vals, int [] ids){
+    return processRows(new ChunkVisitor.DoubleAryVisitor(vals),ids).vals;
+  }
+  /**
+   * Sparse bulk interface, stream through the compressed values and extract them into dense double array.
+   * @param vals holds extracted values, length must be >= this.sparseLen()
+   * @param ids holds extracted chunk-relative row ids, length must be >= this.sparseLen()
+   * @return number of extracted (non-zero) elements, equal to sparseLen()
+   */
+  public int getSparseDoubles(double[] vals, int[] ids){return getSparseDoubles(vals,ids,Double.NaN);}
+  public int getSparseDoubles(double [] vals, int [] ids, double NA) {
+    return processRows(new ChunkVisitor.SparseDoubleAryVisitor(vals,ids,isSparseNA(),NA),0,_len).sparseLen();
+  }
 }

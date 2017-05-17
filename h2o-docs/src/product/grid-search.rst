@@ -68,6 +68,7 @@ K-Means Hyperparameters
 -  ``seed``
 -  ``init``
 -  ``estimate_k``
+-  ``k``
 -  ``categorical_encoding``
 
 GLM Hyperparameters
@@ -79,6 +80,7 @@ GLM Hyperparameters
 -  ``alpha``
 -  ``lambda``
 -  ``missing_values_handling``
+-  ``standardize``
 
 GLRM Hyperparameters
 ~~~~~~~~~~~~~~~~~~~~
@@ -304,7 +306,7 @@ Random Hyper-Parameter Grid Search Example
 
 
     library(h2o)
-    h2o.init(nthreads=-1)
+    h2o.init()
     train <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz")
     dim(train)
     response <- 1

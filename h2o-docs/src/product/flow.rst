@@ -222,12 +222,9 @@ currently used in your flow; essentially, a command history.
 Saving Flows
 ^^^^^^^^^^^^
 
-You can save your flow for later reuse. To save your flow as a notebook,
-click the "Save" button (the first button in the row of buttons below
-the flow name), or click the drop-down "Flow" menu and select "Save
-Flow." To enter a custom name for the flow, click the default flow name
-("Untitled Flow") and type the desired flow name. A pencil icon
-indicates where to enter the desired name.
+You can save your flow for later reuse. After a Flow is saved, you can load it by clicking on the **Flows** tab in the right sidebar. Then in the pop-up confirmation window that appears, select **Load Notebook**. Refer to `Loading Flows <flow.html#loading-flows>`__ for more information. 
+
+To save your flow as a notebook, click the "Save" button (the first button in the row of buttons below the flow name), or click the drop-down "Flow" menu and select "Save Flow." To enter a custom name for the flow, click the default flow name ("Untitled Flow") and type the desired flow name. A pencil icon indicates where to enter the desired name.
 
 .. figure:: images/Flow_rename.png
    :alt: Renaming Flows
@@ -244,7 +241,6 @@ right of the flow name.
 
 .. figure:: images/Flow_flows.png
    :alt: Flows
-
 
 Finding Saved Flows on Your Disk
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -538,8 +534,8 @@ Now that you are familiar with the cell modes, let's import some data.
 
 --------------
 
-Importing Data
---------------
+Data
+----
 
 If you don't have any data of your own to work with, you can find some
 example datasets at http://data.h2o.ai.
@@ -588,8 +584,8 @@ locations.
    :alt: Import Files - Results
 
 
-Uploading Data
-^^^^^^^^^^^^^^
+Uploading Files
+^^^^^^^^^^^^^^^
 
 To upload a local file, click the **Data** menu and select **Upload
 File...**. Click the **Choose File** button, select the file, click the
@@ -682,6 +678,24 @@ displays.
 
 Since we've submitted a couple of jobs (data import & parse) to H2O now,
 let's take a moment to learn more about jobs in H2O.
+
+--------------
+
+Imputing Data
+^^^^^^^^^^^^^
+
+To impute data in a dataset, click the **Data** menu and select **Impute..**. The **Impute** option allows you to perform in-place imputation by filling missing values with aggregates computed on the "na.rm’d" vector. Additionally, you can also perform imputation based on groupings of columns from within the dataset. These columns can be passed by index or by column name using the Group By option. Note that if a factor column is supplied, then the method must be Mode.
+
+The following options can be specified when imputing dataset:
+
+- **Frame**: The dataset containing the column to impute
+- **Column**: A specific column to impute. 
+- **Method**: The type of imputation to perform. Mean replaces NAs with the column mean; Median replaces NAs with the column median; Mode replaces with the most common factor (for factor columns only).
+- **Group By**: If the **Method** is either Mean or Mode, then choose the column or columns to group by. 
+- **Combine Method**: If the **Method** is Median, then choose how to combine quantiles on even sample sizes. Available **Combine Method** options include Interpolate, Average, Low, and High.
+
+.. figure:: images/Flow_impute.png
+   :alt: Flow - Impute data
 
 --------------
 
@@ -1413,8 +1427,7 @@ while ``8`` was predicted correctly 822 times and ``0`` was predicted as
    :alt: Confusion Matrix example
 
 
-**ROC Curve**: (DL, GLM, DRF) Graph representing the ratio of true positives to false positives. To view a
-specific threshold, select a value from the drop-down **Threshold** list. To view any of the following details, select it from the drop-down **Criterion** list:
+**ROC Curve**: (DRF) A `ROC Curve <https://en.wikipedia.org/wiki/Receiver_operating_characteristic>`__  is a graph that represents the ratio of true positives to false positives. (For more information, refer to the Linear Digressions `podcast <http://lineardigressions.com/episodes/2017/1/29/rock-the-roc-curve>`__ describing ROC Curves.) To view a specific threshold, select a value from the drop-down **Threshold** list. To view any of the following details, select it from the drop-down **Criterion** list:
 
 -  Max f1
 -  Max f2
@@ -1460,8 +1473,6 @@ Partial Dependence Plots
 
 For models that include only numerical values, you can view a Partial Dependence Plot (PDP) for that model. This provides a graphical representation of the marginal effect of a variable on the class probability (classification) or response (regression). 
 
-**Note**: The outputted PDPs include the top 10 most important features in a model. 
-
 Viewing Partial Dependence Plots
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -1470,7 +1481,7 @@ Viewing Partial Dependence Plots
  .. figure:: images/score_pdp_menu.png
     :alt: Score > Partial Dependence Plot...
 
-2. Specify the Model and Frame that you want to use to retrieve the plots, and specify the number of bins (levels that PDP will compute). Note that more levels will result in slower speeds. Click **Compute** when you are done.
+2. Specify the Model and Frame that you want to use to retrieve the plots, and specify the number of bins (levels that PDP will compute). Note that more levels will result in slower speeds. By default, the top 10 features are used to build the plot. Alternatively, you can click the **Select Column?** button to build a plot based on a specified set of columns. Click **Compute** when you are done.
 
  **Note**: Be sure to specify the dataframe that was used to build the selected model.
 
@@ -1710,6 +1721,15 @@ H2O.
 
 --------------
 
+Shutting Down H2O
+^^^^^^^^^^^^^^^^^
+
+To shut down H2O, click the **Admin** menu, then click **Shut Down**. A
+*Shut down complete* message displays in the upper right when the
+cluster has been shut down.
+
+--------------
+
 
 Troubleshooting Flow
 --------------------
@@ -1877,9 +1897,9 @@ notify our team.
 Requesting Help
 ^^^^^^^^^^^^^^^
 
-If you have a Google account, you can submit a request for assistance
-with H2O on our Google Groups page,
-`H2Ostream <https://groups.google.com/forum/#!forum/h2ostream>`__.
+If you have questions or ideas to share, please post them to the `H2O community site on Stack Overflow <http://stackoverflow.com/questions/tagged/h2o>`__.
+
+If you have a Google account, you can submit a request for assistance with H2O on our Google Groups page, `H2Ostream <https://groups.google.com/forum/#!forum/h2ostream>`__.
 
 To access H2Ostream from Flow:
 
@@ -1891,15 +1911,6 @@ To access H2Ostream from Flow:
    include your logs. (Refer to `Downloading Logs`_.)
 
 You can also email your question to h2ostream@googlegroups.com.
-
---------------
-
-Shutting Down H2O
-^^^^^^^^^^^^^^^^^
-
-To shut down H2O, click the **Admin** menu, then click **Shut Down**. A
-*Shut down complete* message displays in the upper right when the
-cluster has been shut down.
 
 --------------
 

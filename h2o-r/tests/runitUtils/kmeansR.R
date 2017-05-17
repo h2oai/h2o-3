@@ -7,6 +7,7 @@ checkKMeansModel <- function(myKM.h2o, myKM.r, tol = 0.01) {
   wssH2O <- sort.int(getWithinSS(myKM.h2o))
   totssR <- myKM.r$totss
   totssH2O <- getTotSS(myKM.h2o)
+  totssH2O <- signif(totssH2O, digits = nchar(totssR) - 1)
   btwssR <- myKM.r$betweenss
   btwssH2O <- getBetweenSS(myKM.h2o)
   

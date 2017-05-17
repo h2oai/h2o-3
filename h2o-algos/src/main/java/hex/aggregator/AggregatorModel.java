@@ -25,11 +25,13 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     public String javaName() { return AggregatorModel.class.getName(); }
     @Override public long progressUnits() { return 5 + 2*train().anyVec().nChunks() - 1; } // nChunks maps and nChunks-1 reduces, multiply by two for main job overhead
 
-    public double _radius_scale=1.0;
+    //public double _radius_scale=1.0;
+//    public int _max_iterations = 1000;     // Max iterations for SVD
     public DataInfo.TransformType _transform = DataInfo.TransformType.NORMALIZE; // Data transformation
     public PCAModel.PCAParameters.Method _pca_method = PCAModel.PCAParameters.Method.Power;   // Method for dimensionality reduction
     public int _k = 1;                     // Number of principal components
-    public int _max_iterations = 1000;     // Max iterations for SVD
+    public int _target_num_exemplars = 5000;
+    public double _rel_tol_num_exemplars = 0.5;
     public boolean _use_all_factor_levels = false;   // When expanding categoricals, should first level be kept or dropped?
   }
 

@@ -2,11 +2,11 @@ package hex.gram;
 
 
 import hex.DataInfo;
-import hex.FrameTask;
 import hex.FrameTask2;
 import jsr166y.ForkJoinTask;
 import jsr166y.RecursiveAction;
 import water.*;
+import water.fvec.Chunk;
 import water.util.ArrayUtils;
 
 import java.util.ArrayList;
@@ -16,12 +16,16 @@ public final class Gram extends Iced<Gram> {
   boolean _hasIntercept;
   public double[][] _xx;
   public double[] _diag;
+  public double[][] _frame2DProduce;  // store result of transpose(Aframe)*eigenvector2Darray
   public int _diagN;
   final int _denseN;
   int _fullN;
   final static int MIN_TSKSZ=10000;
 
-  public Gram(DataInfo dinfo) {this(dinfo.fullN(), dinfo.largestCat(), dinfo.numNums(), dinfo._cats,true);}
+  public Gram(DataInfo dinfo) {
+    this(dinfo.fullN(), dinfo.largestCat(), dinfo.numNums(), dinfo._cats,true);
+  }
+
   public Gram(int N, int diag, int dense, int sparse, boolean hasIntercept) {
     _hasIntercept = hasIntercept;
     _fullN = N + (_hasIntercept?1:0);
@@ -323,8 +327,6 @@ public final class Gram extends Iced<Gram> {
     else return ArrayUtils.pprint(getXX(true,false));
   }
 
-
-
   static public class InPlaceCholesky {
     final double _xx[][];             // Lower triangle of the symmetric matrix.
     private boolean _isSPD;
@@ -491,24 +493,36 @@ public final class Gram extends Iced<Gram> {
     double[][] xx = new double[N][];
     for( int i = 0; i < N; ++i )
       xx[i] = MemoryManager.malloc8d(lowerDiag?i+1:N);
+
+    return getXX(xx, lowerDiag, icptFist);
+  }
+
+  public double[][]getXX(double[][] xalloc) { return getXX(xalloc,false, false);}
+  public double[][] getXX(double[][] xalloc, boolean lowerDiag, boolean icptFist) {
+
+    int xlen = xalloc.length;
+    for (int rowInd = 0; rowInd < xlen; rowInd++) {
+      Arrays.fill(xalloc[rowInd], 0.0);
+    }
+
     int off = 0;
     if(icptFist) {
       double [] icptRow = _xx[_xx.length-1];
-      xx[0][0] = icptRow[icptRow.length-1];
+      xalloc[0][0] = icptRow[icptRow.length-1];
       for(int i = 0; i < icptRow.length-1; ++i)
-        xx[i+1][0] = icptRow[i];
+        xalloc[i+1][0] = icptRow[i];
       off = 1;
     }
     for( int i = 0; i < _diag.length; ++i )
-      xx[i+off][i+off] = _diag[i];
+      xalloc[i+off][i+off] = _diag[i];
     for( int i = 0; i < _xx.length - off; ++i ) {
       for( int j = 0; j < _xx[i].length; ++j ) {
-        xx[i + _diag.length + off][j + off] = _xx[i][j];
+        xalloc[i + _diag.length + off][j + off] = _xx[i][j];
         if(!lowerDiag)
-          xx[j + off][i + _diag.length + off] = _xx[i][j];
+          xalloc[j + off][i + _diag.length + off] = _xx[i][j];
       }
     }
-    return xx;
+    return xalloc;
   }
 
   public void add(Gram grm) {
@@ -529,7 +543,7 @@ public final class Gram extends Iced<Gram> {
     public final double[][] _xx;
     protected final double[] _diag;
     private boolean _isSPD;
-    private final boolean _icptFirst;
+    private boolean _icptFirst;
 
     public Cholesky(double[][] xx, double[] diag) {
       _xx = xx;
@@ -543,6 +557,30 @@ public final class Gram extends Iced<Gram> {
       _icptFirst = icptFirst;
       _isSPD = true;
     }
+
+
+    public void solve(final double [][] ys){
+      RecursiveAction [] ras = new RecursiveAction[ys.length];
+      for(int i = 0; i < ras.length; ++i) {
+        final int fi = i;
+        ras[i] = new RecursiveAction() {
+          @Override
+          protected void compute() {
+            ys[fi][fi] = 1;
+            solve(ys[fi]);
+          }
+        };
+      }
+      ForkJoinTask.invokeAll(ras);
+    }
+    public double [][] getInv(){
+      double [][] res = new double[_xx[_xx.length-1].length][_xx[_xx.length-1].length];
+      for(int i = 0; i < res.length; ++i)
+        res[i][i] = 1;
+      solve(res);
+      return res;
+    }
+
     public double [] getInvDiag(){
       final double [] res = new double[_xx.length + _diag.length];
       RecursiveAction [] ras = new RecursiveAction[res.length];
@@ -597,7 +635,7 @@ public final class Gram extends Iced<Gram> {
       for( int k = 0; k < _diag.length; ++k )
         y[k] /= _diag[k];
       // rest
-      final int n = _xx[_xx.length-1].length;
+      final int n = _xx.length == 0?0:_xx[_xx.length-1].length;
       // Solve L*Y = B;
       for( int k = _diag.length; k < n; ++k ) {
         double d = 0;
@@ -667,7 +705,8 @@ public final class Gram extends Iced<Gram> {
     else
       addRowSparse(row, w);
   }
-  public final void addRowDense(DataInfo.Row row, double w) {
+
+  public final void   addRowDense(DataInfo.Row row, double w) {
     final int intercept = _hasIntercept?1:0;
     final int denseRowStart = _fullN - _denseN - _diagN - intercept; // we keep dense numbers at the right bottom of the matrix, -1 is for intercept
     final int denseColStart = _fullN - _denseN - intercept;
@@ -719,7 +758,7 @@ public final class Gram extends Iced<Gram> {
   }
   private double [][] XX = null;
 
-  public void mul(double [] x, double [] res){
+/*  public void mul(double [] x, double [] res){
     Arrays.fill(res,0);
     if(XX == null) XX = getXX(false,false);
     for(int i = 0; i < XX.length; ++i){
@@ -728,6 +767,137 @@ public final class Gram extends Iced<Gram> {
       for(int j = 0; j < XX.length; ++j)
         d += xi[j]*x[j];
       res[i] = d;
+    }
+  }*/
+
+  /*
+  This method will not allocate the extra memory and hence is considered for lowMemory systems.
+  However, need to consider case when you have categoricals!  Make them part of the matrix
+  in the multiplication process.  Done!
+   */
+  public void mul(double[] x, double[] res){
+    int colSize = fullN();        // actual gram matrix size
+    int offsetForCat = colSize-_xx.length; // offset for categorical columns
+
+    for (int rowIndex = 0; rowIndex < colSize; rowIndex++) {
+      double d = 0;
+      if (rowIndex >=offsetForCat) {
+        for (int colIndex = 0; colIndex < rowIndex; colIndex++) {   // below diagonal
+          d += _xx[rowIndex - offsetForCat][colIndex] * x[colIndex];
+        }
+      }
+      // on diagonal
+      d+= (rowIndex>=offsetForCat)?_xx[rowIndex-offsetForCat][rowIndex]*x[rowIndex]:_diag[rowIndex]*x[rowIndex];
+
+      for (int colIndex = rowIndex+1; colIndex < colSize; colIndex++) {   // above diagonal
+        if (rowIndex<offsetForCat) {
+          if ((colIndex>=offsetForCat)) {
+            d += _xx[colIndex-offsetForCat][rowIndex]*x[colIndex];
+          }
+        } else {
+          d += _xx[colIndex-offsetForCat][rowIndex]*x[colIndex];
+        }
+/*        d += (rowIndex<offsetForCat)?((colIndex<offsetForCat)?0:_xx[colIndex-offsetForCat][rowIndex]*x[colIndex]):
+                _xx[colIndex-offsetForCat][rowIndex]*x[colIndex];*/
+    }
+      res[rowIndex] = d;
+    }
+  }
+
+  /**
+   * Task to compute outer product of a matrix normalized by the number of observations (not counting rows with NAs).
+   * in R's notation g = X%*%T(X)/nobs, nobs = number of rows of X with no NA.  Copied from GramTask.
+   * @author wendycwong
+   */
+  public static class OuterGramTask extends MRTask<OuterGramTask> {
+    public Gram _gram;
+    public long _nobs;
+    boolean _intercept = false;
+    int[] _catOffsets;
+    double _scale;    // 1/(number of samples)
+    final Key<Job> _jobKey;
+    protected final DataInfo _dinfo;
+
+
+    public OuterGramTask(Key<Job> jobKey, DataInfo dinfo){
+      _dinfo = dinfo;
+      _jobKey = jobKey;
+      _catOffsets = dinfo._catOffsets != null?Arrays.copyOf(dinfo._catOffsets, dinfo._catOffsets.length):null;
+      _scale = dinfo._adaptedFrame.numRows() > 0?1.0/dinfo._adaptedFrame.numRows():0.0;
+    }
+
+    /*
+    Need to do our own thing here since we need to access and multiple different rows of a chunck.
+     */
+    @Override public void map(Chunk[] chks) { // TODO: implement the sparse option.
+      chunkInit();
+
+      DataInfo.Row rowi = _dinfo.newDenseRow();
+      DataInfo.Row rowj = _dinfo.newDenseRow();
+      Chunk[] chks2 = new Chunk[chks.length];
+
+      // perform inner product within local chunk
+      innerProductChunk(rowi, rowj, chks, chks);
+
+      // perform inner product of local chunk with other chunks with lower chunk index
+      for (int chkIndex = 0; chkIndex < chks[0].cidx(); chkIndex++) {
+        for (int colIndex = 0; colIndex < chks2.length; colIndex++) {   // grab the alternate chunk
+          chks2[colIndex] = _fr.vec(colIndex).chunkForChunkIdx(chkIndex);
+        }
+        innerProductChunk(rowi, rowj, chks, chks2);
+      }
+      chunkDone();
+    }
+
+    /*
+    This method performs inner product operation over one chunk.
+     */
+    public void innerProductChunk(DataInfo.Row rowi, DataInfo.Row rowj, Chunk[] localChunk, Chunk[] alterChunk) {
+      int rowOffsetLocal = (int) localChunk[0].start();   // calculate row indices for this particular chunks of data
+      int rowOffsetAlter = (int) alterChunk[0].start();
+      int localChkRows = localChunk[0]._len;
+      int alterChkRows = alterChunk[0]._len;
+
+      for (int rowL = 0; rowL < localChkRows; rowL++) {
+        _dinfo.extractDenseRow(localChunk, rowL, rowi);
+
+        if (!rowi.isBad()) {
+          ++_nobs;
+          int rowIOffset = rowL + rowOffsetLocal;
+
+          for (int j = 0; j < alterChkRows; j++) {
+            int rowJOffset = j+rowOffsetAlter;
+
+            if (rowJOffset > rowIOffset) {  // we are done with this chunk, next chunk please
+              break;
+            }
+            _dinfo.extractDenseRow(alterChunk, j, rowj); //grab the row from new chunk and perform inner product of rows
+            if ((!rowi.isBad() && rowi.weight != 0) && (!rowj.isBad() && rowj.weight != 0)) {
+              this._gram._xx[rowIOffset][rowJOffset] = rowi.dotSame(rowj);
+            }
+          }
+        }
+      }
+    }
+
+    /*
+    Basically, every time we get an array of chunks, we will generate certain parts of the
+    gram matrix for only this block.
+     */
+    public void chunkInit(){
+      _gram = new Gram((int)_dinfo._adaptedFrame.numRows(), 0, _dinfo.numNums(), _dinfo._cats, _intercept);
+    }
+
+    public void chunkDone(){
+        _gram.mul(_scale);
+    }
+    /*
+    Since each chunk only change a certain part of the gram matrix, we can add them all together when we
+    are doing the reduce job.  Hence, this part should be left alone.
+     */
+    @Override public void reduce(OuterGramTask gt) {
+      _gram.add(gt._gram);
+      _nobs += gt._nobs;
     }
   }
 
@@ -762,16 +932,21 @@ public final class Gram extends Iced<Gram> {
     }
     @Override public void chunkDone(){
       if(_std) {
-        double r = 1.0 / _nobs;
-        _gram.mul(r);
+        if (_nobs > 0) {  // removing NA rows may produce _nobs=0
+          double r = 1.0 / _nobs;
+          _gram.mul(r);
+        }
       }
     }
     @Override public void reduce(GramTask gt){
       if(_std) {
-        double r1 = (double) _nobs / (_nobs + gt._nobs);
-        _gram.mul(r1);
-        double r2 = (double) gt._nobs / (_nobs + gt._nobs);
-        gt._gram.mul(r2);
+        if ((_nobs > 0) && (gt._nobs > 0)) {  // removing NA rows may produce _nobs=0
+          double r1 = (double) _nobs / (_nobs + gt._nobs);
+          _gram.mul(r1);
+
+          double r2 = (double) gt._nobs / (_nobs + gt._nobs);
+          gt._gram.mul(r2);
+        }
       }
       _gram.add(gt._gram);
       _nobs += gt._nobs;

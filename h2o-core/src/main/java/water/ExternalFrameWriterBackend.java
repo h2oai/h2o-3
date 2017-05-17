@@ -4,7 +4,7 @@ import water.fvec.ChunkUtils;
 import water.fvec.NewChunk;
 
 import java.io.IOException;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.ByteChannel;
 
 import static water.ExternalFrameUtils.*;
 
@@ -17,7 +17,7 @@ final class ExternalFrameWriterBackend {
      * @param sock socket channel originating from non-h2o node
      * @param ab {@link AutoBuffer} containing information necessary for preparing backend for writing
      */
-    static void handleWriteToChunk(SocketChannel sock, AutoBuffer ab) throws IOException {
+    static void handleWriteToChunk(ByteChannel sock, AutoBuffer ab) throws IOException {
         String frameKey = ab.getStr();
         byte[] expectedTypes = ab.getA1();
         assert expectedTypes != null;

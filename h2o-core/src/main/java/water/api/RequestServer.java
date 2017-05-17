@@ -1,5 +1,6 @@
 package water.api;
 
+import com.google.gson.Gson;
 import water.*;
 import water.api.schemas3.H2OErrorV3;
 import water.api.schemas3.H2OModelBuilderErrorV3;
@@ -79,6 +80,11 @@ public class RequestServer extends HttpServlet {
   public static int numRoutes() { return routesList.size(); }
   public static ArrayList<Route> routes() { return routesList; }
   public static Route lookupRoute(RequestUri uri) { return routesTree.lookup(uri, null); }
+
+  private static HttpLogFilter[] _filters=new HttpLogFilter[]{defaultFilter()};
+  public static void setFilters(HttpLogFilter... filters) {
+    _filters=filters;
+  }
 
   /**
    * Some HTTP response status codes
@@ -217,6 +223,13 @@ public class RequestServer extends HttpServlet {
   @Override protected void doPost(HttpServletRequest rq, HttpServletResponse rs)   { doGeneric("POST", rq, rs); }
   @Override protected void doHead(HttpServletRequest rq, HttpServletResponse rs)   { doGeneric("HEAD", rq, rs); }
   @Override protected void doDelete(HttpServletRequest rq, HttpServletResponse rs) { doGeneric("DELETE", rq, rs); }
+  @Override protected void doOptions(HttpServletRequest rq, HttpServletResponse rs) {
+    if (System.getProperty(H2O.OptArgs.SYSTEM_DEBUG_CORS) != null) {
+      rs.setHeader("Access-Control-Allow-Origin", "*");
+      rs.setHeader("Access-Control-Allow-Headers", "Content-Type");
+      rs.setStatus(HttpServletResponse.SC_OK);
+    }
+  }
 
   /**
    * Top-level dispatch handling
@@ -239,8 +252,12 @@ public class RequestServer extends HttpServlet {
       final String contentType = request.getContentType();
       Properties parms = new Properties();
       String postBody = null;
+      if (System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.cors") != null) {
+        response.setHeader("Access-Control-Allow-Origin", "*");
+        response.setHeader("Access-Control-Allow-Headers", "Content-Type");
+      }
 
-      if ("application/json".equals(contentType)) {
+      if (contentType != null && contentType.startsWith(MIME_JSON)) {
         StringBuffer jb = new StringBuffer();
         String line = null;
         try {
@@ -298,7 +315,9 @@ public class RequestServer extends HttpServlet {
       resp.writeTo(response.getOutputStream());
 
     } catch (IOException e) {
+      e.printStackTrace();
       JettyHTTPD.setResponseStatus(response, 500);
+      Log.err(e);
       // Trying to send an error message or stack trace will produce another IOException...
 
     } finally {
@@ -313,7 +332,7 @@ public class RequestServer extends HttpServlet {
             }
             for(H2ONode n:H2O.CLOUD._memary) {
               if(n != H2O.SELF)
-                new RPC<>(n, new UDPRebooted.ShutdownTsk(H2O.SELF,n.index(), 1000, confirmations)).call();
+                new RPC<>(n, new UDPRebooted.ShutdownTsk(H2O.SELF,n.index(), 1000, confirmations, 0)).call();
             }
             try { Thread.sleep(2000); }
             catch (Exception ignore) {}
@@ -465,7 +484,7 @@ public class RequestServer extends HttpServlet {
       // some special cases for which we return 400 because it's likely a problem with the client request:
       if (e instanceof IllegalArgumentException || e instanceof FileNotFoundException || e instanceof MalformedURLException)
         error._http_status = HttpResponseStatus.BAD_REQUEST.getCode();
-      Log.err("Caught exception: " + error.toString());
+      Log.err("Caught exception: " + error.toString() +";parms=" + parms);
       return serveError(error);
     }
   }
@@ -474,25 +493,44 @@ public class RequestServer extends HttpServlet {
    * Log the request (unless it's an overly common one).
    */
   private static void maybeLogRequest(RequestUri uri, Properties header, Properties parms) {
+    for(HttpLogFilter f: _filters)
+      if( f.filter(uri,header,parms) ) return; // do not log anything if filtered
     String url = uri.getUrl();
-    if (url.endsWith(".css") ||
-        url.endsWith(".js") ||
-        url.endsWith(".png") ||
-        url.endsWith(".ico")) return;
-
-    String[] path = uri.getPath();
-    if (path[2].equals("Cloud") ||
-        path[2].equals("Jobs") && uri.isGetMethod() ||
-        path[2].equals("Log") ||
-        path[2].equals("Progress") ||
-        path[2].equals("Typeahead") ||
-        path[2].equals("WaterMeterCpuTicks")) return;
-
     Log.info(uri + ", parms: " + parms);
     GAUtils.logRequest(url, header);
   }
 
+  /**
+   * Create a new HttpLogFilter.
+   *
+   * Implement this interface to create new filters used by maybeLogRequest
+   */
+  public interface HttpLogFilter {
+    boolean filter(RequestUri uri, Properties header, Properties parms);
+  }
 
+  /**
+   * Provide the default filters for H2O's HTTP logging.
+   * @return an array of HttpLogFilter instances
+   */
+  public static HttpLogFilter defaultFilter() {
+    return new HttpLogFilter() { // this is much prettier with 1.8 lambdas
+      @Override public boolean filter(RequestUri uri, Properties header, Properties parms) {
+        String url = uri.getUrl();
+        if (url.endsWith(".css") ||
+          url.endsWith(".js")  ||
+          url.endsWith(".png") ||
+          url.endsWith(".ico")) return true;
+        String[] path = uri.getPath();
+        return path[2].equals("Cloud") ||
+          path[2].equals("Jobs") && uri.isGetMethod() ||
+          path[2].equals("Log") ||
+          path[2].equals("Progress") ||
+          path[2].equals("Typeahead") ||
+          path[2].equals("WaterMeterCpuTicks");
+      }
+    };
+  }
 
   //------ Lookup tree for Routes --------------------------------------------------------------------------------------
 
@@ -709,18 +747,17 @@ public class RequestServer extends HttpServlet {
 
       try {
         // Skip nodes that aren't healthy, since they are likely to cause the entire process to hang.
-        boolean healthy = (System.currentTimeMillis() - members[i]._last_heard_from) < HeartBeatThread.TIMEOUT;
-        if (healthy) {
+        if (members[i].isHealthy()) {
           GetLogsFromNode g = new GetLogsFromNode();
           g.nodeidx = i;
           g.doIt();
           bytes = g.bytes;
         } else {
-          bytes = "Node not healthy".getBytes();
+          bytes = StringUtils.bytesOf("Node not healthy");
         }
       }
       catch (Exception e) {
-        bytes = e.toString().getBytes();
+        bytes = StringUtils.toBytes(e);
       }
       perNodeZipByteArray[i] = bytes;
     }
@@ -734,7 +771,7 @@ public class RequestServer extends HttpServlet {
         bytes = g.bytes;
       }
       catch (Exception e) {
-        bytes = e.toString().getBytes();
+        bytes = StringUtils.toBytes(e);
       }
       clientNodeByteArray = bytes;
     }
@@ -745,7 +782,7 @@ public class RequestServer extends HttpServlet {
       finalZipByteArray = zipLogs(perNodeZipByteArray, clientNodeByteArray, outputFileStem);
     }
     catch (Exception e) {
-      finalZipByteArray = e.toString().getBytes();
+      finalZipByteArray = StringUtils.toBytes(e);
     }
 
     NanoResponse res = new NanoResponse(HTTP_OK, MIME_DEFAULT_BINARY, new ByteArrayInputStream(finalZipByteArray));

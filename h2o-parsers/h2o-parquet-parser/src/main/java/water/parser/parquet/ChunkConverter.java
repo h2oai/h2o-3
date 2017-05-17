@@ -12,6 +12,7 @@ import org.apache.parquet.schema.Type;
 import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.parser.ParseWriter;
+import water.util.StringUtils;
 
 /**
  * Implementation of Parquet's GroupConverter for H2O's chunks.
@@ -98,7 +99,7 @@ class ChunkConverter extends GroupConverter {
 
     @Override
     public void addBinary(Binary value) {
-      _bs.set(value.toStringUsingUTF8().getBytes());
+      _bs.set(StringUtils.bytesOf(value.toStringUsingUTF8()));
       _writer.addStrCol(_colIdx, _bs);
     }
 
@@ -117,7 +118,7 @@ class ChunkConverter extends GroupConverter {
 
     @Override
     public void addValueFromDictionary(int dictionaryId) {
-      _bs.set(_dict[dictionaryId].getBytes());
+      _bs.set(StringUtils.bytesOf(_dict[dictionaryId]));
       _writer.addStrCol(_colIdx, _bs);
     }
   }
@@ -160,7 +161,7 @@ class ChunkConverter extends GroupConverter {
 
     @Override
     public void addBinary(Binary value) {
-      _bs.set(value.toStringUsingUTF8().getBytes());
+      _bs.set(StringUtils.bytesOf(value.toStringUsingUTF8()));
       _writer.addStrCol(_colIdx, _bs);
     }
   }

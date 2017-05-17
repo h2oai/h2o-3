@@ -3,10 +3,7 @@
 Handler to an asynchronous task executed on the remote server.
 
 A job is an object with states: CREATED, RUNNING, DONE, FAILED, CANCELLED
-A job can be polled for completion and reports the progress so far if it is still RUNNING.
-
-:copyright: (c) 2016 H2O.ai
-:license:   Apache License Version 2.0 (see LICENSE for details)
+A job can be polled for completion and reports the current progress as long as it is RUNNING.
 """
 from __future__ import division, print_function, absolute_import, unicode_literals
 

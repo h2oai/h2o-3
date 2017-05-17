@@ -10,6 +10,7 @@ import water.*;
 import water.fvec.Vec;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
+import water.util.FileUtils;
 
 public class ParseCompressedAndXLSTest extends TestUtil {
   @BeforeClass static public void setup() { stall_till_cloudsize(5); }
@@ -50,8 +51,7 @@ public class ParseCompressedAndXLSTest extends TestUtil {
   @Test public void  testXLSBadArgs(){
     Frame k1 = null;
     try {
-      File f = find_test_file("smalldata/airlines/AirlinesTest.csv.zip");
-      NFSFileVec nfs = NFSFileVec.make(f);
+      NFSFileVec nfs = TestUtil.makeNfsFileVec("smalldata/airlines/AirlinesTest.csv.zip");
       byte[] ctypes = new byte[12];
       for(int i=0; i < 12; i++) ctypes[i] = Vec.T_NUM;
       ParseSetup setup = new ParseSetup(XLS_INFO,

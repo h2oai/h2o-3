@@ -1,13 +1,16 @@
 package hex;
 
+import hex.genmodel.utils.StringEscapeUtils;
 import org.joda.time.DateTime;
 import water.H2O;
+import water.api.SchemaServer;
 import water.api.StreamWriter;
+import water.api.schemas3.ModelSchemaV3;
+import water.util.StringUtils;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteOrder;
-import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -45,6 +48,7 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
   /** Reference to the model being written. Use this in the subclasses to retreive information from your model. */
   protected M model;
 
+  private String targetdir;
   private StringBuilder tmpfile;
   private String tmpname;
   private ZipOutputStream zos;
@@ -99,7 +103,7 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
 
   /** Write a binary file to the MOJO archive. */
   protected final void writeblob(String filename, byte[] blob) throws IOException {
-    ZipEntry archiveEntry = new ZipEntry(filename);
+    ZipEntry archiveEntry = new ZipEntry(targetdir + filename);
     archiveEntry.setSize(blob.length);
     zos.putNextEntry(archiveEntry);
     zos.write(blob);
@@ -113,17 +117,22 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
     tmpname = filename;
   }
 
+  /** Write a single line of text to a previously opened text file, escape new line characters if enabled. */
+  protected final void writeln(String s, boolean escapeNewlines) {
+    assert tmpfile != null : "No text file is currently being written";
+    tmpfile.append(escapeNewlines ? StringEscapeUtils.escapeNewlines(s) : s);
+    tmpfile.append('\n');
+  }
+
   /** Write a single line of text to a previously opened text file. */
   protected final void writeln(String s) {
-    assert tmpfile != null : "No text file is currently being written";
-    tmpfile.append(s);
-    tmpfile.append('\n');
+    writeln(s, false);
   }
 
   /** Finish writing a text file. */
   protected final void finishWritingTextFile() throws IOException {
     assert tmpfile != null : "No text file is currently being written";
-    writeblob(tmpname, tmpfile.toString().getBytes(Charset.forName("UTF-8")));
+    writeblob(tmpname, StringUtils.toBytes(tmpfile));
     tmpfile = null;
   }
 
@@ -144,16 +153,32 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
    * Each domain file is a plain text file with one line per category (not quoted).
    */
   @Override public final void writeTo(OutputStream os) {
-    zos = new ZipOutputStream(os);
+    ZipOutputStream zos = new ZipOutputStream(os);
     try {
-      addCommonModelInfo();
-      writeModelData();
-      writeModelInfo();
-      writeDomains();
+      writeTo(zos);
       zos.close();
     } catch (IOException e) {
       e.printStackTrace();
     }
+  }
+
+  protected void writeTo(ZipOutputStream zos) throws IOException {
+    writeTo(zos, "");
+  }
+
+  public final void writeTo(ZipOutputStream zos, String zipDirectory) throws IOException {
+    initWriting(zos, zipDirectory);
+    addCommonModelInfo();
+    writeModelData();
+    writeModelInfo();
+    writeDomains();
+    writeModelDetails();
+    writeModelDetailsReadme();
+  }
+
+  private void initWriting(ZipOutputStream zos, String targetdir) {
+    this.zos = zos;
+    this.targetdir = targetdir;
   }
 
   private void addCommonModelInfo() throws IOException {
@@ -240,5 +265,21 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
       }
       finishWritingTextFile();
     }
+  }
+
+  /** Create file that contains model details in JSON format.
+   * This information is pulled from the models schema.
+   */
+  private void writeModelDetails() throws IOException{
+    ModelSchemaV3 modelSchema = (ModelSchemaV3) SchemaServer.schema(3, model).fillFromImpl(model);
+    startWritingTextFile("experimental/modelDetails.json");
+    writeln(modelSchema.toJsonString());
+    finishWritingTextFile();
+  }
+  private void writeModelDetailsReadme() throws IOException{
+    startWritingTextFile("experimental/README.md");
+    writeln("Outputting model information in JSON is an experimental feature and we appreciate any feedback.\n" +
+                "The contents of this folder may change with another version of H2O.");
+    finishWritingTextFile();
   }
 }

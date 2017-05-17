@@ -1,5 +1,5 @@
-GBM
----
+Gradient Boosting Machine (GBM)
+-------------------------------
 
 Introduction
 ~~~~~~~~~~~~
@@ -140,11 +140,13 @@ Defining a GBM Model
 
 - `categorical_encoding <algo-params/categorical_encoding.html>`__: Specify one of the following encoding schemes for handling categorical features:
 
-  - ``auto``: Allow the algorithm to decide (default)
-  - ``enum``: 1 column per categorical feature
-  - ``one_hot_explicit``: N+1 new columns for categorical features with N levels
+  - ``auto`` or ``AUTO``: Allow the algorithm to decide (default). In GBM, the algorithm will automatically perform ``enum`` encoding.
+  - ``enum`` or ``Enum``: 1 column per categorical feature
+  - ``one_hot_explicit`` or ``OneHotExplicit``: N+1 new columns for categorical features with N levels
   - ``binary``: No more than 32 columns per categorical feature
-  - ``eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
+  - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
+  - ``label_encoder`` or ``LabelEncoder``:  Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.)
+  - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.). This is useful in GBM/DRF, for example, when you have more levels than ``nbins_cats``, and where the top level splits now have a chance at separating the data with a split. 
 
 -  `min_split_improvement <algo-params/min_split_improvement.html>`__: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range.  
 
@@ -174,7 +176,7 @@ Defining a GBM Model
 -  `offset_column <algo-params/offset_column.html>`__: (Not applicable if the **distribution** is
    **multinomial**) Specify a column to use as the offset.
    
-	 **Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__. If the **distribution** is **Bernoulli**, the value must be less than one.
+	 **Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__. 
 
 -  `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation
    weights, which are used for bias correction. The specified
@@ -246,8 +248,8 @@ Defining a GBM Model
 -  `huber_alpha <algo-params/huber_alpha.html>`__: Specify the desired quantile for Huber/M-regression (the threshold between quadratic and linear loss). This value must be between 0 and 1.
 
 -  `checkpoint <algo-params/checkpoint.html>`__: Enter a model key associated with a
-   previously-trained model. Use this option to build a new model as a
-   continuation of a previously-generated model.
+   previously trained model. Use this option to build a new model as a
+   continuation of a previously generated model.
 
 -  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the
    cross-validation predictions.
@@ -334,39 +336,6 @@ split points.
 
 For more information about the GBM algorithm, refer to the `Gradient
 Boosting Machine booklet <http://h2o.ai/resources>`__.
-
-Binning In GBM
-~~~~~~~~~~~~~~
-
-**Is the binning range-based or percentile-based?**
-
-It's range based, and re-binned at each tree split. NAs always "go to
-the left" (smallest) bin. There's a minimum observations required value
-(default 10). There has to be at least 1 FP ULP improvement in error to
-split (all-constant predictors won't split). nbins is at least 1024 at
-the top-level, and divides by 2 down each level until you hit the nbins
-parameter (default: 20). Categoricals use a separate, more aggressive,
-binning range.
-
-Re-binning means, eg, suppose your column C1 data is:
-{1,1,2,4,8,16,100,1000}. Then a 20-way binning will use the range from 1
-to 1000, bin by units of 50. The first binning will be a lumpy:
-{1,1,2,4,8,16},{100},{47\_empty\_bins},{1000}. Suppose the split peels
-out the {1000} bin from the rest.
-
-Next layer in the tree for the left-split has value from 1 to 100 (not
-1000!) and so re-bins in units of 5: {1,1,2,4},{8},{},{16},{lots of
-empty bins}{100} (the RH split has the single value 1000).
-
-And so on: important dense ranges with split essentially logarithmically
-at each layer.
-
-**What should I do if my variables are long skewed in the tail and might
-have large outliers?**
-
-You can try adding a new predictor column which is either pre-binned
-(e.g. as a categorical - "small", "median", and "giant" values), or a
-log-transform - plus keep the old column.
 
 Parallel Performance in GBM
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~

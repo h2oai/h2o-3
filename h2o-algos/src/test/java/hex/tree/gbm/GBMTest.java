@@ -17,14 +17,17 @@ import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.util.*;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
 
 import static hex.genmodel.utils.DistributionFamily.*;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static water.fvec.FVecTest.makeByteVec;
@@ -281,6 +284,51 @@ public class GBMTest extends TestUtil {
       if( gbm  != null ) gbm .delete();
       if( pred != null ) pred.remove();
       if( res  != null ) res .remove();
+      Scope.exit();
+    }
+  }
+
+  // Scoring should output original probabilities and probabilities calibrated by Platt Scaling
+  @Test public void testGBMPredictWithCalibration() {
+    GBMModel gbm = null;
+    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    Scope.enter();
+    try {
+      Frame train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
+      Frame calib = parse_test_file("smalldata/gbm_test/ecology_eval.csv");
+
+      // Fix training set
+      train.remove("Site").remove();     // Remove unique ID
+      Scope.track(train.vec("Angaus"));
+      train.replace(train.find("Angaus"), train.vecs()[train.find("Angaus")].toCategoricalVec());
+      Scope.track(train);
+      DKV.put(train); // Update frame after hacking it
+
+      // Fix calibration set (the same way as training)
+      Scope.track(calib.vec("Angaus"));
+      calib.replace(calib.find("Angaus"), calib.vecs()[calib.find("Angaus")].toCategoricalVec());
+      Scope.track(calib);
+      DKV.put(calib); // Update frame after hacking it
+
+      parms._train = train._key;
+      parms._calibrate_model = true;
+      parms._calibration_frame = calib._key;
+      parms._response_column = "Angaus"; // Train on the outcome
+      parms._distribution = DistributionFamily.multinomial;
+
+      gbm = new GBM(parms).trainModel().get();
+
+      Frame pred = parse_test_file("smalldata/gbm_test/ecology_eval.csv");
+      pred.remove("Angaus").remove();    // No response column during scoring
+      Scope.track(pred);
+      Frame res = Scope.track(gbm.score(pred));
+
+      assertArrayEquals(new String[]{"predict", "p0", "p1", "cal_p0", "cal_p1"}, res._names);
+      assertEquals(res.vec("cal_p0").mean(), 0.7860, 1e-4);
+      assertEquals(res.vec("cal_p1").mean(), 0.2139, 1e-4);
+    } finally {
+      if (gbm != null)
+        gbm.remove();
       Scope.exit();
     }
   }
@@ -1535,13 +1583,13 @@ public class GBMTest extends TestUtil {
       Map.Entry<Double, Pair<Float,Float>> n = it.next();
       if (i>0) Assert.assertTrue(n.getKey() > fullDataMSE); //any sampling should make training set MSE worse
       Log.info( "MSE: " + n.getKey() + ", "
-              + ", row sample: " + ((Pair)n.getValue()).getKey()
-              + ", col sample: " + ((Pair)n.getValue()).getValue());
+              + ", row sample: " + ((Pair)n.getValue())._1()
+              + ", col sample: " + ((Pair)n.getValue())._2());
       last=n.getValue();
     }
     // worst training MSE should belong to the most sampled case
-    Assert.assertTrue(last.getKey()==sample_rates[0]);
-    Assert.assertTrue(last.getValue()==col_sample_rates[0]);
+    Assert.assertTrue(last._1()==sample_rates[0]);
+    Assert.assertTrue(last._2()==col_sample_rates[0]);
   }
 
   @Test
@@ -2114,9 +2162,9 @@ public class GBMTest extends TestUtil {
     parms._ntrees = 1;
     GBM job = new GBM(parms);
     GBMModel gbm = job.trainModel().get();
+    Log.info(df.toTwoDimTable());
     Frame preds = gbm.score(df);
-    Log.info(df);
-    Log.info(preds);
+    Log.info(preds.toTwoDimTable());
     Assert.assertTrue(gbm.testJavaScoring(df,preds,1e-15));
     Assert.assertTrue(Math.abs(preds.vec(0).at(0) - 0) < 1e-6);
     Assert.assertTrue(Math.abs(preds.vec(0).at(1) - 0) < 1e-6);
@@ -2843,7 +2891,10 @@ public class GBMTest extends TestUtil {
     }
   }
 
-  @Test public void highCardinality() {
+  @Test public void highCardinalityLowNbinsCats() { highCardinality(2000); }
+  @Test public void highCardinalityHighNbinsCats() { highCardinality(6000); }
+
+  public void highCardinality(int nbins_cats) {
     GBMModel gbm = null;
     GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
     Frame train=null, test=null, train_preds=null, test_preds=null;
@@ -2882,7 +2933,7 @@ public class GBMTest extends TestUtil {
         cf.string_fraction = 0.0;
         cf.binary_ones_fraction = 0.0;
         cf.missing_fraction = 0.2;
-        cf.factors = 3000;
+        cf.factors = 5000;
         cf.response_factors = 2;
         cf.positive_response = false;
         cf.has_response = true;
@@ -2896,7 +2947,7 @@ public class GBMTest extends TestUtil {
       parms._max_depth = 20; //allow it to overfit
       parms._min_rows = 1;
       parms._ntrees = 1;
-      parms._nbins_cats = 2000;
+      parms._nbins_cats = nbins_cats;
       parms._seed = 0x2834234;
 
       GBM job = new GBM(parms);
@@ -2942,51 +2993,55 @@ public class GBMTest extends TestUtil {
     }
   }
 
-  @Test public void lowCardinality() throws FileNotFoundException {
-    int[] vals = new int[]{2,10,20,25,26,27,100};
-    double[] maes = new double[vals.length];
-    int i=0;
-    for (int nbins_cats : vals) {
-      GBMModel model = null;
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
-      Frame train, train_preds=null;
-      Scope.enter();
-      train = parse_test_file("smalldata/gbm_test/alphabet_cattest.csv");
-      try {
-        parms._train = train._key;
-        parms._response_column = "y"; // Train on the outcome
-        parms._max_depth = 2;
-        parms._min_rows = 1;
-        parms._ntrees = 1;
-        parms._learn_rate = 1;
-        parms._nbins_cats = nbins_cats;
+  @Test public void lowCardinality() throws IOException {
+    for (boolean sort_cats : new boolean[]{true, false}) {
+      int[] vals = new int[]{2,10,20,25,26,27,100};
+      double[] maes = new double[vals.length];
+      int i=0;
+      for (int nbins_cats : vals) {
+        GBMModel model = null;
+        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        Frame train, train_preds=null;
+        Scope.enter();
+        train = parse_test_file("smalldata/gbm_test/alphabet_cattest.csv");
+        try {
+          parms._train = train._key;
+          parms._response_column = "y"; // Train on the outcome
+          parms._max_depth = 2;
+          parms._min_rows = 1;
+          parms._ntrees = 1;
+          parms._learn_rate = 1;
+          parms._nbins_cats = nbins_cats;
+          if (sort_cats)
+            parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.SortByResponse;
 
-        GBM job = new GBM(parms);
-        model = job.trainModel().get();
-        StreamingSchema ss = new StreamingSchema(model.getMojo(), "model.zip");
-        FileOutputStream fos = new FileOutputStream("model.zip");
-        ss.getStreamWriter().writeTo(fos);
+          GBM job = new GBM(parms);
+          model = job.trainModel().get();
+          StreamingSchema ss = new StreamingSchema(model.getMojo(), "model.zip");
+          FileOutputStream fos = new FileOutputStream("model.zip");
+          ss.getStreamWriter().writeTo(fos);
 
-        train_preds = model.score(train);
-        Assert.assertTrue(model.testJavaScoring(train, train_preds, 1e-15));
+          train_preds = model.score(train);
+          Assert.assertTrue(model.testJavaScoring(train, train_preds, 1e-15));
 
-        double mae = ModelMetricsRegression.make(train_preds.vec(0), train.vec("y"), gaussian).mae();
-        Log.info("Train MAE: " + mae);
-        maes[i++] = mae;
-        if (nbins_cats >= 25) //even 25 can do a perfect job
-          Assert.assertEquals(mae, 0, 1e-8);
-        else
-          Assert.assertNotEquals(mae, 0, 1e-8);
-
-      } finally {
-        if( model != null ) model.delete();
-        if( train != null ) train.remove();
-        if( train_preds  != null ) train_preds .remove();
-        Scope.exit();
+          double mae = ModelMetricsRegression.make(train_preds.vec(0), train.vec("y"), gaussian).mae();
+          Log.info("Train MAE: " + mae);
+          maes[i++] = mae;
+          if (nbins_cats >= 25 || sort_cats)
+            Assert.assertEquals(0, mae, 1e-8); // sorting of categoricals is enough
+          else
+            Assert.assertTrue(mae > 0);
+        } finally {
+          if( model != null ) model.delete();
+          if( train != null ) train.remove();
+          if( train_preds  != null ) train_preds .remove();
+          new File("model.zip").delete();
+          Scope.exit();
+        }
       }
+      Log.info(Arrays.toString(vals));
+      Log.info(Arrays.toString(maes));
     }
-    Log.info(Arrays.toString(vals));
-    Log.info(Arrays.toString(maes));
   }
 
 }

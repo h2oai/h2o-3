@@ -1,16 +1,20 @@
 package hex;
 
 import hex.genmodel.utils.DistributionFamily;
-import water.AutoBuffer;
 import water.IcedUtils;
 import water.MRTask;
 import water.exceptions.H2OIllegalArgumentException;
-import water.fvec.*;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
 
 public class ModelMetricsRegression extends ModelMetricsSupervised {
+  /** For all algos except GLM this is mean residual deviance.  For GLM it's total residual deviance. */
   public double residual_deviance() { return _mean_residual_deviance; }
+  public double mean_residual_deviance() { return _mean_residual_deviance; }
   public final double _mean_residual_deviance;
   public final double _mean_absolute_error;
   public double mae() { return _mean_absolute_error; }
@@ -101,7 +105,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       _dist=dist;
     }
 
-    // ds[0] has the prediction and ds[1] is ignored
+    // ds[0] has the prediction and ds[1,..,N] is ignored
     @Override public double[] perRow(double ds[], float[] yact, Model m) {return perRow(ds, yact, 1, 0, m);}
     @Override public double[] perRow(double ds[], float[] yact, double w, double o,  Model m) {
       if( Float.isNaN(yact[0]) ) return ds; // No errors if   actual   is missing

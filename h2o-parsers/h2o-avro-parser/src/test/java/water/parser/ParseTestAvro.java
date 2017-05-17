@@ -22,6 +22,7 @@ import static org.junit.Assert.*;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.StringUtils;
 
 /**
  * Test suite for Avro parser.
@@ -187,7 +188,7 @@ class AvroFileGenerator {
       for (int i = 0; i < nrows; i++) {
         GenericRecord gr = new GenericData.Record(schema);
         gr.put("CString", String.valueOf(i));
-        gr.put("CBytes", ByteBuffer.wrap(String.valueOf(i).getBytes()));
+        gr.put("CBytes", ByteBuffer.wrap(StringUtils.toBytes(i)));
         gr.put("CInt", i);
         gr.put("CLong", Long.valueOf(i));
         gr.put("CFloat", Float.valueOf(i));
@@ -230,7 +231,7 @@ class AvroFileGenerator {
       for (int i = 0; i < nrows; i++) {
         GenericRecord gr = new GenericData.Record(schema);
         gr.put("CUString", i == 0 ? null : String.valueOf(i));
-        gr.put("CUBytes", i == 0 ? null : ByteBuffer.wrap(String.valueOf(i).getBytes()));
+        gr.put("CUBytes", i == 0 ? null : ByteBuffer.wrap(StringUtils.toBytes(i)));
         gr.put("CUInt", i == 0 ? null : i);
         gr.put("CULong", i == 0 ? null : Long.valueOf(i));
         gr.put("CUFloat", i == 0 ? null : Float.valueOf(i));

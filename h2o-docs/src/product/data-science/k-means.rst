@@ -1,5 +1,5 @@
-K-Means
--------------
+K-Means Clustering
+------------------
 
 Introduction
 ~~~~~~~~~~~~
@@ -39,11 +39,11 @@ Defining a K-Means Model
 
 -  `score_each_iteration <algo-params/score_each_iteration.html>`__: (Optional) Specify whether to score during each iteration of the model training.
 
--  `k <algo-params/k.html>`__: Specify the number of clusters.
+-  `k <algo-params/k.html>`__: Specify the number of clusters (groups of data) in a dataset that are similar to one another.
 
 -  `estimate_k <algo-params/estimate_k.html>`__: Specify whether to estimate the number of clusters (<=k) iteratively (independent of the seed) and deterministically (beginning with ``k=1,2,3...``). If enabled, for each **k** that, the estimate will go up to **max_iteration**. This option is disabled by default.
 
--  `user_points <algo-params/user_points.html>`__: Specify a vector of initial cluster centers. The user-specified points must have the same number of columns as the training observations. The number of rows must equal the number of clusters.
+-  `user_points <algo-params/user_points.html>`__: Specify a dataframe, where each row represents an initial cluster center.
 
 -  `max_iterations <algo-params/max_iterations.html>`__: Specify the maximum number of training iterations. The range is 0 to 1e6.
 
@@ -66,10 +66,13 @@ Defining a K-Means Model
 
 - `categorical_encoding <algo-params/categorical_encoding.html>`__: Specify one of the following encoding schemes for handling categorical features:
 
-  - ``auto``: Allow the algorithm to decide (default)
-  - ``one_hot_internal``: On the fly N+1 new cols for categorical features with N levels (default)
-  - ``binary``: No more than 32 columns per categorical feature
-  - ``eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
+  - ``auto`` or ``AUTO``: Allow the algorithm to decide (default). In K-Means, the algorithm will automatically perform ``enum`` encoding.
+  - ``one_hot_explicit`` or ``OneHotExplicit``: 1 column per categorical feature
+  - ``one_hot_explicit``: N+1 new columns for categorical features with N levels
+  - ``binary`` or ``Binary``: No more than 32 columns per categorical feature
+  - ```eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
+  - ``label_encoder`` or ``LabelEncoder``:  Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.)
+  - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.) 
 
 Interpreting a K-Means Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -93,6 +96,34 @@ By default, the following output displays:
 -  Cluster means (centroid number, column)
 
 K-Means randomly chooses starting points and converges to a local minimum of centroids. The number of clusters is arbitrary and should be thought of as a tuning parameter. The output is a matrix of the cluster assignments and the coordinates of the cluster centers in terms of the originally chosen attributes. Your cluster centers may differ slightly from run to run as this problem is Non-deterministic Polynomial-time (NP)-hard.
+
+Estimating `k` in K-Means
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The steps below describe the method that K-Means uses in order to estimate `k`.
+
+1. Beginning with one cluster, run K-Means to compute the centroid.
+2. Find variable with greatest range and split at the mean. 
+3. Run K-Means on the two resulting clusters. 
+4. Find the variable and cluster with the greatest range, and then split that cluster on the variable's mean. 
+5. Run K-Means again, and so on. 
+6. Continue running K-Means until a stopping criterion is met. 
+
+H2O uses proportional reduction in error (:math:`PRE`) to determine when to stop splitting. The :math:`PRE` value is calculated based on the sum of squares within (:math:`SSW`). 
+
+ :math:`PRE=\frac{(SSW\text{[before split]} - SSW\text{[after split]})} {SSW\text{[before split]}}`
+
+H2O stops splitting when :math:`PRE` falls below a :math:`threshold`, which is a function of the number of variables and the number of cases as described below:
+
+:math:`threshold` takes the smaller of these two values:
+
+ either 0.8
+
+  or
+
+ :math:`\big[0.02 + \frac{10}{number\_of\_training\_rows} + \frac{2.5}{number\_of\_model\_features^{2}}\big]`
+
+
 
 FAQ
 ~~~
@@ -145,25 +176,31 @@ The number of clusters :math:`K` is user-defined and is determined a priori.
 1. Choose :math:`K` initial cluster centers :math:`m_{k}` according to one of the
    following:
 
-   -  **Randomization**: Choose :math:`K` clusters from the set of :math:`N` observations at random so that each observation has an equal chance of being chosen.
+    - **Random**: Choose :math:`K` clusters from the set of :math:`N` observations at random so that each observation has an equal chance of being chosen.
 
-   -  **Plus Plus**: Choose one center :math:`m_{1}` at random.
+    - **Furthest** (Default): 
 
-    a. Calculate the difference between :math:`m_{1}` and each of the remaining :math:`N-1` observations :math:`x_{i}`. :math:`d(x_{i}, m_{1}) = \|(x_{i}-m_{1})\|^2`
+      a. Choose one center :math:`m_{1}` at random.
 
-    b. Let :math:`P(i)` be the probability of choosing :math:`x_{i}` as :math:`m_{2}`. Weight :math:`P(i)` by :math:`d(x_{i}, m_{1})` so that those :math:`x_{i}` furthest from :math:`m_{2}` have a higher probability of being selected than those :math:`x_{i}` close to :math:`m_{1}`.
+      b. Calculate the difference between :math:`m_{1}` and each of the remaining :math:`N-1` observations :math:`x_{i}`. :math:`d(x_{i}, m_{1}) = ||(x_{i}-m_{1})||^2`
 
-    c. Choose the next center :math:`m_{2}` by drawing at random according to the weighted probability distribution.
-   
-    d. Repeat until :math:`K` centers have been chosen.
+      c. Choose :math:`m_{2}` to be the :math:`x_{i}` that maximizes :math:`d(x_{i}, m_{1})`.
 
-   -  **Furthest**: Choose one center :math:`m_{1}` at random.
+      d. Repeat until :math:`K` centers have been chosen.
 
-    a. Calculate the difference between :math:`m_{1}` and each of the remaining :math:`N-1` observations :math:`x_{i}`. :math:`d(x_{i}, m_{1}) = ||(x_{i}-m_{1})||^2`
+    - **PlusPlus**: 
 
-    b. Choose :math:`m_{2}` to be the :math:`x_{i}` that maximizes :math:`d(x_{i}, m_{1})`.
+      a. Choose one center :math:`m_{1}` at random.
 
-    c. Repeat until :math:`K` centers have been chosen.
+      b. Calculate the difference between :math:`m_{1}` and each of the remaining :math:`N-1` observations :math:`x_{i}`. :math:`d(x_{i}, m_{1}) = \|(x_{i}-m_{1})\|^2`
+
+      c. Let :math:`P(i)` be the probability of choosing :math:`x_{i}` as :math:`m_{2}`. Weight :math:`P(i)` by :math:`d(x_{i}, m_{1})` so that those :math:`x_{i}` furthest from :math:`m_{2}` have a higher probability of being selected than those :math:`x_{i}` close to :math:`m_{1}`.
+
+      d. Choose the next center :math:`m_{2}` by drawing at random according to the weighted probability distribution.
+       
+      e. Repeat until :math:`K` centers have been chosen. 
+
+    - **User** initialization allows you to specify a file (using the ``user_points`` parameter) that includes a vector of initial cluster centers. 
 
 2. Once :math:`K` initial centers have been chosen calculate the difference
    between each observation :math:`x_{i}` and each of the centers
@@ -200,3 +237,5 @@ Xiong, Hui, Junjie Wu, and Jian Chen. “K-means Clustering Versus
 Validation Measures: A Data- distribution Perspective.” Systems, Man,
 and Cybernetics, Part B: Cybernetics, IEEE Transactions on 39.2 (2009):
 318-331.
+
+`Hartigan, John A. Clustering Algorithms. New York: John Wiley & Sons, Inc., N.p., 1975. <http://people.inf.elte.hu/fekete/algoritmusok_msc/klaszterezes/John%20A.%20Hartigan-Clustering%20Algorithms-John%20Wiley%20&%20Sons%20(1975).pdf>`__

@@ -1,7 +1,7 @@
 ``class_sampling_factors``
 --------------------------
 
-- Available in: GBM, DRF, Deep Learning
+- Available in: GBM, DRF, Deep Learning, Naïve-Bayes
 - Hyperparameter: yes
 
 Description

@@ -1,5 +1,6 @@
 package water.rapids;
 
+import hex.Model;
 import water.*;
 import water.fvec.Frame;
 import water.rapids.ast.*;
@@ -19,6 +20,7 @@ import water.rapids.ast.prims.time.*;
 import water.rapids.ast.prims.timeseries.*;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValFun;
+import water.rapids.vals.ValModel;
 
 import java.io.Closeable;
 import java.util.ArrayList;
@@ -191,6 +193,7 @@ public class Env extends Iced {
 
     // Advanced Math
     init(new AstCorrelation());
+    init(new AstDistance());
     init(new AstHist());
     init(new AstImpute());
     init(new AstKFold());
@@ -242,6 +245,7 @@ public class Env extends Iced {
     init(new AstScale());
     init(new AstSetDomain());
     init(new AstSetLevel());
+    init(new AstPivot());
 
     // Assignment; all of these lean heavily on Copy-On-Write optimizations.
     init(new AstAppend());      // Add a column
@@ -259,6 +263,7 @@ public class Env extends Iced {
     init(new AstCountSubstringsWords());
     init(new AstEntropy());
     init(new AstLStrip());
+    init(new AstGrep());
     init(new AstReplaceAll());
     init(new AstReplaceFirst());
     init(new AstRStrip());
@@ -269,6 +274,7 @@ public class Env extends Iced {
     init(new AstToLower());
     init(new AstToUpper());
     init(new AstTrim());
+    init(new AstStrDistance());
 
     // Miscellaneous
     init(new AstComma());
@@ -277,12 +283,17 @@ public class Env extends Iced {
     // Search
     init(new AstMatch());
     init(new AstWhich());
+    init(new AstWhichMax());
+    init(new AstWhichMin());
 
     // Repeaters
     init(new AstRepLen());
     init(new AstSeq());
     init(new AstSeqLen());
 
+    // Custom (eg. algo-specific)
+    for (AstPrimitive prim : PrimsService.INSTANCE.getAllPrims())
+      init(prim);
   }
 
 
@@ -375,8 +386,10 @@ public class Env extends Iced {
     if (value != null) {
       if (value.isFrame())
         return addGlobals((Frame) value.get());
+      if (value.isModel())
+        return new ValModel((Model) value.get());
       // Only understand Frames right now
-      throw new IllegalArgumentException("DKV name lookup of " + id + " yielded an instance of type " + value.className() + ", but only Frame is supported");
+      throw new IllegalArgumentException("DKV name lookup of " + id + " yielded an instance of type " + value.className() + ", but only Frame & Model are supported");
     }
 
     // Now the built-ins

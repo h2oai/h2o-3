@@ -44,7 +44,11 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @property
     def training_frame(self):
-        """str: Id of the training data frame (Not required, to allow initial validation of model parameters)."""
+        """
+        Id of the training data frame (Not required, to allow initial validation of model parameters).
+
+        Type: ``H2OFrame``.
+        """
         return self._parms.get("training_frame")
 
     @training_frame.setter
@@ -55,7 +59,11 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @property
     def validation_frame(self):
-        """str: Id of the validation data frame."""
+        """
+        Id of the validation data frame.
+
+        Type: ``H2OFrame``.
+        """
         return self._parms.get("validation_frame")
 
     @validation_frame.setter
@@ -66,7 +74,11 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @property
     def ignored_columns(self):
-        """List[str]: Names of columns to ignore for training."""
+        """
+        Names of columns to ignore for training.
+
+        Type: ``List[str]``.
+        """
         return self._parms.get("ignored_columns")
 
     @ignored_columns.setter
@@ -77,7 +89,11 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @property
     def ignore_const_cols(self):
-        """bool: Ignore constant columns. (Default: True)"""
+        """
+        Ignore constant columns.
+
+        Type: ``bool``  (default: ``True``).
+        """
         return self._parms.get("ignore_const_cols")
 
     @ignore_const_cols.setter
@@ -88,7 +104,11 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @property
     def score_each_iteration(self):
-        """bool: Whether to score during each iteration of model training. (Default: False)"""
+        """
+        Whether to score during each iteration of model training.
+
+        Type: ``bool``  (default: ``False``).
+        """
         return self._parms.get("score_each_iteration")
 
     @score_each_iteration.setter
@@ -99,7 +119,11 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @property
     def loading_name(self):
-        """str: Frame key to save resulting X"""
+        """
+        Frame key to save resulting X
+
+        Type: ``str``.
+        """
         return self._parms.get("loading_name")
 
     @loading_name.setter
@@ -111,7 +135,9 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     @property
     def transform(self):
         """
-        Enum["none", "standardize", "normalize", "demean", "descale"]: Transformation of training data (Default: "none")
+        Transformation of training data
+
+        One of: ``"none"``, ``"standardize"``, ``"normalize"``, ``"demean"``, ``"descale"``  (default: ``"none"``).
         """
         return self._parms.get("transform")
 
@@ -123,7 +149,11 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @property
     def k(self):
-        """int: Rank of matrix approximation (Default: 1)"""
+        """
+        Rank of matrix approximation
+
+        Type: ``int``  (default: ``1``).
+        """
         return self._parms.get("k")
 
     @k.setter
@@ -135,8 +165,10 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     @property
     def loss(self):
         """
-        Enum["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic"]: Numeric loss function
-        (Default: "quadratic")
+        Numeric loss function
+
+        One of: ``"quadratic"``, ``"absolute"``, ``"huber"``, ``"poisson"``, ``"hinge"``, ``"logistic"``, ``"periodic"``
+        (default: ``"quadratic"``).
         """
         return self._parms.get("loss")
 
@@ -149,8 +181,10 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     @property
     def loss_by_col(self):
         """
-        List[Enum["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic", "categorical",
-        "ordinal"]]: Loss function by column (override)
+        Loss function by column (override)
+
+        Type: ``List[Enum["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic", "categorical",
+        "ordinal"]]``.
         """
         return self._parms.get("loss_by_col")
 
@@ -162,7 +196,11 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @property
     def loss_by_col_idx(self):
-        """List[int]: Loss function by column index (override)"""
+        """
+        Loss function by column index (override)
+
+        Type: ``List[int]``.
+        """
         return self._parms.get("loss_by_col_idx")
 
     @loss_by_col_idx.setter
@@ -173,7 +211,11 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @property
     def multi_loss(self):
-        """Enum["categorical", "ordinal"]: Categorical loss function (Default: "categorical")"""
+        """
+        Categorical loss function
+
+        One of: ``"categorical"``, ``"ordinal"``  (default: ``"categorical"``).
+        """
         return self._parms.get("multi_loss")
 
     @multi_loss.setter
@@ -184,7 +226,11 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @property
     def period(self):
-        """int: Length of period (only used with periodic loss function) (Default: 1)"""
+        """
+        Length of period (only used with periodic loss function)
+
+        Type: ``int``  (default: ``1``).
+        """
         return self._parms.get("period")
 
     @period.setter
@@ -196,8 +242,10 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     @property
     def regularization_x(self):
         """
-        Enum["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"]:
-        Regularization function for X matrix (Default: "none")
+        Regularization function for X matrix
+
+        One of: ``"none"``, ``"quadratic"``, ``"l2"``, ``"l1"``, ``"non_negative"``, ``"one_sparse"``,
+        ``"unit_one_sparse"``, ``"simplex"``  (default: ``"none"``).
         """
         return self._parms.get("regularization_x")
 
@@ -210,8 +258,10 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     @property
     def regularization_y(self):
         """
-        Enum["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"]:
-        Regularization function for Y matrix (Default: "none")
+        Regularization function for Y matrix
+
+        One of: ``"none"``, ``"quadratic"``, ``"l2"``, ``"l1"``, ``"non_negative"``, ``"one_sparse"``,
+        ``"unit_one_sparse"``, ``"simplex"``  (default: ``"none"``).
         """
         return self._parms.get("regularization_y")
 
@@ -223,7 +273,11 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @property
     def gamma_x(self):
-        """float: Regularization weight on X matrix (Default: 0)"""
+        """
+        Regularization weight on X matrix
+
+        Type: ``float``  (default: ``0``).
+        """
         return self._parms.get("gamma_x")
 
     @gamma_x.setter
@@ -234,7 +288,11 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @property
     def gamma_y(self):
-        """float: Regularization weight on Y matrix (Default: 0)"""
+        """
+        Regularization weight on Y matrix
+
+        Type: ``float``  (default: ``0``).
+        """
         return self._parms.get("gamma_y")
 
     @gamma_y.setter
@@ -245,7 +303,11 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @property
     def max_iterations(self):
-        """int: Maximum number of iterations (Default: 1000)"""
+        """
+        Maximum number of iterations
+
+        Type: ``int``  (default: ``1000``).
+        """
         return self._parms.get("max_iterations")
 
     @max_iterations.setter
@@ -256,7 +318,11 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @property
     def max_updates(self):
-        """int: Maximum number of updates, defaults to 2*max_iterations (Default: 2000)"""
+        """
+        Maximum number of updates, defaults to 2*max_iterations
+
+        Type: ``int``  (default: ``2000``).
+        """
         return self._parms.get("max_updates")
 
     @max_updates.setter
@@ -267,7 +333,11 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @property
     def init_step_size(self):
-        """float: Initial step size (Default: 1)"""
+        """
+        Initial step size
+
+        Type: ``float``  (default: ``1``).
+        """
         return self._parms.get("init_step_size")
 
     @init_step_size.setter
@@ -278,7 +348,11 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @property
     def min_step_size(self):
-        """float: Minimum step size (Default: 0.0001)"""
+        """
+        Minimum step size
+
+        Type: ``float``  (default: ``0.0001``).
+        """
         return self._parms.get("min_step_size")
 
     @min_step_size.setter
@@ -289,7 +363,11 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @property
     def seed(self):
-        """int: RNG seed for initialization (Default: -1)"""
+        """
+        RNG seed for initialization
+
+        Type: ``int``  (default: ``-1``).
+        """
         return self._parms.get("seed")
 
     @seed.setter
@@ -300,7 +378,11 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @property
     def init(self):
-        """Enum["random", "svd", "plus_plus", "user"]: Initialization mode (Default: "plus_plus")"""
+        """
+        Initialization mode
+
+        One of: ``"random"``, ``"svd"``, ``"plus_plus"``, ``"user"``  (default: ``"plus_plus"``).
+        """
         return self._parms.get("init")
 
     @init.setter
@@ -312,8 +394,9 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     @property
     def svd_method(self):
         """
-        Enum["gram_s_v_d", "power", "randomized"]: Method for computing SVD during initialization (Caution: Power and
-        Randomized are currently experimental and unstable) (Default: "randomized")
+        Method for computing SVD during initialization (Caution: Randomized is currently experimental and unstable)
+
+        One of: ``"gram_s_v_d"``, ``"power"``, ``"randomized"``  (default: ``"power"``).
         """
         return self._parms.get("svd_method")
 
@@ -325,7 +408,11 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @property
     def user_y(self):
-        """str: User-specified initial Y"""
+        """
+        User-specified initial Y
+
+        Type: ``H2OFrame``.
+        """
         return self._parms.get("user_y")
 
     @user_y.setter
@@ -336,7 +423,11 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @property
     def user_x(self):
-        """str: User-specified initial X"""
+        """
+        User-specified initial X
+
+        Type: ``H2OFrame``.
+        """
         return self._parms.get("user_x")
 
     @user_x.setter
@@ -347,7 +438,11 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @property
     def expand_user_y(self):
-        """bool: Expand categorical columns in user-specified initial Y (Default: True)"""
+        """
+        Expand categorical columns in user-specified initial Y
+
+        Type: ``bool``  (default: ``True``).
+        """
         return self._parms.get("expand_user_y")
 
     @expand_user_y.setter
@@ -358,7 +453,11 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @property
     def impute_original(self):
-        """bool: Reconstruct original training data by reversing transform (Default: False)"""
+        """
+        Reconstruct original training data by reversing transform
+
+        Type: ``bool``  (default: ``False``).
+        """
         return self._parms.get("impute_original")
 
     @impute_original.setter
@@ -369,7 +468,11 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @property
     def recover_svd(self):
-        """bool: Recover singular values and eigenvectors of XY (Default: False)"""
+        """
+        Recover singular values and eigenvectors of XY
+
+        Type: ``bool``  (default: ``False``).
+        """
         return self._parms.get("recover_svd")
 
     @recover_svd.setter
@@ -380,7 +483,11 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @property
     def max_runtime_secs(self):
-        """float: Maximum allowed runtime in seconds for model training. Use 0 to disable. (Default: 0)"""
+        """
+        Maximum allowed runtime in seconds for model training. Use 0 to disable.
+
+        Type: ``float``  (default: ``0``).
+        """
         return self._parms.get("max_runtime_secs")
 
     @max_runtime_secs.setter

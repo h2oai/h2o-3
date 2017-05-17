@@ -7,6 +7,7 @@ import jsr166y.ForkJoinPool;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
+import water.util.StringUtils;
 
 /** The core Value stored in the distributed K/V store, used to cache Plain Old
  *  Java Objects, and maintain coherency around the cluster.  It contains an
@@ -58,7 +59,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // In any case, they will cause issues with both GC (giant pause times on
   // many collectors) and I/O (long term blocking of TCP I/O channels to
   // service a single request, causing starvation of other requests).
-  public static final int MAX = 1024*1024*1024; //DeepWater models can contain a single byte[] state as large as 1GB
+  public static final int MAX = Integer.MAX_VALUE; //DeepWater models can contain a single byte[] state as large as 3GB
 
   /** Size of the serialized wad of bits.  Values are wads of bits; known small
    *  enough to 'chunk' politely on disk, or fit in a Java heap (larger Vecs
@@ -308,7 +309,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _replicas = null;
   }
   Value(Key k, byte[] mem ) { this(k, mem.length, mem, TypeMap.PRIM_B, ICE); }
-  Value(Key k, String s ) { this(k, s.getBytes()); }
+  Value(Key k, String s ) { this(k, StringUtils.bytesOf(s)); }
   Value(Key k, Iced pojo ) { this(k,pojo,ICE); }
   Value(Key k, Iced pojo, byte be ) {
     _key = k;

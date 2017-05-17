@@ -272,7 +272,7 @@ public class GLMTest  extends TestUtil {
       glm.trainModel().get();
       assertFalse("should've thrown IAE", true);
     } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("No rows left in the dataset"));
+      assertTrue(e.getMessage(), e.getMessage().contains("No rows left in the dataset"));
     } finally {
       fr.delete();
     }
@@ -1491,6 +1491,7 @@ public class GLMTest  extends TestUtil {
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model,fr);
       hex.AUC2 adata = mm._auc;
       assertEquals(model._output._training_metrics.auc_obj()._auc, adata._auc, 1e-8);
+      assertEquals(0.7588625640559653, adata.pr_auc(), 1e-8);
       assertEquals(model._output._training_metrics._MSE, mm._MSE, 1e-8);
       assertEquals(((ModelMetricsBinomialGLM)model._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM)mm)._resDev, 1e-8);
       model.score(fr).delete();
@@ -1555,6 +1556,55 @@ public class GLMTest  extends TestUtil {
     }
   }
 
+  @Test public void testQuasibinomial(){
+    GLMParameters params = new GLMParameters(Family.quasibinomial);
+    GLM glm = new GLM(params);
+    params.validate(glm);
+    params._link = Link.log;
+    try {
+      params.validate(glm);
+      Assert.assertTrue("should've thrown IAE", false);
+    } catch(IllegalArgumentException iae){
+      // do nothing
+    }
+
+    // test it behaves like binomial on binary data
+    GLMModel model = null, model2 = null, model3 = null, model4 = null;
+    Frame fr = parse_test_file("smalldata/glm_test/prostate_cat_replaced.csv");
+    try {
+      Scope.enter();
+      // R results
+//      Coefficients:
+//        (Intercept)           ID          AGE       RACER2       RACER3        DPROS        DCAPS          PSA          VOL      GLEASON
+//          -8.894088     0.001588    -0.009589     0.231777    -0.459937     0.556231     0.556395     0.027854    -0.011355     1.010179
+      String[] cfs1 = new String[]{"Intercept", "AGE", "RACE.R2", "RACE.R3", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON"};
+      double[] vals = new double[]{-8.14867, -0.01368, 0.32337, -0.38028, 0.55964, 0.49548, 0.02794, -0.01104, 0.97704};
+      params = new GLMParameters(Family.quasibinomial);
+      params._response_column = "CAPSULE";
+      params._ignored_columns = new String[]{"ID"};
+      params._train = fr._key;
+      params._lambda = new double[]{0};
+      params._standardize = false;
+      params._link = Link.logit;
+//      params._missing_values_handling = MissingValuesHandling.Skip;
+      glm = new GLM(params);
+      model = glm.trainModel().get();
+      HashMap<String, Double> coefs = model.coefficients();
+      System.out.println(coefs);
+      for (int i = 0; i < cfs1.length; ++i)
+        assertEquals(vals[i], coefs.get(cfs1[i]), 1e-4);
+      assertEquals(512.3, nullDeviance(model), 1e-1);
+      assertEquals(378.3, residualDeviance(model), 1e-1);
+      assertEquals(371, resDOF(model), 0);
+    } finally {
+      fr.delete();
+      if(model != null)model.delete();
+      if(model2 != null)model2.delete();
+      if(model3 != null)model3.delete();
+      if(model4 != null)model4.delete();
+      Scope.exit();
+    }
+  }
   @Test public void testSynthetic() throws Exception {
     GLMModel model = null;
     Frame fr = parse_test_file("smalldata/glm_test/glm_test2.csv");
@@ -1780,6 +1830,26 @@ public class GLMTest  extends TestUtil {
   }
 
   @Test
+  public void testZeroedColumn(){
+    Vec x = Vec.makeCon(Vec.newKey(),1,2,3,4,5);
+    Vec y = Vec.makeCon(x.group().addVec(),0,1,0,1,0);
+    Vec z = Vec.makeCon(Vec.newKey(),1,2,3,4,5);
+    Vec w = Vec.makeCon(x.group().addVec(),1,0,1,0,1);
+    Frame fr = new Frame(Key.<Frame>make("test"),new String[]{"x","y","z","w"},new Vec[]{x,y,z,w});
+    DKV.put(fr);
+    GLMParameters parms = new GLMParameters(Family.gaussian);
+    parms._train = fr._key;
+    parms._lambda = new double[]{0};
+    parms._alpha = new double[]{0};
+    parms._compute_p_values = true;
+    parms._response_column = "z";
+    parms._weights_column = "w";
+    GLMModel m = new GLM(parms).trainModel().get();
+    System.out.println(m.coefficients());
+    m.delete();
+    fr.delete();
+  }
+  @Test
   public void testDeviances() {
     for (Family fam : Family.values()) {
       if(fam == Family.quasibinomial) continue;
@@ -1821,6 +1891,61 @@ public class GLMTest  extends TestUtil {
         if (preds != null) preds.delete();
         if (gbm != null) gbm.delete();
       }
+    }
+  }
+
+  /**
+   * train = data.frame(c('red', 'blue','blue'),c('x','x','y'),c(1,'0','0'))
+   names(train)= c('color', 'letter', 'label')
+   test = data.frame(c('red', 'blue','blue','yellow'),c('x','x','y','y'),c(1,'0','0','0'))
+   names(test)= c('color', 'letter', 'label')
+   htrain = as.h2o(train)
+   htest = as.h2o(test)
+   hh = h2o.glm(x = 1:2,y = 3,training_frame = htrain,family = "binomial",max_iterations = 15,alpha = 1,missing_values_handling = 'Skip')
+   h2o.predict(hh,htest)
+   */
+  @Test
+  public void testUnseenLevels(){
+    Scope.enter();
+    try {
+      Vec v0 = Vec.makeCon(Vec.newKey(), 1, 0, 0, 1,1);
+      v0.setDomain(new String[]{"blue", "red"});
+      Frame trn = new Frame(Key.<Frame>make("train"), new String[]{"color", "label"}, new Vec[]{v0, v0.makeCopy(null)});
+      DKV.put(trn);
+      Vec v3 = Vec.makeCon(Vec.newKey(), 1, 0, 0, 2);
+      v3.setDomain(new String[]{"blue", "red", "yellow"});
+      Vec v5 = Vec.makeCon(v3.group().addVec(), 1, 0, 0, 0);
+      Frame tst = new Frame(Key.<Frame>make("test"), new String[]{"color", "label"}, new Vec[]{v3, v5});
+      DKV.put(tst);
+      GLMParameters parms = new GLMParameters(Family.gaussian);
+      parms._train = trn._key;
+      parms._response_column = "label";
+      parms._missing_values_handling = MissingValuesHandling.Skip;
+      GLMModel m = new GLM(parms).trainModel().get();
+      System.out.println("coefficients = " + m.coefficients());
+      double icpt = m.coefficients().get("Intercept");
+      Frame preds = m.score(tst);
+      Assert.assertEquals(icpt+m.coefficients().get("color.red"), preds.vec(0).at(0), 0);
+      Assert.assertEquals(icpt+m.coefficients().get("color.blue"), preds.vec(0).at(1), 0);
+      Assert.assertEquals(icpt+m.coefficients().get("color.blue"), preds.vec(0).at(2), 0);
+      Assert.assertEquals(icpt, preds.vec(0).at(3), 0);
+      parms._missing_values_handling = MissingValuesHandling.MeanImputation;
+      GLMModel m2 = new GLM(parms).trainModel().get();
+      Frame preds2 = m2.score(tst);
+      icpt = m2.coefficients().get("Intercept");
+      System.out.println("coefficients = " + m2.coefficients());
+      Assert.assertEquals(icpt+m2.coefficients().get("color.red"), preds2.vec(0).at(0), 0);
+      Assert.assertEquals(icpt+m2.coefficients().get("color.blue"), preds2.vec(0).at(1), 0);
+      Assert.assertEquals(icpt+m2.coefficients().get("color.blue"), preds2.vec(0).at(2), 0);
+      Assert.assertEquals(icpt+m2.coefficients().get("color.red"), preds2.vec(0).at(3), 0);
+      trn.delete();
+      tst.delete();
+      m.delete();
+      preds.delete();
+      preds2.delete();
+      m2.delete();
+    }finally {
+      Scope.exit();
     }
   }
 }

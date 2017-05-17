@@ -14,7 +14,7 @@
     "H2O",
     "Machine Learning"
   ],
-  "license": "Apache License Version 2.0",
+  "license": "Apache-2.0",
   "private": true,
   "ignore": [
     "**/.*",
@@ -24,7 +24,7 @@
     "tests"
   ],
   "dependencies": {
-    "h2o-flow": "0.4.54"
+    "h2o-flow": "0.6.6"
   },
   "devDependencies": {}
 }

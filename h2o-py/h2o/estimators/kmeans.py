@@ -41,7 +41,11 @@ class H2OKMeansEstimator(H2OEstimator):
 
     @property
     def training_frame(self):
-        """str: Id of the training data frame (Not required, to allow initial validation of model parameters)."""
+        """
+        Id of the training data frame (Not required, to allow initial validation of model parameters).
+
+        Type: ``H2OFrame``.
+        """
         return self._parms.get("training_frame")
 
     @training_frame.setter
@@ -52,7 +56,11 @@ class H2OKMeansEstimator(H2OEstimator):
 
     @property
     def validation_frame(self):
-        """str: Id of the validation data frame."""
+        """
+        Id of the validation data frame.
+
+        Type: ``H2OFrame``.
+        """
         return self._parms.get("validation_frame")
 
     @validation_frame.setter
@@ -63,7 +71,11 @@ class H2OKMeansEstimator(H2OEstimator):
 
     @property
     def nfolds(self):
-        """int: Number of folds for N-fold cross-validation (0 to disable or >= 2). (Default: 0)"""
+        """
+        Number of folds for N-fold cross-validation (0 to disable or >= 2).
+
+        Type: ``int``  (default: ``0``).
+        """
         return self._parms.get("nfolds")
 
     @nfolds.setter
@@ -74,7 +86,11 @@ class H2OKMeansEstimator(H2OEstimator):
 
     @property
     def keep_cross_validation_predictions(self):
-        """bool: Whether to keep the predictions of the cross-validation models. (Default: False)"""
+        """
+        Whether to keep the predictions of the cross-validation models.
+
+        Type: ``bool``  (default: ``False``).
+        """
         return self._parms.get("keep_cross_validation_predictions")
 
     @keep_cross_validation_predictions.setter
@@ -85,7 +101,11 @@ class H2OKMeansEstimator(H2OEstimator):
 
     @property
     def keep_cross_validation_fold_assignment(self):
-        """bool: Whether to keep the cross-validation fold assignment. (Default: False)"""
+        """
+        Whether to keep the cross-validation fold assignment.
+
+        Type: ``bool``  (default: ``False``).
+        """
         return self._parms.get("keep_cross_validation_fold_assignment")
 
     @keep_cross_validation_fold_assignment.setter
@@ -97,9 +117,10 @@ class H2OKMeansEstimator(H2OEstimator):
     @property
     def fold_assignment(self):
         """
-        Enum["auto", "random", "modulo", "stratified"]: Cross-validation fold assignment scheme, if fold_column is not
-        specified. The 'Stratified' option will stratify the folds based on the response variable, for classification
-        problems. (Default: "auto")
+        Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify
+        the folds based on the response variable, for classification problems.
+
+        One of: ``"auto"``, ``"random"``, ``"modulo"``, ``"stratified"``  (default: ``"auto"``).
         """
         return self._parms.get("fold_assignment")
 
@@ -111,7 +132,11 @@ class H2OKMeansEstimator(H2OEstimator):
 
     @property
     def fold_column(self):
-        """str: Column with cross-validation fold index assignment per observation."""
+        """
+        Column with cross-validation fold index assignment per observation.
+
+        Type: ``str``.
+        """
         return self._parms.get("fold_column")
 
     @fold_column.setter
@@ -122,7 +147,11 @@ class H2OKMeansEstimator(H2OEstimator):
 
     @property
     def ignored_columns(self):
-        """List[str]: Names of columns to ignore for training."""
+        """
+        Names of columns to ignore for training.
+
+        Type: ``List[str]``.
+        """
         return self._parms.get("ignored_columns")
 
     @ignored_columns.setter
@@ -133,7 +162,11 @@ class H2OKMeansEstimator(H2OEstimator):
 
     @property
     def ignore_const_cols(self):
-        """bool: Ignore constant columns. (Default: True)"""
+        """
+        Ignore constant columns.
+
+        Type: ``bool``  (default: ``True``).
+        """
         return self._parms.get("ignore_const_cols")
 
     @ignore_const_cols.setter
@@ -144,7 +177,11 @@ class H2OKMeansEstimator(H2OEstimator):
 
     @property
     def score_each_iteration(self):
-        """bool: Whether to score during each iteration of model training. (Default: False)"""
+        """
+        Whether to score during each iteration of model training.
+
+        Type: ``bool``  (default: ``False``).
+        """
         return self._parms.get("score_each_iteration")
 
     @score_each_iteration.setter
@@ -156,8 +193,10 @@ class H2OKMeansEstimator(H2OEstimator):
     @property
     def k(self):
         """
-        int: The max. number of clusters. If estimate_k is disabled, the model will find k centroids, otherwise it will
-        find up to k centroids. (Default: 1)
+        The max. number of clusters. If estimate_k is disabled, the model will find k centroids, otherwise it will find
+        up to k centroids.
+
+        Type: ``int``  (default: ``1``).
         """
         return self._parms.get("k")
 
@@ -170,7 +209,9 @@ class H2OKMeansEstimator(H2OEstimator):
     @property
     def estimate_k(self):
         """
-        bool: Whether to estimate the number of clusters (<=k) iteratively and deterministically. (Default: False)
+        Whether to estimate the number of clusters (<=k) iteratively and deterministically.
+
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("estimate_k")
 
@@ -182,7 +223,13 @@ class H2OKMeansEstimator(H2OEstimator):
 
     @property
     def user_points(self):
-        """str: User-specified points"""
+        """
+        This option allows you to specify a dataframe, where each row represents an initial cluster center. The user-
+        specified points must have the same number of columns as the training observations. The number of rows must
+        equal the number of clusters
+
+        Type: ``H2OFrame``.
+        """
         return self._parms.get("user_points")
 
     @user_points.setter
@@ -194,8 +241,9 @@ class H2OKMeansEstimator(H2OEstimator):
     @property
     def max_iterations(self):
         """
-        int: Maximum training iterations (if estimate_k is enabled, then this is for each inner Lloyds iteration)
-        (Default: 10)
+        Maximum training iterations (if estimate_k is enabled, then this is for each inner Lloyds iteration)
+
+        Type: ``int``  (default: ``10``).
         """
         return self._parms.get("max_iterations")
 
@@ -207,7 +255,11 @@ class H2OKMeansEstimator(H2OEstimator):
 
     @property
     def standardize(self):
-        """bool: Standardize columns before computing distances (Default: True)"""
+        """
+        Standardize columns before computing distances
+
+        Type: ``bool``  (default: ``True``).
+        """
         return self._parms.get("standardize")
 
     @standardize.setter
@@ -218,7 +270,11 @@ class H2OKMeansEstimator(H2OEstimator):
 
     @property
     def seed(self):
-        """int: RNG Seed (Default: -1)"""
+        """
+        RNG Seed
+
+        Type: ``int``  (default: ``-1``).
+        """
         return self._parms.get("seed")
 
     @seed.setter
@@ -229,7 +285,11 @@ class H2OKMeansEstimator(H2OEstimator):
 
     @property
     def init(self):
-        """Enum["random", "plus_plus", "furthest", "user"]: Initialization mode (Default: "furthest")"""
+        """
+        Initialization mode
+
+        One of: ``"random"``, ``"plus_plus"``, ``"furthest"``, ``"user"``  (default: ``"furthest"``).
+        """
         return self._parms.get("init")
 
     @init.setter
@@ -240,7 +300,11 @@ class H2OKMeansEstimator(H2OEstimator):
 
     @property
     def max_runtime_secs(self):
-        """float: Maximum allowed runtime in seconds for model training. Use 0 to disable. (Default: 0)"""
+        """
+        Maximum allowed runtime in seconds for model training. Use 0 to disable.
+
+        Type: ``float``  (default: ``0``).
+        """
         return self._parms.get("max_runtime_secs")
 
     @max_runtime_secs.setter
@@ -252,14 +316,16 @@ class H2OKMeansEstimator(H2OEstimator):
     @property
     def categorical_encoding(self):
         """
-        Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen"]: Encoding scheme for categorical
-        features (Default: "auto")
+        Encoding scheme for categorical features
+
+        One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``,
+        ``"label_encoder"``, ``"sort_by_response"``  (default: ``"auto"``).
         """
         return self._parms.get("categorical_encoding")
 
     @categorical_encoding.setter
     def categorical_encoding(self, categorical_encoding):
-        assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen"))
+        assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response"))
         self._parms["categorical_encoding"] = categorical_encoding
 
 

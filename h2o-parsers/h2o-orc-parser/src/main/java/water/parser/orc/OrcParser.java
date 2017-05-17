@@ -15,6 +15,7 @@ import water.Key;
 import water.fvec.Vec;
 import water.parser.*;
 import water.util.ArrayUtils;
+import water.util.StringUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -270,19 +271,28 @@ public class OrcParser extends Parser {
   private void writeStringcolumn(BytesColumnVector col, int cIdx, int rowNumber, ParseWriter dout) {
     BufferedString bs = new BufferedString();
     if(col.isRepeating) {
+      assert col.length[0] >= 0 : getClass().getSimpleName() + ".writeStringcolumn/1: col.length[0]=" + col.length[0] + ", col.start[0]=" + col.start[0];
       dout.addStrCol(cIdx, bs.set(col.vector[0], col.start[0], col.length[0]));
       for (int rowIndex = 1; rowIndex < rowNumber; ++rowIndex)
         dout.addStrCol(cIdx, bs);
-    } else if(col.noNulls){
-      for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++)
-        dout.addStrCol(cIdx, bs.set(col.vector[rowIndex], col.start[rowIndex], col.length[rowIndex]));
+    } else if (col.noNulls) {
+
+      for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++) {
+        int l = col.length[rowIndex];
+        assert l >= 0 : getClass().getSimpleName() + ".writeStringcolumn/2: col.col.length[rowIndex]=" + l + ", rowIndex=" + rowIndex;
+        dout.addStrCol(cIdx, bs.set(col.vector[rowIndex], col.start[rowIndex], l));
+      }
+
     } else {
       boolean [] isNull = col.isNull;
       for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++) {
         if (isNull[rowIndex])
           dout.addInvalidCol(cIdx);
-        else
+        else {
+          int l = col.length[rowIndex];
+          assert l >= 0 : getClass().getSimpleName() + ".writeStringcolumn/3: col.col.length[rowIndex]=" + l + ", rowIndex=" + rowIndex;
           dout.addStrCol(cIdx, bs.set(col.vector[rowIndex], col.start[rowIndex], col.length[rowIndex]));
+        }
       }
     }
   }
@@ -306,14 +316,14 @@ public class OrcParser extends Parser {
         HashMap<Number,byte[]> map = _toStringMaps.get(colId);
         BufferedString bs = new BufferedString();
         if(vec.isRepeating) {
-          bs.set(Double.toString(oneColumn[0]).getBytes());
+          bs.set(StringUtils.toBytes(oneColumn[0]));
           for (int i = 0; i < rowNumber; ++i)
             dout.addStrCol(colId, bs);
         } else  if (vec.noNulls) {
           for (int i = 0; i < rowNumber; i++) {
             double d = oneColumn[i];
             if(map.get(d) == null) // TODO probably more effficient if moved to the data output
-              map.put(d, Double.toString(d).getBytes());
+              map.put(d, StringUtils.toBytes(d));
             dout.addStrCol(colId, bs.set(map.get(d)));
           }
         } else {
@@ -324,7 +334,7 @@ public class OrcParser extends Parser {
             else {
               double d = oneColumn[i];
               if(map.get(d) == null)
-                map.put(d,Double.toString(d).getBytes());
+                map.put(d,StringUtils.toBytes(d));
               dout.addStrCol(colId, bs.set(map.get(d)));
             }
           }
@@ -367,14 +377,14 @@ public class OrcParser extends Parser {
         HashMap<Number,byte[]> map = _toStringMaps.get(colId);
         BufferedString bs = new BufferedString();
         if(vec.isRepeating) {
-          bs.set(Long.toString(oneColumn[0]).getBytes());
+          bs.set(StringUtils.toBytes(oneColumn[0]));
           for (int i = 0; i < rowNumber; ++i)
             dout.addStrCol(colId, bs);
         } else  if (vec.noNulls) {
           for (int i = 0; i < rowNumber; i++) {
             long l = oneColumn[i];
             if(map.get(l) == null)
-              map.put(l,Long.toString(l).getBytes());
+              map.put(l,StringUtils.toBytes(l));
             dout.addStrCol(colId, bs.set(map.get(l)));
           }
         } else {
@@ -385,7 +395,7 @@ public class OrcParser extends Parser {
             else {
               long l = oneColumn[i];
               if(map.get(l) == null)
-                map.put(l,Long.toString(l).getBytes());
+                map.put(l,StringUtils.toBytes(l));
               dout.addStrCol(colId, bs.set(map.get(l)));
             }
           }

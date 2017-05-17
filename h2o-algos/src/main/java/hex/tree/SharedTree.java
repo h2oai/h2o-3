@@ -3,6 +3,8 @@ package hex.tree;
 import hex.*;
 import hex.genmodel.GenModel;
 import hex.genmodel.utils.DistributionFamily;
+import hex.glm.GLM;
+import hex.glm.GLMModel;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import hex.util.LinearAlgebraUtils;
@@ -27,6 +29,10 @@ import java.util.List;
 import java.util.Random;
 
 public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends ModelBuilder<M,P,O> {
+  public boolean shouldReorder(Vec v) {
+    return _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.SortByResponse
+           && v.cardinality() > _parms._nbins_cats;  // no need to sort categoricals with fewer than nbins_cats - they will be sorted in every leaf anyway
+  }
   final protected static boolean DEV_DEBUG = false;
   protected int _mtry;
   protected int _mtry_per_tree;
@@ -55,6 +61,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   protected Random _rand;
 
+  protected final Frame calib() { return _calib; }
+  protected transient Frame _calib;
+
   public boolean isSupervised(){return true;}
 
   @Override public boolean haveMojo() { return true; }
@@ -67,6 +76,15 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   @Override
   public ToEigenVec getToEigenVec() {
     return LinearAlgebraUtils.toEigen;
+  }
+
+  @Override
+  protected void ignoreInvalidColumns(int npredictors, boolean expensive) {
+    // Drop invalid columns
+    new FilterCols(npredictors) {
+      @Override protected boolean filter(Vec v) {
+        return (v.max() > Float.MAX_VALUE ); }
+    }.doIt(_train,"Dropping columns with too large numeric values: ",expensive);
   }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
@@ -150,6 +168,20 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
     if( _train != null )
       _ncols = _train.numCols()-1-numSpecialCols();
+
+    // Calibration
+    Frame cf = _parms.calib();  // User-given calibration set
+    if (cf != null) {
+      if (! _parms._calibrate_model)
+        warn("_calibration_frame", "Calibration frame was specified but calibration was not requested.");
+      _calib = init_adaptFrameToTrain(cf, "Calibration Frame", "_calibration_frame", expensive);
+    }
+    if (_parms._calibrate_model) {
+      if (nclasses() != 2)
+        error("_calibrate_model", "Model calibration is only currently supported for binomial models.");
+      if (cf == null)
+        error("_calibrate_model", "Calibration frame was not specified.");
+    }
   }
 
   // --------------------------------------------------------------------------
@@ -312,7 +344,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
 
     // Abstract classes implemented by the tree builders
-    abstract protected M makeModel( Key modelKey, P parms);
+    abstract protected M makeModel(Key<M> modelKey, P parms);
     abstract protected boolean doOOBScoring();
     abstract protected boolean buildNextKTrees();
     abstract protected void initializeModelSpecifics();
@@ -536,6 +568,27 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   protected final Vec vec_nids( Frame fr, int c) { return fr.vecs()[idx_nids(c)]; }
   protected final Vec vec_oobt( Frame fr       ) { return fr.vecs()[idx_oobt()]; }
 
+  protected static class FrameMap extends Iced<FrameMap> {
+    public int responseIndex;
+    public int offsetIndex;
+    public int weightIndex;
+    public int tree0Index;
+    public int work0Index;
+    public int nids0Index;
+    public int oobtIndex;
+
+    public FrameMap() {}  // For Externalizable interface
+    public FrameMap(SharedTree t) {
+      responseIndex = t.idx_resp();
+      offsetIndex = t.idx_offset();
+      weightIndex = t.idx_weight();
+      tree0Index = t.idx_tree(0);
+      work0Index = t.idx_work(0);
+      nids0Index = t.idx_nids(0);
+      oobtIndex = t.idx_oobt();
+    }
+  }
+
   protected double[] data_row( Chunk chks[], int row, double[] data) {
     assert data.length == _ncols;
     for(int f=0; f<_ncols; f++) data[f] = chks[f].atd(row);
@@ -632,6 +685,36 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
     // Double update - after either scoring or variable importance
     if( updated ) _model.update(_job);
+
+    // Model Calibration (only for the final model, not CV models)
+    if (finalScoring && _parms._calibrate_model && (! _parms._is_cv_model)) {
+      Key<Frame> calibInputKey = Key.make();
+      try {
+        Scope.enter();
+        _job.update(0, "Calibrating probabilities");
+        Frame calibPredict = Scope.track(_model.score(calib(), null, _job, false));
+
+        Frame calibInput = new Frame(calibInputKey,
+                new String[]{"p", "response"}, new Vec[]{calibPredict.vec(1), calib().vec(_parms._response_column)});
+        DKV.put(calibInput);
+
+        Key<Model> calibModelKey = Key.make();
+        Job calibJob = new Job<>(calibModelKey, ModelBuilder.javaName("glm"), "Platt Scaling (GLM)");
+        GLM calibBuilder = ModelBuilder.make("GLM", calibJob, calibModelKey);
+        calibBuilder._parms._intercept = true;
+        calibBuilder._parms._response_column = "response";
+        calibBuilder._parms._train = calibInput._key;
+        calibBuilder._parms._family = GLMModel.GLMParameters.Family.binomial;
+        calibBuilder._parms._lambda = new double[] {0.0};
+
+        _model._output._calib_model = calibBuilder.trainModel().get();
+        _model.update(_job);
+      } finally {
+        Scope.exit();
+        DKV.remove(calibInputKey);
+      }
+    }
+
     return updated;
   }
 

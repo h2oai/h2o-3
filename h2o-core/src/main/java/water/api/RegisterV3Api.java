@@ -230,6 +230,14 @@ public class RegisterV3Api extends AbstractRegister {
         "GET /99/Models.bin/{model_id}", ModelsHandler.class, "exportModel",
         "Export given model.");
 
+    RequestServer.registerEndpoint("exportMojo",
+            "GET /99/Models.mojo/{model_id}", ModelsHandler.class, "exportMojo",
+            "Export given model as Mojo.");
+
+    RequestServer.registerEndpoint("exportModelDetails",
+            "GET /99/Models/{model_id}/json", ModelsHandler.class, "exportModelDetails",
+            "Export given model details in json format.");
+
     RequestServer.registerEndpoint("grid",
         "GET /99/Grids/{grid_id}", GridsHandler.class, "fetch",
         "Return the specified grid search result.");
@@ -423,5 +431,10 @@ public class RegisterV3Api extends AbstractRegister {
     RequestServer.registerEndpoint("rapids_help",
         "GET /99/Rapids/help", RapidsHandler.class, "genHelp",
         "Produce help for Rapids AstRoot language.");
+
+    // Endpoints for Steam to manage H2O.
+    RequestServer.registerEndpoint("steamMetrics",
+        "GET /3/SteamMetrics", SteamMetricsHandler.class, "fetch",
+        "Get metrics for Steam from H2O.");
   }
 }

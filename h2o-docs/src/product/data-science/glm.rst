@@ -1,5 +1,5 @@
-GLM
---------------
+Generalized Linear Model (GLM)
+------------------------------
 
 Introduction
 ~~~~~~~~~~~~
@@ -158,25 +158,27 @@ Interpreting a GLM Model
 
 By default, the following output displays:
 
--  A graph of the normalized coefficient magnitudes
--  Output (model category, model summary, scoring history, training
-   metrics, validation metrics, best lambda, threshold, residual
-   deviance, null deviance, residual degrees of freedom, null degrees of
-   freedom, AIC, AUC, binomial, rank)
+-  Model parameters (hidden)
+-  A bar chart representing the standardized coefficient magnitudes (blue for negative, orange for positive). Note that this only displays is standardization is enabled.
+-  A graph of the scoring history (objective vs. iteration)
+-  Output (model category, validation metrics, and standardized coefficients magnitude)
+-  GLM model summary (family, link, regularization, number of total predictors, number of active predictors, number of iterations, training frame)
+-  Scoring history in tabular form (timestamp, duration, iteration, log likelihood, objective)
+-  Training metrics (model, model checksum, frame, frame checksum, description, model category, scoring time, predictions, MSE, r2, residual deviance, null deviance, AIC, null degrees of freedom, residual degrees of freedom)  
 -  Coefficients
--  Coefficient magnitudes
+-  Standardized coefficient magnitudes (if standardization is enabled)
 
 Classification and Regression
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-GLM can produce two categories of models: classication (binary classication only) and regression. Logistic regression is the GLM performing binary classication.
+GLM can produce two categories of models: classification and regression. Logistic regression is the GLM performing binary classification.
 
-The data type of the response column determines the model category. If the response is a categorical variable (also called a factor or an enum), then a classication model is created. If the response column data type is numeric (either integer or real), then a regression model is created.
+The data type of the response column determines the model category. If the response is a categorical variable (also called a factor or an enum), then a classification model is created. If the response column data type is numeric (either integer or real), then a regression model is created.
 
 Handling of Categorical Variables
 '''''''''''''''''''''''''''''''''
 
-If the response column is categorical, then a classication model is created. GLM only supports binary classication, so the response column can only have two levels. Categorical predictor columns may have more than two levels. We recommend letting GLM handle categorical columns, as it can take advantage of the categorical column for better performance and memory utilization.
+If the response column is categorical, then a classification model is created. GLM supports both binary and multinomial classification. For binary classification, the response column can only have two levels; for multinomial classification, the response column will have more than two levels. We recommend letting GLM handle categorical columns, as it can take advantage of the categorical column for better performance and memory utilization.
 
 We strongly recommend avoiding one-hot encoding categorical columns with any levels into many binary columns, as this is very inefficient. This is especially true for Python users who are used to expanding their categorical variables manually for other frameworks.
 
@@ -458,8 +460,8 @@ It can sometimes be useful to see the coefficients for all lambda values or to o
 
 To extract the regularization path from R or python:
 
-- R: call h2o.getGLMFullRegularizationPath, takes the model as an argument
-- Python: H2OGeneralizedLinearEstimator.getGLMRegularizationPath (static method), takes the model as an argument
+- R: call h2o.getGLMFullRegularizationPath. This takes the model as an argument. An example is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/glm/runit_GLM_reg_path.R>`__.
+- Python: H2OGeneralizedLinearEstimator.getGLMRegularizationPath (static method). This takes the model as an argument. An example is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/glm/pyunit_glm_regularization_path.py>`__.
 
 Solvers
 ~~~~~~~
@@ -485,7 +487,7 @@ IRLSM (the default) uses a `Gram Matrix <https://en.wikipedia.org/wiki/Gramian_m
 
 - For a sparse solution with a dense dataset, use IRLSM with ``lambda_search=TRUE`` if fewer than 500 active predictors in the solution are expected; otherwise, use L-BFGS. Set ``alpha`` to be greater than 0 to add in an :math:`\ell_1` penalty to the elastic net regularization, which induces sparsity in the estimated coefficients.
 
-- For a sparse solution with a sparse dataset, use IRLSM with ``lambda_search=TRUE`` if you expect less than 5000 active predictors in the solution; otherwise, use L-BGGS. Set ``alpha`` to be greater than 0.
+- For a sparse solution with a sparse dataset, use IRLSM with ``lambda_search=TRUE`` if you expect less than 5000 active predictors in the solution; otherwise, use L-BFGS. Set ``alpha`` to be greater than 0.
 
 If you are unsure whether the solution should be sparse or dense, try both along with a grid of alpha values. The optimal model can be picked based on its performance on the validation data (or alternatively, based on the performance in cross-validation when not enough data is available to have a separate validation dataset).
 
@@ -498,11 +500,142 @@ In addition to IRLSM and L-BFGS, H2O's GLM includes options for specifying Coord
 
 - Coordinate Descent is IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop. This version is faster when :math:`N > p` and :math:`p` ~ :math:`500`.
 - Coordinate Descent Naive is IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop.
+- Coordinate Descent provides much better results if lambda search is enabled. Also, with bounds, it tends to get higher accuracy.
 
 Both of the above method are explained in the `glmnet paper <https://core.ac.uk/download/pdf/6287975.pdf>`__. 
 
-Modifying or Creating Custom GLM Model
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Coefficients Table
+~~~~~~~~~~~~~~~~~~
+
+A Coefficients Table is outputted in a GLM model. This table provides the following information: Column names, Coefficients, Standard Error, z-value, p-value, and Standardized Coefficients.
+
+- Coefficients are the predictor weights (i.e. the weights used in the actual model used for prediction) in a GLM model. 
+
+- Standard error, z-values, and p-values are classical statistical measures of model quality. p-values are essentially hypothesis tests on the values of each coefficient. A high p-value means that a coefficient is unreliable (insiginificant) while a low p-value suggest that the coefficient is statistically significant.
+
+- The standardized coefficients are returned if the ``standardize`` option is enabled (which is the default). These are the predictor weights of the standardized data and are included only for informational purposes (e.g. to compare relative variable importance). In this case, the "normal" coefficients are obtained from the standardized coefficients by reversing the data standardization process (de-scaled, with the intercept adjusted by an added offset) so that they can be applied to data in its original form (i.e.  no standardization prior to scoring). **Note**: These are not the same as coefficients of a model built on non-standardized data. 
+
+Extracting Coefficients Table Information
+'''''''''''''''''''''''''''''''''''''''''
+
+You can extract the columns in the Coefficients Table by specifying ``names``, ``coefficients``, ``std_error``, ``z_value``, ``p_value``, ``standardized_coefficients`` in a retrieve/print statement. (Refer to the example that follows.) In addition, H2O provides the following built-in methods for retrieving standard and non-standard coefficients:
+
+- ``coef()``: Coefficients that can be applied to non-standardized data
+- ``coef_norm()``: Coefficients that can be fitted on the standardized data (requires ``standardized=TRUE``, which is the default)
+
+Example
+'''''''
+
+.. example-code::
+   .. code-block:: r
+
+    library(h2o)
+    h2o.init()
+
+    df <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv")
+    df$CAPSULE <- as.factor(df$CAPSULE)
+    df$RACE <- as.factor(df$RACE)
+    df$DCAPS <- as.factor(df$DCAPS)
+    df$DPROS <- as.factor(df$DPROS)
+
+    predictors <- c("AGE", "RACE", "VOL", "GLEASON")
+    response <- "CAPSULE"
+
+    prostate.glm <- h2o.glm(family= "binomial", x= predictors, y=response, training_frame=df, lambda = 0, compute_p_values = TRUE)
+
+    # Coefficients that can be applied to the non-standardized data
+    h2o.coef(prostate.glm)
+      Intercept      RACE.1      RACE.2         AGE         VOL     GLEASON 
+    -6.67515539 -0.44278752 -0.58992326 -0.01788870 -0.01278335  1.25035939
+
+    # Coefficients fitted on the standardized data (requires standardize=TRUE, which is on by default)
+    h2o.coef_norm(prostate.glm)
+      Intercept      RACE.1      RACE.2         AGE         VOL     GLEASON 
+    -0.07610006 -0.44278752 -0.58992326 -0.11676080 -0.23454402  1.36533415 
+
+    # Print the coefficients table
+    prostate.glm@model$coefficients_table
+    Coefficients: glm coefficients
+          names coefficients std_error   z_value  p_value standardized_coefficients
+    1 Intercept    -6.675155  1.931760 -3.455478 0.000549                 -0.076100
+    2    RACE.1    -0.442788  1.324231 -0.334373 0.738098                 -0.442788
+    3    RACE.2    -0.589923  1.373466 -0.429514 0.667549                 -0.589923
+    4       AGE    -0.017889  0.018702 -0.956516 0.338812                 -0.116761
+    5       VOL    -0.012783  0.007514 -1.701191 0.088907                 -0.234544
+    6   GLEASON     1.250359  0.156156  8.007103 0.000000                  1.365334
+
+    # Print the standard error
+    prostate.glm@model$coefficients_table$std_error
+    [1] 1.931760363 1.324230832 1.373465793 0.018701933 0.007514354 0.156156271
+
+    # Print the p values
+    prostate.glm@model$coefficients_table$p_value
+    [1] 5.493181e-04 7.380978e-01 6.675490e-01 3.388116e-01 8.890718e-02
+    [6] 1.221245e-15
+
+    # Print the z values
+    prostate.glm@model$coefficients_table$z_value
+    [1] -3.4554780 -0.3343734 -0.4295143 -0.9565159 -1.7011907  8.0071033
+
+    # Retrieve a graphical plot of the standardized coefficient magnitudes
+    h2o.std_coef_plot(prostate.glm)
+
+   .. code-block:: python
+
+    import h2o
+    h2o.init()
+    from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+
+    prostate = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv")
+    prostate['CAPSULE'] = prostate['CAPSULE'].asfactor()
+    prostate['RACE'] = prostate['RACE'].asfactor()
+    prostate['DCAPS'] = prostate['DCAPS'].asfactor()
+    prostate['DPROS'] = prostate['DPROS'].asfactor()
+
+    predictors = ["AGE", "RACE", "VOL", "GLEASON"]
+    response_col = "CAPSULE"
+
+    glm_model = H2OGeneralizedLinearEstimator(family= "binomial", lambda_ = 0, compute_p_values = True)
+    glm_model.train(predictors, response_col, training_frame= prostate)
+    
+    # Coefficients that can be applied to the non-standardized data.
+    print(glm_model.coef())
+    {u'GLEASON': 1.2503593867263176, u'VOL': -0.012783348665664449, u'AGE': -0.017888697161812357, u'Intercept': -6.6751553940827195, u'RACE.2': -0.5899232636956354, u'RACE.1': -0.44278751680880707}
+
+    # Coefficients fitted on the standardized data (requires standardize = True, which is on by default)
+    print(glm_model.coef_norm())
+    {u'GLEASON': 1.365334151581163, u'VOL': -0.2345440232267344, u'AGE': -0.11676080128780757, u'Intercept': -0.07610006436753876, u'RACE.2': -0.5899232636956354, u'RACE.1': -0.44278751680880707}
+
+    # Print the Coefficients table
+    glm_model._model_json['output']['coefficients_table']
+    Coefficients: glm coefficients
+    names      coefficients    std_error    z_value    p_value      standardized_coefficients
+    ---------  --------------  -----------  ---------  -----------  ---------------------------
+    Intercept  -6.67516        1.93176      -3.45548   0.000549318  -0.0761001
+    RACE.1     -0.442788       1.32423      -0.334373  0.738098     -0.442788
+    RACE.2     -0.589923       1.37347      -0.429514  0.667549     -0.589923
+    AGE        -0.0178887      0.0187019    -0.956516  0.338812     -0.116761
+    VOL        -0.0127833      0.00751435   -1.70119   0.0889072    -0.234544
+    GLEASON    1.25036         0.156156     8.0071     1.22125e-15  1.36533
+
+    # Print the Standard error
+    print(glm_model._model_json['output']['coefficients_table']['std_error'])
+    [1.9317603626604352, 1.3242308316851008, 1.3734657932878116, 0.01870193337051072, 0.007514353657915356, 0.15615627100850296]
+
+    # Print the p values
+    print(glm_model._model_json['output']['coefficients_table']['p_value'])
+    [0.0005493180609459358, 0.73809783692024, 0.6675489550762566, 0.33881164088847204, 0.0889071809658667, 1.2212453270876722e-15]
+
+    # Print the z values
+    print(glm_model._model_json['output']['coefficients_table']['z_value'])
+    [-3.4554779791058787, -0.3343733631736653, -0.42951434726559384, -0.9565159284557886, -1.7011907141473064, 8.007103260414265]
+
+    # Retrieve a graphical plot of the standardized coefficient magnitudes
+    glm_model.std_coef_plot()
+
+
+Modifying or Creating a Custom GLM Model
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In R and python, the makeGLMModel call can be used to create an H2O model from given coefficients. It needs a source GLM model trained on the same dataset to extract the dataset information. To make a custom GLM model from R or python:
 
@@ -515,20 +648,23 @@ FAQ
 
 -  **How does the algorithm handle missing values during training?**
 
-  Depending on the selected missing value handling policy, they are either imputed mean or the whole row is skipped. The default behavior is mean imputation. Note that categorical variables are imputed by adding an extra "missing" level. Optionally, glm can skip all rows with any missing values.
+  Depending on the selected missing value handling policy, they are either imputed mean or the whole row is skipped. The default behavior is Mean Imputation. Note that unseen categorical levels are replaced by the most frequent level present in training (mod). Optionally, GLM can skip all rows with any missing values.
 
 -  **How does the algorithm handle missing values during testing?** 
 
-  Same as during training. If the missing value handling is set to skip and we are generating predictions, skipped rows will have Na (missing) prediction.
+  Same as during training. If the missing value handling is set to Skip and we are generating predictions, skipped rows will have Na (missing) prediction.
 
 -  **What happens if the response has missing values?**
 
-  The rows with missing response are ignored during model training and validation.
+  The rows with missing responses are ignored during model training and validation.
 
--  **What happens during prediction if the new sample has categorical
-   levels not seen in training?** 
+-  **What happens during prediction if the new sample has categorical levels not seen in training?** 
    
-  The value will be filled with either 0 or a special missing level (if trained with missing values, and ``missing_value_handling`` was set to **MeanImputation**).
+  The value will be filled with either 0 or replaced by the most frequent level present in training (if ``missing_value_handling`` was set to **MeanImputation**).
+
+-  **How are unseen categorical values treated during scoring?**
+
+  Unseen categorical levels are treated based on the missing values handling during training. If your missing value handling was set to Mean Imputation, the unseen levels are replaced by the most frequent level present in training (mod). If your missing value treatment was Skip, the variable is ignored for the given observation.
 
 -  **Does it matter if the data is sorted?**
 
@@ -591,6 +727,24 @@ FAQ
    - for LBFGS, the default is number of classes (1 if not classification) * max(20, number of predictors /4 ) if no lambda search; it is number of classes * 100 * n-lambdas with lambda search.
    
   You will receive a warning if you reach the maximum number of iterations. In some cases, GLM  can end prematurely if it can not progress forward via line search. This typically happens when running a lambda search with IRLSM solver. Note that using CoordinateDescent solver fixes the issue.
+
+-  **Why do I receive different results when I run R's glm and H2O's glm?**
+
+  H2O's glm and R's glm do not run the same way and, thus, will provide different results. This is mainly due to the fact that H2O’s glm uses H2O math, H2O objects, and H2O distributed computing. Additionally, H2O's glm by default adds regularization, so it is essentially solving a different problem.
+
+-  **How can I get H2O's GLM to match R's `glm()` function?**
+
+  There are a few arguments you need to set in order to get H2O's GLM to match R's GLM because by default, they do not function the same way. To match R's GLM, you must set the following in H2O's GLM:
+
+  ::
+
+   solver = "IRLSM"
+   lambda = 0
+   remove_collinear_columns = TRUE
+   compute_p_values = TRUE
+
+  **Note:** ``beta_constraints`` must not be set.
+
 
 GLM Algorithm
 ~~~~~~~~~~~~~
