@@ -120,7 +120,7 @@ public class XGBoostScore extends MRTask<XGBoostScore> {
                             nc[0].addNum(hex.genmodel.GenModel.getPrediction(row, _output._priorClassDist, null, Model.defaultThreshold(_output)));
                         }
                     }
-                }.doAll(_output.nclasses() + 1, Vec.T_NUM, input).outputFrame(names, domains);
+                }.doAll(_output.nclasses() + 1, Vec.T_NUM, input).outputFrame(destinationKey, names, domains);
             }
             DKV.put(subPredsFrame);
 
@@ -149,6 +149,10 @@ public class XGBoostScore extends MRTask<XGBoostScore> {
     }
 
     private Frame rBindAndDelete(Frame left, Frame right) {
+        if(left._key.equals(right._key)) {
+            return left;
+        }
+
         String respBind = "(rbind " + left._key + " " + right._key + ")";
         try {
             Val result = Rapids.exec(respBind);
@@ -177,17 +181,19 @@ public class XGBoostScore extends MRTask<XGBoostScore> {
             mm = ModelMetricsBinomial.make(p1, resp);
             predFrame = new Frame(destinationKey, new Vec[]{label, p0, p1}, true);
         } else {
-            predFrame = new Frame(destinationKey, subPredsFrame.vecs(), true);
+            predFrame = subPredsFrame;
             Frame pp = new Frame(predFrame);
-            pp.remove(new int[]{0,pp.numCols() - 1});
+            pp.remove(0);
             Scope.enter();
             mm = ModelMetricsMultinomial.make(pp, resp, resp.toCategoricalVec().domain());
             Scope.exit();
         }
-        // Remove underlying vec references since they are used in predFrame
-        subPredsFrame.removeAll();
-        // Remove the frame
-        subPredsFrame.remove();
+        if( _output.nclasses() <= 2 ) {
+            // Remove underlying vec references since they are used in predFrame
+            subPredsFrame.removeAll();
+            // Remove the frame
+            subPredsFrame.remove();
+        }
         subResponsesFrame.remove();
     }
 }
