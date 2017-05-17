@@ -11,10 +11,10 @@ import water.JettyHTTPD;
 import water.TestUtil;
 
 import javax.servlet.ServletOutputStream;
+import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
-import java.io.IOException;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -95,7 +95,16 @@ public class CustomHttpFilterTest extends TestUtil {
     when(request.getParameterMap()).thenReturn(new HashMap<String, String[]>());
 
     when(response.getOutputStream()).thenReturn(new ServletOutputStream() {
-      @Override public void write(int b) throws IOException {
+      @Override
+      public boolean isReady() {
+        return false;
+      }
+
+      @Override
+      public void setWriteListener(WriteListener writeListener) {
+      }
+
+      @Override public void write(int b) {
       }
     });
 

@@ -1,14 +1,12 @@
 package water;
 
 import water.init.HostnameGuesser;
-import water.init.NetworkInit;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.UnknownHostException;
 import java.security.GeneralSecurityException;
-import java.security.UnrecoverableKeyException;
 
 public class ProxyStarter {
 
