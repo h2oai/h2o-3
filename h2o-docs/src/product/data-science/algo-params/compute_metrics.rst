@@ -1,7 +1,7 @@
 ``compute_metrics``
 --------------------
 
-- Available in: Naïve-Bayes
+- Available in: Naïve-Bayes, PCA
 - Hyperparameter: yes
 
 Description
