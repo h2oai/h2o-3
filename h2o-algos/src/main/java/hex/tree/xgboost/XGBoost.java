@@ -519,8 +519,19 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         // Prepare Rabit
         RabitTracker rt = new RabitTracker(H2O.getCloudSize());
 
+          String taskName = UUID.randomUUID().toString();
+
+          model.model_info()._booster = new XGBoostUpdateTask(
+                  taskName,
+                  model.model_info()._booster,
+                  model.model_info(),
+                  model._output,
+                  _parms,
+                  0,
+                  rt.getWorkerEnvs()).doAll(_train).booster();
+
         // train the model
-        scoreAndBuildTrees(model, rt);
+        scoreAndBuildTrees(model, rt, taskName);
 
         // final scoring
         doScoring(model, model.model_info()._booster, true);
@@ -534,12 +545,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       model.unlock(_job);
     }
 
-    protected final void scoreAndBuildTrees(XGBoostModel model, RabitTracker rt) throws XGBoostError {
-      String taskName = UUID.randomUUID().toString();
-
+    protected final void scoreAndBuildTrees(XGBoostModel model, RabitTracker rt, String taskName) throws XGBoostError {
       boolean scored = false;
       for( int tid=0; tid< _parms._ntrees; tid++) {
-        if( tid > 0) {
           // During first iteration model contains 0 trees, then 1-tree, ...
           scored = doScoring(model, model.model_info()._booster, false);
           if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
@@ -547,7 +555,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
             _job.update(_parms._ntrees - model._output._ntrees); //finish
             return;
           }
-        }
 
         Timer kb_timer = new Timer();
 
@@ -561,6 +568,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
                 _parms,
                 tid,
                 rt.getWorkerEnvs()).doAll(_train).booster();
+
         rt.waitFor(0);
 
         Log.info((tid + 1) + ". tree was built in " + kb_timer.toString());
