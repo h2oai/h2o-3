@@ -78,6 +78,8 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
         if(booster == null) {
             HashMap<String, Object> params = XGBoostModel.createParams(_parms, _output);
 
+            // DON'T put this before createParams, createPrams calls train() which isn't supposed to be distributed
+            // just to check if we have GPU on the machine
             Rabit.init(rabitEnv);
             HashMap<String, DMatrix> watches = new HashMap<>();
             booster = ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, params, 0, watches, null, null);

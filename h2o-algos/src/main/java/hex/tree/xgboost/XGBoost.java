@@ -15,6 +15,7 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.Timer;
+import water.util.VecUtils;
 
 import java.util.*;
 
@@ -56,14 +57,21 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
                                               String[] featureMap,
                                               boolean sparse) throws XGBoostError {
 
-    List<Integer> chunks = new ArrayList<>();
-    long nRows = 0;
-    for(int i = 0; i < f.anyVec().nChunks(); i++) {
-      Key key = f.anyVec().chunkKey(i);
-      if(!onlyLocal || key.home()) {
-        chunks.add(i);
-        nRows += f.anyVec().chunkLen(i);
+    int[] chunks;
+    Vec vec = f.anyVec();
+    if(!onlyLocal) {
+      // All chunks
+      chunks = new int[f.anyVec().nChunks()];
+      for(int i = 0; i < chunks.length; i++) {
+        chunks[i] = i;
       }
+    } else {
+      chunks = VecUtils.getLocalChunkIds(f.anyVec());
+    }
+
+    long nRows = 0;
+    for(int chId : chunks) {
+      nRows += vec.chunkLen(chId);
     }
 
     DataInfo di = dataInfoKey.get();
@@ -456,10 +464,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     return dinfo;
   }
 
-  public static Object lockForGpu(int gpu_id) {
-    return Integer.valueOf(gpu_id);
-  }
-
   // ----------------------
   private class XGBoostDriver extends Driver {
     @Override
@@ -518,10 +522,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         // train the model
         scoreAndBuildTrees(model, rt);
 
-        Map<String, String> rabitEnv = new HashMap<>();
-        rabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
         // final scoring
-        doScoring(model, model.model_info()._booster, true, rabitEnv);
+        doScoring(model, model.model_info()._booster, true);
 
         // save the model to DKV
         model.model_info().nativeToJava();
@@ -533,18 +535,15 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
 
     protected final void scoreAndBuildTrees(XGBoostModel model, RabitTracker rt) throws XGBoostError {
-      Map<String, String> rabitEnv = new HashMap<>();
-      rabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
-
       String taskName = UUID.randomUUID().toString();
 
       boolean scored = false;
       for( int tid=0; tid< _parms._ntrees; tid++) {
         if( tid > 0) {
           // During first iteration model contains 0 trees, then 1-tree, ...
-          scored = doScoring(model, model.model_info()._booster, false, rabitEnv);
+          scored = doScoring(model, model.model_info()._booster, false);
           if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
-            doScoring(model, model.model_info()._booster, true, rabitEnv);
+            doScoring(model, model.model_info()._booster, true);
             _job.update(_parms._ntrees - model._output._ntrees); //finish
             return;
           }
@@ -575,20 +574,18 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         model._output._training_time_ms = ArrayUtils.copyAndFillOf(model._output._training_time_ms, model._output._ntrees+1, System.currentTimeMillis());
         if (stop_requested() && !timeout()) throw new Job.JobCancelledException();
         if (timeout()) { //stop after scoring
-          if (!scored) doScoring(model, model.model_info()._booster, true, rabitEnv);
+          if (!scored) doScoring(model, model.model_info()._booster, true);
           _job.update(_parms._ntrees-model._output._ntrees); //finish
           break;
         }
       }
-      doScoring(model, model.model_info()._booster, true, rabitEnv);
+      doScoring(model, model.model_info()._booster, true);
     }
 
     long _firstScore = 0;
     long _timeLastScoreStart = 0;
     long _timeLastScoreEnd = 0;
-    private boolean doScoring(XGBoostModel model, Booster booster, boolean finalScoring, Map<String, String> rabitEnv) throws XGBoostError {
-      Rabit.init(rabitEnv);
-
+    private boolean doScoring(XGBoostModel model, Booster booster, boolean finalScoring) throws XGBoostError {
       boolean scored = false;
       long now = System.currentTimeMillis();
       if (_firstScore == 0) _firstScore = now;
@@ -619,7 +616,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         scored = true;
       }
 
-      Rabit.shutdown();
       return scored;
     }
   }

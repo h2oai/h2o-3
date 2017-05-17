@@ -4,14 +4,16 @@ import hex.*;
 import hex.genmodel.utils.DistributionFamily;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
+import ml.dmlc.xgboost4j.java.Rabit;
 import ml.dmlc.xgboost4j.java.XGBoostError;
-import water.Key;
-import water.MRTask;
-import water.Scope;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.*;
+import water.fvec.*;
+import water.rapids.Rapids;
+import water.rapids.Val;
+import water.rapids.vals.ValFrame;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class XGBoostScore extends MRTask<XGBoostScore> {
 
@@ -21,6 +23,8 @@ public class XGBoostScore extends MRTask<XGBoostScore> {
 
     private final Booster booster;
     private final Key<Frame> destinationKey;
+    private Frame subPredsFrame;
+    private Frame subResponsesFrame;
     ModelMetrics mm;
     Frame predFrame;
 
@@ -32,7 +36,6 @@ public class XGBoostScore extends MRTask<XGBoostScore> {
         _sharedmodel = sharedmodel;
         _output = output;
         _parms = parms;
-
         this.booster = booster;
         this.destinationKey = destinationKey;
     }
@@ -40,6 +43,10 @@ public class XGBoostScore extends MRTask<XGBoostScore> {
     @Override
     protected void setupLocal() {
         try {
+            Map<String, String> rabitEnv = new HashMap<>();
+            rabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
+            Rabit.init(rabitEnv);
+
             DMatrix data = XGBoost.convertFrametoDMatrix(
                     _sharedmodel._dataInfoKey,
                     _fr,
@@ -52,7 +59,11 @@ public class XGBoostScore extends MRTask<XGBoostScore> {
 
             final float[][] preds = booster.predict(data);
             Vec resp = Vec.makeVec(data.getLabel(), Vec.newKey());
+            subResponsesFrame = new Frame(Key.<Frame>make(), new Vec[] {resp}, true);
+            DKV.put(subResponsesFrame);
+
             float[] weights = data.getWeight();
+
             if (_output.nclasses() == 1) {
                 double[] dpreds = new double[preds.length];
                 for (int j = 0; j < dpreds.length; ++j)
@@ -60,19 +71,23 @@ public class XGBoostScore extends MRTask<XGBoostScore> {
 //      if (weights.length>0)
 //        for (int j = 0; j < dpreds.length; ++j)
 //          assert weights[j] == 1.0;
-                Vec pred = Vec.makeVec(dpreds, Vec.newKey());
-                mm = ModelMetricsRegression.make(pred, resp, DistributionFamily.gaussian);
-                predFrame = new Frame(destinationKey, new Vec[]{pred}, true);
+                subPredsFrame = new Frame(Key.<Frame>make(), new Vec[] {Vec.makeVec(dpreds, Vec.newKey())}, true);
+
             } else if (_output.nclasses() == 2) {
                 double[] dpreds = new double[preds.length];
+
                 for (int j = 0; j < dpreds.length; ++j)
                     dpreds[j] = preds[j][0];
+
                 if (weights.length > 0)
                     for (int j = 0; j < dpreds.length; ++j)
                         assert weights[j] == 1.0;
                 Vec p1 = Vec.makeVec(dpreds, Vec.newKey());
+
                 Vec p0 = p1.makeCon(0);
+
                 Vec label = p1.makeCon(0., Vec.T_CAT);
+
                 new MRTask() {
                     public void map(Chunk l, Chunk p0, Chunk p1) {
                         for (int i = 0; i < l._len; ++i) {
@@ -81,17 +96,19 @@ public class XGBoostScore extends MRTask<XGBoostScore> {
                             double[] row = new double[]{0, 1 - p, p};
                             l.set(i, hex.genmodel.GenModel.getPrediction(row, _output._priorClassDist, null, Model.defaultThreshold(_output)));
                         }
+
                     }
                 }.doAll(label, p0, p1);
-                mm = ModelMetricsBinomial.make(p1, resp);
+
                 label.setDomain(new String[]{"N", "Y"}); // ignored
-                predFrame = new Frame(destinationKey, new Vec[]{label, p0, p1}, true);
+
+                subPredsFrame = new Frame(Key.<Frame>make(), new Vec[] { label, p0, p1 }, true);
             } else {
                 String[] names = Model.makeScoringNames(_output);
                 String[][] domains = new String[names.length][];
                 domains[0] = _output.classNames();
                 Frame input = new Frame(resp); //has the right size
-                predFrame = new MRTask() {
+                subPredsFrame = new MRTask() {
                     public void map(Chunk[] chk, NewChunk[] nc) {
                         for (int i = 0; i < chk[0]._len; ++i) {
                             double[] row = new double[nc.length];
@@ -103,23 +120,72 @@ public class XGBoostScore extends MRTask<XGBoostScore> {
                             nc[0].addNum(hex.genmodel.GenModel.getPrediction(row, _output._priorClassDist, null, Model.defaultThreshold(_output)));
                         }
                     }
-                }.doAll(_output.nclasses() + 1, Vec.T_NUM, input).outputFrame(destinationKey, names, domains);
-
-                Frame pp = new Frame(predFrame);
-                pp.remove(0);
-                Scope.enter();
-                mm = ModelMetricsMultinomial.make(pp, resp, resp.toCategoricalVec().domain());
-                Scope.exit();
+                }.doAll(_output.nclasses() + 1, Vec.T_NUM, input).outputFrame(names, domains);
             }
-            resp.remove();
+            DKV.put(subPredsFrame);
+
         } catch (XGBoostError xgBoostError) {
             xgBoostError.printStackTrace();
+        } finally {
+            try {
+                Rabit.shutdown();
+            } catch (XGBoostError xgBoostError) {
+                xgBoostError.printStackTrace();
+            }
         }
     }
 
     @Override
     public void reduce(XGBoostScore other) {
-        // TODO ????
+        // todo for some reason the domains in the other vector are going AWOL?!
+        for(int i = 0; i < subPredsFrame.numCols(); i++) {
+            Vec vec = subPredsFrame.vec(i);
+            if(vec.domain() != null) {
+                other.subPredsFrame.vec(i).setDomain(vec.domain());
+            }
+        }
+        subPredsFrame = rBindAndDelete(subPredsFrame, other.subPredsFrame);
+        subResponsesFrame = rBindAndDelete(subResponsesFrame, other.subResponsesFrame);
     }
 
+    private Frame rBindAndDelete(Frame left, Frame right) {
+        String respBind = "(rbind " + left._key + " " + right._key + ")";
+        try {
+            Val result = Rapids.exec(respBind);
+            if (result instanceof ValFrame) {
+                return result.getFrame();
+            } // TODO handle else case
+            return null;
+        } finally {
+            left.remove();
+            right.remove();
+        }
+    }
+
+
+    @Override
+    protected void postGlobal() {
+        Vec resp = subResponsesFrame.vec(0);
+        if (_output.nclasses() == 1) {
+            Vec pred = subPredsFrame.vec(0);
+            mm = ModelMetricsRegression.make(pred, resp, DistributionFamily.gaussian);
+            predFrame = new Frame(destinationKey, new Vec[]{pred}, true);
+        } else if (_output.nclasses() == 2) {
+            Vec label = subPredsFrame.vec(0);
+            Vec p0 = subPredsFrame.vec(1);
+            Vec p1 = subPredsFrame.vec(2);
+            mm = ModelMetricsBinomial.make(p1, resp);
+            predFrame = new Frame(destinationKey, new Vec[]{label, p0, p1}, true);
+        } else {
+            predFrame = new Frame(destinationKey, subPredsFrame.vecs(), true);
+            Frame pp = new Frame(predFrame);
+            pp.remove(new int[]{0,pp.numCols() - 1});
+            Scope.enter();
+            mm = ModelMetricsMultinomial.make(pp, resp, resp.toCategoricalVec().domain());
+            Scope.exit();
+        }
+        subPredsFrame.remove();
+        subResponsesFrame.remove();
+        // TODO check if all unnecessary Vecs and Frames are removed
+    }
 }

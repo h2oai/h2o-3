@@ -4,7 +4,7 @@ import hex.*;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import ml.dmlc.xgboost4j.java.Booster;
-import ml.dmlc.xgboost4j.java.Rabit;
+import ml.dmlc.xgboost4j.java.RabitTracker;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import water.*;
 import water.fvec.Frame;
@@ -369,7 +369,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       ModelMetrics[] mm = new ModelMetrics[1];
       Frame preds = makePreds(model_info()._booster, adaptFr, mm, Key.<Frame>make(destination_key));
       DKV.put(preds);
-      Rabit.shutdown();
       return preds;
     } catch (XGBoostError xgBoostError) {
       xgBoostError.printStackTrace();
