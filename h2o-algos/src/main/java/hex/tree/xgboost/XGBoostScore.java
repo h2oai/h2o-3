@@ -184,8 +184,10 @@ public class XGBoostScore extends MRTask<XGBoostScore> {
             mm = ModelMetricsMultinomial.make(pp, resp, resp.toCategoricalVec().domain());
             Scope.exit();
         }
+        // Remove underlying vec references since they are used in predFrame
+        subPredsFrame.removeAll();
+        // Remove the frame
         subPredsFrame.remove();
         subResponsesFrame.remove();
-        // TODO check if all unnecessary Vecs and Frames are removed
     }
 }
