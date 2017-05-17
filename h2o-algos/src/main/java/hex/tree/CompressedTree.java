@@ -23,6 +23,8 @@ import water.util.SB;
 //    prediction: 4 bytes of float (or 1 or 2 bytes of class prediction)
 //
 
+//Compress Tree begins
+//
 public class CompressedTree extends Keyed<CompressedTree> {
   final byte [] _bits;
   final int _nclass;     // Number of classes being predicted (for an integer prediction tree)
