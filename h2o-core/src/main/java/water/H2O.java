@@ -1446,8 +1446,8 @@ final public class H2O {
    * It is updated also when a new client appears. */
   private static HashSet<H2ONode> STATIC_H2OS = null;
 
-  /* List of all clients that ever connected to this cloud */
-  private static Map<H2ONode.H2Okey, H2ONode> CLIENTS_MAP = new ConcurrentHashMap<>();
+  /* List of all clients that ever connected to this cloud. Keys are IP:PORT of these clients */
+  private static Map<String, H2ONode> CLIENTS_MAP = new ConcurrentHashMap<>();
 
   // Reverse cloud index to a cloud; limit of 256 old clouds.
   static private final H2O[] CLOUDS = new H2O[256];
@@ -1552,6 +1552,10 @@ final public class H2O {
     SELF._heartbeat._jar_md5 = JarHash.JARHASH;
     SELF._heartbeat._client = ARGS.client;
     SELF._heartbeat._cloud_name_hash = ARGS.name.hashCode();
+
+    if(ARGS.client){
+      reportClient(H2O.SELF); // report myself as the client to myself
+    }
   }
 
   /** Starts the worker threads, receiver threads, heartbeats and all other
@@ -1624,7 +1628,29 @@ final public class H2O {
   // A dense array indexing all Cloud members. Fast reversal from "member#" to
   // Node.  No holes.  Cloud size is _members.length.
   public final H2ONode[] _memary;
+
+  // mapping from a node ip to node index
+  private final HashMap<String, Integer> _node_ip_to_index;
   final int _hash;
+
+  public H2ONode getNodeByIpPort(String ipPort) {
+    if(_node_ip_to_index != null) {
+      Integer index = _node_ip_to_index.get(ipPort);
+      if (index != null) {
+        if(index <= -1 || index >= _memary.length){
+          throw new RuntimeException("Mapping from node id to node index contains: " + index + ", however this node" +
+                  "does not exist!");
+        }
+        return _memary[index];
+      } else {
+        // no node with such ip:port
+        return null;
+      }
+    } else {
+      // mapping is null, no cloud ready yet
+      return null;
+    }
+  }
 
   // A dense integer identifier that rolls over rarely. Rollover limits the
   // number of simultaneous nested Clouds we are operating on in-parallel.
@@ -1637,6 +1663,10 @@ final public class H2O {
   H2O( H2ONode[] h2os, int hash, int idx ) {
     _memary = h2os;             // Need to clone?
     java.util.Arrays.sort(_memary);       // ... sorted!
+    _node_ip_to_index = new HashMap<>();
+    for(H2ONode node: _memary){
+      _node_ip_to_index.put(node.getIpPortString(), node.index());
+    }
     _hash = hash;               // And record hash for cloud rollover
     _idx = (char)(idx&0x0ff);   // Roll-over at 256
   }
@@ -2151,7 +2181,7 @@ final public class H2O {
   }
 
   public static H2ONode reportClient(H2ONode client){
-    H2ONode oldClient = CLIENTS_MAP.put(client._key, client);
+    H2ONode oldClient = CLIENTS_MAP.put(client.getIpPortString(), client);
     if(oldClient == null){
       Log.info("New client discovered at " + client);
     }
@@ -2159,14 +2189,14 @@ final public class H2O {
   }
 
   public static H2ONode removeClient(H2ONode client){
-    return CLIENTS_MAP.remove(client._key);
+    return CLIENTS_MAP.remove(client.getIpPortString());
   }
 
   public static HashSet<H2ONode> getClients(){
     return new HashSet<>(CLIENTS_MAP.values());
   }
 
-  public static Map<H2ONode.H2Okey, H2ONode> getClientsByKey(){
-    return new HashMap<>(CLIENTS_MAP);
+  public static H2ONode getClientByIPPort(String ipPort){
+    return CLIENTS_MAP.get(ipPort);
   }
 }
