@@ -13,6 +13,7 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import water.H2O;
 import water.H2OStarter;
+import water.ProxyStarter;
 import water.network.SecurityUtils;
 import water.util.ArrayUtils;
 import water.util.StringUtils;
@@ -102,10 +103,12 @@ public class h2odriver extends Configured implements Tool {
   static String sessionTimeout = null;
   static String userName = System.getProperty("user.name");
   static boolean client = false;
+  static boolean proxy = false;
   static String runAsUser = null;
   static String principal = null;
   static String keytabPath = null;
 
+  String proxyUrl = null;
   // Runtime state that might be touched by different threads.
   volatile ServerSocket driverCallbackSocket = null;
   volatile Job job = null;
@@ -133,15 +136,21 @@ public class h2odriver extends Configured implements Tool {
     clusterPort = port;
   }
 
-  public String getClusterUrl() {
+  public String getPublicUrl() {
     String url;
     if (client) {
       url = H2O.getURL(H2O.getJetty().getScheme());
+    } else if (proxy) {
+      url = proxyUrl;
     } else {
-      String scheme = (jksFileName == null) ? "http" : "https";
-      url = scheme + "://" + clusterIp + ":" + clusterPort;
+      url = getClusterUrl();
     }
     return url;
+  }
+
+  private String getClusterUrl() {
+    String scheme = (jksFileName == null) ? "http" : "https";
+    return scheme + "://" + clusterIp + ":" + clusterPort;
   }
 
   public static boolean usingYarn() {
@@ -321,13 +330,13 @@ public class h2odriver extends Configured implements Tool {
   }
 
   private void reportClusterReady(String ip, int port) throws Exception {
-    if (client)
-      return; // Hadoop cluster ready but we have to wait for client
+    setClusterIpPort(ip, port);
+    if (client || proxy)
+      return; // Hadoop cluster ready but we have to wait for client or proxy to come up
     if (clusterReadyFileName != null) {
       createClusterReadyFile(ip, port);
       System.out.println("Cluster notification file (" + clusterReadyFileName + ") created.");
     }
-    setClusterIpPort(ip, port);
   }
 
   private static void createClusterReadyFile(String ip, int port) throws Exception {
@@ -918,6 +927,10 @@ public class h2odriver extends Configured implements Tool {
       else if (s.equals("-client")) {
         client = true;
         driverArgs = false;
+      }
+      else if (s.equals("-proxy")) {
+        proxy = true;
+        driverArgs = false;
       } else if (s.equals("-run_as_user")) {
         i++; if (i >= args.length) { usage(); }
         runAsUser = args[i];
@@ -1047,6 +1060,10 @@ public class h2odriver extends Configured implements Tool {
 
     if (client && disown) {
       error("client mode doesn't support the '-disown' option");
+    }
+
+    if (proxy && disown) {
+      error("proxy mode doesn't support the '-disown' option");
     }
   }
 
@@ -1274,7 +1291,7 @@ public class h2odriver extends Configured implements Tool {
 
     // Parse arguments.
     // ----------------
-    String[] clientArgs = parseArgs(args);
+    String[] otherArgs = parseArgs(args);
     validateArgs();
 
     // Set up callback address and port.
@@ -1578,7 +1595,7 @@ public class h2odriver extends Configured implements Tool {
       // status stuff in H2O has settled down.
       Thread.sleep(CLOUD_FORMATION_SETTLE_DOWN_SECONDS);
 
-      System.out.println("Open H2O Flow in your web browser: " + getClusterUrl());
+      System.out.println("Open H2O Flow in your web browser: " + getPublicUrl());
       System.out.println("Disowning cluster and exiting.");
       Runtime.getRuntime().removeShutdownHook(ctrlc);
       return 0;
@@ -1619,16 +1636,20 @@ public class h2odriver extends Configured implements Tool {
       };
       if (securityConf != null)
         generatedClientArgs = ArrayUtils.append(generatedClientArgs, new String[]{"-internal_security_conf", securityConf});
-      generatedClientArgs = ArrayUtils.append(generatedClientArgs, clientArgs);
+      generatedClientArgs = ArrayUtils.append(generatedClientArgs, otherArgs);
 
       H2OStarter.start(generatedClientArgs, true);
-      reportClusterReady(H2O.SELF_ADDRESS.getHostAddress(), H2O.API_PORT);
+      reportClientReady(H2O.SELF_ADDRESS.getHostAddress(), H2O.API_PORT);
     }
 
-    if (! client)
+    if (proxy) {
+      proxyUrl = ProxyStarter.start(otherArgs, getClusterUrl());
+    }
+
+    if (! (client || proxy))
       System.out.println("(Note: Use the -disown option to exit the driver after cluster formation)");
     System.out.println("");
-    System.out.println("Open H2O Flow in your web browser: " + getClusterUrl());
+    System.out.println("Open H2O Flow in your web browser: " + getPublicUrl());
     System.out.println("");
     System.out.println("(Press Ctrl-C to kill the cluster)");
     System.out.println("Blocking until the H2O cluster shuts down...");

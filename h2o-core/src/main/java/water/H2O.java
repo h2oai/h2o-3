@@ -186,96 +186,13 @@ final public class H2O {
   public static final OptArgs ARGS = new OptArgs();
 
   /**
-   * A class containing all of the arguments for H2O.
+   * A class containing all of the authentication arguments for H2O.
    */
   public static class
-    OptArgs {
-    // Prefix of hidden system properties
-    public static final String SYSTEM_PROP_PREFIX = "sys.ai.h2o.";
-    public static final String SYSTEM_DEBUG_CORS = H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.cors";
-    //-----------------------------------------------------------------------------------
-    // Help and info
-    //-----------------------------------------------------------------------------------
-    /** -help, -help=true; print help and exit*/
-    public boolean help = false;
-
-    /** -version, -version=true; print version and exit */
-    public boolean version = false;
+    BaseArgs {
 
     //-----------------------------------------------------------------------------------
-    // Clouding
-    //-----------------------------------------------------------------------------------
-    /** -name=name; Set cloud name */
-    public String name = System.getProperty("user.name"); // Cloud name
-
-    /** -flatfile=flatfile; Specify a list of cluster IP addresses */
-    public String flatfile;
-
-    /** -port=####; Specific Browser/API/HTML port */
-    public int port;
-
-    /** -baseport=####; Port to start upward searching from. */
-    public int baseport = 54321;
-
-    /** -web_ip=ip4_or_ip6; IP used for web server. By default it listen to all interfaces. */
-    public String web_ip = null;
-
-    /** -ip=ip4_or_ip6; Named IP4/IP6 address instead of the default */
-    public String ip;
-
-    /** -network=network; Network specification for acceptable interfaces to bind to */
-    public String network;
-
-    /** -client, -client=true; Client-only; no work; no homing of Keys (but can cache) */
-    public boolean client;
-
-    /** -user_name=user_name; Set user name */
-    public String user_name = System.getProperty("user.name");
-
-    //-----------------------------------------------------------------------------------
-    // Node configuration
-    //-----------------------------------------------------------------------------------
-    /** -ice_root=ice_root; ice root directory; where temp files go */
-    public String ice_root;
-
-    /** -cleaner; enable user-mode spilling of big data to disk in ice_root */
-    public boolean cleaner = false;
-
-    /** -nthreads=nthreads; Max number of F/J threads in the low-priority batch queue */
-    public short nthreads= (short)Runtime.getRuntime().availableProcessors();
-
-    /** -log_dir=/path/to/dir; directory to save logs in */
-    public String log_dir;
-
-    /** -flow_dir=/path/to/dir; directory to save flows in */
-    public String flow_dir;
-
-    /** -disable_web; disable Jetty and REST API interface */
-    public boolean disable_web = false;
-
-    /** -context_path=jetty_context_path; the context path for jetty */
-    public String context_path = "";
-
-    //-----------------------------------------------------------------------------------
-    // HDFS & AWS
-    //-----------------------------------------------------------------------------------
-    /** -hdfs_config=hdfs_config; configuration file of the HDFS */
-    public String hdfs_config = null;
-
-    /** -hdfs_skip=hdfs_skip; used by Hadoop driver to not unpack and load any HDFS jar file at runtime. */
-    public boolean hdfs_skip = false;
-
-    /** -aws_credentials=aws_credentials; properties file for aws credentials */
-    public String aws_credentials = null;
-
-    /** --ga_hadoop_ver=ga_hadoop_ver; Version string for Hadoop */
-    public String ga_hadoop_ver = null;
-
-    /** --ga_opt_out; Turns off usage reporting to Google Analytics  */
-    public boolean ga_opt_out = false;
-
-    //-----------------------------------------------------------------------------------
-    // Authentication
+    // Authentication & Security
     //-----------------------------------------------------------------------------------
     /** -jks is Java KeyStore file on local filesystem */
     public String jks = null;
@@ -302,14 +219,107 @@ final public class H2O {
     public boolean form_auth = false;
 
     /** -session_timeout maximum duration of session inactivity in minutes **/
-    private String session_timeout_spec = null; // raw value specified by the user
+    String session_timeout_spec = null; // raw value specified by the user
     public int session_timeout = 0; // parsed value (in minutes)
+
+    /** -user_name=user_name; Set user name */
+    public String user_name = System.getProperty("user.name");
 
     /** -internal_security_conf path (absolute or relative) to a file containing all internal security related configurations */
     public String internal_security_conf = null;
 
     /** -internal_security_enabled is a boolean that indicates if internal communication paths are secured*/
     public boolean internal_security_enabled = false;
+
+    //-----------------------------------------------------------------------------------
+    // Networking
+    //-----------------------------------------------------------------------------------
+    /** -port=####; Specific Browser/API/HTML port */
+    public int port;
+
+    /** -baseport=####; Port to start upward searching from. */
+    public int baseport = 54321;
+
+    /** -web_ip=ip4_or_ip6; IP used for web server. By default it listen to all interfaces. */
+    public String web_ip = null;
+
+    /** -ip=ip4_or_ip6; Named IP4/IP6 address instead of the default */
+    public String ip;
+
+    /** -network=network; Network specification for acceptable interfaces to bind to */
+    public String network;
+
+    /** -context_path=jetty_context_path; the context path for jetty */
+    public String context_path = "";
+  }
+
+  /**
+   * A class containing all of the arguments for H2O.
+   */
+  public static class
+    OptArgs extends BaseArgs {
+    // Prefix of hidden system properties
+    public static final String SYSTEM_PROP_PREFIX = "sys.ai.h2o.";
+    public static final String SYSTEM_DEBUG_CORS = H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.cors";
+    //-----------------------------------------------------------------------------------
+    // Help and info
+    //-----------------------------------------------------------------------------------
+    /** -help, -help=true; print help and exit*/
+    public boolean help = false;
+
+    /** -version, -version=true; print version and exit */
+    public boolean version = false;
+
+    //-----------------------------------------------------------------------------------
+    // Clouding
+    //-----------------------------------------------------------------------------------
+    /** -name=name; Set cloud name */
+    public String name = System.getProperty("user.name"); // Cloud name
+
+    /** -flatfile=flatfile; Specify a list of cluster IP addresses */
+    public String flatfile;
+
+    //-----------------------------------------------------------------------------------
+    // Node configuration
+    //-----------------------------------------------------------------------------------
+    /** -ice_root=ice_root; ice root directory; where temp files go */
+    public String ice_root;
+
+    /** -cleaner; enable user-mode spilling of big data to disk in ice_root */
+    public boolean cleaner = false;
+
+    /** -nthreads=nthreads; Max number of F/J threads in the low-priority batch queue */
+    public short nthreads= (short)Runtime.getRuntime().availableProcessors();
+
+    /** -log_dir=/path/to/dir; directory to save logs in */
+    public String log_dir;
+
+    /** -flow_dir=/path/to/dir; directory to save flows in */
+    public String flow_dir;
+
+    /** -disable_web; disable Jetty and REST API interface */
+    public boolean disable_web = false;
+
+    /** -client, -client=true; Client-only; no work; no homing of Keys (but can cache) */
+    public boolean client;
+
+    //-----------------------------------------------------------------------------------
+    // HDFS & AWS
+    //-----------------------------------------------------------------------------------
+    /** -hdfs_config=hdfs_config; configuration file of the HDFS */
+    public String hdfs_config = null;
+
+    /** -hdfs_skip=hdfs_skip; used by Hadoop driver to not unpack and load any HDFS jar file at runtime. */
+    public boolean hdfs_skip = false;
+
+    /** -aws_credentials=aws_credentials; properties file for aws credentials */
+    public String aws_credentials = null;
+
+    /** --ga_hadoop_ver=ga_hadoop_ver; Version string for Hadoop */
+    public String ga_hadoop_ver = null;
+
+    /** --ga_opt_out; Turns off usage reporting to Google Analytics  */
+    public boolean ga_opt_out = false;
 
     //-----------------------------------------------------------------------------------
     // Debugging
@@ -402,11 +412,10 @@ final public class H2O {
     @Override public String toString() { return _s; }
   }
 
-
   /**
    * Dead stupid argument parser.
    */
-  private static void parseArguments(String[] args) {
+  static void parseArguments(String[] args) {
     for (AbstractH2OExtension e : H2O.getExtensions()) {
       args = e.parseArguments(args);
     }
