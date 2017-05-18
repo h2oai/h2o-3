@@ -138,10 +138,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     model_info._dataInfoKey = dinfo._key;
   }
 
-  HashMap<String, Object> createParams() {
-    return createParams(_parms, _output);
-  }
-
   static HashMap<String, Object> createParams(XGBoostParameters p, XGBoostOutput output) {
     HashMap<String, Object> params = new HashMap<>();
 

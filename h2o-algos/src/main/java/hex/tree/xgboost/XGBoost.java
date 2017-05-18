@@ -464,6 +464,24 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     return dinfo;
   }
 
+  public static byte[] getRawArray(Booster booster) {
+    if(null == booster) {
+      return null;
+    }
+
+    byte[] rawBooster = null;
+    try {
+      Map<String, String> localRabitEnv = new HashMap<>();
+      localRabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
+      Rabit.init(localRabitEnv);
+      rawBooster = booster.toByteArray();
+      Rabit.shutdown();
+    } catch (XGBoostError xgBoostError) {
+      xgBoostError.printStackTrace();
+    }
+    return rawBooster;
+  }
+
   // ----------------------
   private class XGBoostDriver extends Driver {
     @Override
@@ -519,6 +537,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         // Prepare Rabit
         RabitTracker rt = new RabitTracker(H2O.getCloudSize());
 
+        rt.start(0);
+
           model.model_info()._booster = new XGBoostUpdateTask(
                   model.model_info()._booster,
                   model.model_info(),
@@ -527,11 +547,10 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
                   0,
                   rt.getWorkerEnvs()).doAll(_train).booster();
 
+          rt.waitFor(0);
+
         // train the model
         scoreAndBuildTrees(model, rt);
-
-        // final scoring
-//        doScoring(model, model.model_info()._booster, true);
 
         // save the model to DKV
         model.model_info().nativeToJava();
@@ -651,7 +670,11 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     HashMap<String, DMatrix> watches = new HashMap<>();
     watches.put("train", trainMat);
     try {
+      Map<String, String> localRabitEnv = new HashMap<>();
+      localRabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
+      Rabit.init(localRabitEnv);
       ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, params, 1, watches, null, null);
+      Rabit.shutdown();
       GPUS.add(gpu_id);
       return true;
     } catch (XGBoostError xgBoostError) {

@@ -12,7 +12,8 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
 
     private final XGBoostModelInfo _sharedmodel;
     private final XGBoostOutput _output;
-    private Booster booster;
+    private transient Booster booster;
+    private byte[] rawBooster;
 
     private final XGBoostModel.XGBoostParameters _parms;
     private final int tid;
@@ -28,7 +29,7 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
         this._output = _output;
         this._parms = _parms;
         this.tid = tid;
-        this.booster = booster;
+        this.rawBooster = XGBoost.getRawArray(booster);
         rabitEnv.putAll(workerEnvs);
     }
 
@@ -68,9 +69,8 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
           e.printStackTrace();
         }
 
-        if(booster == null) {
-            HashMap<String, Object> params = XGBoostModel.createParams(_parms, _output);
-
+        HashMap<String, Object> params = XGBoostModel.createParams(_parms, _output);
+        if(rawBooster == null) {
             // DON'T put this before createParams, createPrams calls train() which isn't supposed to be distributed
             // just to check if we have GPU on the machine
             Rabit.init(rabitEnv);
@@ -79,6 +79,13 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
             booster = ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, params, 0, watches, null, null);
         } else {
             Rabit.init(rabitEnv);
+            try {
+                booster = Booster.loadModel(new ByteArrayInputStream(rawBooster));
+                booster.setParams(params);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
             booster.update(trainMat, tid);
         }
 

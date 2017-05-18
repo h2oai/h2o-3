@@ -2,14 +2,18 @@ package hex.tree.xgboost;
 
 import hex.*;
 import hex.genmodel.utils.DistributionFamily;
-import ml.dmlc.xgboost4j.java.*;
+import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
+import ml.dmlc.xgboost4j.java.Rabit;
+import ml.dmlc.xgboost4j.java.XGBoostError;
 import water.*;
 import water.fvec.*;
 import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,7 +23,7 @@ public class XGBoostScore extends MRTask<XGBoostScore> {
     private final XGBoostOutput _output;
     private final XGBoostModel.XGBoostParameters _parms;
 
-    private final Booster booster;
+    private byte[] rawBooster;
     private final Key<Frame> destinationKey;
     private Frame subPredsFrame;
     private Frame subResponsesFrame;
@@ -34,13 +38,14 @@ public class XGBoostScore extends MRTask<XGBoostScore> {
         _sharedmodel = sharedmodel;
         _output = output;
         _parms = parms;
-        this.booster = booster;
+        this.rawBooster = XGBoost.getRawArray(booster);
         this.destinationKey = destinationKey;
     }
 
     @Override
     protected void setupLocal() {
         try {
+            HashMap<String, Object> params = XGBoostModel.createParams(_parms, _output);
             Map<String, String> rabitEnv = new HashMap<>();
             rabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
             Rabit.init(rabitEnv);
@@ -55,6 +60,13 @@ public class XGBoostScore extends MRTask<XGBoostScore> {
                     null,
                     _output._sparse);
 
+            Booster booster = null;
+            try {
+                booster = Booster.loadModel(new ByteArrayInputStream(rawBooster));
+                booster.setParams(params);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             final float[][] preds = booster.predict(data);
             Vec resp = Vec.makeVec(data.getLabel(), Vec.newKey());
             subResponsesFrame = new Frame(Key.<Frame>make(), new Vec[] {resp}, true);
