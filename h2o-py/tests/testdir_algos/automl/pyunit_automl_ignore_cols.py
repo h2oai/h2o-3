@@ -34,23 +34,23 @@ def prostate_automl():
     x = ["AGE","RACE","DPROS"]
     y = "CAPSULE"
     names = train.names
-    aml.train(x=x,y=y, training_frame=train,validation_frame=valid, test_frame=test)
+    aml.train(x=x,y=y, training_frame=train,validation_frame=valid, leaderboard_frame=test)
     models = aml.leaderboard["model_id"]
     pyunit_utils.check_ignore_cols_automl(models,names,x,y)
 
     print("AutoML with x and y as col indexes, train, valid, and test")
-    aml.train(x=[2,3,4],y=1, training_frame=train,validation_frame=valid, test_frame=test)
+    aml.train(x=[2,3,4],y=1, training_frame=train,validation_frame=valid, leaderboard_frame=test)
     models = aml.leaderboard["model_id"]
     pyunit_utils.check_ignore_cols_automl(models,names,x,y)
 
 
     print("AutoML with x as a str list, y as a col index, train, valid, and test")
-    aml.train(x=x,y=1, training_frame=train,validation_frame=valid, test_frame=test)
+    aml.train(x=x,y=1, training_frame=train,validation_frame=valid, leaderboard_frame=test)
     models = aml.leaderboard["model_id"]
     pyunit_utils.check_ignore_cols_automl(models,names,x,y)
 
     print("AutoML with x as col indexes, y as a str, train, valid, and test")
-    aml.train(x=[2,3,4],y=y, training_frame=train,validation_frame=valid, test_frame=test)
+    aml.train(x=[2,3,4],y=y, training_frame=train,validation_frame=valid, leaderboard_frame=test)
     models = aml.leaderboard["model_id"]
     pyunit_utils.check_ignore_cols_automl(models,names,x,y)
 

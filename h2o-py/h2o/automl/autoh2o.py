@@ -70,7 +70,7 @@ class H2OAutoML(object):
         self._leader_id = None
         self._leaderboard = None
 
-    def train(self, x=None, y=None, training_frame=None, validation_frame=None, test_frame=None):
+    def train(self, x=None, y=None, training_frame=None, validation_frame=None, leaderboard_frame=None):
         """
         Begins the automl task, which is a background task that incrementally improves
         over time. At any point, the user may use the "predict"/"performance"
@@ -81,7 +81,7 @@ class H2OAutoML(object):
         :param training_frame: The H2OFrame having the columns indicated by x and y (as well as any
             additional columns specified by fold, offset, and weights).
         :param validation_frame: H2OFrame with validation data to be scored on while training.
-        :param test_frame: H2OFrame with test data to be scored on in the leaderboard.
+        :param leaderboard_frame: H2OFrame with test data to be scored on in the leaderboard.
 
         :returns: An H2OAutoML object.
 
@@ -126,9 +126,9 @@ class H2OAutoML(object):
             assert_is_type(training_frame, H2OFrame)
             input_spec['validation_frame'] = validation_frame.frame_id
 
-        if test_frame is not None:
+        if leaderboard_frame is not None:
             assert_is_type(training_frame, H2OFrame)
-            input_spec['test_frame'] = test_frame.frame_id
+            input_spec['leaderboard_frame'] = leaderboard_frame.frame_id
 
         if x is not None:
             assert_is_type(x,list)

@@ -229,13 +229,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private void handleDatafileParameters(AutoMLBuildSpec buildSpec) {
     this.origTrainingFrame = DKV.getGet(buildSpec.input_spec.training_frame);
     this.validationFrame = DKV.getGet(buildSpec.input_spec.validation_frame);
-    this.testFrame = DKV.getGet(buildSpec.input_spec.test_frame);
+    this.testFrame = DKV.getGet(buildSpec.input_spec.leaderboard_frame);
 
     if (null == buildSpec.input_spec.training_frame && null != buildSpec.input_spec.training_path)
       this.origTrainingFrame = importParseFrame(buildSpec.input_spec.training_path, buildSpec.input_spec.parse_setup);
     if (null == buildSpec.input_spec.validation_frame && null != buildSpec.input_spec.validation_path)
       this.validationFrame = importParseFrame(buildSpec.input_spec.validation_path, buildSpec.input_spec.parse_setup);
-    if (null == buildSpec.input_spec.test_frame && null != buildSpec.input_spec.test_path)
+    if (null == buildSpec.input_spec.leaderboard_frame && null != buildSpec.input_spec.test_path)
       this.testFrame = importParseFrame(buildSpec.input_spec.test_path, buildSpec.input_spec.parse_setup);
 
     if (null == this.origTrainingFrame)
@@ -251,7 +251,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     optionallySplitDatasets();
 
     if (null == this.trainingFrame) {
-      // we didn't need to split off the validation_frame or test_frame ourselves
+      // we didn't need to split off the validation_frame or leaderboard_frame ourselves
       this.trainingFrame = new Frame(origTrainingFrame);
       DKV.put(this.trainingFrame);
     }

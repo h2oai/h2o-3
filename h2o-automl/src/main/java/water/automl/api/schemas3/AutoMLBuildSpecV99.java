@@ -69,11 +69,11 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     public KeyV3.FrameKeyV3 validation_frame;
 
     @API(help = "ID of the test data frame.", direction=API.Direction.INPUT)
-    public KeyV3.FrameKeyV3 test_frame;
+    public KeyV3.FrameKeyV3 leaderboard_frame;
 
     @API(help = "Response column",
          direction=API.Direction.INPUT,
-         is_member_of_frames = {"training_frame", "validation_frame", "test_frame"},
+         is_member_of_frames = {"training_frame", "validation_frame", "leaderboard_frame"},
          is_mutually_exclusive_with = {"ignored_columns"},
          required = false
       )
@@ -81,7 +81,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
 
     @API(help = "Names of columns to ignore for training",
          direction=API.Direction.INPUT,
-         is_member_of_frames = {"training_frame", "validation_frame", "test_frame"},
+         is_member_of_frames = {"training_frame", "validation_frame", "leaderboard_frame"},
          required = false
       )
     public String[] ignored_columns;

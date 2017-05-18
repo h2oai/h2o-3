@@ -12,7 +12,7 @@
 #'        categorical variable).
 #' @param training_frame Training data frame (or ID).
 #' @param validation_frame Validation data frame (or ID); Optional.
-#' @param test_frame Test data frame (or ID).  The Leaderboard will be scored using this test data set. Optional.
+#' @param leaderboard_frame Leaderboard data frame (or ID).  The Leaderboard will be scored using this data set. Optional.
 #' @param build_control List of custom build parameters. Optional. 
 #' @param max_runtime_secs Maximum allowed runtime in seconds for the entire model training process.  Use 0 to disable. Defaults to 600 secs (10 min).
 #' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
@@ -30,7 +30,7 @@
 #' @export
 h2o.automl <- function(x, y, training_frame,
                        validation_frame = NULL,
-                       test_frame = NULL,
+                       leaderboard_frame = NULL,
                        build_control = NULL,
                        max_runtime_secs = 600)
 {
@@ -61,9 +61,9 @@ h2o.automl <- function(x, y, training_frame,
   }
 
   # Test frame must be a key or an H2OFrame object
-  test_frame_id <- NULL
-  if (!is.null(test_frame)) {
-    test_frame_id <- h2o.getId(test_frame)
+  leaderboard_frame_id <- NULL
+  if (!is.null(leaderboard_frame)) {
+    leaderboard_frame_id <- h2o.getId(leaderboard_frame)
   }
 
   # Input/data parameters to send to the AutoML backend
@@ -71,7 +71,7 @@ h2o.automl <- function(x, y, training_frame,
   input_spec$response_column <- ifelse(is.numeric(y),names(training_frame[y]),y)
   input_spec$training_frame <- training_frame_id
   input_spec$validation_frame <- validation_frame_id
-  input_spec$test_frame <- test_frame_id
+  input_spec$leaderboard_frame <- leaderboard_frame_id
 
   # If x is specified, set ignored_columns; otherwise do not send ignored_columns in the POST
   if (!missing(x)) {
