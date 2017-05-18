@@ -1327,32 +1327,4 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return table;
   }
 
-  public static void bulkBuildModels(Job job, ModelBuilder[] modelBuilders, int parallelization) {
-    final int N = modelBuilders.length;
-    H2O.H2OCountedCompleter submodel_tasks[] = new H2O.H2OCountedCompleter[N];
-    int nRunning=0;
-    RuntimeException rt = null;
-    for( int i=0; i<N; ++i ) {
-      if (job.stop_requested() ) break; // Stop launching but still must block for all async jobs
-      modelBuilders[i]._start_time = System.currentTimeMillis();
-      submodel_tasks[i] = H2O.submitTask(modelBuilders[i].trainModelImpl());
-      if(++nRunning == parallelization) { //piece-wise advance in training the models
-        while (nRunning > 0) try {
-          submodel_tasks[i + 1 - nRunning--].join();
-          job.update(1); // One job finished
-        } catch (RuntimeException t) {
-          if (rt == null) rt = t;
-        }
-        if(rt != null) throw rt;
-      }
-    }
-    for( int i=0; i<N; ++i ) //all sub-models must be completed before the main model can be built
-      try {
-        submodel_tasks[i].join();
-      } catch(RuntimeException t){
-        if(rt == null) rt = t;
-      }
-    if(rt != null) throw rt;
-  }
-
 }
