@@ -616,7 +616,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         setCommonModelBuilderParams(glmParameters);
 
     glmParameters._lambda_search = true;
-    glmParameters._family = getResponseColumn().isBinary() ? GLMModel.GLMParameters.Family.binomial :
+    glmParameters._family = getResponseColumn().isBinary() && !(getResponseColumn().isNumeric()) ? GLMModel.GLMParameters.Family.binomial :
             getResponseColumn().isCategorical() ? GLMModel.GLMParameters.Family.multinomial :
                     GLMModel.GLMParameters.Family.gaussian;  // TODO: other continuous distributions!
 
