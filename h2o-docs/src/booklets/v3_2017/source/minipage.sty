@@ -1,0 +1,65 @@
+%%% ====================================================================
+%%%  @LaTeX-style-file{
+%%%     author          = "Mario Wolczko",
+%%%     version         = "2",
+%%%     date            = "21 May 1992",
+%%%     time            = "20:55:01 BST",
+%%%     filename        = "boxedminipage.sty",
+%%%     email           = "mario@acm.org",
+%%%     codetable       = "ISO/ASCII",
+%%%     keywords        = "LaTeX, minipage, framebox",
+%%%     supported       = "no",
+%%%     docstring       = "LaTeX document-style option which defines
+%%%     the boxedminipage environment -- just like minipage, but with
+%%%     a box around it.",
+%%%  }
+%%% ====================================================================
+%
+% This file is in the public domain
+%
+% The thickness of the rules around the box is controlled by
+% \fboxrule, and the distance between the rules and the edges of the
+% inner box is governed by \fboxsep.
+%
+% This code is based on Lamport's minipage code.
+%
+% Fixed, 7 Jun 89 by Jerry Leichter
+%	Leave \fboxsep worth of separation at top and bottom, not just at
+%	the sides!
+%
+\def\boxedminipage{\@ifnextchar [{\@iboxedminipage}{\@iboxedminipage[c]}}
+
+\def\@iboxedminipage[#1]#2{\leavevmode \@pboxswfalse
+  \if #1b\vbox
+    \else \if #1t\vtop
+	     \else \ifmmode \vcenter
+		       \else \@pboxswtrue $\vcenter
+		    \fi
+	  \fi
+  \fi\bgroup % start of outermost vbox/vtop/vcenter
+    \hsize #2
+    \hrule\@height\fboxrule
+    \hbox\bgroup % inner hbox
+      \vrule\@width\fboxrule \hskip\fboxsep \vbox\bgroup % innermost vbox
+	\vskip\fboxsep
+	\advance\hsize -2\fboxrule \advance\hsize-2\fboxsep
+	\textwidth\hsize \columnwidth\hsize
+	\@parboxrestore
+	\def\@mpfn{mpfootnote}\def\thempfn{\thempfootnote}\c@mpfootnote\z@
+	\let\@footnotetext\@mpfootnotetext
+	\let\@listdepth\@mplistdepth \@mplistdepth\z@
+	\@minipagerestore\@minipagetrue
+	\everypar{\global\@minipagefalse\everypar{}}}
+
+\def\endboxedminipage{%
+	\par\vskip-\lastskip
+	\ifvoid\@mpfootins\else
+	  \vskip\skip\@mpfootins\footnoterule\unvbox\@mpfootins\fi
+	\vskip\fboxsep
+      \egroup % ends the innermost \vbox
+      \hskip\fboxsep \vrule\@width\fboxrule
+    \egroup % ends the \hbox
+    \hrule\@height\fboxrule
+  \egroup% ends the vbox/vtop/vcenter
+  \if@pboxsw $\fi}
+
