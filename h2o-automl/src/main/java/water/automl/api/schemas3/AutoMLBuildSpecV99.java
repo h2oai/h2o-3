@@ -53,8 +53,8 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     @API(help = "Path of validation data to import and parse, in any form that H2O accepts, including local files or directories, s3, hdfs, etc.", direction=API.Direction.INPUT)
     public ImportFilesV3 validation_path;
 
-    @API(help = "Path of test data to import and parse, in any form that H2O accepts, including local files or directories, s3, hdfs, etc.", direction=API.Direction.INPUT)
-    public ImportFilesV3 test_path;
+    @API(help = "Path of test data (to create the leaderboard) to import and parse, in any form that H2O accepts, including local files or directories, s3, hdfs, etc.", direction=API.Direction.INPUT)
+    public ImportFilesV3 leaderboard_path;
 
     @API(help = "Used to override default settings for training and test data parsing.", direction=API.Direction.INPUT)
     public ParseSetupV3 parse_setup;
@@ -68,7 +68,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     @API(help = "ID of the validation data frame.", direction=API.Direction.INPUT)
     public KeyV3.FrameKeyV3 validation_frame;
 
-    @API(help = "ID of the test data frame.", direction=API.Direction.INPUT)
+    @API(help = "ID of the leaderboard/test data frame.", direction=API.Direction.INPUT)
     public KeyV3.FrameKeyV3 leaderboard_frame;
 
     @API(help = "Response column",

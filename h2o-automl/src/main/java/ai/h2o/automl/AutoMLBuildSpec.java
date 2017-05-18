@@ -60,7 +60,7 @@ public class AutoMLBuildSpec extends Iced {
   static final public class AutoMLInput extends Iced {
     public ImportFilesV3.ImportFiles training_path;
     public ImportFilesV3.ImportFiles validation_path;
-    public ImportFilesV3.ImportFiles test_path;
+    public ImportFilesV3.ImportFiles leaderboard_path;
 
     public ParseSetup parse_setup;
 
