@@ -19,12 +19,12 @@ public class SVD_MTJ_DenseMatrix implements SVDInterface {
   }
 
   @Override
-  public double[] getSingularValues() {
+  public double[] getVariances() {
     return svd.getS();
   }
 
   @Override
-  public double[][] getRightEigenvectors() {
+  public double[][] getPrincipalComponents() {
     return rightEigenvectors;
   }
 

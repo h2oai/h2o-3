@@ -4,6 +4,7 @@ import hex.util.LinearAlgebraUtils;
 import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.Matrix;
 import no.uib.cipr.matrix.NotConvergedException;
+import no.uib.cipr.matrix.SVD;
 
 /**
  * @author mathemage </ha@h2o.ai>
@@ -20,12 +21,12 @@ public class SVD_MTJ implements SVDInterface {
   }
 
   @Override
-  public double[] getSingularValues() {
+  public double[] getVariances() {
     return svd.getS();
   }
 
   @Override
-  public double[][] getRightEigenvectors() {
+  public double[][] getPrincipalComponents() {
     return rightEigenvectors;
   }
 
@@ -33,7 +34,7 @@ public class SVD_MTJ implements SVDInterface {
     int gramDimension = gramMatrix.numRows();
     try {
       // Note: gramMatrix will be overwritten after this
-      svd = new no.uib.cipr.matrix.SVD(gramDimension, gramDimension).factorize(gramMatrix);
+      svd = SVD.factorize(gramMatrix);
     } catch (NotConvergedException e) {
       throw new RuntimeException(e);
     }

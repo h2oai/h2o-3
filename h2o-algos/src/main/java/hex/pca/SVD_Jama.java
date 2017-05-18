@@ -18,12 +18,12 @@ public class SVD_Jama implements SVDInterface {
   }
 
   @Override
-  public double[] getSingularValues() {
+  public double[] getVariances() {
     return svd.getSingularValues();
   }
 
   @Override
-  public double[][] getRightEigenvectors() {
+  public double[][] getPrincipalComponents() {
     return rightEigenvectors;
   }
 
