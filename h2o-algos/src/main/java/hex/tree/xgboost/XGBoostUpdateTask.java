@@ -10,7 +10,6 @@ import java.util.*;
 
 public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
 
-    private final String taskName;
     private final XGBoostModelInfo _sharedmodel;
     private final XGBoostOutput _output;
     private Booster booster;
@@ -20,13 +19,11 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
 
     private IcedHashMapGeneric.IcedHashMapStringString rabitEnv = new IcedHashMapGeneric.IcedHashMapStringString();
 
-    XGBoostUpdateTask(String taskName,
-                      Booster booster,
+    XGBoostUpdateTask(Booster booster,
                       XGBoostModelInfo inputModel,
                       XGBoostOutput _output,
                       XGBoostModel.XGBoostParameters _parms,
                       int tid, Map<String, String> workerEnvs) {
-        this.taskName = taskName;
         this._sharedmodel = inputModel;
         this._output = _output;
         this._parms = _parms;
@@ -71,10 +68,6 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
           e.printStackTrace();
         }
 
-
-        String boosterModelPath = "/tmp/booster" + taskName + H2O.SELF.index() + "/";
-        String boosterModel = boosterModelPath + taskName;
-
         if(booster == null) {
             HashMap<String, Object> params = XGBoostModel.createParams(_parms, _output);
 
@@ -82,22 +75,12 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
             // just to check if we have GPU on the machine
             Rabit.init(rabitEnv);
             HashMap<String, DMatrix> watches = new HashMap<>();
+            watches.put("train", trainMat);
             booster = ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, params, 0, watches, null, null);
         } else {
             Rabit.init(rabitEnv);
-            booster = Booster.loadModel(boosterModel);
-            BoosterUtils.loadRabitCheckpoint(booster);
             booster.update(trainMat, tid);
-            BoosterUtils.saveRabitCheckpoint(booster);
         }
-
-        File modelFile = new File(boosterModelPath);
-        if(!modelFile.exists()) {
-            modelFile.mkdirs();
-            modelFile.deleteOnExit();
-        }
-
-        booster.saveModel(boosterModel);
 
         Rabit.shutdown();
     }

@@ -519,10 +519,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         // Prepare Rabit
         RabitTracker rt = new RabitTracker(H2O.getCloudSize());
 
-          String taskName = UUID.randomUUID().toString();
-
           model.model_info()._booster = new XGBoostUpdateTask(
-                  taskName,
                   model.model_info()._booster,
                   model.model_info(),
                   model._output,
@@ -531,10 +528,10 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
                   rt.getWorkerEnvs()).doAll(_train).booster();
 
         // train the model
-        scoreAndBuildTrees(model, rt, taskName);
+        scoreAndBuildTrees(model, rt);
 
         // final scoring
-        doScoring(model, model.model_info()._booster, true);
+//        doScoring(model, model.model_info()._booster, true);
 
         // save the model to DKV
         model.model_info().nativeToJava();
@@ -545,7 +542,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       model.unlock(_job);
     }
 
-    protected final void scoreAndBuildTrees(XGBoostModel model, RabitTracker rt, String taskName) throws XGBoostError {
+    protected final void scoreAndBuildTrees(XGBoostModel model, RabitTracker rt) throws XGBoostError {
       boolean scored = false;
       for( int tid=0; tid< _parms._ntrees; tid++) {
           // During first iteration model contains 0 trees, then 1-tree, ...
@@ -561,7 +558,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         rt.start(0);
 
         model.model_info()._booster = new XGBoostUpdateTask(
-                taskName,
                 model.model_info()._booster,
                 model.model_info(),
                 model._output,

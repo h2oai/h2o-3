@@ -2,10 +2,8 @@ package hex.tree.xgboost;
 
 import hex.*;
 import hex.genmodel.utils.DistributionFamily;
-import ml.dmlc.xgboost4j.java.Booster;
+import ml.dmlc.xgboost4j.java.*;
 import ml.dmlc.xgboost4j.java.DMatrix;
-import ml.dmlc.xgboost4j.java.Rabit;
-import ml.dmlc.xgboost4j.java.XGBoostError;
 import water.*;
 import water.fvec.*;
 import water.rapids.Rapids;

@@ -4,7 +4,6 @@ import hex.*;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import ml.dmlc.xgboost4j.java.Booster;
-import ml.dmlc.xgboost4j.java.RabitTracker;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import water.*;
 import water.fvec.Frame;
