@@ -76,7 +76,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   private Frame trainingFrame;   // munged training frame: can add and remove Vecs, but not mutate Vec data in place
   private Frame validationFrame; // optional validation frame; the training_frame is split automagically if it's not specified
-  private Frame testFrame;       // optional test frame used for leaderboard scoring; the validation_frame is split automagically if it's not specified
+  private Frame leaderboardFrame;       // optional test frame used for leaderboard scoring; the validation_frame is split automagically if it's not specified
 
   private Vec responseColumn;
   FrameMetadata frameMetadata;           // metadata for trainingFrame
@@ -143,7 +143,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
 
     userFeedback.info(Stage.Workflow, "Project: " + project());
-    leaderboard = new Leaderboard(project(), userFeedback, this.testFrame);
+    leaderboard = new Leaderboard(project(), userFeedback, this.leaderboardFrame);
 
     /*
     TODO
@@ -176,7 +176,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
    * TODO: should the size of the splits adapt to origTrainingFrame.numRows()?
    */
   private void optionallySplitDatasets() {
-    if (null == this.validationFrame && null == this.testFrame) {
+    if (null == this.validationFrame && null == this.leaderboardFrame) {
       // case 1:
       Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(origTrainingFrame,
               new Key[] { Key.make("training_" + origTrainingFrame._key),
@@ -186,12 +186,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
               buildSpec.build_control.stopping_criteria.seed());
       this.trainingFrame = splits[0];
       this.validationFrame = splits[1];
-      this.testFrame = splits[2];
+      this.leaderboardFrame = splits[2];
       this.didValidationSplit = true;
       this.didTestSplit = true;
       userFeedback.info(Stage.DataImport, "Automatically split the training data into training, validation and test datasets in the ratio 0.70:0.15:0.15");
 
-    } else if (null != this.validationFrame && null == this.testFrame) {
+    } else if (null != this.validationFrame && null == this.leaderboardFrame) {
       // case 2:
       Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(validationFrame,
               new Key[] { Key.make("validation_" + origTrainingFrame._key),
@@ -199,12 +199,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
               new double[] { 0.5, 0.5 },
               buildSpec.build_control.stopping_criteria.seed());
       this.validationFrame = splits[0];
-      this.testFrame = splits[1];
+      this.leaderboardFrame = splits[1];
       this.didValidationSplit = true;
       this.didTestSplit = true;
       userFeedback.info(Stage.DataImport, "Automatically split the validation data into validation and test datasets in the ratio 0.5:0.5");
 
-    } else if (null == this.validationFrame && null != this.testFrame) {
+    } else if (null == this.validationFrame && null != this.leaderboardFrame) {
       // case 3:
       Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(origTrainingFrame,
               new Key[] { Key.make("training_" + origTrainingFrame._key),
@@ -217,7 +217,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       this.didValidationSplit = true;
       this.didTestSplit = false;
       userFeedback.info(Stage.DataImport, "Automatically split the training data into training and validation datasets in the ratio 0.5:0.5");
-    } else if (null != this.validationFrame && null != this.testFrame) {
+    } else if (null != this.validationFrame && null != this.leaderboardFrame) {
       // case 4: leave things as-is
       userFeedback.info(Stage.DataImport, "Training, validation and test datasets were all specified; not auto-splitting.");
     } else {
@@ -229,14 +229,14 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private void handleDatafileParameters(AutoMLBuildSpec buildSpec) {
     this.origTrainingFrame = DKV.getGet(buildSpec.input_spec.training_frame);
     this.validationFrame = DKV.getGet(buildSpec.input_spec.validation_frame);
-    this.testFrame = DKV.getGet(buildSpec.input_spec.leaderboard_frame);
+    this.leaderboardFrame = DKV.getGet(buildSpec.input_spec.leaderboard_frame);
 
     if (null == buildSpec.input_spec.training_frame && null != buildSpec.input_spec.training_path)
       this.origTrainingFrame = importParseFrame(buildSpec.input_spec.training_path, buildSpec.input_spec.parse_setup);
     if (null == buildSpec.input_spec.validation_frame && null != buildSpec.input_spec.validation_path)
       this.validationFrame = importParseFrame(buildSpec.input_spec.validation_path, buildSpec.input_spec.parse_setup);
     if (null == buildSpec.input_spec.leaderboard_frame && null != buildSpec.input_spec.test_path)
-      this.testFrame = importParseFrame(buildSpec.input_spec.test_path, buildSpec.input_spec.parse_setup);
+      this.leaderboardFrame = importParseFrame(buildSpec.input_spec.test_path, buildSpec.input_spec.parse_setup);
 
     if (null == this.origTrainingFrame)
       throw new H2OIllegalArgumentException("No training frame; user specified training_path: " +
