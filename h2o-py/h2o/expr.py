@@ -72,7 +72,7 @@ class ExprNode(object):
 
     # Magical count-of-5:   (get 2 more when looking at it in debug mode)
     #  2 for _get_ast_str frame, 2 for _get_ast_str local dictionary list, 1 for parent
-    MAGIC_REF_COUNT = 4 if sys.gettrace() is None else 6  # M = debug ? 6 : 4
+    MAGIC_REF_COUNT = 3 if sys.gettrace() is None else 5  # M = debug ? 6 : 4
 
     def __init__(self, op="", *args):
         # assert isinstance(op, str), op
@@ -138,23 +138,23 @@ class ExprNode(object):
                     if (top and head == self) or gc_ref_cnt >= ExprNode.MAGIC_REF_COUNT:
                         head._cache._id = _py_tmp_key(append=h2o.connection().session_id)
                         s = "(tmp= {} {}".format(head._cache._id, s)
-                        stack.append('^@^')
-                    stack.append('^@^')
+                        stack.append('@')
+                    stack.append('@')
                     stack.extend(reversed(head._children))
-            elif head == '^@^':
+            elif head == '@':
                 s = ')'
             else:
-                s = ExprNode._arg_to_expr(head)
+                s = ExprNode._primitive_expr_to_string(head)
             # Append
             r.append(s)
 
         return " ".join(r)
 
     @staticmethod
-    def _arg_to_expr(arg):
+    def _primitive_expr_to_string(arg):
         """
         Return string representation of primitive expression.
-        It does not accept instance of Expr!
+        It does not support instance of Expr!
         """
         if arg is None:
             return "[]"  # empty list
