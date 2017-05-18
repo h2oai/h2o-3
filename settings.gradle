@@ -55,9 +55,9 @@ if (System.getProperty("user.name").equals("jenkins")
 
   // Default hadoop build targets
   def allTargets = [
-         "cdh5.2", "cdh5.3", "cdh5.4", "cdh5.5", "cdh5.6", "cdh5.7", "cdh5.8",
-         "hdp2.1", "hdp2.2", "hdp2.3", "hdp2.4", "hdp2.5", "hdp2.6",
-        "mapr4.0", "mapr5.0", "mapr5.1","iop4.2"
+         "cdh5.4", "cdh5.5", "cdh5.6", "cdh5.7", "cdh5.8",
+         "hdp2.2", "hdp2.3", "hdp2.4", "hdp2.5", "hdp2.6",
+         "mapr4.0", "mapr5.0", "mapr5.1","iop4.2"
   ]
   // Compute targets
   def targets = System.getenv("H2O_TARGET") != null ? System.getenv("H2O_TARGET").split(",").collect { it.trim() } : allTargets
@@ -66,7 +66,6 @@ if (System.getProperty("user.name").equals("jenkins")
     targets.each { name ->
       include "h2o-hadoop:h2o-${name}"
       include "h2o-hadoop:h2o-${name}-assembly"
-
     }
   }
 }
