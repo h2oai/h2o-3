@@ -63,9 +63,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return validationFrame;
   }
 
-  public Vec getResponseColumn() {
-    return responseColumn;
-  }
+  public Vec getResponseColumn() { return responseColumn; }
+  public Vec getFoldColumn() { return foldColumn; }
+  public Vec getWeightsColumn() { return weightsColumn; }
 
   public FrameMetadata getFrameMetadata() {
     return frameMetadata;
@@ -76,7 +76,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private Frame testFrame;       // optional test frame used for leaderboard scoring; the validation_frame is split automagically if it's not specified
 
   private Vec responseColumn;
-  FrameMetadata frameMetadata;           // metadata for trainingFrame
+  private Vec foldColumn;
+  private Vec weightsColumn;
+
+  private FrameMetadata frameMetadata;           // metadata for trainingFrame
 
   // TODO: remove dead code
   // TODO: more than one grid key!
@@ -235,13 +238,21 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (null == buildSpec.input_spec.test_frame && null != buildSpec.input_spec.test_path)
       this.testFrame = importParseFrame(buildSpec.input_spec.test_path, buildSpec.input_spec.parse_setup);
 
+    // check training_frame and any columns that were specified:
     if (null == this.origTrainingFrame)
       throw new H2OIllegalArgumentException("No training frame; user specified training_path: " +
               buildSpec.input_spec.training_path +
               " and training_frame: " + buildSpec.input_spec.training_frame);
-
     if (this.origTrainingFrame.find(buildSpec.input_spec.response_column) == -1) {
       throw new H2OIllegalArgumentException("Response column " + buildSpec.input_spec.response_column + "is not in " +
+              "the training frame.");
+    }
+    if (buildSpec.input_spec.fold_column != null && this.origTrainingFrame.find(buildSpec.input_spec.fold_column) == -1) {
+      throw new H2OIllegalArgumentException("Fold column " + buildSpec.input_spec.fold_column + "is not in " +
+              "the training frame.");
+    }
+    if (buildSpec.input_spec.weights_column != null && this.origTrainingFrame.find(buildSpec.input_spec.weights_column) == -1) {
+      throw new H2OIllegalArgumentException("Weights column " + buildSpec.input_spec.weights_column + "is not in " +
               "the training frame.");
     }
 
@@ -254,6 +265,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
 
     this.responseColumn = trainingFrame.vec(buildSpec.input_spec.response_column);
+    this.foldColumn = trainingFrame.vec(buildSpec.input_spec.fold_column);
+    this.weightsColumn = trainingFrame.vec(buildSpec.input_spec.weights_column);
 
     if (verifyImmutability) {
       // check that we haven't messed up the original Frame
@@ -406,22 +419,31 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     // pick up any stragglers:
     if (JobType.HyperparamSearch == subJobType) {
-      Grid grid = (Grid)subJob._result.get();
-      int gridCount = grid.getModelCount();
-      if (gridCount > gridLastCount) {
-        userFeedback.info(Stage.ModelTraining,
-                "Built: " + gridCount + " models for search: " + name);
-        this.addModels(grid.getModelKeys());
-        gridLastCount = gridCount;
+      if (subJob.isCrashed()) {
+        userFeedback.info(stage, name + " failed: " + subJob.ex().toString());
+      } else {
+        Grid grid = (Grid) subJob._result.get();
+        int gridCount = grid.getModelCount();
+        if (gridCount > gridLastCount) {
+          userFeedback.info(Stage.ModelTraining,
+                  "Built: " + gridCount + " models for search: " + name);
+          this.addModels(grid.getModelKeys());
+          gridLastCount = gridCount;
+        }
+        userFeedback.info(stage, name + " complete");
       }
     } else if (JobType.ModelBuild == subJobType) {
-      this.addModel((Model)subJob._result.get());
+      if (subJob.isCrashed()) {
+        userFeedback.info(stage, name + " failed: " + subJob.ex().toString());
+      } else {
+        userFeedback.info(stage, name + " complete");
+        this.addModel((Model) subJob._result.get());
+      }
     }
 
     // add remaining work
     parentJob.update(workContribution - lastWorkedSoFar);
 
-    userFeedback.info(stage, name + " complete");
     try { jobs.remove(subJob); } catch (NullPointerException npe) {} // stop() can null jobs; can't just do a pre-check, because there's a race
 
   }
@@ -545,12 +567,20 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       params._valid = validationFrame._key;
     params._response_column = buildSpec.input_spec.response_column;
     params._ignored_columns = buildSpec.input_spec.ignored_columns;
+    params._seed = buildSpec.build_control.stopping_criteria.seed();
 
     // currently required, for the base_models, for stacking:
     if (! (params instanceof StackedEnsembleModel.StackedEnsembleParameters)) {
-      params._nfolds = 5;
-      params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
       params._keep_cross_validation_predictions = true;
+
+      // TODO: StackedEnsemble doesn't support weights or xval yet in score0
+      params._fold_column = buildSpec.input_spec.fold_column;
+      params._weights_column = buildSpec.input_spec.weights_column;
+
+      if (buildSpec.input_spec.fold_column == null) {
+        params._nfolds = 5;
+        params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+      }
     }
   }
 
