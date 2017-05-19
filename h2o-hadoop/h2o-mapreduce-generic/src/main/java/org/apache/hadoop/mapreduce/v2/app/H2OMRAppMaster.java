@@ -31,12 +31,6 @@ public class H2OMRAppMaster extends MRAppMaster {
     super(applicationAttemptId, containerId, nmHost, nmPort, nmHttpPort, appSubmitTime);
   }
 
-  public H2OMRAppMaster(ApplicationAttemptId applicationAttemptId,
-                        ContainerId containerId, String nmHost, int nmPort, int nmHttpPort,
-                        Clock clock, long appSubmitTime) {
-    super(applicationAttemptId, containerId, nmHost, nmPort, nmHttpPort, clock, appSubmitTime);
-  }
-  
   //
   // This is boot code from org.apache.hadoop.mapreduce.v2.app.MRAppMaster from.
   // See: https://github.com/apache/hadoop/blame/trunk/hadoop-mapreduce-project/hadoop-mapreduce-client/hadoop-mapreduce-client-app/src/main/java/org/apache/hadoop/mapreduce/v2/app/MRAppMaster.java
