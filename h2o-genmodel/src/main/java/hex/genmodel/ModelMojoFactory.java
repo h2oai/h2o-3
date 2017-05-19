@@ -5,7 +5,6 @@ import hex.genmodel.algos.drf.DrfMojoReader;
 import hex.genmodel.algos.gbm.GbmMojoReader;
 import hex.genmodel.algos.glm.GlmMojoReader;
 import hex.genmodel.algos.glrm.GlrmMojoReader;
-import hex.genmodel.algos.klime.KLimeMojoReader;
 import hex.genmodel.algos.kmeans.KMeansMojoReader;
 import hex.genmodel.algos.word2vec.Word2VecMojoReader;
 
@@ -42,9 +41,6 @@ public class ModelMojoFactory {
 
       case "K-means":
         return new KMeansMojoReader();
-
-      case "k-LIME":
-        return new KLimeMojoReader();
 
       default:
         throw new IllegalStateException("Unsupported MOJO algorithm: " + algo);
