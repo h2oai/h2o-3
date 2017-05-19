@@ -72,6 +72,8 @@ public class AutoMLBuildSpec extends Iced {
     public Key<Frame> leaderboard_frame;
 
     public String response_column;
+    public String fold_column;
+    public String weights_column;
     public String[] ignored_columns;
   }
 

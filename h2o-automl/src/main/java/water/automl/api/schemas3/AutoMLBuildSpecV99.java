@@ -72,16 +72,33 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     public KeyV3.FrameKeyV3 leaderboard_frame;
 
     @API(help = "Response column",
-         direction=API.Direction.INPUT,
-         is_member_of_frames = {"training_frame", "validation_frame", "leaderboard_frame"},
-         is_mutually_exclusive_with = {"ignored_columns"},
-         required = false
+            direction=API.Direction.INPUT,
+            is_member_of_frames = {"training_frame", "validation_frame", "leaderboard_frame"},
+            is_mutually_exclusive_with = {"ignored_columns", "fold_column", "weights_column"},
+            required = false
       )
     public FrameV3.ColSpecifierV3 response_column;
+
+    @API(help = "Fold column for cross-validation",
+            direction=API.Direction.INPUT,
+            is_member_of_frames = {"training_frame", "validation_frame", "leaderboard_frame"},
+            is_mutually_exclusive_with = {"ignored_columns", "response_column", "weights_column"},
+            required = false
+    )
+    public FrameV3.ColSpecifierV3 fold_column;
+
+    @API(help = "Weights column, specifying row weights for model training",
+            direction=API.Direction.INPUT,
+            is_member_of_frames = {"training_frame", "validation_frame", "leaderboard_frame"},
+            is_mutually_exclusive_with = {"ignored_columns", "response_column", "fold_column"},
+            required = false
+    )
+    public FrameV3.ColSpecifierV3 weights_column;
 
     @API(help = "Names of columns to ignore for training",
          direction=API.Direction.INPUT,
          is_member_of_frames = {"training_frame", "validation_frame", "leaderboard_frame"},
+         is_mutually_exclusive_with = {"response_column", "fold_column", "weights_column"},
          required = false
       )
     public String[] ignored_columns;
