@@ -60,7 +60,7 @@ public class AutoMLBuildSpec extends Iced {
   static final public class AutoMLInput extends Iced {
     public ImportFilesV3.ImportFiles training_path;
     public ImportFilesV3.ImportFiles validation_path;
-    public ImportFilesV3.ImportFiles test_path;
+    public ImportFilesV3.ImportFiles leaderboard_path;
 
     public ParseSetup parse_setup;
 
@@ -69,7 +69,7 @@ public class AutoMLBuildSpec extends Iced {
 
     public Key<Frame> training_frame;
     public Key<Frame> validation_frame;
-    public Key<Frame> test_frame;
+    public Key<Frame> leaderboard_frame;
 
     public String response_column;
     public String[] ignored_columns;

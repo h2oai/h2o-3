@@ -31,7 +31,7 @@ def prostate_automl():
     test["CAPSULE"] = test["CAPSULE"].asfactor()
 
     print("AutoML (Binomial) run with x not provided with train, valid, and test")
-    aml.train(y="CAPSULE", training_frame=train,validation_frame=valid, test_frame=test)
+    aml.train(y="CAPSULE", training_frame=train,validation_frame=valid, leaderboard_frame=test)
     print(aml.leader)
     print(aml.leaderboard)
     assert set(aml.leaderboard.col_header) == set(["","model_id","auc","logloss"])
