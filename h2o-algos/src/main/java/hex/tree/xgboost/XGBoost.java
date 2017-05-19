@@ -537,7 +537,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         // Prepare Rabit
         RabitTracker rt = new RabitTracker(H2O.getCloudSize());
 
-        rt.start(0);
+        if(H2O.CLOUD.size() > 1) {
+          rt.start(0);
+        }
 
           model.model_info()._booster = new XGBoostUpdateTask(
                   model.model_info()._booster,
@@ -545,9 +547,11 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
                   model._output,
                   _parms,
                   0,
-                  rt.getWorkerEnvs()).doAll(_train).booster();
+                  getWorkerEnvs(rt)).doAll(_train).booster();
 
-        rt.waitFor(0);
+        if(H2O.CLOUD.size() > 1) {
+          rt.waitFor(0);
+        }
 
         // train the model
         scoreAndBuildTrees(model, rt);
@@ -574,7 +578,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
         Timer kb_timer = new Timer();
 
-        rt.start(0);
+        if(H2O.CLOUD.size() > 1) {
+          rt.start(0);
+        }
 
         model.model_info()._booster = new XGBoostUpdateTask(
                 model.model_info()._booster,
@@ -582,9 +588,12 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
                 model._output,
                 _parms,
                 tid,
-                rt.getWorkerEnvs()).doAll(_train).booster();
+                getWorkerEnvs(rt)).doAll(_train).booster();
 
-        rt.waitFor(0);
+
+        if(H2O.CLOUD.size() > 1) {
+          rt.waitFor(0);
+        }
 
         Log.info((tid + 1) + ". tree was built in " + kb_timer.toString());
         _job.update(1);
@@ -603,6 +612,14 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         }
       }
       doScoring(model, model.model_info()._booster, true);
+    }
+
+    private Map<String, String> getWorkerEnvs(RabitTracker rt) {
+      if(H2O.CLOUD.size() > 1) {
+        return rt.getWorkerEnvs();
+      } else {
+        return new HashMap<>();
+      }
     }
 
     long _firstScore = 0;
