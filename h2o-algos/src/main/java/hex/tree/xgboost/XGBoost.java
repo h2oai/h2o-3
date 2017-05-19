@@ -547,7 +547,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
                   0,
                   rt.getWorkerEnvs()).doAll(_train).booster();
 
-          rt.waitFor(0);
+        rt.waitFor(0);
 
         // train the model
         scoreAndBuildTrees(model, rt);

@@ -44,8 +44,14 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
     }
 
     private void update() throws XGBoostError {
+        HashMap<String, Object> params = XGBoostModel.createParams(_parms, _output);
+
         rabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
         String[] featureMap = new String[]{""};
+
+        // DON'T put this before createParams, createPrams calls train() which isn't supposed to be distributed
+        // just to check if we have GPU on the machine
+        Rabit.init(rabitEnv);
 
         DMatrix trainMat = XGBoost.convertFrametoDMatrix(
                 _sharedmodel._dataInfoKey,
@@ -69,16 +75,11 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
           e.printStackTrace();
         }
 
-        HashMap<String, Object> params = XGBoostModel.createParams(_parms, _output);
         if(rawBooster == null) {
-            // DON'T put this before createParams, createPrams calls train() which isn't supposed to be distributed
-            // just to check if we have GPU on the machine
-            Rabit.init(rabitEnv);
             HashMap<String, DMatrix> watches = new HashMap<>();
             watches.put("train", trainMat);
             booster = ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, params, 0, watches, null, null);
         } else {
-            Rabit.init(rabitEnv);
             try {
                 booster = Booster.loadModel(new ByteArrayInputStream(rawBooster));
                 booster.setParams(params);

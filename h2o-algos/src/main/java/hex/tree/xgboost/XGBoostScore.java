@@ -60,6 +60,10 @@ public class XGBoostScore extends MRTask<XGBoostScore> {
                     null,
                     _output._sparse);
 
+            if(data.rowNum() == 0) {
+                return;
+            }
+
             Booster booster = null;
             try {
                 booster = Booster.loadModel(new ByteArrayInputStream(rawBooster));
@@ -147,6 +151,16 @@ public class XGBoostScore extends MRTask<XGBoostScore> {
 
     @Override
     public void reduce(XGBoostScore other) {
+        if(subPredsFrame == null && other.subPredsFrame != null) {
+            subPredsFrame = other.subPredsFrame;
+            subResponsesFrame = other.subResponsesFrame;
+            return;
+        }
+
+        if(other.subPredsFrame == null) {
+            return;
+        }
+
         // todo for some reason the domains in the other vector are going AWOL?!
         for(int i = 0; i < subPredsFrame.numCols(); i++) {
             Vec vec = subPredsFrame.vec(i);
