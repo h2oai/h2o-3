@@ -9,8 +9,6 @@ import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 
-import java.util.Arrays;
-
 import static org.junit.Assert.*;
 
 public class KLimeTest extends TestUtil {
@@ -23,7 +21,6 @@ public class KLimeTest extends TestUtil {
     Scope.enter();
     try {
       Frame fr = loadTitanicData();
-      Frame expected = Scope.track(parse_test_file("smalldata/klime_test/titanic_default_expected.csv"));
 
       KLimeModel.KLimeParameters p = new KLimeModel.KLimeParameters();
       p._seed = 12345;
@@ -39,10 +36,18 @@ public class KLimeTest extends TestUtil {
               new String[]{"predict_klime", "cluster_klime", "rc_Pclass", "rc_Sex", "rc_Age", "rc_SibSp", "rc_Parch"},
               scored._names
       );
-      // check predicted_klime is correct
-      assertVecEquals(expected.vec(0), scored.vec(0), 0.11); // FIXME: precision fixed to make the failing test pass
 
-      // check the reason codes
+      double[][] actualCenters = klm._output._clustering._output._centers_std_raw;
+      double[][] expectedCenters = new double[][]{
+              {2.0, 1.0, 0.1735, -0.2466, -0.4059},
+              {2.0, 0.0, -0.5876, 0.1605, 1.711},
+              {2.0, 1.0, -1.0921, 3.5446, 1.5566}
+      };
+
+      for (int i = 0; i < expectedCenters.length; i++)
+        assertArrayEquals("Center matches for cluster" + i, expectedCenters[i], actualCenters[i], 0.001);
+
+      // check that prediction can be calculated from reason codes + intercept
       for (long i = 0; i < scored.numRows(); i++) {
         int cluster = (int) scored.vec(1).at8(i);
         GLMModel m = klm._output.getClusterModel(cluster);
@@ -55,7 +60,7 @@ public class KLimeTest extends TestUtil {
 
       assertTrue(klm._output._training_metrics instanceof KLimeModel.ModelMetricsKLime);
       KLimeModel.ModelMetricsKLime tm = (KLimeModel.ModelMetricsKLime) klm._output._training_metrics;
-      assertArrayEquals(new boolean[]{false, true, true}, tm._usesGlobalModel);
+      assertArrayEquals(new boolean[]{false, false, false}, tm._usesGlobalModel);
       assertEquals(3, tm._clusterMetrics.length);
     } finally {
       Scope.exit();
