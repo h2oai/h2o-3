@@ -419,69 +419,72 @@ final public class H2O {
     for (AbstractH2OExtension e : H2O.getExtensions()) {
       args = e.parseArguments(args);
     }
+    parseH2OArgumentsTo(args, ARGS);
+  }
 
+  static OptArgs parseH2OArgumentsTo(String[] args, OptArgs trgt) {
     for (int i = 0; i < args.length; i++) {
       OptString s = new OptString(args[i]);
       if (s.matches("h") || s.matches("help")) {
-        ARGS.help = true;
+        trgt.help = true;
       }
       else if (s.matches("version")) {
-        ARGS.version = true;
+        trgt.version = true;
       }
       else if (s.matches("name")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.name = args[i];
+        trgt.name = args[i];
       }
       else if (s.matches("flatfile")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.flatfile = args[i];
+        trgt.flatfile = args[i];
       }
       else if (s.matches("port")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.port = s.parseInt(args[i]);
+        trgt.port = s.parseInt(args[i]);
       }
       else if (s.matches("baseport")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.baseport = s.parseInt(args[i]);
+        trgt.baseport = s.parseInt(args[i]);
       }
       else if (s.matches("ip")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.ip = args[i];
+        trgt.ip = args[i];
       }
       else if (s.matches("web_ip")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.web_ip = args[i];
+        trgt.web_ip = args[i];
       }
       else if (s.matches("network")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.network = args[i];
+        trgt.network = args[i];
       }
       else if (s.matches("client")) {
-        ARGS.client = true;
+        trgt.client = true;
       }
       else if (s.matches("user_name")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.user_name = args[i];
+        trgt.user_name = args[i];
       }
       else if (s.matches("ice_root")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.ice_root = args[i];
+        trgt.ice_root = args[i];
       }
       else if (s.matches("log_dir")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.log_dir = args[i];
+        trgt.log_dir = args[i];
       }
       else if (s.matches("flow_dir")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.flow_dir = args[i];
+        trgt.flow_dir = args[i];
       }
       else if (s.matches("disable_web")) {
-        ARGS.disable_web = true;
+        trgt.disable_web = true;
       }
       else if (s.matches("context_path")) {
         i = s.incrementAndCheck(i, args);
         String value = args[i];
-        ARGS.context_path = value.startsWith("/")
+        trgt.context_path = value.startsWith("/")
                             ? value.trim().length() == 1
                               ? "" : value
                             : "/" + value;
@@ -492,91 +495,92 @@ final public class H2O {
         if (nthreads >= 1) { //otherwise keep default (all cores)
           if (nthreads > Short.MAX_VALUE)
             throw H2O.unimpl("Can't handle more than " + Short.MAX_VALUE + " threads.");
-          ARGS.nthreads = (short) nthreads;
+          trgt.nthreads = (short) nthreads;
         }
       }
       else if (s.matches("hdfs_config")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.hdfs_config = args[i];
+        trgt.hdfs_config = args[i];
       }
       else if (s.matches("hdfs_skip")) {
-        ARGS.hdfs_skip = true;
+        trgt.hdfs_skip = true;
       }
       else if (s.matches("aws_credentials")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.aws_credentials = args[i];
+        trgt.aws_credentials = args[i];
       }
       else if (s.matches("ga_hadoop_ver")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.ga_hadoop_ver = args[i];
+        trgt.ga_hadoop_ver = args[i];
       }
       else if (s.matches("ga_opt_out")) {
         // JUnits pass this as a system property, but it usually a flag without an arg
         if (i+1 < args.length && args[i+1].equals("yes")) i++;
-        ARGS.ga_opt_out = true;
+        trgt.ga_opt_out = true;
       }
       else if (s.matches("log_level")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.log_level = args[i];
+        trgt.log_level = args[i];
       }
       else if (s.matches("random_udp_drop")) {
-        ARGS.random_udp_drop = true;
+        trgt.random_udp_drop = true;
       }
       else if (s.matches("md5skip")) {
-        ARGS.md5skip = true;
+        trgt.md5skip = true;
       }
       else if (s.matches("quiet")) {
-        ARGS.quiet = true;
+        trgt.quiet = true;
       }
       else if(s.matches("useUDP")) {
-        ARGS.useUDP = true;
+        trgt.useUDP = true;
       }
       else if(s.matches("cleaner")) {
-        ARGS.cleaner = true;
+        trgt.cleaner = true;
       }
       else if (s.matches("jks")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.jks = args[i];
+        trgt.jks = args[i];
       }
       else if (s.matches("jks_pass")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.jks_pass = args[i];
+        trgt.jks_pass = args[i];
       }
       else if (s.matches("hash_login")) {
-        ARGS.hash_login = true;
+        trgt.hash_login = true;
       }
       else if (s.matches("ldap_login")) {
-        ARGS.ldap_login = true;
+        trgt.ldap_login = true;
       }
       else if (s.matches("kerberos_login")) {
-        ARGS.kerberos_login = true;
+        trgt.kerberos_login = true;
       }
       else if (s.matches("pam_login")) {
-        ARGS.pam_login = true;
+        trgt.pam_login = true;
       }
       else if (s.matches("login_conf")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.login_conf = args[i];
+        trgt.login_conf = args[i];
       }
       else if (s.matches("form_auth")) {
-        ARGS.form_auth = true;
+        trgt.form_auth = true;
       }
       else if (s.matches("session_timeout")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.session_timeout_spec = args[i];
-        try { ARGS.session_timeout = Integer.parseInt(args[i]); } catch (Exception e) { /* ignored */ }
+        trgt.session_timeout_spec = args[i];
+        try { trgt.session_timeout = Integer.parseInt(args[i]); } catch (Exception e) { /* ignored */ }
       }
       else if (s.matches("internal_security_conf")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.internal_security_conf = args[i];
+        trgt.internal_security_conf = args[i];
       }
       else if (s.matches("no_latest_check")) {
-        ARGS.noLatestCheck = true;
+        trgt.noLatestCheck = true;
       }
       else {
         parseFailed("Unknown argument (" + s + ")");
       }
     }
+    return trgt;
   }
 
   private static void validateArguments() {

@@ -13,11 +13,8 @@ public class ProxyStarter {
   public static String start(String[] args, JettyProxy.Credentials credentials, String proxyTo) {
     if (! proxyTo.endsWith("/"))
       proxyTo = proxyTo + "/";
-    // Note: this is UGLY!!!
-    // We populate H2O.ARGS because they are accessed in NetworkInit.findInetAddressForSelf()
-    // FIXME: Refactor NetworkInit.findInetAddressForSelf() to work without H2O.ARGS
-    H2O.parseArguments(args);
-    H2O.BaseArgs baseArgs = H2O.ARGS;
+
+    H2O.BaseArgs baseArgs = H2O.parseH2OArgumentsTo(args, new H2O.OptArgs());
 
     JettyProxy proxy = initializeProxy(baseArgs, credentials, proxyTo);
 
