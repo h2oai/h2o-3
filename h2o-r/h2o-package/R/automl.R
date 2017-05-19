@@ -1,38 +1,50 @@
-#' Automatic Machine Learning
+#' AutoML: Automatic Machine Learning
 #'
 #' The Automatic Machine Learning (AutoML) function automates the supervised machine learning model training process.
 #' The current version of AutoML trains and cross-validates a Random Forest, an Extremely-Randomized Forest,
-#' a random grid of Gradient Boosting Machines (GBMs), a random grid of Deep Neural Nets,
+#' a random grid of Gradient Boosting Machines (GBMs), a random grid of Deep Neural Nets, 
 #' and a Stacked Ensemble of all the models.
 #'
 #' @param x A vector containing the names or indices of the predictor variables to use in building the model.
-#'        If x is missing, then all columns except y are used.
-#' @param y The name of the response variable in the model. If the data does not contain a header, this is the column index
-#'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
-#'        categorical variable).
+#'        If x is missing, then all columns (except y) are used.
+#' @param y The name or index of the response variable in the model. For classification, the y column must be a factor, otherwise regression will be performed. Indexes are 1-based in R.
 #' @param training_frame Training data frame (or ID).
 #' @param validation_frame Validation data frame (or ID); Optional.
 #' @param leaderboard_frame Leaderboard data frame (or ID).  The Leaderboard will be scored using this data set. Optional.
-#' @param build_control List of custom build parameters. Optional. 
 #' @param max_runtime_secs Maximum allowed runtime in seconds for the entire model training process.  Use 0 to disable. Defaults to 600 secs (10 min).
+#' @param max_models Maximum number of models to build in the AutoML process (does not include Stacked Ensembles). Defaults to NULL.
+#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression) Must be one of: "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error". Defaults to AUTO.
+#' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much) Defaults to 0.
+#' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 5 and must be an integer.
+#' @param seed Integer. Set a seed for reproducibility. AutoML can only guarantee reproducibility if max_models or early stopping is used because max_runtime_secs is resource limited, meaning that if the resources are not the same between runs, AutoML may be able to train more models on one run vs another.
 #' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
 #'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.  Note that
-#'          Stacked Ensemble will be trained for regression and binary classification problems since multiclass stacking is not yet supported.
-#' @return An \linkS4class{H2OAutoML} object.
+#'          Stacked Ensemble will be trained for regression and binary classification problems since multiclass stacking is not yet supported (currently in development).
+#' @return An \linkS4class{H2OAutoML} object, which contains a Leaderboard of models.
 #' @examples
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
+#' 
 #' votes_path <- system.file("extdata", "housevotes.csv", package="h2o")
 #' votes_hf <- h2o.uploadFile(path = votes_path, header = TRUE)
+#' 
 #' aml <- h2o.automl(y = "Class", training_frame = votes_hf, max_runtime_secs = 30)
+#' lb <- aml@leaderboard
+#' lb
 #' }
 #' @export
 h2o.automl <- function(x, y, training_frame,
                        validation_frame = NULL,
                        leaderboard_frame = NULL,
-                       build_control = NULL,
-                       max_runtime_secs = 600)
+                       max_runtime_secs = 600,
+                       max_models = NULL,
+                       stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE",
+                                           "RMSLE", "AUC", "lift_top_group", "misclassification",
+                                           "mean_per_class_error"),
+                       stopping_tolerance = 0,
+                       stopping_rounds = 5,
+                       seed = NULL)
 {
 
   tryCatch({
@@ -84,9 +96,19 @@ h2o.automl <- function(x, y, training_frame,
     } # else: length(ignored_columns) == 0; don't send ignored_columns
   }
   
-  # Update build_control list with top level args
-  build_control$stopping_criteria$max_runtime_secs <- max_runtime_secs
-
+  # Update build_control list with top level build control args
+  build_control <- list(stopping_criteria = list(max_runtime_secs = max_runtime_secs))
+  if (!is.null(max_models)) {
+    build_control$stopping_criteria$max_models <- max_models
+  }
+  # Early stopping is currently broken, so uncomment for now
+  #build_control$stopping_criteria$stopping_metric <- match.arg(stopping_metric)
+  #build_control$stopping_criteria$stopping_tolerance <- stopping_tolerance
+  #build_control$stopping_criteria$stopping_rounds <- stopping_rounds
+  if (!is.null(seed)) {
+    build_control$seed <- seed
+  }
+  
   # Create the parameter list to POST to the AutoMLBuilder 
   params <- list(input_spec = input_spec, build_control = build_control)
 
