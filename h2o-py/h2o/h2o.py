@@ -962,7 +962,7 @@ def load_model(path):
     :returns: an :class:`H2OEstimator` object
 
     :examples:
-        >>> path = h2o.save_mode(my_model, dir=my_path)
+        >>> path = h2o.save_model(my_model, dir=my_path)
         >>> h2o.load_model(path)
     """
     assert_is_type(path, str)

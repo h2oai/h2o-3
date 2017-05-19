@@ -18,7 +18,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
 
   protected M _model;
 
-  private MojoReaderBackend _reader;
+  protected MojoReaderBackend _reader;
   private Map<String, Object> _lkv;
 
 

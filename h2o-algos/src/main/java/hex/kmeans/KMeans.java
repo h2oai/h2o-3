@@ -31,7 +31,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ ModelCategory.Clustering }; }
 
   @Override public boolean havePojo() { return true; }
-  @Override public boolean haveMojo() { return false; }
+  @Override public boolean haveMojo() { return true; }
 
   public enum Initialization { Random, PlusPlus, Furthest, User }
   /** Start the KMeans training Job on an F/J thread. */

@@ -2,6 +2,10 @@
 \input{common/conf_top_print.tex}  %settings for printed booklets - comment out by default, uncomment for print and comment out line above. don't save this change! "conf_top" should be default
 
 \input{common/conf_titles.tex}
+
+\usepackage{url}
+\def\UrlBreaks{\do\/\do-\do_}
+
 \begin{document}
 
 \input{common/conf_listings.tex} %see note for `conf_top_print.tex` above
@@ -17,18 +21,16 @@
 \bigskip
 \line(1,0){250}  %inserts  horizontal line
 
-\textsc{\small {Spencer Aiello \hspace{10pt} Eric Eckstrand \hspace{10pt} Anqi Fu}}
+\textsc{\small {Mark Landry}}
 
-\textsc{\small {Mark Landry \hspace{10pt}  Patrick Aboyoun}}
-
-\textsc{\small {Edited by: Jessica Lanford}}
+\textsc{\small {Edited by: Angela Bartz}}
 
 \line(1,0){250}  %inserts  horizontal line
 
 {\url{http://h2o.ai/resources/}}
 
 \bigskip
-\monthname \hspace{1pt}  \the\year: Sixth Edition
+\monthname \hspace{1pt}  \the\year: Seventh Edition
 
 \bigskip
 \end{center}
@@ -51,8 +53,10 @@
 
 Machine Learning with R and H2O\\
 
-  by Spencer Aiello, Eric Eckstrand, \\Anqi Fu, Mark Landry,  \\ \&\ Patrick Aboyoun\\
-Edited by: Jessica Lanford
+  by Mark Landry\\
+  with assistance from Spencer Aiello, \\ 
+  Eric Eckstrand, Anqi Fu, \&\ Patrick Aboyoun\\
+Edited by: Angela Bartz
 
 \bigskip
 Published by H2O.ai, Inc. \\
@@ -62,7 +66,7 @@ Mountain View, CA 94043\\
 \textcopyright \the\year \hspace{1pt} H2O.ai, Inc. All Rights Reserved.
 \bigskip
 
-\monthname \hspace{1pt}  \the\year: Sixth Edition
+\monthname \hspace{1pt}  \the\year: Seventh Edition
 \bigskip
 
 Photos by \textcopyright H2O.ai, Inc.
@@ -230,12 +234,8 @@ For best performance, the allocated memory should be 4x the size of your data, b
 
 H2O checks the Java version and suggests an upgrade if you are running 32-bit Java. On 64-bit Java, the heap size is 1/4 of the total memory available on the machine.
 
-\begin{minipage}{\textwidth}
-
 To launch H2O locally from R, run the following in R:
 
-\medskip
-\waterExampleInR
 \lstinputlisting[style=R]{R_Vignette_code_examples/r_start_local.R}
 
 After successfully launching, R displays output similar to the following example:
@@ -251,7 +251,6 @@ R is connected to H2O cluster:
    H2O cluster allowed cores:  8
    H2O cluster healthy:        TRUE
 \end{lstlisting}
-\end{minipage}
 
 
 To launch H2O locally with default initialization arguments, use the following:
@@ -299,18 +298,25 @@ hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName
 \begin{itemize}
      \item \texttt{cdh5.2}
      \item \texttt{cdh5.3}
-     \item \texttt{cdh5.4.2}
+     \item \texttt{cdh5.4}
+     \item \texttt{cdh5.5}
+     \item \texttt{cdh5.6}
+     \item \texttt{cdh5.7}
+     \item \texttt{cdh5.8}
   \end{itemize} &
 
 \begin{itemize}
   \item \texttt{hdp2.1}
   \item  \texttt{hdp2.2}
   \item  \texttt{hdp2.3}
+  \item  \texttt{hdp2.4}
+  \item  \texttt{hdp2.5}
 \end{itemize} &
 
 \begin{itemize}
-  \item  \texttt{mapr4.0.1}
+  \item  \texttt{mapr4.0}
   \item  \texttt{mapr5.0}
+  \item  \texttt{mapr5.1}
 \end{itemize}\\
 
 \end{tabular}
@@ -392,6 +398,7 @@ The following section contains information about data preparation (also known as
 %To apply a user-specified function to each subset of an H2O dataset and combine the results, use {\texttt{ddply()}}, with the name of the H2O object, the variable name, and the function in the parentheses.
 %\lstinputlisting[style=R]{R_Vignette_code_examples/r_ddply.R}
 
+\newpage
 \section{Models}
 %TODO: Another candidate for "common"
 
@@ -405,20 +412,22 @@ H2O supports the following models:
 
 \begin{frame}%no line table for list of 6+ items
 
-\begin{tabular}{p{5.4cm}p{5.4cm}}
+\begin{tabular}{p{5.0cm}p{6.0cm}}
 
 \begin{itemize}
- \item Deep Learning
+  \item Deep Learning
   \item Na\"{i}ve Bayes
   \item Principal Components Analysis (PCA)
   \item K-means
+  \item Stacked Ensembles
 \end{itemize} &
 
 \begin{itemize}
-     \item Generalized Linear Models (GLM)
-     \item Gradient Boosted Regression (GBM)
-%  \item Generalized Low Rank Model (GLRM) Supported?
+  \item Generalized Linear Models (GLM) 
+  \item Gradient Boosting Machine (GBM)
+  \item Generalized Low Rank Model (GLRM)
   \item Distributed Random Forest (DRF)
+  \item Word2vec
 \end{itemize}
 
 \end{tabular}
@@ -441,11 +450,17 @@ The list is growing quickly, so check \url{www.h2o.ai} to see the latest additio
 
 {\textbf{Na\"{i}ve Bayes}}: Generates a probabilistic classifier that assumes the value of a particular feature is unrelated to the presence or absence of any other feature, given the class variable. It is often used in text categorization.
 
+{\textbf{Stacked Ensembles}}: Using multiple models built from different algorithms, Stacked Ensembles finds the optimal combination of a collection of prediction algorithms using a process known as "stacking."
+
 \subsection{Unsupervised Learning}
 
 {\textbf{K-means}}: Reveals groups or clusters of data points for segmentation. It clusters observations into $k$-number of points with the nearest mean.
 
 {\textbf{Anomaly Detection}}: Identifies the outliers in your data by invoking the deep learning autoencoder, a powerful pattern recognition model.
+
+\subsection{Miscellaneous}
+{\textbf{Word2vec}}: Takes a text corpus as an input and produces the word vectors as output. The result is an H2O Word2vec model that can be exported as a binary model or as a MOJO.
+
 
 \subsection{Modeling Constructs}
 
@@ -468,12 +483,10 @@ The following demo demonstrates how to:
 \item Display the results
 \end{enumerate}
 
-
-\waterExampleInR
-\medskip
-
+\newpage
 \lstinputlisting[style=R]{R_Vignette_code_examples/r_glm_demo.R}
 
+\newpage
 \section{Data Manipulation in R}
 
 The following section describes some common R commands. For a complete command list, including parameters, refer to {\url{http://h2o-release.s3.amazonaws.com/h2o/latest_stable_Rdoc.html}}.
@@ -1313,35 +1326,8 @@ of Hit Ratio tables are returned, where the names are {\texttt{train}}, {\texttt
 
 
 
-\newpage
-
-\newpage
-
-\section{Authors}
-
-\textbf{Spencer Aiello}
-
-Spencer comes from an unconventional background. After studying Physics and Math as an undergraduate at UCSC, he came to San Francisco to continue his education, earning his MS in Analytics from USF.  Spencer has worked on a number of projects related to analytics in R, Python, Java, and SQL. At H2O, he works primarily on the R front-end and the backend Java R-interpreter.
-
-\textbf{Eric Eckstrand}
-
-Eric is a Quality and Performance Hacker at H2O.ai. Eric has formal education in computer science and systems engineering. Prior to joining H2O, Eric was a submariner in the US Navy. His roles included Reactor Controls Assistant and Communications Officer (USS Pittsburgh SSN-720) and Submarine Operations Officer (Destroyer Squadron One).
-
-\textbf{Anqi Fu}
-
-Anqi is a data hacker at H2O.ai. After completing her undergraduate at University of Maryland: College Park, she attended Stanford University. While there she earned her master`s degree in Economics, and a second master‚Äôs degree in Statistics. Her interests include machine learning and optimization.
-
-\textbf{Mark Landry}
-
-Mark Landry is a competition data scientist and product manager at H2O. He enjoys testing ideas in Kaggle competitions, where he is ranked in the top 100 in the world (top 0.03$\%$) and well-trained in getting quick solutions to iterate over. Interests are multi-model architectures and helping the world make fewer models that perform worse than the mean.
-
-\textbf{Patrick Aboyoun}
-
-Patrick is a former math and data hacker at H2O.ai who has made a career out of creating and delivering software and training for data scientists, particularly those who love R.  Patrick received an M.S. in Statistics from the University of Washington and a B.S. in Statistics from Carnegie Mellon University.
-
-\textbf{Jessica Lanford}
-
-Jessica is a word hacker and seasoned technical communicator at H2O.ai. She brings our product to life by documenting the many features and functionality of H2O. Having worked for some of the top companies in technology including Dell, AT$\&$T, and Lam Research, she is an expert at translating complex ideas to digestible articles.
+\section{Acknowledgments}
+We would like to acknowledge the following individuals for their contributions to this booklet: Spencer Aiello, Eric Eckstrand, Anqi Fu, Patrick Aboyoun, and Jessica Lanford.
 
 
 \newpage
@@ -1390,5 +1376,18 @@ Jessica is a word hacker and seasoned technical communicator at H2O.ai. She brin
 \bibentry{h2o_R_package}
 
 \medskip
+
+\section{Authors}
+
+\textbf{Mark Landry}
+
+Mark Landry is a competition data scientist and product manager at H2O. He enjoys testing ideas in Kaggle competitions, where he is ranked in the top 100 in the world (top 0.03$\%$) and well-trained in getting quick solutions to iterate over. Interests are multi-model architectures and helping the world make fewer models that perform worse than the mean.
+
+\textbf{Angela Bartz}
+
+Angela is the doc whisperer at H2O.ai. With extensive experience in technical communication, she brings our products to life by documenting the many features and functionality of H2O. Having worked for companies both large and small, she is an expert at understanding her audience and translating complex ideas to user-friendly content. 
+
+
+
 
 \end{document}

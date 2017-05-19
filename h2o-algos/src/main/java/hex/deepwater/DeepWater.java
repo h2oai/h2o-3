@@ -37,7 +37,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
   public DeepWater(boolean startup_once ) { super(new DeepWaterParameters(),startup_once); }
 
   /** Check whether we have any Deep Water native backends available */
-  static boolean haveBackend() {
+  public static boolean haveBackend() {
     for (DeepWaterParameters.Backend b : DeepWaterParameters.Backend.values()) {
       if (DeepwaterMojoModel.createDeepWaterBackend(b.toString()) != null) return true;
     }

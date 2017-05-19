@@ -9,6 +9,8 @@ import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.deepwater.caffe.DeepwaterCaffeBackend;
 
+import java.io.File;
+
 public class DeepwaterMojoModel extends MojoModel {
   public String _problem_type;
   public int _mini_batch_size;
@@ -81,10 +83,16 @@ public class DeepwaterMojoModel extends MojoModel {
 
   static public BackendTrain createDeepWaterBackend(String backend) {
     try {
-//      if (backend.equals("caffe"))      return new DeepwaterCaffeBackend();
-      if (backend.equals("mxnet"))      backend="deepwater.backends.mxnet.MXNetBackend";
-      if (backend.equals("tensorflow")) backend="deepwater.backends.tensorflow.TensorflowBackend";
-//      if (backend.equals("xgrpc"))      backend="deepwater.backends.grpc.XGRPCBackendTrain";
+      // For Caffe, only instantiate if installed at the right place
+      File f = new File(DeepwaterCaffeBackend.CAFFE_H2O_DIR);
+      if (backend.equals("caffe") && f.exists() && f.isDirectory())
+        return new DeepwaterCaffeBackend();
+      if (backend.equals("mxnet"))
+        backend="deepwater.backends.mxnet.MXNetBackend";
+      else if (backend.equals("tensorflow"))
+        backend="deepwater.backends.tensorflow.TensorflowBackend";
+//      else if (backend.equals("xgrpc"))
+//        backend="deepwater.backends.grpc.XGRPCBackendTrain";
       return (BackendTrain)(Class.forName(backend).newInstance());
     } catch (Exception ignored) {
       //ignored.printStackTrace();

@@ -36,5 +36,13 @@ public abstract class SharedTreeMojoReader<M extends SharedTreeMojoModel> extend
           _model._compressed_trees_aux[_model.treeIndex(j, i)] = readblob(String.format("trees/t%02d_%03d_aux.bin", i, j));
         }
       }
+
+    // Calibration
+    String calibMethod = readkv("calib_method");
+    if (calibMethod != null) {
+      if (! "platt".equals(calibMethod))
+        throw new IllegalStateException("Unknown calibration method: " + calibMethod);
+      _model._calib_glm_beta = readkv("calib_glm_beta", new double[0]);
+    }
   }
 }

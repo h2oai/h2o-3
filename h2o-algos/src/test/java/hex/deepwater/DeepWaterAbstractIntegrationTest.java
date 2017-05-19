@@ -810,9 +810,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
         p._train = tr._key;
         p._valid = va._key;
         p._learning_rate = 5e-3;
-        if(getBackend() != DeepWaterParameters.Backend.tensorflow) {
-          p._hidden = new int[]{500, 500};
-        }
+        p._hidden = new int[]{500, 500};
         p._sparse = true;
         DeepWater j = new DeepWater(p);
         m = j.trainModel().get();
@@ -848,11 +846,9 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
         DKV.put(va);
 
         p._backend = getBackend();
-        if(getBackend() != DeepWaterParameters.Backend.tensorflow) {
-          p._hidden = new int[]{1024, 1024, 2048};
-          p._input_dropout_ratio = 0.1;
-          p._hidden_dropout_ratios = new double[]{0.5, 0.5, 0.5};
-        }
+        p._hidden = new int[]{1024, 1024, 2048};
+        p._input_dropout_ratio = 0.1;
+        p._hidden_dropout_ratios = new double[]{0.5, 0.5, 0.5};
         p._stopping_rounds = 0;
         p._learning_rate = 1e-3;
         p._mini_batch_size = 32;
@@ -976,9 +972,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._epochs = 50;
       p._categorical_encoding = categoricalEncodingScheme;
       p._standardize = standardize;
-      if(getBackend() != DeepWaterParameters.Backend.tensorflow) {
-        p._hidden = new int[]{50, 50};
-      }
+      p._hidden = new int[]{50, 50};
       m = new DeepWater(p).trainModel().get();
 
       // Score original training frame
@@ -1044,9 +1038,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._train = tfr._key;
       p._epochs = 10;
       p._response_column = "C5";
-      if(getBackend() != DeepWaterParameters.Backend.tensorflow) {
-        p._hidden = new int[]{2,2};
-      }
+      p._hidden = new int[]{2,2};
       p._seed = 0xdecaf;
       p._stopping_rounds = 0;
 
@@ -1077,9 +1069,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._train = tfr._key;
       p._epochs = 10;
       p._response_column = "C5";
-      if(getBackend() != DeepWaterParameters.Backend.tensorflow) {
-        p._hidden = new int[]{2, 2};
-      }
+      p._hidden = new int[]{2, 2};
       p._seed = 0xdecaf;
 
       dl = new DeepWater(p).trainModel().get();
@@ -1238,8 +1228,6 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
         parms._autoencoder = ae;
         parms._train_samples_per_iteration = 10;
 
-        if(getBackend() == DeepWaterParameters.Backend.tensorflow)
-          continue; //can't make the network unstable with [200,200]
         parms._hidden = new int[]{10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10};
         parms._learning_rate = 1e10;
         parms._standardize = false;
@@ -1408,9 +1396,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       parms._valid = valid._key;
       parms._epochs = 1;
       parms._response_column = "C5";
-      if(getBackend() != DeepWaterParameters.Backend.tensorflow) {
-        parms._hidden = new int[]{50, 50};
-      }
+      parms._hidden = new int[]{50, 50};
       parms._seed = 0xdecaf;
       parms._train_samples_per_iteration = 0;
       parms._score_duty_cycle = 1;
@@ -1461,9 +1447,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       parms._valid = valid._key;
       parms._epochs = 10;
       parms._response_column = "C5";
-      if(getBackend() != DeepWaterParameters.Backend.tensorflow) {
-        parms._hidden = new int[]{50, 50};
-      }
+      parms._hidden = new int[]{50, 50};
       parms._seed = 0xdecaf;
       parms._train_samples_per_iteration = 0;
       parms._score_duty_cycle = 1;

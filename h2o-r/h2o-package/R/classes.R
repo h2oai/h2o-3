@@ -391,10 +391,11 @@ setMethod("show", "H2OBinomialMetrics", function(object) {
     cat("AUC:  ", object@metrics$AUC, "\n", sep="")
     cat("Gini:  ", object@metrics$Gini, "\n", sep="")
     if(exists(object@algorithm) && object@algorithm == "glm") {
-      if (!is.na(object@metrics$r2)) cat("R^2:  ", object@metrics$r2, "\n", sep="")
-      cat("Null Deviance:  ", object@metrics$null_deviance,"\n", sep="")
-      cat("Residual Deviance:  ", object@metrics$residual_deviance,"\n", sep="")
-      cat("AIC:  ", object@metrics$AIC,"\n", sep="")
+
+      if (!is.null(object@metrics$r2) && !is.na(object@metrics$r2)) cat("R^2:  ", object@metrics$r2, "\n", sep="")
+      if (!is.null(object@metrics$null_deviance0)) cat("Null Deviance:  ", object@metrics$null_deviance,"\n", sep="")
+      if (!is.null(object@metrics$residual_deviance)) cat("Residual Deviance:  ", object@metrics$residual_deviance,"\n", sep="")
+      if (!is.null(object@metrics$AIC)) cat("AIC:  ", object@metrics$AIC,"\n", sep="")
     }
     cat("\n")
     cm <- h2o.confusionMatrix(object)
@@ -614,13 +615,13 @@ setMethod("summary", "H2OGrid",
 })
 
 #'
-#' The AutoML class.
+#' The H2OAutoML class.
 #'
-#' This class represents an AutoML object
+#' This class represents an H2OAutoML object
 #'
-#' @aliases AutoML
+#' @aliases H2OAutoML
 #' @export
 setClass("H2OAutoML",slots = c(project_name="character",
                                user_feedback="list",
-                               leader="character",
+                               leader="H2OModel",
                                leaderboard="data.frame"))

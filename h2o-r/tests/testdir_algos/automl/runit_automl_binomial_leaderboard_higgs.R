@@ -23,8 +23,8 @@ automl.leaderboard.test <- function() {
                     max_runtime_secs = 30)
 
   # Get test set AUC from leaderboard vs h2o.performance() and check that it matches
-  auc_aml_leaderboard_test <- as.numeric(aml@leaderboard[1,3])  #metric column in first/top row
-  perf_aml_test <- h2o.performance(model = h2o.getModel(aml@leader), newdata = test)
+  auc_aml_leaderboard_test <- as.numeric(aml@leaderboard[1,2])  #metric column in first/top row
+  perf_aml_test <- h2o.performance(model = aml@leader, newdata = test)
   auc_aml_test <- h2o.auc(perf_aml_test)
 
 

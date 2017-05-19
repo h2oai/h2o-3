@@ -7,8 +7,17 @@ from h2o.automl import H2OAutoML
 
 def australia_automl():
 
-    train = h2o.import_file(path=pyunit_utils.locate("smalldata/extdata/australia.csv"))
+    df = h2o.import_file(path=pyunit_utils.locate("smalldata/extdata/australia.csv"))
 
+    #Split frames
+    fr = df.split_frame(ratios=[.8,.1])
+
+    #Set up train, validation, and test sets
+    train = fr[0]
+    valid = fr[1]
+    test = fr[2]
+
+    #Make build control for automl
     build_control = {
         'stopping_criteria': {
             'stopping_rounds': 3,
@@ -16,7 +25,12 @@ def australia_automl():
         }
     }
     aml = H2OAutoML(max_runtime_secs = 30,build_control=build_control)
-    aml.train(y="runoffnew", training_frame=train)
+
+    print("AutoML (Regression) run with x not provided with train, valid, and test")
+    aml.train(y="runoffnew", training_frame=train,validation_frame=valid, test_frame=test)
+    print(aml.leader)
+    print(aml.leaderboard)
+    assert set(aml.leaderboard.col_header) == set(["","model_id", "mean_residual_deviance","rmse", "mae", "rmsle"])
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(australia_automl)

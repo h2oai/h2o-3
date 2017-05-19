@@ -1,5 +1,6 @@
 package water.fvec;
 
+import water.parser.BufferedString;
 import water.util.UnsafeUtils;
 
 import java.util.UUID;
@@ -33,6 +34,10 @@ public class C0DChunk extends Chunk {
   @Override double min() { return _con; }
   @Override double max() { return _con; }
 
+  BufferedString atStr_impl(BufferedString bStr, int idx) {
+    if(Double.isNaN(_con)) return null; // speciall all missing case
+    return super.atStr_impl(bStr,idx);
+  }
   // 3.3333333e33
 //  public int pformat_len0() { return 22; }
 //  public String pformat0() { return "% 21.15e"; }

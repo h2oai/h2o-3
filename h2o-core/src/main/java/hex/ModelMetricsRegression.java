@@ -105,7 +105,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       _dist=dist;
     }
 
-    // ds[0] has the prediction and ds[1] is ignored
+    // ds[0] has the prediction and ds[1,..,N] is ignored
     @Override public double[] perRow(double ds[], float[] yact, Model m) {return perRow(ds, yact, 1, 0, m);}
     @Override public double[] perRow(double ds[], float[] yact, double w, double o,  Model m) {
       if( Float.isNaN(yact[0]) ) return ds; // No errors if   actual   is missing

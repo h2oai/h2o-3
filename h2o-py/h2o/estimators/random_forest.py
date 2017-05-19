@@ -32,7 +32,7 @@ class H2ORandomForestEstimator(H2OEstimator):
                       "stopping_metric", "stopping_tolerance", "max_runtime_secs", "seed", "build_tree_one_node",
                       "mtries", "sample_rate", "sample_rate_per_class", "binomial_double_trees", "checkpoint",
                       "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
-                      "histogram_type", "categorical_encoding"}
+                      "histogram_type", "categorical_encoding", "calibrate_model", "calibration_frame"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -569,7 +569,7 @@ class H2ORandomForestEstimator(H2OEstimator):
     @property
     def sample_rate_per_class(self):
         """
-        Row sample rate per tree per class (from 0.0 to 1.0)
+        A list of row sample rates per class (relative fraction for each class, from 0.0 to 1.0), for each tree
 
         Type: ``List[float]``.
         """
@@ -686,5 +686,36 @@ class H2ORandomForestEstimator(H2OEstimator):
     def categorical_encoding(self, categorical_encoding):
         assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response"))
         self._parms["categorical_encoding"] = categorical_encoding
+
+
+    @property
+    def calibrate_model(self):
+        """
+        Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more accurate estimates
+        of class probabilities.
+
+        Type: ``bool``  (default: ``False``).
+        """
+        return self._parms.get("calibrate_model")
+
+    @calibrate_model.setter
+    def calibrate_model(self, calibrate_model):
+        assert_is_type(calibrate_model, None, bool)
+        self._parms["calibrate_model"] = calibrate_model
+
+
+    @property
+    def calibration_frame(self):
+        """
+        Calibration frame for Platt Scaling
+
+        Type: ``H2OFrame``.
+        """
+        return self._parms.get("calibration_frame")
+
+    @calibration_frame.setter
+    def calibration_frame(self, calibration_frame):
+        assert_is_type(calibration_frame, None, H2OFrame)
+        self._parms["calibration_frame"] = calibration_frame
 
 

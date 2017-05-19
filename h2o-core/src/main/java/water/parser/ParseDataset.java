@@ -1,6 +1,5 @@
 package water.parser;
 
-import com.google.common.base.Charsets;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinTask;
 import jsr166y.RecursiveAction;
@@ -488,12 +487,12 @@ public final class ParseDataset {
         _colCats[col].convertToUTF8(col + 1);
         _perColDomains[i] = _colCats[col].getColumnDomain();
         Arrays.sort(_perColDomains[i]);
-        _packedDomains[i] = packDomain(_perColDomains[i]);
+        _packedDomains[i] = PackedDomains.pack(_perColDomains[i]);
         i++;
       }
       Log.trace("Done locally collecting domains on each node.");
     }
-
+    
     @Override
     public void reduce(final GatherCategoricalDomainsTask other) {
       if (_packedDomains == null) {
@@ -502,116 +501,25 @@ public final class ParseDataset {
         H2OCountedCompleter[] domtasks = new H2OCountedCompleter[_catColIdxs.length];
         for (int i = 0; i < _catColIdxs.length; i++) {
           final int fi = i;
-          final GatherCategoricalDomainsTask fOther = other;
-          H2O.submitTask(domtasks[i] = new H2OCountedCompleter() {
+          domtasks[i] = new H2OCountedCompleter(currThrPriority()) {
             @Override
             public void compute2() {
-              // merge sorted packed domains with duplicate removal
-              final byte[] thisDom = _packedDomains[fi];
-              final byte[] otherDom = fOther._packedDomains[fi];
-              final int tLen = UnsafeUtils.get4(thisDom, 0), oLen = UnsafeUtils.get4(otherDom, 0);
-              int tDomLen = UnsafeUtils.get4(thisDom, 4);
-              int oDomLen = UnsafeUtils.get4(otherDom, 4);
-              BufferedString tCat = new BufferedString(thisDom, 8, tDomLen);
-              BufferedString oCat = new BufferedString(otherDom, 8, oDomLen);
-              int ti = 0, oi = 0, tbi = 8, obi = 8, mbi = 4, mergeLen = 0;
-              byte[] mergedDom = new byte[thisDom.length + otherDom.length];
-              // merge
-              while (ti < tLen && oi < oLen) {
-                // compare thisDom to otherDom
-                int x = tCat.compareTo(oCat);
-                // this < or equal to other
-                if (x <= 0) {
-                  UnsafeUtils.set4(mergedDom, mbi, tDomLen); //Store str len
-                  mbi += 4;
-                  for (int j = 0; j < tDomLen; j++)
-                    mergedDom[mbi++] = thisDom[tbi++];
-                  tDomLen = UnsafeUtils.get4(thisDom, tbi);
-                  assert tDomLen >= 0 : getClass().getName() + ".reduce/1: tDomLen=" + tDomLen + ", tbi=" + tbi + "; fi=" + fi + "/" + _catColIdxs.length + "packed size=" + thisDom.length + ", tlen=" + tLen;
-                  tbi += 4;
-                  tCat.set(thisDom, tbi, tDomLen);
-                  ti++;
-                  if (x == 0) { // this == other
-                    obi += oDomLen;
-                    oDomLen = UnsafeUtils.get4(otherDom, obi);
-                    obi += 4;
-                    assert oDomLen >= 0 : getClass().getName() + ".reduce/2: oDomLen=" + oDomLen + ", obi=" + obi;
-                    oCat.set(otherDom, obi, oDomLen);
-                    oi++;
-                  }
-                } else { // other < this
-                  UnsafeUtils.set4(mergedDom, mbi, oDomLen); //Store str len
-                  mbi += 4;
-                  for (int j = 0; j < oDomLen; j++)
-                    mergedDom[mbi++] = otherDom[obi++];
-                  oDomLen = UnsafeUtils.get4(otherDom, obi);
-                  obi += 4;
-                  assert oDomLen >= 0 : getClass().getName() + ".reduce/3: oDomLen=" + oDomLen + ", obi=" + obi;
-                  oCat.set(otherDom, obi, oDomLen);
-                  oi++;
-                }
-                mergeLen++;
-              }
-              // merge remainder of longer list
-              if (ti < tLen) {
-                tbi -= 4;
-                int remainder = thisDom.length - tbi;
-                System.arraycopy(thisDom,tbi,mergedDom,mbi,remainder);
-                mbi += remainder;
-                mergeLen += tLen - ti;
-              } else { //oi < oLen
-                obi -= 4;
-                int remainder = otherDom.length - obi;
-                System.arraycopy(otherDom,obi,mergedDom,mbi,remainder);
-                mbi += remainder;
-                mergeLen += oLen - oi;
-              }
-              _packedDomains[fi]  = Arrays.copyOf(mergedDom, mbi);// reduce size
-              UnsafeUtils.set4(_packedDomains[fi], 0, mergeLen);
-              Log.trace("Merged domain length is "+mergeLen+" for the "
-                  +PrettyPrint.withOrdinalIndicator(fi+1)+ " categorical column.");;
+              _packedDomains[fi] = PackedDomains.merge(_packedDomains[fi], other._packedDomains[fi]);
               tryComplete();
             }
-          });
+          };
         }
-        for (int i = 0; i < _catColIdxs.length; i++) if (domtasks[i] != null) domtasks[i].join();
+        ForkJoinTask.invokeAll(domtasks);
       }
       Log.trace("Done merging domains.");
     }
 
-    private byte[] packDomain(BufferedString[] domain) {
-      int totStrLen =0;
-      for(BufferedString dom : domain)
-        totStrLen += dom.length();
-      final byte[] packedDom = MemoryManager.malloc1(4 + (domain.length << 2) + totStrLen, false);
-      UnsafeUtils.set4(packedDom, 0, domain.length); //Store domain size
-      int i = 4;
-      for(BufferedString dom : domain) {
-        UnsafeUtils.set4(packedDom, i, dom.length()); //Store str len
-        i += 4;
-        byte[] buf = dom.getBuffer();
-        for(int j=0; j < buf.length; j++) //Store str chars
-          packedDom[i++] = buf[j];
-      }
-      return packedDom;
-    }
     public int getDomainLength(int colIdx) {
-      if (_packedDomains == null) return 0;
-      else return UnsafeUtils.get4(_packedDomains[colIdx], 0);
+      return _packedDomains == null ? 0 : PackedDomains.sizeOf(_packedDomains[colIdx]);
     }
 
     public String[] getDomain(int colIdx) {
-      if (_packedDomains == null) return null;
-      final int strCnt = UnsafeUtils.get4(_packedDomains[colIdx], 0);
-      final String[] res = new String[strCnt];
-      int j = 4;
-      for (int i=0; i < strCnt; i++) {
-        final int strLen = UnsafeUtils.get4(_packedDomains[colIdx], j);
-        j += 4;
-        res[i] = new String(_packedDomains[colIdx], j, strLen, Charsets.UTF_8);
-        j += strLen;
-      }
-      return res;
+      return _packedDomains == null ? null : PackedDomains.unpackToStrings(_packedDomains[colIdx]);
     }
   }
 
@@ -1046,7 +954,7 @@ public final class ParseDataset {
     }
 
     // Find & remove all partially built output chunks & vecs
-    private Futures onExceptionCleanup(Futures fs) {
+    Futures onExceptionCleanup(Futures fs) {
       int nchunks = _chunk2ParseNodeMap.length;
       int ncols = _parseSetup._number_columns;
       for( int i = 0; i < ncols; ++i ) {

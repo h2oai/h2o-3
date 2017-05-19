@@ -81,6 +81,8 @@
 #' @param sparse \code{Logical}. Sparse data handling (more efficient for data with lots of 0 values). Defaults to FALSE.
 #' @param gpu \code{Logical}. Whether to use a GPU (if available). Defaults to TRUE.
 #' @param device_id Device IDs (which GPUs to use). Defaults to [0].
+#' @param cache_data \code{Logical}. Whether to cache the data in memory (automatically disabled if data size is too large).
+#'        Defaults to TRUE.
 #' @param network_definition_file Path of file containing network definition (graph, architecture).
 #' @param network_parameters_file Path of file containing network (initial) parameters (weights, biases).
 #' @param mean_image_file Path of file containing the mean image data for data normalization.
@@ -147,6 +149,7 @@ h2o.deepwater <- function(x, y, training_frame,
                           sparse = FALSE,
                           gpu = TRUE,
                           device_id = c(0),
+                          cache_data = TRUE,
                           network_definition_file = NULL,
                           network_parameters_file = NULL,
                           mean_image_file = NULL,
@@ -291,6 +294,8 @@ h2o.deepwater <- function(x, y, training_frame,
     parms$gpu <- gpu
   if (!missing(device_id))
     parms$device_id <- device_id
+  if (!missing(cache_data))
+    parms$cache_data <- cache_data
   if (!missing(network_definition_file))
     parms$network_definition_file <- network_definition_file
   if (!missing(network_parameters_file))

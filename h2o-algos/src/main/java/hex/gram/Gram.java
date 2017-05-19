@@ -493,24 +493,36 @@ public final class Gram extends Iced<Gram> {
     double[][] xx = new double[N][];
     for( int i = 0; i < N; ++i )
       xx[i] = MemoryManager.malloc8d(lowerDiag?i+1:N);
+
+    return getXX(xx, lowerDiag, icptFist);
+  }
+
+  public double[][]getXX(double[][] xalloc) { return getXX(xalloc,false, false);}
+  public double[][] getXX(double[][] xalloc, boolean lowerDiag, boolean icptFist) {
+
+    int xlen = xalloc.length;
+    for (int rowInd = 0; rowInd < xlen; rowInd++) {
+      Arrays.fill(xalloc[rowInd], 0.0);
+    }
+
     int off = 0;
     if(icptFist) {
       double [] icptRow = _xx[_xx.length-1];
-      xx[0][0] = icptRow[icptRow.length-1];
+      xalloc[0][0] = icptRow[icptRow.length-1];
       for(int i = 0; i < icptRow.length-1; ++i)
-        xx[i+1][0] = icptRow[i];
+        xalloc[i+1][0] = icptRow[i];
       off = 1;
     }
     for( int i = 0; i < _diag.length; ++i )
-      xx[i+off][i+off] = _diag[i];
+      xalloc[i+off][i+off] = _diag[i];
     for( int i = 0; i < _xx.length - off; ++i ) {
       for( int j = 0; j < _xx[i].length; ++j ) {
-        xx[i + _diag.length + off][j + off] = _xx[i][j];
+        xalloc[i + _diag.length + off][j + off] = _xx[i][j];
         if(!lowerDiag)
-          xx[j + off][i + _diag.length + off] = _xx[i][j];
+          xalloc[j + off][i + _diag.length + off] = _xx[i][j];
       }
     }
-    return xx;
+    return xalloc;
   }
 
   public void add(Gram grm) {

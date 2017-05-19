@@ -181,6 +181,50 @@ class ModelBase(backwards_compatible()):
         j.poll()
         return h2o.get_frame(j.dest_key)
 
+    def loco(self, frame, loco_frame_id=None, replace_val=None):
+        """
+        Leave One Covariate Out (LOCO)
+
+        Calculates row-wise variable importance's by re-scoring a trained supervised model and measuring the impact of setting
+        each variable to missing or it’s most central value(mean or median & mode for categorical's)
+
+        :param frame: An H2OFrame to score
+        :param loco_frame_id: Destination id for this job; auto-generated if not specified.
+        :param replace_val: Value to replace columns ("mean" or "median") by (Default is to set columns to missing).
+        :returns: An H2OFrame displaying the base prediction (model scored with all predictors) and the difference in predictions
+                  when variables are dropped/replaced. The difference displayed is the base prediction substracted from
+                  the new prediction (when a variable is dropped/replaced with mean/median/mode) for binomial classification
+                  and regression problems. For multinomial problems, the sum of the absolute value of differences across classes
+                  is calculated per column dropped/replaced.
+
+        :examples:
+          >>>
+          >>> iris_h2o = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
+          >>> g = h2o.h2o.H2OGradientBoostingEstimator()
+          >>> g.train(x=list(range(0,4)),y="C5",training_frame=iris_h2o)
+          >>> g.loco(fr)
+          >>> g.loco(fr, replace_val="mean")
+          >>> g.loco(fr,replace_val="median")
+
+        """
+        assert_is_type(frame, h2o.H2OFrame)
+        kwargs = {}
+        kwargs["model"] = self._id
+        kwargs["frame"] = frame.frame_id
+        if loco_frame_id is not None:
+            assert_is_type(loco_frame_id, str)
+            kwargs["loco_frame_id"] = loco_frame_id
+        if replace_val is not None:
+            assert_is_type(replace_val, str)
+            if replace_val not in ["mean","median"]:
+                raise H2OValueError("repalce_val must be either mean or median, but got " + replace_val)
+            kwargs["replace_val"] = replace_val
+
+        j = H2OJob(h2o.api("POST /3/LeaveOneCovarOut",
+                   data=kwargs),"loco")
+        j.poll()
+        return h2o.get_frame(j.dest_key)
+
 
     def weights(self, matrix_id=0):
         """
@@ -933,7 +977,7 @@ class ModelBase(backwards_compatible()):
         """
         Plot the variable importance for a trained model.
 
-        :param num_of_features: the number of features shown in the plot.
+        :param num_of_features: the number of features shown in the plot (default is 10 or all if less than 10).
         :param server: ?
 
         :returns: None.
@@ -962,9 +1006,13 @@ class ModelBase(backwards_compatible()):
         # specify the bar lengths
         val = scaled_importances
 
-        # check that num_of_features is an integer
+        # # check that num_of_features is an integer
+        # if num_of_features is None:
+        #     num_of_features = len(val)
+
+        # default to 10 or less features if num_of_features is not specified
         if num_of_features is None:
-            num_of_features = len(val)
+            num_of_features = min(len(val), 10)
 
         fig, ax = plt.subplots(1, 1, figsize=(14, 10))
         # create separate plot for the case where num_of_features == 1
@@ -994,7 +1042,8 @@ class ModelBase(backwards_compatible()):
             ax.yaxis.set_ticks_position("left")
             ax.xaxis.set_ticks_position("bottom")
             plt.yticks(pos[0:num_of_features], feature_labels[0:num_of_features])
-            ax.margins(y=0.5)
+            plt.ylim([min(pos[0:num_of_features])- 1, max(pos[0:num_of_features])+1])
+            # ax.margins(y=0.5)
 
         # check which algorithm was used to select right plot title
         if self._model_json["algo"] == "gbm":
