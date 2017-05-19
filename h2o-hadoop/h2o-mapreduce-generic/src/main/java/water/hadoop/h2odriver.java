@@ -1475,6 +1475,14 @@ public class h2odriver extends Configured implements Tool {
       addMapperArg(conf, "-disable_web");
     }
 
+    // Proxy
+    final JettyProxy.Credentials proxyCredentials = proxy ? JettyProxy.Credentials.make(userName) : null;
+    if (proxyCredentials != null) {
+      final byte[] hashFileData = StringUtils.bytesOf(proxyCredentials.toHashFileEntry());
+      addMapperArg(conf, "-hash_login");
+      addMapperConf(conf, "-login_conf", "login.conf", hashFileData);
+    }
+
     conf.set(h2omapper.H2O_MAPPER_ARGS_LENGTH, Integer.toString(mapperArgsLength));
 
     // Config files.
@@ -1500,14 +1508,6 @@ public class h2odriver extends Configured implements Tool {
                       "};"
       );
       addMapperConf(conf, "-login_conf", "login.conf", pamConfData);
-    }
-
-    // Proxy
-    final JettyProxy.Credentials proxyCredentials = proxy ? JettyProxy.Credentials.make(userName) : null;
-    if (proxyCredentials != null) {
-      final byte[] hashFileData = StringUtils.bytesOf(proxyCredentials.toHashFileEntry());
-      addMapperArg(conf, "-hash_login");
-      addMapperConf(conf, "-login_conf", "login.conf", hashFileData);
     }
 
     // SSL
