@@ -206,11 +206,14 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
   /**
    * Hadoop heartbeat keepalive thread.  Periodically update a counter so that
    * jobtracker knows not to kill the job.
+   *
+   * Default jobtracker timeout is 10 minutes, so this should be sufficiently
+   * under that.
    */
   public class CounterThread extends Thread {
     Context _context;
     Counter _counter;
-    final int TEN_SECONDS_MILLIS = 10 * 1000;
+    final int SIXTY_SECONDS_MILLIS = 60 * 1000;
 
     CounterThread (Context context, Counter counter) {
       _context = context;
@@ -224,7 +227,7 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
         _context.progress();
         _counter.increment(1);
         try {
-          Thread.sleep (TEN_SECONDS_MILLIS);
+          Thread.sleep (SIXTY_SECONDS_MILLIS);
         }
         catch (Exception ignore) {}
       }
