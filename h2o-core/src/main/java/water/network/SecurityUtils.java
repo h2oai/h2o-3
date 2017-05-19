@@ -72,7 +72,7 @@ public class SecurityUtils {
         return new SSLCredentials(jks, jks);
     }
 
-    private static String passwordGenerator(int len) {
+    public static String passwordGenerator(int len) {
         StringBuilder sb = new StringBuilder(len);
         for (int i = 0; i < len; i++) {
             sb.append(AB.charAt(RANDOM.nextInt(AB.length())));

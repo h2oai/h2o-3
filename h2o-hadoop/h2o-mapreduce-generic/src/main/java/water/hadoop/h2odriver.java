@@ -13,6 +13,7 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import water.H2O;
 import water.H2OStarter;
+import water.JettyProxy;
 import water.ProxyStarter;
 import water.network.SecurityUtils;
 import water.util.ArrayUtils;
@@ -1501,6 +1502,14 @@ public class h2odriver extends Configured implements Tool {
       addMapperConf(conf, "-login_conf", "login.conf", pamConfData);
     }
 
+    // Proxy
+    final JettyProxy.Credentials proxyCredentials = proxy ? JettyProxy.Credentials.make(userName) : null;
+    if (proxyCredentials != null) {
+      final byte[] hashFileData = StringUtils.bytesOf(proxyCredentials.toHashFileEntry());
+      addMapperArg(conf, "-hash_login");
+      addMapperConf(conf, "-login_conf", "login.conf", hashFileData);
+    }
+
     // SSL
     if (null != securityConf && !securityConf.isEmpty()) {
       addMapperConf(conf, "-internal_security_conf", "security.config", securityConf);
@@ -1643,7 +1652,7 @@ public class h2odriver extends Configured implements Tool {
     }
 
     if (proxy) {
-      proxyUrl = ProxyStarter.start(otherArgs, getClusterUrl());
+      proxyUrl = ProxyStarter.start(otherArgs, proxyCredentials, getClusterUrl());
     }
 
     if (! (client || proxy))

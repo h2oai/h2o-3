@@ -9,7 +9,7 @@ import java.net.UnknownHostException;
 
 public class ProxyStarter {
 
-  public static String start(String[] args, String proxyTo) {
+  public static String start(String[] args, JettyProxy.Credentials credentials, String proxyTo) {
     if (! proxyTo.endsWith("/"))
       proxyTo = proxyTo + "/";
     // Note: this is UGLY!!!
@@ -18,17 +18,17 @@ public class ProxyStarter {
     H2O.parseArguments(args);
     H2O.BaseArgs baseArgs = H2O.ARGS;
 
-    JettyProxy proxy = initializeProxy(baseArgs, proxyTo);
+    JettyProxy proxy = initializeProxy(baseArgs, credentials, proxyTo);
 
     H2O.API_PORT = proxy.getPort();
     H2O.SELF_ADDRESS = NetworkInit.findInetAddressForSelf();
     return H2O.getURL(proxy.getScheme());
   }
 
-  private static JettyProxy initializeProxy(H2O.BaseArgs args, String proxyTo) {
+  private static JettyProxy initializeProxy(H2O.BaseArgs args, JettyProxy.Credentials credentials, String proxyTo) {
     int proxyPort = args.port == 0 ? args.baseport : args.port;
 
-    JettyProxy proxy = new JettyProxy(args, proxyTo);
+    JettyProxy proxy = new JettyProxy(args, credentials, proxyTo);
 
     // PROXY socket is only used to find opened port on given ip
     ServerSocket proxySocket = null;
@@ -73,8 +73,9 @@ public class ProxyStarter {
 
   // just for local testing
   public static void main(String[] args) {
-    String url = start(args, "https://localhost:54321/");
-    System.out.println("Proxy started on " + url);
+    JettyProxy.Credentials cred = JettyProxy.Credentials.make(System.getProperty("user.name"), "Heslo123");
+    String url = start(args, cred, "https://localhost:54321/");
+    System.out.println("Proxy started on " + url + " " + cred.toDebugString());
   }
 
 }
