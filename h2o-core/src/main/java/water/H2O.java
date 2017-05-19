@@ -1387,9 +1387,13 @@ final public class H2O {
   }
 
   public static String getURL(String schema) {
-    return String.format(H2O.SELF_ADDRESS instanceof Inet6Address
-                         ? "%s://[%s]:%d%s" : "%s://%s:%d%s",
-                         schema, H2O.SELF_ADDRESS.getHostAddress(), H2O.API_PORT, H2O.ARGS.context_path);
+    return getURL(schema, H2O.SELF_ADDRESS, H2O.API_PORT, H2O.ARGS.context_path);
+  }
+
+  public static String getURL(String schema, InetAddress address, int port, String contextPath) {
+    return String.format(address instanceof Inet6Address
+                    ? "%s://[%s]:%d%s" : "%s://%s:%d%s",
+            schema, address.getHostAddress(), port, contextPath);
   }
 
   // The multicast discovery port

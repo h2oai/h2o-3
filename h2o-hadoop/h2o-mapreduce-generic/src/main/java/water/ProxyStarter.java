@@ -1,5 +1,6 @@
 package water;
 
+import water.init.HostnameGuesser;
 import water.init.NetworkInit;
 
 import java.io.IOException;
@@ -20,9 +21,8 @@ public class ProxyStarter {
 
     JettyProxy proxy = initializeProxy(baseArgs, credentials, proxyTo);
 
-    H2O.API_PORT = proxy.getPort();
-    H2O.SELF_ADDRESS = NetworkInit.findInetAddressForSelf();
-    return H2O.getURL(proxy.getScheme());
+    InetAddress address = HostnameGuesser.findInetAddressForSelf(baseArgs.ip, baseArgs.network);
+    return H2O.getURL(proxy.getScheme(), address, proxy.getPort(), baseArgs.context_path);
   }
 
   private static JettyProxy initializeProxy(H2O.BaseArgs args, JettyProxy.Credentials credentials, String proxyTo) {
