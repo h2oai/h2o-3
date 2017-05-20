@@ -5,8 +5,8 @@ import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.NotConvergedException;
 
 /**
- * @author mathemage </ha@h2o.ai>
- * @date 1.5.17
+ * @author mathemage <ha@h2o.ai>
+ * created on 1.5.17
  */
 public class SVD_MTJ_DenseMatrix implements SVDInterface {
   private DenseMatrix gramMatrix;

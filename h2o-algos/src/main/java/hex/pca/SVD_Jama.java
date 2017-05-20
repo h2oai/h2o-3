@@ -4,8 +4,8 @@ import Jama.Matrix;
 import Jama.SingularValueDecomposition;
 
 /**
- * @author mathemage </ha@h2o.ai>
- * @date 1.5.17
+ * @author mathemage <ha@h2o.ai>
+ * created on 1.5.17
  */
 public class SVD_Jama implements SVDInterface {
   private Matrix gramMatrix;
