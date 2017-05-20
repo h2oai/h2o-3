@@ -17,54 +17,44 @@ def prostate_automl():
     valid = fr[1]
     test = fr[2]
 
-    #Make build control for automl
-    build_control = {
-        'stopping_criteria': {
-            'stopping_rounds': 3,
-            'stopping_tolerance': 0.001
-        }
-    }
-    aml = H2OAutoML(max_runtime_secs = 10,build_control=build_control)
-
     train["CAPSULE"] = train["CAPSULE"].asfactor()
     valid["CAPSULE"] = valid["CAPSULE"].asfactor()
     test["CAPSULE"] = test["CAPSULE"].asfactor()
 
     print("Check arguments to H2OAutoML class")
-    aml2 = H2OAutoML(max_runtime_secs = 10,project_name="aml2",build_control=build_control)
-    aml2.train(y="CAPSULE", training_frame=train)
-    assert aml2.max_runtime_secs == 10, "max_runtime_secs is not set to 10 secs"
-    assert aml2.project_name == "aml2", "Project name is not set"
-    assert aml2.build_control == build_control, "build_control is not correctly set"
+    aml = H2OAutoML(max_runtime_secs = 10,project_name="aml",stopping_rounds=3,stopping_tolerance=0.001)
+    aml.train(y="CAPSULE", training_frame=train)
+    assert aml.max_runtime_secs == 10, "max_runtime_secs is not set to 10 secs"
+    assert aml.project_name == "aml", "Project name is not set"
 
     print("AutoML run with x not provided and train set only")
-    build_control["project"] = "Project1"
+    aml.build_control["project"] = "Project1"
     aml.train(y="CAPSULE", training_frame=train)
     assert aml.max_runtime_secs == 10, "max_runtime_secs is not set to 10 secs"
 
     print("AutoML run with x not provided with train and valid")
-    build_control["project"] = "Project2"
+    aml.build_control["project"] = "Project2"
     aml.train(y="CAPSULE", training_frame=train,validation_frame=valid)
     assert aml.max_runtime_secs == 10, "max_runtime_secs is not set to 10 secs"
 
     print("AutoML run with x not provided with train and test")
-    build_control["project"] = "Project3"
+    aml.build_control["project"] = "Project3"
     aml.train(y="CAPSULE", training_frame=train,leaderboard_frame=test)
     assert aml.max_runtime_secs == 10, "max_runtime_secs is not set to 10 secs"
 
     print("AutoML run with x not provided with train, valid, and test")
-    build_control["project"] = "Project4"
+    aml.build_control["project"] = "Project4"
     aml.train(y="CAPSULE", training_frame=train,validation_frame=valid, leaderboard_frame=test)
     assert aml.max_runtime_secs == 10, "max_runtime_secs is not set to 10 secs"
 
     print("AutoML run with x not provided and y as col idx with train, valid, and test")
-    build_control["project"] = "Project5"
+    aml.build_control["project"] = "Project5"
     aml.train(y=1, training_frame=train,validation_frame=valid, leaderboard_frame=test)
     assert aml.max_runtime_secs == 10, "max_runtime_secs is not set to 10 secs"
 
     print("Check predict, leader, and leaderboard")
     print("AutoML run with x not provided and train set only")
-    build_control["project"] = "Project6"
+    aml.build_control["project"] = "Project6"
     aml.train(y="CAPSULE", training_frame=train)
     print("Check leader")
     aml.leader

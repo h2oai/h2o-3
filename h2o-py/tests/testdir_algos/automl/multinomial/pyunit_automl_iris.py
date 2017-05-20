@@ -17,14 +17,7 @@ def iris_automl():
     valid = fr[1]
     test = fr[2]
 
-    #Make build control for automl
-    build_control = {
-        'stopping_criteria': {
-            'stopping_rounds': 3,
-            'stopping_tolerance': 0.001
-        }
-    }
-    aml = H2OAutoML(max_runtime_secs = 30,build_control=build_control)
+    aml = H2OAutoML(max_runtime_secs = 3,stopping_rounds=3,stopping_tolerance=0.001)
 
     print("AutoML (Multinomial) run with x not provided with train, valid, and test")
     aml.train(y="class", training_frame=train,validation_frame=valid, leaderboard_frame=test)

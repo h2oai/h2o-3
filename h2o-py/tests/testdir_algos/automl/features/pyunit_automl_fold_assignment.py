@@ -9,14 +9,7 @@ def test_fold_column():
 
     train = h2o.import_file(path=pyunit_utils.locate("smalldata/census_income/adult_data.csv"))
 
-    build_control = {
-        'stopping_criteria': {
-            'seed': 42,
-            'stopping_rounds': 3,
-            'stopping_tolerance': 0.05
-        }
-    }
-    aml = H2OAutoML(max_runtime_secs = 420, build_control = build_control)
+    aml = H2OAutoML(max_runtime_secs = 420, stopping_rounds=3,stopping_tolerance=0.05,seed=42)
     aml.train(y='income', training_frame=train, fold_column = 'education-num')
 
 if __name__ == "__main__":
