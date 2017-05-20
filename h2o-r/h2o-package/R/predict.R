@@ -6,7 +6,8 @@
 #'
 #' @param model  String with file name of MOJO or POJO Jar
 #' @param json  JSON String with inputs to model
-#' @param labels  if TRUE then show output labels in result
+#' @param genmodelpath  (Optional) path name to h2o-genmodel.jar, if not set defaults to same dir as MOJO
+#' @param labels  (Optional) if TRUE then show output labels in result
 #' @param classpath  (Optional) Extra items for the class path of where to look for Java classes, e.g., h2o-genmodel.jar
 #' @param javaoptions  (Optional) Java options string, default if "-Xmx4g"
 #' @return Returns an object with the prediction result
@@ -21,20 +22,28 @@
 #' h2o.predict_json(model, json, labels, classpath, javaoptions)
 #' @name h2o.predict_json
 #' @export
-h2o.predict_json <- function(model, json, labels, classpath, javaoptions) {
+h2o.predict_json <- function(model, json, genmodelpath, labels, classpath, javaoptions) {
 	java <- "java"
-	javapath <- c(".", "h2o-genmodel.jar", .h2o.downloadJar() )
+    # Windows require different Java classpath separator and quoting
+    iswindows <- .Platform$OS.type == "windows"
+    separator <- if (iswindows) ";" else ":"
+	fileseparator <- if (iswindows) "\\" else "/"
+	# for now gson lib is the large h2o-genmodel-all.jar lib but should be moved to the small one
+	# default to genmodel being in the same dir as mojo
+	genmpath <- c(paste0(c(dirname(model), "h2o-genmodel.jar"), collapse=fileseparator), paste0(c(dirname(model), "h2o-genmodel-all.jar")), collapse=fileseparator)
+	if (!missing(genmodelpath)) {
+		genmpath <- genmodelpath
+	}
+	javapath <- c(".", genmpath)
 	if (!missing(classpath)) {
 		# prepend optional path
 	   javapath <- c( classpath, javapath )
 	}
 	showlabels <- if (!missing(labels) && labels == TRUE) "-l" else ""
 	javaopts <- if (!missing(javaoptions)) javaoptions else "-Xmx4g"
-    # Windows require different Java classpath separator and quoting
-	iswindows <- .Platform$OS.type == "windows"
-	separator <- if (iswindows) ";" else ":"
+
 	jsonq <- if (iswindows) paste('"', json, '"', sep="") else paste("'", json, "'", sep="")
-	classpath <- paste(javapath, sep="", collapse=separator)
+	classpath <- paste0(javapath, collapse=separator)
 	javaargs <- paste(" ", javaopts, " -cp ", classpath, " water.util.H2OPredictor", sep="")
 	args <- paste(javaargs, showlabels, model, jsonq, sep=" ")
 	# run the Java method H2OPredictor, which will return JSON or an error message
