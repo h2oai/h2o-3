@@ -43,11 +43,11 @@ public class Leaderboard extends Keyed<Leaderboard> {
   private Key<Model>[] models = new Key[0];
 
   /**
-   * Test set ModelMetrics objects for the models.
+   * Leaderboard/test set ModelMetrics objects for the models.
    * <p>
    * Updated inside addModels().
    */
-  private IcedHashMap<Key<ModelMetrics>, ModelMetrics> test_set_metrics = new IcedHashMap<>();
+  private IcedHashMap<Key<ModelMetrics>, ModelMetrics> leaderboard_set_metrics = new IcedHashMap<>();
 
   /**
    * Sort metrics for the models in this leaderboard, in the same order as the models.
@@ -91,7 +91,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
   /**
    * Frame for which we return the metrics, by default.
    */
-  private Frame testFrame;
+  private Frame leaderboardFrame;
 
   /** HIDEME! */
   private Leaderboard() {
@@ -101,20 +101,20 @@ public class Leaderboard extends Keyed<Leaderboard> {
   /**
    *
    */
-  public Leaderboard(String project, UserFeedback userFeedback, Frame testFrame) {
+  public Leaderboard(String project, UserFeedback userFeedback, Frame leaderboardFrame) {
     this._key = make(idForProject(project));
     Leaderboard old = DKV.getGet(this._key);
 
     if (null != old) {
       // pick up where we left off
-      // note that if subsequent runs use a different test frame the models are re-scored
+      // note that if subsequent runs use a different leaderboard frame the models are re-scored
       this.models = old.models;
-      this.test_set_metrics = old.test_set_metrics;
+      this.leaderboard_set_metrics = old.leaderboard_set_metrics;
       this.sort_metrics = old.sort_metrics;
     }
     this.project = project;
     this.userFeedback = userFeedback;
-    this.testFrame = testFrame;
+    this.leaderboardFrame = leaderboardFrame;
     DKV.put(this);
   }
 
@@ -193,8 +193,8 @@ public class Leaderboard extends Keyed<Leaderboard> {
         reallyNewModels.removeAll(Arrays.asList(oldModels));
 
         // Try fetching ModelMetrics for *all* models, not just reallyNewModels,
-        // because the testFrame might have changed.
-        old.test_set_metrics = new IcedHashMap<>();
+        // because the leaderboardFrame might have changed.
+        old.leaderboard_set_metrics = new IcedHashMap<>();
         for (Key<Model> aKey : old.models) {
           Model aModel = aKey.get();
           if (null == aModel) {
@@ -202,18 +202,18 @@ public class Leaderboard extends Keyed<Leaderboard> {
             continue;
           }
 
-          ModelMetrics mm = ModelMetrics.getFromDKV(aModel, testFrame);
+          ModelMetrics mm = ModelMetrics.getFromDKV(aModel, leaderboardFrame);
           if (mm == null) {
-            Frame preds = aModel.score(testFrame);
-            mm = ModelMetrics.getFromDKV(aModel, testFrame);
+            Frame preds = aModel.score(leaderboardFrame);
+            mm = ModelMetrics.getFromDKV(aModel, leaderboardFrame);
           }
-          old.test_set_metrics.put(mm._key, mm);
+          old.leaderboard_set_metrics.put(mm._key, mm);
         }
 
-        // Sort by metric on the test set.
+        // Sort by metric on the leaderboard/test set.
         // TODO TODO TODO this sorts by the metrics in Model._output
         try {
-          List<Key<Model>> modelsSorted = ModelMetrics.sortModelsByMetric(testFrame, sort_metric, sort_decreasing, Arrays.asList(old.models));
+          List<Key<Model>> modelsSorted = ModelMetrics.sortModelsByMetric(leaderboardFrame, sort_metric, sort_decreasing, Arrays.asList(old.models));
           old.models = modelsSorted.toArray(new Key[0]);
         }
         catch (H2OIllegalArgumentException e) {
@@ -222,13 +222,13 @@ public class Leaderboard extends Keyed<Leaderboard> {
         }
 
         Model[] models = new Model[old.models.length];
-        old.sort_metrics = old.getSortMetrics(old.sort_metric, old.test_set_metrics, testFrame, modelsForModelKeys(old.models, models));
+        old.sort_metrics = old.getSortMetrics(old.sort_metric, old.leaderboard_set_metrics, leaderboardFrame, modelsForModelKeys(old.models, models));
         if(sort_metric.equals("auc")){ //Binomial case
-          old.logloss= old.getOtherMetrics("logloss", old.test_set_metrics, testFrame, modelsForModelKeys(old.models, models));
+          old.logloss= old.getOtherMetrics("logloss", old.leaderboard_set_metrics, leaderboardFrame, modelsForModelKeys(old.models, models));
         }else if(sort_metric.equals("mean_residual_deviance")){ //Regression case
-          old.rmse= old.getOtherMetrics("rmse", old.test_set_metrics, testFrame, modelsForModelKeys(old.models, models));
-          old.mae= old.getOtherMetrics("mae", old.test_set_metrics, testFrame, modelsForModelKeys(old.models, models));
-          old.rmsle= old.getOtherMetrics("rmsle", old.test_set_metrics, testFrame, modelsForModelKeys(old.models, models));
+          old.rmse= old.getOtherMetrics("rmse", old.leaderboard_set_metrics, leaderboardFrame, modelsForModelKeys(old.models, models));
+          old.mae= old.getOtherMetrics("mae", old.leaderboard_set_metrics, leaderboardFrame, modelsForModelKeys(old.models, models));
+          old.rmsle= old.getOtherMetrics("rmsle", old.leaderboard_set_metrics, leaderboardFrame, modelsForModelKeys(old.models, models));
         }
 
         // If we're updated leader let this know so that it can notify the user
@@ -243,7 +243,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     // We've updated the DKV but not this instance, so:
     Leaderboard updated = DKV.getGet(this._key);
     this.models = updated.models;
-    this.test_set_metrics = updated.test_set_metrics;
+    this.leaderboard_set_metrics = updated.leaderboard_set_metrics;
     this.sort_metrics = updated.sort_metrics;
     if(sort_metric.equals("auc")){ //Binomial case
       this.logloss = updated.logloss;
@@ -341,22 +341,22 @@ public class Leaderboard extends Keyed<Leaderboard> {
   */
 
   public double[] getSortMetrics() {
-    return getSortMetrics(this.sort_metric, this.test_set_metrics, this.testFrame, this.getModels());
+    return getSortMetrics(this.sort_metric, this.leaderboard_set_metrics, this.leaderboardFrame, this.getModels());
   }
 
-  public static double[] getOtherMetrics(String other_metric, IcedHashMap<Key<ModelMetrics>, ModelMetrics> test_set_metrics, Frame testFrame, Model[] models) {
+  public static double[] getOtherMetrics(String other_metric, IcedHashMap<Key<ModelMetrics>, ModelMetrics> leaderboard_set_metrics, Frame leaderboardFrame, Model[] models) {
     double[] other_metrics = new double[models.length];
     int i = 0;
     for (Model m : models)
-      other_metrics[i++] = ModelMetrics.getMetricFromModelMetric(test_set_metrics.get(ModelMetrics.buildKey(m, testFrame)), other_metric);
+      other_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(m, leaderboardFrame)), other_metric);
     return other_metrics;
   }
 
-  public static double[] getSortMetrics(String sort_metric, IcedHashMap<Key<ModelMetrics>, ModelMetrics> test_set_metrics, Frame testFrame, Model[] models) {
+  public static double[] getSortMetrics(String sort_metric, IcedHashMap<Key<ModelMetrics>, ModelMetrics> leaderboard_set_metrics, Frame leaderboardFrame, Model[] models) {
     double[] sort_metrics = new double[models.length];
     int i = 0;
     for (Model m : models)
-      sort_metrics[i++] = ModelMetrics.getMetricFromModelMetric(test_set_metrics.get(ModelMetrics.buildKey(m, testFrame)), sort_metric);
+      sort_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(m, leaderboardFrame)), sort_metric);
     return sort_metrics;
   }
 

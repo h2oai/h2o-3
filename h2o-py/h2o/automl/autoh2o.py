@@ -70,18 +70,23 @@ class H2OAutoML(object):
         self._leader_id = None
         self._leaderboard = None
 
-    def train(self, x=None, y=None, training_frame=None, validation_frame=None, test_frame=None):
+    def train(self, x = None, y = None, training_frame = None, fold_column = None, 
+              weights_column = None, validation_frame = None, leaderboard_frame=None):
         """
-        Begins the automl task, which is a background task that incrementally improves
-        over time. At any point, the user may use the "predict"/"performance"
-        to inspect the incremental
+        Begins an AutoML task, a background task that automatically builds a number of models
+        with various algorithms and tracks their performance in a leaderboard. At any point 
+        in the process you may use H2O's performance or prediction functions on the resulting 
+        models.
 
         :param x: A list of column names or indices indicating the predictor columns.
         :param y: An index or a column name indicating the response column.
+        :param fold_column: The name or index of the column in training_frame that holds per-row fold
+            assignments.
+        :param weights_column: The name or index of the column in training_frame that holds per-row weights.
         :param training_frame: The H2OFrame having the columns indicated by x and y (as well as any
             additional columns specified by fold, offset, and weights).
         :param validation_frame: H2OFrame with validation data to be scored on while training.
-        :param test_frame: H2OFrame with test data to be scored on in the leaderboard.
+        :param leaderboard_frame: H2OFrame with test data to be scored on in the leaderboard.
 
         :returns: An H2OAutoML object.
 
@@ -100,6 +105,7 @@ class H2OAutoML(object):
         """
         ncols = training_frame.ncols
         names = training_frame.names
+
         #Minimal required arguments are training_frame and y (response)
         if y is None:
             raise ValueError('The response column (y) is not set; please set it to the name of the column that you are trying to predict in your data.')
@@ -122,13 +128,21 @@ class H2OAutoML(object):
             assert_is_type(training_frame, H2OFrame)
             input_spec['training_frame'] = training_frame.frame_id
 
+        if fold_column is not None:
+            assert_is_type(fold_column,int,str)
+            input_spec['fold_column'] = fold_column
+
+        if weights_column is not None:
+            assert_is_type(weights_column,int,str)
+            input_spec['weights_column'] = weights_column
+
         if validation_frame is not None:
             assert_is_type(training_frame, H2OFrame)
             input_spec['validation_frame'] = validation_frame.frame_id
 
-        if test_frame is not None:
+        if leaderboard_frame is not None:
             assert_is_type(training_frame, H2OFrame)
-            input_spec['test_frame'] = test_frame.frame_id
+            input_spec['leaderboard_frame'] = leaderboard_frame.frame_id
 
         if x is not None:
             assert_is_type(x,list)
@@ -145,6 +159,8 @@ class H2OAutoML(object):
                     xset.add(xi)
             x = list(xset)
             ignored_columns = set(names) - {y} - set(x)
+            if fold_column is not None: ignored_columns = ignored_columns - set(fold_column)
+            if weights_column is not None: ignored_columns = ignored_columns - set(weights_column)
             input_spec['ignored_columns'] = list(ignored_columns)
 
         automl_build_params = dict(input_spec = input_spec)

@@ -5,7 +5,7 @@ In recent years, the demand for machine learning experts has outpaced the supply
 
 Although H2O has made it easy for non-experts to experiment with machine learning, there is still a fair bit of knowledge and background in data science that is required to produce high-performing machine learning models.  Deep Neural Networks in particular are notoriously difficult for a non-expert to tune properly.  In order for machine learning software to truly be accessible to non-experts, we have designed an easy-to-use interface which automates the process of training a large selection of candidate models.  H2O's AutoML can also be a helpful tool for the advanced user, by providing a simple wrapper function that performs a large number of modeling-related tasks that would typically require many lines of code, and by freeing up their time to focus on other aspects of the data science pipeline tasks such as data-preprocessing, feature engineering and model deployment.
 
-H2O's AutoML can be used for automating the machine learning workflow, which includes automatic training and tuning of many models within a user-specified time-limit.  The user can also use a performance metric-based stopping criterion for the AutoML process rather than a specific time constraint.  `Stacked ensembles <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html>`__ will be automatically trained on the collection individual models to produce a highly predictive ensemble model which, in most cases, will be the top performing model in the AutoML Leaderboard.  Stacked ensembles are not yet available for multiclass classification problems, so in that case, only singleton models will be trained. 
+H2O's AutoML can be used for automating the machine learning workflow, which includes automatic training and tuning of many models within a user-specified time-limit.  The user can also use a performance metric-based stopping criterion for the AutoML process rather than a specific time constraint.  `Stacked Ensembles <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html>`__ will be automatically trained on the collection individual models to produce a highly predictive ensemble model which, in most cases, will be the top performing model in the AutoML Leaderboard.  Stacked ensembles are not yet available for multiclass classification problems, so in that case, only singleton models will be trained. 
 
 
 AutoML Interface
@@ -13,18 +13,29 @@ AutoML Interface
 
 The AutoML interface is designed to have as few parameters as possible so that all the user needs to do is point to their dataset, identify the response column and optionally specify a time-constraint. 
 
-In both the R and Python API, AutoML uses the same data-related arguments, `x, y, training_frame, validation_frame`, as the other H2O algorithms.  
+In both the R and Python API, AutoML uses the same data-related arguments, ``x``, ``y``, ``training_frame``, ``validation_frame``, as the other H2O algorithms.  
 
-- The `x` argument only needs to be specified if the user wants to exclude predictor columns from their data frame.  If all columns (other than the response) should be used in prediction, this can be left blank/unspecified.
-- The `validation_frame` argument is optional and will be used for early stopping within the training process of the individual models in the AutoML run.  
-- The `test_frame` argument allows the user to specify a particular data frame to rank the models on the leaderboard.  This frame will not be used for anything besides creating the leaderboard.
-- To control how long the AutoML run will execute, the user can specify `max_runtime_secs`, which defaults to 600 seconds (10 minutes).
+- The **x** argument only needs to be specified if the user wants to exclude predictor columns from their data frame.  If all columns (other than the response) should be used in prediction, this can be left blank/unspecified.
+- The **y** argument is the name (or index) of the response column.  Required.
+- The **training_frame** is the training set.  Required.
+- The **validation_frame** argument is optional and will be used for early stopping within the training process of the individual models in the AutoML run.  
+- The **leaderboard_frame** argument allows the user to specify a particular data frame to rank the models on the leaderboard.  This frame will not be used for anything besides creating the leaderboard.
+- To control how long the AutoML run will execute, the user can specify **max_runtime_secs**, which defaults to 600 seconds (10 minutes).
+
+If the user doesn't specify all three frames (training, validation and leaderboard), then the missing frames will be created automatically from what is provided by the user.  For reference, here are the rules for auto-generating the missing frames.
+
+When the user specifies:
+
+   1. **training**:  The ``training_frame`` is split into training (70%), validation (15%) and leaderboard (15%) sets.
+   2. **training + validation**: The ``validation_frame`` is split into validation (50%) and leaderboard (50%) sets and the original training frame stays as-is.
+   3. **training + leaderboard**: The ``training_frame`` is split into training (70%) and validation (30%) sets and the leaderboard frame stays as-is.
+   4. **training + validation + leaderboard**: Leave all frames as-is.
 
 
 Code Examples
 ~~~~~~~~~~~~~
 
-Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* and the ``H2OAutoML`` class in *Python*.  For demonstration purposes only, we explicitly specify the the `x` argument, even though on this dataset, that's not required.  With this dataset, the set of predictors is all columns other than the response.  Like other H2O algorithms, the default value of `x` is "all columns, excluding `y`", so that will produce the same result.
+Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* and the ``H2OAutoML`` class in *Python*.  For demonstration purposes only, we explicitly specify the the `x` argument, even though on this dataset, that's not required.  With this dataset, the set of predictors is all columns other than the response.  Like other H2O algorithms, the default value of ``x`` is "all columns, excluding ``y``", so that will produce the same result.
 
 .. example-code::
    .. code-block:: r
@@ -47,7 +58,7 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
 
     aml <- h2o.automl(x = x, y = y, 
                       training_frame = train,
-                      test_frame = test,
+                      leaderboard_frame = test,
                       max_runtime_secs = 30)
 
     # View the AutoML Leaderboard
@@ -104,7 +115,7 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
     aml = H2OAutoML(max_runtime_secs = 30)
     aml.train(x = x, y = y, 
               training_frame = train, 
-              test_frame = test)
+              leaderboard_frame = test)
 
     # View the AutoML Leaderboard
     lb = aml.leaderboard
@@ -141,7 +152,7 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
 AutoML Output
 -------------
 
-The AutoML object includes a history of all the data-processing and modeling steps that were taken, and will return a "leaderboard" of models that were trained in the process, ranked by a default metric based on the problem type (the second column of the leaderboard).  In binary classification problems, that metric is AUC, and in multiclass classification problems, the metric is mean per-class error.  In regression problems, the default sort metric is root mean squared error (RMSE).  Some additional metrics are also provided, for convenience.
+The AutoML object includes a "leaderboard" of models that were trained in the process, ranked by a default metric based on the problem type (the second column of the leaderboard).  In binary classification problems, that metric is AUC, and in multiclass classification problems, the metric is mean per-class error.  In regression problems, the default sort metric is root mean squared error (RMSE).  Some additional metrics are also provided, for convenience.
 
 Here is an example leaderboard for a binary classification task:
 
@@ -179,11 +190,13 @@ FAQ
 
 -  **Why is there no Stacked Ensemble on my Leaderboard?**
 
-  Currently, Stacked Ensembles supports binary classficiation and regression, but not multi-class classification.  So if you are missing a Stacked Ensemble, the likely cause is that you are performing multi-class classification and it's not meant to be there.
+  Currently, Stacked Ensembles supports binary classficiation and regression, but not multi-class classification, although multi-class support is in `development <https://0xdata.atlassian.net/browse/PUBDEV-3960>`__.  So if your leaderboard is missing a Stacked Ensemble, the reason is likely that you are performing multi-class classification and it's not meant to be there.
 
 
 Additional Information
 ~~~~~~~~~~~~~~~~~~~~~~
 
+- AutoML development is tracked `here <https://0xdata.atlassian.net/issues>`__. This page lists all open or in-progress AutoML JIRA tickets.
 - AutoML is currently in experimental mode ("V99" in the REST API).  This means that the API (REST, R, Python or otherwise) may be subject to breaking changes.
+- More background and information will be added to this document prior to the official release of AutoML.
 

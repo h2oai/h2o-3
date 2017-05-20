@@ -22,7 +22,6 @@ public class RegisterAlgos extends water.api.AbstractRegister {
       new hex.deepwater   .DeepWater   (true),
       new hex.word2vec    .Word2Vec    (true),
       new hex.ensemble    .StackedEnsemble(true),
-      new hex.klime       .KLime       (true),
     };
     // "Word2Vec", "Example", "Grep"
     for (ModelBuilder algo : algos) {
@@ -67,8 +66,5 @@ public class RegisterAlgos extends water.api.AbstractRegister {
 
     H2O.register("POST /3/DataInfoFrame",MakeGLMModelHandler.class, "getDataInfoFrame", "glm_datainfo_frame",
         "Test only");
-
-    H2O.register("POST /3/LeaveOneCovarOut", LeaveOneCovarOutHandler.class, "getLoco","loco",
-            "Conduct Leave One Covariate Out (LOCO) Analysis");
   }
 }

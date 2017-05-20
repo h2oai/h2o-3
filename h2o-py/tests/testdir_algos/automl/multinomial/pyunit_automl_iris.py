@@ -27,7 +27,7 @@ def iris_automl():
     aml = H2OAutoML(max_runtime_secs = 30,build_control=build_control)
 
     print("AutoML (Multinomial) run with x not provided with train, valid, and test")
-    aml.train(y="class", training_frame=train,validation_frame=valid, test_frame=test)
+    aml.train(y="class", training_frame=train,validation_frame=valid, leaderboard_frame=test)
     print(aml.leader)
     print(aml.leaderboard)
     assert set(aml.leaderboard.col_header) == set(["","model_id","mean_per_class_error"])

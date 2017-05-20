@@ -23,6 +23,11 @@ We're glad you're interested in learning more about H2O. If you have questions o
    
 .. toctree::
    :maxdepth: 2
+
+   cloud-integration
+
+.. toctree::
+   :maxdepth: 2
    
    downloading
    
