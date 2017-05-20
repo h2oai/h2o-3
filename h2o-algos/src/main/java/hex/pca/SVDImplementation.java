@@ -7,3 +7,4 @@ package hex.pca;
 public enum SVDImplementation {
   EVD_MTJ_DENSEMATRIX, MTJ, MTJ_DENSEMATRIX, JAMA
 }
+
