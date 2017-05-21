@@ -2,6 +2,28 @@
 
 ## H2O
 
+### Ueno (3.10.4.8) - 5/21/2017
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4123'>PUBDEV-4123</a>] -         Python: Frame summary does not return Python object
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4315'>PUBDEV-4315</a>] -         AIOOB with GLM
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4330'>PUBDEV-4330</a>] -         glm : quasi binomial with link other than default causes an h2o crash
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4332'>PUBDEV-4332</a>] -         Create new /3/SteamMetrics REST API endpoint
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4436'>PUBDEV-4436</a>] -         Steam hadoop user impersonation
+</li>
+</ul>
+
 ### Ueno (3.10.4.7) - 5/8/2017
 
 <h4>        Bug
