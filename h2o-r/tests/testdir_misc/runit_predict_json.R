@@ -4,7 +4,7 @@ source("../../scripts/h2o-r-test-setup.R")
 test.predict_json <- function() {
     iris.hex <- h2o.uploadFile(locate("smalldata/iris/iris_wheader.csv"), "iris.hex")
     hh <- h2o.gbm(x=c(1,2,3,4),y=5,training_frame=iris.hex)
-    file <- h2o.download_mojo(hh) #check mojo
+    file <- h2o.download_mojo(hh, get_genmodel_jar=TRUE) #check mojo
     print(file)
 
     res <- h2o.predict_json(file, '{}')
