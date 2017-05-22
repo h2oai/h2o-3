@@ -19,7 +19,7 @@
 #' h2o.predict_json('~/GBM_model_python_1473313897851_6.zip', '{"C7":1}', c(".", "lib"))
 #' }
 #' @usage
-#' h2o.predict_json(model, json, labels, classpath, javaoptions)
+#' h2o.predict_json(model, json, genmodelpath, labels, classpath, javaoptions)
 #' @name h2o.predict_json
 #' @export
 h2o.predict_json <- function(model, json, genmodelpath, labels, classpath, javaoptions) {
