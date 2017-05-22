@@ -35,8 +35,8 @@ public class JettyProxy extends AbstractHTTPD {
   }
 
   @Override
-  protected RuntimeException failEx() {
-    return new IllegalStateException("Proxy configuration incorrect");
+  protected RuntimeException failEx(String message) {
+    return new IllegalStateException(message);
   }
 
   /**

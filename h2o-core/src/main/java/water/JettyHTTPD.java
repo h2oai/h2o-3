@@ -101,8 +101,8 @@ public class JettyHTTPD extends AbstractHTTPD {
   }
 
   @Override
-  protected RuntimeException failEx() {
-    return H2O.fail();
+  protected RuntimeException failEx(String message) {
+    return H2O.fail(message);
   }
 
   protected void registerHandlers(HandlerWrapper handlerWrapper, ServletContextHandler context) {

@@ -122,7 +122,7 @@ public abstract class AbstractHTTPD {
         loginService = new JAASLoginService("pamloginmodule");
       }
       else {
-        throw failEx();
+        throw failEx("Unexpected authentication method selected");
       }
       IdentityService identityService = new DefaultIdentityService();
       loginService.setIdentityService(identityService);
@@ -190,7 +190,7 @@ public abstract class AbstractHTTPD {
     _server.start();
   }
 
-  protected abstract RuntimeException failEx();
+  protected abstract RuntimeException failEx(String message);
 
   protected void startHttp() throws Exception {
     _server = new Server();
