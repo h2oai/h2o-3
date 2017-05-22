@@ -60,4 +60,5 @@ Collate:
          'klime.R'
          'locate.R'
          'grid.R'
+         'predict.R'
          'zzz.R'

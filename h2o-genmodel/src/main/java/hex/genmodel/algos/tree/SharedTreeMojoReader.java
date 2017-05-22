@@ -23,7 +23,7 @@ public abstract class SharedTreeMojoReader<M extends SharedTreeMojoModel> extend
     _model._mojo_version = readkv("mojo_version");
 
     // In mojos v=1.0 this info wasn't saved.
-    if (!_model._mojo_version.equals(1.0)) {
+    if (_model._mojo_version != null && !_model._mojo_version.equals(1.0)) {
       _model._compressed_trees_aux = new byte[_model._ntree_groups * tpc][];
     }
 
