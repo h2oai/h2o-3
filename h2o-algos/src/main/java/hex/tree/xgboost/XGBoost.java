@@ -537,21 +537,17 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         // Prepare Rabit
         RabitTracker rt = new RabitTracker(H2O.getCloudSize());
 
-        if(H2O.CLOUD.size() > 1) {
-          rt.start(0);
-        }
+        startRabitTracker(rt);
 
-          model.model_info()._booster = new XGBoostUpdateTask(
-                  model.model_info()._booster,
-                  model.model_info(),
-                  model._output,
-                  _parms,
-                  0,
-                  getWorkerEnvs(rt)).doAll(_train).booster();
+        model.model_info().setBooster(new XGBoostUpdateTask(
+                model.model_info().getBooster(),
+                model.model_info(),
+                model._output,
+                _parms,
+                0,
+                getWorkerEnvs(rt)).doAll(_train).booster());
 
-        if(H2O.CLOUD.size() > 1) {
-          rt.waitFor(0);
-        }
+        waitOnRabitWorkers(rt);
 
         // train the model
         scoreAndBuildTrees(model, rt);
@@ -566,34 +562,29 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
 
     protected final void scoreAndBuildTrees(XGBoostModel model, RabitTracker rt) throws XGBoostError {
-      boolean scored = false;
       for( int tid=0; tid< _parms._ntrees; tid++) {
-          // During first iteration model contains 0 trees, then 1-tree, ...
-          scored = doScoring(model, model.model_info()._booster, false);
-          if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
-            doScoring(model, model.model_info()._booster, true);
-            _job.update(_parms._ntrees - model._output._ntrees); //finish
-            return;
-          }
+        // During first iteration model contains 0 trees, then 1-tree, ...
+        boolean scored = doScoring(model, model.model_info().getBooster(), false);
+        if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
+          doScoring(model, model.model_info().getBooster(), true);
+          _job.update(_parms._ntrees - model._output._ntrees); //finish
+          return;
+        }
 
         Timer kb_timer = new Timer();
 
-        if(H2O.CLOUD.size() > 1) {
-          rt.start(0);
-        }
+        startRabitTracker(rt);
 
-        model.model_info()._booster = new XGBoostUpdateTask(
-                model.model_info()._booster,
+        model.model_info().setBooster(new XGBoostUpdateTask(
+                model.model_info().getBooster(),
                 model.model_info(),
                 model._output,
                 _parms,
                 tid,
-                getWorkerEnvs(rt)).doAll(_train).booster();
+                getWorkerEnvs(rt)).doAll(_train).booster());
 
 
-        if(H2O.CLOUD.size() > 1) {
-          rt.waitFor(0);
-        }
+        waitOnRabitWorkers(rt);
 
         Log.info((tid + 1) + ". tree was built in " + kb_timer.toString());
         _job.update(1);
@@ -606,14 +597,30 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         model._output._training_time_ms = ArrayUtils.copyAndFillOf(model._output._training_time_ms, model._output._ntrees+1, System.currentTimeMillis());
         if (stop_requested() && !timeout()) throw new Job.JobCancelledException();
         if (timeout()) { //stop after scoring
-          if (!scored) doScoring(model, model.model_info()._booster, true);
+          if (!scored) doScoring(model, model.model_info().getBooster(), true);
           _job.update(_parms._ntrees-model._output._ntrees); //finish
           break;
         }
       }
-      doScoring(model, model.model_info()._booster, true);
+      doScoring(model, model.model_info().getBooster(), true);
     }
 
+    // Don't start the tracker for 1 node clouds -> the GPU plugin fails in such a case
+    private void startRabitTracker(RabitTracker rt) {
+      if(H2O.CLOUD.size() > 1) {
+        rt.start(0);
+      }
+    }
+
+    // RT should not be started for 1 node clouds
+    private void waitOnRabitWorkers(RabitTracker rt) {
+      if(H2O.CLOUD.size() > 1) {
+        rt.waitFor(0);
+      }
+    }
+
+    // XGBoost seems to manipulate its frames in case of a 1 node distributed version in a way the GPU plugin can't handle
+    // Therefore don't use RabitTracker envs for 1 node
     private Map<String, String> getWorkerEnvs(RabitTracker rt) {
       if(H2O.CLOUD.size() > 1) {
         return rt.getWorkerEnvs();
@@ -644,7 +651,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           (timeToScore && _parms._score_tree_interval == 0) || // use time-based duty-cycle heuristic only if the user didn't specify _score_tree_interval
           manualInterval) {
         _timeLastScoreStart = now;
-        model.doScoring(booster);
+        model.doScoring(booster, _train, _valid);
         _timeLastScoreEnd = System.currentTimeMillis();
         model.computeVarImp(booster.getFeatureScore("/tmp/featureMap.txt"));
         XGBoostOutput out = model._output;

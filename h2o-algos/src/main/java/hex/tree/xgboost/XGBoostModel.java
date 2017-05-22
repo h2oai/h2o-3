@@ -301,13 +301,13 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
    * @param booster xgboost model
    * @throws XGBoostError
    */
-  public void doScoring(Booster booster) throws XGBoostError {
-    ModelMetrics mm = makeMetrics(booster, _parms.train());
+  public void doScoring(Booster booster, Frame _train, Frame _valid) throws XGBoostError {
+    ModelMetrics mm = makeMetrics(booster, _train);
     mm._description = "Metrics reported on training frame";
     _output._training_metrics = mm;
     _output._scored_train[_output._ntrees].fillFrom(mm);
-    if (_parms.valid()!=null) {
-      mm = makeMetrics(booster, _parms.valid());
+    if (_valid!=null) {
+      mm = makeMetrics(booster, _valid);
       mm._description = "Metrics reported on validation frame";
       _output._validation_metrics = mm;
       _output._scored_valid[_output._ntrees].fillFrom(mm);
@@ -332,7 +332,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   public double[] score0(double[] data, double[] preds, double offset) {
     DataInfo di = model_info._dataInfoKey.get();
     return XGBoostMojoModel.score0(data, offset, preds,
-            model_info._booster, di._nums, di._cats, di._catOffsets, di._useAllFactorLevels,
+            model_info.getBooster(), di._nums, di._cats, di._catOffsets, di._useAllFactorLevels,
             _output.nclasses(), _output._priorClassDist, defaultThreshold(), _output._sparse);
   }
 
@@ -362,7 +362,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
     try {
       ModelMetrics[] mm = new ModelMetrics[1];
-      Frame preds = makePreds(model_info()._booster, adaptFr, mm, Key.<Frame>make(destination_key));
+      Frame preds = makePreds(model_info().getBooster(), adaptFr, mm, Key.<Frame>make(destination_key));
       DKV.put(preds);
       return preds;
     } catch (XGBoostError xgBoostError) {

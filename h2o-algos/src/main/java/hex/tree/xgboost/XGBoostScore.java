@@ -48,6 +48,8 @@ public class XGBoostScore extends MRTask<XGBoostScore> {
             HashMap<String, Object> params = XGBoostModel.createParams(_parms, _output);
             Map<String, String> rabitEnv = new HashMap<>();
             rabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
+            // Rabit has to be initialized as parts of booster.predict() are using Rabit
+            // This might be fixed in future versions of XGBoost
             Rabit.init(rabitEnv);
 
             DMatrix data = XGBoost.convertFrametoDMatrix(
@@ -60,6 +62,7 @@ public class XGBoostScore extends MRTask<XGBoostScore> {
                     null,
                     _output._sparse);
 
+            // No local chunks for this frame
             if(data.rowNum() == 0) {
                 return;
             }
@@ -151,12 +154,14 @@ public class XGBoostScore extends MRTask<XGBoostScore> {
 
     @Override
     public void reduce(XGBoostScore other) {
+        // No training took place on this node, take the other result
         if(subPredsFrame == null && other.subPredsFrame != null) {
             subPredsFrame = other.subPredsFrame;
             subResponsesFrame = other.subResponsesFrame;
             return;
         }
 
+        // No training took place on the other node, take this result
         if(other.subPredsFrame == null) {
             return;
         }

@@ -77,11 +77,11 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
 
         if(rawBooster == null) {
             HashMap<String, DMatrix> watches = new HashMap<>();
-            watches.put("train", trainMat);
             booster = ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, params, 0, watches, null, null);
         } else {
             try {
                 booster = Booster.loadModel(new ByteArrayInputStream(rawBooster));
+                // Set the parameters, some seem to get lost on save/load
                 booster.setParams(params);
             } catch (IOException e) {
                 e.printStackTrace();

@@ -24,7 +24,20 @@ final public class XGBoostModelInfo extends Iced {
 
   private TwoDimTable summaryTable;
 
-  transient Booster _booster;  //pointer to C++ process
+  private transient Booster _booster;  //pointer to C++ process
+
+  public Booster getBooster() {
+    if(null == _booster && null != _boosterBytes) {
+      try {
+        _booster = Booster.loadModel(new ByteArrayInputStream(_boosterBytes));
+      } catch (XGBoostError xgBoostError) {
+        xgBoostError.printStackTrace();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+    return _booster;
+  }
 
   Key<DataInfo> _dataInfoKey;
 
@@ -113,5 +126,9 @@ final public class XGBoostModelInfo extends Iced {
     createSummaryTable();
     if (summaryTable!=null) sb.append(summaryTable.toString(1));
     return sb.toString();
+  }
+
+  public void setBooster(Booster booster) {
+    this._booster = booster;
   }
 }
