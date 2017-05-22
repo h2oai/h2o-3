@@ -5,6 +5,9 @@ import h2o
 from tests import pyunit_utils
 from h2o.automl import H2OAutoML
 
+"""
+This test is used to check different variants of `ignored_columns` in `.train()`
+"""
 def prostate_automl():
 
     df = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))

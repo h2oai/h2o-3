@@ -250,13 +250,7 @@ class H2OAutoML(object):
 
         :examples:
         >>> #Set up an H2OAutoML object
-        >>> build_control = {
-        >>>              'stopping_criteria': {
-        >>>              'stopping_rounds': 3,
-        >>>              'stopping_tolerance': 0.001
-        >>>            }
-        >>>        }
-        >>> aml = H2OAutoML(max_runtime_secs=30, build_control=build_control)
+        >>> aml = H2OAutoML(max_runtime_secs=30)
         >>> # Launch H2OAutoML
         >>> aml.train(y=y, training_frame=training_frame)
         >>> #Predict with #1 model from H2OAutoML leaderboard
