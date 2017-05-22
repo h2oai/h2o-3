@@ -78,7 +78,7 @@ public class LinearAlgebraUtils {
     }
     return tmp;
   }
-  
+
   public static double[][] reshape1DArray(double[] arr, int m, int n) {
     double[][] arr2D = new double[m][n];
     for (int i = 0; i < m; i++) {
@@ -452,4 +452,21 @@ public class LinearAlgebraUtils {
   public static ToEigenVec toEigen = new ToEigenVec() {
     @Override public Vec toEigenVec(Vec src) { return toEigen(src); }
   };
+
+  public static boolean isSymmetric(double[][] matrix) {
+    int dimX = matrix.length;
+    for (int i = 0; i < dimX; i++) {
+      if (matrix[i].length != dimX) {
+        return false;
+      }
+    }
+    for (int i = 0; i < dimX; i++) {
+      for (int j = i + 1; j < dimX; j++) {
+        if (matrix[i][j] != matrix[j][i]) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
 }
