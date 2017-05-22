@@ -501,7 +501,14 @@ public class PojoUtils {
         } else {
           throw new IllegalArgumentException("setField can't yet convert an array of: " + value.getClass().getComponentType() + " to an array of: " + f.getType().getComponentType());
         }
-      } else if (! f.getType().isPrimitive() && ! f.getType().isAssignableFrom(value.getClass())) {
+      } else if(f.getType().isEnum() && value instanceof String){
+          try {
+            f.set(o, Enum.valueOf((Class<Enum>) f.getType(), (String) value));
+          } catch (IllegalArgumentException e ){
+            throw new IllegalArgumentException("Field = " + fieldName + " cannot be set to value = " + value, e);
+          }
+      }
+      else if (! f.getType().isPrimitive() && ! f.getType().isAssignableFrom(value.getClass())) {
         // TODO: pull the auto-type-conversion stuff out of copyProperties so we don't have limited copy-paste code here
         throw new IllegalArgumentException("setField can't yet convert a: " + value.getClass() + " to a: " + f.getType());
       } else {
