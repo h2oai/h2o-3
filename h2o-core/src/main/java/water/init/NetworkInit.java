@@ -12,6 +12,7 @@ import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.ServerSocketChannel;
+import java.security.GeneralSecurityException;
 import java.util.*;
 
 /**
@@ -97,6 +98,10 @@ public class NetworkInit {
         break;
 
       } catch (Exception e) {
+        for (Throwable ee = e; ee != null; ee = ee.getCause()) {
+          if (ee instanceof GeneralSecurityException)
+            throw new RuntimeException("Jetty Server initialization failed (check keystore password)", e);
+        }
         Log.trace("Cannot allocate API port " + H2O.API_PORT + " because of following exception: ", e);
         if( apiSocket != null ) try { apiSocket.close(); } catch( IOException ohwell ) { Log.err(ohwell); }
         if( _udpSocket != null ) try { _udpSocket.close(); } catch( IOException ie ) { }
