@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.UnknownHostException;
+import java.security.GeneralSecurityException;
+import java.security.UnrecoverableKeyException;
 
 public class ProxyStarter {
 
@@ -42,6 +44,10 @@ public class ProxyStarter {
 
         break;
       } catch (Exception e) {
+        for (Throwable ee = e; ee != null; ee = ee.getCause()) {
+          if (ee instanceof GeneralSecurityException)
+            throw new RuntimeException("Proxy initialization failed (check keystore password)", e);
+        }
         System.err.println("TRACE: Cannot allocate API port " + proxyPort + " because of following exception: " + e.getMessage());
         if (proxySocket != null) try { proxySocket.close(); } catch (IOException ee) { System.err.println("TRACE: " + ee.getMessage()); }
         proxySocket = null;
