@@ -5,15 +5,18 @@ import water.*;
 import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
 import water.util.IcedHashMap;
 import water.util.Log;
 import water.util.TwoDimTable;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import static water.DKV.getGet;
 import static water.Key.make;
-import water.util.ArrayUtils;
 /**
  * Utility to track all the models built for a given dataset type.
  * <p>
@@ -166,6 +169,11 @@ public class Leaderboard extends Keyed<Leaderboard> {
     if (null == this._key)
       throw new H2OIllegalArgumentException("Can't add models to a Leaderboard which isn't in the DKV.");
 
+    // This can happen if a grid or model build timed out:
+    if (null == newModels || newModels.length < 1) {
+      return;
+    }
+
     if (this.sort_metric == null) {
       // lazily set to default for this model category
       setDefaultMetricAndDirection(newModels[0].get());
@@ -262,12 +270,16 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
 
   public void addModel(final Key<Model> key) {
+    if (null == key) return;
+
     Key<Model>keys[] = new Key[1];
     keys[0] = key;
     addModels(keys);
   }
 
   public void addModel(final Model model) {
+    if (null == model) return;
+
     Key<Model>keys[] = new Key[1];
     keys[0] = model._key;
     addModels(keys);
