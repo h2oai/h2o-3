@@ -1,4 +1,4 @@
-package hex.pca;
+package hex.svd;
 
 import Jama.Matrix;
 import Jama.SingularValueDecomposition;
@@ -7,12 +7,12 @@ import Jama.SingularValueDecomposition;
  * @author mathemage <ha@h2o.ai>
  * created on 1.5.17
  */
-public class SVD_Jama implements SVDInterface {
+public class SVDJama implements SVDInterface {
   private Matrix gramMatrix;
   private SingularValueDecomposition svd;
   private double[][] rightEigenvectors;
 
-  SVD_Jama(double[][] gramMatrix) {
+  public SVDJama(double[][] gramMatrix) {
     this.gramMatrix = new Matrix(gramMatrix);
     runSVD();
   }

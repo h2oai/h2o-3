@@ -1,4 +1,4 @@
-package hex.pca;
+package hex.svd;
 
 /**
  * @author mathemage <ha@h2o.ai>

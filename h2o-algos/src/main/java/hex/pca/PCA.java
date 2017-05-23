@@ -13,8 +13,7 @@ import hex.gram.Gram;
 import hex.gram.Gram.GramTask;
 import hex.gram.Gram.OuterGramTask;
 import hex.pca.PCAModel.PCAParameters;
-import hex.svd.SVD;
-import hex.svd.SVDModel;
+import hex.svd.*;
 import water.DKV;
 import water.H2O;
 import water.HeartBeat;
@@ -350,7 +349,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
             e.printStackTrace();
             throw e;
           }
-          SVDImplementation svdImplementation = SVDImplementation.MTJ_DENSEMATRIX;
+          SVDImplementation svdImplementation = SVDImplementation.JAMA;
           PCA.this._job.update(1, "Computing stats from SVD using " + svdImplementation.toString());
           SVDInterface svd = SVDFactory.createSVDImplementation(gramMatrix, svdImplementation);
           double[][] rightEigenvectors = svd.getPrincipalComponents();

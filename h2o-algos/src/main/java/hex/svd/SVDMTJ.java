@@ -1,19 +1,21 @@
-package hex.pca;
+package hex.svd;
 
 import hex.util.LinearAlgebraUtils;
 import no.uib.cipr.matrix.DenseMatrix;
+import no.uib.cipr.matrix.Matrix;
 import no.uib.cipr.matrix.NotConvergedException;
+import no.uib.cipr.matrix.SVD;
 
 /**
  * @author mathemage <ha@h2o.ai>
  * created on 1.5.17
  */
-public class SVD_MTJ_DenseMatrix implements SVDInterface {
-  private DenseMatrix gramMatrix;
+public class SVDMTJ implements SVDInterface {
+  private Matrix gramMatrix;
   private no.uib.cipr.matrix.SVD svd;
   private double[][] rightEigenvectors;
 
-  SVD_MTJ_DenseMatrix(double[][] gramMatrix) {
+  SVDMTJ(double[][] gramMatrix) {
     this.gramMatrix = new DenseMatrix(gramMatrix);
     runSVD();
   }
@@ -32,7 +34,7 @@ public class SVD_MTJ_DenseMatrix implements SVDInterface {
     int gramDimension = gramMatrix.numRows();
     try {
       // Note: gramMatrix will be overwritten after this
-      svd = new no.uib.cipr.matrix.SVD(gramDimension, gramDimension).factor(gramMatrix);
+      svd = SVD.factorize(gramMatrix);
     } catch (NotConvergedException e) {
       throw new RuntimeException(e);
     }

@@ -1,8 +1,8 @@
-package hex.pca;
+package hex.svd;
 
 /**
  * @author mathemage </ha@h2o.ai>
- * @date 2.5.17
+ * created on 2.5.17
  */
 public interface SVDInterface {
   double[] getVariances();

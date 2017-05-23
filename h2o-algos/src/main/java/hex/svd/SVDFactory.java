@@ -1,21 +1,21 @@
-package hex.pca;
+package hex.svd;
 
 /**
  * @author mathemage <ha@h2o.ai>
  * created on 2.5.17
  */
 public class SVDFactory {
-  static SVDInterface createSVDImplementation(double[][] gramMatrix, SVDImplementation implementation)
+  public static SVDInterface createSVDImplementation(double[][] gramMatrix, SVDImplementation implementation)
       throws Exception {
     switch (implementation) {
       case EVD_MTJ_DENSEMATRIX:
-        return new EVD_MTJ_DenseMatrix(gramMatrix);
+        return new EVDMTJDenseMatrix(gramMatrix);
       case MTJ:
-        return new SVD_MTJ(gramMatrix);
+        return new SVDMTJ(gramMatrix);
       case MTJ_DENSEMATRIX:
-        return new SVD_MTJ_DenseMatrix(gramMatrix);
+        return new SVDMTJDenseMatrix(gramMatrix);
       case JAMA:
-        return new SVD_Jama(gramMatrix);
+        return new SVDJama(gramMatrix);
       default:
         throw new Exception("Unrecognized svdImplementation " + implementation.toString());
     }

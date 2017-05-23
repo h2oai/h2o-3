@@ -1,4 +1,4 @@
-package hex.pca;
+package hex.svd;
 
 import hex.util.EigenPair;
 import hex.util.LinearAlgebraUtils;
@@ -15,15 +15,15 @@ import static java.util.Collections.sort;
  * @author mathemage <ha@h2o.ai>
  *         created on 1.5.17
  */
-public class EVD_MTJ_DenseMatrix implements SVDInterface {
+public class EVDMTJDenseMatrix implements SVDInterface {
   private static DenseMatrix gramMatrix;
   private static no.uib.cipr.matrix.EVD evd;
   private static double[] eigenvalues;
   private static double[][] eigenvectors;
 
-  EVD_MTJ_DenseMatrix(double[][] gramMatrix) {
+  EVDMTJDenseMatrix(double[][] gramMatrix) {
     assert LinearAlgebraUtils.isSymmetric(gramMatrix);
-    EVD_MTJ_DenseMatrix.gramMatrix = new DenseMatrix(gramMatrix);
+    EVDMTJDenseMatrix.gramMatrix = new DenseMatrix(gramMatrix);
     runEVD();
   }
 
