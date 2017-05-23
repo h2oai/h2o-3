@@ -24,6 +24,7 @@ import water.exceptions.H2OAbstractRuntimeException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.nbhm.NonBlockingHashMap;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 import water.util.IcedHashMapGeneric;
@@ -48,6 +49,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   private final static boolean verifyImmutability = true; // check that trainingFrame hasn't been messed with
   private final static SimpleDateFormat fullTimestampFormat = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss.S");
+  private final static SimpleDateFormat timestampFormatForKeys = new SimpleDateFormat("yyyyMMdd_HHmmss");
 
   private AutoMLBuildSpec buildSpec;     // all parameters for doing this AutoML build
   private Frame origTrainingFrame;       // untouched original training frame
@@ -89,6 +91,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private Key<Grid> gridKey;             // Grid key from GridSearch
   private boolean isClassification;
 
+  private Date startTime;
+  static private Date lastStartTime; // protect against two runs with the same second in the timestamp
   private long stopTimeMs;
   private Job job;                  // the Job object for the build of this AutoML.  TODO: can we have > 1?
 
@@ -114,16 +118,14 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     super(null);
   }
   // https://0xdata.atlassian.net/browse/STEAM-52  --more interesting user options
-  public AutoML(Key<AutoML> key, AutoMLBuildSpec buildSpec) {
+  public AutoML(Key<AutoML> key, Date startTime, AutoMLBuildSpec buildSpec) {
     super(key);
 
-    Date startTime = new Date();
-
+    this.startTime = startTime;
     userFeedback = new UserFeedback(this); // Don't use until we set this.project
-
     this.buildSpec = buildSpec;
 
-    userFeedback.info(Stage.Workflow, "AutoML job created: " + fullTimestampFormat.format(startTime));
+    userFeedback.info(Stage.Workflow, "AutoML job created: " + fullTimestampFormat.format(this.startTime));
 
     handleDatafileParameters(buildSpec);
 
@@ -283,11 +285,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
 
-  public static AutoML makeAutoML(Key<AutoML> key, AutoMLBuildSpec buildSpec) {
+  public static AutoML makeAutoML(Key<AutoML> key, Date startTime, AutoMLBuildSpec buildSpec) {
     // if (buildSpec.input_spec.parse_setup == null)
     //   buildSpec.input_spec.parse_setup = ParseSetup.guessSetup(); // use defaults!
 
-    AutoML autoML = new AutoML(key, buildSpec);
+    AutoML autoML = new AutoML(key, startTime, buildSpec);
 
     if (null == autoML.trainingFrame)
       throw new H2OIllegalArgumentException("No training data has been specified, either as a path or a key.");
@@ -456,15 +458,36 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   }
 
+  // These are per (possibly concurrent) AutoML run.
+  // All created keys for a run use the unique AutoML
+  // run timestamp, so we can't have name collisions.
   private int individualModelsTrained = 0;
+  private NonBlockingHashMap<String, Integer> algoInstanceCounters = new NonBlockingHashMap<>();
+  private NonBlockingHashMap<String, Integer> gridInstanceCounters = new NonBlockingHashMap<>();
+
+  private int nextInstanceCounter(String algoName, NonBlockingHashMap<String, Integer> instanceCounters) {
+    synchronized (instanceCounters) {
+      int instanceNum = 0;
+      if (instanceCounters.containsKey(algoName))
+        instanceNum = instanceCounters.get(algoName) + 1;
+      instanceCounters.put(algoName, instanceNum);
+      return instanceNum;
+    }
+  }
+  private Key<Model> modelKey(String algoName) {
+    return Key.make(algoName + "_" + nextInstanceCounter(algoName, algoInstanceCounters) + "_AutoML_" + timestampFormatForKeys.format(this.startTime));
+  }
+
   /**
    * Helper for hex.ModelBuilder.
    * @return
    */
   public Job trainModel(Key<Model> key, String algoURLName, Model.Parameters parms) {
     String algoName = ModelBuilder.algoName(algoURLName);
-    if (null == key) key = ModelBuilder.defaultKey(algoName);
-    Job job = new Job<>(key,ModelBuilder.javaName(algoURLName), algoName);
+
+    if (null == key) key = modelKey(algoName);
+
+    Job job = new Job<>(key, ModelBuilder.javaName(algoURLName), algoName);
     ModelBuilder builder = ModelBuilder.make(algoURLName, job, key);
     Model.Parameters defaults = builder._parms;
     builder._parms = parms;
@@ -497,6 +520,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // TODO: handle error_count and messages
 
     return builder.trainModel();
+  }
+
+  private Key<Grid> gridKey(String algoName) {
+    return Key.make(algoName + "_grid_" + nextInstanceCounter(algoName, gridInstanceCounters) + "_AutoML_" + timestampFormatForKeys.format(this.startTime));
   }
 
   /**
@@ -558,7 +585,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // then use a sequence starting with the same seed given for the model build.
     // Don't use the same exact seed so that, e.g., if we build two GBMs they don't
     // do the same row and column sampling.
-    gridKey = Key.make(algoName + "_grid_" + this._key.toString());
+    gridKey = gridKey(algoName);
     Job<Grid> gridJob = GridSearch.startGridSearch(gridKey,
             baseParms,
             searchParms,
@@ -628,7 +655,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     drfParameters._stopping_tolerance = this.buildSpec.build_control.stopping_criteria.stopping_tolerance();
 
-    Job randomForestJob = trainModel(ModelBuilder.defaultKey("XRT"), "drf", drfParameters);
+    Job randomForestJob = trainModel(modelKey("XRT"), "drf", drfParameters);
     return randomForestJob;
   }
 
@@ -897,6 +924,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     Job<Grid>dlJob3 = defaultSearchDL3();
     pollAndUpdateProgress(Stage.ModelTraining, "DeepLearning hyperparameter search 3", 300, this.job(), dlJob3, JobType.HyperparamSearch);
 
+
     ///////////////////////////////////////////////////////////
     // build a DeepWater model
     ///////////////////////////////////////////////////////////
@@ -969,8 +997,29 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
    * @return
    */
   public static AutoML startAutoML(AutoMLBuildSpec buildSpec) {
-    // TODO: name this job better
-    AutoML aml = AutoML.makeAutoML(Key.<AutoML>make(), buildSpec);
+    Date startTime = new Date();  // this is the one and only startTime for this run
+
+    synchronized (AutoML.class) {
+      // protect against two runs whose startTime is the same second
+      if (lastStartTime != null) {
+        while (lastStartTime.getYear() == startTime.getYear() &&
+                lastStartTime.getMonth() == startTime.getMonth() &&
+                lastStartTime.getDate() == startTime.getDate() &&
+                lastStartTime.getHours() == startTime.getHours() &&
+                lastStartTime.getMinutes() == startTime.getMinutes() &&
+                lastStartTime.getSeconds() == startTime.getSeconds())
+          try {
+            Thread.sleep(1000);
+          }
+          catch (InterruptedException e) {}
+          startTime = new Date();
+      }
+      lastStartTime = startTime;
+    }
+
+    String keyString = "AutoML_" + timestampFormatForKeys.format(startTime);
+    AutoML aml = AutoML.makeAutoML(Key.<AutoML>make(keyString), startTime, buildSpec);
+
     DKV.put(aml);
     startAutoML(aml);
     return aml;
