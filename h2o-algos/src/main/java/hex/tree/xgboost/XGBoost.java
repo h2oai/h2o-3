@@ -472,7 +472,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     byte[] rawBooster = null;
     try {
       Map<String, String> localRabitEnv = new HashMap<>();
-      localRabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
       Rabit.init(localRabitEnv);
       rawBooster = booster.toByteArray();
       Rabit.shutdown();
@@ -545,7 +544,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
                 model._output,
                 _parms,
                 0,
-                getWorkerEnvs(rt)).doAll(_train).booster());
+                getWorkerEnvs(rt)).doAll(_train).booster);
 
         waitOnRabitWorkers(rt);
 
@@ -581,7 +580,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
                 model._output,
                 _parms,
                 tid,
-                getWorkerEnvs(rt)).doAll(_train).booster());
+                getWorkerEnvs(rt)).doAll(_train).booster);
 
 
         waitOnRabitWorkers(rt);
@@ -690,12 +689,12 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     HashMap<String, Object> params = new HashMap<>();
     params.put("updater", "grow_gpu_hist");
     params.put("silent", 1);
+
     params.put("gpu_id", gpu_id);
     HashMap<String, DMatrix> watches = new HashMap<>();
     watches.put("train", trainMat);
     try {
       Map<String, String> localRabitEnv = new HashMap<>();
-      localRabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
       Rabit.init(localRabitEnv);
       ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, params, 1, watches, null, null);
       Rabit.shutdown();

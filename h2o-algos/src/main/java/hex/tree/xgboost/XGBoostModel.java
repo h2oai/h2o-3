@@ -107,6 +107,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public XGBoostParameters() {
       super();
       _categorical_encoding = CategoricalEncodingScheme.LabelEncoder;
+      // TODO set this to the default true after improving distributed scoring
+      this._auto_rebalance = false;
     }
 
     public String algoName() { return "XGBoost"; }

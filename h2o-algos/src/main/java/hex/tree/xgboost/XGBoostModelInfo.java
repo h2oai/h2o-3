@@ -2,7 +2,6 @@ package hex.tree.xgboost;
 
 import hex.DataInfo;
 import ml.dmlc.xgboost4j.java.Booster;
-import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import water.Iced;
 import water.Key;
@@ -36,7 +35,12 @@ final public class XGBoostModelInfo extends Iced {
         e.printStackTrace();
       }
     }
+
     return _booster;
+  }
+
+  public void setBooster(Booster _booster) {
+    this._booster = _booster;
   }
 
   Key<DataInfo> _dataInfoKey;
@@ -128,7 +132,4 @@ final public class XGBoostModelInfo extends Iced {
     return sb.toString();
   }
 
-  public void setBooster(Booster booster) {
-    this._booster = booster;
-  }
 }

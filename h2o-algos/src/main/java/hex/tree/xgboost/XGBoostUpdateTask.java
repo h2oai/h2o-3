@@ -12,7 +12,7 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
 
     private final XGBoostModelInfo _sharedmodel;
     private final XGBoostOutput _output;
-    private transient Booster booster;
+    transient Booster booster;
     private byte[] rawBooster;
 
     private final XGBoostModel.XGBoostParameters _parms;
@@ -24,7 +24,8 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
                       XGBoostModelInfo inputModel,
                       XGBoostOutput _output,
                       XGBoostModel.XGBoostParameters _parms,
-                      int tid, Map<String, String> workerEnvs) {
+                      int tid,
+                      Map<String, String> workerEnvs) {
         this._sharedmodel = inputModel;
         this._output = _output;
         this._parms = _parms;
@@ -46,8 +47,9 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
     private void update() throws XGBoostError {
         HashMap<String, Object> params = XGBoostModel.createParams(_parms, _output);
 
-        rabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
         String[] featureMap = new String[]{""};
+
+        rabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
 
         // DON'T put this before createParams, createPrams calls train() which isn't supposed to be distributed
         // just to check if we have GPU on the machine
@@ -81,20 +83,17 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
         } else {
             try {
                 booster = Booster.loadModel(new ByteArrayInputStream(rawBooster));
-                // Set the parameters, some seem to get lost on save/load
+//                 Set the parameters, some seem to get lost on save/load
                 booster.setParams(params);
             } catch (IOException e) {
                 e.printStackTrace();
             }
 
             booster.update(trainMat, tid);
+            BoosterUtils.saveRabitCheckpoint(booster);
         }
 
         Rabit.shutdown();
-    }
-
-    Booster booster() {
-        return booster;
     }
 
 }

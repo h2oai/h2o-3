@@ -11,6 +11,7 @@ import water.fvec.*;
 import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
+import water.util.VecUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -30,6 +31,9 @@ public class XGBoostScore extends MRTask<XGBoostScore> {
     ModelMetrics mm;
     Frame predFrame;
 
+    // The one in MRTask is transient
+    private int lowChunk;
+
     public XGBoostScore(XGBoostModelInfo sharedmodel,
                         XGBoostOutput output,
                         XGBoostModel.XGBoostParameters parms,
@@ -44,10 +48,12 @@ public class XGBoostScore extends MRTask<XGBoostScore> {
 
     @Override
     protected void setupLocal() {
+        this.lowChunk = VecUtils.getLocalChunkIds(_fr.anyVec())[0];
+
         try {
             HashMap<String, Object> params = XGBoostModel.createParams(_parms, _output);
+
             Map<String, String> rabitEnv = new HashMap<>();
-            rabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
             // Rabit has to be initialized as parts of booster.predict() are using Rabit
             // This might be fixed in future versions of XGBoost
             Rabit.init(rabitEnv);
@@ -173,8 +179,14 @@ public class XGBoostScore extends MRTask<XGBoostScore> {
                 other.subPredsFrame.vec(i).setDomain(vec.domain());
             }
         }
-        subPredsFrame = rBindAndDelete(subPredsFrame, other.subPredsFrame);
-        subResponsesFrame = rBindAndDelete(subResponsesFrame, other.subResponsesFrame);
+        if(this.lowChunk <= other.lowChunk) {
+            subPredsFrame = rBindAndDelete(subPredsFrame, other.subPredsFrame);
+            subResponsesFrame = rBindAndDelete(subResponsesFrame, other.subResponsesFrame);
+        } else {
+            subPredsFrame = rBindAndDelete(other.subPredsFrame, subPredsFrame);
+            subResponsesFrame = rBindAndDelete(other.subResponsesFrame, subResponsesFrame);
+            this.lowChunk = other.lowChunk;
+        }
     }
 
     private Frame rBindAndDelete(Frame left, Frame right) {
