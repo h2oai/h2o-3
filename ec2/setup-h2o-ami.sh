@@ -3,7 +3,8 @@
   apt-get -y update && \
   apt-get install -y \
   curl \
-  wget
+  wget \
+  unzip
 
   apt-get install -y \
   apt-utils \
@@ -31,9 +32,8 @@
   libcurl4-openssl-dev \
   libmysqlclient-dev \
   libgtk2.0-0 \
-  iputils-ping
+  iputils-ping 
   
-
   apt-get install -y r-base r-base-dev && \
   wget https://cran.cnr.berkeley.edu/src/contrib/data.table_1.10.4.tar.gz && \
   wget https://cran.cnr.berkeley.edu/src/contrib/lazyeval_0.2.0.tar.gz && \
@@ -74,3 +74,6 @@
   /usr/bin/pip3 install --upgrade pip && \
   cd /opt && \
   /usr/bin/pip3 install `find . -name "*.whl"`
+
+# Install Jupyter
+  /usr/bin/pip3 install jupyter
