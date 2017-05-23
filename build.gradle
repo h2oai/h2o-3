@@ -198,19 +198,9 @@ subprojects {
     // to all projects
     if (project in publishedProjects) {
       apply from: "$rootDir/gradle/publish.gradle"
-      // Generate Java6 bytecode only if specified
-      if (project.hasProperty("doJava6Bytecode")) {
-        if (project.doJava6Bytecode == "true"
-            || (project.doJava6Bytecode == "auto"
-                && System.getProperty("user.name").equals("jenkins")
-                && System.getenv("JAVA_6_HOME"))) {
-          apply from: "$rootDir/gradle/java6bytecode.gradle"
-          // Always do animal sniffing for java6
-          ext.doAnimalSniffer = "true"
-          }
-      }
     }
 
+    // Note: this is deprecated and will be removed in the future
     apply from: "$rootDir/gradle/makeSupport.gradle"
 
     //
@@ -222,10 +212,10 @@ subprojects {
         apply from: "$rootDir/gradle/java.gradle"
         apply from: "$rootDir/gradle/cp.gradle"
         // Include Findbugs only if the property is specified
-        if (applyFindbugsPlugin) {
+        if (project.hasProperty("doFindbugs") && project.doFindbugs == "true") {
             apply from: "$rootDir/gradle/findbugs.gradle"
         }
-        if (project.hasProperty("doCheckStyle")) {
+        if (project.hasProperty("doCheckStyle") && project.doCheckStyle == "true") {
             apply from: "$rootDir/gradle/checkstyle.gradle"
         }
         if (project.hasProperty("doAnimalSniffer") && project.doAnimalSniffer == "true") {
@@ -312,7 +302,6 @@ task buildH2oDevDist(type: Exec) {
     def branchName = bv.getBranch()
     def buildNumber = bv.getBuildNumber()
     def lastCommitHash = bv.getLastCommitHash()
-    def java6home = System.getenv("JAVA_6_HOME")
 
     environment['BUILD_TIME_MILLIS'] = buildTimeMillis
     environment['BUILD_TIME_ISO8601'] = buildTimeIso8601
@@ -321,9 +310,7 @@ task buildH2oDevDist(type: Exec) {
     environment['BRANCH_NAME'] = branchName
     environment['BUILD_NUMBER'] = buildNumber
     environment['LAST_COMMIT_HASH'] = lastCommitHash
-    if (java6home != null) {
-      environment['JAVA_6_HOME'] = java6home
-    }
+    
     commandLine './make-dist.sh'
 }
 
