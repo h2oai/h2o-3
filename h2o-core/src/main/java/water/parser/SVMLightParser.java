@@ -25,18 +25,15 @@ class SVMLightParser extends Parser {
   /** Try to parse the bytes as svm light format, return a ParseSetupHandler with type 
    *  SVMLight if the input is in svm light format, throw an exception otherwise.
    */
-  public static ParseSetup guessSetup(byte [] bytes) {
-    // find the last eof
-    int i = bytes.length-1;
-    while(i > 0 && bytes[i] != '\n') --i;
-    assert i >= 0;
-    InputStream is = new ByteArrayInputStream(Arrays.copyOf(bytes,i));
+  public static ParseSetup guessSetup(byte [] bits) {
+    int lastNewline = bits.length-1;
+    while(lastNewline > 0 && !CsvParser.isEOL(bits[lastNewline]))lastNewline--;
+    if(lastNewline > 0) bits = Arrays.copyOf(bits,lastNewline+1);
     SVMLightParser p = new SVMLightParser(new ParseSetup(SVMLight_INFO,
             ParseSetup.GUESS_SEP, false,ParseSetup.GUESS_HEADER,ParseSetup.GUESS_COL_CNT,
             null,null,null,null,null), null);
     SVMLightInspectParseWriter dout = new SVMLightInspectParseWriter();
-    try{ p.streamParse(is, dout);
-    } catch(IOException e) { throw new RuntimeException(e); }
+    p.parseChunk(0,new ByteAryData(bits,0), dout);
     if (dout._ncols > 0 && dout._nlines > 0 && dout._nlines > dout._invalidLines)
       return new ParseSetup(SVMLight_INFO, ParseSetup.GUESS_SEP,
             false,ParseSetup.NO_HEADER,dout._ncols,null,dout.guessTypes(),null,null,dout._data, dout.removeErrors());

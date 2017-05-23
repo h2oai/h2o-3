@@ -143,7 +143,7 @@ class XlsParser extends Parser {
   }
   private Props _wrkbook, _rootentry;
 
-  @Override public ParseWriter streamParse( final InputStream is, final ParseWriter dout) throws IOException {
+  @Override public ParseWriter streamParse( final InputStream is, final StreamParseWriter dout) throws IOException {
     _is = is;
     // Check for magic first
     readAtLeast(IDENTIFIER_OLE.length);

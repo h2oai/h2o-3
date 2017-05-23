@@ -43,6 +43,7 @@ public class ParseSetup extends Iced {
   String[][] _data;           // First few rows of parsed/tokenized data
 
   String [] _fileNames = new String[]{"unknown"};
+  public  boolean disableParallelParse;
 
   public void setFileName(String name) {_fileNames[0] = name;}
 
@@ -354,7 +355,7 @@ public class ParseSetup extends Iced {
         try {
           _gblSetup = guessSetup(bv, bits, _userSetup);
           for(ParseWriter.ParseErr e:_gblSetup._errs) {
-            e._byteOffset += e._cidx*Parser.StreamData.bufSz;
+//            e._byteOffset += e._cidx*Parser.StreamData.bufSz;
             e._cidx = 0;
             e._file = _file;
           }
@@ -622,25 +623,17 @@ public class ParseSetup extends Iced {
    * @param bytes Array of bytes (containing 0 or more newlines)
    * @return The longest line length in the given bytes
    */
-  private static final long maxLineLength(byte[] bytes) {
-    if (bytes.length >= 2) {
-      String st = new String(bytes);
-      StringReader sr = new StringReader(st);
-      BufferedReader br = new BufferedReader(sr);
-      String line;
-      long maxLineLength=0;
-      try {
-        while(true) {
-          line = br.readLine();
-          if (line == null) break;
-          maxLineLength = Math.max(line.length(), maxLineLength);
-        }
-      } catch (IOException e) {
-        return -1;
+  private static final int maxLineLength(byte[] bytes) {
+    int start = bytes.length;
+    int max = -1;
+    for(int i = 0; i < bytes.length; ++i){
+      if(CsvParser.isEOL(bytes[i])){
+        int delta = i-start+1;
+        max = Math.max(max,delta);
+        start = i+1;
       }
-      return maxLineLength;
     }
-    return -1;
+    return Math.max(max,bytes.length-start+1);
   }
 
   /**
