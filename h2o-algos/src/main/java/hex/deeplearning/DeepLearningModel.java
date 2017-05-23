@@ -1634,7 +1634,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      * The implemented method (by Gedeon) considers the weights connecting the
      * input features to the first two hidden layers.
      */
-    public boolean _variable_importances = false;
+    public boolean _variable_importances = true;
 
     /**
      * Enable fast mode (minor approximation in back-propagation), should not affect results significantly.
