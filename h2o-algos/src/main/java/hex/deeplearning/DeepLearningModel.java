@@ -1734,7 +1734,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     void validate(DeepLearning dl, boolean expensive) {
       boolean classification = expensive || dl.nclasses() != 0 ? dl.isClassifier() : _loss == CrossEntropy || _loss == ModifiedHuber;
       if (_loss == ModifiedHuber) dl.error("_loss", "ModifiedHuber loss function is not supported yet.");
-      if (_hidden == null || _hidden.length == 0) dl.error("_hidden", "There must be at least one hidden layer.");
+//      if (_hidden == null || _hidden.length == 0) dl.error("_hidden", "There must be at least one hidden layer.");
+      if (_hidden == null) _hidden = new int[0];
       for (int h : _hidden) if (h <= 0) dl.error("_hidden", "Hidden layer size must be positive.");
       if (_mini_batch_size < 1)
         dl.error("_mini_batch_size", "Mini-batch size must be >= 1");

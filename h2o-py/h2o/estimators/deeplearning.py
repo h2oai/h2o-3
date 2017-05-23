@@ -1091,7 +1091,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         Compute variable importances for input features (Gedeon method) - can be slow for large networks.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``  (default: ``True``).
         """
         return self._parms.get("variable_importances")
 
