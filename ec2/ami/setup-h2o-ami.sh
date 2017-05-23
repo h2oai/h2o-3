@@ -84,3 +84,14 @@ R CMD INSTALL `find . -name "h2o*.tar.gz"`
 
 mkdir /data
 
+cd /etc/nginx/sites-enabled
+curl -H 'Cache-Control: no-cache' -O https://raw.githubusercontent.com/h2oai/h2o-3/master/ec2/ami/conf/default
+curl -H 'Cache-Control: no-cache' -O https://raw.githubusercontent.com/h2oai/h2o-3/master/ec2/ami/conf/notebook-site
+
+cd /etc/nginx/conf.d
+curl -H 'Cache-Control: no-cache' -O https://raw.githubusercontent.com/h2oai/h2o-3/master/ec2/ami/conf//httpredirect.conf
+
+cd /opt
+curl -H 'Cache-Control: no-cache' -O https://raw.githubusercontent.com/h2oai/h2o-3/master/ec2/ami/start-jupyter.sh
+chmod +x /opt/start-jupyter.sh
+
