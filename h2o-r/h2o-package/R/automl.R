@@ -99,13 +99,11 @@ h2o.automl <- function(x, y, training_frame,
   project <- automl_job$project
   leaderboard <- as.data.frame(automl_job["leaderboard_table"]$leaderboard_table)
   row.names(leaderboard) <- seq(nrow(leaderboard))
-  user_feedback <- automl_job["user_feedback_table"]
   leader <- h2o.getModel(automl_job$leaderboard$models[[1]]$name)
 
   # Make AutoML object
   new("H2OAutoML",
       project_name = project,
-      user_feedback = user_feedback,
       leader = leader,
       leaderboard = leaderboard
   )
