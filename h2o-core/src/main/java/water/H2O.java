@@ -186,95 +186,12 @@ final public class H2O {
   public static final OptArgs ARGS = new OptArgs();
 
   /**
-   * A class containing all of the arguments for H2O.
+   * A class containing all of the authentication arguments for H2O.
    */
   public static class
-    OptArgs {
-    // Prefix of hidden system properties
-    public static final String SYSTEM_PROP_PREFIX = "sys.ai.h2o.";
+    BaseArgs {
     //-----------------------------------------------------------------------------------
-    // Help and info
-    //-----------------------------------------------------------------------------------
-    /** -help, -help=true; print help and exit*/
-    public boolean help = false;
-
-    /** -version, -version=true; print version and exit */
-    public boolean version = false;
-
-    //-----------------------------------------------------------------------------------
-    // Clouding
-    //-----------------------------------------------------------------------------------
-    /** -name=name; Set cloud name */
-    public String name = System.getProperty("user.name"); // Cloud name
-
-    /** -flatfile=flatfile; Specify a list of cluster IP addresses */
-    public String flatfile;
-
-    /** -port=####; Specific Browser/API/HTML port */
-    public int port;
-
-    /** -baseport=####; Port to start upward searching from. */
-    public int baseport = 54321;
-
-    /** -web_ip=ip4_or_ip6; IP used for web server. By default it listen to all interfaces. */
-    public String web_ip = null;
-
-    /** -ip=ip4_or_ip6; Named IP4/IP6 address instead of the default */
-    public String ip;
-
-    /** -network=network; Network specification for acceptable interfaces to bind to */
-    public String network;
-
-    /** -client, -client=true; Client-only; no work; no homing of Keys (but can cache) */
-    public boolean client;
-
-    /** -user_name=user_name; Set user name */
-    public String user_name = System.getProperty("user.name");
-
-    //-----------------------------------------------------------------------------------
-    // Node configuration
-    //-----------------------------------------------------------------------------------
-    /** -ice_root=ice_root; ice root directory; where temp files go */
-    public String ice_root;
-
-    /** -cleaner; enable user-mode spilling of big data to disk in ice_root */
-    public boolean cleaner = false;
-
-    /** -nthreads=nthreads; Max number of F/J threads in the low-priority batch queue */
-    public short nthreads= (short)Runtime.getRuntime().availableProcessors();
-
-    /** -log_dir=/path/to/dir; directory to save logs in */
-    public String log_dir;
-
-    /** -flow_dir=/path/to/dir; directory to save flows in */
-    public String flow_dir;
-
-    /** -disable_web; disable Jetty and REST API interface */
-    public boolean disable_web = false;
-
-    /** -context_path=jetty_context_path; the context path for jetty */
-    public String context_path = "";
-
-    //-----------------------------------------------------------------------------------
-    // HDFS & AWS
-    //-----------------------------------------------------------------------------------
-    /** -hdfs_config=hdfs_config; configuration file of the HDFS */
-    public String hdfs_config = null;
-
-    /** -hdfs_skip=hdfs_skip; used by Hadoop driver to not unpack and load any HDFS jar file at runtime. */
-    public boolean hdfs_skip = false;
-
-    /** -aws_credentials=aws_credentials; properties file for aws credentials */
-    public String aws_credentials = null;
-
-    /** --ga_hadoop_ver=ga_hadoop_ver; Version string for Hadoop */
-    public String ga_hadoop_ver = null;
-
-    /** --ga_opt_out; Turns off usage reporting to Google Analytics  */
-    public boolean ga_opt_out = false;
-
-    //-----------------------------------------------------------------------------------
-    // Authentication
+    // Authentication & Security
     //-----------------------------------------------------------------------------------
     /** -jks is Java KeyStore file on local filesystem */
     public String jks = null;
@@ -301,14 +218,107 @@ final public class H2O {
     public boolean form_auth = false;
 
     /** -session_timeout maximum duration of session inactivity in minutes **/
-    private String session_timeout_spec = null; // raw value specified by the user
+    String session_timeout_spec = null; // raw value specified by the user
     public int session_timeout = 0; // parsed value (in minutes)
+
+    /** -user_name=user_name; Set user name */
+    public String user_name = System.getProperty("user.name");
 
     /** -internal_security_conf path (absolute or relative) to a file containing all internal security related configurations */
     public String internal_security_conf = null;
 
     /** -internal_security_enabled is a boolean that indicates if internal communication paths are secured*/
     public boolean internal_security_enabled = false;
+
+    //-----------------------------------------------------------------------------------
+    // Networking
+    //-----------------------------------------------------------------------------------
+    /** -port=####; Specific Browser/API/HTML port */
+    public int port;
+
+    /** -baseport=####; Port to start upward searching from. */
+    public int baseport = 54321;
+
+    /** -web_ip=ip4_or_ip6; IP used for web server. By default it listen to all interfaces. */
+    public String web_ip = null;
+
+    /** -ip=ip4_or_ip6; Named IP4/IP6 address instead of the default */
+    public String ip;
+
+    /** -network=network; Network specification for acceptable interfaces to bind to */
+    public String network;
+
+    /** -context_path=jetty_context_path; the context path for jetty */
+    public String context_path = "";
+  }
+
+  /**
+   * A class containing all of the arguments for H2O.
+   */
+  public static class
+    OptArgs extends BaseArgs {
+    // Prefix of hidden system properties
+    public static final String SYSTEM_PROP_PREFIX = "sys.ai.h2o.";
+    public static final String SYSTEM_DEBUG_CORS = H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.cors";
+    //-----------------------------------------------------------------------------------
+    // Help and info
+    //-----------------------------------------------------------------------------------
+    /** -help, -help=true; print help and exit*/
+    public boolean help = false;
+
+    /** -version, -version=true; print version and exit */
+    public boolean version = false;
+
+    //-----------------------------------------------------------------------------------
+    // Clouding
+    //-----------------------------------------------------------------------------------
+    /** -name=name; Set cloud name */
+    public String name = System.getProperty("user.name"); // Cloud name
+
+    /** -flatfile=flatfile; Specify a list of cluster IP addresses */
+    public String flatfile;
+
+    //-----------------------------------------------------------------------------------
+    // Node configuration
+    //-----------------------------------------------------------------------------------
+    /** -ice_root=ice_root; ice root directory; where temp files go */
+    public String ice_root;
+
+    /** -cleaner; enable user-mode spilling of big data to disk in ice_root */
+    public boolean cleaner = false;
+
+    /** -nthreads=nthreads; Max number of F/J threads in the low-priority batch queue */
+    public short nthreads= (short)Runtime.getRuntime().availableProcessors();
+
+    /** -log_dir=/path/to/dir; directory to save logs in */
+    public String log_dir;
+
+    /** -flow_dir=/path/to/dir; directory to save flows in */
+    public String flow_dir;
+
+    /** -disable_web; disable Jetty and REST API interface */
+    public boolean disable_web = false;
+
+    /** -client, -client=true; Client-only; no work; no homing of Keys (but can cache) */
+    public boolean client;
+
+    //-----------------------------------------------------------------------------------
+    // HDFS & AWS
+    //-----------------------------------------------------------------------------------
+    /** -hdfs_config=hdfs_config; configuration file of the HDFS */
+    public String hdfs_config = null;
+
+    /** -hdfs_skip=hdfs_skip; used by Hadoop driver to not unpack and load any HDFS jar file at runtime. */
+    public boolean hdfs_skip = false;
+
+    /** -aws_credentials=aws_credentials; properties file for aws credentials */
+    public String aws_credentials = null;
+
+    /** --ga_hadoop_ver=ga_hadoop_ver; Version string for Hadoop */
+    public String ga_hadoop_ver = null;
+
+    /** --ga_opt_out; Turns off usage reporting to Google Analytics  */
+    public boolean ga_opt_out = false;
 
     //-----------------------------------------------------------------------------------
     // Debugging
@@ -401,77 +411,79 @@ final public class H2O {
     @Override public String toString() { return _s; }
   }
 
-
   /**
    * Dead stupid argument parser.
    */
-  private static void parseArguments(String[] args) {
+  static void parseArguments(String[] args) {
     for (AbstractH2OExtension e : H2O.getExtensions()) {
       args = e.parseArguments(args);
     }
+    parseH2OArgumentsTo(args, ARGS);
+  }
 
+  static OptArgs parseH2OArgumentsTo(String[] args, OptArgs trgt) {
     for (int i = 0; i < args.length; i++) {
       OptString s = new OptString(args[i]);
       if (s.matches("h") || s.matches("help")) {
-        ARGS.help = true;
+        trgt.help = true;
       }
       else if (s.matches("version")) {
-        ARGS.version = true;
+        trgt.version = true;
       }
       else if (s.matches("name")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.name = args[i];
+        trgt.name = args[i];
       }
       else if (s.matches("flatfile")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.flatfile = args[i];
+        trgt.flatfile = args[i];
       }
       else if (s.matches("port")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.port = s.parseInt(args[i]);
+        trgt.port = s.parseInt(args[i]);
       }
       else if (s.matches("baseport")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.baseport = s.parseInt(args[i]);
+        trgt.baseport = s.parseInt(args[i]);
       }
       else if (s.matches("ip")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.ip = args[i];
+        trgt.ip = args[i];
       }
       else if (s.matches("web_ip")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.web_ip = args[i];
+        trgt.web_ip = args[i];
       }
       else if (s.matches("network")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.network = args[i];
+        trgt.network = args[i];
       }
       else if (s.matches("client")) {
-        ARGS.client = true;
+        trgt.client = true;
       }
       else if (s.matches("user_name")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.user_name = args[i];
+        trgt.user_name = args[i];
       }
       else if (s.matches("ice_root")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.ice_root = args[i];
+        trgt.ice_root = args[i];
       }
       else if (s.matches("log_dir")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.log_dir = args[i];
+        trgt.log_dir = args[i];
       }
       else if (s.matches("flow_dir")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.flow_dir = args[i];
+        trgt.flow_dir = args[i];
       }
       else if (s.matches("disable_web")) {
-        ARGS.disable_web = true;
+        trgt.disable_web = true;
       }
       else if (s.matches("context_path")) {
         i = s.incrementAndCheck(i, args);
         String value = args[i];
-        ARGS.context_path = value.startsWith("/")
+        trgt.context_path = value.startsWith("/")
                             ? value.trim().length() == 1
                               ? "" : value
                             : "/" + value;
@@ -482,93 +494,94 @@ final public class H2O {
         if (nthreads >= 1) { //otherwise keep default (all cores)
           if (nthreads > Short.MAX_VALUE)
             throw H2O.unimpl("Can't handle more than " + Short.MAX_VALUE + " threads.");
-          ARGS.nthreads = (short) nthreads;
+          trgt.nthreads = (short) nthreads;
         }
       }
       else if (s.matches("hdfs_config")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.hdfs_config = args[i];
+        trgt.hdfs_config = args[i];
       }
       else if (s.matches("hdfs_skip")) {
-        ARGS.hdfs_skip = true;
+        trgt.hdfs_skip = true;
       }
       else if (s.matches("aws_credentials")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.aws_credentials = args[i];
+        trgt.aws_credentials = args[i];
       }
       else if (s.matches("ga_hadoop_ver")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.ga_hadoop_ver = args[i];
+        trgt.ga_hadoop_ver = args[i];
       }
       else if (s.matches("ga_opt_out")) {
         // JUnits pass this as a system property, but it usually a flag without an arg
         if (i+1 < args.length && args[i+1].equals("yes")) i++;
-        ARGS.ga_opt_out = true;
+        trgt.ga_opt_out = true;
       }
       else if (s.matches("log_level")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.log_level = args[i];
+        trgt.log_level = args[i];
       }
       else if (s.matches("random_udp_drop")) {
-        ARGS.random_udp_drop = true;
+        trgt.random_udp_drop = true;
       }
       else if (s.matches("md5skip")) {
-        ARGS.md5skip = true;
+        trgt.md5skip = true;
       }
       else if (s.matches("quiet")) {
-        ARGS.quiet = true;
+        trgt.quiet = true;
       }
       else if(s.matches("useUDP")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.useUDP = true;
+        trgt.useUDP = true;
       }
       else if(s.matches("cleaner")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.cleaner = true;
+        trgt.cleaner = true;
       }
       else if (s.matches("jks")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.jks = args[i];
+        trgt.jks = args[i];
       }
       else if (s.matches("jks_pass")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.jks_pass = args[i];
+        trgt.jks_pass = args[i];
       }
       else if (s.matches("hash_login")) {
-        ARGS.hash_login = true;
+        trgt.hash_login = true;
       }
       else if (s.matches("ldap_login")) {
-        ARGS.ldap_login = true;
+        trgt.ldap_login = true;
       }
       else if (s.matches("kerberos_login")) {
-        ARGS.kerberos_login = true;
+        trgt.kerberos_login = true;
       }
       else if (s.matches("pam_login")) {
-        ARGS.pam_login = true;
+        trgt.pam_login = true;
       }
       else if (s.matches("login_conf")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.login_conf = args[i];
+        trgt.login_conf = args[i];
       }
       else if (s.matches("form_auth")) {
-        ARGS.form_auth = true;
+        trgt.form_auth = true;
       }
       else if (s.matches("session_timeout")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.session_timeout_spec = args[i];
-        try { ARGS.session_timeout = Integer.parseInt(args[i]); } catch (Exception e) { /* ignored */ }
+        trgt.session_timeout_spec = args[i];
+        try { trgt.session_timeout = Integer.parseInt(args[i]); } catch (Exception e) { /* ignored */ }
       }
       else if (s.matches("internal_security_conf")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.internal_security_conf = args[i];
+        trgt.internal_security_conf = args[i];
       }
       else if (s.matches("no_latest_check")) {
-        ARGS.noLatestCheck = true;
+        trgt.noLatestCheck = true;
       }
       else {
         parseFailed("Unknown argument (" + s + ")");
       }
     }
+    return trgt;
   }
 
   private static void validateArguments() {
@@ -1379,9 +1392,13 @@ final public class H2O {
   }
 
   public static String getURL(String schema) {
-    return String.format(H2O.SELF_ADDRESS instanceof Inet6Address
-                         ? "%s://[%s]:%d%s" : "%s://%s:%d%s",
-                         schema, H2O.SELF_ADDRESS.getHostAddress(), H2O.API_PORT, H2O.ARGS.context_path);
+    return getURL(schema, H2O.SELF_ADDRESS, H2O.API_PORT, H2O.ARGS.context_path);
+  }
+
+  public static String getURL(String schema, InetAddress address, int port, String contextPath) {
+    return String.format(address instanceof Inet6Address
+                    ? "%s://[%s]:%d%s" : "%s://%s:%d%s",
+            schema, address.getHostAddress(), port, contextPath);
   }
 
   // The multicast discovery port
