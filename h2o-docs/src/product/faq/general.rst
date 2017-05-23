@@ -190,9 +190,7 @@ vec that loads the file when necessary, and returns a key.
 
 **Does H2O support GPUs?**
 
-Currently, we do not support this capability. If you are interested in
-contributing your efforts to support this feature to our open-source
-code database, please contact us at h2ostream@googlegroups.com.
+H2O supports GPUs as part of our Deep Water offering. Refer to the `Deep Water <https://www.h2o.ai/deep-water/>`__ product section of the H2O.ai site for more information. Users with an AWS account can also follow the `"H2O + TensorFlow on AWS GPU" <https://blog.h2o.ai/2016/07/h2o-tensorflow-on-aws-gpu/>`__ tutorial. 
 
 --------------
 
