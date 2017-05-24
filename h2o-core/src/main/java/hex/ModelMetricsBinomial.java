@@ -117,7 +117,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
         ds[2] = chks[0].atd(i); //class 1 probs (user-given)
         ds[1] = 1-ds[2]; //class 0 probs
         ds[0] = GenModel.getPrediction(ds, null, ds, Double.NaN/*ignored - uses AUC's default threshold*/); //label
-        _mb.perRow(ds, new float[]{actuals.at8(i)}, null);
+        _mb.perRow(ds, new float[]{(float)actuals.atd(i)}, null);
       }
     }
     @Override public void reduce(BinomialMetrics mrt) { _mb.reduce(mrt._mb); }
