@@ -15,6 +15,12 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import static java.util.Collections.reverse;
+import static java.util.Collections.sort;
+
 public class LinearAlgebraUtils {
   /*
    * Forward substitution: Solve Lx = b for x with L = lower triangular matrix, b = real vector
@@ -86,7 +92,23 @@ public class LinearAlgebraUtils {
     }
     return arr2D;
   }
-  
+
+  public static List<EigenPair> sortEigenpairsDescendingly(int count, double[] eigenvalues, double[][] eigenvectors) {
+    List<EigenPair> eigenPairs = new ArrayList<>();
+    for (int i = 0; i < count; i++) {
+      eigenPairs.add(new EigenPair(eigenvalues[i], eigenvectors[i]));
+    }
+    sort(eigenPairs);
+    reverse(eigenPairs);
+    return eigenPairs;
+    int index = 0;
+    for (EigenPair eigenPair : eigenPairs) {
+      eigenvectors[index] = eigenPair.eigenvector;
+      eigenvalues[index] = eigenPair.eigenvalue;
+      index++;
+    }
+  }
+
   /**
    * Computes B = XY where X is n by k and Y is k by p, saving result in new vecs
    * Input: dinfo = X (large frame) with dinfo._adaptedFrame passed to doAll

@@ -6,11 +6,11 @@ package hex.util;
  */
 public class EigenPair implements Comparable<EigenPair> {
   public double eigenvalue;
-  public double[] eigenvectors;
+  public double[] eigenvector;
 
-  public EigenPair(double eigenvalue, double[] eigenvectors) {
+  public EigenPair(double eigenvalue, double[] eigenvector) {
     this.eigenvalue = eigenvalue;
-    this.eigenvectors = eigenvectors;
+    this.eigenvector = eigenvector;
   }
 
   /**
