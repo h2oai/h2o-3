@@ -22,7 +22,6 @@ public class EVDMTJDenseMatrix implements SVDInterface {
   private static double[][] eigenvectors;
 
   EVDMTJDenseMatrix(double[][] gramMatrix) {
-    assert LinearAlgebraUtils.isSymmetric(gramMatrix);
     EVDMTJDenseMatrix.gramMatrix = new DenseMatrix(gramMatrix);
     runEVD();
   }
