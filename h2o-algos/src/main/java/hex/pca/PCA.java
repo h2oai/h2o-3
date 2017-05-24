@@ -349,7 +349,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
             e.printStackTrace();
             throw e;
           }
-          SVDImplementation svdImplementation = SVDImplementation.JAMA;
+          SVDImplementation svdImplementation = SVDImplementation.EVD_MTJ_DENSEMATRIX;
           PCA.this._job.update(1, "Computing stats from SVD using " + svdImplementation.toString());
           SVDInterface svd = SVDFactory.createSVDImplementation(gramMatrix, svdImplementation);
           double[][] rightEigenvectors = svd.getPrincipalComponents();

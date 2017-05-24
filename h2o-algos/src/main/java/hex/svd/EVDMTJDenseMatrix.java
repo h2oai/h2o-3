@@ -31,11 +31,12 @@ public class EVDMTJDenseMatrix implements SVDInterface {
     } catch (NotConvergedException e) {
       throw new RuntimeException(e);
     }
+    // initial eigenpairs
     eigenvalues = evd.getRealEigenvalues();
     eigenvectors = LinearAlgebraUtils.reshape1DArray(evd.getRightEigenvectors().getData(), gramDimension,
         gramDimension);
 
-    // sort in descending order according to magnitude of eigenvalues
+    // sort eigenpairs in descending order according to the magnitude of eigenvalues
     List<EigenPair> eigenPairs = EigenPair.getSortedEigenpairs(gramDimension, eigenvalues, eigenvectors);
     reverse(eigenPairs);
     eigenvalues = EigenPair.extractEigenvalues(eigenPairs);

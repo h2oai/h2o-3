@@ -82,7 +82,7 @@ public class LinearAlgebraUtils {
   public static double[][] reshape1DArray(double[] arr, int m, int n) {
     double[][] arr2D = new double[m][n];
     for (int i = 0; i < m; i++) {
-		System.arraycopy(arr, i * m, arr2D[i], 0, n);
+      System.arraycopy(arr, i * m, arr2D[i], 0, n);
     }
     return arr2D;
   }
