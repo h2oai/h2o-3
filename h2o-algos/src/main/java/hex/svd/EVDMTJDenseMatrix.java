@@ -30,7 +30,6 @@ public class EVDMTJDenseMatrix implements SVDInterface {
   private static void runEVD() {
     int gramDimension = gramMatrix.numRows();
     try {
-      // Note: gramMatrix will be overwritten after this
       evd = no.uib.cipr.matrix.EVD.factorize(gramMatrix);
     } catch (NotConvergedException e) {
       throw new RuntimeException(e);

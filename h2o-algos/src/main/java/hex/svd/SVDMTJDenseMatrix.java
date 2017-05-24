@@ -31,7 +31,6 @@ public class SVDMTJDenseMatrix implements SVDInterface {
   private void runSVD() {
     int gramDimension = gramMatrix.numRows();
     try {
-      // Note: gramMatrix will be overwritten after this
       svd = new no.uib.cipr.matrix.SVD(gramDimension, gramDimension).factor(gramMatrix);
     } catch (NotConvergedException e) {
       throw new RuntimeException(e);

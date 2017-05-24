@@ -11,7 +11,7 @@ public class SVDFactory {
       case EVD_MTJ_DENSEMATRIX:
         return new EVDMTJDenseMatrix(gramMatrix);
       case MTJ:
-        return new SVDMTJ(gramMatrix);
+        return new EVDMTJSymm(gramMatrix);
       case MTJ_DENSEMATRIX:
         return new SVDMTJDenseMatrix(gramMatrix);
       case JAMA:

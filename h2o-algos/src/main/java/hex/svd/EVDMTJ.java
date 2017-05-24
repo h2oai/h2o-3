@@ -3,6 +3,7 @@ package hex.svd;
 import hex.util.EigenPair;
 import hex.util.LinearAlgebraUtils;
 import no.uib.cipr.matrix.DenseMatrix;
+import no.uib.cipr.matrix.Matrix;
 import no.uib.cipr.matrix.NotConvergedException;
 
 import java.util.ArrayList;
@@ -16,7 +17,7 @@ import static java.util.Collections.sort;
  *         created on 1.5.17
  */
 public class EVDMTJ implements SVDInterface {
-  private static DenseMatrix gramMatrix;
+  private static Matrix gramMatrix;
   private static no.uib.cipr.matrix.EVD evd;
   private static double[] eigenvalues;
   private static double[][] eigenvectors;
@@ -30,7 +31,6 @@ public class EVDMTJ implements SVDInterface {
   private static void runEVD() {
     int gramDimension = gramMatrix.numRows();
     try {
-      // Note: gramMatrix will be overwritten after this
       evd = no.uib.cipr.matrix.EVD.factorize(gramMatrix);
     } catch (NotConvergedException e) {
       throw new RuntimeException(e);
