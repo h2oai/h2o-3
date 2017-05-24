@@ -5,11 +5,9 @@ import hex.util.LinearAlgebraUtils;
 import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.NotConvergedException;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static java.util.Collections.reverse;
-import static java.util.Collections.sort;
 
 /**
  * @author mathemage <ha@h2o.ai>
@@ -34,21 +32,15 @@ public class EVDMTJDenseMatrix implements SVDInterface {
       throw new RuntimeException(e);
     }
     eigenvalues = evd.getRealEigenvalues();
-    DenseMatrix rightEigenvectors = evd.getRightEigenvectors();
-    eigenvectors = LinearAlgebraUtils.reshape1DArray(rightEigenvectors.getData(), gramDimension, gramDimension);
+    eigenvectors = LinearAlgebraUtils.reshape1DArray(evd.getRightEigenvectors().getData(), gramDimension,
+        gramDimension);
 
-    List<EigenPair> eigenPairs = new ArrayList<>();
-    for (int i = 0; i < gramDimension; i++) {
-      eigenPairs.add(new EigenPair(eigenvalues[i], eigenvectors[i]));
-    }
-    sort(eigenPairs);
+    // sort in descending order according to magnitude of eigenvalues
+    List<EigenPair> eigenPairs = EigenPair.getSortedEigenpairs(gramDimension, eigenvalues, eigenvectors);
     reverse(eigenPairs);
-    int index = 0;
-    for (EigenPair eigenPair : eigenPairs) {
-      eigenvectors[index] = eigenPair.eigenvectors;
-      eigenvalues[index] = eigenPair.eigenvalue;
-      index++;
-    }
+    eigenvalues = EigenPair.extractEigenvalues(eigenPairs);
+    eigenvectors = EigenPair.extractEigenvectors(eigenPairs);
+
     DenseMatrix sortedEigenvectors = new DenseMatrix(eigenvectors);
     eigenvectors = LinearAlgebraUtils.reshape1DArray(sortedEigenvectors.getData(), gramDimension, gramDimension);
   }
