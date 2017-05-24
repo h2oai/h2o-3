@@ -25,8 +25,9 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
   @Override public boolean isSupervised() { return false; }
 
   public static class Exemplar extends Iced<Exemplar> {
-    Exemplar(double[] d, long id) { data=d; gid=id; _cnt=1; }
-    final double[] data;
+    Exemplar(double[] d, int[] c, long id) { data=d; cats=c; gid=id; _cnt=1; }
+    final double[] data; //numerical
+    final int[] cats; //categorical
     final long gid;
 
     long _cnt;  // exemplar count
@@ -112,14 +113,6 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
       error("_rel_tol_num_exemplars", "rel_tol_num_exemplars must be inside 0...1.");
     }
     super.init(expensive);
-    if (expensive) {
-      byte[] types = _train.types();
-      for (byte b : types) {
-        if (b != Vec.T_NUM && b != Vec.T_TIME) {
-          error("_categorical_encoding", "Categorical features must be turned into numeric features. Specify categorical_encoding=\"Eigen\", \"OneHotExplicit\", \"LabelEncoder\" or \"Binary\"");
-        }
-      }
-    }
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(Aggregator.this);
   }
@@ -345,8 +338,9 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         long rowIndex = chks[0].start()+r;
         row = di.extractDenseRow(dataChks, r, row);
         double[] data = Arrays.copyOf(row.numVals, nCols);
+        int[] cats = Arrays.copyOf(row.binIds, row.binIds.length);
         if (r==0) {
-          Exemplar ex = new Exemplar(data, rowIndex);
+          Exemplar ex = new Exemplar(data, cats, rowIndex);
           es = Exemplar.addExemplar(es,ex);
           assignmentChk.set(r, ex.gid);
         } else {
@@ -357,6 +351,11 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
           long gid=-1;
           for(Exemplar e: es) {
             if( null==e ) break;
+            // all categoricals must match: only non-trivial (empty) for categorical_handling == Enum
+            if (!Arrays.equals(cats, e.cats)) {
+              index++;
+              continue;
+            }
             double distToExemplar = e.squaredEuclideanDistance(data,distanceToNearestExemplar);
             if( distToExemplar < distanceToNearestExemplar ) {
               distanceToNearestExemplar = distToExemplar;
@@ -374,7 +373,8 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
             assignmentChk.set(r, gid);
           } else {
             /* otherwise, assign a new exemplar */
-            Exemplar ex = new Exemplar(data, rowIndex);
+            Exemplar ex = new Exemplar(data, cats, rowIndex);
+            assert(Arrays.equals(cats, ex.cats));
             es = Exemplar.addExemplar(es,ex);
             if (es.length > 2*_maxExemplars) { //es array grows by 2x - have to be conservative here
               terminate();
