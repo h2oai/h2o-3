@@ -139,6 +139,60 @@ public class AggregatorTest extends TestUtil {
   }
 
   @Test public void testAggregatorEigenLowCardinalityEnum() {
+    String[] data = new String[] {
+        "1|2|A|A",
+        "1|2|A|A",
+        "1|2|A|A",
+        "1|2|A|A",
+        "1|2|A|A",
+        "2|2|A|B",
+        "2|2|A|A",
+        "1|4|A|A",
+        "1|2|B|A",
+        "1|2|B|A",
+        "1|2|A|A",
+        "1|2|A|A",
+        "4|5|C|A",
+        "4|5|D|A",
+        "2|5|D|A",
+        "3|5|E|A",
+        "4|5|F|A",
+        "4|5|G|A",
+        "4|5|H|A",
+        "4|5|I|A",
+        "4|5|J|A",
+        "4|5|K|A",
+        "4|5|L|A",
+        "4|5|M|A",
+        "4|5|N|A",
+        "4|5|O|A",
+        "4|5|P|A",
+    };
+
+    StringBuilder sb1 = new StringBuilder();
+    for( String ds : data ) sb1.append(ds).append("\n");
+    Key k1 = makeByteVec(sb1.toString());
+    Key r1 = Key.make("r1");
+    Frame frame = ParseDataset.parse(r1, k1);
+
+    AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
+    parms._train = frame._key;
+    parms._target_num_exemplars = 5;
+    parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.Enum;
+    long start = System.currentTimeMillis();
+    AggregatorModel agg = new Aggregator(parms).trainModel().get();  // 0.905
+    System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");
+    agg.checkConsistency();
+    Frame output = agg._output._output_frame.get();
+    System.out.println(output.toTwoDimTable(0, (int)output.numRows()));
+    Log.info("Number of exemplars: " + agg._exemplars.length);
+    Assert.assertTrue(agg._exemplars.length==17);
+    output.remove();
+    frame.remove();
+    agg.remove();
+  }
+
+  @Test public void testAggregatorEigenLowCardinalityEnumLimited() {
      String[] data = new String[] {
          "1|2|A|A",
          "1|2|A|A",
@@ -178,7 +232,7 @@ public class AggregatorTest extends TestUtil {
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
     parms._target_num_exemplars = 5;
-    parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.Enum;
+    parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.EnumLimited;
     long start = System.currentTimeMillis();
     AggregatorModel agg = new Aggregator(parms).trainModel().get();  // 0.905
     System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");
@@ -186,7 +240,7 @@ public class AggregatorTest extends TestUtil {
     Frame output = agg._output._output_frame.get();
     System.out.println(output.toTwoDimTable(0, (int)output.numRows()));
     Log.info("Number of exemplars: " + agg._exemplars.length);
-    Assert.assertTrue(agg._exemplars.length==17);
+    Assert.assertTrue(agg._exemplars.length==7);
     output.remove();
     frame.remove();
     agg.remove();

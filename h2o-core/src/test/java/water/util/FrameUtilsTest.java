@@ -113,7 +113,7 @@ public class FrameUtilsTest extends TestUtil {
               .withChunkLayout(2, 2, 2, 1)
               .build();
       Frame result = FrameUtils.categoricalEncoder(f, new String[]{"CatCol1"},
-              Model.Parameters.CategoricalEncodingScheme.OneHotExplicit, null);
+              Model.Parameters.CategoricalEncodingScheme.OneHotExplicit, null, -1);
       Scope.track(result);
       assertArrayEquals(
               new String[]{"NumCol", "CatCol2.A", "CatCol2.B", "CatCol2.C", "CatCol2.missing(NA)", "CatCol1"},

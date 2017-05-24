@@ -409,7 +409,7 @@ public class LinearAlgebraUtils {
     Key<Frame> source = Key.make();
     Key<Frame> dest = Key.make();
     Frame train = new Frame(source, new String[]{"enum"}, new Vec[]{src});
-    int maxLevels = 10;
+    int maxLevels = 1024; // keep eigen projection method reasonably fast
     boolean created=false;
     if (src.cardinality()>maxLevels) {
       DKV.put(train);
