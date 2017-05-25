@@ -62,7 +62,7 @@ def stackedensemble_binary_test():
     preds_py =  ensemble.predict(test)
 
     #Load binary model and predict
-    bin_model = h2o.load_model("smalldata/binarymodels/stackedensemble/ensemble_higgs")
+    bin_model = h2o.load_model(pyunit_utils.locate("smalldata/binarymodels/stackedensemble/ensemble_higgs"))
     preds_bin = bin_model.predict(test)
 
     #Predictions from model in Py and binary model should be the same
