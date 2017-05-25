@@ -11,11 +11,11 @@
 #' @param training_frame Training data frame (or ID).
 #' @param validation_frame Validation data frame (or ID); Optional.
 #' @param leaderboard_frame Leaderboard data frame (or ID).  The Leaderboard will be scored using this data set. Optional.
-#' @param max_runtime_secs Maximum allowed runtime in seconds for the entire model training process.  Use 0 to disable. Defaults to 600 secs (10 min).
+#' @param max_runtime_secs Maximum allowed runtime in seconds for the entire model training process. Use 0 to disable. Defaults to 3600 secs (1 hour).
 #' @param max_models Maximum number of models to build in the AutoML process (does not include Stacked Ensembles). Defaults to NULL.
-#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression) Must be one of: "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error". Defaults to AUTO.
-#' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much) Defaults to 0.
-#' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 5 and must be an integer.
+#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression)  Must be one of: "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error". Defaults to AUTO.
+#' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much) Defaults to 0.001.  Set to 0 to disable metric-based early stopping.
+#' @param stopping_rounds Integer. Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 5 and must be an integer.
 #' @param seed Integer. Set a seed for reproducibility. AutoML can only guarantee reproducibility if max_models or early stopping is used because max_runtime_secs is resource limited, meaning that if the resources are not the same between runs, AutoML may be able to train more models on one run vs another.
 #' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
 #'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.  Note that
@@ -37,18 +37,18 @@
 h2o.automl <- function(x, y, training_frame,
                        validation_frame = NULL,
                        leaderboard_frame = NULL,
-                       max_runtime_secs = 600,
+                       max_runtime_secs = 3600,
                        max_models = NULL,
                        stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE",
                                            "RMSLE", "AUC", "lift_top_group", "misclassification",
                                            "mean_per_class_error"),
-                       stopping_tolerance = 0,
+                       stopping_tolerance = 0.001,
                        stopping_rounds = 5,
                        seed = NULL)
 {
 
   tryCatch({
-    .h2o.__remoteSend(h2oRestApiVersion = 3, method="GET", page = "Metadata/schemas/AutoMLV99")
+    .h2o.__remoteSend(h2oRestApiVersion = 3, method = "GET", page = "Metadata/schemas/AutoMLV99")
   },
   error = function(cond){
     message("
@@ -80,7 +80,7 @@ h2o.automl <- function(x, y, training_frame,
 
   # Input/data parameters to send to the AutoML backend
   input_spec <- list()
-  input_spec$response_column <- ifelse(is.numeric(y),names(training_frame[y]),y)
+  input_spec$response_column <- ifelse(is.numeric(y), names(training_frame[y]),y)
   input_spec$training_frame <- training_frame_id
   input_spec$validation_frame <- validation_frame_id
   input_spec$leaderboard_frame <- leaderboard_frame_id
@@ -101,10 +101,9 @@ h2o.automl <- function(x, y, training_frame,
   if (!is.null(max_models)) {
     build_control$stopping_criteria$max_models <- max_models
   }
-  # Early stopping is currently broken, so uncomment for now
-  #build_control$stopping_criteria$stopping_metric <- match.arg(stopping_metric)
-  #build_control$stopping_criteria$stopping_tolerance <- stopping_tolerance
-  #build_control$stopping_criteria$stopping_rounds <- stopping_rounds
+  build_control$stopping_criteria$stopping_metric <- match.arg(stopping_metric)
+  build_control$stopping_criteria$stopping_tolerance <- stopping_tolerance
+  build_control$stopping_criteria$stopping_rounds <- stopping_rounds
   if (!is.null(seed)) {
     build_control$seed <- seed
   }
