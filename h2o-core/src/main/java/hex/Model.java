@@ -964,7 +964,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           if (vec.isString())
             vec = VecUtils.stringToCategorical(vec); //turn a String column into a categorical column (we don't delete the original vec here)
           if( expensive && vec.domain() != domains[i] && !Arrays.equals(vec.domain(),domains[i]) ) { // Result needs to be the same categorical
-            CategoricalWrappedVec evec;
+            Vec evec;
             try {
               evec = vec.adaptTo(domains[i]); // Convert to categorical or throw IAE
               toDelete.put(evec._key, "categorically adapted vec");

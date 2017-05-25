@@ -98,7 +98,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-    if(domain == null && _parms._family == Family.binomial)
+    if(domain == null && (_parms._family == Family.binomial || _parms._family == Family.quasibinomial))
       domain = binomialClassNames;
     return new GLMMetricBuilder(domain, _ymu, new GLMWeightsFun(_parms), _output.bestSubmodel().rank(), true, _parms._intercept);
   }
@@ -334,6 +334,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case gaussian:
           return _link == Link.identity;
         case binomial:
+        case quasibinomial:
           return _link == Link.logit;
         case poisson:
           return _link == Link.log;
@@ -724,7 +725,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   @Override
   protected String[][] scoringDomains(){
     String [][] domains = _output._domains;
-    if(_parms._family == Family.binomial && _output._domains[_output._dinfo.responseChunkId(0)] == null) {
+    if((_parms._family == Family.binomial || _parms._family == Family.quasibinomial) && _output._domains[_output._dinfo.responseChunkId(0)] == null) {
       domains = domains.clone();
       domains[_output._dinfo.responseChunkId(0)] = binomialClassNames;
     }
@@ -828,6 +829,21 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       String[] cnames = glm._dinfo.coefNames();
       String [] names = glm._dinfo._adaptedFrame._names;
       String [][] domains = glm._dinfo._adaptedFrame.domains();
+      if(glm._parms._family == Family.quasibinomial){
+        double [] mins = glm._dinfo._adaptedFrame.lastVec().mins();
+        double [] maxs = glm._dinfo._adaptedFrame.lastVec().maxs();
+        double l = mins[0];
+        double u = maxs[0];
+        if(!(l<u))
+          throw new IllegalArgumentException("quasibinomail family expects response to have two distinct values");
+        for(int i = 0; i < mins.length; ++i){
+          if((mins[i]-l)*(mins[i]-u) != 0)
+            throw new IllegalArgumentException("quasibinomail family expects response to have two distinct values, got mins = " + Arrays.toString(mins) + ", maxs = " + Arrays.toString(maxs));
+          if((maxs[i]-l)*(maxs[i]-u) != 0)
+            throw new IllegalArgumentException("quasibinomail family expects response to have two distinct values, got mins = " + Arrays.toString(mins) + ", maxs = " + Arrays.toString(maxs));
+        }
+        domains[domains.length-1] = new String[]{Double.toString(l),Double.toString(u)};
+      }
       int id = glm._generatedWeights == null?-1:ArrayUtils.find(names, glm._generatedWeights);
       if(id >= 0) {
         _dinfo._weights = false;
@@ -844,7 +860,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _domains = domains;
       _coefficient_names = Arrays.copyOf(cnames, cnames.length + 1);
       _coefficient_names[_coefficient_names.length-1] = "Intercept";
-      _binomial = glm._parms._family == Family.binomial;
+      _binomial = (glm._parms._family == Family.binomial || glm._parms._family == Family.quasibinomial);
       _nclasses = glm.nclasses();
       _multinomial = _nclasses > 2;
 

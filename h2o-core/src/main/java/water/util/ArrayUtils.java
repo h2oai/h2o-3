@@ -890,10 +890,12 @@ public class ArrayUtils {
     return cnt;
   }
 
-  public static boolean isInt(String s) {
-    if (s == null || s.isEmpty()) return false;
-    int i = s.charAt(0)=='-' ? 1 : 0;
-    for(; i<s.length();i++) if (!Character.isDigit(s.charAt(i))) return false;
+  public static boolean isInt(String... ary) {
+    for(String s:ary) {
+      if (s == null || s.isEmpty()) return false;
+      int i = s.charAt(0) == '-' ? 1 : 0;
+      for (; i < s.length(); i++) if (!Character.isDigit(s.charAt(i))) return false;
+    }
     return true;
   }
 
@@ -1197,6 +1199,17 @@ public class ArrayUtils {
 
   public static int [] sortedMerge(int[] a, int [] b) {
     int [] c = MemoryManager.malloc4(a.length + b.length);
+    int i = 0, j = 0;
+    for(int k = 0; k < c.length; ++k){
+      if(i == a.length) c[k] = b[j++];
+      else if(j == b.length)c[k] = a[i++];
+      else if(b[j] < a[i]) c[k] = b[j++];
+      else c[k] = a[i++];
+    }
+    return c;
+  }
+  public static double [] sortedMerge(double[] a, double [] b) {
+    double [] c = MemoryManager.malloc8d(a.length + b.length);
     int i = 0, j = 0;
     for(int k = 0; k < c.length; ++k){
       if(i == a.length) c[k] = b[j++];
@@ -1786,6 +1799,11 @@ public class ArrayUtils {
   }
 
   public static boolean isSorted(int[] vals) {
+    for (int i = 1; i < vals.length; ++i)
+      if (vals[i - 1] > vals[i]) return false;
+    return true;
+  }
+  public static boolean isSorted(double[] vals) {
     for (int i = 1; i < vals.length; ++i)
       if (vals[i - 1] > vals[i]) return false;
     return true;

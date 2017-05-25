@@ -109,11 +109,31 @@ public class VecUtils {
     if (src.isInt()) {
       int min = (int) src.min(), max = (int) src.max();
       // try to do the fast domain collection
-      long dom[] = (min >= 0 && max < Integer.MAX_VALUE - 4) ? new CollectDomainFast(max).doAll(src).domain() : new CollectDomain().doAll(src).domain();
+      long dom[] = (min >= 0 && max < Integer.MAX_VALUE - 4) ? new CollectDomainFast(max).doAll(src).domain() : new CollectIntegerDomain().doAll(src).domain();
       if (dom.length > Categorical.MAX_CATEGORICAL_COUNT)
         throw new H2OIllegalArgumentException("Column domain is too large to be represented as an categorical: " + dom.length + " > " + Categorical.MAX_CATEGORICAL_COUNT);
       return copyOver(src, Vec.T_CAT, dom);
-    } else throw new H2OIllegalArgumentException("Categorical conversion can only currently be applied to integer columns.");
+    } else if(src.isNumeric()){
+      final double [] dom = new CollectDoubleDomain(null,10000).doAll(src).domain();
+      String [] strDom = new String[dom.length];
+      for(int i = 0; i < dom.length; ++i)
+        strDom[i] = String.valueOf(dom[i]);
+      Vec dst = src.makeZero(strDom);
+      new MRTask(){
+        @Override public void map(Chunk c0, Chunk c1){
+          for(int r = 0; r < c0._len; ++r){
+            double d = c0.atd(r);
+            if(Double.isNaN(d))
+              c1.setNA(r);
+            else
+              c1.set(r,Arrays.binarySearch(dom,d));
+          }
+        }
+      }.doAll(new Vec[]{src,dst});
+      assert dst.min() == 0;
+      assert dst.max() == dom.length-1;
+      return dst;
+    } else throw new IllegalArgumentException("calling numericToCategorical conversion on a non numeric column");
   }
 
   /**
@@ -382,11 +402,63 @@ public class VecUtils {
       }.doAll(Vec.T_NUM, src).outputFrame().anyVec();
   }
 
+  public static class CollectDoubleDomain extends MRTask<CollectDoubleDomain> {
+
+    final double [] _sortedKnownDomain;
+    private IcedHashMap<IcedDouble,IcedInt> _uniques; // new uniques
+    final int _maxDomain;
+    final IcedInt _placeHolder = new IcedInt(1);
+
+    public CollectDoubleDomain(double [] knownDomain, int maxDomainSize) {
+      _maxDomain = maxDomainSize;
+      _sortedKnownDomain = knownDomain == null?null:knownDomain.clone();
+      if(!ArrayUtils.isSorted(knownDomain))
+        Arrays.sort(_sortedKnownDomain);
+    }
+
+    @Override public void setupLocal(){
+      _uniques = new IcedHashMap<>();
+    }
+
+    public double [] domain(){
+      double [] res = MemoryManager.malloc8d(_uniques.size());
+      int i = 0;
+      for(IcedDouble v:_uniques.keySet())
+        res[i++] = v._val;
+      Arrays.sort(res);
+      return res;
+    }
+    private IcedDouble addValue(IcedDouble val){
+      if(Double.isNaN(val._val)) return val;
+      if(_sortedKnownDomain != null && Arrays.binarySearch(_sortedKnownDomain,val._val) >= 0)
+        return val; // already known value
+      if (!_uniques.containsKey(val)) {
+        _uniques.put(val,_placeHolder);
+        val = new IcedDouble(0);
+        if(_uniques.size() > _maxDomain)
+          throw new RuntimeException("Too many unique values. Expected |uniques| < " + _maxDomain + ", already got " + _uniques.size());
+      }
+      return val;
+    }
+    @Override public void map(Chunk ys) {
+      IcedDouble val = new IcedDouble(0);
+      for( int row=ys.nextNZ(-1); row< ys._len; row = ys.nextNZ(row) )
+        val = addValue(val.setVal(ys.atd(row)));
+      if(ys.isSparseZero())
+        addValue(val.setVal(0));
+    }
+    @Override public void reduce(CollectDoubleDomain mrt) {
+      if( _uniques != mrt._uniques ) _uniques.putAll(mrt._uniques);
+      if(_uniques.size() > _maxDomain)
+        throw new RuntimeException("Too many unique values. Expected |uniques| < " + _maxDomain + ", already got " + _uniques.size());
+    }
+  }
+
   /** Collect numeric domain of given {@link Vec}
    *  A map-reduce task to collect up the unique values of an integer {@link Vec}
    *  and returned as the domain for the {@link Vec}.
    * */
-  public static class CollectDomain extends MRTask<CollectDomain> {
+  public static class CollectIntegerDomain extends MRTask<CollectIntegerDomain> {
     transient NonBlockingHashMapLong<String> _uniques;
     @Override protected void setupLocal() { _uniques = new NonBlockingHashMapLong<>(); }
     @Override public void map(Chunk ys) {
@@ -395,7 +467,7 @@ public class VecUtils {
           _uniques.put(ys.at8(row), "");
     }
 
-    @Override public void reduce(CollectDomain mrt) {
+    @Override public void reduce(CollectIntegerDomain mrt) {
       if( _uniques != mrt._uniques ) _uniques.putAll(mrt._uniques);
     }
 
@@ -403,14 +475,14 @@ public class VecUtils {
       return ab.putA8(_uniques==null ? null : _uniques.keySetLong());
     }
 
-    public final CollectDomain read_impl( AutoBuffer ab ) {
+    public final CollectIntegerDomain read_impl(AutoBuffer ab ) {
       long ls[] = ab.getA8();
       assert _uniques == null || _uniques.size()==0; // Only receiving into an empty (shared) NBHM
       _uniques = new NonBlockingHashMapLong<>();
       if( ls != null ) for( long l : ls ) _uniques.put(l, "");
       return this;
     }
-    @Override public final void copyOver(CollectDomain that) {
+    @Override public final void copyOver(CollectIntegerDomain that) {
       _uniques = that._uniques;
     }
 
@@ -464,7 +536,7 @@ public class VecUtils {
     }
   }
 
-  // >11x faster than CollectDomain
+  // >11x faster than CollectIntegerDomain
   /** (Optimized for positive ints) Collect numeric domain of given {@link Vec}
    *  A map-reduce task to collect up the unique values of an integer {@link Vec}
    *  and returned as the domain for the {@link Vec}.

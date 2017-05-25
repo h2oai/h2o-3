@@ -43,6 +43,7 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
     if(_computeMetrics) {
       switch(_glmf._family){
         case binomial:
+        case quasibinomial:
           _metricBuilder = new MetricBuilderBinomial(domain);
           break;
         case multinomial:
@@ -71,7 +72,7 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
     if(!ArrayUtils.hasNaNsOrInfs(ds) && !ArrayUtils.hasNaNsOrInfs(yact)) {
       if(_glmf._family == Family.multinomial)
         add2(yact[0], ds, weight, offset);
-      else if (_glmf._family == Family.binomial)
+      else if (_glmf._family == Family.binomial || _glmf._family == Family.quasibinomial)
         add2(yact[0], ds[2], weight, offset);
       else
         add2(yact[0], ds[0], weight, offset);
@@ -106,7 +107,7 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
   public void add(double yreal, double ymodel, double weight, double offset) {
     if(weight == 0)return;
     _yact[0] = (float) yreal;
-    if(_glmf._family == Family.binomial) {
+    if(_glmf._family == Family.binomial || _glmf._family == Family.quasibinomial) {
       _ds[1] = 1 - ymodel;
       _ds[2] = ymodel;
     } else {
@@ -160,6 +161,7 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
       case gaussian:
         _aic =  _nobs * (Math.log(residual_deviance / _nobs * 2 * Math.PI) + 1) + 2;
         break;
+      case quasibinomial:
       case binomial:
         _aic = residual_deviance;
         break;
@@ -169,7 +171,6 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
       case gamma:
         _aic = Double.NaN;
         break;
-      case quasibinomial:
       case tweedie:
       case multinomial:
         _aic = Double.NaN;
@@ -184,7 +185,7 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
     GLMModel gm = (GLMModel)m;
     computeAIC();
     ModelMetrics metrics = _metricBuilder.makeModelMetrics(gm, f, null, null);
-    if (_glmf._family == Family.binomial) {
+    if (_glmf._family == Family.binomial || _glmf._family == Family.quasibinomial) {
       ModelMetricsBinomial metricsBinommial = (ModelMetricsBinomial) metrics;
       GainsLift gl = null;
       if (preds!=null) {
