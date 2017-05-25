@@ -107,8 +107,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public XGBoostParameters() {
       super();
       _categorical_encoding = CategoricalEncodingScheme.LabelEncoder;
-      // TODO set this to the default true after improving distributed scoring
-      this._auto_rebalance = false;
     }
 
     public String algoName() { return "XGBoost"; }
@@ -292,9 +290,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
 
   private Frame makePreds(Booster booster, Frame data, ModelMetrics[] mm, Key<Frame> destinationKey) throws XGBoostError {
-    XGBoostScore score = new XGBoostScore(model_info(), _output, _parms, booster, destinationKey).doAll(data);
+    XGBoostScoreTask.XGBoostScoreTaskResult score = XGBoostScoreTask.runScoreTask(model_info(), _output, _parms, booster, destinationKey, data);
     mm[0] = score.mm;
-    return score.predFrame;
+    return score.preds;
   }
 
   /**
@@ -379,7 +377,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 //    boolean computeMetrics = (!isSupervised() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
 //    String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
 //    try {
-//      DMatrix trainMat = convertFrametoDMatrix( model_info()._dataInfoKey, adaptFr,
+//      DMatrix trainMat = convertFrameToDMatrix( model_info()._dataInfoKey, adaptFr,
 //          _parms._response_column, _parms._weights_column, _parms._fold_column, null, _output._sparse);
 //      ModelMetrics[] mm = new ModelMetrics[1];
 //      Frame preds = makePreds(model_info()._booster, trainMat, mm);

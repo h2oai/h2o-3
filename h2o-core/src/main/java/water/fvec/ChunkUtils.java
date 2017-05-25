@@ -27,7 +27,9 @@ public class ChunkUtils {
 
     public static void initFrame(String keyName, String[] names) {
         Frame fr = new water.fvec.Frame(Key.<Frame>make(keyName));
-        fr.preparePartialFrame(names);
+        if(null != names) {
+            fr.preparePartialFrame(names);
+        }
         // Save it directly to DKV
         fr.update();
     }

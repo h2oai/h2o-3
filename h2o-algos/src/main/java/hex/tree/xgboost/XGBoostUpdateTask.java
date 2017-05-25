@@ -55,7 +55,7 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
         // just to check if we have GPU on the machine
         Rabit.init(rabitEnv);
 
-        DMatrix trainMat = XGBoost.convertFrametoDMatrix(
+        DMatrix trainMat = XGBoostUtils.convertFrameToDMatrix(
                 _sharedmodel._dataInfoKey,
                 _fr,
                 true,
