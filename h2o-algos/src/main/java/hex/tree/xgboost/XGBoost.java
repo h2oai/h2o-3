@@ -334,7 +334,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     // RT should not be started for 1 node clouds
     private void waitOnRabitWorkers(RabitTracker rt) {
       if(H2O.CLOUD.size() > 1) {
-//        rt.waitFor(0);
+        rt.waitFor(0);
       }
     }
 

@@ -16,6 +16,7 @@ import java.util.List;
 
 import static water.H2O.technote;
 
+// TODO: both convert methods probably can be DRYed since the general logic is the same, just a lot of small differences
 public class XGBoostUtils {
 
     public static int countUnique(int[] unsortedArray) {
@@ -302,9 +303,11 @@ public class XGBoostUtils {
         Vec.Reader respVec = f.vec(response).new Reader();
         float[] resp = new float[actualRows];
         int j = 0;
-        for (int i = 0; i < nRows; ++i) {
-            if (w != null && w.at(i) == 0) continue;
-            resp[j++] = (float) respVec.at(i);
+        for (Integer val : chunks) {
+            for (long i = f.anyVec().espc()[val]; i < f.anyVec().espc()[val + 1]; i++) {
+                if (w != null && w.at(i) == 0) continue;
+                resp[j++] = (float) respVec.at(i);
+            }
         }
         assert (j == actualRows);
         resp = Arrays.copyOf(resp, actualRows);
