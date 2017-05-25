@@ -34,7 +34,6 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
         rabitEnv.putAll(workerEnvs);
     }
 
-
     @Override
     protected void setupLocal() {
         try {
@@ -64,6 +63,10 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
                 _parms._fold_column,
                 featureMap,
                 _output._sparse);
+
+        if(null == trainMat) {
+            return;
+        }
 
         // For feature importances - write out column info
         OutputStream os;
@@ -96,4 +99,23 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
         Rabit.shutdown();
     }
 
+    @Override
+    public void reduce(XGBoostUpdateTask mrt) {
+        if(null == rawBooster) {
+            rawBooster = mrt.rawBooster;
+        }
+    }
+
+    public Booster getBooster() {
+        if(null == booster) {
+            try {
+                booster = Booster.loadModel(new ByteArrayInputStream(rawBooster));
+            } catch (XGBoostError xgBoostError) {
+                xgBoostError.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return booster;
+    }
 }

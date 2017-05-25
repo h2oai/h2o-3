@@ -70,6 +70,10 @@ public class XGBoostUtils {
             nRows += vec.chunkLen(chId);
         }
 
+        if(0 == nRows) {
+            return null;
+        }
+
         DataInfo di = dataInfoKey.get();
         // set the names for the (expanded) columns
         if (featureMap!=null) {

@@ -265,7 +265,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
                 model._output,
                 _parms,
                 0,
-                getWorkerEnvs(rt)).doAll(_train).booster);
+                getWorkerEnvs(rt)).doAll(_train).getBooster());
 
         waitOnRabitWorkers(rt);
 
@@ -301,8 +301,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
                 model._output,
                 _parms,
                 tid,
-                getWorkerEnvs(rt)).doAll(_train).booster);
-
+                getWorkerEnvs(rt)).doAll(_train).getBooster());
 
         waitOnRabitWorkers(rt);
 
@@ -335,7 +334,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     // RT should not be started for 1 node clouds
     private void waitOnRabitWorkers(RabitTracker rt) {
       if(H2O.CLOUD.size() > 1) {
-        rt.waitFor(0);
+//        rt.waitFor(0);
       }
     }
 
