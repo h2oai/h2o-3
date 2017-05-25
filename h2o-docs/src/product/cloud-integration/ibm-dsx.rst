@@ -3,7 +3,7 @@ Using H2O with IBM Data Science Experience - BETA
 
 The IBM Data Science Experience (DSX) provides an interactive, collaborative, cloud-based environment where data scientists can use multiple tools to activate their insights. With DSX, Data scientists can use the best of open source tools such as R and Python, tap into IBMs unique features, grow their capabilities, and share their successes.
 
-This section show how simple it is to use H2O R with IBM DSX.
+This section shows how simple it is to use H2O R with IBM DSX.
 
 1. Sign in to `datascience.ibm.com <http://datascience.ibm.com>`__. (Or select **Sign Up** if you do not yet have an account.)
 
