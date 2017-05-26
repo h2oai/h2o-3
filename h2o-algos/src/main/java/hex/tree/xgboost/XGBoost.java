@@ -9,13 +9,10 @@ import water.Job;
 import water.Key;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
-import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.Timer;
-import water.util.VecUtils;
 
 import java.util.*;
 
@@ -185,7 +182,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     return dinfo;
   }
 
-  public static byte[] getRawArray(Booster booster) {
+  static byte[] getRawArray(Booster booster) {
     if(null == booster) {
       return null;
     }
@@ -285,7 +282,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       model.unlock(_job);
     }
 
-    protected final void scoreAndBuildTrees(XGBoostModel model, RabitTracker rt) throws XGBoostError {
+    final void scoreAndBuildTrees(XGBoostModel model, RabitTracker rt) throws XGBoostError {
       for( int tid=0; tid< _parms._ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
         boolean scored = doScoring(model, model.model_info().getBooster(), false);

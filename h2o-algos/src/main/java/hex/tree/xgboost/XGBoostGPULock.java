@@ -3,11 +3,11 @@ package hex.tree.xgboost;
 import java.util.HashMap;
 import java.util.Map;
 
-public class XGBoostGPULock {
+class XGBoostGPULock {
 
-    public static final Map<Integer, XGBoostGPULock> LOCKS = new HashMap<>();
+    private static final Map<Integer, XGBoostGPULock> LOCKS = new HashMap<>();
 
-    public static XGBoostGPULock lock(int gpuId) {
+    static XGBoostGPULock lock(int gpuId) {
         if(!LOCKS.containsKey(gpuId)) {
             synchronized (XGBoostGPULock.class) {
                 if(!LOCKS.containsKey(gpuId)) {

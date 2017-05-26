@@ -32,12 +32,12 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
         public ModelMetrics mm;
     }
 
-    public static XGBoostScoreTaskResult runScoreTask(XGBoostModelInfo sharedmodel,
-                                                      XGBoostOutput output,
-                                                      XGBoostModel.XGBoostParameters parms,
-                                                      Booster booster,
-                                                      Key<Frame> destinationKey,
-                                                      Frame data) {
+    static XGBoostScoreTaskResult runScoreTask(XGBoostModelInfo sharedmodel,
+                                               XGBoostOutput output,
+                                               XGBoostModel.XGBoostParameters parms,
+                                               Booster booster,
+                                               Key<Frame> destinationKey,
+                                               Frame data) {
         XGBoostScoreTask task = new XGBoostScoreTask(sharedmodel,
                 output,
                 parms,

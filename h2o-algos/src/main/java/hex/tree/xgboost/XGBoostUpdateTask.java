@@ -12,7 +12,7 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
 
     private final XGBoostModelInfo _sharedmodel;
     private final XGBoostOutput _output;
-    transient Booster booster;
+    private transient Booster booster;
     private byte[] rawBooster;
     private final String featureMapId;
 
@@ -109,7 +109,7 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
         }
     }
 
-    public Booster getBooster() {
+    Booster getBooster() {
         if(null == booster) {
             try {
                 booster = Booster.loadModel(new ByteArrayInputStream(rawBooster));

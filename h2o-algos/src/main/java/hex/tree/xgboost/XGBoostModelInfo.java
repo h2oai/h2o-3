@@ -18,7 +18,6 @@ import java.util.Arrays;
  * This will be shared: one per node
  */
 final public class XGBoostModelInfo extends Iced {
-  private int _classes;
   byte[] _boosterBytes; // internal state of native backend
 
   private TwoDimTable summaryTable;
@@ -95,8 +94,7 @@ final public class XGBoostModelInfo extends Iced {
    * @param nClasses number of classes (1 for regression, 0 for autoencoder)
    */
   XGBoostModelInfo(final XGBoostModel.XGBoostParameters origParams, int nClasses) {
-    _classes = nClasses;
-    _classification = _classes > 1;
+    _classification = nClasses > 1;
     parameters = (XGBoostModel.XGBoostParameters) origParams.clone(); //make a copy, don't change model's parameters
   }
 

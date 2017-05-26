@@ -301,7 +301,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
    * @param booster xgboost model
    * @throws XGBoostError
    */
-  public void doScoring(Booster booster, Frame _train, Frame _valid) throws XGBoostError {
+  void doScoring(Booster booster, Frame _train, Frame _valid) throws XGBoostError {
     ModelMetrics mm = makeMetrics(booster, _train);
     mm._description = "Metrics reported on training frame";
     _output._training_metrics = mm;
@@ -314,7 +314,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
   }
 
-  public void computeVarImp(Map<String,Integer> varimp) {
+  void computeVarImp(Map<String, Integer> varimp) {
     if (varimp.isEmpty()) return;
     // compute variable importance
     float[] viFloat = new float[varimp.size()];

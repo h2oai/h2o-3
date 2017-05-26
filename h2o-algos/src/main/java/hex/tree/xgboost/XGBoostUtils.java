@@ -17,9 +17,9 @@ import java.util.List;
 import static water.H2O.technote;
 
 // TODO: both convert methods probably can be DRYed since the general logic is the same, just a lot of small differences
-public class XGBoostUtils {
+class XGBoostUtils {
 
-    public static int countUnique(int[] unsortedArray) {
+    private static int countUnique(int[] unsortedArray) {
         if (unsortedArray.length == 0) {
             return 0;
         }
@@ -45,14 +45,14 @@ public class XGBoostUtils {
      * @return DMatrix
      * @throws XGBoostError
      */
-    public static DMatrix convertFrameToDMatrix(Key<DataInfo> dataInfoKey,
-                                                Frame f,
-                                                boolean onlyLocal,
-                                                String response,
-                                                String weight,
-                                                String fold,
-                                                String[] featureMap,
-                                                boolean sparse) throws XGBoostError {
+    static DMatrix convertFrameToDMatrix(Key<DataInfo> dataInfoKey,
+                                         Frame f,
+                                         boolean onlyLocal,
+                                         String response,
+                                         String weight,
+                                         String fold,
+                                         String[] featureMap,
+                                         boolean sparse) throws XGBoostError {
 
         int[] chunks;
         Vec vec = f.anyVec();
@@ -328,12 +328,12 @@ public class XGBoostUtils {
      * @return DMatrix
      * @throws XGBoostError
      */
-    public static DMatrix convertChunksToDMatrix(Key<DataInfo> dataInfoKey,
-                                                 Chunk[] chunks,
-                                                 int response,
-                                                 int weight,
-                                                 int fold,
-                                                 boolean sparse) throws XGBoostError {
+    static DMatrix convertChunksToDMatrix(Key<DataInfo> dataInfoKey,
+                                          Chunk[] chunks,
+                                          int response,
+                                          int weight,
+                                          int fold,
+                                          boolean sparse) throws XGBoostError {
         long nRows = chunks[0]._len;
 
         DMatrix trainMat;
