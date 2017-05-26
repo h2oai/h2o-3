@@ -28,10 +28,8 @@ final public class XGBoostModelInfo extends Iced {
     if(null == _booster && null != _boosterBytes) {
       try {
         _booster = Booster.loadModel(new ByteArrayInputStream(_boosterBytes));
-      } catch (XGBoostError xgBoostError) {
-        xgBoostError.printStackTrace();
-      } catch (IOException e) {
-        e.printStackTrace();
+      } catch (XGBoostError | IOException exception) {
+        throw new IllegalStateException("Failed to load the booster.", exception);
       }
     }
 
@@ -55,10 +53,8 @@ final public class XGBoostModelInfo extends Iced {
     InputStream is = new ByteArrayInputStream(_boosterBytes);
     try {
       _booster = Booster.loadModel(is);
-    } catch (XGBoostError xgBoostError) {
-      xgBoostError.printStackTrace();
-    } catch (IOException e) {
-      e.printStackTrace();
+    } catch (XGBoostError | IOException xgBoostError) {
+      throw new IllegalStateException("Failed to load the booster", xgBoostError);
     }
   }
 
@@ -66,7 +62,7 @@ final public class XGBoostModelInfo extends Iced {
     try {
       _boosterBytes = _booster.toByteArray();
     } catch (XGBoostError xgBoostError) {
-      xgBoostError.printStackTrace();
+      throw new IllegalStateException("Failed to serialize the booster.", xgBoostError);
     }
   }
 

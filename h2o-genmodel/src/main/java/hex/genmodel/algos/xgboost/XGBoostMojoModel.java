@@ -65,7 +65,7 @@ public final class XGBoostMojoModel extends MojoModel {
       out = _booster.predict(dmat);
       Rabit.shutdown();
     } catch (XGBoostError xgBoostError) {
-      xgBoostError.printStackTrace();
+      throw new IllegalStateException("Failed XGBoost prediction.", xgBoostError);
     }
 
     if (nclasses > 2) {

@@ -19,7 +19,7 @@ public class XGBoostMojoReader extends ModelMojoReader<XGBoostMojoModel> {
     try {
       _model._booster = Booster.loadModel(is);
     } catch (XGBoostError xgBoostError) {
-      xgBoostError.printStackTrace();
+      throw new IllegalStateException("Failed to load the booster.", xgBoostError);
     }
     _model._nums = readkv("nums");
     _model._cats = readkv("cats");

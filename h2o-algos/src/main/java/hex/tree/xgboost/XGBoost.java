@@ -187,14 +187,14 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       return null;
     }
 
-    byte[] rawBooster = null;
+    byte[] rawBooster;
     try {
       Map<String, String> localRabitEnv = new HashMap<>();
       Rabit.init(localRabitEnv);
       rawBooster = booster.toByteArray();
       Rabit.shutdown();
     } catch (XGBoostError xgBoostError) {
-      xgBoostError.printStackTrace();
+      throw new IllegalStateException("Failed to initialize Rabit or serialize the booster.", xgBoostError);
     }
     return rawBooster;
   }
@@ -276,7 +276,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         // save the model to DKV
         model.model_info().nativeToJava();
       } catch (XGBoostError xgBoostError) {
-        xgBoostError.printStackTrace();
+        throw new IllegalStateException("Failed XGBoost modelling with an exception.", xgBoostError);
       }
       model._output._boosterBytes = model.model_info()._boosterBytes;
       model.unlock(_job);
@@ -405,7 +405,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       trainMat = new DMatrix(new float[]{1,2,1,2},2,2);
       trainMat.setLabel(new float[]{1,0});
     } catch (XGBoostError xgBoostError) {
-      xgBoostError.printStackTrace();
+      throw new IllegalStateException("Couldn't prepare training matrix for XGBoost.", xgBoostError);
     }
 
     HashMap<String, Object> params = new HashMap<>();

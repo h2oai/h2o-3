@@ -143,7 +143,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                 booster = Booster.loadModel(new ByteArrayInputStream(rawBooster));
                 booster.setParams(params);
             } catch (IOException e) {
-                e.printStackTrace();
+                throw new IllegalStateException("Failed to load the booster.", e);
             }
             final float[][] preds = booster.predict(data);
 
@@ -192,12 +192,12 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                 }
             }
         } catch (XGBoostError xgBoostError) {
-            xgBoostError.printStackTrace();
+            throw new IllegalStateException("Failed to score with XGBoost.", xgBoostError);
         } finally {
             try {
                 Rabit.shutdown();
             } catch (XGBoostError xgBoostError) {
-                xgBoostError.printStackTrace();
+                throw new IllegalStateException("Failed Rabit shutdown. A hanging RabitTracker task might be present on the driver node.", xgBoostError);
             }
         }
     }

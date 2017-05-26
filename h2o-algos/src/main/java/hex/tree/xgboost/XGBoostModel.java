@@ -366,9 +366,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       DKV.put(preds);
       return preds;
     } catch (XGBoostError xgBoostError) {
-      xgBoostError.printStackTrace();
+      throw new IllegalStateException("Failed scoring.", xgBoostError);
     }
-    return null;
   }
 
 //  @Override

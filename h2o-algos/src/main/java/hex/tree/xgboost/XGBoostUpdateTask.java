@@ -42,7 +42,7 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
         try {
             update();
         } catch (XGBoostError xgBoostError) {
-            xgBoostError.printStackTrace();
+            throw new IllegalStateException("Failed XGBoost training.", xgBoostError);
         }
     }
 
@@ -77,10 +77,8 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
           os = new FileOutputStream("/tmp/featureMap" + featureMapId + ".txt");
           os.write(featureMap[0].getBytes());
           os.close();
-        } catch (FileNotFoundException e) {
-          e.printStackTrace();
         } catch (IOException e) {
-          e.printStackTrace();
+            throw new IllegalStateException("Failed to write the XGBoost feature map to disk.", e);
         }
 
         if(rawBooster == null) {
@@ -92,7 +90,7 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
 //                 Set the parameters, some seem to get lost on save/load
                 booster.setParams(params);
             } catch (IOException e) {
-                e.printStackTrace();
+                throw new IllegalStateException("Failed to load the booster.", e);
             }
 
             booster.update(trainMat, tid);
@@ -113,10 +111,8 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
         if(null == booster) {
             try {
                 booster = Booster.loadModel(new ByteArrayInputStream(rawBooster));
-            } catch (XGBoostError xgBoostError) {
-                xgBoostError.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (XGBoostError | IOException xgBoostError) {
+                throw new IllegalStateException("Failed to load the booster.", xgBoostError);
             }
         }
         return booster;
