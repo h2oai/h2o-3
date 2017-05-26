@@ -2,7 +2,6 @@ package hex.tree.xgboost;
 
 import hex.DataInfo;
 import ml.dmlc.xgboost4j.java.Booster;
-import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import water.Iced;
 import water.Key;
@@ -19,12 +18,27 @@ import java.util.Arrays;
  * This will be shared: one per node
  */
 final public class XGBoostModelInfo extends Iced {
-  private int _classes;
   byte[] _boosterBytes; // internal state of native backend
 
   private TwoDimTable summaryTable;
 
-  transient Booster _booster;  //pointer to C++ process
+  private transient Booster _booster;  //pointer to C++ process
+
+  public Booster getBooster() {
+    if(null == _booster && null != _boosterBytes) {
+      try {
+        _booster = Booster.loadModel(new ByteArrayInputStream(_boosterBytes));
+      } catch (XGBoostError | IOException exception) {
+        throw new IllegalStateException("Failed to load the booster.", exception);
+      }
+    }
+
+    return _booster;
+  }
+
+  public void setBooster(Booster _booster) {
+    this._booster = _booster;
+  }
 
   Key<DataInfo> _dataInfoKey;
 
@@ -39,10 +53,8 @@ final public class XGBoostModelInfo extends Iced {
     InputStream is = new ByteArrayInputStream(_boosterBytes);
     try {
       _booster = Booster.loadModel(is);
-    } catch (XGBoostError xgBoostError) {
-      xgBoostError.printStackTrace();
-    } catch (IOException e) {
-      e.printStackTrace();
+    } catch (XGBoostError | IOException xgBoostError) {
+      throw new IllegalStateException("Failed to load the booster", xgBoostError);
     }
   }
 
@@ -50,7 +62,7 @@ final public class XGBoostModelInfo extends Iced {
     try {
       _boosterBytes = _booster.toByteArray();
     } catch (XGBoostError xgBoostError) {
-      xgBoostError.printStackTrace();
+      throw new IllegalStateException("Failed to serialize the booster.", xgBoostError);
     }
   }
 
@@ -78,8 +90,7 @@ final public class XGBoostModelInfo extends Iced {
    * @param nClasses number of classes (1 for regression, 0 for autoencoder)
    */
   XGBoostModelInfo(final XGBoostModel.XGBoostParameters origParams, int nClasses) {
-    _classes = nClasses;
-    _classification = _classes > 1;
+    _classification = nClasses > 1;
     parameters = (XGBoostModel.XGBoostParameters) origParams.clone(); //make a copy, don't change model's parameters
   }
 
@@ -114,4 +125,5 @@ final public class XGBoostModelInfo extends Iced {
     if (summaryTable!=null) sb.append(summaryTable.toString(1));
     return sb.toString();
   }
+
 }

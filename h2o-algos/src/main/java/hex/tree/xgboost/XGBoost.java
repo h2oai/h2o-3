@@ -1,33 +1,20 @@
 package hex.tree.xgboost;
 
-import hex.DataInfo;
-import hex.ModelBuilder;
-import hex.ModelCategory;
-import hex.ScoreKeeper;
+import hex.*;
 import hex.glm.GLMTask;
-import ml.dmlc.xgboost4j.java.Booster;
+import ml.dmlc.xgboost4j.java.*;
 import ml.dmlc.xgboost4j.java.DMatrix;
-import ml.dmlc.xgboost4j.java.XGBoostError;
 import water.H2O;
 import water.Job;
 import water.Key;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
-import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.Timer;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 import static hex.tree.SharedTree.createModelSummaryTable;
 import static hex.tree.SharedTree.createScoringHistoryTable;
@@ -46,256 +33,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
   @Override public BuilderVisibility builderVisibility() {
     return haveBackend() ? BuilderVisibility.Stable : BuilderVisibility.Experimental;
-  }
-
-  /**
-   * convert an H2O Frame to a sparse DMatrix
-   * @param f H2O Frame
-   * @param response name of the response column
-   * @param weight name of the weight column
-   * @param fold name of the fold assignment column
-   * @param featureMap featureMap[0] will be populated with the column names and types
-   * @return DMatrix
-   * @throws XGBoostError
-   */
-  public static DMatrix convertFrametoDMatrix(Key<DataInfo> dataInfoKey, Frame f, String response, String weight, String fold, String[] featureMap, boolean sparse) throws XGBoostError {
-
-    DataInfo di = dataInfoKey.get();
-    // set the names for the (expanded) columns
-    if (featureMap!=null) {
-      String[] coefnames = di.coefNames();
-      StringBuilder sb = new StringBuilder();
-      assert(coefnames.length == di.fullN());
-      for (int i = 0; i < di.fullN(); ++i) {
-        sb.append(i).append(" ").append(coefnames[i].replaceAll("\\s*","")).append(" ");
-        int catCols = di._catOffsets[di._catOffsets.length-1];
-        if (i < catCols || f.vec(i-catCols).isBinary())
-          sb.append("i");
-        else if (f.vec(i-catCols).isInt())
-          sb.append("int");
-        else
-          sb.append("q");
-        sb.append("\n");
-      }
-      featureMap[0] = sb.toString();
-    }
-
-    DMatrix trainMat;
-    int nz = 0;
-    int actualRows = 0;
-    int nRows = (int) f.numRows();
-    Vec.Reader w = weight == null ? null : f.vec(weight).new Reader();
-    Vec.Reader[] vecs = new Vec.Reader[f.numCols()];
-    for (int i = 0; i < vecs.length; ++i) {
-      vecs[i] = f.vec(i).new Reader();
-    }
-
-    try {
-      if (sparse) {
-        Log.info("Treating matrix as sparse.");
-        // 1 0 2 0
-        // 4 0 0 3
-        // 3 1 2 0
-        boolean csc = false; //di._cats == 0;
-
-        // truly sparse matrix - no categoricals
-        // collect all nonzeros column by column (in parallel), then stitch together into final data structures
-        if (csc) {
-
-          // CSC:
-//    long[] colHeaders = new long[] {0,        3,  4,     6,    7}; //offsets
-//    float[] data = new float[]     {1f,4f,3f, 1f, 2f,2f, 3f};      //non-zeros down each column
-//    int[] rowIndex = new int[]     {0,1,2,    2,  0, 2,  1};       //row index for each non-zero
-
-          class SparseItem {
-            int pos;
-            double val;
-          }
-          int nCols = di._nums;
-
-          List<SparseItem>[] col = new List[nCols]; //TODO: use more efficient storage (no GC)
-          // allocate
-          for (int i=0;i<nCols;++i) {
-            col[i] = new ArrayList<>(Math.min(nRows, 10000));
-          }
-
-          // collect non-zeros
-          int nzCount=0;
-          for (int i=0;i<nCols;++i) { //TODO: parallelize over columns
-            Vec v = f.vec(i);
-            for (int c=0;c<v.nChunks();++c) {
-              Chunk ck = v.chunkForChunkIdx(c);
-              int[] nnz = new int[ck.sparseLenZero()];
-              int nnzCount = ck.nonzeros(nnz);
-              for (int k=0;k<nnzCount;++k) {
-                SparseItem item = new SparseItem();
-                int localIdx = nnz[k];
-                item.pos = (int)ck.start() + localIdx;
-                // both 0 and NA are omitted in the sparse DMatrix
-                if (w != null && w.at(item.pos) == 0) continue;
-                if (ck.isNA(localIdx)) continue;
-                item.val = ck.atd(localIdx);
-                col[i].add(item);
-                nzCount++;
-              }
-            }
-          }
-          long[] colHeaders = new long[nCols + 1];
-          float[] data = new float[nzCount];
-          int[] rowIndex = new int[nzCount];
-          // fill data for DMatrix
-          for (int i=0;i<nCols;++i) { //TODO: parallelize over columns
-            List sparseCol = col[i];
-            colHeaders[i] = nz;
-            for (int j=0;j<sparseCol.size();++j) {
-              SparseItem si = (SparseItem)sparseCol.get(j);
-              rowIndex[nz] = si.pos;
-              data[nz] = (float)si.val;
-              assert(si.val != 0);
-              assert(!Double.isNaN(si.val));
-              assert(w == null || w.at(si.pos) != 0);
-              nz++;
-            }
-          }
-          colHeaders[nCols] = nz;
-          data = Arrays.copyOf(data, nz);
-          rowIndex = Arrays.copyOf(rowIndex, nz);
-          actualRows = countUnique(rowIndex);
-          trainMat = new DMatrix(colHeaders, rowIndex, data, DMatrix.SparseType.CSC, actualRows);
-          assert trainMat.rowNum() == actualRows;
-        } else {
-
-          // CSR:
-//    long[] rowHeaders = new long[] {0,      2,      4,         7}; //offsets
-//    float[] data = new float[]     {1f,2f,  4f,3f,  3f,1f,2f};     //non-zeros across each row
-//    int[] colIndex = new int[]     {0, 2,   0, 3,   0, 1, 2};      //col index for each non-zero
-
-          long[] rowHeaders = new long[nRows + 1];
-          int initial_size = 1 << 20;
-          float[] data = new float[initial_size];
-          int[] colIndex = new int[initial_size];
-
-          // extract predictors
-          rowHeaders[0] = 0;
-          for (int i = 0; i < nRows; ++i) {
-            if (w != null && w.at(i) == 0) continue;
-            int nzstart = nz;
-            // enlarge final data arrays by 2x if needed
-            while (data.length < nz + di._cats + di._nums) {
-              int newLen = (int) Math.min((long) data.length << 1L, (long) (Integer.MAX_VALUE - 10));
-              Log.info("Enlarging sparse data structure from " + data.length + " bytes to " + newLen + " bytes.");
-              if (data.length == newLen) {
-                throw new IllegalArgumentException(technote(11, "Data is too large to fit into the 32-bit Java float[] array that needs to be passed to the XGBoost C++ backend. Use H2O GBM instead."));
-              }
-              data = Arrays.copyOf(data, newLen);
-              colIndex = Arrays.copyOf(colIndex, newLen);
-            }
-            for (int j = 0; j < di._cats; ++j) {
-              if (!vecs[j].isNA(i)) {
-                data[nz] = 1; //one-hot encoding
-                colIndex[nz] = di.getCategoricalId(j, vecs[j].at8(i));
-                nz++;
-              } else {
-                // NA == 0 for sparse -> no need to fill
-//            data[nz] = 1; //one-hot encoding
-//            colIndex[nz] = di.getCategoricalId(j, Double.NaN); //Fill NA bucket
-//            nz++;
-              }
-            }
-            for (int j = 0; j < di._nums; ++j) {
-              float val = (float) vecs[di._cats + j].at(i);
-              if (!Float.isNaN(val) && val != 0) {
-                data[nz] = val;
-                colIndex[nz] = di._catOffsets[di._catOffsets.length - 1] + j;
-                nz++;
-              }
-            }
-            if (nz == nzstart) {
-              // for the corner case where there are no categorical values, and all numerical values are 0, we need to
-              // assign a 0 value to any one column to have a consistent number of rows between the predictors and the special vecs (weight/response/etc.)
-              data[nz] = 0;
-              colIndex[nz] = 0;
-              nz++;
-            }
-            rowHeaders[++actualRows] = nz;
-          }
-          data = Arrays.copyOf(data, nz);
-          colIndex = Arrays.copyOf(colIndex, nz);
-          rowHeaders = Arrays.copyOf(rowHeaders, actualRows + 1);
-          trainMat = new DMatrix(rowHeaders, colIndex, data, DMatrix.SparseType.CSR, di.fullN());
-          assert trainMat.rowNum() == actualRows;
-        }
-      } else {
-        Log.info("Treating matrix as dense.");
-
-        // extract predictors
-        float[] data = new float[1 << 20];
-        int cols = di.fullN();
-        int pos = 0;
-        for (int i = 0; i < nRows; ++i) {
-          if (w != null && w.at(i) == 0) continue;
-          // enlarge final data arrays by 2x if needed
-          while (data.length < (actualRows + 1) * cols) {
-            int newLen = (int) Math.min((long) data.length << 1L, (long) (Integer.MAX_VALUE - 10));
-            Log.info("Enlarging dense data structure from " + data.length + " bytes to " + newLen + " bytes.");
-            if (data.length == newLen) {
-              throw new IllegalArgumentException(technote(11, "Data is too large to fit into the 32-bit Java float[] array that needs to be passed to the XGBoost C++ backend. Use H2O GBM instead."));
-            }
-            data = Arrays.copyOf(data, newLen);
-          }
-          for (int j = 0; j < di._cats; ++j) {
-            if (vecs[j].isNA(i)) {
-              data[pos + di.getCategoricalId(j, Double.NaN)] = 1; // fill NA bucket
-            } else {
-              data[pos + di.getCategoricalId(j, vecs[j].at8(i))] = 1;
-            }
-          }
-          for (int j = 0; j < di._nums; ++j) {
-            if (vecs[di._cats + j].isNA(i))
-              data[pos + di._catOffsets[di._catOffsets.length - 1] + j] = Float.NaN;
-            else
-              data[pos + di._catOffsets[di._catOffsets.length - 1] + j] = (float) vecs[di._cats + j].at(i);
-          }
-          assert di._catOffsets[di._catOffsets.length - 1] + di._nums == cols;
-          pos += cols;
-          actualRows++;
-        }
-        data = Arrays.copyOf(data, actualRows * cols);
-        trainMat = new DMatrix(data, actualRows, cols, Float.NaN);
-        assert trainMat.rowNum() == actualRows;
-      }
-    } catch (NegativeArraySizeException e) {
-      throw new IllegalArgumentException(technote(11, "Data is too large to fit into the 32-bit Java float[] array that needs to be passed to the XGBoost C++ backend. Use H2O GBM instead."));
-    }
-
-    // extract weight vector
-    float[] weights = new float[actualRows];
-    if (w != null) {
-      int j = 0;
-      for (int i = 0; i < nRows; ++i) {
-        if (w.at(i) == 0) continue;
-        weights[j++] = (float) w.at(i);
-      }
-      assert (j == actualRows);
-    }
-
-    // extract response vector
-    Vec.Reader respVec = f.vec(response).new Reader();
-    float[] resp = new float[actualRows];
-    int j = 0;
-    for (int i = 0; i < nRows; ++i) {
-      if (w != null && w.at(i) == 0) continue;
-      resp[j++] = (float) respVec.at(i);
-    }
-    assert (j == actualRows);
-    resp = Arrays.copyOf(resp, actualRows);
-    weights = Arrays.copyOf(weights, actualRows);
-
-    trainMat.setLabel(resp);
-    if (w!=null)
-      trainMat.setWeight(weights);
-//    trainMat.setGroup(null); //fold //FIXME - only needed if CV is internally done in XGBoost
-    return trainMat;
   }
 
   @Override public ModelCategory[] can_build() {
@@ -362,9 +99,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       }
     }
 
-    if (H2O.CLOUD.size()>1) {
-      throw new IllegalArgumentException("XGBoost is currently only supported in single-node mode.");
-    }
     if ( _parms._backend == XGBoostModel.XGBoostParameters.Backend.gpu && !hasGPU(_parms._gpu_id)) {
       error("_backend", "GPU backend (gpu_id: " + _parms._gpu_id + ") is not functional. Check CUDA_PATH and/or GPU installation.");
     }
@@ -448,8 +182,28 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     return dinfo;
   }
 
+  static byte[] getRawArray(Booster booster) {
+    if(null == booster) {
+      return null;
+    }
+
+    byte[] rawBooster;
+    try {
+      Map<String, String> localRabitEnv = new HashMap<>();
+      Rabit.init(localRabitEnv);
+      rawBooster = booster.toByteArray();
+      Rabit.shutdown();
+    } catch (XGBoostError xgBoostError) {
+      throw new IllegalStateException("Failed to initialize Rabit or serialize the booster.", xgBoostError);
+    }
+    return rawBooster;
+  }
+
   // ----------------------
   private class XGBoostDriver extends Driver {
+
+    private String featureMapId = UUID.randomUUID().toString();
+
     @Override
     public void computeImpl() {
       init(true); //this can change the seed if it was set to -1
@@ -464,9 +218,20 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
 
     final void buildModel() {
-      XGBoostModel model = new XGBoostModel(_result,_parms,new XGBoostOutput(XGBoost.this),_train,_valid);
+      if( (XGBoostModel.XGBoostParameters.Backend.auto.equals(_parms._backend) ||
+              XGBoostModel.XGBoostParameters.Backend.gpu.equals(_parms._backend) ) &&
+              XGBoost.hasGPU(_parms._gpu_id) ) {
+        synchronized (XGBoostGPULock.lock(_parms._gpu_id)) {
+          buildModelImpl();
+        }
+      } else {
+        buildModelImpl();
+      }
+    }
+
+    final void buildModelImpl() {
+      XGBoostModel model = new XGBoostModel(_result, _parms, new XGBoostOutput(XGBoost.this), _train, _valid);
       model.write_lock(_job);
-      String[] featureMap = new String[]{""};
 
       if (_parms._dmatrix_type == XGBoostModel.XGBoostParameters.DMatrixType.sparse) {
         model._output._sparse = true;
@@ -489,65 +254,59 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       }
 
       try {
-        DMatrix trainMat = convertFrametoDMatrix( model.model_info()._dataInfoKey, _train,
-            _parms._response_column, _parms._weights_column, _parms._fold_column, featureMap, model._output._sparse);
+        // Prepare Rabit
+        RabitTracker rt = new RabitTracker(H2O.getCloudSize());
 
-        DMatrix validMat = _valid != null ? convertFrametoDMatrix(model.model_info()._dataInfoKey, _valid,
-            _parms._response_column, _parms._weights_column, _parms._fold_column, featureMap, model._output._sparse) : null;
+        startRabitTracker(rt);
 
-        // For feature importances - write out column info
-        OutputStream os;
-        try {
-          os = new FileOutputStream("/tmp/featureMap.txt");
-          os.write(featureMap[0].getBytes());
-          os.close();
-        } catch (FileNotFoundException e) {
-          e.printStackTrace();
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
+        model.model_info().setBooster(new XGBoostUpdateTask(
+                model.model_info().getBooster(),
+                model.model_info(),
+                model._output,
+                _parms,
+                0,
+                getWorkerEnvs(rt),
+                featureMapId).doAll(_train).getBooster());
 
-        HashMap<String, DMatrix> watches = new HashMap<>();
-//        if (validMat!=null)
-//          watches.put("valid", validMat);
-//        else
-//          watches.put("train", trainMat);
-
-        // create the backend
-        model.model_info()._booster = ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, model.createParams(), 0, watches, null, null);
+        waitOnRabitWorkers(rt);
 
         // train the model
-        scoreAndBuildTrees(model, trainMat, validMat);
-
-        // final scoring
-        doScoring(model, model.model_info()._booster, trainMat, validMat, true);
+        scoreAndBuildTrees(model, rt);
 
         // save the model to DKV
         model.model_info().nativeToJava();
       } catch (XGBoostError xgBoostError) {
-        xgBoostError.printStackTrace();
+        throw new IllegalStateException("Failed XGBoost modelling with an exception.", xgBoostError);
       }
       model._output._boosterBytes = model.model_info()._boosterBytes;
       model.unlock(_job);
     }
 
-    protected final void scoreAndBuildTrees(XGBoostModel model, DMatrix trainMat, DMatrix validMat) throws XGBoostError {
+    final void scoreAndBuildTrees(XGBoostModel model, RabitTracker rt) throws XGBoostError {
       for( int tid=0; tid< _parms._ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
-        boolean scored = doScoring(model, model.model_info()._booster, trainMat, validMat, false);
+        boolean scored = doScoring(model, model.model_info().getBooster(), false);
         if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
-          doScoring(model, model.model_info()._booster, trainMat, validMat, true);
-          _job.update(_parms._ntrees-model._output._ntrees); //finish
+          doScoring(model, model.model_info().getBooster(), true);
+          _job.update(_parms._ntrees - model._output._ntrees); //finish
           return;
         }
 
         Timer kb_timer = new Timer();
-        try {
-//          model.model_info()._booster.setParam("eta", effective_learning_rate(model));
-          model.model_info()._booster.update(trainMat, tid);
-        } catch (XGBoostError xgBoostError) {
-          xgBoostError.printStackTrace();
-        }
+
+        startRabitTracker(rt);
+
+        model.model_info().setBooster(new XGBoostUpdateTask(
+                model.model_info().getBooster(),
+                model.model_info(),
+                model._output,
+                _parms,
+                tid,
+                getWorkerEnvs(rt),
+                featureMapId).doAll(_train).getBooster());
+
+        waitOnRabitWorkers(rt);
+
         Log.info((tid + 1) + ". tree was built in " + kb_timer.toString());
         _job.update(1);
         // Optional: for convenience
@@ -559,18 +318,42 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         model._output._training_time_ms = ArrayUtils.copyAndFillOf(model._output._training_time_ms, model._output._ntrees+1, System.currentTimeMillis());
         if (stop_requested() && !timeout()) throw new Job.JobCancelledException();
         if (timeout()) { //stop after scoring
-          if (!scored) doScoring(model, model.model_info()._booster, trainMat, validMat, true);
+          if (!scored) doScoring(model, model.model_info().getBooster(), true);
           _job.update(_parms._ntrees-model._output._ntrees); //finish
           break;
         }
       }
-      doScoring(model, model.model_info()._booster, trainMat, validMat, true);
+      doScoring(model, model.model_info().getBooster(), true);
+    }
+
+    // Don't start the tracker for 1 node clouds -> the GPU plugin fails in such a case
+    private void startRabitTracker(RabitTracker rt) {
+      if(H2O.CLOUD.size() > 1) {
+        rt.start(0);
+      }
+    }
+
+    // RT should not be started for 1 node clouds
+    private void waitOnRabitWorkers(RabitTracker rt) {
+      if(H2O.CLOUD.size() > 1) {
+        rt.waitFor(0);
+      }
+    }
+
+    // XGBoost seems to manipulate its frames in case of a 1 node distributed version in a way the GPU plugin can't handle
+    // Therefore don't use RabitTracker envs for 1 node
+    private Map<String, String> getWorkerEnvs(RabitTracker rt) {
+      if(H2O.CLOUD.size() > 1) {
+        return rt.getWorkerEnvs();
+      } else {
+        return new HashMap<>();
+      }
     }
 
     long _firstScore = 0;
     long _timeLastScoreStart = 0;
     long _timeLastScoreEnd = 0;
-    private boolean doScoring(XGBoostModel model, Booster booster, DMatrix trainMat, DMatrix validMat, boolean finalScoring) throws XGBoostError {
+    private boolean doScoring(XGBoostModel model, Booster booster, boolean finalScoring) throws XGBoostError {
       boolean scored = false;
       long now = System.currentTimeMillis();
       if (_firstScore == 0) _firstScore = now;
@@ -589,9 +372,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           (timeToScore && _parms._score_tree_interval == 0) || // use time-based duty-cycle heuristic only if the user didn't specify _score_tree_interval
           manualInterval) {
         _timeLastScoreStart = now;
-        model.doScoring(booster, trainMat, validMat);
+        model.doScoring(booster, _train, _valid);
         _timeLastScoreEnd = System.currentTimeMillis();
-        model.computeVarImp(booster.getFeatureScore("/tmp/featureMap.txt"));
+        model.computeVarImp(booster.getFeatureScore("/tmp/featureMap" + featureMapId + ".txt"));
         XGBoostOutput out = model._output;
         out._model_summary = createModelSummaryTable(out._ntrees, null);
         out._scoring_history = createScoringHistoryTable(out, model._output._scored_train, out._scored_valid, _job, out._training_time_ms);
@@ -600,6 +383,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         Log.info(model);
         scored = true;
       }
+
       return scored;
     }
   }
@@ -608,42 +392,39 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     return _parms._learn_rate * Math.pow(_parms._learn_rate_annealing, (model._output._ntrees-1));
   }
 
+  private static Set<Integer> GPUS = new HashSet<>();
+
   // helper
-  static boolean hasGPU(int gpu_id) {
+  static synchronized boolean hasGPU(int gpu_id) {
+    if(GPUS.contains(gpu_id)) {
+      return true;
+    }
+
     DMatrix trainMat = null;
     try {
       trainMat = new DMatrix(new float[]{1,2,1,2},2,2);
       trainMat.setLabel(new float[]{1,0});
     } catch (XGBoostError xgBoostError) {
-      xgBoostError.printStackTrace();
+      throw new IllegalStateException("Couldn't prepare training matrix for XGBoost.", xgBoostError);
     }
 
     HashMap<String, Object> params = new HashMap<>();
     params.put("updater", "grow_gpu_hist");
     params.put("silent", 1);
+
     params.put("gpu_id", gpu_id);
     HashMap<String, DMatrix> watches = new HashMap<>();
     watches.put("train", trainMat);
     try {
+      Map<String, String> localRabitEnv = new HashMap<>();
+      Rabit.init(localRabitEnv);
       ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, params, 1, watches, null, null);
+      Rabit.shutdown();
+      GPUS.add(gpu_id);
       return true;
     } catch (XGBoostError xgBoostError) {
       return false;
     }
   }
 
-  public static int countUnique(int[] unsortedArray) {
-    if (unsortedArray.length == 0) {
-      return 0;
-    }
-    int[] array = Arrays.copyOf(unsortedArray, unsortedArray.length);
-    Arrays.sort(array);
-    int count = 1;
-    for (int i = 0; i < array.length - 1; i++) {
-      if (array[i] != array[i + 1]) {
-        count++;
-      }
-    }
-    return count;
-  }
 }

@@ -4,7 +4,11 @@ import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
+import ml.dmlc.xgboost4j.java.Rabit;
 import ml.dmlc.xgboost4j.java.XGBoostError;
+
+import java.util.HashMap;
+import java.util.Map;
 
 
 /**
@@ -53,11 +57,15 @@ public final class XGBoostMojoModel extends MojoModel {
     GenModel.setInput(doubles, floats, _nums, _cats, _catOffsets, null, null, _useAllFactorLevels, _sparse /*replace NA with 0*/);
     float[][] out = null;
     try {
+      Map<String, String> rabitEnv = new HashMap<>();
+      rabitEnv.put("DMLC_TASK_ID", "0");
+      Rabit.init(rabitEnv);
       DMatrix dmat = new DMatrix(floats,1,floats.length, _sparse ? 0 : Float.NaN);
 //      dmat.setWeight(new float[]{(float)weight});
       out = _booster.predict(dmat);
+      Rabit.shutdown();
     } catch (XGBoostError xgBoostError) {
-      xgBoostError.printStackTrace();
+      throw new IllegalStateException("Failed XGBoost prediction.", xgBoostError);
     }
 
     if (nclasses > 2) {
