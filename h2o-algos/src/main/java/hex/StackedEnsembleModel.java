@@ -380,5 +380,26 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
     return super.remove_impl(fs);
   }
+
+  /** Write out models (base + metalearner) */
+  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
+    //Metalearner
+    ab.putKey(_output._metalearner._key);
+    //Base Models
+    for (Key<Model> ks : _parms._base_models)
+        ab.putKey(ks);
+    return super.writeAll_impl(ab);
+  }
+
+  /** Read in models (base + metalearner) */
+  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
+    //Metalearner
+    ab.getKey(_output._metalearner._key,fs);
+    //Base Models
+    for (Key<Model> ks : _parms._base_models)
+      ab.getKey(ks,fs);
+    return super.readAll_impl(ab,fs);
+  }
+
 }
 
