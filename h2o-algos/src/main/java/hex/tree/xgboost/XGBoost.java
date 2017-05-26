@@ -204,6 +204,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
   // ----------------------
   private class XGBoostDriver extends Driver {
+
+    private String featureMapId = UUID.randomUUID().toString();
+
     @Override
     public void computeImpl() {
       init(true); //this can change the seed if it was set to -1
@@ -265,7 +268,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
                 model._output,
                 _parms,
                 0,
-                getWorkerEnvs(rt)).doAll(_train).getBooster());
+                getWorkerEnvs(rt),
+                featureMapId).doAll(_train).getBooster());
 
         waitOnRabitWorkers(rt);
 
@@ -301,7 +305,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
                 model._output,
                 _parms,
                 tid,
-                getWorkerEnvs(rt)).doAll(_train).getBooster());
+                getWorkerEnvs(rt),
+                featureMapId).doAll(_train).getBooster());
 
         waitOnRabitWorkers(rt);
 
@@ -372,7 +377,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         _timeLastScoreStart = now;
         model.doScoring(booster, _train, _valid);
         _timeLastScoreEnd = System.currentTimeMillis();
-        model.computeVarImp(booster.getFeatureScore("/tmp/featureMap.txt"));
+        model.computeVarImp(booster.getFeatureScore("/tmp/featureMap" + featureMapId + ".txt"));
         XGBoostOutput out = model._output;
         out._model_summary = createModelSummaryTable(out._ntrees, null);
         out._scoring_history = createScoringHistoryTable(out, model._output._scored_train, out._scored_valid, _job, out._training_time_ms);

@@ -14,6 +14,7 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
     private final XGBoostOutput _output;
     transient Booster booster;
     private byte[] rawBooster;
+    private final String featureMapId;
 
     private final XGBoostModel.XGBoostParameters _parms;
     private final int tid;
@@ -25,12 +26,14 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
                       XGBoostOutput _output,
                       XGBoostModel.XGBoostParameters _parms,
                       int tid,
-                      Map<String, String> workerEnvs) {
+                      Map<String, String> workerEnvs,
+                      String featureMapId) {
         this._sharedmodel = inputModel;
         this._output = _output;
         this._parms = _parms;
         this.tid = tid;
         this.rawBooster = XGBoost.getRawArray(booster);
+        this.featureMapId = featureMapId;
         rabitEnv.putAll(workerEnvs);
     }
 
@@ -71,7 +74,7 @@ public class XGBoostUpdateTask extends MRTask<XGBoostUpdateTask> {
         // For feature importances - write out column info
         OutputStream os;
         try {
-          os = new FileOutputStream("/tmp/featureMap.txt");
+          os = new FileOutputStream("/tmp/featureMap" + featureMapId + ".txt");
           os.write(featureMap[0].getBytes());
           os.close();
         } catch (FileNotFoundException e) {
