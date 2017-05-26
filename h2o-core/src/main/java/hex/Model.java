@@ -1248,7 +1248,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       Chunk weightsChunk = _hasWeights && _computeMetrics ? chks[_output.weightsIdx()] : null;
       Chunk offsetChunk = _output.hasOffset() ? chks[_output.offsetIdx()] : null;
       Chunk responseChunk = null;
-      double [] tmp = new double[_output.nfeatures()];
       float [] actual = null;
       _mb = Model.this.makeMetricBuilder(_domain);
       if (_computeMetrics) {
@@ -1258,45 +1257,108 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         } else
           actual = new float[chks.length];
       }
-      double[] preds = _mb._work;  // Sized for the union of test and train classes
       int len = chks[0]._len;
 
       try {
         setupBigScorePredict();
 
-        for (int row = 0; row < len; row++) {
-          double weight = weightsChunk != null ? weightsChunk.atd(row) : 1;
-          if (weight == 0) {
+        if(!bulkBigScorePredict()) {
+          double [] tmp = new double[_output.nfeatures()];
+          double[] preds = _mb._work;  // Sized for the union of test and train classes
+          for (int row = 0; row < len; row++) {
+            double weight = getWeight(weightsChunk, row);
+            if (weight == 0) {
+              if (_makePreds) {
+                for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
+                  cpreds[c].addNum(0);
+              }
+              continue;
+            }
+            double offset = getOffset(offsetChunk, row);
+            double[] p = score0(chks, offset, row, tmp, preds);
+            if (_computeMetrics) {
+              if (isSupervised()) {
+                actual[0] = (float) responseChunk.atd(row);
+              } else {
+                for (int i = 0; i < actual.length; ++i)
+                  actual[i] = (float) data(chks, row, i);
+              }
+              _mb.perRow(preds, actual, weight, offset, Model.this);
+            }
             if (_makePreds) {
               for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
-                cpreds[c].addNum(0);
+                cpreds[c].addNum(p[c]);
             }
-            continue;
           }
-          double offset = offsetChunk != null ? offsetChunk.atd(row) : 0;
-          double[] p = score0(chks, offset, row, tmp, preds);
-          if (_computeMetrics) {
-            if (isSupervised()) {
-              actual[0] = (float) responseChunk.atd(row);
-            } else {
-              for (int i = 0; i < actual.length; ++i)
-                actual[i] = (float) data(chks, row, i);
+        } else {
+          int[] indices = new int[len];
+          double[] offsets = offsetChunk != null ? new double[len] : null;
+          int nonZeroW = 0;
+          for (int row = 0; row < len; row++) {
+            double weight = getWeight(weightsChunk, row);
+            if (weight == 0) {
+              if (_makePreds) {
+                for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
+                  cpreds[c].addNum(0);
+              }
+              continue;
             }
-            _mb.perRow(preds, actual, weight, offset, Model.this);
+            if(offsetChunk != null) {
+              offsets[nonZeroW] = getOffset(offsetChunk, row);
+            }
+            indices[nonZeroW++] = row;
           }
-          if (_makePreds) {
-            for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
-              cpreds[c].addNum(p[c]);
+
+          indices = Arrays.copyOf(indices, nonZeroW);
+
+          if(0 == nonZeroW) {
+            return;
+          }
+
+          double[][] bulkPreds = new double[nonZeroW][];
+          for(int i = 0; i < bulkPreds.length; i++) {
+            bulkPreds[i] = new double[_mb._work.length];
+          }
+          double[][] bulkTmp = new double[nonZeroW][];
+          for(int i = 0; i < bulkTmp.length; i++) {
+            bulkTmp[i] = new double[_output.nfeatures()];
+          }
+          double[][] p = score0(chks, offsets, indices, bulkTmp, bulkPreds);
+          for(int rowIdx = 0; rowIdx < indices.length; rowIdx++) {
+            int row = indices[rowIdx];
+            if (_computeMetrics) {
+              if (isSupervised()) {
+                actual[0] = (float) responseChunk.atd(row);
+              } else {
+                for (int i = 0; i < actual.length; ++i)
+                  actual[i] = (float) data(chks, row, i);
+              }
+              _mb.perRow(bulkPreds[rowIdx], actual, getWeight(weightsChunk, row), getOffset(offsetChunk, row), Model.this);
+            }
+            if (_makePreds) {
+              for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
+                cpreds[c].addNum(p[rowIdx][c]);
+            }
           }
         }
       } finally {
         closeBigScorePredict();
       }
     }
+
+    private double getOffset(Chunk offsetChunk, int row) {
+      return offsetChunk != null ? offsetChunk.atd(row) : 0;
+    }
+
+    private double getWeight(Chunk weightsChunk, int row) {
+      return weightsChunk != null ? weightsChunk.atd(row) : 1;
+    }
+
     @Override public void reduce( BigScore bs ) { if(_mb != null )_mb.reduce(bs._mb); }
     @Override protected void postGlobal() { if(_mb != null)_mb.postGlobal(); }
   }
 
+  protected boolean bulkBigScorePredict() { return false; }
   protected void setupBigScorePredict() {}
   protected void closeBigScorePredict() {}
 
@@ -1312,6 +1374,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  subclass scoring logic. */
   public double[] score0( Chunk chks[], int row_in_chunk, double[] tmp, double[] preds ) {
     return score0(chks, 0, row_in_chunk, tmp, preds);
+  }
+
+  // To be implemented by Models that override bulkBigScorePredict() to return true
+  public double[][] score0( Chunk chks[], double[] offset, int[] rowsInChunk, double[][] tmp, double[][] preds ) {
+    return null;
   }
 
   public double[] score0( Chunk chks[], double offset, int row_in_chunk, double[] tmp, double[] preds ) {

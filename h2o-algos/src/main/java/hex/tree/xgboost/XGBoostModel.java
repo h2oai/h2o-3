@@ -1,11 +1,13 @@
 package hex.tree.xgboost;
 
 import hex.*;
+import hex.genmodel.GenModel;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import water.*;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.Log;
 
@@ -211,11 +213,11 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
         params.put("gpu_id", p._gpu_id);
         if (p._tree_method == XGBoostParameters.TreeMethod.exact) {
           Log.info("Using grow_gpu (exact) updater.");
-          params.put("updater", "grow_gpu");
+//          params.put("updater", "grow_gpu");
         }
         else {
           Log.info("Using grow_gpu_hist (approximate) updater.");
-          params.put("updater", "grow_gpu_hist");
+//          params.put("updater", "grow_gpu_hist");
         }
       } else {
         Log.info("No GPU (gpu_id: "+p._gpu_id + ") found. Using CPU backend.");
@@ -335,6 +337,36 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
             model_info.getBooster(), di._nums, di._cats, di._catOffsets, di._useAllFactorLevels,
             _output.nclasses(), _output._priorClassDist, defaultThreshold(), _output._sparse);
   }
+
+  @Override
+  public double[][] score0( Chunk chks[], double[] offset, int[] rowsInChunk, double[][] tmp, double[][] preds ) {
+    for( int row=0; row < rowsInChunk.length; row++ ) {
+      for( int i=0; i< tmp[row].length; i++ ) {
+        tmp[row][i] = chks[i].atd(rowsInChunk[row]);
+      }
+    }
+    DataInfo di = model_info._dataInfoKey.get();
+    double[][] scored = XGBoostMojoModel.bulkScore0(tmp, offset, preds,
+            model_info.getBooster(), di._nums, di._cats, di._catOffsets, di._useAllFactorLevels,
+            _output.nclasses(), _output._priorClassDist, defaultThreshold(), _output._sparse);
+
+    if(isSupervised()) {
+      // Correct probabilities obtained from training on oversampled data back to original distribution
+      // C.f. http://gking.harvard.edu/files/0s.pdf Eq.(27)
+      if( _output.isClassifier()) {
+        for( int row=0; row < rowsInChunk.length; row++ ) {
+          if (_parms._balance_classes)
+            GenModel.correctProbabilities(scored[row], _output._priorClassDist, _output._modelClassDist);
+          //assign label at the very end (after potentially correcting probabilities)
+          scored[row][0] = hex.genmodel.GenModel.getPrediction(scored[row], _output._priorClassDist, tmp[row], defaultThreshold());
+        }
+      }
+    }
+    return scored;
+  }
+
+  @Override
+  protected boolean bulkBigScorePredict() { return true; }
 
   private void setDataInfoToOutput(DataInfo dinfo) {
     _output._names = dinfo._adaptedFrame.names();
