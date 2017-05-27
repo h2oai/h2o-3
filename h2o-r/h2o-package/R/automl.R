@@ -7,14 +7,13 @@
 #'
 #' @param x A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except y are used.
-#' @param y The name of the response variable in the model. If the data does not contain a header, this is the column index
-#'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
-#'        categorical variable).
+#' @param y The name or index of the response variable in the model. For classification, the y column must be a factor, otherwise regression will be performed. Indexes are 1-based in R.
 #' @param training_frame Training data frame (or ID).
 #' @param validation_frame Validation data frame (or ID); Optional.
 #' @param leaderboard_frame Leaderboard data frame (or ID).  The Leaderboard will be scored using this data set. Optional.
 #' @param build_control List of custom build parameters. Optional. 
-#' @param max_runtime_secs Maximum allowed runtime in seconds for the entire model training process.  Use 0 to disable. Defaults to 600 secs (10 min).
+#' @param max_runtime_secs Maximum allowed runtime in seconds for the entire model training process. Use 0 to disable. Defaults to 3600 secs (1 hour).
+#' @param max_models Maximum number of models to build in the AutoML process (does not include Stacked Ensembles). Defaults to NULL.
 #' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
 #'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.  Note that
 #'          Stacked Ensemble will be trained for regression and binary classification problems since multiclass stacking is not yet supported.
@@ -32,7 +31,8 @@ h2o.automl <- function(x, y, training_frame,
                        validation_frame = NULL,
                        leaderboard_frame = NULL,
                        build_control = NULL,
-                       max_runtime_secs = 600)
+                       max_runtime_secs = 3600,
+                       max_models = NULL)
 {
 
   tryCatch({
