@@ -82,7 +82,7 @@ public class LinearAlgebraUtils {
   public static double[][] reshape1DArray(double[] arr, int m, int n) {
     double[][] arr2D = new double[m][n];
     for (int i = 0; i < m; i++) {
-      System.arraycopy(arr, i * m, arr2D[i], 0, n);
+      System.arraycopy(arr, i * n, arr2D[i], 0, n);
     }
     return arr2D;
   }
@@ -464,16 +464,16 @@ public class LinearAlgebraUtils {
         return "Stacked matrix!";
       }
     }
-    String stringRepresenation = "";
+    StringBuilder stringOfMatrix = new StringBuilder();
     for (int x = 0; x < dimX; x++) {
       for (int y = 0; y < dimY; y++) {
         if (matrix[x][y] > 0) {
-          stringRepresenation += ' ';   // a leading space before a number
+          stringOfMatrix.append(' ');   // a leading space before a number
         }
-        stringRepresenation += String.format("%.4f\t", matrix[x][y]);
+        stringOfMatrix.append(String.format("%.4f\t", matrix[x][y]));
       }
-      stringRepresenation += '\n';
+      stringOfMatrix.append('\n');
     }
-    return stringRepresenation;
+    return stringOfMatrix.toString();
   }
 }

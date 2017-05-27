@@ -3,7 +3,9 @@ package hex.svd;
 import hex.util.EigenPair;
 import hex.util.LinearAlgebraUtils;
 import no.uib.cipr.matrix.DenseMatrix;
+import no.uib.cipr.matrix.Matrix;
 import no.uib.cipr.matrix.NotConvergedException;
+import water.util.ArrayUtils;
 
 import java.util.List;
 
@@ -33,17 +35,15 @@ public class EVDMTJDenseMatrix implements SVDInterface {
     }
     // initial eigenpairs
     eigenvalues = evd.getRealEigenvalues();
-    eigenvectors = LinearAlgebraUtils.reshape1DArray(evd.getRightEigenvectors().getData(), gramDimension,
+    Matrix eigenvectorMatrix = evd.getRightEigenvectors();
+    eigenvectors = LinearAlgebraUtils.reshape1DArray(((DenseMatrix) eigenvectorMatrix).getData(), gramDimension,
         gramDimension);
 
     // sort eigenpairs in descending order according to the magnitude of eigenvalues
     List<EigenPair> eigenPairs = EigenPair.getSortedEigenpairs(gramDimension, eigenvalues, eigenvectors);
     reverse(eigenPairs);
     eigenvalues = EigenPair.extractEigenvalues(eigenPairs);
-    eigenvectors = EigenPair.extractEigenvectors(eigenPairs);
-
-    DenseMatrix sortedEigenvectors = new DenseMatrix(eigenvectors);
-    eigenvectors = LinearAlgebraUtils.reshape1DArray(sortedEigenvectors.getData(), gramDimension, gramDimension);
+    eigenvectors = ArrayUtils.transpose(EigenPair.extractEigenvectors(eigenPairs));
   }
 
   @Override
