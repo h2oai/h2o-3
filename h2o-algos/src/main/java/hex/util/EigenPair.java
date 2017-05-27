@@ -1,9 +1,6 @@
 package hex.util;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import static java.util.Collections.sort;
+import static java.util.Arrays.sort;
 
 /**
  * @author mathemage <ha@h2o.ai>
@@ -18,29 +15,30 @@ public class EigenPair implements Comparable<EigenPair> {
     this.eigenvector = eigenvector;
   }
 
-  public static List<EigenPair> getSortedEigenpairs(int count, double[] eigenvalues, double[][] eigenvectors) {
-    List<EigenPair> eigenPairs = new ArrayList<>();
+  public static EigenPair[] getSortedEigenpairs(double[] eigenvalues, double[][] eigenvectors) {
+    int count = eigenvalues.length;
+    EigenPair eigenPairs[] = new EigenPair[count];
     for (int i = 0; i < count; i++) {
-      eigenPairs.add(new EigenPair(eigenvalues[i], eigenvectors[i]));
+      eigenPairs[i] = new EigenPair(eigenvalues[i], eigenvectors[i]);
     }
     sort(eigenPairs);
     return eigenPairs;
   }
 
-  public static double[] extractEigenvalues(List<EigenPair> eigenPairs) {
-    int count = eigenPairs.size();
+  public static double[] extractEigenvalues(EigenPair[] eigenPairs) {
+    int count = eigenPairs.length;
     double[] eigenvalues = new double[count];
     for (int i = 0; i < count; i++) {
-      eigenvalues[i] = eigenPairs.get(i).eigenvalue;
+      eigenvalues[i] = eigenPairs[i].eigenvalue;
     }
     return eigenvalues;
   }
 
-  public static double[][] extractEigenvectors(List<EigenPair> eigenPairs) {
-    int count = eigenPairs.size();
+  public static double[][] extractEigenvectors(EigenPair[] eigenPairs) {
+    int count = eigenPairs.length;
     double[][] eigenvectors = new double[count][];
     for (int i = 0; i < count; i++) {
-      eigenvectors[i] = eigenPairs.get(i).eigenvector;
+      eigenvectors[i] = eigenPairs[i].eigenvector;
     }
     return eigenvectors;
   }
