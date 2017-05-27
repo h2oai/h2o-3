@@ -14,6 +14,9 @@
 #' @param build_control List of custom build parameters. Optional. 
 #' @param max_runtime_secs Maximum allowed runtime in seconds for the entire model training process. Use 0 to disable. Defaults to 3600 secs (1 hour).
 #' @param max_models Maximum number of models to build in the AutoML process (does not include Stacked Ensembles). Defaults to NULL.
+#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression)  Must be one of: "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error". Defaults to AUTO.
+#' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much) Defaults to 0.001.  Set to 0 to disable metric-based early stopping.
+#' @param stopping_rounds Integer. Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the stopping_metric does not improve for k (stopping_rounds) scoring events (0 to disable) Defaults to 5 and must be an integer.
 #' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
 #'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.  Note that
 #'          Stacked Ensemble will be trained for regression and binary classification problems since multiclass stacking is not yet supported.
@@ -32,7 +35,12 @@ h2o.automl <- function(x, y, training_frame,
                        leaderboard_frame = NULL,
                        build_control = NULL,
                        max_runtime_secs = 3600,
-                       max_models = NULL)
+                       max_models = NULL,
+                       stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE",
+                                           "RMSLE", "AUC", "lift_top_group", "misclassification",
+                                           "mean_per_class_error"),
+                       stopping_tolerance = 0.001,
+                       stopping_rounds = 5)
 {
 
   tryCatch({
