@@ -20,20 +20,6 @@ def getOS() {
     return os
 }
 
-def getOsSpecificCommandLine(args) { return Os.isFamily(Os.FAMILY_WINDOWS) ? [ 'cmd', '/c' ] + args : args }
-def newPath(String first, String... args) { return FileSystems.getDefault().getPath(first, args) }
-def copyFile(src, tgt) {
-    if (!(src instanceof Path)) src = newPath(*(src as List))
-    if (!(tgt instanceof Path)) tgt = newPath(*(tgt as List))
-    Files.copy(src, tgt, COPY_ATTRIBUTES, REPLACE_EXISTING)
-}
-
-def gzip(String s, String outFile){
-    GZIPOutputStream zipStream = new GZIPOutputStream(new FileOutputStream(outFile))
-    zipStream.write(s.getBytes())
-    zipStream.close()
-}
-
 def bv = new H2OBuildVersion(rootDir, version)
 
 ext {
@@ -129,16 +115,16 @@ task setPackageFiles << {
 
 task buildPackageDocumentation(type: Exec) {
     doFirst {
-        standardOutput = new FileOutputStream("build/tmp/h2o-r_buildPackageDocumentation.out")
-        errorOutput = new FileOutputStream("build/tmp/h2o-r_buildPackageDocumentation.err")
+        standardOutput = new FileOutputStream("${buildDir}/tmp/h2o-r_buildPackageDocumentation.out")
+        errorOutput = new FileOutputStream("${buildDir}/tmp/h2o-r_buildPackageDocumentation.err")
     }
     commandLine getOsSpecificCommandLine(['R', "-q", "-e", "library(devtools); document('h2o-package');"])
 }
 
 task genPDF(type: Exec) {
     doFirst {
-        standardOutput = new FileOutputStream("build/tmp/h2o-r_genPDF.out")
-        errorOutput = new FileOutputStream("build/tmp/h2o-r_genPDF.err")
+        standardOutput = new FileOutputStream("${buildDir}/tmp/h2o-r_genPDF.out")
+        errorOutput = new FileOutputStream("${buildDir}/tmp/h2o-r_genPDF.err")
     }
     ignoreExitValue=true
     if (SYS_OS == "windows") commandLine 'cmd', '/c', 'R', 'CMD', "Rd2pdf", "--force", "--output=h2o_package.pdf", "--title=\"h2o\"", "--no-preview", "h2o-package\\man"
@@ -147,32 +133,34 @@ task genPDF(type: Exec) {
 
 genPDF.onlyIf { PDF_LATEX != "" && SYS_OS != "windows" }
 
-task cpPDF << {
-    new File([T,"R"].join(File.separator)).mkdirs()
-    copyFile([T,"h2o_package.pdf"], [T,"R", "h2o_package.pdf"])
+task cpPDF(type: Copy) {
+    from "${projectDir}/h2o_package.pdf"
+    into "${projectDir}/R/"
 }
 
 cpPDF.onlyIf { PDF_LATEX.contains("pdflatex") }
 
-task cpH2OAppJar << {
-    def path = [T, "h2o-package", "inst", "java"].join(File.separator)
-    File f = new File(path)
-    f.deleteDir()
-    new File(path).mkdirs()
-    copyFile([T,"..", "build", "h2o.jar"],[T, "h2o-package", "inst", "java", "h2o.jar"])
+task cpH2OAppJar(type: Copy) {
+    from "${rootDir}/build/h2o.jar"
+    into "${projectDir}/h2o-package/inst/java/"
 }
 
 task buildPKG(type: Exec) {
     doFirst {
-        standardOutput = new FileOutputStream("build/tmp/h2o-r_buildPKG.out")
+        standardOutput = new FileOutputStream("${buildDir}/tmp/h2o-r_buildPKG.out")
     }
     commandLine getOsSpecificCommandLine(['R', 'CMD', 'build', 'h2o-package'])
 }
 
 task cpToR << {
-    new File([T, "R", "src", "contrib"].join(File.separator)).mkdirs()
-    copyFile([T, "README.md"], [T, "R", "README.md"])
-    copyFile([T, H2O_R_SOURCE_FILE], [T, "R", "src", "contrib", H2O_R_SOURCE_FILE])
+    copy {
+        from "${projectDir}/README.md"
+        into "${projectDir}/R"
+    }
+    copy {
+        from "${projectDir}/${H2O_R_SOURCE_FILE}"
+        into "${projectDir}/R/src/contrib"
+    }
 }
 task publishPKG(type: Exec) { commandLine getOsSpecificCommandLine(['Rscript', "-e", "tools::write_PACKAGES('R/src/contrib')"]) }
 
