@@ -38,10 +38,10 @@ public class EVDMTJDenseMatrix implements SVDInterface {
         gramDimension);
 
     // sort eigenpairs in descending order according to the magnitude of eigenvalues
-    EigenPair[] eigenPairs = EigenPair.getSortedEigenpairs(eigenvalues, eigenvectors);
+    EigenPair[] eigenPairs = LinearAlgebraUtils.getSortedEigenpairs(eigenvalues, eigenvectors);
     reverse(eigenPairs);
-    eigenvalues = EigenPair.extractEigenvalues(eigenPairs);
-    eigenvectors = ArrayUtils.transpose(EigenPair.extractEigenvectors(eigenPairs));
+    eigenvalues = LinearAlgebraUtils.extractEigenvaluesFromEigenpairs(eigenPairs);
+    eigenvectors = ArrayUtils.transpose(LinearAlgebraUtils.extractEigenvectorsFromEigenpairs(eigenPairs));
   }
 
   @Override

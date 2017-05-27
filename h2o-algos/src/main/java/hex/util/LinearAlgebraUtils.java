@@ -15,6 +15,8 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
 
+import static java.util.Arrays.sort;
+
 public class LinearAlgebraUtils {
   /*
    * Forward substitution: Solve Lx = b for x with L = lower triangular matrix, b = real vector
@@ -85,6 +87,34 @@ public class LinearAlgebraUtils {
       System.arraycopy(arr, i * n, arr2D[i], 0, n);
     }
     return arr2D;
+  }
+
+  public static EigenPair[] getSortedEigenpairs(double[] eigenvalues, double[][] eigenvectors) {
+    int count = eigenvalues.length;
+    EigenPair eigenPairs[] = new EigenPair[count];
+    for (int i = 0; i < count; i++) {
+      eigenPairs[i] = new EigenPair(eigenvalues[i], eigenvectors[i]);
+    }
+    sort(eigenPairs);
+    return eigenPairs;
+  }
+
+  public static double[] extractEigenvaluesFromEigenpairs(EigenPair[] eigenPairs) {
+    int count = eigenPairs.length;
+    double[] eigenvalues = new double[count];
+    for (int i = 0; i < count; i++) {
+      eigenvalues[i] = eigenPairs[i].eigenvalue;
+    }
+    return eigenvalues;
+  }
+
+  public static double[][] extractEigenvectorsFromEigenpairs(EigenPair[] eigenPairs) {
+    int count = eigenPairs.length;
+    double[][] eigenvectors = new double[count][];
+    for (int i = 0; i < count; i++) {
+      eigenvectors[i] = eigenPairs[i].eigenvector;
+    }
+    return eigenvectors;
   }
 
   /**
