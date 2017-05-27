@@ -106,7 +106,7 @@
 #' @param force_load_balance \code{Logical}. Force extra load balancing to increase training speed for small datasets (to keep all cores
 #'        busy). Defaults to TRUE.
 #' @param variable_importances \code{Logical}. Compute variable importances for input features (Gedeon method) - can be slow for large
-#'        networks. Defaults to FALSE.
+#'        networks. Defaults to TRUE.
 #' @param replicate_training_data \code{Logical}. Replicate the entire training dataset onto every node for faster training on small datasets.
 #'        Defaults to TRUE.
 #' @param single_node_mode \code{Logical}. Run on a single node for fine-tuning of model parameters. Defaults to FALSE.
@@ -208,7 +208,7 @@ h2o.deeplearning <- function(x, y, training_frame,
                              diagnostics = TRUE,
                              fast_mode = TRUE,
                              force_load_balance = TRUE,
-                             variable_importances = FALSE,
+                             variable_importances = TRUE,
                              replicate_training_data = TRUE,
                              single_node_mode = FALSE,
                              shuffle_training_data = FALSE,

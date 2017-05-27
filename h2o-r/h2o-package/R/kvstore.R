@@ -161,7 +161,9 @@ h2o.getModel <- function(model_id) {
       type    <- mapping[1L, 1L]
       scalar  <- mapping[1L, 2L]
 
-      if (type == "numeric" && value == "Infinity")
+      if(type == "numeric" && class(value) == "list" && length(value) == 0) #Special case when using deep learning with 0 hidden units
+        value <- 0
+      else if (type == "numeric" && value == "Infinity")
         value <- Inf
       else if (type == "numeric" && value == "-Infinity")
         value <- -Inf
