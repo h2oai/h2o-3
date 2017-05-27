@@ -1,4 +1,4 @@
-#' AutoML: Automatic Machine Learning
+#' Automatic Machine Learning (AutoML)
 #'
 #' The Automatic Machine Learning (AutoML) function automates the supervised machine learning model training process.
 #' The current version of AutoML trains and cross-validates a Random Forest, an Extremely-Randomized Forest,
