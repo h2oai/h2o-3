@@ -453,22 +453,27 @@ public class LinearAlgebraUtils {
     @Override public Vec toEigenVec(Vec src) { return toEigen(src); }
   };
 
-  public static void printMatrix(double[][] matrix) {
+  public static String getMatrixInString(double[][] matrix) {
     int dimX = matrix.length;
     if (dimX <= 0) {
-      return;
+      return "";
     }
     int dimY = matrix[0].length;
     for (int x = 1; x < dimX; x++) {
       if (matrix[x].length != dimY) {
-        water.util.Log.err("Stacked matrix!");
+        return "Stacked matrix!";
       }
     }
+    String stringRepresenation = "";
     for (int x = 0; x < dimX; x++) {
       for (int y = 0; y < dimY; y++) {
-        System.out.print(String.format("%.4f", matrix[x][y]) + "\t");
+        if (matrix[x][y] > 0) {
+          stringRepresenation += ' ';   // a leading space before a number
+        }
+        stringRepresenation += String.format("%.4f\t", matrix[x][y]);
       }
-      System.out.println();
+      stringRepresenation += '\n';
     }
+    return stringRepresenation;
   }
 }
