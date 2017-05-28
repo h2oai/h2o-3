@@ -14,6 +14,7 @@
 #' @param build_control List of custom build parameters. Optional. 
 #' @param max_runtime_secs Maximum allowed runtime in seconds for the entire model training process. Use 0 to disable. Defaults to 3600 secs (1 hour).
 #' @param max_models Maximum number of models to build in the AutoML process (does not include Stacked Ensembles). Defaults to NULL.
+#' @param project_name Character string to identify an AutoML project.  Defaults to NULL, which means a project name will be auto-generated based on the training frame ID.
 #' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
 #'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.  Note that
 #'          Stacked Ensemble will be trained for regression and binary classification problems since multiclass stacking is not yet supported.
@@ -32,7 +33,8 @@ h2o.automl <- function(x, y, training_frame,
                        leaderboard_frame = NULL,
                        build_control = NULL,
                        max_runtime_secs = 3600,
-                       max_models = NULL)
+                       max_models = NULL,
+                       project_name = NULL)
 {
 
   tryCatch({
@@ -87,9 +89,16 @@ h2o.automl <- function(x, y, training_frame,
   # Update build_control list with top level build control args
   build_control <- list(stopping_criteria = list(max_runtime_secs = max_runtime_secs))
   if (!is.null(max_models)) {
-    build_control$stopping_criteria$max_models <- max_models
+    input_spec$stopping_criteria$max_models <- max_models
   }
 
+  # If project_name is NULL, auto-gen based on training_frame ID
+  if (is.null(project_name)) {
+    build_control$project <- paste0("automl_", training_frame_id)
+  } else {
+    build_control$project <- project_name
+  }
+  
   # Create the parameter list to POST to the AutoMLBuilder 
   params <- list(input_spec = input_spec, build_control = build_control)
 
@@ -99,14 +108,14 @@ h2o.automl <- function(x, y, training_frame,
 
   # GET AutoML job and leaderboard for project
   automl_job <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", res$job$dest$name))
-  project <- automl_job$project
+  #project <- automl_job$project  # This is not functional right now, we can get project_name from user input instead
   leaderboard <- as.data.frame(automl_job["leaderboard_table"]$leaderboard_table)
   row.names(leaderboard) <- seq(nrow(leaderboard))
   leader <- h2o.getModel(automl_job$leaderboard$models[[1]]$name)
 
   # Make AutoML object
   new("H2OAutoML",
-      project_name = project,
+      project_name = build_control$project,
       leader = leader,
       leaderboard = leaderboard
   )
