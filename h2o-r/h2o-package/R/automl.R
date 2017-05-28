@@ -13,6 +13,8 @@
 #' @param leaderboard_frame Leaderboard data frame (or ID).  The Leaderboard will be scored using this data set. Optional.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for the entire model training process. Use 0 to disable. Defaults to 3600 secs (1 hour).
 #' @param max_models Maximum number of models to build in the AutoML process (does not include Stacked Ensembles). Defaults to NULL.
+#' @param stopping_metric Metric to use for early stopping (AUTO is logloss for classification, deviance for regression).  
+#'        Must be one of "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error". Defaults to AUTO.
 #' @param seed Integer. Set a seed for reproducibility. AutoML can only guarantee reproducibility if max_models or early stopping is used 
 #'        because max_runtime_secs is resource limited, meaning that if the resources are not the same between runs, AutoML may be able to train more models on one run vs another.
 #' @param project_name Character string to identify an AutoML project.  Defaults to NULL, which means a project name will be auto-generated based on the training frame ID.
@@ -34,6 +36,7 @@ h2o.automl <- function(x, y, training_frame,
                        leaderboard_frame = NULL,
                        max_runtime_secs = 3600,
                        max_models = NULL,
+                       stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error"),
                        seed = NULL,
                        project_name = NULL)
 {
@@ -92,6 +95,7 @@ h2o.automl <- function(x, y, training_frame,
   if (!is.null(max_models)) {
     build_control$stopping_criteria$max_models <- max_models
   }
+  build_control$stopping_criteria$stopping_metric <- match.arg(stopping_metric)
   if (!is.null(seed)) {
     build_control$seed <- seed
   }
