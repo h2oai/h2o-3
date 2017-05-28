@@ -43,12 +43,6 @@ Supervised
     :show-inheritance:
     :members:
 
-:mod:`H2OStackedEnsembleEstimator`
-----------------------------------
-.. autoclass:: h2o.estimators.stackedensemble.H2OStackedEnsembleEstimator
-    :show-inheritance:
-    :members:
-
 
 Unsupervised
 ++++++++++++
@@ -80,6 +74,12 @@ Unsupervised
 :mod:`H2OPrincipalComponentAnalysisEstimator`
 ---------------------------------------------
 .. autoclass:: h2o.estimators.pca.H2OPrincipalComponentAnalysisEstimator
+    :show-inheritance:
+    :members:
+
+:mod:`H2OStackedEnsembleEstimator`
+----------------------------------
+.. autoclass:: h2o.estimators.stackedensemble.H2OStackedEnsembleEstimator
     :show-inheritance:
     :members:
 
