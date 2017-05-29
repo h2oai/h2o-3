@@ -113,9 +113,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     }
 
     levelOneFrame.add(this.responseColumn, adaptFrm.vec(this.responseColumn));
-
     // TODO: what if we're running multiple in parallel and have a name collision?
-    DKV.put(levelOneFrame);
     Log.info("Finished creating \"level one\" frame for scoring: " + levelOneFrame.toString());
 
     // Score the dataset, building the class distribution & predictions
@@ -123,8 +121,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     Model metalearner = this._output._metalearner;
     Frame levelOneAdapted = new Frame(levelOneFrame);
     metalearner.adaptTestForTrain(levelOneAdapted, true, computeMetrics);
-
-    DKV.put(levelOneAdapted);
 
     String[] metaNames = metalearner.makeScoringNames();
     String[][] metaDomains = new String[metaNames.length][];
@@ -144,8 +140,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     }
 
     Model.cleanup_adapt(levelOneAdapted, levelOneFrame);
-    levelOneAdapted.remove(); //Cleanup
-    levelOneFrame.remove();  //Cleanup
     return metaBs.outputFrame(Key.<Frame>make(destination_key), metaNames, metaDomains);
   }
 
