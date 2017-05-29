@@ -28,49 +28,48 @@ public class LogsHandler extends Handler {
           name = "debug";
         }
 
-        if (name.equals("stdout") || name.equals("stderr")) {
-          LinuxProcFileReader lpfr = new LinuxProcFileReader();
-          lpfr.read();
-          if (! lpfr.valid()) {
-            log = "This option only works for Linux hosts";
-          }
-          else {
-            String pid = lpfr.getProcessID();
-            String fdFileName = "/proc/" + pid + "/fd/" + (name.equals("stdout") ? "1" : "2");
-            File f = new File(fdFileName);
-            logPathFilename = f.getCanonicalPath();
-            if (logPathFilename.startsWith("/dev")) {
-              log = "Unsupported when writing to console";
+        switch (name) {
+          case "stdout":
+          case "stderr":
+            LinuxProcFileReader lpfr = new LinuxProcFileReader();
+            lpfr.read();
+            if (!lpfr.valid()) {
+              log = "This option only works for Linux hosts";
+            } else {
+              String pid = lpfr.getProcessID();
+              String fdFileName = "/proc/" + pid + "/fd/" + (name.equals("stdout") ? "1" : "2");
+              File f = new File(fdFileName);
+              logPathFilename = f.getCanonicalPath();
+              if (logPathFilename.startsWith("/dev")) {
+                log = "Unsupported when writing to console";
+              }
+              if (logPathFilename.startsWith("socket")) {
+                log = "Unsupported when writing to a socket";
+              }
+              if (logPathFilename.startsWith("pipe")) {
+                log = "Unsupported when writing to a pipe";
+              }
+              if (logPathFilename.equals(fdFileName)) {
+                log = "Unsupported when writing to a pipe";
+              }
+              Log.trace("LogPathFilename calculation: " + logPathFilename);
             }
-            if (logPathFilename.startsWith("socket")) {
-              log = "Unsupported when writing to a socket";
+            break;
+          case "trace":
+          case "debug":
+          case "info":
+          case "warn":
+          case "error":
+          case "fatal":
+          case "httpd":
+            try {
+              logPathFilename = Log.getLogFilePath(name);
+            } catch (Exception e) {
+              log = "H2O logging not configured.";
             }
-            if (logPathFilename.startsWith("pipe")) {
-              log = "Unsupported when writing to a pipe";
-            }
-            if (logPathFilename.equals(fdFileName)) {
-              log = "Unsupported when writing to a pipe";
-            }
-            Log.trace("LogPathFilename calculation: " + logPathFilename);
-          }
-        }
-        else if (  name.equals("trace")
-                || name.equals("debug")
-                || name.equals("info")
-                || name.equals("warn")
-                || name.equals("error")
-                || name.equals("fatal")
-                || name.equals("httpd")
-                ) {
-          try {
-            logPathFilename = Log.getLogFilePath(name);
-          }
-          catch (Exception e) {
-            log = "H2O logging not configured.";
-          }
-        }
-        else {
-          throw new IllegalArgumentException("Illegal log file name requested (try 'default')");
+            break;
+          default:
+            throw new IllegalArgumentException("Illegal log file name requested (try 'default')");
         }
 
         if (log == null) {
