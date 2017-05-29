@@ -103,9 +103,9 @@ abstract public class Log {
   }
 
   /** Log with custom specification whether to print to stdout or not */
-  public static void info(String s, boolean stdout) { if( currentLevel >= INFO ) write0(INFO, stdout, s); }
+  public static void info(String s, boolean stdout) { if( currentLevel >= INFO ) write(INFO, stdout, new String[]{s}); }
 
-  /** Log to htttp log*/
+  /** Log to htttp log */
   public static void httpd(String method, String uri, int status, long deltaMillis) {
     org.apache.log4j.Logger l = LogManager.getLogger(water.api.RequestServer.class);
     String msg = String.format("  %-6s  %3d  %6d ms  %s", method, status, deltaMillis, uri);
@@ -121,7 +121,7 @@ abstract public class Log {
   /** Determine whether to print to stdout or not and pass the call for further processing */
   private static void write(int lvl, Object objs[]) {
     boolean writeToStdout = (lvl <= currentLevel);
-    write0(lvl, writeToStdout, objs);
+    write(lvl, writeToStdout, objs);
   }
 
   private static void setLogPrefix(){
@@ -130,7 +130,8 @@ abstract public class Log {
             + StringUtils.ofFixedLength(H2O.PID + " ", 6);
   }
 
-  private static void write0(int lvl, boolean stdout, Object objs[]) {
+  /** Initialize the log if necessary, log buffered messages and pass the call for further processing */
+  private static void write(int lvl, boolean stdout, Object objs[]) {
     StringBuilder sb = new StringBuilder();
     for( Object o : objs ) sb.append(o);
     String res = sb.toString();
