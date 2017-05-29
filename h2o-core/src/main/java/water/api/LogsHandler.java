@@ -114,39 +114,51 @@ public class LogsHandler extends Handler {
   }
 
 
-  private static H2ONode getH2ONode(String nodeIdx){
-    try
-    {
-      int numNodeIdx = Integer.parseInt(nodeIdx);
-
-      if ((numNodeIdx < -1) || (numNodeIdx >= H2O.CLOUD.size())) {
+  private static H2ONode getH2ONodeFromIdx(int nodeIdx){
+      if ((nodeIdx < -1) || (nodeIdx >= H2O.CLOUD.size())) {
         throw new IllegalArgumentException("H2O node with the specified index does not exist!");
-      }else if(numNodeIdx == -1){
+      }else if(nodeIdx == -1){
         return H2O.SELF;
       }else{
-        return H2O.CLOUD._memary[numNodeIdx];
+        return H2O.CLOUD._memary[nodeIdx];
       }
-    }
-    catch(NumberFormatException nfe)
-    {
-      // not a number, try to parse ipPort
-      if (nodeIdx.equals("self")) {
-        return H2O.SELF;
+  }
+
+  private static H2ONode getH2ONodeFromIPPort(String ipPort){
+    // not a number, try to parse ipPort
+    if (ipPort.equals("self")) {
+      return H2O.SELF;
+    } else {
+      H2ONode node = H2O.CLOUD.getNodeByIpPort(ipPort);
+      if (node != null){
+        return node;
       } else {
-        H2ONode node = H2O.CLOUD.getNodeByIpPort(nodeIdx);
-        if (node != null){
-          return node;
+        // it still can be client
+        H2ONode client = H2O.getClientByIPPort(ipPort);
+        if (client != null) {
+          return client;
         } else {
-          // it still can be client
-          H2ONode client = H2O.getClientByIPPort(nodeIdx);
-          if (client != null) {
-            return client;
-          } else {
-            // the ipport does not represent any existing h2o cloud member or client
-            throw new IllegalArgumentException("No H2O node running as part of this cloud on " + nodeIdx + " does not exist!");
-          }
+          // the ipport does not represent any existing h2o cloud member or client
+          throw new IllegalArgumentException("No H2O node running as part of this cloud on " + ipPort + " does not exist!");
         }
       }
+    }
+  }
+
+  private static boolean isNodeIndex(String nodeRef){
+    try {
+      int numNodeIdx = Integer.parseInt(nodeRef);
+      return true;
+    }catch (NumberFormatException nfe) {
+      return false;
+    }
+  }
+
+  private static H2ONode getH2ONode(String nodeRef) {
+   if(isNodeIndex(nodeRef)) {
+    return getH2ONodeFromIdx(Integer.parseInt(nodeRef));
+   }else{
+      return getH2ONodeFromIPPort(nodeRef);
     }
   }
 

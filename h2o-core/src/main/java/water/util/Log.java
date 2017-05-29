@@ -373,7 +373,7 @@ abstract public class Log {
       case DEBUG: logger.debug(sb); break;
       case TRACE: logger.trace(sb); break;
       default:
-        logger.error("Invalid log level requested");
+        logger.error("Invalid log level requested.");
         logger.error(s);
     }
   }

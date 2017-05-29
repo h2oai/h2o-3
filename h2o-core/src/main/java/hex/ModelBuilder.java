@@ -786,7 +786,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       _log_level = log_level;
       _field_name = field_name;
       _message = message;
-      Log.log(log_level,field_name + ": " + message);
+      Log.log(Log.LEVEL.fromNum(log_level),field_name + ": " + message);
     }
     public int log_level() { return _log_level; }
     @Override public String toString() { return Log.LEVEL.fromNum(_log_level) + " on field: " + _field_name + ": " + _message; }
