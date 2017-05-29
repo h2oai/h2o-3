@@ -65,11 +65,11 @@ public class LogsHandler extends Handler {
             if(Log.getCurrentLogLevel().getLevel() < Log.LEVEL.fromString(name).getLevel()){
               logContent = name + " log not available since the log level is set to " + Log.getCurrentLogLevel();
             } else {
-              try {
-                logPathFilename = Log.getLogFilePath(name);
-              } catch (Exception e) {
-                logContent = "H2O logging not configured.";
-              }
+                if(!Log.isLoggingInitialized()){
+                  logContent = "H2O logging not configured.";
+                }else{
+                  logPathFilename = Log.getLogFilePath(name);
+                }
             }
             break;
           default:
