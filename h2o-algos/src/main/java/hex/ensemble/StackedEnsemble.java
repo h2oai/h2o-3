@@ -148,7 +148,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       // _model._output._model_summary = createModelSummaryTable(model._output);
       _model.update(_job);
       _model.unlock(_job);
-      levelOneFrame.remove(); //Cleanup
+      DKV.remove(levelOneFrame._key);  //Cleanup
 
     } // computeImpl
   }
