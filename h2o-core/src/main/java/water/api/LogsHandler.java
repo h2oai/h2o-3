@@ -12,13 +12,13 @@ import java.io.FileReader;
 public class LogsHandler extends Handler {
   private static class GetLogTask extends DTask<GetLogTask> {
     public String name;
-    public String log;
+    public String logContent;
 
     public boolean success = false;
 
     public GetLogTask() {
       super(H2O.GUI_PRIORITY);
-      log = null;
+      logContent = null;
     }
 
     public void doIt() {
@@ -34,23 +34,23 @@ public class LogsHandler extends Handler {
             LinuxProcFileReader lpfr = new LinuxProcFileReader();
             lpfr.read();
             if (!lpfr.valid()) {
-              log = "This option only works for Linux hosts";
+              logContent = "This option only works for Linux hosts";
             } else {
               String pid = lpfr.getProcessID();
               String fdFileName = "/proc/" + pid + "/fd/" + (name.equals("stdout") ? "1" : "2");
               File f = new File(fdFileName);
               logPathFilename = f.getCanonicalPath();
               if (logPathFilename.startsWith("/dev")) {
-                log = "Unsupported when writing to console";
+                logContent = "Unsupported when writing to console";
               }
               if (logPathFilename.startsWith("socket")) {
-                log = "Unsupported when writing to a socket";
+                logContent = "Unsupported when writing to a socket";
               }
               if (logPathFilename.startsWith("pipe")) {
-                log = "Unsupported when writing to a pipe";
+                logContent = "Unsupported when writing to a pipe";
               }
               if (logPathFilename.equals(fdFileName)) {
-                log = "Unsupported when writing to a pipe";
+                logContent = "Unsupported when writing to a pipe";
               }
               Log.trace("LogPathFilename calculation: " + logPathFilename);
             }
@@ -62,17 +62,21 @@ public class LogsHandler extends Handler {
           case "error":
           case "fatal":
           case "httpd":
-            try {
-              logPathFilename = Log.getLogFilePath(name);
-            } catch (Exception e) {
-              log = "H2O logging not configured.";
+            if(Log.getCurrentLogLevel().getLevel() < Log.LEVEL.fromString(name).getLevel()){
+              logContent = name + " log not available since the log level is set to " + Log.getCurrentLogLevel();
+            } else {
+              try {
+                logPathFilename = Log.getLogFilePath(name);
+              } catch (Exception e) {
+                logContent = "H2O logging not configured.";
+              }
             }
             break;
           default:
             throw new IllegalArgumentException("Illegal log file name requested (try 'default')");
         }
 
-        if (log == null) {
+        if (logContent == null) {
           File f = new File(logPathFilename);
           if (!f.exists()) {
             throw new IllegalArgumentException("File " + f + " does not exist");
@@ -93,7 +97,7 @@ public class LogsHandler extends Handler {
           }
           reader.close();
 
-          log = sb.toString();
+          logContent = sb.toString();
         }
 
         success = true;
@@ -125,7 +129,7 @@ public class LogsHandler extends Handler {
     }
     catch(NumberFormatException nfe)
     {
-      // not a number, try to parse for ipPort
+      // not a number, try to parse ipPort
       if (nodeIdx.equals("self")) {
         return H2O.SELF;
       } else {
@@ -148,8 +152,6 @@ public class LogsHandler extends Handler {
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public LogsV3 fetch(int version, LogsV3 s) {
-
-
     H2ONode node = getH2ONode(s.nodeidx);
     String filename = s.name;
     if (filename != null) {
@@ -178,9 +180,7 @@ public class LogsHandler extends Handler {
     if (!t.success) {
       throw new RuntimeException("GetLogTask failed");
     }
-
-    s.log = t.log;
-
+    s.log = t.logContent;
     return s;
   }
 }

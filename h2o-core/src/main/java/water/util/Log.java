@@ -136,12 +136,16 @@ abstract public class Log {
     }
   }
 
-  /** Get directory where the logs are store */
+  /** Get directory where the logs are stored */
   public static String getLogDir() throws Exception {
     if (logDir == null) {
       throw new Exception("logDir not yet defined");
     }
     return logDir;
+  }
+
+  public static LEVEL getCurrentLogLevel(){
+    return LEVEL.fromNum(currentLevel);
   }
 
   /** Get full path to a log file of specified log level */
