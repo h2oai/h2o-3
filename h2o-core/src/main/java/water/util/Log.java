@@ -449,8 +449,8 @@ abstract public class Log {
     }
     POST(n, e.toString());
     StackTraceElement[] els = e.getStackTrace();
-    for (int i = 0; i < els.length; i++) {
-      POST(n, els[i].toString());
+    for (StackTraceElement el : els) {
+      POST(n, el.toString());
     }
   }
 }
