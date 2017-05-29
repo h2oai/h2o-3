@@ -13,12 +13,15 @@
 #' @param leaderboard_frame Leaderboard data frame (or ID).  The Leaderboard will be scored using this data set. Optional.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for the entire model training process. Use 0 to disable. Defaults to 3600 secs (1 hour).
 #' @param max_models Maximum number of models to build in the AutoML process (does not include Stacked Ensembles). Defaults to NULL.
+#' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much) Defaults to 0.001.
+#' @param stopping_rounds Integer. Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the stopping_metric 
+#'        does not improve for k (stopping_rounds) scoring events. Defaults to 3 and must be an non-zero integer.  Use 0 to disable early stopping.
 #' @param seed Integer. Set a seed for reproducibility. AutoML can only guarantee reproducibility if max_models or early stopping is used 
 #'        because max_runtime_secs is resource limited, meaning that if the resources are not the same between runs, AutoML may be able to train more models on one run vs another.
 #' @param project_name Character string to identify an AutoML project.  Defaults to NULL, which means a project name will be auto-generated based on the training frame ID.
 #' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
-#'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.  Note that
-#'          Stacked Ensemble will be trained for regression and binary classification problems since multiclass stacking is not yet supported.
+#'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.  Note that a
+#'          Stacked Ensemble will be trained for regression and binary classification problems only since multiclass stacking is not yet supported.
 #' @return An \linkS4class{H2OAutoML} object.
 #' @examples
 #' \donttest{
@@ -34,6 +37,8 @@ h2o.automl <- function(x, y, training_frame,
                        leaderboard_frame = NULL,
                        max_runtime_secs = 3600,
                        max_models = NULL,
+                       stopping_tolerance = 0.001,
+                       stopping_rounds = 3,
                        seed = NULL,
                        project_name = NULL)
 {
@@ -93,6 +98,8 @@ h2o.automl <- function(x, y, training_frame,
     build_control$stopping_criteria$max_models <- max_models
   }
   #build_control$stopping_criteria$stopping_metric <- match.arg(stopping_metric)
+  build_control$stopping_criteria$stopping_tolerance <- stopping_tolerance
+  build_control$stopping_criteria$stopping_rounds <- stopping_rounds
   if (!is.null(seed)) {
     build_control$seed <- seed
   }

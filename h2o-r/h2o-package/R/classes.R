@@ -619,7 +619,6 @@ setMethod("summary", "H2OGrid",
 #'
 #' This class represents an H2OAutoML object
 #'
-#' @aliases H2OAutoML
 #' @export
 setClass("H2OAutoML", slots = c(project_name = "character",
                                 leader = "H2OModel",
