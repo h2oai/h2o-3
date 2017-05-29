@@ -291,8 +291,8 @@ abstract public class Log {
     }
   }
 
-  private static synchronized org.apache.log4j.Logger initializeLogger() {
-    if( logger != null ) return logger; // Test again under lock
+  private static synchronized void initializeLogger() {
+    if( logger != null ) return;
 
     String log4jConfiguration = System.getProperty ("h2o.log4j.configuration");
     boolean log4jConfigurationProvided = log4jConfiguration != null;
@@ -330,7 +330,7 @@ abstract public class Log {
         PropertyConfigurator.configure(p);
       }
     }
-    return (logger = LogManager.getLogger("water.default"));
+    logger = LogManager.getLogger("water.default");
   }
 
   private static void setLogPrefix(){
@@ -416,7 +416,7 @@ abstract public class Log {
   public static void POST(int n, String s) {
     System.out.println("POST " + n + ": " + s);
   }
-  
+
   public static void POST(int n, Exception e) {
     if (e.getMessage() != null) {
       POST(n, e.getMessage());
