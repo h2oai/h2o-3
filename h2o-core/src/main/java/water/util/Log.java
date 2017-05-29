@@ -413,36 +413,10 @@ abstract public class Log {
    * @param n POST code.
    * @param s String to emit.
    */
-//  private static final Object postLock = new Object();
   public static void POST(int n, String s) {
-    // DO NOTHING UNLESS ENABLED BY REMOVING THIS RETURN!
     System.out.println("POST " + n + ": " + s);
-    return;
-
-//      synchronized (postLock) {
-//          File f = new File ("/tmp/h2o.POST");
-//          if (! f.exists()) {
-//              boolean success = f.mkdirs();
-//              if (! success) {
-//                  try { System.err.print ("Exiting from POST now!"); } catch (Exception _) {}
-//                  H2O.exit (0);
-//              }
-//          }
-//
-//          f = new File ("/tmp/h2o.POST/" + n);
-//          try {
-//              f.createNewFile();
-//              FileWriter fstream = new FileWriter(f.getAbsolutePath(), true);
-//              BufferedWriter out = new BufferedWriter(fstream);
-//              out.write(s + "\n");
-//              out.close();
-//          }
-//          catch (Exception e) {
-//              try { System.err.print ("Exiting from POST now!"); } catch (Exception _) {}
-//              H2O.exit (0);
-//          }
-//      }
   }
+  
   public static void POST(int n, Exception e) {
     if (e.getMessage() != null) {
       POST(n, e.getMessage());
