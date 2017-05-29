@@ -10,9 +10,9 @@ public class SVDFactory {
     switch (implementation) {
       case EVD_MTJ_DENSEMATRIX:
         return new EVDMTJDenseMatrix(gramMatrix);
-      case MTJ:
+      case EVD_MTJ_SYMM:
         return new EVDMTJSymm(gramMatrix);
-      case MTJ_DENSEMATRIX:
+      case MTJ:
         return new SVDMTJDenseMatrix(gramMatrix);
       case JAMA:
         return new SVDJama(gramMatrix);

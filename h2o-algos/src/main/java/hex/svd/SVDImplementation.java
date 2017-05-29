@@ -5,5 +5,5 @@ package hex.svd;
  *         created on 2.5.17
  */
 public enum SVDImplementation {
-  EVD_MTJ_DENSEMATRIX, MTJ, MTJ_DENSEMATRIX, JAMA
+  EVD_MTJ_DENSEMATRIX, EVD_MTJ_SYMM, MTJ, JAMA
 }
