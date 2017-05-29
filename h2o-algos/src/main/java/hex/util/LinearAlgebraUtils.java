@@ -16,6 +16,7 @@ import water.util.ArrayUtils;
 import water.util.Log;
 
 import static java.util.Arrays.sort;
+import static org.apache.commons.lang.ArrayUtils.reverse;
 
 public class LinearAlgebraUtils {
   /*
@@ -89,13 +90,19 @@ public class LinearAlgebraUtils {
     return arr2D;
   }
 
-  public static EigenPair[] getSortedEigenpairs(double[] eigenvalues, double[][] eigenvectors) {
+  public static EigenPair[] createSortedEigenpairs(double[] eigenvalues, double[][] eigenvectors) {
     int count = eigenvalues.length;
     EigenPair eigenPairs[] = new EigenPair[count];
     for (int i = 0; i < count; i++) {
       eigenPairs[i] = new EigenPair(eigenvalues[i], eigenvectors[i]);
     }
     sort(eigenPairs);
+    return eigenPairs;
+  }
+
+  public static EigenPair[] createReverseSortedEigenpairs(double[] eigenvalues, double[][] eigenvectors) {
+    EigenPair[] eigenPairs = createSortedEigenpairs(eigenvalues, eigenvectors);
+    reverse(eigenPairs);
     return eigenPairs;
   }
 

@@ -7,8 +7,6 @@ import no.uib.cipr.matrix.Matrix;
 import no.uib.cipr.matrix.NotConvergedException;
 import water.util.ArrayUtils;
 
-import static org.apache.commons.lang.ArrayUtils.reverse;
-
 /**
  * @author mathemage <ha@h2o.ai>
  *         created on 1.5.17
@@ -38,8 +36,7 @@ public class EVDMTJDenseMatrix implements SVDInterface {
         gramDimension);
 
     // sort eigenpairs in descending order according to the magnitude of eigenvalues
-    EigenPair[] eigenPairs = LinearAlgebraUtils.getSortedEigenpairs(eigenvalues, eigenvectors);
-    reverse(eigenPairs);
+    EigenPair[] eigenPairs = LinearAlgebraUtils.createReverseSortedEigenpairs(eigenvalues, eigenvectors);
     eigenvalues = LinearAlgebraUtils.extractEigenvaluesFromEigenpairs(eigenPairs);
     eigenvectors = ArrayUtils.transpose(LinearAlgebraUtils.extractEigenvectorsFromEigenpairs(eigenPairs));
   }
