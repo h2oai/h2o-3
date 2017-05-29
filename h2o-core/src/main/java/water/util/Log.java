@@ -159,10 +159,22 @@ abstract public class Log {
     quietLogging = quiet;
   }
 
+  /** Get names of all log files */
+  public static String[] getLogFileNames() throws Exception {
+    return new String[]{
+            getLogFileName("fatal"),
+            getLogFileName("error"),
+            getLogFileName("warn"),
+            getLogFileName("info"),
+            getLogFileName("debug"),
+            getLogFileName("trace"),
+            getLogFileName("httpd")
+    };
+  }
   /** Get file name for log file of specified log level */
   private static String getLogFileName(String level) throws Exception {
     if(level.equals("httpd")){
-      return getLogFileNamePrefix() + "-httpd.log";
+      return getLogFileNamePrefix() + "-HTTPD.log";
     }else{
       LEVEL lvl = LEVEL.fromString(level);
       if(lvl.equals(LEVEL.UNKNOWN)) {
