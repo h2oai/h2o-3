@@ -54,13 +54,13 @@ public final class ValidationMessageV3 extends SchemaV3<ValidationMessage, Valid
   }
 
   public ValidationMessage createImpl() {
-    return new ModelBuilder.ValidationMessage(Log.valueOf(message_type), field_name, message);
+    return new ModelBuilder.ValidationMessage(Log.LEVEL.valueOf(message_type).getLevel(), field_name, message);
   }
 
   // Version&Schema-specific filling from the implementation object
   public ValidationMessageV3 fillFromImpl(ValidationMessage vm) {
     PojoUtils.copyProperties(this, vm, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
-    this.message_type = Log.LVLS[vm.log_level()]; // field name changed
+    this.message_type = Log.LEVEL.fromNum(vm.log_level()).toString(); // field name changed
     if (this.field_name != null) {
       if (this.field_name.startsWith("_"))
         this.field_name = this.field_name.substring(1);

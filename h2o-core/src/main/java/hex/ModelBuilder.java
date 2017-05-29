@@ -749,10 +749,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public ValidationMessage[] _messages = new ValidationMessage[0];
   private int _error_count = -1; // -1 ==> init not run yet, for those Jobs that have an init, like ModelBuilder. Note, this counts ONLY errors, not WARNs and etc.
   public int error_count() { assert _error_count >= 0 : "init() not run yet"; return _error_count; }
-  public void hide (String field_name, String message) { message(Log.TRACE, field_name, message); }
-  public void info (String field_name, String message) { message(Log.INFO , field_name, message); }
-  public void warn (String field_name, String message) { message(Log.WARN , field_name, message); }
-  public void error(String field_name, String message) { message(Log.ERRR , field_name, message); _error_count++; }
+  public void hide (String field_name, String message) { message(Log.LEVEL.TRACE.getLevel(), field_name, message); }
+  public void info (String field_name, String message) { message(Log.LEVEL.INFO.getLevel(), field_name, message); }
+  public void warn (String field_name, String message) { message(Log.LEVEL.WARN.getLevel(), field_name, message); }
+  public void error(String field_name, String message) { message(Log.LEVEL.ERROR.getLevel(), field_name, message); _error_count++; }
   public void clearValidationErrors() {
     _messages = new ValidationMessage[0];
     _error_count = 0;
@@ -762,14 +762,14 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     _messages = Arrays.copyOf(_messages, _messages.length + 1);
     _messages[_messages.length - 1] = new ValidationMessage(log_level, field_name, message);
 
-    if (log_level == Log.ERRR) _error_count++;
+    if (log_level == Log.LEVEL.ERROR.getLevel()) _error_count++;
   }
 
  /** Get a string representation of only the ERROR ValidationMessages (e.g., to use in an exception throw). */
   public String validationErrors() {
     StringBuilder sb = new StringBuilder();
     for( ValidationMessage vm : _messages )
-      if( vm._log_level == Log.ERRR )
+      if( vm._log_level == Log.LEVEL.ERROR.getLevel() )
         sb.append(vm.toString()).append("\n");
     return sb.toString();
   }
@@ -789,7 +789,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       Log.log(log_level,field_name + ": " + message);
     }
     public int log_level() { return _log_level; }
-    @Override public String toString() { return Log.LVLS[_log_level] + " on field: " + _field_name + ": " + _message; }
+    @Override public String toString() { return Log.LEVEL.fromNum(_log_level) + " on field: " + _field_name + ": " + _message; }
   }
 
   // ==========================================================================
