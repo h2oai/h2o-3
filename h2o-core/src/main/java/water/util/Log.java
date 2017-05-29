@@ -11,7 +11,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
 
-/** Log for H2O. 
+/** Log for H2O.
  *
  *  OOME: when the VM is low on memory, OutOfMemoryError can be thrown in the
  *  logging framework while it is trying to print a message. In this case the
@@ -56,7 +56,7 @@ abstract public class Log {
     if( lvl != -1 ) _level = lvl;
     _quiet = quiet;
   }
-  
+
   public static void trace( Object... objs ) { log(TRACE,objs); }
   public static void debug( Object... objs ) { log(DEBUG,objs); }
   public static void info ( Object... objs ) { log(INFO ,objs); }
@@ -94,6 +94,12 @@ abstract public class Log {
     write0(lvl, writeToStdout, objs);
   }
 
+  private static void createLogPrefix(){
+    String host = H2O.SELF_ADDRESS.getHostAddress();
+    _preHeader = StringUtils.ofFixedLength(host + ":" + H2O.API_PORT + " ", 22)
+            + StringUtils.ofFixedLength(H2O.PID + " ", 6);
+  }
+
   private static void write0( int lvl, boolean stdout, Object objs[] ) {
     StringBuilder sb = new StringBuilder();
     for( Object o : objs ) sb.append(o);
@@ -103,8 +109,7 @@ abstract public class Log {
       return;
     }
     if( INIT_MSGS != null ) {   // Ahh, dump any initial buffering
-      String host = H2O.SELF_ADDRESS.getHostAddress();
-      _preHeader = fixedLength(host + ":" + H2O.API_PORT + " ", 22) + fixedLength(H2O.PID + " ", 6);
+      createLogPrefix();
       ArrayList<String> bufmsgs = INIT_MSGS;  INIT_MSGS = null;
       if (bufmsgs != null) for( String s : bufmsgs ) write0(INFO, true, s);
     }
@@ -122,15 +127,15 @@ abstract public class Log {
     // log something here
     org.apache.log4j.Logger l4j = _logger != null ? _logger : createLog4j();
     switch( lvl ) {
-    case FATAL:l4j.fatal(sb); break;
-    case ERRR: l4j.error(sb); break;
-    case WARN: l4j.warn (sb); break;
-    case INFO: l4j.info (sb); break;
-    case DEBUG:l4j.debug(sb); break;
-    case TRACE:l4j.trace(sb); break;
-    default:
-      l4j.error("Invalid log level requested");
-      l4j.error(s);
+      case FATAL:l4j.fatal(sb); break;
+      case ERRR: l4j.error(sb); break;
+      case WARN: l4j.warn (sb); break;
+      case INFO: l4j.info (sb); break;
+      case DEBUG:l4j.debug(sb); break;
+      case TRACE:l4j.trace(sb); break;
+      default:
+        l4j.error("Invalid log level requested");
+        l4j.error(s);
     }
   }
 
@@ -144,12 +149,9 @@ abstract public class Log {
   }
 
   // Build a header for all lines in a single message
-  private static String header( int lvl ) {
-    String nowString = Timer.nowAsLogString();
-    String s = nowString +" "+_preHeader+" "+
-      fixedLength(Thread.currentThread().getName() + " ", 10)+
-      LVLS[lvl]+": ";
-    return s;
+  private static String header(int lvl) {
+    String threadName = StringUtils.ofFixedLength(Thread.currentThread().getName() + " ", 10);
+    return String.format("%s %s %s%s: ", Timer.nowAsLogString(), _preHeader, threadName, LVLS[lvl]);
   }
 
   // A little bit of startup buffering
@@ -224,12 +226,12 @@ abstract public class Log {
 
     // H2O-wide logging
     String appenders = new String[]{
-      "TRACE, R6",
-      "TRACE, R5, R6",
-      "TRACE, R4, R5, R6",
-      "TRACE, R3, R4, R5, R6",
-      "TRACE, R2, R3, R4, R5, R6",
-      "TRACE, R1, R2, R3, R4, R5, R6",
+            "TRACE, R6",
+            "TRACE, R5, R6",
+            "TRACE, R4, R5, R6",
+            "TRACE, R3, R4, R5, R6",
+            "TRACE, R2, R3, R4, R5, R6",
+            "TRACE, R1, R2, R3, R4, R5, R6",
     }[_level];
     p.setProperty("log4j.logger.water.default", appenders);
     p.setProperty("log4j.additivity.water.default",   "false");
@@ -366,25 +368,8 @@ abstract public class Log {
         PropertyConfigurator.configure(p);
       }
     }
-    
-    return (_logger = LogManager.getLogger("water.default"));
-  }
 
-  public static String fixedLength(String s, int length) {
-    String r = padRight(s, length);
-    if( r.length() > length ) {
-      int a = Math.max(r.length() - length + 1, 0);
-      int b = Math.max(a, r.length());
-      r = "#" + r.substring(a, b);
-    }
-    return r;
-  }
-  
-  static String padRight(String stringToPad, int size) {
-    StringBuilder strb = new StringBuilder(stringToPad);
-    while( strb.length() < size )
-      if( strb.length() < size ) strb.append(' ');
-    return strb.toString();
+    return (_logger = LogManager.getLogger("water.default"));
   }
 
   public static void ignore(Throwable e) {
