@@ -62,10 +62,8 @@ public class LogsHandler extends Handler {
                 || name.equals("fatal")
                 || name.equals("httpd")
                 ) {
-          name = water.util.Log.getLogFileName(name);
           try {
-            String logDir = Log.getLogDir();
-            logPathFilename = logDir + File.separator + name;
+            logPathFilename = Log.getLogFilePath(name);
           }
           catch (Exception e) {
             log = "H2O logging not configured.";
@@ -114,39 +112,39 @@ public class LogsHandler extends Handler {
 
 
   private static H2ONode getH2ONode(String nodeIdx){
-      try
-      {
-        int numNodeIdx = Integer.parseInt(nodeIdx);
+    try
+    {
+      int numNodeIdx = Integer.parseInt(nodeIdx);
 
-        if ((numNodeIdx < -1) || (numNodeIdx >= H2O.CLOUD.size())) {
-          throw new IllegalArgumentException("H2O node with the specified index does not exist!");
-        }else if(numNodeIdx == -1){
-              return H2O.SELF;
-          }else{
-              return H2O.CLOUD._memary[numNodeIdx];
-          }
+      if ((numNodeIdx < -1) || (numNodeIdx >= H2O.CLOUD.size())) {
+        throw new IllegalArgumentException("H2O node with the specified index does not exist!");
+      }else if(numNodeIdx == -1){
+        return H2O.SELF;
+      }else{
+        return H2O.CLOUD._memary[numNodeIdx];
       }
-      catch(NumberFormatException nfe)
-      {
-        // not a number, try to parse for ipPort
-        if (nodeIdx.equals("self")) {
-          return H2O.SELF;
+    }
+    catch(NumberFormatException nfe)
+    {
+      // not a number, try to parse for ipPort
+      if (nodeIdx.equals("self")) {
+        return H2O.SELF;
+      } else {
+        H2ONode node = H2O.CLOUD.getNodeByIpPort(nodeIdx);
+        if (node != null){
+          return node;
         } else {
-          H2ONode node = H2O.CLOUD.getNodeByIpPort(nodeIdx);
-          if (node != null){
-            return node;
+          // it still can be client
+          H2ONode client = H2O.getClientByIPPort(nodeIdx);
+          if (client != null) {
+            return client;
           } else {
-            // it still can be client
-            H2ONode client = H2O.getClientByIPPort(nodeIdx);
-            if (client != null) {
-              return client;
-            } else {
-              // the ipport does not represent any existing h2o cloud member or client
-              throw new IllegalArgumentException("No H2O node running as part of this cloud on " + nodeIdx + " does not exist!");
-            }
+            // the ipport does not represent any existing h2o cloud member or client
+            throw new IllegalArgumentException("No H2O node running as part of this cloud on " + nodeIdx + " does not exist!");
           }
         }
       }
+    }
   }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer

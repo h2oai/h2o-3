@@ -80,12 +80,6 @@ abstract public class Log {
   // Common prefix for logged messages
   private static String logPrefix;
 
-  public static void init(String slvl, boolean quiet) {
-    LEVEL lvl = LEVEL.fromString(slvl);
-    if( lvl != LEVEL.UNKNOWN) currentLevel = lvl.getLevel();
-    quietLogging = quiet;
-  }
-
   /** Basic logging methods */
   public static void fatal(Object... objs) { log(FATAL,objs); }
   public static void err(Object... objs) { log(ERROR, objs); }
@@ -118,79 +112,26 @@ abstract public class Log {
     throw e instanceof RuntimeException ? (RuntimeException)e : new RuntimeException(e); // Throw it
   }
 
-  /** Determine whether to print to stdout or not and pass the call for further processing */
-  private static void write(int lvl, Object objs[]) {
-    boolean writeToStdout = (lvl <= currentLevel);
-    write(lvl, writeToStdout, objs);
+  public static void ignore(Throwable e) {
+    ignore(e,"[h2o] Problem ignored: ");
   }
 
-  private static void setLogPrefix(){
-    String host = H2O.SELF_ADDRESS.getHostAddress();
-    logPrefix = StringUtils.ofFixedLength(host + ":" + H2O.API_PORT + " ", 22)
-            + StringUtils.ofFixedLength(H2O.PID + " ", 6);
+  public static void ignore(Throwable e, String msg) {
+    ignore(e, msg, true);
   }
 
-  /** Initialize the log if necessary, log buffered messages and pass the call for further processing */
-  private static void write(int lvl, boolean stdout, Object objs[]) {
-    StringBuilder sb = new StringBuilder();
-    for( Object o : objs ) sb.append(o);
-    String res = sb.toString();
-    if( H2O.SELF_ADDRESS == null ) { // Oops, need to buffer until we can do a proper header
-      initialMsgs.add(res);
-      return;
-    }
-    if( initialMsgs != null ) {   // Ahh, dump any initial buffering
-      setLogPrefix();
-      // this is a good time to initialize log4j since H2O.SELF_ADDRESS is already known
-      initializeLogger();
-      ArrayList<String> bufmsgs = initialMsgs;  initialMsgs = null;
-      if (bufmsgs != null) for( String s : bufmsgs ) write0(INFO, true, s);
-    }
-    write0(lvl, stdout, res);
+  public static void ignore(Throwable e, String msg, boolean printException) {
+    debug(msg + (printException? e.toString() : ""));
   }
 
-  private static void write0(int lvl, boolean stdout, String s) {
-    StringBuilder sb = new StringBuilder();
-    String hdr = header(lvl);   // Common header for all lines
-    write0(sb, hdr, s);
-
-    // stdout first - in case log4j dies failing to init or write something
-    if(stdout && !quietLogging) System.out.println(sb);
-
-    switch( lvl ) {
-      case FATAL: logger.fatal(sb); break;
-      case ERROR: logger.error(sb); break;
-      case WARN: logger.warn (sb); break;
-      case INFO: logger.info (sb); break;
-      case DEBUG: logger.debug(sb); break;
-      case TRACE: logger.trace(sb); break;
-      default:
-        logger.error("Invalid log level requested");
-        logger.error(s);
-    }
-  }
-
-  private static void write0(StringBuilder sb, String hdr, String s) {
-    if( s.contains("\n") ) {
-      for( String s2 : s.split("\n") ) { write0(sb, hdr, s2); sb.append("\n"); }
-      sb.setLength(sb.length() - 1);
-    } else {
-      sb.append(hdr).append(s);
-    }
-  }
-
-  // Build a header for all lines in a single message
-  private static String header(int lvl) {
-    String threadName = StringUtils.ofFixedLength(Thread.currentThread().getName() + " ", 10);
-    return String.format("%s %s %s%s: ", Timer.nowAsLogString(), logPrefix, threadName, LEVEL.fromNum(lvl));
-  }
+  public static void setQuiet(boolean q) { quietLogging = q; }
+  public static boolean getQuiet() { return quietLogging; }
 
   public static void flushStdout() {
     if (initialMsgs != null) {
       for (String s : initialMsgs) {
         System.out.println(s);
       }
-
       initialMsgs.clear();
     }
   }
@@ -203,21 +144,21 @@ abstract public class Log {
     return logDir;
   }
 
-  /** Get Prefix for each log file */
-  private static String getLogFileNamePrefix() throws Exception {
-    if(H2O.SELF_ADDRESS == null){
-      throw new Exception("H2O.SELF_ADDRESS not yet defined");
-    }
-    String ip = H2O.SELF_ADDRESS.getHostAddress();
-    int port = H2O.API_PORT;
-    String portString = Integer.toString(port);
-    return "h2o_" + ip + "_" + portString;
+  /** Get full path to a log file of specified log level */
+  public static String getLogFilePath(String level) throws Exception {
+    return getLogDir() + File.separator + getLogFileName(level);
+  }
+
+  public static void init(String slvl, boolean quiet) {
+    LEVEL lvl = LEVEL.fromString(slvl);
+    if( lvl != LEVEL.UNKNOWN) currentLevel = lvl.getLevel();
+    quietLogging = quiet;
   }
 
   /** Get file name for log file of specified log level */
-  public static String getLogFileName(String level) throws Exception {
+  private static String getLogFileName(String level) throws Exception {
     if(level.equals("httpd")){
-      return "-httpd.log";
+      return getLogFileNamePrefix() + "-httpd.log";
     }else{
       LEVEL lvl = LEVEL.fromString(level);
       if(lvl.equals(LEVEL.UNKNOWN)) {
@@ -228,9 +169,15 @@ abstract public class Log {
     }
   }
 
-  /** Get full path to a log file of specified log level */
-  public static String getLogFilePath(String level) throws Exception {
-    return getLogDir() + File.separator + getLogFileName(level);
+  /** Get Prefix for each log file */
+  private static String getLogFileNamePrefix() throws Exception {
+    if(H2O.SELF_ADDRESS == null){
+      throw new Exception("H2O.SELF_ADDRESS not yet defined");
+    }
+    String ip = H2O.SELF_ADDRESS.getHostAddress();
+    int port = H2O.API_PORT;
+    String portString = Integer.toString(port);
+    return "h2o_" + ip + "_" + portString;
   }
 
   private static void setLog4jProperties(java.util.Properties p) throws Exception {
@@ -386,14 +333,71 @@ abstract public class Log {
     return (logger = LogManager.getLogger("water.default"));
   }
 
-  public static void ignore(Throwable e) {
-    ignore(e,"[h2o] Problem ignored: ");
+  private static void setLogPrefix(){
+    String host = H2O.SELF_ADDRESS.getHostAddress();
+    logPrefix = StringUtils.ofFixedLength(host + ":" + H2O.API_PORT + " ", 22)
+            + StringUtils.ofFixedLength(H2O.PID + " ", 6);
   }
-  public static void ignore(Throwable e, String msg) {
-    ignore(e, msg, true);
+
+  /** Build a header for all lines in a single message */
+  private static String header(int lvl) {
+    String threadName = StringUtils.ofFixedLength(Thread.currentThread().getName() + " ", 10);
+    return String.format("%s %s %s%s: ", Timer.nowAsLogString(), logPrefix, threadName, LEVEL.fromNum(lvl));
   }
-  public static void ignore(Throwable e, String msg, boolean printException) {
-    debug(msg + (printException? e.toString() : ""));
+
+  /** Determine whether to print to stdout or not and pass the call for further processing */
+  private static void write(int lvl, Object objs[]) {
+    boolean writeToStdout = (lvl <= currentLevel);
+    write(lvl, writeToStdout, objs);
+  }
+
+  /** Initialize the log if necessary, log buffered messages and pass the call for further processing */
+  private static void write(int lvl, boolean stdout, Object objs[]) {
+    StringBuilder sb = new StringBuilder();
+    for( Object o : objs ) sb.append(o);
+    String res = sb.toString();
+    if( H2O.SELF_ADDRESS == null ) { // Oops, need to buffer until we can do a proper header
+      initialMsgs.add(res);
+      return;
+    }
+    if( initialMsgs != null ) {   // Ahh, dump any initial buffering
+      setLogPrefix();
+      // this is a good time to initialize log4j since H2O.SELF_ADDRESS is already known
+      initializeLogger();
+      ArrayList<String> bufmsgs = initialMsgs;  initialMsgs = null;
+      if (bufmsgs != null) for( String s : bufmsgs ) write0(INFO, true, s);
+    }
+    write0(lvl, stdout, res);
+  }
+
+  private static void write0(int lvl, boolean stdout, String s) {
+    StringBuilder sb = new StringBuilder();
+    String hdr = header(lvl);   // Common header for all lines
+    write0(sb, hdr, s);
+
+    // stdout first - in case log4j dies failing to init or write something
+    if(stdout && !quietLogging) System.out.println(sb);
+
+    switch( lvl ) {
+      case FATAL: logger.fatal(sb); break;
+      case ERROR: logger.error(sb); break;
+      case WARN: logger.warn (sb); break;
+      case INFO: logger.info (sb); break;
+      case DEBUG: logger.debug(sb); break;
+      case TRACE: logger.trace(sb); break;
+      default:
+        logger.error("Invalid log level requested");
+        logger.error(s);
+    }
+  }
+
+  private static void write0(StringBuilder sb, String hdr, String s) {
+    if( s.contains("\n") ) {
+      for( String s2 : s.split("\n") ) { write0(sb, hdr, s2); sb.append("\n"); }
+      sb.setLength(sb.length() - 1);
+    } else {
+      sb.append(hdr).append(s);
+    }
   }
 
   //-----------------------------------------------------------------
@@ -449,7 +453,4 @@ abstract public class Log {
       POST(n, els[i].toString());
     }
   }
-
-  public static void setQuiet(boolean q) { quietLogging = q; }
-  public static boolean getQuiet() { return quietLogging; }
 }
