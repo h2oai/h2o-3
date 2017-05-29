@@ -136,7 +136,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       // The ModelMetrics object for the metalearner will be removed when the metalearner is removed.
       ModelMetrics mmStackedEnsemble = mmMetalearner.deepCloneWithDifferentModelAndFrame(this, fr);
       this.addModelMetrics(mmStackedEnsemble);
-      metalearner.remove(); //Not needed anywhere since we copied over metalearner model metrics over to Stacked Ensemble model metrics
     }
 
     Model.cleanup_adapt(levelOneAdapted, levelOneFrame);

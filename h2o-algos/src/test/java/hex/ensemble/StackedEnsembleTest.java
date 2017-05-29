@@ -149,6 +149,7 @@ public class StackedEnsembleTest extends TestUtil {
                 stackedEnsembleModel.delete();
                 stackedEnsembleModel.remove();
                 stackedEnsembleModel._output._metalearner._output._training_metrics.remove();
+                stackedEnsembleModel._output._metalearner.remove();
             }
 
             Scope.exit();

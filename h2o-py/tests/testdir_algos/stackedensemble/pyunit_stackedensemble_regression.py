@@ -145,6 +145,9 @@ def stackedensemble_gaussian():
     stacker.train(model_id="my_ensemble", y="Claims", training_frame=insurance_train)
     print("trained H2OStackedEnsembleEstimator: " + str(stacker))
 
+    print("metalearner: ")
+    print(h2o.get_model(stacker.metalearner()['name']))
+
     predictions = stacker.predict(insurance_train)  # training data
     print("preditions for ensemble are in: " + predictions.frame_id)
 
