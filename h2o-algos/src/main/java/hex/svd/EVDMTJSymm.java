@@ -1,7 +1,11 @@
 package hex.svd;
 
+import hex.util.EigenPair;
 import hex.util.LinearAlgebraUtils;
-import no.uib.cipr.matrix.*;
+import no.uib.cipr.matrix.DenseMatrix;
+import no.uib.cipr.matrix.NotConvergedException;
+import no.uib.cipr.matrix.UpperSymmDenseMatrix;
+import water.util.ArrayUtils;
 
 /**
  * @author mathemage <ha@h2o.ai>
@@ -11,6 +15,7 @@ public class EVDMTJSymm implements SVDInterface {
   private UpperSymmDenseMatrix symmGramMatrix;
   private no.uib.cipr.matrix.SymmDenseEVD symmDenseEVD;
   private double[][] eigenvectors;
+  private double[] eigenvalues;
 
   EVDMTJSymm(double[][] gramMatrix) {
     this.symmGramMatrix = new UpperSymmDenseMatrix(new DenseMatrix(gramMatrix));
@@ -19,7 +24,7 @@ public class EVDMTJSymm implements SVDInterface {
 
   @Override
   public double[] getVariances() {
-    return symmDenseEVD.getEigenvalues();
+    return eigenvalues;
   }
 
   @Override
@@ -34,7 +39,14 @@ public class EVDMTJSymm implements SVDInterface {
     } catch (NotConvergedException e) {
       throw new RuntimeException(e);
     }
+    // initial eigenpairs
+    eigenvalues = symmDenseEVD.getEigenvalues();
     double[] Vt_1D = symmDenseEVD.getEigenvectors().getData();
-    this.eigenvectors = LinearAlgebraUtils.reshape1DArray(Vt_1D, gramDimension, gramDimension);
+    eigenvectors = LinearAlgebraUtils.reshape1DArray(Vt_1D, gramDimension, gramDimension);
+
+    // sort eigenpairs in descending order according to the magnitude of eigenvalues
+    EigenPair[] eigenPairs = LinearAlgebraUtils.createReverseSortedEigenpairs(eigenvalues, eigenvectors);
+    eigenvalues = LinearAlgebraUtils.extractEigenvaluesFromEigenpairs(eigenPairs);
+    eigenvectors = ArrayUtils.transpose(LinearAlgebraUtils.extractEigenvectorsFromEigenpairs(eigenPairs));
   }
 }
