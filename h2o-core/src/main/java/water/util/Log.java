@@ -70,15 +70,10 @@ abstract public class Log {
   public static void fatal( Object... objs ) { log(FATAL,objs); }
   public static void log  ( int level, Object... objs ) { if( _level >= level ) write(level, objs); }
 
-  public static void httpd( String msg ) {
-    // This is never called anymore.
-    throw H2O.fail();
-  }
-
-  public static void httpd( String method, String uri, int status, long deltaMillis ) {
+  public static void httpd(String method, String uri, int status, long deltaMillis) {
     org.apache.log4j.Logger l = LogManager.getLogger(water.api.RequestServer.class);
-    String s = String.format("  %-6s  %3d  %6d ms  %s", method, status, deltaMillis, uri);
-    l.info(s);
+    String msg = String.format("  %-6s  %3d  %6d ms  %s", method, status, deltaMillis, uri);
+    l.info(msg);
   }
 
   public static void info( String s, boolean stdout ) { if( _level >= INFO ) write0(INFO, stdout, s); }
