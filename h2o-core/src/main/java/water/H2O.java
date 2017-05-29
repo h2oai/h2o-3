@@ -1667,7 +1667,9 @@ final public class H2O {
     if(_node_ip_to_index != null) {
       Integer index = _node_ip_to_index.get(ipPort);
       if (index != null) {
-        if(index <= -1 || index >= _memary.length){
+        if(index == -1){
+          return H2O.SELF;
+        } else if(index < -1 || index >= _memary.length){
           throw new RuntimeException("Mapping from node id to node index contains: " + index + ", however this node" +
                   "does not exist!");
         }
