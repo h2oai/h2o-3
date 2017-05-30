@@ -106,7 +106,7 @@ abstract public class Log {
   public static boolean getQuiet() { return quietLogging; }
 
   public static boolean isLoggingEnabledFor(Level level){
-    return currentLevel.numLevel < level.numLevel;
+    return currentLevel.numLevel >= level.numLevel;
   }
 
   public static void flushStdout() {
@@ -134,8 +134,13 @@ abstract public class Log {
   }
 
   /** Get full path to a log file of specified log level */
-  public static String getLogFilePath(String level) {
+  public static String getLogFilePath(Level level) {
     return getLogDir() + File.separator + getLogFileName(level);
+  }
+
+  /** Get path to HTTPD logs. They are special logs and therefore are handled separately */
+  public static String getLogFilePathHTTPD(){
+    return getLogDir() + File.separator + getLogFileNameHTTPD();
   }
 
   public static boolean isLoggerInitialized(){
@@ -147,7 +152,7 @@ abstract public class Log {
   }
 
   /** Get names of all log files */
-  public static String[] getLogFileNames() throws Exception {
+  public static String[] getLogFileNames(){
     return new String[]{
             getLogFileName(FATAL),
             getLogFileName(ERROR),
@@ -155,21 +160,18 @@ abstract public class Log {
             getLogFileName(INFO),
             getLogFileName(DEBUG),
             getLogFileName(TRACE),
-            getLogFileName(HTTPD)
+            getLogFileNameHTTPD()
     };
   }
 
-  private static String getLogFileName(Level level){
-      return getLogFileNamePrefix() + "-" + level.numLevel + "-" + level.toString() + ".log";
+  /** Get file name for log file of specified log level */
+  public static String getLogFileName(Level level){
+    return getLogFileNamePrefix() + "-" + level.numLevel + "-" + level.toString() + ".log";
   }
 
-  /** Get file name for log file of specified log level */
-  private static String getLogFileName(String level) {
-    if(level.toUpperCase().equals(HTTPD)){
-      return getLogFileNamePrefix() + "-" + HTTPD + ".log";
-    } else {
-      return getLogFileName(Level.fromString(level));
-    }
+  /** Get name of HTTPD logs. They are special logs and therefore are handled separately */
+  public static String getLogFileNameHTTPD(){
+    return getLogFileNamePrefix() + "-" + HTTPD + ".log";
   }
 
   /**
@@ -186,19 +188,19 @@ abstract public class Log {
   }
 
   private static void setPropertiesForLevel(Properties p, String logger, Level level) {
-   setPropertiesFor(p, logger, "%m%n", level.name());
+   setPropertiesFor(p, logger, "%m%n", level.name(), getLogFilePath(level));
   }
 
   private static void setPropertiesForHTTPD(Properties p){
     p.setProperty("log4j.logger.water.api.RequestServer",       "TRACE, " + HTTPD);
     p.setProperty("log4j.additivity.water.api.RequestServer",   "false");
-    setPropertiesFor(p, HTTPD, "%d{ISO8601} %m%n", HTTPD.toLowerCase());
+    setPropertiesFor(p, HTTPD, "%d{ISO8601} %m%n", HTTPD.toLowerCase(), getLogFilePathHTTPD());
   }
 
-  private static void setPropertiesFor(Properties p, String logger, String pattern, String level){
+  private static void setPropertiesFor(Properties p, String logger, String pattern, String level, String logPath){
     p.setProperty("log4j.appender." + logger,                               "org.apache.log4j.RollingFileAppender");
     p.setProperty("log4j.appender." + logger + ".Threshold",                level);
-    p.setProperty("log4j.appender." + logger + ".File",                     getLogFilePath(level));
+    p.setProperty("log4j.appender." + logger + ".File",                     logPath);
     p.setProperty("log4j.appender." + logger + ".MaxFileSize",              "1MB");
     p.setProperty("log4j.appender." + logger + ".MaxBackupIndex",           "3");
     p.setProperty("log4j.appender." + logger + ".layout",                   "org.apache.log4j.PatternLayout");
