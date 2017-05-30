@@ -671,22 +671,17 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                     if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }<br/>
                     <br/>
                     <em># Next, we download packages that H<sub>2</sub>O depends on.</em><br/>
-                    if (! ("methods"  %in% rownames(installed.packages()))) { install.packages("methods") }<br/>
-                    if (! ("statmod"  %in% rownames(installed.packages()))) { install.packages("statmod") }<br/>
-                    if (! ("stats"    %in% rownames(installed.packages()))) { install.packages("stats") }<br/>
-                    if (! ("graphics" %in% rownames(installed.packages()))) { install.packages("graphics") }<br/>
-                    if (! ("RCurl"    %in% rownames(installed.packages()))) { install.packages("RCurl") }<br/>
-                    if (! ("jsonlite" %in% rownames(installed.packages()))) { install.packages("jsonlite") }<br/>
-                    if (! ("tools"    %in% rownames(installed.packages()))) { install.packages("tools") }<br/>
-                    if (! ("utils"    %in% rownames(installed.packages()))) { install.packages("utils") }<br/>
+                    pkgs &lt;- c("statmod","RCurl","jsonlite")<br/>
+                    for (pkg in pkgs) {<br/>
+                      if (! (pkg %in% rownames(installed.packages()))) { install.packages(pkg) }<br/>
+                    }<br/>
                     <br/>
                     <em># Now we download, install and initialize the H<sub>2</sub>O package for R.</em><br/>
-                    install.packages("h2o", type="source", repos=(c("<script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/R")))<br/>
-                    library(h2o)<br/>
-                    localH2O = h2o.init(nthreads=-1)<br/>
+                    install.packages("h2o", type="source", repos="<script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/R")<br/>
                     <br/>
-                    <em># Finally, let's run a demo to see H<sub>2</sub>O at work.</em><br/>
-                    demo(h2o.kmeans)
+                    <em># Finally, let's load H2O and start up an H2O cluster</em><br/>
+                    library(h2o)<br/>
+                    h2o.init()<br/>
             </div>
 
           <div id="quickstart-hadoop" style="display:none">
