@@ -13,7 +13,7 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Properties;
 
-import static water.util.Log.LEVEL.*;
+import static water.util.Log.Level.*;
 
 /**
  *  Log for H2O.
@@ -27,13 +27,13 @@ import static water.util.Log.LEVEL.*;
  *  logging, no guarantees are made about the messages.
  **/
 abstract public class Log {
-
-  public enum LEVEL {
+  private static final String HTTPD = "HTTPD";
+  public enum Level {
     UNKNOWN((byte)-1), FATAL((byte)0), ERROR((byte)1), WARN((byte)2), INFO((byte)3),
     DEBUG((byte)4), TRACE((byte)5);
 
     private byte numLevel;
-    LEVEL(byte numLevel) {
+    Level(byte numLevel) {
       this.numLevel = numLevel;
     }
 
@@ -41,26 +41,14 @@ abstract public class Log {
       return numLevel;
     }
 
-    public static LEVEL fromString(String level) {
+    public static Level fromString(String level) {
       if(level == null){
         return UNKNOWN;
       }
       try {
-        return LEVEL.valueOf(level.toUpperCase());
+        return Level.valueOf(level.toUpperCase());
       }catch (IllegalArgumentException e){
         return UNKNOWN;
-      }
-    }
-
-    public static LEVEL fromNum(int level){
-      switch (level){
-        case 0: return FATAL;
-        case 1: return ERROR;
-        case 2: return WARN;
-        case 3: return INFO;
-        case 4: return DEBUG;
-        case 5: return TRACE;
-        default: return UNKNOWN;
       }
     }
   }
@@ -69,7 +57,7 @@ abstract public class Log {
   private static String logDir = null;
   // List for messages to be logged before the logging is fully initialized (startup buffering)
   private static ArrayList<String> initialMsgs = new ArrayList<>();
-  private static LEVEL currentLevel = INFO;
+  private static Level currentLevel = INFO;
   private static boolean quietLogging = false;
   // Common prefix for logged messages
   private static String logPrefix;
@@ -81,7 +69,7 @@ abstract public class Log {
   public static void info(Object... objs) { log(INFO, objs); }
   public static void debug(Object... objs) { log(DEBUG, objs); }
   public static void trace(Object... objs) { log(TRACE, objs); }
-  public static void log(LEVEL level, Object... objs) { if( currentLevel.numLevel >= level.numLevel ) write(level, objs); }
+  public static void log(Level level, Object... objs) { if( currentLevel.numLevel >= level.numLevel ) write(level, objs); }
 
   /** Log exception */
   public static void err(Throwable ex) {
@@ -121,6 +109,10 @@ abstract public class Log {
   public static void setQuiet(boolean q) { quietLogging = q; }
   public static boolean getQuiet() { return quietLogging; }
 
+  public static boolean isLoggingEnabledFor(Level level){
+    return currentLevel.numLevel < level.numLevel;
+  }
+
   public static void flushStdout() {
     if (initialMsgs != null) {
       for (String s : initialMsgs) {
@@ -141,7 +133,7 @@ abstract public class Log {
     return logDir;
   }
 
-  public static LEVEL getCurrentLogLevel(){
+  public static Level getCurrentLogLevel(){
     return currentLevel;
   }
 
@@ -154,35 +146,38 @@ abstract public class Log {
     return logDir != null;
   }
 
-  public static void init(String slvl, boolean quiet) {
-    LEVEL lvl = LEVEL.fromString(slvl);
-    if(lvl != LEVEL.UNKNOWN) currentLevel = lvl;
+  public static void init(Level level, boolean quiet) {
+    currentLevel = level;
     quietLogging = quiet;
   }
 
   /** Get names of all log files */
   public static String[] getLogFileNames() throws Exception {
     return new String[]{
-            getLogFileName("fatal"),
-            getLogFileName("error"),
-            getLogFileName("warn"),
-            getLogFileName("info"),
-            getLogFileName("debug"),
-            getLogFileName("trace"),
-            getLogFileName("httpd")
+            getLogFileName(FATAL),
+            getLogFileName(ERROR),
+            getLogFileName(WARN),
+            getLogFileName(INFO),
+            getLogFileName(DEBUG),
+            getLogFileName(TRACE),
+            getLogFileName(HTTPD)
     };
   }
+
+  private static String getLogFileName(Level level){
+    if(level.equals(Level.UNKNOWN)) {
+      throw new RuntimeException("Unknown level: " + level);
+    } else {
+      return getLogFileNamePrefix() + "-" + level.numLevel + "-" + level.toString() + ".log";
+    }
+  }
+
   /** Get file name for log file of specified log level */
   private static String getLogFileName(String level) {
-    if(level.toLowerCase().equals("httpd")){
-      return getLogFileNamePrefix() + "-HTTPD.log";
-    }else{
-      LEVEL lvl = LEVEL.fromString(level);
-      if(lvl.equals(LEVEL.UNKNOWN)) {
-        throw new RuntimeException("Unknown level: " + level);
-      } else {
-        return getLogFileNamePrefix() + "-" + lvl.getLevel() + "-" + lvl.toString() + ".log";
-      }
+    if(level.toUpperCase().equals(HTTPD)){
+      return getLogFileNamePrefix() + "-" + HTTPD + ".log";
+    } else {
+      return getLogFileName(Level.fromString(level));
     }
   }
 
@@ -199,14 +194,14 @@ abstract public class Log {
     return "h2o_" + ip + "_" + portString;
   }
 
-  private static void setPropertiesForLevel(Properties p, String logger, LEVEL level) {
+  private static void setPropertiesForLevel(Properties p, String logger, Level level) {
    setPropertiesFor(p, logger, "%m%n", level.name());
   }
 
   private static void setPropertiesForHTTPD(Properties p){
-    p.setProperty("log4j.logger.water.api.RequestServer",       "TRACE, HTTPD");
+    p.setProperty("log4j.logger.water.api.RequestServer",       "TRACE, " + HTTPD);
     p.setProperty("log4j.additivity.water.api.RequestServer",   "false");
-    setPropertiesFor(p, "HTTPD", "%d{ISO8601} %m%n", "httpd");
+    setPropertiesFor(p, HTTPD, "%d{ISO8601} %m%n", HTTPD.toLowerCase());
   }
 
   private static void setPropertiesFor(Properties p, String logger, String pattern, String level){
@@ -320,19 +315,19 @@ abstract public class Log {
   }
 
   /** Build a header for all lines in a single message */
-  private static String header(LEVEL lvl) {
+  private static String header(Level lvl) {
     String threadName = StringUtils.ofFixedLength(Thread.currentThread().getName() + " ", 10);
     return String.format("%s %s %s%s: ", Timer.nowAsLogString(), logPrefix, threadName, lvl);
   }
 
   /** Determine whether to print to stdout or not and pass the call for further processing */
-  private static void write(LEVEL lvl, Object objs[]) {
+  private static void write(Level lvl, Object objs[]) {
     boolean writeToStdout = (lvl.numLevel <= currentLevel.numLevel);
     write(lvl, writeToStdout, objs);
   }
 
   /** Initialize the log if necessary, log buffered messages and pass the call for further processing */
-  private static void write(LEVEL lvl, boolean stdout, Object objs[]) {
+  private static void write(Level lvl, boolean stdout, Object objs[]) {
     StringBuilder sb = new StringBuilder();
     for( Object o : objs ) sb.append(o);
     String res = sb.toString();
@@ -350,7 +345,7 @@ abstract public class Log {
     write0(lvl, stdout, res);
   }
 
-  private static void write0(LEVEL lvl, boolean stdout, String s) {
+  private static void write0(Level lvl, boolean stdout, String s) {
     StringBuilder sb = new StringBuilder();
     String hdr = header(lvl);   // Common header for all lines
     write0(sb, hdr, s);

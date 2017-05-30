@@ -326,7 +326,7 @@ final public class H2O {
     // Debugging
     //-----------------------------------------------------------------------------------
     /** -log_level=log_level; One of DEBUG, INFO, WARN, ERRR.  Default is INFO. */
-    public String log_level;
+    public Log.Level log_level = Log.Level.INFO;
 
     /** -random_udp_drop, -random_udp_drop=true; test only, randomly drop udp incoming */
     public boolean random_udp_drop;
@@ -530,7 +530,11 @@ final public class H2O {
       }
       else if (s.matches("log_level")) {
         i = s.incrementAndCheck(i, args);
-        trgt.log_level = args[i];
+        Log.Level lvl = Log.Level.fromString(args[i]);
+        if(lvl.equals(Log.Level.UNKNOWN)){
+          parseFailed("Invalid log level, possible values are:" + Arrays.toString(Log.Level.values()));
+        }
+        trgt.log_level = lvl;
       }
       else if (s.matches("random_udp_drop")) {
         trgt.random_udp_drop = true;
