@@ -63,7 +63,7 @@ public class LogsHandler extends Handler {
           case "fatal":
           case "httpd":
             Log.Level lvl = Log.Level.fromString(name);
-            if(Log.isLoggingEnabledFor(lvl)){
+            if(!Log.isLoggingEnabledFor(lvl)){
               logContent = name + " log not available since the log level is set to " + Log.getCurrentLogLevel();
             } else {
                 if(!Log.isLoggerInitialized()){
