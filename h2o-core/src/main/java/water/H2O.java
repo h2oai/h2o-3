@@ -1513,7 +1513,8 @@ final public class H2O {
    *  without unpacking the jar file and other startup stuff.  */
   private static void printAndLogVersion(String[] arguments) {
     String latestVersion = ARGS.noLatestCheck ? "?" : ABV.getLatestH2OVersion();
-    Log.init(ARGS.log_level, ARGS.quiet);
+    Log.setLevel(ARGS.log_level);
+    Log.setQuiet(ARGS.quiet);
     Log.info("----- H2O started " + (ARGS.client?"(client)":"") + " -----");
     Log.info("Build git branch: " + ABV.branchName());
     Log.info("Build git hash: " + ABV.lastCommitHash());

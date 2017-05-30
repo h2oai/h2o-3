@@ -138,13 +138,12 @@ abstract public class Log {
     return getLogDir() + File.separator + getLogFileName(level);
   }
 
-  public static boolean isLoggingInitialized(){
+  public static boolean isLoggerInitialized(){
     return logDir != null;
   }
 
-  public static void init(Level level, boolean quiet) {
+  public static void setLevel(Level level){
     currentLevel = level;
-    quietLogging = quiet;
   }
 
   /** Get names of all log files */
