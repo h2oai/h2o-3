@@ -26,7 +26,7 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
    * (e.g., "airlines" and "iris").
    */
   @API(help="Identifier for models that should be grouped together in the same leaderboard", direction=API.Direction.INOUT)
-  public String project = "<default>";
+  public String project_name = "<default>";
 
   @API(help="The leaderboard for this project, potentially including models from other AutoML runs", direction=API.Direction.OUTPUT)
   public LeaderboardV99   leaderboard;
@@ -45,7 +45,7 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
 
     if (null == autoML) return this;
 
-    this.project = autoML.project();
+    this.project_name = autoML.projectName();
 
     if (null != autoML._key) {
       this.automl_id = new AutoML.AutoMLKeyV3(autoML._key);

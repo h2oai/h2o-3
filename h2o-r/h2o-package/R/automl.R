@@ -130,7 +130,7 @@ h2o.automl <- function(x, y, training_frame,
 
   # Make AutoML object
   new("H2OAutoML",
-      project_name = build_control$project,
+      project_name = build_control$project_name,
       leader = leader,
       leaderboard = leaderboard
   )

@@ -115,7 +115,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     Date startTime = new Date();
 
-    userFeedback = new UserFeedback(this); // Don't use until we set this.project
+    userFeedback = new UserFeedback(this); // Don't use until we set this.project_name
 
     this.buildSpec = buildSpec;
 
@@ -141,8 +141,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       }
     }
 
-    userFeedback.info(Stage.Workflow, "Project: " + project());
-    leaderboard = new Leaderboard(project(), userFeedback, this.leaderboardFrame);
+    userFeedback.info(Stage.Workflow, "Project: " + projectName());
+    leaderboard = new Leaderboard(projectName(), userFeedback, this.leaderboardFrame);
 
     /*
     TODO
@@ -943,17 +943,17 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     Log.info(userFeedback.toString("User Feedback for AutoML Run " + this._key));
     Log.info();
 
-    Leaderboard trainingLeaderboard = new Leaderboard(project() + "_training", userFeedback, this.trainingFrame);
+    Leaderboard trainingLeaderboard = new Leaderboard(projectName() + "_training", userFeedback, this.trainingFrame);
     trainingLeaderboard.addModels(this.leaderboard().getModelKeys());
-    Log.info(trainingLeaderboard.toTwoDimTable("TRAINING FRAME Leaderboard for project " + project(), true).toString());
+    Log.info(trainingLeaderboard.toTwoDimTable("TRAINING FRAME Leaderboard for project " + projectName(), true).toString());
     Log.info();
 
-    Leaderboard validationLeaderboard = new Leaderboard(project() + "_validation", userFeedback, this.validationFrame);
+    Leaderboard validationLeaderboard = new Leaderboard(projectName() + "_validation", userFeedback, this.validationFrame);
     validationLeaderboard.addModels(this.leaderboard().getModelKeys());
-    Log.info(validationLeaderboard.toTwoDimTable("VALIDATION FRAME Leaderboard for project " + project(), true).toString());
+    Log.info(validationLeaderboard.toTwoDimTable("VALIDATION FRAME Leaderboard for project " + projectName(), true).toString());
     Log.info();
 
-    Log.info(leaderboard().toTwoDimTable("Leaderboard for project " + project(), true).toString());
+    Log.info(leaderboard().toTwoDimTable("Leaderboard for project " + projectName(), true).toString());
 
     possiblyVerifyImmutability();
 
@@ -1053,7 +1053,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   public UserFeedback userFeedback() { return userFeedback == null ? null : userFeedback._key.get(); }
 
-  public String project() {
+  public String projectName() {
     return buildSpec == null ? null : buildSpec.project();
   }
 
