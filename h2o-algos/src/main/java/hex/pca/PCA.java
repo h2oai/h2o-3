@@ -349,9 +349,9 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
             e.printStackTrace();
             throw e;
           }
-          SVDImplementation svdImplementation = SVDImplementation.EVD_MTJ_DENSEMATRIX;
-          PCA.this._job.update(1, "Computing stats from SVD using " + svdImplementation.toString());
-          SVDInterface svd = SVDFactory.createSVDImplementation(gramMatrix, svdImplementation);
+          PCA.this._job.update(1, "Computing stats from SVD using "
+              + _parms.getSvdImplementation().toString());
+          SVDInterface svd = SVDFactory.createSVDImplementation(gramMatrix, _parms.getSvdImplementation());
           double[][] rightEigenvectors = svd.getPrincipalComponents();
           if (_wideDataset) {       // correct for the eigenvector by t(A)*eigenvector for wide dataset
             transformEigenVectors(dinfo, rightEigenvectors);

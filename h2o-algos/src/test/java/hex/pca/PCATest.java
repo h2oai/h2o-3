@@ -3,6 +3,7 @@ package hex.pca;
 import hex.DataInfo;
 import hex.SplitFrame;
 import hex.pca.PCAModel.PCAParameters;
+import hex.svd.SVDImplementation;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -86,6 +87,10 @@ public class PCATest extends TestUtil {
       parms._k = 4;
       parms._transform = DataInfo.TransformType.NONE;
       parms._pca_method = PCAParameters.Method.GramSVD;
+      parms.setSvdImplementation(SVDImplementation.JAMA);
+//      parms.setSvdImplementation(SVDImplementation.MTJ);
+//      parms.setSvdImplementation(SVDImplementation.EVD_MTJ_DENSEMATRIX);
+//      parms.setSvdImplementation(SVDImplementation.EVD_MTJ_SYMM);
 
       model = new PCA(parms).trainModel().get();
       TestUtil.checkStddev(stddev, model._output._std_deviation, 1e-5);

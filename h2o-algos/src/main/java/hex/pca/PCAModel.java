@@ -4,6 +4,7 @@ import hex.DataInfo;
 import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetrics;
+import hex.svd.SVDImplementation;
 import water.DKV;
 import water.Job;
 import water.Key;
@@ -37,6 +38,18 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
 
     public enum Method {
       GramSVD, Power, Randomized, GLRM
+    }
+
+    // always set DEFAULT_SVD_IMPLEMENTATION to the fastest SVD implementation available
+    public static final SVDImplementation DEFAULT_SVD_IMPLEMENTATION = SVDImplementation.MTJ;
+    public SVDImplementation _svdImplementation = DEFAULT_SVD_IMPLEMENTATION;
+
+    public SVDImplementation getSvdImplementation() {
+      return _svdImplementation;
+    }
+
+    public void setSvdImplementation(SVDImplementation svdImplementation) {
+      _svdImplementation = svdImplementation;
     }
   }
 
