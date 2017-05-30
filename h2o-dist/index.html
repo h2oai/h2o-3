@@ -669,7 +669,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                     if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }<br/>
                     <br/>
                     <em># Next, we download packages that H<sub>2</sub>O depends on.</em><br/>
-                    pkgs &lt;- c("methods","statmod","stats","graphics","RCurl","jsonlite","tools","utils")<br/>
+                    pkgs &lt;- c("statmod","RCurl","jsonlite")<br/>
                     for (pkg in pkgs) {<br/>
                       if (! (pkg %in% rownames(installed.packages()))) { install.packages(pkg) }<br/>
                     }<br/>
@@ -679,7 +679,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                     <br/>
                     <em># Finally, let's load H2O and start up an H2O cluster</em><br/>
                     library(h2o)<br/>
-                    h2o.init(nthreads=-1)<br/>
+                    h2o.init()<br/>
             </div>
 
           <div id="quickstart-hadoop" style="display:none">
