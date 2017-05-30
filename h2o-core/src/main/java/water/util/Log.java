@@ -29,7 +29,7 @@ import static water.util.Log.Level.*;
 abstract public class Log {
   private static final String HTTPD = "HTTPD";
   public enum Level {
-    UNKNOWN((byte)-1), FATAL((byte)0), ERROR((byte)1), WARN((byte)2), INFO((byte)3),
+    FATAL((byte)0), ERROR((byte)1), WARN((byte)2), INFO((byte)3),
     DEBUG((byte)4), TRACE((byte)5);
 
     private byte numLevel;
@@ -43,13 +43,9 @@ abstract public class Log {
 
     public static Level fromString(String level) {
       if(level == null){
-        return UNKNOWN;
+        throw new IllegalArgumentException("Unsupported log level");
       }
-      try {
-        return Level.valueOf(level.toUpperCase());
-      }catch (IllegalArgumentException e){
-        return UNKNOWN;
-      }
+      return Level.valueOf(level.toUpperCase());
     }
   }
 
@@ -165,11 +161,7 @@ abstract public class Log {
   }
 
   private static String getLogFileName(Level level){
-    if(level.equals(Level.UNKNOWN)) {
-      throw new RuntimeException("Unknown level: " + level);
-    } else {
       return getLogFileNamePrefix() + "-" + level.numLevel + "-" + level.toString() + ".log";
-    }
   }
 
   /** Get file name for log file of specified log level */
@@ -361,8 +353,7 @@ abstract public class Log {
       case DEBUG: logger.debug(sb); break;
       case TRACE: logger.trace(sb); break;
       default:
-        logger.error("Invalid log level requested.");
-        logger.error(s);
+        throw new RuntimeException("Invalid log level");
     }
   }
 

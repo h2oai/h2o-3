@@ -530,11 +530,11 @@ final public class H2O {
       }
       else if (s.matches("log_level")) {
         i = s.incrementAndCheck(i, args);
-        Log.Level lvl = Log.Level.fromString(args[i]);
-        if(lvl.equals(Log.Level.UNKNOWN)){
+        try {
+          trgt.log_level = Log.Level.fromString(args[i]);
+        }catch (IllegalArgumentException e){
           parseFailed("Invalid log level, possible values are:" + Arrays.toString(Log.Level.values()));
         }
-        trgt.log_level = lvl;
       }
       else if (s.matches("random_udp_drop")) {
         trgt.random_udp_drop = true;
