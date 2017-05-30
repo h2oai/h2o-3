@@ -11,16 +11,40 @@ H2O's AutoML can be used for automating the machine learning workflow, which inc
 AutoML Interface
 ----------------
 
-The AutoML interface is designed to have as few parameters as possible so that all the user needs to do is point to their dataset, identify the response column and optionally specify a time-constraint. 
+The AutoML interface is designed to have as few parameters as possible so that all the user needs to do is point to their dataset, identify the response column and optionally specify a time constraint, a maximum number of models constraint, and early stopping parameters. 
 
-In both the R and Python API, AutoML uses the same data-related arguments, ``x``, ``y``, ``training_frame``, ``validation_frame``, as the other H2O algorithms.  
+In both the R and Python API, AutoML uses the same data-related arguments, ``x``, ``y``, ``training_frame``, ``validation_frame``, as the other H2O algorithms. Below is a list of all available AutoML options. 
 
-- The **x** argument only needs to be specified if the user wants to exclude predictor columns from their data frame.  If all columns (other than the response) should be used in prediction, this can be left blank/unspecified.
-- The **y** argument is the name (or index) of the response column.  Required.
-- The **training_frame** is the training set.  Required.
-- The **validation_frame** argument is optional and will be used for early stopping within the training process of the individual models in the AutoML run.  
-- The **leaderboard_frame** argument allows the user to specify a particular data frame to rank the models on the leaderboard.  This frame will not be used for anything besides creating the leaderboard.
-- To control how long the AutoML run will execute, the user can specify **max_runtime_secs**, which defaults to 600 seconds (10 minutes).
+- **x**: The **x** argument only needs to be specified if the user wants to exclude predictor columns from their data frame.  If all columns (other than the response) should be used in prediction, this can be left blank/unspecified.
+- `y <data-science/algo-params/y.html>`__: This argument is the name (or index) of the response column. This argument is required.
+- `training_frame <data-science/algo-params/training_frame.html>`__: Specifies the training set. This argument is required.
+- `validation_frame <data-science/algo-params/validation_frame.html>`__: This argument is optional and will be used for early stopping within the training process of the individual models in the AutoML run.  
+- **leaderboard_frame**: This argument allows the user to specify a particular data frame to rank the models on the leaderboard. This frame will not be used for anything besides creating the leaderboard.
+- `max_runtime_secs <data-science/algo-params/max_runtime_secs.html>`__: This argument controls how long the AutoML run will execute. This defaults to 3600 seconds.
+- **project_name**: Specify a string that identifies an AutoML project. This value defaults to NULL, which means a project name will be auto-generated based on the training frame ID.
+- **max_models**: Specify the maximum number of models to build in an AutoML run. (Does not include Stacked Ensembles.) 
+- `stopping_rounds <data-science/algo-params/stopping_rounds.html>`__: This argument stops training when the option selected for **stopping_metric** doesn't improve for the specified number of training rounds, based on a simple moving average. To disable this feature, specify ``0``. The metric is computed on the validation data (if provided); otherwise, training data is used.
+
+-  `stopping_metric <data-science/algo-params/stopping_metric.html>`__: Specifies the metric to use for early stopping. The available options are:
+
+    - ``auto``: This defaults to ``logloss`` for classification, ``deviance`` for regression
+    - ``deviance``
+    - ``logloss``
+    - ``mse``
+    - ``rmse``
+    - ``mae``
+    - ``rmsle``
+    - ``auc``
+    - ``lift_top_group``
+    - ``misclassification``
+    - ``mean_per_class_error``
+
+-  `stopping_tolerance <data-science/algo-params/stopping_tolerance.html>`__ option specifies the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value.
+
+-  `seed <data-science/algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations.
+
+Auto-Generated Frames
+~~~~~~~~~~~~~~~~~~~~~
 
 If the user doesn't specify all three frames (training, validation and leaderboard), then the missing frames will be created automatically from what is provided by the user.  For reference, here are the rules for auto-generating the missing frames.
 

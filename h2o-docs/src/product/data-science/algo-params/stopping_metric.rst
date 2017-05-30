@@ -1,7 +1,7 @@
 ``stopping_metric``
 -------------------
 
-- Available in: GBM, DRF, Deep Learning
+- Available in: GBM, DRF, Deep Learning, AutoML
 - Hyperparameter: yes
 
 Description
