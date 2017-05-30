@@ -987,7 +987,7 @@ types.
    predictors are omitted in the probability calculation during
    prediction.
 
--  **max_models_to_buld**: (AutoML) This option allows the user to specify the maximum number of models to build in an AutoML run. 
+-  **max_models**: (AutoML) This option allows the user to specify the maximum number of models to build in an AutoML run. 
 
 -  **max_runtime_secs**: (AutoML) This option controls how long the AutoML run will execute. This value defaults to 3600 seconds.
 
