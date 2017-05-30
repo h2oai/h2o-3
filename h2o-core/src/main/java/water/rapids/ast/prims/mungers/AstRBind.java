@@ -235,7 +235,6 @@ public class AstRBind extends AstPrimitive {
       int idx = _chunkOffset + cs.cidx();
       Key ckey = Vec.chunkKey(_v._key, idx);
       if (_cmap != null) {
-        assert !cs.hasFloat() : "Input chunk (" + cs.getClass() + ") has float, but is expected to be categorical";
         NewChunk nc = new NewChunk(_v, idx);
         // loop over rows and update ints for new domain mapping according to vecs[c].domain()
         for (int r = 0; r < cs._len; ++r) {
