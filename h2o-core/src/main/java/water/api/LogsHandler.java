@@ -64,7 +64,7 @@ public class LogsHandler extends Handler {
           case "httpd":
             Log.Level lvl = Log.Level.fromString(name);
             if(!Log.isLoggingEnabledFor(lvl)){
-              logContent = name + " log not available since the log level is set to " + Log.getCurrentLogLevel();
+              logContent = lvl + " log not available since the log level is set to " + Log.getCurrentLogLevel();
             } else {
                 if(!Log.isLoggerInitialized()){
                   logContent = "H2O logging not configured.";
