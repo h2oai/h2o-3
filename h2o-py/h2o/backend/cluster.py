@@ -252,6 +252,21 @@ class H2OCluster(object):
         res["table"].show()
 
 
+
+    def list_all_extensions(self):
+        """List all available extensions on the h2o backend"""
+        return self._list_extensions("Capabilities")
+
+
+    def list_core_extensions(self):
+        """List available core extensions on the h2o backend"""
+        return self._list_extensions("Capabilities/Core")
+
+
+    def list_api_extensions(self):
+        """List available API extensions on the h2o backend"""
+        return self._list_extensions("Capabilities/API")
+
     @property
     def timezone(self):
         """Current timezone of the H2O cluster."""
@@ -284,6 +299,9 @@ class H2OCluster(object):
         other._props = {}
         other._retrieved_at = None
 
+    def _list_extensions(self, endpoint):
+        res = h2o.api("GET /3/" + endpoint)["capabilities"]
+        return [x["name"] for x in res]
 
 
 _cloud_v3_valid_keys = {"is_client", "build_number", "cloud_name", "locked", "node_idx", "consensus", "branch_name",
