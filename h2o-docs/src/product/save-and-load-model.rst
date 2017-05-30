@@ -44,14 +44,14 @@ In R and Python, you can save a model locally or to HDFS using the ``h2o.saveMod
 .. example-code::
    .. code-block:: r
 
-	# build the model
-	model <- h2o.glm(model params)
+    # build the model
+    model <- h2o.glm(model params)
 
-	# save the model to HDFS
-	hdfs_name_node <- "node-1"
-	hdfs_tmp_dir <- "/tmp/runit”
-	model_path <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_tmp_dir)
-	h2o.saveModel(model, dir=model_path, name="mymodel")
+    # save the model to HDFS
+    hdfs_name_node <- "node-1"
+    hdfs_tmp_dir <- "/tmp/runit"
+    model_path <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_tmp_dir)
+    h2o.saveModel(model, dir=model_path, name="mymodel")
 
    .. code-block:: python
 

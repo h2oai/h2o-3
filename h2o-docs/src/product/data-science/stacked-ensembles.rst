@@ -318,8 +318,7 @@ FAQ
 
 -  **How do I save ensemble models?**
 
-  Currently, there is no support for saving ensembles, but this will be addressed in the next release.  `Binary save/load <https://0xdata.atlassian.net/browse/PUBDEV-3970>`__ as as well as `MOJO support <https://0xdata.atlassian.net/browse/PUBDEV-3877>`__ is planned for Stacked Ensemble models.  (More accurately, you can currently save an ensemble as a binary model, but there may be issues when loading it back in.)
-
+  H2O now supports saving and loading ensemble models. (Refer to `PUBDEV-3970 <https://0xdata.atlassian.net/browse/PUBDEV-3970>`__ for more information.) The steps are the same as those described in the `Saving and Loading a Model <../save-and-load-model.html>`__ section. Note that MOJO support is planned for Stacked Ensemble models in a future release. (See `PUBDEV-3877 <https://0xdata.atlassian.net/browse/PUBDEV-3877>`__.)
 
 -  **Will an stacked ensemble always perform better than a single model?**
   
@@ -329,7 +328,6 @@ FAQ
 -  **How do I improve the performance of an ensemble?**
   
   If you find that your ensemble is not performing better than the best base learner, then you can try a few different things.  First, look to see if there are base learners that are performing much worse than the other base learners (for example, a GLM).  If so, remove them from the ensemble and try again.  Second, you can try adding more models to the ensemble, especially models that add diversity to your set of base models.  Once `custom metalearner support <https://0xdata.atlassian.net/browse/PUBDEV-3743>`__ is added, you can try out different metalearners as well.
-
 
 -  **How does the algorithm handle missing values during training?**
 
@@ -351,7 +349,6 @@ FAQ
    column?**
 
   In the base learners, specify ``balance_classes``, ``class_sampling_factors`` and ``max_after_balance_size`` to control over/under-sampling.
-
 
 
 Additional Information
