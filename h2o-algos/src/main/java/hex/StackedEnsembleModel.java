@@ -49,11 +49,13 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     public String javaName() { return StackedEnsembleModel.class.getName(); }
     @Override public long progressUnits() { return 1; }  // TODO
 
+    /*
     public static enum SelectionStrategy { choose_all }
 
     // TODO: make _selection_strategy an object:
-    /** How do we choose which models to stack? */
+    // How do we choose which models to stack?
     public SelectionStrategy _selection_strategy;
+    */
 
     /** Which models can we choose from? */
     public Key<Model> _base_models[] = new Key[0];
