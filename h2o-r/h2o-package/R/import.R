@@ -253,7 +253,8 @@ h2o.import_sql_select<- function(connection_url, select_query, username, passwor
 #'
 #' Load H2O Model from HDFS or Local Disk
 #'
-#' Load a saved H2O model from disk.
+#' Load a saved H2O model from disk. (Note that ensemble binary models 
+#' can now be loaded using this method.)
 #'
 #' @param path The path of the H2O Model to be imported.
 #'        and port of the server running H2O.
