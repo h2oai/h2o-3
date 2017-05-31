@@ -11,6 +11,9 @@
 #' @param training_frame Training data frame (or ID).
 #' @param validation_frame Validation data frame (or ID); Optional.
 #' @param leaderboard_frame Leaderboard data frame (or ID).  The Leaderboard will be scored using this data set. Optional.
+#' @param fold_column Column with cross-validation fold index assignment per observation; used to override the default, randomized, 5-fold cross-validation scheme for individual models in the AutoML run.
+#' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from 
+#'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative weights are not allowed.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for the entire model training process. Use 0 to disable. Defaults to 3600 secs (1 hour).
 #' @param max_models Maximum number of models to build in the AutoML process (does not include Stacked Ensembles). Defaults to NULL.
 #' @param stopping_metric Metric to use for early stopping (AUTO is logloss for classification, deviance for regression).  
@@ -32,11 +35,15 @@
 #' votes_path <- system.file("extdata", "housevotes.csv", package="h2o")
 #' votes_hf <- h2o.uploadFile(path = votes_path, header = TRUE)
 #' aml <- h2o.automl(y = "Class", training_frame = votes_hf, max_runtime_secs = 30)
+#' lb <- aml@leaderboard
+#' lb
 #' }
 #' @export
 h2o.automl <- function(x, y, training_frame,
                        validation_frame = NULL,
                        leaderboard_frame = NULL,
+                       fold_column = NULL,
+                       weights_column = NULL,
                        max_runtime_secs = 3600,
                        max_models = NULL,
                        stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error"),
@@ -83,6 +90,12 @@ h2o.automl <- function(x, y, training_frame,
   input_spec$training_frame <- training_frame_id
   input_spec$validation_frame <- validation_frame_id
   input_spec$leaderboard_frame <- leaderboard_frame_id
+  if (!is.null(fold_column)) {
+    input_spec$fold_column <- fold_column
+  }
+  if (!is.null(weights_column)) {
+    input_spec$weights_column <- weights_column
+  }
 
   # If x is specified, set ignored_columns; otherwise do not send ignored_columns in the POST
   if (!missing(x)) {
