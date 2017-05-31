@@ -17,10 +17,15 @@ apt-get install -y python-software-properties texinfo texlive-bibtex-extra texli
 
 # Install Java
 add-apt-repository -y ppa:webupd8team/java
+add-apt-repository -y ppa:graphics-drivers/ppa
 apt-get update -q -y
 echo debconf shared/accepted-oracle-license-v1-1 select true | debconf-set-selections
 echo debconf shared/accepted-oracle-license-v1-1 seen true | debconf-set-selections  
 apt-get install -y oracle-java8-installer
+
+# Install Nvidia
+# apt-get purge nvidia-*
+# apt-get install nvidia-381
 
 # Install NodeJS
 curl -sL https://deb.nodesource.com/setup_7.x | bash -
