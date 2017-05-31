@@ -7,6 +7,10 @@ import hex.svd.SVDImplementation;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 import water.DKV;
 import water.Key;
 import water.Scope;
@@ -18,8 +22,20 @@ import water.util.FrameUtils;
 
 import java.util.concurrent.ExecutionException;
 
+import static hex.svd.SVDImplementation.*;
+
+@RunWith(Parameterized.class)
 public class PCATest extends TestUtil {
   public static final double TOLERANCE = 1e-6;
+
+  @Parameters
+  public static SVDImplementation[] parametersForSvdImplementation() {
+    return new SVDImplementation[]{JAMA, MTJ, EVD_MTJ_DENSEMATRIX, EVD_MTJ_SYMM};
+  }
+
+  @Parameter
+  public SVDImplementation svdImplementation;
+
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void testArrests() throws InterruptedException, ExecutionException {
@@ -87,10 +103,7 @@ public class PCATest extends TestUtil {
       parms._k = 4;
       parms._transform = DataInfo.TransformType.NONE;
       parms._pca_method = PCAParameters.Method.GramSVD;
-      parms.setSvdImplementation(SVDImplementation.JAMA);
-//      parms.setSvdImplementation(SVDImplementation.MTJ);
-//      parms.setSvdImplementation(SVDImplementation.EVD_MTJ_DENSEMATRIX);
-//      parms.setSvdImplementation(SVDImplementation.EVD_MTJ_SYMM);
+      parms.setSvdImplementation(svdImplementation);
 
       model = new PCA(parms).trainModel().get();
       TestUtil.checkStddev(stddev, model._output._std_deviation, 1e-5);
@@ -98,7 +111,8 @@ public class PCATest extends TestUtil {
 
       score = model.score(train);
       scoreR = parse_test_file(Key.make("scoreR.hex"), "smalldata/pca_test/USArrests_PCAscore.csv");
-      TestUtil.checkProjection(scoreR, score, TOLERANCE, flippedEig);    // Flipped cols must match those from eigenvectors
+//      TestUtil.checkProjection(scoreR, score, TOLERANCE, flippedEig);    // Flipped cols must match those from eigenvectors
+      TestUtil.checkProjection(scoreR, score, 1e-6, flippedEig);    // Flipped cols must match those from eigenvectors
 
       // Build a POJO, validate same results
       Assert.assertTrue(model.testJavaScoring(train,score,1e-5));
@@ -173,6 +187,7 @@ public class PCATest extends TestUtil {
       parms._k = 4;
       parms._max_iterations = 1000;
       parms._pca_method = PCAParameters.Method.GramSVD;
+      parms.setSvdImplementation(svdImplementation);
 
       model = new PCA(parms).trainModel().get();
 
@@ -182,8 +197,8 @@ public class PCATest extends TestUtil {
     } finally {
       if( fr  != null ) fr.delete();
       if( fr2 != null ) fr2.delete();
-      if( tr  != null ) tr .delete();
-      if( te  != null ) te .delete();
+      if( tr  != null ) tr.delete();
+      if( te  != null ) te.delete();
       if (model != null) model.delete();
     }
   }
@@ -209,6 +224,7 @@ public class PCATest extends TestUtil {
       parms._k = 4;
       parms._transform = DataInfo.TransformType.NONE;
       parms._pca_method = PCAModel.PCAParameters.Method.GramSVD;
+      parms.setSvdImplementation(svdImplementation);
       parms._impute_missing = true;   // Don't skip rows with NA entries, but impute using mean of column
       parms._seed = seed;
 
@@ -251,6 +267,7 @@ public class PCATest extends TestUtil {
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._use_all_factor_levels = true;
       parms._pca_method = PCAParameters.Method.GramSVD;
+      parms.setSvdImplementation(svdImplementation);
       parms._impute_missing = false;
       parms._seed = 12345;
 
@@ -282,6 +299,7 @@ public class PCATest extends TestUtil {
       parms._k = 3;
       parms._transform = DataInfo.TransformType.NONE;
       parms._pca_method = PCAModel.PCAParameters.Method.Randomized;
+      parms.setSvdImplementation(svdImplementation);
       parms._impute_missing = true;   // Don't skip rows with NA entries, but impute using mean of column
       parms._seed = 12345;
       parms._use_all_factor_levels=true;
