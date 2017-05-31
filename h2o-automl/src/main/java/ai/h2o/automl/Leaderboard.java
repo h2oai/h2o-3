@@ -184,7 +184,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     new TAtomic<Leaderboard>() {
       @Override
       final public Leaderboard atomic(Leaderboard old) {
-        if (old == null) old = new Leaderboard();
+        if (old == null) old = new Leaderboard(project, userFeedback, leaderboardFrame);
 
         final Key<Model>[] oldModels = old.models;
         final Key<Model> oldLeader = (oldModels == null || 0 == oldModels.length) ? null : oldModels[0];
@@ -231,9 +231,9 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
         Model[] models = new Model[old.models.length];
         old.sort_metrics = old.getSortMetrics(old.sort_metric, old.leaderboard_set_metrics, leaderboardFrame, modelsForModelKeys(old.models, models));
-        if(sort_metric.equals("auc")){ //Binomial case
+        if (sort_metric.equals("auc")){ //Binomial case
           old.logloss= old.getOtherMetrics("logloss", old.leaderboard_set_metrics, leaderboardFrame, modelsForModelKeys(old.models, models));
-        }else if(sort_metric.equals("mean_residual_deviance")){ //Regression case
+        } else if (sort_metric.equals("mean_residual_deviance")){ //Regression case
           old.rmse= old.getOtherMetrics("rmse", old.leaderboard_set_metrics, leaderboardFrame, modelsForModelKeys(old.models, models));
           old.mae= old.getOtherMetrics("mae", old.leaderboard_set_metrics, leaderboardFrame, modelsForModelKeys(old.models, models));
           old.rmsle= old.getOtherMetrics("rmsle", old.leaderboard_set_metrics, leaderboardFrame, modelsForModelKeys(old.models, models));
@@ -253,9 +253,9 @@ public class Leaderboard extends Keyed<Leaderboard> {
     this.models = updated.models;
     this.leaderboard_set_metrics = updated.leaderboard_set_metrics;
     this.sort_metrics = updated.sort_metrics;
-    if(sort_metric.equals("auc")){ //Binomial case
+    if (sort_metric.equals("auc")){ //Binomial case
       this.logloss = updated.logloss;
-    }else if(sort_metric.equals("mean_residual_deviance")){ //Regression
+    } else if (sort_metric.equals("mean_residual_deviance")){ //Regression
       this.rmse = updated.rmse;
       this.mae = updated.mae;
       this.rmsle = updated.rmsle;
@@ -341,6 +341,9 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
     return modelKeys[0].get();
   }
+
+  /** Return the number of models in this Leaderboard. */
+  public int getModelCount() { return getModelKeys().length; }
 
   /*
   public long[] getTimestamps(Model[] models) {
