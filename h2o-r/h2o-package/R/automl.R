@@ -2,8 +2,8 @@
 #'
 #' The Automatic Machine Learning (AutoML) function automates the supervised machine learning model training process.
 #' The current version of AutoML trains and cross-validates a Random Forest, an Extremely-Randomized Forest,
-#' a random grid of Gradient Boosting Machines (GBMs), a random grid of Deep Neural Nets,
-#' and a Stacked Ensemble of all the models.
+#' a random grid of Gradient Boosting Machines (GBMs), a random grid of Deep Neural Nets, and then trains a
+#' Stacked Ensemble using all of the models.
 #'
 #' @param x A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except y are used.
@@ -36,7 +36,6 @@
 #' votes_hf <- h2o.uploadFile(path = votes_path, header = TRUE)
 #' aml <- h2o.automl(y = "Class", training_frame = votes_hf, max_runtime_secs = 30)
 #' lb <- aml@leaderboard
-#' lb
 #' }
 #' @export
 h2o.automl <- function(x, y, training_frame,
