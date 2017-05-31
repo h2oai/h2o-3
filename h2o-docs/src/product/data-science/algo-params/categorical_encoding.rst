@@ -1,8 +1,8 @@
 ``categorical_encoding``
 ------------------------
 
-- Available in: GBM, DRF, Deep Learning, K-Means
-- Hyperparameter: 
+- Available in: GBM, DRF, Deep Learning, K-Means, Aggregator
+- Hyperparameter: yes
 
 Description
 ~~~~~~~~~~~
@@ -29,6 +29,16 @@ This option specifies the encoding scheme to use for handling categorical featur
   - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.).
 
   **Note**: For Deep Learning, this value defaults to ``one_hot_internal``. Similarly, if ``auto`` is specified, then the algorithm performs ``one_hot_internal`` encoding. 
+
+**Aggregator**
+
+  - ``auto`` or ``AUTO``:  Allow the algorithm to decide. For Aggregator, the algorithm will perform One Hot Internal encoding when ``auto`` is specified.
+  - ``one_hot_internal`` or ``OneHotInternal``: Leave the dataset as is. This internally expands each row via one-hot encoding on the fly. (default)
+  - ``binary`` or ``Binary``: No more than 32 columns per categorical feature
+  - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
+  - ``label_encoder`` or ``LabelEncoder``: Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.). This is useful for keeping the number of columns small for XGBoost or DeepLearning/DeepWater, where the algorithm otherwise perform ExplicitOneHotEncoding. 
+  - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.).
+  - ``enum_limited``: Automatically reduce categorical levels to the most prevalent ones during Aggregator training and only keep the **T** most frequent levels.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
