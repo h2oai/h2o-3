@@ -126,6 +126,8 @@ h2o.automl <- function(x, y, training_frame,
   #project <- automl_job$project  # This is not functional right now, we can get project_name from user input instead
   leaderboard <- as.data.frame(automl_job["leaderboard_table"]$leaderboard_table)
   row.names(leaderboard) <- seq(nrow(leaderboard))
+  leaderboard <- as.h2o(leaderboard)
+  leaderboard[,2:length(leaderboard)] <- as.numeric(leaderboard[,2:length(leaderboard)])
   leader <- h2o.getModel(automl_job$leaderboard$models[[1]]$name)
 
   # Make AutoML object

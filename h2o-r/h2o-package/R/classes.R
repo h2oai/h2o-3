@@ -615,6 +615,14 @@ setMethod("summary", "H2OGrid",
 })
 
 #'
+#' The H2OFrame class
+#'
+#' This class represents an H2OFrame object
+#'
+#' @export
+setClass("H2OFrame")
+
+#'
 #' The H2OAutoML class
 #'
 #' This class represents an H2OAutoML object
@@ -622,4 +630,4 @@ setMethod("summary", "H2OGrid",
 #' @export
 setClass("H2OAutoML", slots = c(project_name = "character",
                                 leader = "H2OModel",
-                                leaderboard = "data.frame"))
+                                leaderboard = "H2OFrame"))
