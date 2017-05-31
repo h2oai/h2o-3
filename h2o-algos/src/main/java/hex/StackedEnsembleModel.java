@@ -16,7 +16,6 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 
 import static hex.Model.Parameters.FoldAssignmentScheme.AUTO;
-import static hex.Model.Parameters.FoldAssignmentScheme.Modulo;
 import static hex.Model.Parameters.FoldAssignmentScheme.Random;
 
 /**
@@ -309,7 +308,8 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
                 ! aModel._parms._fold_column.equals(fold_column))
           throw new H2OIllegalArgumentException("Base models are inconsistent: they use different fold_columns.");
 
-        if (fold_assignment != Modulo &&
+        if (aModel._parms._fold_column == null &&
+                fold_assignment == Random &&
                 aModel._parms._seed != seed)
           throw new H2OIllegalArgumentException("Base models are inconsistent: they use random-seeded crossfold validation but have different seeds.");
 
