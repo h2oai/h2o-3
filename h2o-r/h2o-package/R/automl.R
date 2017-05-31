@@ -69,18 +69,36 @@ h2o.automl <- function(x, y, training_frame,
   if (missing(training_frame)) stop("argument 'training_frame' is missing")
   if (missing(y)) stop("The response column (y) is not set; please set it to the name of the column that you are trying to predict in your data.")
 
-  # Training frame id
+  # Training frame must be a key or an H2OFrame object
+  if (!is.H2OFrame(training_frame)) {
+    tryCatch(training_frame <- h2o.getFrame(training_frame), 
+             error = function(err) {
+               stop("argument 'training_frame' must be a valid H2OFrame or key")
+             }) 
+  }
   training_frame_id <- h2o.getId(training_frame)
 
   # Validation frame must be a key or an H2OFrame object
   validation_frame_id <- NULL
   if (!is.null(validation_frame)) {
+    if (!is.H2OFrame(validation_frame)) {
+      tryCatch(validation_frame <- h2o.getFrame(validation_frame), 
+               error = function(err) {
+                 stop("argument 'validation_frame' must be a valid H2OFrame or key")
+               }) 
+    }
     validation_frame_id <- h2o.getId(validation_frame)
   }
 
-  # Test frame must be a key or an H2OFrame object
+  # Leaderboard/test frame must be a key or an H2OFrame object
   leaderboard_frame_id <- NULL
   if (!is.null(leaderboard_frame)) {
+    if (!is.H2OFrame(leaderboard_frame)) {
+      tryCatch(leaderboard_frame <- h2o.getFrame(leaderboard_frame), 
+               error = function(err) {
+                 stop("argument 'leaderboard_frame' must be a valid H2OFrame or key")
+               }) 
+    }
     leaderboard_frame_id <- h2o.getId(leaderboard_frame)
   }
 
@@ -100,7 +118,17 @@ h2o.automl <- function(x, y, training_frame,
   # If x is specified, set ignored_columns; otherwise do not send ignored_columns in the POST
   if (!missing(x)) {
     args <- .verify_dataxy(training_frame, x, y)
-    ignored_columns <- setdiff(names(training_frame), c(args$x,args$y)) #Remove x and y to create ignored_columns
+    # Create keep_columns to track which columns to keep (vs ignore)
+    keep_columns <- c(args$x, args$y)
+    # If fold_column or weights_column is specified, add them to the keep_columns list
+    # otherwise H2O won't be able to find it in the training frame and will give an error
+    if (!is.null(fold_column)) {
+      keep_columns <- c(keep_columns, fold_column)
+    }
+    if (!is.null(weights_column)) {
+      keep_columns <- c(keep_columns, weights_column)
+    }
+    ignored_columns <- setdiff(names(training_frame), keep_columns)
     if (length(ignored_columns) == 1) {
       input_spec$ignored_columns <- list(ignored_columns)
     } else if (length(ignored_columns) > 1) {
