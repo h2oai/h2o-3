@@ -620,6 +620,29 @@ h2o.killMinus3 <- function() {
   rv <- .h2o.doSafeGET(urlSuffix="KillMinus3")
 }
 
+.h2o.list_extensions <- function(endpoint){
+  res <- .h2o.fromJSON(jsonlite::fromJSON(.h2o.doSafeGET(urlSuffix = endpoint), simplifyDataFrame=FALSE))
+  lapply(res$capabilities, function(x) x$name)
+}
+
+#' List all H2O registered extensions
+#' @export
+h2o.list_all_extensions <- function() {
+  .h2o.list_extensions(endpoint = .h2o.__ALL_CAPABILITIES)
+}
+
+#' List registered core extensions
+#' @export
+h2o.list_core_extensions <- function() {
+  .h2o.list_extensions(endpoint = .h2o.__CORE_CAPABILITIES)
+}
+
+#' List registered API extensions
+#' @export
+h2o.list_api_extensions <- function() {
+  .h2o.list_extensions(endpoint = .h2o.__API_CAPABILITIES)
+}
+
 #' Print H2O cluster info
 #' @export
 h2o.clusterInfo <- function() {
