@@ -2,7 +2,7 @@
 -------------
 
 - Available in: PCA
-- Hyperparameter: no
+- Hyperparameter: yes
 
 Description
 ~~~~~~~~~~~
