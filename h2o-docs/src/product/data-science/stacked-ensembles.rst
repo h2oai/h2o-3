@@ -55,11 +55,9 @@ Defining an H2O Stacked Ensemble Model
 
 -  **validation_frame**: Specify the dataset used to evaluate the accuracy of the model.
 
--  **selection_strategy**: Specify the strategy for choosing which models to stack. Note that **choose_all** is currently the only selection strategy implemented. 
-
 -  **base_models**: Specify a list of model IDs that can be stacked together. Models must have been cross-validated using ``nfolds`` > 1, they all must use the same cross-validation folds and ``keep_cross_validation_folds`` must be set to True.  
 
-Regarding the base models: One way to guarantee identical folds across base models is to set **fold_assignment** = "Modulo" in all the base models.  Currently, using base models that were all trained with **fold_assignment** = "Modulo" is a strict requirement, but this will be `relaxed <https://0xdata.atlassian.net/browse/PUBDEV-3973>`__ in the next release to allow for identical user-specified folds or random folds that were generated with the same seed.
+Regarding the base models: One way to guarantee identical folds across base models is to set ``fold_assignment = "Modulo"`` in all the base models.  It is also possible to get identical folds by setting ``fold_assignment = "Random"`` when the same seed is used in all base models.
 
 Also in a `future release <https://0xdata.atlassian.net/browse/PUBDEV-3743>`__, there will be an additional **metalearner** parameter which allows for the user to specify the metalearning algorithm used.  Currently, the metalearner is fixed as a default H2O GLM with non-negative weights.
 

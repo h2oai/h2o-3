@@ -51,8 +51,7 @@ def stackedensemble_gaussian():
     my_glm.model_performance(australia_hex).show()
 
 
-    stacker = H2OStackedEnsembleEstimator(selection_strategy="choose_all",
-                                          base_models=[my_gbm.model_id, my_rf.model_id, my_glm.model_id])
+    stacker = H2OStackedEnsembleEstimator(base_models=[my_gbm.model_id, my_rf.model_id, my_glm.model_id])
     stacker.train(model_id="my_ensemble", x=myX, y="runoffnew", training_frame=australia_hex)
     # test ignore_columns parameter checking
     # stacker.train(model_id="my_ensemble", y="runoffnew", training_frame=australia_hex, ignored_columns=["premax"])
@@ -94,7 +93,7 @@ def stackedensemble_gaussian():
     my_glm.model_performance(ecology_train).show()
 
 
-    stacker = H2OStackedEnsembleEstimator(selection_strategy="choose_all", base_models=[my_gbm.model_id, my_rf.model_id, my_glm.model_id])
+    stacker = H2OStackedEnsembleEstimator(base_models=[my_gbm.model_id, my_rf.model_id, my_glm.model_id])
     print("created H2OStackedEnsembleEstimator: " + str(stacker))
     stacker.train(model_id="my_ensemble", y="Angaus", training_frame=ecology_train)
     print("trained H2OStackedEnsembleEstimator: " + str(stacker))
@@ -140,7 +139,7 @@ def stackedensemble_gaussian():
     my_glm.model_performance(insurance_train).show()
 
 
-    stacker = H2OStackedEnsembleEstimator(selection_strategy="choose_all", base_models=[my_gbm.model_id, my_rf.model_id, my_glm.model_id])
+    stacker = H2OStackedEnsembleEstimator(base_models=[my_gbm.model_id, my_rf.model_id, my_glm.model_id])
     print("created H2OStackedEnsembleEstimator: " + str(stacker))
     stacker.train(model_id="my_ensemble", y="Claims", training_frame=insurance_train)
     print("trained H2OStackedEnsembleEstimator: " + str(stacker))
