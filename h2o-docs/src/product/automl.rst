@@ -20,6 +20,8 @@ In both the R and Python API, AutoML uses the same data-related arguments, ``x``
 - `training_frame <data-science/algo-params/training_frame.html>`__: Specifies the training set. This argument is required.
 - `validation_frame <data-science/algo-params/validation_frame.html>`__: This argument is optional and will be used for early stopping within the training process of the individual models in the AutoML run.  
 - **leaderboard_frame**: This argument allows the user to specify a particular data frame to rank the models on the leaderboard. This frame will not be used for anything besides creating the leaderboard.
+- `fold_column <data-science/algo-params/fold_column.html>`__: Specifies a column with cross-validation fold index assignment per observation. This is used to override the default, randomized, 5-fold cross-validation scheme for individual models in the AutoML run.
+- `weights_column <data-science/algo-params/weights_column.html>`__: Specifies a column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative weights are not allowed.
 - `max_runtime_secs <data-science/algo-params/max_runtime_secs.html>`__: This argument controls how long the AutoML run will execute. This defaults to 3600 seconds.
 - **project_name**: Specify a string that identifies an AutoML project. This value defaults to NULL, which means a project name will be auto-generated based on the training frame ID.
 - **max_models**: Specify the maximum number of models to build in an AutoML run. (Does not include Stacked Ensembles.) 
@@ -176,7 +178,7 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
 AutoML Output
 -------------
 
-The AutoML object includes a "leaderboard" of models that were trained in the process, ranked by a default metric based on the problem type (the second column of the leaderboard).  In binary classification problems, that metric is AUC, and in multiclass classification problems, the metric is mean per-class error.  In regression problems, the default sort metric is root mean squared error (RMSE).  Some additional metrics are also provided, for convenience.
+The AutoML object includes a "leaderboard" of models that were trained in the process, ranked by a default metric based on the problem type (the second column of the leaderboard). In binary classification problems, that metric is AUC, and in multiclass classification problems, the metric is mean per-class error. In regression problems, the default sort metric is deviance.  Some additional metrics are also provided, for convenience.
 
 Here is an example leaderboard for a binary classification task:
 
