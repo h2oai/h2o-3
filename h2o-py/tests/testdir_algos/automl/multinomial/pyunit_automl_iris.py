@@ -23,7 +23,7 @@ def iris_automl():
     aml.train(y="class", training_frame=train,validation_frame=valid, leaderboard_frame=test)
     print(aml.leader)
     print(aml.leaderboard)
-    assert set(aml.leaderboard.col_header) == set(["","model_id","mean_per_class_error"])
+    assert set(aml.leaderboard.columns) == set(["C1","model_id","mean_per_class_error"])
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(iris_automl)
