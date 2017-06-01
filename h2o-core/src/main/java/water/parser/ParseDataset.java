@@ -729,20 +729,24 @@ public final class ParseDataset {
       try {
         switch( cpr ) {
         case NONE:
-          boolean disableParallelParse = (_keys.length > TOO_MANY_KEYS_COUNT) &&
+          boolean disableParallelParse = localSetup.disableParallelParse || (_keys.length > TOO_MANY_KEYS_COUNT) &&
                   (vec.nChunks() <= SMALL_FILE_NCHUNKS) && _parseSetup._parse_type.isStreamParseSupported();
           if( _parseSetup._parse_type.isParallelParseSupported() && (! disableParallelParse)) {
             new DistributedParse(_vg, localSetup, _vecIdStart, chunkStartIdx, this, key, vec.nChunks()).dfork(vec).getResult(false);
             for( int i = 0; i < vec.nChunks(); ++i )
               _chunk2ParseNodeMap[chunkStartIdx + i] = vec.chunkKey(i).home_node().index();
           } else {
+            localSetup = ParserService.INSTANCE.getByInfo(localSetup._parse_type).setupLocal(vec,localSetup);
             InputStream bvs = vec.openStream(_jobKey);
-            _dout[_lo] = streamParse(bvs, localSetup, makeDout(localSetup,chunkStartIdx,vec.nChunks()), bvs);
+            Parser p = localSetup.parser(_jobKey);
+            _dout[_lo] = ((FVecParseWriter) p.streamParse(bvs,makeDout(localSetup,chunkStartIdx,vec.nChunks()))).close(_fs);
             _errors = _dout[_lo].removeErrors();
             chunksAreLocal(vec,chunkStartIdx,key);
+
           }
           break;
         case ZIP: {
+          localSetup = ParserService.INSTANCE.getByInfo(localSetup._parse_type).setupLocal(vec,localSetup);
           // Zipped file; no parallel decompression;
           InputStream bvs = vec.openStream(_jobKey);
           ZipInputStream zis = new ZipInputStream(bvs);
@@ -750,18 +754,17 @@ public final class ParseDataset {
           if (ZipUtil.isZipDirectory(key)) {  // file is a zip if multiple files
             zis.getNextEntry();          // first ZipEntry describes the directory
           }
-
           ZipEntry ze = zis.getNextEntry(); // Get the *FIRST* entry
           // There is at least one entry in zip file and it is not a directory.
           if( ze != null && !ze.isDirectory() )
             _dout[_lo] = streamParse(zis,localSetup, makeDout(localSetup,chunkStartIdx,vec.nChunks()), bvs);
             _errors = _dout[_lo].removeErrors();
-
           zis.close();       // Confused: which zipped file to decompress
           chunksAreLocal(vec,chunkStartIdx,key);
           break;
         }
         case GZIP: {
+          localSetup = ParserService.INSTANCE.getByInfo(localSetup._parse_type).setupLocal(vec,localSetup);
           InputStream bvs = vec.openStream(_jobKey);
           // Zipped file; no parallel decompression;
           _dout[_lo] = streamParse(new GZIPInputStream(bvs), localSetup, makeDout(localSetup,chunkStartIdx,vec.nChunks()),bvs);
@@ -812,7 +815,6 @@ public final class ParseDataset {
     private FVecParseWriter streamParse(final InputStream is, final ParseSetup localSetup,FVecParseWriter dout, InputStream bvs) throws IOException {
       // All output into a fresh pile of NewChunks, one per column
       Parser p = localSetup.parser(_jobKey);
-
       // assume 2x inflation rate
       if(localSetup._parse_type.isParallelParseSupported())
         p.streamParseZip(is, dout, bvs);

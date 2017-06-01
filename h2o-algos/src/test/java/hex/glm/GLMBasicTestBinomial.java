@@ -1253,6 +1253,10 @@ public class GLMBasicTestBinomial extends TestUtil {
     _abcd = parse_test_file("smalldata/glm_test/abcd.csv");
     Frame _airlines = parse_test_file("smalldata/airlines/AirlinesTrain.csv.zip");
     _airlines.remove("IsDepDelayed_REC").remove();
+    Key k  = Key.make("airliens_rebalanced");
+    H2O.submitTask(new RebalanceDataSet(_airlines,k,1)).join(); // need this to match the random split from R
+    _airlines.delete();
+    _airlines = DKV.getGet(k);
     String [] names = new String[]{"Origin", "Dest", "fDayofMonth", "fYear", "UniqueCarrier", "fDayOfWeek", "fMonth", "DepTime", "ArrTime", "Distance", "IsDepDelayed"};
     _airlines.restructure(names,_airlines.vecs(names));
     _airlinesTrain = new MRTask(){
