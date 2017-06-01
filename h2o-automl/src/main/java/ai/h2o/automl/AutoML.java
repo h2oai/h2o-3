@@ -1054,7 +1054,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   public UserFeedback userFeedback() { return userFeedback == null ? null : userFeedback._key.get(); }
 
   public String project() {
-    return buildSpec == null ? null : buildSpec.project();>
+    return buildSpec == null ? null : buildSpec.project();
   }
 
   // If we have multiple AutoML engines running on the same
