@@ -8,8 +8,7 @@ automl.args.test <- function() {
   # 1) That h2o.automl executes w/o errors
   # 2) That the arguments are working properly
   
-  #train <- h2o.importFile("/Users/me/h2oai/github/build-h2o/smalldata/testng/higgs_train_5k.csv")
-  #test <- h2o.importFile("/Users/me/h2oai/github/build-h2o/smalldata/testng/higgs_test_5k.csv")
+  # Load data and split into train, valid and test sets
   train <- h2o.uploadFile(locate("smalldata/testng/higgs_train_5k.csv"),
                           destination_frame = "higgs_train_5k")
   test <- h2o.uploadFile(locate("smalldata/testng/higgs_test_5k.csv"),
@@ -26,44 +25,44 @@ automl.args.test <- function() {
   
   print("Check arguments to H2OAutoML class")
   
-  # # Try without a y
-  # expect_failure(h2o.automl(training_frame = train,
-  #                           max_runtime_secs = max_runtime_secs,
-  #                           project_name = "aml0"))
+  print("Try without a y")
+  expect_failure(h2o.automl(training_frame = train,
+                            max_runtime_secs = max_runtime_secs,
+                            project_name = "aml0"))
   
-  # Try without an x
+  print("Try without an x")
   aml1 <- h2o.automl(y = y, 
                      training_frame = train,
                      max_runtime_secs = max_runtime_secs,
                      project_name = "aml1")
   
-  # Try with y as a column index, x as colnames
+  print("Try with y as a column index, x as colnames")
   aml2 <- h2o.automl(x = x, y = 1, 
                      training_frame = train,
                      max_runtime_secs = max_runtime_secs,
                      project_name = "aml2")
   
-  # Single training frame; x and y both specified
+  print("Single training frame; x and y both specified")
   aml3 <- h2o.automl(x = x, y = y, 
                      training_frame = train,
                      max_runtime_secs = max_runtime_secs,
                      project_name = "aml3")
   
-  # Training & validation frame
+  print("Training & validation frame")
   aml4 <- h2o.automl(x = x, y = y, 
                      training_frame = train,
                      validation_frame = valid,
                      max_runtime_secs = max_runtime_secs,
                      project_name = "aml4")
   
-  # Training & leaderboard frame
+  print("Training & leaderboard frame")
   aml5 <- h2o.automl(x = x, y = y, 
                      training_frame = train,
                      leaderboard_frame = test,
                      max_runtime_secs = max_runtime_secs,
                      project_name = "aml5")
   
-  # Training, validaion & leaderboard frame
+  print("Training, validaion & leaderboard frame")
   aml6 <- h2o.automl(x = x, y = y, 
                      training_frame = train,
                      validation_frame = valid,
@@ -71,7 +70,7 @@ automl.args.test <- function() {
                      max_runtime_secs = max_runtime_secs,
                      project_name = "aml6")
   
-  # Early stopping
+  print("Early stopping args")
   aml7 <- h2o.automl(x = x, y = y, 
                      training_frame = train,
                      validation_frame = valid,
@@ -82,7 +81,7 @@ automl.args.test <- function() {
                      stopping_rounds = 3,
                      project_name = "aml7")
   
-  # Check max_models = 1
+  print("Check max_models = 1")
   aml8 <- h2o.automl(x = x, y = y, 
                      training_frame = train,
                      max_runtime_secs = max_runtime_secs,
@@ -91,7 +90,7 @@ automl.args.test <- function() {
   nrow_aml8_lb <- nrow(aml8@leaderboard)
   expect_equal(nrow_aml8_lb, 2)
   
-  # Check max_models > 1; leaderboard continuity/growth
+  print("Check max_models > 1; leaderboard continuity/growth")
   aml8 <- h2o.automl(x = x, y = y, 
                      training_frame = train,
                      max_runtime_secs = max_runtime_secs,
@@ -106,7 +105,7 @@ automl.args.test <- function() {
   train[,fold_column] <- as.h2o(data.frame(rep(seq(1:3), 2000)[1:nrow(train)]))
   train[,weights_column] <- as.h2o(data.frame(runif(n = nrow(train), min = 0, max = 5)))
   
-  # Check fold_column
+  print("Check fold_column")
   aml9 <- h2o.automl(x = x, y = y, 
                      training_frame = train,
                      fold_column = fold_column,
@@ -116,7 +115,7 @@ automl.args.test <- function() {
   amodel_fold_column <- amodel@parameters$fold_column$column_name
   expect_equal(amodel_fold_column, fold_column)
   
-  # Check weights_column
+  print("Check weights_column")
   aml10 <- h2o.automl(x = x, y = y, 
                       training_frame = train,
                       weights_column = weights_column,
@@ -126,7 +125,7 @@ automl.args.test <- function() {
   amodel_weights_column <- amodel@parameters$weights_column$column_name
   expect_equal(amodel_weights_column, weights_column)
   
-  # Check fold_colum and weights_column
+  print("Check fold_colum and weights_column")
   aml11 <- h2o.automl(x = x, y = y, 
                       training_frame = train,
                       fold_column = fold_column,
