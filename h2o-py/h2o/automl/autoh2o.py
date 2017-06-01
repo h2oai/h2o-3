@@ -273,7 +273,7 @@ class H2OAutoML(object):
             self._leader_id = leaderboard_list[0]
         else:
             self._leader_id = None
-        self._leaderboard = res["leaderboard_table"]
+        self._leaderboard = h2o.H2OFrame(res["leaderboard_table"].as_data_frame())
         return self._leader_id is not None
 
     def _get_params(self):

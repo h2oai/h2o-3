@@ -2978,6 +2978,7 @@ def model_seed_sorted_by_time(model_list):
     return model_seed_list
 
 def check_ignore_cols_automl(models,names,x,y):
+    models = sum(models.as_data_frame().values.tolist(),[])
     for model in models:
         if "StackedEnsemble" in model:
             continue
