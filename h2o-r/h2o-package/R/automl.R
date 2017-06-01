@@ -2,8 +2,8 @@
 #'
 #' The Automatic Machine Learning (AutoML) function automates the supervised machine learning model training process.
 #' The current version of AutoML trains and cross-validates a Random Forest, an Extremely-Randomized Forest,
-#' a random grid of Gradient Boosting Machines (GBMs), a random grid of Deep Neural Nets,
-#' and a Stacked Ensemble of all the models.
+#' a random grid of Gradient Boosting Machines (GBMs), a random grid of Deep Neural Nets, and then trains a
+#' Stacked Ensemble using all of the models.
 #'
 #' @param x A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except y are used.
@@ -11,6 +11,9 @@
 #' @param training_frame Training data frame (or ID).
 #' @param validation_frame Validation data frame (or ID); Optional.
 #' @param leaderboard_frame Leaderboard data frame (or ID).  The Leaderboard will be scored using this data set. Optional.
+#' @param fold_column Column with cross-validation fold index assignment per observation; used to override the default, randomized, 5-fold cross-validation scheme for individual models in the AutoML run.
+#' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from 
+#'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative weights are not allowed.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for the entire model training process. Use 0 to disable. Defaults to 3600 secs (1 hour).
 #' @param max_models Maximum number of models to build in the AutoML process (does not include Stacked Ensembles). Defaults to NULL.
 #' @param stopping_metric Metric to use for early stopping (AUTO is logloss for classification, deviance for regression).  
@@ -37,6 +40,8 @@
 h2o.automl <- function(x, y, training_frame,
                        validation_frame = NULL,
                        leaderboard_frame = NULL,
+                       fold_column = NULL,
+                       weights_column = NULL,
                        max_runtime_secs = 3600,
                        max_models = NULL,
                        stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error"),
@@ -62,18 +67,36 @@ h2o.automl <- function(x, y, training_frame,
   if (missing(training_frame)) stop("argument 'training_frame' is missing")
   if (missing(y)) stop("The response column (y) is not set; please set it to the name of the column that you are trying to predict in your data.")
 
-  # Training frame id
+  # Training frame must be a key or an H2OFrame object
+  if (!is.H2OFrame(training_frame)) {
+    tryCatch(training_frame <- h2o.getFrame(training_frame), 
+             error = function(err) {
+               stop("argument 'training_frame' must be a valid H2OFrame or key")
+             }) 
+  }
   training_frame_id <- h2o.getId(training_frame)
 
   # Validation frame must be a key or an H2OFrame object
   validation_frame_id <- NULL
   if (!is.null(validation_frame)) {
+    if (!is.H2OFrame(validation_frame)) {
+      tryCatch(validation_frame <- h2o.getFrame(validation_frame), 
+               error = function(err) {
+                 stop("argument 'validation_frame' must be a valid H2OFrame or key")
+               }) 
+    }
     validation_frame_id <- h2o.getId(validation_frame)
   }
 
-  # Test frame must be a key or an H2OFrame object
+  # Leaderboard/test frame must be a key or an H2OFrame object
   leaderboard_frame_id <- NULL
   if (!is.null(leaderboard_frame)) {
+    if (!is.H2OFrame(leaderboard_frame)) {
+      tryCatch(leaderboard_frame <- h2o.getFrame(leaderboard_frame), 
+               error = function(err) {
+                 stop("argument 'leaderboard_frame' must be a valid H2OFrame or key")
+               }) 
+    }
     leaderboard_frame_id <- h2o.getId(leaderboard_frame)
   }
 
@@ -83,11 +106,27 @@ h2o.automl <- function(x, y, training_frame,
   input_spec$training_frame <- training_frame_id
   input_spec$validation_frame <- validation_frame_id
   input_spec$leaderboard_frame <- leaderboard_frame_id
+  if (!is.null(fold_column)) {
+    input_spec$fold_column <- fold_column
+  }
+  if (!is.null(weights_column)) {
+    input_spec$weights_column <- weights_column
+  }
 
   # If x is specified, set ignored_columns; otherwise do not send ignored_columns in the POST
   if (!missing(x)) {
     args <- .verify_dataxy(training_frame, x, y)
-    ignored_columns <- setdiff(names(training_frame), c(args$x,args$y)) #Remove x and y to create ignored_columns
+    # Create keep_columns to track which columns to keep (vs ignore)
+    keep_columns <- c(args$x, args$y)
+    # If fold_column or weights_column is specified, add them to the keep_columns list
+    # otherwise H2O won't be able to find it in the training frame and will give an error
+    if (!is.null(fold_column)) {
+      keep_columns <- c(keep_columns, fold_column)
+    }
+    if (!is.null(weights_column)) {
+      keep_columns <- c(keep_columns, weights_column)
+    }
+    ignored_columns <- setdiff(names(training_frame), keep_columns)
     if (length(ignored_columns) == 1) {
       input_spec$ignored_columns <- list(ignored_columns)
     } else if (length(ignored_columns) > 1) {
