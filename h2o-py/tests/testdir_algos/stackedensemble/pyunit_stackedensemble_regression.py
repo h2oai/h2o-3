@@ -51,11 +51,11 @@ def stackedensemble_gaussian():
     my_glm.model_performance(australia_hex).show()
 
 
-    stacker = H2OStackedEnsembleEstimator(base_models=[my_gbm.model_id, my_rf.model_id, my_glm.model_id])
-    stacker.train(model_id="my_ensemble", x=myX, y="runoffnew", training_frame=australia_hex)
+    stack = H2OStackedEnsembleEstimator(base_models=[my_gbm.model_id, my_rf.model_id, my_glm.model_id])
+    stack.train(model_id="my_ensemble", x=myX, y="runoffnew", training_frame=australia_hex)
     # test ignore_columns parameter checking
-    # stacker.train(model_id="my_ensemble", y="runoffnew", training_frame=australia_hex, ignored_columns=["premax"])
-    predictions = stacker.predict(australia_hex)  # training data
+    # stack.train(model_id="my_ensemble", y="runoffnew", training_frame=australia_hex, ignored_columns=["premax"])
+    predictions = stack.predict(australia_hex)  # training data
     print("Predictions for australia ensemble are in: " + predictions.frame_id)
 
 
@@ -93,13 +93,13 @@ def stackedensemble_gaussian():
     my_glm.model_performance(ecology_train).show()
 
 
-    stacker = H2OStackedEnsembleEstimator(base_models=[my_gbm.model_id, my_rf.model_id, my_glm.model_id])
-    print("created H2OStackedEnsembleEstimator: " + str(stacker))
-    stacker.train(model_id="my_ensemble", y="Angaus", training_frame=ecology_train)
-    print("trained H2OStackedEnsembleEstimator: " + str(stacker))
+    stack = H2OStackedEnsembleEstimator(base_models=[my_gbm.model_id, my_rf.model_id, my_glm.model_id])
+    print("created H2OStackedEnsembleEstimator: " + str(stack))
+    stack.train(model_id="my_ensemble", y="Angaus", training_frame=ecology_train)
+    print("trained H2OStackedEnsembleEstimator: " + str(stack))
     print("trained H2OStackedEnsembleEstimator via get_model: " + str(h2o.get_model("my_ensemble")))
 
-    predictions = stacker.predict(ecology_train)  # training data
+    predictions = stack.predict(ecology_train)  # training data
     print("predictions for ensemble are in: " + predictions.frame_id)
 
 
@@ -139,15 +139,15 @@ def stackedensemble_gaussian():
     my_glm.model_performance(insurance_train).show()
 
 
-    stacker = H2OStackedEnsembleEstimator(base_models=[my_gbm.model_id, my_rf.model_id, my_glm.model_id])
-    print("created H2OStackedEnsembleEstimator: " + str(stacker))
-    stacker.train(model_id="my_ensemble", y="Claims", training_frame=insurance_train)
-    print("trained H2OStackedEnsembleEstimator: " + str(stacker))
+    stack = H2OStackedEnsembleEstimator(base_models=[my_gbm.model_id, my_rf.model_id, my_glm.model_id])
+    print("created H2OStackedEnsembleEstimator: " + str(stack))
+    stack.train(model_id="my_ensemble", y="Claims", training_frame=insurance_train)
+    print("trained H2OStackedEnsembleEstimator: " + str(stack))
 
     print("metalearner: ")
-    print(h2o.get_model(stacker.metalearner()['name']))
+    print(h2o.get_model(stack.metalearner()['name']))
 
-    predictions = stacker.predict(insurance_train)  # training data
+    predictions = stack.predict(insurance_train)  # training data
     print("preditions for ensemble are in: " + predictions.frame_id)
 
 if __name__ == "__main__":
