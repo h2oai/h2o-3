@@ -542,7 +542,7 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
           }
         } else if (o instanceof Double) {
           value = (Double) o;
-        } else if (o instanceof byte[] && isImage) {
+        } else if (o instanceof byte[]) {
           // Read the image from raw bytes
           InputStream is = new ByteArrayInputStream((byte[]) o);
           try {
@@ -555,7 +555,7 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
                   "Unexpected object type " + o.getClass().getName() + " for numeric column " + dataColumnName);
         }
 
-        if (isImage && img != null) {
+        if (img != null) {
           DeepwaterMojoModel dwm = (DeepwaterMojoModel) m;
           int W = dwm._width;
           int H = dwm._height;
