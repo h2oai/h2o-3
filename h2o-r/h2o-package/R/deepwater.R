@@ -319,16 +319,20 @@ h2o.deepwater <- function(x, y, training_frame,
 }
 
 #' Ask the H2O server whether a Deep Water model can be built (depends on availability of native backends)
-#' Returns True if a deep water model can be built, or False otherwise.
-#' @param h2oRestApiVersion (Optional) Specific version of the REST API to use
-#'
+#' Returns TRUE if a Deep Water model can be built, or FALSE otherwise.
+#' @param h2oRestApiVersion (Optional) Specific version of the REST API to use.
+#' @export
 h2o.deepwater.available <- function(h2oRestApiVersion = .h2o.__REST_API_VERSION) {
-visibility = .h2o.__remoteSend(method = "GET", h2oRestApiVersion = h2oRestApiVersion, .h2o.__MODEL_BUILDERS("deepwater"))$model_builders[["deepwater"]][["visibility"]]
+res <- .h2o.__remoteSend(method = "GET", 
+h2oRestApiVersion = h2oRestApiVersion, 
+page = .h2o.__MODEL_BUILDERS("deepwater"))
+visibility <- res$model_builders[["deepwater"]][["visibility"]]
 if (visibility == "Experimental") {
 print("Cannot build a Deep Water model - no backend found.")
-return(FALSE)
+available <- FALSE
 } else {
-return(TRUE)
+available <- TRUE
 }
+return(available)
 }
 
