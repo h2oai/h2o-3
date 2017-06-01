@@ -25,10 +25,10 @@ automl.args.test <- function() {
   
   print("Check arguments to H2OAutoML class")
   
-  print("Try without a y")
-  expect_failure(h2o.automl(training_frame = train,
-                            max_runtime_secs = max_runtime_secs,
-                            project_name = "aml0"))
+  #print("Try without a y")
+  #expect_failure(h2o.automl(training_frame = train,
+  #                          max_runtime_secs = max_runtime_secs,
+  #                          project_name = "aml0"))
   
   print("Try without an x")
   aml1 <- h2o.automl(y = y, 
