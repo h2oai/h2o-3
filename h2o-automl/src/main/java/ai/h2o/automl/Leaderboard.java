@@ -184,7 +184,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     new TAtomic<Leaderboard>() {
       @Override
       final public Leaderboard atomic(Leaderboard old) {
-        if (old == null) old = new Leaderboard(project, userFeedback, leaderboardFrame);
+        if (old == null) old = new Leaderboard(project_name, userFeedback, leaderboardFrame);
 
         final Key<Model>[] oldModels = old.models;
         final Key<Model> oldLeader = (oldModels == null || 0 == oldModels.length) ? null : oldModels[0];
