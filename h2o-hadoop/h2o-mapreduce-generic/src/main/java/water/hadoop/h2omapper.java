@@ -231,6 +231,53 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
     }
   }
 
+  /**
+   * Under unusual debugging circumstances, it can be helpful to print out the command line arguments in this format.
+   * @param arr Array of command-line arguments.
+   */
+  private static void printArgs(String[] arr) {
+    Log.info("");
+    Log.info("----- printArgs -----");
+    for (int i = 0; i < arr.length; i++) {
+      String s = arr[i];
+      Log.info(i);
+      if (s == null) {
+        Log.info("null");
+      }
+      else {
+        Log.info(s);
+      }
+    }
+    Log.info("----------");
+  }
+
+  /**
+   * This shouldn't be necessary, but is.  In one really weird Hadoop environment, we saw an argument coming across
+   * from the driver as null.  This shouldn't be possible but it happened.  So repair it here, by forcing a null
+   * to really be the empty string.
+   *
+   * @param args Array of command line arguments
+   */
+  private static void repairNullArgsAndWarnIfNecessary(String[] args) {
+    boolean haveANullArg = false;
+    for (String s : args) {
+      if (s == null) {
+        haveANullArg = true;
+        break;
+      }
+    }
+
+    if (haveANullArg) {
+      Log.warn("Found a null command-line argument; printing all command-line arguments out now");
+      printArgs(args);
+    }
+
+    for (int i = 0; i < args.length; i++) {
+      String s = args[i];
+      args[i] = (s == null) ? "" : s;
+    }
+  }
+
   private int run2(Context context) throws IOException, InterruptedException {
     Configuration conf = context.getConfiguration();
 
@@ -313,6 +360,7 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
       H2O.setEmbeddedH2OConfig(_embeddedH2OConfig);
       Log.POST(11, "After setEmbeddedH2OConfig");
       //-------------------------------------------------------------
+      repairNullArgsAndWarnIfNecessary(args);
       water.H2OApp.main(args);
       //-------------------------------------------------------------
       Log.POST(12, "After main");
@@ -320,6 +368,7 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
     catch (Exception e) {
       Log.POST(13, "Exception in main");
       Log.POST(13, e.toString());
+      e.printStackTrace();
     }
 
     Log.POST(14, "Waiting for exit");
