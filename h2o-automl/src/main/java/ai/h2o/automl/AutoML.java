@@ -58,13 +58,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return buildSpec;
   }
 
-  public Frame getTrainingFrame() {
-    return trainingFrame;
-  }
-
-  public Frame getValidationFrame() {
-    return validationFrame;
-  }
+  public Frame getTrainingFrame() { return trainingFrame; }
+  public Frame getValidationFrame() { return validationFrame; }
+  public Frame getLeaderboardFrame() { return leaderboardFrame; }
 
   public Vec getResponseColumn() { return responseColumn; }
   public Vec getFoldColumn() { return foldColumn; }
@@ -280,6 +276,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       for (int i = 0; i < originalTrainingFrameVecs.length; i++)
         originalTrainingFrameChecksums[i] = originalTrainingFrameVecs[i].checksum();
     }
+    DKV.put(this);
   }
 
 
@@ -959,6 +956,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     Log.info(leaderboard().toTwoDimTable("Leaderboard for project " + project(), true).toString());
 
     possiblyVerifyImmutability();
+
     // gather more data? build more models? start applying transforms? what next ...?
     stop();
   } // end of learn()
@@ -1050,13 +1048,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return DKV.getGet(this.job._key);
   }
 
-  public Leaderboard leaderboard() { return leaderboard._key.get(); }
+  public Leaderboard leaderboard() { return (leaderboard == null ? null : leaderboard._key.get()); }
   public Model leader() { return (leaderboard() == null ? null : leaderboard().getLeader()); }
 
-  public UserFeedback userFeedback() { return userFeedback._key.get(); }
+  public UserFeedback userFeedback() { return userFeedback == null ? null : userFeedback._key.get(); }
 
   public String project() {
-    return buildSpec.project();
+    return buildSpec == null ? null : buildSpec.project();>
   }
 
   // If we have multiple AutoML engines running on the same
