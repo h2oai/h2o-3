@@ -26,7 +26,7 @@ public class RegisterRestApi extends AbstractRegister {
             "Return all the AutoML leaderboards.");
 
     RequestServer.registerEndpoint("leaderboard",
-            "GET /99/Leaderboards/{project}", LeaderboardsHandler.class, "fetch",
+            "GET /99/Leaderboards/{project_name}", LeaderboardsHandler.class, "fetch",
             "Return the AutoML leaderboard for the given project.");
   }
 

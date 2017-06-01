@@ -124,10 +124,10 @@ public class EckoClient {
 
     if (eckoEnabled) {
       AutoML autoML = event.getAutoML();
-      String project = autoML.project();
+      String project = autoML.projectName();
       initializeProjectPage(project);
 
-      ProjectStatus status = statuses.get(statuses.get(event.getAutoML().project()));
+      ProjectStatus status = statuses.get(statuses.get(event.getAutoML().projectName()));
       status.lastEvent = event;
 
       int httpStatus = -1;
@@ -214,7 +214,7 @@ public class EckoClient {
   } // updateLeaderboard
 
   public static final void updateProgress(AutoML autoML) {
-    ProjectStatus status = statuses.get(autoML.project());
+    ProjectStatus status = statuses.get(autoML.projectName());
     double progress = (autoML.job() == null ? 0.0 : autoML.job().progress());
     status.progress = progress;
     updateHomePage(status);

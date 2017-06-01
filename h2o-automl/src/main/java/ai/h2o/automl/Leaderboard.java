@@ -20,7 +20,7 @@ import static water.Key.make;
 /**
  * Utility to track all the models built for a given dataset type.
  * <p>
- * Note that if a new Leaderboard is made for the same project it'll
+ * Note that if a new Leaderboard is made for the same project_name it'll
  * keep using the old model list, which allows us to run AutoML multiple
  * times and keep adding to the leaderboard.
  * <p>
@@ -35,7 +35,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
    * Identifier for models that should be grouped together in the leaderboard
    * (e.g., "airlines" and "iris").
    */
-  private final String project;
+  private final String project_name;
 
   /**
    * List of models for this leaderboard, sorted by metric so that the best is first,
@@ -104,8 +104,8 @@ public class Leaderboard extends Keyed<Leaderboard> {
   /**
    *
    */
-  public Leaderboard(String project, UserFeedback userFeedback, Frame leaderboardFrame) {
-    this._key = make(idForProject(project));
+  public Leaderboard(String project_name, UserFeedback userFeedback, Frame leaderboardFrame) {
+    this._key = make(idForProject(project_name));
     Leaderboard old = DKV.getGet(this._key);
 
     if (null != old) {
@@ -115,7 +115,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
       this.leaderboard_set_metrics = old.leaderboard_set_metrics;
       this.sort_metrics = old.sort_metrics;
     }
-    this.project = project;
+    this.project_name = project_name;
     this.userFeedback = userFeedback;
     this.leaderboardFrame = leaderboardFrame;
     DKV.put(this);
@@ -131,10 +131,10 @@ public class Leaderboard extends Keyed<Leaderboard> {
     }
   }
 
-  public static String idForProject(String project) { return "AutoML_Leaderboard_" + project; }
+  public static String idForProject(String project_name) { return "AutoML_Leaderboard_" + project_name; }
 
   public String getProject() {
-    return project;
+    return project_name;
   }
 
   public void setMetricAndDirection(String metric,String[] otherMetrics, boolean sortDecreasing){
@@ -184,7 +184,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     new TAtomic<Leaderboard>() {
       @Override
       final public Leaderboard atomic(Leaderboard old) {
-        if (old == null) old = new Leaderboard(project, userFeedback, leaderboardFrame);
+        if (old == null) old = new Leaderboard(project_name, userFeedback, leaderboardFrame);
 
         final Key<Model>[] oldModels = old.models;
         final Key<Model> oldLeader = (oldModels == null || 0 == oldModels.length) ? null : oldModels[0];
@@ -562,7 +562,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
   }
 
   public TwoDimTable toTwoDimTable() {
-    return toTwoDimTable("Leaderboard for project: " + project, false);
+    return toTwoDimTable("Leaderboard for project_name: " + project_name, false);
   }
 
   public TwoDimTable toTwoDimTable(String tableHeader, boolean leftJustifyModelIds) {
@@ -600,12 +600,12 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
   //private static final SimpleDateFormat timestampFormat = new SimpleDateFormat("HH:mm:ss.SSS");
 
-  //public static String toString(String project, Model[] models, String fieldSeparator, String lineSeparator, boolean includeTitle, boolean includeHeader, boolean includeTimestamp) {
-  public static String toString(String project, Model[] models, String fieldSeparator, String lineSeparator, boolean includeTitle, boolean includeHeader) {
+  //public static String toString(String project_name, Model[] models, String fieldSeparator, String lineSeparator, boolean includeTitle, boolean includeHeader, boolean includeTimestamp) {
+  public static String toString(String project_name, Model[] models, String fieldSeparator, String lineSeparator, boolean includeTitle, boolean includeHeader) {
     StringBuilder sb = new StringBuilder();
     if (includeTitle) {
-      sb.append("Leaderboard for project \"")
-              .append(project)
+      sb.append("Leaderboard for project_name \"")
+              .append(project_name)
               .append("\": ");
 
       if (models.length == 0) {
@@ -652,8 +652,8 @@ public class Leaderboard extends Keyed<Leaderboard> {
   }
 
   public String toString(String fieldSeparator, String lineSeparator) {
-    //return toString(project, getModels(), fieldSeparator, lineSeparator, true, true, false);
-    return toString(project, getModels(), fieldSeparator, lineSeparator, true, true);
+    //return toString(project_name, getModels(), fieldSeparator, lineSeparator, true, true, false);
+    return toString(project_name, getModels(), fieldSeparator, lineSeparator, true, true);
   }
 
   @Override

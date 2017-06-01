@@ -109,9 +109,9 @@ h2o.automl <- function(x, y, training_frame,
 
   # If project_name is NULL, auto-gen based on training_frame ID
   if (is.null(project_name)) {
-    build_control$project <- paste0("automl_", training_frame_id)
+    build_control$project_name <- paste0("automl_", training_frame_id)
   } else {
-    build_control$project <- project_name
+    build_control$project_name <- project_name
   }
   
   # Create the parameter list to POST to the AutoMLBuilder 
@@ -132,7 +132,7 @@ h2o.automl <- function(x, y, training_frame,
 
   # Make AutoML object
   new("H2OAutoML",
-      project_name = build_control$project,
+      project_name = build_control$project_name,
       leader = leader,
       leaderboard = leaderboard
   )

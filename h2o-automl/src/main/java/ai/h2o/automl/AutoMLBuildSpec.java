@@ -46,7 +46,7 @@ public class AutoMLBuildSpec extends Iced {
      * (e.g., "airlines" and "iris").  If the user doesn't set it we use the basename
      * of the training file name.
      */
-    public String project = null;
+    public String project_name = null;
     public String loss = "AUTO";  // TODO: plumb through
     public HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria stopping_criteria;
   }
@@ -113,8 +113,8 @@ public class AutoMLBuildSpec extends Iced {
       return project_cached;
 
     // allow the user to override:
-    if (null != build_control.project) {
-      project_cached = build_control.project;
+    if (null != build_control.project_name) {
+      project_cached = build_control.project_name;
       return project_cached;
     }
 

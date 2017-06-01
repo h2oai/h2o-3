@@ -81,7 +81,7 @@ class H2OAutoML(object):
         #Set project name if provided. If None, then we set in .train() to "automl_" + training_frame.frame_id
         if project_name is not None:
             assert_is_type(project_name,str)
-            self.build_control["project"] = project_name
+            self.build_control["project_name"] = project_name
             self.project_name = project_name
         else:
             self.project_name = None
