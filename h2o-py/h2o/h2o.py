@@ -938,13 +938,16 @@ def download_all_logs(dirname=".", filename=None):
 
 def save_model(model, path="", force=False):
     """
-    Save an H2O Model object to disk.
+    Save an H2O Model object to disk. (Note that ensemble binary models can now be saved using this method.)
 
     :param model: The model object to save.
     :param path: a path to save the model at (hdfs, s3, local)
     :param force: if True overwrite destination directory in case it exists, or throw exception if set to False.
 
     :returns: the path of the saved model
+
+    :examples:
+        >>> path = h2o.save_model(my_model, dir=my_path)
     """
     assert_is_type(model, ModelBase)
     assert_is_type(path, str)
@@ -955,7 +958,7 @@ def save_model(model, path="", force=False):
 
 def load_model(path):
     """
-    Load a saved H2O model from disk.
+    Load a saved H2O model from disk. (Note that ensemble binary models can now be loaded using this method.)
 
     :param path: the full path of the H2O Model to be imported.
 

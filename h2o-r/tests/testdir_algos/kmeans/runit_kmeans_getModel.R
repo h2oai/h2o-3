@@ -6,7 +6,6 @@ source("../../../scripts/h2o-r-test-setup.R")
 # Test k-means clustering on benign.csv
 test.km.benign <- function() {
   Log.info("Importing benign.csv data...\n")
-  # benign.hex = h2o.importURL( "https..//raw.github.com/0xdata/h2o/master/smalldata/logreg/benign.csv")
   # benign.hex = h2o.importFile( normalizePath("../../../smalldata/logreg/benign.csv"))
   benign.hex <- h2o.importFile( locate("smalldata/logreg/benign.csv"))
   benign.sum <- summary(benign.hex)

@@ -72,7 +72,9 @@ public abstract class DKV {
     return old;
   }
   /** Make the mapping <em>key -&gt; val</em>.  Caching.  */
-  static public Value put( Key key, Value val, Futures fs ) { return put(key,val,fs,false);}
+  static public Value put( Key key, Value val, Futures fs ) {
+    return put(key,val,fs,false);
+  }
   /** Make the mapping <em>key -&gt; val</em>.  */
   static public Value put( Key key, Value val, Futures fs, boolean dontCache ) {
     assert key != null;

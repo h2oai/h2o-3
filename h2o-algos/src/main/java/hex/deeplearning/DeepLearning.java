@@ -128,17 +128,22 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
     }
 //    assert(makeDataInfo(_train, _valid, _parms).fullN() == p);
     long output = _parms._autoencoder ? p : Math.abs(_train.lastVec().cardinality());
-    // weights
-    long model_size = p * _parms._hidden[0];
-    int layer=1;
-    for (; layer < _parms._hidden.length; ++layer)
-      model_size += _parms._hidden[layer-1] * _parms._hidden[layer];
-    model_size += _parms._hidden[layer-1] * output;
+    long model_size = 0;
+    if (_parms._hidden.length==0) {
+      model_size += p * output;
+    } else {
+      // weights
+      model_size += p * _parms._hidden[0];
+      int layer = 1;
+      for (; layer < _parms._hidden.length; ++layer)
+        model_size += _parms._hidden[layer - 1] * _parms._hidden[layer];
+      model_size += _parms._hidden[layer - 1] * output;
 
-    // biases
-    for (layer=0; layer < _parms._hidden.length; ++layer)
-      model_size += _parms._hidden[layer];
-    model_size += output;
+      // biases
+      for (layer = 0; layer < _parms._hidden.length; ++layer)
+        model_size += _parms._hidden[layer];
+      model_size += output;
+    }
 
     if (model_size > 1e8) {
       String msg = "Model is too large: " + model_size + " parameters. Try reducing the number of neurons in the hidden layers (or reduce the number of categorical factors).";

@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import water.TestUtil;
+import water.fvec.Frame;
 import water.util.FileUtils;
 import water.util.Log;
 

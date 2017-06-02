@@ -81,7 +81,7 @@ class H2OAutoML(object):
         #Set project name if provided. If None, then we set in .train() to "automl_" + training_frame.frame_id
         if project_name is not None:
             assert_is_type(project_name,str)
-            self.build_control["project"] = project_name
+            self.build_control["project_name"] = project_name
             self.project_name = project_name
         else:
             self.project_name = None
@@ -214,9 +214,10 @@ class H2OAutoML(object):
                     xset.add(xi)
             x = list(xset)
             ignored_columns = set(names) - {y} - set(x)
-            if fold_column is not None: ignored_columns = ignored_columns - set(fold_column)
-            if weights_column is not None: ignored_columns = ignored_columns - set(weights_column)
-            input_spec['ignored_columns'] = list(ignored_columns)
+            if fold_column is not None: ignored_columns = ignored_columns.remove(fold_column)
+            if weights_column is not None: ignored_columns = ignored_columns.remove(weights_column)
+            if ignored_columns is not None:
+                input_spec['ignored_columns'] = list(ignored_columns)
 
         automl_build_params = dict(input_spec = input_spec)
 
@@ -273,7 +274,7 @@ class H2OAutoML(object):
             self._leader_id = leaderboard_list[0]
         else:
             self._leader_id = None
-        self._leaderboard = res["leaderboard_table"]
+        self._leaderboard = h2o.H2OFrame(res["leaderboard_table"].as_data_frame())[1:]
         return self._leader_id is not None
 
     def _get_params(self):

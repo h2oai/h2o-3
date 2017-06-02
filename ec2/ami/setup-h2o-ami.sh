@@ -29,6 +29,8 @@ apt-get -y install \
   libcurl4-openssl-dev \
   libgtk2.0-0 \
   iputils-ping \
+  cloud-utils \
+  apache2-utils \
   nginx
   
 apt-get install -y \
@@ -43,12 +45,12 @@ wget https://cran.cnr.berkeley.edu/src/contrib/hms_0.3.tar.gz
 wget https://cran.cnr.berkeley.edu/src/contrib/feather_0.3.1.tar.gz
   
 R CMD INSTALL \
-    data.table_1.10.4.tar.gz \
-    lazyeval_0.2.0.tar.gz \
-    Rcpp_0.12.10.tar.gz \
-    tibble_1.3.0.tar.gz \
-    hms_0.3.tar.gz \
-    feather_0.3.1.tar.gz
+  data.table_1.10.4.tar.gz \
+  lazyeval_0.2.0.tar.gz \
+  Rcpp_0.12.10.tar.gz \
+  tibble_1.3.0.tar.gz \
+  hms_0.3.tar.gz \
+  feather_0.3.1.tar.gz
     
 rm -rf *.tar.gz && \
 
@@ -83,6 +85,7 @@ R CMD INSTALL `find . -name "h2o*.tar.gz"`
 /usr/bin/pip3 install jupyter
 
 mkdir /data
+mkdir /opt/h2oai
 
 cd /etc/nginx/sites-enabled
 curl -H 'Cache-Control: no-cache' -O https://raw.githubusercontent.com/h2oai/h2o-3/master/ec2/ami/conf/default
@@ -95,3 +98,6 @@ cd /opt
 curl -H 'Cache-Control: no-cache' -O https://raw.githubusercontent.com/h2oai/h2o-3/master/ec2/ami/start-jupyter.sh
 chmod +x /opt/start-jupyter.sh
 
+cd /opt/h2oai
+curl -H 'Cache-Control: no-cache' -O https://raw.githubusercontent.com/h2oai/h2o-3/master/ec2/ami/get-id.sh
+chmod +x get-id.sh

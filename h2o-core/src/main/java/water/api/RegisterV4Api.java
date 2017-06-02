@@ -42,4 +42,9 @@ public class RegisterV4Api extends AbstractRegister {
     //------------ Jobs ------------------------------------------------------------------------------------------------
     registerEndpoint("GET /4/jobs/{job_id}", JobsHandler.FetchJob.class);
   }
+
+  @Override
+  public String getName() {
+    return "Core V4";
+  }
 }

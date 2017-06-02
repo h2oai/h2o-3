@@ -338,7 +338,7 @@ public class TestUtil extends Iced {
    * @param na_string string for NA in a column
    * @return
    */
-  protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types ) {
+  protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types, boolean disableParallelParse) {
     File folder = FileUtils.locateFile(fname);
     File[] files = contentsOf(fname, folder);
     Arrays.sort(files);
@@ -370,7 +370,7 @@ public class TestUtil extends Iced {
 
     if (column_types != null)
       p.setColumnTypes(column_types);
-
+    p.disableParallelParse = disableParallelParse;
     return ParseDataset.parse(Key.make(), res, true, p);
 
   }
@@ -752,7 +752,7 @@ public class TestUtil extends Iced {
         File f = generatedFile = prepareFile();
         System.out.println("File generated into: " + f.getCanonicalPath());
         if (f.isDirectory()) {
-          return parse_test_folder(f.getCanonicalPath(), null, ParseSetup.HAS_HEADER, null);
+          return parse_test_folder(f.getCanonicalPath(), null, ParseSetup.HAS_HEADER, null, false);
         } else {
           return parse_test_file(f.getCanonicalPath());
         }

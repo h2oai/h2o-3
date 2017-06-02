@@ -18,6 +18,7 @@ import water.util.ArrayUtils;
 import water.util.StringUtils;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -65,6 +66,24 @@ public class OrcParser extends Parser {
   private transient int _cidx;
 
   private transient HashMap<Integer,HashMap<Number,byte[]>> _toStringMaps = new HashMap<>();
+
+
+  @Override protected ParseWriter streamParse(final InputStream is, final StreamParseWriter dout) throws IOException {
+    List<StripeInformation> stripesInfo = ((OrcParseSetup) this._setup).getStripes();
+    StreamParseWriter nextChunk = dout;
+    for(int i = 0; i < stripesInfo.size(); i++) {
+      parseChunk(i, null, dout);
+      if(dout != nextChunk) dout.reduce(nextChunk);
+      if(i < stripesInfo.size()-1) nextChunk = nextChunk.nextChunk();
+    }
+    return dout;
+  }
+
+  @Override protected ParseWriter streamParseZip( final InputStream is, final StreamParseWriter dout, InputStream bvs ) throws IOException {
+    throw new UnsupportedOperationException("H2O Orc Parser does not support parsing of zipped orc files");
+  }
+
+
   /**
    * This method calculates the number of stripes that will be read for each chunk.  Since
    * only single threading is supported in reading each stripe, we will never split one stripe

@@ -16,7 +16,7 @@
     "Machine Learning"
   ],
   "author": "Prithvi Prabhu <prithvi@0xdata.com>",
-  "license": "Apache License Version 2.0",
+  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/h2oai/h2o-dev/issues"
   },

@@ -158,7 +158,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       AUTO, Random, Modulo, Stratified
     }
     public enum CategoricalEncodingScheme {
-      AUTO(false), OneHotInternal(false), OneHotExplicit(false), Enum(false), Binary(false), Eigen(false), LabelEncoder(false), SortByResponse(true);
+      AUTO(false), OneHotInternal(false), OneHotExplicit(false), Enum(false), Binary(false), Eigen(false), LabelEncoder(false), SortByResponse(true), EnumLimited(false);
       CategoricalEncodingScheme(boolean needResponse) { _needResponse = needResponse; }
       final boolean _needResponse;
       boolean needsResponse() { return _needResponse; }
@@ -173,6 +173,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     public FoldAssignmentScheme _fold_assignment = FoldAssignmentScheme.AUTO;
     public CategoricalEncodingScheme _categorical_encoding = CategoricalEncodingScheme.AUTO;
+    public int _max_categorical_levels = 10;
 
     public DistributionFamily _distribution = DistributionFamily.AUTO;
     public double _tweedie_power = 1.5;
@@ -1016,7 +1017,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     // check if we first need to expand categoricals before calling this method again
     if (expensive && !catEncoded && haveCategoricalPredictors) {
-      Frame updated = categoricalEncoder(test, new String[]{weights, offset, fold, response}, parms._categorical_encoding, tev);
+      Frame updated = categoricalEncoder(test, new String[]{weights, offset, fold, response}, parms._categorical_encoding, tev, parms._max_categorical_levels);
       toDelete.put(updated._key, "categorically encoded frame");
       test.restructure(updated.names(), updated.vecs()); //updated in place
       String[] msg2 = adaptTestForTrain(test, origNames, origDomains, backupNames, backupDomains, parms, expensive, computeMetrics, interactions, tev, toDelete, true /*catEncoded*/);

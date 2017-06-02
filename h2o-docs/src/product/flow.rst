@@ -619,12 +619,15 @@ The read-only **Sources** field shows the file path for the imported data select
 
 1. Select the parser type (if necessary) from the drop-down **Parser** list. For most data parsing, H2O automatically recognizes the data type, so the default settings typically do not need to be changed. The following options are available:
 
- -  Auto
+ -  AUTO
  -  ARFF
  -  XLS
  -  XLSX
  -  CSV
  -  SVMLight
+ -  ORC
+ -  AVRO
+ -  PARQUET
 
  **Note**: For SVMLight data, the column indices must be >= 1 and the columns must be in ascending order.
 
@@ -776,15 +779,23 @@ Available options vary depending on model type.
    :alt: Model Builder
 
 
-In the **Build a Model** cell, select an algorithm from the drop-down menu. (Refer to the `Data Science Algorithms <data-science.html>`_ section for information about the available algorithms.)
+In the **Build a Model** cell, select an algorithm from the drop-down menu. (Refer to the `Data Science Algorithms <data-science.html>`_ section for information about the available algorithms.) Available algorithms include:
 
- - **K-means**: Create a K-Means model.
+ - **Aggregator**: Create an Aggregator model.
+ - **Deep Learning**: Create a Deep Learning model.
+ - **Distributed Random Forest**: Create a distributed Random Forest model.
+ - **Gradient Boosting Machine**: Create a Gradient Boosted model
  - **Generalized Linear Model**: Create a Generalized Linear model.
- - **Distributed RF**: Create a distributed Random Forest model.
+ - **K-means**: Create a K-Means model.
  - **Naïve Bayes**: Create a Naïve Bayes model.
  - **Principal Component Analysis**: Create a Principal Components Analysis model for modeling without regularization or performing dimensionality reduction.
- - **Gradient Boosting Machine**: Create a Gradient Boosted model
- - **Deep Learning**: Create a Deep Learning model.
+
+ You can also specify to run AutoML, which automatically trains and tunes models while requiring as few parameters as possible. All the user needs to do is point to a dataset, identify the response column, and optionally specify a time-constraint.
+
+ .. figure:: images/Flow_model_dropdown.png
+    :alt: Flow Model dropdown menu
+    :height: 308
+    :width: 150
 
 The available options vary depending on the selected model. If an option
 is only available for a specific model type, the model type is listed.
@@ -976,6 +987,10 @@ types.
    predictors are omitted in the probability calculation during
    prediction.
 
+-  **max_models**: (AutoML) This option allows the user to specify the maximum number of models to build in an AutoML run. 
+
+-  **max_runtime_secs**: (AutoML) This option controls how long the AutoML run will execute. This value defaults to 3600 seconds.
+
 **Advanced Options**
 
 -  **fold\_assignment**: (GLM, GBM, DL, DRF, K-Means) (Applicable only if a value
@@ -1037,7 +1052,29 @@ types.
 
 -  **max\_hit\_ratio\_k**: (DRF, DL, Naïve Bayes, GBM, GLM) Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multinomial only. To disable, enter 0.
 
--  **r2\_stopping**: (GBM, DRF) Specify a threshold for the coefficient of determination (r^2) metric value. When this threshold is met or exceeded, H2O stops making trees.
+-  **stopping_metric**: (GBM, DRF, DL, AutoML) Specify the metric to use for early stopping. The available options are:
+
+    - auto: This defaults to logloss for classification, deviance for regression
+    - deviance
+    - logloss
+    - mse
+    - rmse
+    - mae
+    - rmsle
+    - auc
+    - lift_top_group
+    - misclassification
+    - mean_per_class_error
+
+-  **stopping_rounds**: (GBM, DRF, DL, AutoML) Stops training when the option selected for **stopping_metric** doesn’t improve for the specified number of training rounds, based on a simple moving average. To disable this feature, specify 0. The metric is computed on the validation data (if provided); otherwise, training data is used.
+
+   **Note**: If cross-validation is enabled:
+   
+   - All cross-validation models stop training when the validation metric doesn’t improve.
+   - The main model runs for the mean number of epochs.
+   - N+1 models may be off by the number specified for stopping_rounds from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
+
+-  **stopping_tolerance**: (GBM, DRF, DL, AutoML) This option specifies the tolerance value by which a model must improve before training ceases.
 
 -  **build\_tree\_one\_node**: (DRF, GBM) To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. The
    default setting is disabled.

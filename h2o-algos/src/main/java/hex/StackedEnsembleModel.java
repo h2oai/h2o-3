@@ -16,7 +16,6 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 
 import static hex.Model.Parameters.FoldAssignmentScheme.AUTO;
-import static hex.Model.Parameters.FoldAssignmentScheme.Modulo;
 import static hex.Model.Parameters.FoldAssignmentScheme.Random;
 
 /**
@@ -309,7 +308,8 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
                 ! aModel._parms._fold_column.equals(fold_column))
           throw new H2OIllegalArgumentException("Base models are inconsistent: they use different fold_columns.");
 
-        if (fold_assignment != Modulo &&
+        if (aModel._parms._fold_column == null &&
+                fold_assignment == Random &&
                 aModel._parms._seed != seed)
           throw new H2OIllegalArgumentException("Base models are inconsistent: they use random-seeded crossfold validation but have different seeds.");
 
@@ -380,5 +380,26 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
     return super.remove_impl(fs);
   }
+
+  /** Write out models (base + metalearner) */
+  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
+    //Metalearner
+    ab.putKey(_output._metalearner._key);
+    //Base Models
+    for (Key<Model> ks : _parms._base_models)
+        ab.putKey(ks);
+    return super.writeAll_impl(ab);
+  }
+
+  /** Read in models (base + metalearner) */
+  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
+    //Metalearner
+    ab.getKey(_output._metalearner._key,fs);
+    //Base Models
+    for (Key<Model> ks : _parms._base_models)
+      ab.getKey(ks,fs);
+    return super.readAll_impl(ab,fs);
+  }
+
 }
 

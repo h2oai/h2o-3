@@ -27,7 +27,7 @@ def prostate_automl():
     aml.train(y="CAPSULE", training_frame=train,validation_frame=valid, leaderboard_frame=test)
     print(aml.leader)
     print(aml.leaderboard)
-    assert set(aml.leaderboard.col_header) == set(["","model_id","auc","logloss"])
+    assert set(aml.leaderboard.columns) == set(["model_id","auc","logloss"])
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(prostate_automl)

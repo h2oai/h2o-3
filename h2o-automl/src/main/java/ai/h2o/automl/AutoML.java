@@ -60,13 +60,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return buildSpec;
   }
 
-  public Frame getTrainingFrame() {
-    return trainingFrame;
-  }
-
-  public Frame getValidationFrame() {
-    return validationFrame;
-  }
+  public Frame getTrainingFrame() { return trainingFrame; }
+  public Frame getValidationFrame() { return validationFrame; }
+  public Frame getLeaderboardFrame() { return leaderboardFrame; }
 
   public Vec getResponseColumn() { return responseColumn; }
   public Vec getFoldColumn() { return foldColumn; }
@@ -122,7 +118,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     super(key);
 
     this.startTime = startTime;
-    userFeedback = new UserFeedback(this); // Don't use until we set this.project
+    userFeedback = new UserFeedback(this); // Don't use until we set this.project_name
+
     this.buildSpec = buildSpec;
 
     userFeedback.info(Stage.Workflow, "AutoML job created: " + fullTimestampFormat.format(this.startTime));
@@ -147,8 +144,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       }
     }
 
-    userFeedback.info(Stage.Workflow, "Project: " + project());
-    leaderboard = new Leaderboard(project(), userFeedback, this.leaderboardFrame);
+    userFeedback.info(Stage.Workflow, "Project: " + projectName());
+    leaderboard = new Leaderboard(projectName(), userFeedback, this.leaderboardFrame);
 
     /*
     TODO
@@ -282,6 +279,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       for (int i = 0; i < originalTrainingFrameVecs.length; i++)
         originalTrainingFrameChecksums[i] = originalTrainingFrameVecs[i].checksum();
     }
+    DKV.put(this);
   }
 
 
@@ -453,7 +451,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // add remaining work
     parentJob.update(workContribution - lastWorkedSoFar);
 
-    //FIXME Bad call here. Should revist later
+    //FIXME Bad call here. Should revisit later
     try { jobs.remove(subJob); } catch (NullPointerException npe) {} // stop() can null jobs; can't just do a pre-check, because there's a race
 
   }
@@ -549,16 +547,17 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       searchCriteria.set_max_runtime_secs(Math.min(searchCriteria.max_runtime_secs(),
               timeRemainingMs() / 1000.0));
 
+    if (searchCriteria.max_runtime_secs() <= 0.001) {
+      userFeedback.info(Stage.ModelTraining,"AutoML: out of time; skipping " + algoName + " hyperparameter search");
+      return null;
+    }
+
     if (searchCriteria.max_models() == 0)
       searchCriteria.set_max_models(remainingModels());
     else
       searchCriteria.set_max_models(Math.min(searchCriteria.max_models(),
               remainingModels()));
 
-    if (searchCriteria.max_runtime_secs() <= 0.001) {
-      userFeedback.info(Stage.ModelTraining,"AutoML: out of time; skipping " + algoName + " hyperparameter search");
-      return null;
-    }
     userFeedback.info(Stage.ModelTraining, "AutoML: starting " + algoName + " hyperparameter search");
 
     // If the caller hasn't set ModelBuilder stopping criteria, set it from our global criteria.
@@ -825,7 +824,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return ensembleJob;
   }
 
-  Job<DeepWaterModel>defaulDeepWater() {
+  Job<DeepWaterModel> defaultDeepWater() {
     if (exceededSearchLimits("DeepWater")) return null;
 
     DeepWaterParameters deepWaterParameters = new DeepWaterParameters();
@@ -929,7 +928,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // build a DeepWater model
     ///////////////////////////////////////////////////////////
     if (DeepWater.haveBackend()) {
-      Job<DeepWaterModel> defaultDeepWaterJob = defaulDeepWater();
+      Job<DeepWaterModel> defaultDeepWaterJob = defaultDeepWater();
       pollAndUpdateProgress(Stage.ModelTraining, "Default DeepWater build", 50, this.job(), defaultDeepWaterJob, JobType.ModelBuild);
     }
 
@@ -973,19 +972,20 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     Log.info(userFeedback.toString("User Feedback for AutoML Run " + this._key));
     Log.info();
 
-    Leaderboard trainingLeaderboard = new Leaderboard(project() + "_training", userFeedback, this.trainingFrame);
-    trainingLeaderboard.addModels(this.leaderboard.getModelKeys());
-    Log.info(trainingLeaderboard.toTwoDimTable("TRAINING FRAME Leaderboard for project " + project(), true).toString());
+    Leaderboard trainingLeaderboard = new Leaderboard(projectName() + "_training", userFeedback, this.trainingFrame);
+    trainingLeaderboard.addModels(this.leaderboard().getModelKeys());
+    Log.info(trainingLeaderboard.toTwoDimTable("TRAINING FRAME Leaderboard for project " + projectName(), true).toString());
     Log.info();
 
-    Leaderboard validationLeaderboard = new Leaderboard(project() + "_validation", userFeedback, this.validationFrame);
-    validationLeaderboard.addModels(this.leaderboard.getModelKeys());
-    Log.info(validationLeaderboard.toTwoDimTable("VALIDATION FRAME Leaderboard for project " + project(), true).toString());
+    Leaderboard validationLeaderboard = new Leaderboard(projectName() + "_validation", userFeedback, this.validationFrame);
+    validationLeaderboard.addModels(this.leaderboard().getModelKeys());
+    Log.info(validationLeaderboard.toTwoDimTable("VALIDATION FRAME Leaderboard for project " + projectName(), true).toString());
     Log.info();
 
-    Log.info(leaderboard.toTwoDimTable("Leaderboard for project " + project(), true).toString());
+    Log.info(leaderboard().toTwoDimTable("Leaderboard for project " + projectName(), true).toString());
 
     possiblyVerifyImmutability();
+
     // gather more data? build more models? start applying transforms? what next ...?
     stop();
   } // end of learn()
@@ -1098,34 +1098,46 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return DKV.getGet(this.job._key);
   }
 
-  public Leaderboard leaderboard() { return leaderboard._key.get(); }
-  public Model leader() { return (leaderboard == null ? null : leaderboard().getLeader()); }
+  public Leaderboard leaderboard() { return (leaderboard == null ? null : leaderboard._key.get()); }
+  public Model leader() { return (leaderboard() == null ? null : leaderboard().getLeader()); }
 
-  public UserFeedback userFeedback() { return userFeedback._key.get(); }
+  public UserFeedback userFeedback() { return userFeedback == null ? null : userFeedback._key.get(); }
 
-  public String project() {
-    return buildSpec.project();
+  public String projectName() {
+    return buildSpec == null ? null : buildSpec.project();
   }
 
+  // If we have multiple AutoML engines running on the same
+  // project they will be updating the Leaderboard concurrently,
+  // so always use leaderboard() instead of the raw field, to get
+  // it from the DKV.
+  //
+  // Also, the leaderboard will reject duplicate models, so use
+  // the difference in Leaderboard length here:
   public void addModels(final Key<Model>[] newModels) {
-    modelCount.addAndGet(newModels.length);
-    leaderboard.addModels(newModels);
+    int before = leaderboard().getModelCount();
+    leaderboard().addModels(newModels);
+    int after = leaderboard().getModelCount();
+    modelCount.addAndGet(after - before);
   }
 
   public void addModel(final Key<Model> newModel) {
-    modelCount.addAndGet(1);
-    leaderboard.addModel(newModel);
+    int before = leaderboard().getModelCount();
+    leaderboard().addModel(newModel);
+    int after = leaderboard().getModelCount();
+    modelCount.addAndGet(after - before);
   }
 
   public void addModel(final Model newModel) {
-    modelCount.addAndGet(1);
-    leaderboard.addModel(newModel);
+    int before = leaderboard().getModelCount();
+    leaderboard().addModel(newModel);
+    int after = leaderboard().getModelCount();
+    modelCount.addAndGet(after - before);
   }
 
   // satisfy typing for job return type...
   public static class AutoMLKeyV3 extends KeyV3<Iced, AutoMLKeyV3, AutoML> {
-    public AutoMLKeyV3() {
-    }
+    public AutoMLKeyV3() { }
 
     public AutoMLKeyV3(Key<AutoML> key) {
       super(key);

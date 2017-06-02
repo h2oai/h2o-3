@@ -1105,7 +1105,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   private Frame encodeFrameCategoricals(Frame fr, boolean scopeTrack) {
     String[] skipCols = new String[]{_parms._weights_column, _parms._offset_column, _parms._fold_column, _parms._response_column};
-    Frame encoded = FrameUtils.categoricalEncoder(fr, skipCols, _parms._categorical_encoding, getToEigenVec());
+    Frame encoded = FrameUtils.categoricalEncoder(fr, skipCols, _parms._categorical_encoding, getToEigenVec(), _parms._max_categorical_levels);
     if (encoded != fr) {
       assert encoded._key != null;
       if (scopeTrack)

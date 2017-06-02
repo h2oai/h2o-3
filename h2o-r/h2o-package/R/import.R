@@ -25,8 +25,7 @@
 #' will be relative to the start location of the H2O instance. The default
 #' behavior is to pass-through to the parse phase automatically.
 #'
-#' \code{h2o.importURL} and \code{h2o.importHDFS} are both deprecated functions. Instead, use
-#' \code{h2o.importFile}
+#' \code{h2o.importHDFS} is deprecated. Instead, use \code{h2o.importFile}.
 #'
 #' @param path The complete URL or normalized file path of the file to be
 #'        imported. Each row of data appears as one line of the file.
@@ -121,13 +120,6 @@ if(parse) {
     return( myData[[1L]] )
   else
     return( myData )
-}
-
-
-#' @rdname h2o.importFile
-#' @export
-h2o.importURL <- function(path, destination_frame = "", parse = TRUE, header = NA, sep = "", col.names = NULL, na.strings=NULL) {
-  .Deprecated("h2o.importFile")
 }
 
 
@@ -261,7 +253,8 @@ h2o.import_sql_select<- function(connection_url, select_query, username, passwor
 #'
 #' Load H2O Model from HDFS or Local Disk
 #'
-#' Load a saved H2O model from disk.
+#' Load a saved H2O model from disk. (Note that ensemble binary models 
+#' can now be loaded using this method.)
 #'
 #' @param path The path of the H2O Model to be imported.
 #'        and port of the server running H2O.

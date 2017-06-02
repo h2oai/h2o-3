@@ -15,6 +15,7 @@ public class H2OStarter {
    */
   public static void start(String[] args, String relativeResourcePath, boolean finalizeRestRegistration) {
     long time0 = System.currentTimeMillis();
+    // FIXME: move into H2O.main()
     H2O.configureLogging();
     H2O.registerExtensions();
 

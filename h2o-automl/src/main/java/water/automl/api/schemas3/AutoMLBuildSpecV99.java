@@ -26,7 +26,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     }
 
     @API(help="optional project name used to group models from multiple runs into a leaderboard; derived from the training data name if not specified")
-    public String project;
+    public String project_name;
 
     @API(help="loss function", direction=API.Direction.INPUT)
     public String loss;

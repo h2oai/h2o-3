@@ -17,7 +17,7 @@ This option specifies the maximum number of clusters that K-Means will form.  If
 PCA
 '''
 
-In PCA, 
+In PCA, ``k`` specifies the rank of matrix approximation. This can be a value from 1 to 9 and defaults to 1.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
