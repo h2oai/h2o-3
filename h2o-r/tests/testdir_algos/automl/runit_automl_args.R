@@ -96,7 +96,7 @@ automl.args.test <- function() {
                      max_runtime_secs = max_runtime_secs,
                      max_models = 3,
                      project_name = "aml8")
-  expect_gt(nrow(aml8@leaderboard), nrow_aml8_lb)
+  expect_equal(nrow(aml8@leaderboard) > nrow_aml8_lb,TRUE)
   
   
   # Add a fold_column and weights_column
