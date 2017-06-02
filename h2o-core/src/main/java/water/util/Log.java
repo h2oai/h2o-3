@@ -219,13 +219,68 @@ abstract public class Log {
     p.setProperty("log4j.logger.water.default", appenders);
     p.setProperty("log4j.additivity.water.default",   "false");
 
-    setPropertiesForLevel(p,"R1", TRACE);
-    setPropertiesForLevel(p,"R2", DEBUG);
-    setPropertiesForLevel(p,"R3", INFO);
-    setPropertiesForLevel(p,"R4", WARN);
-    setPropertiesForLevel(p,"R5", ERROR);
-    setPropertiesForLevel(p,"R6", FATAL);
-    setPropertiesForHTTPD(p);
+    p.setProperty("log4j.logger.water.default", appenders);
+    p.setProperty("log4j.additivity.water.default",   "false");
+
+    p.setProperty("log4j.appender.R1",                          "org.apache.log4j.RollingFileAppender");
+    p.setProperty("log4j.appender.R1.Threshold",                "TRACE");
+    p.setProperty("log4j.appender.R1.File",                     getLogFileName(TRACE));
+    p.setProperty("log4j.appender.R1.MaxFileSize",              "1MB");
+    p.setProperty("log4j.appender.R1.MaxBackupIndex",           "3");
+    p.setProperty("log4j.appender.R1.layout",                   "org.apache.log4j.PatternLayout");
+    p.setProperty("log4j.appender.R1.layout.ConversionPattern", "%m%n");
+
+    p.setProperty("log4j.appender.R2",                          "org.apache.log4j.RollingFileAppender");
+    p.setProperty("log4j.appender.R2.Threshold",                "DEBUG");
+    p.setProperty("log4j.appender.R2.File",                     getLogFileName(DEBUG));
+    p.setProperty("log4j.appender.R2.MaxFileSize",              "3MB");
+    p.setProperty("log4j.appender.R2.MaxBackupIndex",           "3");
+    p.setProperty("log4j.appender.R2.layout",                   "org.apache.log4j.PatternLayout");
+    p.setProperty("log4j.appender.R2.layout.ConversionPattern", "%m%n");
+
+    p.setProperty("log4j.appender.R3",                          "org.apache.log4j.RollingFileAppender");
+    p.setProperty("log4j.appender.R3.Threshold",                "INFO");
+    p.setProperty("log4j.appender.R3.File",                     getLogFileName(INFO));
+    p.setProperty("log4j.appender.R3.MaxFileSize",              "2MB");
+    p.setProperty("log4j.appender.R3.MaxBackupIndex",           "3");
+    p.setProperty("log4j.appender.R3.layout",                   "org.apache.log4j.PatternLayout");
+    p.setProperty("log4j.appender.R3.layout.ConversionPattern", "%m%n");
+
+    p.setProperty("log4j.appender.R4",                          "org.apache.log4j.RollingFileAppender");
+    p.setProperty("log4j.appender.R4.Threshold",                "WARN");
+    p.setProperty("log4j.appender.R4.File",                     getLogFileName(WARN));
+    p.setProperty("log4j.appender.R4.MaxFileSize",              "256KB");
+    p.setProperty("log4j.appender.R4.MaxBackupIndex",           "3");
+    p.setProperty("log4j.appender.R4.layout",                   "org.apache.log4j.PatternLayout");
+    p.setProperty("log4j.appender.R4.layout.ConversionPattern", "%m%n");
+
+    p.setProperty("log4j.appender.R5",                          "org.apache.log4j.RollingFileAppender");
+    p.setProperty("log4j.appender.R5.Threshold",                "ERROR");
+    p.setProperty("log4j.appender.R5.File",                     getLogFileName(ERROR));
+    p.setProperty("log4j.appender.R5.MaxFileSize",              "256KB");
+    p.setProperty("log4j.appender.R5.MaxBackupIndex",           "3");
+    p.setProperty("log4j.appender.R5.layout",                   "org.apache.log4j.PatternLayout");
+    p.setProperty("log4j.appender.R5.layout.ConversionPattern", "%m%n");
+
+    p.setProperty("log4j.appender.R6",                          "org.apache.log4j.RollingFileAppender");
+    p.setProperty("log4j.appender.R6.Threshold",                "FATAL");
+    p.setProperty("log4j.appender.R6.File",                     getLogFileName(FATAL));
+    p.setProperty("log4j.appender.R6.MaxFileSize",              "256KB");
+    p.setProperty("log4j.appender.R6.MaxBackupIndex",           "3");
+    p.setProperty("log4j.appender.R6.layout",                   "org.apache.log4j.PatternLayout");
+    p.setProperty("log4j.appender.R6.layout.ConversionPattern", "%m%n");
+
+    // HTTPD logging
+    p.setProperty("log4j.logger.water.api.RequestServer",       "TRACE, HTTPD");
+    p.setProperty("log4j.additivity.water.api.RequestServer",   "false");
+
+    p.setProperty("log4j.appender.HTTPD",                       "org.apache.log4j.RollingFileAppender");
+    p.setProperty("log4j.appender.HTTPD.Threshold",             "TRACE");
+    p.setProperty("log4j.appender.HTTPD.File",                  getLogFileNameHTTPD());
+    p.setProperty("log4j.appender.HTTPD.MaxFileSize",           "1MB");
+    p.setProperty("log4j.appender.HTTPD.MaxBackupIndex",        "3");
+    p.setProperty("log4j.appender.HTTPD.layout",                "org.apache.log4j.PatternLayout");
+    p.setProperty("log4j.appender.HTTPD.layout.ConversionPattern", "%d{ISO8601} %m%n");
 
     // Turn down the logging for some class hierarchies.
     p.setProperty("log4j.logger.org.apache.http",               "WARN");
