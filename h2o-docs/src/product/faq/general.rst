@@ -40,9 +40,12 @@ To score a simple .CSV file, download the
     mkdir gbm_model_dir
     javac -cp h2o-genmodel.jar -J-Xmx2g -J-XX:MaxPermSize=128m PredictCSV.java gbm_model.java -d gbm_model_dir
 
-Specify the following: - the classpath using ``-cp`` - the model name
-(or class) using ``--model`` - the csv file you want to score using
-``--input`` - the location for the predictions using ``--output``.
+Specify the following: 
+
+- the classpath using ``-cp`` 
+- the model name (or class) using ``--model`` 
+- the csv file you want to score using ``--input`` 
+- the location for the predictions using ``--output``.
 
 You must match the table column names to the order specified in the
 POJO. The output file will be in a .hex format, which is a lossless text
