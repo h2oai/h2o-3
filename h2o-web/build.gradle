@@ -38,8 +38,9 @@ static def checkPrerequisite(name) {
   return 0
 }
 
-task checkClientPrerequisites << {
-  def nodeInstallationInstruction = """\
+task checkClientPrerequisites {
+    doLast {
+    def nodeInstallationInstruction = """\
 
 To install node.js, try one of these:
 
@@ -56,17 +57,17 @@ Use the official installer at http://nodejs.org/download/
 
 """
 
-  def nodeFailureMessage = "Could not detect a node.js installation on this system.\nInstall node.js and try again.\n" + nodeInstallationInstruction
+    def nodeFailureMessage = "Could not detect a node.js installation on this system.\nInstall node.js and try again.\n" + nodeInstallationInstruction
 
-  if (checkPrerequisite('node') != 0) {
-    if (Os.isFamily(Os.FAMILY_MAC)) {
-      if (checkPrerequisite('/usr/local/bin/node') != 0) {
-        throw new StopExecutionException(nodeFailureMessage)
-      }
-    } else {
-      throw new StopExecutionException(nodeFailureMessage)
+    if (checkPrerequisite('node') != 0) {
+        if (Os.isFamily(Os.FAMILY_MAC)) {
+            if (checkPrerequisite('/usr/local/bin/node') != 0) {
+                throw new StopExecutionException(nodeFailureMessage)
+            }
+        } else {
+            throw new StopExecutionException(nodeFailureMessage)
+        }
     }
-  }
 
 //  def npmFailureMessage = "Could not find command 'npm'.\nRe-install node.js and try again.\n" + nodeInstallationInstruction
 //  if (checkPrerequisite('npm') != 0) {
@@ -78,6 +79,7 @@ Use the official installer at http://nodejs.org/download/
 //      throw new StopExecutionException(npmFailureMessage)
 //    }
 //  }
+}
 }
 
 task installNpmPackages(type: Exec) {
@@ -100,9 +102,15 @@ task deleteLegacyFlowBundleFromWebRoot(type: Delete) {
   delete 'lib/h2o-flow/build/js/flow.js'
 }
 
-task copyFlowBundleFromDrift() << {
-  def f = new File('h2o-web/lib/h2o-flow/build/js/flow.js')
-  new URL('https://cdn.rawgit.com/h2oai/drift/664a4870e576e1c58a0e47fa557a7cb29dbf47dc/build/flow.js').withInputStream{ i -> f.withOutputStream{ it << i }}
+task copyFlowBundleFromDrift() {
+    doLast {
+        def f = new File('h2o-web/lib/h2o-flow/build/js/flow.js')
+        new URL('https://cdn.rawgit.com/h2oai/drift/664a4870e576e1c58a0e47fa557a7cb29dbf47dc/build/flow.js').withInputStream { i ->
+            f.withOutputStream {
+                it << i
+            }
+        }
+    }
 }
 
 task copyFlowToWebRoot(type: Copy) {
@@ -170,8 +178,10 @@ task copyHelpImages(type: Copy) {
 //    commandLine '../scripts/run.py', '--wipeall', '--test', './lib/h2o-flow/build/js/headless-test.js'
 //}
 
-task cleanUpSmokeTest << {
-    new File(["results"].join(File.separator)).deleteDir()
+task cleanUpSmokeTest {
+    doLast {
+        new File(["results"].join(File.separator)).deleteDir()
+    }
 }
 
 task compileAndInstallDocFiles(type: Exec) {
