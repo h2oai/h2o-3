@@ -1556,13 +1556,6 @@ final public class H2O {
 
   /** Initializes the local node and the local cloud with itself as the only member. */
   private static void startLocalNode() {
-    PID = -1L;
-    try {
-      String n = ManagementFactory.getRuntimeMXBean().getName();
-      int i = n.indexOf('@');
-      if( i != -1 ) PID = Long.parseLong(n.substring(0, i));
-    } catch( Throwable ignore ) { }
-
     // Figure self out; this is surprisingly hard
     NetworkInit.initializeNetworkSockets();
     // Do not forget to put SELF into the static configuration (to simulate
@@ -2029,6 +2022,11 @@ final public class H2O {
       }
     }
 
+    // We need to initialize PID before we initialize SELF_ADDRESS.
+    // Initialization of SELF_ADDRESS triggers buffered logged messages to be logged and PID
+    // is part of the log header. We want to have correct PID in the buffered messages as well.
+    initializePID();
+
     // Epic Hunt for the correct self InetAddress
     long time4 = System.currentTimeMillis();
     Log.info("IPv6 stack selected: " + IS_IPV6);
@@ -2137,6 +2135,16 @@ final public class H2O {
     Log.debug("    Start network services: " + (time10 - time9) + "ms");
     Log.debug("    Cloud up: " + (time11 - time10) + "ms");
     Log.debug("    Start GA: " + (time12 - time11) + "ms");
+  }
+
+  /** Find PID of the current process, use -1 if we can find the value */
+  private static void initializePID(){
+    PID = -1L;
+    try {
+      String n = ManagementFactory.getRuntimeMXBean().getName();
+      int i = n.indexOf('@');
+      if( i != -1 ) PID = Long.parseLong(n.substring(0, i));
+    } catch( Throwable ignore ) { }
   }
 
   // Die horribly
