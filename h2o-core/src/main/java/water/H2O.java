@@ -1557,15 +1557,17 @@ final public class H2O {
     new GAStartupReportThread().start();
   }
 
-  /** Initializes the local node and the local cloud with itself as the only member. */
-  private static void startLocalNode() {
+  private static void setPID(){
     PID = -1L;
     try {
       String n = ManagementFactory.getRuntimeMXBean().getName();
       int i = n.indexOf('@');
       if( i != -1 ) PID = Long.parseLong(n.substring(0, i));
     } catch( Throwable ignore ) { }
+  }
 
+  /** Initializes the local node and the local cloud with itself as the only member. */
+  private static void startLocalNode() {
     // Figure self out; this is surprisingly hard
     NetworkInit.initializeNetworkSockets();
     // Do not forget to put SELF into the static configuration (to simulate
@@ -1965,13 +1967,7 @@ final public class H2O {
 
     // Get ice path before loading Log or Persist class
     long time1 = System.currentTimeMillis();
-    String ice = DEFAULT_ICE_ROOT();
-    if( ARGS.ice_root != null ) ice = ARGS.ice_root.replace("\\", "/");
-    try {
-      ICE_ROOT = new URI(ice);
-    } catch(URISyntaxException ex) {
-      throw new RuntimeException("Invalid ice_root: " + ice + ", " + ex.getMessage());
-    }
+    setIceRoot();
 
     // Always print version, whether asked-for or not!
     long time2 = System.currentTimeMillis();
@@ -2031,6 +2027,10 @@ final public class H2O {
           Log.POST(11, ste.toString());
       }
     }
+    // PID information is used inside logger and logger is initialized when
+    // SELF_ADDRESS is not null. We therefore need to set PID before we set SELF_ADDRESS
+    // to avoid having PID set to -1 in the log
+    setPID();
 
     // Epic Hunt for the correct self InetAddress
     long time4 = System.currentTimeMillis();
@@ -2140,6 +2140,16 @@ final public class H2O {
     Log.debug("    Start network services: " + (time10 - time9) + "ms");
     Log.debug("    Cloud up: " + (time11 - time10) + "ms");
     Log.debug("    Start GA: " + (time12 - time11) + "ms");
+  }
+
+  private static void setIceRoot(){
+    String ice = DEFAULT_ICE_ROOT();
+    if( ARGS.ice_root != null ) ice = ARGS.ice_root.replace("\\", "/");
+    try {
+      ICE_ROOT = new URI(ice);
+    } catch(URISyntaxException ex) {
+      throw new RuntimeException("Invalid ice_root: " + ice + ", " + ex.getMessage());
+    }
   }
 
   // Die horribly
