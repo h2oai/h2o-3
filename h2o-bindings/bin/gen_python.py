@@ -251,7 +251,7 @@ def algo_to_classname(algo):
     return "H2O" + algo.capitalize() + "Estimator"
 
 def extra_imports_for(algo):
-    if algo == "glm" or algo == "deepwater":
+    if algo == "glm" or algo == "deepwater" or algo == "xgboost":
         return "import h2o"
 
 def help_preamble_for(algo):
