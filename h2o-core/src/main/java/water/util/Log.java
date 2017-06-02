@@ -81,7 +81,7 @@ abstract public class Log {
     l.info(s);
   }
 
-  public static void info( String s, boolean stdout ) { if( _level >= INFO ) write0(INFO, stdout, s); }
+  public static void info( String s, boolean stdout ) { if( _level >= INFO ) write0(INFO, stdout, new String[]{s}); }
 
   // This call *throws* an unchecked exception and never returns (after logging).
   public static RuntimeException throwErr( Throwable e ) {
