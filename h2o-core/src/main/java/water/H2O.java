@@ -414,7 +414,7 @@ final public class H2O {
     public int parsePort(String portString){
       int portNum = parseInt(portString);
       if(portNum < 0 || portNum > 65535){
-        parseFailed("Argument " + _lastMatchedFor + "  must be an integer between 0 and 65535");
+        parseFailed("Argument " + _lastMatchedFor + " must be an integer between 0 and 65535");
         return 0;
       }else{
         return portNum;
