@@ -176,3 +176,37 @@ h2o.automl <- function(x, y, training_frame,
       leaderboard = leaderboard
   )
 }
+
+#' Predict on an AutoML object
+#'
+#' Obtains predictions from an AutoML object.
+#'
+#' This method generated predictions on the leader model from an AutoML run.
+#' The order of the rows in the results is the same as the order in which the
+#' data was loaded, even if some rows fail (for example, due to missing
+#' values or unseen factor levels).
+#'
+#' @param object a fitted \linkS4class{H2OAutoML} object for which prediction is
+#'        desired
+#' @param newdata An H2OFrame object in which to look for
+#'        variables with which to predict.
+#' @param ... additional arguments to pass on.
+#' @return Returns an H2OFrame object with probabilites and
+#'         default predictions.
+#' @export
+predict.H2OAutoML <- function(object, newdata, ...) {
+  if (missing(newdata)) {
+    stop("predictions with a missing `newdata` argument is not implemented yet")
+  }
+  
+  model <- object@leader
+  
+  # Send keys to create predictions
+  url <- paste0('Predictions/models/', model@model_id, '/frames/',  h2o.getId(newdata))
+  res <- .h2o.__remoteSend(url, method = "POST", h2oRestApiVersion = 4)
+  job_key <- res$key$name
+  dest_key <- res$dest$name
+  .h2o.__waitOnJob(job_key)
+  h2o.getFrame(dest_key)
+}
+
