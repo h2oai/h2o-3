@@ -7,6 +7,7 @@ import water.H2O;
 import water.persist.PersistManager;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -330,6 +331,26 @@ abstract public class Log {
     //     p.setProperty("log4j.appender.R1.layout.ConversionPattern", "%p %C %m%n");
   }
 
+  private static File defaultLogDir() {
+    boolean windowsPath = H2O.ICE_ROOT.toString().matches("^[a-zA-Z]:.*");
+    File dir;
+    // Use ice folder if local, or default
+    if (windowsPath) {
+      dir = new File(H2O.ICE_ROOT.toString());
+    } else if (H2O.ICE_ROOT.getScheme() == null || PersistManager.Schemes.FILE.equals(H2O.ICE_ROOT.getScheme())) {
+      dir = new File(H2O.ICE_ROOT.getPath());
+    } else {
+      dir = new File(H2O.DEFAULT_ICE_ROOT());
+    }
+
+    try {
+      // create temp directory inside the log folder so the logs don't overlap
+      return FileUtils.createUniqueDirectory(dir.getAbsolutePath(), "h2ologs");
+    }catch (IOException e){
+      throw new RuntimeException(e);
+    }
+  }
+
   private static synchronized org.apache.log4j.Logger createLog4j() {
     if( _logger != null ) return _logger; // Test again under lock
 
@@ -339,31 +360,17 @@ abstract public class Log {
 
     if (log4jConfigurationProvided) {
       PropertyConfigurator.configure(log4jConfiguration);
-    }
-    else {
+    } else {
       // Create some default properties on the fly if we aren't using a provided configuration.
       // H2O creates the log setup itself on the fly in code.
       java.util.Properties p = new java.util.Properties();
+      if (H2O.ARGS.log_dir != null) {
+        LOG_DIR = new File(H2O.ARGS.log_dir).getAbsolutePath();
+      } else {
+        LOG_DIR = defaultLogDir().getAbsolutePath();
+      }
       try {
-        File dir;
-        if (H2O.ARGS.log_dir != null) {
-          dir = new File(H2O.ARGS.log_dir);
-        }
-        else {
-          boolean windowsPath = H2O.ICE_ROOT.toString().matches("^[a-zA-Z]:.*");
-
-          // Use ice folder if local, or default
-          if (windowsPath)
-            dir = new File(H2O.ICE_ROOT.toString());
-          else if (H2O.ICE_ROOT.getScheme() == null || PersistManager.Schemes.FILE.equals(H2O.ICE_ROOT.getScheme()))
-            dir = new File(H2O.ICE_ROOT.getPath());
-          else
-            dir = new File(H2O.DEFAULT_ICE_ROOT());
-
-          dir = new File(dir, "h2ologs");
-        }
-
-        setLog4jProperties(dir.toString(), p);
+        setLog4jProperties(LOG_DIR, p);
       }
       catch (Exception e) {
         System.err.println("ERROR: failed in createLog4j, exiting now.");
