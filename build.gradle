@@ -28,6 +28,7 @@ buildscript {
 
 plugins {
     id "java"
+    id "com.github.hierynomus.license" version "0.14.0"
 }
 
 //
