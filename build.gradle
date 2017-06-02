@@ -121,7 +121,6 @@ ext {
     ubenchProjects = [
       project(':h2o-core'),
       project(':h2o-algos')
-<<<<<<< bb4fa8d7597c86011dc98405f4dfa1da275b74aa
     ]
     
     // Apt required
@@ -131,8 +130,6 @@ ext {
       project(':h2o-algos'),
       project(':h2o-app'),
       project(':h2o-automl')
-=======
->>>>>>> Enable benchmarks `./gradlew :h2o-algos:jmh`
     ]
 
     //
