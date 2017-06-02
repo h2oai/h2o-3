@@ -410,6 +410,17 @@ final public class H2O {
       parseFailed("Argument " + _lastMatchedFor + " must be an integer (was given '" + a + "')" );
       return 0;
     }
+
+    public int parsePort(String portString){
+      int portNum = parseInt(portString);
+      if(portNum < 0 || portNum > 65535){
+        parseFailed("Argument " + _lastMatchedFor + " must be an integer between 0 and 65535");
+        return 0;
+      }else{
+        return portNum;
+      }
+    }
+
     @Override public String toString() { return _s; }
   }
 
@@ -442,11 +453,11 @@ final public class H2O {
       }
       else if (s.matches("port")) {
         i = s.incrementAndCheck(i, args);
-        trgt.port = s.parseInt(args[i]);
+        trgt.port = s.parsePort(args[i]);
       }
       else if (s.matches("baseport")) {
         i = s.incrementAndCheck(i, args);
-        trgt.baseport = s.parseInt(args[i]);
+        trgt.baseport = s.parsePort(args[i]);
       }
       else if (s.matches("ip")) {
         i = s.incrementAndCheck(i, args);
