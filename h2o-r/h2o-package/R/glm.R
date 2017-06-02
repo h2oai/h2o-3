@@ -174,12 +174,12 @@ h2o.glm <- function(x, y, training_frame,
                     max_runtime_secs = 0
                     ) 
 {
-  #If x is missing, then assume user wants to use all columns as features.
-  if(missing(x)){
-     if(is.numeric(y)){
-         x <- setdiff(col(training_frame),y)
-     }else{
-         x <- setdiff(colnames(training_frame),y)
+  # If x is missing, then assume user wants to use all columns as features.
+  if (missing(x)) {
+     if (is.numeric(y)) {
+         x <- setdiff(col(training_frame), y)
+     } else {
+         x <- setdiff(colnames(training_frame), y)
      }
   }
   # if (!is.null(beta_constraints)) {
@@ -194,7 +194,7 @@ h2o.glm <- function(x, y, training_frame,
   }
 
   # Required args: training_frame
-  if( missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
+  if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
   # Training_frame must be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
      tryCatch(training_frame <- h2o.getFrame(training_frame),
