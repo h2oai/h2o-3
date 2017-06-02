@@ -23,7 +23,7 @@ def australia_automl():
     aml.train(y="runoffnew", training_frame=train,validation_frame=valid, leaderboard_frame=test)
     print(aml.leader)
     print(aml.leaderboard)
-    assert set(aml.leaderboard.columns) == set(["C1","model_id", "mean_residual_deviance","rmse", "mae", "rmsle"])
+    assert set(aml.leaderboard.columns) == set(["model_id", "mean_residual_deviance","rmse", "mae", "rmsle"])
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(australia_automl)
