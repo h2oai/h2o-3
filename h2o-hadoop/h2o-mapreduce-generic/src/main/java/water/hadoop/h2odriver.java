@@ -894,7 +894,11 @@ public class h2odriver extends Configured implements Tool {
       else if (s.equals("-internal_secure_connections")) {
         internal_secure_connections = true;
       }
-      else if (s.equals("-internal_security")) {
+      else if (s.equals("-internal_security_conf") || s.equals("-internal_security")) {
+        if(s.equals("-internal_security")){
+          System.out.println("The '-internal_security' configuration is deprecated. " +
+                  "Please use '-internal_security_conf' instead.");
+        }
         i++; if (i >= args.length) { usage(); }
         securityConf = args[i];
       }
