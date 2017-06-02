@@ -200,7 +200,7 @@ abstract public class Log {
   }
 
   private static void setPropertiesForLevel(Properties p, String logger, LEVEL level) {
-   setPropertiesFor(p, logger, level.name(), "%m%n");
+   setPropertiesFor(p, logger, "%m%n", level.name());
   }
 
   private static void setPropertiesForHTTPD(Properties p){
@@ -295,14 +295,7 @@ abstract public class Log {
       } else {
         logDir = defaultLogDir().getAbsolutePath();
       }
-      try {
-        setLog4jProperties(p);
-      }catch (Exception e){
-        // this can't happen since at the time the setLog4jProperties method is called, both logDir and SELF_ADDRESS
-        // are set up
-        throw new RuntimeException(e);
-      }
-
+      setLog4jProperties(p);
       boolean launchedWithHadoopJar = H2O.ARGS.launchedWithHadoopJar();
       // For the Hadoop case, force H2O to specify the logging setup since we don't care
       // about any hadoop log setup, anyway.
