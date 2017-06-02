@@ -9,7 +9,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
-from h2o.utils.typechecks import assert_is_type, Enum, numeric
+from h2o.utils.typechecks import assert_is_type, Enum, numeric, is_type
 
 
 class H2OStackedEnsembleEstimator(H2OEstimator):
@@ -121,8 +121,12 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
     @base_models.setter
     def base_models(self, base_models):
-        assert_is_type(base_models, None, [str])
-        self._parms["base_models"] = base_models
+         if is_type(base_models,[H2OEstimator]):
+            base_models = [b.model_id for b in base_models]
+            self._parms["base_models"] = base_models
+         else:
+            assert_is_type(base_models, None, [str])
+            self._parms["base_models"] = base_models
 
 
     @property
