@@ -411,6 +411,16 @@ final public class H2O {
       return 0;
     }
 
+    public int parsePort(String portString){
+      int portNum = parseInt(portString);
+      if(portNum < 0 || portNum > 65535){
+        parseFailed("Argument baseport must be an integer between 0 and 65535");
+        return 0;
+      }else{
+        return portNum;
+      }
+    }
+
     @Override public String toString() { return _s; }
   }
 
@@ -443,19 +453,11 @@ final public class H2O {
       }
       else if (s.matches("port")) {
         i = s.incrementAndCheck(i, args);
-        int portNum = s.parseInt(args[i]);
-        if(portNum < 0 || portNum > 65535){
-          parseFailed("Argument port must be an integer between 0 and 65535");
-        }
-        trgt.port = portNum;
+        trgt.port = s.parsePort(args[i]);
       }
       else if (s.matches("baseport")) {
         i = s.incrementAndCheck(i, args);
-        int portNum = s.parseInt(args[i]);
-        if(portNum < 0 || portNum > 65535){
-          parseFailed("Argument baseport must be an integer between 0 and 65535");
-        }
-        trgt.baseport = portNum;
+        trgt.baseport = s.parsePort(args[i]);
       }
       else if (s.matches("ip")) {
         i = s.incrementAndCheck(i, args);
