@@ -2,15 +2,111 @@ package water.util;
 
 import org.eclipse.jetty.io.EofException;
 import water.Key;
-import water.fvec.NFSFileVec;
 
 import java.io.*;
 import java.net.URI;
+import java.util.Set;
+import java.util.UUID;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 /**
  * File utilities.
  */
 public class FileUtils {
+  private static final int MB = 1 << 20;
+  private static final int MAX_SIZE = 25 * MB;
+  private static int MAX_DIR_CREATION_ATTEMPTS = 10;
+
+  /**
+   * Create a directory inside the given parent directory. The directory is guaranteed to be
+   * newly created, and is not marked for automatic deletion.
+   */
+  public static File createUniqueDirectory(String rootDir, String namePrefix) throws IOException {
+    int attempts = 0;
+    int maxAttempts = MAX_DIR_CREATION_ATTEMPTS;
+    File dir = null;
+    while (dir == null) {
+      attempts += 1;
+      if (attempts > maxAttempts) {
+        throw new IOException("Failed to create a temp directory (under " + rootDir + ") after " +
+                maxAttempts + " attempts!");
+      }
+      try {
+        dir = new File(rootDir, namePrefix + "-" + UUID.randomUUID().toString());
+        if (dir.exists() || !dir.mkdirs()) {
+          dir = null;
+        }
+      } catch(SecurityException e) {
+        dir = null;
+      }
+    }
+
+    return dir.getCanonicalFile();
+  }
+
+  public static void zipDir(String dir2zip, ByteArrayOutputStream baos, ZipOutputStream zos) throws IOException{
+    zipDir(dir2zip, null, baos, zos);
+  }
+
+  /** Zip provided directory. The files which should be zipped can be specified */
+  public static void zipDir(String dir2zip, Set<String> filter, ByteArrayOutputStream baos, ZipOutputStream zos) throws IOException {
+    try {
+      // create a new File object based on the directory we have to zip.
+      File zipDir = new File(dir2zip);
+      // get a listing of the directory content
+      String[] dirList = zipDir.list();
+      byte[] readBuffer = new byte[4096];
+      int bytesIn = 0;
+      //loop through dirList, and zip the files
+      for (String aDirList : dirList) {
+        File f = new File(zipDir, aDirList);
+        if (f.isDirectory()) {
+          //if the File object is a directory, call this
+          //function again to add its content recursively
+          String filePath = f.getPath();
+          zipDir(filePath, baos, zos);
+          //loop again
+          continue;
+        }
+
+        if (filter != null && !filter.contains(f.getName())) {
+          continue;
+        }
+
+        //if we reached here, the File object f was not a directory
+        //create a FileInputStream on top of f
+        FileInputStream fis = new FileInputStream(f);
+        // create a new zip entry
+        ZipEntry anEntry = new ZipEntry(f.getPath());
+        anEntry.setTime(f.lastModified());
+        //place the zip entry in the ZipOutputStream object
+        zos.putNextEntry(anEntry);
+        //now write the content of the file to the ZipOutputStream
+
+        boolean stopEarlyBecauseTooMuchData = false;
+        while ((bytesIn = fis.read(readBuffer)) != -1) {
+          zos.write(readBuffer, 0, bytesIn);
+          if (baos.size() > MAX_SIZE) {
+            stopEarlyBecauseTooMuchData = true;
+            break;
+          }
+        }
+        //close the Stream
+        fis.close();
+        zos.closeEntry();
+
+        if (stopEarlyBecauseTooMuchData) {
+          Log.warn("Zipping stopped because of stopEarlyBecauseTooMuchData");
+          break;
+        }
+      }
+    }
+    catch(Exception e) {
+      Log.warn(e);
+    }
+  }
+
   /**
    * Silently close given files.
    *

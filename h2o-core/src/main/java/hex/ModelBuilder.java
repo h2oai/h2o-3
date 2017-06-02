@@ -749,27 +749,27 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public ValidationMessage[] _messages = new ValidationMessage[0];
   private int _error_count = -1; // -1 ==> init not run yet, for those Jobs that have an init, like ModelBuilder. Note, this counts ONLY errors, not WARNs and etc.
   public int error_count() { assert _error_count >= 0 : "init() not run yet"; return _error_count; }
-  public void hide (String field_name, String message) { message(Log.TRACE, field_name, message); }
-  public void info (String field_name, String message) { message(Log.INFO , field_name, message); }
-  public void warn (String field_name, String message) { message(Log.WARN , field_name, message); }
-  public void error(String field_name, String message) { message(Log.ERRR , field_name, message); _error_count++; }
+  public void hide (String field_name, String message) { message(Log.Level.TRACE, field_name, message); }
+  public void info (String field_name, String message) { message(Log.Level.INFO, field_name, message); }
+  public void warn (String field_name, String message) { message(Log.Level.WARN, field_name, message); }
+  public void error(String field_name, String message) { message(Log.Level.ERROR, field_name, message); _error_count++; }
   public void clearValidationErrors() {
     _messages = new ValidationMessage[0];
     _error_count = 0;
   }
 
-  public void message(byte log_level, String field_name, String message) {
+  public void message(Log.Level log_level, String field_name, String message) {
     _messages = Arrays.copyOf(_messages, _messages.length + 1);
     _messages[_messages.length - 1] = new ValidationMessage(log_level, field_name, message);
 
-    if (log_level == Log.ERRR) _error_count++;
+    if (log_level.equals(Log.Level.ERROR)) _error_count++;
   }
 
  /** Get a string representation of only the ERROR ValidationMessages (e.g., to use in an exception throw). */
   public String validationErrors() {
     StringBuilder sb = new StringBuilder();
     for( ValidationMessage vm : _messages )
-      if( vm._log_level == Log.ERRR )
+      if( vm._log_level.equals(Log.Level.ERROR) )
         sb.append(vm.toString()).append("\n");
     return sb.toString();
   }
@@ -779,17 +779,17 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  the values of other fields, or a WARN or INFO for informative
    *  messages to the user. */
   public static final class ValidationMessage extends Iced {
-    final byte _log_level; // See util/Log.java for levels
+    final Log.Level _log_level; // See util/Log.java for levels
     final String _field_name;
     final String _message;
-    public ValidationMessage(byte log_level, String field_name, String message) {
+    public ValidationMessage(Log.Level log_level, String field_name, String message) {
       _log_level = log_level;
       _field_name = field_name;
       _message = message;
       Log.log(log_level,field_name + ": " + message);
     }
-    public int log_level() { return _log_level; }
-    @Override public String toString() { return Log.LVLS[_log_level] + " on field: " + _field_name + ": " + _message; }
+    public Log.Level log_level() { return _log_level; }
+    @Override public String toString() { return _log_level + " on field: " + _field_name + ": " + _message; }
   }
 
   // ==========================================================================

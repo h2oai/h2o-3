@@ -326,7 +326,7 @@ final public class H2O {
     // Debugging
     //-----------------------------------------------------------------------------------
     /** -log_level=log_level; One of DEBUG, INFO, WARN, ERRR.  Default is INFO. */
-    public String log_level;
+    public Log.Level log_level = Log.Level.INFO;
 
     /** -random_udp_drop, -random_udp_drop=true; test only, randomly drop udp incoming */
     public boolean random_udp_drop;
@@ -410,6 +410,7 @@ final public class H2O {
       parseFailed("Argument " + _lastMatchedFor + " must be an integer (was given '" + a + "')" );
       return 0;
     }
+
     @Override public String toString() { return _s; }
   }
 
@@ -442,11 +443,19 @@ final public class H2O {
       }
       else if (s.matches("port")) {
         i = s.incrementAndCheck(i, args);
-        trgt.port = s.parseInt(args[i]);
+        int portNum = s.parseInt(args[i]);
+        if(portNum < 0 || portNum > 65535){
+          parseFailed("Argument port must be an integer between 0 and 65535");
+        }
+        trgt.port = portNum;
       }
       else if (s.matches("baseport")) {
         i = s.incrementAndCheck(i, args);
-        trgt.baseport = s.parseInt(args[i]);
+        int portNum = s.parseInt(args[i]);
+        if(portNum < 0 || portNum > 65535){
+          parseFailed("Argument baseport must be an integer between 0 and 65535");
+        }
+        trgt.baseport = portNum;
       }
       else if (s.matches("ip")) {
         i = s.incrementAndCheck(i, args);
@@ -521,7 +530,11 @@ final public class H2O {
       }
       else if (s.matches("log_level")) {
         i = s.incrementAndCheck(i, args);
-        trgt.log_level = args[i];
+        try {
+          trgt.log_level = Log.Level.fromString(args[i]);
+        }catch (IllegalArgumentException e){
+          parseFailed("Invalid log level, possible values are:" + Arrays.toString(Log.Level.values()));
+        }
       }
       else if (s.matches("random_udp_drop")) {
         trgt.random_udp_drop = true;
@@ -1500,7 +1513,8 @@ final public class H2O {
    *  without unpacking the jar file and other startup stuff.  */
   private static void printAndLogVersion(String[] arguments) {
     String latestVersion = ARGS.noLatestCheck ? "?" : ABV.getLatestH2OVersion();
-    Log.init(ARGS.log_level, ARGS.quiet);
+    Log.setLevel(ARGS.log_level);
+    Log.setQuiet(ARGS.quiet);
     Log.info("----- H2O started " + (ARGS.client?"(client)":"") + " -----");
     Log.info("Build git branch: " + ABV.branchName());
     Log.info("Build git hash: " + ABV.lastCommitHash());
@@ -1543,15 +1557,17 @@ final public class H2O {
     new GAStartupReportThread().start();
   }
 
-  /** Initializes the local node and the local cloud with itself as the only member. */
-  private static void startLocalNode() {
+  private static void setPID(){
     PID = -1L;
     try {
       String n = ManagementFactory.getRuntimeMXBean().getName();
       int i = n.indexOf('@');
       if( i != -1 ) PID = Long.parseLong(n.substring(0, i));
     } catch( Throwable ignore ) { }
+  }
 
+  /** Initializes the local node and the local cloud with itself as the only member. */
+  private static void startLocalNode() {
     // Figure self out; this is surprisingly hard
     NetworkInit.initializeNetworkSockets();
     // Do not forget to put SELF into the static configuration (to simulate
@@ -1667,7 +1683,9 @@ final public class H2O {
     if(_node_ip_to_index != null) {
       Integer index = _node_ip_to_index.get(ipPort);
       if (index != null) {
-        if(index <= -1 || index >= _memary.length){
+        if(index == -1){
+          return H2O.SELF;
+        } else if(index < -1 || index >= _memary.length){
           throw new RuntimeException("Mapping from node id to node index contains: " + index + ", however this node" +
                   "does not exist!");
         }
@@ -1949,13 +1967,7 @@ final public class H2O {
 
     // Get ice path before loading Log or Persist class
     long time1 = System.currentTimeMillis();
-    String ice = DEFAULT_ICE_ROOT();
-    if( ARGS.ice_root != null ) ice = ARGS.ice_root.replace("\\", "/");
-    try {
-      ICE_ROOT = new URI(ice);
-    } catch(URISyntaxException ex) {
-      throw new RuntimeException("Invalid ice_root: " + ice + ", " + ex.getMessage());
-    }
+    setIceRoot();
 
     // Always print version, whether asked-for or not!
     long time2 = System.currentTimeMillis();
@@ -2015,6 +2027,10 @@ final public class H2O {
           Log.POST(11, ste.toString());
       }
     }
+    // PID information is used inside logger and logger is initialized when
+    // SELF_ADDRESS is not null. We therefore need to set PID before we set SELF_ADDRESS
+    // to avoid having PID set to -1 in the log
+    setPID();
 
     // Epic Hunt for the correct self InetAddress
     long time4 = System.currentTimeMillis();
@@ -2124,6 +2140,16 @@ final public class H2O {
     Log.debug("    Start network services: " + (time10 - time9) + "ms");
     Log.debug("    Cloud up: " + (time11 - time10) + "ms");
     Log.debug("    Start GA: " + (time12 - time11) + "ms");
+  }
+
+  private static void setIceRoot(){
+    String ice = DEFAULT_ICE_ROOT();
+    if( ARGS.ice_root != null ) ice = ARGS.ice_root.replace("\\", "/");
+    try {
+      ICE_ROOT = new URI(ice);
+    } catch(URISyntaxException ex) {
+      throw new RuntimeException("Invalid ice_root: " + ice + ", " + ex.getMessage());
+    }
   }
 
   // Die horribly

@@ -202,4 +202,23 @@ public class StringUtils {
   public static String toString(byte[] bytes, int from, int length) {
     return new String(bytes, from, length, Charsets.UTF_8);
   }
+
+  public static String ofFixedLength(String s, int length) {
+    String r = padRight(s, length);
+    if( r.length() > length ) {
+      int a = Math.max(r.length() - length + 1, 0);
+      int b = Math.max(a, r.length());
+      r = "#" + r.substring(a, b);
+    }
+    return r;
+  }
+
+  private static String padRight(String stringToPad, int size) {
+    StringBuilder strb = new StringBuilder(stringToPad);
+    while( strb.length() < size ) {
+      strb.append(' ');
+    }
+    return strb.toString();
+  }
+
 }
