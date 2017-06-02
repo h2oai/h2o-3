@@ -19,11 +19,9 @@ def stackedensemble_base_models_test():
     2) That passing in a list of models and model_ids results in the same stacked ensemble.
     """
 
-    # Import train and test datasets
-    train = h2o.import_file(path="/Users/me/h2oai/github/build-h2o/smalldata/testng/higgs_train_5k.csv",
+    # Import training set
+    train = h2o.import_file(path=pyunit_utils.locate("smalldata/testng/higgs_train_5k.csv"),
                             destination_frame="higgs_train_5k")
-    #train = h2o.import_file(path=pyunit_utils.locate("smalldata/testng/higgs_train_5k.csv"),
-    #                        destination_frame="higgs_train_5k")
 
     # Identify predictors and response
     x = train.columns
