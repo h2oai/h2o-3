@@ -21,7 +21,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
   // The in-progress model being built
   protected StackedEnsembleModel _model;
 
-
+  public StackedEnsemble(StackedEnsembleModel.StackedEnsembleParameters parms) { super(parms); init(false); }
   public StackedEnsemble(boolean startup_once) { super(new StackedEnsembleModel.StackedEnsembleParameters(),startup_once); }
 
   /*
@@ -50,7 +50,6 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
     if (aModel._output.isBinomialClassifier()) {
       // GLM uses a different column name than the other algos, yay!
       Vec preds = aModelsPredictions.vec(2); // Predictions column names have been changed. . .
-
       levelOneFrame.add(aModel._key.toString(), preds);
     } else if (aModel._output.isClassifier()) {
       throw new H2OIllegalArgumentException("Don't yet know how to stack multinomial classifiers: " + aModel._key);
@@ -149,6 +148,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       // _model._output._model_summary = createModelSummaryTable(model._output);
       _model.update(_job);
       _model.unlock(_job);
+      DKV.remove(levelOneFrame._key);  //Cleanup
 
     } // computeImpl
   }

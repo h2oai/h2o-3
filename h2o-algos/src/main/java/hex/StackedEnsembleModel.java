@@ -105,6 +105,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       Frame basePreds = baseBs.outputFrame(Key.<Frame>make("preds_base_" + this._key.toString() + fr._key), names, domains);
       base_prediction_frames[baseIdx] = basePreds;
       StackedEnsemble.addModelPredictionsToLevelOneFrame(base, basePreds, levelOneFrame);
+      DKV.remove(basePreds._key); //Cleanup
 
       Model.cleanup_adapt(adaptedFrame, fr);
 
@@ -112,9 +113,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     }
 
     levelOneFrame.add(this.responseColumn, adaptFrm.vec(this.responseColumn));
-
     // TODO: what if we're running multiple in parallel and have a name collision?
-    DKV.put(levelOneFrame);
     Log.info("Finished creating \"level one\" frame for scoring: " + levelOneFrame.toString());
 
     // Score the dataset, building the class distribution & predictions
@@ -122,8 +121,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     Model metalearner = this._output._metalearner;
     Frame levelOneAdapted = new Frame(levelOneFrame);
     metalearner.adaptTestForTrain(levelOneAdapted, true, computeMetrics);
-
-    DKV.put(levelOneAdapted);
 
     String[] metaNames = metalearner.makeScoringNames();
     String[][] metaDomains = new String[metaNames.length][];
@@ -134,7 +131,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
     if (computeMetrics) {
       ModelMetrics mmMetalearner = metaBs._mb.makeModelMetrics(metalearner, levelOneFrame, levelOneAdapted, metaBs.outputFrame());
-
       // This has just stored a ModelMetrics object for the (metalearner, preds_levelone) Model/Frame pair.
       // We need to be able to look it up by the (this, fr) pair.
       // The ModelMetrics object for the metalearner will be removed when the metalearner is removed.
@@ -170,7 +166,8 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
   }
 
   public ModelMetrics doScoreMetricsOneFrame(Frame frame, Job job) {
-      this.predictScoreImpl(frame, new Frame(frame), null, job, true);
+      Frame pred = this.predictScoreImpl(frame, new Frame(frame), null, job, true);
+      pred.remove();
       return ModelMetrics.getFromDKV(this, frame);
   }
 
