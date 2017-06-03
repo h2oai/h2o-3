@@ -141,7 +141,10 @@ def gen_module(schema, algo):
     yield "from h2o.estimators.estimator_base import H2OEstimator"
     yield "from h2o.exceptions import H2OValueError"
     yield "from h2o.frame import H2OFrame"
-    yield "from h2o.utils.typechecks import assert_is_type, Enum, numeric"
+    if classname == "H2OStackedEnsembleEstimator":
+        yield "from h2o.utils.typechecks import assert_is_type, Enum, numeric, is_type"
+    else:
+        yield "from h2o.utils.typechecks import assert_is_type, Enum, numeric"
     if extra_imports:
         yield reindent_block(extra_imports, 0) + ""
     yield ""
@@ -211,9 +214,17 @@ def gen_module(schema, algo):
             yield "        assert_is_type(%s, None, numeric, [numeric])" % pname
         elif pname in {"checkpoint", "pretrained_autoencoder"}:
             yield "        assert_is_type(%s, None, str, H2OEstimator)" % pname
+        elif pname in {"base_models"}:
+            yield "         if is_type(base_models,[H2OEstimator]):"
+            yield      "            %s = [b.model_id for b in %s]" % (pname,pname)
+            yield      "            self._parms[\"%s\"] = %s" % (sname, pname)
+            yield "         else:"
+            yield "            assert_is_type(%s, None, %s)" % (pname, ptype)
+            yield "            self._parms[\"%s\"] = %s" % (sname, pname)
         else:
             yield "        assert_is_type(%s, None, %s)" % (pname, ptype)
-        yield "        self._parms[\"%s\"] = %s" % (sname, pname)
+        if pname not in {"base_models"}:
+            yield "        self._parms[\"%s\"] = %s" % (sname, pname)
         yield ""
         yield ""
     if class_extra:
