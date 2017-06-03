@@ -1,5 +1,4 @@
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-
+apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'java'
 apply plugin: 'com.github.hierynomus.license'
 
@@ -24,6 +23,8 @@ dependencies {
     }
     compile project(":h2o-parquet-parser")
     compile "org.slf4j:slf4j-log4j12:1.7.5"
+
+    
 }
 
 //
@@ -49,39 +50,31 @@ for (comp in optionalComponents) {
     
 }
 
-task shadowJar(type: ShadowJar) {
-    configurations = [ project.configurations.compile ]
-    mergeServiceFiles()
-    classifier = ''
-    // CDH 5.3.0 provides joda-time v1.6 which is too old, shadow the library instead
-    if (!project.hasProperty("jacocoCoverage")) {
-        relocate 'org.joda.time', 'ai.h2o.org.joda.time'
-    }
-    exclude 'META-INF/*.DSA'
-    exclude 'META-INF/*.SF'
-    exclude 'synchronize.properties'
-    exclude 'uploader.properties'
-    exclude 'test.properties'
-    exclude 'cockpitlite.properties'
-    exclude 'devpay_products.properties'
-    manifest {
-        attributes 'Main-Class': 'water.H2OApp'
-    }
-
-    into("META-INF") {
-        from("${buildDir.absolutePath}/reports/license"){
-            include "dependency-license.xml"
-        }
-    }
-}
-
-configurations{
-    shadow
+shadowJar {
+  mergeServiceFiles()
+  classifier = ''
+  // CDH 5.3.0 provides joda-time v1.6 which is too old, shadow the library instead
+  if (!project.hasProperty("jacocoCoverage")) {
+    relocate 'org.joda.time', 'ai.h2o.org.joda.time'
+  }
+  exclude 'META-INF/*.DSA'
+  exclude 'META-INF/*.SF'
+  exclude 'synchronize.properties'
+  exclude 'uploader.properties'
+  exclude 'test.properties'
+  exclude 'cockpitlite.properties'
+  exclude 'devpay_products.properties'
+  manifest {
+    attributes 'Main-Class': 'water.H2OApp'
+  }
+  transform(com.github.jengelman.gradle.plugins.shadow.transformers.IncludeResourceTransformer.class) {
+    file = file("${buildDir}/reports/license/dependency-license.xml")
+    resource = "META-INF/license/h2o-depenencies-licenses.xml"
+  }
 }
 
 artifacts {
   archives shadowJar
-  shadow shadowJar
 }
 
 //
@@ -100,6 +93,7 @@ task copyJar(type: Copy) {
     rename { it.replace(assembly, allInOne) }
 }
 
+// Include licences
 shadowJar.dependsOn(project.tasks.getByName('downloadLicenses'))
 // Execute always copyJar
 shadowJar.finalizedBy copyJar
