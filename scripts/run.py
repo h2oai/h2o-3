@@ -333,6 +333,7 @@ class H2OCloudNode(object):
         classpath = self.h2o_jar if self.cp == "" else self.h2o_jar + classpath_sep + self.cp
         cmd = [java,
                # "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005",
+               "-XX:OnOutOfMemoryError='kill -9 %p'",
                "-Xmx" + self.xmx,
                "-ea",
                "-cp", classpath,
@@ -388,7 +389,7 @@ class H2OCloudNode(object):
                                           cwd=there)
             os.chdir(cwd)
         else:
-            try: 
+            try:
               self.child = subprocess.Popen(args=cmd,
                                             stdout=f,
                                             stderr=subprocess.STDOUT,
@@ -942,7 +943,7 @@ class Test(object):
             return ["phantomjs", test_name, "--host", ip + ":" + str(port), "--timeout", str(g_phantomjs_to),
                     "--packs", g_phantomjs_packs, "--perf", g_date, str(g_build_id), g_git_hash, g_git_branch,
                    str(g_ncpu), g_os, g_job_name, g_output_dir, "--excludeFlows", self.exclude_flows]
-        
+
         else:
             return ["phantomjs", test_name, "--host", ip + ":" + str(port), "--timeout", str(g_phantomjs_to),
                     "--packs", g_phantomjs_packs, "--excludeFlows", self.exclude_flows]
