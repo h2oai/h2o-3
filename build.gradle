@@ -17,7 +17,7 @@ buildscript {
         classpath 'com.github.townsfolk:gradle-release:1.2'
         classpath 'com.adaptc.gradle:nexus-workflow:0.6'
         classpath 'org.testng:testng:6.8'
-        classpath "be.insaneprogramming.gradle:animalsniffer-gradle-plugin:+"
+        classpath 'be.insaneprogramming.gradle:animalsniffer-gradle-plugin:+'
         classpath 'me.champeau.gradle:jmh-gradle-plugin:0.3.1'
         classpath 'net.ltgt.gradle:gradle-apt-plugin:0.10'
         // Note: Analyze unused/undefined dependencies for each module - good for debugging
@@ -112,7 +112,8 @@ ext {
 
     // Projects with micro-benchmarks
     ubenchProjects = [
-      project(':h2o-core')
+      project(':h2o-core'),
+      project(':h2o-algos')
     ]
     
     // Apt required
@@ -309,8 +310,8 @@ apply from: "gradle/s3sync.gradle"
 // See ~jenkins/bin/buildh2odev.sh.
 task buildH2oDevDist(type: Exec) {
     group='Dist'
-    H2OBuildVersion bv = new H2OBuildVersion(rootDir, version);
-    def buildTimeMillis = System.currentTimeMillis();
+    H2OBuildVersion bv = new H2OBuildVersion(rootDir, version)
+    def buildTimeMillis = System.currentTimeMillis()
     def buildTimeIso8601 = new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone("UTC"))
     def buildTimeLocal = new Date()
     def projectVersion = bv.getProjectVersion()

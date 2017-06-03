@@ -23,10 +23,6 @@ import java.util.ArrayList;
  **/
 abstract public class Log {
 
-  private static org.apache.log4j.Logger _logger = null;
-
-  static String LOG_DIR = null;
-
   public static final byte FATAL= 0;
   public static final byte ERRR = 1;
   public static final byte WARN = 2;
@@ -34,12 +30,15 @@ abstract public class Log {
   public static final byte DEBUG= 4;
   public static final byte TRACE= 5;
   public static final String[] LVLS = { "FATAL", "ERRR", "WARN", "INFO", "DEBUG", "TRACE" };
+  static String LOG_DIR = null;
   static int _level=INFO;
   static boolean _quiet = false;
-
+  private static org.apache.log4j.Logger _logger = null;
   // Common pre-header
   private static String _preHeader;
-
+  // A little bit of startup buffering
+  private static ArrayList<String> INIT_MSGS = new ArrayList<>();
+  
   public static byte valueOf( String slvl ) {
     if( slvl == null ) return -1;
     slvl = slvl.toLowerCase();
@@ -51,23 +50,39 @@ abstract public class Log {
     if( slvl.startsWith("trace") ) return TRACE;
     return -1;
   }
-  public static void init( String slvl, boolean quiet ) {
-    int lvl = valueOf(slvl);
+  
+  public static void init(String sLvl, boolean quiet) {
+    int lvl = valueOf(sLvl);
     if( lvl != -1 ) _level = lvl;
     _quiet = quiet;
   }
   
+  public static void setLogLevel(String sLvl, boolean quiet) {
+    init(sLvl, quiet);
+  }
+  
+  public static void setLogLevel(String sLvl) {
+    setLogLevel(sLvl, true);
+  }
+
   public static void trace( Object... objs ) { log(TRACE,objs); }
+
   public static void debug( Object... objs ) { log(DEBUG,objs); }
+  
   public static void info ( Object... objs ) { log(INFO ,objs); }
+  
   public static void warn ( Object... objs ) { log(WARN ,objs); }
+  
   public static void err  ( Object... objs ) { log(ERRR ,objs); }
+  
   public static void err(Throwable ex) {
     StringWriter sw = new StringWriter();
     ex.printStackTrace(new PrintWriter(sw));
     err(sw.toString());
   }
+  
   public static void fatal( Object... objs ) { log(FATAL,objs); }
+  
   public static void log  ( int level, Object... objs ) { if( _level >= level ) write(level, objs); }
 
   public static void httpd( String msg ) {
@@ -151,9 +166,6 @@ abstract public class Log {
       LVLS[lvl]+": ";
     return s;
   }
-
-  // A little bit of startup buffering
-  private static ArrayList<String> INIT_MSGS = new ArrayList<>();
 
   public static void flushStdout() {
     if (INIT_MSGS != null) {
@@ -457,6 +469,9 @@ abstract public class Log {
     }
   }
 
-  public static void setQuiet(boolean q) { _quiet = q; }
   public static boolean getQuiet() { return _quiet; }
+  
+  public static void setQuiet(boolean q) {
+    _quiet = q;
+  }
 }
