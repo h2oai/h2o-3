@@ -91,7 +91,7 @@ h2o.glrm <- function(training_frame, cols = NULL,
 {
 
   # Required args: training_frame
-  if( missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
+  if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
   # Training_frame must be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
      tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -212,7 +212,7 @@ h2o.glrm <- function(training_frame, cols = NULL,
   stop("Argument user_x must either be null or a valid user-defined starting X matrix.")
         
   # Error check and build model
-  .h2o.modelJob('glrm', parms, h2oRestApiVersion=3) 
+  .h2o.modelJob('glrm', parms, h2oRestApiVersion = 3) 
 }
 
 #' Reconstruct Training Data via H2O GLRM Model

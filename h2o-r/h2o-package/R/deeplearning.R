@@ -229,17 +229,17 @@ h2o.deeplearning <- function(x, y, training_frame,
                              elastic_averaging_regularization = 0.001
                              ) 
 {
-  #If x is missing, then assume user wants to use all columns as features.
-  if(missing(x)){
-     if(is.numeric(y)){
-         x <- setdiff(col(training_frame),y)
-     }else{
-         x <- setdiff(colnames(training_frame),y)
+  # If x is missing, then assume user wants to use all columns as features.
+  if (missing(x)) {
+     if (is.numeric(y)) {
+         x <- setdiff(col(training_frame), y)
+     } else {
+         x <- setdiff(colnames(training_frame), y)
      }
   }
 
   # Required args: training_frame
-  if( missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
+  if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
   # Training_frame must be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
      tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -436,7 +436,7 @@ h2o.deeplearning <- function(x, y, training_frame,
   if (!missing(elastic_averaging_regularization))
     parms$elastic_averaging_regularization <- elastic_averaging_regularization
   # Error check and build model
-  .h2o.modelJob('deeplearning', parms, h2oRestApiVersion=3) 
+  .h2o.modelJob('deeplearning', parms, h2oRestApiVersion = 3) 
 }
 
 #' Anomaly Detection via H2O Deep Learning Model

@@ -123,17 +123,17 @@ h2o.randomForest <- function(x, y, training_frame,
                              calibration_frame = NULL
                              ) 
 {
-  #If x is missing, then assume user wants to use all columns as features.
-  if(missing(x)){
-     if(is.numeric(y)){
-         x <- setdiff(col(training_frame),y)
-     }else{
-         x <- setdiff(colnames(training_frame),y)
+  # If x is missing, then assume user wants to use all columns as features.
+  if (missing(x)) {
+     if (is.numeric(y)) {
+         x <- setdiff(col(training_frame), y)
+     } else {
+         x <- setdiff(colnames(training_frame), y)
      }
   }
 
   # Required args: training_frame
-  if( missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
+  if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
   # Training_frame must be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
      tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -241,5 +241,5 @@ h2o.randomForest <- function(x, y, training_frame,
   if (!missing(calibration_frame))
     parms$calibration_frame <- calibration_frame
   # Error check and build model
-  .h2o.modelJob('drf', parms, h2oRestApiVersion=3) 
+  .h2o.modelJob('drf', parms, h2oRestApiVersion = 3) 
 }

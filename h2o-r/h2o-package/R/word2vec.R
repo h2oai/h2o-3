@@ -33,7 +33,7 @@ h2o.word2vec <- function(training_frame = NULL,
 {
 
   # training_frame is required if pre_trained frame is not specified
-  if( missing(pre_trained) && missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
+  if (missing(pre_trained) && missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
   # training_frame must be a key or an H2OFrame object
   if (!missing(training_frame) && !is.H2OFrame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -71,5 +71,5 @@ h2o.word2vec <- function(training_frame = NULL,
   if (!missing(pre_trained))
     parms$pre_trained <- pre_trained
   # Error check and build model
-  .h2o.modelJob('word2vec', parms, h2oRestApiVersion=3) 
+  .h2o.modelJob('word2vec', parms, h2oRestApiVersion = 3) 
 }

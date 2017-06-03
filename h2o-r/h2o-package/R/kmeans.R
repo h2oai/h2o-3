@@ -70,7 +70,7 @@ h2o.kmeans <- function(training_frame, x,
 {
 
   # Required args: training_frame
-  if( missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
+  if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
   # Training_frame must be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
      tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -156,5 +156,5 @@ h2o.kmeans <- function(training_frame, x,
   }
         
   # Error check and build model
-  .h2o.modelJob('kmeans', parms, h2oRestApiVersion=3) 
+  .h2o.modelJob('kmeans', parms, h2oRestApiVersion = 3) 
 }

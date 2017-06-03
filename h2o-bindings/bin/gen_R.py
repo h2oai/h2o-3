@@ -111,12 +111,12 @@ def gen_module(schema, algo, module):
     yield ",\n".join(list)
     yield indent(") \n{", 17 + len(module))
     if algo in ["deeplearning", "deepwater", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
-        yield "  #If x is missing, then assume user wants to use all columns as features."
-        yield "  if(missing(x)){"
-        yield "     if(is.numeric(y)){"
-        yield "         x <- setdiff(col(training_frame),y)"
-        yield "     }else{"
-        yield "         x <- setdiff(colnames(training_frame),y)"
+        yield "  # If x is missing, then assume user wants to use all columns as features."
+        yield "  if (missing(x)) {"
+        yield "     if (is.numeric(y)) {"
+        yield "         x <- setdiff(col(training_frame), y)"
+        yield "     } else {"
+        yield "         x <- setdiff(colnames(training_frame), y)"
         yield "     }"
         yield "  }"
         if algo == "gbm":
@@ -140,7 +140,7 @@ def gen_module(schema, algo, module):
     yield ""
     if algo == "word2vec":
         yield "  # training_frame is required if pre_trained frame is not specified"
-        yield "  if( missing(pre_trained) && missing(training_frame) ) stop(\"argument \'training_frame\' is missing, with no default\")"
+        yield "  if (missing(pre_trained) && missing(training_frame)) stop(\"argument \'training_frame\' is missing, with no default\")"
         yield "  # training_frame must be a key or an H2OFrame object"
         yield "  if (!missing(training_frame) && !is.H2OFrame(training_frame))"
         yield "    tryCatch(training_frame <- h2o.getFrame(training_frame),"
@@ -155,7 +155,7 @@ def gen_module(schema, algo, module):
         yield "             })"
     else:
         yield "  # Required args: training_frame"
-        yield "  if( missing(training_frame) ) stop(\"argument \'training_frame\' is missing, with no default\")"
+        yield "  if (missing(training_frame)) stop(\"argument \'training_frame\' is missing, with no default\")"
         # yield "  if( missing(validation_frame) ) validation_frame = NULL"
         yield "  # Training_frame must be a key or an H2OFrame object"
         yield "  if (!is.H2OFrame(training_frame))"
@@ -163,7 +163,7 @@ def gen_module(schema, algo, module):
         yield "           error = function(err) {"
         yield "             stop(\"argument \'training_frame\' must be a valid H2OFrame or key\")"
         yield "           })"
-    if algo not in ["stackedensemble", "word2vec"]:
+    if algo not in ["word2vec"]:
         yield "  # Validation_frame must be a key or an H2OFrame object"
         yield "  if (!is.null(validation_frame)) {"
         yield "     if (!is.H2OFrame(validation_frame))"
@@ -203,9 +203,18 @@ def gen_module(schema, algo, module):
         yield "      parms$model_id <- destination_key"
         yield "    }"
         yield "  }"
+    #if algo == "stackedensemble":
+    #    yield "  if (!missing(model_id))"
+    #    yield "    parms$model_id <- model_id"
     if algo == "stackedensemble":
-        yield "  if (!missing(model_id))"
-        yield "    parms$model_id <- model_id"
+        yield " if (length(base_models) == 0) stop('base_models is empty')"
+        yield "  # If base_models contains models instead of ids, replace with model id"
+        yield "  for (i in 1:length(base_models)) {"
+        yield "    if (inherits(base_models[[i]], 'H2OModel')) {"
+        yield "      base_models[[i]] <- base_models[[i]]@model_id"
+        yield "    }"
+        yield "  }"
+        yield " "
     for param in schema["parameters"]:
         if param["name"] in ["ignored_columns", "response_column", "training_frame", "max_confusion_matrix_size"]:
             continue
@@ -244,7 +253,7 @@ def gen_module(schema, algo, module):
             yield "%s" % line
     if algo != "glm":
         yield "  # Error check and build model"
-        yield "  .h2o.modelJob('%s', parms, h2oRestApiVersion=%d) \n}" % (algo, 99 if algo in ["svd", "stackedensemble"] else 3)
+        yield "  .h2o.modelJob('%s', parms, h2oRestApiVersion = %d) \n}" % (algo, 99 if algo in ["svd", "stackedensemble"] else 3)
     if help_afterword:
         lines = help_afterword.split("\n")
         for line in lines:
