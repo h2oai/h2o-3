@@ -839,13 +839,20 @@ When you are running H2O on Hadoop, H2O tries to determine the home HDFS directo
 
 Each h2odriver.jar file is built with a specific Hadoop distribution so in order to have a working HDFS connection download the h2odriver.jar file for your Hadoop distribution.
 
-		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-cdh5.2.zip
-		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-cdh5.3.zip
-		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.1.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-cdh5.4.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-cdh5.5.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-cdh5.6.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-cdh5.7.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-cdh5.8.zip
 		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.2.zip
-    	wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.3.zip
-		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr4.0.1.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.3.zip
+    	wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.4.zip
+    	wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.5.zip
+    	wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.6.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr4.0.zip
 		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr5.0.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr5.1.zip
+		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-iop4.2.zip
 
 	**Note**: Enter only one of the above commands.
 
