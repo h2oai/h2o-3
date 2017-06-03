@@ -112,8 +112,15 @@ automl.args.test <- function() {
                      max_runtime_secs = max_runtime_secs,
                      project_name = "aml9")
   amodel <- h2o.getModel(tail(aml9@leaderboard, 1)$model_id)
-  amodel_fold_column <- amodel@parameters$fold_column$column_name
-  expect_equal(amodel_fold_column, fold_column)
+  if(grepl("^StackedEnsemble",amodel@model_id)){
+    print("Last model in leaderboard is Stacked Ensemble. Will need to use second to last for fold_column test")
+    amodel <- h2o.getModel(tail(aml9@leaderboard, 2)$model_id)
+    amodel_fold_column <- amodel@parameters$fold_column$column_name
+    expect_equal(amodel_fold_column, fold_column)
+  }else{
+    amodel_fold_column <- amodel@parameters$fold_column$column_name
+    expect_equal(amodel_fold_column, fold_column)
+  }
   
   print("Check weights_column")
   aml10 <- h2o.automl(x = x, y = y, 
@@ -122,8 +129,15 @@ automl.args.test <- function() {
                       max_runtime_secs = max_runtime_secs,
                       project_name = "aml10")
   amodel <- h2o.getModel(tail(aml10@leaderboard, 1)$model_id)
-  amodel_weights_column <- amodel@parameters$weights_column$column_name
-  expect_equal(amodel_weights_column, weights_column)
+  if(grepl("^StackedEnsemble",amodel@model_id)){
+      print("Last model in leaderboard is Stacked Ensemble. Will need to use second to last for weights_column test")
+      amodel <- h2o.getModel(tail(aml10@leaderboard, 2)$model_id)
+      amodel_weights_column <- amodel@parameters$weights_column$column_name
+      expect_equal(amodel_weights_column, weights_column)
+  }else{
+      amodel_weights_column <- amodel@parameters$weights_column$column_name
+      expect_equal(amodel_weights_column, weights_column)
+  }
   
   print("Check fold_colum and weights_column")
   aml11 <- h2o.automl(x = x, y = y, 
@@ -133,10 +147,19 @@ automl.args.test <- function() {
                       max_runtime_secs = max_runtime_secs,
                       project_name = "aml11")
   amodel <- h2o.getModel(tail(aml11@leaderboard, 1)$model_id)
-  amodel_fold_column <- amodel@parameters$fold_column$column_name
-  expect_equal(amodel_fold_column, fold_column)
-  amodel_weights_column <- amodel@parameters$weights_column$column_name
-  expect_equal(amodel_weights_column, weights_column)
+  if(grepl("^StackedEnsemble",amodel@model_id)){
+      print("Last model in leaderboard is Stacked Ensemble. Will need to use second to last for fold/weight column test")
+      amodel <- h2o.getModel(tail(aml11@leaderboard, 2)$model_id)
+      amodel_fold_column <- amodel@parameters$fold_column$column_name
+      expect_equal(amodel_fold_column, fold_column)
+      amodel_weights_column <- amodel@parameters$weights_column$column_name
+      expect_equal(amodel_weights_column, weights_column)
+  }else{
+      amodel_fold_column <- amodel@parameters$fold_column$column_name
+      expect_equal(amodel_fold_column, fold_column)
+      amodel_weights_column <- amodel@parameters$weights_column$column_name
+      expect_equal(amodel_weights_column, weights_column)
+  }
   
 }
 
