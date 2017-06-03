@@ -40,8 +40,10 @@ Additional Requirements
 
 -  **Hadoop**: Hadoop is not required to run H2O unless you want to deploy H2O on a Hadoop cluster. Supported versions are listed on the `Download page <http://www.h2o.ai/download/>`_ (when you select the Install on Hadoop tab) and include:
 
-   -  Cloudera CDH 5.2 or later (5.3 is recommended)
-   -  Hortonworks HDP 2.1 or later
+   -  Cloudera CDH 5.4 or later
+   -  Hortonworks HDP 2.2 or later
+   -  MapR 4.0 or later
+   -  IBM Open Platform 4.2
 
   Refer to the :ref:`on-hadoop` section for detailed information.
 
@@ -410,14 +412,11 @@ This section describes how to use H2O on Hadoop.
 Supported Versions
 ~~~~~~~~~~~~~~~~~~
 
--  CDH 5.2
--  CDH 5.3
 -  CDH 5.4
 -  CDH 5.5
 -  CDH 5.6
 -  CDH 5.7
 -  CDH 5.8
--  HDP 2.1
 -  HDP 2.2
 -  HDP 2.3
 -  HDP 2.4
@@ -425,6 +424,7 @@ Supported Versions
 -  MapR 4.0
 -  MapR 5.0
 -  MapR 5.1
+-  IOP 4.2
 
 **Important Points to Remember**:
 
