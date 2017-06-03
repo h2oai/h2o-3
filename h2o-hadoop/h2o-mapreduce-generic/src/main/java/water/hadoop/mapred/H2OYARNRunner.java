@@ -7,7 +7,7 @@ import org.apache.hadoop.mapred.ClientCache;
 import org.apache.hadoop.mapred.ResourceMgrDelegate;
 import org.apache.hadoop.mapred.YARNRunner;
 import org.apache.hadoop.mapreduce.MRJobConfig;
-import org.apache.hadoop.mapreduce.v2.app.H2OMRAppMaster;
+import org.apache.hadoop.mapreduce.v2.app.MRAppMaster;
 import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.yarn.api.records.ApplicationSubmissionContext;
 import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
@@ -28,7 +28,10 @@ public class H2OYARNRunner extends YARNRunner {
 
   private static final Log LOG = LogFactory.getLog(H2OYARNRunner.class);
 
-  private static final String APPLICATION_MASTER_CLASS = H2OMRAppMaster.class.getName();
+  // Here is place which can override default application master
+  // to replace it via H2O App master
+  private static final Class NEW_APP_MASTER_CLASS = MRAppMaster.class;
+  private static final Class DEFAULT_APP_MASTER_CLASS = MRAppMaster.class;
 
   public H2OYARNRunner(Configuration conf) {
     super(conf);
@@ -54,14 +57,16 @@ public class H2OYARNRunner extends YARNRunner {
     ApplicationSubmissionContext appContext = super.createApplicationSubmissionContext(jobConf, jobSubmitDir, ts);
     appContext.setApplicationType("H2O");
     // Modify MRAppMaster commands to point to our master
-    LOG.info("Setting MRAppMaster to " + H2OMRAppMaster.class.toString());
-    ContainerLaunchContext origClc = appContext.getAMContainerSpec();
-    ContainerLaunchContext newClc = ContainerLaunchContext.newInstance(
-        origClc.getLocalResources(), origClc.getEnvironment(),
-        replaceMRAppMaster(origClc.getCommands()),
-        null, origClc.getTokens(), origClc.getApplicationACLs());
-    LOG.info(newClc);
-    appContext.setAMContainerSpec(newClc);
+    if (replaceDefaultAppMaster()) {
+      LOG.info("Setting MRAppMaster to " + NEW_APP_MASTER_CLASS.getName().toString());
+      ContainerLaunchContext origClc = appContext.getAMContainerSpec();
+      ContainerLaunchContext newClc = ContainerLaunchContext.newInstance(
+          origClc.getLocalResources(), origClc.getEnvironment(),
+          replaceMRAppMaster(origClc.getCommands()),
+          null, origClc.getTokens(), origClc.getApplicationACLs());
+      LOG.info(newClc);
+      appContext.setAMContainerSpec(newClc);
+    }
     // And return modified context
     return appContext;
   }
@@ -70,11 +75,15 @@ public class H2OYARNRunner extends YARNRunner {
     Vector<String> args = new Vector<String>(8);
     for (String cmd : commands) {
       if (cmd.contains(MRJobConfig.APPLICATION_MASTER_CLASS)) {
-        cmd = cmd.replace(MRJobConfig.APPLICATION_MASTER_CLASS, APPLICATION_MASTER_CLASS);
+        cmd = cmd.replace(MRJobConfig.APPLICATION_MASTER_CLASS, NEW_APP_MASTER_CLASS.getName());
       }
       args.add(cmd);
     }
     return args;
+  }
+
+  private static boolean replaceDefaultAppMaster() {
+    return NEW_APP_MASTER_CLASS != DEFAULT_APP_MASTER_CLASS;
   }
 }
 
