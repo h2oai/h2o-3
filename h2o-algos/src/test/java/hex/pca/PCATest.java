@@ -22,15 +22,13 @@ import water.util.FrameUtils;
 
 import java.util.concurrent.ExecutionException;
 
-import static hex.svd.SVDImplementation.*;
-
 @RunWith(Parameterized.class)
 public class PCATest extends TestUtil {
   public static final double TOLERANCE = 1e-6;
 
   @Parameters
   public static SVDImplementation[] parametersForSvdImplementation() {
-    return new SVDImplementation[]{JAMA, MTJ, EVD_MTJ_DENSEMATRIX, EVD_MTJ_SYMM};
+    return SVDImplementation.values();
   }
 
   @Parameter
