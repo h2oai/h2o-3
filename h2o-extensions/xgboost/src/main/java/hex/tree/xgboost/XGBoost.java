@@ -48,6 +48,12 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     return haveBackend() ? BuilderVisibility.Stable : BuilderVisibility.Experimental;
   }
 
+  private static String XGBOOST_MIN_REQUIREMENTS =
+      "Xgboost (enabled GPUs) needs: \n"
+      + "  - CUDA 8.0\n"
+      + "XGboost (minimal version) needs: \n"
+      + "  - no req\n";
+
   //
   // FIXME: moved into XGBoost core extension (see PUBDEV-4548)
   //
@@ -59,12 +65,12 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         Log.info("Found XGBoost backend with library: " + libName);
         return true;
       } else {
-        Log.warn("Cannot get XGBoost backend!");
+        Log.warn("Cannot get XGBoost backend!" + XGBOOST_MIN_REQUIREMENTS);
         return false;
       }
     } catch (IOException e) {
       // Ups no lib loaded or load failed
-      Log.warn("Cannot initialize XGBoost backend!", e);
+      Log.warn("Cannot initialize XGBoost backend! " + XGBOOST_MIN_REQUIREMENTS, e);
       return false;
     }
   }
