@@ -333,7 +333,7 @@ class H2OCloudNode(object):
         classpath = self.h2o_jar if self.cp == "" else self.h2o_jar + classpath_sep + self.cp
         cmd = [java,
                # "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005",
-               "-XX:OnOutOfMemoryError=\"kill -9 %p\"",
+               "-XX:OnOutOfMemoryError=kill -9 %p",
                "-Xmx" + self.xmx,
                "-ea",
                "-cp", classpath,
