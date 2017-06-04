@@ -504,10 +504,12 @@ public class Leaderboard extends Keyed<Leaderboard> {
           "%s"};
 
   public static final TwoDimTable makeTwoDimTable(String tableHeader, String sort_metric, String[] other_metric, int length) {
+    assert sort_metric != null : "sort_metrics needs to be always specified!";
+    
     String[] rowHeaders = new String[length];
     for (int i = 0; i < length; i++) rowHeaders[i] = "" + i;
 
-    if(sort_metric.equals("mean_per_class_error")){ //Multinomial
+    if ("mean_per_class_error".equals(sort_metric)){ //Multinomial
       return new TwoDimTable(tableHeader,
               "models sorted in order of " + sort_metric + ", best first",
               rowHeaders,
@@ -515,7 +517,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
               Leaderboard.colTypesMultinomial,
               Leaderboard.colFormatsMultinomial,
               "#");
-    }else if(sort_metric.equals("auc")){ //Binomial
+    } else if("auc".equals(sort_metric)){ //Binomial
       return new TwoDimTable(tableHeader,
               "models sorted in order of " + sort_metric + ", best first",
               rowHeaders,
