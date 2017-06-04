@@ -504,7 +504,8 @@ public class Leaderboard extends Keyed<Leaderboard> {
           "%s"};
 
   public static final TwoDimTable makeTwoDimTable(String tableHeader, String sort_metric, String[] other_metric, int length) {
-    assert sort_metric != null : "sort_metrics needs to be always specified!";
+    assert sort_metric != null || (sort_metric == null && length == 0) :
+        "sort_metrics needs to be always not-null for non-empty array!";
     
     String[] rowHeaders = new String[length];
     for (int i = 0; i < length; i++) rowHeaders[i] = "" + i;
