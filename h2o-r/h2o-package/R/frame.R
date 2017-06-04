@@ -3933,14 +3933,15 @@ h2o.isax <- function(x, num_words, max_cardinality, optimize_card = FALSE){
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
-#' fr2 <- h2o.fillna(fr,"forward",0,2)
+#' fr.with.nas = h2o.createFrame(categorical_fraction=0.0,missing_fraction=0.7,rows=6,cols=2,seed=123)
+#' fr <- h2o.fillna(fr.with.nas, "forward", axis=1, maxlen=2L)
 #' }
 #' @export
 h2o.fillna <- function(x, method="forward", axis=1, maxlen=1L) {
   if(! axis %in% c(1,2)) stop("axis must be 1 or 2")
   if(axis == 2) axis_arg=0 else axis_arg=1
   if(! method %in% c("forward","backward")) stop("method must be forward or backward")
-  if(! is.integer(maxlen)) stop("max len must be an integer")
+  if(! is.integer(maxlen)) stop("max len must be an integer (e.g., 2L)")
   .newExpr("h2o.fillna", x, .quote(method), axis_arg, maxlen)
 }
 
