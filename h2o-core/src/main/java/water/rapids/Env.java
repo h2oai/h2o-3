@@ -195,6 +195,7 @@ public class Env extends Iced {
     init(new AstCorrelation());
     init(new AstDistance());
     init(new AstHist());
+    init(new AstFillNA());
     init(new AstImpute());
     init(new AstKFold());
     init(new AstMode());
