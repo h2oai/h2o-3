@@ -593,7 +593,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
   @Override
   protected double[] score0(double[] data, double[] preds) {
-    return score0(data, preds, 1, 0);
+    return score0(data, preds, 0);
   }
 
   /**
@@ -690,7 +690,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
    * @return preds, can contain NaNs
    */
   @Override
-  public double[] score0(double[] data, double[] preds, double weight, double offset) {
+  public double[] score0(double[] data, double[] preds, double offset) {
     int mb=0;
     int n=1;
 

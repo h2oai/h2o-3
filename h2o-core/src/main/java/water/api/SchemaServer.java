@@ -21,6 +21,7 @@ public class SchemaServer {
 
   private static final int HIGHEST_SUPPORTED_VERSION = 4;
   private static final int EXPERIMENTAL_VERSION = 99;
+  private static final int STABLE_VERSION = 3;
   private static int LATEST_VERSION = -1;
   private static boolean schemas_registered = false;
 
@@ -65,6 +66,8 @@ public class SchemaServer {
    * releases.
    */
   public static int getExperimentalVersion() { return EXPERIMENTAL_VERSION; }
+
+  public static int getStableVersion() { return STABLE_VERSION; }
 
 
   public static void checkIfRegistered(Schema schema) {

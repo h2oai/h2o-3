@@ -1,0 +1,4 @@
+hex.schemas.XGBoostModelV3
+hex.schemas.XGBoostModelV3$XGBoostModelOutputV3
+hex.schemas.XGBoostV3
+hex.schemas.XGBoostV3$XGBoostParametersV3

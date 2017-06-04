@@ -2,7 +2,6 @@ apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'java'
 
 description = "H2O Application Assembly"
-
 // Exclude unwanted dependencies
 configurations {
     compile.exclude module: 'junit'
@@ -23,8 +22,6 @@ dependencies {
     }
     compile project(":h2o-parquet-parser")
     compile "org.slf4j:slf4j-log4j12:1.7.5"
-
-    
 }
 
 //
@@ -44,7 +41,7 @@ for (comp in optionalComponents) {
         project.ext.set(compPropVersionName, compVersion)
     }
     if (compEnabled || project.hasProperty(compPropName) && project.property(compPropName)) {
-        logger.lifecycle("== Using optional component: ${compName}, version ${project.findProperty(compPropVersionName)}")
+        logger.lifecycle("== ${project.path}: Using optional component: ${compName}, version ${project.findProperty(compPropVersionName)}")
         apply from: "$rootDir/gradle/components/${compName}.gradle"
     }
     

@@ -13,7 +13,7 @@ configurations {
 
 dependencies {
     // Dependency on shared model support which is served by web backend as a file
-    publishedJars project(path: ':h2o-genmodel', configuration: 'shadow')
+    publishedJars project(path: ':h2o-assemblies:genmodel', configuration: 'shadow')
 }
 
 static def getOsSpecificCommandLine(args) {
@@ -112,7 +112,7 @@ task copyFlowToWebRoot(type: Copy) {
 
 task copyGenModelJarToWebRoot(type: Copy) {
   from {
-      configurations.publishedJars.filter { it.name.startsWith("h2o-genmodel") }
+      configurations.publishedJars.filter { it.name.contains("genmodel") }
   }
   into "src/main/resources/www/${h2oRESTApiVersion}/"
   rename { filename -> "h2o-genmodel.jar"}
@@ -124,7 +124,6 @@ task copyDeepWaterJarToWebRoot(type: Copy) {
   }
   into "src/main/resources/www/${h2oRESTApiVersion}/"
 }
-
 
 task deleteBowerModules(type: Delete) {
   delete 'lib'

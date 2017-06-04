@@ -10,6 +10,11 @@ import java.nio.ByteBuffer;
 public class GlrmMojoReader extends ModelMojoReader<GlrmMojoModel> {
 
   @Override
+  public String getModelName() {
+    return "Generalized Low Rank Model";
+  }
+
+  @Override
   protected void readModelData() throws IOException {
     _model._ncolA = readkv("ncolA");
     _model._ncolY = readkv("ncolY");

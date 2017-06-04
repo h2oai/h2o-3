@@ -10,6 +10,11 @@ import java.io.IOException;
 public class GbmMojoReader extends SharedTreeMojoReader<GbmMojoModel> {
 
   @Override
+  public String getModelName() {
+    return "Gradient Boosting Machine";
+  }
+
+  @Override
   protected void readModelData() throws IOException {
     super.readModelData();
     _model._family = DistributionFamily.valueOf((String)readkv("distribution"));
