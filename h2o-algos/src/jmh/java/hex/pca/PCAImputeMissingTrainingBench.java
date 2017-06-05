@@ -24,8 +24,8 @@ import static water.TestUtil.stall_till_cloudsize;
 @Fork(1)
 @Threads(1)
 @State(Scope.Thread)
-@Warmup(iterations = 3)
-@Measurement(iterations = 10)
+@Warmup(iterations = JMHConstants.WARM_UP_ITERATIONS)
+@Measurement(iterations = JMHConstants.MEASUREMENT_ITERATIONS)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 public class PCAImputeMissingTrainingBench {
