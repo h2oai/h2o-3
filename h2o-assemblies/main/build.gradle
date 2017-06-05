@@ -1,5 +1,6 @@
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'java'
+apply plugin: 'com.github.hierynomus.license'
 
 description = "H2O Application Assembly"
 // Exclude unwanted dependencies
@@ -64,6 +65,10 @@ shadowJar {
   manifest {
     attributes 'Main-Class': 'water.H2OApp'
   }
+  transform(com.github.jengelman.gradle.plugins.shadow.transformers.IncludeResourceTransformer.class) {
+    file = file("${buildDir}/reports/license/dependency-license.xml")
+    resource = "META-INF/license/h2o-depenencies-licenses.xml"
+  }
 }
 
 artifacts {
@@ -85,6 +90,9 @@ task copyJar(type: Copy) {
     into "${project.parent.parent.buildDir}"
     rename { it.replace(assembly, allInOne) }
 }
+
+// Include licences
+shadowJar.dependsOn(project.tasks.getByName('downloadLicenses'))
 // Execute always copyJar
 shadowJar.finalizedBy copyJar
 // Run shadowJar as par of build
