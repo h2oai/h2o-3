@@ -17,11 +17,8 @@ test <-
     # for big models containing huge amount of trees.
     # This case verify multi-classifiers.
     training_file <- test_file <- locate("smalldata/logreg/prostate_train_null_column_name.csv")
-    #training_file <- test_file <- locate("smalldata/dd.csv")
-    browser()
     training_frame <- h2o.importFile(training_file)
     test_frame <- h2o.importFile(test_file)
-    browser()
     params                 <- list()
     params$ntrees          <- 100
     params$max_depth       <- 5
