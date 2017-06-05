@@ -36,6 +36,7 @@ public class PCAWideDataSetsScoringBench {
 	
 	@Setup(Level.Invocation)
 	public void setup() {
+		water.util.Log.setLogLevel("ERRR");
 		stall_till_cloudsize(1);
 		
 		pcaWideDataSetsBench = new PCAWideDataSetsBenchModel(dataSetCase);
