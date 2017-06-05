@@ -1062,7 +1062,7 @@ final public class H2O {
 
   // Best-guess process ID
   public static final long PID;
-  static{
+  static {
     PID = getCurrentPID();
   }
 
@@ -2135,7 +2135,7 @@ final public class H2O {
   }
 
   /** Find PID of the current process, use -1 if we can't find the value. */
-  private static long getCurrentPID(){
+  private static long getCurrentPID() {
     try {
       String n = ManagementFactory.getRuntimeMXBean().getName();
       int i = n.indexOf('@');
