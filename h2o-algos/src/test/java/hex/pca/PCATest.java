@@ -181,9 +181,7 @@ public class PCATest extends TestUtil {
     }
   }
 
-  /*
-  Quick test to make sure changes made to PCA for rank deficient matrices do not cause leakage.
-   */
+  /* Quick test to make sure changes made to PCA for rank deficient matrices do not cause leakage. */
   @Test public void testPUBDEV3500NoLeakage() throws InterruptedException, ExecutionException {
     Scope.enter();
     Frame train = null;

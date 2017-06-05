@@ -1,5 +1,6 @@
 package hex.pca;
 
+import hex.svd.SVDImplementation;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -25,7 +26,9 @@ public class PCAWideDataSetsScoringBench {
 	private PCAWideDataSetsBenchModel pcaWideDataSetsBench;
 	@Param({"1", "2", "3", "4", "5", "6"})
 	private int dataSetCase;
-	
+	@Param({"JAMA", "MTJ", "EVD_MTJ_DENSEMATRIX", "EVD_MTJ_SYMM"})
+	private SVDImplementation svdImplementation;
+
 	public static void main(String[] args) throws RunnerException {
 		Options opt = new OptionsBuilder()
 			.include(PCAWideDataSetsScoringBench.class.getSimpleName())
@@ -40,6 +43,7 @@ public class PCAWideDataSetsScoringBench {
 		stall_till_cloudsize(1);
 		
 		pcaWideDataSetsBench = new PCAWideDataSetsBenchModel(dataSetCase);
+		pcaWideDataSetsBench.setSvdImplementation(svdImplementation);
 		// train model to prepare for score()
 		pcaWideDataSetsBench.train();
 	}

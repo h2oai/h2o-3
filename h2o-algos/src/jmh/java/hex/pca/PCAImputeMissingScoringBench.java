@@ -1,6 +1,7 @@
 package hex.pca;
 
 import hex.DataInfo;
+import hex.svd.SVDImplementation;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -29,6 +30,9 @@ import static water.TestUtil.stall_till_cloudsize;
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 public class PCAImputeMissingScoringBench {
+
+  @Param({"JAMA", "MTJ", "EVD_MTJ_DENSEMATRIX", "EVD_MTJ_SYMM"})
+  private SVDImplementation svdImplementation;
 
   private PCAParameters paramsImputeMissing;
   private PCAModel pcaModel;
@@ -65,6 +69,7 @@ public class PCAImputeMissingScoringBench {
       paramsImputeMissing._k = 4;
       paramsImputeMissing._transform = DataInfo.TransformType.NONE;
       paramsImputeMissing._pca_method = GramSVD;
+      paramsImputeMissing.setSvdImplementation(svdImplementation);
       paramsImputeMissing._impute_missing = true;   // Don't skip rows with NA entries, but impute using mean of column
       paramsImputeMissing._seed = seed;
 

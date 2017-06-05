@@ -1,6 +1,7 @@
 package hex.pca;
 
 import hex.DataInfo;
+import hex.svd.SVDImplementation;
 import water.DKV;
 import water.Key;
 import water.fvec.Frame;
@@ -24,7 +25,8 @@ public class PCAWideDataSetsBenchModel {
 	private int dataSetCase;
 	private PCAModel pcaModel;
 	private Frame pcaScore;
-	
+	private SVDImplementation svdImplementation;
+
 	PCAWideDataSetsBenchModel(int dataSetCase) {
 		setDataSetCase(dataSetCase);
 		setup();
@@ -105,6 +107,7 @@ public class PCAWideDataSetsBenchModel {
 		parameters._transform = transformType;
 		parameters._use_all_factor_levels = true;
 		parameters._pca_method = GramSVD;
+		parameters.setSvdImplementation(getSvdImplementation());
 		parameters._impute_missing = false;
 		parameters._seed = 12345;
 		
@@ -144,5 +147,12 @@ public class PCAWideDataSetsBenchModel {
 		}
 		return true;
 	}
-	
+
+	public SVDImplementation getSvdImplementation() {
+		return svdImplementation;
+	}
+
+	public void setSvdImplementation(SVDImplementation svdImplementation) {
+		this.svdImplementation = svdImplementation;
+	}
 }
