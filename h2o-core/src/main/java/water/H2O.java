@@ -2134,7 +2134,7 @@ final public class H2O {
     Log.debug("    Start GA: " + (time12 - time11) + "ms");
   }
 
-  /** Find PID of the current process, use -1 if we can find the value */
+  /** Find PID of the current process, use -1 if we can't find the value. */
   private static long getCurrentPID(){
     try {
       String n = ManagementFactory.getRuntimeMXBean().getName();
