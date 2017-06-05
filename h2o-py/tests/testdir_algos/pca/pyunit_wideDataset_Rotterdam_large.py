@@ -28,39 +28,48 @@ def pca_wideDataset_rotterdam():
     gramSVD = H2OPCA(k=8, impute_missing=True, transform=transformN, seed=12345)
     gramSVD.train(x=x, training_frame=rotterdamH2O)
 
-    powerPCA = H2OPCA(k=8, impute_missing=True, transform=transformN, pca_method="Power", seed=12345)  # power
-    powerPCA.train(x=x, training_frame=rotterdamH2O)
+    buildModel = [False, False]
+    buildModel[randint(0, len(buildModel)-1)] = True
 
-    randomizedPCA = H2OPCA(k=8, impute_missing=True, transform=transformN, pca_method="Randomized", seed=12345)  # power
-    randomizedPCA.train(x=x, training_frame=rotterdamH2O)
+    expNum = 0
 
-    # compare singular values and stuff with GramSVD
-    print("@@@@@@  Comparing eigenvalues between GramSVD and Power...\n")
-    pyunit_utils.assert_H2OTwoDimTable_equal(gramSVD._model_json["output"]["importance"],
+    if (buildModel[expNum]):
+        powerPCA = H2OPCA(k=8, impute_missing=True, transform=transformN, pca_method="Power", seed=12345)  # power
+        powerPCA.train(x=x, training_frame=rotterdamH2O)
+        # compare singular values and stuff with GramSVD
+        print("@@@@@@  Comparing eigenvalues between GramSVD and Power...\n")
+        pyunit_utils.assert_H2OTwoDimTable_equal(gramSVD._model_json["output"]["importance"],
                                              powerPCA._model_json["output"]["importance"],
                                              ["Standard deviation", "Cumulative Proportion", "Cumulative Proportion"],
                                              tolerance=1e-6, check_all=False)
-    print("@@@@@@  Comparing eigenvectors between GramSVD and Power...\n")
-    # compare singular vectors
+        print("@@@@@@  Comparing eigenvectors between GramSVD and Power...\n")
+        # compare singular vectors
 
-    pyunit_utils.assert_H2OTwoDimTable_equal(gramSVD._model_json["output"]["eigenvectors"],
+        pyunit_utils.assert_H2OTwoDimTable_equal(gramSVD._model_json["output"]["eigenvectors"],
                                              powerPCA._model_json["output"]["eigenvectors"],
                                              powerPCA._model_json["output"]["names"], tolerance=1e-6, check_sign=True,
                                              check_all=False)
 
-    # compare singular values and stuff with GramSVD
-    print("@@@@@@  Comparing eigenvalues between GramSVD and Randomized...\n")
-    pyunit_utils.assert_H2OTwoDimTable_equal(gramSVD._model_json["output"]["importance"],
-                                             randomizedPCA._model_json["output"]["importance"],
-                                             ["Standard deviation", "Cumulative Proportion", "Cumulative Proportion"],
-                                             tolerance=1e-3, check_all=False)
+    expNum=expNum+1
 
-    print("@@@@@@  Comparing eigenvectors between GramSVD and Power...\n")
-    # compare singular vectors
-    pyunit_utils.assert_H2OTwoDimTable_equal(gramSVD._model_json["output"]["eigenvectors"],
-                                             randomizedPCA._model_json["output"]["eigenvectors"],
-                                             randomizedPCA._model_json["output"]["names"], tolerance=1e-6,
-                                             check_sign=True, check_all=False)
+    if (buildModel[expNum]):
+        randomizedPCA = H2OPCA(k=8, impute_missing=True, transform=transformN, pca_method="Randomized", seed=12345)  # power
+        randomizedPCA.train(x=x, training_frame=rotterdamH2O)
+
+        # compare singular values and stuff with GramSVD
+        print("@@@@@@  Comparing eigenvalues between GramSVD and Randomized...\n")
+        pyunit_utils.assert_H2OTwoDimTable_equal(gramSVD._model_json["output"]["importance"],
+                                                 randomizedPCA._model_json["output"]["importance"],
+                                                 ["Standard deviation", "Cumulative Proportion", "Cumulative Proportion"],
+                                                 tolerance=1e-3, check_all=False)
+
+        print("@@@@@@  Comparing eigenvectors between GramSVD and Power...\n")
+        # compare singular vectors
+        pyunit_utils.assert_H2OTwoDimTable_equal(gramSVD._model_json["output"]["eigenvectors"],
+                                                 randomizedPCA._model_json["output"]["eigenvectors"],
+                                                 randomizedPCA._model_json["output"]["names"], tolerance=1e-6,
+                                                 check_sign=True, check_all=False)
+    h2o.remove_all()
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(pca_wideDataset_rotterdam)
