@@ -1059,9 +1059,12 @@ final public class H2O {
 
   // Used to gate default worker threadpool sizes
   public static final int NUMCPUS = Runtime.getRuntime().availableProcessors();
-  // Best-guess process ID
-  public static long PID = -1L;
 
+  // Best-guess process ID
+  public static final long PID;
+  static{
+    PID = getCurrentPID();
+  }
 
   /**
    * Throw an exception that will cause the request to fail, but the cluster to continue.
@@ -2021,12 +2024,6 @@ final public class H2O {
           Log.POST(11, ste.toString());
       }
     }
-
-    // We need to initialize PID before we initialize SELF_ADDRESS.
-    // Initialization of SELF_ADDRESS triggers buffered logged messages to be logged and PID
-    // is part of the log header. We want to have correct PID in the buffered messages as well.
-    initializePID();
-
     // Epic Hunt for the correct self InetAddress
     long time4 = System.currentTimeMillis();
     Log.info("IPv6 stack selected: " + IS_IPV6);
@@ -2138,13 +2135,18 @@ final public class H2O {
   }
 
   /** Find PID of the current process, use -1 if we can find the value */
-  private static void initializePID(){
-    PID = -1L;
+  private static long getCurrentPID(){
     try {
       String n = ManagementFactory.getRuntimeMXBean().getName();
       int i = n.indexOf('@');
-      if( i != -1 ) PID = Long.parseLong(n.substring(0, i));
-    } catch( Throwable ignore ) { }
+      if(i != -1){
+        return Long.parseLong(n.substring(0, i));
+      }else{
+        return -1L;
+      }
+    } catch(Throwable ignore) {
+      return -1L;
+    }
   }
 
   // Die horribly
