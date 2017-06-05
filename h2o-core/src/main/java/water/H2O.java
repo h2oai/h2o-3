@@ -2139,9 +2139,9 @@ final public class H2O {
     try {
       String n = ManagementFactory.getRuntimeMXBean().getName();
       int i = n.indexOf('@');
-      if(i != -1){
+      if(i != -1) {
         return Long.parseLong(n.substring(0, i));
-      }else{
+      } else {
         return -1L;
       }
     } catch(Throwable ignore) {
