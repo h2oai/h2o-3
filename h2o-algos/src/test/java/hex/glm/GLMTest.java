@@ -1321,7 +1321,7 @@ public class GLMTest  extends TestUtil {
 
 
   public static double residualDeviance(GLMModel m) {
-    if (m._parms._family == Family.binomial) {
+    if (m._parms._family == Family.binomial || m._parms._family == Family.quasibinomial) {
       ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM) m._output._training_metrics;
       return metrics._resDev;
     } else {
@@ -1368,7 +1368,7 @@ public class GLMTest  extends TestUtil {
   }
 
   public static double resDOF(GLMModel m) {
-    if (m._parms._family == Family.binomial) {
+    if (m._parms._family == Family.binomial || m._parms._family == Family.quasibinomial) {
       ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM) m._output._training_metrics;
       return metrics._residualDegressOfFreedom;
     } else {
@@ -1397,7 +1397,7 @@ public class GLMTest  extends TestUtil {
   }
 
   public static double nullDeviance(GLMModel m) {
-    if (m._parms._family == Family.binomial) {
+    if (m._parms._family == Family.binomial || m._parms._family == Family.quasibinomial) {
       ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM) m._output._training_metrics;
       return metrics._nullDev;
     } else {

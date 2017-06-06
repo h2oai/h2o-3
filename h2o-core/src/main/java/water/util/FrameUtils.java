@@ -879,7 +879,7 @@ public class FrameUtils {
   static public void shrinkDomainsToObservedSubset(Frame frameToModifyInPlace) {
     for (Vec v : frameToModifyInPlace.vecs()) {
       if (v.isCategorical()) {
-        long[] uniques = (v.min() >= 0 && v.max() < Integer.MAX_VALUE - 4) ? new VecUtils.CollectDomainFast((int)v.max()).doAll(v).domain() : new VecUtils.CollectDomain().doAll(v).domain();
+        long[] uniques = (v.min() >= 0 && v.max() < Integer.MAX_VALUE - 4) ? new VecUtils.CollectDomainFast((int)v.max()).doAll(v).domain() : new VecUtils.CollectIntegerDomain().doAll(v).domain();
         String[] newDomain = new String[uniques.length];
         final int[] fromTo = new int[(int)ArrayUtils.maxValue(uniques)+1];
         for (int i=0;i<newDomain.length;++i) {
