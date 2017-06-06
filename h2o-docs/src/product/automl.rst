@@ -43,7 +43,7 @@ In both the R and Python API, AutoML uses the same data-related arguments, ``x``
 
 - `stopping_rounds <data-science/algo-params/stopping_rounds.html>`__: This argument stops training new models in the AutoML run when the option selected for **stopping_metric** doesn't improve for the specified number of models, based on a simple moving average. Defaults to 3 and must be an non-negative integer.  To disable this feature, set it to 0. 
 
-- `seed <data-science/algo-params/seed.html>`__: Integer. Set a seed for reproducibility. AutoML can only guarantee reproducibility if max_models or early stopping is used because max_runtime_secs is resource limited, meaning that if the resources are not the same between runs, AutoML may be able to train more models on one run vs another.  Defaults to ``NULL/None``.
+- `seed <data-science/algo-params/seed.html>`__: Integer. Set a seed for reproducibility. AutoML can only guarantee reproducibility if ``max_models`` or early stopping is used because ``max_runtime_secs`` is resource limited, meaning that if the resources are not the same between runs, AutoML may be able to train more models on one run vs another.  Defaults to ``NULL/None``.
 
 - **project_name**: Character string to identify an AutoML project. Defaults to ``NULL/None``, which means a project name will be auto-generated based on the training frame ID.  More models can be trained on an existing AutoML project by specifying the same project name in muliple calls to the AutoML function (as long as the same training frame is used in subsequent runs).
 
@@ -96,11 +96,17 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
     lb <- aml@leaderboard
     lb
 
-    #                                 model_id      auc  logloss
-    # 1 StackedEnsemble_AutoML_20170602_131734 0.916974 0.304348
-    # 2 GBM_0_AutoML_20170602_131734           0.916848 0.310946
-    # 3 XRT_0_AutoML_20170602_131734           0.910575 0.301715
-    # 4 DRF_0_AutoML_20170602_131734           0.910027 0.305436
+                                       model_id       auc    logloss
+    # StackedEnsemble_0_AutoML_20170605_212658   0.776164   0.564872
+    # GBM_grid_0_AutoML_20170605_212658_model_2  0.75355    0.587546
+    # DRF_0_AutoML_20170605_212658               0.738885   0.611997
+    # GBM_grid_0_AutoML_20170605_212658_model_0  0.735078   0.630062
+    # GBM_grid_0_AutoML_20170605_212658_model_1  0.730645   0.67458
+    # XRT_0_AutoML_20170605_212658               0.728358   0.629296
+    # GLM_grid_0_AutoML_20170605_212658_model_1  0.685216   0.635137
+    # GLM_grid_0_AutoML_20170605_212658_model_0  0.685216   0.635137
+
+    # [8 rows x 3 columns]
 
     # The leader model is stored here
     aml@leader
@@ -137,7 +143,7 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
     train[y] = train[y].asfactor()
     test[y] = test[y].asfactor()
     
-    # Run AutoML for 30 seconds
+    # Run AutoML for 120 seconds and specify a maximum of 10 models
     aml = H2OAutoML(max_runtime_secs = 30)
     aml.train(x = x, y = y, 
               training_frame = train, 
@@ -147,12 +153,18 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
     lb = aml.leaderboard
     lb
 
-    # model_id                                            auc       logloss
-    # --------------------------------------------------  --------  ---------
-    #             StackedEnsemble_AutoML_20170602_131734  0.916974  0.304348
-    #                       GBM_0_AutoML_20170602_131734  0.916848  0.310946
-    #                       XRT_0_AutoML_20170602_131734  0.910575  0.301715
-    #                       DRF_0_AutoML_20170602_131734  0.910027  0.305436
+    # model_id                                        auc    logloss
+    # -----------------------------------------  --------  ---------
+    # StackedEnsemble_0_AutoML_20170605_212658   0.776164   0.564872
+    # GBM_grid_0_AutoML_20170605_212658_model_2  0.75355    0.587546
+    # DRF_0_AutoML_20170605_212658               0.738885   0.611997
+    # GBM_grid_0_AutoML_20170605_212658_model_0  0.735078   0.630062
+    # GBM_grid_0_AutoML_20170605_212658_model_1  0.730645   0.67458
+    # XRT_0_AutoML_20170605_212658               0.728358   0.629296
+    # GLM_grid_0_AutoML_20170605_212658_model_1  0.685216   0.635137
+    # GLM_grid_0_AutoML_20170605_212658_model_0  0.685216   0.635137
+
+    # [8 rows x 3 columns]
 
     # The leader model is stored here
     aml.leader
@@ -176,18 +188,25 @@ The AutoML object includes a "leaderboard" of models that were trained in the pr
 
 Here is an example leaderboard for a binary classification task:
 
-+----------------------------------------------------+----------+----------+
-|                                           model_id |      auc |  logloss |
-+====================================================+==========+==========+
-| StackedEnsemble_AutoML_20170602_131734             | 0.916974 | 0.304348 | 
-+----------------------------------------------------+----------+----------+
-| GBM_0_AutoML_20170602_131734                       | 0.916848 | 0.310946 |
-+----------------------------------------------------+----------+----------+
-| XRT_0_AutoML_20170602_131734                       | 0.910575 | 0.301715 |
-+----------------------------------------------------+----------+----------+
-| DRF_0_AutoML_20170602_131734                       | 0.910027 | 0.305436 |
-+----------------------------------------------------+----------+----------+
-
++-------------------------------------------+----------+----------+
+|                                  model_id |      auc |  logloss |
++===========================================+==========+==========+
+| StackedEnsemble_0_AutoML_20170605_212658  | 0.776164 | 0.564872 | 
++-------------------------------------------+----------+----------+
+| GBM_grid_0_AutoML_20170605_212658_model_2 | 0.75355  | 0.587546 |
++-------------------------------------------+----------+----------+
+| DRF_0_AutoML_20170605_212658              | 0.738885 | 0.611997 |
++-------------------------------------------+----------+----------+
+| GBM_grid_0_AutoML_20170605_212658_model_0 | 0.735078 | 0.630062 |
++-------------------------------------------+----------+----------+
+| GBM_grid_0_AutoML_20170605_212658_model_1 | 0.730645 | 0.67458  |
++-------------------------------------------+----------+----------+
+| XRT_0_AutoML_20170605_212658              | 0.728358 | 0.629296 |
++-------------------------------------------+----------+----------+
+| GLM_grid_0_AutoML_20170605_212658_model_1 | 0.685216 | 0.635137 |
++-------------------------------------------+----------+----------+
+| GLM_grid_0_AutoML_20170605_212658_model_0 | 0.685216 | 0.635137 |
++-------------------------------------------+----------+----------+
 
 FAQ
 ~~~
