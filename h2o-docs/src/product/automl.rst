@@ -13,16 +13,30 @@ AutoML Interface
 
 The H2O AutoML interface is designed to have as few parameters as possible so that all the user needs to do is point to their dataset, identify the response column and optionally specify a time constraint, a maximum number of models constraint, and early stopping parameters. 
 
-In both the R and Python API, AutoML uses the same data-related arguments, ``x``, ``y``, ``training_frame``, ``validation_frame``, as the other H2O algorithms.  Most of the time, all you'll need to do is specify the data arguments, set one of ``max_runtime_secs`` or ``max_models``, and you're ready to go!  The early stopping arguments can be left at their defaults, unless you want fine-grained control of the AutoML process.  Below is a list of all available AutoML arguments.  
+In both the R and Python API, AutoML uses the same data-related arguments, ``x``, ``y``, ``training_frame``, ``validation_frame``, as the other H2O algorithms.  Most of the time, all you'll need to do is specify the data arguments. You can then configure values for ``max_runtime_secs`` and/or ``max_models`` to set explicit time or number-of-model limits on your run, or you can set those values high and configure the early stopping arguments to take care of the rest.  
 
-- **x**: A list/vector of predictor column names or indexes.  This argument is optional and only needs to be specified if the user wants to exclude columns from the set of predictors.  If all columns (other than the response) should be used in prediction, then this does not need to be set.
-- `y <data-science/algo-params/y.html>`__: This argument is the name (or index) of the response column. This argument is required.
-- `training_frame <data-science/algo-params/training_frame.html>`__: Specifies the training set. This argument is required.
-- `validation_frame <data-science/algo-params/validation_frame.html>`__: This argument is optional and will be used for early stopping within the training process of the individual models in the AutoML run.  
-- **leaderboard_frame**: This argument allows the user to specify a particular data frame to rank the models on the leaderboard. This frame will not be used for anything besides creating the leaderboard.
+Required Parameters
+~~~~~~~~~~~~~~~~~~~
+
+- `y <data-science/algo-params/y.html>`__: This argument is the name (or index) of the response column. 
+
+- `training_frame <data-science/algo-params/training_frame.html>`__: Specifies the training set. 
+
+Optional Parameters
+~~~~~~~~~~~~~~~~~~~
+
+- **x**: A list/vector of predictor column names or indexes.  This argument only needs to be specified if the user wants to exclude columns from the set of predictors.  If all columns (other than the response) should be used in prediction, then this does not need to be set.
+
+- `validation_frame <data-science/algo-params/validation_frame.html>`__: This argument is is used for early stopping within the training process of the individual models in the AutoML run.  
+
+- **leaderboard_frame**: This argument allows the user to specify a particular data frame to rank the models on the leaderboard. This frame will not be used for anything besides creating the leaderboard. If this option is not specified, then a ``leaderboard_frame`` will be created from the ``training_frame``.
+
 - `fold_column <data-science/algo-params/fold_column.html>`__: Specifies a column with cross-validation fold index assignment per observation. This is used to override the default, randomized, 5-fold cross-validation scheme for individual models in the AutoML run.
+
 - `weights_column <data-science/algo-params/weights_column.html>`__: Specifies a column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative weights are not allowed.
+
 - `max_runtime_secs <data-science/algo-params/max_runtime_secs.html>`__: This argument controls how long the AutoML run will execute. This defaults to 3600 seconds (1 hour).
+
 - **max_models**: Specify the maximum number of models to build in an AutoML run. (Does not include the Stacked Ensemble model.) 
 
 -  `stopping_metric <data-science/algo-params/stopping_metric.html>`__: Specifies the metric to use for early stopping. Defaults to ``"AUTO"``.  The available options are:
@@ -39,7 +53,7 @@ In both the R and Python API, AutoML uses the same data-related arguments, ``x``
     - ``misclassification``
     - ``mean_per_class_error``
 
--  `stopping_tolerance <data-science/algo-params/stopping_tolerance.html>`__: This option specifies the relative tolerance for the metric-based stopping to stop the AutoML run if the improvement is less than this value.  Defaults to 0.001.
+-  `stopping_tolerance <data-science/algo-params/stopping_tolerance.html>`__: This option specifies the relative tolerance for the metric-based stopping to stop the AutoML run if the improvement is less than this value. This value defaults to 0.001 if the dataset is big enough; otherwise it defaults to a value determined by the size of the dataset and the ``na`` rate. 1/((nrows * non-na-rate)^2)
 
 - `stopping_rounds <data-science/algo-params/stopping_rounds.html>`__: This argument stops training new models in the AutoML run when the option selected for **stopping_metric** doesn't improve for the specified number of models, based on a simple moving average. Defaults to 3 and must be an non-negative integer.  To disable this feature, set it to 0. 
 
@@ -48,7 +62,7 @@ In both the R and Python API, AutoML uses the same data-related arguments, ``x``
 - **project_name**: Character string to identify an AutoML project. Defaults to ``NULL/None``, which means a project name will be auto-generated based on the training frame ID.  More models can be trained on an existing AutoML project by specifying the same project name in muliple calls to the AutoML function (as long as the same training frame is used in subsequent runs).
 
 
-**Note:** When multiple options are set to control the stopping of the AutoML run (e.g. ``max_models`` and ``max_runtime_secs``), then whichever happens first will stop the AutoML run.
+ **Note:** When multiple options are set to control the stopping of the AutoML run (e.g. ``max_models`` and ``max_runtime_secs``), then whichever happens first will stop the AutoML run.
 
 Auto-Generated Frames
 ~~~~~~~~~~~~~~~~~~~~~
