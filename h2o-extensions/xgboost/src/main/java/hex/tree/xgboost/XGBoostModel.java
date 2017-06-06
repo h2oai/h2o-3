@@ -12,7 +12,7 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.Log;
-
+import hex.ModelMetrics;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -305,8 +305,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     float[] weights = data.getWeight();
     if (_output.nclasses()==1) {
       double[] dpreds = new double[preds.length];
-      for (int j = 0; j < dpreds.length; ++j)
+      for (int j = 0; j < dpreds.length; ++j) {
         dpreds[j] = preds[j][0];
+        assert(!Double.isNaN(dpreds[j])) : "Error: XGBoost predicted NAs.";
+      }
 //      if (weights.length>0)
 //        for (int j = 0; j < dpreds.length; ++j)
 //          assert weights[j] == 1.0;
@@ -435,11 +437,22 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     Frame adaptFr = new Frame(fr);
     computeMetrics = computeMetrics && (!isSupervised() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
     String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
+    if (msg.length > 0) {
+      for (String s : msg)
+        Log.warn(s);
+    }
     try {
       DMatrix trainMat = convertFrametoDMatrix( model_info()._dataInfoKey, adaptFr,
           _parms._response_column, _parms._weights_column, _parms._fold_column, null, _output._sparse);
       ModelMetrics[] mm = new ModelMetrics[1];
       Frame preds = makePreds(model_info()._booster, trainMat, mm, Key.<Frame>make(destination_key));
+      //Update model
+      if (computeMetrics){
+        final Key modelKey = ModelMetrics.buildKey(this,fr); //Make Key for Model Metrics
+        mm[0]._key = modelKey;
+        this.addModelMetrics(mm[0]);
+        DKV.put(this);
+      }
       DKV.put(preds);
       return preds;
     } catch (XGBoostError xgBoostError) {
