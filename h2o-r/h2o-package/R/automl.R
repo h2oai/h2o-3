@@ -143,7 +143,7 @@ h2o.automl <- function(x, y, training_frame,
   build_control$stopping_criteria$stopping_tolerance <- stopping_tolerance
   build_control$stopping_criteria$stopping_rounds <- stopping_rounds
   if (!is.null(seed)) {
-    build_control$seed <- seed
+    build_control$stopping_criteria$seed <- seed
   }
 
   # If project_name is NULL, auto-gen based on training_frame ID
