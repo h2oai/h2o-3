@@ -412,7 +412,7 @@ public class VecUtils {
     public CollectDoubleDomain(double [] knownDomain, int maxDomainSize) {
       _maxDomain = maxDomainSize;
       _sortedKnownDomain = knownDomain == null?null:knownDomain.clone();
-      if(!ArrayUtils.isSorted(knownDomain))
+      if(_sortedKnownDomain != null && !ArrayUtils.isSorted(knownDomain))
         Arrays.sort(_sortedKnownDomain);
     }
 
