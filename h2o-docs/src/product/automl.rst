@@ -97,12 +97,12 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
     lb
 
                                        model_id       auc    logloss
-    # StackedEnsemble_0_AutoML_20170605_212658   0.776164   0.564872
-    # GBM_grid_0_AutoML_20170605_212658_model_2  0.75355    0.587546
-    # DRF_0_AutoML_20170605_212658               0.738885   0.611997
+    #  StackedEnsemble_0_AutoML_20170605_212658  0.776164   0.564872
+    # GBM_grid_0_AutoML_20170605_212658_model_2  0.753550   0.587546
+    #              DRF_0_AutoML_20170605_212658  0.738885   0.611997
     # GBM_grid_0_AutoML_20170605_212658_model_0  0.735078   0.630062
-    # GBM_grid_0_AutoML_20170605_212658_model_1  0.730645   0.67458
-    # XRT_0_AutoML_20170605_212658               0.728358   0.629296
+    # GBM_grid_0_AutoML_20170605_212658_model_1  0.730645   0.674580
+    #              XRT_0_AutoML_20170605_212658  0.728358   0.629296
     # GLM_grid_0_AutoML_20170605_212658_model_1  0.685216   0.635137
     # GLM_grid_0_AutoML_20170605_212658_model_0  0.685216   0.635137
 
