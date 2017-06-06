@@ -2746,7 +2746,7 @@ def compareOneNumericColumn(frame1, frame2, col_ind, rows, tolerance, numElement
 
     row_indices = []
     if numElements > 0:
-        row_indices = random.sample(xrange(rows), numElements)
+        row_indices = random.sample(range(rows), numElements)
     else:
         numElements = rows  # Compare all elements
         row_indices = list(range(rows))
