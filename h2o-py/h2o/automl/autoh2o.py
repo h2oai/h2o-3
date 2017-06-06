@@ -39,7 +39,7 @@ class H2OAutoML(object):
 
         #If max_runtime_secs is not provided, then it is set to default (600 secs)
         if max_runtime_secs is None:
-            max_runtime_secs = 600
+            max_runtime_secs = 3600
             self.max_runtime_secs = max_runtime_secs
         else:
             assert_is_type(max_runtime_secs,int)
