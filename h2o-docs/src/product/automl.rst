@@ -143,7 +143,7 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
     train[y] = train[y].asfactor()
     test[y] = test[y].asfactor()
     
-    # Run AutoML for 120 seconds and specify a maximum of 10 models
+    # Run AutoML for 30 seconds
     aml = H2OAutoML(max_runtime_secs = 30)
     aml.train(x = x, y = y, 
               training_frame = train, 
