@@ -27,7 +27,7 @@ locale
 
 java -version
 export BUILD_HADOOP=false
-export GRADLE_USER_HOME=$WORKSPACE
+#export GRADLE_USER_HOME=$WORKSPACE
 # Use the Jenkins-user shared R library; already sync'd no need to sync again
 export R_LIBS_USER=${WORKSPACE}/../Rlibrary
 
