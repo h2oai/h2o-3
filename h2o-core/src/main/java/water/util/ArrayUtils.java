@@ -1436,6 +1436,18 @@ public class ArrayUtils {
     return res;
   }
 
+  public static int[] sorted_set_diff(int[] x, int[] y) {
+    assert isSorted(x);
+    assert isSorted(y);
+    int [] res = new int[x.length];
+    int j = 0, k = 0;
+    for(int i = 0; i < x.length; i++){
+      while(j < y.length && y[j] < x[i])j++;
+      if(j == y.length || y[j] != x[i])
+        res[k++] = x[i];
+    }
+    return Arrays.copyOf(res,k);
+  }
   /*
       This class is written to copy the contents of a frame to a 2-D double array.
    */
