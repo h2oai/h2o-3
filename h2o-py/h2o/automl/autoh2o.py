@@ -13,10 +13,41 @@ class H2OAutoML(object):
     a random grid of Gradient Boosting Machines (GBMs), a random grid of Deep Neural Nets,
     and a Stacked Ensemble of all the models.
 
+    :param int max_runtime_secs: This argument controls how long the AutoML run will execute. Defaults to 3600 seconds (1 hour).
+    :param int max_models: Specify the maximum number of models to build in an AutoML run. (Does not include the Stacked Ensemble model.)
+    :param str stopping_metric: Specifies the metric to use for early stopping. Defaults to ``"AUTO"``.
+      The available options are:
+      ``AUTO`` (This defaults to ``logloss`` for classification, ``deviance`` for regression),
+      ``deviance``, ``logloss``, ``mse``, ``rmse``, ``mae``, ``rmsle``, ``auc``, ``lift_top_group``,
+      ``misclassification``, ``mean_per_class_error``.
+    :param int stopping_rounds: This argument stops training new models in the AutoML run when the option selected for
+      stopping_metric doesn't improve for the specified number of models, based on a simple moving average.
+      To disable this feature, set it to 0. Defaults to 3 and must be an non-negative integer.
+    :param int seed: Set a seed for reproducibility. AutoML can only guarantee reproducibility if ``max_models`` or
+      early stopping is used because ``max_runtime_secs`` is resource limited, meaning that if the resources are
+      not the same between runs, AutoML may be able to train more models on one run vs another.  Defaults to ``None``.
+    :param str project_name: Character string to identify an AutoML project. Defaults to ``None``, which means
+      a project name will be auto-generated based on the training frame ID.  More models can be trained on an
+      existing AutoML project by specifying the same project name in muliple calls to the AutoML function
+      (as long as the same training frame is used in subsequent runs).
+
     :examples:
-    >>> # Setting up an H2OAutoML object
-    >>> project_name = "Project1"
-    >>> aml = H2OAutoML(max_runtime_secs=30, project_name=project_name)
+    >>> import h2o
+    >>> from h2o.automl import H2OAutoML
+    >>> h2o.init()
+    >>> # Import a sample binary outcome train/test set into H2O
+    >>> train = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
+    >>> test = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
+    >>> # Identify predictors and response
+    >>> x = train.columns
+    >>> y = "response"
+    >>> x.remove(y)
+    >>> # For binary classification, response should be a factor
+    >>> train[y] = train[y].asfactor()
+    >>> test[y] = test[y].asfactor()
+    >>> # Run AutoML for 30 seconds
+    >>> aml = H2OAutoML(max_runtime_secs = 30)
+    >>> aml.train(x = x, y = y,training_frame = train,leaderboard_frame = test)
     """
     def __init__(self,
                  max_runtime_secs=3600,
