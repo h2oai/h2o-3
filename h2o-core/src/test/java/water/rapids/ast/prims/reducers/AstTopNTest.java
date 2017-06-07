@@ -64,11 +64,26 @@ public class AstTopNTest extends TestUtil {
 				try {
 						for (int index = 0; index < numRuns; index++) { // randomly choose 4 percentages to test
 								testPercent = checkPercent[_rand.nextInt(checkPercent.length)];
+								boolean[] runTest = {false, false, false, false};
+								runTest[_rand.nextInt(4)] = true;  // choose one out of 4 to run
+								int testIndex = 0;
 								Log.info("Percentage is " + testPercent);
-								testTopBottom(topLong, testPercent, 0, "0", _tolerance);
-								testTopBottom(topFloat, testPercent, 0, "1", _tolerance);  // test top % Float
-								testTopBottom(bottomLong, testPercent, 1, "0", _tolerance);  // test bottom % Long
-								testTopBottom(bottomFloat, testPercent, 1, "1", _tolerance);  // test bottom % Float
+								if (runTest[testIndex++]) {
+										Log.info("Testing top N long.");
+										testTopBottom(topLong, testPercent, 0, "0", _tolerance);
+								}
+								if (runTest[testIndex++]) {
+										Log.info("Testing top N float.");
+										testTopBottom(topFloat, testPercent, 0, "1", _tolerance);  // test top % Float
+								}
+								if (runTest[testIndex++]) {
+										Log.info("Testing bottom N long.");
+										testTopBottom(bottomLong, testPercent, 1, "0", _tolerance);  // test bottom % Long
+								}
+								if (runTest[testIndex++]) {
+										Log.info("Testing bottom N float.");
+										testTopBottom(bottomFloat, testPercent, 1, "1", _tolerance);  // test bottom % Float
+								}
 						}
 				} finally {
 						Scope.exit();
@@ -80,9 +95,12 @@ public class AstTopNTest extends TestUtil {
 				Scope.enter();
 				Frame topBN = null, topBL = null;
 				try {
+						long runTime = System.currentTimeMillis();
 						String x = "(topn " + _train._key + " " + columnIndex + " " + testPercent + " " + getBottom + ")";
 						Val res = Rapids.exec(x);         // make the call to grab top/bottom N percent
 						topBN = res.getFrame();            // get frame that contains top N elements
+						runTime = System.currentTimeMillis() - runTime;
+						Log.info("run time in ms is " + runTime);
 						Scope.track(topBN);
 						topBL = topBN.extractFrame(1, 2);
 						Scope.track(topBL);
@@ -114,6 +132,7 @@ public class AstTopNTest extends TestUtil {
 						Scope.track(sortedFT);
 						assertTrue(isIdenticalUpToRelTolerance(topN, sortedFT, tolerance));
 						Scope.track(topN);
+						Scope.track_generic(ksplits[0].get());
 						Scope.track_generic(ksplits[1].get());
 				} finally {
 						Scope.exit();
