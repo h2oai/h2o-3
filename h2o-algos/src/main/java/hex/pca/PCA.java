@@ -60,12 +60,13 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     boolean useGramSVD = _parms._pca_method == PCAParameters.Method.GramSVD;
     boolean usePower = _parms._pca_method == PCAParameters.Method.Power;
     boolean useRandomized = _parms._pca_method == PCAParameters.Method.Randomized;
+    boolean useGLRM = _parms._pca_method == PCAParameters.Method.GLRM;
     double gramSize =  _train.lastVec().nChunks()==1 ? 1 :
             Math.log((double) _train.lastVec().nChunks()) / Math.log(2.); // gets to zero if nChunks=1
 
-    long mem_usage = (useGramSVD || usePower || useRandomized) ? (long) (hb._cpus_allowed * p * p * 8/*doubles*/ *
+    long mem_usage = (useGramSVD || usePower || useRandomized || useGLRM) ? (long) (hb._cpus_allowed * p * p * 8/*doubles*/ *
             gramSize) : 1; //one gram per core
-    long mem_usage_w = (useGramSVD || usePower || useRandomized) ? (long) (hb._cpus_allowed * r * r *
+    long mem_usage_w = (useGramSVD || usePower || useRandomized || useGLRM) ? (long) (hb._cpus_allowed * r * r *
             8/*doubles*/ * gramSize) : 1;
 
     long max_mem = hb.get_free_mem();
@@ -425,7 +426,10 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           // Build an SVD model
           // Hack: we have to resort to unsafe type casts because _job is of Job<PCAModel> type, whereas a GLRM
           // model requires a Job<GLRMModel> _job. If anyone knows how to avoid this hack, please fix it!
-          GLRMModel glrm = new GLRM(parms, (Job)_job).trainModelNested(tranRebalanced);
+          GLRM glrmP = new GLRM(parms, (Job)_job);
+          glrmP.setWideDataset(_wideDataset);  // force to treat dataset as wide even though it is not.
+          GLRMModel glrm = glrmP.trainModelNested(tranRebalanced);
+
           if (stop_requested()) {
             return;
           }
