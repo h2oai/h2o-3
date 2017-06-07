@@ -22,30 +22,29 @@ def h2o_H2OFrame_top_bottomN():
     frameNames = dataFrame.names    # get data column names
     tolerance=1e-12
     nsample = 100
-
     nP = nPercentages[randint(0, len(nPercentages)-1)]  # pick a random percentage
     colIndex = randint(0, len(frameNames)-1)    # pick a random column
-    print("For topN: Percentage chosen is {0}.  Column index chosen is {1}".format(nP, colIndex))
-    newTopFrame = dataFrame.topN(frameNames[colIndex], nP)  # call topN with column names
-    newTopFrameC = dataFrame.topN(colIndex, nP)             # call topN with same column index
 
-    # the two return frames should be the same for this case, compare 1000 rows chosen randomly
-    pyunit_utils.compare_frames(newTopFrame, newTopFrameC, nsample, tol_numeric=tolerance)
+    if (randint(0,2)==0):
+        print("For topN: Percentage chosen is {0}.  Column index chosen is {1}".format(nP, colIndex))
+        newTopFrame = dataFrame.topN(frameNames[colIndex], nP)  # call topN with column names
+        newTopFrameC = dataFrame.topN(colIndex, nP)             # call topN with same column index
 
-    # compare one of the return frames with known answer
-    compare_rep_frames(topAnswer, newTopFrame, tolerance, colIndex, 0)
+        # the two return frames should be the same for this case, compare 1000 rows chosen randomly
+        pyunit_utils.compare_frames(newTopFrame, newTopFrameC, nsample, tol_numeric=tolerance)
 
-    # test bottomN here
-    nP = nPercentages[randint(0, len(nPercentages)-1)]  # pick a random percentage
-    colIndex = randint(0, len(frameNames)-1)    # pick a random column
-    print("For bottomN: Percentage chosen is {0}.  Column index chosen is {1}".format(nP, colIndex))
-    newBottomFrame = dataFrame.bottomN(frameNames[colIndex], nP)  # call topN with column names
-    newBottomFrameC = dataFrame.bottomN(colIndex, nP)             # call topN with same column index
+        # compare one of the return frames with known answer
+        compare_rep_frames(topAnswer, newTopFrame, tolerance, colIndex, 0)
+    else:
+        # test bottomN here
+        print("For bottomN: Percentage chosen is {0}.  Column index chosen is {1}".format(nP, colIndex))
+        newBottomFrame = dataFrame.bottomN(frameNames[colIndex], nP)  # call topN with column names
+        newBottomFrameC = dataFrame.bottomN(colIndex, nP)             # call topN with same column index
 
-    # the two return frames should be the same for this case
-    pyunit_utils.compare_frames(newBottomFrame, newBottomFrameC, nsample, tol_numeric=tolerance)
-    # compare one of the return frames with known answer
-    compare_rep_frames(bottomAnswer, newBottomFrame, tolerance, colIndex, 1)
+        # the two return frames should be the same for this case
+        pyunit_utils.compare_frames(newBottomFrame, newBottomFrameC, nsample, tol_numeric=tolerance)
+        # compare one of the return frames with known answer
+        compare_rep_frames(bottomAnswer, newBottomFrame, tolerance, colIndex, 1)
 
 
 def compare_rep_frames(answerF, repFrame, tolerance,  colIndex, getBottom=0):
