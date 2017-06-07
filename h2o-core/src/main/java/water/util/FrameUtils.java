@@ -117,7 +117,7 @@ public class FrameUtils {
     }
   }
 
-  private static class Vec2ArryTsk extends MRTask<Vec2ArryTsk> {
+  public static class Vec2ArryTsk extends MRTask<Vec2ArryTsk> {
     final int N;
     public double [] res;
     public Vec2ArryTsk(int N){this.N = N;}
@@ -136,6 +136,33 @@ public class FrameUtils {
           res[i] += other.res[i]; // assuming only one nonzero
         }
       }
+    }
+  }
+
+  public static class Vecs2ArryTsk extends MRTask<Vecs2ArryTsk> {
+    final int dim1;   // treat as row
+    final int dim2;   // treat as column
+    public double [][] res;
+    public Vecs2ArryTsk(int dim1, int dim2)
+    {
+      this.dim1 = dim1;
+      this.dim2 = dim2;
+    }
+
+    @Override public void setupLocal(){
+      res = MemoryManager.malloc8d(dim1, dim2);
+    }
+    @Override public void map(Chunk[] c){
+      final int off = (int)c[0].start();
+      for (int colIndex = 0; colIndex < dim2; colIndex++) {
+        for (int rowIndex = 0; rowIndex < dim1; rowIndex++) {
+          res[off+rowIndex][colIndex] = c[colIndex].atd(rowIndex);
+        }
+      }
+    }
+
+    @Override public void reduce(Vecs2ArryTsk other){
+      ArrayUtils.add(res, other.res);
     }
   }
 
