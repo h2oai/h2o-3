@@ -12,8 +12,10 @@ import water.fvec.Frame;
 import water.rapids.Rapids;
 import water.rapids.Val;
 import water.util.FrameUtils;
-import java.util.Random;
+import water.util.Log;
+
 import java.util.Arrays;
+import java.util.Random;
 
 import static org.junit.Assert.assertTrue;
 
@@ -41,8 +43,8 @@ public class AstTopNTest extends TestUtil {
 		@Test
 		public void TestTopBottomN() {
 				Scope.enter();
-				double[] checkPercent = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19}; // complete test
-				int numRuns = 2;
+				double[] checkPercent = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 19}; // complete test
+				int numRuns = 1;
 				double testPercent = 0;      // store test percentage
 				Frame topLong = null, topFloat = null, bottomLong = null, bottomFloat = null;
 
@@ -62,6 +64,7 @@ public class AstTopNTest extends TestUtil {
 				try {
 						for (int index = 0; index < numRuns; index++) { // randomly choose 4 percentages to test
 								testPercent = checkPercent[_rand.nextInt(checkPercent.length)];
+								Log.info("Percentage is " + testPercent);
 								testTopBottom(topLong, testPercent, 0, "0", _tolerance);
 								testTopBottom(topFloat, testPercent, 0, "1", _tolerance);  // test top % Float
 								testTopBottom(bottomLong, testPercent, 1, "0", _tolerance);  // test bottom % Long
@@ -73,7 +76,7 @@ public class AstTopNTest extends TestUtil {
 		}
 
 		public void testTopBottom(Frame topBottom, double testPercent, int getBottom, String columnIndex,
-																																			double tolerance) {
+																												double tolerance) {
 				Scope.enter();
 				Frame topBN = null, topBL = null;
 				try {
