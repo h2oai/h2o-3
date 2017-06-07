@@ -18,26 +18,27 @@ In both the R and Python API, AutoML uses the same data-related arguments, ``x``
 Required Parameters
 ~~~~~~~~~~~~~~~~~~~
 
+Required Data Parameters
+''''''''''''''''''''''''
+
 - `y <data-science/algo-params/y.html>`__: This argument is the name (or index) of the response column. 
 
 - `training_frame <data-science/algo-params/training_frame.html>`__: Specifies the training set. 
 
-Optional Parameters
-~~~~~~~~~~~~~~~~~~~
+Required Stopping Parameters
+''''''''''''''''''''''''''''
 
-- **x**: A list/vector of predictor column names or indexes.  This argument only needs to be specified if the user wants to exclude columns from the set of predictors.  If all columns (other than the response) should be used in prediction, then this does not need to be set.
+One of the following stopping strategies (time, model or metric-based) must be specified.  **Note:** When multiple options are set to control the stopping of the AutoML run (e.g. ``max_models`` and ``max_runtime_secs``), then whichever happens first will stop the AutoML run.
 
-- `validation_frame <data-science/algo-params/validation_frame.html>`__: This argument is is used for early stopping within the training process of the individual models in the AutoML run.  
-
-- **leaderboard_frame**: This argument allows the user to specify a particular data frame to rank the models on the leaderboard. This frame will not be used for anything besides creating the leaderboard. If this option is not specified, then a ``leaderboard_frame`` will be created from the ``training_frame``.
-
-- `fold_column <data-science/algo-params/fold_column.html>`__: Specifies a column with cross-validation fold index assignment per observation. This is used to override the default, randomized, 5-fold cross-validation scheme for individual models in the AutoML run.
-
-- `weights_column <data-science/algo-params/weights_column.html>`__: Specifies a column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative weights are not allowed.
+Time-based:
 
 - `max_runtime_secs <data-science/algo-params/max_runtime_secs.html>`__: This argument controls how long the AutoML run will execute. This defaults to 3600 seconds (1 hour).
 
+Model-based:
+
 - **max_models**: Specify the maximum number of models to build in an AutoML run. (Does not include the Stacked Ensemble model.) 
+
+Metric-based (used as a group):
 
 -  `stopping_metric <data-science/algo-params/stopping_metric.html>`__: Specifies the metric to use for early stopping. Defaults to ``"AUTO"``.  The available options are:
 
@@ -57,12 +58,31 @@ Optional Parameters
 
 - `stopping_rounds <data-science/algo-params/stopping_rounds.html>`__: This argument stops training new models in the AutoML run when the option selected for **stopping_metric** doesn't improve for the specified number of models, based on a simple moving average. Defaults to 3 and must be an non-negative integer.  To disable this feature, set it to 0. 
 
+
+Optional Parameters
+~~~~~~~~~~~~~~~~~~~
+
+Optional Data Parameters
+''''''''''''''''''''''''
+
+- **x**: A list/vector of predictor column names or indexes.  This argument only needs to be specified if the user wants to exclude columns from the set of predictors.  If all columns (other than the response) should be used in prediction, then this does not need to be set.
+
+- `validation_frame <data-science/algo-params/validation_frame.html>`__: This argument is is used for early stopping within the training process of the individual models in the AutoML run.  
+
+- **leaderboard_frame**: This argument allows the user to specify a particular data frame to rank the models on the leaderboard. This frame will not be used for anything besides creating the leaderboard. If this option is not specified, then a ``leaderboard_frame`` will be created from the ``training_frame``.
+
+- `fold_column <data-science/algo-params/fold_column.html>`__: Specifies a column with cross-validation fold index assignment per observation. This is used to override the default, randomized, 5-fold cross-validation scheme for individual models in the AutoML run.
+
+- `weights_column <data-science/algo-params/weights_column.html>`__: Specifies a column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative weights are not allowed.
+
+
+Optional Miscellaneous Parameters
+'''''''''''''''''''''''''''''''''
+
 - `seed <data-science/algo-params/seed.html>`__: Integer. Set a seed for reproducibility. AutoML can only guarantee reproducibility if ``max_models`` or early stopping is used because ``max_runtime_secs`` is resource limited, meaning that if the resources are not the same between runs, AutoML may be able to train more models on one run vs another.  Defaults to ``NULL/None``.
 
 - **project_name**: Character string to identify an AutoML project. Defaults to ``NULL/None``, which means a project name will be auto-generated based on the training frame ID.  More models can be trained on an existing AutoML project by specifying the same project name in muliple calls to the AutoML function (as long as the same training frame is used in subsequent runs).
 
-
- **Note:** When multiple options are set to control the stopping of the AutoML run (e.g. ``max_models`` and ``max_runtime_secs``), then whichever happens first will stop the AutoML run.
 
 Auto-Generated Frames
 ~~~~~~~~~~~~~~~~~~~~~
