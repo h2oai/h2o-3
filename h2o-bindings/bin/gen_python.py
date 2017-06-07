@@ -461,6 +461,8 @@ def gen_init(modules):
     for module, clz, category in sorted(modules):
         if clz == "H2OGridSearch": continue
         module_strs.append('"%s"' % clz)
+        if clz == "H2OAutoML": continue
+        module_strs.append('"%s"' % clz)
         yield "from .%s import %s" % (module, clz)
     yield ""
     yield "__all__ = ("
@@ -484,6 +486,8 @@ def gen_models_docs(modules):
             fullmodule = "h2o.estimators.%s.%s" % (module, clz)
             if clz == "H2OGridSearch":
                 fullmodule = "h2o.grid.grid_search.H2OGridSearch"
+            if clz == "H2OAutoML":
+                fullmodule = "h2o.automl.autoh2o.H2OAutoML"
             yield ":mod:`%s`" % clz
             yield "-" * (7 + len(clz))
             yield ".. autoclass:: %s" % fullmodule
@@ -501,7 +505,8 @@ def main():
 
     modules = [("deeplearning", "H2OAutoEncoderEstimator", "Unsupervised"),
                ("estimator_base", "H2OEstimator", "Miscellaneous"),
-               ("grid_search", "H2OGridSearch", "Miscellaneous")]
+               ("grid_search", "H2OGridSearch", "Miscellaneous"),
+               ("automl", "H2OAutoML", "Miscellaneous")]
     for name, mb in bi.model_builders().items():
         module = name
         if name == "drf": module = "random_forest"
