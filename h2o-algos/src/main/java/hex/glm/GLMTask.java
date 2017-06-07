@@ -1799,16 +1799,15 @@ public abstract class GLMTask  {
   }
 
   static class GLMIncrementalGramTask extends MRTask<GLMIncrementalGramTask> {
-    final int[] newCols;
+    final int[] _newCols;
     final DataInfo _dinfo;
     double[][] _gram;
     double [] _xy;
     final double [] _beta;
     final GLMWeightsFun _glmf;
 
-
     public GLMIncrementalGramTask(int [] newCols, DataInfo dinfo, GLMWeightsFun glmf, double [] beta){
-      this.newCols = newCols;
+      this._newCols = newCols;
       _glmf = glmf;
       _dinfo = dinfo;
       _beta = beta;
@@ -1818,8 +1817,8 @@ public abstract class GLMTask  {
       double [] wsum = new double[_dinfo.fullN()+1];
       double ywsum = 0;
       DataInfo.Rows rows = _dinfo.rows(chks);
-      double [][] gram = new double[newCols.length][_dinfo.fullN() + 1];
-      double [] xy = new double[newCols.length];
+      double [][] gram = new double[_newCols.length][_dinfo.fullN() + 1];
+      double [] xy = new double[_newCols.length];
       final int ns = _dinfo.numStart();
       double sparseOffset = rows._sparse?GLM.sparseOffset(_beta,_dinfo):0;
       for (int rid = 0; rid < rows._nrows; ++rid) {
@@ -1836,25 +1835,25 @@ public abstract class GLMTask  {
         ywsum += glmw.z*glmw.w;
         // first cats
         for (int i = 0; i < r.nBins; i++) {
-          while (j < newCols.length && newCols[j] < r.binIds[i])
+          while (j < _newCols.length && _newCols[j] < r.binIds[i])
             j++;
-          if (j == newCols.length || newCols[j] >= ns)
+          if (j == _newCols.length || _newCols[j] >= ns)
             break;
-          if (r.binIds[i] == newCols[j]) {
+          if (r.binIds[i] == _newCols[j]) {
             r.addToArray(glmw.w, gram[j]);
             xy[j] += glmw.w*glmw.z;
             j++;
           }
         }
-        while (j < newCols.length && newCols[j] < ns)
+        while (j < _newCols.length && _newCols[j] < ns)
           j++;
         // nums
         if (r.numIds != null) { // sparse
           for (int i = 0; i < r.nNums; i++) {
-            while (j < newCols.length && newCols[j] < r.numIds[i])
+            while (j < _newCols.length && _newCols[j] < r.numIds[i])
               j++;
-            if (j == newCols.length) break;
-            if (r.numIds[i] == newCols[j]) {
+            if (j == _newCols.length) break;
+            if (r.numIds[i] == _newCols[j]) {
               double wx = glmw.w * r.numVals[i];
               r.addToArray(wx, gram[j]);
               xy[j] += wx*glmw.z;
@@ -1862,22 +1861,22 @@ public abstract class GLMTask  {
             }
           }
         } else { // dense
-          for (; j < newCols.length; j++) {
-            int id = newCols[j];
+          for (; j < _newCols.length; j++) {
+            int id = _newCols[j];
             double x = r.numVals[id - _dinfo.numStart()];
             if(x == 0) continue;
             double wx = glmw.w * x;
             r.addToArray(wx, gram[j]);
             xy[j] += wx*glmw.z;
           }
-          assert j == newCols.length;
+          assert j == _newCols.length;
         }
       }
       if(rows._sparse && _dinfo._normSub != null){ // adjust for sparse zeros (skipped centering)
-        int numstart = Arrays.binarySearch(newCols,ns);
+        int numstart = Arrays.binarySearch(_newCols,ns);
         if(numstart < 0) numstart = -numstart-1;
         for(int k = 0; k < numstart; ++k){
-          int i = newCols[k];
+          int i = _newCols[k];
           double [] row = gram[k];
           for(int j = ns; j < row.length-1; ++j){
             double mean_j = _dinfo.normSub(j-ns);
@@ -1886,7 +1885,7 @@ public abstract class GLMTask  {
           }
         }
         for(int k = numstart; k < gram.length; ++k){
-          int i = newCols[k];
+          int i = _newCols[k];
           double mean_i = _dinfo.normSub(i-ns);
           double scale_i = _dinfo.normMul(i-ns);
           // categoricals

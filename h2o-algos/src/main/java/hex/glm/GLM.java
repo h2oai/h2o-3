@@ -1268,11 +1268,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       grads[i] += diff * ary[i];
     return grads;
   }
-  private static double [] doSparseUpdateCD(double [] grads, double [] ary, int[] ids, double diff , int variable_min, int variable_max) {
-    for(int i = 0; i < ids.length; ++i)
-      grads[ids[i]] += diff * ary[i];
-    return grads;
-  }
+
   public double [] COD_solve(ComputationState.GramXY gram, double alpha, double lambda) {
     double [] res = COD_solve(gram.gram.getXX(),gram.xy,gram.getCODGradients(),gram.newCols,alpha,lambda);
     gram.newCols = new int[0];
