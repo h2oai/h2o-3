@@ -43,7 +43,7 @@ public class AstTopNTest extends TestUtil {
 		@Test
 		public void TestTopBottomN() {
 				Scope.enter();
-				double[] checkPercent = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 19}; // complete test
+				double[] checkPercent = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}; //, 11, 12, 13, 14, 15, 17, 19}; // complete test
 				int numRuns = 1;
 				double testPercent = 0;      // store test percentage
 				Frame topLong = null, topFloat = null, bottomLong = null, bottomFloat = null;
@@ -64,23 +64,21 @@ public class AstTopNTest extends TestUtil {
 				try {
 						for (int index = 0; index < numRuns; index++) { // randomly choose 4 percentages to test
 								testPercent = checkPercent[_rand.nextInt(checkPercent.length)];
-								boolean[] runTest = {false, false, false, false};
-								runTest[_rand.nextInt(4)] = true;  // choose one out of 4 to run
-								int testIndex = 0;
+								int testNo = _rand.nextInt(4);
 								Log.info("Percentage is " + testPercent);
-								if (runTest[testIndex++]) {
+								if (testNo==0) {
 										Log.info("Testing top N long.");
 										testTopBottom(topLong, testPercent, 0, "0", _tolerance);
 								}
-								if (runTest[testIndex++]) {
+								if (testNo==1) {
 										Log.info("Testing top N float.");
 										testTopBottom(topFloat, testPercent, 0, "1", _tolerance);  // test top % Float
 								}
-								if (runTest[testIndex++]) {
+								if (testNo==2) {
 										Log.info("Testing bottom N long.");
 										testTopBottom(bottomLong, testPercent, 1, "0", _tolerance);  // test bottom % Long
 								}
-								if (runTest[testIndex++]) {
+								if (testNo==3) {
 										Log.info("Testing bottom N float.");
 										testTopBottom(bottomFloat, testPercent, 1, "1", _tolerance);  // test bottom % Float
 								}
