@@ -19,11 +19,11 @@ class H2OAutoML(object):
     >>> aml = H2OAutoML(max_runtime_secs=30, project_name=project_name)
     """
     def __init__(self,
-                 max_runtime_secs=None,
+                 max_runtime_secs=3600,
                  max_models=None,
-                 stopping_metric=None,
-                 stopping_tolerance=None,
-                 stopping_rounds=None,
+                 stopping_metric="AUTO",
+                 stopping_tolerance=0.001,
+                 stopping_rounds=3,
                  seed=None,
                  project_name=None):
 
@@ -38,11 +38,11 @@ class H2OAutoML(object):
                   "\nVerbose Error Message:")
 
         #If max_runtime_secs is not provided, then it is set to default (600 secs)
-        if max_runtime_secs is None:
-            max_runtime_secs = 3600
+        if max_runtime_secs is not 3600:
+            assert_is_type(max_runtime_secs,int)
+            max_runtime_secs = max_runtime_secs
             self.max_runtime_secs = max_runtime_secs
         else:
-            assert_is_type(max_runtime_secs,int)
             self.max_runtime_secs = max_runtime_secs
 
         #Make bare minimum build_control
@@ -58,18 +58,27 @@ class H2OAutoML(object):
             self.build_control["stopping_criteria"]["max_models"] = max_models
             self.max_models = max_models
 
-        if stopping_metric is not None:
+        if stopping_metric is not "AUTO":
             assert_is_type(stopping_metric,str)
             self.build_control["stopping_criteria"]["stopping_metric"] = stopping_metric
             self.stopping_metric = stopping_metric
+        else:
+            self.build_control["stopping_criteria"]["stopping_metric"] = stopping_metric
+            self.stopping_metric = stopping_metric
 
-        if stopping_tolerance is not None:
+        if stopping_tolerance is not 0.001:
             assert_is_type(stopping_tolerance,float)
             self.build_control["stopping_criteria"]["stopping_tolerance"] = stopping_tolerance
             self.stopping_tolerence = stopping_tolerance
+        else:
+            self.build_control["stopping_criteria"]["stopping_tolerance"] = stopping_tolerance
+            self.stopping_tolerence = stopping_tolerance
 
-        if stopping_rounds is not None:
+        if stopping_rounds is not 3:
             assert_is_type(stopping_rounds,int)
+            self.build_control["stopping_criteria"]["stopping_rounds"] = stopping_rounds
+            self.stopping_rounds = stopping_rounds
+        else:
             self.build_control["stopping_criteria"]["stopping_rounds"] = stopping_rounds
             self.stopping_rounds = stopping_rounds
 
