@@ -1,5 +1,7 @@
 package water.api;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.ServiceLoader;
 import hex.ModelBuilder;
 import water.H2O;
@@ -22,6 +24,11 @@ public abstract class AbstractRegister implements RestApiExtension {
   @Override
   public String getName() {
     return this.getClass().getName();
+  }
+
+  @Override
+  public List<String> getRequiredCoreExtensions() {
+    return Collections.emptyList();
   }
 
   /**

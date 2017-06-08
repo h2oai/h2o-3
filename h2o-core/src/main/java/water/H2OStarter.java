@@ -17,15 +17,15 @@ public class H2OStarter {
     long time0 = System.currentTimeMillis();
     // FIXME: move into H2O.main()
     H2O.configureLogging();
-    H2O.registerExtensions();
+    ExtensionManager.registerCoreExtensions();
 
     // Fire up the H2O Cluster
     H2O.main(args);
 
     if (!H2O.ARGS.disable_web) {
-      H2O.registerRestApis(relativeResourcePath);
+      ExtensionManager.regsterRestApiExtensions(relativeResourcePath);
       if (finalizeRestRegistration) {
-        H2O.finalizeRegistration();
+        H2O.startServingRestApi();
       }
     }
 

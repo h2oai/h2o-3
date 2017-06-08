@@ -1,5 +1,9 @@
 package water.api;
 
+import water.AbstractH2OExtension;
+
+import java.util.List;
+
 /**
  * REST API registration endpoint.
  *
@@ -35,4 +39,7 @@ public interface RestApiExtension {
 
   /** Provide name of the REST API extension. */
   String getName();
+
+  /** List of core extensions on which this rest api depends on */
+  List<String> getRequiredCoreExtensions();
 }
