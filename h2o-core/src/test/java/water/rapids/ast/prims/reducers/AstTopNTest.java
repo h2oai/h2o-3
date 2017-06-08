@@ -66,19 +66,19 @@ public class AstTopNTest extends TestUtil {
 								testPercent = checkPercent[_rand.nextInt(checkPercent.length)];
 								int testNo = _rand.nextInt(4);
 								Log.info("Percentage is " + testPercent);
-								if (testNo==0) {
+								if (testNo == 0) {
 										Log.info("Testing top N long.");
 										testTopBottom(topLong, testPercent, 0, "0", _tolerance);
 								}
-								if (testNo==1) {
+								if (testNo == 1) {
 										Log.info("Testing top N float.");
 										testTopBottom(topFloat, testPercent, 0, "1", _tolerance);  // test top % Float
 								}
-								if (testNo==2) {
+								if (testNo == 2) {
 										Log.info("Testing bottom N long.");
 										testTopBottom(bottomLong, testPercent, 1, "0", _tolerance);  // test bottom % Long
 								}
-								if (testNo==3) {
+								if (testNo == 3) {
 										Log.info("Testing bottom N float.");
 										testTopBottom(bottomFloat, testPercent, 1, "1", _tolerance);  // test bottom % Float
 								}
@@ -116,8 +116,7 @@ public class AstTopNTest extends TestUtil {
 				try {
 						double nfrac = (getBottom > 0) ? 1.0 * grabF.numRows() / answerF.numRows() : (1 - 1.0 * grabF.numRows() / answerF.numRows());   // translate percentage to actual fraction
 
-						SplitFrame sf = new SplitFrame(answerF, new double[]{nfrac, 1 - nfrac}, new Key[]{
-														Key.make("topN.hex"), Key.make("bottomN.hex")});
+						SplitFrame sf = new SplitFrame(answerF, new double[]{nfrac, 1 - nfrac}, new Key[]{Key.make("topN.hex"), Key.make("bottomN.hex")});
 						// Invoke the job
 						sf.exec().get();
 						Key[] ksplits = sf._destination_frames;

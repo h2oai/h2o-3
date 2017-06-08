@@ -1,10 +1,10 @@
 package water.rapids.ast.prims.reducers;
 
-import water.DKV;
-import water.H2O;
-import water.Key;
 import water.MRTask;
-import water.fvec.*;
+import water.fvec.C8Chunk;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
@@ -46,14 +46,6 @@ public class AstTopN extends AstPrimitive {
 		@Override
 		public ValFrame apply(Env env, Env.StackHelp stk, AstRoot[] asts) { // implementation with PriorityQueue
 				Frame frOriginal = stk.track(asts[1].exec(env)).getFrame(); // get the 2nd argument and convert it to a Frame
-				// break into multiple chunks if needed
-				if ((frOriginal.anyVec().nChunks() == 1) && (frOriginal.numRows() > 1000)) {
-						Key rebalancedKey = Key.make();
-						RebalanceDataSet rb = new RebalanceDataSet(frOriginal, rebalancedKey, 4);
-						H2O.submitTask(rb);
-						rb.join();
-						frOriginal = DKV.get(rebalancedKey).get();
-				}
 				int colIndex = (int) stk.track(asts[2].exec(env)).getNum();     // column index of interest
 				double nPercent = stk.track(asts[3].exec(env)).getNum();        //  top or bottom percentage of row to return
 				int getBottomN = (int) stk.track(asts[4].exec(env)).getNum();   // 0, return top, 1 return bottom percentage
@@ -62,7 +54,6 @@ public class AstTopN extends AstPrimitive {
 				String[] finalColumnNames = {"Original_Row_Indices", frOriginal.name(colIndex)}; // set output frame names
 				GrabTopNPQ grabTask = new GrabTopNPQ(finalColumnNames, numRows, (getBottomN == 0 ? 1 : -1));
 				grabTask.doAll(frOriginal.vec(colIndex));
-				frOriginal.remove();
 				return new ValFrame(grabTask._sortedOut);
 		}
 
@@ -141,7 +132,7 @@ public class AstTopN extends AstPrimitive {
 
 				public void mergeArraysL(long[] otherRow, long[] otherValue) {
 						// grab bottom and grab top are slightly different
-						int finalArraySize = min(this._rowSize, this._lValues.length+otherValue.length);
+						int finalArraySize = min(this._rowSize, this._lValues.length + otherValue.length);
 
 						long[] newRow = new long[finalArraySize];
 						long[] newValues = new long[finalArraySize]; // desired values are at start of array
@@ -173,7 +164,7 @@ public class AstTopN extends AstPrimitive {
 
 				public void mergeArraysD(long[] otherRow, double[] otherValue) {
 						// grab bottom and grab top are slightly different
-						int finalArraySize = min(this._rowSize, this._rowIndices.length+otherRow.length);
+						int finalArraySize = min(this._rowSize, this._rowIndices.length + otherRow.length);
 
 						long[] newRow = new long[finalArraySize];
 						double[] newValues = new double[finalArraySize]; // desired values are at start of array
