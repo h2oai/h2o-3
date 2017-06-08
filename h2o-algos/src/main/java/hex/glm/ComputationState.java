@@ -653,7 +653,8 @@ public final class ComputationState {
     assert beta == null || beta.length == activeData.fullN()+1;
     int [] activeCols = activeData.activeCols();
     if (Arrays.equals(_currGram.activeCols,activeCols))
-      return (!weighted || Arrays.equals(_currGram.beta,beta))?_currGram:computeNewGram(activeData,beta,s);
+      return (!weighted || Arrays.equals(_currGram.beta, beta)) ? _currGram : (_currGram = computeNewGram(activeData, beta, s));
+
     if(_glmw == null) _glmw = new GLMModel.GLMWeightsFun(_parms);
     // check if we need full or just incremental update
     if(_currGram != null){
@@ -662,8 +663,8 @@ public final class ComputationState {
       int jj = 0;
       boolean matches = true;
       int k = 0;
-      for (int i = 0; jj < newCols.length && i < activeCols.length; ++i) {
-        if (activeCols[i] == newCols[jj]) {
+      for (int i = 0; i < activeCols.length; ++i) {
+        if (jj < newCols.length && activeCols[i] == newCols[jj]) {
           newColsIds[jj++] = i;
           matches = matches && (beta == null || beta[i] == 0);
         } else {
