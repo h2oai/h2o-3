@@ -789,6 +789,7 @@ In the **Build a Model** cell, select an algorithm from the drop-down menu. (Ref
  - **K-means**: Create a K-Means model.
  - **Naïve Bayes**: Create a Naïve Bayes model.
  - **Principal Component Analysis**: Create a Principal Components Analysis model for modeling without regularization or performing dimensionality reduction.
+ - **XGBoost**: Create an XGBoost model. 
 
  You can also specify to run AutoML, which automatically trains and tunes models while requiring as few parameters as possible. All the user needs to do is point to a dataset, identify the response column, and optionally specify a time-constraint.
 
@@ -1329,6 +1330,33 @@ Exporting and Importing Models
 .. figure:: images/ImportModel.png
    :alt: Import Model
 
+--------------
+
+Run AutoML
+^^^^^^^^^^
+
+AutoML automatically trains and tunes models while requiring as few parameters as possible. A user is only required to point to a dataset, identify the response column and optionally specify a time constraint, a maximum number of models constraint, and early stopping parameters. AutoML will then begin training models and will stop as specified in the configuration (i.e., when the maximum number of models has been reached, when the maximum run time has been reached, or when the stopping criteria are met). The outputted models will display on a leaderboard, showing the best results first. Stacked Ensembles will also be automatically trained on the collection of individual models to produce a highly predictive ensemble model which, in most cases, will be the top performing model in the AutoML leaderboard. Note that Stacked Ensembles are not yet available for multiclass classification problems, so in that case, only singleton models will be trained.
+
+To begin an AutoML run, select **Models > Run AutoML** from the top menu.
+
+.. figure:: images/Flow_Model_RunAutoML.png
+   :alt: Select Model > Run AutoML
+   :height: 308
+   :width: 150
+
+At a minimum, specify the training frame and the response column. (Note that by default, the AutoML run will end after 3600 seconds.) Click **Build Model** to start the run.
+
+.. figure:: images/Flow_RunAutoML.png
+   :alt: Configure the AutoML run
+   :height: 423
+   :width: 800
+
+After the run is completed, click the **View** button to view the Leaderboard.
+
+.. figure:: images/Flow_ViewLeaderboard.png
+   :alt: Viewing the Leaderboard
+   :height: 474
+   :width: 820
 
 --------------
 
