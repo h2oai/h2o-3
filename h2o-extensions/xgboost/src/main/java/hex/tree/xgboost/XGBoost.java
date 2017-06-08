@@ -7,8 +7,8 @@ import hex.ScoreKeeper;
 import hex.glm.GLMTask;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
-import ml.dmlc.xgboost4j.java.NativeLibLoader;
 import ml.dmlc.xgboost4j.java.XGBoostError;
+import water.ExtensionManager;
 import water.H2O;
 import water.Job;
 import water.Key;
@@ -23,7 +23,6 @@ import water.util.Log;
 import water.util.Timer;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -34,7 +33,6 @@ import java.util.List;
 
 import static hex.tree.SharedTree.createModelSummaryTable;
 import static hex.tree.SharedTree.createScoringHistoryTable;
-import static water.H2O.PID;
 import static water.H2O.technote;
 
 /** Gradient Boosted Trees
@@ -45,38 +43,10 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   @Override public boolean haveMojo() { return true; }
 
   @Override public BuilderVisibility builderVisibility() {
-    return haveBackend() ? BuilderVisibility.Stable : BuilderVisibility.Experimental;
-  }
-
-  private static String XGBOOST_MIN_REQUIREMENTS =
-      "Xgboost (enabled GPUs) needs: \n"
-      + "  - CUDA 8.0\n"
-      + "XGboost (minimal version) needs: \n"
-      + "  - no req\n";
-
-  //
-  // FIXME: moved into XGBoost core extension (see PUBDEV-4548)
-  //
-  static boolean haveBackend() {
-    //Check if multinode (XGBoost will not work for multinode)
-    if (H2O.getCloudSize() > 1) {
-      Log.info("Detected more than 1 H2O node. H2O only supports XGBoost in single node setting.");
-      return false;
-    }
-    // Check if some native library was loaded
-    try {
-      String libName = NativeLibLoader.getLoadedLibraryName();
-      if (libName != null) {
-        Log.info("Found XGBoost backend with library: " + libName);
-        return true;
-      } else {
-        Log.warn("Cannot get XGBoost backend!" + XGBOOST_MIN_REQUIREMENTS);
-        return false;
-      }
-    } catch (IOException e) {
-      // Ups no lib loaded or load failed
-      Log.warn("Cannot initialize XGBoost backend! " + XGBOOST_MIN_REQUIREMENTS, e);
-      return false;
+    if(ExtensionManager.getInstance().isCoreExtensionsEnabled(XGBoostExtension.NAME)){
+      return BuilderVisibility.Stable;
+    } else {
+      return BuilderVisibility.Experimental;
     }
   }
 

@@ -96,7 +96,6 @@ public class AutoSerialTest extends Iced {
   }
 
   @Test public void testKey() throws Exception {
-    H2O.main(new String[0]);
     Key[] tests = { Key.make(), Key.make("monkey"), Key.make("ninja"), null };
     for( Key exp : tests) {
       _key = exp;
@@ -107,7 +106,6 @@ public class AutoSerialTest extends Iced {
   }
 
   @Test public void testString() throws Exception {
-    H2O.main(new String[0]);
     String[] tests = { "", "monkey", "ninja", null };
     for( String exp : tests) {
       _string = exp;
