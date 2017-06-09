@@ -21,7 +21,6 @@ include 'h2o-avro-parser'
 include 'h2o-orc-parser'
 include 'h2o-parquet-parser'
 include 'h2o-jaas-pam'
-include 'h2o-automl'
 include 'h2o-genmodel-ext-xgboost'
 include 'h2o-ext-xgboost'
 

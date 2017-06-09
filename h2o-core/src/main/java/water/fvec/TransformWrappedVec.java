@@ -19,8 +19,6 @@ import water.rapids.ast.params.AstNum;
  * per Op per element (per Chunk). As has been noted (see e.g. RollupStats),
  * virtual calls are expensive, but the memory savings are substantial.
  *
- * AutoML can freely transform columns without ramification.
- *
  * Each wrapped Vec will track its own transformations, which makes it easy
  * when generating a POJO.
  *

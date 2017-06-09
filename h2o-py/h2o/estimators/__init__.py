@@ -22,14 +22,9 @@ from .word2vec import H2OWord2vecEstimator
 from .xgboost import H2OXGBoostEstimator
 
 __all__ = (
-    "H2OAggregatorEstimator", "H2OAggregatorEstimator", "H2OAutoML", "H2OAutoEncoderEstimator",
-    "H2OAutoEncoderEstimator", "H2ODeepLearningEstimator", "H2ODeepLearningEstimator", "H2ODeepWaterEstimator",
-    "H2ODeepWaterEstimator", "H2OEstimator", "H2OEstimator", "H2OGradientBoostingEstimator",
-    "H2OGradientBoostingEstimator", "H2OGeneralizedLinearEstimator", "H2OGeneralizedLinearEstimator",
-    "H2OGeneralizedLowRankEstimator", "H2OGeneralizedLowRankEstimator", "H2OKMeansEstimator", "H2OKMeansEstimator",
-    "H2ONaiveBayesEstimator", "H2ONaiveBayesEstimator", "H2OPrincipalComponentAnalysisEstimator",
-    "H2OPrincipalComponentAnalysisEstimator", "H2ORandomForestEstimator", "H2ORandomForestEstimator",
-    "H2OStackedEnsembleEstimator", "H2OStackedEnsembleEstimator", "H2OSingularValueDecompositionEstimator",
-    "H2OSingularValueDecompositionEstimator", "H2OWord2vecEstimator", "H2OWord2vecEstimator", "H2OXGBoostEstimator",
-    "H2OXGBoostEstimator"
+    "H2OAggregatorEstimator", "H2OAutoEncoderEstimator", "H2ODeepLearningEstimator", "H2ODeepWaterEstimator",
+    "H2OEstimator", "H2OGradientBoostingEstimator", "H2OGeneralizedLinearEstimator", "H2OGeneralizedLowRankEstimator",
+    "H2OKMeansEstimator", "H2ONaiveBayesEstimator", "H2OPrincipalComponentAnalysisEstimator",
+    "H2ORandomForestEstimator", "H2OStackedEnsembleEstimator", "H2OSingularValueDecompositionEstimator",
+    "H2OWord2vecEstimator", "H2OXGBoostEstimator"
 )

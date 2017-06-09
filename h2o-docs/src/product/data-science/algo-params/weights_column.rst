@@ -1,7 +1,7 @@
 ``weights_column``
 ------------------
 
-- Available in: GBM, DRF, Deep Learning, GLM, AutoML
+- Available in: GBM, DRF, Deep Learning, GLM
 - Hyperparameter: no
 
 Description

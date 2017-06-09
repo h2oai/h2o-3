@@ -234,7 +234,6 @@ def endpoints(raw=False):
             if path == "/3/ModelMetrics/frames/{frame}": continue
             if path == "/3/ModelMetrics/models/{model}": continue
             if path == "/3/ModelMetrics": continue
-            if "AutoML" in path: continue  # Generation code doesn't know how to deal with defaults for complex objects yet
             if apiname.endswith("_deprecated"): continue
 
             # Resolve one name conflict
@@ -344,8 +343,6 @@ def schemas_map(add_generics=False):
     """
     m = {}
     for schema in schemas():
-        if schema["name"].startswith('AutoML'): continue  # Generation code doesn't know how to deal with defaults for complex objects yet
-        if schema["name"].startswith('UserFeedback'): continue  # UserFeedback schema contains an AutoMLKeyV3
         m[schema["name"]] = schema
 
     def find_field(fields, field_name):

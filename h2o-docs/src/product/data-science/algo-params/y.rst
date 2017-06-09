@@ -1,6 +1,6 @@
 ``y``
 -----
-- Available in: GBM, DRF, Deep Learning, GLM, Naïve-Bayes, AutoML
+- Available in: GBM, DRF, Deep Learning, GLM, Naïve-Bayes
 - Hyperparameter: no
 
 

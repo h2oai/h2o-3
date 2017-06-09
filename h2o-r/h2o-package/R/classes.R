@@ -622,12 +622,3 @@ setMethod("summary", "H2OGrid",
 #' @export
 setClass("H2OFrame")
 
-#'
-#' The H2OAutoML class
-#'
-#' This class represents an H2OAutoML object
-#'
-#' @export
-setClass("H2OAutoML", slots = c(project_name = "character",
-                                leader = "H2OModel",
-                                leaderboard = "H2OFrame"))
