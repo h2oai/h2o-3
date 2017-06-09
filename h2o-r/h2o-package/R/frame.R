@@ -1138,9 +1138,9 @@ h2o.pivot <- function(x, index, column, value){
 # @param x an H2OFrame
 # @param column is a column name or column index to grab the top N percent value from
 # @param nPercent a top percentage values to grab
-# @param getBottom if -1 grab top percentage, 1 grab bottom percentage
+# @param grabTopN if -1 grab bottom percentage, 1 grab top percentage
 # @return An H2OFrame with 2 columns: first column is the original row indices, second column contains the values
-h2o.topBottomN <- function(x, column, nPercent, getBottom){
+h2o.topBottomN <- function(x, column, nPercent, grabTopN){
   cnames = names(x)
   colIndex=0
   if (typeof(column)=="character") {  # verify column
@@ -1157,7 +1157,7 @@ h2o.topBottomN <- function(x, column, nPercent, getBottom){
   if (nPercent*0.01*nrow(x) < 1) stop("Increase nPercent.  Current value will result in top 0 row.")
   if (!h2o.isnumeric(x[colIndex+1])) stop("Wrong column type!  Selected column must be numeric.")
 
-  .newExpr("topn", x, colIndex, nPercent,getBottom)
+  .newExpr("topn", x, colIndex, nPercent,grabTopN)
 }
 
 #' H2O topN
@@ -1170,7 +1170,7 @@ h2o.topBottomN <- function(x, column, nPercent, getBottom){
 #' @return An H2OFrame with 2 columns.  The first column is the original row indices, second column contains the topN values
 #' @export
 h2o.topN <- function(x, column, nPercent) {
-  h2o.topBottomN(x, column, nPercent, -1)
+  h2o.topBottomN(x, column, nPercent, 1)
 }
 #' H2O bottomN
 #'
@@ -1183,7 +1183,7 @@ h2o.topN <- function(x, column, nPercent) {
 #' @return An H2OFrame with 2 columns.  The first column is the original row indices, second column contains the bottomN values
 #' @export
 h2o.bottomN <- function(x, column, nPercent) {
-  h2o.topBottomN(x, column, nPercent, 1)
+  h2o.topBottomN(x, column, nPercent, -1)
 }
 
 #-----------------------------------------------------------------------------------------------------------------------

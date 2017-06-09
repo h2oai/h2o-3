@@ -24,7 +24,7 @@ test.topNbottomN = function() {
 
         # result from column name and column index should be the same
         h2o_and_R_equal(topNf, topNfI)
-        compare_rep_frames(topAnswer, topNf, tolerance, colIndex, -1)
+        compare_rep_frames(topAnswer, topNf, tolerance, colIndex, 1)
     } else {
         # test bottomN with randomly chosen N percent, and with column names and column index
         print(paste("test bottomN: nPercent is", nP, " Column index is ", colIndex))
@@ -32,18 +32,18 @@ test.topNbottomN = function() {
         bottomNfI = h2o.bottomN(dataset, colIndex, nP)              # call with column index
         # result from column name and column index should be the same
         h2o_and_R_equal(bottomNf, bottomNfI)
-        compare_rep_frames(bottomAnswer, bottomNfI, tolerance, colIndex, 1)
+        compare_rep_frames(bottomAnswer, bottomNfI, tolerance, colIndex, -1)
     }
 }
 
-compare_rep_frames = function(answerFrame, actualFrame, tolerance, colIndex, getBottom) {
+compare_rep_frames = function(answerFrame, actualFrame, tolerance, colIndex, grabTopN) {
     answerA = sort(data.matrix(as.data.frame(answerFrame)[colIndex]))
     actualA = sort(data.matrix(as.data.frame(actualFrame)[2]))
     highIndex = nrow(answerFrame)
     distinctValNum = nrow(actualFrame) / 4
     allIndex = c((highIndex - distinctValNum + 1) : highIndex)
     repIndex = 1
-    if (getBottom > 0) {
+    if (grabTopN < 0) {
         allIndex = c(1 : distinctValNum)
     }
     for (index in allIndex) {
