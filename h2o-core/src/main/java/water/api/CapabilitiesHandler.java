@@ -12,7 +12,7 @@ public class CapabilitiesHandler extends Handler{
 
   private ArrayList<CapabilityEntryV3> getCoreExtensionEntries(){
     ArrayList<CapabilityEntryV3> entries = new ArrayList<>();
-    for(AbstractH2OExtension ext: ExtensionManager.getCoreExtensions()){
+    for(AbstractH2OExtension ext: ExtensionManager.getInstance().getCoreExtensions()){
       entries.add(new CapabilityEntryV3(ext.getExtensionName()));
     }
     return entries;
@@ -20,7 +20,7 @@ public class CapabilitiesHandler extends Handler{
 
   private ArrayList<CapabilityEntryV3> getRestAPIExtensionEntries(){
     ArrayList<CapabilityEntryV3> entries = new ArrayList<>();
-    for(RestApiExtension ext: ExtensionManager.getRestApiExtensions()){
+    for(RestApiExtension ext: ExtensionManager.getInstance().getRestApiExtensions()){
       entries.add(new CapabilityEntryV3(ext.getName()));
     }
     return entries;

@@ -17,15 +17,6 @@ import java.util.List;
 public interface RestApiExtension {
 
   /**
-   * TODO: would be better to pass Jetty object to register `jetty.register(new ApiHandler())
-   * @param relativeResourcePath
-   *
-   * @deprecated use {@link #registerEndPoints(RestApiContext)}
-   */
-  @Deprecated
-  void register(String relativeResourcePath);
-
-  /**
    *
    * @param context
    */

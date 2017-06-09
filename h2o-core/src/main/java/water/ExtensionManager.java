@@ -10,19 +10,29 @@ import java.util.*;
 
 public class ExtensionManager {
 
-  private static HashMap<String, AbstractH2OExtension> coreExtensions = new HashMap<>();
-  private static HashMap<String, RestApiExtension> restApiExtensions = new HashMap<>();
-  private static long registerCoreExtensionsMillis = 0;
+  private static ExtensionManager extManager = new ExtensionManager();
+
+  private ExtensionManager(){
+  }
+
+  public static ExtensionManager getInstance(){
+    return extManager;
+  }
+
+
+  private HashMap<String, AbstractH2OExtension> coreExtensions = new HashMap<>();
+  private HashMap<String, RestApiExtension> restApiExtensions = new HashMap<>();
+  private long registerCoreExtensionsMillis = 0;
   // Be paranoid and check that this doesn't happen twice.
-  private static boolean extensionsRegistered = false;
-  private static boolean restApiExtensionsRegistered = false;
+  private boolean extensionsRegistered = false;
+  private boolean restApiExtensionsRegistered = false;
 
 
-  public static Collection<AbstractH2OExtension> getCoreExtensions() {
+  public Collection<AbstractH2OExtension> getCoreExtensions() {
     return coreExtensions.values();
   }
 
-  public static boolean isCoreExtensionsEnabled(String extensionName){
+  public boolean isCoreExtensionsEnabled(String extensionName){
     return coreExtensions.get(extensionName).isEnabled();
   }
 
@@ -32,7 +42,7 @@ public class ExtensionManager {
    * Use SPI to find all classes that extends water.AbstractH2OExtension
    * and call H2O.addCoreExtension() for each.
    */
-  public static void registerCoreExtensions() {
+  public void registerCoreExtensions() {
     if (extensionsRegistered) {
       throw H2O.fail("Extensions already registered");
     }
@@ -49,11 +59,11 @@ public class ExtensionManager {
     registerCoreExtensionsMillis = System.currentTimeMillis() - before;
   }
 
-  public static Collection<RestApiExtension> getRestApiExtensions(){
+  public Collection<RestApiExtension> getRestApiExtensions(){
     return restApiExtensions.values();
   }
 
-  private static boolean areDependantCoreExtensionsEnabled(List<String> names){
+  private boolean areDependantCoreExtensionsEnabled(List<String> names){
     for(String name: names){
       AbstractH2OExtension ext = coreExtensions.get(name);
       if(ext == null || !ext.isEnabled()){
@@ -69,15 +79,14 @@ public class ExtensionManager {
    * Use reflection to find all classes that inherit from {@link water.api.AbstractRegister}
    * and call the register() method for each.
    *
-   * @param relativeResourcePath Relative path from running process working dir to find web resources.
    */
-  public static void regsterRestApiExtensions(String relativeResourcePath) {
+  public void registerRestApiExtensions() {
     if (restApiExtensionsRegistered) {
       throw H2O.fail("APIs already registered");
     }
 
     // Log core extension registrations here so the message is grouped in the right spot.
-    for (AbstractH2OExtension e : ExtensionManager.getCoreExtensions()) {
+    for (AbstractH2OExtension e : getCoreExtensions()) {
       e.printInitialized();
     }
     Log.info("Registered " + coreExtensions.size() + " core extensions in: " + registerCoreExtensionsMillis + "ms");
@@ -89,7 +98,6 @@ public class ExtensionManager {
     for (RestApiExtension r : restApiExtensionLoader) {
       try {
         if(areDependantCoreExtensionsEnabled(r.getRequiredCoreExtensions())) {
-          r.register(relativeResourcePath);
           r.registerEndPoints(dummyRestApiContext);
           r.registerSchemas(dummyRestApiContext);
           restApiExtensions.put(r.getName(), r);
@@ -103,17 +111,17 @@ public class ExtensionManager {
 
     long registerApisMillis = System.currentTimeMillis() - before;
     Log.info("Registered: " + RequestServer.numRoutes() + " REST APIs in: " + registerApisMillis + "ms");
-    Log.info("Registered REST API extensions: " + Arrays.toString(ExtensionManager.getRestApiExtensionNames()));
+    Log.info("Registered REST API extensions: " + Arrays.toString(getRestApiExtensionNames()));
 
     // Register all schemas
     SchemaServer.registerAllSchemasIfNecessary(dummyRestApiContext.getAllSchemas());
   }
 
-  private static String[] getRestApiExtensionNames(){
+  private String[] getRestApiExtensionNames(){
     return restApiExtensions.keySet().toArray(new String[restApiExtensions.keySet().size()]);
   }
 
-  private static String[] getCoreExtensionNames(){
+  private String[] getCoreExtensionNames(){
     return coreExtensions.keySet().toArray(new String[coreExtensions.keySet().size()]);
   }
 }
