@@ -111,6 +111,23 @@ public class DataInfo extends Keyed<DataInfo> {
   public int [] _catOffsets;   // offset column indices for the 1-hot expanded values (includes enum-enum interaction)
   public boolean [] _catMissing;  // bucket for missing levels
   private int [] _catNAFill;    // majority class of each categorical col (or last bucket if _catMissing[i] is true)
+
+  private int catDomainLen(int i) {
+    return _catOffsets[i+1]-_catOffsets[i];
+  }
+
+  public int[] catMap(int i) {
+    if(_catMap != null && _catMap[i] != null) return _catMap[i];
+    if(!_useAllFactorLevels){ // make new catmap
+      int [] catMap = new int[catDomainLen(i)+1];
+      catMap[0] = -1;
+      for(int j = 1; j < catMap.length; j++)
+        catMap[j] = j-1;
+      return catMap;
+    }
+    return null;
+  }
+
   public int [] _permutation; // permutation matrix mapping input col indices to adaptedFrame
   public double [] _normMul;  // scale the predictor column by this value
   public double [] _normSub;  // subtract from the predictor this value

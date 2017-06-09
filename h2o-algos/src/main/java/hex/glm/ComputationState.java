@@ -43,6 +43,7 @@ public final class ComputationState {
   private GLMGradientSolver _gslvr;
   private final Job _job;
   private int _activeClass = -1;
+  protected double _obj_reg = 1;
 
   /**
    *
@@ -74,8 +75,8 @@ public final class ComputationState {
     // (shoudl be safe as we check the KKTs anyways)
     applyStrongRules(lambda, _lambda);
     _lambda = lambda;
-    _gslvr = new GLMGradientSolver(_job,_parms,_activeData,l2pen(),_activeBC);
     adjustToNewLambda(lambda, 0);
+    _gslvr = new GLMGradientSolver(_job,_obj_reg,_parms,_activeData,l2pen(),_activeBC);
   }
   public double [] beta(){
     if(_activeClass != -1)
@@ -182,7 +183,7 @@ public final class ComputationState {
         assert _u == null || _activeData.activeCols().length == _u.length;
         _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal, ArrayUtils.select(_ginfo._gradient, cols));
         _activeBC = _bc.filterExpandedColumns(_activeData.activeCols());
-        _gslvr = new GLMGradientSolver(_job,_parms,_activeData,(1-_alpha)*_lambda,_bc);
+        _gslvr = new GLMGradientSolver(_job,_obj_reg,_parms,_activeData,(1-_alpha)*_lambda,_bc);
         assert _beta.length == cols.length;
         return;
       }
@@ -396,7 +397,7 @@ public final class ComputationState {
     }
     int [] activeCols = _activeData.activeCols();
     if(beta != _beta || _ginfo == null) {
-      _gslvr = new GLMGradientSolver(_job, _parms, _dinfo, (1 - _alpha) * _lambda, _bc);
+      _gslvr = new GLMGradientSolver(_job,_obj_reg, _parms, _dinfo, (1 - _alpha) * _lambda, _bc);
       _ginfo = _gslvr.getGradient(beta);
     }
     double[] grad = _ginfo._gradient.clone();
@@ -444,7 +445,7 @@ public final class ComputationState {
         _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal, ArrayUtils.select(_ginfo._gradient, newCols));
         _activeData = _dinfo.filterExpandedColumns(newCols);
         _activeBC = _bc.filterExpandedColumns(_activeData.activeCols());
-        _gslvr = new GLMGradientSolver(_job, _parms, _activeData, (1 - _alpha) * _lambda, _activeBC);
+        _gslvr = new GLMGradientSolver(_job, _obj_reg,_parms, _activeData, (1 - _alpha) * _lambda, _activeBC);
         return false;
       }
     }
@@ -460,7 +461,7 @@ public final class ComputationState {
       _ginfo._gradient = ArrayUtils.removeIds(_ginfo._gradient,cols);
     _activeData = _dinfo.filterExpandedColumns(activeCols);
     _activeBC = _bc.filterExpandedColumns(activeCols);
-    _gslvr = new GLMGradientSolver(_job, _parms, _activeData, (1 - _alpha) * _lambda, _activeBC);
+    _gslvr = new GLMGradientSolver(_job, _obj_reg,_parms, _activeData, (1 - _alpha) * _lambda, _activeBC);
     return activeCols;
   }
 
@@ -488,7 +489,7 @@ public final class ComputationState {
   public double objective() {return _beta == null?Double.MAX_VALUE:objective(_beta,_likelihood);}
 
   public double objective(double [] beta, double likelihood) {
-    return likelihood * _parms._obj_reg + penalty(beta) + (_activeBC == null?0:_activeBC.proxPen(beta));
+    return likelihood * _obj_reg + penalty(beta) + (_activeBC == null?0:_activeBC.proxPen(beta));
   }
   protected double  updateState(double [] beta, double likelihood) {
     _betaDiff = ArrayUtils.linfnorm(_beta == null?beta:ArrayUtils.subtract(_beta,beta),false);
@@ -616,7 +617,7 @@ public final class ComputationState {
   }
 
   protected GramXY computeNewGram(DataInfo activeData, double [] beta, GLMParameters.Solver s){
-    double obj_reg = _parms._obj_reg;
+    double obj_reg = _obj_reg;
     if(_glmw == null) _glmw = new GLMModel.GLMWeightsFun(_parms);
     GLMTask.GLMIterationTask gt = new GLMTask.GLMIterationTask(_job._key, activeData, _glmw, beta,_activeClass).doAll(activeData._adaptedFrame);
     gt._gram.mul(obj_reg);
@@ -641,7 +642,7 @@ public final class ComputationState {
 
   // get cached gram or incrementally update or compute new one
   public GramXY computeGram(double [] beta, GLMParameters.Solver s){
-    double obj_reg = _parms._obj_reg;
+    double obj_reg = _obj_reg;
     boolean weighted = _parms._family != Family.gaussian || _parms._link != GLMParameters.Link.identity;
     if(_parms._family == Family.multinomial) // no caching
       return computeNewGram(activeDataMultinomial(_activeClass),beta,s);
