@@ -2,9 +2,9 @@
 
 ## H2O
 
-### Vapnik (3.12.0.1) - 6/6/2017
+### Vajda (3.10.5.1) - 6/9/2017
 
-Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-vapnik/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-vapnik/1/index.html</a>
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/1/index.html</a>
 
 <h4>Technical Task</h4>
 
