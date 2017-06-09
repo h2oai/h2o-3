@@ -34,7 +34,7 @@ def h2o_H2OFrame_top_bottomN():
         pyunit_utils.compare_frames(newTopFrame, newTopFrameC, nsample, tol_numeric=tolerance)
 
         # compare one of the return frames with known answer
-        compare_rep_frames(topAnswer, newTopFrame, tolerance, colIndex, 0)
+        compare_rep_frames(topAnswer, newTopFrame, tolerance, colIndex, -1)
     else:
         # test bottomN here
         print("For bottomN: Percentage chosen is {0}.  Column index chosen is {1}".format(nP, colIndex))
@@ -47,7 +47,7 @@ def h2o_H2OFrame_top_bottomN():
         compare_rep_frames(bottomAnswer, newBottomFrame, tolerance, colIndex, 1)
 
 
-def compare_rep_frames(answerF, repFrame, tolerance,  colIndex, getBottom=0):
+def compare_rep_frames(answerF, repFrame, tolerance,  colIndex, getBottom=-1):
     # actual answer is in second column of repFrame
     highIndex = int(round(repFrame.nrow/4))
     allIndex = range(answerF.nrow-highIndex, answerF.nrow)

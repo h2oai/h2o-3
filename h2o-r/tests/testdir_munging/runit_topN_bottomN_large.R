@@ -24,7 +24,7 @@ test.topNbottomN = function() {
 
         # result from column name and column index should be the same
         h2o_and_R_equal(topNf, topNfI)
-        compare_rep_frames(topAnswer, topNf, tolerance, colIndex, 0)
+        compare_rep_frames(topAnswer, topNf, tolerance, colIndex, -1)
     } else {
         # test bottomN with randomly chosen N percent, and with column names and column index
         print(paste("test bottomN: nPercent is", nP, " Column index is ", colIndex))

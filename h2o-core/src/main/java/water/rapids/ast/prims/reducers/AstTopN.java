@@ -39,7 +39,7 @@ public class AstTopN extends AstPrimitive {
 		public String description() {
 				return "Return the top N percent rows for a numerical column as a frame with two columns.  The first column " +
 												"will contain the original row indices of the chosen values.  The second column contains the top N row" +
-												"values.  If getBottomN is 1, we will return the bottom N percent.  If getBottomN is 0, we will return" +
+												"values.  If getBottomN is 1, we will return the bottom N percent.  If getBottomN is -1, we will return" +
 												"the top N percent of rows";
 		}
 
@@ -52,7 +52,7 @@ public class AstTopN extends AstPrimitive {
 				long numRows = Math.round(nPercent * 0.01 * frOriginal.numRows()); // number of rows to return
 
 				String[] finalColumnNames = {"Original_Row_Indices", frOriginal.name(colIndex)}; // set output frame names
-				GrabTopNPQ grabTask = new GrabTopNPQ(finalColumnNames, numRows, (getBottomN == 0 ? 1 : -1));
+				GrabTopNPQ grabTask = new GrabTopNPQ(finalColumnNames, numRows, getBottomN);
 				grabTask.doAll(frOriginal.vec(colIndex));
 				return new ValFrame(grabTask._sortedOut);
 		}

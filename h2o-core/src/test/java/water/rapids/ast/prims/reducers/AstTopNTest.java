@@ -68,11 +68,11 @@ public class AstTopNTest extends TestUtil {
 								Log.info("Percentage is " + testPercent);
 								if (testNo == 0) {
 										Log.info("Testing top N long.");
-										testTopBottom(topLong, testPercent, 0, "0", _tolerance);
+										testTopBottom(topLong, testPercent, -1, "0", _tolerance);
 								}
 								if (testNo == 1) {
 										Log.info("Testing top N float.");
-										testTopBottom(topFloat, testPercent, 0, "1", _tolerance);  // test top % Float
+										testTopBottom(topFloat, testPercent, -1, "1", _tolerance);  // test top % Float
 								}
 								if (testNo == 2) {
 										Log.info("Testing bottom N long.");
