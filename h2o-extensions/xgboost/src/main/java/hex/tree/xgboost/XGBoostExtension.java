@@ -46,5 +46,6 @@ public class XGBoostExtension extends AbstractH2OExtension {
       // Ups no lib loaded or load failed
       Log.warn("Cannot initialize XGBoost backend! " + XGBOOST_MIN_REQUIREMENTS, e);
       return false;
+    }
   }
 }

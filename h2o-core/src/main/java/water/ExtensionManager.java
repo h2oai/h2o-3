@@ -71,7 +71,7 @@ public class ExtensionManager {
    *
    * @param relativeResourcePath Relative path from running process working dir to find web resources.
    */
-  public static void regsterRestApiExtensions(String relativeResourcePath) {
+  public static void regsterRestApiExtensions() {
     if (restApiExtensionsRegistered) {
       throw H2O.fail("APIs already registered");
     }
@@ -89,7 +89,6 @@ public class ExtensionManager {
     for (RestApiExtension r : restApiExtensionLoader) {
       try {
         if(areDependantCoreExtensionsEnabled(r.getRequiredCoreExtensions())) {
-          r.register(relativeResourcePath);
           r.registerEndPoints(dummyRestApiContext);
           r.registerSchemas(dummyRestApiContext);
           restApiExtensions.put(r.getName(), r);

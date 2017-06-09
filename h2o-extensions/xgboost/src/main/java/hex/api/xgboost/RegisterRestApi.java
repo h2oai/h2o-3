@@ -2,18 +2,20 @@ package hex.api.xgboost;
 
 import hex.tree.xgboost.XGBoost;
 import hex.tree.xgboost.XGBoostExtension;
+import water.api.AlgoAbstractRegister;
+import water.api.RestApiContext;
 import water.api.SchemaServer;
 
 import java.util.Collections;
 import java.util.List;
 
-public class RegisterRestApi extends water.api.AbstractRegister {
+public class RegisterRestApi extends AlgoAbstractRegister {
 
   @Override
-  public void register(String relativeResourcePath) {
+  public void registerEndPoints(RestApiContext context) {
     XGBoost xgBoostMB = new XGBoost(true);
     // Register XGBoost model builder REST API
-    registerModelBuilder(xgBoostMB, SchemaServer.getStableVersion());
+    registerModelBuilder(context, xgBoostMB, SchemaServer.getStableVersion());
   }
 
   @Override

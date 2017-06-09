@@ -1525,12 +1525,6 @@ final public class H2O {
 
   }
 
-  static public void register(
-      String method_url, Class<? extends water.api.Handler> hclass, String method, String apiName, String summary
-  ) {
-    RequestServer.registerEndpoint(apiName, method_url, hclass, method, summary);
-  }
-
   public static void registerResourceRoot(File f) {
     JarHash.registerResourceRoot(f);
   }
@@ -1548,7 +1542,7 @@ final public class H2O {
   /**
    * This switch Jetty into accepting mode.
    */
-  static public void startServingRestApi() {
+  public static void startServingRestApi() {
     if (!H2O.ARGS.disable_web) {
       jetty.acceptRequests();
     }
