@@ -789,6 +789,9 @@ In the **Build a Model** cell, select an algorithm from the drop-down menu. (Ref
  - **K-means**: Create a K-Means model.
  - **Naïve Bayes**: Create a Naïve Bayes model.
  - **Principal Component Analysis**: Create a Principal Components Analysis model for modeling without regularization or performing dimensionality reduction.
+ - **Stacked Ensembles**: Create a Stacked Ensembles model.
+ - **Word2vec**: Create a Word2vec model.
+ - **XGBoost**: Create an XGBoost model.
 
  .. figure:: images/Flow_model_dropdown.png
     :alt: Flow Model dropdown menu
