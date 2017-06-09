@@ -394,12 +394,8 @@ predict.H2OModel <- function(object, newdata, ...) {
 
 #' @rdname predict.H2OModel
 #' @export
-h2o.predict <- function(object, newdata, ...){
-  if(class(object) == "H2OAutoML"){
-    return(predict.H2OAutoML(object, newdata, ...))
-  }else{
-    return(predict.H2OModel(object, newdata, ...))
-  }
+h2o.predict <- function(object, newdata, ...) {
+  return(predict.H2OModel(object, newdata, ...))
 }
 #' Predict the Leaf Node Assignment on an H2O Model
 #'

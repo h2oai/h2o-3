@@ -789,8 +789,9 @@ In the **Build a Model** cell, select an algorithm from the drop-down menu. (Ref
  - **K-means**: Create a K-Means model.
  - **Naïve Bayes**: Create a Naïve Bayes model.
  - **Principal Component Analysis**: Create a Principal Components Analysis model for modeling without regularization or performing dimensionality reduction.
-
- You can also specify to run AutoML, which automatically trains and tunes models while requiring as few parameters as possible. All the user needs to do is point to a dataset, identify the response column, and optionally specify a time-constraint.
+ - **Stacked Ensembles**: Create a Stacked Ensembles model.
+ - **Word2vec**: Create a Word2vec model.
+ - **XGBoost**: Create an XGBoost model.
 
  .. figure:: images/Flow_model_dropdown.png
     :alt: Flow Model dropdown menu
@@ -987,10 +988,6 @@ types.
    predictors are omitted in the probability calculation during
    prediction.
 
--  **max_models**: (AutoML) This option allows the user to specify the maximum number of models to build in an AutoML run. 
-
--  **max_runtime_secs**: (AutoML) This option controls how long the AutoML run will execute. This value defaults to 3600 seconds.
-
 **Advanced Options**
 
 -  **fold\_assignment**: (GLM, GBM, DL, DRF, K-Means) (Applicable only if a value
@@ -1052,7 +1049,7 @@ types.
 
 -  **max\_hit\_ratio\_k**: (DRF, DL, Naïve Bayes, GBM, GLM) Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multinomial only. To disable, enter 0.
 
--  **stopping_metric**: (GBM, DRF, DL, AutoML) Specify the metric to use for early stopping. The available options are:
+-  **stopping_metric**: (GBM, DRF, DL) Specify the metric to use for early stopping. The available options are:
 
     - auto: This defaults to logloss for classification, deviance for regression
     - deviance
@@ -1066,7 +1063,7 @@ types.
     - misclassification
     - mean_per_class_error
 
--  **stopping_rounds**: (GBM, DRF, DL, AutoML) Stops training when the option selected for **stopping_metric** doesn’t improve for the specified number of training rounds, based on a simple moving average. To disable this feature, specify 0. The metric is computed on the validation data (if provided); otherwise, training data is used.
+-  **stopping_rounds**: (GBM, DRF, DL) Stops training when the option selected for **stopping_metric** doesn’t improve for the specified number of training rounds, based on a simple moving average. To disable this feature, specify 0. The metric is computed on the validation data (if provided); otherwise, training data is used.
 
    **Note**: If cross-validation is enabled:
    
@@ -1074,7 +1071,7 @@ types.
    - The main model runs for the mean number of epochs.
    - N+1 models may be off by the number specified for stopping_rounds from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
 
--  **stopping_tolerance**: (GBM, DRF, DL, AutoML) This option specifies the tolerance value by which a model must improve before training ceases.
+-  **stopping_tolerance**: (GBM, DRF, DL) This option specifies the tolerance value by which a model must improve before training ceases.
 
 -  **build\_tree\_one\_node**: (DRF, GBM) To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. The
    default setting is disabled.

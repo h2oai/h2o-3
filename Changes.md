@@ -2,9 +2,9 @@
 
 ## H2O
 
-### Vapnik (3.12.0.1) - 6/6/2017
+### Vajda (3.10.5.1) - 6/9/2017
 
-Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-vapnik/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-vapnik/1/index.html</a>
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/1/index.html</a>
 
 <h4>Technical Task</h4>
 
@@ -99,7 +99,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-vapnik/1/index
 		<li>R - <a href='https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/isax.R'>https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/isax.R</a></li>
 	</ul>
 	</li>
-	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4273'>PUBDEV-4273</a>] - AutoML is now available in H2O. AutoML can be used for automatically training and tuning a number of models within a user-specified time limit or model limit. It is designed to run with as few parameters as possible, and the top performing models can be viewed on a leaderboard. More information about AutoML is available <a href='http://docs.h2o.ai/h2o/latest-stable/h2o-docs/automl.html'>here</a>.</li>
 </ul>
 
 <h4>New Feature</h4>
@@ -126,7 +125,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-vapnik/1/index
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4280'>PUBDEV-4280</a>] - Created a Capability rest end point that gives the client an overview of registered extensions.</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4329'>PUBDEV-4329</a>] - When viewing a model in Flow, a new **Download Gen Model** button is available, allowing you to save the h2o-genmodel.jar file locally. </li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4425'>PUBDEV-4425</a>] - Added an `h2o.flow()` function to base H2O. This allows users to open up a Flow window from within R and Python.</li>
-	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4451'>PUBDEV-4451</a>] - With the addition of the AutoML feature, a new **Run AutoML** option is available in Flow under the **Models** dropdown menu.</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4472'>PUBDEV-4472</a>] - The `parse_type` parameter is now case insensitive.</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4478'>PUBDEV-4478</a>] - Added automatic reduction of categorical levels for Aggregator. This can be done by setting `categorical_encoding=EnumLimited`.</li>
 	<li>[NA] - In GBM and DRF, added two new categorical_encoding schemas: SortByResponse and LabelEncoding. More information about these options is available <a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/algo-params/categorical_encoding.html">here</a>.

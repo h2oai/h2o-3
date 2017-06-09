@@ -93,12 +93,6 @@ Unsupervised
 Miscellaneous
 +++++++++++++
 
-:mod:`H2OAutoML`
-----------------
-.. autoclass:: h2o.automl.autoh2o.H2OAutoML
-    :show-inheritance:
-    :members:
-
 :mod:`H2OEstimator`
 -------------------
 .. autoclass:: h2o.estimators.estimator_base.H2OEstimator

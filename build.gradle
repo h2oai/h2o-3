@@ -70,7 +70,6 @@ ext {
       project(':h2o-orc-parser'),
       project(':h2o-parquet-parser'),
       project(':h2o-jaas-pam'),
-      project(':h2o-automl'),
       project(':h2o-genmodel-ext-xgboost'),
       project(':h2o-ext-xgboost')
     ]
@@ -90,7 +89,6 @@ ext {
       project(':h2o-orc-parser'),
       project(':h2o-parquet-parser'),
       project(':h2o-jaas-pam'),
-      project(':h2o-automl'),
       project(':h2o-genmodel-ext-xgboost'),
       project(':h2o-ext-xgboost')
     ]
@@ -127,7 +125,6 @@ ext {
       project(':h2o-core'),
       project(':h2o-algos'),
       project(':h2o-app'),
-      project(':h2o-automl')
     ]
 
     //

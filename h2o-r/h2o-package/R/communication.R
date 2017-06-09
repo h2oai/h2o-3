@@ -46,7 +46,7 @@
       sprintf("%s://%s:%s/%s/%s/%s", scheme, conn@ip, as.character(conn@port), conn@context_path, h2oRestApiVersion, urlSuffix)
 }
 
-.h2o.doRawREST <- function(conn, h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, binary=FALSE, autoML = FALSE, ...) {
+.h2o.doRawREST <- function(conn, h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, binary=FALSE, ...) {
   timeout_secs <- 0
   stopifnot(is(conn, "H2OConnection"))
   stopifnot(is.character(urlSuffix))
@@ -114,12 +114,6 @@
       if (nzchar(queryString)) {
         url = sprintf("%s?%s", url, queryString)
       }
-    }
-    #For AutoML
-    if(autoML == TRUE){
-      postBody <- jsonlite::toJSON(parms,auto_unbox=TRUE,pretty=TRUE)
-      postBody <- sub('\"\\{', '\\{',postBody)
-      postBody <- sub('\\}\"', '\\}',postBody)
     }
 
   .__curlError = FALSE
@@ -202,11 +196,7 @@
   } else if (method == "POST") {
     h = basicHeaderGatherer()
     t = basicTextGatherer(.mapUnicode = FALSE)
-    if(!autoML){
-      header['Expect'] = ''
-    }else{
-      header = "Content-Type: application/json"
-    }
+    header['Expect'] = ''
     tmp = tryCatch(curlPerform(url = url,
                                postfields = postBody,
                                writefunction = t$update,
@@ -301,7 +291,7 @@
                  parms = parms, method = "POST", fileUploadInfo = fileUploadInfo, ...)
 }
 
-.h2o.doREST <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo,autoML=FALSE, ...) {
+.h2o.doREST <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, ...) {
   stopifnot(is(conn, "H2OConnection"))
   stopifnot(is.character(urlSuffix))
   stopifnot(is.character(method))
@@ -311,7 +301,7 @@
   }
 
   .h2o.doRawREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
-                 parms = parms, method = method, fileUploadInfo,autoML=autoML, ...)
+                 parms = parms, method = method, fileUploadInfo, ...)
 }
 
 #' Just like doRawGET but fills in the default h2oRestApiVersion if none is provided
@@ -336,13 +326,13 @@
               parms = parms, method = "POST", ...)
 }
 
-.h2o.doSafeREST <- function(h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo,autoML=FALSE, ...) {
+.h2o.doSafeREST <- function(h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, ...) {
   stopifnot(is.character(urlSuffix))
   stopifnot(is.character(method))
   if (!missing(fileUploadInfo)) stopifnot(is(fileUploadInfo, "FileUploadInfo"))
 
   rv = .h2o.doREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
-                   parms = parms, method = method, fileUploadInfo = fileUploadInfo,autoML=autoML, ...)
+                   parms = parms, method = method, fileUploadInfo = fileUploadInfo, ...)
 
   if (rv$curlError) {
 
@@ -557,7 +547,7 @@ print.H2OTable <- function(x, header=TRUE, ...) {
 # Error checking is performed.
 #
 # @return JSON object converted from the response payload
-.h2o.__remoteSend <- function(page, method = "GET", ..., autoML = FALSE, .params = list(), raw=FALSE, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
+.h2o.__remoteSend <- function(page, method = "GET", ..., .params = list(), raw=FALSE, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
   stopifnot(is.character(method))
   stopifnot(is.list(.params))
 
@@ -578,8 +568,6 @@ print.H2OTable <- function(x, header=TRUE, ...) {
 
   if( !is.null(timeout) ){
     rawREST <- .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page, parms = .params, method = method, timeout = timeout)
-  }else if(autoML == TRUE){
-    rawREST <- .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page, parms = .params, method = method,autoML=autoML)
   }else{
     rawREST <- .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page, parms = .params, method = method)
   }

@@ -55,10 +55,6 @@ public final class DHistogram extends Iced {
   public double wY(int i){ return _vals[3*i+1];}
   public double wYY(int i){return _vals[3*i+2];}
 
-  public void addWAtomic(int i, double wDelta) {  // used by AutoML
-    AtomicUtils.DoubleArray.add(_vals, 3*i+0, wDelta);
-  }
-
   public void addNasAtomic(double y, double wy, double wyy) {
     AtomicUtils.DoubleArray.add(_vals,3*_nbin+0,y);
     AtomicUtils.DoubleArray.add(_vals,3*_nbin+1,wy);
