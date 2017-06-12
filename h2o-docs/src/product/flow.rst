@@ -1267,27 +1267,21 @@ list of available models displays.
 To view all current models, you can also click the **Model** menu and
 click **List All Models**.
 
-To inspect a model, check its checkbox then click the **Inspect**
-button, or click the **Inspect** button to the right of the model name.
+Click on a model name to view details about the model. The information that displays varies based on the algorithm that was used to build the model, but it can include the parameters used when building the model, scoring history, training metrics, coefficient tables, and a POJO preview.  
 
-.. figure:: images/Flow_GetModel.png
-   :alt: Flow Model
+.. figure:: images/Flow_viewModel.png
+   :alt: Viewing a Model
 
+The following additional functions are available when viewing a model:
 
-A summary of the model's parameters displays. To display more details,
-click the **Show All Parameters** button.
-
-To delete a model, click the **Delete** button.
-
-To generate a Plain Old Java Object (POJO) that can use the model
-outside of H2O, click the **Download POJO** button.
-
-**Note**: A POJO can be run in standalone mode or it can be integrated
-into a platform, such as `Hadoop's
-Storm <https://github.com/h2oai/h2o-tutorials/tree/master/tutorials/streaming/storm>`__.
-To make the POJO work in your Java application, you will also need the
-``h2o-genmodel.jar`` file (available in
-``h2o-3/h2o-genmodel/build/libs/h2o-genmodel.jar``).
+- **Refresh**: Refreshes the model.
+- **Predict**: Use this model to make predictions.  
+- **Download POJO**: Generates a Plain Old Java Object (POJO) that can use the model outside of H2O. Note that a POJO can be run in standalone mode or it can be integrated into a platform, such as `Hadoop's Storm <https://github.com/h2oai/h2o-tutorials/tree/master/tutorials/streaming/storm>`__. To make the POJO work in your Java application, you will also need the ``h2o-genmodel.jar`` file (available via the **Download Generated Model** button or in ``h2o-3/h2o-genmodel/build/libs/h2o-genmodel.jar``).
+- **Download Model Deployment Package**: Downloads a zip file containing the Model ObJect, Optimized (MOJO). This file includes the outputting model information in JSON format. Note that MOJOs are only available for DRF, GBM, GLM, and K-Means models. 
+- **Export**: Exports a built model.
+- **Inspect**: Inspect the model. Clicking this button displays a data table of the model parameters and output information.
+- **Delete**: Deletes the model.
+- **Download Gen Model**: Downloads the Generated Model (h2o-genmodel.jar) file for this model.
 
 --------------
 
