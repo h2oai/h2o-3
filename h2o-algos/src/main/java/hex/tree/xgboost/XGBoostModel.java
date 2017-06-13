@@ -366,7 +366,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
 
   @Override
-  protected boolean bulkBigScorePredict() { return true; }
+  protected boolean bulkBigScorePredict() { return false; }
 
   private void setDataInfoToOutput(DataInfo dinfo) {
     _output._names = dinfo._adaptedFrame.names();

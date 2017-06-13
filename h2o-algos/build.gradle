@@ -37,10 +37,4 @@ task testSSLEncryption(type: Exec) {
 // enough), we get NO output for the test run.  So instead we need to arrange a
 // complete cluster of free-running JVMs and redirect all output (at the OS
 // level) to files - then scrape the files later for test results.
-test {
-  dependsOn ":h2o-core:testJar"
-  dependsOn smalldataCheck, cpLibs, jar, testJar, testSingleNode, testMultiNode, testSSLEncryption
 
-  // Defeat task 'test' by running no tests.
-  exclude '**'
-}

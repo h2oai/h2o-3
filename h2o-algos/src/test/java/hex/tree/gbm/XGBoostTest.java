@@ -470,7 +470,7 @@ public class XGBoostTest extends TestUtil {
 
         XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
         parms._dmatrix_type = dMatrixType;
-        parms._nfolds = 5;
+        parms._nfolds = 2;
         parms._train = trainFrame._key;
         parms._valid = testFrame._key;
         parms._response_column = response;

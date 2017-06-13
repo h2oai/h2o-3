@@ -89,6 +89,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
         } else if(output.nclasses() == 2) {
             String[][] domains = new String[4][];
             domains[0] = new String[]{"N", "Y"};
+            domains[3] = new String[]{"N", "Y"};
             return domains;
         } else{
             String[][] domains = new String[names.length][];
