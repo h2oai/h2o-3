@@ -3648,10 +3648,19 @@ h2o.relevel <- function(x,y) {
 #' \code{ss} calculates the sum of squares of each column specified in \code{col} for each group of a 
 #' GroupBy object; \code{sum} calculates the sum of each column specified in \code{col} for each group 
 #' of a GroupBy object; and \code{var} calculates the variance of each column specified in \code{col} 
-#' for each group of a GroupBy object.
+#' for each group of a GroupBy object. For each aggregate function, you can include a column name for
+#' which the function should apply. If no arguments are provided in the aggregate function, then it 
+#' is assumed that the aggregation should apply to all columns except the GroupBy columns. 
 #'
 #' @param data an H2OFrame object.
 #' @param by a list of column names
+#' @param rm.method Controls treatment of NA values during the calculation. It can be one of the following.
+#'        \code{all} specifies that any NAs are used in the calculation as-is, which usually results 
+#'        in the final result being NA too. \code{ignore} specifies that NA entries are not included 
+#'        in calculations, but the total number of entries is taken as the total number of rows. For 
+#'        example, "mean([1, 2, 3, nan], na="ignore")" will produce 1.5. \code{rm} specifies that entries 
+#'        are skipped during the calculations, reducing the total effective count of entries. For example, 
+#'        "mean([1, 2, 3, nan], na="rm")" will produce 2.
 #' @param \dots any supported aggregate function. See \code{Details:} for more help.
 #' @param gb.control a list of how to handle \code{NA} values in the dataset as well as how to name
 #'        output columns. See \code{Details:} for more help.
