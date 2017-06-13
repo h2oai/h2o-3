@@ -3655,7 +3655,7 @@ h2o.relevel <- function(x,y) {
 #' @param data an H2OFrame object.
 #' @param by a list of column names
 #' @param nrow specify the name of the generated column
-#' @param rm.method Controls treatment of NA values during the calculation. It can be one of the following:
+#' @param na.method Controls treatment of NA values during the calculation. It can be one of the following:
 #'        \code{all}, \code{ignore}, or \code{rm}. See \code{Details:} for more help.
 #' @param \dots any supported aggregate function. See \code{Details:} for more help.
 #' @param gb.control a list of how to handle \code{NA} values in the dataset as well as how to name
