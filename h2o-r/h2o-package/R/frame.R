@@ -3637,9 +3637,22 @@ h2o.relevel <- function(x,y) {
 #'
 #' Similar to \code{na.methods}, \code{col.names} will pad the list with the default column names if
 #' the length is less than the number of colums groups supplied.
+#'
+#' Supported aggregate functions include the following: \code{count} counts the number of rows in 
+#' each group of a GroupBy object; \code{max} calculates the maximum of each column specified in
+#' \code{col} for each group of a GroupBy object; \code{mean} calculates the mean of each column 
+#' specified in \code{col} for each group of a GroupBy object; \code{min} calculates the minimum of 
+#' each column specified in \code{col} for each group of a GroupBy object; \code{mode} calculates the
+#' mode of each column specified in \code{col} for each group of a GroupBy object; \code{sd} calculates
+#' the standard deviation of each column specified in \code{col} for each group of a GroupBy object; 
+#' \code{ss} calculates the sum of squares of each column specified in \code{col} for each group of a 
+#' GroupBy object; \code{sum} calculates the sum of each column specified in \code{col} for each group 
+#' of a GroupBy object; and \code{var} calculates the variance of each column specified in \code{col} 
+#' for each group of a GroupBy object.
+#'
 #' @param data an H2OFrame object.
 #' @param by a list of column names
-#' @param \dots any supported aggregate function.
+#' @param \dots any supported aggregate function. See \code{Details:} for more help.
 #' @param gb.control a list of how to handle \code{NA} values in the dataset as well as how to name
 #'        output columns. See \code{Details:} for more help.
 #' @return Returns a new H2OFrame object with columns equivalent to the number of
