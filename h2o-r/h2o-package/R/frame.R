@@ -3654,13 +3654,8 @@ h2o.relevel <- function(x,y) {
 #'
 #' @param data an H2OFrame object.
 #' @param by a list of column names
-#' @param rm.method Controls treatment of NA values during the calculation. It can be one of the following.
-#'        \code{all} specifies that any NAs are used in the calculation as-is, which usually results 
-#'        in the final result being NA too. \code{ignore} specifies that NA entries are not included 
-#'        in calculations, but the total number of entries is taken as the total number of rows. For 
-#'        example, "mean([1, 2, 3, nan], na="ignore")" will produce 1.5. \code{rm} specifies that entries 
-#'        are skipped during the calculations, reducing the total effective count of entries. For example, 
-#'        "mean([1, 2, 3, nan], na="rm")" will produce 2.
+#' @param rm.method Controls treatment of NA values during the calculation. It can be one of the following:
+#'        \code{all}, \code{ignore}, or \code{rm}. See \code{Details:} for more help.
 #' @param \dots any supported aggregate function. See \code{Details:} for more help.
 #' @param gb.control a list of how to handle \code{NA} values in the dataset as well as how to name
 #'        output columns. See \code{Details:} for more help.
