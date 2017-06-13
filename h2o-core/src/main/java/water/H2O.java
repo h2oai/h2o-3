@@ -176,7 +176,7 @@ final public class H2O {
 
     System.out.print(s);
 
-    for (AbstractH2OExtension e : ExtensionManager.getCoreExtensions()) {
+    for (AbstractH2OExtension e : extManager.getCoreExtensions()) {
       e.printHelp();
     }
   }
@@ -428,7 +428,7 @@ final public class H2O {
    * Dead stupid argument parser.
    */
   static void parseArguments(String[] args) {
-    for (AbstractH2OExtension e : ExtensionManager.getCoreExtensions()) {
+    for (AbstractH2OExtension e : extManager.getCoreExtensions()) {
       args = e.parseArguments(args);
     }
     parseH2OArgumentsTo(args, ARGS);
@@ -637,7 +637,7 @@ final public class H2O {
     }
 
     // Validate extension arguments
-    for (AbstractH2OExtension e : ExtensionManager.getCoreExtensions()) {
+    for (AbstractH2OExtension e : extManager.getCoreExtensions()) {
       e.validateArguments();
     }
   }
@@ -963,6 +963,9 @@ final public class H2O {
   static {
     PID = getCurrentPID();
   }
+
+  // Extension Manager instance
+  private static final ExtensionManager extManager = ExtensionManager.getInstance();
 
   /**
    * Throw an exception that will cause the request to fail, but the cluster to continue.
@@ -1427,7 +1430,7 @@ final public class H2O {
       Log.warn("");
     }
 
-    for (AbstractH2OExtension e : ExtensionManager.getCoreExtensions()) {
+    for (AbstractH2OExtension e : extManager.getCoreExtensions()) {
       String n = e.getExtensionName() + " ";
       AbstractBuildVersion abv = e.getBuildVersion();
       Log.info(n + "Build git branch: ", abv.branchName());
@@ -1939,7 +1942,7 @@ final public class H2O {
 
     // Allow core extensions to perform initialization that requires the network.
     long time6 = System.currentTimeMillis();
-    for (AbstractH2OExtension ext: ExtensionManager.getCoreExtensions()) {
+    for (AbstractH2OExtension ext: extManager.getCoreExtensions()) {
       ext.onLocalNodeStarted();
     }
 

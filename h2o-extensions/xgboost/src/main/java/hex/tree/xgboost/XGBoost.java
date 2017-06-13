@@ -43,7 +43,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   @Override public boolean haveMojo() { return true; }
 
   @Override public BuilderVisibility builderVisibility() {
-    if(ExtensionManager.isCoreExtensionsEnabled(XGBoostExtension.NAME)){
+    if(ExtensionManager.getInstance().isCoreExtensionsEnabled(XGBoostExtension.NAME)){
       return BuilderVisibility.Stable;
     } else {
       return BuilderVisibility.Experimental;
