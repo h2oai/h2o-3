@@ -16,7 +16,6 @@ import water.fvec.Vec;
 import java.util.Arrays;
 
 public class MathUtils {
-
   public static double weightedSigma(long nobs, double wsum, double xSum, double xxSum) {
     double reg = 1.0/wsum;
     return nobs <= 1? 0 : Math.sqrt(xxSum*reg - (xSum*xSum) * reg * reg);
