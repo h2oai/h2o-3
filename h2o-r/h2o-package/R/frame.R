@@ -3576,15 +3576,36 @@ h2o.relevel <- function(x,y) {
 #' \code{"all"} will include \code{NAs} in computation of functions. \code{"rm"} will completely
 #' remove all \code{NA} fields. \code{"ignore"} will remove \code{NAs} from the numerator but keep
 #' the rows for computational purposes. If a list smaller than the number of columns groups is
-#' supplied, the list will be padded by \code{"ignore"}.
+#' supplied, the list will be padded by \code{"ignore"}. 
 #'
-#' Similar to \code{na.methods}, \code{col.names} will pad the list with the default column names if
-#' the length is less than the number of colums groups supplied.
+#' Note that to specify a list of column names in the \code{gb.control} list, you must add the 
+#' \code{col.names} argument. Similar to \code{na.methods}, \code{col.names} will pad the list with 
+#' the default column names if the length is less than the number of colums groups supplied. 
+#'
+#' Supported functions include \code{nrow}. This function is required and accepts a string for the 
+#' name of the generated column. Other supported aggregate functions accept \code{col} and \code{na} 
+#' arguments for specifying columns and the handling of NAs (\code{"all"}, \code{"ignore"}, and 
+#  \code{"rm"}) and include the following: \code{count} counts the number of rows in each group of a 
+#' GroupBy object; \code{max} calculates the maximum of each column specified in \code{col} for each 
+#' group of a GroupBy object; \code{mean} calculates the mean of each column specified in \code{col} 
+#' for each group of a GroupBy object; \code{min} calculates the minimum of each column specified in 
+#' \code{col} for each group of a GroupBy object; \code{mode} calculates the mode of each column 
+#' specified in \code{col} for each group of a GroupBy object; \code{sd} calculates the standard 
+#' deviation of each column specified in \code{col} for each group of a GroupBy object; \code{ss} 
+#' calculates the sum of squares of each column specified in \code{col} for each group of a GroupBy 
+#' object; \code{sum} calculates the sum of each column specified in \code{col} for each group of a 
+#' GroupBy object; and \code{var} calculates the variance of each column specified in \code{col} for 
+#' each group of a GroupBy object. If an aggregate is provided without a value (for example, as 
+#' \code{max} in \code{sum(col="X1", na="all").mean(col="X5", na="all").max()}), then it is assumed 
+#' that the aggregation should apply to all columns except the GroupBy columns. Note again that 
+#' \code{nrow} is required and cannot be empty.
+#'
 #' @param data an H2OFrame object.
 #' @param by a list of column names
-#' @param \dots any supported aggregate function.
+#' @param \dots any supported aggregate function. See \code{Details:} for more help.
 #' @param gb.control a list of how to handle \code{NA} values in the dataset as well as how to name
-#'        output columns. See \code{Details:} for more help.
+#'        output columns. The method is specified using the \code{rm.method} argument. See 
+#'        \code{Details:} for more help.
 #' @return Returns a new H2OFrame object with columns equivalent to the number of
 #'         groups created
 #' @export
