@@ -1,5 +1,8 @@
 package water.api;
 
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * REST API registration interfaces.
  *
