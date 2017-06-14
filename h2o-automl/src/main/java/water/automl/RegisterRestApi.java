@@ -1,32 +1,31 @@
 package water.automl;
 
 import water.api.AbstractRegister;
-import water.api.RestApiContext;
+import water.api.RequestServer;
 import water.automl.api.AutoMLBuilderHandler;
 import water.automl.api.AutoMLHandler;
 import water.automl.api.LeaderboardsHandler;
+import water.util.Log;
 
 public class RegisterRestApi extends AbstractRegister {
-
-  @Override
-  public void registerEndPoints(RestApiContext context) {
-    context.registerEndpoint("automl_build",
+  @Override public void register(String relativeResourcePath) {
+    RequestServer.registerEndpoint("automl_build",
             "POST /99/AutoMLBuilder", AutoMLBuilderHandler.class, "build",
             "Start an AutoML build process.");
 
-    context.registerEndpoint("automls",
+    RequestServer.registerEndpoint("automls",
             "GET /99/AutoML", AutoMLHandler.class, "list",
             "Return all the AutoML objects.");
 
-    context.registerEndpoint("automl",
+    RequestServer.registerEndpoint("automl",
             "GET /99/AutoML/{automl_id}", AutoMLHandler.class, "fetch",
             "Fetch the specified AutoML object.");
 
-    context.registerEndpoint("leaderboards",
+    RequestServer.registerEndpoint("leaderboards",
             "GET /99/Leaderboards", LeaderboardsHandler.class, "list",
             "Return all the AutoML leaderboards.");
 
-    context.registerEndpoint("leaderboard",
+    RequestServer.registerEndpoint("leaderboard",
             "GET /99/Leaderboards/{project_name}", LeaderboardsHandler.class, "fetch",
             "Return the AutoML leaderboard for the given project.");
   }

@@ -2,8 +2,6 @@ package water;
 
 import water.util.Log;
 
-import java.io.File;
-
 /**
  * H2O starter which manages start and registration of application extensions.
  */
@@ -19,17 +17,15 @@ public class H2OStarter {
     long time0 = System.currentTimeMillis();
     // FIXME: move into H2O.main()
     H2O.configureLogging();
-    ExtensionManager.getInstance().registerCoreExtensions();
+    H2O.registerExtensions();
 
     // Fire up the H2O Cluster
     H2O.main(args);
 
     if (!H2O.ARGS.disable_web) {
-      H2O.registerResourceRoot(new File(relativeResourcePath + File.separator + "h2o-web/src/main/resources/www"));
-      H2O.registerResourceRoot(new File(relativeResourcePath + File.separator + "h2o-core/src/main/resources/www"));
-      ExtensionManager.getInstance().registerRestApiExtensions();
+      H2O.registerRestApis(relativeResourcePath);
       if (finalizeRestRegistration) {
-        H2O.startServingRestApi();
+        H2O.finalizeRegistration();
       }
     }
 
