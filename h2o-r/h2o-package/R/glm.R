@@ -38,8 +38,9 @@
 #'        number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for datasets with many
 #'        columns. Coordinate descent is experimental (beta). Must be one of: "AUTO", "IRLSM", "L_BFGS",
 #'        "COORDINATE_DESCENT_NAIVE", "COORDINATE_DESCENT". Defaults to AUTO.
-#' @param alpha distribution of regularization between L1 and L2. Default value of alpha is 0 when SOLVER = 'L-BFGS', 0.5
-#'        otherwise
+#' @param alpha Distribution of regularization between the L1 (Lasso) and L2 (Ridge) penalties. A value of 1 for alpha represents 
+#'        Lasso regression, a value of 0 produces Ridge regression, and anything in between specifies the amount of mixing between
+#'        the two. Default value of alpha is 0 when SOLVER = 'L-BFGS'; 0.5 otherwise. 
 #' @param lambda regularization strength
 #' @param lambda_search \code{Logical}. use lambda search starting at lambda max, given lambda is then interpreted as lambda min
 #'        Defaults to FALSE.
