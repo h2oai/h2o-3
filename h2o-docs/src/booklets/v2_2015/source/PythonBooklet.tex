@@ -412,11 +412,13 @@ In addition to loading data from Python objects, H2O can load data directly from
 \item CSV (delimited) files
 \item ORC
 \item SVMLite
+\item Parquet
 \end{itemize} &
 \begin{itemize}
 \item ARFF
 \item XLS
-\item XLST 
+\item XLSX 
+\item AVRO
 \end{itemize}
 \end{tabular}
 \end{frame}
@@ -454,6 +456,7 @@ H2O supports the following models:
   \item Principal Components Analysis (PCA)
   \item K-means
   \item Stacked Ensembles
+  \item XGBoost
 \end{itemize} &
 
 \begin{itemize}
@@ -484,6 +487,8 @@ The list continues to grow, so check \url{www.h2o.ai} to see the latest addition
 {\textbf{Na\"{i}ve Bayes}}: Generates a probabilistic classifier that assumes the value of a particular feature is unrelated to the presence or absence of any other feature, given the class variable. It is often used in text categorization.
 
 {\textbf{Stacked Ensembles}}: Using multiple models built from different algorithms, Stacked Ensembles finds the optimal combination of a collection of prediction algorithms using a process known as "stacking."
+
+{\textbf{XGBoost}}: XGBoost is an optimized gradient boosting library that implements machine learning algorithms under the Gradient Boosting Machine (GBM) framework. For many problems, XGBoost is the one of the best GBM frameworks today.  In other cases, the H2O GBM algorithm comes out on top.  Both implementations are available on the H2O platform.
 
 \subsubsection{Unsupervised Learning}
 {\textbf{K-Means}}: Reveals groups or clusters of data points for segmentation. It clusters observations into $k$-number of points with the nearest mean.
