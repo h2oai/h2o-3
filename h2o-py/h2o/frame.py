@@ -2509,14 +2509,14 @@ class H2OFrame(object):
             raise H2OValueError("'index' argument is not type enum, time or int")
         return H2OFrame._expr(expr=ExprNode("pivot",self,index,column,value))
 
-    def topNBottomN(self, column=0, nPercent=10, getBottom=0):
+    def topNBottomN(self, column=0, nPercent=10, grabTopN=-1):
         """
         Given a column name or one column index, a percent N, this function will return the top or bottom N% of the
          values of the column of a frame.  The column must be a numerical column.
     
         :param column: a string for column name or an integer index
         :param nPercent: a top or bottom percentage of the column values to return
-        :param getBottom: 0 to grab top N percent and 1 to grab bottom N percent
+        :param grabTopN: -1 to grab bottom N percent and 1 to grab top N percent
         :returns: a H2OFrame containing two columns.  The first column contains the original row indices where
             the top/bottom values are extracted from.  The second column contains the values.
         """
@@ -2538,7 +2538,7 @@ class H2OFrame(object):
         if not(self[colIndex].isnumeric()):
             raise H2OValueError("Wrong column type!  Selected column must be numeric.")
 
-        return H2OFrame._expr(expr=ExprNode("topn",self,colIndex, nPercent, getBottom))
+        return H2OFrame._expr(expr=ExprNode("topn", self, colIndex, nPercent, grabTopN))
 
     def topN(self, column=0, nPercent=10):
         """
@@ -2550,7 +2550,7 @@ class H2OFrame(object):
         :returns: a H2OFrame containing two columns.  The first column contains the original row indices where
             the top values are extracted from.  The second column contains the top nPercent values.
         """
-        return self.topNBottomN(column, nPercent, 0)
+        return self.topNBottomN(column, nPercent, 1)
 
     def bottomN(self, column=0, nPercent=10):
         """
@@ -2562,7 +2562,7 @@ class H2OFrame(object):
         :returns: a H2OFrame containing two columns.  The first column contains the original row indices where
             the bottom values are extracted from.  The second column contains the bottom nPercent values.
         """
-        return self.topNBottomN(column, nPercent, 1)
+        return self.topNBottomN(column, nPercent, -1)
 
     def sub(self, pattern, replacement, ignore_case=False):
         """
