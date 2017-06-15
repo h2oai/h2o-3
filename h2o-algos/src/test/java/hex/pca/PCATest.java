@@ -27,12 +27,12 @@ public class PCATest extends TestUtil {
   public static final double TOLERANCE = 1e-6;
 
   @Parameters
-  public static SVDImplementation[] parametersForSvdImplementation() {
-    return SVDImplementation.values();
+  public static String[] parametersForSvdImplementation() {
+    return SVDImplementation.getEnumNames();
   }
 
   @Parameter
-  public SVDImplementation svdImplementation;
+  public String svdImplementationName;
 
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
@@ -53,7 +53,7 @@ public class PCATest extends TestUtil {
       parms._k = 4;
       parms._transform = DataInfo.TransformType.NONE;
       parms._pca_method = PCAParameters.Method.GramSVD;
-      parms.setSvdImplementation(svdImplementation);
+      parms.setSvdImplementation(SVDImplementation.valueOf(svdImplementationName) );
 
       model = new PCA(parms).trainModel().get();
       TestUtil.checkStddev(stddev, model._output._std_deviation, 1e-5);
@@ -95,7 +95,7 @@ public class PCATest extends TestUtil {
       parms._k = 4;
       parms._max_iterations = 1000;
       parms._pca_method = PCAParameters.Method.GramSVD;
-      parms.setSvdImplementation(svdImplementation);
+      parms.setSvdImplementation(SVDImplementation.valueOf(svdImplementationName) );
 
       model = new PCA(parms).trainModel().get();
 
@@ -132,7 +132,7 @@ public class PCATest extends TestUtil {
       parms._k = 4;
       parms._transform = DataInfo.TransformType.NONE;
       parms._pca_method = PCAModel.PCAParameters.Method.GramSVD;
-      parms.setSvdImplementation(svdImplementation);
+      parms.setSvdImplementation(SVDImplementation.valueOf(svdImplementationName) );
       parms._impute_missing = true;   // Don't skip rows with NA entries, but impute using mean of column
       parms._seed = seed;
 
@@ -164,7 +164,7 @@ public class PCATest extends TestUtil {
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._use_all_factor_levels = true;
       parms._pca_method = PCAParameters.Method.GramSVD;
-      parms.setSvdImplementation(svdImplementation);
+      parms.setSvdImplementation(SVDImplementation.valueOf(svdImplementationName) );
       parms._impute_missing = false;
       parms._seed = 12345;
 
@@ -194,7 +194,7 @@ public class PCATest extends TestUtil {
       parms._k = 3;
       parms._transform = DataInfo.TransformType.NONE;
       parms._pca_method = PCAModel.PCAParameters.Method.Randomized;
-      parms.setSvdImplementation(svdImplementation);
+      parms.setSvdImplementation(SVDImplementation.valueOf(svdImplementationName) );
       parms._impute_missing = true;   // Don't skip rows with NA entries, but impute using mean of column
       parms._seed = 12345;
       parms._use_all_factor_levels=true;
