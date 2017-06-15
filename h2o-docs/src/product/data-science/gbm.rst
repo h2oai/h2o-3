@@ -270,6 +270,10 @@ Defining a GBM Model
    histogram. This number will then be decreased by a factor of two per
    level.
 
+-  `calibrate_model <algo-params/calibrate_model.html>`__: Use Platt scaling to calculate calibrated class probabilities. Defaults to False.
+
+-  `calibrate_frame <algo-params/calibrate_frame.html>`__: Specifies the frame to be used for Platt scaling.
+
 Interpreting a GBM Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -374,6 +378,10 @@ a Rejoinder by the Authors)." The Annals of Statistics 28.2 (2000):
 `Hastie, Trevor, Robert Tibshirani, and J Jerome H Friedman. The
 Elements of Statistical Learning. Vol.1. N.p., page 339: Springer New
 York, 2001. <http://statweb.stanford.edu/~tibs/ElemStatLearn/>`__
+
+`Niculescu-Mizil, Alexandru and Caruana, Rich, "Predicting Good Probabilities with Supervised Learning", Ithaca, NY, 2005. <http://www.datascienceassn.org/sites/default/files/Predicting%20good%20probabilities%20with%20supervised%20learning.pdf>`__ 
+
+`Nee, Daniel, "Calibrating Classifier Probabilities", 2014 <http://danielnee.com/tag/platt-scaling>`__
 
 FAQ
 ~~~

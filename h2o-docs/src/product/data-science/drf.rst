@@ -241,6 +241,10 @@ Defining a DRF Model
   - ``label_encoder`` or ``LabelEncoder``:  Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.)
   - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.). This is useful in GBM/DRF, for example, when you have more levels than ``nbins_cats``, and where the top level splits now have a chance at separating the data with a split. 
 
+-  `calibrate_model <algo-params/calibrate_model.html>`__: Use Platt scaling to calculate calibrated class probabilities. Defaults to False.
+
+-  `calibrate_frame <algo-params/calibrate_frame.html>`__: Specifies the frame to be used for Platt scaling.
+
 Interpreting a DRF Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -366,4 +370,8 @@ DRF Algorithm
 References
 ~~~~~~~~~~
 
-`P. Geurts, D. Ernst., and L. Wehenkel, “Extremely randomized trees”, Machine Learning, 63(1), 3-42, 2006. <http://link.springer.com/article/10.1007%2Fs10994-006-6226-1>`_
+`P. Geurts, D. Ernst., and L. Wehenkel, "Extremely randomized trees", Machine Learning, 63(1), 3-42, 2006. <http://link.springer.com/article/10.1007%2Fs10994-006-6226-1>`_
+
+`Niculescu-Mizil, Alexandru and Caruana, Rich, "Predicting Good Probabilities with Supervised Learning", Ithaca, NY, 2005. <http://www.datascienceassn.org/sites/default/files/Predicting%20good%20probabilities%20with%20supervised%20learning.pdf>`__ 
+
+`Nee, Daniel, "Calibrating Classifier Probabilities", 2014 <http://danielnee.com/tag/platt-scaling>`__
