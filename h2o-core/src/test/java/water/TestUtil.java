@@ -86,13 +86,15 @@ public class TestUtil extends Iced {
     x = Math.max(MINCLOUDSIZE, x);
     if( !_stall_called_before ) {
       H2O.main(args);
-      H2O.registerRestApis(System.getProperty("user.dir"));
+      ExtensionManager.getInstance().registerRestApiExtensions();
+      H2O.registerResourceRoot(new File(System.getProperty("user.dir") + File.separator + "h2o-web/src/main/resources/www"));
+      H2O.registerResourceRoot(new File(System.getProperty("user.dir") + File.separator + "h2o-core/src/main/resources/www"));
       _stall_called_before = true;
     }
     H2O.waitForCloudSize(x, timeout);
     _initial_keycnt = H2O.store_size();
     // Finalize registration of REST API to enable tests which are touching Schemas.
-    H2O.finalizeRegistration();
+    H2O.startServingRestApi();
   }
 
 

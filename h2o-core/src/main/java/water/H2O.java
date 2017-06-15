@@ -176,7 +176,7 @@ final public class H2O {
 
     System.out.print(s);
 
-    for (AbstractH2OExtension e : H2O.getCoreExtensions()) {
+    for (AbstractH2OExtension e : extManager.getCoreExtensions()) {
       e.printHelp();
     }
   }
@@ -428,7 +428,7 @@ final public class H2O {
    * Dead stupid argument parser.
    */
   static void parseArguments(String[] args) {
-    for (AbstractH2OExtension e : H2O.getCoreExtensions()) {
+    for (AbstractH2OExtension e : extManager.getCoreExtensions()) {
       args = e.parseArguments(args);
     }
     parseH2OArgumentsTo(args, ARGS);
@@ -637,7 +637,7 @@ final public class H2O {
     }
 
     // Validate extension arguments
-    for (AbstractH2OExtension e : H2O.getCoreExtensions()) {
+    for (AbstractH2OExtension e : extManager.getCoreExtensions()) {
       e.validateArguments();
     }
   }
@@ -785,108 +785,6 @@ final public class H2O {
     System.setProperty("org.eclipse.jetty.util.log.class", "org.eclipse.jetty.util.log.StdErrLog");
   }
 
-  //-------------------------------------------------------------------------------------------------------------------
-
-  // Be paranoid and check that this doesn't happen twice.
-  private static boolean extensionsRegistered = false;
-  private static long registerExtensionsMillis = 0;
-
-  /**
-   * Register H2O extensions.
-   * <p/>
-   * Use SPI to find all classes that extends water.AbstractH2OExtension
-   * and call H2O.addCoreExtension() for each.
-   */
-  public static void registerExtensions() {
-    if (extensionsRegistered) {
-      throw H2O.fail("Extensions already registered");
-    }
-
-    long before = System.currentTimeMillis();
-    ServiceLoader<AbstractH2OExtension> extensionsLoader = ServiceLoader.load(AbstractH2OExtension.class);
-    for (AbstractH2OExtension ext : extensionsLoader) {
-      if (ext.isEnabled()) {
-        ext.init();
-        addCoreExtension(ext);
-      }
-    }
-    extensionsRegistered = true;
-
-    registerExtensionsMillis = System.currentTimeMillis() - before;
-  }
-
-  private static ArrayList<AbstractH2OExtension> coreExtensions = new ArrayList<>();
-
-  public static void addCoreExtension(AbstractH2OExtension e) {
-    coreExtensions.add(e);
-  }
-
-  private static ArrayList<RestApiExtension> restApiExtensions = new ArrayList<>();
-
-  public static void addRestAPIExtension(RestApiExtension e){
-    restApiExtensions.add(e);
-  }
-  public static ArrayList<AbstractH2OExtension> getCoreExtensions() {
-    return coreExtensions;
-  }
-
-  public static ArrayList<RestApiExtension> getRestApiExtensions(){
-    return restApiExtensions;
-  }
-
-  //-------------------------------------------------------------------------------------------------------------------
-
-  // Be paranoid and check that this doesn't happen twice.
-  private static boolean apisRegistered = false;
-
-  /**
-   * Register REST API routes.
-   *
-   * Use reflection to find all classes that inherit from {@link water.api.AbstractRegister}
-   * and call the register() method for each.
-   *
-   * @param relativeResourcePath Relative path from running process working dir to find web resources.
-   */
-  public static void registerRestApis(String relativeResourcePath) {
-    if (apisRegistered) {
-      throw H2O.fail("APIs already registered");
-    }
-
-    // Log extension registrations here so the message is grouped in the right spot.
-    List<String> registeredH2OExts = new ArrayList<>();
-    for (AbstractH2OExtension e : H2O.getCoreExtensions()) {
-      e.printInitialized();
-      registeredH2OExts.add(e.getExtensionName());
-    }
-    Log.info("Registered " + H2O.getCoreExtensions().size() + " core extensions in: " + registerExtensionsMillis + "ms");
-    Log.info("Registered H2O core extensions: " + Arrays.toString(registeredH2OExts.toArray()));
-
-    long before = System.currentTimeMillis();
-    RequestServer.DummyRestApiContext dummyRestApiContext = new RequestServer.DummyRestApiContext();
-    ServiceLoader<RestApiExtension> restApiExtensionLoader = ServiceLoader.load(RestApiExtension.class);
-    List<String> registeredRestApiExts = new ArrayList<>();
-    for (RestApiExtension r : restApiExtensionLoader) {
-      try {
-        r.register(relativeResourcePath);
-        r.registerEndPoints(dummyRestApiContext);
-        r.registerSchemas(dummyRestApiContext);
-        registeredRestApiExts.add(r.getName());
-        H2O.addRestAPIExtension(r);
-      } catch (Exception e) {
-        Log.info("Cannot register extension: " + r + ". Skipping it...");
-      }
-    }
-    
-    apisRegistered = true;
-
-    long registerApisMillis = System.currentTimeMillis() - before;
-    Log.info("Registered: " + RequestServer.numRoutes() + " REST APIs in: " + registerApisMillis + "ms");
-    Log.info("Registered REST API extensions: " + Arrays.toString(registeredRestApiExts.toArray()));
-
-    // Register all schemas
-    SchemaServer.registerAllSchemasIfNecessary(dummyRestApiContext.getAllSchemas());
-  }
-  
   //-------------------------------------------------------------------------------------------------------------------
 
   public static class AboutEntry {
@@ -1065,6 +963,9 @@ final public class H2O {
   static {
     PID = getCurrentPID();
   }
+
+  // Extension Manager instance
+  private static final ExtensionManager extManager = ExtensionManager.getInstance();
 
   /**
    * Throw an exception that will cause the request to fail, but the cluster to continue.
@@ -1529,7 +1430,7 @@ final public class H2O {
       Log.warn("");
     }
 
-    for (AbstractH2OExtension e : H2O.getCoreExtensions()) {
+    for (AbstractH2OExtension e : extManager.getCoreExtensions()) {
       String n = e.getExtensionName() + " ";
       AbstractBuildVersion abv = e.getBuildVersion();
       Log.info(n + "Build git branch: ", abv.branchName());
@@ -1627,12 +1528,6 @@ final public class H2O {
 
   }
 
-  static public void register(
-      String method_url, Class<? extends water.api.Handler> hclass, String method, String apiName, String summary
-  ) {
-    RequestServer.registerEndpoint(apiName, method_url, hclass, method, summary);
-  }
-
   public static void registerResourceRoot(File f) {
     JarHash.registerResourceRoot(f);
   }
@@ -1650,7 +1545,7 @@ final public class H2O {
   /**
    * This switch Jetty into accepting mode.
    */
-  static public void startServingRestApi() {
+  public static void startServingRestApi() {
     if (!H2O.ARGS.disable_web) {
       jetty.acceptRequests();
     }
@@ -2047,7 +1942,7 @@ final public class H2O {
 
     // Allow core extensions to perform initialization that requires the network.
     long time6 = System.currentTimeMillis();
-    for (AbstractH2OExtension ext: coreExtensions) {
+    for (AbstractH2OExtension ext: extManager.getCoreExtensions()) {
       ext.onLocalNodeStarted();
     }
 
