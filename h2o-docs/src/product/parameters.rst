@@ -18,6 +18,8 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/beta_epsilon
    data-science/algo-params/binomial_double_trees
    data-science/algo-params/build_tree_one_node
+   data-science/algo-params/calibrate_frame
+   data-science/algo-params/calibrate_model
    data-science/algo-params/categorical_encoding
    data-science/algo-params/checkpoint
    data-science/algo-params/class_sampling_factors
