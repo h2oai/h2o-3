@@ -789,6 +789,8 @@ In the **Build a Model** cell, select an algorithm from the drop-down menu. (Ref
  - **K-means**: Create a K-Means model.
  - **Naïve Bayes**: Create a Naïve Bayes model.
  - **Principal Component Analysis**: Create a Principal Components Analysis model for modeling without regularization or performing dimensionality reduction.
+ - **Stacked Ensemble**: Create a Stacked Ensemble model.
+ - **XGBoost**: Create an XGBoost model. 
 
  You can also specify to run AutoML, which automatically trains and tunes models while requiring as few parameters as possible. All the user needs to do is point to a dataset, identify the response column, and optionally specify a time-constraint.
 
