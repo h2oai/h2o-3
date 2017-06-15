@@ -1598,8 +1598,7 @@ public class GLMTest  extends TestUtil {
     } finally {
       fr.delete();
       if(model != null){
-        for(Key k:model._output._cross_validation_models)
-          Keyed.remove(k);
+        model.deleteCrossValidationModels();
         model.delete();
       }
       Scope.exit();
