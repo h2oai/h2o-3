@@ -789,174 +789,96 @@ In the **Build a Model** cell, select an algorithm from the drop-down menu. (Ref
  - **K-means**: Create a K-Means model.
  - **Naïve Bayes**: Create a Naïve Bayes model.
  - **Principal Component Analysis**: Create a Principal Components Analysis model for modeling without regularization or performing dimensionality reduction.
- - **Stacked Ensembles**: Create a Stacked Ensembles model.
+ - **Stacked Ensemble**: Create a Stacked Ensemble model.
  - **XGBoost**: Create an XGBoost model. 
-
- .. figure:: images/Flow_model_dropdown.png
-    :alt: Flow Model dropdown menu
-    :height: 308
-    :width: 150
 
 The available options vary depending on the selected model. If an option
 is only available for a specific model type, the model type is listed.
 If no model type is specified, the option is applicable to all model
 types.
 
--  **model\_id**: (Optional) Enter a custom name for the model to use as
-   a reference. By default, H2O automatically generates an ID containing
-   the model type (for example,
-   ``gbm-6f6bdc8b-ccbc-474a-b590-4579eea44596``).
+-  **model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates an ID containing the model type (for example, ``gbm-6f6bdc8b-ccbc-474a-b590-4579eea44596``).
 
--  **training\_frame**: (Required) Select the dataset used to build the
-   model.
+-  **training_frame**: (Required) Select the dataset used to build the model.
 
--  **validation\_frame**: (Optional) Select the dataset used to evaluate
-   the accuracy of the model.
+-  **validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model.
 
 -  **nfolds**: (GLM, GBM, DL, DRF) Specify the number of folds for cross-validation.
 
--  **response\_column**: (Required for GLM, GBM, DL, DRF, Naïve Bayes) Select the
-   column to use as the independent variable.
+-  **response_column**: (Required for GLM, GBM, DL, DRF, Naïve Bayes) Select the column to use as the independent variable.
 
--  **ignored\_columns**: (Optional) Click the checkbox next to a column
-   name to add it to the list of columns excluded from the model. To add
-   all columns, click the **All** button. To remove a column from the
-   list of ignored columns, click the X next to the column name. To
-   remove all columns from the list of ignored columns, click the
-   **None** button. To search for a specific column, type the column
-   name in the **Search** field above the column list. To only show
-   columns with a specific percentage of missing values, specify the
-   percentage in the **Only show columns with more than 0% missing
-   values** field. To change the selections for the hidden columns, use
-   the **Select Visible** or **Deselect Visible** buttons.
+-  **ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
 
--  **ignore\_const\_cols**: (Optional) Check this checkbox to ignore
-   constant training columns, since no information can be gained from
-   them. This option is selected by default.
+-  **ignore_const_cols**: (Optional) Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default.
 
--  **transform**: (PCA) Select the transformation method for
-   the training data: None, Standardize, Normalize, Demean, or Descale.
+-  **transform**: (PCA) Select the transformation method for the training data: None, Standardize, Normalize, Demean, or Descale.
 
--  **pca\_method**: (PCA) Select the algorithm to use for
-   computing the principal components:
+-  **pca_method**: (PCA) Select the algorithm to use for computing the principal components:
 
-   -  *GramSVD*: Uses a distributed computation of the Gram matrix,
-      followed by a local SVD using the JAMA package
+   -  *GramSVD*: Uses a distributed computation of the Gram matrix, followed by a local SVD using the JAMA package
    -  *Power*: Computes the SVD using the power iteration method
    -  *Randomized*: Uses randomized subspace iteration method
-   -  *GLRM*: Fits a generalized low-rank model with L2 loss function
-      and no regularization and solves for the SVD using local matrix
-      algebra
+   -  *GLRM*: Fits a generalized low-rank model with L2 loss function and no regularization and solves for the SVD using local matrix algebra
 
--  **family**: (GLM) Select the model type (Gaussian,
-   Binomial, Multinomial, Poisson, Gamma, or Tweedie).
+-  **family**: (GLM) Select the model type (Gaussian, Binomial, Multinomial, Poisson, Gamma, or Tweedie).
 
--  **solver**: (GLM) Select the solver to use (AUTO, IRLSM,
-   L\_BFGS, COORDINATE\_DESCENT\_NAIVE, or COORDINATE\_DESCENT). IRLSM
-   is fast on on problems with a small number of predictors and for
-   lambda-search with L1 penalty, while
-   `L\_BFGS <http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf>`__
-   scales better for datasets with many columns. COORDINATE\_DESCENT is
-   IRLSM with the covariance updates version of cyclical coordinate
-   descent in the innermost loop. COORDINATE\_DESCENT\_NAIVE is IRLSM
-   with the naive updates version of cyclical coordinate descent in the
-   innermost loop. COORDINATE\_DESCENT\_NAIVE and COORDINATE\_DESCENT
-   are currently experimental.
+-  **solver**: (GLM) Select the solver to use (AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_NAIVE, or COORDINATE_DESCENT). IRLSM is fast on on problems with a small number of predictors and for lambda-search with L1 penalty, while `L_BFGS <http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf>`__ scales better for datasets with many columns. COORDINATE_DESCENT is IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop. COORDINATE_DESCENT_NAIVE is IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop. COORDINATE_DESCENT_NAIVE and COORDINATE_DESCENT are currently experimental.
 
--  **link**: (GLM) Select a link function (Identity,
-   Family\_Default, Logit, Log, Inverse, or Tweedie).
+-  **link**: (GLM) Select a link function (Identity, Family_Default, Logit, Log, Inverse, or Tweedie).
 
--  **alpha**: (GLM) Specify the regularization distribution
-   between L2 and L2.
+-  **alpha**: (GLM) Specify the regularization distribution between L2 and L2. A value of 1 for alpha represents Lasso regression, a value of 0 produces Ridge regression and anything in between specifies the amount of mixing between the two. Default value of alpha is 0 when SOLVER = 'L-BFGS', 0.5 otherwise. 
 
 -  **lambda**: (GLM) Specify the regularization strength.
 
--  **lambda\_search**: (GLM) Check this checkbox to enable
-   lambda search, starting with lambda max. The given lambda is then
+-  **lambda_search**: (GLM) Check this checkbox to enable lambda search, starting with lambda max. The given lambda is then
    interpreted as lambda min.
 
--  **non-negative**: (GLM) To force coefficients to be
-   non-negative, check this checkbox.
+-  **non-negative**: (GLM) To force coefficients to be non-negative, check this checkbox.
 
--  **standardize**: (K-Means, GLM) To
-   standardize the numeric columns to have mean of zero and unit
-   variance, check this checkbox. Standardization is highly recommended;
-   if you do not use standardization, the results can include components
-   that are dominated by variables that appear to have larger variances
-   relative to other attributes as a matter of scale, rather than true
-   contribution. This option is selected by default.
+-  **standardize**: (K-Means, GLM) To standardize the numeric columns to have mean of zero and unit variance, check this checkbox. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option is selected by default.
 
--  **beta\_constraints**: (GLM) To use beta constraints,
-   select a dataset from the drop-down menu. The selected frame is used
-   to constraint the coefficient vector to provide upper and lower
-   bounds.
+-  **beta_constraints**: (GLM) To use beta constraints, select a dataset from the drop-down menu. The selected frame is used
+   to constraint the coefficient vector to provide upper and lower bounds.
 
 -  **ntrees**: (GBM, DRF) Specify the number of trees.
 
--  **max\_depth**: (GBM, DRF) Specify the maximum tree depth.
+-  **max_depth**: (GBM, DRF) Specify the maximum tree depth.
 
--  **min\_rows**: (GBM, DRF) Specify the minimum number of observations for a leaf ("nodesize" in R).
+-  **min_rows**: (GBM, DRF) Specify the minimum number of observations for a leaf ("nodesize" in R).
 
 -  **nbins**: (GBM, DRF) (Numerical [real/int] only) Specify the minimum number of bins for the histogram to build, then split at the best point.
 
--  **nbins\_cats**: (GBM, DRF) (Categorical
-   [factors/enums] only) Specify the maximum number of bins for the
-   histogram to build, then split at the best point. Higher values can
-   lead to more overfitting. The levels are ordered alphabetically; if
-   there are more levels than bins, adjacent levels share bins. This
-   value has a more significant impact on model fitness than **nbins**.
-   Larger values may increase runtime, especially for deep trees and
-   large clusters, so tuning may be required to find the optimal value
-   for your configuration.
+-  **nbins_cats**: (GBM, DRF) (Categorical [factors/enums] only) Specify the maximum number of bins for the histogram to build, then split at the best point. Higher values can lead to more overfitting. The levels are ordered alphabetically; if   there are more levels than bins, adjacent levels share bins. This value has a more significant impact on model fitness than **nbins**. Larger values may increase runtime, especially for deep trees and large clusters, so tuning may be required to find the optimal value for your configuration.
 
--  **learn\_rate**: (GBM) Specify the learning rate. The range is 0.0 to 1.0.
+-  **learn_rate**: (GBM) Specify the learning rate. The range is 0.0 to 1.0.
 
--  **distribution**: (GBM, DL) Select the
-   distribution type from the drop-down list. The options are auto,
-   bernoulli, multinomial, gaussian, poisson, gamma, or tweedie.
+-  **distribution**: (GBM, DL) Select the distribution type from the drop-down list. The options are auto, bernoulli, multinomial, gaussian, poisson, gamma, or tweedie.
 
--  **sample\_rate**: (GBM, DRF) Specify the row
-   sampling rate (x-axis). The range is 0.0 to 1.0. Higher values may
-   improve training accuracy. Test accuracy improves when either columns
-   or rows are sampled. For details, refer to "Stochastic Gradient
-   Boosting" (`Friedman,
-   1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
+-  **sample_rate**: (GBM, DRF) Specify the row sampling rate (x-axis). The range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
 
--  **col\_sample\_rate**: (GBM, DRF) Specify the
-   column sampling rate (y-axis). The range is 0.0 to 1.0. Higher values
-   may improve training accuracy. Test accuracy improves when either
-   columns or rows are sampled. For details, refer to "Stochastic
-   Gradient Boosting" (`Friedman,
-   1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
+-  **col_sample_rate**: (GBM, DRF) Specify the column sampling rate (y-axis). The range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
 
--  **mtries**: (DRF) Specify the columns to randomly select
-   at each level. If the default value of ``-1`` is used, the number of
-   variables is the square root of the number of columns for
-   classification and p/3 for regression (where p is the number of
-   predictors).
+-  **mtries**: (DRF) Specify the columns to randomly select at each level. If the default value of ``-1`` is used, the number of variables is the square root of the number of columns for classification and p/3 for regression (where p is the number of predictors).
 
--  **binomial\_double\_trees**: (DRF) (Binary classification
-   only) Build twice as many trees (one per class). Enabling this option
-   can lead to higher accuracy, while disabling can result in faster
-   model building. This option is disabled by default.
+-  **binomial_double_trees**: (DRF) (Binary classification only) Build twice as many trees (one per class). Enabling this option  can lead to higher accuracy, while disabling can result in faster model building. This option is disabled by default.
 
--  **score\_each\_iteration**: (K-Means, DRF, Naïve Bayes, PCA, GBM, GLM) To score during each iteration of the model training, check this checkbox.
+-  **score_each_iteration**: (K-Means, DRF, Naïve Bayes, PCA, GBM, GLM) To score during each iteration of the model training, check this checkbox.
 
 -  **k**\ \*: (K-Means, PCA) For K-Means, specify the number of clusters. For PCA, specify the rank of matrix approximation.
 
 -  **estimate_k**: (K-Means) Specify whether to estimate the number of clusters (<=k) iteratively (independent of the seed) and deterministically (beginning with ``k=1,2,3...``). If enabled, for each **k** that, the estimate will go up to **max_iteration**. This option is disabled by default.
 
--  **user\_points**: (K-Means) For K-Means, specify the number of initial cluster centers.
+-  **user_points**: (K-Means) For K-Means, specify the number of initial cluster centers.
 
--  **max\_iterations**: (K-Means, PCA, GLM) Specify the number of training iterations.
+-  **max_iterations**: (K-Means, PCA, GLM) Specify the number of training iterations.
 
 -  **init**: (K-Means) Select the initialization mode. The options are Furthest, PlusPlus, Random, or User.
 
     **Note**: If PlusPlus is selected, the initial Y matrix is chosen by the final cluster centers from the K-Means PlusPlus algorithm.
 
--  **tweedie\_variance\_power**: (GLM) (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie variance power.
+-  **tweedie_variance_power**: (GLM) (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie variance power.
 
--  **tweedie\_link\_power**: (GLM) (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie link power.
+-  **tweedie_link_power**: (GLM) (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie link power.
 
 -  **activation**: (DL) Select the activation function (Tanh, TanhWithDropout, Rectifier, RectifierWithDropout, Maxout, MaxoutWithDropout). The default option is Rectifier.
 
@@ -964,89 +886,53 @@ types.
 
 -  **epochs**: (DL) Specify the number of times to iterate (stream) the dataset. The value can be a fraction.
 
--  **variable\_importances**: (DL) Check this checkbox to compute variable importance. This option is not selected by default.
+-  **variable_importances**: (DL) Check this checkbox to compute variable importance. This option is not selected by default.
 
 -  **laplace**: (Naïve Bayes) Specify the Laplace smoothing parameter.
 
--  **min\_sdev**: (Naïve Bayes) Specify the minimum standard deviation to use for observations without enough data.
+-  **min_sdev**: (Naïve Bayes) Specify the minimum standard deviation to use for observations without enough data.
 
--  **eps\_sdev**: (Naïve Bayes) Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used.
+-  **eps_sdev**: (Naïve Bayes) Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used.
 
--  **min\_prob**: (Naïve Bayes) Specify the minimum probability to use for observations without enough data.
+-  **min_prob**: (Naïve Bayes) Specify the minimum probability to use for observations without enough data.
 
--  **eps\_prob**: (Naïve Bayes) Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used.
+-  **eps_prob**: (Naïve Bayes) Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used.
 
--  **compute\_metrics**: (Naïve Bayes, PCA) To
-   compute metrics on training data, check this checkbox. The Naïve
-   Bayes classifier assumes independence between predictor variables
-   conditional on the response, and a Gaussian distribution of numeric
-   predictors with mean and standard deviation computed from the
-   training dataset. When building a Naïve Bayes classifier, every row
-   in the training dataset that contains at least one NA will be skipped
-   completely. If the test dataset has missing values, then those
-   predictors are omitted in the probability calculation during
-   prediction.
+-  **compute_metrics**: (Naïve Bayes, PCA) To compute metrics on training data, check this checkbox. The Naïve Bayes classifier assumes independence between predictor variables conditional on the response, and a Gaussian distribution of numeric predictors with mean and standard deviation computed from the training dataset. When building a Naïve Bayes classifier, every row in the training dataset that contains at least one NA will be skipped completely. If the test dataset has missing values, then those predictors are omitted in the probability calculation during prediction.
 
 **Advanced Options**
 
--  **fold\_assignment**: (GLM, GBM, DL, DRF, K-Means) (Applicable only if a value
-   for **nfolds** is specified and **fold\_column** is not selected)
-   Select the cross-validation fold assignment scheme. The available
-   options are Random or
-   `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__.
+-  **fold_assignment**: (GLM, GBM, DL, DRF, K-Means) (Applicable only if a value for **nfolds** is specified and **fold\_column** is not selected.) Select the cross-validation fold assignment scheme. The available options are Random or `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__.
 
--  **fold\_column**: (GLM, GBM, DL, DRF, K-Means) Select the column that
-   contains the cross-validation fold index assignment per observation.
+-  **fold_column**: (GLM, GBM, DL, DRF, K-Means) Select the column that contains the cross-validation fold index assignment per observation.
 
--  **offset\_column**: (GLM, DRF, GBM, DL) Select a column to use as the offset. *Note*: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__.
+-  **offset_column**: (GLM, DRF, GBM, DL) Select a column to use as the offset. *Note*: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__.
 
--  **weights\_column**: (GLM, DL, DRF, GBM) Select a column to use for the observation weights. The specified ``weights_column`` must be included in the specified ``training_frame``. *Python only*: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``. *Note*: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
+-  **weights_column**: (GLM, DL, DRF, GBM) Select a column to use for the observation weights. The specified ``weights_column`` must be included in the specified ``training_frame``. *Python only*: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``. *Note*: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
--  **loss**: (DL) Select the loss function. For DL, the
-   options are Automatic, Quadratic, CrossEntropy, Huber, or Absolute
-   and the default value is Automatic. Absolute, Quadratic, and Huber
-   are applicable for regression or classification, while CrossEntropy
-   is only applicable for classification. Huber can improve for
-   regression problems with outliers.
+-  **loss**: (DL) Select the loss function. For DL, the options are Automatic, Quadratic, CrossEntropy, Huber, or Absolute and the default value is Automatic. Absolute, Quadratic, and Huber are applicable for regression or classification, while CrossEntropy is only applicable for classification. Huber can improve for regression problems with outliers.
 
 -  **checkpoint**: (DL, DRF, GBM) Enter a model key associated with a previously-trained model. Use this option to build a new model as a continuation of a previously-generated model.
 
--  **use\_all\_factor\_levels**: (DL, PCA) Check this checkbox to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. For Deep Learning models, this option is useful for determining variable importances and is automatically enabled if the autoencoder is selected.
+-  **use_all_factor_levels**: (DL, PCA) Check this checkbox to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. For Deep Learning models, this option is useful for determining variable importances and is automatically enabled if the autoencoder is selected.
 
--  **train\_samples\_per\_iteration**: (DL) Specify the number
-   of global training samples per MapReduce iteration. To specify one
-   epoch, enter 0. To specify all available data (e.g., replicated
-   training data), enter -1. To use the automatic values, enter -2.
+-  **train_samples_per_iteration**: (DL) Specify the number of global training samples per MapReduce iteration. To specify one epoch, enter 0. To specify all available data (e.g., replicated training data), enter -1. To use the automatic values, enter -2.
 
--  **adaptive\_rate**: (DL) Check this checkbox to enable the
-   adaptive learning rate (ADADELTA). This option is selected by
-   default. If this option is enabled, the following parameters are
-   ignored: ``rate``, ``rate_decay``, ``rate_annealing``,
-   ``momentum_start``, ``momentum_ramp``, ``momentum_stable``, and
-   ``nesterov_accelerated_gradient``.
+-  **adaptive_rate**: (DL) Check this checkbox to enable the adaptive learning rate (ADADELTA). This option is selected by default. If this option is enabled, the following parameters are ignored: ``rate``, ``rate_decay``, ``rate_annealing``, ``momentum_start``, ``momentum_ramp``, ``momentum_stable``, and ``nesterov_accelerated_gradient``.
 
--  **input\_dropout\_ratio**: (DL) Specify the input layer
-   dropout ratio to improve generalization. Suggested values are 0.1 or
-   0.2. The range is >= 0 to <1.
+-  **input_dropout_ratio**: (DL) Specify the input layer dropout ratio to improve generalization. Suggested values are 0.1 or 0.2. The range is >= 0 to <1.
 
--  **l1**: (DL) Specify the L1 regularization to add stability
-   and improve generalization; sets the value of many weights to 0.
+-  **l1**: (DL) Specify the L1 regularization to add stability and improve generalization; sets the value of many weights to 0.
 
--  **l2**: (DL) Specify the L2 regularization to add stability
-   and improve generalization; sets the value of many weights to smaller
-   values.
+-  **l2**: (DL) Specify the L2 regularization to add stability and improve generalization; sets the value of many weights to smaller values.
 
--  **balance\_classes**: (GBM, DL) Oversample the
-   minority classes to balance the class distribution. This option is
-   not selected by default and can increase the data frame size. This
-   option is only applicable for classification. Majority classes can be
-   undersampled to satisfy the **Max\_after\_balance\_size** parameter.
+-  **balance_classes**: (GBM, DL) Oversample the minority classes to balance the class distribution. This option is not selected by default and can increase the data frame size. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **max_after_balance_size** parameter.
 
     **Note**: ``balance_classes`` balances over just the target, not over all classes in the training frame.
 
--  **max\_confusion\_matrix\_size**: (DRF, DL, Naïve Bayes, GBM, GLM) Specify the maximum size (in number of classes) for confusion matrices to be  printed in the Logs.
+-  **max_confusion_matrix_size**: (DRF, DL, Naïve Bayes, GBM, GLM) Specify the maximum size (in number of classes) for confusion matrices to be  printed in the Logs.
 
--  **max\_hit\_ratio\_k**: (DRF, DL, Naïve Bayes, GBM, GLM) Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multinomial only. To disable, enter 0.
+-  **max_hit_ratio_k**: (DRF, DL, Naïve Bayes, GBM, GLM) Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multinomial only. To disable, enter 0.
 
 -  **stopping_metric**: (GBM, DRF, DL) Specify the metric to use for early stopping. The available options are:
 
@@ -1072,32 +958,31 @@ types.
 
 -  **stopping_tolerance**: (GBM, DRF, DL) This option specifies the tolerance value by which a model must improve before training ceases.
 
--  **build\_tree\_one\_node**: (DRF, GBM) To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. The
-   default setting is disabled.
+-  **build_tree_one_node**: (DRF, GBM) To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. The default setting is disabled.
 
--  **rate**: (DL) Specify the learning rate. Higher rates result in less stable models and lower rates result in slower convergence. Not applicable if **adaptive\_rate** is enabled.
+-  **rate**: (DL) Specify the learning rate. Higher rates result in less stable models and lower rates result in slower convergence. Not applicable if **adaptive_rate** is enabled.
 
--  **rate\_annealing**: (DL) Specify the learning rate annealing. The formula is rate/(1+rate\_annealing value \* samples). Not applicable if **adaptive\_rate** is enabled.
+-  **rate_annealing**: (DL) Specify the learning rate annealing. The formula is rate/(1+rate_annealing value \* samples). Not applicable if **adaptive_rate** is enabled.
 
--  **momentum\_start**: (DL) Specify the initial momentum at the beginning of training. A suggested value is 0.5. Not applicable if **adaptive\_rate** is enabled.
+-  **momentum_start**: (DL) Specify the initial momentum at the beginning of training. A suggested value is 0.5. Not applicable if **adaptive_rate** is enabled.
 
--  **momentum\_ramp**: (DL) Specify the number of training samples for increasing the momentum. Not applicable if **adaptive\_rate** is enabled.
+-  **momentum_ramp**: (DL) Specify the number of training samples for increasing the momentum. Not applicable if **adaptive_rate** is enabled.
 
--  **momentum\_stable**: (DL) Specify the final momentum value reached after the **momentum\_ramp** training samples. Not applicable if **adaptive\_rate** is enabled.
+-  **momentum_stable**: (DL) Specify the final momentum value reached after the **momentum_ramp** training samples. Not applicable if **adaptive_rate** is enabled.
 
--  **nesterov\_accelerated\_gradient**: (DL) Check this checkbox to use the Nesterov accelerated gradient. This option is recommended and selected by default. Not applicable is **adaptive\_rate** is enabled.
+-  **nesterov_accelerated_gradient**: (DL) Check this checkbox to use the Nesterov accelerated gradient. This option is recommended and selected by default. Not applicable is **adaptive_rate** is enabled.
 
--  **hidden\_dropout\_ratios**: (DL) Specify the hidden layer dropout ratios to improve generalization. Specify one value per hidden layer, each value between 0 and 1 (exclusive). There is no default value. This option is applicable only if *TanhwithDropout*, *RectifierwithDropout*, or *MaxoutWithDropout* is selected from the **Activation** drop-down list.
+-  **hidden_dropout_ratios**: (DL) Specify the hidden layer dropout ratios to improve generalization. Specify one value per hidden layer, each value between 0 and 1 (exclusive). There is no default value. This option is applicable only if *TanhwithDropout*, *RectifierwithDropout*, or *MaxoutWithDropout* is selected from the **Activation** drop-down list.
 
--  **tweedie\_power**: (DL, GBM) (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie power. The range is from 1 to 2. For a normal distribution, enter ``0``. For Poisson distribution, enter ``1``. For a gamma distribution, enter ``2``. For a compound Poisson-gamma distribution, enter a value greater than 1 but less than 2. For more information, refer to `Tweedie distribution <https://en.wikipedia.org/wiki/Tweedie_distribution>`__.
+-  **tweedie_power**: (DL, GBM) (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie power. The range is from 1 to 2. For a normal distribution, enter ``0``. For Poisson distribution, enter ``1``. For a gamma distribution, enter ``2``. For a compound Poisson-gamma distribution, enter a value greater than 1 but less than 2. For more information, refer to `Tweedie distribution <https://en.wikipedia.org/wiki/Tweedie_distribution>`__.
 
--  **score\_interval**: (DL) Specify the shortest time interval (in seconds) to wait between model scoring.
+-  **score_interval**: (DL) Specify the shortest time interval (in seconds) to wait between model scoring.
 
--  **score\_training\_samples**: (DL) Specify the number of training set samples for scoring. To use all training samples, enter 0.
+-  **score_training_samples**: (DL) Specify the number of training set samples for scoring. To use all training samples, enter 0.
 
--  **score\_validation\_samples**: (DL) (Requires selection from the **validation\_frame** drop-down list) This option is applicable to classification only. Specify the number of validation set samples for scoring. To use all validation set samples, enter 0.
+-  **score_validation_samples**: (DL) (Requires selection from the **validation\_frame** drop-down list) This option is applicable to classification only. Specify the number of validation set samples for scoring. To use all validation set samples, enter 0.
 
--  **score\_duty\_cycle**: (DL) Specify the maximum duty cycle fraction for scoring. A lower value results in more training and a higher value results in more scoring. The value must be greater than 0 and less than 1.
+-  **score_duty_cycle**: (DL) Specify the maximum duty cycle fraction for scoring. A lower value results in more training and a higher value results in more scoring. The value must be greater than 0 and less than 1.
 
 -  **autoencoder**: (DL) Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default.
 
@@ -1105,147 +990,91 @@ types.
 
 **Expert Options**
 
--  **keep\_cross\_validation\_predictions**: (GLM, GBM, DL, DRF, K-Means) To keep the cross-validation predictions, check this checkbox.
+-  **keep_cross_validation_predictions**: (GLM, GBM, DL, DRF, K-Means) To keep the cross-validation predictions, check this checkbox.
 
--  **class\_sampling\_factors**: (DRF, GBM, DL) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. This option is only applicable for classification problems and when **balance\_classes** is enabled.
+-  **class_sampling_factors**: (DRF, GBM, DL) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. This option is only applicable for classification problems and when **balance_classes** is enabled.
 
--  **overwrite\_with\_best\_model**: (DL) Check this checkbox
-   to overwrite the final model with the best model found during
+-  **overwrite_with_best_model**: (DL) Check this checkbox to overwrite the final model with the best model found during
    training. This option is selected by default.
 
--  **target\_ratio\_comm\_to\_comp**: (DL) Specify the target
-   ratio of communication overhead to computation. This option is only
-   enabled for multi-node operation and if
-   **train\_samples\_per\_iteration** equals -2 (auto-tuning).
+-  **target_ratio_comm_to_comp**: (DL) Specify the target ratio of communication overhead to computation. This option is only enabled for multi-node operation and if **train_samples_per_iteration** equals -2 (auto-tuning).
 
--  **rho**: (DL) Specify the adaptive learning rate time decay
-   factor. This option is only applicable if **adaptive\_rate** is
+-  **rho**: (DL) Specify the adaptive learning rate time decay factor. This option is only applicable if **adaptive\_rate** is
    enabled.
 
--  **epsilon**: (DL) Specify the adaptive learning rate time
-   smoothing factor to avoid dividing by zero. This option is only
-   applicable if **adaptive\_rate** is enabled.
+-  **epsilon**: (DL) Specify the adaptive learning rate time smoothing factor to avoid dividing by zero. This option is only
+   applicable if **adaptive_rate** is enabled.
 
--  **max\_w2**: (DL) Specify the constraint for the squared
-   sum of the incoming weights per unit (e.g., for Rectifier).
+-  **max_w2**: (DL) Specify the constraint for the squared sum of the incoming weights per unit (e.g., for Rectifier).
 
--  **initial\_weight\_distribution**: (DL) Select the initial
-   weight distribution (Uniform Adaptive, Uniform, or Normal). If
-   Uniform Adaptive is used, the **initial\_weight\_scale** parameter is
-   not applicable.
+-  **initial_weight_distribution**: (DL) Select the initial weight distribution (Uniform Adaptive, Uniform, or Normal). If Uniform Adaptive is used, the **initial_weight_scale** parameter is not applicable.
 
--  **initial\_weight\_scale**: (DL) Specify the initial weight
-   scale of the distribution function for Uniform or Normal
-   distributions. For Uniform, the values are drawn uniformly from
-   initial weight scale. For Normal, the values are drawn from a Normal
-   distribution with the standard deviation of the initial weight scale.
-   If Uniform Adaptive is selected as the
-   **initial\_weight\_distribution**, the **initial\_weight\_scale**
-   parameter is not applicable.
+-  **initial_weight_scale**: (DL) Specify the initial weight scale of the distribution function for Uniform or Normal distributions. For Uniform, the values are drawn uniformly from initial weight scale. For Normal, the values are drawn from a Normal distribution with the standard deviation of the initial weight scale. If Uniform Adaptive is selected as the **initial_weight_distribution**, the **initial_weight_scale** parameter is not applicable.
 
--  **classification\_stop**: (DL) (Applicable to
-   discrete/categorical datasets only) Specify the stopping criterion
-   for classification error fractions on training data. To disable this
-   option, enter -1.
+-  **classification_stop**: (DL) (Applicable to discrete/categorical datasets only) Specify the stopping criterion for classification error fractions on training data. To disable this option, enter -1.
 
--  **max\_hit\_ratio\_k**: (DL, GLM) (Classification only) Specify the maximum number (top K) of predictions to use for hit ratio computation (for multinomial only). To disable this option, enter 0.
+-  **max_hit_ratio_k**: (DL, GLM) (Classification only) Specify the maximum number (top K) of predictions to use for hit ratio computation (for multinomial only). To disable this option, enter 0.
 
--  **regression\_stop**: (DL) (Applicable to real value/continuous datasets only) Specify the stopping criterion for regression error (MSE) on the training data. To disable this option, enter -1.
+-  **regression_stop**: (DL) (Applicable to real value/continuous datasets only) Specify the stopping criterion for regression error (MSE) on the training data. To disable this option, enter -1.
 
--  **diagnostics**: (DL) Check this checkbox to compute the
-   variable importances for input features (using the Gedeon method).
-   For large networks, selecting this option can reduce speed. This
-   option is selected by default.
+-  **diagnostics**: (DL) Check this checkbox to compute the variable importances for input features (using the Gedeon method). For large networks, selecting this option can reduce speed. This option is selected by default.
 
--  **fast\_mode**: (DL) Check this checkbox to enable fast
-   mode, a minor approximation in back-propagation. This option is
-   selected by default.
+-  **fast_mode**: (DL) Check this checkbox to enable fast mode, a minor approximation in back-propagation. This option is selected by default.
 
--  **force\_load\_balance**: (DL) Check this checkbox to force
-   extra load balancing to increase training speed for small datasets
-   and use all cores. This option is selected by default.
+-  **force_load_balance**: (DL) Check this checkbox to force extra load balancing to increase training speed for small datasets and use all cores. This option is selected by default.
 
--  **single\_node\_mode**: (DL) Check this checkbox to force
-   H2O to run on a single node for fine-tuning of model parameters. This
-   option is not selected by default.
+-  **single_node_mode**: (DL) Check this checkbox to force H2O to run on a single node for fine-tuning of model parameters. This option is not selected by default.
 
--  **replicate\_training\_data**: (DL) Check this checkbox to
-   replicate the entire training dataset on every node for faster
-   training on small datasets. This option is not selected by default.
-   This option is only applicable for clouds with more than one node.
+-  **replicate_training_data**: (DL) Check this checkbox to replicate the entire training dataset on every node for faster training on small datasets. This option is not selected by default. This option is only applicable for clouds with more than one node.
 
--  **shuffle\_training\_data**: (DL) Check this checkbox to
-   shuffle the training data. This option is recommended if the training
-   data is replicated and the value of
-   **train\_samples\_per\_iteration** is close to the number of nodes
-   times the number of rows. This option is not selected by default.
+-  **shuffle_training_data**: (DL) Check this checkbox to shuffle the training data. This option is recommended if the training data is replicated and the value of **train_samples_per_iteration** is close to the number of nodes times the number of rows. This option is not selected by default.
 
--  **missing\_values\_handling**: (DL, GLM) Select how to handle
-   missing values (Skip or MeanImputation).
+-  **missing_values_handling**: (DL, GLM) Select how to handle missing values (Skip or MeanImputation).
 
--  **quiet\_mode**: (DL) Check this checkbox to display less
-   output in the standard output. This option is not selected by
+-  **quiet_mode**: (DL) Check this checkbox to display less output in the standard output. This option is not selected by
    default.
 
--  **sparse**: (DL) Check this checkbox to enable sparse data
-   handling, which is more efficient for data with many zero values.
+-  **sparse**: (DL) Check this checkbox to enable sparse data handling, which is more efficient for data with many zero values.
 
--  **col\_major**: (DL) Check this checkbox to use a column
-   major weight matrix for the input layer. This option can speed up
-   forward propagation but may reduce the speed of backpropagation. This
-   option is not selected by default.
+-  **col_major**: (DL) Check this checkbox to use a column major weight matrix for the input layer. This option can speed up forward propagation but may reduce the speed of backpropagation. This option is not selected by default.
 
     **Note**: This parameter has been deprecated.
 
--  **average\_activation**: (DL) Specify the average
-   activation for the sparse autoencoder. If **Rectifier** is selected
-   as the **Activation** type, this value must be positive. For Tanh,
-   the value must be in (-1,1).
+-  **average_activation**: (DL) Specify the average activation for the sparse autoencoder. If **Rectifier** is selected as the **Activation** type, this value must be positive. For Tanh, the value must be in (-1,1).
 
--  **sparsity\_beta**: (DL) Specify the sparsity-based
-   regularization optimization. For more information, refer to the
-   following
-   `link <http://www.mit.edu/~9.520/spring09/Classes/class11_sparsity.pdf>`__.
+-  **sparsity_beta**: (DL) Specify the sparsity-based regularization optimization. For more information, refer to the following `link <http://www.mit.edu/~9.520/spring09/Classes/class11_sparsity.pdf>`__.
 
--  **max\_categorical\_features**: (DL) Specify the maximum
-   number of categorical features enforced via hashing.
+-  **max_categorical_features**: (DL) Specify the maximum number of categorical features enforced via hashing.
 
--  **reproducible**: (DL) To force reproducibility on small
-   data, check this checkbox. If this option is enabled, the model takes
-   more time to generate, since it uses only one thread.
+-  **reproducible**: (DL) To force reproducibility on small data, check this checkbox. If this option is enabled, the model takes more time to generate, since it uses only one thread.
 
--  **export\_weights\_and\_biases**: (DL) To export the neural
-   network weights and biases as H2O frames, check this checkbox.
+-  **export_weights_and_biases**: (DL) To export the neural network weights and biases as H2O frames, check this checkbox.
 
--  **max\_after\_balance\_size**: (DRF, GBM, DL) Specify the maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires **balance\_classes**.
+-  **max_after_balance_size**: (DRF, GBM, DL) Specify the maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires **balance_classes**.
 
--  **nbins\_top\_level**: (DRF, GBM) (For numerical [real/int] columns only) Specify the maximum number of bins at the root level to use to build the histogram. This number will then be decreased by a factor of two per level.
+-  **nbins_top_level**: (DRF, GBM) (For numerical [real/int] columns only) Specify the maximum number of bins at the root level to use to build the histogram. This number will then be decreased by a factor of two per level.
+
+-  **max_abs_leafnode_pred**: (GBM) The maximum absolute value of a leaf node prediction.
+
+-  **pred_noise_bandwidth**: (GBM) The bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions.
+
+-  **calibrate_model**: (DRF, GBM) Use Platt scaling to calculate calibrated class probabilities. Defaults to False.
+
+-  **calibration_frame**: (DRF, GBM) Specifies the frame to be used for Platt scaling.
 
 -  **seed**: (K-Means, GBM, DL, DRF) Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations.
 
--  **intercept**: (GLM) To include a constant term in the
-   model, check this checkbox. This option is selected by default.
+-  **intercept**: (GLM) To include a constant term in the model, check this checkbox. This option is selected by default.
 
--  **objective\_epsilon**: (GLM) Specify a threshold for
-   convergence. If the objective value is less than this threshold, the
-   model is converged.
+-  **objective_epsilon**: (GLM) Specify a threshold for convergence. If the objective value is less than this threshold, the model is converged.
 
--  **beta\_epsilon**: (GLM) Specify the beta epsilon value.
-   If the L1 normalization of the current beta change is below this
-   threshold, consider using convergence.
+-  **beta_epsilon**: (GLM) Specify the beta epsilon value. If the L1 normalization of the current beta change is below this threshold, consider using convergence.
 
--  **gradient\_epsilon**: (GLM) (For L-BFGS only) Specify a
-   threshold for convergence. If the objective value (using the
-   L-infinity norm) is less than this threshold, the model is converged.
+-  **gradient_epsilon**: (GLM) (For L-BFGS only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged.
 
--  **prior**: (GLM) Specify prior probability for y ==1. Use
-   this parameter for logistic regression if the data has been sampled
-   and the mean of response does not reflect reality.
+-  **prior**: (GLM) Specify prior probability for y ==1. Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality.
 
--  **max\_active\_predictors**: (GLM) Specify the maximum
-   number of active predictors during computation. This value is used as
-   a stopping criterium to prevent expensive model building with many
-   predictors.
+-  **max_active_predictors**: (GLM) Specify the maximum number of active predictors during computation. This value is used as a stopping criterium to prevent expensive model building with many predictors.
 
 --------------
 
