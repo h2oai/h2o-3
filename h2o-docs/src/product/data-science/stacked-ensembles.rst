@@ -49,17 +49,19 @@ The steps below describe the individual tasks involved in training and testing a
 Defining an H2O Stacked Ensemble Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  **model_id**: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
+-  `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
 
--  **training_frame**: Specify the dataset used to build the model. 
+-  `training_frame <algo-params/training_frame.html>`__ Specify the dataset used to build the model. 
 
--  **validation_frame**: Specify the dataset used to evaluate the accuracy of the model.
+-  `validation_frame <algo-params/validation_frame.html>`__: Specify the dataset used to evaluate the accuracy of the model.
 
--  **selection_strategy**: Specify the strategy for choosing which models to stack. Note that **choose_all** is currently the only selection strategy implemented. 
+-  **base_models**: Specify a list of model IDs that can be stacked together. Models must have been cross-validated using ``nfolds`` > 1, they all must use the same cross-validation folds, and ``keep_cross_validation_folds`` must be set to True. 
 
--  **base_models**: Specify a list of model IDs that can be stacked together. Models must have been cross-validated using ``nfolds`` > 1, they all must use the same cross-validation folds and ``keep_cross_validation_folds`` must be set to True.  
+  **Notes regarding** ``base_models``: 
 
-Regarding the base models: One way to guarantee identical folds across base models is to set **fold_assignment** = "Modulo" in all the base models.  Currently, using base models that were all trained with **fold_assignment** = "Modulo" is a strict requirement, but this will be `relaxed <https://0xdata.atlassian.net/browse/PUBDEV-3973>`__ in the next release to allow for identical user-specified folds or random folds that were generated with the same seed.
+    - One way to guarantee identical folds across base models is to set ``fold_assignment = "Modulo"`` in all the base models.  It is also possible to get identical folds by setting ``fold_assignment = "Random"`` when the same seed is used in all base models.
+
+    - In R, you can specify a list of models in the ``base_models`` parameter. 
 
 Also in a `future release <https://0xdata.atlassian.net/browse/PUBDEV-3743>`__, there will be an additional **metalearner** parameter which allows for the user to specify the metalearning algorithm used.  Currently, the metalearner is fixed as a default H2O GLM with non-negative weights.
 

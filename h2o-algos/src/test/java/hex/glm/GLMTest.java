@@ -81,7 +81,6 @@ public class GLMTest  extends TestUtil {
       Chunk[] outputChks = Arrays.copyOfRange(chks, chks.length - nout, chks.length);
       chks = Arrays.copyOf(chks, chks.length - nout);
       Chunk off = new C0DChunk(0, chks[0]._len);
-      Chunk w = new C0DChunk(1, chks[0]._len);
       double[] tmp = new double[_m._output._dinfo._cats + _m._output._dinfo._nums];
       double[] predictions = new double[nout];
       double[] outputs = new double[nout];
@@ -90,12 +89,11 @@ public class GLMTest  extends TestUtil {
         chks = Arrays.copyOf(chks, chks.length - 1);
       }
       if (_weights) {
-        w = chks[chks.length - 1];
         chks = Arrays.copyOf(chks, chks.length - 1);
       }
       for (int i = 0; i < chks[0]._len; ++i) {
         if (_weights || _offset)
-          _m.score0(chks, w.atd(i), off.atd(i), i, tmp, predictions);
+          _m.score0(chks, off.atd(i), i, tmp, predictions);
         else
           _m.score0(chks, i, tmp, predictions);
         for (int j = 0; j < predictions.length; ++j)
@@ -1323,7 +1321,7 @@ public class GLMTest  extends TestUtil {
 
 
   public static double residualDeviance(GLMModel m) {
-    if (m._parms._family == Family.binomial) {
+    if (m._parms._family == Family.binomial || m._parms._family == Family.quasibinomial) {
       ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM) m._output._training_metrics;
       return metrics._resDev;
     } else {
@@ -1370,7 +1368,7 @@ public class GLMTest  extends TestUtil {
   }
 
   public static double resDOF(GLMModel m) {
-    if (m._parms._family == Family.binomial) {
+    if (m._parms._family == Family.binomial || m._parms._family == Family.quasibinomial) {
       ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM) m._output._training_metrics;
       return metrics._residualDegressOfFreedom;
     } else {
@@ -1399,7 +1397,7 @@ public class GLMTest  extends TestUtil {
   }
 
   public static double nullDeviance(GLMModel m) {
-    if (m._parms._family == Family.binomial) {
+    if (m._parms._family == Family.binomial || m._parms._family == Family.quasibinomial) {
       ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM) m._output._training_metrics;
       return metrics._nullDev;
     } else {
@@ -1734,7 +1732,7 @@ public class GLMTest  extends TestUtil {
       params._max_iterations = 100000;
       params._max_active_predictors = 10000;
       params._alpha = new double[]{1};
-      for(Solver s: new Solver[]{ Solver.IRLSM, Solver.COORDINATE_DESCENT}){//Solver.COORDINATE_DESCENT,}) { // LBFGS lambda-search is too slow now
+      for(Solver s: new Solver[]{Solver.IRLSM, Solver.COORDINATE_DESCENT}){//Solver.COORDINATE_DESCENT,}) { // LBFGS lambda-search is too slow now
         params._solver = s;
         GLM glm = new GLM( params, modelKey);
         glm.trainModel().get();

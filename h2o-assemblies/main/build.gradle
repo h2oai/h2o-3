@@ -1,8 +1,8 @@
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'java'
+apply plugin: 'com.github.hierynomus.license'
 
 description = "H2O Application Assembly"
-
 // Exclude unwanted dependencies
 configurations {
     compile.exclude module: 'junit'
@@ -23,8 +23,6 @@ dependencies {
     }
     compile project(":h2o-parquet-parser")
     compile "org.slf4j:slf4j-log4j12:1.7.5"
-
-    
 }
 
 //
@@ -44,7 +42,7 @@ for (comp in optionalComponents) {
         project.ext.set(compPropVersionName, compVersion)
     }
     if (compEnabled || project.hasProperty(compPropName) && project.property(compPropName)) {
-        logger.lifecycle("== Using optional component: ${compName}, version ${project.findProperty(compPropVersionName)}")
+        logger.lifecycle("== ${project.path}: Using optional component: ${compName}, version ${project.findProperty(compPropVersionName)}")
         apply from: "$rootDir/gradle/components/${compName}.gradle"
     }
     
@@ -67,6 +65,10 @@ shadowJar {
   manifest {
     attributes 'Main-Class': 'water.H2OApp'
   }
+  transform(com.github.jengelman.gradle.plugins.shadow.transformers.IncludeResourceTransformer.class) {
+    file = file("${buildDir}/reports/license/dependency-license.xml")
+    resource = "META-INF/license/h2o-depenencies-licenses.xml"
+  }
 }
 
 artifacts {
@@ -88,6 +90,9 @@ task copyJar(type: Copy) {
     into "${project.parent.parent.buildDir}"
     rename { it.replace(assembly, allInOne) }
 }
+
+// Include licences
+shadowJar.dependsOn(project.tasks.getByName('downloadLicenses'))
 // Execute always copyJar
 shadowJar.finalizedBy copyJar
 // Run shadowJar as par of build

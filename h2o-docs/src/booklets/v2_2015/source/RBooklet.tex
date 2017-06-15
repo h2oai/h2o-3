@@ -452,6 +452,8 @@ The list is growing quickly, so check \url{www.h2o.ai} to see the latest additio
 
 {\textbf{Stacked Ensembles}}: Using multiple models built from different algorithms, Stacked Ensembles finds the optimal combination of a collection of prediction algorithms using a process known as "stacking."
 
+{\textbf{XGBoost}}: XGBoost is an optimized gradient boosting library that implements machine learning algorithms under the Gradient Boosting Machine (GBM) framework. For many problems, XGBoost is the one of the best GBM frameworks today.  In other cases, the H2O GBM algorithm comes out on top.  Both implementations are available on the H2O platform.
+
 \subsection{Unsupervised Learning}
 
 {\textbf{K-means}}: Reveals groups or clusters of data points for segmentation. It clusters observations into $k$-number of points with the nearest mean.
@@ -483,7 +485,6 @@ The following demo demonstrates how to:
 \item Display the results
 \end{enumerate}
 
-\newpage
 \lstinputlisting[style=R]{R_Vignette_code_examples/r_glm_demo.R}
 
 \newpage
@@ -1238,6 +1239,7 @@ The following section lists some common R commands by function and a brief descr
 {\texttt{h2o.naiveBayes}}: Build gradient boosted classification trees and gradient boosted regression trees on a parsed dataset.
 {\texttt{h2o.prcomp}}: Perform principal components analysis on the given dataset.
 {\texttt{h2o.randomForest}}: Perform random forest classification on a dataset.
+{\texttt{h2o.xgboost}}: Build an extreme gradient boosted model.
 
 \medskip
 \emph{Model Training: Unsupervised Learning}\par
@@ -1329,8 +1331,6 @@ of Hit Ratio tables are returned, where the names are {\texttt{train}}, {\texttt
 \section{Acknowledgments}
 We would like to acknowledge the following individuals for their contributions to this booklet: Spencer Aiello, Eric Eckstrand, Anqi Fu, Patrick Aboyoun, and Jessica Lanford.
 
-
-\newpage
 \section{References}
 
 \bibliographystyle{plainnat}
@@ -1376,6 +1376,8 @@ We would like to acknowledge the following individuals for their contributions t
 \bibentry{h2o_R_package}
 
 \medskip
+
+\newpage
 
 \section{Authors}
 

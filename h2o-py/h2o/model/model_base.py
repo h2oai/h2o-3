@@ -715,9 +715,9 @@ class ModelBase(backwards_compatible()):
         """
         assert_is_type(path, str)
         assert_is_type(get_genmodel_jar, bool)
-        if self.algo not in {"drf", "gbm", "deepwater", "glrm", "glm", "word2vec"}:
+        if self.algo not in {"drf", "gbm", "deepwater", "xgboost", "glrm", "glm", "word2vec"}:
             raise H2OValueError("MOJOs are currently supported for Distributed Random Forest, "
-                                "Gradient Boosting Machine, Deep Water, GLM, GLRM and word2vec models only.")
+                                "Gradient Boosting Machine, XGBoost, Deep Water, GLM, GLRM and word2vec models only.")
         if get_genmodel_jar:
             if genmodel_name == "":
                 h2o.api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, "h2o-genmodel.jar"))
@@ -789,9 +789,9 @@ class ModelBase(backwards_compatible()):
             plt.title("Validation Scoring History")
             plt.plot(scoring_history[timestep], scoring_history[metric])
 
-        elif self._model_json["algo"] in ("deeplearning", "deepwater", "drf", "gbm"):
+        elif self._model_json["algo"] in ("deeplearning", "deepwater", "xgboost", "drf", "gbm"):
             # Set timestep
-            if self._model_json["algo"] in ("gbm", "drf"):
+            if self._model_json["algo"] in ("gbm", "drf", "xgboost"):
                 assert_is_type(timestep, "AUTO", "duration", "number_of_trees")
                 if timestep == "AUTO":
                     timestep = "number_of_trees"
@@ -838,7 +838,7 @@ class ModelBase(backwards_compatible()):
                 plt.ylim(ylim)
                 plt.plot(scoring_history[timestep], scoring_history[training_metric])
 
-        else:  # algo is not glm, deeplearning, drf, gbm
+        else:  # algo is not glm, deeplearning, drf, gbm, xgboost
             raise H2OValueError("Plotting not implemented for this type of model")
         if not server: plt.show()
 
@@ -1007,6 +1007,9 @@ class ModelBase(backwards_compatible()):
             if not server: plt.show()
         elif self._model_json["algo"] == "drf":
             plt.title("Variable Importance: H2O DRF", fontsize=20)
+            if not server: plt.show()
+        elif self._model_json["algo"] == "xgboost":
+            plt.title("Variable Importance: H2O XGBoost", fontsize=20)
             if not server: plt.show()
         # if H2ODeepLearningEstimator has variable_importances == True
         elif self._model_json["algo"] == "deeplearning":

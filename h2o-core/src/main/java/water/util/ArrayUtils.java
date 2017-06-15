@@ -890,10 +890,12 @@ public class ArrayUtils {
     return cnt;
   }
 
-  public static boolean isInt(String s) {
-    if (s == null || s.isEmpty()) return false;
-    int i = s.charAt(0)=='-' ? 1 : 0;
-    for(; i<s.length();i++) if (!Character.isDigit(s.charAt(i))) return false;
+  public static boolean isInt(String... ary) {
+    for(String s:ary) {
+      if (s == null || s.isEmpty()) return false;
+      int i = s.charAt(0) == '-' ? 1 : 0;
+      for (; i < s.length(); i++) if (!Character.isDigit(s.charAt(i))) return false;
+    }
     return true;
   }
 
@@ -1206,6 +1208,17 @@ public class ArrayUtils {
     }
     return c;
   }
+  public static double [] sortedMerge(double[] a, double [] b) {
+    double [] c = MemoryManager.malloc8d(a.length + b.length);
+    int i = 0, j = 0;
+    for(int k = 0; k < c.length; ++k){
+      if(i == a.length) c[k] = b[j++];
+      else if(j == b.length)c[k] = a[i++];
+      else if(b[j] < a[i]) c[k] = b[j++];
+      else c[k] = a[i++];
+    }
+    return c;
+  }
   // sparse sortedMerge (ids and vals)
   public static void sortedMerge(int[] aIds, double [] aVals, int[] bIds, double [] bVals, int [] resIds, double [] resVals) {
     int i = 0, j = 0;
@@ -1423,6 +1436,18 @@ public class ArrayUtils {
     return res;
   }
 
+  public static int[] sorted_set_diff(int[] x, int[] y) {
+    assert isSorted(x);
+    assert isSorted(y);
+    int [] res = new int[x.length];
+    int j = 0, k = 0;
+    for(int i = 0; i < x.length; i++){
+      while(j < y.length && y[j] < x[i])j++;
+      if(j == y.length || y[j] != x[i])
+        res[k++] = x[i];
+    }
+    return Arrays.copyOf(res,k);
+  }
   /*
       This class is written to copy the contents of a frame to a 2-D double array.
    */
@@ -1786,6 +1811,11 @@ public class ArrayUtils {
   }
 
   public static boolean isSorted(int[] vals) {
+    for (int i = 1; i < vals.length; ++i)
+      if (vals[i - 1] > vals[i]) return false;
+    return true;
+  }
+  public static boolean isSorted(double[] vals) {
     for (int i = 1; i < vals.length; ++i)
       if (vals[i - 1] > vals[i]) return false;
     return true;

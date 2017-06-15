@@ -154,7 +154,7 @@ def np_comparison_check(h2o_data, np_data, num_elements):
         assert np.absolute(h2o_val - np_val) < 1e-5, \
             "failed comparison check! h2o computed {0} and numpy computed {1}".format(h2o_val, np_val)
 
-def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs):
+def javapredict(algo, equality, train, test, x, y, compile_only=False, separator=",", setInvNumNA=False,**kwargs):
     print("Creating model in H2O")
     if algo == "gbm": model = H2OGradientBoostingEstimator(**kwargs)
     elif algo == "random_forest": model = H2ORandomForestEstimator(**kwargs)
@@ -206,6 +206,7 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs)
         f = open(in_csv, "r+")
         csv = f.read()
         csv = re.sub('\"', "", csv)
+        csv = re.sub(",", separator, csv)       # replace with arbitrary separator for input dataset
         f.seek(0)
         f.write(csv)
         f.truncate()
@@ -218,7 +219,9 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs)
         cp_sep = ";" if sys.platform == "win32" else ":"
         java_cmd = ["java", "-ea", "-cp", h2o_genmodel_jar + cp_sep + tmpdir, "-Xmx12g", "-XX:MaxPermSize=2g",
                     "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv",
-                    "--pojo", pojoname, "--input", in_csv, "--output", out_pojo_csv]
+                    "--pojo", pojoname, "--input", in_csv, "--output", out_pojo_csv, "--separator", separator]
+        if setInvNumNA:
+            java_cmd.append("--setConvertInvalidNum")
         p = subprocess.Popen(java_cmd, stdout=PIPE, stderr=STDOUT)
         o, e = p.communicate()
         print("Java output: {0}".format(o))
@@ -245,7 +248,6 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs)
                 assert hp == pp, "Expected predictions to be the same for row %d, but got %r and %r" % (r, hp, pp)
             else:
                 raise ValueError
-
 
 def javamunge(assembly, pojoname, test, compile_only=False):
     """
@@ -2746,7 +2748,7 @@ def compareOneNumericColumn(frame1, frame2, col_ind, rows, tolerance, numElement
 
     row_indices = []
     if numElements > 0:
-        row_indices = random.sample(xrange(rows), numElements)
+        row_indices = random.sample(range(rows), numElements)
     else:
         numElements = rows  # Compare all elements
         row_indices = list(range(rows))

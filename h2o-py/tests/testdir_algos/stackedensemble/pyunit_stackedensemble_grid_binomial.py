@@ -59,7 +59,6 @@ def stackedensemble_grid_binomial():
 
     # Train a stacked ensemble using the GBM grid
     stack = H2OStackedEnsembleEstimator(model_id="my_ensemble_gbm_grid_binomial", 
-                                        selection_strategy="choose_all", 
                                         base_models=grid.model_ids)
     stack.train(x=x, y=y, training_frame=train, validation_frame=test)
 

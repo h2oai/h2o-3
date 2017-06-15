@@ -138,9 +138,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
   }
 
   @Override
-  protected double[] score0(double[] data, double[] preds, double weight, double offset) {
-    if (weight == 0) return data; //0 distance from itself - validation holdout points don't increase metrics
-    assert(weight == 1);
+  protected double[] score0(double[] data, double[] preds, double offset) {
     return score0(data, preds);
   }
 

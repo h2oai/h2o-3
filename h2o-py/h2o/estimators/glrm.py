@@ -396,7 +396,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Method for computing SVD during initialization (Caution: Randomized is currently experimental and unstable)
 
-        One of: ``"gram_s_v_d"``, ``"power"``, ``"randomized"``  (default: ``"power"``).
+        One of: ``"gram_s_v_d"``, ``"power"``, ``"randomized"``  (default: ``"randomized"``).
         """
         return self._parms.get("svd_method")
 

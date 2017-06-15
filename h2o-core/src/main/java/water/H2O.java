@@ -1059,9 +1059,12 @@ final public class H2O {
 
   // Used to gate default worker threadpool sizes
   public static final int NUMCPUS = Runtime.getRuntime().availableProcessors();
-  // Best-guess process ID
-  public static long PID = -1L;
 
+  // Best-guess process ID
+  public static final long PID;
+  static {
+    PID = getCurrentPID();
+  }
 
   /**
    * Throw an exception that will cause the request to fail, but the cluster to continue.
@@ -1556,13 +1559,6 @@ final public class H2O {
 
   /** Initializes the local node and the local cloud with itself as the only member. */
   private static void startLocalNode() {
-    PID = -1L;
-    try {
-      String n = ManagementFactory.getRuntimeMXBean().getName();
-      int i = n.indexOf('@');
-      if( i != -1 ) PID = Long.parseLong(n.substring(0, i));
-    } catch( Throwable ignore ) { }
-
     // Figure self out; this is surprisingly hard
     NetworkInit.initializeNetworkSockets();
     // Do not forget to put SELF into the static configuration (to simulate
@@ -2028,7 +2024,6 @@ final public class H2O {
           Log.POST(11, ste.toString());
       }
     }
-
     // Epic Hunt for the correct self InetAddress
     long time4 = System.currentTimeMillis();
     Log.info("IPv6 stack selected: " + IS_IPV6);
@@ -2137,6 +2132,21 @@ final public class H2O {
     Log.debug("    Start network services: " + (time10 - time9) + "ms");
     Log.debug("    Cloud up: " + (time11 - time10) + "ms");
     Log.debug("    Start GA: " + (time12 - time11) + "ms");
+  }
+
+  /** Find PID of the current process, use -1 if we can't find the value. */
+  private static long getCurrentPID() {
+    try {
+      String n = ManagementFactory.getRuntimeMXBean().getName();
+      int i = n.indexOf('@');
+      if(i != -1) {
+        return Long.parseLong(n.substring(0, i));
+      } else {
+        return -1L;
+      }
+    } catch(Throwable ignore) {
+      return -1L;
+    }
   }
 
   // Die horribly

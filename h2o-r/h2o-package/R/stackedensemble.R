@@ -14,22 +14,18 @@
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
 #' @param validation_frame Id of the validation data frame.
-#' @param base_models List of model ids which we can stack together.  Which ones are chosen depends on the selection_strategy
-#'        (currently, all models will be used since selection_strategy can only be set to choose_all).  Models must have
-#'        been cross-validated using nfolds > 1, fold_assignment equal to Modulo, and keep_cross_validation_folds must
-#'        be set to True. Defaults to [].
-#' @param selection_strategy Strategy for choosing which models to stack. Must be one of: "choose_all".
+#' @param base_models List of model ids which we can stack together. Models must have been cross-validated using nfolds > 1, and
+#'        folds must be identical across models. Defaults to [].
 #' @examples
 #' 
-#' # See example R code here: 
+#' # See example R code here:
 #' # http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html
 #' 
 #' @export
 h2o.stackedEnsemble <- function(x, y, training_frame,
                                 model_id = NULL,
                                 validation_frame = NULL,
-                                base_models = list(),
-                                selection_strategy = c("choose_all")
+                                base_models = list()
                                 ) 
 {
   # If x is missing, then assume user wants to use all columns as features.
@@ -77,8 +73,6 @@ h2o.stackedEnsemble <- function(x, y, training_frame,
     parms$validation_frame <- validation_frame
   if (!missing(base_models))
     parms$base_models <- base_models
-  if (!missing(selection_strategy))
-    parms$selection_strategy <- selection_strategy
   # Error check and build model
   .h2o.modelJob('stackedensemble', parms, h2oRestApiVersion = 99) 
 }

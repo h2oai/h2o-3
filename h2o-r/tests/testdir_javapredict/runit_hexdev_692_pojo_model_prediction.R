@@ -16,19 +16,19 @@ test <-
     # The objective of the test is to verify java code generation
     # for big models containing huge amount of trees.
     # This case verify multi-classifiers.
-    training_file <- test_file <- locate("smalldata/Training_Data.csv")
-    #training_file <- test_file <- locate("smalldata/dd.csv")
-    
+    training_file <- test_file <- locate("smalldata/logreg/prostate_train_null_column_name.csv")
     training_frame <- h2o.importFile(training_file)
     test_frame <- h2o.importFile(test_file)
-    browser()
     params                 <- list()
     params$ntrees          <- 100
-    params$max_depth       <- 7
-    params$x               <- 1:14
-    params$y               <- "Label"
+    params$max_depth       <- 5
+    params$x               <- 2:8
+    params$y               <- "CAPSULE"
     params$training_frame  <- training_frame
     params$seed            <- 42
+    params$learn_rate       <-0.1
+    params$min_rows        <-10
+    params$distribution    <-"bernoulli"
     
     doJavapredictTest("gbm",test_file,test_frame,params)
   }

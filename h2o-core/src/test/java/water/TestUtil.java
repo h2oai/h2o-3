@@ -597,8 +597,17 @@ public class TestUtil extends Iced {
     int ncomp = actual.getColDim();
     boolean[] flipped = new boolean[ncomp];
 
+    // better way to get sign
+    for (int j=0; j < ncomp; j++) {
+      for (int i = 0; i < nfeat; i++) {
+        if (Math.abs((Double) expected.get(i,j))>0.0 && Math.abs((Double) actual.get(i,j))>0.0) { // only non zeros
+          flipped[j] = !(Math.signum((Double)expected.get(i,j))==Math.signum((Double)actual.get(i,j)));
+          break;
+        }
+      }
+    }
+
     for(int j = 0; j < ncomp; j++) {
-      flipped[j] = Math.abs((double)expected.get(0,j) - (double)actual.get(0,j)) > threshold;
       for(int i = 0; i < nfeat; i++) {
         assertEquals((double) expected.get(i,j), flipped[j] ? -(double)actual.get(i,j) : (double)actual.get(i,j), threshold);
       }

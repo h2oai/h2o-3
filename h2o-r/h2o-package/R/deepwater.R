@@ -323,8 +323,8 @@ h2o.deepwater <- function(x, y, training_frame,
 #' @param h2oRestApiVersion (Optional) Specific version of the REST API to use.
 #' @export
 h2o.deepwater.available <- function(h2oRestApiVersion = .h2o.__REST_API_VERSION) {
-res <- .h2o.__remoteSend(method = "GET", 
-h2oRestApiVersion = h2oRestApiVersion, 
+res <- .h2o.__remoteSend(method = "GET",
+h2oRestApiVersion = h2oRestApiVersion,
 page = .h2o.__MODEL_BUILDERS("deepwater"))
 visibility <- res$model_builders[["deepwater"]][["visibility"]]
 if (visibility == "Experimental") {

@@ -30,7 +30,7 @@ h2o.predict_json <- function(model, json, genmodelpath, labels, classpath, javao
 	fileseparator <- if (iswindows) "\\" else "/"
 	# for now gson lib is the large h2o-genmodel-all.jar lib but should be moved to the small one
 	# default to genmodel being in the same dir as mojo
-	genmpath <- c(paste0(c(dirname(model), "h2o-genmodel.jar"), collapse=fileseparator), paste0(c(dirname(model), "h2o-genmodel-all.jar")), collapse=fileseparator)
+	genmpath <- c(paste0(c(dirname(model), "h2o-genmodel.jar"), collapse=fileseparator), paste0(c(dirname(model), "genmodel.jar")), collapse=fileseparator)
 	if (!missing(genmodelpath)) {
 		genmpath <- genmodelpath
 	}

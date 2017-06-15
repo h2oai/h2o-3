@@ -10,6 +10,11 @@ import java.util.Iterator;
 public class Word2VecMojoReader extends ModelMojoReader<Word2VecMojoModel> {
 
   @Override
+  public String getModelName() {
+    return "Word2Vec";
+  }
+
+  @Override
   protected void readModelData() throws IOException {
     final int vocabSize = readkv("vocab_size", -1);
     final int vecSize = readkv("vec_size", -1);

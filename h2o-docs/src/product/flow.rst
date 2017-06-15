@@ -1102,27 +1102,21 @@ list of available models displays.
 To view all current models, you can also click the **Model** menu and
 click **List All Models**.
 
-To inspect a model, check its checkbox then click the **Inspect**
-button, or click the **Inspect** button to the right of the model name.
+Click on a model name to view details about the model. The information that displays varies based on the algorithm that was used to build the model, but it can include the parameters used when building the model, scoring history, training metrics, coefficient tables, and a POJO preview.  
 
-.. figure:: images/Flow_GetModel.png
-   :alt: Flow Model
+.. figure:: images/Flow_viewModel.png
+   :alt: Viewing a Model
 
+The following additional functions are available when viewing a model:
 
-A summary of the model's parameters displays. To display more details,
-click the **Show All Parameters** button.
-
-To delete a model, click the **Delete** button.
-
-To generate a Plain Old Java Object (POJO) that can use the model
-outside of H2O, click the **Download POJO** button.
-
-**Note**: A POJO can be run in standalone mode or it can be integrated
-into a platform, such as `Hadoop's
-Storm <https://github.com/h2oai/h2o-tutorials/tree/master/tutorials/streaming/storm>`__.
-To make the POJO work in your Java application, you will also need the
-``h2o-genmodel.jar`` file (available in
-``h2o-3/h2o-genmodel/build/libs/h2o-genmodel.jar``).
+- **Refresh**: Refreshes the model.
+- **Predict**: Use this model to make predictions.  
+- **Download POJO**: Generates a Plain Old Java Object (POJO) that can use the model outside of H2O. Note that a POJO can be run in standalone mode or it can be integrated into a platform, such as `Hadoop's Storm <https://github.com/h2oai/h2o-tutorials/tree/master/tutorials/streaming/storm>`__. To make the POJO work in your Java application, you will also need the ``h2o-genmodel.jar`` file (available via the **Download Generated Model** button or in ``h2o-3/h2o-genmodel/build/libs/h2o-genmodel.jar``).
+- **Download Model Deployment Package**: Downloads a zip file containing the Model ObJect, Optimized (MOJO). This file includes the outputting model information in JSON format. Note that MOJOs are only available for DRF, GBM, GLM, and K-Means models. 
+- **Export**: Exports a built model.
+- **Inspect**: Inspect the model. Clicking this button displays a data table of the model parameters and output information.
+- **Delete**: Deletes the model.
+- **Download Gen Model**: Downloads the Generated Model (h2o-genmodel.jar) file for this model.
 
 --------------
 
@@ -1165,6 +1159,33 @@ Exporting and Importing Models
 .. figure:: images/ImportModel.png
    :alt: Import Model
 
+--------------
+
+Run AutoML
+^^^^^^^^^^
+
+AutoML automatically trains and tunes models while requiring as few parameters as possible. A user is only required to point to a dataset, identify the response column and optionally specify a time constraint, a maximum number of models constraint, and early stopping parameters. AutoML will then begin training models and will stop as specified in the configuration (i.e., when the maximum number of models has been reached, when the maximum run time has been reached, or when the stopping criteria are met). The outputted models will display on a leaderboard, showing the best results first. Stacked Ensembles will also be automatically trained on the collection of individual models to produce a highly predictive ensemble model which, in most cases, will be the top performing model in the AutoML leaderboard. Note that Stacked Ensembles are not yet available for multiclass classification problems, so in that case, only singleton models will be trained.
+
+To begin an AutoML run, select **Models > Run AutoML** from the top menu.
+
+.. figure:: images/Flow_Model_RunAutoML.png
+   :alt: Select Model > Run AutoML
+   :height: 308
+   :width: 150
+
+At a minimum, specify the training frame and the response column. (Note that by default, the AutoML run will end after 3600 seconds.) Click **Build Model** to start the run.
+
+.. figure:: images/Flow_RunAutoML.png
+   :alt: Configure the AutoML run
+   :height: 423
+   :width: 800
+
+After the run is completed, click the **View** button to view the Leaderboard.
+
+.. figure:: images/Flow_ViewLeaderboard.png
+   :alt: Viewing the Leaderboard
+   :height: 474
+   :width: 820
 
 --------------
 

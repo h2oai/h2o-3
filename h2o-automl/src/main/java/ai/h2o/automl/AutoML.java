@@ -819,7 +819,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     StackedEnsembleModel.StackedEnsembleParameters stackedEnsembleParameters = new StackedEnsembleModel.StackedEnsembleParameters();
     stackedEnsembleParameters._base_models = allModelKeys.toArray(new Key[0]);
-    stackedEnsembleParameters._selection_strategy = StackedEnsembleModel.StackedEnsembleParameters.SelectionStrategy.choose_all;
+    //stackedEnsembleParameters._selection_strategy = StackedEnsembleModel.StackedEnsembleParameters.SelectionStrategy.choose_all;
     Job ensembleJob = trainModel(null, "stackedensemble", stackedEnsembleParameters);
     return ensembleJob;
   }
