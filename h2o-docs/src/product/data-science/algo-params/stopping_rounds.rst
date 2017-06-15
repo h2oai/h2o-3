@@ -15,6 +15,11 @@ Use this option to stop model training when the option selected for `stopping_me
 
 then the model will stop training after reaching three scoring events in a row in which a model's missclassication value does not improve by **1e-3**. These stopping options are used to increase performance by restricting the number of models that get built. 
 
+The default value for this option varies depending on the algorithm:
+
+- GBM/DRF: ``stopping_rounds`` defaults to 0 (disabled)
+- Deep Learning: ``stopping_rounds`` defaults to 5 
+
 To disable this feature, specify 0. When disabled, the metric is computed on the validation data (if provided); otherwise, training data is used. 
 
 When used with Deep Learning, you can also specify the ``overwrite_with_best_model`` option. When enabled, the final model is the best model generated for the given ``stopping_metric`` option.
