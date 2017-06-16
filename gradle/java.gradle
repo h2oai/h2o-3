@@ -12,6 +12,7 @@ compileJava {
 
 task testJar(type: Jar, dependsOn: testClasses, group: "build") {
     appendix = 'test'
+    classifier = 'tests'
     from sourceSets.test.output
 }
 
@@ -51,6 +52,7 @@ plugins.withType(org.gradle.api.publish.maven.plugins.MavenPublishPlugin) {
     // Publish it only if "maven-publish" plugin is in the context
     artifacts {
         toPublish javadocJar
+        toPublish testJar
     }
 }
 
