@@ -36,7 +36,7 @@
 #'        Defaults to -1 (time-based random number).
 #' @param init Initialization mode Must be one of: "Random", "SVD", "PlusPlus", "User". Defaults to PlusPlus.
 #' @param svd_method Method for computing SVD during initialization (Caution: Randomized is currently experimental and unstable)
-#'        Must be one of: "GramSVD", "Power", "Randomized". Defaults to Power.
+#'        Must be one of: "GramSVD", "Power", "Randomized". Defaults to Randomized.
 #' @param user_y User-specified initial Y
 #' @param user_x User-specified initial X
 #' @param expand_user_y \code{Logical}. Expand categorical columns in user-specified initial Y Defaults to TRUE.

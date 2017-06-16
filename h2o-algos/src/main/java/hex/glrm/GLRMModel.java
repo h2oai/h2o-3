@@ -35,6 +35,7 @@ import java.util.ArrayList;
  *    Rx(X) = Sum[rx_i(x_i)  for i=1..m]
  *    Ry(Y) = Sum[ry_j(x_j)  for j=1..n]
  *
+ *
  * The output of the model consists of matrices X and Y. There are multiple interpretations of these (see section 5.4
  * in Boyd's paper). In particular,
  *   + The rows of Y (1 x n) can be interpreted as "idealized examples" of input rows (even if rows of Y are always
@@ -59,8 +60,8 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     // Data transformation (demean to compare with PCA)
     public DataInfo.TransformType _transform = DataInfo.TransformType.NONE;
     public int _k = 1;                       // Rank of resulting XY matrix
-    public GlrmInitialization _init = GlrmInitialization.PlusPlus;  // Initialization of Y matrix
-    public SVDParameters.Method _svd_method = SVDParameters.Method.Power;  // SVD initialization method (for _init = SVD)
+    public GlrmInitialization _init = GlrmInitialization.PlusPlus;  // Initialization of Y matrix, use SVD for all numerics
+    public SVDParameters.Method _svd_method = SVDParameters.Method.Randomized;  // SVD initialization method (for _init = SVD)
     public Key<Frame> _user_y;               // User-specified Y matrix (for _init = User)
     public Key<Frame> _user_x;               // User-specified X matrix (for _init = User)
     public boolean _expand_user_y = true;    // Should categorical columns in _user_y be expanded via one-hot encoding? (for _init = User)

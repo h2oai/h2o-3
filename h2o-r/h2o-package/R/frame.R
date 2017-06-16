@@ -1129,6 +1129,63 @@ h2o.pivot <- function(x, index, column, value){
   }
   .newExpr("pivot", x, .quote(index), .quote(column), .quote(value))
 }
+
+# H2O topBottomN
+#
+# topBottomN function will will grab the top N percent or botom N percent of values of a column and return it in a
+#  H2OFrame.
+#
+# @param x an H2OFrame
+# @param column is a column name or column index to grab the top N percent value from
+# @param nPercent a top percentage values to grab
+# @param getBottom if 0 grab top percentage, 1 grab bottom percentage
+# @return An H2OFrame with 2 columns: first column is the original row indices, second column contains the values
+h2o.topBottomN <- function(x, column, nPercent, getBottom){
+  cnames = names(x)
+  colIndex=0
+  if (typeof(column)=="character") {  # verify column
+    if (!column %in% cnames) stop("column name not found in dataframe")
+    colIndex = ((which(column==cnames ))-1)
+
+  } else {  # column is number
+    if ((column <= 0) || (column > ncol(x))) stop("Illegal column index")
+    colIndex = (column-1)
+  }
+
+  # verify nPercent
+  if ((nPercent <  0) || nPercent > 100) stop("nPercent is between 0 and 100.")
+  if (nPercent*0.01*nrow(x) < 1) stop("Increase nPercent.  Current value will result in top 0 row.")
+  if (!h2o.isnumeric(x[colIndex+1])) stop("Wrong column type!  Selected column must be numeric.")
+
+  .newExpr("topn", x, colIndex, nPercent,getBottom)
+}
+
+#' H2O topN
+#'
+#' Extract the top N percent  of values of a column and return it in a H2OFrame.
+#'
+#' @param x an H2OFrame
+#' @param column is a column name or column index to grab the top N percent value from
+#' @param nPercent is a top percentage value to grab
+#' @return An H2OFrame with 2 columns.  The first column is the original row indices, second column contains the topN values
+#' @export
+h2o.topN <- function(x, column, nPercent) {
+  h2o.topBottomN(x, column, nPercent, 0)
+}
+#' H2O bottomN
+#'
+#' bottomN function will will grab the bottom N percent of values of a column and return it in a H2OFrame.
+#' Extract the top N percent of values of a column and return it in a H2OFrame.
+#'
+#' @param x an H2OFrame
+#' @param column is a column name or column index to grab the top N percent value from
+#' @param nPercent is a bottom percentage value to grab
+#' @return An H2OFrame with 2 columns.  The first column is the original row indices, second column contains the bottomN values
+#' @export
+h2o.bottomN <- function(x, column, nPercent) {
+  h2o.topBottomN(x, column, nPercent, 1)
+}
+
 #-----------------------------------------------------------------------------------------------------------------------
 # Time & Date
 #-----------------------------------------------------------------------------------------------------------------------
