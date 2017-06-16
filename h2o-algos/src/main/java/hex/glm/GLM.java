@@ -1011,7 +1011,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     protected Submodel computeSubmodel(int i,double lambda) {
       Submodel sm;
-      if(lambda >= _lmax)
+      if(lambda >= _lmax && _state.l1pen() > 0)
         _model.addSubmodel(sm = new Submodel(lambda,getNullBeta(),_state._iter,_nullDevTrain,_nullDevTest));
       else {
         _model.addSubmodel(sm = new Submodel(lambda, _state.beta(),_state._iter,-1,-1));
@@ -1329,9 +1329,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         for(int j = activeData._catOffsets[i]; j < activeData._catOffsets[i+1]; ++j) { // can do in parallel
           double b = bc.applyBounds(ADMM.shrinkage(grads[j], l1pen) * diagInv[j],j);
           double bd = beta[j] - b;
-          double diff = bd*bd*xx[j][j];
-          if(diff > maxDiff) maxDiff = diff;
-          if(diff > .01*betaEpsilon) {
+          if(bd != 0) {
+            double diff = bd*bd*xx[j][j];
+            if(diff > maxDiff) maxDiff = diff;
             if (nzs[j] == null)
               doUpdateCD(grads, xx[j], bd, activeData._catOffsets[i], activeData._catOffsets[i + 1]);
             else {

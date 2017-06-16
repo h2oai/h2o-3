@@ -1706,6 +1706,78 @@ public class GLMTest  extends TestUtil {
       }
     }
   }
+
+  /**
+   * Test that lambda search gets (almost) the same result as running the model for each lambda separately.
+   */
+  @Test public void testCustomLambdaSearch(){
+    Key pros = Key.make("prostate");
+    Frame f = parse_test_file(pros, "smalldata/glm_test/prostate_cat_replaced.csv");
+
+    for(Family fam:new Family[]{Family.multinomial,Family.binomial}) {
+      for (double alpha : new double[]{0, .5, 1}) {
+        for (Solver s : Solver.values()) {
+          if (s == Solver.COORDINATE_DESCENT_NAIVE || s== Solver.AUTO) continue;
+//          if(fam == Family.multinomial && (s != Solver.L_BFGS || alpha != 0)) continue;
+          try {
+            Scope.enter();
+            GLMParameters parms = new GLMParameters(fam);
+            parms._train = pros;
+            parms._alpha = new double[]{alpha};
+            parms._solver = s;
+            parms._lambda = new double[]{10, 1, .1, 1e-5, 0};
+            parms._lambda_search = true;
+            parms._response_column = fam == Family.multinomial?"RACE":"CAPSULE";
+            GLMModel model = new GLM(parms).trainModel().get();
+            GLMModel.RegularizationPath rp = model.getRegularizationPath();
+            for (int i = 0; i < parms._lambda.length; ++i) {
+              GLMParameters parms2 = new GLMParameters(fam);
+              parms2._train = pros;
+              parms2._alpha = new double[]{alpha};
+              parms2._solver = s;
+              parms2._lambda = new double[]{parms._lambda[i]};
+              parms2._lambda_search = false;
+              parms2._response_column = fam == Family.multinomial?"RACE":"CAPSULE";
+              parms2._beta_epsilon = 1e-5;
+              parms2._objective_epsilon = 1e-8;
+              GLMModel model2 = new GLM(parms2).trainModel().get();
+              double[] beta_ls = rp._coefficients_std[i];
+              double [] beta = fam == Family.multinomial?ArrayUtils.flat(model2._output.getNormBetaMultinomial()):model2._output.getNormBeta();
+              System.out.println(ArrayUtils.pprint(new double[][]{beta,beta_ls}));
+              // Can't compare beta here, have to compare objective value
+              double null_dev = ((GLMMetrics) model2._output._training_metrics).null_deviance();
+              double res_dev_ls = null_dev * (1 - rp._explained_deviance_train[i]);
+              double likelihood_ls = .5 * res_dev_ls;
+              double likelihood = .5 * ((GLMMetrics) model2._output._training_metrics).residual_deviance();
+              double nobs = model._nobs;
+              if(fam == Family.multinomial){
+                beta = beta.clone();
+                beta_ls = beta_ls.clone();
+                int P = beta.length/model._output.nclasses();
+                assert beta.length == P*model._output.nclasses();
+                for(int j = P-1; j < beta.length; j += P) {
+                  beta[j] = 0;
+                  beta_ls[j] = 0;
+                }
+              }
+              double obj_ls = likelihood_ls / nobs + ((1 - alpha) * parms._lambda[i] * .5 * ArrayUtils.l2norm2(beta_ls, true)) + alpha * parms._lambda[i] * ArrayUtils.l1norm(beta_ls, true);
+              double obj = likelihood / nobs + ((1 - alpha) * parms._lambda[i] * .5 * ArrayUtils.l2norm2(beta, true)) + alpha * parms._lambda[i] * ArrayUtils.l1norm(beta, true);
+              Assert.assertEquals(obj, obj_ls, 2*parms._objective_epsilon);
+              model2.delete();
+            }
+            model.delete();
+          } finally {
+            Scope.exit();
+          }
+        }
+      }
+    }
+    f.delete();
+  }
+
+
+
+
   /**
    * Test strong rules on arcene datasets (10k predictors, 100 rows).
    * Should be able to obtain good model (~100 predictors, ~1 explained deviance) with up to 250 active predictors.
