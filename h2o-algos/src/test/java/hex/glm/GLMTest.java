@@ -1567,7 +1567,7 @@ public class GLMTest  extends TestUtil {
     }
 
     // test it behaves like binomial on binary data
-    GLMModel model = null, model2 = null, model3 = null, model4 = null;
+    GLMModel model = null;
     Frame fr = parse_test_file("smalldata/glm_test/prostate_cat_replaced.csv");
     try {
       Scope.enter();
@@ -1582,6 +1582,7 @@ public class GLMTest  extends TestUtil {
       params._ignored_columns = new String[]{"ID"};
       params._train = fr._key;
       params._lambda = new double[]{0};
+      params._nfolds = 5;
       params._standardize = false;
       params._link = Link.logit;
 //      params._missing_values_handling = MissingValuesHandling.Skip;
@@ -1596,10 +1597,10 @@ public class GLMTest  extends TestUtil {
       assertEquals(371, resDOF(model), 0);
     } finally {
       fr.delete();
-      if(model != null)model.delete();
-      if(model2 != null)model2.delete();
-      if(model3 != null)model3.delete();
-      if(model4 != null)model4.delete();
+      if(model != null){
+        model.deleteCrossValidationModels();
+        model.delete();
+      }
       Scope.exit();
     }
   }
