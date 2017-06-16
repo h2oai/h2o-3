@@ -24,7 +24,7 @@ function make_zip_common {
   cp h2o-py/dist/*whl $IMAGEDIR/python
 
   mkdir -p $IMAGEDIR/bindings/java
-  cp h2o-bindings/build/libs/h2o-bindings-*.zip $IMAGEDIR/bindings/java
+  cp h2o-bindings/build/distributions/h2o-bindings-*.zip $IMAGEDIR/bindings/java
 
   cd $IMAGEDIR/..
   zip -r ${PROJECT_BASE}.zip ${PROJECT_BASE}
