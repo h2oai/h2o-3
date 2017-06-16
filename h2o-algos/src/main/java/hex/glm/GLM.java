@@ -475,8 +475,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _lmax = lmax(ginfo._gradient);
       _state.setLambdaMax(_lmax);
       _model = new GLMModel(_result, _parms, GLM.this, _state._ymu, _dinfo._adaptedFrame.lastVec().sigma(), _lmax, _nobs);
-      String[] warns = _model.adaptTestForTrain(_valid, true, true);
-      for (String s : warns) _job.warn(s);
       if (_parms._lambda_min_ratio == -1) {
         _parms._lambda_min_ratio = (_nobs >> 4) > _dinfo.fullN() ? 1e-4 : 1e-2;
         if(_parms._alpha[0] == 0)

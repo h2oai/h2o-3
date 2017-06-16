@@ -83,16 +83,16 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help = "AUTO will set the solver based on given data and the other parameters. IRLSM is fast on on problems with small number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for datasets with many columns. Coordinate descent is experimental (beta).", values = {"AUTO", "IRLSM", "L_BFGS","COORDINATE_DESCENT_NAIVE", "COORDINATE_DESCENT"}, level = Level.critical)
     public Solver solver;
 
-    @API(help = "distribution of regularization between L1 and L2. Default value of alpha is 0 when SOLVER = 'L-BFGS', 0.5 otherwise", level = Level.critical, gridable = true)
+    @API(help = "Distribution of regularization between the L1 (Lasso) and L2 (Ridge) penalties. A value of 1 for alpha represents Lasso regression, a value of 0 produces Ridge regression, and anything in between specifies the amount of mixing between the two. Default value of alpha is 0 when SOLVER = 'L-BFGS'; 0.5 otherwise.", level = Level.critical, gridable = true)
     public double[] alpha;
 
-    @API(help = "regularization strength", required = false, level = Level.critical, gridable = true)
+    @API(help = "Regularization strength", required = false, level = Level.critical, gridable = true)
     public double[] lambda;
 
-    @API(help = "use lambda search starting at lambda max, given lambda is then interpreted as lambda min", level = Level.critical)
+    @API(help = "Use lambda search starting at lambda max, given lambda is then interpreted as lambda min", level = Level.critical)
     public boolean lambda_search;
 
-    @API(help="stop early when there is no more relative improvement on train or validation (if provided)")
+    @API(help="Stop early when there is no more relative improvement on train or validation (if provided)")
     public boolean early_stopping;
 
     @API(help = "Number of lambdas to be used in a search." +
@@ -113,7 +113,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help = "Maximum number of iterations", level = Level.secondary)
     public int max_iterations;
 
-    @API(help = "converge if  beta changes less (using L-infinity norm) than beta esilon, ONLY applies to IRLSM solver ", level = Level.expert)
+    @API(help = "Converge if  beta changes less (using L-infinity norm) than beta esilon, ONLY applies to IRLSM solver ", level = Level.expert)
     public double beta_epsilon;
 
     @API(help = "Converge if  objective value changes less than this."+ " Default indicates: If lambda_search"+
@@ -128,13 +128,13 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     " the conditional values above are 1E-8 and 1E-6 respectively.", level = Level.expert)
     public double gradient_epsilon;
 
-    @API(help="likelihood divider in objective value computation, default is 1/nobs")
+    @API(help="Likelihood divider in objective value computation, default is 1/nobs")
     public double obj_reg;
 
     @API(help = "", level = Level.secondary, values = {"family_default", "identity", "logit", "log", "inverse", "tweedie"})
     public GLMParameters.Link link;
 
-    @API(help="include constant term in the model", level = Level.expert)
+    @API(help="Include constant term in the model", level = Level.expert)
     public boolean intercept;
 
 //    @API(help = "Tweedie variance power", level = Level.secondary)
@@ -143,16 +143,16 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
 //    @API(help = "Tweedie link power", level = Level.secondary)
 //    public double tweedie_link_power;
 
-    @API(help = "prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean of response does not reflect reality.", level = Level.expert)
+    @API(help = "Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean of response does not reflect reality.", level = Level.expert)
     public double prior;
 
-    @API(help = "Min lambda used in lambda search, specified as a ratio of lambda_max." +
+    @API(help = "Minimum lambda used in lambda search, specified as a ratio of lambda_max." +
     " Default indicates: if the number of observations is greater than the number of variables then lambda_min_ratio" +
     " is set to 0.0001; if the number of observations is less than the number of variables then lambda_min_ratio" +
     " is set to 0.01.", level = Level.expert)
     public double lambda_min_ratio;
 
-    @API(help = "beta constraints", direction = API.Direction.INPUT /* Not required, to allow initial params validation: , required=true */)
+    @API(help = "Beta constraints", direction = API.Direction.INPUT /* Not required, to allow initial params validation: , required=true */)
     public FrameKeyV3 beta_constraints;
 
     @API(help="Maximum number of active predictors during computation. Use as a stopping criterion" +
@@ -195,13 +195,13 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     /**
      * The maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
      */
-    @API(help = "Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)", level = API.Level.secondary, direction=API.Direction.INOUT)
+    @API(help = "Maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)", level = API.Level.secondary, direction=API.Direction.INOUT)
     public int max_hit_ratio_k;
 
-    @API(help="request p-values computation, p-values work only with IRLSM solver and no regularization", level = Level.secondary, direction = Direction.INPUT)
+    @API(help="Request p-values computation, p-values work only with IRLSM solver and no regularization", level = Level.secondary, direction = Direction.INPUT)
     public boolean compute_p_values; // _remove_collinear_columns
 
-    @API(help="in case of linearly dependent columns remove some of the dependent columns", level = Level.secondary, direction = Direction.INPUT)
+    @API(help="In case of linearly dependent columns, remove some of the dependent columns", level = Level.secondary, direction = Direction.INPUT)
     public boolean remove_collinear_columns; // _remove_collinear_columns
 
     /////////////////////

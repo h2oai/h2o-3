@@ -1,7 +1,7 @@
 package hex.tree.drf;
 
-import hex.genmodel.utils.DistributionFamily;
 import hex.ModelCategory;
+import hex.genmodel.utils.DistributionFamily;
 import hex.tree.*;
 import hex.tree.DTree.DecidedNode;
 import hex.tree.DTree.LeafNode;
@@ -12,6 +12,7 @@ import water.MRTask;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+
 import java.util.Random;
 
 import static hex.genmodel.GenModel.getPrediction;
@@ -23,7 +24,8 @@ import static hex.tree.drf.TreeMeasuresCollector.asVotes;
  *  Based on "Elements of Statistical Learning, Second Edition, page 387"
  */
 public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel.DRFParameters, hex.tree.drf.DRFModel.DRFOutput> {
-
+  private static final double ONEBOUND=1+1e-12;    // due to fixed precision
+  private static final double ZEROBOUND=-1e-12;    // due to fixed precision
   @Override public ModelCategory[] can_build() {
     return new ModelCategory[]{
       ModelCategory.Regression,
@@ -327,6 +329,10 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     }
     else if (_nclass==2 && _model.binomialOpt()) {
       fs[1] = weight * chk_tree(chks, 0).atd(row) / chk_oobt(chks).atd(row);
+      if (fs[1]>1 && fs[1]<=ONEBOUND)
+        fs[1] = 1.0;
+      else if (fs[1]<0 && fs[1]>=ZEROBOUND)
+        fs[1] = 0.0;
       assert(fs[1] >= 0 && fs[1] <= 1);
       fs[2] = 1. - fs[1];
     }
