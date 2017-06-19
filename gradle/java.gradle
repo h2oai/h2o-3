@@ -11,8 +11,7 @@ compileJava {
 }
 
 task testJar(type: Jar, dependsOn: testClasses, group: "build") {
-    appendix = 'test'
-    classifier = 'tests'
+    classifier = 'test'
     from sourceSets.test.output
 }
 
