@@ -9,6 +9,7 @@ import org.apache.hadoop.hive.serde2.io.HiveDecimalWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.joda.time.DateTime;
 import org.joda.time.MutableDateTime;
+import water.Futures;
 import water.H2O;
 import water.Job;
 import water.Key;
@@ -71,9 +72,12 @@ public class OrcParser extends Parser {
   @Override protected ParseWriter streamParse(final InputStream is, final StreamParseWriter dout) throws IOException {
     List<StripeInformation> stripesInfo = ((OrcParseSetup) this._setup).getStripes();
     StreamParseWriter nextChunk = dout;
+    Futures fs = new Futures();
     for(int i = 0; i < stripesInfo.size(); i++) {
-      parseChunk(i, null, dout);
-      if(dout != nextChunk) dout.reduce(nextChunk);
+      parseChunk(i, null, nextChunk);
+      nextChunk.close(fs);
+      if(dout != nextChunk)
+        dout.reduce(nextChunk);
       if(i < stripesInfo.size()-1) nextChunk = nextChunk.nextChunk();
     }
     return dout;
