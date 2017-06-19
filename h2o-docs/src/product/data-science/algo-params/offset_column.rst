@@ -1,7 +1,7 @@
 ``offset_column``
 -----------------
 
-- Available in: GBM, DRF, Deep Learning, GLM
+- Available in: GBM, DRF, Deep Learning, GLM, XGBoost
 - Hyperparameter: no
 
 

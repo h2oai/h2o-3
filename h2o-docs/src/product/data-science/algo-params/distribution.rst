@@ -1,7 +1,7 @@
 ``distribution``
 ----------------
 
-- Available in: GBM, Deep Learning
+- Available in: GBM, Deep Learning, XGBoost
 - Hyperparameter: yes
 
 Description

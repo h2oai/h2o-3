@@ -1,7 +1,7 @@
 ``keep_cross_validation_fold_assignment``
 -----------------------------------------
 
-- Available in: GBM, DRF, Deep Learning, GLM, Naïve-Bayes, K-Means
+- Available in: GBM, DRF, Deep Learning, GLM, Naïve-Bayes, K-Means, XGBoost
 - Hyperparameter: no
 
 Description
