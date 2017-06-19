@@ -26,7 +26,7 @@ import static org.junit.Assert.assertTrue;
 
 public class GLMTest  extends TestUtil {
 
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
 
   public static void testScoring(GLMModel m, Frame fr) {
     Scope.enter();
@@ -1806,7 +1806,8 @@ public class GLMTest  extends TestUtil {
       params._max_iterations = 100000;
       params._max_active_predictors = 10000;
       params._alpha = new double[]{1};
-      for(Solver s: new Solver[]{Solver.IRLSM, Solver.COORDINATE_DESCENT}){//Solver.COORDINATE_DESCENT,}) { // LBFGS lambda-search is too slow now
+      for(Solver s: new Solver[]{Solver.COORDINATE_DESCENT_NAIVE/*,Solver.IRLSM,Solver.COORDINATE_DESCENT*/}){// LBFGS lambda-search is too slow now
+        long t0 = System.currentTimeMillis();
         params._solver = s;
         GLM glm = new GLM( params, modelKey);
         glm.trainModel().get();
@@ -1816,9 +1817,10 @@ public class GLMTest  extends TestUtil {
         assertEquals(params._nlambdas, model._output._submodels.length);
         System.out.println(model._output._training_metrics);
         // assert on the quality of the result, technically should compare objective value, but this should be good enough for now
+        System.out.println("Solver " + s + " done in " + (System.currentTimeMillis()-t0) + "ms");
       }
       model.delete();
-      params._solver = Solver.COORDINATE_DESCENT;
+/*      params._solver = Solver.COORDINATE_DESCENT;
       params._max_active_predictors = 100;
       params._lambda_min_ratio = 1e-2;
       params._nlambdas = 100;
@@ -1844,7 +1846,7 @@ public class GLMTest  extends TestUtil {
       // assert on that we got all submodels (if strong rules work, we should be able to get the results with this many active predictors)
       System.out.println(model._output._training_metrics);
       System.out.println("============================================================================================================");
-      model.delete();
+      model.delete();*/
     } finally {
       fr.delete();
       if(model != null)model.delete();

@@ -65,6 +65,7 @@ public class C4VolatileChunk extends Chunk {
 
   @Override
   public Futures close( int cidx, Futures fs ) {
+    if(_vec.isVolatile()) return fs;
     if(chk2() != null) return chk2().close(cidx,fs);
     Value v = new Value(_vec.chunkKey(cidx),this,_len*4,Value.ICE);
     DKV.put(v._key,v,fs);

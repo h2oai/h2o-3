@@ -762,8 +762,10 @@ public class Frame extends Lockable<Frame> {
    *  @return The old column, for flow-coding */
   public Vec replace(int col, Vec nv) {
     Vec rv = vecs()[col];
-    nv = ((new Frame(rv)).makeCompatible(new Frame(nv)))[0];
-    DKV.put(nv);
+    if(!rv.isCompatibleWith(nv)) {
+      nv = ((new Frame(rv)).makeCompatible(new Frame(nv)))[0];
+      DKV.put(nv);
+    }
     assert DKV.get(nv._key)!=null; // Already in DKV
     assert rv.isCompatibleWith(nv);
     _vecs[col] = nv;

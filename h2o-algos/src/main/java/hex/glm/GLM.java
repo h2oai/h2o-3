@@ -807,7 +807,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       boolean sparse =  sparseRatio <= .125;
       long t0 = System.currentTimeMillis();
       // public GLMGenerateWeightsTask(Key jobKey, DataInfo dinfo, GLMModel.GLMParameters glm, double[] betaw) {
-      GLMGenerateWeightsTask gt = new GLMGenerateWeightsTask(_job._key,sparse, _state.activeData(), _parms, beta).doAll(fr0);
+      GLMGenerateWeightsTask gt = new GLMGenerateWeightsTask(_job._key,sparse, _state.activeData(), _parms, beta).doAll(fr0,true);
       long tdelta = System.currentTimeMillis() - t0;
       int iter1Sum = 0;
       int iter_x = 0;
@@ -839,12 +839,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               fr1.replace(xjIdx, activeData._adaptedFrame.vec(i)); // add current variable col
               bOld = Arrays.copyOfRange(betaold, catStart, catEnd+1);
               bOld[bOld.length-1] = 0;
-              double [] res = new GLMCoordinateDescentTaskSeqNaiveCat((iter_x = 1-iter_x),gamma,bOld,bNew,activeData.catMap(i),activeData.catNAFill(i)).doAll(fr1)._res;
+              double [] res = new GLMCoordinateDescentTaskSeqNaiveCat((iter_x = 1-iter_x),gamma,bOld,bNew,activeData.catMap(i),activeData.catNAFill(i)).doAll(fr1,true)._res;
               for(int j=0; j < res.length; ++j)
                 beta[catStart+j] = bOld[j] = ADMM.shrinkage(res[j]*wsumuInv, l1pen) * denums[catStart+j];
               bNew = bOld;
             }
-            GLMCoordinateDescentTaskSeqNaiveCat t = new GLMCoordinateDescentTaskSeqNaiveCat((iter_x = 1-iter_x),gamma,null,bNew,null,Integer.MAX_VALUE).doAll(fr1);
+            GLMCoordinateDescentTaskSeqNaiveCat t = new GLMCoordinateDescentTaskSeqNaiveCat((iter_x = 1-iter_x),gamma,null,bNew,null,Integer.MAX_VALUE).doAll(fr1,true);
             RES = t._residual;
           }
           if(activeData.numNums() > 0){
@@ -856,7 +856,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 gamma += delta*betaold[currIdx];
                 fr1.replace(xjIdx, activeData._adaptedFrame.vec(activeData._cats + i)); // add current variable col
                 beta[currIdx] = 0;
-                GLMCoordinateDescentTaskSeqNaiveNumSparse tsk = new GLMCoordinateDescentTaskSeqNaiveNumSparse((iter_x = 1 - iter_x), gamma, betaold[currIdx], prevIdx >= activeData.numStart() ? beta[prevIdx]-betaold[prevIdx] : 0, activeData.normMul(i), 0).doAll(fr1);
+                GLMCoordinateDescentTaskSeqNaiveNumSparse tsk = new GLMCoordinateDescentTaskSeqNaiveNumSparse((iter_x = 1 - iter_x), gamma, betaold[currIdx], prevIdx >= activeData.numStart() ? beta[prevIdx]-betaold[prevIdx] : 0, activeData.normMul(i), 0).doAll(fr1,true);
                 // sparse task calculates only residual updates across the non-zeros
                 double RES_NEW = RES + tsk._residual + tsk._residualNew - delta*betaold[currIdx]*wsumx;
                 // adjust for skipped centering
@@ -871,7 +871,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               }
               double bdiff = beta[activeData.numStart() + activeData.numNums() - 1] - betaold[activeData.numStart() + activeData.numNums() - 1];
               if(bdiff != 0) {
-                GLMCoordinateDescentTaskSeqNaiveNumSparse tsk = new GLMCoordinateDescentTaskSeqNaiveNumSparse((iter_x = 1 - iter_x), gamma, 0, beta[activeData.numStart() + activeData.numNums() - 1] - betaold[activeData.numStart() + activeData.numNums() - 1], 0, 0).doAll(fr1);
+                GLMCoordinateDescentTaskSeqNaiveNumSparse tsk = new GLMCoordinateDescentTaskSeqNaiveNumSparse((iter_x = 1 - iter_x), gamma, 0, beta[activeData.numStart() + activeData.numNums() - 1] - betaold[activeData.numStart() + activeData.numNums() - 1], 0, 0).doAll(fr1,true);
                 RES += tsk._residual;
               }
             } else {
@@ -879,10 +879,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 int currIdx = i + activeData.numStart();
                 int prevIdx = currIdx - 1;
                 fr1.replace(xjIdx, activeData._adaptedFrame.vec(activeData._cats + i)); // add current variable col
-                GLMCoordinateDescentTaskSeqNaiveNum tsk = new GLMCoordinateDescentTaskSeqNaiveNum((iter_x = 1 - iter_x), gamma, betaold[currIdx], prevIdx >= activeData.numStart() ? beta[prevIdx] : 0, activeData.normMul(i), activeData.normSub(i), 0).doAll(fr1);
+                GLMCoordinateDescentTaskSeqNaiveNum tsk = new GLMCoordinateDescentTaskSeqNaiveNum((iter_x = 1 - iter_x), gamma, betaold[currIdx], prevIdx >= activeData.numStart() ? beta[prevIdx] : 0, activeData.normMul(i), activeData.normSub(i), 0).doAll(fr1,true);
                 beta[currIdx] = ADMM.shrinkage(tsk._res * wsumuInv, l1pen) * denums[currIdx];
               }
-              GLMCoordinateDescentTaskSeqNaiveNumIcpt tsk = new GLMCoordinateDescentTaskSeqNaiveNumIcpt((iter_x = 1 - iter_x), gamma, beta[activeData.numStart() + activeData.numNums() - 1]).doAll(fr1);
+              GLMCoordinateDescentTaskSeqNaiveNumIcpt tsk = new GLMCoordinateDescentTaskSeqNaiveNumIcpt((iter_x = 1 - iter_x), gamma, beta[activeData.numStart() + activeData.numNums() - 1]).doAll(fr1,true);
               RES = tsk._residual;
             }
           }
