@@ -426,17 +426,34 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   // Step 4: Run all the CV models and launch the main model
   public void cv_buildModels(int N, ModelBuilder<M, P, O>[] cvModelBuilders ) {
+    bulkBuildModels("cross-validation", _job, cvModelBuilders, nModelsInParallel(), 0 /*no job updates*/);
+    cv_computeAndSetOptimalParameters(cvModelBuilders);
+  }
+
+  /**
+   * Runs given model builders in bulk.
+   *
+   * @param modelType text description of group of models being built (for logging purposes)
+   * @param job parent job (processing will be stopped if stop of a parent job was requested)
+   * @param modelBuilders list of model builders to run in bulk
+   * @param parallelization level of parallelization (how many models can be built at the same time)
+   * @param updateInc update increment (0 = disable updates)
+   */
+  public static void bulkBuildModels(String modelType, Job job, ModelBuilder<?, ?, ?>[] modelBuilders,
+                                     int parallelization, int updateInc) {
+    final int N = modelBuilders.length;
     H2O.H2OCountedCompleter submodel_tasks[] = new H2O.H2OCountedCompleter[N];
     int nRunning=0;
     RuntimeException rt = null;
     for( int i=0; i<N; ++i ) {
-      if( _job.stop_requested() ) break; // Stop launching but still must block for all async jobs
-      Log.info("Building cross-validation model " + (i + 1) + " / " + N + ".");
-      cvModelBuilders[i]._start_time = System.currentTimeMillis();
-      submodel_tasks[i] = H2O.submitTask(cvModelBuilders[i].trainModelImpl());
-      if(++nRunning == nModelsInParallel()) { //piece-wise advance in training the CV models
+      if (job.stop_requested() ) break; // Stop launching but still must block for all async jobs
+      Log.info("Building " + modelType + " model " + (i + 1) + " / " + N + ".");
+      modelBuilders[i]._start_time = System.currentTimeMillis();
+      submodel_tasks[i] = H2O.submitTask(modelBuilders[i].trainModelImpl());
+      if(++nRunning == parallelization) { //piece-wise advance in training the models
         while (nRunning > 0) try {
           submodel_tasks[i + 1 - nRunning--].join();
+          if (updateInc > 0) job.update(updateInc); // One job finished
         } catch (RuntimeException t) {
           if (rt == null) rt = t;
         }
@@ -450,7 +467,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if(rt == null) rt = t;
       }
     if(rt != null) throw rt;
-    cv_computeAndSetOptimalParameters(cvModelBuilders);
   }
 
   private void buildMainModel() {
