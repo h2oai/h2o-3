@@ -2,6 +2,63 @@
 
 ## H2O
 
+### Vajda (3.10.5.2) - 6/19/2017
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/2/index.html</a>
+
+<h4>Bug</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3860'>PUBDEV-3860</a>] - In PCA, fixed an issue that resulted in errors when specifying `pca_method=glrm` on wide datasets. In addition, the GLRM algorithm can now be used with wide datasets.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4416'>PUBDEV-4416</a>] - Fixed issues with streamParse in ORC parser that caused a NullPointerException when parsing multifile from Hive.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4438'>PUBDEV-4438</a>] - Fixed an issue that occurred with H2O data frame indexing for large indices that resulted in off-by-one errors. Now, when indexing is set to a value greater than 1000, indexing between left and right sides is no longer inconsistent.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4456'>PUBDEV-4456</a>] - In DRF, fixed an issue that resulted in an AssertionError when run on certain datasets with weights.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4579'>PUBDEV-4579</a>] - Removed an incorrect Python example from the Sparkling Water booklet. Python users must start Spark using the H2O pysparkling egg on the Python path. Using `--package` when running the pysparkling app is not advised, as the pysparkling distribution already contains the required jar file.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4594'>PUBDEV-4594</a>] - In GLM fixed an issue that caused a Runtime exception when specifying the quasibinomial family with `nfold = 2`.
+</li>
+</ul>
+        
+<h4>New Feature</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3624'>PUBDEV-3624</a>] - Added top an bottom N functions, which allow users to grab the top or bottom N percent of a numerical column. The returned frame contains the original row indices of the top/bottom N percent values extracted into the second column. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4096'>PUBDEV-4096</a>] - When building Stacked Ensembles in R, the base_models parameter can accept models rather than just model IDs. Updated the documentation in the User Guide for the base_models parameter to indicate this.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4523'>PUBDEV-4523</a>] - Added the following new GBM and DRF parameters to the User Guide: `calibrate_frame` and `calibrate_model`. 
+</li>
+</ul>
+            
+<h4>Improvement</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4531'>PUBDEV-4531</a>] -  Improved PredictCsv.java as follows:
+  <ul>
+  <li>Enabled PredictCsv.java to accept arbitrary separator characters in the input dataset file if the user includes the optional flag `--separator` in the input arguments. If a user enters a special Java character as the separator, then H2O will add "\".
+  </li>
+  <li>Enabled PredictCsv.java to perform setConvertInvalidNumbersToNa(setInvNumNA)) if the optional flag `--setConvertInvalidNum` is included in the input arguments.
+  </li>
+  </ul>
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4578'>PUBDEV-4578</a>] - Fixed the R package so that a "browseURL" NOTE no longer appears.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4583'>PUBDEV-4583</a>] - In the R package documentation, improved the description of the GLM `alpha` parameter. 
+</li>
+</ul>
+    
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4524'>PUBDEV-4524</a>] - In the "Using Flow - H2O’s Web UI" section of the User Guide, updated the Viewing Models topic to include that users can download the h2o-genmodel.jar file when viewing models in Flow. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4549'>PUBDEV-4549</a>] - The `group_by` function accepts a number of aggregate options, which were documented in the User Guide and in the Python package documentation. These aggregate options are now described in the R package documentation.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4575'>PUBDEV-4575</a>] - Added an initial XGBoost topic to the User Guide. Note that this is still a work in progress.
+</li>
+</ul>    
+
 ### Vajda (3.10.5.1) - 6/9/2017
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/1/index.html</a>
@@ -319,6 +376,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-ueno/5/index.h
 </ul>
 
 ### Ueno (3.10.4.4) - 4/15/2017
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-ueno/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-ueno/4/index.html</a>
 
 <h4>        Technical task
 </h4>
