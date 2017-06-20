@@ -2,6 +2,7 @@ package water.api;
 
 import hex.*;
 import hex.genmodel.utils.DistributionFamily;
+import org.apache.commons.lang.ArrayUtils;
 import water.*;
 import water.api.schemas3.*;
 import water.exceptions.H2OIllegalArgumentException;
@@ -367,6 +368,10 @@ class ModelMetricsHandler extends Handler {
           Frame predictions = ((Model.DeepFeatures) parms._model).scoreDeepFeatures(parms._frame, s.deep_features_hidden_layer, j);
           predictions = new Frame(Key.<Frame>make(parms._predictions_name), predictions.names(), predictions.vecs());
           DKV.put(predictions._key, predictions);
+        }
+        if (parms._model._warningsP.length > 0) { // add prediction warning here only
+          String[] allWarnings = (String[]) ArrayUtils.addAll(j.warns(), parms._model._warningsP); // copy both over
+          j.setWarnings(allWarnings);
         }
         tryComplete();
       }

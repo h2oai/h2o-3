@@ -37,7 +37,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   public P _parms;   // TODO: move things around so that this can be protected
   public O _output;  // TODO: move things around so that this can be protected
-  public String[] _warnings = new String[0];
+  public String[] _warnings = new String[0];  // warning associated with model building
+  public String[] _warningsP;     // warnings associated with prediction only
   public Distribution _dist;
   protected ScoringInfo[] scoringInfo;
   public IcedHashMap<Key, String> _toDelete = new IcedHashMap<>();
@@ -952,11 +953,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             msgs.add(H2O.technote(1, "Test/Validation dataset is missing weights column '" + names[i] + "' (needed because a response was found and metrics are to be computed): substituting in a column of 1s"));
           }
         } else if (expensive) {
-          String str = "Test/Validation dataset is missing column '" + names[i] + "': substituting in a column of " + (isFold ? 0 : missing);
-          vec = test.anyVec().makeCon(isFold ? 0 : missing);
-          toDelete.put(vec._key, "adapted missing vectors");
-          if (!isFold) convNaN++;
-          msgs.add(str);
+          if (!isResponse) {    // only generate this warning if column is not a response column
+            String str = "Test/Validation dataset is missing column '" + names[i] + "': substituting in a column of " + (isFold ? 0 : missing);
+            vec = test.anyVec().makeCon(isFold ? 0 : missing);
+            toDelete.put(vec._key, "adapted missing vectors");
+            if (!isFold) convNaN++;
+            msgs.add(str);
+          }
         }
       }
       if( vec != null ) {          // I have a column with a matching name
@@ -1066,13 +1069,22 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return score(fr, destination_key, j, true);
   }
 
+  public void addWarningP(String s) {
+    _warningsP = Arrays.copyOf(_warningsP, _warningsP.length + 1);
+    _warningsP[_warningsP.length - 1] = s;
+  }
+
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics) throws IllegalArgumentException {
     Frame adaptFr = new Frame(fr);
     computeMetrics = computeMetrics && (!isSupervised() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
     String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
+    // clean up the previous score warning messages
+    _warningsP = new String[0];
     if (msg.length > 0) {
-      for (String s : msg)
+      for (String s : msg) {
+        addWarningP(s);                      // add warning string to model
         Log.warn(s);
+      }
     }
     Frame output = predictScoreImpl(fr, adaptFr, destination_key, j, computeMetrics); // Predict & Score
     // Log modest confusion matrices
