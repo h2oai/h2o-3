@@ -5,7 +5,7 @@ The current implementation of the grid search REST API exposes the following end
 
 - `GET /<version>/Grids`: List available grids, with optional parameters to sort the list by model metric such as MSE
 - `GET /<version>/Grids/<grid_id>`: Return specified grid
-- `POST /<version>/Grids/<algo_name>`: Start a new grid search
+- `POST /<version>/Grid/<algo_name>`: Start a new grid search
 	- `<algo_name>`: Supported algorithm values are `{glm, gbm, drf, kmeans, deeplearning}`
 
 Endpoints accept model-specific parameters (e.g., [GBMParametersV3](https://github.com/h2oai/h2o-3/blob/master/h2o-algos/src/main/java/hex/schemas/GBMV3.java) and an additional parameter called `hyper_parameters` which contains a dictionary of the hyper parameters which will be searched. In this dictionary an array of values is specified for each searched hyperparameter.
