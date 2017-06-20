@@ -149,7 +149,7 @@ publishing {
       } else {
           maven {
               name "LocalNexusRepo"
-              url "http://172.17.0.53:8081/nexus/content/repositories/snapshots"
+              url "${localNexusLocation}/snapshots"
 
               credentials {
                   username project.findProperty("local-release-maven.username") ?: "<NA>"
