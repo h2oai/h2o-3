@@ -37,7 +37,7 @@ public class OrcParserProvider extends ParserProvider {
       // ORC stream parse is more efficient
       return
           nfiles >= (ncores_tot >> 1)  // got enough files to keep cluster busy
-              ?ParseMethod.StreamParse:ParseMethod.StreamParse;//ParseMethod.DistributesParse;
+              ?ParseMethod.StreamParse:ParseMethod.StreamParse;//ParseMethod.DistributedParse;
     }
   }
   /* Setup for this parser */

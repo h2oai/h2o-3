@@ -52,7 +52,7 @@ public class ParserInfo extends Iced<ParserInfo> {
   // A file is considered to be small if it can fit into <SMALL_FILE_NCHUNKS> number of chunks.
   public static final int SMALL_FILE_NCHUNKS = 10;
 
-  public enum ParseMethod {StreamParse,DistributesParse}
+  public enum ParseMethod {StreamParse, DistributedParse}
   /*
   localSetup.disableParallelParse ||
    */
@@ -62,7 +62,7 @@ public class ParserInfo extends Iced<ParserInfo> {
         return ParseMethod.StreamParse;
     }
     if(isParallelParseSupported())
-      return ParseMethod.DistributesParse;
+      return ParseMethod.DistributedParse;
     throw H2O.unimpl();
   }
 
