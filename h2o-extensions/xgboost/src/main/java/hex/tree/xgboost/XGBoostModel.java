@@ -1,22 +1,21 @@
 package hex.tree.xgboost;
 
 import hex.*;
+import hex.genmodel.GenModel;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import ml.dmlc.xgboost4j.java.Booster;
-import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
+import ml.dmlc.xgboost4j.java.XGBoostModelInfo;
+import ml.dmlc.xgboost4j.java.XGBoostScoreTask;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
 import water.util.Log;
 import hex.ModelMetrics;
 import java.util.HashMap;
 import java.util.Map;
 
-import static hex.tree.xgboost.XGBoost.convertFrametoDMatrix;
 import static hex.tree.xgboost.XGBoost.makeDataInfo;
 
 public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> {
@@ -143,8 +142,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     model_info._dataInfoKey = dinfo._key;
   }
 
-  HashMap<String, Object> createParams() {
-    XGBoostParameters p = _parms;
+  public static HashMap<String, Object> createParams(XGBoostParameters p, XGBoostOutput output) {
     HashMap<String, Object> params = new HashMap<>();
 
     // Common parameters with H2O GBM
@@ -212,22 +210,22 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("skip_drop", p._skip_drop);
     }
     if ( p._backend == XGBoostParameters.Backend.auto || p._backend == XGBoostParameters.Backend.gpu ) {
-      if (XGBoost.hasGPU(_parms._gpu_id)) {
-        Log.info("Using GPU backend (gpu_id: " + _parms._gpu_id + ").");
-        params.put("gpu_id", _parms._gpu_id);
+      if (XGBoost.hasGPU(p._gpu_id)) {
+        Log.info("Using GPU backend (gpu_id: " + p._gpu_id + ").");
+        params.put("gpu_id", p._gpu_id);
         if (p._tree_method == XGBoostParameters.TreeMethod.exact) {
           Log.info("Using grow_gpu (exact) updater.");
           params.put("tree_method", "exact");
-          params.put("updater", "grow_gpu");
+//          params.put("updater", "grow_gpu");
         }
         else {
           Log.info("Using grow_gpu_hist (approximate) updater.");
           params.put("max_bins", p._max_bins);
           params.put("tree_method", "exact");
-          params.put("updater", "grow_gpu_hist");
+//          params.put("updater", "grow_gpu_hist");
         }
       } else {
-        Log.info("No GPU (gpu_id: "+_parms._gpu_id + ") found. Using CPU backend.");
+        Log.info("No GPU (gpu_id: "+p._gpu_id + ") found. Using CPU backend.");
       }
     } else {
       assert p._backend == XGBoostParameters.Backend.cpu;
@@ -251,9 +249,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     params.put("lambda", p._reg_lambda);
     params.put("alpha", p._reg_alpha);
 
-    if (_output.nclasses()==2) {
+    if (output.nclasses()==2) {
       params.put("objective", "binary:logistic");
-    } else if (_output.nclasses()==1) {
+    } else if (output.nclasses()==1) {
       if (p._distribution == DistributionFamily.gamma) {
         params.put("objective", "reg:gamma");
       } else if (p._distribution == DistributionFamily.tweedie) {
@@ -268,7 +266,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       }
     } else {
       params.put("objective", "multi:softprob");
-      params.put("num_class", _output.nclasses());
+      params.put("num_class", output.nclasses());
     }
     Log.info("XGBoost Parameters:");
     for (Map.Entry<String,Object> s : params.entrySet()) {
@@ -301,12 +299,11 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   // Fast scoring using the C++ data structures
   // However, we need to bring the data back to Java to compute the metrics
   // For multinomial, we also need to transpose the data - which is slow
-  private ModelMetrics makeMetrics(Booster booster, DMatrix data, Frame dataFrame, String description) throws XGBoostError {
-    return makeMetrics(booster, data, dataFrame, description, null);
+  private ModelMetrics makeMetrics(Booster booster, Frame data, String description) throws XGBoostError {
+    return makeMetrics(booster, data, description, null);
   }
 
-  private ModelMetrics makeMetrics(Booster booster, DMatrix data, Frame dataFrame, String description,
-                                   Key<Frame> predFrameKey) throws XGBoostError {
+  private ModelMetrics makeMetrics(Booster booster, Frame data, String description, Key<Frame> predFrameKey) throws XGBoostError {
     Futures fs = new Futures();
     ModelMetrics[] mms = new ModelMetrics[1];
     Frame predictions = makePreds(booster, data, mms, true, predFrameKey, fs);
@@ -317,12 +314,12 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
     fs.blockForPending();
     ModelMetrics mm = mms[0]
-        .withModelAndFrame(this, dataFrame)
+        .withModelAndFrame(this, data)
         .withDescription(description);
     return mm;
   }
 
-  private Frame makePredsOnly(Booster booster, DMatrix data, Key<Frame> destinationKey) throws XGBoostError {
+  private Frame makePredsOnly(Booster booster, Frame data, Key<Frame> destinationKey) throws XGBoostError {
     Futures fs = new Futures();
     Frame preds = makePreds(booster, data, null, false, destinationKey, fs);
     DKV.put(preds, fs);
@@ -330,133 +327,41 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return preds;
   }
 
-  private Frame makePreds(Booster booster, DMatrix data, ModelMetrics[] mms, boolean computeMetrics,
-                          Key<Frame> destinationKey, Futures fs) throws XGBoostError {
-    assert (! computeMetrics) || (mms != null && mms.length == 1);
+  private Frame makePreds(Booster booster, Frame data, ModelMetrics[] mms, boolean computeMetrics, Key<Frame> destinationKey, Futures fs) throws XGBoostError {
+      assert (! computeMetrics) || (mms != null && mms.length == 1);
 
-    // Calculate predictions
-    final float[][] preds = booster.predict(data);
-
-    // Convert to expected output structure and optionally calculate metrics
-    Frame predFrame;
-    ModelMetrics mm = null;
-    Vec resp = null;
-    float[] weights = data.getWeight();
-    if (_output.nclasses()==1) {
-      // Regression
-      resp = computeMetrics ? Vec.makeVec(data.getLabel(), Vec.newKey()) : null;
-      double[] dpreds = new double[preds.length];
-      for (int j = 0; j < dpreds.length; ++j) {
-        dpreds[j] = preds[j][0];
-        assert(!Double.isNaN(dpreds[j])) : "Error: XGBoost predicted NAs.";
-      }
-//      if (weights.length>0)
-//        for (int j = 0; j < dpreds.length; ++j)
-//          assert weights[j] == 1.0;
-      Vec pred = Vec.makeVec(dpreds, Vec.newKey());
-      if (computeMetrics)
-        mm = ModelMetricsRegression.make(pred, resp, DistributionFamily.gaussian);
-      predFrame = new Frame(destinationKey, makeScoringNames(), new Vec[]{pred});
-    }
-    else if (_output.nclasses()==2) {
-      // Binomial
-      resp = computeMetrics ? Vec.makeVec(data.getLabel(), _output.classNames(), Vec.newKey()) : null;
-      double[] dpreds = new double[preds.length];
-      for (int j = 0; j < dpreds.length; ++j)
-        dpreds[j] = preds[j][0];
-      if (weights.length>0)
-        for (int j = 0; j < dpreds.length; ++j)
-          assert weights[j] == 1.0;
-      Vec p1 = Vec.makeVec(dpreds, Vec.newKey());
-      Frame partPreds = new MRTask() {
-        @Override
-        public void map(Chunk[] cs, NewChunk[] ncs) {
-          Chunk p1c = cs[0];
-          for (int i=0; i< p1c._len; ++i) {
-            double p1 = p1c.atd(i);
-            double p0 = 1. - p1;
-            double[] row = new double[]{0, p0, p1};
-            int label = hex.genmodel.GenModel.getPrediction(row, _output._priorClassDist, null, defaultThreshold());
-            ncs[0].addNum(label);
-            ncs[1].addNum(p0);
-          }
-        }
-      }.doAll(new byte[]{Vec.T_CAT, Vec.T_NUM}, p1).outputFrame(null, null, new String[][]{new String[]{"Y", "N"}, null});
-      if (computeMetrics)
-        mm = ModelMetricsBinomial.make(p1, resp);
-      predFrame = new Frame(destinationKey, makeScoringNames(), new Vec[]{partPreds.vec(0), partPreds.vec(1), p1});
-    } else {
-      // Multinomial
-      resp = computeMetrics ? Vec.makeVec(data.getLabel(), _output.classNames(), Vec.newKey()) : null;
-      String[] names = makeScoringNames();
-      String[][] domains = new String[names.length][];
-      domains[0] = _output.classNames();
-      Frame input = null;
-      try {
-        input = new Frame(Vec.makeVec(MemoryManager.malloc4f(preds.length), Vec.newKey())); // dummy frame of the right size
-        predFrame = new MRTask() {
-          @Override
-          public void map(Chunk[] chk, NewChunk[] nc) {
-            assert chk.length == 1;
-            double[] row = new double[nc.length];
-            for (int i = 0; i < chk[0]._len; ++i) {
-              row[0] = 0;
-              for (int j = 1; j < row.length; ++j) {
-                double val = preds[i][j - 1];
-                nc[j].addNum(val);
-                row[j] = val;
-              }
-              nc[0].addNum(hex.genmodel.GenModel.getPrediction(row, _output._priorClassDist, null, defaultThreshold()));
-            }
-          }
-        }.doAll(_output.nclasses() + 1, Vec.T_NUM, input).outputFrame(destinationKey, names, domains);
-      } finally {
-        if (input != null)
-          input.remove(fs);
-      }
-      if (computeMetrics) {
-        Frame pp = new Frame(predFrame);
-        pp.remove(0);
-        mm = ModelMetricsMultinomial.make(pp, resp, _output.classNames());
-      }
-    }
-    if (resp != null)
-      resp.remove(fs);
-
-    if (computeMetrics) {
-      assert mm != null;
-      mms[0] = mm;
-    }
-    assert predFrame != null && "predict".equals(predFrame.name(0));
-    return predFrame;
+      XGBoostScoreTask.XGBoostScoreTaskResult score = XGBoostScoreTask.runScoreTask(
+              model_info(), _output, _parms,
+              booster, destinationKey, data,
+              computeMetrics
+      );
+      mms[0] = score.mm;
+      return score.preds;
   }
 
   /**
    * Score an XGBoost model on training and validation data (optional)
    * Note: every row is scored, all observation weights are assumed to be equal
    * @param booster xgboost model
-   * @param train training data in the form of matrix
-   * @param trainFrame original training frame
-   * @param valid validation data (optional, can be null)
-   * @param validFrame original validation frame, can be null
+   * @param _train training data in the form of matrix
+   * @param _valid validation data (optional, can be null)
    * @throws XGBoostError
    */
-  public void doScoring(Booster booster, DMatrix train, Frame trainFrame, DMatrix valid, Frame validFrame) throws XGBoostError {
-    ModelMetrics mm = makeMetrics(booster, train, trainFrame, "Metrics reported on training frame");
+  public void doScoring(Booster booster, Frame _train, Frame _valid) throws XGBoostError {
+    ModelMetrics mm = makeMetrics(booster, _train, "Metrics reported on training frame");
     _output._training_metrics = mm;
     _output._scored_train[_output._ntrees].fillFrom(mm);
-    addModelMetrics(mm);
     // Optional validation part
-    if (valid!=null) {
-      assert validFrame != null : "Validation frame (source of validation matrix) has to be not null!";
-      mm = makeMetrics(booster, valid, validFrame, "Metrics reported on validation frame");
+    if (_valid!=null) {
+      assert _valid != null : "Validation frame (source of validation matrix) has to be not null!";
+      mm = makeMetrics(booster, _valid, "Metrics reported on validation frame");
       _output._validation_metrics = mm;
       _output._scored_valid[_output._ntrees].fillFrom(mm);
       addModelMetrics(mm);
     }
   }
 
-  public void computeVarImp(Map<String,Integer> varimp) {
+  void computeVarImp(Map<String, Integer> varimp) {
     if (varimp.isEmpty()) return;
     // compute variable importance
     float[] viFloat = new float[varimp.size()];
@@ -474,9 +379,39 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   public double[] score0(double[] data, double[] preds, double offset) {
     DataInfo di = model_info._dataInfoKey.get();
     return XGBoostMojoModel.score0(data, offset, preds,
-            model_info.booster(), di._nums, di._cats, di._catOffsets, di._useAllFactorLevels,
+            model_info.getBooster(), di._nums, di._cats, di._catOffsets, di._useAllFactorLevels,
             _output.nclasses(), _output._priorClassDist, defaultThreshold(), _output._sparse);
   }
+
+  @Override
+  public double[][] score0( Chunk chks[], double[] offset, int[] rowsInChunk, double[][] tmp, double[][] preds ) {
+    for( int row=0; row < rowsInChunk.length; row++ ) {
+      for( int i=0; i< tmp[row].length; i++ ) {
+        tmp[row][i] = chks[i].atd(rowsInChunk[row]);
+      }
+    }
+    DataInfo di = model_info._dataInfoKey.get();
+    double[][] scored = XGBoostMojoModel.bulkScore0(tmp, offset, preds,
+            model_info.getBooster(), di._nums, di._cats, di._catOffsets, di._useAllFactorLevels,
+            _output.nclasses(), _output._priorClassDist, defaultThreshold(), _output._sparse);
+
+    if(isSupervised()) {
+      // Correct probabilities obtained from training on oversampled data back to original distribution
+      // C.f. http://gking.harvard.edu/files/0s.pdf Eq.(27)
+      if( _output.isClassifier()) {
+        for( int row=0; row < rowsInChunk.length; row++ ) {
+          if (_parms._balance_classes)
+            GenModel.correctProbabilities(scored[row], _output._priorClassDist, _output._modelClassDist);
+          //assign label at the very end (after potentially correcting probabilities)
+          scored[row][0] = hex.genmodel.GenModel.getPrediction(scored[row], _output._priorClassDist, tmp[row], defaultThreshold());
+        }
+      }
+    }
+    return scored;
+  }
+
+  @Override
+  protected boolean bulkBigScorePredict() { return false; }
 
   private void setDataInfoToOutput(DataInfo dinfo) {
     _output._names = dinfo._adaptedFrame.names();
@@ -507,19 +442,17 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
         Log.warn(s);
     }
     try {
-      DMatrix trainMat = convertFrametoDMatrix( model_info()._dataInfoKey, adaptFr,
-          _parms._response_column, _parms._weights_column, _parms._fold_column, null, _output._sparse);
       Key<Frame> destFrameKey = Key.make(destination_key);
       if (computeMetrics){
-        ModelMetrics mm = makeMetrics(model_info().booster(), trainMat, fr, "Prediction on frame " + fr._key, destFrameKey);
+        ModelMetrics mm = makeMetrics(model_info().booster(), adaptFr, "Prediction on frame " + fr._key, destFrameKey);
         // Update model with newly computed model metrics
         this.addModelMetrics(mm);
         DKV.put(this);
       } else
-        makePredsOnly(model_info().booster(), trainMat, destFrameKey);
+        makePredsOnly(model_info().booster(), adaptFr, destFrameKey);
       return destFrameKey.get();
     } catch (XGBoostError xgBoostError) {
-      throw new RuntimeException(xgBoostError);
+      throw new IllegalStateException("Failed scoring.", xgBoostError);
     }
   }
 }

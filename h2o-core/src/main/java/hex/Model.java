@@ -94,12 +94,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @return threshold in 0...1
    */
   public double defaultThreshold() {
-    if (_output.nclasses() != 2 || _output._training_metrics == null)
+    return defaultThreshold(_output);
+  }
+
+  public static <O extends Model.Output> double defaultThreshold(O output) {
+    if (output.nclasses() != 2 || output._training_metrics == null)
       return 0.5;
-    if (_output._validation_metrics != null && ((ModelMetricsBinomial)_output._validation_metrics)._auc != null)
-      return ((ModelMetricsBinomial)_output._validation_metrics)._auc.defaultThreshold();
-    if (((ModelMetricsBinomial)_output._training_metrics)._auc != null)
-      return ((ModelMetricsBinomial)_output._training_metrics)._auc.defaultThreshold();
+    if (output._validation_metrics != null && ((ModelMetricsBinomial)output._validation_metrics)._auc != null)
+      return ((ModelMetricsBinomial)output._validation_metrics)._auc.defaultThreshold();
+    if (((ModelMetricsBinomial)output._training_metrics)._auc != null)
+      return ((ModelMetricsBinomial)output._training_metrics)._auc.defaultThreshold();
     return 0.5;
   }
 
@@ -1288,13 +1292,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }.doAll(Vec.T_NUM, predictions).outputFrame(Key.<Frame>make(outputName), new String[]{"deviance"}, null);
   }
 
-  protected String [] makeScoringNames(){
-    final int nc = _output.nclasses();
+  protected String[] makeScoringNames(){
+    return makeScoringNames(_output);
+  }
+
+  public static <O extends Model.Output> String [] makeScoringNames(O output){
+    final int nc = output.nclasses();
     final int ncols = nc==1?1:nc+1; // Regression has 1 predict col; classification also has class distribution
     String [] names = new String[ncols];
     names[0] = "predict";
     for(int i = 1; i < names.length; ++i) {
-      names[i] = _output.classNames()[i - 1];
+      names[i] = output.classNames()[i - 1];
       // turn integer class labels such as 0, 1, etc. into p0, p1, etc.
       try {
         Integer.valueOf(names[i]);
@@ -1411,7 +1419,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       Chunk weightsChunk = _hasWeights && _computeMetrics ? chks[_output.weightsIdx()] : null;
       Chunk offsetChunk = _output.hasOffset() ? chks[_output.offsetIdx()] : null;
       Chunk responseChunk = null;
-      double [] tmp = new double[_output.nfeatures()];
       float [] actual = null;
       _mb = Model.this.makeMetricBuilder(_domain);
       if (_computeMetrics) {
@@ -1421,37 +1428,90 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         } else
           actual = new float[chks.length];
       }
-      double[] preds = _mb._work;  // Sized for the union of test and train classes
       int len = chks[0]._len;
 
       try {
         setupBigScorePredict();
 
-        for (int row = 0; row < len; row++) {
-          double weight = weightsChunk != null ? weightsChunk.atd(row) : 1;
-          if (weight == 0) {
+        if(!bulkBigScorePredict()) {
+          double [] tmp = new double[_output.nfeatures()];
+          double[] preds = _mb._work;  // Sized for the union of test and train classes
+          for (int row = 0; row < len; row++) {
+            double weight = weightsChunk != null ? weightsChunk.atd(row) : 1;
+            if (weight == 0) {
+              if (_makePreds) {
+                for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
+                  cpreds[c].addNum(0);
+              }
+              continue;
+            }
+            double offset = offsetChunk != null ? offsetChunk.atd(row) : 0;
+            double[] p = score0(chks, offset, row, tmp, preds);
+            if (_computeMetrics) {
+              if (isSupervised()) {
+                actual[0] = (float) responseChunk.atd(row);
+              } else {
+                for (int i = 0; i < actual.length; ++i)
+                  actual[i] = (float) data(chks, row, i);
+              }
+              _mb.perRow(preds, actual, weight, offset, Model.this);
+              // Handle custom metric
+              customMetricPerRow(preds, actual, weight, offset, Model.this);
+            }
             if (_makePreds) {
               for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
-                cpreds[c].addNum(0);
+                cpreds[c].addNum(p[c]);
             }
-            continue;
           }
-          double offset = offsetChunk != null ? offsetChunk.atd(row) : 0;
-          double[] p = score0(chks, offset, row, tmp, preds);
-          if (_computeMetrics) {
-            if (isSupervised()) {
-              actual[0] = (float) responseChunk.atd(row);
-            } else {
-              for (int i = 0; i < actual.length; ++i)
-                actual[i] = (float) data(chks, row, i);
+        } else {
+          int[] indices = new int[len];
+          double[] offsets = offsetChunk != null ? new double[len] : null;
+          int nonZeroW = 0;
+          for (int row = 0; row < len; row++) {
+            double weight = getWeight(weightsChunk, row);
+            if (weight == 0) {
+              if (_makePreds) {
+                for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
+                  cpreds[c].addNum(0);
+              }
+              continue;
             }
-            _mb.perRow(preds, actual, weight, offset, Model.this);
-            // Handle custom metric
-            customMetricPerRow(preds, actual, weight, offset, Model.this);
+            if(offsetChunk != null) {
+              offsets[nonZeroW] = getOffset(offsetChunk, row);
+            }
+            indices[nonZeroW++] = row;
           }
-          if (_makePreds) {
-            for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
-              cpreds[c].addNum(p[c]);
+
+          indices = Arrays.copyOf(indices, nonZeroW);
+
+          if(0 == nonZeroW) {
+            return;
+          }
+
+          double[][] bulkPreds = new double[nonZeroW][];
+          for(int i = 0; i < bulkPreds.length; i++) {
+            bulkPreds[i] = new double[_mb._work.length];
+          }
+          double[][] bulkTmp = new double[nonZeroW][];
+          for(int i = 0; i < bulkTmp.length; i++) {
+            bulkTmp[i] = new double[_output.nfeatures()];
+          }
+          double[][] p = score0(chks, offsets, indices, bulkTmp, bulkPreds);
+          for(int rowIdx = 0; rowIdx < indices.length; rowIdx++) {
+            int row = indices[rowIdx];
+            if (_computeMetrics) {
+              if (isSupervised()) {
+                actual[0] = (float) responseChunk.atd(row);
+              } else {
+                for (int i = 0; i < actual.length; ++i)
+                  actual[i] = (float) data(chks, row, i);
+              }
+              _mb.perRow(bulkPreds[rowIdx], actual, getWeight(weightsChunk, row), getOffset(offsetChunk, row), Model.this);
+            }
+            if (_makePreds) {
+              for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
+                cpreds[c].addNum(p[rowIdx][c]);
+            }
           }
         }
       } finally {
@@ -1469,8 +1529,18 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         _mb.postGlobal(getComputedCustomMetric());
       }
     }
+
+    private double getOffset(Chunk offsetChunk, int row) {
+      return offsetChunk != null ? offsetChunk.atd(row) : 0;
+    }
+
+    private double getWeight(Chunk weightsChunk, int row) {
+      return weightsChunk != null ? weightsChunk.atd(row) : 1;
+    }
+
   }
 
+  protected boolean bulkBigScorePredict() { return false; }
   protected void setupBigScorePredict() {}
   protected void closeBigScorePredict() {}
 
@@ -1486,6 +1556,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  subclass scoring logic. */
   public double[] score0( Chunk chks[], int row_in_chunk, double[] tmp, double[] preds ) {
     return score0(chks, 0, row_in_chunk, tmp, preds);
+  }
+
+  // To be implemented by Models that override bulkBigScorePredict() to return true
+  public double[][] score0( Chunk chks[], double[] offset, int[] rowsInChunk, double[][] tmp, double[][] preds ) {
+    throw new IllegalStateException("Not implemented.");
   }
 
   public double[] score0( Chunk chks[], double offset, int row_in_chunk, double[] tmp, double[] preds ) {
