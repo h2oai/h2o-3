@@ -369,7 +369,7 @@ class ModelMetricsHandler extends Handler {
           predictions = new Frame(Key.<Frame>make(parms._predictions_name), predictions.names(), predictions.vecs());
           DKV.put(predictions._key, predictions);
         }
-        if (parms._model._warningsP.length > 0) { // add prediction warning here only
+        if ((parms._model._warningsP != null) && (parms._model._warningsP.length > 0)) { // add prediction warning here only
           String[] allWarnings = (String[]) ArrayUtils.addAll(j.warns(), parms._model._warningsP); // copy both over
           j.setWarnings(allWarnings);
         }

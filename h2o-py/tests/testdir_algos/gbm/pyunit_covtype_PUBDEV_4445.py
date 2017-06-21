@@ -41,20 +41,27 @@ def check_warnings(theModel, warnNumber, dataset):
     buffer = StringIO() # redirect output
     sys.stderr=buffer
     pred_h2o = theModel.predict(dataset)
-    warn_phrase = "UserWarning"
-    warn_string_of_interest = "missing column"
-
+    warn_phrase = "missing"
+    sys.stderr=sys.__stderr__   # redirect printout back to normal path
     try:        # for python 2.7
         assert len(buffer.buflist)==warnNumber
         if len(buffer.buflist) > 0:  # check to make sure we have the right number of warning
             for index in range(len(buffer.buflist)):
                 print("*** captured warning message: {0}".format(buffer.buflist[index]))
-                assert (warn_phrase in buffer.buflist[index]) and (warn_string_of_interest in buffer.buflist[index])
+                assert (warn_phrase in buffer.buflist[index]), "Wrong warning message is received."
     except:     # for python 3.
-        warns = buffer.getvalue()
-        assert len(warns)==warnNumber
-        print("*** captured warning message: {0}".format(warns))
-        assert (warn_phrase in warns) and (warn_string_of_interest in warns)
+        if warnNumber==0:
+            try:
+                warns = buffer.getvalue()
+                assert False, "Warning not expected but received..."
+            except:
+                assert True, "Warning not expected but received..."
+        else:
+            warns = buffer.getvalue()
+            print("*** captured warning message: {0}".format(warns))
+            countWarns = warns.split().count(warn_phrase)
+            assert countWarns==warnNumber, "Expected number of warning: {0}.  But received {1}.".format(warnNumber, countWarns)
+
 
 
 

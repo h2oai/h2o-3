@@ -952,14 +952,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             toDelete.put(vec._key, "adapted missing vectors");
             msgs.add(H2O.technote(1, "Test/Validation dataset is missing weights column '" + names[i] + "' (needed because a response was found and metrics are to be computed): substituting in a column of 1s"));
           }
-        } else if (expensive) {
-          if (!isResponse) {    // only generate this warning if column is not a response column
-            String str = "Test/Validation dataset is missing column '" + names[i] + "': substituting in a column of " + (isFold ? 0 : missing);
-            vec = test.anyVec().makeCon(isFold ? 0 : missing);
-            toDelete.put(vec._key, "adapted missing vectors");
-            if (!isFold) convNaN++;
-            msgs.add(str);
-          }
+        } else if (expensive) {   // generate warning even for response columns.  Other tests depended on this.
+          String str = "Test/Validation dataset is missing column '" + names[i] + "': substituting in a column of " + (isFold ? 0 : missing);
+          vec = test.anyVec().makeCon(isFold ? 0 : missing);
+          toDelete.put(vec._key, "adapted missing vectors");
+          if (!isFold) convNaN++;
+          msgs.add(str);
         }
       }
       if( vec != null ) {          // I have a column with a matching name
@@ -1082,8 +1080,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     _warningsP = new String[0];
     if (msg.length > 0) {
       for (String s : msg) {
-        addWarningP(s);                      // add warning string to model
-        Log.warn(s);
+        if ((_output.responseName() == null) || !s.contains(_output.responseName())) {  // response column missing will not generate warning for prediction
+          addWarningP(s);                      // add warning string to model
+          Log.warn(s);
+        }
       }
     }
     Frame output = predictScoreImpl(fr, adaptFr, destination_key, j, computeMetrics); // Predict & Score
