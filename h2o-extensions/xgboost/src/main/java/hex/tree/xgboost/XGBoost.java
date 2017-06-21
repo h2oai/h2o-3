@@ -445,7 +445,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
 
     HashMap<String, Object> params = new HashMap<>();
-//    params.put("updater", "grow_gpu_hist");
+    params.put("updater", "grow_gpu_hist");
     params.put("silent", 1);
 
     params.put("gpu_id", gpu_id);
