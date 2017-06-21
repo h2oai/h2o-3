@@ -981,7 +981,18 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public HashMap<String,Double> coefficients(){
     HashMap<String, Double> res = new HashMap<>();
     final double [] b = beta();
-    if(b != null) for(int i = 0; i < b.length; ++i)res.put(_output._coefficient_names[i],b[i]);
+    if(b == null) return res;
+    if(_parms._family == Family.multinomial){
+      String [] responseDomain = _output._domains[_output._domains.length-1];
+      int len = b.length/_output.nclasses();
+      assert b.length == len*_output.nclasses();
+      for(int c = 0; c < _output.nclasses(); ++c) {
+        String prefix =  responseDomain[c] + "_";
+        for (int i = 0; i < len; ++i)
+          res.put(prefix + _output._coefficient_names[i], b[c*len+i]);
+      }
+    } else for (int i = 0; i < b.length; ++i)
+        res.put(_output._coefficient_names[i], b[i]);
     return res;
   }
 
