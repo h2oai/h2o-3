@@ -5,6 +5,7 @@ import hex.SplitFrame;
 import hex.pca.PCAModel.PCAParameters;
 import hex.svd.SVDImplementation;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -25,16 +26,23 @@ import java.util.concurrent.ExecutionException;
 @RunWith(Parameterized.class)
 public class PCATest extends TestUtil {
   public static final double TOLERANCE = 1e-6;
+  private PCAParameters pcaParameters;
 
   @Parameters
-  public static String[] parametersForSvdImplementation() {
-    return SVDImplementation.getEnumNames();
+  public static SVDImplementation[] parametersForSvdImplementation() {
+    return SVDImplementation.values();
   }
 
   @Parameter
-  public String svdImplementationName;
+  public SVDImplementation svdImplementation;
 
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+
+  @Before public void setupPcaParameters() {
+    pcaParameters = new PCAParameters();
+    pcaParameters.setSvdImplementation(svdImplementation);
+    water.util.Log.info(pcaParameters.getSvdImplementation().name());
+  }
 
   @Test public void testArrestsScoring() throws InterruptedException, ExecutionException {
     // Results with original training frame
@@ -48,14 +56,12 @@ public class PCATest extends TestUtil {
     Frame train = null, score = null, scoreR = null;
     try {
       train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
-      PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
-      parms._train = train._key;
-      parms._k = 4;
-      parms._transform = DataInfo.TransformType.NONE;
-      parms._pca_method = PCAParameters.Method.GramSVD;
-      parms.setSvdImplementation(SVDImplementation.valueOf(svdImplementationName) );
+      pcaParameters._train = train._key;
+      pcaParameters._k = 4;
+      pcaParameters._transform = DataInfo.TransformType.NONE;
+      pcaParameters._pca_method = PCAParameters.Method.GramSVD;
 
-      model = new PCA(parms).trainModel().get();
+      model = new PCA(pcaParameters).trainModel().get();
       TestUtil.checkStddev(stddev, model._output._std_deviation, 1e-5);
       boolean[] flippedEig = TestUtil.checkEigvec(eigvec, model._output._eigenvectors, 1e-5);
 
@@ -89,15 +95,13 @@ public class PCATest extends TestUtil {
       tr = DKV.get(ksplits[0]).get();
       te = DKV.get(ksplits[1]).get();
 
-      PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
-      parms._train = ksplits[0];
-      parms._valid = ksplits[1];
-      parms._k = 4;
-      parms._max_iterations = 1000;
-      parms._pca_method = PCAParameters.Method.GramSVD;
-      parms.setSvdImplementation(SVDImplementation.valueOf(svdImplementationName) );
+      pcaParameters._train = ksplits[0];
+      pcaParameters._valid = ksplits[1];
+      pcaParameters._k = 4;
+      pcaParameters._max_iterations = 1000;
+      pcaParameters._pca_method = PCAParameters.Method.GramSVD;
 
-      model = new PCA(parms).trainModel().get();
+      model = new PCA(pcaParameters).trainModel().get();
 
       // Done building model; produce a score column with cluster choices
       fr2 = model.score(te);
@@ -127,17 +131,15 @@ public class PCATest extends TestUtil {
         DKV.remove(frtmp._key); // Delete the frame header (not the data)
       }
 
-      PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
-      parms._train = train._key;
-      parms._k = 4;
-      parms._transform = DataInfo.TransformType.NONE;
-      parms._pca_method = PCAModel.PCAParameters.Method.GramSVD;
-      parms.setSvdImplementation(SVDImplementation.valueOf(svdImplementationName) );
-      parms._impute_missing = true;   // Don't skip rows with NA entries, but impute using mean of column
-      parms._seed = seed;
+      pcaParameters._train = train._key;
+      pcaParameters._k = 4;
+      pcaParameters._transform = DataInfo.TransformType.NONE;
+      pcaParameters._pca_method = PCAModel.PCAParameters.Method.GramSVD;
+      pcaParameters._impute_missing = true;   // Don't skip rows with NA entries, but impute using mean of column
+      pcaParameters._seed = seed;
 
       PCAModel pca = null;
-      pca = new PCA(parms).trainModel().get();
+      pca = new PCA(pcaParameters).trainModel().get();
       if (pca != null) pca.remove();
     } finally {
       if (train != null) train.delete();
@@ -158,17 +160,15 @@ public class PCATest extends TestUtil {
         }
       }
       DKV.put(train);
-      PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
-      parms._train = train._key;
-      parms._k = 2;
-      parms._transform = DataInfo.TransformType.STANDARDIZE;
-      parms._use_all_factor_levels = true;
-      parms._pca_method = PCAParameters.Method.GramSVD;
-      parms.setSvdImplementation(SVDImplementation.valueOf(svdImplementationName) );
-      parms._impute_missing = false;
-      parms._seed = 12345;
+      pcaParameters._train = train._key;
+      pcaParameters._k = 2;
+      pcaParameters._transform = DataInfo.TransformType.STANDARDIZE;
+      pcaParameters._use_all_factor_levels = true;
+      pcaParameters._pca_method = PCAParameters.Method.GramSVD;
+      pcaParameters._impute_missing = false;
+      pcaParameters._seed = 12345;
 
-      PCA pcaParms = new PCA(parms);
+      PCA pcaParms = new PCA(pcaParameters);
       model = pcaParms.trainModel().get(); // get normal data
       score = model.score(train);
 
@@ -189,18 +189,16 @@ public class PCATest extends TestUtil {
       train = parse_test_file(Key.make("prostate_cat.hex"), "smalldata/prostate/prostate_cat.csv");
       Scope.track(train);
 
-      PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
-      parms._train = train._key;
-      parms._k = 3;
-      parms._transform = DataInfo.TransformType.NONE;
-      parms._pca_method = PCAModel.PCAParameters.Method.Randomized;
-      parms.setSvdImplementation(SVDImplementation.valueOf(svdImplementationName) );
-      parms._impute_missing = true;   // Don't skip rows with NA entries, but impute using mean of column
-      parms._seed = 12345;
-      parms._use_all_factor_levels=true;
+      pcaParameters._train = train._key;
+      pcaParameters._k = 3;
+      pcaParameters._transform = DataInfo.TransformType.NONE;
+      pcaParameters._pca_method = PCAModel.PCAParameters.Method.Randomized;
+      pcaParameters._impute_missing = true;   // Don't skip rows with NA entries, but impute using mean of column
+      pcaParameters._seed = 12345;
+      pcaParameters._use_all_factor_levels=true;
 
       PCAModel pca = null;
-      pca = new PCA(parms).trainModel().get();
+      pca = new PCA(pcaParameters).trainModel().get();
       Scope.track_generic(pca);
       Assert.assertTrue(pca._parms._k == pca._output._std_deviation.length);
     } finally {
@@ -265,14 +263,13 @@ public class PCATest extends TestUtil {
           DataInfo.TransformType.STANDARDIZE }) {
         PCAModel model = null;
         try {
-          PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
-          parms._train = train._key;
-          parms._k = 4;
-          parms._transform = std;
-          parms._max_iterations = 1000;
-          parms._pca_method = PCAParameters.Method.Power;
+          pcaParameters._train = train._key;
+          pcaParameters._k = 4;
+          pcaParameters._transform = std;
+          pcaParameters._max_iterations = 1000;
+          pcaParameters._pca_method = PCAParameters.Method.Power;
 
-          model = new PCA(parms).trainModel().get();
+          model = new PCA(pcaParameters).trainModel().get();
 
           if (std == DataInfo.TransformType.DEMEAN) {
             TestUtil.checkStddev(stddev, model._output._std_deviation, TOLERANCE);
@@ -305,14 +302,13 @@ public class PCATest extends TestUtil {
     Frame train = null, score = null, scoreR = null;
     try {
       train = parse_test_file(Key.make("iris.hex"), "smalldata/iris/iris_wheader.csv");
-      PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
-      parms._train = train._key;
-      parms._k = 7;
-      parms._transform = DataInfo.TransformType.NONE;
-      parms._use_all_factor_levels = true;
-      parms._pca_method = PCAParameters.Method.Power;
+      pcaParameters._train = train._key;
+      pcaParameters._k = 7;
+      pcaParameters._transform = DataInfo.TransformType.NONE;
+      pcaParameters._use_all_factor_levels = true;
+      pcaParameters._pca_method = PCAParameters.Method.Power;
 
-      model = new PCA(parms).trainModel().get();
+      model = new PCA(pcaParameters).trainModel().get();
       TestUtil.checkStddev(stddev, model._output._std_deviation, 1e-5);
       boolean[] flippedEig = TestUtil.checkEigvec(eigvec, model._output._eigenvectors, 1e-5);
 
