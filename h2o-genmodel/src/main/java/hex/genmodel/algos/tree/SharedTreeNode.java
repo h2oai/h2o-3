@@ -10,7 +10,7 @@ import java.util.BitSet;
  * Node in a tree.
  * A node (optionally) contains left and right edges to the left and right child nodes.
  */
-class SharedTreeNode {
+public class SharedTreeNode {
   final SharedTreeNode parent;
   final int subgraphNumber;
   int nodeNumber;
@@ -26,7 +26,9 @@ class SharedTreeNode {
   float predValue = Float.NaN;
   float squaredError = Float.NaN;
   SharedTreeNode leftChild;
-  SharedTreeNode rightChild;
+
+
+  public  SharedTreeNode rightChild;
 
   // Whether NA for this colId is reachable to this node.
   private boolean inclusiveNa;
@@ -403,5 +405,57 @@ class SharedTreeNode {
 
       printDotEdgesCommon(os, maxLevelsToPrintPerEdge, arr, rightChild);
     }
+  }
+
+  public SharedTreeNode getParent() {
+    return parent;
+  }
+
+  public int getSubgraphNumber() {
+    return subgraphNumber;
+  }
+
+  public String getColName() {
+    return colName;
+  }
+
+  public boolean isLeftward() {
+    return leftward;
+  }
+
+  public boolean isNaVsRest() {
+    return naVsRest;
+  }
+
+  public float getSplitValue() {
+    return splitValue;
+  }
+
+  public String[] getDomainValues() {
+    return domainValues;
+  }
+
+  public GenmodelBitSet getBs() {
+    return bs;
+  }
+
+  public float getPredValue() {
+    return predValue;
+  }
+
+  public float getSquaredError() {
+    return squaredError;
+  }
+
+  public SharedTreeNode getLeftChild() {
+    return leftChild;
+  }
+
+  public SharedTreeNode getRightChild() {
+    return rightChild;
+  }
+
+  public boolean isInclusiveNa() {
+    return inclusiveNa;
   }
 }
