@@ -178,7 +178,13 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         baseModelPredictions.add(aPred);
       }
 
-      return prepareLevelOneFrame(levelOneKey, baseModels.toArray(new Model[0]), baseModelPredictions.toArray(new Frame[0]), actuals);
+      Frame levelOne = prepareLevelOneFrame(levelOneKey, baseModels.toArray(new Model[0]), baseModelPredictions.toArray(new Frame[0]), actuals);
+
+      // remove baseModelPredictions frames and all the non-preds vecs from the DKV
+      for (Frame aPred : baseModelPredictions)
+        Frame.deleteTempFrameAndItsNonSharedVecs(aPred, levelOne);
+
+      return levelOne;
     }
 
     public void computeImpl() {

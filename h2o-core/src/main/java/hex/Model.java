@@ -9,6 +9,7 @@ import hex.genmodel.easy.prediction.*;
 import hex.genmodel.utils.DistributionFamily;
 import org.joda.time.DateTime;
 import water.*;
+import water.api.ModelsHandler;
 import water.api.StreamWriter;
 import water.api.StreamingSchema;
 import water.api.schemas3.KeyV3;
@@ -41,6 +42,23 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public Distribution _dist;
   protected ScoringInfo[] scoringInfo;
   public IcedHashMap<Key, String> _toDelete = new IcedHashMap<>();
+
+  public static Model[] fetchAll() {
+    final Key[] modelKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
+      @Override
+      public boolean filter(KeySnapshot.KeyInfo k) {
+        return Value.isSubclassOf(k._type, Model.class);
+      }
+    }).keys();
+
+    Model[] models = new Model[modelKeys.length];
+    for (int i = 0; i < modelKeys.length; i++) {
+      Model model = ModelsHandler.getFromDKV("(none)", modelKeys[i]);
+      models[i] = model;
+    }
+
+    return models;
+  }
 
 
   public interface DeepFeatures {
@@ -1103,7 +1121,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           output.replace(0, new CategoricalWrappedVec(actual.group().addVec(), actual._rowLayout, sdomain, predicted._key));
       }
     }
-    cleanup_adapt(adaptFr, fr);
+    Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, fr);
     return output;
   }
 
@@ -1155,16 +1173,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         }
       }
     }.doAll(Vec.T_NUM, predictions).outputFrame(Key.<Frame>make(outputName), new String[]{"deviance"}, null);
-  }
-
-  // Remove temp keys.  TODO: Really should use Scope but Scope does not
-  // currently allow nested-key-keepers.
-  static protected void cleanup_adapt( Frame adaptFr, Frame fr ) {
-    Key[] keys = adaptFr.keys();
-    for( int i=0; i<keys.length; i++ )
-      if( fr.find(keys[i]) == -1 ) //only delete vecs that aren't shared
-        keys[i].remove();
-    DKV.remove(adaptFr._key); //delete the frame header
   }
 
   protected String [] makeScoringNames(){
@@ -1795,7 +1803,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                            " out of " + num_total + " rows tested.");
       return num_errors == 0;
     } finally {
-      cleanup_adapt(fr, data);  // Remove temp keys.
+      Frame.deleteTempFrameAndItsNonSharedVecs(fr, data);  // Remove temp keys.
     }
   }
 

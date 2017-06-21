@@ -1,6 +1,7 @@
 package hex.ensemble;
 
-import hex.*;
+import hex.Model;
+import hex.StackedEnsembleModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
@@ -9,9 +10,17 @@ import hex.tree.gbm.GBMModel;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.*;
+import water.DKV;
+import water.Key;
+import water.Scope;
+import water.TestUtil;
 import water.fvec.Frame;
-import static hex.genmodel.utils.DistributionFamily.*;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
+import static hex.genmodel.utils.DistributionFamily.gaussian;
 
 public class StackedEnsembleTest extends TestUtil {
 
@@ -26,25 +35,36 @@ public class StackedEnsembleTest extends TestUtil {
     @Test public void testBasicEnsemble() {
         // Regression tests
         basicEnsemble("./smalldata/junit/cars.csv",
+                null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
                 false, gaussian);
 
         basicEnsemble("./smalldata/junit/test_tree_minmax.csv",
+                null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) { return fr.find("response"); }
                 },
                 false, DistributionFamily.bernoulli);
 
         basicEnsemble("./smalldata/logreg/prostate.csv",
+                null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("CAPSULE"); }
                 },
                 false, DistributionFamily.bernoulli);
 
+        basicEnsemble("./smalldata/logreg/prostate_train.csv",
+                "./smalldata/logreg/prostate_test.csv",
+                new StackedEnsembleTest.PrepData() { int prep(Frame fr) { return fr.find("CAPSULE"); }
+                },
+                false, DistributionFamily.bernoulli);
+
         basicEnsemble("./smalldata/gbm_test/alphabet_cattest.csv",
+                null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) { return fr.find("y"); }
                 },
                 false, DistributionFamily.bernoulli);
 
         basicEnsemble("./smalldata/airlines/allyears2k_headers.zip",
+                null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) {
                     for( String s : ignored_aircols ) fr.remove(s).remove();
                     return fr.find("IsArrDelayed"); }
@@ -52,28 +72,42 @@ public class StackedEnsembleTest extends TestUtil {
                 false, DistributionFamily.bernoulli);
     }
     // ==========================================================================
-    public StackedEnsembleModel.StackedEnsembleOutput basicEnsemble(String fname, StackedEnsembleTest.PrepData prep, boolean validation, DistributionFamily family) {
+    public StackedEnsembleModel.StackedEnsembleOutput basicEnsemble(String training_file, String validation_file, StackedEnsembleTest.PrepData prep, boolean dupeTrainingFrameToValidationFrame, DistributionFamily family) {
+        Set<Frame> framesBefore = new HashSet<>();
+        framesBefore.addAll(Arrays.asList( Frame.fetchAll()));
+
         GBMModel gbm = null;
         DRFModel drf = null;
         StackedEnsembleModel stackedEnsembleModel = null;
-        Frame fr = null, fr2= null, vfr=null;
+        Frame training_frame = null, validation_frame = null;
         try {
             Scope.enter();
-            fr = parse_test_file(fname);
-            int idx = prep.prep(fr); // hack frame per-test
+            training_frame = parse_test_file(training_file);
+            if (null != validation_file)
+                validation_frame = parse_test_file(validation_file);
+
+            int idx = prep.prep(training_frame); // hack frame per-test
+            if (null != validation_frame)
+                prep.prep(validation_frame);
+
             if (family == DistributionFamily.bernoulli || family == DistributionFamily.multinomial || family == DistributionFamily.modified_huber) {
-                if (!fr.vecs()[idx].isCategorical()) {
-                    Scope.track(fr.replace(idx, fr.vecs()[idx].toCategoricalVec()));
+                if (!training_frame.vecs()[idx].isCategorical()) {
+                    Scope.track(training_frame.replace(idx, training_frame.vecs()[idx].toCategoricalVec()));
+                    if (null != validation_frame)
+                        Scope.track(validation_frame.replace(idx, validation_frame.vecs()[idx].toCategoricalVec()));
                 }
             }
-            DKV.put(fr);// Update frame after hacking it
+            DKV.put(training_frame); // Update frames after preparing
+            if (null != validation_frame)
+                DKV.put(validation_frame);
 
             // Build GBM
             GBMModel.GBMParameters gbmParameters = new GBMModel.GBMParameters();
             if( idx < 0 ) idx = ~idx;
             // Configure GBM
-            gbmParameters._train = fr._key;
-            gbmParameters._response_column = fr._names[idx];
+            gbmParameters._train = training_frame._key;
+            gbmParameters._valid = (validation_frame == null ? null : validation_frame._key);
+            gbmParameters._response_column = training_frame._names[idx];
             gbmParameters._ntrees = 5;
             gbmParameters._distribution = family;
             gbmParameters._max_depth = 4;
@@ -84,10 +118,10 @@ public class StackedEnsembleTest extends TestUtil {
             gbmParameters._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
             gbmParameters._keep_cross_validation_predictions = true;
             gbmParameters._nfolds = 5;
-            if( validation ) {        // Make a validation frame that's a clone of the training data
-                vfr = new Frame(fr);
-                DKV.put(vfr);
-                gbmParameters._valid = vfr._key;
+            if( dupeTrainingFrameToValidationFrame ) {        // Make a validation frame that's a clone of the training data
+                validation_frame = new Frame(training_frame);
+                DKV.put(validation_frame);
+                gbmParameters._valid = validation_frame._key;
             }
             // Invoke GBM and block till the end
             GBM gbmJob = new GBM(gbmParameters);
@@ -98,8 +132,9 @@ public class StackedEnsembleTest extends TestUtil {
             // Build DRF
             DRFModel.DRFParameters drfParameters = new DRFModel.DRFParameters();
             // Configure DRF
-            drfParameters._train = fr._key;
-            drfParameters._response_column = fr._names[idx];
+            drfParameters._train = training_frame._key;
+            drfParameters._valid = (validation_frame == null ? null : validation_frame._key);
+            drfParameters._response_column = training_frame._names[idx];
             drfParameters._ntrees = 5;
             drfParameters._max_depth = 4;
             drfParameters._min_rows = 1;
@@ -117,8 +152,9 @@ public class StackedEnsembleTest extends TestUtil {
             // Build Stacked Ensemble of previous GBM and DRF
             StackedEnsembleModel.StackedEnsembleParameters stackedEnsembleParameters = new StackedEnsembleModel.StackedEnsembleParameters();
             // Configure Stacked Ensemble
-            stackedEnsembleParameters._train = fr._key;
-            stackedEnsembleParameters._response_column = fr._names[idx];
+            stackedEnsembleParameters._train = training_frame._key;
+            stackedEnsembleParameters._valid = (validation_frame == null ? null : validation_frame._key);
+            stackedEnsembleParameters._response_column = training_frame._names[idx];
             stackedEnsembleParameters._base_models = new Key[] {gbm._key,drf._key};
             // Invoke Stacked Ensemble and block till end
             StackedEnsemble stackedEnsembleJob = new StackedEnsemble(stackedEnsembleParameters);
@@ -130,9 +166,8 @@ public class StackedEnsembleTest extends TestUtil {
             return stackedEnsembleModel._output;
 
         } finally {
-            if( fr  != null ) fr .remove();
-            if( fr2 != null ) fr2.remove();
-            if( vfr != null ) vfr.remove();
+            if( training_frame  != null ) training_frame .remove();
+            if( validation_frame != null ) validation_frame.remove();
             if( gbm != null ) {
                 gbm.delete();
                 for (Key k : gbm._output._cross_validation_predictions) k.remove();
@@ -145,6 +180,12 @@ public class StackedEnsembleTest extends TestUtil {
                 drf._output._cross_validation_holdout_predictions_frame_id.remove();
                 drf.deleteCrossValidationModels();
             }
+
+            Set<Frame> framesAfter = new HashSet<>(framesBefore);
+            framesAfter.removeAll(Arrays.asList( Frame.fetchAll()));
+
+            Assert.assertEquals("finish with the same number of Frames as we started: " + framesAfter, 0, framesAfter.size());
+
             if( stackedEnsembleModel != null ) {
                 stackedEnsembleModel.delete();
                 stackedEnsembleModel.remove();
