@@ -42,7 +42,7 @@ public class ParseTestParquet extends TestUtil {
   private static double EPSILON = 1e-9;
 
   @BeforeClass
-  static public void setup() { TestUtil.stall_till_cloudsize(5); }
+  static public void setup() { TestUtil.stall_till_cloudsize(1); }
 
   @Test
   public void testParseSimple() {

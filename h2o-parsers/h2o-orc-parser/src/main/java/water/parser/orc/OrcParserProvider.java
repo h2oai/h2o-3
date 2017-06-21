@@ -1,6 +1,7 @@
 package water.parser.orc;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.ql.io.orc.OrcFile;
 import org.apache.hadoop.hive.ql.io.orc.Reader;
@@ -13,6 +14,7 @@ import water.Key;
 import water.fvec.*;
 import water.parser.*;
 import water.persist.PersistHdfs;
+import water.persist.VecFileSystem;
 
 import java.io.IOException;
 import java.util.List;
@@ -25,8 +27,25 @@ import static water.fvec.FileVec.getPathForKey;
  */
 public class OrcParserProvider extends ParserProvider {
 
+  public static class OrParserInfo extends ParserInfo {
+
+    public OrParserInfo() {
+      super("ORC", DefaultParserProviders.MAX_CORE_PRIO + 20, true, true, false);
+    }
+
+    public ParseMethod parseMethod(int nfiles, int nchunks){
+      int ncores_tot = H2O.NUMCPUS*H2O.CLOUD.size();
+      // prefer StreamParse if we have enough files to keep cluster busy
+      // ORC stream parse is more efficient
+      return
+          nfiles >= ncores_tot // got enough files to keep cluster busy
+              || nchunks <= 4  // there is not much parallelization anyways, better to save unnecessary memory loads
+              || (nfiles >= ncores_tot >> 1) && nchunks <= H2O.NUMCPUS
+              ?ParseMethod.StreamParse:ParseMethod.StreamParse;//ParseMethod.DistributesParse;
+    }
+  }
   /* Setup for this parser */
-  static ParserInfo ORC_INFO = new ParserInfo("ORC", DefaultParserProviders.MAX_CORE_PRIO + 20, true);
+  static ParserInfo ORC_INFO = new OrParserInfo();
 
   @Override
   public ParserInfo info() {
@@ -70,10 +89,8 @@ public class OrcParserProvider extends ParserProvider {
   private Reader getReader(FileVec f) throws IOException {
     String strPath = getPathForKey(f._key);
     Path path = new Path(strPath);
-    if(f instanceof HDFSFileVec)
-      return OrcFile.createReader(PersistHdfs.getFS(strPath), path);
-    else
-      return OrcFile.createReader(path, OrcFile.readerOptions(new Configuration()));
+    Configuration conf = VecFileSystem.makeConfiguration(f);
+    return OrcFile.createReader(VecFileSystem.get(conf), path);
   }
 
   /**

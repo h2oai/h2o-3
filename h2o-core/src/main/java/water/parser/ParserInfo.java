@@ -1,5 +1,6 @@
 package water.parser;
 
+import water.H2O;
 import water.Iced;
 
 /**
@@ -41,6 +42,28 @@ public class ParserInfo extends Iced<ParserInfo> {
   /** Get order priority for this parser. */
   public int priority() {
     return prior;
+  }
+
+  // TOO_MANY_KEYS_COUNT specifies when to disable parallel parse. We want to cover a scenario when
+  // we are working with too many keys made of small files - in this case the distributed parse
+  // doesn't work well because of the way chunks are distributed to nodes. We should switch to a local
+  // parse to make sure the work is uniformly distributed across the whole cluster.
+  public static final int TOO_MANY_KEYS_COUNT = 128;
+  // A file is considered to be small if it can fit into <SMALL_FILE_NCHUNKS> number of chunks.
+  public static final int SMALL_FILE_NCHUNKS = 10;
+
+  public enum ParseMethod {StreamParse,DistributesParse}
+  /*
+  localSetup.disableParallelParse ||
+   */
+  public ParseMethod parseMethod(int nfiles, int nchunks){
+    if(isStreamParseSupported()) {
+      if (!isParallelParseSupported() || (nfiles > TOO_MANY_KEYS_COUNT && (nchunks <= SMALL_FILE_NCHUNKS)))
+        return ParseMethod.StreamParse;
+    }
+    if(isParallelParseSupported())
+      return ParseMethod.DistributesParse;
+    throw H2O.unimpl();
   }
 
   /** Does the parser support parallel parse? */
