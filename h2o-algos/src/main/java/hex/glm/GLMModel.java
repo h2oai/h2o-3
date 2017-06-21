@@ -50,11 +50,22 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public String []   _coefficient_names;
   }
 
+
   public RegularizationPath getRegularizationPath() {
     RegularizationPath rp = new RegularizationPath();
     rp._coefficient_names = _output._coefficient_names;
     int N = _output._submodels.length;
     int P = _output._dinfo.fullN() + 1;
+    if(_parms._family == Family.multinomial){
+      String [] classNames = _output._domains[_output._domains.length-1];
+      String [] coefNames = new String[P*_output.nclasses()];
+      for(int c = 0; c < _output.nclasses(); ++c){
+        for(int i = 0; i < P; ++i)
+          coefNames[c*P+i] = _output._coefficient_names[i] + "_" + classNames[c];
+      }
+      rp._coefficient_names = coefNames;
+      P*=_output.nclasses();
+    }
     rp._lambdas = new double[N];
     rp._coefficients = new double[N][];
     rp._explained_deviance_train = new double[N];
@@ -108,13 +119,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       return ArrayUtils.flat(_output._global_beta_multinomial);
     return _output._global_beta;
   }
-  public double [] beta() { return _output._global_beta;}
+  public double [] beta() { return beta_internal();}
   public double [] beta(double lambda) {
     for(int i = 0 ; i < _output._submodels.length; ++i)
       if(_output._submodels[i].lambda_value == lambda)
         return _output._dinfo.denormalizeBeta(_output._submodels[i].getBeta(MemoryManager.malloc8d(_output._dinfo.fullN()+1)));
     throw new RuntimeException("no such lambda value, lambda = " + lambda);
   }
+
   public double [] beta_std(double lambda) {
     for(int i = 0 ; i < _output._submodels.length; ++i)
       if(_output._submodels[i].lambda_value == lambda)
@@ -969,7 +981,18 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public HashMap<String,Double> coefficients(){
     HashMap<String, Double> res = new HashMap<>();
     final double [] b = beta();
-    if(b != null) for(int i = 0; i < b.length; ++i)res.put(_output._coefficient_names[i],b[i]);
+    if(b == null) return res;
+    if(_parms._family == Family.multinomial){
+      String [] responseDomain = _output._domains[_output._domains.length-1];
+      int len = b.length/_output.nclasses();
+      assert b.length == len*_output.nclasses();
+      for(int c = 0; c < _output.nclasses(); ++c) {
+        String prefix =  responseDomain[c] + "_";
+        for (int i = 0; i < len; ++i)
+          res.put(prefix + _output._coefficient_names[i], b[c*len+i]);
+      }
+    } else for (int i = 0; i < b.length; ++i)
+        res.put(_output._coefficient_names[i], b[i]);
     return res;
   }
 

@@ -73,9 +73,9 @@ public final class ComputationState {
     // However, it seems tobe working nicely to use 0 instead and be more aggressive on the predictor pruning
     // (shoudl be safe as we check the KKTs anyways)
     applyStrongRules(lambda, _lambda);
-    adjustToNewLambda(lambda, 0);
     _lambda = lambda;
     _gslvr = new GLMGradientSolver(_job,_parms,_activeData,l2pen(),_activeBC);
+    adjustToNewLambda(lambda, 0);
   }
   public double [] beta(){
     if(_activeClass != -1)
@@ -107,18 +107,22 @@ public final class ComputationState {
     double l2pen = .5*ArrayUtils.l2norm2(_beta,true);
     if(l2pen > 0) {
       if(_parms._family == Family.multinomial) {
+        l2pen = 0;
         int off = 0;
         for(int c = 0; c < _nclasses; ++c) {
           DataInfo activeData = activeDataMultinomial(c);
-          for (int i = 0; i < activeData.fullN(); ++i)
-            _ginfo._gradient[off+i] += ldiff * _beta[off+i];
+          for (int i = 0; i < activeData.fullN(); ++i) {
+            double b = _beta[off + i];
+            _ginfo._gradient[off + i] += ldiff * b;
+            l2pen += b*b;
+          }
           off += activeData.fullN()+1;
         }
+        l2pen *= .5;
       } else  for(int i = 0; i < _activeData.fullN(); ++i)
         _ginfo._gradient[i] += ldiff*_beta[i];
     }
     _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal + ldiff * l2pen, _ginfo._gradient);
-
   }
 
   public double l1pen() {return _alpha*_lambda;}
