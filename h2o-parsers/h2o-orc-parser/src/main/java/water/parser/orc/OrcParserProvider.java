@@ -1,7 +1,6 @@
 package water.parser.orc;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.ql.io.orc.OrcFile;
 import org.apache.hadoop.hive.ql.io.orc.Reader;
@@ -13,7 +12,6 @@ import water.Job;
 import water.Key;
 import water.fvec.*;
 import water.parser.*;
-import water.persist.PersistHdfs;
 import water.persist.VecFileSystem;
 
 import java.io.IOException;
@@ -27,9 +25,9 @@ import static water.fvec.FileVec.getPathForKey;
  */
 public class OrcParserProvider extends ParserProvider {
 
-  public static class OrParserInfo extends ParserInfo {
+  public static class OrcParserInfo extends ParserInfo {
 
-    public OrParserInfo() {
+    public OrcParserInfo() {
       super("ORC", DefaultParserProviders.MAX_CORE_PRIO + 20, true, true, false);
     }
 
@@ -43,7 +41,7 @@ public class OrcParserProvider extends ParserProvider {
     }
   }
   /* Setup for this parser */
-  static ParserInfo ORC_INFO = new OrParserInfo();
+  static ParserInfo ORC_INFO = new OrcParserInfo();
 
   @Override
   public ParserInfo info() {
