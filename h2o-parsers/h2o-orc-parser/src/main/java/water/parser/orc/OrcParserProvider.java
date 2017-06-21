@@ -38,9 +38,7 @@ public class OrcParserProvider extends ParserProvider {
       // prefer StreamParse if we have enough files to keep cluster busy
       // ORC stream parse is more efficient
       return
-          nfiles >= ncores_tot // got enough files to keep cluster busy
-              || nchunks <= 4  // there is not much parallelization anyways, better to save unnecessary memory loads
-              || (nfiles >= ncores_tot >> 1) && nchunks <= H2O.NUMCPUS
+          nfiles >= (ncores_tot >> 1)  // got enough files to keep cluster busy
               ?ParseMethod.StreamParse:ParseMethod.StreamParse;//ParseMethod.DistributesParse;
     }
   }
