@@ -6,11 +6,40 @@ import water.fvec.NFSFileVec;
 
 import java.io.*;
 import java.net.URI;
+import java.util.UUID;
 
 /**
  * File utilities.
  */
 public class FileUtils {
+  private static int MAX_DIR_CREATION_ATTEMPTS = 10;
+
+  /**
+   * Create a directory inside the given parent directory. The directory is guaranteed to be
+   * newly created, and is not marked for automatic deletion.
+   */
+  public static File createUniqueDirectory(String rootDir, String namePrefix) throws IOException {
+    int attempts = 0;
+    int maxAttempts = MAX_DIR_CREATION_ATTEMPTS;
+    File dir = null;
+    while (dir == null) {
+      attempts += 1;
+      if (attempts > maxAttempts) {
+        throw new IOException("Failed to create a temp directory (under " + rootDir + ") after " +
+                maxAttempts + " attempts!");
+      }
+      try {
+        dir = new File(rootDir, namePrefix + "-" + UUID.randomUUID().toString());
+        if (dir.exists() || !dir.mkdirs()) {
+          dir = null;
+        }
+      } catch(SecurityException e) {
+        dir = null;
+      }
+    }
+    return dir.getCanonicalFile();
+  }
+
   /**
    * Silently close given files.
    *
