@@ -1,6 +1,6 @@
-#Upgrading to H2O 3.0
+# Upgrading to H2O 3.0
 
-##Why Upgrade? 
+## Why Upgrade? 
 
 H2O 3.0 represents our latest iteration of H2O. It includes many improvements, such as a simplified architecture, faster and more accurate algorithms, and an interactive web UI. 
 
@@ -8,37 +8,40 @@ As of May 15th, 2015, this version will supersede the previous version of H2O. S
 
 For a comparison of H2O and H2O 3.0, please refer to <a href="https://github.com/h2oai/h2o-dev/blob/jessica-dev-docs/h2o-docs/src/product/upgrade/H2OvsH2O-Dev.md" target="_blank">this document</a>. 
 
-###Python Support
+### Python Support
 
 Python is only supported on the latest version of H2O. For more information, refer to the <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-py/README.rst" target="_blank">Python installation instructions</a>.
 
-###Sparkling Water Support
+### Sparkling Water Support
 
 Sparkling Water is only supported with H2O 3.0. For more information, refer to the <a href="https://github.com/h2oai/sparkling-water/blob/master/README.md" target="_blank">Sparkling Water repo</a>.
 
-##Supported Algorithms
+## Supported Algorithms
 
 H2O 3.0 will soon provide feature parity with previous versions of H2O. Currently, the following algorithms are supported: 
 
-###Supervised 
+### Supervised 
 
 - **Generalized Linear Model (GLM)**: Binomial classification, multinomial classification, regression (including logistic regression)
 - **Distributed Random Forest (DRF)**: Binomial classification, multinomial classification, regression
 - **Gradient Boosting Machine (GBM)**: Binomial classification, multinomial classification, regression
 - **Deep Learning (DL)**: Binomial classification, multinomial classification, regression
+- **Naive Bayes**
+- **Stacked Ensembles**
+- **XGBoost**
 
-###Unsupervised
+### Unsupervised
 
-- K-means
-- Principal Component Analysis
-- Autoencoder 
+- **K-means**
+- **Principal Component Analysis**
+- **Autoencoder**
+- **Generalized Low Rank Models**
 
+### Miscellaneous
 
-###Still In Testing
+- **Word2vec**
 
-- Naive Bayes
-
-##How to Update R Scripts
+## How to Update R Scripts
 
 Due to the numerous enhancements to the H2O package for R to make it more consistent and simplified, some parameters have been renamed or deprecated. 
 
