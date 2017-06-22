@@ -1,7 +1,7 @@
 ``use_all_factor_levels``
 -------------------------
 
-- Available in: PCA
+- Available in: Deep Learning, PCA
 - Hyperparameter: no
 
 Description
