@@ -74,17 +74,14 @@ Defining an XGBoost Model
 
 -  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations.
 
--  `distribution <algo-params/distribution.html>`__: Specify the distribution (i.e., the loss function). The options are AUTO, bernoulli, multinomial, gaussian, poisson, gamma, laplace, quantile, huber, or tweedie.
+-  `distribution <algo-params/distribution.html>`__: Specify the distribution (i.e., the loss function). The options are AUTO, bernoulli, multinomial, gaussian, poisson, gamma, and tweedie.
 
   - If the distribution is ``bernoulli``, the the response column must be 2-class categorical
   - If the distribution is ``multinomial``, the response column must be categorical.
   - If the distribution is ``poisson``, the response column must be numeric.
-  - If the distribution is ``laplace``, the response column must be numeric.
   - If the distribution is ``tweedie``, the response column must be numeric.
   - If the distribution is ``gaussian``, the response column must be numeric.
-  - If the distribution is ``huber``, the response column must be numeric.
   - If the distribution is ``gamma``, the response column must be numeric.
-  - If the distribution is ``quantile``, the response column must be numeric.
 
 -  `tweedie_power <algo-params/tweedie_power.html>`__: (Only applicable if *Tweedie* is specified for **distribution**) Specify the Tweedie power. The range is from 1 to 2. For a normal distribution, enter ``0``. For Poisson distribution, enter ``1``. For a gamma distribution, enter ``2``. For a compound Poisson-gamma distribution, enter a value greater than 1 but less than 2. For more information, refer to `Tweedie distribution <https://en.wikipedia.org/wiki/Tweedie_distribution>`__.
 
