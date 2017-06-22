@@ -22,6 +22,8 @@ import water.util.*;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static water.util.FrameUtils.categoricalEncoder;
 import static water.util.FrameUtils.cleanUp;
@@ -1072,6 +1074,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     _warningsP[_warningsP.length - 1] = s;
   }
 
+  public boolean containsResponse(String s, String responseName) {
+    Pattern pat = Pattern.compile("'(.*?)'");
+    Matcher match = pat.matcher(s);
+    if (match.find() && responseName.equals(match.group(1))) {
+      return true;
+    }
+    return false;
+  }
+
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics) throws IllegalArgumentException {
     Frame adaptFr = new Frame(fr);
     computeMetrics = computeMetrics && (!isSupervised() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
@@ -1080,7 +1091,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     _warningsP = new String[0];
     if (msg.length > 0) {
       for (String s : msg) {
-        if ((_output.responseName() == null) || !s.contains(_output.responseName())) {  // response column missing will not generate warning for prediction
+        if ((_output.responseName() == null) || !containsResponse(s, _output.responseName())) {  // response column missing will not generate warning for prediction
           addWarningP(s);                      // add warning string to model
           Log.warn(s);
         }
