@@ -937,6 +937,7 @@ types.
 
 -  **l2**: (DL) Specify the L2 regularization to add stability and improve generalization; sets the value of many weights to smaller values.
 
+-  **balance_classes**: (GBM, DL) Oversample the minority classes to balance the class distribution. This option is not selected by default and can increase the data frame size. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **max_after_balance_size** parameter.
 
     **Note**: ``balance_classes`` balances over just the target, not over all classes in the training frame.
 
@@ -1037,6 +1038,7 @@ types.
 
 -  **replicate_training_data**: (DL) Check this checkbox to replicate the entire training dataset on every node for faster training on small datasets. This option is not selected by default. This option is only applicable for clouds with more than one node.
 
+-  **shuffle_training_data**: (DL) Check this checkbox to shuffle the training data. This option is recommended if the training data is replicated and the value of **train_samples_per_iteration** is close to the number of nodes times the number of rows. This option is not selected by default.
 
 -  **missing_values_handling**: (DL, GLM) Select how to handle missing values (Skip or MeanImputation).
 
