@@ -194,6 +194,41 @@ Aggregator Hyperparameters
 -  ``k``
 -  ``max_iterations``
 
+XGBoost Hyperparameters
+~~~~~~~~~~~~~~~~~~~~~~~
+
+-  ``ntrees``
+-  ``max_depth``
+-  ``min_rows``
+-  ``seed``
+-  ``sample_rate``
+-  ``subsample``
+-  ``col_sample_rate``
+-  ``col_sample_by_level``
+-  ``col_sample_rate_per tree``
+-  ``colsample_bytree``
+-  ``min_split_improvement``
+-  ``gamma``
+-  ``learn_rate``
+-  ``eta``
+-  ``max_abs_leafnode_pred``
+-  ``max_delta_step``
+-  ``distribution``
+-  ``tweedie_power``
+-  ``categorical_encoding``
+-  ``tree_method``
+-  ``num_leaves``
+-  ``min_sum_hessian_in_leaf``
+-  ``min_data_in_leaf``
+-  ``grow_policy``
+-  ``booster``
+-  ``reg_lambda``
+-  ``sample_type``
+-  ``normalize_type``
+-  ``rate_drop``
+-  ``one_drop``
+-  ``skip_drop``
+
 REST API
 --------
 

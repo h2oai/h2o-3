@@ -1,7 +1,7 @@
 ``col_sample_rate_per_tree``
 ----------------------------
 
-- Available in: GBM, DRF
+- Available in: GBM, DRF, XGBoost
 - Hyperparameter: yes
 
 Description
