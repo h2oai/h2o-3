@@ -856,7 +856,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 gamma += delta*betaold[currIdx];
                 fr1.replace(xjIdx, activeData._adaptedFrame.vec(activeData._cats + i)); // add current variable col
                 beta[currIdx] = 0;
-                GLMCoordinateDescentTaskSeqNaiveNumSparse tsk = new GLMCoordinateDescentTaskSeqNaiveNumSparse((iter_x = 1 - iter_x), gamma, betaold[currIdx], prevIdx >= activeData.numStart() ? beta[prevIdx]-betaold[prevIdx] : 0, activeData.normMul(i), 0).doAll(fr1,true);
+                GLMCoordinateDescentTaskSeqNaiveNumSparse tsk = new GLMCoordinateDescentTaskSeqNaiveNumSparse((iter_x = 1 - iter_x), gamma, betaold[currIdx], prevIdx >= activeData.numStart() ? beta[prevIdx]-betaold[prevIdx] : 0, activeData.normMul(i), activeData.normSub(i)).doAll(fr1,true);
                 // sparse task calculates only residual updates across the non-zeros
                 double RES_NEW = RES + tsk._residual + tsk._residualNew - delta*betaold[currIdx]*wsumx;
                 // adjust for skipped centering
@@ -879,7 +879,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 int currIdx = i + activeData.numStart();
                 int prevIdx = currIdx - 1;
                 fr1.replace(xjIdx, activeData._adaptedFrame.vec(activeData._cats + i)); // add current variable col
-                GLMCoordinateDescentTaskSeqNaiveNum tsk = new GLMCoordinateDescentTaskSeqNaiveNum((iter_x = 1 - iter_x), gamma, betaold[currIdx], prevIdx >= activeData.numStart() ? beta[prevIdx] : 0, activeData.normMul(i), activeData.normSub(i), 0).doAll(fr1,true);
+                GLMCoordinateDescentTaskSeqNaiveNum tsk = new GLMCoordinateDescentTaskSeqNaiveNum((iter_x = 1 - iter_x), gamma, betaold[currIdx], prevIdx >= activeData.numStart() ? beta[prevIdx] : 0, activeData.normMul(i), activeData.normSub(i),activeData.normSub(i)).doAll(fr1,true);
                 beta[currIdx] = ADMM.shrinkage(tsk._res * wsumuInv, l1pen) * denums[currIdx];
               }
               GLMCoordinateDescentTaskSeqNaiveNumIcpt tsk = new GLMCoordinateDescentTaskSeqNaiveNumIcpt((iter_x = 1 - iter_x), gamma, beta[activeData.numStart() + activeData.numNums() - 1]).doAll(fr1,true);
