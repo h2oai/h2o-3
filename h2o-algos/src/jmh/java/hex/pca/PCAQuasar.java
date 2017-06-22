@@ -38,9 +38,6 @@ public class PCAQuasar {
   private PCAModel pcaModel;
   private Frame trainingFrame;
 
-  public PCAQuasar() {
-  }
-
   public static void main(String[] args) throws RunnerException {
     Options opt = new OptionsBuilder()
         .include(PCAQuasar.class.getSimpleName())
@@ -49,7 +46,25 @@ public class PCAQuasar {
     new Runner(opt).run();
   }
 
-  @Setup(Level.Invocation)
+  private boolean tryToTrain() {
+    try {
+      pcaModel = new PCA(paramsQuasar).trainModel().get();
+    } catch (Exception exception) {
+      return false;
+    }
+    return true;
+  }
+
+  private boolean tryToScore() {
+    try {
+      pcaModel.score(trainingFrame);
+    } catch (Exception e) {
+      return false;
+    }
+    return true;
+  }
+
+  @Setup(Level.Iteration)
   public void setup() {
     water.util.Log.setLogLevel("ERRR");
     stall_till_cloudsize(1);
@@ -63,7 +78,7 @@ public class PCAQuasar {
        * 1) ./gradlew syncSmalldata
        * 2) unzip SDSS_quasar.txt.zip
        */
-      trainingFrame = parse_test_file(Key.make("quasar.hex"), "smalldata/SDSS_quasar.txt");
+      trainingFrame = parse_test_file(Key.make("quasar.hex"), "smalldata/pca_test/SDSS_quasar.txt");
       // Add missing values to the training data
       Frame frame = new Frame(Key.<Frame>make(), trainingFrame.names(), trainingFrame.vecs());
       DKV.put(frame._key, frame); // Need to put the frame (to be modified) into DKV for MissingInserter to pick up
@@ -79,10 +94,6 @@ public class PCAQuasar {
       paramsQuasar.setSvdImplementation(svdImplementation);
       paramsQuasar._impute_missing = true;   // Don't skip rows with NA entries, but impute using mean of column
       paramsQuasar._seed = seed;
-
-      if (!train()) {                               // prepare the model for scoring
-        throw new RuntimeException("PCA model failed to be trained.");
-      }
     } catch (RuntimeException e) {
       if (trainingFrame != null) {
         trainingFrame.delete();
@@ -93,14 +104,22 @@ public class PCAQuasar {
   }
 
   @Benchmark
-  public boolean measureImputeMissingScoring() throws Exception {
-    if (!score()) {
-      throw new Exception("Model for PCAImputeMissing failed to be scored!");
+  public boolean measureQuasarTraining() throws Exception {
+    if (!tryToTrain()) {
+      throw new Exception("Model for PCAQuasar failed to be trained!");
     }
     return true;
   }
 
-  @TearDown(Level.Invocation)
+  @Benchmark
+  public boolean measureQuasarScoring() throws Exception {
+    if (!tryToScore()) {
+      throw new Exception("Model for PCAQuasar failed to be scored!");
+    }
+    return true;
+  }
+
+  @TearDown(Level.Iteration)
   public void tearDown() {
     if (pcaModel != null) {
       pcaModel.remove();
@@ -109,23 +128,4 @@ public class PCAQuasar {
       trainingFrame.delete();
     }
   }
-
-  private boolean train() {
-    try {
-      pcaModel = new PCA(paramsQuasar).trainModel().get();
-    } catch (Exception exception) {
-      return false;
-    }
-    return true;
-  }
-
-  private boolean score() {
-    try {
-      pcaModel.score(trainingFrame);
-    } catch (Exception e) {
-      return false;
-    }
-    return true;
-  }
-
 }
