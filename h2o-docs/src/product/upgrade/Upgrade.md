@@ -26,16 +26,16 @@ H2O 3.0 will soon provide feature parity with previous versions of H2O. Currentl
 - **Distributed Random Forest (DRF)**: Binomial classification, multinomial classification, regression
 - **Gradient Boosting Machine (GBM)**: Binomial classification, multinomial classification, regression
 - **Deep Learning (DL)**: Binomial classification, multinomial classification, regression
-- **Naive Bayes**
-- **Stacked Ensembles**
-- **XGBoost**
+- Naive Bayes
+- Stacked Ensembles
+- XGBoost
 
 ### Unsupervised
 
-- **K-means**
-- **Principal Component Analysis**
-- **Autoencoder**
-- **Generalized Low Rank Models**
+- K-means
+- Principal Component Analysis
+- Autoencoder
+- Generalized Low Rank Models
 
 ### Miscellaneous
 

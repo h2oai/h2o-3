@@ -29,19 +29,20 @@ Most of the algorithms available in previous versions of H2O have been improved 
 - **Distributed Random Forest (DRF)**: Binomial classification, multinomial classification, regression
 - **Gradient Boosting Machine (GBM)**: Binomial classification, multinomial classification, regression
 - **Deep Learning (DL)**: Binomial classification, multinomial classification, regression
+- Naive Bayes
+- Stacked Ensembles
+- XGBoost
 
 ### Unsupervised
 
 - K-means
 - Principal Component Analysis
-- Autoencoder 
+- Autoencoder
+- Generalized Low Rank Models
 
-There are a few algorithms that are still being refined to provide these same benefits and will be available in a future version of H2O. 
+### Miscellaneous
 
-Currently, the following algorithms and associated capabilities are still in development: 
-
-- Naïve Bayes
-
+- **Word2vec**
 
 Check back for updates, as these algorithms will be re-introduced in an improved form in a future version of H2O. 
 
@@ -293,7 +294,7 @@ H2O Classic Parameter Name | H2O 3.0 Parameter Name
  `iter.max` | `max_iterations`
  `epsilon` | `beta_epsilon`
 
-###Deprecated GLM Parameters
+### Deprecated GLM Parameters
  
 The following parameters have been removed: 
  
