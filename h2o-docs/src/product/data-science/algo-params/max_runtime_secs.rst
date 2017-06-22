@@ -1,7 +1,7 @@
 ``max_runtime_secs``
 -----------------------
 
-- Available in: GBM, DRF, Deep Learning, GLM, PCA, GLRM, Naïve-Bayes, K-Means, AutoML
+- Available in: GBM, DRF, Deep Learning, GLM, PCA, GLRM, Naïve-Bayes, K-Means, AutoML, XGBoost
 - Hyperparameter: yes
 
 Description

@@ -1,7 +1,7 @@
 ``stopping_rounds``
 -------------------
 
-- Available in: GBM, DRF, Deep Learning, AutoML
+- Available in: GBM, DRF, Deep Learning, AutoML, XGBoost
 - Hyperparameter: yes
 
 Description

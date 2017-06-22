@@ -26,6 +26,7 @@ Supervised
    data-science/gbm
    data-science/naive-bayes
    data-science/stacked-ensembles
+   data-science/xgboost
 
 Unsupervised
 ------------
