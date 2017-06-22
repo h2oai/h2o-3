@@ -325,7 +325,7 @@ final public class H2O {
     // Debugging
     //-----------------------------------------------------------------------------------
     /** -log_level=log_level; One of DEBUG, INFO, WARN, ERRR.  Default is INFO. */
-    public String log_level;
+    public Log.Level log_level = Log.Level.INFO;
 
     /** -random_udp_drop, -random_udp_drop=true; test only, randomly drop udp incoming */
     public boolean random_udp_drop;
@@ -534,7 +534,11 @@ final public class H2O {
       }
       else if (s.matches("log_level")) {
         i = s.incrementAndCheck(i, args);
-        trgt.log_level = args[i];
+        try {
+          trgt.log_level = Log.Level.fromString(args[i]);
+        }catch (IllegalArgumentException e){
+          parseFailed("Invalid log level, possible values are:" + Arrays.toString(Log.Level.values()));
+        }
       }
       else if (s.matches("random_udp_drop")) {
         trgt.random_udp_drop = true;
@@ -1435,7 +1439,8 @@ final public class H2O {
    *  stdout.  This allows for early processing of the '-version' option
    *  without unpacking the jar file and other startup stuff.  */
   private static void printAndLogVersion(String[] arguments) {
-    Log.init(ARGS.log_level, ARGS.quiet);
+    Log.setLogLevel(ARGS.log_level);
+    Log.setQuiet(ARGS.quiet);
     Log.info("----- H2O started " + (ARGS.client?"(client)":"") + " -----");
     Log.info("Build git branch: " + ABV.branchName());
     Log.info("Build git hash: " + ABV.lastCommitHash());
@@ -1891,13 +1896,7 @@ final public class H2O {
 
     // Get ice path before loading Log or Persist class
     long time1 = System.currentTimeMillis();
-    String ice = DEFAULT_ICE_ROOT();
-    if( ARGS.ice_root != null ) ice = ARGS.ice_root.replace("\\", "/");
-    try {
-      ICE_ROOT = new URI(ice);
-    } catch(URISyntaxException ex) {
-      throw new RuntimeException("Invalid ice_root: " + ice + ", " + ex.getMessage());
-    }
+    H2O.setIceRoot();
 
     // Always print version, whether asked-for or not!
     long time2 = System.currentTimeMillis();
@@ -2043,6 +2042,16 @@ final public class H2O {
       }
     } catch(Throwable ignore) {
       return -1L;
+    }
+  }
+
+  private static void setIceRoot(){
+    String ice = DEFAULT_ICE_ROOT();
+    if( ARGS.ice_root != null ) ice = ARGS.ice_root.replace("\\", "/");
+    try {
+      ICE_ROOT = new URI(ice);
+    } catch(URISyntaxException ex) {
+      throw new RuntimeException("Invalid ice_root: " + ice + ", " + ex.getMessage());
     }
   }
 

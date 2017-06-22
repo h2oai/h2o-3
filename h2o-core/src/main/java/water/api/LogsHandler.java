@@ -61,21 +61,22 @@ public class LogsHandler extends Handler {
           case "warn":
           case "error":
           case "fatal":
-            if(!Log.isLoggingFor(name)){
-              log = "Logging for "+ name.toUpperCase() + " is not enabled as the log level is set to " + Log.LVLS[Log.getLogLevel()]+".";
-            }else {
-              try {
-                logPathFilename = Log.getLogFilePath(name);
-              } catch (Exception e) {
+            Log.Level level = Log.Level.fromString(name);
+            if(!Log.isLoggingFor(level)){
+              log = "Logging for "+ name.toUpperCase() + " is not enabled as the log level is set to " + level + ".";
+            } else {
+              if (!Log.isLoggerInitialized()) {
                 log = "H2O logging not configured.";
+              } else {
+                logPathFilename = Log.getLogFilePath(level);
               }
             }
             break;
           case "httpd":
-            try {
-              logPathFilename = Log.getLogFilePath(name);
-            } catch (Exception e) {
+            if (!Log.isLoggerInitialized()) {
               log = "H2O logging not configured.";
+            } else {
+              logPathFilename = Log.getLogFilePath(Log.Level.fromString(name));
             }
             break;
           default:
@@ -120,40 +121,52 @@ public class LogsHandler extends Handler {
   }
 
 
-  private static H2ONode getH2ONode(String nodeIdx){
-      try
-      {
-        int numNodeIdx = Integer.parseInt(nodeIdx);
-
-        if ((numNodeIdx < -1) || (numNodeIdx >= H2O.CLOUD.size())) {
-          throw new IllegalArgumentException("H2O node with the specified index does not exist!");
-        }else if(numNodeIdx == -1){
-              return H2O.SELF;
-          }else{
-              return H2O.CLOUD._memary[numNodeIdx];
-          }
+  private static H2ONode getH2ONodeFromIdx(int nodeIdx){
+      if ((nodeIdx < -1) || (nodeIdx >= H2O.CLOUD.size())) {
+        throw new IllegalArgumentException("H2O node with the specified index does not exist!");
+      } else if(nodeIdx == -1) {
+        return H2O.SELF;
+      } else {
+        return H2O.CLOUD._memary[nodeIdx];
       }
-      catch(NumberFormatException nfe)
-      {
-        // not a number, try to parse for ipPort
-        if (nodeIdx.equals("self")) {
-          return H2O.SELF;
+  }
+
+  private static H2ONode getH2ONodeFromIPPort(String ipPort) {
+    // not a number, try to parse ipPort
+    if (ipPort.equals("self")) {
+      return H2O.SELF;
+    } else {
+      H2ONode node = H2O.CLOUD.getNodeByIpPort(ipPort);
+      if (node != null) {
+        return node;
+      } else {
+        // it still can be client
+        H2ONode client = H2O.getClientByIPPort(ipPort);
+        if (client != null) {
+          return client;
         } else {
-          H2ONode node = H2O.CLOUD.getNodeByIpPort(nodeIdx);
-          if (node != null){
-            return node;
-          } else {
-            // it still can be client
-            H2ONode client = H2O.getClientByIPPort(nodeIdx);
-            if (client != null) {
-              return client;
-            } else {
-              // the ipport does not represent any existing h2o cloud member or client
-              throw new IllegalArgumentException("No H2O node running as part of this cloud on " + nodeIdx + " does not exist!");
-            }
-          }
+          // the ipport does not represent any existing h2o cloud member or client
+          throw new IllegalArgumentException("No H2O node running as part of this cloud on " + ipPort + " does not exist!");
         }
       }
+    }
+  }
+
+  private static boolean isNodeIndex(String nodeRef){
+    try {
+      int numNodeIdx = Integer.parseInt(nodeRef);
+      return true;
+    }catch (NumberFormatException nfe) {
+      return false;
+    }
+  }
+
+  private static H2ONode getH2ONode(String nodeRef) {
+   if(isNodeIndex(nodeRef)) {
+    return getH2ONodeFromIdx(Integer.parseInt(nodeRef));
+   } else {
+      return getH2ONodeFromIPPort(nodeRef);
+    }
   }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer

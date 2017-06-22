@@ -59,7 +59,7 @@ public class GetLogsFromNode extends Iced {
       try {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ZipOutputStream zos = new ZipOutputStream(baos);
-        zipDir(Log.LOG_DIR, baos, zos);
+        zipDir(Log.getLogDir(), baos, zos);
         zos.close();
         baos.close();
         _bytes = baos.toByteArray();

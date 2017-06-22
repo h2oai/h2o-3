@@ -406,7 +406,7 @@ public class DTree extends Iced {
       return sb.toString();
     }
     static private StringBuilder p(StringBuilder sb, String s, int w) {
-      return sb.append(Log.fixedLength(s,w));
+      return sb.append(StringUtils.ofFixedLength(s, w));
     }
     static private StringBuilder p(StringBuilder sb, double d, int w) {
       String s = Double.isNaN(d) ? "NaN" :
