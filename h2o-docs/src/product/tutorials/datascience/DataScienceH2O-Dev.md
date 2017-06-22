@@ -702,7 +702,7 @@ For regression, the floor - in this example, (100/3)=33 columns - is used for ea
 
 Naïve Bayes (NB) is a classification algorithm that relies on strong assumptions of the independence of covariates in applying Bayes Theorem. NB models are commonly used as an alternative to decision trees for classification problems.
 
-###Defining a Naïve Bayes Model
+### Defining a Naïve Bayes Model
 
 - **model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
 
