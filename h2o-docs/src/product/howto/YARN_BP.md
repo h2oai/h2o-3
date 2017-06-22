@@ -1,9 +1,11 @@
-#YARN Best Practices
+# YARN Best Practices
+
+>**Note**: This topic is no longer being maintained. Refer to [YARN Best Practices](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/welcome.rst#yarn-best-practices) for the most up-to-date documentation.
 
 YARN (Yet Another Resource Manager) is a resource management framework. H2O can be launched as an application on YARN. If you want to run H2O on Hadoop, essentially, you are running H2O on YARN. If you are not currently using YARN to manage your cluster resources, we strongly recommend it. 
 
 
-##Using H2O with YARN
+## Using H2O with YARN
 
 When you launch H2O on Hadoop using the `hadoop jar` command, YARN allocates the necessary resources to launch the requested number of nodes. H2O launches as a MapReduce (V2) task, where each mapper is an H2O node of the specified size. 
 
@@ -19,7 +21,7 @@ To resolve configuration issues, adjust the maximum memory that YARN will allow 
 
 The `mapreduce.map.memory.mb` value must be less than the YARN memory configuration values for the launch to succeed. 
 
-##Configuring YARN
+## Configuring YARN
 
 **For Cloudera, configure the settings in Cloudera Manager. Depending on how the cluster is configured, you may need to change the settings for more than one role group.**
 	
@@ -63,7 +65,7 @@ To verify the values were changed, check the values for the following properties
 	 - <name>yarn.scheduler.maximum-allocation-mb</name>
 
 
-##Limiting CPU Usage 
+## Limiting CPU Usage 
 
 To limit the number of CPUs used by H2O, use the `-nthreads` option and specify the maximum number of CPUs for a single container to use. The following example limits the number of CPUs to four:  
 
@@ -72,7 +74,7 @@ To limit the number of CPUs used by H2O, use the `-nthreads` option and specify 
 **Note**: The default is 4*the number of CPUs. You must specify at least four CPUs; otherwise, the following error message displays: 
 `ERROR: nthreads invalid (must be >= 4)` 
 
-##Specifying Queues
+## Specifying Queues
 
 If you do not specify a queue when launching H2O, H2O jobs are submitted to the default queue. Jobs submitted to the default queue have a lower priority than jobs submitted to a specific queue. 
 
@@ -86,16 +88,16 @@ For example,
 
 
 
-##Specifying Output Directories
+## Specifying Output Directories
 
 To prevent overwriting multiple users' files, each job must have a unique output directory name. Change the `-output hdfsOutputDir` argument (where `hdfsOutputDir` is the name of the directory. 
 
 Alternatively, you can delete the directory (manually or by using a script) instead of creating a unique directory each time you launch H2O. 
 
-##Customizing YARN
+## Customizing YARN
 
 Most of the configurable YARN variables are stored in `yarn-site.xml`. To prevent settings from being overridden, you can mark a config as "final." If you change any values in `yarn-site.xml`, you must restart YARN to confirm the changes. 
 
-##Accessing Logs
+## Accessing Logs
 
 To learn how to access logs in YARN, refer to [Downloading Logs](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-docs/index.html#Downloading%20Logs). 

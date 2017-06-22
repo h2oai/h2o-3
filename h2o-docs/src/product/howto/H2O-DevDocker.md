@@ -1,5 +1,7 @@
 # ... Using Docker
 
+>**Note**: This topic is no longer being maintained. Refer to [Docker Users](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/welcome.rst#docker-users) for the most up-to-date documentation.
+
 This walkthrough describes: 
 
   * Installing Docker on Mac or Linux OS

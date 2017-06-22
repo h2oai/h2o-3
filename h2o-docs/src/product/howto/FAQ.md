@@ -1,5 +1,7 @@
 # FAQ
 
+>**Note**: This topic is no longer being maintained. Refer to individual topics within the [FAQ](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/faq) folder for the most up-to-date version of the H2O FAQ.
+
 ## General Troubleshooting Tips
 
 

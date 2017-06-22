@@ -1,13 +1,14 @@
-#Downloading Logs
+# Downloading Logs
 
+>**Note**: This topic is no longer being maintained. Refer to [Downloading Logs](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/logs.rst) for the most up-to-date documentation.
 
-##Accessing Logs
+## Accessing Logs
 
 Depending on whether you are using Hadoop with H2O and whether the job is currently running, there are different ways of obtaining the logs for H2O. 
 
 Copy and email the logs to support@h2o.ai or submit them to h2ostream@googlegroups.com with a brief description of your Hadoop environment, including the Hadoop distribution and version.
 
-###Without Running Jobs
+### Without Running Jobs
 
 - If you are using Hadoop and the job is not running, view the logs by using the `yarn logs -applicationId` command. When you start an H2O instance, the complete command displays in the output: 
 
@@ -41,21 +42,21 @@ In the above example, the command is specified in the next to last line (`For YA
 
 Use YARN to obtain the `stdout` and `stderr` logs that are used for troubleshooting. To learn how to access YARN based on management software, version, and job status, see [Accessing YARN](#AccessYARN). 
 
-0. Click the **Applications** link to view all jobs, then click the **History** link for the job.
+1. Click the **Applications** link to view all jobs, then click the **History** link for the job.
  
   ![YARN - History](images/YARN_AllApps_History.png)
 
-0. Click the **logs** link. 
+2. Click the **logs** link. 
 	
 	![YARN - History](images/YARN_History_Logs.png)
 	
-0. 	Copy the information that displays and send it in an email to support@h2o.ai. 
+3. 	Copy the information that displays and send it in an email to support@h2o.ai. 
 	
 	![YARN - History](images/YARN_History_Logs2.png)
  
 ---
 
-###With Running Jobs
+### With Running Jobs
 
 
 If you are using Hadoop and the job is still running: 
@@ -127,14 +128,14 @@ If you are using Hadoop and the job is still running:
 ---
 
 <a name="AccessYARN"></a>
-##Accessing YARN
+## Accessing YARN
 
 Methods for accessing YARN vary depending on the default management software and version, as well as job status. 
 
 
 ---
  
-###Cloudera 5 & 5.2
+### Cloudera 5 & 5.2
 
 
 1. In Cloudera Manager, click the **YARN** link in the cluster section.
@@ -147,7 +148,7 @@ Methods for accessing YARN vary depending on the default management software and
 
 ---
  
-###Ambari
+### Ambari
 
 
 1. From the Ambari Dashboard, select **YARN**. 
@@ -160,9 +161,9 @@ Methods for accessing YARN vary depending on the default management software and
 
 ---
 
-##For Non-Hadoop Users
+## For Non-Hadoop Users
 
-###Without Current Jobs
+### Without Current Jobs
 
 
 If you are not using Hadoop and the job is not running: 
@@ -172,7 +173,7 @@ If you are not using Hadoop and the job is not running:
 
 ---
 
-###With Current Jobs
+### With Current Jobs
 
 If you are not using Hadoop and the job is still running: 
 
@@ -223,16 +224,16 @@ If you are not using Hadoop and the job is still running:
 
 - To view the REST API logs from R: 
 
-  0. In R, enter `h2o.startLogging()`. The output displays the location of the REST API logs: 
+  1. In R, enter `h2o.startLogging()`. The output displays the location of the REST API logs: 
 
 		```		
 		> h2o.startLogging()
 		Appending REST API transactions to log file /var/folders/ylcq5nhky53hjcl9wrqxt39kz80000gn/T//RtmpE7X8Yv/rest.log 
 		```
 		
-  0. Copy the displayed file path. 
+  2. Copy the displayed file path. 
 	  In Terminal, enter `less` and paste the file path. 
-  0. Press Enter. A time-stamped log of all REST API transactions displays. 
+  3. Press Enter. A time-stamped log of all REST API transactions displays. 
 
 ```		
 		------------------------------------------------------------
