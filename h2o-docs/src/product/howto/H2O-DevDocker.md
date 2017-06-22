@@ -24,7 +24,7 @@ This walkthrough describes:
   * Using `User` directory (not `root`)
 
 
-##Notes
+## Notes
 
 - Older Linux kernel versions are known to cause kernel panics that break Docker; there are ways around it, but these should be attempted at your own risk. To check the version of your kernel, run `uname -r` at the command prompt. The following walkthrough has been tested on a Mac OS X 10.10.1.
 - The Dockerfile always pulls the latest H2O release. 

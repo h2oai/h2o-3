@@ -1,6 +1,6 @@
-#FAQ
+# FAQ
 
-##General Troubleshooting Tips
+## General Troubleshooting Tips
 
 
 - Confirm your internet connection is active.
@@ -64,7 +64,7 @@ This error output indicates that your Java version is not supported. Upgrade to 
 ---
 
 
-##Algorithms
+## Algorithms
 
 **What does it mean if the r2 value in my model is negative?**
 
@@ -228,7 +228,7 @@ To convert the response column:
 
 ---
 
-##Building H2O
+## Building H2O
 
 
 **During the build process, the following error message displays. What do I need to do to resolve it?**
@@ -261,7 +261,7 @@ Try using `./gradlew build -x test` - the build may be failing tests if data is 
 
 ---
 
-##Clusters
+## Clusters
 
 
 **When trying to launch H2O, I received the following error message: `ERROR: Too many retries starting cloud.` What should I do?**
@@ -375,7 +375,7 @@ The following information displays for each message:
 ---
 
 
-##Data
+## Data
 
 **How should I format my SVMLight data before importing?**
 
@@ -424,7 +424,7 @@ Parsing Gzip files is not done in parallel, so it is sequential and uses only on
 ---
 
 
-##General
+## General
 
 **How do I score using an exported JSON model?**
 
@@ -761,7 +761,7 @@ Do Nothing and All Is Well.
 
 ---
 
-##Hadoop
+## Hadoop
 
 
 **Why did I get an error in R when I tried to save my model to my home directory in Hadoop?**
@@ -865,7 +865,7 @@ Then run the command to launch the H2O Application in the driver by specifying t
 
 ---
 
-##Java
+## Java
 
 **How do I use H2O with Java?**
 
@@ -936,7 +936,7 @@ EOF
 ---
 
 
-##Python
+## Python
 
 **I tried to install H2O in Python but `pip install scikit-learn` failed - what should I do?**
 
@@ -1165,7 +1165,7 @@ Yes, a notebook is available [here](https://github.com/h2oai/h2o-3/blob/master/h
 ---
 
 
-##R
+## R
 
 **Which versions of R are compatible with H2O?**
 
@@ -1583,7 +1583,7 @@ new_fr
 
 ---
 
-##Sparkling Water
+## Sparkling Water
 
 **What are the advantages of using Sparkling Water compared with H2O?**
 
@@ -1800,7 +1800,7 @@ After setting up `H2OContext`, try to run Sparkling Water again.
 ---
 
 
-##Tunneling between servers with H2O
+## Tunneling between servers with H2O
 
 To tunnel between servers (for example, due to firewalls):
 
