@@ -189,10 +189,10 @@ https://github.com/h2oai/sparkling-water/blob/master/examples/scripts/craigslist
 
 Here is an example of how the prediction process works in H2O:
 
-0. Train a model using data that has a categorical predictor column with levels B,C, and D (no other levels); this level will be the "training set domain": {B,C,D}
-0. During scoring, the test set has only rows with levels A,C, and E for that column; this is the "test set domain": {A,C,E}
-0. For scoring, a combined "scoring domain" is created, which is the training domain appended with the extra test set domain entries: {B,C,D,A,E}
-0. Each model can handle these extra levels {A,E} separately during scoring.
+1. Train a model using data that has a categorical predictor column with levels B,C, and D (no other levels); this level will be the "training set domain": {B,C,D}
+2. During scoring, the test set has only rows with levels A,C, and E for that column; this is the "test set domain": {A,C,E}
+3. For scoring, a combined "scoring domain" is created, which is the training domain appended with the extra test set domain entries: {B,C,D,A,E}
+4. Each model can handle these extra levels {A,E} separately during scoring.
 
 The behavior for unseen categorical levels depends on the algorithm and how it handles missing levels (NA values):
 
