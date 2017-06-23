@@ -1,4 +1,4 @@
-#Interaction Features between Factors
+# Interaction Features between Factors
 
 Use `h2o.interaction` to create interaction terms between categorical columns of an H2O frame. This feature creates N-th order interaction terms between categorical features of an H2O Frame (N=0,1,2,3,...). 
 
@@ -17,7 +17,7 @@ Use `h2o.interaction` to create interaction terms between categorical columns of
 
 
 
-##Example
+## Example
 
 ```
 library(h2o)

@@ -1,11 +1,14 @@
 # Grid Search (Hyperparameter Search) API
+
+>**Note**: This topic is no longer being maintained. Refer to [Grid Search](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/grid-search.rst) for the most up-to-date documentation.
+
 ## REST
 
 The current implementation of the grid search REST API exposes the following endpoints:
 
 - `GET /<version>/Grids`: List available grids, with optional parameters to sort the list by model metric such as MSE
 - `GET /<version>/Grids/<grid_id>`: Return specified grid
-- `POST /<version>/Grid/<algo_name>`: Start a new grid search
+- `POST /<version>/Grids/<algo_name>`: Start a new grid search
 	- `<algo_name>`: Supported algorithm values are `{glm, gbm, drf, kmeans, deeplearning}`
 
 Endpoints accept model-specific parameters (e.g., [GBMParametersV3](https://github.com/h2oai/h2o-3/blob/master/h2o-algos/src/main/java/hex/schemas/GBMV3.java) and an additional parameter called `hyper_parameters` which contains a dictionary of the hyper parameters which will be searched. In this dictionary an array of values is specified for each searched hyperparameter.
@@ -204,7 +207,7 @@ The following hyperparameters are supported by grid search.
 - `k`
 - `max_iterations`
 
-##Example
+## Example
 
 Invoke a new GBM model grid search by POSTing the following request to `/99/Grid/gbm`:
 
@@ -212,7 +215,7 @@ Invoke a new GBM model grid search by POSTing the following request to `/99/Grid
 parms:{hyper_parameters={"ntrees":[1,5],"learn_rate":[0.1,0.01]}, training_frame="filefd41fe7ac0b_csv_1.hex_2", grid_id="gbm_grid_search", response_column="Species"", ignored_columns=[""]}
 ```
 
-##Grid Search in R
+## Grid Search in R
 
 Grid search in R provides the following capabilities:
 
@@ -224,7 +227,7 @@ Grid search in R provides the following capabilities:
 	- `hyper_parameters` attribute for passing a list of hyper parameters (e.g., `list(ntrees=c(1,100), learn_rate=c(0.1,0.001))`)
 	- `search_criteria` optional attribute for specifying more a advanced search strategy
 
-###Example
+### Example
 
 ```r
 ntrees_opts = c(1, 5)
@@ -336,7 +339,7 @@ print(ntrees)
 For more information, refer to the [R grid search code](https://github.com/h2oai/h2o-3/blob/master/h2o-r/h2o-package/R/grid.R) and [runit_GBMGrid_airlines.R](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/gbm/runit_GBMGrid_airlines.R).
 
 
-##Grid Search in Python
+## Grid Search in Python
 
 - Class is `H2OGridSearch`
 - `<grid_name>.show()`: Display a list of models (including model IDs, hyperparameters, and MSE) explored by grid search  (where `<grid_name>` is an instance of an `H2OGridSearch` class)
@@ -347,7 +350,7 @@ For more information, refer to the [R grid search code](https://github.com/h2oai
 
 
 
-###Example
+### Example
 
 
 ```python
@@ -361,7 +364,7 @@ For more information, refer to the [R grid search code](https://github.com/h2oai
 For more information, refer to the [Python grid search code](https://github.com/h2oai/h2o-3/blob/master/h2o-py/h2o/grid/grid_search.py) and [pyunit_benign_glm_grid.py](https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/glm/pyunit_benign_glm_grid.py).
 
 
-##Grid Search Java API
+## Grid Search Java API
 
 Each parameter exposed by the schema can specify if it is supported by grid search by specifying the attribute `gridable=true` in the schema @API annotation. In any case, the Java API does not restrict the parameters supported by grid search.
 
@@ -383,7 +386,7 @@ The Java API can grid search any parameters defined in the model parameter's cla
 
 Additional methods are available in the model builder to support creation of model parameters and configuration. This eliminates the requirement of the previous implementation where each gridable value was represented as a `double`. This also allows users to specify different building strategies for model parameters. For example, the REST layer uses a builder that validates parameters against the model parameter's schema, where the Java API uses a simple reflective builder. Additional reflections support is provided by PojoUtils (methods `setField`, `getFieldValue`).
 
-###Example
+### Example
 
 ```java
 HashMap<String, Object[]> hyperParms = new HashMap<>();
@@ -412,7 +415,7 @@ In the following example, the PCA algorithm has been implemented and we would li
 
 To add support for PCA grid search:
 
-0. Add the PCA model build factory into the `hex.grid.ModelFactories` class:
+1. Add the PCA model build factory into the `hex.grid.ModelFactories` class:
 
 	  ```java
 	  class ModelFactories {
@@ -433,7 +436,7 @@ To add support for PCA grid search:
 	  }
 	  ```
 
-0. Add the PCA REST end-point schema:
+2. Add the PCA REST end-point schema:
 
 	  ```java
 	  public class PCAGridSearchV99 extends GridSearchSchema<PCAGridSearchHandler.PCAGrid,
@@ -444,7 +447,7 @@ To add support for PCA grid search:
 	  }
 	  ```
 
-0. Add the PCA REST end-point handler:
+3. Add the PCA REST end-point handler:
 
 	  ```java
 	  public class PCAGridSearchHandler
@@ -472,7 +475,7 @@ To add support for PCA grid search:
 	  }
 	  ```
 
-0. Register the REST end-point in the register factory `hex.api.Register`:
+4. Register the REST end-point in the register factory `hex.api.Register`:
 
 	  ```java
 	  public class Register extends AbstractRegister {
@@ -485,7 +488,7 @@ To add support for PCA grid search:
 	  }
 	  ```
 
-##Grid Testing
+## Grid Testing
 
 The current test infrastructure includes:
 
@@ -502,7 +505,7 @@ The current test infrastructure includes:
 
 There are tests for the `RandomDiscrete` search criteria in [runit_GBMGrid_airlines.R](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/gbm/runit_GBMGrid_airlines.R) and [pyunit_benign_glm_grid.py](https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/glm/pyunit_benign_glm_grid.py).
 
-##Caveats/In Progress
+## Caveats/In Progress
 
 - Currently, the schema system requires specific classes instead of parameterized classes. For example, the schema definition `Grid<GBMParameters>` is not supported unless your define the class `GBMGrid extends Grid<GBMParameters>`.
 - Grid Job scheduler is sequential only; schedulers for concurrent builds are under development.  Note that in cases of true big data sequential scheduling will yield the highest performance.  It is only with a large cluster and small data that concurrent scheduling will improve performance.
@@ -510,7 +513,7 @@ There are tests for the `RandomDiscrete` search criteria in [runit_GBMGrid_airli
 - There is no way to list the hyper space parameters that caused a model builder job failure.
 
 
-##Documentation
+## Documentation
 
 - <a href="http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-core/javadoc/index.html" target="_blank">H2O Core Java Developer Documentation</a>: The definitive Java API guide for the core components of H2O.
 
