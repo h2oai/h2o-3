@@ -146,10 +146,17 @@ publishing {
                   password project["oss-releases.password"]
               }
           }
-      } else {
+      }
+
+      def isInternalBuild = Boolean.valueOf(project.findProperty("isInternalBuild") ?: "false")
+      if (isInternalBuild) { // We will setup local repo only for internal builds
           maven {
               name "LocalNexusRepo"
-              url "${localNexusLocation}/snapshots"
+              if (project.ext.isRelease) {
+                url "${localNexusLocation}/releases"
+              } else {
+                url "${localNexusLocation}/snapshots"
+              }
 
               credentials {
                   username project.findProperty("local-release-maven.username") ?: "<NA>"
