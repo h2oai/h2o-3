@@ -14,6 +14,7 @@ import water.util.FrameUtils;
 
 import java.util.concurrent.TimeUnit;
 
+import static hex.pca.JMHConfiguration.logLevel;
 import static hex.pca.PCAModel.PCAParameters;
 import static hex.pca.PCAModel.PCAParameters.Method.GramSVD;
 import static water.TestUtil.parse_test_file;
@@ -48,7 +49,7 @@ public class PCAImputeMissingScoringBench {
 
   @Setup(Level.Invocation)
   public void setup() {
-    water.util.Log.setLogLevel("ERRR");
+    water.util.Log.setLogLevel(logLevel);
     stall_till_cloudsize(1);
 
     trainingFrame = null;

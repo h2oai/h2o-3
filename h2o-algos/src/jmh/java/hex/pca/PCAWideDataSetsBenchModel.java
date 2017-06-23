@@ -8,6 +8,7 @@ import water.fvec.Frame;
 
 import java.util.Random;
 
+import static hex.pca.JMHConfiguration.logLevel;
 import static hex.pca.PCAModel.PCAParameters.Method.GramSVD;
 import static water.TestUtil.parse_test_file;
 
@@ -41,8 +42,7 @@ public class PCAWideDataSetsBenchModel {
 	}
 	
 	public void setup() {
-		water.util.
-				Log.setLogLevel("ERRR");
+		water.util.Log.setLogLevel(logLevel);
 		final String _smallDataSet = "smalldata/pca_test/decathlon.csv";
 		final String _prostateDataSet = "smalldata/prostate/prostate_cat.csv";
 		final DataInfo.TransformType[] _transformTypes = {DataInfo.TransformType.NONE,

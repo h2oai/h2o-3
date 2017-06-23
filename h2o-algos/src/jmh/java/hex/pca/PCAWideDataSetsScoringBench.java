@@ -9,6 +9,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.util.concurrent.TimeUnit;
 
+import static hex.pca.JMHConfiguration.logLevel;
 import static water.TestUtil.stall_till_cloudsize;
 
 /**
@@ -39,7 +40,7 @@ public class PCAWideDataSetsScoringBench {
 	
 	@Setup(Level.Invocation)
 	public void setup() {
-		water.util.Log.setLogLevel("ERRR");
+		water.util.Log.setLogLevel(logLevel);
 		stall_till_cloudsize(1);
 		
 		pcaWideDataSetsBench = new PCAWideDataSetsBenchModel(dataSetCase);
