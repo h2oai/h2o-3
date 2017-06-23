@@ -116,7 +116,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
     return dinfo;
   }
 
-  @Override protected void checkMemoryFootPrint() {
+  @Override protected void checkMemoryFootPrint_impl() {
     if (_parms._checkpoint != null) return;
     long p = hex.util.LinearAlgebraUtils.numColsExp(_train,true) - (_parms._autoencoder ? 0 : _train.lastVec().cardinality());
     String[][] dom = _train.domains();

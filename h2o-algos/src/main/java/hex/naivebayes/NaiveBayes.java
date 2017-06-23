@@ -32,7 +32,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
   @Override public boolean haveMojo() { return false; }
 
   @Override
-  protected void checkMemoryFootPrint() {
+  protected void checkMemoryFootPrint_impl() {
     // compute memory usage for pcond matrix
     long mem_usage = (_train.numCols() - 1) * _train.lastVec().cardinality();
     String[][] domains = _train.domains();
