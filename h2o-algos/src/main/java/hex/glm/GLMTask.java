@@ -729,7 +729,7 @@ public abstract class GLMTask  {
         double e = es[i], y = ys[i];
         double d = (e-y);
         double wd = w*d;
-        _likelihood += wd*d;
+        _likelihood += .5*wd*d;
         es[i] = wd;
       }
     }
@@ -1576,7 +1576,9 @@ public abstract class GLMTask  {
         int i = 0, j = 0;
         double res = 0;
         while (i < idCurr.length && (j = idCurr[i]) != -1) {
-          res += xCurr[i] * wChunk[j] * (ztildaChunk[j] - _sparseOffset);
+          double x = xCurr[i]*_normMul;
+          res += x * wChunk[j] * (ztildaChunk[j] - _sparseOffset);
+          xCurr[i] = x;
           i++;
         }
         _res = res;
@@ -1859,7 +1861,8 @@ public abstract class GLMTask  {
       for (int rid = 0; rid < rows._nrows; ++rid) {
         int j = 0;
         Row r = rows.row(rid);
-        if(r.weight == 0) continue;
+        if(r.isBad() || r.weight == 0)
+          continue;
         if(_beta != null) {
           _glmf.computeWeights(r.response(0), r.innerProduct(_beta) + sparseOffset, r.offset, r.weight, glmw);
         } else {

@@ -192,7 +192,9 @@ public final class L_BFGS extends Iced {
       _hist.update(pk, newGinfo._gradient, ginfo._gradient);
       rel_improvement = (ginfo._objVal - newGinfo._objVal)/ginfo._objVal;
       ginfo = newGinfo;
-      if(!pm.progress(lineSearch.getX(), ginfo))break;
+      if(!pm.progress(lineSearch.getX(), ginfo)){
+        break;
+      }
     }
     return new Result((ArrayUtils.linfnorm(ginfo._gradient,false) <= _gradEps  || rel_improvement <= _objEps),iter,lineSearch.getX(), lineSearch.ginfo(),rel_improvement);
   }

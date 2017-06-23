@@ -682,7 +682,9 @@ public final class ComputationState {
           ArrayUtils.mult(d, obj_reg);
         ArrayUtils.mult(gt._xy, obj_reg);
         // glue the update and old gram together
-        return _currGram = GramXY.addCols(beta, activeCols, newColsIds, _currGram, gt._gram, gt._xy);
+        _currGram = GramXY.addCols(beta, activeCols, newColsIds, _currGram, gt._gram, gt._xy);
+        GramXY gxy = computeNewGram(activeData(),beta,s);
+        return _currGram;
       }
     }
     return _currGram = computeNewGram(activeData,beta,s);
