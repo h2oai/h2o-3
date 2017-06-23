@@ -1,4 +1,4 @@
-#Deep Learning Tutorial
+# Deep Learning Tutorial
 
 The purpose of this tutorial is to walk new users through Deep Learning using H2O Flow. 
 
@@ -6,7 +6,7 @@ Those who have never used H2O before should refer to <a href="https://github.com
 
 For tips on improving the performance and results of your Deep Learning model, refer to our <a href="http://h2o.ai/blog/2015/02/deep-learning-performance/" target="_blank">Definintive Performance Tuning Guide for Deep Learning</a>.
 
-###Using Deep Learning
+### Using Deep Learning
 
 H2O’s Deep Learning functionalities include:
 
@@ -34,67 +34,67 @@ If you don't have any data of your own to work with, you can find some example d
 
 
 
-####Importing Data
+#### Importing Data
 Before creating a model, import the data into H2O:
 
-0. Click the **Assist Me!** button (the last button in the row of buttons below the menus). 
+1. Click the **Assist Me!** button (the last button in the row of buttons below the menus). 
 
  ![Assist Me button](../images/Flow_AssistMeButton.png)
 
-0. Click the **importFiles** link and enter the file path to the training dataset in the **Search** entry field. For this example, the following datasets are used: 
+2. Click the **importFiles** link and enter the file path to the training dataset in the **Search** entry field. For this example, the following datasets are used: 
 	- *Training*:  https://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/mnist/train.csv.gz
 	- *Testing*: https://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/mnist/test.csv.gz
 
   ![Importing Testing Data](../images/DL_importFile_test.png)
 
-0. Click the **Add all** link to add the file to the import queue, then click the **Import** button. 
+3. Click the **Add all** link to add the file to the import queue, then click the **Import** button. 
 
   ![Importing Training Data](../images/DL_importFile_train.png)
 
 
-####Parsing Data
+#### Parsing Data
 
 Now, parse the imported data: 
 
-0. Click the **Parse these files...** button. 
+1. Click the **Parse these files...** button. 
 
   >**Note**: The default options typically do not need to be changed unless the data does not parse correctly. 
 
-0. From the drop-down **Parser** list, select the file type of the data set (Auto, XLS, CSV, or SVMLight). 
-0. If the data uses a separator, select it from the drop-down **Separator** list. 
-0. If the data uses a column header as the first row, select the **First row contains column names** radio button. If the first row contains data, select the **First row contains data** radio button. You can also select the **Auto** radio button to have H2O automatically determine if the first row of the dataset contains the column names or data. 
-0. If the data uses apostrophes ( `'` - also known as single quotes), check the **Enable single quotes as a field quotation character** checkbox. 
-0. Review the data in the **Edit Column Names and Types** section. The last column, `C785`, must be changed to an enum for a classification model. 
-0. Enter `C785` in the *Search by column name* entry field at the top. 
-0. Click the drop-down column heading menu for C785 and select `Enum`.  
+2. From the drop-down **Parser** list, select the file type of the data set (Auto, XLS, CSV, or SVMLight). 
+3. If the data uses a separator, select it from the drop-down **Separator** list. 
+4. If the data uses a column header as the first row, select the **First row contains column names** radio button. If the first row contains data, select the **First row contains data** radio button. You can also select the **Auto** radio button to have H2O automatically determine if the first row of the dataset contains the column names or data. 
+5. If the data uses apostrophes ( `'` - also known as single quotes), check the **Enable single quotes as a field quotation character** checkbox. 
+6. Review the data in the **Edit Column Names and Types** section. The last column, `C785`, must be changed to an enum for a classification model. 
+7. Enter `C785` in the *Search by column name* entry field at the top. 
+8. Click the drop-down column heading menu for C785 and select `Enum`.  
    
    ![Selecting Enum](../images/DL_SelectEnum.png) 
 
-0. Click the **Parse** button.  
+9. Click the **Parse** button.  
 
   ![Parsing Data](../images/DL_Parse.png)
   
   >**NOTE**: Make sure the parse is complete by confirming progress is 100% before continuing to the next step, model building. For small datasets, this should only take a few seconds, but larger datasets take longer to parse.
 
-##Building a Model
+## Building a Model
 
-0. Once data are parsed, click the **View** button, then click the **Build Model** button. 
-0. Select `Deep Learning` from the drop-down **Select an algorithm** menu, then click the **Build model** button. 
-0. If the parsed training data is not already listed in the **Training_frame** drop-down list, select it. 
+1. Once data are parsed, click the **View** button, then click the **Build Model** button. 
+2. Select `Deep Learning` from the drop-down **Select an algorithm** menu, then click the **Build model** button. 
+3. If the parsed training data is not already listed in the **Training_frame** drop-down list, select it. 
 
   >**Note**: If the **Ignore\_const\_col** checkbox is checked, a list of the excluded columns displays below the **Training_frame** drop-down list. 
 
-0. From the drop-down **Validation_frame** list, select the parsed testing (validation) data. 
-0. From the **Ignored_columns** section, select the columns to ignore in the *Available* area to move them to the *Selected* area. For this example, do not select any columns. 
-0. From the drop-down **Response** list, select the last column (`C785`). 
-0. From the drop-down **Activation** list, select the activation function (for this example, select `Tanh`). 
-0. In the **Hidden** field, specify the hidden layer sizes (for this example, enter `50,50`). 
-0. In the **Epochs** field, enter the number of times to iterate the dataset (for this example, enter `0.1`). 
-0. Click the **Build Model** button.
+4. From the drop-down **Validation_frame** list, select the parsed testing (validation) data. 
+5. From the **Ignored_columns** section, select the columns to ignore in the *Available* area to move them to the *Selected* area. For this example, do not select any columns. 
+6. From the drop-down **Response** list, select the last column (`C785`). 
+7. From the drop-down **Activation** list, select the activation function (for this example, select `Tanh`). 
+8. In the **Hidden** field, specify the hidden layer sizes (for this example, enter `50,50`). 
+9. In the **Epochs** field, enter the number of times to iterate the dataset (for this example, enter `0.1`). 
+10. Click the **Build Model** button.
 
   ![Building Models](../images/DL_BuildModel.png)
 
-##Results
+## Results
 
  To view the results, click the **View** button. The output for the Deep Learning model includes the following information for both the training and testing sets:
  
