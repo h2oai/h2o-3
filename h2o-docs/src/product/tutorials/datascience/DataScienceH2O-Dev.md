@@ -1,23 +1,26 @@
 # Data Science Algorithms
 
+>**Note**: This topic is no longer being maintained. Refer to the topics in the [Data Science](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/data-science) folder for the most up-to-date documentation.
+
+
 This document describes how to define the models and how to interpret the model, as well the algorithm itself, and provides an FAQ. 
 
-##Commonalities 
+## Commonalities 
 
-###Quantiles
+### Quantiles
 
 
 **Note**: The quantile results in Flow are computed lazily on-demand and cached. It is a fast approximation (max - min / 1024) that is very accurate for most use cases. 
 If the distribution is skewed, the quantile results may not be as accurate as the results obtained using `h2o.quantile` in R or `H2OFrame.quantile` in Python.  
 
 <a name="Kmeans"></a>
-##K-Means
+## K-Means
 
-###Introduction
+### Introduction
 
 K-Means falls in the general category of clustering algorithms.
 
-###Defining a K-Means Model
+### Defining a K-Means Model
 
 - **model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
 
@@ -53,7 +56,7 @@ K-Means falls in the general category of clustering algorithms.
  
 - **seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
-###Interpreting a K-Means Model
+### Interpreting a K-Means Model
 
 By default, the following output displays:
 
@@ -68,7 +71,7 @@ By default, the following output displays:
 K-Means randomly chooses starting points and converges to a local minimum of centroids. The number of clusters is arbitrary, and should be thought of as a tuning parameter.
 The output is a matrix of the cluster assignments and the coordinates of the cluster centers in terms of the originally chosen attributes. Your cluster centers may differ slightly from run to run as this problem is Non-deterministic Polynomial-time (NP)-hard.
 
-###FAQ
+### FAQ
 
 - **How does the algorithm handle missing values during training?**
    
@@ -96,7 +99,7 @@ The output is a matrix of the cluster assignments and the coordinates of the clu
 
 
 
-###K-Means Algorithm
+### K-Means Algorithm
 
 The number of clusters \(K\) is user-defined and is determined a priori. 
 
@@ -146,7 +149,7 @@ The number of clusters \(K\) is user-defined and is determined a priori.
 
 
 
-###References
+### References
 
 [Hastie, Trevor, Robert Tibshirani, and J Jerome H Friedman. The Elements of Statistical Learning. Vol.1. N.p., Springer New York, 2001.](http://www.stanford.edu/~hastie/local.ftp/Springer/OLD//ESLII_print4.pdf)
 
@@ -155,9 +158,9 @@ Xiong, Hui, Junjie Wu, and Jian Chen. “K-means Clustering Versus Validation Me
 ---
 
 <a name="GLM"></a>
-##GLM
+## GLM
 
-###Introduction
+### Introduction
 
 Generalized Linear Models (GLM) estimate regression models for outcomes following exponential distributions. In addition to the Gaussian (i.e. normal) distribution, these include Poisson, binomial, and gamma distributions. Each serves a different purpose, and depending on distribution and link function choice, can be used either for prediction or classification.
 
@@ -170,7 +173,7 @@ The GLM suite includes:
 - Gamma regression
 
 
-###Defining a GLM Model
+### Defining a GLM Model
 
 - **model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
 
@@ -268,7 +271,7 @@ The GLM suite includes:
 
 - **seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
-###Interpreting a GLM Model
+### Interpreting a GLM Model
 
 By default, the following output displays:
 
@@ -311,7 +314,7 @@ To make custom GLM model from R or python:
  - pyton: H2OGeneralizedLinearEstimator.makeGLMModel (static method), takes a model, dictionary containing coefficients and (optional) decision threshold as parameters.
 
 
-###FAQ
+### FAQ
 
 - **How does the algorithm handle missing values during training?**
 
@@ -369,7 +372,7 @@ For GLM, the variable importance represents the coefficient magnitudes.
 
 
 
-###GLM Algorithm
+### GLM Algorithm
 
 Following the definitive text by P. McCullagh and J.A. Nelder (1989) on the generalization of linear models to non-linear distributions of the response variable Y, H2O fits GLM models based on the maximum likelihood estimation via iteratively reweighed least squares. 
 
@@ -442,7 +445,7 @@ Relative to P, the larger that (N/CPUs) becomes, the more trivial p becomes to t
 For more information about how GLM works, refer to the [Generalized Linear Modeling booklet](http://h2o.ai/resources). 
 
 
-###References
+### References
 
 Breslow, N E. “Generalized Linear Models: Checking Assumptions and Strengthening Conclusions.” Statistica Applicata 8 (1996): 23-41.
 
@@ -466,9 +469,9 @@ Snee, Ronald D. “Validation of Regression Models: Methods and Examples.” Tec
 
 
 <a name="DRF"></a>
-##DRF
+## DRF
 
-###Introduction
+### Introduction
 
 Distributed Random Forest (DRF) is a powerful classification and regression tool. When given a set of data, DRF generates a forest of classification (or regression) trees, rather than a single classification (or regression) tree. Each of these trees is a weak learner built on a subset of rows and columns. More trees will reduce the variance. Both classification and regression take the average prediction over all of their trees to make a final prediction, whether predicting for a class or numeric value (note: for a categorical response column, DRF maps factors  (e.g. 'dog', 'cat', 'mouse) in lexicographic order to a name lookup array with integer indices (e.g. 'cat ->0, 'dog' -> 1, 'mouse' ->2).
 
@@ -487,7 +490,7 @@ There was some code cleanup and refactoring to support the following features:
 DRF no longer has a special-cased histogram for classification or regression (class DBinomHistogram has been superseded by DRealHistogram) since it was not applicable to cases with observation weights or for cross-validation. 
 
 
-###Defining a DRF Model
+### Defining a DRF Model
 
 - **model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
 
@@ -608,7 +611,7 @@ DRF no longer has a special-cased histogram for classification or regression (cl
 - **nbins\_top\_level**: (For numerical/real/int columns only) Specify the minimum number of bins at the root level to use to build the histogram. This number will then be decreased by a factor of two per level.  
 
 
-###Interpreting a DRF Model
+### Interpreting a DRF Model
 
 By default, the following output displays:
 
@@ -625,10 +628,10 @@ By default, the following output displays:
 - Variable importances in tabular format
 
 
-###Leaf Node Assignment
+### Leaf Node Assignment
 Trees cluster observations into leaf nodes, and this information can be useful for feature engineering or model interpretability. Use **h2o.predict\_leaf\_node\_assignment\(model, frame\)** to get an H2OFrame with the leaf node assignments, or click the checkbox when making predictions from Flow. Those leaf nodes represent decision rules that can be fed to other models (i.e., GLM with lambda search and strong rules) to obtain a limited set of the most important rules.
 
-###FAQ
+### FAQ
 
 - **How does the algorithm handle missing values during training?**
 
@@ -681,25 +684,25 @@ For regression, the floor - in this example, (100/3)=33 columns - is used for ea
 `mtries` is configured independently of `col_sample_rate_per_tree`, but it can be limited by it. For example, if `col_sample_rate_per_tree=0.01`, then there's only one column left for each split, regardless of how large the value for `mtries` is.
 
 
-###DRF Algorithm 
+### DRF Algorithm 
 
 
 <iframe src="//www.slideshare.net/slideshow/embed_code/key/tASzUyJ19dtJsQ" width="425" height="355" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC; border-width:1px; margin-bottom:5px; max-width: 100%;" allowfullscreen> </iframe> <div style="margin-bottom:5px"> <strong> <a href="//www.slideshare.net/0xdata/rf-brighttalk" title="Building Random Forest at Scale" target="_blank">Building Random Forest at Scale</a> </strong> from <strong><a href="//www.slideshare.net/0xdata" target="_blank">Sri Ambati</a></strong> </div>
 
-###References
+### References
 
 <a href="http://link.springer.com/article/10.1007%2Fs10994-006-6226-1" target="_blank">P. Geurts, D. Ernst., and L. Wehenkel, “Extremely randomized trees”, Machine Learning, 63(1), 3-42, 2006.</a>
 
 ---
 
 <a name="NB"></a>
-##Naïve Bayes
+## Naïve Bayes
 
-###Introduction 
+### Introduction 
 
 Naïve Bayes (NB) is a classification algorithm that relies on strong assumptions of the independence of covariates in applying Bayes Theorem. NB models are commonly used as an alternative to decision trees for classification problems.
 
-###Defining a Naïve Bayes Model
+### Defining a Naïve Bayes Model
 
 - **model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
 
@@ -736,7 +739,7 @@ Naïve Bayes (NB) is a classification algorithm that relies on strong assumption
 
 
 
-###Interpreting a Naïve Bayes Model
+### Interpreting a Naïve Bayes Model
 
 The output from Naïve Bayes is a list of tables containing the a-priori and conditional probabilities of each class of the response. The a-priori probability is the estimated probability of a particular class before observing any of the predictors. Each conditional probability table corresponds to a predictor column. The row headers are the classes of the response and the column headers are the classes of the predictor. Thus, in the table below, the probability of survival (y) given a person is male (x) is 0.91543624.
 
@@ -756,7 +759,7 @@ By default, the following output displays:
 - Y-Levels (levels of the response column)
 - P-conditionals 
 
-###FAQ
+### FAQ
 
 - **How does the algorithm handle missing values during training?**
   
@@ -800,7 +803,7 @@ By default, the following output displays:
 For Naïve Bayes, we recommend using many smaller nodes because the distributed task doesn't require intensive computation. 
 
 
-###Naïve Bayes Algorithm 
+### Naïve Bayes Algorithm 
 
 The algorithm is presented for the simplified binomial case without loss of generality.
 
@@ -855,7 +858,7 @@ Note that in the general case where y takes on k values, there are k+1 modified 
 Laplace smoothing should be used with care; it is generally intended to allow for predictions in rare events. As prediction data becomes increasingly distinct from training data, train new models when possible to account for a broader set of possible X values. 
 
 
-###References
+### References
 
 
 [Hastie, Trevor, Robert Tibshirani, and J Jerome H Friedman. The Elements of Statistical Learning. Vol.1. N.p., Springer New York, 2001.](http://www.stanford.edu/~hastie/local.ftp/Springer/OLD//ESLII_print4.pdf) 
@@ -865,15 +868,15 @@ Laplace smoothing should be used with care; it is generally intended to allow fo
 ---
 
 <a name="PCA"></a>
-##PCA
+## PCA
 
-###Introduction
+### Introduction
 
 Principal Components Analysis (PCA) is closely related to Principal Components Regression. The algorithm is carried out on a set of possibly collinear features and performs a transformation to produce a new set of uncorrelated features.
 
 PCA is commonly used to model without regularization or perform dimensionality reduction. It can also be useful to carry out as a preprocessing step before distance-based algorithms such as K-Means since PCA guarantees that all dimensions of a manifold are orthogonal.
 
-###Defining a PCA Model
+### Defining a PCA Model
 
 - **model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
 
@@ -911,7 +914,7 @@ PCA is commonly used to model without regularization or perform dimensionality r
 
 
 
-###Interpreting a PCA Model
+### Interpreting a PCA Model
 
 PCA output returns a table displaying the number of components specified by the value for `k`.
 
@@ -928,7 +931,7 @@ The output for PCA includes the following:
 
 
 
-###FAQ
+### FAQ
 
 - **How does the algorithm handle missing values during scoring?**
 
@@ -980,7 +983,7 @@ For PCA, this is dependent on the selected `pca_method` parameter:
 After the PCA model has been built using `h2o.prcomp`, use `h2o.predict` on the original data frame and the PCA model to produce the dimensionality-reduced representation. Use `cbind` to add the predictor column from the original data frame to the data frame produced by the output of `h2o.predict`. At this point, you can build supervised learning models on the new data frame. 
 
 
-###PCA Algorithm
+### PCA Algorithm
 
 Let \(X\) be an \(M\times N\) matrix where
  
@@ -1022,7 +1025,7 @@ For each eigenvalue \(\lambda\) \((C-{x}-\lambda I)x =0\) where \(x\) is the eig
 
 Solve for \(x\) by Gaussian elimination. 
 
-####Recovering SVD from GLRM
+#### Recovering SVD from GLRM
 
 GLRM gives \(x\)  and \(y\), where \(x \in \rm \Bbb I \!\Bbb R ^{n * k}\) and \( y \in \rm \Bbb I \!\Bbb R ^{k*m} \)
 
@@ -1079,7 +1082,7 @@ Left singular vectors: \( (QU) \in \rm \Bbb I \!\Bbb R^{n * k}\)
 
 
 
-###References
+### References
 
 Gockenbach, Mark S. "Finite-Dimensional Linear Algebra (Discrete Mathematics and Its Applications)." (2010): 566-567. 
 
@@ -1087,9 +1090,9 @@ Gockenbach, Mark S. "Finite-Dimensional Linear Algebra (Discrete Mathematics and
 ---
 
 <a name="GBM"></a>
-##GBM
+## GBM
 
-###Introduction
+### Introduction
 
 Gradient Boosted Regression and Gradient Boosted Classification are forward learning ensemble methods. The guiding heuristic is that good predictive results can be obtained through increasingly refined approximations. H2O's GBM sequentially builds regression trees on all the features of the dataset in a fully distributed way - each tree is built in parallel.
 
@@ -1105,7 +1108,7 @@ There was some code cleanup and refactoring to support the following features:
 - N-fold cross-validation
 - Support for more distribution functions (such as Gamma, Poisson, and Tweedie)
 
-###Defining a GBM Model
+### Defining a GBM Model
 
 - **model_id**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
 
@@ -1240,7 +1243,7 @@ There was some code cleanup and refactoring to support the following features:
 - **nbins\_top\_level**: (For numerical/real/int columns only) Specify the minimum number of bins at the root level to use to build the histogram. This number will then be decreased by a factor of two per level.  
 
 
-###Interpreting a GBM Model
+### Interpreting a GBM Model
 
 The output for GBM includes the following: 
 
@@ -1253,10 +1256,10 @@ The output for GBM includes the following:
 - Training metrics (model name, model checksum name, frame name, description, model category, duration in ms, scoring time, predictions, MSE, R2)
 - Variable importances in tabular format
 
-###Leaf Node Assignment
+### Leaf Node Assignment
 Trees cluster observations into leaf nodes, and this information can be useful for feature engineering or model interpretability. Use **h2o.predict\_leaf\_node\_assignment\(model, frame\)** to get an H2OFrame with the leaf node assignments, or click the checkbox when making predictions from Flow. Those leaf nodes represent decision rules that can be fed to other models (i.e., GLM with lambda search and strong rules) to obtain a limited set of the most important rules.
 
-###FAQ
+### FAQ
 
 - **How does the algorithm handle missing values during training?**
 
@@ -1324,7 +1327,7 @@ Trees cluster observations into leaf nodes, and this information can be useful f
 
  You can find tutorials for using GBM with R, Python, and Flow at the following location: <a href="https://github.com/h2oai/h2o-3/tree/master/h2o-docs/src/product/tutorials/gbm" target="_blank">https://github.com/h2oai/h2o-3/tree/master/h2o-docs/src/product/tutorials/gbm</a>
 
-###GBM Algorithm 
+### GBM Algorithm 
 
 H2O's Gradient Boosting Algorithms follow the algorithm specified by Hastie et al (2001):
 
@@ -1357,7 +1360,7 @@ The above vec has a real-valued type if passed as a whole, but if the zero-weigh
 For more information about the GBM algorithm, refer to the [Gradient Boosted Machines booklet](http://h2o.ai/resources). 
 
 
-###Binning In GBM
+### Binning In GBM
 
 **Is the binning range-based or percentile-based?**
 
@@ -1381,7 +1384,7 @@ And so on: important dense ranges with split essentially logrithmeticaly at each
 
 You can try adding a new predictor column which is either pre-binned (e.g. as a categorical - "small", "median", and "giant" values), or a log-transform - plus keep the old column.
 
-###References
+### References
 
 Dietterich, Thomas G, and Eun Bae Kong. "Machine Learning Bias,
 Statistical Bias, and Statistical Variance of Decision Tree
@@ -1409,13 +1412,13 @@ Vol.1. N.p., page 339: Springer New York, 2001.](http://www.stanford.edu/~hastie
 ---
 
 <a name="DL"></a>
-##Deep Learning
+## Deep Learning
 
-###Introduction
+### Introduction
 
 H2O’s Deep Learning is based on a multi-layer feed-forward artificial neural network that is trained with stochastic gradient descent using back-propagation. The network can contain a large number of hidden layers consisting of neurons with tanh, rectifier and maxout activation functions. Advanced features such as adaptive learning rate, rate annealing, momentum training, dropout, L1 or L2 regularization, checkpointing and grid search enable high predictive accuracy. Each compute node trains a copy of the global model parameters on its local data with multi-threading (asynchronously), and contributes periodically to the global model via model averaging across the network.
 
-###Defining a Deep Learning Model
+### Defining a Deep Learning Model
 
 H2O Deep Learning models have many input parameters, many of which are only accessible via the expert mode. For most cases, use the default values. Please read the following instructions before building extensive Deep Learning models. The application of grid search and successive continuation of winning models via checkpoint restart is highly recommended, as model performance can vary greatly.
 
@@ -1595,7 +1598,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 
 
-###Interpreting a Deep Learning Model
+### Interpreting a Deep Learning Model
 
 To view the results, click the View button. The output for the Deep Learning model includes the following information for both the training and testing sets: 
 
@@ -1611,7 +1614,7 @@ To view the results, click the View button. The output for the Deep Learning mod
 
 
 
-###FAQ
+### FAQ
 
 - **How does the algorithm handle missing values during training?**
 
@@ -1734,7 +1737,7 @@ To view the results, click the View button. The output for the Deep Learning mod
 
 ---
 
-###Deep Learning Algorithm 
+### Deep Learning Algorithm 
 
 To compute deviance for a Deep Learning regression model, the following formula is used: 
 
@@ -1743,7 +1746,7 @@ For Absolute/Laplace or Huber -> MSE != Deviance
 
 For more information about how the Deep Learning algorithm works, refer to the [Deep Learning booklet](http://h2o.ai/resources). 
 
-###References
+### References
 
  ["Deep Learning." *Wikipedia: The free encyclopedia*. Wikimedia Foundation, Inc. 1 May 2015. Web. 4 May 2015.](http://en.wikipedia.org/wiki/Deep_learning)
 
@@ -1813,7 +1816,7 @@ print(cvAUCs)
 mean(cvAUCs)
 ```
 
-#Using Cross-Validated Predictions
+## Using Cross-Validated Predictions
 
 With cross-validated model building, H2O builds N+1 models: N cross-validated model and 1 overarching model over all of the training data.
 
@@ -1872,7 +1875,7 @@ and each one has the following shape (for example the first one):
 
 The training rows receive a prediction of `0` (more on this below) as well as `0` for all class probabilities. Each of these holdout predictions has the same number of rows as the input frame.
 
-##Combining holdout predictions
+## Combining holdout predictions
 
 The frame of cross-validated predictions is simply the superposition of the individual predictions. [Here's an example from R](https://0xdata.atlassian.net/browse/PUBDEV-2236):
 

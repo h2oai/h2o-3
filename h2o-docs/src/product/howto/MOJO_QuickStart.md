@@ -34,56 +34,56 @@ The examples below describe how to start H2O and create a model using R and Pyth
 1. Open a terminal window and start r.
 2. Run the following commands to build a simple GBM model. 
 
-```R
-library(h2o)
-h2o.init(nthreads=-1)
-path = system.file("extdata", "prostate.csv", package="h2o")
-h2o_df = h2o.importFile(path)
-h2o_df$RACE = as.factor(h2o_df$RACE)
-model = h2o.gbm(y="CAPSULE",
-		x=c("AGE", "RACE", "PSA", "GLEASON"),
-		training_frame=h2o_df,
-		distribution="bernoulli",
-		ntrees=100,
-		max_depth=4,
-		learn_rate=0.1)
-```
+	```R
+	library(h2o)
+	h2o.init(nthreads=-1)
+	path = system.file("extdata", "prostate.csv", package="h2o")
+	h2o_df = h2o.importFile(path)
+	h2o_df$RACE = as.factor(h2o_df$RACE)
+	model = h2o.gbm(y="CAPSULE",
+			x=c("AGE", "RACE", "PSA", "GLEASON"),
+			training_frame=h2o_df,
+			distribution="bernoulli",
+			ntrees=100,
+			max_depth=4,
+			learn_rate=0.1)
+	```
 
 3. Download the MOJO and the resulting h2o-genmodel.jar file to a new **experiment** folder. 
 
-```R
-modelfile = model.download_mojo(path="~/experiment/", get_genmodel_jar=True)
-print("Model saved to " + modelfile)
-Model saved to /Users/user/GBM_model_R_1475248925871_74.zip"
-```
+	```R
+	modelfile = model.download_mojo(path="~/experiment/", get_genmodel_jar=True)
+	print("Model saved to " + modelfile)
+	Model saved to /Users/user/GBM_model_R_1475248925871_74.zip"
+	```
 
 **Build and extract a model using Python**
 
 1. Open a terminal window and start python. 
 2. Run the following commands to build a simple GBM model. The model, along with the **h2o-genmodel.jar** file will then be downloaded to an **experiment** folder. 
 
-```R
-import h2o
-from h2o.estimators.gbm import H2OGradientBoostingEstimator
-h2o.init()
-h2o_df = h2o.load_dataset("prostate.csv")
-h2o_df["CAPSULE"] = h2o_df["CAPSULE"].asfactor()
-model=H2OGradientBoostingEstimator(distribution="bernoulli",
-			       ntrees=100,
-			       max_depth=4,
-			       learn_rate=0.1)
-model.train(y="CAPSULE",
-	x=["AGE","RACE","PSA","GLEASON"],
-	training_frame=h2o_df)
-```
+	```R
+	import h2o
+	from h2o.estimators.gbm import H2OGradientBoostingEstimator
+	h2o.init()
+	h2o_df = h2o.load_dataset("prostate.csv")
+	h2o_df["CAPSULE"] = h2o_df["CAPSULE"].asfactor()
+	model=H2OGradientBoostingEstimator(distribution="bernoulli",
+				       ntrees=100,
+				       max_depth=4,
+				       learn_rate=0.1)
+	model.train(y="CAPSULE",
+		x=["AGE","RACE","PSA","GLEASON"],
+		training_frame=h2o_df)
+	```
 
 3. Download the MOJO and the resulting h2o-genmodel.jar file to a new **experiment** folder. 
 
-```R
-modelfile = model.download_mojo(path="~/experiment/", get_genmodel_jar=True)
-print("Model saved to " + modelfile)
-Model saved to /Users/user/GBM_model_python_1475248925871_888.zip           
-```
+	```R
+	modelfile = model.download_mojo(path="~/experiment/", get_genmodel_jar=True)
+	print("Model saved to " + modelfile)
+	Model saved to /Users/user/GBM_model_python_1475248925871_888.zip           
+	```
 
 ### Step 2: Compile and run the MOJO
 
@@ -93,44 +93,44 @@ Model saved to /Users/user/GBM_model_python_1475248925871_888.zip
 
 2.  Create your main program in the **experiment** folder by creating a new file called main.java (for example, using "vim main.java"). Include the following contents. Note that this file references the GBM model created above using R. 
 
-```java
-import java.io.*;
-import hex.genmodel.easy.RowData;
-import hex.genmodel.easy.EasyPredictModelWrapper;
-import hex.genmodel.easy.prediction.*;
-import hex.genmodel.MojoModel;
-
-public class main {
-  public static void main(String[] args) throws Exception {
-    EasyPredictModelWrapper model = new EasyPredictModelWrapper(MojoModel.load("GBM_model_R_1475248925871_74.zip"));
-
-    RowData row = new RowData();
-    row.put("AGE", "68");
-    row.put("RACE", "2");
-    row.put("DCAPS", "2");
-    row.put("VOL", "0");
-    row.put("GLEASON", "6");
-
-    BinomialModelPrediction p = model.predictBinomial(row);
-    System.out.println("Has penetrated the prostatic capsule (1=yes; 0=no): " + p.label);
-    System.out.print("Class probabilities: ");
-    for (int i = 0; i < p.classProbabilities.length; i++) {
-      if (i > 0) {
-	System.out.print(",");
-      }
-      System.out.print(p.classProbabilities[i]);
-    }
-    System.out.println("");
-  }
-}
-``` 
+	```java
+	import java.io.*;
+	import hex.genmodel.easy.RowData;
+	import hex.genmodel.easy.EasyPredictModelWrapper;
+	import hex.genmodel.easy.prediction.*;
+	import hex.genmodel.MojoModel;
+	
+	public class main {
+	  public static void main(String[] args) throws Exception {
+	    EasyPredictModelWrapper model = new EasyPredictModelWrapper(MojoModel.load("GBM_model_R_1475248925871_74.zip"));
+	
+	    RowData row = new RowData();
+	    row.put("AGE", "68");
+	    row.put("RACE", "2");
+	    row.put("DCAPS", "2");
+	    row.put("VOL", "0");
+	    row.put("GLEASON", "6");
+	
+	    BinomialModelPrediction p = model.predictBinomial(row);
+	    System.out.println("Has penetrated the prostatic capsule (1=yes; 0=no): " + p.label);
+	    System.out.print("Class probabilities: ");
+	    for (int i = 0; i < p.classProbabilities.length; i++) {
+	      if (i > 0) {
+		System.out.print(",");
+	      }
+	      System.out.print(p.classProbabilities[i]);
+	    }
+	    System.out.println("");
+	  }
+	}
+	``` 
 
 3. Compile and run in terminal window 2. 
 
-```bash
-$ javac -cp h2o-genmodel.jar -J-Xms2g -J-XX:MaxPermSize=128m main.java
-$ java -cp .:h2o-genmodel.jar main	
-```
+	```bash
+	$ javac -cp h2o-genmodel.jar -J-Xms2g -J-XX:MaxPermSize=128m main.java
+	$ java -cp .:h2o-genmodel.jar main	
+	```
 
 The following output displays:
 

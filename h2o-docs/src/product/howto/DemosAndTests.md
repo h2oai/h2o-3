@@ -1,4 +1,4 @@
-#Running Demos and Tests
+# Running Demos and Tests
 
 H2O provides demos and tests in R, Python, Flow, Scala and Java for our algorithms. 
 
@@ -6,35 +6,35 @@ Demos contain example workflows showing how typical end users make use of H2O's 
 
 Tests exercise every capability of H2O in detail using appropriate datasets and parameters and automatically verify that the expected results are produced.  
 
-##Demos
+## Demos
 
-###R
+### R
 
 - [Kaggle](https://github.com/h2oai/h2o-3/tree/master/h2o-r/demos/kaggle): Contains Kaggle demos, including "Beating the Benchmark" and "Will It Rain?"
 
 - [Supervised Demo](https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/large/supervised.R): Runs four algorithms on categorical or continuous response datasets and reports performance. 
 
-###Python
+### Python
 
 - [Python Demos](https://github.com/h2oai/h2o-3/tree/master/h2o-py/demos): Contains a library of Python demos and instructions on how to run the demos. 
 
-###Flow
+### Flow
 
 - [Flow Demos](https://github.com/h2oai/h2o-3/tree/master/h2o-docs/src/product/flow/packs/examples): Contains a library of demos that can be run in H2O's web UI, Flow. These demos can also be accessed within Flow by clicking the "Help" sidebar, then clicking "Browse installed packs...", then clicking the "Examples" folder and selecting the demo flow. 
 
-###Scala
+### Scala
 
 - [Scala Demos](https://github.com/h2oai/sparkling-water/tree/master/examples/scripts): Contains Scala demos used at meetups to demonstrate Sparkling Water. 
 
 
-###Java
+### Java
 
 >Need location
 
 
-##Tests
+## Tests
 
-###R
+### R
 
 - [Instructions](https://github.com/h2oai/h2o-3/tree/master/h2o-r): Instructions on running R tests. 
 
@@ -66,7 +66,7 @@ Tests exercise every capability of H2O in detail using appropriate datasets and 
 
 
 
-###Python
+### Python
 
 - [Instructions](https://github.com/h2oai/h2o-3/tree/master/h2o-py): Instructions for running Python tests. 
 
@@ -80,7 +80,7 @@ Tests exercise every capability of H2O in detail using appropriate datasets and 
 
 - [DRF](https://github.com/h2oai/h2o-3/tree/master/h2o-py/tests/testdir_algos/rf): Library of DRF Python tests. 
 
-###Java
+### Java
 
 - [Instructions](https://github.com/h2oai/h2o-3/blob/master/h2o-core/testMultiNode.sh): Instructions on running Java tests. 
 
