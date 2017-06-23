@@ -1421,7 +1421,7 @@ and selecting **List All Predictions**.
 
 
 Interpreting the Gains/Lift Chart
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The Gains/Lift chart evaluates the prediction ability of a binary classification model. The chart is computed using the prediction probability and the true response (class) labels. The accuracy of the classification model for a random sample is evaluated according to the results when the model is and is not used. 
 
