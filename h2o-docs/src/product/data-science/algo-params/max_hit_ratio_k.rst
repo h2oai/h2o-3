@@ -1,7 +1,7 @@
 ``max_hit_ratio_k``
 -------------------
 
-- Available in: GBM, DRF, Deep Learning, Naïve-Bayes
+- Available in: GBM, DRF, Deep Learning, GLM, Naïve-Bayes
 - Hyperparameter: no
 
 Description
