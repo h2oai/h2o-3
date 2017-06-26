@@ -3,7 +3,6 @@ package water;
 import water.init.AbstractBuildVersion;
 import water.util.Log;
 
-@SuppressWarnings("unused")
 public abstract class AbstractH2OExtension {
   /**
    * @return The name of this extension.
