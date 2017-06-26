@@ -660,15 +660,13 @@ def help_afterword_for(algo):
         return """
             #' Ask the H2O server whether a XGBoost model can be built (depends on availability of native backend)
             #' Returns True if a XGBoost model can be built, or False otherwise.
-            #' @param h2oRestApiVersion (Optional) Specific version of the REST API to use
             #' @export
-            h2o.xgboost.available <- function(h2oRestApiVersion = .h2o.__REST_API_VERSION) {
-                visibility = .h2o.__remoteSend(method = "GET", h2oRestApiVersion = h2oRestApiVersion, .h2o.__MODEL_BUILDERS("xgboost"))$model_builders[["xgboost"]][["visibility"]]
-                if (visibility == "Experimental") {
+            h2o.xgboost.available <- function() {                
+                if (!("XGBoost" %in% h2o.list_core_extensions())) {
                     print("Cannot build a XGboost model - no backend found.")
                     return(FALSE)
                 } else {
-                   return(TRUE)
+                    return(TRUE)
                 }
             }
         """
