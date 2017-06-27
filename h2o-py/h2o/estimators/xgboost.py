@@ -794,9 +794,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         Returns True if a XGBoost model can be built, or False otherwise.
         """
-        builder_json = h2o.api("GET /3/ModelBuilders", data={"algo": "xgboost"})
-        visibility = builder_json["model_builders"]["xgboost"]["visibility"]
-        if (visibility == "Experimental"):
+        if "XGBoost" not in h2o.cluster().list_core_extensions():
             print("Cannot build an XGBoost model - no backend found.")
             return False
         else:
