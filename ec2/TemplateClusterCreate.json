@@ -24,23 +24,32 @@
       "Default": "1"
     },
 
-
     "SSHLocation": {
       "Description": "The IP address range that can be used to SSH to the EC2 instances",
       "Type": "String",
       "MinLength": "9",
       "MaxLength": "18",
-      "Default": "0.0.0.0/0",
+      "Default": "10.8.0.0/16",
       "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
       "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
+    },
+    "VPC": {
+      "Description": "VPC must have internet access (with Internet Gateway or Virtual Private Gateway)",
+      "Type": "AWS::EC2::VPC::Id"
+    },
+    "PublicSubnet": {
+      "Description": "",
+      "Type": "AWS::EC2::Subnet::Id"
     }
+
   },
 
   "Mappings": {
 
     "SubnetConfig": {
       "VPC": { "CIDR": "10.0.0.0/16" },
-      "Public1": { "CIDR": "10.0.0.0/24" }      
+      "Public1": { "CIDR": "10.0.0.0/24" },
+      "Public2": { "CIDR": "10.0.1.0/24" }
     },
 
     "AWSInstanceType2Arch": {
@@ -101,356 +110,61 @@
 
     "AWSRegionArch2AMI": {
       "us-east-1": {
-        "HVM64": "ami-957b5df0"
+        "HVM64": "ami-6f21000a"
       },
       "us-west-2": {
-        "HVM64": "ami-957b5df0"
+        "HVM64": "ami-6f21000a"
       },
       "us-west-1": {
-        "HVM64": "ami-957b5df0"
+        "HVM64": "ami-6f21000a"
       },
       "eu-west-1": {
-        "HVM64": "ami-957b5df0"
+        "HVM64": "ami-6f21000a"
       },
       "eu-west-2": {
-        "HVM64": "ami-957b5df0"
+        "HVM64": "ami-6f21000a"
       },
       "eu-central-1": {
-        "HVM64": "ami-957b5df0"
+        "HVM64": "ami-6f21000a"
       },
       "ap-northeast-1": {
-        "HVM64": "ami-957b5df0"
+        "HVM64": "ami-6f21000a"
       },
       "ap-northeast-2": {
-        "HVM64": "ami-957b5df0"
+        "HVM64": "ami-6f21000a"
       },
       "ap-southeast-1": {
-        "HVM64": "ami-957b5df0"
+        "HVM64": "ami-6f21000a"
       },
       "ap-southeast-2": {
-        "HVM64": "ami-957b5df0"
+        "HVM64": "ami-6f21000a"
       },
       "ap-south-1": {
-        "HVM64": "ami-957b5df0"
+        "HVM64": "ami-6f21000a"
       },
       "us-east-2": {
-        "HVM64": "ami-957b5df0"
+        "HVM64": "ami-6f21000a"
       },
       "ca-central-1": {
-        "HVM64": "ami-957b5df0"
+        "HVM64": "ami-6f21000a"
       },
       "sa-east-1": {
-        "HVM64": "ami-957b5df0"
+        "HVM64": "ami-6f21000a"
       },
       "cn-north-1": {
-        "HVM64": "ami-957b5df0"
+        "HVM64": "ami-6f21000a"
       }
     }
 
   },
 
   "Resources": {
-
-    "VPC": {
-      "Type": "AWS::EC2::VPC",
-      "Properties": {
-        "CidrBlock": { "Fn::FindInMap": [ "SubnetConfig", "VPC", "CIDR" ] },
-        "EnableDnsSupport": "true",
-        "EnableDnsHostnames": "true",
-        "Tags": [
-          {
-            "Key": "Application",
-            "Value": { "Ref": "AWS::StackId" }
-          },
-          {
-            "Key": "Network",
-            "Value": "Public"
-          }
-        ]
-      }
-    },
-
-    "PublicSubnet1": {
-      "Type": "AWS::EC2::Subnet",
-      "Properties": {
-        "VpcId": { "Ref": "VPC" },
-        "CidrBlock": { "Fn::FindInMap": [ "SubnetConfig", "Public1", "CIDR" ] },
-        "AvailabilityZone": {
-          "Fn::Select": [
-            0,
-            { "Fn::GetAZs": "" }
-          ]
-        },
-        "Tags": [
-          {
-            "Key": "Application",
-            "Value": { "Ref": "AWS::StackId" }
-          },
-          {
-            "Key": "Network",
-            "Value": "Public"
-          }
-        ]
-      }
-    },
-
-    "PublicSubnet2": {
-      "Type": "AWS::EC2::Subnet",
-      "Properties": {
-        "VpcId": { "Ref": "VPC" },
-        "CidrBlock": { "Fn::FindInMap": [ "SubnetConfig", "Public2", "CIDR" ] },
-        "AvailabilityZone": {
-          "Fn::Select": [
-            1,
-            { "Fn::GetAZs": "" }
-          ]
-        },
-        "Tags": [
-          {
-            "Key": "Application",
-            "Value": { "Ref": "AWS::StackId" }
-          },
-          {
-            "Key": "Network",
-            "Value": "Public"
-          }
-        ]
-      }
-    },
-
-    "InternetGateway": {
-      "Type": "AWS::EC2::InternetGateway",
-      "Properties": {
-        "Tags": [
-          {
-            "Key": "Application",
-            "Value": { "Ref": "AWS::StackId" }
-          },
-          {
-            "Key": "Network",
-            "Value": "Public"
-          }
-        ]
-      }
-    },
-
-    "GatewayToInternet": {
-      "Type": "AWS::EC2::VPCGatewayAttachment",
-      "Properties": {
-        "VpcId": { "Ref": "VPC" },
-        "InternetGatewayId": { "Ref": "InternetGateway" }
-      }
-    },
-
-    "PublicRouteTable": {
-      "Type": "AWS::EC2::RouteTable",
-      "Properties": {
-        "VpcId": { "Ref": "VPC" },
-        "Tags": [
-          {
-            "Key": "Application",
-            "Value": { "Ref": "AWS::StackId" }
-          },
-          {
-            "Key": "Network",
-            "Value": "Public"
-          }
-        ]
-      }
-    },
-
-    "PublicRoute": {
-      "Type": "AWS::EC2::Route",
-      "DependsOn": "GatewayToInternet",
-      "Properties": {
-        "RouteTableId": { "Ref": "PublicRouteTable" },
-        "DestinationCidrBlock": "0.0.0.0/0",
-        "GatewayId": { "Ref": "InternetGateway" }
-      }
-    },
-
-    "PublicSubnetRouteTableAssociation1": {
-      "Type": "AWS::EC2::SubnetRouteTableAssociation",
-      "Properties": {
-        "SubnetId": { "Ref": "PublicSubnet1" },
-        "RouteTableId": { "Ref": "PublicRouteTable" }
-      }
-    },
-
-    "PublicSubnetRouteTableAssociation2": {
-      "Type": "AWS::EC2::SubnetRouteTableAssociation",
-      "Properties": {
-        "SubnetId": { "Ref": "PublicSubnet2" },
-        "RouteTableId": { "Ref": "PublicRouteTable" }
-      }
-    },
-
-    "PublicNetworkAcl": {
-      "Type": "AWS::EC2::NetworkAcl",
-      "Properties": {
-        "VpcId": { "Ref": "VPC" },
-        "Tags": [
-          {
-            "Key": "Application",
-            "Value": { "Ref": "AWS::StackId" }
-          },
-          {
-            "Key": "Network",
-            "Value": "Public"
-          }
-        ]
-      }
-    },
-
-    "InboundHTTPPublicNetworkAclEntry": {
-      "Type": "AWS::EC2::NetworkAclEntry",
-      "Properties": {
-        "NetworkAclId": { "Ref": "PublicNetworkAcl" },
-        "RuleNumber": "100",
-        "Protocol": "6",
-        "RuleAction": "allow",
-        "Egress": "false",
-        "CidrBlock": "0.0.0.0/0",
-        "PortRange": {
-          "From": "80",
-          "To": "80"
-        }
-      }
-    },
-
-    "InboundDynamicPortPublicNetworkAclEntry": {
-      "Type": "AWS::EC2::NetworkAclEntry",
-      "Properties": {
-        "NetworkAclId": { "Ref": "PublicNetworkAcl" },
-        "RuleNumber": "101",
-        "Protocol": "6",
-        "RuleAction": "allow",
-        "Egress": "false",
-        "CidrBlock": "0.0.0.0/0",
-        "PortRange": {
-          "From": "1024",
-          "To": "65535"
-        }
-      }
-    },
-
-    "InboundSSHPublicNetworkAclEntry": {
-      "Type": "AWS::EC2::NetworkAclEntry",
-      "Properties": {
-        "NetworkAclId": { "Ref": "PublicNetworkAcl" },
-        "RuleNumber": "102",
-        "Protocol": "6",
-        "RuleAction": "allow",
-        "Egress": "false",
-        "CidrBlock": { "Ref": "SSHLocation" },
-        "PortRange": {
-          "From": "22",
-          "To": "22"
-        }
-      }
-    },
-
-    "OutboundPublicNetworkAclEntry": {
-      "Type": "AWS::EC2::NetworkAclEntry",
-      "Properties": {
-        "NetworkAclId": { "Ref": "PublicNetworkAcl" },
-        "RuleNumber": "100",
-        "Protocol": "6",
-        "RuleAction": "allow",
-        "Egress": "true",
-        "CidrBlock": "0.0.0.0/0",
-        "PortRange": {
-          "From": "0",
-          "To": "65535"
-        }
-      }
-    },
-
-    "PublicSubnetNetworkAclAssociation1": {
-      "Type": "AWS::EC2::SubnetNetworkAclAssociation",
-      "Properties": {
-        "SubnetId": { "Ref": "PublicSubnet1" },
-        "NetworkAclId": { "Ref": "PublicNetworkAcl" }
-      }
-    },
-
-    "PublicSubnetNetworkAclAssociation2": {
-      "Type": "AWS::EC2::SubnetNetworkAclAssociation",
-      "Properties": {
-        "SubnetId": { "Ref": "PublicSubnet2" },
-        "NetworkAclId": { "Ref": "PublicNetworkAcl" }
-      }
-    },
-
-    "PublicApplicationLoadBalancer": {
-      "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
-      "Properties": {
-        "Subnets": [
-          { "Ref": "PublicSubnet1" },
-          { "Ref": "PublicSubnet2" }
-        ],
-        "SecurityGroups": [ { "Ref": "PublicLoadBalancerSecurityGroup" } ]
-      }
-    },
-
-    "ALBListener": {
-      "Type": "AWS::ElasticLoadBalancingV2::Listener",
-      "Properties": {
-        "DefaultActions": [
-          {
-            "Type": "forward",
-            "TargetGroupArn": { "Ref": "ALBTargetGroup" }
-          }
-        ],
-        "LoadBalancerArn": { "Ref": "PublicApplicationLoadBalancer" },
-        "Port": "80",
-        "Protocol": "HTTP"
-      }
-    },
-
-    "ALBTargetGroup": {
-      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
-      "Properties": {
-        "HealthCheckIntervalSeconds": 90,
-        "HealthCheckTimeoutSeconds": 60,
-        "HealthyThresholdCount": 3,
-        "Port": 80,
-        "Protocol": "HTTP",
-        "UnhealthyThresholdCount": 5,
-        "VpcId": { "Ref": "VPC" }
-      }
-    },
-
-    "PublicLoadBalancerSecurityGroup": {
-      "Type": "AWS::EC2::SecurityGroup",
-      "Properties": {
-        "GroupDescription": "Public ELB Security Group with HTTP access on port 80 from the internet",
-        "VpcId": { "Ref": "VPC" },
-        "SecurityGroupIngress": [
-          {
-            "IpProtocol": "tcp",
-            "FromPort": "80",
-            "ToPort": "80",
-            "CidrIp": "0.0.0.0/0"
-          }
-        ],
-        "SecurityGroupEgress": [
-          {
-            "IpProtocol": "tcp",
-            "FromPort": "80",
-            "ToPort": "80",
-            "CidrIp": "0.0.0.0/0"
-          }
-        ]
-      }
-    },
-
+    
     "H2OFleet": {
-      "Type": "AWS::AutoScaling::AutoScalingGroup",
-      "DependsOn": "PublicRoute",
+      "Type": "AWS::AutoScaling::AutoScalingGroup",      
       "Properties": {
         "VPCZoneIdentifier": [
-          { "Ref": "PublicSubnet1" }
+          { "Ref": "PublicSubnet" }
         ],
         "LaunchConfigurationName": { "Ref": "H2OLaunchConfig" },
         "MinSize": { "Ref": "vmCount" },
@@ -492,37 +206,27 @@
                       "AG_NAME=$(aws autoscaling describe-auto-scaling-instances --instance-ids ${INSTANCE_ID}",
                       " --region ",
                       { "Ref": "AWS::Region" },
-                      "--query AutoScalingInstances[].AutoScalingGroupName --output text) \n",
+                      " --query AutoScalingInstances[].AutoScalingGroupName --output text) \n",
 
-                      "for ID in $(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names ${AG_NAME} --no-sign-request",
+                      "for ID in $(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names ${AG_NAME}",
                       " --region ",
                       { "Ref": "AWS::Region" },
-                      "--query AutoScalingGroups[].Instances[].InstanceId --output text); \n",
+                      " --query AutoScalingGroups[].Instances[].InstanceId --output text); \n",
 
 
                       "do \n",
-                      "IP=$(aws ec2 describe-instances --instance-ids $ID --no-sign-request",
-                      "--region",
+                      "IP=$(aws ec2 describe-instances --instance-ids $ID ",
+                      "--region ",
                       { "Ref": "AWS::Region" },
-                      "--query Reservations[].Instances[].PrivateIpAddress --output text) \n",
-                      "echo \"${IP}\" >> \"$flatfile\" \n ",
+                      " --query Reservations[].Instances[].PrivateIpAddress --output text) \n",
+                      "echo \"${IP}:54321\" >> \"$flatfile\" \n ",
                       "done \n"
 
                     ]
                   ]
                 }
-              },
-              "commands": {
-                "Fn::Base64": {
-                  "Fn::Join": [
-                    "",
-                    [
-                      "sh /opt/h2oai/create_flatfile.sh \n",
-                      "sh /opt/h2oai/start-h2o-bg.sh \n"
-                    ]
-                  ]
-                }
               }
+
             }
 
           }
@@ -545,6 +249,7 @@
         "SecurityGroups": [ { "Ref": "H2OSecurityGroup" } ],
         "InstanceType": { "Ref": "InstanceType" },
         "KeyName": { "Ref": "KeyName" },
+        "IamInstanceProfile": { "Ref": "TemplateInstanceProfile" },
         "AssociatePublicIpAddress": "true",
         "UserData": {
           "Fn::Base64": {
@@ -554,8 +259,8 @@
                 "#cloud-boothook",
                 "#!/bin/bash -xe\n",
                 "apt-get -y install python-setuptools\n",
-                "easy_install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz\n",
-                "pip install --upgrade awscli",
+                "easy_install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz \n",
+                "pip install --upgrade awscli \n",
 
                 "# Install the sample application\n",
                 "cfn-init -v ",
@@ -565,6 +270,22 @@
                 "    --region ",
                 { "Ref": "AWS::Region" },
                 "\n",
+
+
+                "# Create the FlatFile \n",
+                "sh /opt/h2oai/create_flatfile.sh \n",
+                "sh /opt/h2oai/install_h2o.sh \n",
+                "touch /opt/h2oai/h2o.err \n",
+                "touch /opt/h2oai/check.err \n",
+                "ls /opt/h2oai -ls > /opt/h2oai/check.err \n",
+
+                "# Start H2O Cloud\n",
+                "# Use 90% of RAM for H2O. \n",
+                "memTotalKb=`cat /proc/meminfo | grep MemTotal | sed 's/MemTotal:[ \t]*//' | sed 's/ kB//'` \n ",
+                "memTotalMb=$(($memTotalKb / 1024)) \n ",
+                "tmp=$(($memTotalMb * 90))  \n",
+                "xmxMb=$(($tmp / 100))  \n",
+                "sudo nohup java -Xmx${xmxMb}m -jar /opt/h2oai/h2o.jar -flatfile /opt/h2oai/flatfile.txt 1> /dev/null 2> /opt/h2oai/h2o.err & \n",
 
                 "# Signal copletion\n",
                 "cfn-signal -e $? ",
@@ -594,15 +315,70 @@
           },
           {
             "IpProtocol": "tcp",
+            "FromPort": "54322",
+            "ToPort": "54322",
+            "CidrIp": { "Ref": "SSHLocation" }
+          },
+          {
+            "IpProtocol": "tcp",
             "FromPort": "54321",
             "ToPort": "54321",
-            "CidrIp": "0.0.0.0/0"
+            "CidrIp": { "Ref": "SSHLocation" }
           }
         ],
+
         "VpcId": { "Ref": "VPC" }
       }
+    },
+
+    "TemplateRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [ "ec2.amazonaws.com" ]
+              },
+              "Action": [ "sts:AssumeRole" ]
+            }
+          ]
+        },
+        "Path": "/",
+        "Policies": [
+          {
+            "PolicyName": "root",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [ "autoscaling:Describe*", "ec2:DescribeInstances" ],
+                  "Resource": "*"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+
+    "TemplateInstanceProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/",
+        "Roles": [
+          {
+            "Ref": "TemplateRole"
+          }
+        ]
+      }
     }
+
   },
+
 
   "Outputs": {
 
