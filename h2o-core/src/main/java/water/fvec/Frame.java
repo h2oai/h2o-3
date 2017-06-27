@@ -3,6 +3,7 @@ package water.fvec;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
+import water.api.FramesHandler;
 import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.parser.BufferedString;
@@ -11,8 +12,10 @@ import water.util.*;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 /** A collection of named {@link Vec}s, essentially an R-like Distributed Data Frame.
  *
@@ -66,6 +69,43 @@ public class Frame extends Lockable<Frame> {
   private Key<Vec>[] _keys;     // Keys for the vectors
   private transient Vec[] _vecs; // The Vectors (transient to avoid network traffic)
   private transient Vec _col0; // First readable vec; fast access to the VectorGroup's Chunk layout
+
+  /**
+   * Given a temp Frame and a base Frame from which it was created, delete the
+   * Vecs that aren't found in the base Frame and then delete the temp Frame.
+   *
+   * TODO: Really should use Scope but Scope does not.
+   */
+  public static void deleteTempFrameAndItsNonSharedVecs(Frame tempFrame, Frame baseFrame) {
+    Key[] keys = tempFrame.keys();
+    for( int i=0; i<keys.length; i++ )
+      if( baseFrame.find(keys[i]) == -1 ) //only delete vecs that aren't shared
+        keys[i].remove();
+    DKV.remove(tempFrame._key); //delete the frame header
+  }
+
+  /**
+   * Fetch all Frames from the KV store.
+   */
+  public static Frame[] fetchAll() {
+    // Get all the frames.
+    final Key[] frameKeys = KeySnapshot.globalKeysOfClass(Frame.class);
+    List<Frame> frames = new ArrayList<>(frameKeys.length);
+    for( Key key : frameKeys ) {
+      Frame frame = FramesHandler.getFromDKV("(none)", key);
+      // Weed out frames with vecs that are no longer in DKV
+      boolean skip = false;
+      for( Vec vec : frame.vecs() ) {
+        if (vec == null || DKV.get(vec._key) == null) {
+          Log.warn("Leaked frame: Frame "+frame._key+" points to one or more deleted vecs.");
+          skip = true;
+          break;
+        }
+      }
+      if (!skip) frames.add(frame);
+    }
+    return frames.toArray(new Frame[frames.size()]);
+  }
 
   public boolean hasNAs(){
     for(Vec v:bulkRollups())

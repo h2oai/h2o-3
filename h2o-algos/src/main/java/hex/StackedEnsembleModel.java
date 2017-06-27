@@ -109,7 +109,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       StackedEnsemble.addModelPredictionsToLevelOneFrame(base, basePreds, levelOneFrame);
       DKV.remove(basePreds._key); //Cleanup
 
-      Model.cleanup_adapt(adaptedFrame, fr);
+      Frame.deleteTempFrameAndItsNonSharedVecs(adaptedFrame, fr);
 
       baseIdx++;
     }
@@ -140,7 +140,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       this.addModelMetrics(mmStackedEnsemble);
     }
 
-    Model.cleanup_adapt(levelOneAdapted, levelOneFrame);
+    Frame.deleteTempFrameAndItsNonSharedVecs(levelOneAdapted, levelOneFrame);
     return metaBs.outputFrame(Key.<Frame>make(destination_key), metaNames, metaDomains);
   }
 
