@@ -247,36 +247,3 @@ documentation <https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md>`__
 
 After starting ``H2OServices`` by starting ``H2OContext``, point your
 client to the IP address and port number specified in ``H2OContext``.
-
---------------
-
-**Occasionally I receive an "out of memory" error from Sparkling Water. Is there a method based on the trees/depth/cross-validations that is used to determine how much memory is needed to store the model?**
-
-We normally suggest 3-4 times the size of the dataset for the amount of memory required. It's difficult to calculate the exact memory footprint for each case because running with a different solver or with different parameters can change the memory footprint drastically. In GLM for example, there's an internal heuristic for checking the estimated memory needed:
-
-`https://github.com/h2oai/h2o-3/blob/master/h2o-algos/src/main/java/hex/glm/GLM.java#L182 <https://github.com/h2oai/h2o-3/blob/master/h2o-algos/src/main/java/hex/glm/GLM.java#L182>`__
-
-In this particular case, if you use IRLSM or Coordinate Descent, the memory footprint is roughly in bytes:
-
-  (number of predictors expanded)^2 * (# of cores on one machine) * 4 
-
-And if you run cross validation with, for example, two-fold xval, then the memory footprint would be double this number; three-fold would be triple, etc.
-
-For GBM and Random Forest, another heuristic is run by checking how much memory is needed to hold the trees. Additionally, the number of histograms that are calculated per predictor also matters. 
-
-Depending on the user-specified predictors, max_depth per tree, the number of trees, nbins per histogram, and the number of classes (binomial vs multinomial), memory consumption will vary:
-
-- Holding trees: 2^max_depth * nclasses * ntrees * 10 (or the avg bytes/element)
-- Computing histograms: (num_predictors) * nbins * 3 (histogram/leaf) * (2^max_depth) * nclasses * 8
-
---------------
-
-**Also, is there a way to clear everything from H2O (including H2OFrames/Models)?**
-
-You can open Flow and select individual items to delete from H2O, or you can run the following to remove everything from H2O:
-
-::
-
-    import water.api.RemoveAllHandler
-    new RemoveAllHandler().remove(3,new RemoveAllV3())
-
