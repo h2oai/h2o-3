@@ -247,4 +247,3 @@ documentation <https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md>`__
 
 After starting ``H2OServices`` by starting ``H2OContext``, point your
 client to the IP address and port number specified in ``H2OContext``.
-
