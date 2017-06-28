@@ -7,8 +7,6 @@ stackedensemble.validation_frame.test <- function() {
   # 
   # 1) That passing in a validation_frame to h2o.stackedEnsemble does something (validation metrics exist)
   # 2) It should hopefully produce a better model (in the metalearning step)
-  # 3) Since the metalearner is harcoded to GLM, we should check:
-  # - TO DO: Should lambda_search = TRUE so that having validation_frame actually does something, or is early_stopping = TRUE enough?
      
   df <- h2o.uploadFile(locate("smalldata/higgs/higgs_train_5k.csv"), 
                           destination_frame = "higgs_train_5k")
@@ -55,7 +53,6 @@ stackedensemble.validation_frame.test <- function() {
                                 base_models = list(my_gbm, my_rf))
   expect_equal(inherits(h2o.performance(stack1, valid = TRUE), "H2OBinomialMetrics"), FALSE)
   
-  
   # Train a stacked ensemble with a validation_frame & check that validation metrics exist & are correct type
   stack2 <- h2o.stackedEnsemble(x = x, 
                                 y = y, 
@@ -64,15 +61,6 @@ stackedensemble.validation_frame.test <- function() {
                                 base_models = list(my_gbm, my_rf))
   expect_equal(inherits(h2o.performance(stack2, valid = TRUE), "H2OBinomialMetrics"), TRUE)
   expect_equal(class(h2o.auc(stack2, valid = TRUE)), "numeric")
-  
-  # Check properties of metalearners
-  # Only for GLM metalearner & will need to update if we modify GLM metalearner
-  meta1 <- h2o.getModel(stack1@model$metalearner$name)
-  meta2 <- h2o.getModel(stack2@model$metalearner$name)
-  expect_equal(meta1@allparameters$early_stopping, TRUE)
-  expect_equal(meta2@allparameters$early_stopping, TRUE)
-  expect_equal(meta1@allparameters$non_negative, TRUE)
-  expect_equal(meta2@allparameters$non_negative, TRUE)
   
   
   # Compare test AUC (ensemble with validation_frame should not be worse)
