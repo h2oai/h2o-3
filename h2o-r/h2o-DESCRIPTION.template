@@ -26,6 +26,7 @@ Imports: graphics,
 Suggests: ggplot2,
           mlbench,
           Matrix,
+          slam,
           data.table (>= 1.9.8)
 Collate:
          'astfun.R'
