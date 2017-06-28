@@ -19,7 +19,7 @@ import static water.TestUtil.parse_test_file;
  * using GramSVD under normal setting (_wideDataset is set to false).  Next, it builds a GramSVD model with
  * _wideDataSet set to true.
  */
-public class PCAWideDataSetsBenchModel {
+public class PCAWideDataSets {
 	private static final int numberOfModels = 6;
 	private Frame trainingFrame = null;
 	private PCA pca = null;
@@ -28,7 +28,7 @@ public class PCAWideDataSetsBenchModel {
 	private Frame pcaScore;
 	private SVDImplementation svdImplementation;
 
-	PCAWideDataSetsBenchModel(int dataSetCase) {
+	PCAWideDataSets(int dataSetCase) {
 		setDataSetCase(dataSetCase);
 		setup();
 	}

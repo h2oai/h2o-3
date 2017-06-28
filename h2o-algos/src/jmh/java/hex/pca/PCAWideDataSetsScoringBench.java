@@ -24,7 +24,7 @@ import static water.TestUtil.stall_till_cloudsize;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 public class PCAWideDataSetsScoringBench {
 	
-	private PCAWideDataSetsBenchModel pcaWideDataSetsBench;
+	private PCAWideDataSets pcaWideDataSetsBench;
 	@Param({"1", "2", "3", "4", "5", "6"})
 	private int dataSetCase;
 	@Param({"JAMA", "MTJ", "EVD_MTJ_DENSEMATRIX", "EVD_MTJ_SYMM"})
@@ -43,7 +43,7 @@ public class PCAWideDataSetsScoringBench {
 		water.util.Log.setLogLevel(logLevel);
 		stall_till_cloudsize(1);
 		
-		pcaWideDataSetsBench = new PCAWideDataSetsBenchModel(dataSetCase);
+		pcaWideDataSetsBench = new PCAWideDataSets(dataSetCase);
 		pcaWideDataSetsBench.setSvdImplementation(svdImplementation);
 		// train model to prepare for score()
 		pcaWideDataSetsBench.train();
