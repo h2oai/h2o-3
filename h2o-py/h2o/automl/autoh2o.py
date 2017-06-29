@@ -279,8 +279,6 @@ class H2OAutoML(object):
         self._automl_key = self._job.dest_key
         self._job.poll()
         self._fetch()
-        if self.project_name is None:
-            self.project_name = "automl_" + training_frame.frame_id
 
     #---------------------------------------------------------------------------
     # Predict with AutoML

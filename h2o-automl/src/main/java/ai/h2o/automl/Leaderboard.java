@@ -104,21 +104,24 @@ public class Leaderboard extends Keyed<Leaderboard> {
   /**
    *
    */
-  public Leaderboard(String project_name, UserFeedback userFeedback, Frame leaderboardFrame) {
+  private Leaderboard(String project_name, UserFeedback userFeedback, Frame leaderboardFrame) {
     this._key = make(idForProject(project_name));
-    Leaderboard old = DKV.getGet(this._key);
-
-    if (null != old) {
-      // pick up where we left off
-      // note that if subsequent runs use a different leaderboard frame the models are re-scored
-      this.models = old.models;
-      this.leaderboard_set_metrics = old.leaderboard_set_metrics;
-      this.sort_metrics = old.sort_metrics;
-    }
     this.project_name = project_name;
     this.userFeedback = userFeedback;
     this.leaderboardFrame = leaderboardFrame;
     DKV.put(this);
+  }
+
+  public static Leaderboard getOrMakeLeaderboard(String project_name, UserFeedback userFeedback, Frame leaderboardFrame) {
+    Leaderboard exists = DKV.getGet(Key.make(idForProject(project_name)));
+    if (null != exists) {
+      exists.userFeedback = userFeedback;
+      exists.leaderboardFrame = leaderboardFrame;
+      DKV.put(exists);
+      return exists;
+    }
+
+    return new Leaderboard(project_name, userFeedback, leaderboardFrame);
   }
 
   // satisfy typing for job return type...
@@ -219,7 +222,6 @@ public class Leaderboard extends Keyed<Leaderboard> {
         }
 
         // Sort by metric on the leaderboard/test set.
-        // TODO TODO TODO this sorts by the metrics in Model._output
         try {
           List<Key<Model>> modelsSorted = ModelMetrics.sortModelsByMetric(leaderboardFrame, sort_metric, sort_decreasing, Arrays.asList(old.models));
           old.models = modelsSorted.toArray(new Key[0]);
