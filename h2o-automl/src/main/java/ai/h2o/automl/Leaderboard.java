@@ -510,7 +510,16 @@ public class Leaderboard extends Keyed<Leaderboard> {
     String[] rowHeaders = new String[length];
     for (int i = 0; i < length; i++) rowHeaders[i] = "" + i;
 
-    if ("mean_per_class_error".equals(sort_metric)){ //Multinomial
+    if (sort_metric == null && length == 0) {
+      // empty TwoDimTable
+      return new TwoDimTable(tableHeader,
+              "no models in this leaderboard",
+              new String[0],
+              new String[0],
+              new String[0],
+              new String[0],
+              "-");
+    } else if ("mean_per_class_error".equals(sort_metric)){ //Multinomial
       return new TwoDimTable(tableHeader,
               "models sorted in order of " + sort_metric + ", best first",
               rowHeaders,
