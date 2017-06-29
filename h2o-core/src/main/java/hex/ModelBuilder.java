@@ -749,10 +749,21 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected void ignoreInvalidColumns(int npredictors, boolean expensive){}
 
   /**
+   * Makes sure the final model will fit in memory.
+   *
+   * Note: This method should not be overridden (override checkMemoryFootPrint_impl instead). It is
+   * not declared 'final' to not to break 3rd party implementations. It might be declared final in the future
+   * if necessary.
+   */
+  protected void checkMemoryFootPrint() {
+    if (Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.noMemoryCheck")) return; // skip check if disabled
+    checkMemoryFootPrint_impl();
+  }
+
+  /**
    * Override this method to call error() if the model is expected to not fit in memory, and say why
    */
-  protected void checkMemoryFootPrint() {}
-
+  protected void checkMemoryFootPrint_impl() {}
 
   transient double [] _distribution;
   transient protected double [] _priorClassDist;

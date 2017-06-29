@@ -42,7 +42,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
   public KMeans( KMeansModel.KMeansParameters parms, Job job) { super(parms,job); init(false); }
   public KMeans(boolean startup_once) { super(new KMeansModel.KMeansParameters(),startup_once); }
 
-  @Override protected void checkMemoryFootPrint() {
+  @Override protected void checkMemoryFootPrint_impl() {
     long mem_usage = 8 /*doubles*/ * _parms._k * _train.numCols() * (_parms._standardize ? 2 : 1);
     long max_mem = H2O.SELF._heartbeat.get_free_mem();
     if (mem_usage > max_mem) {

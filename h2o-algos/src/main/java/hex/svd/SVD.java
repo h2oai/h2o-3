@@ -83,7 +83,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   public SVD(boolean startup_once) { super(new SVDParameters(),startup_once); }
 
   @Override
-  protected void checkMemoryFootPrint() {
+  protected void checkMemoryFootPrint_impl() {
     HeartBeat hb = H2O.SELF._heartbeat;
     double p = LinearAlgebraUtils.numColsExp(_train, true);
     double r = _train.numRows();

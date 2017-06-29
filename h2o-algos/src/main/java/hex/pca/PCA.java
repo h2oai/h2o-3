@@ -51,7 +51,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   @Override public boolean havePojo() { return true; }
   @Override public boolean haveMojo() { return false; }
 
-  @Override protected void checkMemoryFootPrint() {
+  @Override protected void checkMemoryFootPrint_impl() {
 
     HeartBeat hb = H2O.SELF._heartbeat; // todo: Add to H2O object memory information so we don't have to use heartbeat.
     //   int numCPUs= H2O.NUMCPUS;   // proper way to get number of CPUs.
