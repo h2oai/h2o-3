@@ -238,8 +238,8 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
   }
 
   /**
+   * Note: this method is not yet implemented.
    * Make a prediction on a new data point using an AutoEncoder model.
-   *
    * @param data A new data point.
    * @return The prediction.
    * @throws PredictException
