@@ -57,7 +57,6 @@ Collate:
          'naivebayes.R'
          'word2vec.R'
          'w2vutils.R'
-         'klime.R'
          'locate.R'
          'grid.R'
          'predict.R'
