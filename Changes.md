@@ -2,6 +2,48 @@
 
 ## H2O
 
+### Vajda (3.10.5.3) - 6/30/2017
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/3/index.html</a>
+
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4026'>PUBDEV-4026</a>] - Fixed an issue that resulted in "Unexpected character after column id:" warnings when parsing an SVMLight file.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4445'>PUBDEV-4445</a>] - h2o.predict now displays a warning if the features (columns) in the test frame do not contain those features used by the model.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4572'>PUBDEV-4572</a>] - The XGBoost REST API is now only registered when backend lib exists.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4595'>PUBDEV-4595</a>] - H2O no longer displays an error if there is a "/" in the user-supplied model name. Instead, a message will display indicating that the "/" is replaced with "_".
+</li>
+</ul>
+                    
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3941'>PUBDEV-3941</a>] - Added support for autoencoder POJOs in in the EasyPredictModelWrapper. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4269'>PUBDEV-4269</a>] - H2O now warns the user about the minimal required Colorama version in case of python client. Note that the current minimum version is 0.3.8.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4537'>PUBDEV-4537</a>] - Removed deprecation warnings from the H2O build.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4548'>PUBDEV-4548</a>] - Moved the initialization of XGBoost into the H2O core extension.
+</li>
+</ul>
+    
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4515'>PUBDEV-4515</a>] - Added a link to paper describing balance classes in the <a href='http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/algo-params/balance_classes.html'>balance_classes</a> parameter topic.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4610'>PUBDEV-4610</a>] - Removed `laplace`, `huber`, and `quantile` from list of supported distributions in the XGBoost documentation.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4612'>PUBDEV-4612</a>] - Add heuristics to the FAQ &gt; General Troubleshooting topic. 
+</li>
+</ul>
+
 ### Vajda (3.10.5.2) - 6/19/2017
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/2/index.html</a>
