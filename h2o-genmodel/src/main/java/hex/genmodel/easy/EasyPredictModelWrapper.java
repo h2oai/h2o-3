@@ -3,7 +3,6 @@ package hex.genmodel.easy;
 import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.algos.deepwater.DeepwaterMojoModel;
-import hex.genmodel.algos.word2vec.Word2VecMojoModel;
 import hex.genmodel.algos.word2vec.WordEmbeddingModel;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.exception.PredictNumberFormatException;
@@ -262,6 +261,12 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     return p;
   }
 
+  /**
+   * Creates a 1-hot encoded representation of the input data.
+   * @param data raw input as seen by the score0 function
+   * @param size target size of the output array
+   * @return 1-hot encoded data
+   */
   private double[] expandRawData(double[] data, int size) {
     double[] expanded = new double[size];
     int pos = 0;
@@ -278,6 +283,12 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     return expanded;
   }
 
+  /**
+   * Converts output of AutoEncoder to a RowData structure. Categorical fields are represented by
+   * a map of domain values -> reconstructed values, missing domain value is represented by a 'null' key
+   * @param reconstructed raw output of AutoEncoder
+   * @return reconstructed RowData structure
+   */
   private RowData reconstructedToRowData(double[] reconstructed) {
     RowData rd = new RowData();
     int pos = 0;
