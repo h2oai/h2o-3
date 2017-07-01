@@ -100,7 +100,7 @@ public class PreviewParseWriter extends Iced implements StreamParseWriter {
   }
 
   @Override
-  public void setInvalidCol(int colIdx, int nrow) {
+  public void addNAs(int colIdx, int nrow) {
     throw H2O.unimpl();
   }
 

@@ -98,7 +98,7 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
   }
 
   @Override
-  public void setInvalidCol(int colIdx, int nrows) {
+  public void addNAs(int colIdx, int nrows) {
     (_nvs[colIdx] = _vecs[colIdx].chunkForChunkIdx(_cidx)).addNAs(nrows);
   }
 

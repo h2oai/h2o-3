@@ -142,7 +142,6 @@ public class OrcParserProvider extends ParserProvider {
     if(!(v instanceof FileVec)) throw H2O.unimpl("ORC only implemented for HDFS / NFS files");
     try {
       ((OrcParser.OrcParseSetup)setup).setOrcFileReader(getReader((FileVec)v));
-
       return setup;
 
     } catch (IOException e) {throw new RuntimeException(e);}

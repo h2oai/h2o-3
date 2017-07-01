@@ -16,6 +16,7 @@ import water.api.schemas3.ParseSetupV3;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
+import water.parser.orc.OrcParserProvider;
 import water.util.FileUtils;
 import water.util.Log;
 
@@ -85,7 +86,10 @@ public class ParseTestOrc extends TestUtil {
     @Test public void testBadColumn(){
         NFSFileVec nfs = makeNfsFileVec("smalldata/parser/orc/orc_split_elim.orc");
         Key<Frame> outputKey = Key.make("orc_Test");
-        ParseSetup ps = ParseSetup.guessSetup(new Key[]{nfs._key}, new ParseSetup(new ParseSetupV3()));
+        ParseSetup pstp = new ParseSetup(new ParseSetupV3());
+        pstp._parse_type = new OrcParserProvider.OrcParserInfo();
+        ParseSetup ps = ParseSetup.guessSetup(new Key[]{nfs._key}, pstp);
+        Assert.assertEquals(ps._parse_type.name(), "ORC");
         System.out.println("ParseSetup");
         System.out.println(ps);
         ps._column_types[0] = Vec.T_BAD;

@@ -134,6 +134,7 @@ public class OrcParser extends Parser {
           if (toInclude[col + 1]) { // only write a column if we actually want it
             if(_setup.getColumnTypes()[col] != Vec.T_BAD)
               write1column(dataVectors[col], orcTypes[colIndex], colIndex, nrows, dout);
+            else dout.addNAs(col,nrows);
             colIndex++;
           }
         }
@@ -142,7 +143,7 @@ public class OrcParser extends Parser {
       byte [] col_types = _setup.getColumnTypes();
       for(int i = 0; i < col_types.length; ++i){
         if(col_types[i] == Vec.T_BAD)
-          dout.setInvalidCol(i,(int)rowCount);
+          dout.addNAs(i,(int)rowCount);
       }
       perStripe.close();
     } catch(IOException ioe) {

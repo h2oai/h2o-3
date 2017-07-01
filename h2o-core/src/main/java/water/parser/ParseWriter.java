@@ -39,7 +39,7 @@ public interface ParseWriter extends Freezable {
   void addNumCol(int colIdx, double d);
   // An an invalid / missing entry
   void addInvalidCol(int colIdx);
-  void setInvalidCol(int colIdx, int nrow);
+  void addNAs(int colIdx, int nrow);
   // Add a String column
   void addStrCol( int colIdx, BufferedString str );
   // Final rolling back of partial line
