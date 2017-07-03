@@ -221,7 +221,7 @@ class H2OFrame(object):
         """The list of column names (List[str])."""
         if not self._ex._cache.names_valid():
             self._ex._cache.flush()
-            self._frame(True)
+            self._frame(fill_cache=True)
         return list(self._ex._cache.names)
 
     @names.setter
