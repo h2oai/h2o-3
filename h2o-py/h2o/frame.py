@@ -208,7 +208,7 @@ class H2OFrame(object):
     def refresh(self):
         """Reload frame information from the backend H2O server."""
         self._ex._cache.flush()
-        self._frame(True)
+        self._frame(fill_cache=True)
 
 
 
@@ -234,7 +234,7 @@ class H2OFrame(object):
         """Number of rows in the dataframe (int)."""
         if not self._ex._cache.nrows_valid():
             self._ex._cache.flush()
-            self._frame(True)
+            self._frame(fill_cache=True)
         return self._ex._cache.nrows
 
 
@@ -243,7 +243,7 @@ class H2OFrame(object):
         """Number of columns in the dataframe (int)."""
         if not self._ex._cache.ncols_valid():
             self._ex._cache.flush()
-            self._frame(True)
+            self._frame(fill_cache=True)
         return self._ex._cache.ncols
 
 
@@ -258,7 +258,7 @@ class H2OFrame(object):
         """The dictionary of column name/type pairs."""
         if not self._ex._cache.types_valid():
             self._ex._cache.flush()
-            self._frame(True)
+            self._frame(fill_cache=True)
         return dict(self._ex._cache.types)
 
 
@@ -289,7 +289,7 @@ class H2OFrame(object):
         assert_is_type(col, int, str)
         if not self._ex._cache.types_valid() or not self._ex._cache.names_valid():
             self._ex._cache.flush()
-            self._frame(True)
+            self._frame(fill_cache=True)
         types = self._ex._cache.types
         if is_type(col, str):
             if col in types:
@@ -417,12 +417,12 @@ class H2OFrame(object):
         if H2ODisplay._in_ipy():
             import IPython.display
             if use_pandas and can_use_pandas():
-                IPython.display.display(self.head().as_data_frame(True))
+                IPython.display.display(self.head().as_data_frame(fill_cache=True))
             else:
                 IPython.display.display_html(self._ex._cache._tabulate("html", False,rows=self.nrows), raw=True)
         else:
             if use_pandas and can_use_pandas():
-                print(self.head().as_data_frame(True))
+                print(self.head().as_data_frame(fill_cache=True))
             else:
                 s = self.__unicode__()
                 try:
