@@ -387,11 +387,10 @@ class H2OFrame(object):
     def __iter__(self):
         return (self[i] for i in range(self.ncol))
 
-
     def __unicode__(self):
         if sys.gettrace() is None:
             if self._ex is None: return "This H2OFrame has been removed."
-            table = self._frame()._ex._cache._tabulate("simple", False)
+            table = self._frame(rows=self.nrows,fill_cache=True)._ex._cache._tabulate("simple", False)
             nrows = "%d %s" % (self.nrow, "row" if self.nrow == 1 else "rows")
             ncols = "%d %s" % (self.ncol, "column" if self.ncol == 1 else "columns")
             return "%s\n\n[%s x %s]" % (table, nrows, ncols)
@@ -414,13 +413,13 @@ class H2OFrame(object):
         if self._ex is None:
             print("This H2OFrame has been removed.")
             return
-        if not self._ex._cache.is_valid(): self._frame()._ex._cache.fill()
+        if not self._ex._cache.is_valid(): self._frame()._ex._cache.fill(rows=self.nrows)
         if H2ODisplay._in_ipy():
             import IPython.display
             if use_pandas and can_use_pandas():
                 IPython.display.display(self.head().as_data_frame(True))
             else:
-                IPython.display.display_html(self._ex._cache._tabulate("html", False), raw=True)
+                IPython.display.display_html(self._ex._cache._tabulate("html", False,rows=self.nrows), raw=True)
         else:
             if use_pandas and can_use_pandas():
                 print(self.head().as_data_frame(True))
@@ -472,10 +471,10 @@ class H2OFrame(object):
         self.summary()
 
 
-    def _frame(self, fill_cache=False):
+    def _frame(self, rows=10,fill_cache=False):
         self._ex._eager_frame()
         if fill_cache:
-            self._ex._cache.fill()
+            self._ex._cache.fill(rows=rows)
         return self
 
 
