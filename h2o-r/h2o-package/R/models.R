@@ -94,13 +94,13 @@
 }
 
 
-.h2o.modelJob <- function( algo, params, h2oRestApiVersion=.h2o.__REST_API_VERSION ) {
+.h2o.modelJob <- function( algo, params, h2oRestApiVersion=.h2o.__REST_API_VERSION, verbose=FALSE) {
   if( !is.null(params$validation_frame) )
     .eval.frame(params$training_frame)
   if( !is.null(params$validation_frame) )
     .eval.frame(params$validation_frame)
   job <- .h2o.startModelJob(algo, params, h2oRestApiVersion)
-  h2o.getFutureModel(job)
+  h2o.getFutureModel(job, verbose = verbose)
 }
 
 .h2o.startModelJob <- function(algo, params, h2oRestApiVersion) {
@@ -160,8 +160,8 @@
 #' @rdname h2o.getFutureModel
 #' @param object H2OModel
 #' @export
-h2o.getFutureModel <- function(object) {
-  .h2o.__waitOnJob(object@job_key)
+h2o.getFutureModel <- function(object,verbose=FALSE) {
+  .h2o.__waitOnJob(object@job_key,verboseModelScoringHistory=verbose)
   h2o.getModel(object@model_id)
 }
 

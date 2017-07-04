@@ -41,7 +41,7 @@ class H2OJob(object):
         self._poll_count = 10**10
 
 
-    def poll(self):
+    def poll(self, verbose_model_scoring_history = False):
         """
         Wait until the job finishes.
 
@@ -51,7 +51,10 @@ class H2OJob(object):
         try:
             hidden = not H2OJob.__PROGRESS_BAR__
             pb = ProgressBar(title=self._job_type + " progress", hidden=hidden)
-            pb.execute(self._refresh_job_status)
+            if verbose_model_scoring_history:
+                pb.execute(self._refresh_job_status, verbose_model=self.job['dest']['name'])
+            else:
+                pb.execute(self._refresh_job_status)
         except StopIteration as e:
             if str(e) == "cancelled":
                 h2o.api("POST /3/Jobs/%s/cancel" % self.job_key)
