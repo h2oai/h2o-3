@@ -413,7 +413,7 @@ class H2OFrame(object):
         if self._ex is None:
             print("This H2OFrame has been removed.")
             return
-        if not self._ex._cache.is_valid(): self._frame()._ex._cache.fill(rows=self.nrows)
+        if not self._ex._cache.is_valid(): self._frame()._ex._cache.fill()
         if H2ODisplay._in_ipy():
             import IPython.display
             if use_pandas and can_use_pandas():
@@ -491,7 +491,8 @@ class H2OFrame(object):
         assert_is_type(cols, int)
         nrows = min(self.nrows, rows)
         ncols = min(self.ncols, cols)
-        return self[:nrows, :ncols]
+        newdt = self[:nrows, :ncols]
+        return newdt._frame(rows=nrows,fill_cache=True)
 
 
     def tail(self, rows=10, cols=200):
@@ -508,7 +509,8 @@ class H2OFrame(object):
         nrows = min(self.nrows, rows)
         ncols = min(self.ncols, cols)
         start_idx = self.nrows - nrows
-        return self[start_idx:start_idx + nrows, :ncols]
+        newdt = self[start_idx:start_idx + nrows, :ncols]
+        return newdt._frame(rows=nrows,fill_cache=True)
 
 
     def logical_negation(self):
