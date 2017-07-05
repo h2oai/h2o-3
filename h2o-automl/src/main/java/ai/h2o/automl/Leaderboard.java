@@ -264,7 +264,6 @@ public class Leaderboard extends Keyed<Leaderboard> {
     }
 
     // always
-    EckoClient.updateLeaderboard(this);
     if (null != newLeader[0]) {
       userFeedback.info(UserFeedbackEvent.Stage.ModelTraining, "New leader: " + newLeader[0]);
     }
