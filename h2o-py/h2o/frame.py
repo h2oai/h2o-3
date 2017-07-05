@@ -471,7 +471,7 @@ class H2OFrame(object):
         self.summary()
 
 
-    def _frame(self, rows=10,fill_cache=False):
+    def _frame(self, rows=10, fill_cache=False):
         self._ex._eager_frame()
         if fill_cache:
             self._ex._cache.fill(rows=rows)
