@@ -390,7 +390,7 @@ class H2OFrame(object):
     def __unicode__(self):
         if sys.gettrace() is None:
             if self._ex is None: return "This H2OFrame has been removed."
-            table = self._frame(rows=self.nrows,fill_cache=True)._ex._cache._tabulate("simple", False)
+            table = self._frame(fill_cache=True)._ex._cache._tabulate("simple", False)
             nrows = "%d %s" % (self.nrow, "row" if self.nrow == 1 else "rows")
             ncols = "%d %s" % (self.ncol, "column" if self.ncol == 1 else "columns")
             return "%s\n\n[%s x %s]" % (table, nrows, ncols)
