@@ -419,7 +419,7 @@ class H2OFrame(object):
             if use_pandas and can_use_pandas():
                 IPython.display.display(self.head().as_data_frame(fill_cache=True))
             else:
-                IPython.display.display_html(self._ex._cache._tabulate("html", False,rows=self.nrows), raw=True)
+                IPython.display.display_html(self._ex._cache._tabulate("html", False), raw=True)
         else:
             if use_pandas and can_use_pandas():
                 print(self.head().as_data_frame(fill_cache=True))
@@ -492,7 +492,7 @@ class H2OFrame(object):
         nrows = min(self.nrows, rows)
         ncols = min(self.ncols, cols)
         newdt = self[:nrows, :ncols]
-        return newdt._frame(rows=nrows,fill_cache=True)
+        return newdt._frame(rows=nrows, fill_cache=True)
 
 
     def tail(self, rows=10, cols=200):
@@ -510,7 +510,7 @@ class H2OFrame(object):
         ncols = min(self.ncols, cols)
         start_idx = self.nrows - nrows
         newdt = self[start_idx:start_idx + nrows, :ncols]
-        return newdt._frame(rows=nrows,fill_cache=True)
+        return newdt._frame(rows=nrows, fill_cache=True)
 
 
     def logical_negation(self):
