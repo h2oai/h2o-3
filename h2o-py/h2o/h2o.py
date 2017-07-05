@@ -354,7 +354,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     :param path: path(s) specifying the location of the data to import or a path to a directory of files to import
     :param destination_frame: The unique hex key assigned to the imported file. If none is given, a key will be
         automatically generated.
-    :param parse: If True, the file should be parsed after import.
+    :param parse: If True, the file should be parsed after import. If False, then a list is returned containing the file path.
     :param header: -1 means the first line is data, 0 means guess, 1 means first line is header.
     :param sep: The field separator character. Values on each line of the file are separated by
         this character. If not provided, the parser will automatically detect the separator.
