@@ -1,7 +1,8 @@
 package hex.pca;
 
 public final class JMHConfiguration {
-  public static final int WARM_UP_ITERATIONS = 5;
-  public static final int MEASUREMENT_ITERATIONS = 10;
-  public static final String logLevel = "ERRR";
+  // The default values are for minimal working benchmarking. Set up your own values for your own benchmarking.
+  static final int WARM_UP_ITERATIONS = 1;
+  static final int MEASUREMENT_ITERATIONS = 1;
+  static final String logLevel = "ERRR";
 }
