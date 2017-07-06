@@ -132,7 +132,7 @@ public class OrcParser extends Parser {
         int colIndex = 0;
         for (int col = 0; col < batch.numCols; ++col) {  // read one column at a time;
           if (toInclude[col + 1]) { // only write a column if we actually want it
-            if(_setup.getColumnTypes()[col] != Vec.T_BAD)
+            if(_setup.getColumnTypes()[colIndex] != Vec.T_BAD)
               write1column(dataVectors[col], orcTypes[colIndex], colIndex, nrows, dout);
             else dout.addNAs(col,nrows);
             colIndex++;
