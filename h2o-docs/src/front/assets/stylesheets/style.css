@@ -460,22 +460,30 @@ header ul ul li {
 */
 
 .textwidget {
-    width: 20vw !important;
+    width: 12vw !important;
     padding: 0 !important;
     margin: 0 !important;
+    text-align: left;
+}
+
+.textwidget h3 {
+    font-family: Heebo;
+    font-size: 20px;
+    font-weight: 400;
+    line-height 24px;
 }
 
 .textwidget p, .textwidget h4 {
     margin-bottom: 10px !important;
-    text-align: center !important;
+    text-align: left;
     
 }
 
 .textwidget img {
-    display:block !important;
-    margin:auto !important;
-    margin-bottom: 16px !important;
-    max-height: 24px !important;
+    display:block;
+    margin: 0px;
+    margin-bottom: 8px;
+    max-height: 24px;
 }
 
 footer {
