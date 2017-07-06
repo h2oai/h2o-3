@@ -22,6 +22,7 @@ import static water.TestUtil.stall_till_cloudsize;
 @Measurement(iterations = JMHConfiguration.MEASUREMENT_ITERATIONS)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
+@Timeout(time = JMHConfiguration.TIMEOUT_MINUTES, timeUnit = TimeUnit.MINUTES)
 public class PCAWideDataSetsScoringBench {
 	
 	private PCAWideDataSets pcaWideDataSetsBench;
