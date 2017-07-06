@@ -19,14 +19,14 @@ import java.util.concurrent.TimeUnit;
 @Measurement(iterations = JMHConfiguration.MEASUREMENT_ITERATIONS)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-public class PCAQuasarTrainingBench extends PCAQuasar {
+public class PCAJMHTraining extends PCAJMH {
   
   @Param({"JAMA", "MTJ", "EVD_MTJ_DENSEMATRIX", "EVD_MTJ_SYMM"})
   private SVDImplementation svdImplementation;
   
   public static void main(String[] args) throws RunnerException {
     Options opt = new OptionsBuilder()
-        .include(PCAQuasarTrainingBench.class.getSimpleName())
+        .include(PCAJMHTraining.class.getSimpleName())
         .build();
 
     new Runner(opt).run();
@@ -46,7 +46,7 @@ public class PCAQuasarTrainingBench extends PCAQuasar {
   @Benchmark
   public boolean measureQuasarTraining() throws Exception {
     if (!tryToTrain()) {
-      throw new Exception("Model for PCAQuasarScoringBench failed to be trained!");
+      throw new Exception("Model for PCAJMHScoring failed to be trained!");
     }
     return true;
   }

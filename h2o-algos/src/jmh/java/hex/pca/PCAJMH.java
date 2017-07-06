@@ -15,7 +15,8 @@ import static water.TestUtil.stall_till_cloudsize;
  * @author mathemage <ha@h2o.ai>
  *         created on 24.6.17
  */
-public class PCAQuasar {
+public class PCAJMH {
+	
 	PCAModel.PCAParameters paramsQuasar;
 	protected PCAModel pcaModel;
 	protected Frame trainingFrame;
@@ -83,4 +84,5 @@ public class PCAQuasar {
 		}
 		return true;
 	}
+	
 }
