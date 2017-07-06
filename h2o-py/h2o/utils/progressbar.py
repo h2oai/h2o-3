@@ -11,8 +11,6 @@ import math
 import os
 import sys
 import time
-from datetime import datetime
-import h2o
 from types import FunctionType, GeneratorType, MethodType
 
 import colorama
@@ -123,7 +121,7 @@ class ProgressBar(object):
         self._next_poll_time = None
 
 
-    def execute(self, progress_fn, verbose_model=None):
+    def execute(self, progress_fn, print_verbose_info=None):
         """
         Start the progress bar, and return only when the progress reaches 100%.
 
@@ -178,17 +176,13 @@ class ProgressBar(object):
                 time1 = self._get_time_at_progress(result.next_progress)
                 next_render_time = min(time0, time1)
                 self._draw(result.rendered)
-                if verbose_model is not None:
-                    time.sleep(1) #To avoid 400 HTTP error
-                    model = h2o.get_model(verbose_model)
-                    print("\nScoring History for Model " + str(model.model_id) + " at " + str(datetime.now()))
-                    print("Model Build is {0:.0f}% done...".format(progress*100))
-                    print(model.scoring_history().tail())
-                    print("\n")
+
                 # Wait until the next rendering/querying cycle
                 wait_time = min(next_render_time, self._next_poll_time) - now
                 if wait_time > 0:
                     time.sleep(wait_time)
+                    if print_verbose_info is not None:
+                        print_verbose_info(True)
         except KeyboardInterrupt:
             # If the user presses Ctrl+C, we interrupt the progress bar.
             status = "cancelled"

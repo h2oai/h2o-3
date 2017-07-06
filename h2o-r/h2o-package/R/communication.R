@@ -800,12 +800,6 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
       }
 
       job = jobs[[1]]
-      if(verboseModelScoringHistory){
-        Sys.sleep(1) #To avoid 400 HTTP error
-        cat(paste0("\nScoring History for Model ",job$dest$name, " at ", Sys.time(),"\n"))
-        print(paste0("Model Build is ", job$progress*100, "% done..."))
-        print(tail(h2o.getModel(job$dest$name)@model$scoring_history))
-      }
       status = job$status
       stopifnot(is.character(status))
 
@@ -851,6 +845,11 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
 
       if (keepRunning) {
         Sys.sleep(pollInterval)
+        if(verboseModelScoringHistory){
+          cat(paste0("\nScoring History for Model ",job$dest$name, " at ", Sys.time(),"\n"))
+          print(paste0("Model Build is ", job$progress*100, "% done..."))
+          print(tail(h2o.getModel(job$dest$name)@model$scoring_history))
+        }
       } else {
         if (progressBar) {
           close(pb)
