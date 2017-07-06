@@ -182,7 +182,7 @@ class ProgressBar(object):
                 if wait_time > 0:
                     time.sleep(wait_time)
                     if print_verbose_info is not None:
-                        print_verbose_info(True)
+                        print_verbose_info(progress)
         except KeyboardInterrupt:
             # If the user presses Ctrl+C, we interrupt the progress bar.
             status = "cancelled"
