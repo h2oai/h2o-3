@@ -208,7 +208,7 @@ class H2OFrame(object):
     def refresh(self):
         """Reload frame information from the backend H2O server."""
         self._ex._cache.flush()
-        self._frame(True)
+        self._frame(fill_cache=True)
 
 
 
@@ -221,7 +221,7 @@ class H2OFrame(object):
         """The list of column names (List[str])."""
         if not self._ex._cache.names_valid():
             self._ex._cache.flush()
-            self._frame(True)
+            self._frame(fill_cache=True)
         return list(self._ex._cache.names)
 
     @names.setter
@@ -234,7 +234,7 @@ class H2OFrame(object):
         """Number of rows in the dataframe (int)."""
         if not self._ex._cache.nrows_valid():
             self._ex._cache.flush()
-            self._frame(True)
+            self._frame(fill_cache=True)
         return self._ex._cache.nrows
 
 
@@ -243,7 +243,7 @@ class H2OFrame(object):
         """Number of columns in the dataframe (int)."""
         if not self._ex._cache.ncols_valid():
             self._ex._cache.flush()
-            self._frame(True)
+            self._frame(fill_cache=True)
         return self._ex._cache.ncols
 
 
@@ -258,7 +258,7 @@ class H2OFrame(object):
         """The dictionary of column name/type pairs."""
         if not self._ex._cache.types_valid():
             self._ex._cache.flush()
-            self._frame(True)
+            self._frame(fill_cache=True)
         return dict(self._ex._cache.types)
 
 
@@ -289,7 +289,7 @@ class H2OFrame(object):
         assert_is_type(col, int, str)
         if not self._ex._cache.types_valid() or not self._ex._cache.names_valid():
             self._ex._cache.flush()
-            self._frame(True)
+            self._frame(fill_cache=True)
         types = self._ex._cache.types
         if is_type(col, str):
             if col in types:
@@ -387,11 +387,10 @@ class H2OFrame(object):
     def __iter__(self):
         return (self[i] for i in range(self.ncol))
 
-
     def __unicode__(self):
         if sys.gettrace() is None:
             if self._ex is None: return "This H2OFrame has been removed."
-            table = self._frame()._ex._cache._tabulate("simple", False)
+            table = self._frame(fill_cache=True)._ex._cache._tabulate("simple", False)
             nrows = "%d %s" % (self.nrow, "row" if self.nrow == 1 else "rows")
             ncols = "%d %s" % (self.ncol, "column" if self.ncol == 1 else "columns")
             return "%s\n\n[%s x %s]" % (table, nrows, ncols)
@@ -418,12 +417,12 @@ class H2OFrame(object):
         if H2ODisplay._in_ipy():
             import IPython.display
             if use_pandas and can_use_pandas():
-                IPython.display.display(self.head().as_data_frame(True))
+                IPython.display.display(self.head().as_data_frame(fill_cache=True))
             else:
                 IPython.display.display_html(self._ex._cache._tabulate("html", False), raw=True)
         else:
             if use_pandas and can_use_pandas():
-                print(self.head().as_data_frame(True))
+                print(self.head().as_data_frame(fill_cache=True))
             else:
                 s = self.__unicode__()
                 try:
@@ -472,10 +471,10 @@ class H2OFrame(object):
         self.summary()
 
 
-    def _frame(self, fill_cache=False):
+    def _frame(self, rows=10, fill_cache=False):
         self._ex._eager_frame()
         if fill_cache:
-            self._ex._cache.fill()
+            self._ex._cache.fill(rows=rows)
         return self
 
 
@@ -492,7 +491,8 @@ class H2OFrame(object):
         assert_is_type(cols, int)
         nrows = min(self.nrows, rows)
         ncols = min(self.ncols, cols)
-        return self[:nrows, :ncols]
+        newdt = self[:nrows, :ncols]
+        return newdt._frame(rows=nrows, fill_cache=True)
 
 
     def tail(self, rows=10, cols=200):
@@ -509,7 +509,8 @@ class H2OFrame(object):
         nrows = min(self.nrows, rows)
         ncols = min(self.ncols, cols)
         start_idx = self.nrows - nrows
-        return self[start_idx:start_idx + nrows, :ncols]
+        newdt = self[start_idx:start_idx + nrows, :ncols]
+        return newdt._frame(rows=nrows, fill_cache=True)
 
 
     def logical_negation(self):
