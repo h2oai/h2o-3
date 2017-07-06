@@ -2351,11 +2351,6 @@ def parse_args(argv):
             if i >= len(argv):
                 usage()
             g_jvm_xmx = argv[i]
-        elif s == "--jvm.cp":
-            i += 1
-            if i > len(argv):
-                usage()
-            g_jvm_cp = argv[i]
         elif s == "--norun":
             g_no_run = True
         elif s == "--noxunit":

@@ -54,8 +54,6 @@ public class UserFeedback extends Keyed<UserFeedback> {
     feedbackEvents = new UserFeedbackEvent[feedbackEvents.length + 1];
     System.arraycopy(oldEvents, 0, feedbackEvents, 0, oldEvents.length);
     feedbackEvents[oldEvents.length] = event;
-
-    EckoClient.addEvent(event);
   } // addEvent
 
   /**
