@@ -1,4 +1,4 @@
-package water.parser.parquet;
+package water.persist;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;

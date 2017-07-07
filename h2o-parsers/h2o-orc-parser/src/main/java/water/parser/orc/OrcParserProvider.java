@@ -12,7 +12,7 @@ import water.Job;
 import water.Key;
 import water.fvec.*;
 import water.parser.*;
-import water.persist.PersistHdfs;
+import water.persist.VecFileSystem;
 
 import java.io.IOException;
 import java.util.List;
@@ -25,8 +25,23 @@ import static water.fvec.FileVec.getPathForKey;
  */
 public class OrcParserProvider extends ParserProvider {
 
+  public static class OrcParserInfo extends ParserInfo {
+
+    public OrcParserInfo() {
+      super("ORC", DefaultParserProviders.MAX_CORE_PRIO + 20, true, true, false);
+    }
+
+    public ParseMethod parseMethod(int nfiles, int nchunks){
+      int ncores_tot = H2O.NUMCPUS*H2O.CLOUD.size();
+      // prefer StreamParse if we have enough files to keep cluster busy
+      // ORC stream parse is more efficient
+      return
+          nfiles >= (ncores_tot >> 1)  // got enough files to keep cluster busy
+              ?ParseMethod.StreamParse:ParseMethod.StreamParse;//ParseMethod.DistributedParse;
+    }
+  }
   /* Setup for this parser */
-  static ParserInfo ORC_INFO = new ParserInfo("ORC", DefaultParserProviders.MAX_CORE_PRIO + 20, true);
+  static ParserInfo ORC_INFO = new OrcParserInfo();
 
   @Override
   public ParserInfo info() {
@@ -70,10 +85,8 @@ public class OrcParserProvider extends ParserProvider {
   private Reader getReader(FileVec f) throws IOException {
     String strPath = getPathForKey(f._key);
     Path path = new Path(strPath);
-    if(f instanceof HDFSFileVec)
-      return OrcFile.createReader(PersistHdfs.getFS(strPath), path);
-    else
-      return OrcFile.createReader(path, OrcFile.readerOptions(new Configuration()));
+    Configuration conf = VecFileSystem.makeConfiguration(f);
+    return OrcFile.createReader(VecFileSystem.get(conf), path);
   }
 
   /**
@@ -103,7 +116,7 @@ public class OrcParserProvider extends ParserProvider {
         byte[] old_columnTypes = stp.getColumnTypes();
         String[] old_columnTypeNames = stp.getColumnTypesString();
         for (int index = 0; index < columnTypes.length; index++) {
-          if (columnTypes[index] == Vec.T_CAT)  // only copy the enum types
+          if (columnTypes[index] == Vec.T_CAT || columnTypes[index] == Vec.T_BAD)  // only copy the enum types
             old_columnTypes[index] = columnTypes[index];
         }
         stp.setColumnTypes(old_columnTypes);
@@ -129,7 +142,6 @@ public class OrcParserProvider extends ParserProvider {
     if(!(v instanceof FileVec)) throw H2O.unimpl("ORC only implemented for HDFS / NFS files");
     try {
       ((OrcParser.OrcParseSetup)setup).setOrcFileReader(getReader((FileVec)v));
-
       return setup;
 
     } catch (IOException e) {throw new RuntimeException(e);}

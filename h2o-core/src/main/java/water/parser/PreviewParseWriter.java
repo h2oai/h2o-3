@@ -98,6 +98,12 @@ public class PreviewParseWriter extends Iced implements StreamParseWriter {
         _data[_nlines][colIdx] = "NA";
     }
   }
+
+  @Override
+  public void addNAs(int colIdx, int nrow) {
+    throw H2O.unimpl();
+  }
+
   @Override public void addStrCol(int colIdx, BufferedString str) {
     if(colIdx < _ncols) {
       // Check for time

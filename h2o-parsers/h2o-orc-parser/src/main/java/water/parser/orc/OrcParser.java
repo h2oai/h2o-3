@@ -132,11 +132,18 @@ public class OrcParser extends Parser {
         int colIndex = 0;
         for (int col = 0; col < batch.numCols; ++col) {  // read one column at a time;
           if (toInclude[col + 1]) { // only write a column if we actually want it
-            write1column(dataVectors[col], orcTypes[colIndex], colIndex, nrows, dout);
+            if(_setup.getColumnTypes()[colIndex] != Vec.T_BAD)
+              write1column(dataVectors[col], orcTypes[colIndex], colIndex, nrows, dout);
+            else dout.addNAs(col,nrows);
             colIndex++;
           }
         }
         rows  += currentBatchRow;    // record number of rows of data actually read
+      }
+      byte [] col_types = _setup.getColumnTypes();
+      for(int i = 0; i < col_types.length; ++i){
+        if(col_types[i] == Vec.T_BAD)
+          dout.addNAs(i,(int)rowCount);
       }
       perStripe.close();
     } catch(IOException ioe) {

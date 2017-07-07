@@ -1,4 +1,4 @@
-package water.parser.parquet;
+package water.persist;
 
 import org.apache.hadoop.fs.PositionedReadable;
 import org.apache.hadoop.fs.Seekable;
