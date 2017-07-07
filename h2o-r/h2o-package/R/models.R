@@ -159,6 +159,7 @@
 #'
 #' @rdname h2o.getFutureModel
 #' @param object H2OModel
+#' @param verbose Print model progress to console. Default is FALSE
 #' @export
 h2o.getFutureModel <- function(object,verbose=FALSE) {
   .h2o.__waitOnJob(object@job_key,verboseModelScoringHistory=verbose)
