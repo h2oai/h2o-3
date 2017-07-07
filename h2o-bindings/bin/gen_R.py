@@ -69,6 +69,8 @@ def gen_module(schema, algo, module):
         if param["default_value"] is not None:
             phelp += " Defaults to %s." % normalize_value(param, True)
         yield "#' @param %s %s" % (param["name"], bi.wrap(phelp, indent=("#'        "), indent_first=False))
+    if algo in ["deeplearning","drf", "gbm","xgboost"]:
+        yield "#' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree for GBM, DRF, & XGBoost. Metrics per epoch for Deep Learning). Defaults to FALSE."
     if help_details:
         yield "#' @details %s" % bi.wrap(help_details, indent=("#'          "), indent_first=False)
     if help_return:
@@ -108,6 +110,8 @@ def gen_module(schema, algo, module):
                 list.append(indent("eps_prob = %s" % normalize_value(param), 17 + len(module)))
                 continue
         list.append(indent("%s = %s" % (param["name"], normalize_value(param)), 17 + len(module)))
+    if algo in ["deeplearning","drf", "gbm","xgboost"]:
+        list.append(indent("verbose = FALSE ",17 + len(module)))
     yield ",\n".join(list)
     yield indent(") \n{", 17 + len(module))
     if algo in ["deeplearning", "deepwater", "xgboost", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
@@ -251,9 +255,12 @@ def gen_module(schema, algo, module):
         lines = help_extra_checks.split("\n")
         for line in lines:
             yield "%s" % line
-    if algo != "glm":
+    if algo not in ["glm","deeplearning","drf", "gbm","xgboost"]:
         yield "  # Error check and build model"
         yield "  .h2o.modelJob('%s', parms, h2oRestApiVersion = %d) \n}" % (algo, 99 if algo in ["svd", "stackedensemble"] else 3)
+    if algo in ["deeplearning","drf", "gbm","xgboost"]:
+        yield "  # Error check and build model"
+        yield "  .h2o.modelJob('%s', parms, h2oRestApiVersion = %d, verbose=verbose) \n}" % (algo, 99 if algo in ["svd", "stackedensemble"] else 3)
     if help_afterword:
         lines = help_afterword.split("\n")
         for line in lines:

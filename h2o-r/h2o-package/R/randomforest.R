@@ -76,6 +76,7 @@
 #' @param calibrate_model \code{Logical}. Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more
 #'        accurate estimates of class probabilities. Defaults to FALSE.
 #' @param calibration_frame Calibration frame for Platt Scaling
+#' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree for GBM, DRF, & XGBoost. Metrics per epoch for Deep Learning). Defaults to FALSE.
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @export
@@ -120,7 +121,8 @@ h2o.randomForest <- function(x, y, training_frame,
                              histogram_type = c("AUTO", "UniformAdaptive", "Random", "QuantilesGlobal", "RoundRobin"),
                              categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                              calibrate_model = FALSE,
-                             calibration_frame = NULL
+                             calibration_frame = NULL,
+                             verbose = FALSE 
                              ) 
 {
   # If x is missing, then assume user wants to use all columns as features.
@@ -241,5 +243,5 @@ h2o.randomForest <- function(x, y, training_frame,
   if (!missing(calibration_frame))
     parms$calibration_frame <- calibration_frame
   # Error check and build model
-  .h2o.modelJob('drf', parms, h2oRestApiVersion = 3) 
+  .h2o.modelJob('drf', parms, h2oRestApiVersion = 3, verbose=verbose) 
 }

@@ -131,6 +131,7 @@
 #'        #Experimental Defaults to FALSE.
 #' @param elastic_averaging_moving_rate Elastic averaging moving rate (only if elastic averaging is enabled). Defaults to 0.9.
 #' @param elastic_averaging_regularization Elastic averaging regularization strength (only if elastic averaging is enabled). Defaults to 0.001.
+#' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree for GBM, DRF, & XGBoost. Metrics per epoch for Deep Learning). Defaults to FALSE.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @examples
 #' \donttest{
@@ -226,7 +227,8 @@ h2o.deeplearning <- function(x, y, training_frame,
                              categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                              elastic_averaging = FALSE,
                              elastic_averaging_moving_rate = 0.9,
-                             elastic_averaging_regularization = 0.001
+                             elastic_averaging_regularization = 0.001,
+                             verbose = FALSE 
                              ) 
 {
   # If x is missing, then assume user wants to use all columns as features.
@@ -436,7 +438,7 @@ h2o.deeplearning <- function(x, y, training_frame,
   if (!missing(elastic_averaging_regularization))
     parms$elastic_averaging_regularization <- elastic_averaging_regularization
   # Error check and build model
-  .h2o.modelJob('deeplearning', parms, h2oRestApiVersion = 3) 
+  .h2o.modelJob('deeplearning', parms, h2oRestApiVersion = 3, verbose=verbose) 
 }
 
 #' Anomaly Detection via H2O Deep Learning Model

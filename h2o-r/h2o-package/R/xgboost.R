@@ -72,6 +72,7 @@
 #' @param backend Backend. By default (auto), a GPU is used if available. Must be one of: "auto", "gpu", "cpu". Defaults to
 #'        auto.
 #' @param gpu_id Which GPU to use.  Defaults to 0.
+#' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree for GBM, DRF, & XGBoost. Metrics per epoch for Deep Learning). Defaults to FALSE.
 #' @export
 h2o.xgboost <- function(x, y, training_frame,
                         model_id = NULL,
@@ -120,7 +121,8 @@ h2o.xgboost <- function(x, y, training_frame,
                         reg_alpha = 0.0,
                         dmatrix_type = c("auto", "dense", "sparse"),
                         backend = c("auto", "gpu", "cpu"),
-                        gpu_id = 0
+                        gpu_id = 0,
+                        verbose = FALSE 
                         ) 
 {
   # If x is missing, then assume user wants to use all columns as features.
@@ -253,7 +255,7 @@ h2o.xgboost <- function(x, y, training_frame,
   if (!missing(gpu_id))
     parms$gpu_id <- gpu_id
   # Error check and build model
-  .h2o.modelJob('xgboost', parms, h2oRestApiVersion = 3) 
+  .h2o.modelJob('xgboost', parms, h2oRestApiVersion = 3, verbose=verbose) 
 }
 
 #' Ask the H2O server whether a XGBoost model can be built (depends on availability of native backend)
