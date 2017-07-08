@@ -31,6 +31,7 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "seed",
         "distribution",
         "tweedie_power",
+        "categorical_encoding",
 
         // model specific
         "ntrees",
@@ -45,7 +46,7 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "max_abs_leafnode_pred", "max_delta_step",
 
         "score_tree_interval",
-        "min_split_improvement",
+        "min_split_improvement", "gamma",
 
         //lightgbm only
         "max_bin",
@@ -57,12 +58,18 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "tree_method",
         "grow_policy",
         "booster",
-        "gamma",
         "reg_lambda",
         "reg_alpha",
         "dmatrix_type",
         "backend",
-        "gpu_id"
+        "gpu_id",
+
+        // dart
+        "sample_type",
+        "normalize_type",
+        "rate_drop",
+        "one_drop",
+        "skip_drop",
     };
 
     @API(help="(same as n_estimators) Number of trees.", gridable = true)
