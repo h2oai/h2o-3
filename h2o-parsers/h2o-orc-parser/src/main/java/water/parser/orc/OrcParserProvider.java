@@ -83,10 +83,7 @@ public class OrcParserProvider extends ParserProvider {
   }
 
   private Reader getReader(FileVec f) throws IOException {
-    String strPath = getPathForKey(f._key);
-    Path path = new Path(strPath);
-    Configuration conf = VecFileSystem.makeConfiguration(f);
-    return OrcFile.createReader(VecFileSystem.get(conf), path);
+    return OrcFile.createReader(VecFileSystem.VEC_PATH.getFileSystem(VecFileSystem.makeConfiguration(f)), VecFileSystem.VEC_PATH);
   }
 
   /**

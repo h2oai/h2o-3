@@ -34,6 +34,10 @@ public class VecFileSystem extends FileSystem {
     super.initialize(name, conf);
   }
 
+  @Override public FileStatus getFileStatus(Path p){
+    return new FileStatus(_v.length(),false,1,_v.length()/_v.nChunks(),0l,VecFileSystem.VEC_PATH);
+  }
+
   @Override
   public URI getUri() {
     return URI.create("hex:/");
@@ -84,11 +88,6 @@ public class VecFileSystem extends FileSystem {
 
   @Override
   public Path getWorkingDirectory() {
-    return null;
-  }
-
-  @Override
-  public FileStatus getFileStatus(Path f) throws IOException {
     return null;
   }
 
