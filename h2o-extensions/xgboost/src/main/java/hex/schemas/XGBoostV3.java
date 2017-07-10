@@ -150,9 +150,10 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
 
     @API(help = "L1 regularization", level = API.Level.expert, gridable = true)
     public float reg_alpha;
-
-    @API(help="Missing Value Handling", values = { "mean_imputation", "skip"}, level = API.Level.expert, gridable = true)
-    public XGBoostParameters.MissingValuesHandling missing_values_handling;
+    
+    // no special support for missing value right now - missing value are handled by XGBoost internally
+    //@API(help="Missing Value Handling", values = { "mean_imputation", "skip"}, level = API.Level.expert, gridable = true)
+    //public XGBoostParameters.MissingValuesHandling missing_values_handling;
 
     @API(help="Enable quiet mode", level = API.Level.expert, gridable = false)
     public boolean quiet_mode;
