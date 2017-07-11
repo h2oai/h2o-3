@@ -2,7 +2,6 @@ package hex.tree.xgboost;
 
 import ml.dmlc.xgboost4j.java.NativeLibLoader;
 import water.AbstractH2OExtension;
-import water.H2O;
 import water.util.Log;
 
 import java.io.IOException;
@@ -33,11 +32,6 @@ public class XGBoostExtension extends AbstractH2OExtension {
 
   @Override
   public boolean isEnabled() {
-    //Check if multinode (XGBoost will not work for multinode)
-    if (H2O.getCloudSize() > 1) {
-      Log.warn("Detected more than 1 H2O node. H2O only supports XGBoost in single node setting.");
-      return false;
-    }
     // Check if some native library was loaded
     if (!isInitCalled) {
       synchronized (this) {
