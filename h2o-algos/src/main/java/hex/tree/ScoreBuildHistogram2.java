@@ -334,7 +334,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
     }
 
     @Override
-    protected void reduce(ComputeHistoThread cc) {
+    public void reduce(ComputeHistoThread cc) {
       assert _lh != cc._lh;
       mergeHistos(_lh, cc._lh);
     }

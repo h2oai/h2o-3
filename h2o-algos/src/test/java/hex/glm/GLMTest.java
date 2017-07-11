@@ -26,7 +26,7 @@ import static org.junit.Assert.assertTrue;
 
 public class GLMTest  extends TestUtil {
 
-  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass public static void setup() { System.out.println("haha");stall_till_cloudsize(1); System.out.println("gaga");}
 
   public static void testScoring(GLMModel m, Frame fr) {
     Scope.enter();
@@ -1985,6 +1985,31 @@ public class GLMTest  extends TestUtil {
     m.delete();
     fr.delete();
   }
+
+  @Test public void testtest(){
+    Frame frMM = parse_test_file(Key.make("AirlinesMM"), "smalldata/airlines/AirlinesTrainMM.csv.zip");
+    frMM.remove("C1").remove();
+    Vec v;
+    frMM.add("IsDepDelayed", (v = frMM.remove("IsDepDelayed")).makeCopy(null));
+    v.remove();
+    Key k;
+    H2O.submitTask(new RebalanceDataSet(frMM,k = Key.make(frMM._key.toString() + "_rebalanced"),32)).join();
+    frMM.delete();
+    frMM = DKV.getGet(k);
+    GLMParameters params = new GLMParameters(Family.gaussian);
+    params._response_column = "IsDepDelayed";
+    params._ignored_columns = new String[0];
+    params._train = frMM._key;
+    params._lambda = new double[]{0};
+    params._alpha = new double[]{0};
+    params._solver = Solver.COORDINATE_DESCENT_NAIVE;
+    params._standardize = true;
+    params._use_all_factor_levels = false;
+    GLMModel model1 = new GLM(params).trainModel().get();
+    model1.remove();
+    frMM.delete();
+  }
+
   @Test
   public void testDeviances() {
     for (Family fam : Family.values()) {

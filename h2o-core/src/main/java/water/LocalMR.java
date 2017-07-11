@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Created by tomas on 11/5/16.
  *
- * Generic lightewight Local MRTask utility. Will launch requested number of tasks (on local node!), organized in a binary tree fashion, similar to MRTask.
+ * Generic lightweight Local MRTask utility. Will launch requested number of tasks (on local node!), organized in a binary tree fashion, similar to MRTask.
  * Will attempt to share local results (MrFun instances) if the previous task has completed before launching current task.
  *
  * User expected to pass in MrFun implementing map(id), reduce(MrFun) and makeCopy() functions.
@@ -26,6 +26,16 @@ public class LocalMR<T extends MrFun<T>> extends H2O.H2OCountedCompleter<LocalMR
   private  volatile boolean  _cancelled;
   private LocalMR<T> _root;
 
+  public LocalMR(MrFun mrt, int nthreads, boolean bumpPriority){
+    super(null,(byte)(currThrPriority() + (bumpPriority?1:0)));
+    if(nthreads <= 0)
+      throw new IllegalArgumentException("nthreads must be positive");
+    _root = this;
+    _mrFun = mrt; // used as golden copy and also will hold the result after task has finished.
+    _lo = 0;
+    _hi = nthreads;
+    _prevTsk = null;
+  }
   public LocalMR(MrFun mrt, int nthreads){this(mrt,nthreads,null);}
   public LocalMR(MrFun mrt, H2O.H2OCountedCompleter cc){this(mrt,H2O.NUMCPUS,cc);}
   public LocalMR(MrFun mrt, int nthreads, H2O.H2OCountedCompleter cc){

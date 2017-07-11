@@ -1820,4 +1820,9 @@ public class ArrayUtils {
       if (vals[i - 1] > vals[i]) return false;
     return true;
   }
+
+  public static <T> T[] makeAry(int sz){
+    Object [] res = new Object[sz];
+    return (T[])res;
+  }
 }

@@ -893,7 +893,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if( expensive ) Log.info("Dropping ignored columns: "+Arrays.toString(_parms._ignored_columns));
     }
     // Rebalance train and valid datasets
-    if (expensive && error_count() == 0 && _parms._auto_rebalance) {
+    if (expensive && error_count() == 0/* && _parms._auto_rebalance*/) {
       setTrain(rebalance(_train, false, _result + ".temporary.train"));
       _valid = rebalance(_valid, false, _result + ".temporary.valid");
     }

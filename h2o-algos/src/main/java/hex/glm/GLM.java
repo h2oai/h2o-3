@@ -31,13 +31,14 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by tomasnykodym on 8/27/14.
  *
  * Generalized linear model implementation.
  */
-public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
+public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput>  implements ProgressMonitor {
   protected boolean _cv; // flag signalling this is MB for one of the fold-models during cross-validation
   static NumberFormat lambdaFormatter = new DecimalFormat(".##E0");
   static NumberFormat devFormatter = new DecimalFormat(".##");
@@ -533,16 +534,18 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   }
   private transient ComputationState _state;
 
+
+
   /**
    * Main loop of the glm algo.
    */
-  public final class GLMDriver extends Driver implements ProgressMonitor {
-    private long _workPerIteration;
+  public final class GLMDriver extends Driver {
     private transient double[][] _vcov;
 
 
     private void doCleanup() {
       try {
+        _state.cleanup(new Futures()).blockForPending();
         if(_parms._lambda_search && _parms._is_cv_model)
           Scope.untrack(removeLater(_dinfo.getWeightsVec()._key));
         if(!_cv && _model!=null)
@@ -751,7 +754,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         double reltol = L1Solver.DEFAULT_RELTOL;
         double abstol = L1Solver.DEFAULT_ABSTOL;
         double ADMM_gradEps = 1e-3;
-        ProximalGradientSolver innerSolver = new ProximalGradientSolver(gslvr, beta, rho, _parms._objective_epsilon * 1e-1, _parms._gradient_epsilon, _state.ginfo(), this);
+        ProximalGradientSolver innerSolver = new ProximalGradientSolver(gslvr, beta, rho, _parms._objective_epsilon * 1e-1, _parms._gradient_epsilon, _state.ginfo(), GLM.this);
 //        new ProgressMonitor() {
 //          @Override
 //          public boolean progress(double[] betaDiff, GradientInfo ginfo) {
@@ -759,7 +762,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 //          }
 //        });
         ADMM.L1Solver l1Solver = new ADMM.L1Solver(ADMM_gradEps, 250, reltol, abstol, _state._u);
-        l1Solver._pm = this;
+        l1Solver._pm = GLM.this;
         l1Solver.solve(innerSolver, beta, l1pen, true, _state.activeBC()._betaLB, _state.activeBC()._betaUB);
         _state._u = l1Solver._u;
         _state.updateState(beta,gslvr.getGradient(beta));
@@ -771,7 +774,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           public boolean progress(double[] beta, GradientInfo ginfo) {
             if(_state._iter < 4 || ((_state._iter & 3) == 0))
               Log.info(LogMsg("LBFGS, gradient norm = " + ArrayUtils.linfnorm(ginfo._gradient, false)));
-            return GLMDriver.this.progress(beta,ginfo);
+            return GLM.this.progress(beta,ginfo);
           }
         });
         Log.info(LogMsg(r.toString()));
@@ -779,7 +782,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
     }
 
-    private Frame _codVecs;
+
+    private Map<String,VecUtils.RawVec> _codVecs;
 
     int SUM_ITER = 0;
     int SUM_TASKS = 0;
@@ -807,17 +811,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       double [] denums;
       double [] betaold = beta.clone();
       int iter2=0; // total cd iters
-      if(_codVecs == null) {
-        _codVecs = new Frame(new String[]{"w", "zTilda", "d0", "d1"}, _state.activeData()._adaptedFrame.anyVec().makeVolatileDoubles(0, 0, 1, 1));
-        _codVecs.add(new String[]{"c0", "c1"}, _state.activeData()._adaptedFrame.anyVec().makeVolatileInts(new int[]{0, 0}));
-      }
-      final Frame fr0 = new Frame(_state.activeData()._adaptedFrame).add(_codVecs);
+
       long startTimeTotalNaive = System.currentTimeMillis();
       double sparseRatio = FrameUtils.sparseRatio(activeData._adaptedFrame);
       boolean sparse =  sparseRatio <= .125;
       long t0 = System.currentTimeMillis();
       // public GLMGenerateWeightsTask(Key jobKey, DataInfo dinfo, GLMModel.GLMParameters glm, double[] betaw) {
-      GLMGenerateWeightsTask gt = new GLMGenerateWeightsTask(_job._key,sparse, _state.activeData(), _parms, beta).doAll(fr0,run_local);
+      GLMGenerateWeightsTask gt = new GLMGenerateWeightsTask(_job._key,sparse, _state.activeData(), _parms, beta).doAll(activeData._adaptedFrame,run_local);
       long tdelta = System.currentTimeMillis() - t0;
       int iter1Sum = 0;
       int iter_x = 0;
@@ -836,9 +836,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         for(int i = 0; i < denums.length; ++i)
           denums[i] = 1.0/(denums[i]*wsumuInv + l2pen);
         int iter1 = 0;
-        final Frame fr1 = new Frame(_codVecs);
+        final Frame fr1 = new Frame();
         final int xjIdx = fr1.numCols();
-        fr1.add("xj", /* just a placeholder */ _codVecs.anyVec()); // add current variable col
+        fr1.add("xj", /* just a placeholder */ activeData._adaptedFrame.anyVec()); // add current variable col
         double RES = gt.res; // sum of weighted residual:   sum_i{w_i*(y_i-ytilda_i)}
         while (iter1++ < 1000) {
           if (activeData._cats > 0) {
@@ -914,7 +914,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             break;
         }
         iter1Sum += iter1;
-        gt = new GLMGenerateWeightsTask(_job._key, sparse, _state.activeData(), _parms, beta).doAll(fr0);
+//        gt = new GLMGenerateWeightsTask(_job._key, sparse, _state.activeData(), _parms, beta).doAll(fr0);
         if(!progress(beta.clone(),gt._likelihood) || _parms._family == Family.gaussian)
           break;
         double maxDiff = 0;
@@ -931,32 +931,23 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       Log.info(LogMsg("COD Naive took " + iter2 + ":" + iter1Sum + " iterations, " + (endTimeTotalNaive-startTimeTotalNaive)*0.001 + " seconds"));
       Log.info(LogMsg("COD took " + (SUM_ITER += iter1Sum) + " passes and " + (SUM_TASKS += iter1Sum*activeData.fullN()) + " tasks so far"));
     }
-    private void fitModel() {
-      Solver solver = (_parms._solver == Solver.AUTO) ? defaultSolver() : _parms._solver;
-      switch (solver) {
-        case COORDINATE_DESCENT: // fall through to IRLSM
-        case IRLSM:
-          if(_parms._family == Family.multinomial)
-            fitIRLSM_multinomial(solver);
-          else if(_parms._family == Family.gaussian && _parms._link == Link.identity)
-            fitLSM(solver);
-          else
-            fitIRLSM(solver);
-          break;
-        case L_BFGS:
-          fitLBFGS();
-          break;
+    private GLMSolver solver(){
+      if(_state._solver != null)
+        return _state._solver;
+      Solver s = _parms._solver == Solver.AUTO?defaultSolver():_parms._solver;
+      switch(s){
         case COORDINATE_DESCENT_NAIVE:
-          fitCOD();
-          break;
+          return _state._solver = new CoordinateDescentSolverNaive();
         default:
           throw H2O.unimpl();
       }
+    }
+    private void fitModel() {
+      solver().fit(GLM.this,_state);
       if(_parms._compute_p_values) { // compute p-values
         double se = 1;
         boolean seEst = false;
         double [] beta = _state.beta();
-
         if(_parms._family != Family.binomial && _parms._family != Family.poisson) {
           seEst = true;
           ComputeSETsk ct = new ComputeSETsk(null, _state.activeData(), _job._key, beta, _parms).doAll(_state.activeData()._adaptedFrame);
@@ -984,32 +975,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
     }
 
-    private long _lastScore = System.currentTimeMillis();
-    private long timeSinceLastScoring(){return System.currentTimeMillis() - _lastScore;}
-
-    private void scoreAndUpdateModel(){
-      // compute full validation on train and test
-      Log.info(LogMsg("Scoring after " + timeSinceLastScoring() + "ms"));
-      long t1 = System.currentTimeMillis();
-      Frame train = DKV.<Frame>getGet(_parms._train);
-      _model.score(train).delete();
-      ModelMetrics mtrain = ModelMetrics.getFromDKV(_model, train); // updated by model.scoreAndUpdateModel
-      _model._output._training_metrics = mtrain;
-      long t2 = System.currentTimeMillis();
-      Log.info(LogMsg("Training metrics computed in " + (t2-t1) + "ms"));
-      Log.info(LogMsg(mtrain.toString()));
-      if(_valid != null) {
-        Frame valid = DKV.<Frame>getGet(_parms._valid);
-        _model.score(valid).delete();
-        _model._output._validation_metrics = ModelMetrics.getFromDKV(_model, valid); //updated by model.scoreAndUpdateModel
-      }
-      _model._output._scoring_history = _parms._lambda_search?_lsc.to2dTable():_sc.to2dTable();
-      _model.update(_job._key);
-      _model.generateSummary(_parms._train,_state._iter);
-      _lastScore = System.currentTimeMillis();
-      long scoringTime = System.currentTimeMillis() - t1;
-      _scoringInterval = Math.max(_scoringInterval,20*scoringTime); // at most 5% overhead for scoring
-    }
 
     protected Submodel computeSubmodel(int i,double lambda) {
       Submodel sm;
@@ -1064,9 +1029,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _nullDevTest = _parms._family == Family.multinomial
             ?new GLMResDevTaskMultinomial(_job._key,_validDinfo,getNullBeta(), _nclass).doAll(_validDinfo._adaptedFrame).avgDev()
             :new GLMResDevTask(_job._key, _validDinfo, _parms, getNullBeta()).doAll(_validDinfo._adaptedFrame).avgDev();
-        _workPerIteration = WORK_TOTAL/_parms._nlambdas;
+        _state._workPerIteration = WORK_TOTAL/_parms._nlambdas;
       } else
-        _workPerIteration = 1 + (WORK_TOTAL/_parms._max_iterations);
+        _state._workPerIteration = 1 + (WORK_TOTAL/_parms._max_iterations);
 
       if(_parms._family == Family.multinomial && _parms._solver != Solver.L_BFGS ) {
         double [] nb = getNullBeta();
@@ -1117,11 +1082,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             }
           }
         }
-        if(_parms._lambda_search && (_parms._score_each_iteration || timeSinceLastScoring() > _scoringInterval)) {
+        if(_parms._lambda_search && (_parms._score_each_iteration || timeSinceLastScoring() > _state._scoringInterval)) {
           _model._output.setSubmodelIdx(_model._output._best_lambda_idx = i);
           scoreAndUpdateModel(); // update partial results
         }
-        _job.update(_workPerIteration,"iter=" + _state._iter + " lmb=" + lambdaFormatter.format(_state.lambda()) + "deviance trn/tst= " + devFormatter.format(trainDev) + "/" + devFormatter.format(testDev) + " P=" + ArrayUtils.countNonzeros(_state.beta()));
+        _job.update(_state._workPerIteration,"iter=" + _state._iter + " lmb=" + lambdaFormatter.format(_state.lambda()) + "deviance trn/tst= " + devFormatter.format(trainDev) + "/" + devFormatter.format(testDev) + " P=" + ArrayUtils.countNonzeros(_state.beta()));
       }
       if(_state._iter >= _parms._max_iterations)
         _job.warn("Reached maximum number of iterations " + _parms._max_iterations + "!");
@@ -1135,7 +1100,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _model.update(_job._key);
       }
       if(!(_parms)._lambda_search && _state._iter < _parms._max_iterations){
-        _job.update(_workPerIteration*(_parms._max_iterations - _state._iter));
+        _job.update(_state._workPerIteration*(_parms._max_iterations - _state._iter));
       }
       if(_iceptAdjust != 0) { // apply the intercept adjust according to prior probability
         assert _parms._intercept;
@@ -1154,50 +1119,56 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
 
 
-    @Override public boolean progress(double [] beta, GradientInfo ginfo) {
-      _state._iter++;
-      if(ginfo instanceof ProximalGradientInfo) {
-        ginfo = ((ProximalGradientInfo) ginfo)._origGinfo;
-        GLMGradientInfo gginfo = (GLMGradientInfo) ginfo;
-        _state.updateState(beta, gginfo);
-        if (!_parms._lambda_search)
-          updateProgress(false);
-        return !timeout() && !_job.stop_requested() && _state._iter < _parms._max_iterations;
-      } else {
-        GLMGradientInfo gginfo = (GLMGradientInfo) ginfo;
-        if(gginfo._gradient == null)
-          _state.updateState(beta,gginfo._likelihood);
-        else
-          _state.updateState(beta, gginfo);
-        if (!_parms._lambda_search)
-          updateProgress(true);
-        boolean converged = _state.converged();
-        if (converged) Log.info(LogMsg(_state.convergenceMsg));
-        return !timeout() && !_job.stop_requested() && !converged && _state._iter < _parms._max_iterations;
-      }
-    }
 
-    public boolean progress(double [] beta, double likelihood) {
-      _state._iter++;
-      _state.updateState(beta,likelihood);
-      if(!_parms._lambda_search)
-        updateProgress(true);
-      boolean converged = _state.converged();
-      if(converged) Log.info(LogMsg(_state.convergenceMsg));
-      return !_job.stop_requested() && !converged && _state._iter < _parms._max_iterations ;
-    }
 
-    private transient long _scoringInterval = SCORING_INTERVAL_MSEC;
+
+
 
     // update user visible progress
-    protected void updateProgress(boolean canScore){
-      assert !_parms._lambda_search;
-      _sc.addIterationScore(_state._iter, _state.likelihood(), _state.objective());
-      _job.update(_workPerIteration,_state.toString());
-      if(canScore && (_parms._score_each_iteration || timeSinceLastScoring() > _scoringInterval)) {
-        _model.update(_state.expandBeta(_state.beta()), -1, -1, _state._iter);
-        scoreAndUpdateModel();
-      }
+
+  }
+
+  @Override public boolean progress(double [] beta, GradientInfo ginfo) {
+    _state._iter++;
+    if(ginfo instanceof ProximalGradientInfo) {
+      ginfo = ((ProximalGradientInfo) ginfo)._origGinfo;
+      GLMGradientInfo gginfo = (GLMGradientInfo) ginfo;
+      _state.updateState(beta, gginfo);
+      if (!_parms._lambda_search)
+        updateProgress(false);
+      return !timeout() && !_job.stop_requested() && _state._iter < _parms._max_iterations;
+    } else {
+      GLMGradientInfo gginfo = (GLMGradientInfo) ginfo;
+      if(gginfo._gradient == null)
+        _state.updateState(beta,gginfo._likelihood);
+      else
+        _state.updateState(beta, gginfo);
+      if (!_parms._lambda_search)
+        updateProgress(true);
+      boolean converged = _state.converged();
+      if (converged) Log.info(LogMsg(_state.convergenceMsg));
+      return !timeout() && !_job.stop_requested() && !converged && _state._iter < _parms._max_iterations;
+    }
+  }
+
+
+  public boolean progress(double [] beta, double likelihood) {
+    _state._iter++;
+    _state.updateState(beta,likelihood);
+    if(!_parms._lambda_search)
+      updateProgress(true);
+    boolean converged = _state.converged();
+    if(converged) Log.info(LogMsg(_state.convergenceMsg));
+    return !_job.stop_requested() && !converged && _state._iter < _parms._max_iterations ;
+  }
+
+  protected void updateProgress(boolean canScore){
+    assert !_parms._lambda_search;
+    _sc.addIterationScore(_state._iter, _state.likelihood(), _state.objective());
+    _job.update(_state._workPerIteration,_state.toString());
+    if(canScore && (_parms._score_each_iteration || timeSinceLastScoring() > _state._scoringInterval)) {
+      _model.update(_state.expandBeta(_state.beta()), -1, -1, _state._iter);
+      scoreAndUpdateModel();
     }
   }
 
@@ -1242,7 +1213,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   }
 
 
-  private String  LogMsg(String msg) {return "GLM[dest=" + dest() + ", " + _state + "] " + msg;}
+  public String  LogMsg(String msg) {return "GLM[dest=" + dest() + ", " + _state + "] " + msg;}
 
 
   private static final double[] expandVec(double[] beta, final int[] activeCols, int fullN) {
@@ -2004,6 +1975,33 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       return res;
     }
   }
+
+  private long timeSinceLastScoring(){return System.currentTimeMillis() - _state._lastScore;}
+
+  private void scoreAndUpdateModel(){
+    // compute full validation on train and test
+    Log.info(LogMsg("Scoring after " + timeSinceLastScoring() + "ms"));
+    long t1 = System.currentTimeMillis();
+    Frame train = DKV.<Frame>getGet(_parms._train);
+    _model.score(train).delete();
+    ModelMetrics mtrain = ModelMetrics.getFromDKV(_model, train); // updated by model.scoreAndUpdateModel
+    _model._output._training_metrics = mtrain;
+    long t2 = System.currentTimeMillis();
+    Log.info(LogMsg("Training metrics computed in " + (t2-t1) + "ms"));
+    Log.info(LogMsg(mtrain.toString()));
+    if(_valid != null) {
+      Frame valid = DKV.<Frame>getGet(_parms._valid);
+      _model.score(valid).delete();
+      _model._output._validation_metrics = ModelMetrics.getFromDKV(_model, valid); //updated by model.scoreAndUpdateModel
+    }
+    _model._output._scoring_history = _parms._lambda_search?_lsc.to2dTable():_sc.to2dTable();
+    _model.update(_job._key);
+    _model.generateSummary(_parms._train,_state._iter);
+    _state._lastScore = System.currentTimeMillis();
+    long scoringTime = System.currentTimeMillis() - t1;
+    _state._scoringInterval = Math.max(_state._scoringInterval,20*scoringTime); // at most 5% overhead for scoring
+  }
+
 
 
 }

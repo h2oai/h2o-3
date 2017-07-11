@@ -10,6 +10,7 @@ import hex.gram.Gram;
 import hex.optimization.ADMM;
 import hex.optimization.OptimizationUtils.GradientInfo;
 import hex.optimization.OptimizationUtils.GradientSolver;
+import water.Futures;
 import water.H2O;
 import water.Job;
 import water.MemoryManager;
@@ -19,6 +20,8 @@ import water.util.MathUtils;
 
 import java.util.Arrays;
 import java.util.Comparator;
+
+import static hex.glm.GLM.SCORING_INTERVAL_MSEC;
 
 public final class ComputationState {
   final boolean _intercept;
@@ -191,6 +194,14 @@ public final class ComputationState {
     _activeData = _dinfo;
   }
 
+  long _workPerIteration;
+  long _lastScore = System.currentTimeMillis();
+
+  GLMSolver _solver;
+  public Futures cleanup(Futures fs){
+    if(_solver != null) _solver.cleanup(fs);
+    return fs;
+  }
   public boolean _lsNeeded = false;
 
   private DataInfo [] _activeDataMultinomial;
@@ -689,4 +700,5 @@ public final class ComputationState {
     }
     return _currGram = computeNewGram(activeData,beta,s);
   }
+  transient long _scoringInterval = SCORING_INTERVAL_MSEC;
 }

@@ -3,15 +3,13 @@ package water.util;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OIllegalValueException;
-import water.fvec.C0DChunk;
-import water.fvec.Chunk;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.nbhm.NonBlockingHashMapLong;
 import water.parser.BufferedString;
 import water.parser.Categorical;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class VecUtils {
   /**
@@ -52,6 +50,160 @@ public class VecUtils {
             + " given to toCategoricalVec()");
     }
   }
+
+
+  private static class RawVecVals<T> extends Iced {
+    final transient int[] _ids;
+    final transient T [] _vals;
+    final transient boolean _allLocal;
+
+    public RawVecVals(int [] cidxs, T [] vals, boolean allLocal){
+      _ids = cidxs;
+      _vals = vals;
+      _allLocal = allLocal;
+    }
+    public T localChunk(int cidx){
+      return _vals[cidx];
+    }
+    public T chunkForChunkIdx(int cidx){
+      return _allLocal?_vals[cidx]:_vals[Arrays.binarySearch(_ids,cidx)];
+    }
+    public int size(){return _vals.length;}
+  }
+
+
+  public static class RawVec<T> {
+    final Key [] _keys;
+    final Vec _template; // vec template this raw vec is compatible with (same group + espc)
+    final H2ONode _home; // home node if local, otherwise null
+    private transient volatile RawVecVals<T> _vals;
+    private RawVecVals<T> vals(){
+      if(_vals == null)
+        _vals = DKV.getGet(_keys[H2O.SELF.index()]);
+      return _vals;
+    }
+    public Futures remove(Futures fs){for(Key k:_keys)if(k != null)DKV.remove(k,fs); return fs;}
+
+    public T valForChunkIdx(int cidx){return vals().chunkForChunkIdx(cidx);}
+    public T valForLocalIdx(int lidx){return vals().localChunk(lidx);}
+
+    private int localSize() {return vals()._ids.length;}
+    private RawVec(Vec template, Key [] keys, boolean local){
+      super();
+      _template = template;
+      _keys = keys;
+      _home = local || H2O.CLOUD.size() == 1?H2O.SELF:null;
+    }
+
+    public <R,F extends RawVecFun<T,R,F>> R eval(F f){
+      return new RawVecTsk<T,R,F>(this,f).exec();
+    }
+
+    public boolean isLocal(){return _home == H2O.SELF;}
+    public boolean isDistributed(){return _home == null;}
+
+    public static abstract class ChunkedMaker<T> extends Iced<ChunkedMaker<T>>{
+      public abstract T make(Chunk [] cs);
+    }
+
+    private static final class CidxVal<T> implements Comparable<CidxVal<T>>{
+      final T val;
+      final int cidx;
+      public CidxVal(int cidx, T val){
+        this.cidx = cidx;
+        this.val = val;
+      }
+      @Override
+      public int compareTo(CidxVal<T> o) {return cidx - o.cidx;}
+    }
+    public static <T> RawVec<T> makeChunks(Vec[] vecs, final boolean local, final ChunkedMaker<T> chunkedMaker){
+      final Key[] keys = new Key[H2O.CLOUD.size()];
+      new MRTask() {
+        RawVecVals<T> vals;
+        NonBlockingHashMapLong<CidxVal> _map;
+        @Override
+        public void setupLocal() {_map = new NonBlockingHashMapLong<>();}
+        @Override
+        public void map(Chunk [] cs) {
+          int cidx = cs[0].cidx();
+          _map.put(cidx, new CidxVal(cidx,chunkedMaker.make(cs)));
+        }
+        @Override public void closeLocal(){
+          int [] cidxs = MemoryManager.malloc4(_map.size());
+          T [] vals = ArrayUtils.makeAry(cidxs.length);
+          CidxVal<T> [] ary = _map.values().toArray(new CidxVal[_map.size()]);
+          Arrays.sort(ary);
+          for(int i = 0; i < ary.length; ++i) {
+            cidxs[i] = ary[i].cidx;
+            vals[i] = ary[i].val;
+          }
+          int nodeIdx = H2O.SELF.index();
+          DKV.put(keys[nodeIdx] = Key.make(H2O.SELF), new RawVecVals<>(cidxs,vals,local));
+        }
+      }.doAll(new Frame(vecs), local);
+      return new RawVec<>(vecs[0], keys, local);
+    }
+
+    private static class RawVecTskMrT<T,R,O extends RawVecFun<T,R,O>> extends MRTask<RawVecTskMrT<T,R,O>>{
+      final RawVecTsk<T,R,O> _tsk;
+      public RawVecTskMrT(RawVecTsk<T,R, O> tsk){_tsk = tsk;}
+      @Override public void setupLocal(){_tsk.execLocal();}
+      @Override public void reduce(RawVecTskMrT<T,R,O> other){_tsk.reduce(other._tsk);}
+    }
+
+    public static abstract class RawVecFun<T,R,O extends RawVecFun<T,R,O>> implements Cloneable {
+      public abstract void map(T val);
+
+      public O makeNew() {
+        try {
+          return (O) clone();
+        } catch (CloneNotSupportedException e) {
+          throw new RuntimeException(e);
+        }
+      }
+      public void reduce(O t){}
+      public void closeLocal(){}
+      public abstract R getResult();
+    }
+    public static final class RawVecTsk<T,R,O extends RawVecFun<T,R,O>> extends MrFun<RawVecTsk<T,R,O>> {
+      private final O _funRoot;
+      O _fun;
+      final RawVec<T> _vec;
+      public RawVecTsk (RawVec<T> vec,O fun){_vec = vec; _funRoot = fun;}
+      private transient AtomicInteger cntr;
+      private void setupLocal(){cntr = new AtomicInteger();}
+
+      @Override
+      public final void map(int id){
+        int cidx;
+         while((cidx = cntr.getAndIncrement()) < _vec.localSize()) {
+           if(_fun == null) _fun = _funRoot.makeNew();
+           _fun.map(_vec.valForLocalIdx(cidx));
+         }
+      }
+      @Override public void reduce(RawVecTsk<T,R,O> other){
+        if(_fun == null) _fun = other._fun;
+        else if(other._fun != null) {
+          assert _fun != other._fun;
+          _fun.reduce(other._fun);
+        }
+      }
+
+      protected void execLocal(){
+        setupLocal();
+        new LocalMR(this,Math.min(_vec.localSize(),H2O.SELF._heartbeat._cpus_allowed),false).fork().join();
+        _fun.closeLocal();
+      }
+      public R exec(){
+        if(_vec.isLocal()) execLocal();
+        new RawVecTskMrT(this).doAllNodes();
+        return _fun.getResult();
+      }
+    }
+
+
+  }
+
 
   /**
    * Create a new {@link Vec} of categorical values from string {@link Vec}.

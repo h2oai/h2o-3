@@ -7,7 +7,7 @@ package water;
  */
 public abstract class MrFun<T extends MrFun<T>> extends Iced<T> {
   protected abstract void map(int id);
-  protected void reduce(T t) {}
+  public void reduce(T t) {}
   protected MrFun<T> makeCopy() {
     return clone();
   }
