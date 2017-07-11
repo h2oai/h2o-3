@@ -6,6 +6,7 @@ import hex.ModelCategory;
 import hex.ScoreKeeper;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMTask;
+import io.netty.util.internal.NativeLibraryLoader;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
@@ -432,6 +433,14 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
   // helper
   static synchronized boolean hasGPU(int gpu_id) {
+    try {
+      if(!NativeLibLoader.getLoadedLibraryName().toLowerCase().contains("gpu")) {
+        return false;
+      }
+    } catch (IOException e) {
+      return false;
+    }
+
     if(GPUS.contains(gpu_id)) {
       return true;
     }
