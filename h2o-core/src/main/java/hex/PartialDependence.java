@@ -22,9 +22,13 @@ public class PartialDependence extends Lockable<PartialDependence> {
   public int _nbins = 20;
   public TwoDimTable[] _partial_dependence_data; //OUTPUT
 
-  public PartialDependence(Key<PartialDependence> dest) {
+  public PartialDependence(Key<PartialDependence> dest, Job j) {
     super(dest);
-    _job = new Job<>(dest, PartialDependence.class.getName(), "PartialDependence");
+    _job = j;
+  }
+
+  public PartialDependence(Key<PartialDependence> dest) {
+    this(dest, new Job<>(dest, PartialDependence.class.getName(), "PartialDependence"));
   }
 
   public Job<PartialDependence> execImpl() {
