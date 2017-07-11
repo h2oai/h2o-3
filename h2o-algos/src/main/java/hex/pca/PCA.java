@@ -78,9 +78,13 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
       error("_train", msg);
     }
-
-    if (mem_usage > mem_usage_w) {  // choose the most memory efficient one
-      _wideDataset = true;   // set to true if wide dataset is detected
+    // _wideDataset is true if original memory does not fit.
+    if (mem_usage > max_mem) {
+      _wideDataset = true;  // have to set _wideDataset in this case
+    } else {  // both ways fit into memory.  Want to choose wideDataset if p is too big.
+      if ((p > 5000) && ( r < 5000)) {
+        _wideDataset = true;
+      }
     }
   }
 
@@ -309,7 +313,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           GramTask gtsk = null;
 
           if (_wideDataset) {
-            ogtsk = new OuterGramTask(_job._key, dinfo).doAll(dinfo._adaptedFrame);
+            ogtsk = new OuterGramTask(_job._key, dinfo).doAll(dinfo._adaptedFrame); // 30 times slower than gram
             gram = ogtsk._gram;
             model._output._nobs = ogtsk._nobs;
           } else {
