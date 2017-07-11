@@ -57,7 +57,7 @@ public class SharedTreeNode {
     return nodeNumber;
   }
 
-  float getWeight() {
+  public float getWeight() {
     return weight;
   }
 
@@ -219,7 +219,7 @@ public class SharedTreeNode {
     inclusiveNa = v;
   }
 
-  private boolean getInclusiveNa() {
+  public boolean getInclusiveNa() {
     return inclusiveNa;
   }
 
@@ -227,7 +227,7 @@ public class SharedTreeNode {
     inclusiveLevels = v;
   }
 
-  private BitSet getInclusiveLevels() {
+  public BitSet getInclusiveLevels() {
     return inclusiveLevels;
   }
 
