@@ -20,6 +20,9 @@ public class PCAJMH {
 	PCAModel.PCAParameters paramsQuasar;
 	protected PCAModel pcaModel;
 	protected Frame trainingFrame;
+	protected String hexKey = "input_data.hex";
+	protected String dataSetFilePath = "smalldata/pca_test/SDSS_quasar.txt";
+//	protected String dataSetFilePath = "bigdata/laptop/jira/re0.wc.arff.csv";
 	
 	public void setup() {
 		water.util.Log.setLogLevel(logLevel);
@@ -34,7 +37,7 @@ public class PCAJMH {
 	     * 1) ./gradlew syncSmalldata
 	     * 2) unzip SDSS_quasar.txt.zip
 	     */
-			trainingFrame = parse_test_file(Key.make("quasar.hex"), "smalldata/pca_test/SDSS_quasar.txt");
+			trainingFrame = parse_test_file(Key.make(hexKey), dataSetFilePath);
 			// Add missing values to the training data
 			Frame frame = new Frame(Key.<Frame>make(), trainingFrame.names(), trainingFrame.vecs());
 			DKV.put(frame._key, frame); // Need to put the frame (to be modified) into DKV for MissingInserter to pick up
