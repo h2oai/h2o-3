@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * PCA benchmark micro-benchmark based on hex.pca.PCATest.testImputeMissing() using dataset of Quasar data
  */
-@Fork(1)
+@Fork(value = 1, jvmArgsAppend = "-Xmx16g")
 @Threads(1)
 @State(Scope.Thread)
 @Warmup(iterations = JMHConfiguration.WARM_UP_ITERATIONS)
