@@ -64,6 +64,7 @@ shadowJar {
   exclude 'devpay_products.properties'
   manifest {
     attributes 'Main-Class': 'water.H2OApp'
+    attributes 'Class-Path': extensionProjects.collect { "h2o-ext/${it.name}.jar" }.join(";")
   }
   transform(com.github.jengelman.gradle.plugins.shadow.transformers.IncludeResourceTransformer.class) {
     file = file("${buildDir}/reports/license/dependency-license.xml")
@@ -87,14 +88,27 @@ task copyJar(type: Copy) {
     from ("${project.buildDir}/libs"){
         include assembly
     }
-    into "${project.parent.parent.buildDir}"
+    into "${rootProject.buildDir}"
     rename { it.replace(assembly, allInOne) }
 }
 
+task copyExtensionJars(type: Copy) {
+    extensionProjects.each { p ->
+        from("${p.buildDir}/libs") {
+            include "${p.project.name}.jar"
+        }
+        into "${rootProject.buildDir}/h2o-ext/"
+        eachFile { f ->
+            logger.info("Copy extension file ${f.relativeSourcePath} to ${f.relativePath}")
+        }
+    }
+}
+
+// Make sure extensions jars are built prior to making the shadow jar
 // Include licences
-shadowJar.dependsOn(project.tasks.getByName('downloadLicenses'))
-// Execute always copyJar
-shadowJar.finalizedBy copyJar
+shadowJar.dependsOn extensionProjects.collect { p -> p.getTasksByName("jar", false) } + [project.tasks.getByName('downloadLicenses')]
+// Execute always copyJar & copyExtensionJars
+shadowJar.finalizedBy copyJar, copyExtensionJars
 // Run shadowJar as par of build
 jar.finalizedBy shadowJar
 
