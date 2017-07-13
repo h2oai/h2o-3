@@ -72,13 +72,10 @@ class H2OAutoML(object):
                   "*******************************************************************\n" \
                   "\nVerbose Error Message:")
 
-        #If max_runtime_secs is not provided, then it is set to default (600 secs)
+        #If max_runtime_secs is not provided, then it is set to default (3600 secs)
         if max_runtime_secs is not 3600:
             assert_is_type(max_runtime_secs,int)
-            max_runtime_secs = max_runtime_secs
-            self.max_runtime_secs = max_runtime_secs
-        else:
-            self.max_runtime_secs = max_runtime_secs
+        self.max_runtime_secs = max_runtime_secs
 
         #Make bare minimum build_control
         self.build_control = {
@@ -106,7 +103,6 @@ class H2OAutoML(object):
             self.build_control["stopping_criteria"]["stopping_tolerance"] = stopping_tolerance
             self.stopping_tolerence = stopping_tolerance
         else:
-            self.build_control["stopping_criteria"]["stopping_tolerance"] = stopping_tolerance
             self.stopping_tolerence = stopping_tolerance
 
         if stopping_rounds is not 3:
