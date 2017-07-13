@@ -130,7 +130,7 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
     lb <- aml@leaderboard
     lb
 
-                                       model_id       auc    logloss
+    #                                  model_id       auc    logloss
     #  StackedEnsemble_0_AutoML_20170605_212658  0.776164   0.564872
     # GBM_grid_0_AutoML_20170605_212658_model_2  0.753550   0.587546
     #              DRF_0_AutoML_20170605_212658  0.738885   0.611997
@@ -139,7 +139,7 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
     #              XRT_0_AutoML_20170605_212658  0.728358   0.629296
     # GLM_grid_0_AutoML_20170605_212658_model_1  0.685216   0.635137
     # GLM_grid_0_AutoML_20170605_212658_model_0  0.685216   0.635137
-
+    #
     # [8 rows x 3 columns]
 
     # The leader model is stored here
@@ -197,7 +197,7 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
     # XRT_0_AutoML_20170605_212658               0.728358   0.629296
     # GLM_grid_0_AutoML_20170605_212658_model_1  0.685216   0.635137
     # GLM_grid_0_AutoML_20170605_212658_model_0  0.685216   0.635137
-
+    #
     # [8 rows x 3 columns]
 
     # The leader model is stored here
