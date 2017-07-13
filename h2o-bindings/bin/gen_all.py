@@ -31,7 +31,6 @@ cloud = run.H2OCloud(
     h2o_jar=os.path.abspath(h2o_jarfile),
     base_port=48000,
     xmx="4g",
-    cp="",
     output_dir=results_dir,
     test_ssl=False
 )
