@@ -169,7 +169,7 @@ class Cleaner extends Thread {
           io_ns += System.nanoTime() - now_ns; // Accumulate i/o time
         }
         // And, under pressure, free all
-        if( isChunk && force && (val.isPersisted() || !((Key)ok).home()) ) {
+        if(force && (val.isPersisted() || !((Key)ok).home()) ) {
           val.freeMem ();  if( m != null ) freed += val._max;  m = null;
           val.freePOJO();  if( p != null ) freed += val._max;  p = null;
           if( isChunk ) freed -= val._max; // Double-counted freed mem for Chunks since val._pojo._mem & val._mem are the same.
@@ -194,6 +194,7 @@ class Cleaner extends Thread {
       String s2 = h+" diski_o="+PrettyPrint.bytes(cleaned)+", freed="+(freed>>20)+"M, DESIRED="+(DESIRED>>20)+"M";
       if( MemoryManager.canAlloc() ) Log.debug(s1,s2);
       else                           System.err.println(s1+"\n"+s2);
+      System.err.println(h);
       // For testing thread
       synchronized(this) {
         _did_sweep = true;
@@ -232,7 +233,9 @@ class Cleaner extends Thread {
     long _eldest; // Time of the eldest K/V found in some prior pass
     long _hStep;  // Histogram step: (now-eldest)/histogram.length
     long _cached; // Total alive data in the histogram
+    long _cachedCached; // Total alive data in the histogram from remote nodes
     long _total;  // Total data in local K/V
+    long _totalCached; // Total data in local K/V cached from remote nodes
     long _when;   // When was this histogram computed
     long _swapped;// On-disk stuff
     Value _vold;  // For assertions: record the oldest Value
@@ -248,7 +251,9 @@ class Cleaner extends Thread {
       // Compute the hard way
       Object[] kvs = H2O.STORE.raw_array();
       long cached = 0; // Total K/V cached in ram
+      long cachedCached = 0; // Total K/V cached in ram from remote nodes
       long total = 0;  // Total K/V in local node
+      long totalCached = 0;  // Total K/V in local node cached from remote nodes
       long swapped=0;  // Total K/V persisted
       long oldest = Long.MAX_VALUE; // K/V with the longest time since being touched
       Value vold = null;
@@ -258,9 +263,11 @@ class Cleaner extends Thread {
         Object ok = kvs[i], ov = kvs[i+1];
         if( !(ok instanceof Key  ) ) continue; // Ignore tombstones and Primes and null's
         if( !(ov instanceof Value) ) continue; // Ignore tombstones and Primes and null's
-        Value val = (Value)ov;
+        boolean isHomed = ((Key) ok).home();
+        Value val = (Value) ov;
         if( val.isNull() ) { Value.STORE_get(val._key); continue; } // Another flavor of NULL
         total += val._max;
+        if (!isHomed) total += val._max;
         if( val.isPersisted() ) swapped += val._max;
         int len = 0;
         byte[] m = val.rawMem();
@@ -270,6 +277,7 @@ class Cleaner extends Thread {
         if( m != null && p instanceof Chunk ) len -= val._max; // Do not double-count Chunks
         if( len == 0 ) continue;
         cached += len; // Accumulate total amount of cached keys
+        if (!isHomed) cachedCached += len;
 
         if( val._lastAccessedTime < oldest ) { // Found an older Value?
           vold = val; // Record oldest Value seen
@@ -282,7 +290,9 @@ class Cleaner extends Thread {
         _hs[idx] += len;      // Bump histogram bucket
       }
       _cached = cached; // Total cached; NOTE: larger than sum of histogram buckets
+      _cachedCached = cachedCached;
       _total = total;   // Total used data
+      _totalCached = totalCached;
       _swapped = swapped;
       _oldest = oldest; // Oldest seen in this pass
       _vold = vold;
@@ -307,7 +317,7 @@ class Cleaner extends Thread {
     @Override public String toString() {
       long x = _eldest;
       long now = System.currentTimeMillis();
-      return "H(cached:"+(_cached>>20)+"M, eldest:"+x+"L < +"+(_oldest-x)+"ms <...{"+_hStep+"ms}...< +"+(_hStep*_hs.length)+"ms < +"+(now-x)+")";
+      return "H(cached:"+(_cached>>20)+"M" + "(rcached:" + (_cachedCached>>20) + "M), eldest:"+x+"L < +"+(_oldest-x)+"ms <...{"+_hStep+"ms}...< +"+(_hStep*_hs.length)+"ms < +"+(now-x)+")";
     }
   }
 }
