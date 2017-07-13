@@ -6,6 +6,7 @@ package water;
  *
  */
 public abstract class MrFun<T extends MrFun<T>> extends Iced<T> {
+  protected boolean canShareResult(){return true;}
   protected abstract void map(int id);
   public void reduce(T t) {}
   protected MrFun<T> makeCopy() {

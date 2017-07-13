@@ -71,7 +71,6 @@ public class VecUtils {
     public int size(){return _vals.length;}
   }
 
-
   public static class RawVec<T> {
     final Key [] _keys;
     final Vec _template; // vec template this raw vec is compatible with (same group + espc)
@@ -84,6 +83,9 @@ public class VecUtils {
     }
     public Futures remove(Futures fs){for(Key k:_keys)if(k != null)DKV.remove(k,fs); return fs;}
 
+    public <R> R eval(RawVecFun<T,R> f){
+      return new RawVecTsk<>(this,/* make sure we don't change the original function object*/ f.clone2()).exec();
+    }
     public T valForChunkIdx(int cidx){return vals().chunkForChunkIdx(cidx);}
     public T valForLocalIdx(int lidx){return vals().localChunk(lidx);}
 
@@ -93,10 +95,6 @@ public class VecUtils {
       _template = template;
       _keys = keys;
       _home = local || H2O.CLOUD.size() == 1?H2O.SELF:null;
-    }
-
-    public <R,F extends RawVecFun<T,R,F>> R eval(F f){
-      return new RawVecTsk<T,R,F>(this,f).exec();
     }
 
     public boolean isLocal(){return _home == H2O.SELF;}
@@ -144,64 +142,88 @@ public class VecUtils {
       return new RawVec<>(vecs[0], keys, local);
     }
 
-    private static class RawVecTskMrT<T,R,O extends RawVecFun<T,R,O>> extends MRTask<RawVecTskMrT<T,R,O>>{
+    private static class RawVecTskMrT<T,R extends Freezable,O extends RawVecFun<T,R>> extends MRTask<RawVecTskMrT<T,R,O>>{
       final RawVecTsk<T,R,O> _tsk;
       public RawVecTskMrT(RawVecTsk<T,R, O> tsk){_tsk = tsk;}
       @Override public void setupLocal(){_tsk.execLocal();}
+      @Override public void closeLocal(){
+
+      }
       @Override public void reduce(RawVecTskMrT<T,R,O> other){_tsk.reduce(other._tsk);}
     }
 
-    public static abstract class RawVecFun<T,R,O extends RawVecFun<T,R,O>> implements Cloneable {
-      public abstract void map(T val);
+//    public static abstract class RawVecFun<T,R,O extends RawVecFun<T,R,O>> implements Cloneable {
+//      public abstract void map(T val);
+//
+//      public O makeNew() {
+//        try {
+//          return (O) clone();
+//        } catch (CloneNotSupportedException e) {
+//          throw new RuntimeException(e);
+//        }
+//      }
+//      public void reduce(O t){}
+//      public void closeLocal(){}
+//      public abstract R getResult();
+//    }
 
-      public O makeNew() {
-        try {
-          return (O) clone();
-        } catch (CloneNotSupportedException e) {
-          throw new RuntimeException(e);
-        }
-      }
-      public void reduce(O t){}
-      public void closeLocal(){}
-      public abstract R getResult();
+
+    public static abstract class RawVecFun<T,R> extends Iced {
+      public void setupLocal(){}
+      public R getResult(R res){return res;}
+      public abstract R makeNew();
+      public abstract R map(T data, R accum);
+      public abstract R reduce(R x, R y);
+      protected RawVecFun<T,R> clone2(){return this;}
     }
-    public static final class RawVecTsk<T,R,O extends RawVecFun<T,R,O>> extends MrFun<RawVecTsk<T,R,O>> {
-      private final O _funRoot;
-      O _fun;
-      final RawVec<T> _vec;
-      public RawVecTsk (RawVec<T> vec,O fun){_vec = vec; _funRoot = fun;}
-      private transient AtomicInteger cntr;
-      private void setupLocal(){cntr = new AtomicInteger();}
+
+
+    private static final class RawVecTsk<T,R,F extends RawVecFun<T,R>> extends MrFun<RawVecTsk<T,R,F>> {
+      private final F _fun;
+      private final RawVec<T> _vec;
+      R _res;
+      private int _numtasks = -1;
+      public RawVecTsk (RawVec<T> vec,F fun){_vec = vec; _fun = fun;}
+
+      @Override protected boolean canShareResult(){return false;}
+
+      protected RawVecTsk<T,R,F> makeCopy() {
+        assert _res == null;
+        return clone();
+      }
 
       @Override
       public final void map(int id){
-        int cidx;
-         while((cidx = cntr.getAndIncrement()) < _vec.localSize()) {
-           if(_fun == null) _fun = _funRoot.makeNew();
-           _fun.map(_vec.valForLocalIdx(cidx));
-         }
-      }
-      @Override public void reduce(RawVecTsk<T,R,O> other){
-        if(_fun == null) _fun = other._fun;
-        else if(other._fun != null) {
-          assert _fun != other._fun;
-          _fun.reduce(other._fun);
+        // cidx could be atomic counter for better work distribution but then result would not be exactly reproducible (different sequence of reduces)
+        assert _res == null;
+        R res = _fun.makeNew();
+        for(int cidx = id; cidx < _vec.localSize(); cidx += _numtasks) {
+          res = _fun.map(_vec.valForLocalIdx(cidx), res);
+          if (res == _fun) throw new IllegalStateException("Result can not be the same as function");
         }
+        _res = res;
       }
 
-      protected void execLocal(){
-        setupLocal();
-        new LocalMR(this,Math.min(_vec.localSize(),H2O.SELF._heartbeat._cpus_allowed),false).fork().join();
-        _fun.closeLocal();
+      @Override public void reduce(RawVecTsk<T,R,F> other){
+        if(_res == null) _res = other._res;
+        else if(other._res != null) {
+          if(_res == other._res)
+            System.out.println("this = " + this + " that = " + other);
+          assert _res != other._res;
+          _res = _fun.reduce(_res,other._res);
+        }
+      }
+      private void execLocal(){
+        _fun.setupLocal();
+        _numtasks = Math.min(Math.min(Runtime.getRuntime().availableProcessors(),H2O.SELF._heartbeat._cpus_allowed),_vec.localSize());
+        new LocalMR(this,_numtasks,false).fork().join();
       }
       public R exec(){
         if(_vec.isLocal()) execLocal();
-        new RawVecTskMrT(this).doAllNodes();
-        return _fun.getResult();
+        else new RawVecTskMrT(this).doAllNodes();
+        return _fun.getResult(_res);
       }
     }
-
-
   }
 
 

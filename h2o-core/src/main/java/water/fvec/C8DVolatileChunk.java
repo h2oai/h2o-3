@@ -12,7 +12,7 @@ import water.util.UnsafeUtils;
 public final class C8DVolatileChunk extends Chunk {
   private transient double [] _ds;
   C8DVolatileChunk(double[] ds ) {_start = -1; _len = ds.length; _ds = ds; }
-  public C8DVolatileChunk(double[] ds, Vec v, long start) {_len = ds.length; _ds = ds; _vec = v; _start = start;}
+
 
 
   public double [] getValues(){return _ds;}
@@ -59,9 +59,7 @@ public final class C8DVolatileChunk extends Chunk {
 
   @Override
   public Futures close( int cidx, Futures fs ) {
-    if(_vec.isVolatile()) return fs;
     if(chk2() != null) return chk2().close(cidx,fs);
-
     Value v = new Value(_vec.chunkKey(cidx),this,_len*8,Value.ICE);
     DKV.put(v._key,v,fs);
     return fs;

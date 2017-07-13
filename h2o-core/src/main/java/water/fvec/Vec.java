@@ -626,38 +626,6 @@ public class Vec extends Keyed<Vec> {
     return vecs;
   }
 
-  private static class VolatileVec extends Vec {
-    public VolatileVec(Key<Vec> key, int rowLayout) {
-      super(key, rowLayout);
-    }
-    @Override public Futures postWrite(Futures fs){return fs;}
-  }
-
-  public Vec [] makeVolatileDoubles(final double... vals){
-    Key [] ks = group().addVecs(vals.length);
-    final Vec [] vecs = new Vec[ks.length];
-    for(int i = 0; i < vecs.length; ++i)
-      vecs[i] = new VolatileVec(ks[i],_rowLayout);
-    for(Vec v:vecs) {
-      v._volatile = true;
-      DKV.put(v);
-    }
-    final int nChunks = nChunks();
-    new MRTask(){
-      @Override public void map(Chunk c) {
-        for (int i = 0; i < vecs.length; ++i) {
-          Key k = vecs[i].chunkKey(c.cidx());
-          double[] ary = MemoryManager.malloc8d(c._len);
-          Arrays.fill(ary, vals[i]);
-          Value v = new Value(k, new C8DVolatileChunk(ary), c._len * 8, Value.ICE);
-          DKV.put(v._key, v);
-        }
-      }
-    }.doAll(this);
-    return vecs;
-  }
-
-
   /**
    * Make a temporary work vec of int [] .
    * Volatile vecs can only be used locally (chunks do not serialize) and are assumed to change frequently(MRTask call preWiting() by default).
@@ -667,26 +635,22 @@ public class Vec extends Keyed<Vec> {
    * @return
    */
   public Vec [] makeVolatileInts(final int [] cons){
-    Key [] ks = group().addVecs(cons.length);
-    final Vec [] vecs = new Vec[ks.length];
-    for(int i = 0; i < vecs.length; ++i)
-      vecs[i] = new VolatileVec(ks[i],_rowLayout);
+    Vec [] vecs = makeZeros(cons.length);
     for(Vec v:vecs) {
       v._volatile = true;
       DKV.put(v);
     }
-    final int nChunks = nChunks();
     new MRTask(){
-      @Override public void map(Chunk c) {
-        for (int i = 0; i < vecs.length; ++i) {
-          Key k = vecs[i].chunkKey(c.cidx());
-          int[] ary = MemoryManager.malloc4(c._len);
-          Arrays.fill(ary, cons[i]);
-          Value v = new Value(k, new C4VolatileChunk(ary), c._len * 8, Value.ICE);
-          DKV.put(v._key, v);
+      @Override public void map(Chunk [] cs){
+        int len = cs[0].len();
+        for(int i = 0; i < cs.length; ++i) {
+          int [] vals = MemoryManager.malloc4(len);
+          Arrays.fill(vals,cons[i]);
+          cs[i].setVolatile(vals);
         }
       }
-    }.doAll(this);
+    }.doAll(vecs);
+
     return vecs;
   }
 

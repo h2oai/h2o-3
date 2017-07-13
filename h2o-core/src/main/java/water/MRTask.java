@@ -297,6 +297,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    *  this object, for disposing of node-local shared data structures.  */
   protected void closeLocal() { }
 
+
   /** Compute a permissible node index on which to launch remote work. */
   private int addShift( int x ) { x += _nlo; int sz = H2O.CLOUD.size(); return x < sz ? x : x-sz; }
   private int subShift( int x ) { x -= _nlo; int sz = H2O.CLOUD.size(); return x <  0 ? x+sz : x; }
