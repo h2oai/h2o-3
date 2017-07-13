@@ -18,7 +18,9 @@
 #' @param max_models Maximum number of models to build in the AutoML process (does not include Stacked Ensembles). Defaults to NULL.
 #' @param stopping_metric Metric to use for early stopping (AUTO is logloss for classification, deviance for regression).  
 #'        Must be one of "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error". Defaults to AUTO.
-#' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much) Defaults to 0.001.
+#' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much). This value defaults to 0.001 if the 
+#'        dataset is at least 1 million rows; otherwise it defaults to a bigger value determined by the size of the dataset and the NA-rate.  In that case, the value is computed 
+#'        as 1/((nrows * non-na-rate)^2).
 #' @param stopping_rounds Integer. Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the stopping_metric 
 #'        does not improve for k (stopping_rounds) scoring events. Defaults to 3 and must be an non-zero integer.  Use 0 to disable early stopping.
 #' @param seed Integer. Set a seed for reproducibility. AutoML can only guarantee reproducibility if max_models or early stopping is used 
@@ -45,7 +47,7 @@ h2o.automl <- function(x, y, training_frame,
                        max_runtime_secs = 3600,
                        max_models = NULL,
                        stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error"),
-                       stopping_tolerance = 0.001,
+                       stopping_tolerance = NULL,
                        stopping_rounds = 3,
                        seed = NULL,
                        project_name = NULL)
@@ -140,7 +142,9 @@ h2o.automl <- function(x, y, training_frame,
     build_control$stopping_criteria$max_models <- max_models
   }
   build_control$stopping_criteria$stopping_metric <- match.arg(stopping_metric)
-  build_control$stopping_criteria$stopping_tolerance <- stopping_tolerance
+  if (!is.null(stopping_tolerance)) {
+    build_control$stopping_criteria$stopping_tolerance <- stopping_tolerance
+  }
   build_control$stopping_criteria$stopping_rounds <- stopping_rounds
   if (!is.null(seed)) {
     build_control$stopping_criteria$seed <- seed
