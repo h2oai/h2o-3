@@ -61,7 +61,7 @@ class H2OLocalServer(object):
 
     @staticmethod
     def start(jar_path=None, nthreads=-1, enable_assertions=True, max_mem_size=None, min_mem_size=None,
-              ice_root=None, port="54321+", verbose=True):
+              ice_root=None, port="54321+", extra_classpath=None, verbose=True):
         """
         Start new H2O server on the local machine.
 
@@ -76,6 +76,7 @@ class H2OLocalServer(object):
             tempfile.mkdtemp().
         :param port: Port where to start the new server. This could be either an integer, or a string of the form
             "DDDDD+", indicating that the server should start looking for an open port starting from DDDDD and up.
+        :param extra_classpath List of paths to libraries that should be included on the Java classpath.
         :param verbose: If True, then connection info will be printed to the stdout.
 
         :returns: a new H2OLocalServer instance
@@ -87,6 +88,7 @@ class H2OLocalServer(object):
         assert_is_type(min_mem_size, None, int)
         assert_is_type(max_mem_size, None, BoundInt(1 << 25))
         assert_is_type(ice_root, None, I(str, os.path.isdir))
+        assert_is_type(extra_classpath, None, [str])
         if jar_path:
             assert_satisfies(jar_path, jar_path.endswith("h2o.jar"))
 
@@ -107,6 +109,7 @@ class H2OLocalServer(object):
         hs = H2OLocalServer()
         hs._verbose = bool(verbose)
         hs._jar_path = hs._find_jar(jar_path)
+        hs._extra_classpath = extra_classpath
         hs._ice_root = ice_root
         if not ice_root:
             hs._ice_root = tempfile.mkdtemp()
@@ -176,6 +179,7 @@ class H2OLocalServer(object):
         self._process = None
         self._verbose = None
         self._jar_path = None
+        self._extra_classpath = None
         self._ice_root = None
         self._stdout = None
         self._stderr = None
@@ -257,6 +261,9 @@ class H2OLocalServer(object):
             print("  Starting server from " + self._jar_path)
             print("  Ice root: " + self._ice_root)
 
+        # Combine jar path with the optional extra classpath
+        classpath = [self._jar_path] if self._extra_classpath is None else [self._jar_path] + self._extra_classpath
+
         # Construct java command to launch the process
         cmd = [java]
 
@@ -269,7 +276,7 @@ class H2OLocalServer(object):
                      str(num)
             cmd += [mq + numstr]
         cmd += ["-verbose:gc", "-XX:+PrintGCDetails", "-XX:+PrintGCTimeStamps"]
-        cmd += ["-jar", self._jar_path]  # This should be the last JVM option
+        cmd += ["-cp", os.pathsep.join(classpath), "water.H2OApp"]  # This should be the last JVM option
 
         # ...add H2O options
         cmd += ["-ip", self._ip]

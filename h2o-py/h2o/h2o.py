@@ -144,7 +144,8 @@ def version_check():
 
 def init(url=None, ip=None, port=None, https=None, insecure=None, username=None, password=None,
          cookies=None, proxy=None, start_h2o=True, nthreads=-1, ice_root=None, enable_assertions=True,
-         max_mem_size=None, min_mem_size=None, strict_version_check=None, ignore_config=False, **kwargs):
+         max_mem_size=None, min_mem_size=None, strict_version_check=None, ignore_config=False,
+         extra_classpath=None, **kwargs):
     """
     Attempt to connect to a local server, or if not successful start a new server and connect to it.
 
@@ -165,6 +166,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     :param min_mem_size: Minimum memory to use for the new h2o server.
     :param strict_version_check: If True, an error will be raised if the client and server versions don't match.
     :param ignore_config: Indicates whether a processing of a .h2oconfig file should be conducted or not. Default value is False.
+    :param extra_classpath: List of paths to libraries that should be included on the Java classpath when starting H2O from Python.
     :param kwargs: (all other deprecated attributes)
     """
     global h2oconn
@@ -184,6 +186,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     assert_is_type(max_mem_size, int, str, None)
     assert_is_type(min_mem_size, int, str, None)
     assert_is_type(strict_version_check, bool, None)
+    assert_is_type(extra_classpath, [str], None)
     assert_is_type(kwargs, {"proxies": {str: str}, "max_mem_size_GB": int, "min_mem_size_GB": int,
                             "force_connect": bool})
 
@@ -254,7 +257,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
             port = str(port) + "+"
         if not start_h2o: raise
         hs = H2OLocalServer.start(nthreads=nthreads, enable_assertions=enable_assertions, max_mem_size=mmax,
-                                  min_mem_size=mmin, ice_root=ice_root, port=port)
+                                  min_mem_size=mmin, ice_root=ice_root, port=port, extra_classpath=extra_classpath)
         h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=not insecure,
                                      auth=auth, proxy=proxy,cookies=cookies, verbose=True)
     if check_version:

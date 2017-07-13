@@ -219,6 +219,7 @@ class H2OCluster(object):
             status += ", healthy"
         else:
             status += ", %d nodes are not healthy" % unhealthy_nodes
+        api_extensions = self.list_api_extensions()
         H2ODisplay([
             ["H2O cluster uptime:",        get_human_readable_time(self.cloud_uptime_millis)],
             ["H2O cluster version:",       self.version],
@@ -232,6 +233,7 @@ class H2OCluster(object):
             ["H2O connection url:",        h2o.connection().base_url],
             ["H2O connection proxy:",      h2o.connection().proxy],
             ["H2O internal security:",     self.internal_security_enabled],
+            ["H2O API Extensions:",        ', '.join(api_extensions)],
             ["Python version:",            "%d.%d.%d %s" % tuple(sys.version_info[:4])],
         ])
 
