@@ -27,22 +27,22 @@ public class CompressedTree extends Keyed<CompressedTree> {
   final byte [] _bits;
   final int _nclass;     // Number of classes being predicted (for an integer prediction tree)
   final long _seed;
-  final String[][] _domains;
+  final int[] _domainSizes;
 
   public CompressedTree(byte[] bits, int nclass, long seed, int tid, int cls, String[][] domains) {
     super(makeTreeKey(tid, cls));
     _bits = bits;
     _nclass = nclass;
     _seed = seed;
-    _domains = domains;
+    _domainSizes = SharedTreeMojoModel.getDomainSizes(domains);
   }
 
   public double score(final double row[]) {
-    return SharedTreeMojoModel.scoreTree(_bits, row, _nclass, false, _domains);
+    return SharedTreeMojoModel.scoreTree(_bits, row, _nclass, false, _domainSizes);
   }
 
   public String getDecisionPath(final double row[]) {
-    double d = SharedTreeMojoModel.scoreTree(_bits, row, _nclass, true, _domains);
+    double d = SharedTreeMojoModel.scoreTree(_bits, row, _nclass, true, _domainSizes);
     return SharedTreeMojoModel.getDecisionPath(d);
   }
 

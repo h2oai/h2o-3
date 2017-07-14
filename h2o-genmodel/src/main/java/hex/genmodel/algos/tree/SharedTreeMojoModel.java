@@ -50,18 +50,35 @@ public abstract class SharedTreeMojoModel extends MojoModel {
      */
     protected double[] _calib_glm_beta;
 
+    /**
+     * Sizes of each categorical domain {@see getDomainSizes}
+     * Used in tree scoring to find out whether input categorical level is in bounds of the domain.
+     */
+    private final int[] _domain_sizes;
 
-  /**
-   * Highly efficient (critical path) tree scoring
-   *
-   * Given a tree (in the form of a byte array) and the row of input data, compute either this tree's
-   * predicted value when `computeLeafAssignment` is false, or the the decision path within the tree (but no more
-   * than 64 levels) when `computeLeafAssignment` is true.
-   *
-   * Note: this function is also used from the `hex.tree.CompressedTree` class in `h2o-algos` project.
-   */
-  @SuppressWarnings("ConstantConditions")  // Complains that the code is too complex. Well duh!
-    public static double scoreTree(byte[] tree, double[] row, int nclasses, boolean computeLeafAssignment, String[][] domains) {
+    /**
+     * Extracts sizes of the given domains.
+     * @param domains
+     * @return array containing sizes of domains, -1 for columns that are not categorical
+     */
+    public static int[] getDomainSizes(String[][] domains) {
+        int[] sizes = new int[domains.length];
+        for (int i = 0; i < sizes.length; i++)
+            sizes[i] = domains[i] != null ? domains[i].length : -1;
+        return sizes;
+    }
+
+    /**
+     * Highly efficient (critical path) tree scoring
+     *
+     * Given a tree (in the form of a byte array) and the row of input data, compute either this tree's
+     * predicted value when `computeLeafAssignment` is false, or the the decision path within the tree (but no more
+     * than 64 levels) when `computeLeafAssignment` is true.
+     *
+     * Note: this function is also used from the `hex.tree.CompressedTree` class in `h2o-algos` project.
+     */
+    @SuppressWarnings("ConstantConditions")  // Complains that the code is too complex. Well duh!
+    public static double scoreTree(byte[] tree, double[] row, int nclasses, boolean computeLeafAssignment, int[] domainSizes) {
         ByteBufferWrapper ab = new ByteBufferWrapper(tree);
         GenmodelBitSet bs = null;
         long bitsRight = 0;
@@ -134,7 +151,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
           //        }
 
             double d = row[colId];
-            if (Double.isNaN(d) || ( equal != 0 && bs != null && !bs.isInRange((int)d) ) || (domains != null && domains[colId] != null && domains[colId].length <= (int)d)
+            if (Double.isNaN(d) || ( equal != 0 && bs != null && !bs.isInRange((int)d) ) || (domainSizes != null && domainSizes[colId] != -1 && domainSizes[colId] <= (int)d)
                     ? !leftward : !naVsRest && (equal == 0? d >= splitVal : bs.contains((int)d))) {
                 // go RIGHT
                 switch (lmask) {
@@ -432,6 +449,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
 
     protected SharedTreeMojoModel(String[] columns, String[][] domains) {
         super(columns, domains);
+        _domain_sizes = getDomainSizes(domains);
     }
 
     /**
@@ -450,7 +468,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
                 } else if (_mojo_version.equals(1.1)) { //Second version
                     preds[k] += scoreTree1(_compressed_trees[itree], row, _nclasses, false);
                 } else if (_mojo_version.equals(1.2)) { //CURRENT VERSION
-                    preds[k] += scoreTree(_compressed_trees[itree], row, _nclasses, false, _domains);
+                    preds[k] += scoreTree(_compressed_trees[itree], row, _nclasses, false, _domain_sizes);
                 }
             }
         }
