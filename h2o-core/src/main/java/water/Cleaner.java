@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
 import water.fvec.Chunk;
+import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.PrettyPrint;
 
@@ -233,9 +234,9 @@ class Cleaner extends Thread {
     long _eldest; // Time of the eldest K/V found in some prior pass
     long _hStep;  // Histogram step: (now-eldest)/histogram.length
     long _cached; // Total alive data in the histogram
-    long _cachedCached; // Total alive data in the histogram from remote nodes
+    long _rCached; // Total alive data in the histogram from remote nodes
     long _total;  // Total data in local K/V
-    long _totalCached; // Total data in local K/V cached from remote nodes
+    long _rTotal; // Total data in local K/V cached from remote nodes
     long _when;   // When was this histogram computed
     long _swapped;// On-disk stuff
     Value _vold;  // For assertions: record the oldest Value
@@ -251,9 +252,9 @@ class Cleaner extends Thread {
       // Compute the hard way
       Object[] kvs = H2O.STORE.raw_array();
       long cached = 0; // Total K/V cached in ram
-      long cachedCached = 0; // Total K/V cached in ram from remote nodes
+      long rCached = 0; // Total K/V cached in ram from remote nodes
       long total = 0;  // Total K/V in local node
-      long totalCached = 0;  // Total K/V in local node cached from remote nodes
+      long rTotal = 0;  // Total K/V in local node cached from remote nodes
       long swapped=0;  // Total K/V persisted
       long oldest = Long.MAX_VALUE; // K/V with the longest time since being touched
       Value vold = null;
@@ -277,7 +278,7 @@ class Cleaner extends Thread {
         if( m != null && p instanceof Chunk ) len -= val._max; // Do not double-count Chunks
         if( len == 0 ) continue;
         cached += len; // Accumulate total amount of cached keys
-        if (!isHomed) cachedCached += len;
+        if (!isHomed) rCached += len;
 
         if( val._lastAccessedTime < oldest ) { // Found an older Value?
           vold = val; // Record oldest Value seen
@@ -290,9 +291,9 @@ class Cleaner extends Thread {
         _hs[idx] += len;      // Bump histogram bucket
       }
       _cached = cached; // Total cached; NOTE: larger than sum of histogram buckets
-      _cachedCached = cachedCached;
+      _rCached = rCached;
       _total = total;   // Total used data
-      _totalCached = totalCached;
+      _rTotal = rTotal;
       _swapped = swapped;
       _oldest = oldest; // Oldest seen in this pass
       _vold = vold;
@@ -317,7 +318,26 @@ class Cleaner extends Thread {
     @Override public String toString() {
       long x = _eldest;
       long now = System.currentTimeMillis();
-      return "H(cached:"+(_cached>>20)+"M" + "(rcached:" + (_cachedCached>>20) + "M), eldest:"+x+"L < +"+(_oldest-x)+"ms <...{"+_hStep+"ms}...< +"+(_hStep*_hs.length)+"ms < +"+(now-x)+")";
+      StringBuilder sb = new StringBuilder();
+      sb.append("Histogram(cached: ").append(_cached>>20).append("M")
+          .append(",rcached: ").append(_rCached >> 20).append("M")
+          .append(",eldest:").append(x).append("L < +").append(_oldest-x)
+          .append("ms <...{").append(_hStep).append("ms}...< +").append(_hStep*_hs.length)
+          .append("ms < +").append(now-x).append("ms)");
+      
+      return sb.toString();
+    }
+
+    private static StringBuilder toHisto(long[] ary, StringBuilder sb, int width) {
+      long maxVal = ArrayUtils.maxValue(ary);
+      double scale = width / (double) maxVal;
+      for (int i = 0; i < ary.length; i++) {
+        int l = (int) (ary[i] * scale);
+        sb.append(String.format("%10d", ary[i]));
+        for (int j = 0; j < l; j++) sb.append('#');
+        sb.append('\n');
+      }
+      return sb;
     }
   }
 }
