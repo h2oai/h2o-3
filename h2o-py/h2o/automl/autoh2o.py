@@ -23,7 +23,7 @@ class H2OAutoML(object):
     :param float stopping_tolerance: This option specifies the relative tolerance for the metric-based stopping
       to stop the AutoML run if the improvement is less than this value. This value defaults to 0.001
       if the dataset is at least 1 million rows; otherwise it defaults to a value determined by the size of the dataset
-      and the ``na`` rate.  In that case, the value is computed as 1/((nrows * non-na-rate)^2).
+      and the non-NA-rate.  In that case, the value is computed as 1/sqrt(nrows * non-NA-rate).
     :param int stopping_rounds: This argument stops training new models in the AutoML run when the option selected for
       stopping_metric doesn't improve for the specified number of models, based on a simple moving average.
       To disable this feature, set it to 0. Defaults to 3 and must be an non-negative integer.

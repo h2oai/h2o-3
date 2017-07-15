@@ -19,8 +19,8 @@
 #' @param stopping_metric Metric to use for early stopping (AUTO is logloss for classification, deviance for regression).  
 #'        Must be one of "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error". Defaults to AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much). This value defaults to 0.001 if the 
-#'        dataset is at least 1 million rows; otherwise it defaults to a bigger value determined by the size of the dataset and the NA-rate.  In that case, the value is computed 
-#'        as 1/((nrows * non-na-rate)^2).
+#'        dataset is at least 1 million rows; otherwise it defaults to a bigger value determined by the size of the dataset and the non-NA-rate.  In that case, the value is computed 
+#'        as 1/sqrt(nrows * non-NA-rate).
 #' @param stopping_rounds Integer. Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the stopping_metric 
 #'        does not improve for k (stopping_rounds) scoring events. Defaults to 3 and must be an non-zero integer.  Use 0 to disable early stopping.
 #' @param seed Integer. Set a seed for reproducibility. AutoML can only guarantee reproducibility if max_models or early stopping is used 
