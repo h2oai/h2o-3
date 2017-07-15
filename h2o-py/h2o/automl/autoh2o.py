@@ -88,30 +88,22 @@ class H2OAutoML(object):
         if max_models is not None:
             assert_is_type(max_models,int)
             self.build_control["stopping_criteria"]["max_models"] = max_models
-            self.max_models = max_models
+        self.max_models = max_models
 
         if stopping_metric is not "AUTO":
             assert_is_type(stopping_metric,str)
-            self.build_control["stopping_criteria"]["stopping_metric"] = stopping_metric
-            self.stopping_metric = stopping_metric
-        else:
-            self.build_control["stopping_criteria"]["stopping_metric"] = stopping_metric
-            self.stopping_metric = stopping_metric
+        self.build_control["stopping_criteria"]["stopping_metric"] = stopping_metric
+        self.stopping_metric = stopping_metric
 
         if stopping_tolerance is not None:
             assert_is_type(stopping_tolerance,float)
             self.build_control["stopping_criteria"]["stopping_tolerance"] = stopping_tolerance
-            self.stopping_tolerence = stopping_tolerance
-        else:
-            self.stopping_tolerence = stopping_tolerance
+        self.stopping_tolerence = stopping_tolerance
 
         if stopping_rounds is not 3:
             assert_is_type(stopping_rounds,int)
-            self.build_control["stopping_criteria"]["stopping_rounds"] = stopping_rounds
-            self.stopping_rounds = stopping_rounds
-        else:
-            self.build_control["stopping_criteria"]["stopping_rounds"] = stopping_rounds
-            self.stopping_rounds = stopping_rounds
+        self.build_control["stopping_criteria"]["stopping_rounds"] = stopping_rounds
+        self.stopping_rounds = stopping_rounds    
 
         if seed is not None:
             assert_is_type(seed,int)
