@@ -4,16 +4,16 @@ import hex.genmodel.MojoModel;
 
 public class SvmMojoModel extends MojoModel {
 
-    protected SvmMojoModel(String[] columns, String[][] domains) {
-        super(columns, domains);
-    }
-
     boolean meanImputation;
     double[] weights;
     double[] means;
     double interceptor;
     double defaultThreshold;
     double threshold;
+
+    SvmMojoModel(String[] columns, String[][] domains) {
+        super(columns, domains);
+    }
 
     @Override
     public double[] score0(double[] row, double[] preds) {

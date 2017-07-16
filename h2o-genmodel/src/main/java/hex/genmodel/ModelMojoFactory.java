@@ -70,7 +70,7 @@ public class ModelMojoFactory {
       case "K-means":
         return new KMeansMojoReader();
 
-      case "SVM":
+      case "Support Vector Machine (*Spark*)":
         return new SvmMojoReader();
 
       default:
