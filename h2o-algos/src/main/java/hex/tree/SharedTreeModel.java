@@ -198,7 +198,7 @@ public abstract class SharedTreeModel<
         DKV.put(keys[i]=ct._key,ct,fs);
         _treeStats.updateBy(trees[i]); // Update tree shape stats
 
-        CompressedTree ctAux = new CompressedTree(trees[i]._abAux.buf(),-1,-1,-1,-1,_domains);
+        CompressedTree ctAux = new CompressedTree(trees[i]._abAux.buf(),-1,-1,-1,-1);
         keysAux[i] = ctAux._key = Key.make(createAuxKey(ct._key.toString()));
         DKV.put(ctAux);
       }
@@ -250,7 +250,7 @@ public abstract class SharedTreeModel<
             Key[] keys = _output._treeKeys[tidx];
             for (Key key : keys) {
               if (key != null) {
-                String pred = DKV.get(key).<CompressedTree>get().getDecisionPath(input);
+                String pred = DKV.get(key).<CompressedTree>get().getDecisionPath(input,_output._domains);
                 output[col++] = pred;
               }
             }
@@ -326,7 +326,7 @@ public abstract class SharedTreeModel<
     Key[] keys = _output._treeKeys[treeIdx];
     for( int c=0; c<keys.length; c++ ) {
       if (keys[c] != null) {
-        double pred = DKV.get(keys[c]).<CompressedTree>get().score(data);
+        double pred = DKV.get(keys[c]).<CompressedTree>get().score(data,_output._domains);
         assert (!Double.isInfinite(pred));
         preds[keys.length == 1 ? 0 : c + 1] += pred;
       }
