@@ -2,6 +2,17 @@
 
 ## H2O
 
+### Vajda (3.10.5.4) - 7/17/2017
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/4/index.html</a>
+
+
+<h4>Bug</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4694'>PUBDEV-4694</a>] -         Tree Algos are wasting memory by storing categorical values in every tree
+</li>
+</ul>
+
 ### Vajda (3.10.5.3) - 6/30/2017
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/3/index.html</a>
@@ -19,11 +30,11 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/3/index.
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4595'>PUBDEV-4595</a>] - H2O no longer displays an error if there is a "/" in the user-supplied model name. Instead, a message will display indicating that the "/" is replaced with "_".
 </li>
 </ul>
-                    
+
 <h4>Improvement</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3941'>PUBDEV-3941</a>] - Added support for autoencoder POJOs in in the EasyPredictModelWrapper. 
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3941'>PUBDEV-3941</a>] - Added support for autoencoder POJOs in in the EasyPredictModelWrapper.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4269'>PUBDEV-4269</a>] - H2O now warns the user about the minimal required Colorama version in case of python client. Note that the current minimum version is 0.3.8.
 </li>
@@ -32,7 +43,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/3/index.
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4548'>PUBDEV-4548</a>] - Moved the initialization of XGBoost into the H2O core extension.
 </li>
 </ul>
-    
+
 <h4>Docs</h4>
 
 <ul>
@@ -40,7 +51,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/3/index.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4610'>PUBDEV-4610</a>] - Removed `laplace`, `huber`, and `quantile` from list of supported distributions in the XGBoost documentation.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4612'>PUBDEV-4612</a>] - Add heuristics to the FAQ &gt; General Troubleshooting topic. 
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4612'>PUBDEV-4612</a>] - Add heuristics to the FAQ &gt; General Troubleshooting topic.
 </li>
 </ul>
 
@@ -63,17 +74,17 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/2/index.
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4594'>PUBDEV-4594</a>] - In GLM fixed an issue that caused a Runtime exception when specifying the quasibinomial family with `nfold = 2`.
 </li>
 </ul>
-        
+
 <h4>New Feature</h4>
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3624'>PUBDEV-3624</a>] - Added top an bottom N functions, which allow users to grab the top or bottom N percent of a numerical column. The returned frame contains the original row indices of the top/bottom N percent values extracted into the second column. 
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3624'>PUBDEV-3624</a>] - Added top an bottom N functions, which allow users to grab the top or bottom N percent of a numerical column. The returned frame contains the original row indices of the top/bottom N percent values extracted into the second column.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4096'>PUBDEV-4096</a>] - When building Stacked Ensembles in R, the base_models parameter can accept models rather than just model IDs. Updated the documentation in the User Guide for the base_models parameter to indicate this.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4523'>PUBDEV-4523</a>] - Added the following new GBM and DRF parameters to the User Guide: `calibrate_frame` and `calibrate_model`. 
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4523'>PUBDEV-4523</a>] - Added the following new GBM and DRF parameters to the User Guide: `calibrate_frame` and `calibrate_model`.
 </li>
 </ul>
-            
+
 <h4>Improvement</h4>
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4531'>PUBDEV-4531</a>] -  Improved PredictCsv.java as follows:
@@ -86,20 +97,20 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/2/index.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4578'>PUBDEV-4578</a>] - Fixed the R package so that a "browseURL" NOTE no longer appears.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4583'>PUBDEV-4583</a>] - In the R package documentation, improved the description of the GLM `alpha` parameter. 
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4583'>PUBDEV-4583</a>] - In the R package documentation, improved the description of the GLM `alpha` parameter.
 </li>
 </ul>
-    
+
 <h4>Docs</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4524'>PUBDEV-4524</a>] - In the "Using Flow - H2O’s Web UI" section of the User Guide, updated the Viewing Models topic to include that users can download the h2o-genmodel.jar file when viewing models in Flow. 
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4524'>PUBDEV-4524</a>] - In the "Using Flow - H2O’s Web UI" section of the User Guide, updated the Viewing Models topic to include that users can download the h2o-genmodel.jar file when viewing models in Flow.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4549'>PUBDEV-4549</a>] - The `group_by` function accepts a number of aggregate options, which were documented in the User Guide and in the Python package documentation. These aggregate options are now described in the R package documentation.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4575'>PUBDEV-4575</a>] - Added an initial XGBoost topic to the User Guide. Note that this is still a work in progress.
 </li>
-</ul>    
+</ul>
 
 ### Vajda (3.10.5.1) - 6/9/2017
 
@@ -131,7 +142,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/1/index.
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3196'>PUBDEV-3196</a>] - The `.mean()` function can now be applied to a row in `H2OFrame.apply()`.</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3350'>PUBDEV-3350</a>] - Fixed an issue that caused a negative value to display in the H2O cluster version. </li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3396'>PUBDEV-3396</a>] - GLM now checks to see if a response is encoded as a factor and warns the user if it is not. </li>
-	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3470'>PUBDEV-3470</a>] - Fixed an issue that resulted in an `h2o.init()` fail message even though the server had actually been started. As a result, H2O did not shutdown automatically upon exit.</li>	
+	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3470'>PUBDEV-3470</a>] - Fixed an issue that resulted in an `h2o.init()` fail message even though the server had actually been started. As a result, H2O did not shutdown automatically upon exit.</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3502'>PUBDEV-3502</a>] - Fixed an issue that caused PCA to hang when run on a wide dataset using the Randomized `pca_method`. Note that it is still not recommended to use Randomized with wide datasets.</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3520'>PUBDEV-3520</a>] - `h2o.setLevels` now works correctly when wrapped into invisible.</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3651'>PUBDEV-3651</a>] - Added a dependency for the roxygen2 package.</li>
@@ -154,7 +165,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/1/index.
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4156'>PUBDEV-4156</a>] - The Python API now provides a method to extract parameters from `cluster_status`.</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4171'>PUBDEV-4171</a>] - Fixed incorrect parsing of input parameters. Previously, system property parsing logic added the value of any system property other than "ga_opt_out" to the arguments list if a property was prefixed with "ai.h2o.". This caused an attempt to parse the value of a system property as if it were itself a system property and at times resulted in an "Unknown Argument" error. </li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4174'>PUBDEV-4174</a>] - Fixed intermittent pyunit_javapredict_dynamic_data_paramsDR. </li>
-	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4177'>PUBDEV-4177</a>] - Fixed orc parser test by setting timezone to local time.</li>	
+	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4177'>PUBDEV-4177</a>] - Fixed orc parser test by setting timezone to local time.</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4185'>PUBDEV-4185</a>] - H2O can now correctly handle preflight OPTIONS calls - specifically in the event of a (1) CORS request and (2) the request has a content type other than text/plain, application/x-www-form-urlencoded, or multipart/form-data.</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4202'>PUBDEV-4202</a>] - In the REST API, POST of application/json requests no longer fails if requests expect required fields.</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4216'>PUBDEV-4216</a>] - The R client `impute` function now checks for categorical values and returns an error if none exist.</li>
@@ -177,7 +188,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/1/index.
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4350'>PUBDEV-4350</a>] - Improved the doc strings for `sample_rate_per_class` in R and Python.</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4351'>PUBDEV-4351</a>] - Fixed a bug in the cosine distance formula.</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4352'>PUBDEV-4352</a>] - Fixed an issue with CBSChunk set with long argument.</li>
-	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4363'>PUBDEV-4363</a>] - C0DChunk with con == NaN now works with strings.</li>	
+	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4363'>PUBDEV-4363</a>] - C0DChunk with con == NaN now works with strings.</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4378'>PUBDEV-4378</a>] - When retrieving a Variable Importance plot using the H2O Python client, the default number of features shown is now 10 (or all if < 10 exist). Also reduced the top and bottom margins of the Y axis. </li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4381'>PUBDEV-4381</a>] - When retrieving a Variable Importance plot using the H2O R client, the default number of features shown is now 10 (or all if < 10 exist).</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4416'>PUBDEV-4416</a>] - Fixed an ORC stream parse.</li>
@@ -209,7 +220,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/1/index.
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2022'>PUBDEV-2022</a>] - Added support to impute missing elements for RandomForest.</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2348'>PUBDEV-2348</a>] - Added a probability calibration plot function.</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2535'>PUBDEV-2535</a>] - A new h2o.pivot() function is available to allow pivoting of tables.</li>
-	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3666'>PUBDEV-3666</a>] - MOJO support has been extended to K-Means models.</li>	
+	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3666'>PUBDEV-3666</a>] - MOJO support has been extended to K-Means models.</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3840'>PUBDEV-3840</a>] - Added two new options in GBM and DRF: `calibrate_model` and `calibrate_frame`. These flags allow you to retrieve calibrated probabilities for binary classification problems. </li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3850'>PUBDEV-3850</a>] - In Stacked Ensembles, added support for passing in models instead of model IDs when using the R client.</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3970'>PUBDEV-3970</a>] - Added support for saving and loading binary Stacked Ensemble models.</li>
@@ -259,7 +270,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/1/index.
 <h4> Improvement </h4>
 
 <ul>
-	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3088'>PUBDEV-3088</a>] - Improved error handling when users receive the follwoing error: 
+	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3088'>PUBDEV-3088</a>] - Improved error handling when users receive the follwoing error:
 `Error: lexical error: invalid char in json text. <html> <head> <meta http-equiv= (right here) ------^`
 	</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3500'>PUBDEV-3500</a>] - In PCA, when the user specifies a value for k that is <=0, then all principal components will automatically be calculated.</li>
@@ -276,7 +287,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/1/index.
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4267'>PUBDEV-4267</a>] - In the R client, the default for `nthreads` is now -1. The documentation examples have been updated to reflect this change.</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4307'>PUBDEV-4307</a>] - ModelMetrics can sort models by a different Frame.</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4331'>PUBDEV-4331</a>] - The application type is now reported in YARN manager, and H2O now overrides the default MapReduce type to H2O type.</li>
-	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4419'>PUBDEV-4419</a>] - Added a title option to PrintMOJO utility</li>	
+	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4419'>PUBDEV-4419</a>] - Added a title option to PrintMOJO utility</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4431'>PUBDEV-4431</a>] - Flow now uses ip:port for identifying the node as part of LogHandler.</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4465'>PUBDEV-4465</a>] - Reduced the frequency of Hadoop heartbeat logging.</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4484'>PUBDEV-4484</a>] - In GLM, quasibinomial models produce binomial metrics when scoring.</li>
@@ -299,7 +310,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/1/index.
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4078'>PUBDEV-4078</a>] - Added a topic to the Data Manipulation section describing the `group_by` function.
 	</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4140'>PUBDEV-4140</a>] - In the Productionizing H2O section of the User Guide, added an example showing how to read a MOJO as a resource from a jar file.</li>
-	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4182'>PUBDEV-4182</a>] - Improved the R and Python documentation for coef() and coef_norm(). 
+	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4182'>PUBDEV-4182</a>] - Improved the R and Python documentation for coef() and coef_norm().
 	</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4183'>PUBDEV-4183</a>] - In the GLM section of the User Guide, added a topic describing how to extract coefficient table information. This new topic includes Python and R examples.
 	</li>
@@ -314,9 +325,9 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/1/index.
 		<li>Moved POJO/MOJO topic into the **Productionizing H2O** section.</li>
 		</ul>
 	</li>
-	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4206'>PUBDEV-4206</a>] - In the Security topic of the User Guide, added a section about using H2O with PAM authentication.  
+	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4206'>PUBDEV-4206</a>] - In the Security topic of the User Guide, added a section about using H2O with PAM authentication.
 	</li>
-	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4211'>PUBDEV-4211</a>] - Documentation for `h2o.download_all_logs()` now informs the user that the supplied file name must include the .zip extension. 
+	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4211'>PUBDEV-4211</a>] - Documentation for `h2o.download_all_logs()` now informs the user that the supplied file name must include the .zip extension.
 	</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4218'>PUBDEV-4218</a> - Added an FAQ describing how to use third-party plotting libraries to plot metrics in the H2O Python client. This faq is available in the <a href='http://docs.h2o.ai/h2o/latest-stable/h2o-docs/faq/python.html'>FAQ > Python</a> topic.
 	</li>
@@ -333,8 +344,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/1/index.
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4294'>PUBDEV-4294</a>] - In the Deep Learning topic, deleted the Algorithm section. The information included in that section has been moved into the Deep Learning FAQ.</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4297'>PUBDEV-4297</a>] - Documented support for using H2O with Microsoft Azure Linux Data Science VM. Note that this is currently still a BETA feature.
 	</li>
-	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4309'>PUBDEV-4309</a>] - Added an FAQ describing YARN resource usage. This FAQ is available in the <a href='http://docs.h2o.ai/h2o/latest-stable/h2o-docs/faq/hadoop.html'>FAQ > Hadoop</a> topic. 
-	</li>	
+	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4309'>PUBDEV-4309</a>] - Added an FAQ describing YARN resource usage. This FAQ is available in the <a href='http://docs.h2o.ai/h2o/latest-stable/h2o-docs/faq/hadoop.html'>FAQ > Hadoop</a> topic.
+	</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4336'>PUBDEV-4336</a>] - Added parameter descriptions for PCA parameters.</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4337'>PUBDEV-4337</a>] - Added examples for PCA parameters.</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4348'>PUBDEV-4348</a>] - A new h2o.sort() function is available in the H2O Python client. This returns a new Frame that is sorted by column(s) in ascending order. The column(s) to sort by can be either a single column name, a list of column names, or a list of column indices. Information about this function is available in the Python and R documentation.</li>
@@ -346,7 +357,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-vajda/1/index.
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4401'>PUBDEV-4401</a>] - Fixed documentation that described estimating in K-means. </li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4403'>PUBDEV-4403</a>] - Updated the documentation that described how to download a model in Flow.</li>
 	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4444'>PUBDEV-4444</a>] - The Data Sources topic, which describes that data can come from local file system, S3, HDFS, and JDBC, now also includes that data can be imported by specifying the URL of a file.</li>
-	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4467'>PUBDEV-4467</a>] - H2O now supports GPUs. Updated the FAQ that indicated we do not, and added a pointer to Deep Water.</li>	
+	<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4467'>PUBDEV-4467</a>] - H2O now supports GPUs. Updated the FAQ that indicated we do not, and added a pointer to Deep Water.</li>
 </ul>
 
 ### Ueno (3.10.4.8) - 5/21/2017
