@@ -468,7 +468,6 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
 
         // Set X and Y appropriately given SVD of A = UDV'
         // a) Set Y = D^(1/2)V'S where S = diag(\sigma)
-        _parms._k = svd._parms._nv;   // parameter k may have been reduced due to rank deficient dataset
         double[] dsqrt = new double[_parms._k];
         for (int i = 0; i < _parms._k; i++) {
           dsqrt[i] = Math.sqrt(svd._output._d[i]);
@@ -2551,7 +2550,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
 
     CholMulTask(CholeskyDecomposition chol, Archetypes yt, int ncolA, int ncolX, int ncats,
                 double[] normSub, double[] normMul) {
-      assert yt != null && yt.rank() <= ncolX;
+      assert yt != null && yt.rank() == ncolX;
       assert ncats <= ncolA;
       _yt = yt;
       _ncolA = ncolA;
