@@ -10,7 +10,7 @@ Scoring
   3. Call the predict endpoint either from R, Python, Flow, or the REST API directly. 
   4. Export the predictions to file or download them from the server.
 
- You can also score models in parallel by downloading a pojo for each model, and then embedding those pojos within a HIVE UDF to score the large dataset stored on Hadoop. A tutorial on this process can be found `here <http://docs.h2o.ai/h2o-tutorials/latest-stable/tutorials/hive_udf_template/index.html>`__.
+ You can also score models in parallel by downloading a POJO or MOJO for each model, and then embedding those within a HIVE UDF to score the large dataset stored on Hadoop. Tutorials on this process can be found `here (POJO) <https://github.com/h2oai/h2o-tutorials/tree/master/tutorials/hive_udf_pojo_template>`__ and `here (MOJO) <https://github.com/h2oai/h2o-tutorials/tree/master/tutorials/hive_udf_mojo_template>`__.
 
 - **Which parameters are used with or for scoring?**
 
