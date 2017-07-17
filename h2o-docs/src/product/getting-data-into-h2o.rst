@@ -14,7 +14,7 @@ H2O currently supports the following file types:
 - ARFF
 - XLS
 - XLSX
-- Avro (without multifile parsing or column type modification)
+- Avro version 1.8.0 (without multifile parsing or column type modification)
 - Parquet
 
 **Notes**: 
