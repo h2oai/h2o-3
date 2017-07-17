@@ -629,7 +629,7 @@ The read-only **Sources** field shows the file path for the imported data select
  -  AVRO
  -  PARQUET
 
- **Note**: For SVMLight data, the column indices must be >= 1 and the columns must be in ascending order.
+ **Note**: For SVMLight data, the column indices must be >= 1 and the columns must be in ascending order. For AVRO, only version 1.8.0 is supported.
 
 2. If a separator or delimiter is used, select it from the **Separator** list.
 
