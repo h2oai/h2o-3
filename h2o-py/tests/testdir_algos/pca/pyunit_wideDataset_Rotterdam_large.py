@@ -5,7 +5,6 @@ import h2o
 from random import randint
 from tests import pyunit_utils
 from h2o.transforms.decomposition import H2OPCA
-from h2o.estimators.glrm import H2OGeneralizedLowRankEstimator
 
 
 # This test aims to test that our PCA works with wide datasets for the following PCA methods:
@@ -34,10 +33,8 @@ def pca_wideDataset_rotterdam():
         print("------  Testing GLRM PCA --------")
         gramSVD = H2OPCA(k=8, impute_missing=True, transform=transformN, seed=12345, use_all_factor_levels=True)
         gramSVD.train(x=x, training_frame=rotterdamH2O)
-
-        glrmPCA = H2OGeneralizedLowRankEstimator(k=8, transform=transformN, seed=12345, init="Random",
-                                                 max_iterations=10, recover_svd=True, regularization_x="None",
-                                                 regularization_y="None")
+        glrmPCA = H2OPCA(k=8, impute_missing=True, transform=transformN, pca_method="GLRM", seed=12345,
+                         use_all_factor_levels=True)  # GLRM
         glrmPCA.train(x=x, training_frame=rotterdamH2O)
 
         # compare singular values and stuff with GramSVD
@@ -82,8 +79,7 @@ def pca_wideDataset_rotterdam():
         print("------  Testing Randomized PCA --------")
         gramSVD = H2OPCA(k=8, impute_missing=True, transform=transformN, seed=12345)
         gramSVD.train(x=x, training_frame=rotterdamH2O)
-        randomizedPCA = H2OPCA(k=8, impute_missing=True, transform=transformN, pca_method="Randomized", seed=12345,
-                               max_iterations=5)  # power
+        randomizedPCA = H2OPCA(k=8, impute_missing=True, transform=transformN, pca_method="Randomized", seed=12345)  # power
         randomizedPCA.train(x=x, training_frame=rotterdamH2O)
 
         # compare singular values and stuff with GramSVD
@@ -91,7 +87,7 @@ def pca_wideDataset_rotterdam():
         pyunit_utils.assert_H2OTwoDimTable_equal(gramSVD._model_json["output"]["importance"],
                                                  randomizedPCA._model_json["output"]["importance"],
                                                  ["Standard deviation", "Cumulative Proportion", "Cumulative Proportion"],
-                                                 tolerance=1e-1, check_all=False)
+                                                 tolerance=1e-3, check_all=False)
 
         print("@@@@@@  Comparing eigenvectors between GramSVD and Power...\n")
         # compare singular vectors
