@@ -17,7 +17,11 @@ H2O currently supports the following file types:
 - Avro (without multifile parsing or column type modification)
 - Parquet
 
-Note that ORC is available only if H2O is running as a Hadoop job. 
+**Notes**: 
+ 
+ - ORC is available only if H2O is running as a Hadoop job. 
+ - Users can also import Hive files that are saved in ORC format. 
+
 
 .. _data_sources:
 
