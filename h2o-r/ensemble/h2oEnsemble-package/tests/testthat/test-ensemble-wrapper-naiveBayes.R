@@ -54,6 +54,24 @@ test_that( "The Naive Bayes wrapper is working", {
   test_nb_auc <- h2o.auc(perf$base[[1]])
   expect_equal(test_nb_auc, 0.6524723, tolerance = 0.0005)
   
+  # Check a custom naiveBayes wrappers
+  h2o.naiveBayes.1 <- function(..., laplace = 0.001) h2o.naiveBayes.wrapper(..., laplace = laplace)
+
+  learner <- c("h2o.naiveBayes.1", "h2o.randomForest.wrapper", 
+               "h2o.glm.wrapper")
+  
+  # Train an ensemble model with default args
+  fit <- h2o.ensemble(x = x, y = y, training_frame = train,
+                      family = family, learner = learner,
+                      metalearner = metalearner)
+  
+  # Evaluate performance on a test set
+  perf <- h2o.ensemble_performance(fit, newdata = test) 
+  
+  # Check expected test AUC on the Naive Bayes learner
+  test_nb_auc <- h2o.auc(perf$base[[1]])
+  expect_equal(test_nb_auc, 0.6524723, tolerance = 0.0005)
+  
 })
 
 
