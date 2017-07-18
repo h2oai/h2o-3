@@ -534,11 +534,15 @@ footer a.social img {
 }
 
 footer .copyright {
-    margin-top: 5em;
-    font-size: .8em;
+    margin-top: 1em;
+    font-size: .9em;
     margin-bootom: 0;
 }
 
+footer .copyright a {
+    color: rgb(252,204,0);
+    display: inline-block;
+}
 
 #home {
     min-width: 100px;
