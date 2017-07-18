@@ -138,7 +138,7 @@ h2o.gbm.wrapper <- function(x, y, training_frame, model_id = NULL,
                             nbins = 20,
                             nbins_top_level = 1024,
                             nbins_cats = 1024,
-                            r2_stopping = 1.797693135e+308,
+                            #r2_stopping = 1.797693135e+308,  #deprecated
                             stopping_rounds = 0,
                             stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error"),
                             stopping_tolerance = 0.001,
@@ -166,7 +166,7 @@ h2o.gbm.wrapper <- function(x, y, training_frame, model_id = NULL,
                             calibration_frame = NULL,
                             #verbose = FALSE,  #remove so that this is compatible with earlier versions of H2O
                             ...) {
-  
+
   family <- match.arg(family)
   if (family == "binomial") {
     distribution <- "bernoulli"
@@ -200,7 +200,7 @@ h2o.gbm.wrapper <- function(x, y, training_frame, model_id = NULL,
           nbins = nbins,
           nbins_top_level = nbins_top_level,
           nbins_cats = nbins_cats,
-          r2_stopping = r2_stopping,
+          #r2_stopping = r2_stopping,
           stopping_rounds = stopping_rounds,
           stopping_metric = match.arg(stopping_metric),
           stopping_tolerance = stopping_tolerance,
@@ -251,7 +251,7 @@ h2o.randomForest.wrapper <- function(x, y, training_frame, model_id = NULL,
                                      nbins = 20,
                                      nbins_top_level = 1024,
                                      nbins_cats = 1024,
-                                     r2_stopping = 1.797693135e+308,
+                                     #r2_stopping = 1.797693135e+308,  #deprecated
                                      stopping_rounds = 0,
                                      stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error"),
                                      stopping_tolerance = 0.001,
@@ -273,7 +273,7 @@ h2o.randomForest.wrapper <- function(x, y, training_frame, model_id = NULL,
                                      #verbose = FALSE,  #remove so that this is compatible with earlier versions of H2O
                                      ...) {
   
-  # Currently ignoring the `family` arg, will get class from outcome in H2OFrame
+  # Currently ignoring the `family` arg (so it's removed), will get class from outcome in H2OFrame
   # TO DO: Add a check to make sure that outcome/family type is consistent with specified family
   h2o.randomForest(x = x, 
                    y = y, 
@@ -300,7 +300,7 @@ h2o.randomForest.wrapper <- function(x, y, training_frame, model_id = NULL,
                    nbins = nbins,
                    nbins_top_level = nbins_top_level,
                    nbins_cats = nbins_cats,
-                   r2_stopping = r2_stopping,
+                   #r2_stopping = r2_stopping,
                    stopping_rounds = stopping_rounds,
                    stopping_metric = match.arg(stopping_metric),
                    stopping_tolerance = stopping_tolerance,
@@ -312,12 +312,12 @@ h2o.randomForest.wrapper <- function(x, y, training_frame, model_id = NULL,
                    sample_rate_per_class = sample_rate_per_class,
                    binomial_double_trees = binomial_double_trees,
                    checkpoint = checkpoint,
-                   col_sample_rate_change_per_level = col_sample_rate_per_level,
+                   col_sample_rate_change_per_level = col_sample_rate_change_per_level,
                    col_sample_rate_per_tree = col_sample_rate_per_tree,
                    min_split_improvement = min_split_improvement,
                    histogram_type = match.arg(histogram_type),
                    categorical_encoding = match.arg(categorical_encoding),
-                   calibrate_model = calibration_model,
+                   calibrate_model = calibrate_model,
                    calibration_frame = calibration_frame)
 }
 
@@ -501,38 +501,60 @@ h2o.deeplearning.wrapper <- function(x, y, training_frame, model_id = NULL,
 
 # Note: Naive Bayes is classification only; not available for regression
 h2o.naiveBayes.wrapper <- function(x, y, training_frame, model_id = NULL,
+                                   family = "binomial",
+                                   nfolds = 0,
+                                   seed = -1,
+                                   fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
+                                   fold_column = NULL,
+                                   keep_cross_validation_predictions = TRUE,
+                                   keep_cross_validation_fold_assignment = FALSE,
                                    validation_frame = NULL,
                                    ignore_const_cols = TRUE,
-                                   family = c("binomial", "multinomial"),
+                                   score_each_iteration = FALSE,
+                                   balance_classes = FALSE,
+                                   class_sampling_factors = NULL,
+                                   max_after_balance_size = 5.0,
+                                   max_hit_ratio_k = 0,
                                    laplace = 0,
-                                   threshold = 0.001,
-                                   eps = 0, 
-                                   nfolds = 0,
-                                   fold_column = NULL,
-                                   fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
-                                   seed, 
-                                   keep_cross_validation_predictions = TRUE, 
-                                   keep_cross_validation_fold_assignment = FALSE, 
-                                   compute_metrics = TRUE, 
-                                   max_runtime_secs = 0, ...) {
+                                   #threshold = 0.001,  #deprecated
+                                   min_sdev = 0.001,
+                                   #eps = 0,  #deprecated
+                                   eps_sdev = 0,
+                                   min_prob = 0.001,
+                                   eps_prob = 0,
+                                   compute_metrics = TRUE,
+                                   max_runtime_secs = 0,
+                                   ...) {
   
   # Currently ignoring the `family` arg, will get class from resposne column in H2OFrame
   if (family == "gaussian") {
     # TO DO: Add a check in the h2o.stack and h2o.ensemble code so that this will fail early
     stop("Naive Bayes cannot be used as a base learner for regression problems.\nThe response variable must be categorical and family must be binomial.")
   }
-  h2o.naiveBayes(x = x, y = y, training_frame = training_frame, model_id = model_id,
+  h2o.naiveBayes(x = x, 
+                 y = y, 
+                 training_frame = training_frame, 
+                 model_id = model_id,
+                 nfolds = nfolds,
+                 seed = seed,
+                 fold_assignment = match.arg(fold_assignment),
+                 fold_column = fold_column,
+                 keep_cross_validation_predictions = TRUE,  #must have for stacking
+                 keep_cross_validation_fold_assignment = keep_cross_validation_fold_assignment,
                  validation_frame = validation_frame,
                  ignore_const_cols = ignore_const_cols,
+                 score_each_iteration = score_each_iteration,
+                 balance_classes = balance_classes,
+                 class_sampling_factors = class_sampling_factors,
+                 max_after_balance_size = max_after_balance_size,
+                 max_hit_ratio_k = max_hit_ratio_k,
                  laplace = laplace,
-                 threshold = threshold,
-                 eps = eps,
-                 nfolds = nfolds,
-                 fold_column = fold_column,
-                 fold_assignment = match.arg(fold_assignment),
-                 seed = seed,
-                 keep_cross_validation_predictions = keep_cross_validation_predictions,
-                 keep_cross_validation_fold_assignment = keep_cross_validation_fold_assignment,
+                 #threshold = threshold,  #deprecated
+                 min_sdev = min_sdev,
+                 #eps = eps,  #deprecated
+                 eps_sdev = eps_sdev,
+                 min_prob = min_prob,
+                 eps_prob = eps_prob,
                  compute_metrics = compute_metrics,
                  max_runtime_secs = max_runtime_secs)
 }
