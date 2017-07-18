@@ -6,7 +6,7 @@ The **h2oEnsemble** R package provides functionality to create ensembles from th
 
 H2O Ensemble currently supports [regression](https://en.wikipedia.org/wiki/Regression_analysis) and [binary classification](https://en.wikipedia.org/wiki/Binary_classification).  As is true of all the H2O algorithms, binary classification provides predicted values for each class in addition to a predicted class label.  Support for [multiclass classification](https://en.wikipedia.org/wiki/Multiclass_classification) will be included in a future release (follow the progress [here](https://0xdata.atlassian.net/browse/PUBDEV-2355)).
 
-**Note that as of H2O 3.10.3.1, Stacked Ensembles are now available as part of base H2O.** The documentation for H2O Stacked Ensembles, including R and Python code examples, can be found [here](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html). The **h2oEnsemble** R package is the predecessor to the base H2O implementation and although this package will contibue to be supported, new development efforts will be focused on the native H2O version of stacked ensembles, and for new projects we'd recommend using native H2O.
+**Note that as of H2O 3.10.3.1 (Jan 30, 2017), Stacked Ensembles are now available as part of base H2O.** The documentation for H2O Stacked Ensembles, including R and Python code examples, can be found [here](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html). The **h2oEnsemble** R package is the predecessor to the base H2O implementation and although this package will contibue to be supported, new development efforts will be focused on the native H2O version of stacked ensembles, and for new projects we'd recommend using native H2O.
 
 
 

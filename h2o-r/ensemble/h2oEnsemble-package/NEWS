@@ -13,14 +13,14 @@ h2oEnsemble TO DO
 
 
 
-h2oEnsemble 0.1.9  (2016-12-20)
+h2oEnsemble 0.1.9  (2017-07-17)
 -----------------
 * Updated defaults for GLM wrapper `tweedie_variance_power` and `tweedie_link_power` to match `h2o.glm` defaults.
 * Added `./man/h2o.stack.Rd` file to the GitHub repo (it was accidentally missing).  Documented here: https://0xdata.atlassian.net/browse/PUBDEV-3221
 * Fixed bug in `print.h2o.ensemble_performance` function.  Documented here: https://0xdata.atlassian.net/browse/PUBDEV-3731
 * Modified the h2o.ensemble and h2o.stack code examples to use data hosted on S3 instead of Berkeley servers.  Documented here: https://0xdata.atlassian.net/browse/PUBDEV-3581
 * Added `h2o.naiveBayes.wrapper` function (classification only).  Documented here: https://0xdata.atlassian.net/browse/PUBDEV-2855
-* Updated all h2o.algo.wrapper functions to be consistent with latest stable of h2o on CRAN (3.10.0.8).
+* Updated all h2o.algo.wrapper functions to be consistent with latest stable of h2o on CRAN (3.10.5.3).
 
 
 h2oEnsemble 0.1.8 (2016-03-29)

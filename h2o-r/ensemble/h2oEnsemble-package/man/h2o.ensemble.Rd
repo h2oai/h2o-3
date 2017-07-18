@@ -131,7 +131,7 @@ Erin LeDell \email{erin@h2o.ai}
 # An example of binary classification on a local machine using h2o.ensemble
 
 library(h2oEnsemble)
-h2o.init(nthreads = -1) # Start H2O cluster using all available CPU threads
+h2o.init() # Start the H2O cluster
 
 
 # Import a sample binary outcome train/test set into R
@@ -152,14 +152,13 @@ learner <- c("h2o.glm.wrapper", "h2o.randomForest.wrapper",
 metalearner <- "h2o.glm.wrapper"
 
 
-# Train the ensemble using 5-fold CV to generate level-one data
+# Train the ensemble using 5-fold CV (the default) to generate level-one data
 # More CV folds will take longer to train, but should increase performance
 fit <- h2o.ensemble(x = x, y = y, 
                     training_frame = train, 
                     family = family, 
                     learner = learner, 
-                    metalearner = metalearner,
-                    cvControl = list(V = 5, shuffle = TRUE))
+                    metalearner = metalearner)
 
 
 # Compute test set performance:
