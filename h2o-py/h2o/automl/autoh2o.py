@@ -22,8 +22,8 @@ class H2OAutoML(object):
       ``misclassification``, ``mean_per_class_error``.
     :param float stopping_tolerance: This option specifies the relative tolerance for the metric-based stopping
       to stop the AutoML run if the improvement is less than this value. This value defaults to 0.001
-      if the dataset is big enough; otherwise it defaults to a value determined by the size of the dataset
-      and the ``na`` rate. 1/((nrows * non-na-rate)^2)
+      if the dataset is at least 1 million rows; otherwise it defaults to a value determined by the size of the dataset
+      and the non-NA-rate.  In that case, the value is computed as 1/sqrt(nrows * non-NA-rate).
     :param int stopping_rounds: This argument stops training new models in the AutoML run when the option selected for
       stopping_metric doesn't improve for the specified number of models, based on a simple moving average.
       To disable this feature, set it to 0. Defaults to 3 and must be an non-negative integer.
@@ -57,7 +57,7 @@ class H2OAutoML(object):
                  max_runtime_secs=3600,
                  max_models=None,
                  stopping_metric="AUTO",
-                 stopping_tolerance=0.001,
+                 stopping_tolerance=None,
                  stopping_rounds=3,
                  seed=None,
                  project_name=None):
@@ -72,13 +72,10 @@ class H2OAutoML(object):
                   "*******************************************************************\n" \
                   "\nVerbose Error Message:")
 
-        #If max_runtime_secs is not provided, then it is set to default (600 secs)
+        #If max_runtime_secs is not provided, then it is set to default (3600 secs)
         if max_runtime_secs is not 3600:
             assert_is_type(max_runtime_secs,int)
-            max_runtime_secs = max_runtime_secs
-            self.max_runtime_secs = max_runtime_secs
-        else:
-            self.max_runtime_secs = max_runtime_secs
+        self.max_runtime_secs = max_runtime_secs
 
         #Make bare minimum build_control
         self.build_control = {
@@ -91,31 +88,22 @@ class H2OAutoML(object):
         if max_models is not None:
             assert_is_type(max_models,int)
             self.build_control["stopping_criteria"]["max_models"] = max_models
-            self.max_models = max_models
+        self.max_models = max_models
 
         if stopping_metric is not "AUTO":
             assert_is_type(stopping_metric,str)
-            self.build_control["stopping_criteria"]["stopping_metric"] = stopping_metric
-            self.stopping_metric = stopping_metric
-        else:
-            self.build_control["stopping_criteria"]["stopping_metric"] = stopping_metric
-            self.stopping_metric = stopping_metric
+        self.build_control["stopping_criteria"]["stopping_metric"] = stopping_metric
+        self.stopping_metric = stopping_metric
 
-        if stopping_tolerance is not 0.001:
+        if stopping_tolerance is not None:
             assert_is_type(stopping_tolerance,float)
             self.build_control["stopping_criteria"]["stopping_tolerance"] = stopping_tolerance
-            self.stopping_tolerence = stopping_tolerance
-        else:
-            self.build_control["stopping_criteria"]["stopping_tolerance"] = stopping_tolerance
-            self.stopping_tolerence = stopping_tolerance
+        self.stopping_tolerence = stopping_tolerance
 
         if stopping_rounds is not 3:
             assert_is_type(stopping_rounds,int)
-            self.build_control["stopping_criteria"]["stopping_rounds"] = stopping_rounds
-            self.stopping_rounds = stopping_rounds
-        else:
-            self.build_control["stopping_criteria"]["stopping_rounds"] = stopping_rounds
-            self.stopping_rounds = stopping_rounds
+        self.build_control["stopping_criteria"]["stopping_rounds"] = stopping_rounds
+        self.stopping_rounds = stopping_rounds    
 
         if seed is not None:
             assert_is_type(seed,int)
