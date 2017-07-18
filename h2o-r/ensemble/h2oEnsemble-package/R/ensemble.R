@@ -92,18 +92,19 @@ h2o.ensemble <- function(x, y, training_frame,
   if (!exists(metalearner)) {
     stop("'metalearner' function name not found.")
   }
-  
-  # Check that Naive Bayes is not specified for a regression problem
-  if (family == "gaussian") {
-    if (sum(!sapply(learner, function(l) "gaussian" %in% eval(formals(l)$family)))>0) {
-      # TO DO: should make this more generic and print specific wrapper name in violation
-      stop("The Naive Bayes function does not support regression, please remove this function from your set of base learners.")
-    }
-    if (!("gaussian" %in% eval(formals(metalearner)$family))) {
-      # TO DO: should make this more generic and print specific wrapper name in violation
-      stop("The Naive Bayes function does not support regression, please choose a different metalearner.")
-    }    
-  }
+
+  # This is not working, but we need a way to fail early when Naive Bayes wrappers are attempted to be used in a regression problem.  
+  # # Check that Naive Bayes is not specified for a regression problem
+  # if (family == "gaussian") {
+  #   if (sum(!sapply(learner, function(l) "gaussian" %in% eval(formals(l)$family)))>0) {
+  #     # TO DO: should make this more generic and print specific wrapper name in violation
+  #     stop("The Naive Bayes function does not support regression, please remove this function from your set of base learners.")
+  #   }
+  #   if (!("gaussian" %in% eval(formals(metalearner)$family))) {
+  #     # TO DO: should make this more generic and print specific wrapper name in violation
+  #     stop("The Naive Bayes function does not support regression, please choose a different metalearner.")
+  #   }    
+  # }
 
     
   # Check remaining args
