@@ -229,6 +229,49 @@ XGBoost Hyperparameters
 -  ``one_drop``
 -  ``skip_drop``
 
+AutoML Hyperparameters
+~~~~~~~~~~~~~~~~~~~~~~
+
+AutoML performs hyperparameter search over a variety of H2O algorithms in order to deliver the best model.
+
+**AutoML Hyperparameters**
+
+-  ``max_runtime_secs``
+-  ``max_models``
+-  ``stopping_metric``
+-  ``stopping_rounds``
+-  ``stopping_tolerance``
+-  ``seed``
+
+**GBM Hyperparameters**
+
+-  ``score_tree_interval``
+-  ``histogram_type``
+-  ``ntrees``
+-  ``max_depth``
+-  ``min_rows``
+-  ``learn_rate``
+-  ``sample_rate``
+-  ``col_sample_rate``
+-  ``col_sample_rate_per_tree``
+-  ``min_split_improvement``
+
+**GLM Hyperparameters**
+
+-  ``alpha``
+-  ``missing_values_handling``
+
+**Deep Learning Hyperparameters**
+
+-  ``epochs``
+-  ``adaptivate_rate``
+-  ``activation``
+-  ``rho``
+-  ``epsilon``
+-  ``input_dropout_ratio``
+-  ``hidden``
+-  ``hidden_dropout_ratios``
+
 REST API
 --------
 
