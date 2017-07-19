@@ -29,13 +29,14 @@ h2o.glm.wrapper <- function(x, y, training_frame,
                             fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
                             fold_column = NULL,
                             ignore_const_cols = TRUE,
-                            #score_each_iteration = FALSE,
+                            score_each_iteration = FALSE,
                             offset_column = NULL,
                             weights_column = NULL,
-                            family = c("gaussian", "binomial", "multinomial", "poisson", "gamma", "tweedie"),
+                            family = "AUTO",
+                            #family = c("AUTO", "binomial", "gaussian", "quasibinomial", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
                             tweedie_variance_power = 0,
                             tweedie_link_power = 1,
-                            solver = c("IRLSM", "L_BFGS"),
+                            solver = c("AUTO", "IRLSM", "L_BFGS", "COORDINATE_DESCENT_NAIVE", "COORDINATE_DESCENT"),
                             alpha = NULL,
                             lambda = NULL,
                             lambda_search = FALSE,
@@ -57,11 +58,23 @@ h2o.glm.wrapper <- function(x, y, training_frame,
                             beta_constraints = NULL,
                             max_active_predictors = -1,
                             interactions = NULL,
-                            #balance_classes = FALSE,
-                            #class_sampling_factors = NULL,
-                            #max_after_balance_size = 5.0,
-                            #max_hit_ratio_k = 0,
+                            balance_classes = FALSE,
+                            class_sampling_factors = NULL,
+                            max_after_balance_size = 5.0,
+                            max_hit_ratio_k = 0,
                             max_runtime_secs = 0, ...) {
+  
+  # If family is not specified, set it using the datatype of the response column
+  #family <- match.arg(family)
+  if (family == "AUTO") {
+    if (is.factor(training_frame[,y])) {
+      family <- "binomial"
+    } else {
+      family <- "gaussian"
+    }
+  } else if (family %in% c("laplace", "quantile", "huber")) { # not supported by GLM
+      family <- "gaussian"
+  }
   
   # Also, offset_column, weights_column, intercept not implemented at the moment due to similar bug as beta_constraints
   # intercept argument not currently supported due to GLM bug with explicitly setting interactions = NULL (the default) 
@@ -77,10 +90,10 @@ h2o.glm.wrapper <- function(x, y, training_frame,
           fold_assignment = match.arg(fold_assignment),
           fold_column = fold_column,
           ignore_const_cols = ignore_const_cols,
-          #score_each_iteration = score_each_iteration,
+          score_each_iteration = score_each_iteration,
           offset_column = offset_column,
           weights_column = weights_column,
-          family = match.arg(family), 
+          family = family, 
           tweedie_variance_power = tweedie_variance_power,
           tweedie_link_power = tweedie_link_power,        
           solver = match.arg(solver), 
@@ -105,18 +118,17 @@ h2o.glm.wrapper <- function(x, y, training_frame,
           beta_constraints = beta_constraints,
           max_active_predictors = max_active_predictors,
           #interactions = interactions,  #causes a bug when set to NULL (the default), the h2o.glm function needs to be fixed: https://0xdata.atlassian.net/browse/PUBDEV-4698
-          #balance_classes = balance_classes,
-          #class_sampling_factors = class_sampling_factors,
-          #max_after_balance_size = max_after_balance_size,
-          #max_hit_ratio_k = max_hit_ratio_k, 
+          balance_classes = balance_classes,
+          class_sampling_factors = class_sampling_factors,
+          max_after_balance_size = max_after_balance_size,
+          max_hit_ratio_k = max_hit_ratio_k, 
           max_runtime_secs = max_runtime_secs)
 }
 
 
 
 h2o.gbm.wrapper <- function(x, y, training_frame, model_id = NULL,
-                            family = c("AUTO", "gaussian", "bernoulli", "binomial", "multinomial", 
-                                       "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
+                            family = "AUTO",
                             validation_frame = NULL,
                             nfolds = 0,
                             keep_cross_validation_predictions = FALSE,
@@ -131,7 +143,7 @@ h2o.gbm.wrapper <- function(x, y, training_frame, model_id = NULL,
                             balance_classes = FALSE,
                             class_sampling_factors = NULL,
                             max_after_balance_size = 5.0,
-                            #max_hit_ratio_k = 0,
+                            max_hit_ratio_k = 0,
                             ntrees = 50,
                             max_depth = 5,
                             min_rows = 10,
@@ -162,19 +174,28 @@ h2o.gbm.wrapper <- function(x, y, training_frame, model_id = NULL,
                             max_abs_leafnode_pred = 1.797693135e+308,
                             pred_noise_bandwidth = 0,
                             categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
-                            #calibrate_model = FALSE,
-                            #calibration_frame = NULL,
+                            calibrate_model = FALSE,
+                            calibration_frame = NULL,
                             #verbose = FALSE,  #remove so that this is compatible with earlier versions of H2O
                             ...) {
-
-  family <- match.arg(family)
-  if (family == "binomial") {
-    distribution <- "bernoulli"
-  } else if (family %in% c("AUTO", "gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber")) {
+  
+  # If family is not specified, set it using the datatype of the response column
+  # GBM uses `distribution` instead of `family` so we set `distribution` here instead
+  if (family == "AUTO") {
+    if (is.factor(training_frame[,y])) {
+      distribution <- "bernoulli"
+    } else {
+      distribution <- "gaussian"
+    }
+  } else if (family %in% c("laplace", "quantile", "huber")) { # extra distributions for GBM
     distribution <- family
+  } else if (family == "binomial") {
+    distribution <- "bernoulli"
   } else {
-    stop("`family` not supported in `h2o.gbm.wrapper`")
+    # not supported by GBM, so we set to "gaussian"
+    distribution <- "gaussian"
   }
+  
   h2o.gbm(x = x, 
           y = y, 
           training_frame = training_frame, 
@@ -193,7 +214,7 @@ h2o.gbm.wrapper <- function(x, y, training_frame, model_id = NULL,
           balance_classes = balance_classes,
           class_sampling_factors = class_sampling_factors,
           max_after_balance_size = max_after_balance_size,
-          #max_hit_ratio_k = max_hit_ratio_k,
+          max_hit_ratio_k = max_hit_ratio_k,
           ntrees = ntrees,
           max_depth = max_depth,
           min_rows = min_rows,
@@ -223,10 +244,9 @@ h2o.gbm.wrapper <- function(x, y, training_frame, model_id = NULL,
           histogram_type = match.arg(histogram_type),
           max_abs_leafnode_pred = max_abs_leafnode_pred,
           pred_noise_bandwidth = pred_noise_bandwidth,
-          categorical_encoding = match.arg(categorical_encoding)#,
-          #calibrate_model = calibrate_model,
-          #calibration_frame = calibration_frame
-          )
+          categorical_encoding = match.arg(categorical_encoding),
+          calibrate_model = calibrate_model,
+          calibration_frame = calibration_frame)
 }
 
 
@@ -245,7 +265,7 @@ h2o.randomForest.wrapper <- function(x, y, training_frame, model_id = NULL,
                                      balance_classes = FALSE,
                                      class_sampling_factors = NULL,
                                      max_after_balance_size = 5.0,
-                                     #max_hit_ratio_k = 0,
+                                     max_hit_ratio_k = 0,
                                      ntrees = 50,
                                      max_depth = 20,
                                      min_rows = 1,
@@ -269,8 +289,8 @@ h2o.randomForest.wrapper <- function(x, y, training_frame, model_id = NULL,
                                      min_split_improvement = 1e-05,
                                      histogram_type = c("AUTO", "UniformAdaptive", "Random", "QuantilesGlobal", "RoundRobin"),
                                      categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
-                                     #calibrate_model = FALSE,
-                                     #calibration_frame = NULL,
+                                     calibrate_model = FALSE,
+                                     calibration_frame = NULL,
                                      #verbose = FALSE,  #remove so that this is compatible with earlier versions of H2O
                                      ...) {
   
@@ -294,7 +314,7 @@ h2o.randomForest.wrapper <- function(x, y, training_frame, model_id = NULL,
                    balance_classes = balance_classes,
                    class_sampling_factors = class_sampling_factors,
                    max_after_balance_size = max_after_balance_size,
-                   #max_hit_ratio_k = max_hit_ratio_k,
+                   max_hit_ratio_k = max_hit_ratio_k,
                    ntrees = ntrees,
                    max_depth = max_depth,
                    min_rows = min_rows,
@@ -317,15 +337,14 @@ h2o.randomForest.wrapper <- function(x, y, training_frame, model_id = NULL,
                    col_sample_rate_per_tree = col_sample_rate_per_tree,
                    min_split_improvement = min_split_improvement,
                    histogram_type = match.arg(histogram_type),
-                   categorical_encoding = match.arg(categorical_encoding)#,
-                   #calibrate_model = calibrate_model,
-                   #calibration_frame = calibration_frame
-                   )
+                   categorical_encoding = match.arg(categorical_encoding),
+                   calibrate_model = calibrate_model,
+                   calibration_frame = calibration_frame)
 }
 
 
 h2o.deeplearning.wrapper <- function(x, y, training_frame, model_id = NULL,
-                                     family = c("binomial", "multinomial", "gaussian"), 
+                                     family = "AUTO", 
                                      validation_frame = NULL,
                                      nfolds = 0,
                                      keep_cross_validation_predictions = FALSE,
@@ -371,7 +390,7 @@ h2o.deeplearning.wrapper <- function(x, y, training_frame, model_id = NULL,
                                      initial_weights = NULL,
                                      initial_biases = NULL,
                                      loss = c("Automatic", "CrossEntropy", "Quadratic", "Huber", "Absolute", "Quantile"),
-                                     distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
+                                     #distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
                                      quantile_alpha = 0.5,
                                      tweedie_power = 1.5,
                                      huber_alpha = 0.9,
@@ -411,7 +430,23 @@ h2o.deeplearning.wrapper <- function(x, y, training_frame, model_id = NULL,
                                      #verbose = FALSE,  #remove so that this is compatible with earlier versions of H2O
                                      ...) {
   
-  # Currently ignoring the `family` arg, will get class from outcome in H2OFrame
+  # If family is not specified, set it using the datatype of the response column
+  # GBM uses `distribution` instead of `family` so we set `distribution` here instead
+  if (family == "AUTO") {
+    if (is.factor(training_frame[,y])) {
+      distribution <- "bernoulli"
+    } else {
+      distribution <- "gaussian"
+    }
+  } else if (family %in% c("laplace", "quantile", "huber")) { # extra distributions for DL
+    distribution <- family
+  } else if (family == "binomial") {
+    distribution <- "bernoulli"
+  } else {
+    # not supported by DL, so we set to "gaussian"
+    distribution <- "gaussian"
+  }
+  
   h2o.deeplearning(x = x, 
                    y = y, 
                    training_frame = training_frame, 
@@ -461,7 +496,7 @@ h2o.deeplearning.wrapper <- function(x, y, training_frame, model_id = NULL,
                    initial_weights = initial_weights,
                    initial_biases = initial_biases,
                    loss = match.arg(loss),
-                   distribution = match.arg(distribution),
+                   distribution = distribution,
                    quantile_alpha = quantile_alpha,
                    tweedie_power = tweedie_power,
                    huber_alpha = huber_alpha,
@@ -498,4 +533,70 @@ h2o.deeplearning.wrapper <- function(x, y, training_frame, model_id = NULL,
                    elastic_averaging = elastic_averaging,
                    elastic_averaging_moving_rate = elastic_averaging_moving_rate,
                    elastic_averaging_regularization = elastic_averaging_regularization) 
+}
+
+
+# Note: Naive Bayes is classification only; not available for regression
+h2o.naiveBayes.wrapper <- function(x, y, training_frame, model_id = NULL,
+                                   family = "AUTO",
+                                   nfolds = 0,
+                                   seed = -1,
+                                   fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
+                                   fold_column = NULL,
+                                   keep_cross_validation_predictions = TRUE,
+                                   keep_cross_validation_fold_assignment = FALSE,
+                                   validation_frame = NULL,
+                                   ignore_const_cols = TRUE,
+                                   score_each_iteration = FALSE,
+                                   balance_classes = FALSE,
+                                   class_sampling_factors = NULL,
+                                   max_after_balance_size = 5.0,
+                                   max_hit_ratio_k = 0,
+                                   laplace = 0,
+                                   #threshold = 0.001,  #deprecated
+                                   min_sdev = 0.001,
+                                   #eps = 0,  #deprecated
+                                   eps_sdev = 0,
+                                   min_prob = 0.001,
+                                   eps_prob = 0,
+                                   compute_metrics = TRUE,
+                                   max_runtime_secs = 0,
+                                   ...) {
+  
+  # If family is not specified, set it using the datatype of the response column
+  if (family == "AUTO") {
+    if (is.factor(training_frame[,y])) {
+      family <- "binomial"
+    } 
+  }
+  if (family != "binomial") {
+    # TO DO: Add a check in the h2o.stack and h2o.ensemble code so that this will fail early
+    stop("Naive Bayes cannot be used as a base learner for regression problems.\nThe response variable must be categorical and family must be binomial.")
+  }
+  h2o.naiveBayes(x = x, 
+                 y = y, 
+                 training_frame = training_frame, 
+                 model_id = model_id,
+                 nfolds = nfolds,
+                 seed = seed,
+                 fold_assignment = match.arg(fold_assignment),
+                 fold_column = fold_column,
+                 keep_cross_validation_predictions = TRUE,  #must have for stacking
+                 keep_cross_validation_fold_assignment = keep_cross_validation_fold_assignment,
+                 validation_frame = validation_frame,
+                 ignore_const_cols = ignore_const_cols,
+                 score_each_iteration = score_each_iteration,
+                 balance_classes = balance_classes,
+                 class_sampling_factors = class_sampling_factors,
+                 max_after_balance_size = max_after_balance_size,
+                 max_hit_ratio_k = max_hit_ratio_k,
+                 laplace = laplace,
+                 #threshold = threshold,  #deprecated
+                 min_sdev = min_sdev,
+                 #eps = eps,  #deprecated
+                 eps_sdev = eps_sdev,
+                 min_prob = min_prob,
+                 eps_prob = eps_prob,
+                 compute_metrics = compute_metrics,
+                 max_runtime_secs = max_runtime_secs)
 }

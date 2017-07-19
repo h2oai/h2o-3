@@ -9,7 +9,9 @@ This function creates a "Super Learner" (stacking) ensemble using the H2O base l
 \usage{
 h2o.ensemble(x, y, training_frame,  
   model_id = NULL, validation_frame = NULL,
-  family = c("AUTO", "binomial", "gaussian"),
+  family = c("AUTO", "binomial", "gaussian", "quasibinomial", 
+             "poisson", "gamma", "tweedie", 
+             "laplace", "quantile", "huber"),
   learner = c("h2o.glm.wrapper", "h2o.randomForest.wrapper",
               "h2o.gbm.wrapper", "h2o.deeplearning.wrapper"), 
   metalearner = "h2o.glm.wrapper", 
@@ -29,7 +31,7 @@ The name of the response variable in the model.
 An H2OFrame object containing the variables in the model.
 }
   \item{family}{
-A description of the error distribution and link function to be used in the model.  This must be a character string.  Currently supports \code{"binomial"} and \code{"gaussian"}.  
+A description of the distribution function.  This must be a character string.  Defaults to \code{"AUTO"}, which means that it will use \code{"binomial"} for binary classification and \code{"gaussian"} for regression (determined by the column type of the response; a "numeric" response forces regression).  Must be one of: \code{"AUTO"}, \code{"binomial"}, \code{"gaussian"}, \code{"quasibinomial"}, \code{"poisson"}, \code{"gamma"}, \code{"tweedie"}, \code{"laplace"}, \code{"quantile"}, \code{"huber"}.  Binary classification requires \code{"binomial"}, and the rest are options for regression.  This will be passed on to the base learners, but if the base learner in a regression problem does not support the given distribution, then \code{"gaussian"} (default for regression) will be used instead. 
 }
   \item{model_id}{
 (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.

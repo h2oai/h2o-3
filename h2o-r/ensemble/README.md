@@ -26,14 +26,15 @@ The **h2oEnsemble** R package requires the **h2o** R package (and its dependenci
 The latest stable version, compatible with the latest stable version of h2o, be installed as follows:
 
 ```r
-install.packages("https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.9.tar.gz", repos = NULL)
+install.packages("https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.2.0.tar.gz", repos = NULL)
 ``` 
 
 To install **h2oEnsemble** for a previous stable release of H2O, you can replace the URL above with the URL in the table below that matches your H2O version.
 
 |H2O Stable Release| Recommended version| Other compatible versions |
 |:---------|:----------|:----------|
-|H2O 3.10.1.1 - [latest stable h2o](https://www.h2o.ai/download/) (>=Turnbull)|[h2oEnsemble 0.1.9](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.9.tar.gz)| |
+|H2O 3.10.5.1 - [latest stable h2o](https://www.h2o.ai/download/) (>=Vajda)|[h2oEnsemble 0.2.0](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.2.0.tar.gz)| [h2oEnsemble 0.1.9](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.9.tar.gz)|
+|H2O 3.10.1.1 - [3.10.4.8](http://h2o-release.s3.amazonaws.com/h2o/rel-ueno/8/index.html) (Turnbull - Ueno)|[h2oEnsemble 0.1.9](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.9.tar.gz)| |
 |H2O 3.8.0.1 - [3.10.0.10](http://h2o-release.s3.amazonaws.com/h2o/rel-turing/10/index.html) (Tukey - Turing)|[h2oEnsemble 0.1.8](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.8.tar.gz)| [h2oEnsemble 0.1.7](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.7.tar.gz), [h2oEnsemble 0.1.6](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.6.tar.gz)|
 |H2O 3.6.0.1 - [3.6.0.8](http://h2o-release.s3.amazonaws.com/h2o/rel-tibshirani/8/index.html) (Tibshirani)|[h2oEnsemble 0.1.5](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.5.tar.gz)||
 |H2O 3.2.0.1 - [3.2.0.9](http://h2o-release.s3.amazonaws.com/h2o/rel-slater/9/index.html) (Slater)|[h2oEnsemble 0.1.4](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.4.tar.gz)||
@@ -61,7 +62,7 @@ R CMD INSTALL h2o-3/h2o-r/ensemble/h2oEnsemble-package
 - An example of how to train and test an ensemble is in the `h2o.ensemble()` function documentation in the **h2oEnsemble** package and also in the [H2O Ensemble Tutorial](http://learn.h2o.ai/content/tutorials/ensembles-stacking/index.html).
 - The ensemble is defined by its set of base learning algorithms and the metalearning algorithm.  Algorithm wrapper functions are used to specify these algorithms.
 - The ensemble fit is an object of class, "h2o.ensemble" (actually just a list containing model elements).
-- Also available since v. 0.1.8 is the `h2o.stack()` function, which can take existing H2O models as a list and fit the metalearning function.  This function also returns an object of class, "h2o.ensemble".
+- Also available since version 0.1.8 is the `h2o.stack()` function, which can take existing H2O models as a list and fit the metalearning function.  This function also returns an object of class, "h2o.ensemble".
 
 
 ## Wrapper Functions
