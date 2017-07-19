@@ -73,7 +73,15 @@ h2o.ensemble <- function(x, y, training_frame,
   L <- length(learner)  #Number of distinct learners
   idxs <- expand.grid(1:V,1:L)
   names(idxs) <- c("v","l")
+
   
+  # The 'family' must be a string, not an R function input like gaussian()
+  # No support for multiclass at the moment, just binary classification or regression
+  # TO DO: Since metalearners support other distributions (regression), shoud allow here
+  if (!(family %in% c("binomial", "gaussian"))) {
+    stop("'family' not supported")
+  }
+
   # Validate learner and metalearner arguments
   if (length(metalearner)>1 | !is.character(metalearner) | !exists(metalearner)) {
     stop("The 'metalearner' argument must be a string, specifying the name of a base learner wrapper function.")
@@ -83,12 +91,23 @@ h2o.ensemble <- function(x, y, training_frame,
   }
   if (!exists(metalearner)) {
     stop("'metalearner' function name not found.")
-  } 
-  # The 'family' must be a string, not an R function input like gaussian()
-  # No support for multiclass at the moment, just binary classification or regression
-  if (!(family %in% c("binomial", "gaussian"))) {
-    stop("'family' not supported")
   }
+
+  # This is not working, but we need a way to fail early when Naive Bayes wrappers are attempted to be used in a regression problem.  
+  # # Check that Naive Bayes is not specified for a regression problem
+  # if (family == "gaussian") {
+  #   if (sum(!sapply(learner, function(l) "gaussian" %in% eval(formals(l)$family)))>0) {
+  #     # TO DO: should make this more generic and print specific wrapper name in violation
+  #     stop("The Naive Bayes function does not support regression, please remove this function from your set of base learners.")
+  #   }
+  #   if (!("gaussian" %in% eval(formals(metalearner)$family))) {
+  #     # TO DO: should make this more generic and print specific wrapper name in violation
+  #     stop("The Naive Bayes function does not support regression, please choose a different metalearner.")
+  #   }    
+  # }
+
+    
+  # Check remaining args
   if (inherits(parallel, "character")) {
     if (!(parallel %in% c("seq","multicore"))) {
       stop("'parallel' must be either 'seq' or 'multicore' or a snow cluster object")
