@@ -1,12 +1,17 @@
 XGBoost
 -------
 
-This section is a work in progress.
+**Notes:**
+
+- This section is a work in progress.
+- XGBoost is not supported on Windows.
 
 Introduction
 ~~~~~~~~~~~~
 
 XGBoost is an optimized distributed gradient boosting library designed to be highly efficient, flexible, and portable. This algorithm provides parallel tree boosting (also known as GBDT, GBM) that solves many data science problems in a fast and accurate way. For many problems, XGBoost is the one of the best gradient boosting machine (GBM) frameworks today. 
+
+Refer to the `XGBoost in H2O Machine Learning Platform <https://blog.h2o.ai/2017/06/xgboost-in-h2o-machine-learning-platform/>`__ blog post for an example of how to use XGBoost with the HIGGS dataset. 
 
 Defining an XGBoost Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -74,7 +79,7 @@ Defining an XGBoost Model
 
 -  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations.
 
--  `distribution <algo-params/distribution.html>`__: Specify the distribution (i.e., the loss function). The options are AUTO, bernoulli, multinomial, gaussian, poisson, gamma, and tweedie.
+-  `distribution <algo-params/distribution.html>`__: Specify the distribution (i.e., the loss function). The options are AUTO, bernoulli, multinomial, gaussian, poisson, gamma, or tweedie.
 
   - If the distribution is ``bernoulli``, the the response column must be 2-class categorical
   - If the distribution is ``multinomial``, the response column must be categorical.
@@ -84,6 +89,20 @@ Defining an XGBoost Model
   - If the distribution is ``gamma``, the response column must be numeric.
 
 -  `tweedie_power <algo-params/tweedie_power.html>`__: (Only applicable if *Tweedie* is specified for **distribution**) Specify the Tweedie power. The range is from 1 to 2. For a normal distribution, enter ``0``. For Poisson distribution, enter ``1``. For a gamma distribution, enter ``2``. For a compound Poisson-gamma distribution, enter a value greater than 1 but less than 2. For more information, refer to `Tweedie distribution <https://en.wikipedia.org/wiki/Tweedie_distribution>`__.
+
+-  `categorical_encoding <algo-params/categorical_encoding.html>`__: Specify one of the following encoding schemes for handling categorical features:
+
+  - ``auto`` or ``AUTO``: Allow the algorithm to decide (default). In XGBoost, the algorithm will automatically perform ``label_encoder`` encoding.
+  - ``enum`` or ``Enum``: 1 column per categorical feature
+  - ``one_hot_internal`` or ``OneHotInternal``: On the fly N+1 new cols for categorical features with N levels
+  - ``one_hot_explicit`` or ``OneHotExplicit``: N+1 new columns for categorical features with N levels
+  - ``binary``: No more than 32 columns per categorical feature
+  - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
+  - ``label_encoder`` or ``LabelEncoder``: Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.) (default)
+  - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.). This is useful in GBM/DRF, for example, when you have more levels than ``nbins_cats``, and where the top level splits now have a chance at separating the data with a split. 
+  - ``enum_limited`` or ``EnumLimited``: Automatically reduce categorical levels to the most prevalent ones during training and only keep the **T** most frequent levels.
+
+  **Note**: This value defaults to ``label_encoder``. Similarly, if ``auto`` is specified, then the algorithm performs ``label_encoder`` encoding. 
 
 -  **quiet_mode**: Specify whether to enable quiet mode.
 
@@ -119,7 +138,7 @@ Defining an XGBoost Model
 
 -  `min_split_improvement <algo-params/min_split_improvement.html>`__: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range.  
 
--  **tree_method**: Specify the tree method. This can be one of the following: ``"auto"``, ``"exact"``, ``"approx"``, or ``"hist"``. This value defaults to ``"auto"``.
+-  **tree_method**: Specify the tree method. This can be one of the following: "auto", "exact", "approx", or "hist". This value defaults to ``"auto"``.
 
 -  **max_bin**: When ``tree_method="hist"``, specify the maximum number of bins. This value defaults to 255.
 
@@ -129,19 +148,19 @@ Defining an XGBoost Model
 
 -  **min_data_in_leaf**: When ``tree_method="hist"``, specify the mininum data in a leaf to keep splitting. This value defaults to 0.
 
--  **grow_policy**: Specify a grow policy of "depthwise" or "lossguide". "depthwise" is standard GBM; "lossguide" is LightGBM. This value defaults to "depthwise".
+-  **grow_policy**: Specify a grow policy of "depthwise" or "lossguide". "depthwise" is standard GBM; "lossguide" is light GBM. This value defaults to "depthwise".
 
--  **booster**: Specify the booster type. This can be one of the following: ``"gbtree"``, ``"gblinear"``, or ``"dart"``. This value defaults to ``"gbtree"``.
+-  **booster**: Specify the booster type. This can be one of the following: "gbtree", "gblinear", or "dart". This value defaults to "gbtree".
 
--  **sample_type**: When ``booster=dart``, specify whether the sampling type should be "uniform" or "weighted". This value defaults to "uniform".
+-  **sample_type**: When ``booster="dart"``, specify whether the sampling type should be "uniform" or "weighted". This value defaults to "uniform".
 
--  **normalize_type**: When ``booster=dart``, specify whether the normalize type should be "tree" or "forest". This value defaults to "tree".
+-  **normalize_type**: When ``booster="dart"``, specify whether the normalize type should be "tree" or "forest". This value defaults to "tree".
 
--  **rate_drop**: When ``booster=dart``, specify a float value from 0 to 1 for the rate drop. This value defaults to 0.
+-  **rate_drop**: When ``booster="dart"``, specify a float value from 0 to 1 for the rate drop. This value defaults to 0.
 
--  **one_drop**: When ``booster=dart``, specify whether to enable one drop. This value defaults to FALSE.
+-  **one_drop**: When ``booster="dart"``, specify whether to enable one drop. This value defaults to FALSE.
 
--  **skip_drop**: When ``booster=dart``, specify whether a float value from 0 to 1 for the skip drop. This value defaults to 0.
+-  **skip_drop**: When ``booster="dart"``, specify whether a float value from 0 to 1 for the skip drop. This value defaults to 0.
 
 -  **gamma**: This is the same as ``min_split_improvement`` except that this has a default of 0.
 
@@ -149,9 +168,9 @@ Defining an XGBoost Model
 
 -  **reg_alpha**: Specify a value for L1 regularization. This defaults to 0.
 
--  **dmatrix_type**: Specify the type of DMatrix. Valid options include the following: ``"auto"``, ``"dense"``, and ``"sparse"``. Note that for ``dmatrix_type=sparse``, NAs and 0 are treated equally. This value defaults to ``"auto"``.
+-  **dmatrix_type**: Specify the type of DMatrix. Valid options include the following: "auto", "dense", and "sparse". Note that for ``dmatrix_type="sparse"``, NAs and 0 are treated equally. This value defaults to "auto".
 
--  **backend**: Specify the backend type. This can be done of the following: ``"auto"``, ``"gpu"``, or ``"cpu"``. By default (auto), a GPU is used if available.
+-  **backend**: Specify the backend type. This can be done of the following: "auto", "gpu", or "cpu". By default (auto), a GPU is used if available.
 
 -  **gpu_id**: If a GPU backend is available, specify Which GPU to use. This value defaults to 0.
 
@@ -181,7 +200,7 @@ The following additional parameters can be configured when ``booster=dart``:
 XGBoost Only
 ~~~~~~~~~~~~
 
-As opposed to Light GBM models, the following options configure a true XGBoost model.
+As opposed to light GBM models, the following options configure a true XGBoost model.
 
 - ``tree_method``
 - ``grow_policy``
@@ -198,9 +217,12 @@ Limitations
 
 This section provides a list of XGBoost limitations - some of which will be addressed in a future release. In general, if XGBoost cannot be initialized for any reason (e.g., unsupported platform), then the algorithm is not exposed via REST API and is not available for clients. Clients can verify availability of the XGBoost by using the corresponding client API call. For example, in Python:
 
-```python
+In Limitations section, change the python is_available line to:
 is_xgboost_available = H2OXGBoostEstimator.available()
-```
+
+::
+
+  is_xgboost_available = H2OXGBoostEstimator.available()
 
 The list of limitations include:
 
@@ -223,6 +245,29 @@ The list of limitations include:
   3. Because we are using native XGBoost libraries that depend on OS/platform libraries, it is possible that on older operating systems, XGBoost will not be able to find all necessary binary dependencies, and will not be initialized and available.
 
   4. XGBoost GPU libraries are compiled against CUDA 8, which is a necessary runtime requirement in order to utilize XGBoost GPU support.
+
+FAQs
+~~~~
+
+-  **How does H2O's XGBoost create the d-matrix?**
+
+  H2O passes and the matrix as a float[] to the C++ backend of XGBoost, exactly like it would be done from C++ or Python.
+
+-  **When training an H2O XGBoost model, the score is calculated intermittently. How does H2O get the score from the XGBoost model while the model is being trained?**
+
+  H2O computes the score itself from the predictions made by XGBoost. This way, it is consistent with all other H2O models.
+
+-  **Are there any algorithmic differences between H2O's XGBoost and regular XGBoost?**
+
+  No, H2O calls the regular XGBoost backend.
+
+-  **How are categorical columns handled?**
+
+  By default, XGBoost converts every enum into the integer of its index (i.e., ``categorical_encoding="label_encoder"``). 
+
+-  **I have a dataset with a large number of missing values (more than 40%), and I'm generating models using XGBoost and H2O Gradient Boosting. Does XGBoost handle variables with missing values differently than H2O's Gradient Boosting?**
+
+  Missing values handling and variable importances are both slightly different between the two methods. Both treat missing values as information (i.e., they learn from them, and don't just impute with a simple constant). The variable importances are computed from the gains of their respective loss functions during tree construction. H2O uses squared error, and XGBoost uses a more complicated one based on gradient and hessian.
 
 
 References
