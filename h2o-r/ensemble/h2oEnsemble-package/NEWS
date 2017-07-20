@@ -12,6 +12,12 @@ h2oEnsemble TO DO
 * TO DO: Add support for external cross-validation of the ensemble by adding an `nfolds` argument.
 
 
+h2oEnsemble 0.2.0  (2017-07-19)
+-----------------
+* The `family` argument of `h2o.ensemble` now supports the superset of family/distribution values for H2O algorithms, which is: "AUTO", "binomial", "gaussian", "quasibinomial", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber”.
+* Updated all h2o.algo.wrapper functions to be consistent with latest stable version of h2o (3.10.5.4), including new arguments that have been added since the previous release.
+* Added `h2o.naiveBayes.wrapper` function (classification only).  Documented here: https://0xdata.atlassian.net/browse/PUBDEV-2855
+
 
 h2oEnsemble 0.1.9  (2017-07-17)
 -----------------
