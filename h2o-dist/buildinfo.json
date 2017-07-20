@@ -178,7 +178,7 @@
             "path" : "docs-website/h2o-docs/booklets/GLMBooklet.pdf"
         },
         {
-            "name" : "DeepLearning",
+            "name" : "Deep Learning",
             "id"   : "booklet-deeplearning",
             "path" : "docs-website/h2o-docs/booklets/DeepLearningBooklet.pdf"
         },
@@ -198,12 +198,12 @@
             "path" : "docs-website/h2o-docs/booklets/PythonBooklet.pdf"
         },
         {
-            "name" : "SparklingWater",
+            "name" : "Sparkling Water",
             "id"   : "booklet-sparklingwater",
             "path" : "docs-website/h2o-docs/booklets/SparklingWaterBooklet.pdf"
         },
         {
-            "name" : "DeepWaterBooklet",
+            "name" : "Deep Water",
             "id"   : "booklet-deepwater",
             "path" : "docs-website/h2o-docs/booklets/DeepWaterBooklet.pdf"
         }
