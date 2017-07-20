@@ -29,12 +29,13 @@ class H2OXGBoostEstimator(H2OEstimator):
                       "keep_cross_validation_fold_assignment", "score_each_iteration", "fold_assignment", "fold_column",
                       "response_column", "ignored_columns", "ignore_const_cols", "offset_column", "weights_column",
                       "stopping_rounds", "stopping_metric", "stopping_tolerance", "max_runtime_secs", "seed",
-                      "distribution", "tweedie_power", "ntrees", "max_depth", "min_rows", "min_child_weight",
-                      "learn_rate", "eta", "sample_rate", "subsample", "col_sample_rate", "colsample_bylevel",
-                      "col_sample_rate_per_tree", "colsample_bytree", "max_abs_leafnode_pred", "max_delta_step",
-                      "score_tree_interval", "min_split_improvement", "max_bin", "num_leaves",
-                      "min_sum_hessian_in_leaf", "min_data_in_leaf", "tree_method", "grow_policy", "booster", "gamma",
-                      "reg_lambda", "reg_alpha", "dmatrix_type", "backend", "gpu_id"}
+                      "distribution", "tweedie_power", "categorical_encoding", "ntrees", "max_depth", "min_rows",
+                      "min_child_weight", "learn_rate", "eta", "sample_rate", "subsample", "col_sample_rate",
+                      "colsample_bylevel", "col_sample_rate_per_tree", "colsample_bytree", "max_abs_leafnode_pred",
+                      "max_delta_step", "score_tree_interval", "min_split_improvement", "gamma", "max_bin",
+                      "num_leaves", "min_sum_hessian_in_leaf", "min_data_in_leaf", "tree_method", "grow_policy",
+                      "booster", "reg_lambda", "reg_alpha", "dmatrix_type", "backend", "gpu_id", "sample_type",
+                      "normalize_type", "rate_drop", "one_drop", "skip_drop"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -353,6 +354,22 @@ class H2OXGBoostEstimator(H2OEstimator):
 
 
     @property
+    def categorical_encoding(self):
+        """
+        Encoding scheme for categorical features
+
+        One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``,
+        ``"label_encoder"``, ``"sort_by_response"``, ``"enum_limited"``  (default: ``"label_encoder"``).
+        """
+        return self._parms.get("categorical_encoding")
+
+    @categorical_encoding.setter
+    def categorical_encoding(self, categorical_encoding):
+        assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"))
+        self._parms["categorical_encoding"] = categorical_encoding
+
+
+    @property
     def ntrees(self):
         """
         (same as n_estimators) Number of trees.
@@ -593,6 +610,21 @@ class H2OXGBoostEstimator(H2OEstimator):
 
 
     @property
+    def gamma(self):
+        """
+        (same as min_split_improvement) Minimum relative improvement in squared error reduction for a split to happen
+
+        Type: ``float``  (default: ``0``).
+        """
+        return self._parms.get("gamma")
+
+    @gamma.setter
+    def gamma(self, gamma):
+        assert_is_type(gamma, None, float)
+        self._parms["gamma"] = gamma
+
+
+    @property
     def max_bin(self):
         """
         For tree_method=hist only: maximum number of bins
@@ -698,21 +730,6 @@ class H2OXGBoostEstimator(H2OEstimator):
 
 
     @property
-    def gamma(self):
-        """
-        (same as min_split_improvement) Minimum relative improvement in squared error reduction for a split to happen
-
-        Type: ``float``  (default: ``0``).
-        """
-        return self._parms.get("gamma")
-
-    @gamma.setter
-    def gamma(self, gamma):
-        assert_is_type(gamma, None, float)
-        self._parms["gamma"] = gamma
-
-
-    @property
     def reg_lambda(self):
         """
         L2 regularization
@@ -785,6 +802,81 @@ class H2OXGBoostEstimator(H2OEstimator):
     def gpu_id(self, gpu_id):
         assert_is_type(gpu_id, None, int)
         self._parms["gpu_id"] = gpu_id
+
+
+    @property
+    def sample_type(self):
+        """
+        For booster=dart only: sample_type
+
+        One of: ``"uniform"``, ``"weighted"``  (default: ``"uniform"``).
+        """
+        return self._parms.get("sample_type")
+
+    @sample_type.setter
+    def sample_type(self, sample_type):
+        assert_is_type(sample_type, None, Enum("uniform", "weighted"))
+        self._parms["sample_type"] = sample_type
+
+
+    @property
+    def normalize_type(self):
+        """
+        For booster=dart only: normalize_type
+
+        One of: ``"tree"``, ``"forest"``  (default: ``"tree"``).
+        """
+        return self._parms.get("normalize_type")
+
+    @normalize_type.setter
+    def normalize_type(self, normalize_type):
+        assert_is_type(normalize_type, None, Enum("tree", "forest"))
+        self._parms["normalize_type"] = normalize_type
+
+
+    @property
+    def rate_drop(self):
+        """
+        For booster=dart only: rate_drop (0..1)
+
+        Type: ``float``  (default: ``0``).
+        """
+        return self._parms.get("rate_drop")
+
+    @rate_drop.setter
+    def rate_drop(self, rate_drop):
+        assert_is_type(rate_drop, None, float)
+        self._parms["rate_drop"] = rate_drop
+
+
+    @property
+    def one_drop(self):
+        """
+        For booster=dart only: one_drop
+
+        Type: ``bool``  (default: ``False``).
+        """
+        return self._parms.get("one_drop")
+
+    @one_drop.setter
+    def one_drop(self, one_drop):
+        assert_is_type(one_drop, None, bool)
+        self._parms["one_drop"] = one_drop
+
+
+    @property
+    def skip_drop(self):
+        """
+        For booster=dart only: skip_drop (0..1)
+
+        Type: ``float``  (default: ``0``).
+        """
+        return self._parms.get("skip_drop")
+
+    @skip_drop.setter
+    def skip_drop(self, skip_drop):
+        assert_is_type(skip_drop, None, float)
+        self._parms["skip_drop"] = skip_drop
 
 
 

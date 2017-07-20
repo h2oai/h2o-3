@@ -31,6 +31,7 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "seed",
         "distribution",
         "tweedie_power",
+        "categorical_encoding",
 
         // model specific
         "ntrees",
@@ -45,7 +46,7 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "max_abs_leafnode_pred", "max_delta_step",
 
         "score_tree_interval",
-        "min_split_improvement",
+        "min_split_improvement", "gamma",
 
         //lightgbm only
         "max_bin",
@@ -57,12 +58,18 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "tree_method",
         "grow_policy",
         "booster",
-        "gamma",
         "reg_lambda",
         "reg_alpha",
         "dmatrix_type",
         "backend",
-        "gpu_id"
+        "gpu_id",
+
+        // dart
+        "sample_type",
+        "normalize_type",
+        "rate_drop",
+        "one_drop",
+        "skip_drop",
     };
 
     @API(help="(same as n_estimators) Number of trees.", gridable = true)
@@ -143,9 +150,10 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
 
     @API(help = "L1 regularization", level = API.Level.expert, gridable = true)
     public float reg_alpha;
-
-    @API(help="Missing Value Handling", values = { "mean_imputation", "skip"}, level = API.Level.expert, gridable = true)
-    public XGBoostParameters.MissingValuesHandling missing_values_handling;
+    
+    // no special support for missing value right now - missing value are handled by XGBoost internally
+    //@API(help="Missing Value Handling", values = { "mean_imputation", "skip"}, level = API.Level.expert, gridable = true)
+    //public XGBoostParameters.MissingValuesHandling missing_values_handling;
 
     @API(help="Enable quiet mode", level = API.Level.expert, gridable = false)
     public boolean quiet_mode;
