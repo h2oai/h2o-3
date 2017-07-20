@@ -3230,7 +3230,7 @@ as.h2o.Matrix <- function(x, destination_frame="", ...) {
     destination_frame <- .key.make("Matrix") # only used if `x` variable name not valid key
 
   if (use.package("data.table",use=getOption("h2o.use.data.table", TRUE)) && use.package("slam", version="0.1.40", TRUE)) {
-    drs <- as.simple_triplet_matrix(x)# need to convert sparse matrix x to a simple triplet matrix format
+    drs <- slam::as.simple_triplet_matrix(x)# need to convert sparse matrix x to a simple triplet matrix format
     thefile <- tempfile()
     .h2o.write_stm_svm(drs, file = thefile)
     h2f <<- h2o.uploadFile(thefile, parse_type = "SVMLight", destination_frame=destination_frame)
@@ -3277,9 +3277,12 @@ as.h2o.Matrix <- function(x, destination_frame="", ...) {
   # data table solution thanks to roland
   rowLeft <- setdiff(c(1:n), unique(stm$i))
   nrowLeft <- length(rowLeft)
-
-  stm2 <- data.table(i = c(stm$i,rowLeft), j = c(stm$j,rep(1,nrowLeft)), v = c(stm$v,rep(0,nrowLeft)))
-  res <- stm2[, .(i, jv = paste(j, v, sep = ":"))][order(i), .(res = paste(jv, collapse = " ")), by = i][["res"]]
+  i=NULL  # serves no purpose except to pass the R cmd cran check
+  j=NULL
+  v=NULL
+  jv=NULL
+  stm2 <- data.table::data.table(i = c(stm$i,rowLeft), j = c(stm$j,rep(1,nrowLeft)), v = c(stm$v,rep(0,nrowLeft)))
+  res <- stm2[, list(i, jv = paste(j, v, sep = ":"))][order(i), list(res = paste(jv, collapse = " ")), by = i][["res"]]
 
   out <- paste(y, res)
 
