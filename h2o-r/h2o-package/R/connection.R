@@ -3,7 +3,7 @@
 #' Attempts to start and/or connect to and H2O instance.
 #'
 #' By default, this method first checks if an H2O instance is connectible. If it cannot connect and \code{start = TRUE} with \code{ip = "localhost"}, it will attempt to start and instance of H2O at localhost:54321.
-#' If an open ip & port of your choice are passed in, then this method will attempt to start an H2O instance at that specified ip & port.
+#' If an open ip and port of your choice are passed in, then this method will attempt to start an H2O instance at that specified ip  port.
 #'
 #' When initializing H2O locally, this method searches for h2o.jar in the R library resources (\code{system.file("java", "h2o.jar", package = "h2o")}), and if the file does not exist, it will automatically attempt to download the correct version from Amazon S3. The user must have Internet access for this process to be successful.
 #'
@@ -776,6 +776,7 @@ h2o.networkTest <- function() {
 #'
 #' Open H2O Flow in your browser
 #'
+#' @importFrom utils browseURL
 #' @export
 h2o.flow <- function(){
   browseURL(.h2o.calcBaseURL(urlSuffix=""))
