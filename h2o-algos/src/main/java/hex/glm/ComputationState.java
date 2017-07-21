@@ -461,6 +461,7 @@ public final class ComputationState {
     _activeData = _dinfo.filterExpandedColumns(activeCols);
     _activeBC = _bc.filterExpandedColumns(activeCols);
     _gslvr = new GLMGradientSolver(_job, _parms, _activeData, (1 - _alpha) * _lambda, _activeBC);
+    _currGram = null;
     return activeCols;
   }
 
@@ -626,8 +627,8 @@ public final class ComputationState {
     GramXY res;
     if(_parms._family != Family.multinomial && zeros.length > 0) {
       gt._gram.dropCols(zeros);
-      res = new ComputationState.GramXY(gt._gram,ArrayUtils.removeIds(gt._xy, zeros),null,gt._beta == null?null:ArrayUtils.removeIds(gt._beta, zeros),activeCols,null,gt._yy,gt._likelihood);
       removeCols(zeros);
+      res = new ComputationState.GramXY(gt._gram,ArrayUtils.removeIds(gt._xy, zeros),null,gt._beta == null?null:ArrayUtils.removeIds(gt._beta, zeros),activeData().activeCols(),null,gt._yy,gt._likelihood);
     } else res = new GramXY(gt._gram,gt._xy,null,beta == null?null:beta,activeCols,null,gt._yy,gt._likelihood);
     if(s == GLMParameters.Solver.COORDINATE_DESCENT) {
       res.gram.getXX();
@@ -651,14 +652,13 @@ public final class ComputationState {
       //    and COD and IRLSM need matrix in different shape
       //    and COD is better for lambda search
       return computeNewGram(activeData(),beta,s);
-    DataInfo activeData = activeData();
     if(_currGram == null) // no cached value, compute new one and store
-      return _currGram = computeNewGram(activeData,beta,s);
+      return _currGram = computeNewGram(activeData(),beta,s);
+    DataInfo activeData = activeData();
     assert beta == null || beta.length == activeData.fullN()+1;
     int [] activeCols = activeData.activeCols();
     if (Arrays.equals(_currGram.activeCols,activeCols))
       return (!weighted || Arrays.equals(_currGram.beta, beta)) ? _currGram : (_currGram = computeNewGram(activeData, beta, s));
-
     if(_glmw == null) _glmw = new GLMModel.GLMWeightsFun(_parms);
     // check if we need full or just incremental update
     if(_currGram != null){

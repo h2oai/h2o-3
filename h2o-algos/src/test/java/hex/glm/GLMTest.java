@@ -1046,6 +1046,42 @@ public class GLMTest  extends TestUtil {
     f.delete();
   }
 
+
+  @Test public void testConstantColumns(){
+    GLMModel model1 = null, model2 = null, model3 = null, model4 = null;
+    Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/allyears2k_headers.zip");
+//    fr.remove("C1").remove();
+//    Vec w = frMM.vec("OriginABQ").makeCopy();
+    Vec y = fr.vec("IsDepDelayed").makeCopy(null);
+    fr.replace(fr.find("IsDepDelayed"),y).remove();
+//    frMM.add("weights",w);
+//    for(int j = 0; j < 5; j++) {
+      Vec weights = fr.anyVec().makeZero();
+      System.out.println("made new weights vec " + weights._key);
+      Vec.Writer vw = weights.open();
+      for (int i = 0; i < 1999; ++i)
+        vw.set(i, 1);
+      vw.close();
+      fr.add("weights", weights);
+      DKV.put(fr);
+      System.out.println("weights vec = " + fr.vec("weights")._key);
+      GLMParameters parms = new GLMParameters(Family.gaussian);
+      parms._train = fr._key;
+      parms._weights_column = "weights";
+      parms._lambda_search = true;
+      parms._alpha = new double[]{0};
+      parms._response_column = "IsDepDelayed";
+      parms._ignored_columns = new String[]{"DepTime", "ArrTime", "Cancelled", "CancellationCode", "DepDelay", "Diverted", "CarrierDelay", "WeatherDelay", "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"};
+      parms._standardize = true;
+      model1 = new GLM(parms).trainModel().get();
+      model1.delete();
+      Vec w = fr.remove("weights");
+      System.out.println("removing vec " + w._key);
+      w.remove();
+//    }
+    fr.delete();
+  }
+
   // test categorical autoexpansions, run on airlines which has several categorical columns,
   // once on explicitly expanded data, once on h2o autoexpanded and compare the results
   @Test
