@@ -1011,23 +1011,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     sb.i(1).p("// Thread-local storage for neuron activation values.").nl();
     sb.i(1).p("final double[][] ACTIVATION = new double[][] {").nl();
     for (int i=0; i<neurons.length; i++) {
-      String colInfoClazz = mname + "_Activation_"+i;
-      sb.i(2).p("/* ").p(neurons[i].getClass().getSimpleName()).p(" */ ");
-      sb.p(colInfoClazz).p(".VALUES");
+      sb.i(2).p("/* ").p(neurons[i].getClass().getSimpleName()).p(" */ ").p("new double[").p(layers[i]).p("]");
       if (i!=neurons.length-1) sb.p(',');
       sb.nl();
     }
     sb.i(1).p("};").nl();
-    fileCtx.add(new CodeGenerator() {
-      @Override
-      public void generate(JCodeSB out) {
-        for (int i=0; i<neurons.length; i++) {
-          String colInfoClazz = mname + "_Activation_"+i;
-          out.i().p("// Neuron activation values for ").p(neurons[i].getClass().getSimpleName()).p(" layer").nl();
-          JCodeGen.toClassWithArray(out, null, colInfoClazz, new double[layers[i]]);
-        }
-      }
-    });
 
     // biases
     sb.i(1).p("// Neuron bias values.").nl();
