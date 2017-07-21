@@ -219,10 +219,9 @@ The "magic" behind ``run-example.sh`` is a regular Spark Submit:
 
 --------------
 
-**How do I use Sparkling Water with Databricks cloud?**
+**How do I use Sparkling Water with Databricks?**
 
-Sparkling Water compatibility with Databricks cloud is still in
-development.
+Refer to `Using H2O Sparking Water with Databricks <../cloud-integration/databricks.html>`__ for information on how to use Sparkling Water with Databricks.
 
 --------------
 
