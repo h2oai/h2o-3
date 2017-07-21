@@ -16,5 +16,6 @@ Refer to the following topics:
    cloud-integration/ec2-and-s3
    cloud-integration/azure-hdi
    cloud-integration/azure-dsvm
+   cloud-integration/databricks
    cloud-integration/ibm-dsx
    cloud-integration/nimbix
