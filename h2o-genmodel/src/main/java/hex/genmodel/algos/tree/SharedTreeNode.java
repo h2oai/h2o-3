@@ -322,7 +322,7 @@ public class SharedTreeNode {
    * Recursively print nodes at a particular depth level in the tree.  Useful to group them so they render properly.
    * @param os output stream
    * @param levelToPrint level number
-   * @param detail include addtional node detail information
+   * @param detail include additional node detail information
    */
   void printDotNodesAtLevel(PrintStream os, int levelToPrint, boolean detail) {
     if (getDepth() == levelToPrint) {
@@ -340,7 +340,7 @@ public class SharedTreeNode {
     }
   }
 
-  private void printDotEdgesCommon(PrintStream os, int maxLevelsToPrintPerEdge, ArrayList<String> arr, SharedTreeNode child) {
+  private void printDotEdgesCommon(PrintStream os, int maxLevelsToPrintPerEdge, ArrayList<String> arr, SharedTreeNode child, float totalWeight, boolean detail) {
     if (isBitset()) {
       BitSet childInclusiveLevels = child.getInclusiveLevels();
       int total = childInclusiveLevels.cardinality();
@@ -353,6 +353,19 @@ public class SharedTreeNode {
         arr.add(total + " levels");
       }
     }
+
+    if (detail) {
+      try {
+        final int max_width = 15 - 1;
+        float width = child.getWeight() / totalWeight * max_width;
+        int intWidth = Math.round(width) + 1;
+        os.print("penwidth=");
+        os.print(intWidth);
+        os.print(",");
+      } catch (Exception ignore) {
+      }
+    }
+
     os.print("label=\"");
     for (String s : arr) {
       os.print(escapeQuotes(s) + "\\n");
@@ -365,8 +378,10 @@ public class SharedTreeNode {
    * Recursively print all edges in the tree.
    * @param os output stream
    * @param maxLevelsToPrintPerEdge Limit the number of individual categorical level names printed per edge
+   * @param totalWeight total weight of all observations (used to determine edge thickness)
+   * @param detail include additional edge detail information
    */
-  void printDotEdges(PrintStream os, int maxLevelsToPrintPerEdge) {
+  void printDotEdges(PrintStream os, int maxLevelsToPrintPerEdge, float totalWeight, boolean detail) {
     assert (leftChild == null) == (rightChild == null);
 
     if (leftChild != null) {
@@ -386,7 +401,7 @@ public class SharedTreeNode {
         }
       }
 
-      printDotEdgesCommon(os, maxLevelsToPrintPerEdge, arr, leftChild);
+      printDotEdgesCommon(os, maxLevelsToPrintPerEdge, arr, leftChild, totalWeight, detail);
     }
 
     if (rightChild != null) {
@@ -403,7 +418,7 @@ public class SharedTreeNode {
         }
       }
 
-      printDotEdgesCommon(os, maxLevelsToPrintPerEdge, arr, rightChild);
+      printDotEdgesCommon(os, maxLevelsToPrintPerEdge, arr, rightChild, totalWeight, detail);
     }
   }
 

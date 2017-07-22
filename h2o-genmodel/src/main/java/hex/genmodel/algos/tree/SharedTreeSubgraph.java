@@ -108,7 +108,7 @@ public class SharedTreeSubgraph {
     os.println("");
     os.println("/* Edges */");
     for (SharedTreeNode n : nodesArray) {
-      n.printDotEdges(os, maxLevelsToPrintPerEdge);
+      n.printDotEdges(os, maxLevelsToPrintPerEdge, rootNode.getWeight(), detail);
     }
     os.println("");
     os.println("fontsize=40");
