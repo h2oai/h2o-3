@@ -20,13 +20,11 @@ import water.util.ArrayUtils;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class GLMTest  extends TestUtil {
 
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
 
   public static void testScoring(GLMModel m, Frame fr) {
     Scope.enter();
@@ -1050,21 +1048,21 @@ public class GLMTest  extends TestUtil {
   @Test public void testConstantColumns(){
     GLMModel model1 = null, model2 = null, model3 = null, model4 = null;
     Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/allyears2k_headers.zip");
-//    fr.remove("C1").remove();
-//    Vec w = frMM.vec("OriginABQ").makeCopy();
     Vec y = fr.vec("IsDepDelayed").makeCopy(null);
     fr.replace(fr.find("IsDepDelayed"),y).remove();
-//    frMM.add("weights",w);
-//    for(int j = 0; j < 5; j++) {
       Vec weights = fr.anyVec().makeZero();
-      System.out.println("made new weights vec " + weights._key);
-      Vec.Writer vw = weights.open();
-      for (int i = 0; i < 1999; ++i)
-        vw.set(i, 1);
-      vw.close();
+      new MRTask(){
+        @Override public void map(Chunk c){
+          int i = 0;
+          for(i = 0; i < c._len; ++i){
+            long rid = c.start()+i;
+            if(rid >= 1999) break;
+            c.set(i,1);
+          }
+        }
+      }.doAll(weights);
       fr.add("weights", weights);
       DKV.put(fr);
-      System.out.println("weights vec = " + fr.vec("weights")._key);
       GLMParameters parms = new GLMParameters(Family.gaussian);
       parms._train = fr._key;
       parms._weights_column = "weights";
@@ -1075,10 +1073,6 @@ public class GLMTest  extends TestUtil {
       parms._standardize = true;
       model1 = new GLM(parms).trainModel().get();
       model1.delete();
-      Vec w = fr.remove("weights");
-      System.out.println("removing vec " + w._key);
-      w.remove();
-//    }
     fr.delete();
   }
 
