@@ -20,13 +20,11 @@ import water.util.ArrayUtils;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class GLMTest  extends TestUtil {
 
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
 
   public static void testScoring(GLMModel m, Frame fr) {
     Scope.enter();
@@ -1044,6 +1042,38 @@ public class GLMTest  extends TestUtil {
     }
     dinfo.remove();
     f.delete();
+  }
+
+
+  @Test public void testConstantColumns(){
+    GLMModel model1 = null, model2 = null, model3 = null, model4 = null;
+    Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/allyears2k_headers.zip");
+    Vec y = fr.vec("IsDepDelayed").makeCopy(null);
+    fr.replace(fr.find("IsDepDelayed"),y).remove();
+      Vec weights = fr.anyVec().makeZero();
+      new MRTask(){
+        @Override public void map(Chunk c){
+          int i = 0;
+          for(i = 0; i < c._len; ++i){
+            long rid = c.start()+i;
+            if(rid >= 1999) break;
+            c.set(i,1);
+          }
+        }
+      }.doAll(weights);
+      fr.add("weights", weights);
+      DKV.put(fr);
+      GLMParameters parms = new GLMParameters(Family.gaussian);
+      parms._train = fr._key;
+      parms._weights_column = "weights";
+      parms._lambda_search = true;
+      parms._alpha = new double[]{0};
+      parms._response_column = "IsDepDelayed";
+      parms._ignored_columns = new String[]{"DepTime", "ArrTime", "Cancelled", "CancellationCode", "DepDelay", "Diverted", "CarrierDelay", "WeatherDelay", "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"};
+      parms._standardize = true;
+      model1 = new GLM(parms).trainModel().get();
+      model1.delete();
+    fr.delete();
   }
 
   // test categorical autoexpansions, run on airlines which has several categorical columns,

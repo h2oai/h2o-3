@@ -139,7 +139,7 @@ public class MathUtils {
     private double[] variance(double[] res) {
       for (int i = 0; i < res.length; ++i) {
         long nobs = _nobs - _naCnt[i];
-        res[i] = (nobs / (nobs - 1.0)) * _m2[i] / _wsums[i];
+        res[i] = nobs == 0?0:(nobs / (nobs - 1.0)) * _m2[i] / _wsums[i];
       }
       return res;
     }
