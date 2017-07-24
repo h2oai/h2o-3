@@ -24,7 +24,8 @@ class H2OWord2vecEstimator(H2OEstimator):
         super(H2OWord2vecEstimator, self).__init__()
         self._parms = {}
         names_list = {"model_id", "training_frame", "min_word_freq", "word_model", "norm_model", "vec_size",
-                      "window_size", "sent_sample_rate", "init_learning_rate", "epochs", "pre_trained"}
+                      "window_size", "sent_sample_rate", "init_learning_rate", "epochs", "pre_trained",
+                      "max_runtime_secs"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -185,5 +186,20 @@ class H2OWord2vecEstimator(H2OEstimator):
     def pre_trained(self, pre_trained):
         assert_is_type(pre_trained, None, H2OFrame)
         self._parms["pre_trained"] = pre_trained
+
+
+    @property
+    def max_runtime_secs(self):
+        """
+        Maximum allowed runtime in seconds for model training. Use 0 to disable.
+
+        Type: ``float``  (default: ``0``).
+        """
+        return self._parms.get("max_runtime_secs")
+
+    @max_runtime_secs.setter
+    def max_runtime_secs(self, max_runtime_secs):
+        assert_is_type(max_runtime_secs, None, numeric)
+        self._parms["max_runtime_secs"] = max_runtime_secs
 
 

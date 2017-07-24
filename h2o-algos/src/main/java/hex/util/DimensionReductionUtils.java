@@ -74,7 +74,7 @@ public class DimensionReductionUtils {
             if (fieldName.equals("Timestamp")) {
                 colHeaders.add("Timestamp"); colTypes.add("string"); colFormat.add("%s");
                 colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
-                colHeaders.add("Iteration"); colTypes.add("long"); colFormat.add("%d");
+                colHeaders.add("Iterations"); colTypes.add("long"); colFormat.add("%d");
             } else {
                 otherTableEntries.add(fieldName); colHeaders.add(fieldName); colTypes.add("double"); colFormat.add("%.5f");
             }

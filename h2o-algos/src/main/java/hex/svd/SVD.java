@@ -200,6 +200,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
       // Update v_i <- (A'Av_{i-1})/||A'Av_{i-1}|| where A'A = Gram matrix of training frame
       while(iters < _parms._max_iterations && err > TOLERANCE) {
+        if (stop_requested()) break;
         // Compute x_i <- A'Av_{i-1} and ||x_i||
         gram.mul(v, vnew);
 
