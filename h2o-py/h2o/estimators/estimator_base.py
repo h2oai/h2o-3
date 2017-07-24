@@ -261,6 +261,7 @@ class H2OEstimator(ModelBase):
         if name == "H2OKMeansEstimator": return "kmeans"
         if name == "H2ONaiveBayesEstimator": return "naivebayes"
         if name == "H2ORandomForestEstimator": return "drf"
+        if name == "H2OXGBoostEstimator": return "xgboost"
         if name == "H2OPCA": return "pca"
         if name == "H2OSVD": return "svd"
 
