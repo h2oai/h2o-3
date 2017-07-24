@@ -8,10 +8,11 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
-import static water.rapids.SingleThreadRadixOrder.getSortedOXHeaderKey;
 import water.util.ArrayUtils;
-
+import java.math.BigInteger;
 import java.util.Arrays;
+
+import static water.rapids.SingleThreadRadixOrder.getSortedOXHeaderKey;
 
 class BinaryMerge extends DTask<BinaryMerge> {
   long _numRowsInResult=0;  // returned to caller, so not transient
@@ -49,8 +50,11 @@ class BinaryMerge extends DTask<BinaryMerge> {
     private final long _base[]; // the col.min() of each column in the key
     private final int _fieldSizes[]; // the widths of each column in the key
     private final int _keySize; // the total width in bytes of the key, sum of field sizes
+    private final BigInteger _baseD[];  // the col.min() of each column in double
+    private final boolean _isNotDouble[]; // denote if a column is integer or double
+    private final boolean _isCategorical[];
 
-    FFSB( Frame frame, int msb, int shift, int fieldSizes[], long base[] ) { 
+    FFSB( Frame frame, int msb, int shift, int fieldSizes[], long base[], BigInteger baseD[], boolean isNotDouble[], boolean isCategorical[]) {
       assert -1<=msb && msb<=255; // left ranges from 0 to 255, right from -1 to 255
       _frame = frame;
       _msb = msb;
@@ -58,6 +62,9 @@ class BinaryMerge extends DTask<BinaryMerge> {
       _fieldSizes = fieldSizes;
       _keySize = ArrayUtils.sum(fieldSizes);
       _base = base;
+      _baseD = baseD;
+      _isNotDouble = isNotDouble;
+      _isCategorical = isCategorical;
       // Create fast lookups to go from chunk index to node index of that chunk
       Vec vec = _vec = frame.anyVec();
       _chunkNode = vec==null ? null : new int[vec.nChunks()];
@@ -66,8 +73,15 @@ class BinaryMerge extends DTask<BinaryMerge> {
         _chunkNode[i] = vec.chunkKey(i).home_node().index();
     }
 
-    long min() { return (((long)_msb  ) << _shift) + _base[0]-1; } // the first key possible in this bucket
-    long max() { return (((long)_msb+1) << _shift) + _base[0]-2; } // the last  key possible in this bucket
+ //   long min() { return (((long)_msb  ) << _shift) + _base[0]-1; } // the first key possible in this bucket
+ //   long max() { return (((long)_msb+1) << _shift) + _base[0]-2; } // the last  key possible in this bucket
+
+    long min() {
+      return (_isNotDouble[0]||_isCategorical[0])?(((long)_msb) << _shift) + _base[0]-1:BigInteger.valueOf(((long)_msb) << _shift).add(_baseD[0].subtract(BigInteger.ONE)).longValue();
+    }
+    long max() {
+      return (_isNotDouble[0]||_isCategorical[0])?(((long)_msb+1) << _shift) + _base[0]-1:BigInteger.valueOf(((long)_msb+1) << _shift).add(_baseD[0].subtract(BigInteger.ONE).subtract(BigInteger.ONE)).longValue();
+    }
   }
 
   // In X[Y], 'left'=i and 'right'=x
