@@ -24,7 +24,7 @@ import static org.junit.Assert.*;
 
 public class GLMTest  extends TestUtil {
 
-  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   public static void testScoring(GLMModel m, Frame fr) {
     Scope.enter();
