@@ -1401,11 +1401,13 @@ public class DRFTest extends TestUtil {
         tfr.remove("economy").remove();
         old = tfr.remove("economy_20mpg");
         tfr.add("economy_20mpg", VecUtils.toCategoricalVec(old)); // response to last column
+        tfr.add("constantCol",tfr.anyVec().makeCon(1)); //DRF should not honor constant cols but still use all cols for split when mtries=-2
         DKV.put(tfr);
 
         DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
         parms._train = tfr._key;
         parms._response_column = "economy_20mpg";
+        parms._ignored_columns = new String[]{"year"}; //Test to see if ignored column is not passed to DRF
         parms._min_rows = 2;
         parms._ntrees = 5;
         parms._max_depth = 5;
