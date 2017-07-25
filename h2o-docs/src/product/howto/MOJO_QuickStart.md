@@ -10,7 +10,7 @@ This document describes how to build and implement a MOJO (Model Object, Optimiz
 A MOJO (Model Object, Optimized) is an alternative to H2O's currently available
 [POJO](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/POJO_QuickStart.md). As with POJOs, H2O allows you to convert models that you build to MOJOs, which can then be deployed for scoring in real time.
 
-**Note**: MOJOs are supported for GBM, DRF, GLM, and K-Means models only.
+**Note**: MOJOs are supported for GBM, DRF, GLM, K-Means, and XGBoost models only.
 
 ## Benefit over POJOs
 
@@ -49,7 +49,7 @@ The examples below describe how to start H2O and create a model using R and Pyth
 			learn_rate=0.1)
 	```
 
-3. Download the MOJO and the resulting h2o-genmodel.jar file to a new **experiment** folder. 
+3. Download the MOJO and the resulting h2o-genmodel.jar file to a new **experiment** folder. Note that the ``h2o-genmodel.jar`` file is a library that supports scoring and contains the required readers and interpreters. This file is required when MOJO models are deployed to production.
 
 	```R
 	modelfile = model.download_mojo(path="~/experiment/", get_genmodel_jar=True)
@@ -77,7 +77,7 @@ The examples below describe how to start H2O and create a model using R and Pyth
 		training_frame=h2o_df)
 	```
 
-3. Download the MOJO and the resulting h2o-genmodel.jar file to a new **experiment** folder. 
+3. Download the MOJO and the resulting ``h2o-genmodel.jar`` file to a new **experiment** folder. Note that the ``h2o-genmodel.jar`` file is a library that supports scoring and contains the required readers and interpreters. This file is required when MOJO models are deployed to production.
 
 	```R
 	modelfile = model.download_mojo(path="~/experiment/", get_genmodel_jar=True)
