@@ -15,7 +15,7 @@ Requirements
   .. figure:: ../images/databricks_newlibrary.png
      :alt: New library
 
-2. Create a new cluster. Note that in this example, we are using Spark 1.5, and the name of the name of the cluster is "HamOrSpamCluster".
+2. Create a new cluster. Note that in this example, we are using Spark 1.5, and the name of the cluster is "HamOrSpamCluster".
 
   .. figure:: ../images/databricks_createcluster.png
      :alt: Create cluster
