@@ -110,9 +110,9 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       }else if(_parms._mtries==-1) {
         _mtry = (isClassifier() ? Math.max((int) Math.sqrt(_ncols), 1) : Math.max(_ncols / 3, 1));
       }else{
+        _mtry = _parms._mtries;
         if (!(1 <= _mtry && _mtry <= _ncols))
           throw new IllegalArgumentException("Computed mtry should be in interval <1," + _ncols + "> but it is " + _mtry);
-        _mtry = _parms._mtries;
       }
 
       _initialPrediction = isClassifier() ? 0 : getInitialValue();
