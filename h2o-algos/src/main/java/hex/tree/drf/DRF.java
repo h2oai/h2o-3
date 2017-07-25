@@ -54,12 +54,12 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
   @Override public void init(boolean expensive) {
     super.init(expensive);
     // Initialize local variables
-    if( _parms._mtries < 1 && _parms._mtries != -1 )
-      error("_mtries", "mtries must be -1 (converted to sqrt(features)), or >= 1 but it is " + _parms._mtries);
+    if( _parms._mtries < 1 && _parms._mtries != -1 && _parms._mtries != -2 )
+      error("_mtries", "mtries must be -1 (converted to sqrt(features)) or -2 (All features) or >= 1 but it is " + _parms._mtries);
     if( _train != null ) {
       int ncols = _train.numCols();
-      if( _parms._mtries != -1 && !(1 <= _parms._mtries && _parms._mtries < ncols /*ncols includes the response*/))
-        error("_mtries","Computed mtries should be -1 or in interval [1,"+ncols+"[ but it is " + _parms._mtries);
+      if( _parms._mtries != -1 && _parms._mtries != -2 && !(1 <= _parms._mtries && _parms._mtries < ncols /*ncols includes the response*/))
+        error("_mtries","Computed mtries should be -1 or -2 or in interval [1,"+ncols+"[ but it is " + _parms._mtries);
     }
     if (_parms._distribution == DistributionFamily.AUTO) {
       if (_nclass == 1) _parms._distribution = DistributionFamily.gaussian;
@@ -105,10 +105,10 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     @Override protected void initializeModelSpecifics() {
       _mtry_per_tree = Math.max(1, (int)(_parms._col_sample_rate_per_tree * _ncols));
       if (!(1 <= _mtry_per_tree && _mtry_per_tree <= _ncols)) throw new IllegalArgumentException("Computed mtry_per_tree should be in interval <1,"+_ncols+"> but it is " + _mtry_per_tree);
-      if(_parms._mtries==-2){
+      if(_parms._mtries==-2){ //mtries set to -2 would use all columns in each split regardless of what column has been dropped during train
         _mtry = _ncols-1; //-1 to get rid of response column
       }else if(_parms._mtries==-1) {
-        _mtry = (isClassifier() ? Math.max((int) Math.sqrt(_ncols), 1) : Math.max(_ncols / 3, 1));
+        _mtry = (isClassifier() ? Math.max((int) Math.sqrt(_ncols), 1) : Math.max(_ncols / 3, 1)); // classification: mtry=sqrt(_ncols), regression: mtry=_ncols/3
       }else{
         _mtry = _parms._mtries;
         if (!(1 <= _mtry && _mtry <= _ncols))
