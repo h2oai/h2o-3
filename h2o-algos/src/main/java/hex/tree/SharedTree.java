@@ -373,7 +373,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // Reconstruct the working tree state from the checkpoint
       Timer t = new Timer();
       int ntreesFromCheckpoint = ((SharedTreeModel.SharedTreeParameters) _parms._checkpoint.<SharedTreeModel>get()._parms)._ntrees;
-      new ReconstructTreeState(_ncols, _nclass, st /*large, but cleaner code this way*/, _parms._sample_rate,_model._output._treeKeys, doOOBScoring()).doAll(_train, _parms._build_tree_one_node);
+      new ReconstructTreeState(_ncols, _nclass, st /*large, but cleaner code this way*/, _parms._sample_rate,
+              new CompressedForest(_model._output._treeKeys, _model._output._domains), doOOBScoring())
+              .doAll(_train, _parms._build_tree_one_node);
       for (int i = 0; i < ntreesFromCheckpoint; i++) _rand.nextLong(); //for determinism
       Log.info("Reconstructing OOB stats from checkpoint took " + t);
       if (DEV_DEBUG) {
