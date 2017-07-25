@@ -1045,7 +1045,7 @@ public class GLMTest  extends TestUtil {
   }
 
 
-  @Test public void testConstantColumns(){
+  @Test @Ignore public void testConstantColumns(){
     GLMModel model1 = null, model2 = null, model3 = null, model4 = null;
     Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/allyears2k_headers.zip");
     Vec y = fr.vec("IsDepDelayed").makeCopy(null);
