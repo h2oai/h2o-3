@@ -32,9 +32,8 @@ public class PackedDomainsTest {
 
   @Test
   public void testPack1() throws Exception {
-    BufferedString bs = new BufferedString("efabc");
-    bs.addBuff("def".getBytes());
-    bs.setOff(2);
+    BufferedString bs = new BufferedString("efabcxy".getBytes(), 2, 3);
+    assertEquals("abc", bs.toString());
     byte[] packed = pack(new BufferedString[] {
         new BufferedString(""),
         bs,
@@ -43,9 +42,16 @@ public class PackedDomainsTest {
         new BufferedString("X")});
     
     assertArrayEquals(pack("", "abc", "∞", "", "X"), packed);
-
   }
-  
+
+  @Test
+  public void testPackStringWithOffset() {
+    BufferedString bs = new BufferedString("LeftMiddleRight".getBytes(), "Left".length(), "Middle".length());
+    byte[] packed = pack(new BufferedString[]{bs});
+    String[] unpacked = unpackToStrings(packed);
+    assertArrayEquals(new String[]{"Middle"}, unpacked);
+  }
+
   byte[] empty = pack();
   byte[] first = pack("", "ANNIHILATION", "Zoo");
   byte[] second = pack("aardvark", "absolute", "neo", "x", "xyzzy");
