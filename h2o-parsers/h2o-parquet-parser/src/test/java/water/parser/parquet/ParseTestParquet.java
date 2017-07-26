@@ -28,11 +28,14 @@ import static org.apache.parquet.hadoop.metadata.CompressionCodecName.UNCOMPRESS
 import static org.apache.parquet.schema.MessageTypeParser.parseMessageType;
 import static org.junit.Assert.*;
 
+import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.fvec.RollupStatsHelpers;
+import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.BufferedString;
+import water.parser.ParseDataset;
+import water.parser.ParseSetup;
 
 /**
  * Test suite for Parquet parser.
@@ -54,6 +57,73 @@ public class ParseTestParquet extends TestUtil {
       assertEquals(Arrays.asList(expected._names), Arrays.asList(actual._names));
       assertEquals(Arrays.asList(expected.typesStr()), Arrays.asList(actual.typesStr()));
       assertTrue(isBitIdentical(expected, actual));
+    } finally {
+      if (expected != null) expected.delete();
+      if (actual != null) actual.delete();
+    }
+  }
+
+  @Test
+  public void testParseWithTypeOverride() {
+    Frame expected = null, actual = null;
+    try {
+      NFSFileVec nfs = makeNfsFileVec("smalldata/parser/parquet/airlines-simple.snappy.parquet");
+      Key[] keys = new Key[]{nfs._key};
+      ParseSetup guessedSetup = ParseSetup.guessSetup(keys, false, ParseSetup.GUESS_HEADER);
+
+      // attempt to override a Enum type to String
+      byte[] types = guessedSetup.getColumnTypes();
+      types[1] = Vec.T_STR;
+      guessedSetup.setColumnTypes(types);
+
+      // parse the file with the modified setup
+      ParseDataset pd = ParseDataset.forkParseDataset(Key.<Frame>make(), keys, guessedSetup, true);
+      actual = pd._job.get();
+
+      expected = parse_test_file("smalldata/airlines/AirlinesTrain.csv.zip");
+      expected.replace(1, expected.vec(1).toStringVec()).remove();
+
+      // type is String instead of Enum
+      assertEquals("String", actual.typesStr()[1]);
+      assertEquals(Arrays.asList(expected._names), Arrays.asList(actual._names));
+      assertEquals(Arrays.asList(expected.typesStr()), Arrays.asList(actual.typesStr()));
+      assertTrue(isBitIdentical(expected, actual));
+
+      // no warnings were generated
+      assertNull(pd._job.warns());
+    } finally {
+      if (expected != null) expected.delete();
+      if (actual != null) actual.delete();
+    }
+  }
+
+  @Test
+  public void testParseWithInvalidTypeOverride() {
+    Frame expected = null, actual = null;
+    try {
+      NFSFileVec nfs = makeNfsFileVec("smalldata/parser/parquet/airlines-simple.snappy.parquet");
+      Key[] keys = new Key[]{nfs._key};
+      ParseSetup guessedSetup = ParseSetup.guessSetup(keys, false, ParseSetup.GUESS_HEADER);
+
+      // attempt to override a Numeric type to String
+      byte[] types = guessedSetup.getColumnTypes();
+      types[9] = Vec.T_STR;
+      guessedSetup.setColumnTypes(types);
+
+      // parse the file with the modified setup
+      ParseDataset pd = ParseDataset.forkParseDataset(Key.<Frame>make(), keys, guessedSetup, true);
+      actual = pd._job.get();
+
+      // type stayed the same
+      assertEquals("Numeric", actual.typesStr()[9]);
+      expected = parse_test_file("smalldata/airlines/AirlinesTrain.csv.zip");
+      assertEquals(Arrays.asList(expected._names), Arrays.asList(actual._names));
+      assertEquals(Arrays.asList(expected.typesStr()), Arrays.asList(actual.typesStr()));
+      assertTrue(isBitIdentical(expected, actual));
+
+      // proper warnings were generated
+      assertEquals(1, pd._job.warns().length);
+      assertTrue(pd._job.warns()[0].endsWith("error = 'Unsupported type override (Numeric -> String). Column Distance will be parsed as Numeric'"));
     } finally {
       if (expected != null) expected.delete();
       if (actual != null) actual.delete();

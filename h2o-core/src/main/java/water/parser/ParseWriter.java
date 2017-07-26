@@ -9,6 +9,10 @@ public interface ParseWriter extends Freezable {
 
   class ParseErr extends Iced {
     public ParseErr(){}
+    public ParseErr(String file, String err) {
+      this(err, 0, -1, -1);
+      _file = file;
+    }
     public ParseErr(String err, int cidx, long lineNum, long byteOff){
       _err = err;
       _cidx = cidx;
@@ -24,7 +28,7 @@ public interface ParseWriter extends Freezable {
     // filled int he end (when we now the line-counts)
     long _gLineNum = -1;
     public String toString(){
-      return "ParseError at file " + _file + (_gLineNum == -1?"":" at line " + _lineNum + " ( destination line " + _gLineNum + " )") + "  at byte offset " + _byteOffset + "; error = \'" + _err + "\'";
+      return "ParseError at file " + _file + (_gLineNum == -1?"":" at line " + _lineNum + " ( destination line " + _gLineNum + " )") + (_byteOffset == -1 ? "" : "  at byte offset " + _byteOffset) + "; error = \'" + _err + "\'";
     }
   }
 
