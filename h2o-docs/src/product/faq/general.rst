@@ -36,8 +36,7 @@ To score a simple .CSV file, download the
 
 ::
 
-    wget https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-r/tests/testdir_javapredict/PredictCSV.java
-    mkdir gbm_model_dir
+    wget https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-genmodel/src/main/java/hex/genmodel/tools/PredictCsv.java
     javac -cp h2o-genmodel.jar -J-Xmx2g -J-XX:MaxPermSize=128m PredictCSV.java gbm_model.java -d gbm_model_dir
 
 Specify the following: 
@@ -54,7 +53,7 @@ to read the hex strings as numerics.
 
 ::
 
-    java -ea -cp h2o-genmodel.jar:gbm_model_dir -Xmx4g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m PredictCSV --header --model gbm_model --input input.csv --output output.csv
+    java -ea -cp h2o-genmodel.jar:gbm_model_dir -Xmx4g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m hex.genmodel.tools.PredictCsv --header --model gbm_model --input input.csv --output output.csv
 
 --------------
 
