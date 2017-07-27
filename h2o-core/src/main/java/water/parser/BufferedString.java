@@ -181,7 +181,7 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
   public boolean equalsAsciiString(String str) {
     if (str == null || str.length() != _len) return false;
     for (int i = 0; i < _len; ++i)
-      if (_buf[_off + i] == str.charAt(i)) return false;
+      if (_buf[_off + i] != str.charAt(i)) return false;
     return true;
   }
 
