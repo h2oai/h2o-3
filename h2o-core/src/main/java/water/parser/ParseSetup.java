@@ -8,9 +8,6 @@ import water.util.ArrayUtils;
 import water.util.FileUtils;
 import water.util.Log;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.StringReader;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -653,6 +650,21 @@ public class ParseSetup extends Iced {
     } catch (IllegalAccessException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  /**
+   * Tests whether a given string represents a NA in a given column.
+   * Note: NAs are expected to be made ONLY of ASCII (7-bit) characters, NA constants in unicode won't be recognized.
+   * @param colIdx index of the column
+   * @param str string to be tested for NA
+   * @return true - string is one of the column's NAs, false otherwise
+   */
+  public boolean isNA(int colIdx, BufferedString str) {
+    if (_na_strings == null || colIdx >= _na_strings.length || _na_strings[colIdx] == null)
+      return false;
+    for (String naStr : _na_strings[colIdx])
+      if (str.equalsAsciiString(naStr)) return true;
+    return false;
   }
 
   public ParserInfo getParseType() {

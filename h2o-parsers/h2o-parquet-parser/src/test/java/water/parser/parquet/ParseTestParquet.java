@@ -169,7 +169,7 @@ public class ParseTestParquet extends TestUtil {
           assertEquals("Value in column mylong", 2 + row, f.vec(2).at8(row));
           assertEquals("Value in column myfloat", 3.1f + row, f.vec(3).at(row), EPSILON);
           assertEquals("Value in column myfloat", 4.1 + row, f.vec(4).at(row), EPSILON);
-          assertEquals("Value in column mystring", "hello world: " + row, f.vec(7).atStr(bs, row).bytesToString());
+          assertEquals("Value in column mystring", "hello world: " + row, f.vec(7).atStr(bs, row).toSanitizedString());
           assertEquals("Value in column myenum", row % 2 == 0 ? "a" : "b", f.vec(8).factor(f.vec(8).at8(row)));
         }
       }

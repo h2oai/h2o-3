@@ -1,14 +1,11 @@
 package water.parser;
 
 import org.apache.commons.lang.math.NumberUtils;
-import org.apache.http.ParseException;
 import water.fvec.Vec;
 import water.fvec.FileVec;
 import water.Key;
 import water.util.StringUtils;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -122,9 +119,7 @@ MAIN_LOOP:
             str.addBuff(bits);
           }
           if( !isNa &&
-              _setup._na_strings != null &&
-              _setup._na_strings.length > colIdx &&
-              str.isOneOf(_setup._na_strings[colIdx])) {
+              _setup.isNA(colIdx, str)) {
             isNa = true;
           }
           if (!isNa) {

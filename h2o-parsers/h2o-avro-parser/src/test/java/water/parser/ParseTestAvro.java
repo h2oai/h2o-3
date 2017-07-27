@@ -70,8 +70,8 @@ public class ParseTestAvro extends TestUtil {
             int nrows = nrows();
             BufferedString bs = new BufferedString();
             for (int row = 0; row < nrows; row++) {
-              assertEquals("Value in column CString", String.valueOf(row), f.vec(0).atStr(bs, row).bytesToString());
-              assertEquals("Value in column CBytes", String.valueOf(row), f.vec(1).atStr(bs, row).bytesToString());
+              assertEquals("Value in column CString", String.valueOf(row), f.vec(0).atStr(bs, row).toString());
+              assertEquals("Value in column CBytes", String.valueOf(row), f.vec(1).atStr(bs, row).toString());
               assertEquals("Value in column CInt", row, f.vec(2).at8(row));
               assertEquals("Value in column CLong", row, f.vec(3).at8(row));
               assertEquals("Value in column CFloat", row, f.vec(4).at(row), EPSILON);
@@ -105,8 +105,8 @@ public class ParseTestAvro extends TestUtil {
               assertTrue("NA should be in first row and col " + col, f.vec(col).isNA(0));
             }
             for (int row = 1; row < nrows; row++) {
-              assertEquals("Value in column CString", String.valueOf(row), f.vec(0).atStr(bs, row).bytesToString());
-              assertEquals("Value in column CBytes", String.valueOf(row), f.vec(1).atStr(bs, row).bytesToString());
+              assertEquals("Value in column CString", String.valueOf(row), f.vec(0).atStr(bs, row).toString());
+              assertEquals("Value in column CBytes", String.valueOf(row), f.vec(1).atStr(bs, row).toString());
               assertEquals("Value in column CInt", row, f.vec(2).at8(row));
               assertEquals("Value in column CLong", row, f.vec(3).at8(row));
               assertEquals("Value in column CFloat", row, f.vec(4).at(row), EPSILON);

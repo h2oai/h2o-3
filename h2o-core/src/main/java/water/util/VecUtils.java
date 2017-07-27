@@ -84,7 +84,7 @@ public class VecUtils {
             nc.addNA();
           } else {
             c.atStr(bs, row);
-            nc.addNum(lookupTable.get(bs.bytesToString()), 0);
+            nc.addNum(lookupTable.get(bs.toSanitizedString()), 0);
           }
         }
       }
@@ -620,7 +620,7 @@ public class VecUtils {
       for (int i = 0; i < c.len(); i++) {
         if (!c.isNA(i)) {
           c.atStr(bs, i);
-          _uniques.put(bs.bytesToString(), _placeHolder);
+          _uniques.put(bs.toSanitizedString(), _placeHolder);
         }
       }
     }
