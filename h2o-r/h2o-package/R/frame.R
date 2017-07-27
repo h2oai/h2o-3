@@ -3122,7 +3122,7 @@ destination_frame.guess <- function(x) {
 #' options(op)
 use.package <- function(package, 
                         version="1.9.8"[package=="data.table"], 
-                        use=getOption("h2o.use.data.table", FALSE)[package=="data.table"]) {
+                        use=getOption("h2o.use.data.table", TRUE)[package=="data.table"]) {
   ## methods that depends on use.package default arguments (to have control in single place):
   # as.h2o.data.frame
   # as.data.frame.H2OFrame
@@ -3242,7 +3242,7 @@ as.h2o.Matrix <- function(x, destination_frame="", ...) {
   if ( destination_frame=="" ) # .h2o.readSVMLight wont handle ""
     destination_frame <- .key.make("Matrix") # only used if `x` variable name not valid key
 
-  if (use.package("data.table",use=getOption("h2o.use.data.table", TRUE)) && use.package("slam", version="0.1.40", TRUE)) {
+  if (use.package("data.table") && use.package("slam", version="0.1.40", TRUE)) {
     drs <- slam::as.simple_triplet_matrix(x)# need to convert sparse matrix x to a simple triplet matrix format
     thefile <- tempfile()
     .h2o.write_stm_svm(drs, file = thefile)
