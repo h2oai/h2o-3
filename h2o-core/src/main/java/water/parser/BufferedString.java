@@ -1,6 +1,5 @@
 package water.parser;
 
-import com.google.common.base.Charsets;
 import water.AutoBuffer;
 import water.Iced;
 import water.util.StringUtils;
@@ -99,7 +98,12 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
     return _buf == null ? null : StringUtils.toString(_buf, Math.max(0, _off), Math.min(_buf.length, _len));
   }
 
-  public String bytesToString() {
+  /**
+   * Converts this BufferedString into an ASCII String where all original non-ASCII characters
+   * are represented in a hexadecimal notation.
+   * @return Sanitized String value (safe to use eg. in domains).
+   */
+  public String toSanitizedString() {
     StringBuilder sb = new StringBuilder(_len * 2);
     Formatter formatter = new Formatter(sb);
     boolean inHex = false;
@@ -167,21 +171,20 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
     }
     return false;
   }
- 
-  public boolean sameString(String str) {
+
+  /**
+   * Tests whether this BufferedString is equal to a given ASCII string
+   * @param str string sequence made of ASCII characters (0..127)
+   * @return true if this BufferedString represents a given ASCII String, false if sequences differ or if the test
+   * string is not actually made of just ASCII characters
+   */
+  public boolean equalsAsciiString(String str) {
     if (str == null || str.length() != _len) return false;
     for (int i = 0; i < _len; ++i)
-      if ((0xFF&_buf[_off + i]) != str.charAt(i)) return false;
+      if (_buf[_off + i] == str.charAt(i)) return false;
     return true;
   }
-  
-  public boolean isOneOf(String[] samples) {
-    if (samples != null) {
-      for (String sample : samples) if (sameString(sample)) return true;
-    }
-    return false;
-  }
-  
+
   // Thou Shalt Not use accessors in performance critical code - because it
   // obfuscates the code's cost model.  All file-local uses of the accessors
   // has been stripped, please do not re-insert them.  In particular, the
