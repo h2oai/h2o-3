@@ -388,6 +388,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     if(_worked    != remote._worked    ) differ = true;
     if(_msg       != remote._msg       ) differ = true;
     if(_max_runtime_msecs != remote._max_runtime_msecs) differ = true;
+    if(! Arrays.equals(_warns, remote._warns)) differ = true;
     if( differ )
       synchronized(this) { 
         _stop_requested = remote._stop_requested;
@@ -398,6 +399,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
         _worked    = remote._worked    ;
         _msg       = remote._msg       ;
         _max_runtime_msecs = remote._max_runtime_msecs;
+        _warns     = remote._warns;
       }
   }
   @Override public Class<KeyV3.JobKeyV3> makeSchema() { return KeyV3.JobKeyV3.class; }
