@@ -359,7 +359,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           double[] variances = svd.getVariances();
           computeStatsFillModel(model, dinfo, variances, rightEigenvectors, gram, model._output._nobs);
           model._output._training_time_ms.add(System.currentTimeMillis());
-          // TODO: replace Jama SVD with MTJ SVD in SVD.java
           // generate variables for scoring_history generation
           LinkedHashMap<String, ArrayList> scoreTable = new LinkedHashMap<>();
           scoreTable.put("Timestamp", model._output._training_time_ms);

@@ -41,7 +41,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     }
 
     // always set DEFAULT_SVD_IMPLEMENTATION to the fastest SVD implementation available
-    public static final SVDImplementation DEFAULT_SVD_IMPLEMENTATION = SVDImplementation.MTJ;
+    public static final SVDImplementation DEFAULT_SVD_IMPLEMENTATION = SVDImplementation.EVD_MTJ_SYMM;
     public SVDImplementation _svdImplementation = DEFAULT_SVD_IMPLEMENTATION;
 
     public SVDImplementation getSvdImplementation() {
