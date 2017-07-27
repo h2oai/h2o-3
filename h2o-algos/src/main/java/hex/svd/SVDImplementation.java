@@ -6,7 +6,12 @@ package hex.svd;
  */
 public enum SVDImplementation {
   EVD_MTJ_DENSEMATRIX, EVD_MTJ_SYMM, MTJ, JAMA;
-
+  final static SVDImplementation fastestImplementation = EVD_MTJ_SYMM;    // set to the fastest implementation
+  
+  public static SVDImplementation getFastestImplementation() {
+    return fastestImplementation;
+  }
+  
   public static String[] getEnumNames() {
     SVDImplementation[] svdImplementations = values();
     String[] enumNames = new String[svdImplementations.length];
