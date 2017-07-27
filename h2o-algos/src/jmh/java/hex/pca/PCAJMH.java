@@ -33,6 +33,7 @@ public class PCAJMH {
 		long seed = 12345;
 		
 		try {
+			// TODO update following comment
 	    /* NOTE get the data this way
 	     * 1) ./gradlew syncSmalldata
 	     * 2) unzip SDSS_quasar.txt.zip
