@@ -219,24 +219,7 @@ open target/docs-website/h2o-docs/index.html
 
 ### 4.2. Setup on all Platforms
 
-> **Note**: The following instructions assume you have installed the latest version of [**pip**](https://pip.pypa.io/en/latest/installing/#install-or-upgrade-pip), which is installed with the latest version of [**Python**](https://www.python.org/downloads/).  
-
-##### Install required Python packages (prepending with `sudo` if unsuccessful)
-
-    pip install grip
-    pip install tabulate
-    pip install wheel
-    pip install scikit-learn
-
-Python tests require:
-
-    pip install scikit-learn
-    pip install numpy
-    pip install scipy
-    pip install pandas
-    pip install statsmodels
-    pip install patsy
-    pip install future
+The requirements for building / installing `h2o` are listed in file [h2o-py/conda/h2o/meta.yaml](h2o-py/conda/h2o/meta.yaml) file. Install the required Python packages (prepending with `sudo` if unsuccessful).
 
 ### 4.3. Setup on Windows
 
