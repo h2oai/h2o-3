@@ -15,7 +15,10 @@ This option specifies the tolerance value by which a model must improve before t
 
 then the model will stop training after reaching three scoring events in a row in which a model's missclassication value does not improve by **1e-3**. These stopping options are used to increase performance by restricting the number of models that get built. 
 
-**Note**: ``stopping_rounds`` must be enabled for ``stopping_metric`` or ``stopping_tolerance`` to work.
+**Notes**: 
+
+- ``stopping_rounds`` must be enabled for ``stopping_metric`` or ``stopping_tolerance`` to work.
+- For all supported algorithms except AutoML, this value defaults to 0.001. In AutoML, this value defaults to 0.001 if the  dataset is at least 1 million rows; otherwise it defaults to a bigger value determined by the size of the dataset and the non-NA-rate.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
