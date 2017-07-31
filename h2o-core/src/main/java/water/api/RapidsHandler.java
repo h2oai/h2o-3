@@ -1,6 +1,5 @@
 package water.api;
 
-import org.reflections.Reflections;
 import water.H2O;
 import water.Key;
 import water.api.schemas3.*;
@@ -8,16 +7,22 @@ import water.api.schemas3.RapidsHelpV3.RapidsExpressionV3;
 import water.api.schemas4.InputSchemaV4;
 import water.api.schemas4.SessionIdV4;
 import water.exceptions.H2OIllegalArgumentException;
-import water.rapids.ast.AstRoot;
 import water.rapids.Rapids;
 import water.rapids.Session;
 import water.rapids.Val;
+import water.rapids.ast.AstRoot;
 import water.util.Log;
 import water.util.StringUtils;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Modifier;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public class RapidsHandler extends Handler {
 
@@ -59,18 +64,39 @@ public class RapidsHandler extends Handler {
     }
   }
 
+  private static Class[] getRapidsClasses(){
+    try {
+      InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("rapids.list");
+      java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\n");
+      ArrayList<String> names = new ArrayList<>();
+      while(s.hasNext()){
+        names.add(s.next());
+      }
+      Class[] rapids = new Class[names.size()];
+      for(int i = 0; i< rapids.length; i++){
+        rapids[i] = Class.forName(names.get(i));
+      }
+      return rapids;
+    } catch (ClassNotFoundException e) {
+      throw new RuntimeException("All rapids classes need to be available!");
+    }
+  }
+
   public RapidsHelpV3 genHelp(int version, SchemaV3 noschema) {
-    Reflections reflections = new Reflections("water.rapids");
+
+
     RapidsHelpV3 res = new RapidsHelpV3();
-    res.syntax = processAstClass(AstRoot.class, reflections);
+    res.syntax = processAstClass(AstRoot.class, getRapidsClasses());
     return res;
   }
 
-  private RapidsExpressionV3 processAstClass(Class<? extends AstRoot> clz, Reflections refl) {
+  private RapidsExpressionV3 processAstClass(Class<? extends AstRoot> clz, Class[] rapids) {
     ArrayList<RapidsExpressionV3> subs = new ArrayList<>();
-    for (Class<? extends AstRoot> subclass : refl.getSubTypesOf(clz))
-      if (subclass.getSuperclass() == clz)
-        subs.add(processAstClass(subclass, refl));
+    for (Class subclass : rapids) {
+      if (subclass != clz && subclass.getSuperclass() == clz) {
+        subs.add(processAstClass(subclass, rapids));
+      }
+    }
 
     RapidsExpressionV3 target = new RapidsExpressionV3();
     target.name = clz.getSimpleName();
@@ -127,5 +153,6 @@ public class RapidsHandler extends Handler {
       return out;
     }
   }
+
 
 }
