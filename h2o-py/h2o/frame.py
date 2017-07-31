@@ -1239,7 +1239,7 @@ class H2OFrame(object):
         """
         if can_use_pandas() and use_pandas:
             import pandas
-            return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False)
+            return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False, skip_blank_lines=False)
         frame = [row for row in csv.reader(StringIO(self.get_frame_data()))]
         if not header:
             frame.pop(0)
