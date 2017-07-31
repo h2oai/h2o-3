@@ -72,7 +72,8 @@ ext {
       project(':h2o-jaas-pam'),
       project(':h2o-automl'),
       project(':h2o-genmodel-ext-xgboost'),
-      project(':h2o-ext-xgboost')
+      project(':h2o-ext-xgboost'),
+      project(':h2o-ext-krbstandalone')
     ]
 
     javaProjects = [
@@ -92,7 +93,8 @@ ext {
       project(':h2o-jaas-pam'),
       project(':h2o-automl'),
       project(':h2o-genmodel-ext-xgboost'),
-      project(':h2o-ext-xgboost')
+      project(':h2o-ext-xgboost'),
+      project(':h2o-ext-krbstandalone')
     ]
 
     scalaProjects = [
