@@ -417,10 +417,12 @@ Supported Versions
 -  CDH 5.6
 -  CDH 5.7
 -  CDH 5.8
+-  CDH 5.10
 -  HDP 2.2
 -  HDP 2.3
 -  HDP 2.4
 -  HDP 2.5
+-  HDP 2.6
 -  MapR 4.0
 -  MapR 5.0
 -  MapR 5.1
