@@ -19,13 +19,13 @@ import java.util.Arrays;
 public class AstSetDomain extends AstPrimitive {
   @Override
   public String[] args() {
-    return new String[]{"ary", "newDomains"};
+    return new String[]{"ary", "inPlace", "newDomains"};
   }
 
   @Override
   public int nargs() {
-    return 1 + 2;
-  } // (setDomain x [list of strings])
+    return 1 + 3;
+  } // (setDomain x inPlace [list of strings])
 
   @Override
   public String str() {
@@ -35,19 +35,24 @@ public class AstSetDomain extends AstPrimitive {
   @Override
   public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame f = stk.track(asts[1].exec(env)).getFrame();
-    String[] _domains = ((AstStrList) asts[2])._strs;
+    boolean inPlace = asts[2].exec(env).getNum() == 1;
+    String[] newDomains = ((AstStrList) asts[3])._strs;
     if (f.numCols() != 1)
       throw new IllegalArgumentException("Must be a single column. Got: " + f.numCols() + " columns.");
-    Vec v = f.anyVec();
-    if (!v.isCategorical())
-      throw new IllegalArgumentException("Vector must be a factor column. Got: " + v.get_type_str());
-    if (_domains != null && _domains.length != v.domain().length) {
+    if (! f.vec(0).isCategorical())
+      throw new IllegalArgumentException("Vector must be a factor column. Got: " + f.vec(0).get_type_str());
+    Vec v;
+    if (inPlace)
+      v = f.vec(0);
+    else
+      v = env._ses.copyOnWrite(f, new int[]{0})[0]; // copy-on-write
+    if (newDomains != null && newDomains.length != v.domain().length) {
       // in this case we want to recollect the domain and check that number of levels matches _domains
       VecUtils.CollectDomainFast t = new VecUtils.CollectDomainFast((int) v.max());
       t.doAll(v);
       final long[] dom = t.domain();
-      if (dom.length != _domains.length)
-        throw new IllegalArgumentException("Number of replacement factors must equal current number of levels. Current number of levels: " + dom.length + " != " + _domains.length);
+      if (dom.length != newDomains.length)
+        throw new IllegalArgumentException("Number of replacement factors must equal current number of levels. Current number of levels: " + dom.length + " != " + newDomains.length);
       new MRTask() {
         @Override
         public void map(Chunk c) {
@@ -61,7 +66,7 @@ public class AstSetDomain extends AstPrimitive {
         }
       }.doAll(v);
     }
-    v.setDomain(_domains);
+    v.setDomain(newDomains);
     DKV.put(v);
     return new ValFrame(f);
   }
