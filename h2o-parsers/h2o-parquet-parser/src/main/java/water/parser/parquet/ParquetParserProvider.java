@@ -1,20 +1,14 @@
 package water.parser.parquet;
 
 import org.apache.parquet.hadoop.VecParquetReader;
-import org.reflections.ReflectionUtils;
 import water.DKV;
-import water.H2O;
 import water.Job;
 import water.Key;
 import water.fvec.ByteVec;
-import water.fvec.FileVec;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.parser.*;
 import water.util.ArrayUtils;
-
-import java.io.IOException;
-import java.lang.reflect.Field;
 
 /**
  * Parquet parser provider.
