@@ -1812,7 +1812,8 @@ h2o.nlevels <- function(x) {
 #' \donttest{
 #' h2o.init()
 #' iris.hex <- as.h2o(iris)
-#' iris.hex$Species <- h2o.setLevels(iris.hex$Species, c("setosa", "versicolor", "caroliniana"), in.place = FALSE)
+#' new.levels <- c("setosa", "versicolor", "caroliniana")
+#' iris.hex$Species <- h2o.setLevels(iris.hex$Species, new.levels, in.place = FALSE)
 #' h2o.levels(iris.hex$Species)
 #' }
 h2o.setLevels <- function(x, levels, in.place = TRUE) .newExpr("setDomain", chk.H2OFrame(x), in.place, levels)
