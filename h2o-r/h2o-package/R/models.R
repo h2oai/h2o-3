@@ -1007,7 +1007,7 @@ h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 h2o.coef <- function(object) {
   if (is(object, "H2OModel")) {
     if (is.null(object@model$coefficients_table)) stop("Can only extract coefficeints from GLMs")
-    if (object@parameters$family != "multinomial") {
+    if (object@allparameters$family != "multinomial") {
       coefs <- object@model$coefficients_table$coefficients
       names(coefs) <- object@model$coefficients_table$names
     } else {
