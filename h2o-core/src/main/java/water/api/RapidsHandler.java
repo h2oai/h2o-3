@@ -14,15 +14,7 @@ import water.rapids.ast.AstRoot;
 import water.util.Log;
 import water.util.StringUtils;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.Modifier;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 public class RapidsHandler extends Handler {
 
@@ -64,54 +56,28 @@ public class RapidsHandler extends Handler {
     }
   }
 
-  private static Class[] getRapidsClasses(){
-    try {
-      InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("rapids.list");
-      java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\n");
-      ArrayList<String> names = new ArrayList<>();
-      while(s.hasNext()){
-        names.add(s.next());
-      }
-      Class[] rapids = new Class[names.size()];
-      for(int i = 0; i< rapids.length; i++){
-        rapids[i] = Class.forName(names.get(i));
-      }
-      return rapids;
-    } catch (ClassNotFoundException e) {
-      throw new RuntimeException("All rapids classes need to be available!");
-    }
-  }
-
   public RapidsHelpV3 genHelp(int version, SchemaV3 noschema) {
+    Iterator<AstRoot> iterator = ServiceLoader.load(AstRoot.class).iterator();
+    List<AstRoot> rapids = new ArrayList<>();
+    while (iterator.hasNext()) {
+      rapids.add(iterator.next());
+    }
 
+    ArrayList<RapidsExpressionV3> expressions = new ArrayList<>();
+    for(AstRoot expr: rapids){
+      expressions.add(processAstClass(expr, rapids));
+    }
 
     RapidsHelpV3 res = new RapidsHelpV3();
-    res.syntax = processAstClass(AstRoot.class, getRapidsClasses());
+    res.expressions = expressions.toArray(new RapidsExpressionV3[expressions.size()]);
     return res;
   }
 
-  private RapidsExpressionV3 processAstClass(Class<? extends AstRoot> clz, Class[] rapids) {
-    ArrayList<RapidsExpressionV3> subs = new ArrayList<>();
-    for (Class subclass : rapids) {
-      if (subclass != clz && subclass.getSuperclass() == clz) {
-        subs.add(processAstClass(subclass, rapids));
-      }
-    }
-
+  private RapidsExpressionV3 processAstClass(AstRoot expr, List<AstRoot> rapids) {
     RapidsExpressionV3 target = new RapidsExpressionV3();
-    target.name = clz.getSimpleName();
-    target.is_abstract = Modifier.isAbstract(clz.getModifiers());
-    if (!target.is_abstract) {
-      try {
-        AstRoot m = clz.newInstance();
-        target.pattern = m.example();
-        target.description = m.description();
-      }
-      catch (IllegalAccessException e) { throw H2O.fail("A"); }
-      catch (InstantiationException e) { throw H2O.fail("B"); }
-    }
-    target.sub = subs.toArray(new RapidsExpressionV3[subs.size()]);
-
+    target.name = expr.getClass().getSimpleName();
+    target.pattern = expr.example();
+    target.description = expr.description();
     return target;
   }
 

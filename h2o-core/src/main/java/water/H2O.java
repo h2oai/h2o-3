@@ -7,11 +7,8 @@ import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
-
 import water.UDPRebooted.ShutdownTsk;
-import water.api.RestApiExtension;
 import water.api.RequestServer;
-import water.api.SchemaServer;
 import water.exceptions.H2OFailException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.init.*;

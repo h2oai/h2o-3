@@ -13,7 +13,6 @@ water.rapids.ast.prims.string.AstCountMatches
 water.rapids.ast.prims.math.AstExp
 water.rapids.ast.prims.time.AstMonth
 water.rapids.ast.prims.time.AstHour
-water.rapids.ast.prims.search.AstWhichFunc
 water.rapids.ast.prims.reducers.AstMinNa
 water.rapids.ast.prims.assign.AstTmpAssign
 water.rapids.ast.prims.mungers.AstScale
@@ -45,7 +44,6 @@ water.rapids.ast.prims.time.AstDay
 water.rapids.ast.prims.operators.AstGt
 water.rapids.ast.prims.time.AstMktime
 water.rapids.ast.prims.operators.AstIntDiv
-water.rapids.ast.prims.reducers.AstRollupOp
 water.rapids.ast.prims.time.AstWeek
 water.rapids.ast.prims.timeseries.AstIsax
 water.rapids.ast.prims.reducers.AstAll
@@ -69,7 +67,6 @@ water.rapids.ast.prims.math.AstNot
 water.rapids.ast.prims.mungers.AstLevels
 water.rapids.ast.prims.string.AstTokenize
 water.rapids.ast.prims.reducers.AstTopN
-water.rapids.ast.AstRow
 water.rapids.ast.prims.mungers.AstAnyFactor
 water.rapids.ast.prims.math.AstGamma
 water.rapids.ast.params.AstStr
@@ -81,7 +78,6 @@ water.rapids.ast.prims.mungers.AstSetDomain
 water.rapids.ast.prims.time.AstSetTimeZone
 water.rapids.ast.prims.reducers.AstSumAxis
 water.rapids.ast.prims.reducers.AstMax
-water.rapids.ast.prims.math.AstUniOp
 water.rapids.ast.prims.string.AstRStrip
 water.rapids.ast.prims.reducers.AstProd
 water.rapids.ast.prims.math.AstCos
@@ -101,7 +97,6 @@ water.rapids.ast.prims.mungers.AstNLevels
 water.rapids.ast.prims.reducers.AstCumMin
 water.rapids.ast.prims.assign.AstRm
 water.rapids.ast.prims.time.AstMoment
-water.rapids.ast.prims.reducers.AstCumu
 water.rapids.ast.prims.mungers.AstGroupedPermute
 water.rapids.ast.prims.string.AstCountSubstringsWords
 water.rapids.ast.prims.mungers.AstSort
@@ -111,13 +106,11 @@ water.rapids.ast.prims.reducers.AstMaxNa
 water.rapids.ast.prims.operators.AstPow
 water.rapids.ast.prims.reducers.AstSdev
 water.rapids.ast.prims.operators.AstIntDivR
-water.rapids.ast.prims.reducers.AstNaRollupOp
 water.rapids.ast.prims.operators.AstMod
 water.rapids.ast.prims.search.AstWhichMin
 water.rapids.ast.prims.mungers.AstColSlice
 water.rapids.ast.prims.mungers.AstIsNa
 water.rapids.ast.prims.matrix.AstTranspose
-water.rapids.ast.AstBuiltin
 water.rapids.ast.prims.mungers.AstNrow
 water.rapids.ast.prims.operators.AstSub
 water.rapids.ast.prims.operators.AstModR
@@ -131,7 +124,6 @@ water.rapids.ast.prims.operators.AstAnd
 water.rapids.ast.prims.math.AstCosPi
 water.rapids.ast.prims.operators.AstLt
 water.rapids.ast.prims.advmath.AstHist
-water.rapids.ast.AstPrimitive
 water.rapids.ast.prims.mungers.AstColPySlice
 water.rapids.ast.prims.operators.AstMul
 water.rapids.ast.prims.mungers.AstNaOmit
@@ -149,9 +141,7 @@ water.rapids.ast.prims.reducers.AstAnyNa
 water.rapids.ast.prims.math.AstAtan
 water.rapids.ast.prims.math.AstTriGamma
 water.rapids.ast.prims.math.AstTan
-water.rapids.ast.AstParameter
 water.rapids.ast.prims.mungers.AstIsNumeric
-water.rapids.ast.prims.reducers.AstReducerOp
 water.rapids.ast.prims.misc.AstLs
 water.rapids.ast.prims.matrix.AstMMult
 water.rapids.ast.prims.mungers.AstPivot
@@ -177,7 +167,6 @@ water.rapids.ast.prims.timeseries.AstDiffLag1
 water.rapids.ast.prims.reducers.AstCumSum
 water.rapids.ast.prims.math.AstTanPi
 water.rapids.ast.prims.time.AstDayOfWeek
-water.rapids.ast.prims.time.AstTime
 water.rapids.ast.prims.math.AstRound
 water.rapids.ast.prims.mungers.AstAsNumeric
 water.rapids.ast.prims.misc.AstComma
@@ -185,7 +174,6 @@ water.rapids.ast.prims.mungers.AstAsCharacter
 water.rapids.ast.prims.time.AstMinute
 water.rapids.ast.prims.advmath.AstDistance
 water.rapids.ast.prims.math.AstNoOp
-water.rapids.ast.prims.operators.AstBinOp
 water.rapids.ast.prims.math.AstTanh
 water.rapids.ast.prims.reducers.AstNaCnt
 water.rapids.ast.prims.mungers.AstFilterNaCols
