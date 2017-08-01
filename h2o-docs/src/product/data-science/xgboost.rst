@@ -50,7 +50,7 @@ Defining an XGBoost Model
    
     **Note**: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
--  `stopping_rounds <algo-params/stopping_rounds.html>`__: Stops training when the option selected for **stopping\_metric** doesn't improve for the specified number of training rounds, based on a simple moving average. To disable this feature, specify ``0``. The metric is computed on the validation data (if provided); otherwise, training data is used.
+-  `stopping_rounds <algo-params/stopping_rounds.html>`__: Stops training when the option selected for **stopping\_metric** doesn't improve for the specified number of training rounds, based on a simple moving average. This value defaults to ``0`` (disabled). The metric is computed on the validation data (if provided); otherwise, training data is used.
    
    **Note**: If cross-validation is enabled:
 
@@ -73,13 +73,13 @@ Defining an XGBoost Model
     - ``misclassification``
     - ``mean_per_class_error``
 
--  `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value.
+-  `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value. This value defaults to 0.001.
 
--  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+-  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. This option defaults to 0 (disabled) by default.
 
--  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations.
+-  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This option defaults to -1 (time-based random number).
 
--  `distribution <algo-params/distribution.html>`__: Specify the distribution (i.e., the loss function). The options are AUTO, bernoulli, multinomial, gaussian, poisson, gamma, or tweedie.
+-  `distribution <algo-params/distribution.html>`__: Specify the distribution (i.e., the loss function). The options are AUTO, bernoulli, multinomial, gaussian, poisson, gamma, or tweedie. 
 
   - If the distribution is ``bernoulli``, the the response column must be 2-class categorical
   - If the distribution is ``multinomial``, the response column must be categorical.
@@ -88,11 +88,13 @@ Defining an XGBoost Model
   - If the distribution is ``gaussian``, the response column must be numeric.
   - If the distribution is ``gamma``, the response column must be numeric.
 
--  `tweedie_power <algo-params/tweedie_power.html>`__: (Only applicable if *Tweedie* is specified for **distribution**) Specify the Tweedie power. The range is from 1 to 2. For a normal distribution, enter ``0``. For Poisson distribution, enter ``1``. For a gamma distribution, enter ``2``. For a compound Poisson-gamma distribution, enter a value greater than 1 but less than 2. For more information, refer to `Tweedie distribution <https://en.wikipedia.org/wiki/Tweedie_distribution>`__.
+  AUTO distribution is performed by default. In this case, the algorithm will guess the model type based on the response column type. If the response column type is numeric, AUTO defaults to “gaussian”; if categorical, AUTO defaults to bernoulli or multinomial depending on the number of response categories.
+
+-  `tweedie_power <algo-params/tweedie_power.html>`__: (Only applicable if *Tweedie* is specified for **distribution**) Specify the Tweedie power. This value defaults to 1.5, and the range is from 1 to 2. For a normal distribution, enter ``0``. For Poisson distribution, enter ``1``. For a gamma distribution, enter ``2``. For a compound Poisson-gamma distribution, enter a value greater than 1 but less than 2. For more information, refer to `Tweedie distribution <https://en.wikipedia.org/wiki/Tweedie_distribution>`__.
 
 -  `categorical_encoding <algo-params/categorical_encoding.html>`__: Specify one of the following encoding schemes for handling categorical features:
 
-  - ``auto`` or ``AUTO``: Allow the algorithm to decide (default). In XGBoost, the algorithm will automatically perform ``label_encoder`` encoding.
+  - ``auto`` or ``AUTO``: Allow the algorithm to decide. In XGBoost, the algorithm will automatically perform ``label_encoder`` encoding.
   - ``enum`` or ``Enum``: 1 column per categorical feature
   - ``one_hot_internal`` or ``OneHotInternal``: On the fly N+1 new cols for categorical features with N levels
   - ``one_hot_explicit`` or ``OneHotExplicit``: N+1 new columns for categorical features with N levels
@@ -104,43 +106,41 @@ Defining an XGBoost Model
 
   **Note**: This value defaults to ``label_encoder``. Similarly, if ``auto`` is specified, then the algorithm performs ``label_encoder`` encoding. 
 
--  **quiet_mode**: Specify whether to enable quiet mode.
+-  **quiet_mode**: Specify whether to enable quiet mode. This option is enabled by default.
 
--  `ntrees <algo-params/ntrees.html>`__: Specify the number of trees to build.
+-  `ntrees <algo-params/ntrees.html>`__ (alias: ``n_estimators``): Specify the number of trees to build. This value defaults to 50.
 
--  `max_depth <algo-params/max_depth.html>`__: Specify the maximum tree depth.
+-  `max_depth <algo-params/max_depth.html>`__: Specify the maximum tree depth. This value defaults to 5. Higher values will make the model more complex and can lead to overfitting. Setting this value to 0 specifies no limit. Note that a max_depth limit must be used if ``grow_policy=depthwise`` (default). 
 
--  `min_rows <algo-params/min_rows.html>`__: Specify the minimum number of observations for a leaf (``nodesize`` in R).
+-  `min_rows <algo-params/min_rows.html>`__ (alias: ``min_child_weight``): Specify the minimum number of observations for a leaf (``nodesize`` in R). This value defaults to 10. 
 
--  **min_child_weight**: Specifies the fewest allowed (weighted) observations in a leaf. This value defaults to 10.
+-  **min_child_weight**: This is the same as ``min_rows`` except that this value defaults to 0.
 
--  `learn_rate <algo-params/learn_rate.html>`__: Specify the learning rate. The range is 0.0 to 1.0. This value defaults to 0.1.
+-  `learn_rate <algo-params/learn_rate.html>`__ (alias: ``eta``): Specify the learning rate by which to shrink the feature weights. Shrinking feature weights after each boosting step makes the boosting process more conservative and prevents overfitting. The range is 0.0 to 1.0. This value defaults to 0.1.
 
--  **eta**: This option is the same as ``learn_rate``, except that this has a default of 0.
+-  **eta**: This is the same as ``learn_rate`` except that this value defaults to 0.
 
--  `sample_rate <algo-params/sample_rate.html>`__: Specify the row sampling rate (x-axis). The range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
+-  `sample_rate <algo-params/sample_rate.html>`__ (alias: ``subsample``): Specify the row sampling ratio of the training instance (x-axis). For example, setting this value to 0.5 tells XGBoost to randomly collected half of the data instances to grow trees. This value defaults to 1, and the range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
 
--  **subsample**: This option is the same as ``sample_rate``, except that this has a default of 0.
+-  **subsample**: This is the same as ``sample_rate`` except that this value defaults to 0.
 
--  `col_sample_rate <algo-params/col_sample_rate.html>`__: Specify the column sampling rate (y-axis). The range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
-
--  **colsample_bylevel**: This option is the same as ``col_sample_rate`` except that this has a default of 0.
+-  `col_sample_rate <algo-params/col_sample_rate.html>`__ (alias: ``colsample_bylevel``): Specify the column sampling rate (y-axis) for each split in each level. This value defaults to 1.0, and the range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
    
--  `col_sample_rate_per_tree <algo-params/col_sample_rate_per_tree.html>`__: Specify the column sample rate per tree. This can be a value from 0.0 to 1.0. Note that it is multiplicative with ``col_sample_rate``, so setting both parameters to 0.8, for example, results in 64% of columns being considered at any given node to split.
+-  **colsample_bylevel**: This is the same as ``col_sample_rate`` except that this value defaults to 0.
 
--  **colsample_bytree**: This option is the same as ``col_sample_rate_per_tree`` except that this has a default of 0.
+-  `col_sample_rate_per_tree <algo-params/col_sample_rate_per_tree.html>`__ (alias: ``colsample_bytree``: Specify the column subsampling rate per tree. This value defaults to 1.0 and can be a value from 0.0 to 1.0. Note that it is multiplicative with ``col_sample_rate``, so setting both parameters to 0.8, for example, results in 64% of columns being considered at any given node to split.
 
--  `max_abs_leafnode_pred <algo-params/max_abs_leafnode_pred.html>`__: When building a GBM classification model, this option reduces overfitting by limiting the maximum absolute value of a leaf node prediction. This option defaults to Double.MAX_VALUE.
+-  **colsample_bytree**: This is the sam eas ``col_sample_rate_per_tree`` except that this value defaults to 0. 
 
--  **max_delta_step**: This option is the same as ``max_abs_leafnode_pred`` except that this has a default of 0.
+-  `max_abs_leafnode_pred <algo-params/max_abs_leafnode_pred.html>`__ (alias: ``max_delta_step``): Specifies the maximum delta step allowed in each tree’s weight estimation. This value defaults to 3.4028235e+38. Setting this value to 0 specifies no constraint. Setting this value to be greater than 0 can help making the update step more conservative and reduce overfitting by limiting the absolute value of a leafe node prediction. This option also helps in logistic regression when a class is extremely imbalanced. 
 
--  `score_tree_interval <algo-params/score_tree_interval.html>`__: Score the model after every so many trees. Disabled if set to 0.
+-  **max_delta_step**: This is the same as ``max_abs_leafnode_pred`` except that this value defaults to 0.
 
--  `min_split_improvement <algo-params/min_split_improvement.html>`__: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range.  
+-  `score_tree_interval <algo-params/score_tree_interval.html>`__: Score the model after every so many trees. This value is set to 0 (disabled) by default.
 
--  **tree_method**: Specify the tree method. This can be one of the following: "auto", "exact", "approx", or "hist". This value defaults to ``"auto"``.
+-  `min_split_improvement <algo-params/min_split_improvement.html>`__ (alias: ``gamma``): The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range. This value defaults to 0.
 
--  **max_bin**: When ``tree_method="hist"``, specify the maximum number of bins. This value defaults to 255.
+-  **max_bin**: When ``tree_method="hist"``, specify the maximum number of bins for binning continuous features. This value defaults to 255.
 
 -  **num_leaves**: When ``tree_method="hist"``, specify the maximum number of leaves to include each tree. This value defaults to 255.
 
@@ -148,21 +148,32 @@ Defining an XGBoost Model
 
 -  **min_data_in_leaf**: When ``tree_method="hist"``, specify the mininum data in a leaf to keep splitting. This value defaults to 0.
 
--  **grow_policy**: Specify a grow policy of "depthwise" or "lossguide". "depthwise" is standard GBM; "lossguide" is light GBM. This value defaults to "depthwise".
+-  **tree_method**: Specify the construction tree method to use. This can be one of the following: 
 
--  **booster**: Specify the booster type. This can be one of the following: "gbtree", "gblinear", or "dart". This value defaults to "gbtree".
+   - ``auto`` (default): Allow the algorithm to choose the best method. For small to medium dataset, ``exact``  will be used. For very large datasets, ``approx`` will be used.
+   - ``exact``: Use the exact greedy method.
+   - ``approx``: Use an approximate greedy method.
+   - ``hist``: Use a fast histogram optimized approximate greedy method.
 
--  **sample_type**: When ``booster="dart"``, specify whether the sampling type should be "uniform" or "weighted". This value defaults to "uniform".
+-  **grow_policy**: Specify the way that new nodes are added to the tree. "depthwise" (default) splits at nodes that are closest to the root; "lossguide" splits at nodes with the highest loss change. Note that when the grow policy is "depthwise", then ``max_depth`` cannot be 0 (unlimited).
 
--  **normalize_type**: When ``booster="dart"``, specify whether the normalize type should be "tree" or "forest". This value defaults to "tree".
+-  **booster**: Specify the booster type. This can be one of the following: "gbtree", "gblinear", or "dart". Note that "gbtree" and "dart" use a tree-based model while "gblinear" uses linear function. This value defaults to "gbtree".
 
--  **rate_drop**: When ``booster="dart"``, specify a float value from 0 to 1 for the rate drop. This value defaults to 0.
+-  **sample_type**: When ``booster="dart"``, specify whether the sampling type should be one of the following:
 
--  **one_drop**: When ``booster="dart"``, specify whether to enable one drop. This value defaults to FALSE.
+  -  ``uniform`` (default): Dropped trees are selected uniformly.
+  -  ``weighted``: Dropped trees are selected in proportion to weight.
 
--  **skip_drop**: When ``booster="dart"``, specify whether a float value from 0 to 1 for the skip drop. This value defaults to 0.
+-  **normalize_type**: When ``booster="dart"``, specify whether the normalization method. This can be one of the following:
 
--  **gamma**: This is the same as ``min_split_improvement`` except that this has a default of 0.
+  -  ``tree`` (default): New trees have the same weight as each of the dropped trees 1 / (k + learning_rate).
+  -  ``forest``: New trees have the same weight as the sum of the dropped trees (1 / (1 + learning_rate).
+
+-  **rate_drop**: When ``booster="dart"``, specify a float value from 0 to 1 for the rate at which to drop previous trees during dropout. This value defaults to 0.0.
+
+-  **one_drop**: When ``booster="dart"``, specify whether to enable one drop, which causes at least one tree to always drop during the dropout. This value defaults to FALSE.
+
+-  **skip_drop**: When ``booster="dart"``, specify a float value from 0 to 1 for the skip drop. This determines the probability of skipping the dropout procedure during a boosting iteration. If a dropout is skipped, new trees are added in the same manner as "gbtree". Note that non-zero ``skip_drop`` has higher priority than ``rate_drop`` or ``one_drop``. This value defaults to 0.0.
 
 -  **reg_lamda**: Specify a value for L2 regularization. This defaults to 1.0.
 
@@ -173,6 +184,8 @@ Defining an XGBoost Model
 -  **backend**: Specify the backend type. This can be done of the following: "auto", "gpu", or "cpu". By default (auto), a GPU is used if available.
 
 -  **gpu_id**: If a GPU backend is available, specify Which GPU to use. This value defaults to 0.
+
+-  **verbose**: Print scoring history to the console. For XGBoost, metrics are per tree. This value defaults to FALSE.
 
 
 Light GBM

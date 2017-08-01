@@ -17,7 +17,7 @@ then the model will stop training after reaching three scoring events in a row i
 
 The default value for this option varies depending on the algorithm:
 
-- GBM/DRF: ``stopping_rounds`` defaults to 0 (disabled)
+- GBM/DRF/XGBoost: ``stopping_rounds`` defaults to 0 (disabled)
 - Deep Learning: ``stopping_rounds`` defaults to 5 
 - AutoML: ``stopping_rounds`` defaults 3
 
