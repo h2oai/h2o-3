@@ -425,6 +425,9 @@ class H2OFrame(object):
                 print(self.head().as_data_frame(fill_cache=True))
             else:
                 s = self.__unicode__()
+                stk = traceback.extract_stack()
+                if "IPython" in stk[-3][0]:
+                    s = "\n%s" % s
                 try:
                     print(s)
                 except UnicodeEncodeError:
