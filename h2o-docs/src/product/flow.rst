@@ -1180,7 +1180,16 @@ At a minimum, specify the training frame and the response column. (Note that by 
    :height: 423
    :width: 800
 
-After the run is completed, click the **View** button to view the Leaderboard.
+Click the **View** button to view the Leaderboard and/or monitor the current AutoML run.
+
+.. figure:: images/Flow_ViewButton.png
+   :alt: Running Job
+   :height: 438
+   :width: 1043
+
+After clicking **View**, the Leaderboard displays the list of models that were built in the order of ``mean_residual_deviance`` (best model first). While AutoML is running, click the **Monitor Live** button and scroll down to view a live feed of the User Feedback progress of AutoML. This section provides details about each step taken by AutoML, including the parameters being configured, the dataset's features, and model training information.
+
+**Note**: You can also monitor or view an AutoML run if the run was started through Python or R. In this case, open Flow, click **Admin > Jobs** from the top menu, then click the AutoML hyperlink.
 
 .. figure:: images/Flow_ViewLeaderboard.png
    :alt: Viewing the Leaderboard
