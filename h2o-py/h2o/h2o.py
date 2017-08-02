@@ -32,6 +32,7 @@ from .estimators.kmeans import H2OKMeansEstimator
 from .estimators.naive_bayes import H2ONaiveBayesEstimator
 from .estimators.random_forest import H2ORandomForestEstimator
 from .estimators.stackedensemble import H2OStackedEnsembleEstimator
+from .estimators.word2vec import H2OWord2vecEstimator
 from .expr import ExprNode
 from .frame import H2OFrame
 from .grid.grid_search import H2OGridSearch
@@ -704,6 +705,7 @@ def get_model(model_id):
     elif algo == "gbm":          m = H2OGradientBoostingEstimator()
     elif algo == "deepwater":    m = H2ODeepWaterEstimator()
     elif algo == "xgboost":      m = H2OXGBoostEstimator()
+    elif algo == "word2vec":     m = H2OWord2vecEstimator()
     elif algo == "deeplearning":
         if model_json["output"]["model_category"] == "AutoEncoder":
             m = H2OAutoEncoderEstimator()
