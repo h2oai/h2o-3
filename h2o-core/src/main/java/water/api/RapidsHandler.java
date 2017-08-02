@@ -65,7 +65,7 @@ public class RapidsHandler extends Handler {
 
     ArrayList<RapidsExpressionV3> expressions = new ArrayList<>();
     for(AstRoot expr: rapids){
-      expressions.add(processAstClass(expr, rapids));
+      expressions.add(processAstClass(expr));
     }
 
     RapidsHelpV3 res = new RapidsHelpV3();
@@ -73,7 +73,7 @@ public class RapidsHandler extends Handler {
     return res;
   }
 
-  private RapidsExpressionV3 processAstClass(AstRoot expr, List<AstRoot> rapids) {
+  private RapidsExpressionV3 processAstClass(AstRoot expr) {
     RapidsExpressionV3 target = new RapidsExpressionV3();
     target.name = expr.getClass().getSimpleName();
     target.pattern = expr.example();
