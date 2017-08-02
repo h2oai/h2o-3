@@ -996,7 +996,7 @@ class H2OFrame(object):
         :returns: A single-column H2OFrame with the desired levels.
         """
         assert_is_type(levels, [str])
-        return H2OFrame._expr(expr=ExprNode("setDomain", self, True, levels), cache=self._ex._cache)
+        return H2OFrame._expr(expr=ExprNode("setDomain", self, False, levels), cache=self._ex._cache)
 
 
     def set_names(self, names):
