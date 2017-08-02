@@ -6,6 +6,7 @@ import hex.genmodel.algos.gbm.GbmMojoReader;
 import hex.genmodel.algos.glm.GlmMojoReader;
 import hex.genmodel.algos.glrm.GlrmMojoReader;
 import hex.genmodel.algos.kmeans.KMeansMojoReader;
+import hex.genmodel.algos.svm.SvmMojoReader;
 import hex.genmodel.algos.word2vec.Word2VecMojoReader;
 import java.util.ServiceLoader;
 
@@ -68,6 +69,9 @@ public class ModelMojoFactory {
 
       case "K-means":
         return new KMeansMojoReader();
+
+      case "Support Vector Machine (*Spark*)":
+        return new SvmMojoReader();
 
       default:
         // Try to load MOJO reader via service
