@@ -73,12 +73,13 @@ final public class ExternalFrameWriterClient {
      * @param chunkId chunk index
      * @param totalNumRows total number of rows which is about to be sent
      */
-    public void createChunks(String frameKey, byte[] expectedTypes, int chunkId, int totalNumRows) throws IOException {
+    public void createChunks(String frameKey, byte[] expectedTypes, int chunkId, int totalNumRows, int[] maxVecSizes) throws IOException {
         ab.put1(ExternalFrameHandler.INIT_BYTE);
         ab.put1(ExternalFrameHandler.CREATE_FRAME);
         ab.putStr(frameKey);
         this.expectedTypes = expectedTypes;
         ab.putA1(expectedTypes);
+        ab.putA4(maxVecSizes);
         ab.putInt(totalNumRows);
         ab.putInt(chunkId);
         writeToChannel(ab, channel);
@@ -139,6 +140,17 @@ final public class ExternalFrameWriterClient {
         increaseCurrentColIdx();
     }
 
+    public void sendSparseVector(int[] indices, double[] values) throws IOException {
+        sendBoolean(ExternalFrameUtils.VECTOR_IS_SPARSE);
+        ExternalFrameUtils.sendIntArray(ab, channel, indices);
+        ExternalFrameUtils.sendDoubleArray(ab, channel, values);
+    }
+
+    public void sendDenseVector(double[] values) throws IOException {
+        sendBoolean(ExternalFrameUtils.VECTOR_IS_DENSE);
+        ExternalFrameUtils.sendDoubleArray(ab, channel, values);
+    }
+
     /**
      * This method ensures the application waits for all bytes to be written before continuing in the control flow.
      *
@@ -165,6 +177,6 @@ final public class ExternalFrameWriterClient {
     }
 
     private void increaseCurrentColIdx(){
-        currentColIdx = (currentColIdx+1) % expectedTypes.length;
+        currentColIdx = (currentColIdx + 1) % expectedTypes.length;
     }
 }

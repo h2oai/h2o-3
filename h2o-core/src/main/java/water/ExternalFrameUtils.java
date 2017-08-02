@@ -3,7 +3,6 @@ package water;
 import water.fvec.Vec;
 import water.network.SocketChannelFactory;
 
-import javax.print.DocFlavor;
 import java.io.IOException;
 import java.nio.channels.ByteChannel;
 import java.sql.Timestamp;
@@ -31,6 +30,13 @@ public class ExternalFrameUtils {
     public static final byte EXPECTED_DOUBLE = 7;
     public static final byte EXPECTED_STRING = 8;
     public static final byte EXPECTED_TIMESTAMP = 9;
+    public static final byte EXPECTED_VECTOR = 10;
+
+    /**
+     * Meta Information used to specify whether we should expect sparse or dense vector
+     */
+    public static final boolean VECTOR_IS_SPARSE = true;
+    public static final boolean VECTOR_IS_DENSE = false;
 
     /**
      * Get connection to a specific h2o node. The caller of this method is usually non-H2O node who wants to read H2O
@@ -46,57 +52,87 @@ public class ExternalFrameUtils {
         return getConnection(split[0], Integer.parseInt(split[1]));
     }
 
-    public static byte[] vecTypesFromExpectedTypes(byte[] expectedTypes){
-        byte[] vecTypes = new byte[expectedTypes.length];
-        for (int i = 0; i < expectedTypes.length; i++) {
-            switch (expectedTypes[i]){
-                case EXPECTED_BOOL: vecTypes[i] = Vec.T_NUM; break;
-                case EXPECTED_BYTE: vecTypes[i] = Vec.T_NUM; break;
-                case EXPECTED_CHAR: vecTypes[i] = Vec.T_NUM; break;
-                case EXPECTED_SHORT: vecTypes[i] = Vec.T_NUM; break;
-                case EXPECTED_INT: vecTypes[i] = Vec.T_NUM; break;
-                case EXPECTED_LONG: vecTypes[i] = Vec.T_NUM; break;
-                case EXPECTED_FLOAT: vecTypes[i] = Vec.T_NUM; break;
-                case EXPECTED_DOUBLE: vecTypes[i] = Vec.T_NUM; break;
-                case EXPECTED_STRING: vecTypes[i] = Vec.T_STR; break;
-                case EXPECTED_TIMESTAMP: vecTypes[i] = Vec.T_TIME; break;
-                default: throw new IllegalArgumentException("Unknown expected type: "+expectedTypes[i]);
+    public static byte[] vecTypesFromExpectedTypes(byte[] expectedTypes, int[] vecElemSizes){
+        int size = expectedTypes.length;
+        if(vecElemSizes != null && vecElemSizes.length == 0){
+            size = size - vecElemSizes.length;
+            // length is number of simple expected types
+            // plus length of all vectors. the expected
+            for(int vecSize: vecElemSizes){
+                size += vecSize;
             }
         }
-        return vecTypes;
+
+        byte[] vecTypes = new byte[size];
+        int vectorCount = 0;
+        int currentVecIdx = 0;
+        for (byte expectedType: expectedTypes) {
+            switch (expectedType) {
+                case EXPECTED_BOOL:
+                    vecTypes[currentVecIdx] = Vec.T_NUM;
+                    currentVecIdx++;
+                    break;
+                case EXPECTED_BYTE:
+                    vecTypes[currentVecIdx] = Vec.T_NUM;
+                    currentVecIdx++;
+                    break;
+                case EXPECTED_CHAR:
+                    vecTypes[currentVecIdx] = Vec.T_NUM;
+                    currentVecIdx++;
+                    break;
+                case EXPECTED_SHORT:
+                    vecTypes[currentVecIdx] = Vec.T_NUM;
+                    currentVecIdx++;
+                    break;
+                case EXPECTED_INT:
+                    vecTypes[currentVecIdx] = Vec.T_NUM;
+                    currentVecIdx++;
+                    break;
+                case EXPECTED_LONG:
+                    vecTypes[currentVecIdx] = Vec.T_NUM;
+                    currentVecIdx++;
+                    break;
+                case EXPECTED_FLOAT:
+                    vecTypes[currentVecIdx] = Vec.T_NUM;
+                    currentVecIdx++;
+                    break;
+                case EXPECTED_DOUBLE:
+                    vecTypes[currentVecIdx] = Vec.T_NUM;
+                    currentVecIdx++;
+                    break;
+                case EXPECTED_STRING:
+                    vecTypes[currentVecIdx] = Vec.T_STR;
+                    currentVecIdx++;
+                    break;
+                case EXPECTED_TIMESTAMP:
+                    vecTypes[currentVecIdx] = Vec.T_TIME;
+                    currentVecIdx++;
+                    break;
+                case EXPECTED_VECTOR:
+                    for (int j = 0; j < vecElemSizes[vectorCount]; j++) {
+                        vecTypes[currentVecIdx] = Vec.T_NUM;
+                        currentVecIdx++;
+                        break;
+                    }
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown expected type: " + expectedType);
+            }
+        }
+       return vecTypes;
+
     }
 
-    public static byte[] prepareExpectedTypes(Class[] javaClasses){
-        byte[] expectedTypes = new byte[javaClasses.length];
-        for (int i = 0; i < javaClasses.length; i++) {
-            Class clazz = javaClasses[i];
-            if(clazz == Boolean.class){
-                expectedTypes[i] = EXPECTED_BOOL;
-            } else if(clazz == Byte.class){
-                expectedTypes[i] = EXPECTED_BYTE;
-            }else if(clazz == Short.class){
-                expectedTypes[i] = EXPECTED_SHORT;
-            }else if(clazz == Character.class){
-                expectedTypes[i] = EXPECTED_CHAR;
-            }else if(clazz == Integer.class){
-                expectedTypes[i] = EXPECTED_INT;
-            }else if(clazz == Long.class){
-                expectedTypes[i] = EXPECTED_LONG;
-            }else if(clazz == Float.class){
-                expectedTypes[i] = EXPECTED_FLOAT;
-            }else if(clazz == Double.class){
-                expectedTypes[i] = EXPECTED_DOUBLE;
-            }else if(clazz == String.class){
-                expectedTypes[i] = EXPECTED_STRING;
-            }else if(clazz == Timestamp.class){
-                expectedTypes[i] = EXPECTED_TIMESTAMP;
-            }else{
-                throw new IllegalArgumentException("Unknown java class " + clazz);
-            }
-        }
-        return expectedTypes;
+    static void sendIntArray(AutoBuffer ab, ByteChannel channel, int[] data) throws IOException{
+        ab.putA4(data);
+        writeToChannel(ab, channel);
     }
-    
+
+    static void sendDoubleArray(AutoBuffer ab, ByteChannel channel, double[] data) throws IOException{
+        ab.putA8d(data);
+        writeToChannel(ab, channel);
+    }
+
     static void sendBoolean(AutoBuffer ab, ByteChannel channel, boolean data) throws IOException{
         sendBoolean(ab, channel, data ? (byte)1 : (byte)0);
     }
@@ -222,6 +258,35 @@ public class ExternalFrameUtils {
 
     public static boolean isNA(AutoBuffer ab, String data){
         return data != null && data.equals(STR_MARKER_NEXT_BYTE_FOLLOWS) && ab.get1() == MARKER_NA;
+    }
+
+    static int[] getStartPositions(int[] elemSizes){
+        int[] startPos = new int[elemSizes.length];
+        for(int i = 1; i<elemSizes.length; i++){
+            startPos[i] = startPos[ i - 1] + elemSizes[i - 1];
+        }
+        return startPos;
+    }
+
+    static int[] getElemSizes(byte[] expectedTypes, int[] vecElemSizes){
+        int vecCount = 0;
+        int[] elemSizes = new int[expectedTypes.length];
+        for(int i = 0; i<expectedTypes.length; i++){
+            switch (expectedTypes[i]){
+                case EXPECTED_BOOL:
+                case EXPECTED_BYTE:
+                case EXPECTED_CHAR:
+                case EXPECTED_SHORT:
+                case EXPECTED_INT:
+                case EXPECTED_LONG:
+                case EXPECTED_FLOAT:
+                case EXPECTED_DOUBLE:
+                case EXPECTED_STRING:
+                case EXPECTED_TIMESTAMP: elemSizes[i] = 1; break;
+                case EXPECTED_VECTOR: elemSizes[i] = vecElemSizes[vecCount]; break;
+            }
+        }
+        return elemSizes;
     }
 
     /**
