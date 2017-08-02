@@ -1112,7 +1112,7 @@ The following additional functions are available when viewing a model:
 - **Refresh**: Refreshes the model.
 - **Predict**: Use this model to make predictions.  
 - **Download POJO**: Generates a Plain Old Java Object (POJO) that can use the model outside of H2O. Note that a POJO can be run in standalone mode or it can be integrated into a platform, such as `Hadoop's Storm <https://github.com/h2oai/h2o-tutorials/tree/master/tutorials/streaming/storm>`__. To make the POJO work in your Java application, you will also need the ``h2o-genmodel.jar`` file (available via the **Download Generated Model** button or in ``h2o-3/h2o-genmodel/build/libs/h2o-genmodel.jar``). Note that POJOs are are not supported for XGBoost models.
-- **Download Model Deployment Package**: Downloads a zip file containing the Model ObJect, Optimized (MOJO). This file includes the outputting model information in JSON format. Note that MOJOs are only available for DRF, GBM, GLM, GLRM, K-Means, Word2vec, and XGBoost models. 
+- **Download Model Deployment Package (MOJO)**: Downloads a zip file containing the Model ObJect, Optimized (MOJO). This file includes the outputting model information in JSON format. Note that MOJOs are only available for DRF, GBM, GLM, GLRM, K-Means, Word2vec, and XGBoost models. 
 - **Export**: Exports a built model.
 - **Inspect**: Inspect the model. Clicking this button displays a data table of the model parameters and output information.
 - **Delete**: Deletes the model.
@@ -1180,7 +1180,16 @@ At a minimum, specify the training frame and the response column. (Note that by 
    :height: 423
    :width: 800
 
-After the run is completed, click the **View** button to view the Leaderboard.
+Click the **View** button to view the Leaderboard and/or monitor the current AutoML run.
+
+.. figure:: images/Flow_ViewButton.png
+   :alt: Running Job
+   :height: 438
+   :width: 1043
+
+After clicking **View**, the Leaderboard displays the list of models that were built in the order of ``mean_residual_deviance`` (best model first). While AutoML is running, click the **Monitor Live** button and scroll down to view a live feed of the User Feedback progress of AutoML. This section provides details about each step taken by AutoML, including the parameters being configured, the dataset's features, and model training information.
+
+**Note**: You can also monitor or view an AutoML run if the run was started through Python or R. In this case, open Flow, click **Admin > Jobs** from the top menu, then click the AutoML hyperlink.
 
 .. figure:: images/Flow_ViewLeaderboard.png
    :alt: Viewing the Leaderboard
