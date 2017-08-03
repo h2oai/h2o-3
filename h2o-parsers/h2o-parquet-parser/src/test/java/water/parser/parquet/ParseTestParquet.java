@@ -226,7 +226,7 @@ public class ParseTestParquet extends TestUtil {
         assertArrayEquals("Column names need to match!", ar("cat_field"), f.names());
         assertArrayEquals("Column types need to match!", ar(Vec.T_CAT), f.types());
         for (int row = 0; row < nrows(); row++) {
-          String catValue = row == 66 ? "weird" : "CAT_" + (row % 10);
+          String catValue = row == 66 ? "weird\0" : "CAT_" + (row % 10);
           assertEquals("Value in column string_field", catValue, f.vec(0).factor(f.vec(0).at8(row))
           );
         }
