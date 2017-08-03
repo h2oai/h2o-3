@@ -8,6 +8,11 @@ import java.io.IOException;
 
 /**
  * XGBoost Extension
+ *
+ * This is responsible for early initialization of
+ * XGBoost per cluster node. The registration
+ * of XGBoost REST API requires thix extension
+ * to be enabled.
  */
 public class XGBoostExtension extends AbstractH2OExtension {
 
