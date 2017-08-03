@@ -45,6 +45,11 @@ public abstract class SharedTreeMojoModel extends MojoModel {
      */
     protected byte[][] _compressed_trees_aux;
 
+    /**
+     * GLM's beta used for calibrating output probabilities using Platt Scaling.
+     */
+    protected double[] _calib_glm_beta;
+
 
   /**
    * Highly efficient (critical path) tree scoring
@@ -611,6 +616,18 @@ public abstract class SharedTreeMojoModel extends MojoModel {
         }
       }
     }
+  }
+
+  @Override
+  public boolean calibrateClassProbabilities(double[] preds) {
+    if (_calib_glm_beta == null)
+      return false;
+    assert _nclasses == 2; // only supported for binomial classification
+    assert preds.length == _nclasses + 1;
+    double p = GLM_logitInv((preds[1] * _calib_glm_beta[0]) + _calib_glm_beta[1]);
+    preds[1] = 1 - p;
+    preds[2] = p;
+    return true;
   }
 
 }

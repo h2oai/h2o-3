@@ -3,6 +3,8 @@ Importing a File
 
 Unlike the `upload <uploading-data.html>`__ function, which is a push from the client to the server, the import function is a parallelized reader and pulls information from the server from a location specified by the client. The path is a server-side path. This is a fast, scalable, highly optimized way to read data. H2O pulls the data from a data store and initiates the data transfer as a read operation.
 
+Refer to the `Supported File Formats <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/getting-data-into-h2o.html#supported-file-formats>`__ topic to ensure that you are using a supported file type.
+
 .. example-code::
    .. code-block:: r
 	

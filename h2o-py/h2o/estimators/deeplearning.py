@@ -1091,7 +1091,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         Compute variable importances for input features (Gedeon method) - can be slow for large networks.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``  (default: ``True``).
         """
         return self._parms.get("variable_importances")
 
@@ -1319,13 +1319,13 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Encoding scheme for categorical features
 
         One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``,
-        ``"label_encoder"``, ``"sort_by_response"``  (default: ``"auto"``).
+        ``"label_encoder"``, ``"sort_by_response"``, ``"enum_limited"``  (default: ``"auto"``).
         """
         return self._parms.get("categorical_encoding")
 
     @categorical_encoding.setter
     def categorical_encoding(self, categorical_encoding):
-        assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response"))
+        assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"))
         self._parms["categorical_encoding"] = categorical_encoding
 
 

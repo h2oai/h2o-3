@@ -79,6 +79,37 @@ public class ParquetParser extends Parser {
     return ppWriter.toParseSetup(metadataBytes);
   }
 
+  /**
+   * Overrides unsupported type conversions/mappings specified by the user.
+   * @param vec byte vec holding binary parquet data
+   * @param requestedTypes user-specified target types
+   * @return corrected types
+   */
+  public static byte[] correctTypeConversions(ByteVec vec, byte[] requestedTypes) {
+    byte[] metadataBytes = VecParquetReader.readFooterAsBytes(vec);
+    ParquetMetadata metadata = VecParquetReader.readFooter(metadataBytes, ParquetMetadataConverter.NO_FILTER);
+    byte[] roughTypes = roughGuessTypes(metadata.getFileMetaData().getSchema());
+    return correctTypeConversions(roughTypes, requestedTypes);
+  }
+
+  private static byte[] correctTypeConversions(byte[] roughTypes, byte[] requestedTypes) {
+    if (requestedTypes.length != roughTypes.length)
+      throw new IllegalArgumentException("Invalid column type specification: number of columns and number of types differ!");
+    byte[] resultTypes = new byte[requestedTypes.length];
+    for (int i = 0; i < requestedTypes.length; i++) {
+      if ((roughTypes[i] == Vec.T_NUM) || (roughTypes[i] == Vec.T_TIME)) {
+        // don't convert Parquet numeric/time type to non-numeric type in H2O
+        resultTypes[i] = roughTypes[i];
+      } else if ((roughTypes[i] == Vec.T_BAD) && (requestedTypes[i] == Vec.T_NUM)) {
+        // don't convert Parquet non-numeric type to a numeric type in H2O
+        resultTypes[i] = Vec.T_STR;
+      } else
+        // satisfy the request
+        resultTypes[i] = requestedTypes[i];
+    }
+    return resultTypes;
+  }
+
   private static class ParquetPreviewParseWriter extends PreviewParseWriter {
 
     private String[] _colNames;
@@ -100,17 +131,7 @@ public class ParquetParser extends Parser {
 
     @Override
     public byte[] guessTypes() {
-      byte[] types = super.guessTypes();
-      for (int i = 0; i < types.length; i++) {
-        if ((_roughTypes[i] == Vec.T_NUM) || (_roughTypes[i] == Vec.T_TIME)) {
-          // don't convert Parquet numeric/time type to non-numeric type in H2O
-          types[i] = _roughTypes[i];
-        } else if ((_roughTypes[i] == Vec.T_BAD) && (types[i] == Vec.T_NUM)) {
-          // don't convert Parquet non-numeric type to a numeric type in H2O
-          types[i] = Vec.T_STR;
-        }
-      }
-      return types;
+      return correctTypeConversions(_roughTypes, super.guessTypes());
     }
 
     ParseSetup toParseSetup(byte[] parquetMetadata) {

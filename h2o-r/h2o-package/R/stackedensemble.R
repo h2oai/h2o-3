@@ -14,57 +14,65 @@
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
 #' @param validation_frame Id of the validation data frame.
-#' @param base_models List of model ids which we can stack together.  Which ones are chosen depends on the selection_strategy
-#'        (currently, all models will be used since selection_strategy can only be set to choose_all).  Models must have
-#'        been cross-validated using nfolds > 1, fold_assignment equal to Modulo, and keep_cross_validation_folds must
-#'        be set to True. Defaults to [].
-#' @param selection_strategy Strategy for choosing which models to stack. Must be one of: "choose_all".
+#' @param base_models List of model ids which we can stack together. Models must have been cross-validated using nfolds > 1, and
+#'        folds must be identical across models. Defaults to [].
 #' @examples
 #' 
-#' # See example R code here: 
+#' # See example R code here:
 #' # http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html
 #' 
 #' @export
 h2o.stackedEnsemble <- function(x, y, training_frame,
                                 model_id = NULL,
                                 validation_frame = NULL,
-                                base_models = list(),
-                                selection_strategy = c("choose_all")
+                                base_models = list()
                                 ) 
 {
-  #If x is missing, then assume user wants to use all columns as features.
-  if(missing(x)){
-     if(is.numeric(y)){
-         x <- setdiff(col(training_frame),y)
-     }else{
-         x <- setdiff(colnames(training_frame),y)
+  # If x is missing, then assume user wants to use all columns as features.
+  if (missing(x)) {
+     if (is.numeric(y)) {
+         x <- setdiff(col(training_frame), y)
+     } else {
+         x <- setdiff(colnames(training_frame), y)
      }
   }
 
   # Required args: training_frame
-  if( missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
+  if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
   # Training_frame must be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
      tryCatch(training_frame <- h2o.getFrame(training_frame),
            error = function(err) {
              stop("argument 'training_frame' must be a valid H2OFrame or key")
            })
+  # Validation_frame must be a key or an H2OFrame object
+  if (!is.null(validation_frame)) {
+     if (!is.H2OFrame(validation_frame))
+         tryCatch(validation_frame <- h2o.getFrame(validation_frame),
+             error = function(err) {
+                 stop("argument 'validation_frame' must be a valid H2OFrame or key")
+             })
+  }
   # Parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame
   args <- .verify_dataxy(training_frame, x, y)
   parms$response_column <- args$y
 
-  if (!missing(model_id))
-    parms$model_id <- model_id
+ if (length(base_models) == 0) stop('base_models is empty')
+  # If base_models contains models instead of ids, replace with model id
+  for (i in 1:length(base_models)) {
+    if (inherits(base_models[[i]], 'H2OModel')) {
+      base_models[[i]] <- base_models[[i]]@model_id
+    }
+  }
+ 
   if (!missing(model_id))
     parms$model_id <- model_id
   if (!missing(validation_frame))
     parms$validation_frame <- validation_frame
   if (!missing(base_models))
     parms$base_models <- base_models
-  if (!missing(selection_strategy))
-    parms$selection_strategy <- selection_strategy
   # Error check and build model
-  .h2o.modelJob('stackedensemble', parms, h2oRestApiVersion=99) 
+  .h2o.modelJob('stackedensemble', parms, h2oRestApiVersion = 99) 
 }

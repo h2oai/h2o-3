@@ -2,8 +2,8 @@ apply plugin: 'java'
 
 description = 'H2O driver for Hadoop ' + hadoopVersion
 
-sourceCompatibility = 1.6
-targetCompatibility = 1.6
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
 
 compileJava { 
   options.debug = true 
@@ -13,16 +13,25 @@ sourceSets {
   main {
     java {
       if (project.hasProperty('notYarn')) {
-        srcDir  '../h2o-mapreduce-generic/src/main/java'
+        srcDirs  '../h2o-mapreduce-generic/src/main/java'
+      } else {
+        srcDirs '../h2o-mapreduce-generic/src/main/java',
+                '../h2o-yarn-generic/src/main/java'
       }
-      else {
-        srcDirs '../h2o-mapreduce-generic/src/main/java', '../h2o-yarn-generic/src/main/java'
+    }
+    resources {
+      if (project.hasProperty('notYarn')) {
+        srcDirs  '../h2o-mapreduce-generic/src/main/resources'
+      } else {
+        srcDirs '../h2o-mapreduce-generic/src/main/resources',
+                '../h2o-yarn-generic/src/main/resources'
       }
     }
   }
 }
 
 dependencies {
+  compile "org.eclipse.jetty.aggregate:jetty-all-server:8.1.17.v20150415"
   if (project.hasProperty('notYarn')) {
     compile('org.apache.hadoop:hadoop-core:' + hadoopMavenArtifactVersion)
   }

@@ -61,7 +61,7 @@ public class AstKFold extends AstPrimitive {
     // therefore, have a seed per class to be used by the map call
     if (!(y.isCategorical() || (y.isNumeric() && y.isInt())))
       throw new IllegalArgumentException("stratification only applies to integer and categorical columns. Got: " + y.get_type_str());
-    final long[] classes = new VecUtils.CollectDomain().doAll(y).domain();
+    final long[] classes = new VecUtils.CollectIntegerDomain().doAll(y).domain();
     final int nClass = y.isNumeric() ? classes.length : y.domain().length;
     final long[] seeds = new long[nClass]; // seed for each regular fold column (one per class)
     for (int i = 0; i < nClass; ++i)

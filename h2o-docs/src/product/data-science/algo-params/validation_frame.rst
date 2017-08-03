@@ -1,7 +1,7 @@
 ``validation_frame``
 --------------------
 
-- Available in: GBM, DRF, Deep Learning, GLM, PCA, GLRM, Naïve-Bayes, K-Means
+- Available in: GBM, DRF, Deep Learning, GLM, PCA, GLRM, Naïve-Bayes, K-Means, Stacked Ensembles, AutoML, XGBoost
 - Hyperparameter: no
 
 Description

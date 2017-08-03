@@ -1,5 +1,6 @@
 package water.util;
 
+import hex.Interaction;
 import hex.Model;
 import hex.ToEigenVec;
 import jsr166y.CountedCompleter;
@@ -71,7 +72,7 @@ public class FrameUtils {
     return ParseSetup.guessSetup(inKeys, userParserSetup);
   }
 
-  public static Frame categoricalEncoder(Frame dataset, String[] skipCols, Model.Parameters.CategoricalEncodingScheme scheme, ToEigenVec tev) {
+  public static Frame categoricalEncoder(Frame dataset, String[] skipCols, Model.Parameters.CategoricalEncodingScheme scheme, ToEigenVec tev, int maxLevels) {
     switch (scheme) {
       case AUTO:
       case Enum:
@@ -82,6 +83,8 @@ public class FrameUtils {
         return new CategoricalOneHotEncoder(dataset, skipCols).exec().get();
       case Binary:
         return new CategoricalBinaryEncoder(dataset, skipCols).exec().get();
+      case EnumLimited:
+        return new CategoricalEnumLimitedEncoder(maxLevels, dataset, skipCols).exec().get();
       case Eigen:
         return new CategoricalEigenEncoder(tev, dataset, skipCols).exec().get();
       case LabelEncoder:
@@ -114,7 +117,7 @@ public class FrameUtils {
     }
   }
 
-  private static class Vec2ArryTsk extends MRTask<Vec2ArryTsk> {
+  public static class Vec2ArryTsk extends MRTask<Vec2ArryTsk> {
     final int N;
     public double [] res;
     public Vec2ArryTsk(int N){this.N = N;}
@@ -133,6 +136,33 @@ public class FrameUtils {
           res[i] += other.res[i]; // assuming only one nonzero
         }
       }
+    }
+  }
+
+  public static class Vecs2ArryTsk extends MRTask<Vecs2ArryTsk> {
+    final int dim1;   // treat as row
+    final int dim2;   // treat as column
+    public double [][] res;
+    public Vecs2ArryTsk(int dim1, int dim2)
+    {
+      this.dim1 = dim1;
+      this.dim2 = dim2;
+    }
+
+    @Override public void setupLocal(){
+      res = MemoryManager.malloc8d(dim1, dim2);
+    }
+    @Override public void map(Chunk[] c){
+      final int off = (int)c[0].start();
+      for (int colIndex = 0; colIndex < dim2; colIndex++) {
+        for (int rowIndex = 0; rowIndex < dim1; rowIndex++) {
+          res[off+rowIndex][colIndex] = c[colIndex].atd(rowIndex);
+        }
+      }
+    }
+
+    @Override public void reduce(Vecs2ArryTsk other){
+      ArrayUtils.add(res, other.res);
     }
   }
 
@@ -722,6 +752,84 @@ public class FrameUtils {
   /**
    * Helper to convert a categorical variable into the first eigenvector of the dummy-expanded matrix.
    */
+  public static class CategoricalEnumLimitedEncoder {
+    final Frame _frame;
+    Job<Frame> _job;
+    final String[] _skipCols;
+    final int _maxLevels;
+
+    public CategoricalEnumLimitedEncoder(int maxLevels, Frame dataset, String[] skipCols) {
+      _frame = dataset;
+      _skipCols = skipCols;
+      _maxLevels = maxLevels;
+    }
+
+    /**
+     * Driver for CategoricalEnumLimited
+     */
+    class CategoricalEnumLimitedDriver extends H2O.H2OCountedCompleter {
+      final Frame _frame;
+      final Key<Frame> _destKey;
+      final String[] _skipCols;
+      CategoricalEnumLimitedDriver(Frame frame, Key<Frame> destKey, String[] skipCols) {
+        _frame = frame; _destKey = destKey; _skipCols = skipCols;
+      }
+
+      @Override public void compute2() {
+        Vec[] frameVecs = _frame.vecs();
+        Vec[] extraVecs = new Vec[_skipCols==null?0:_skipCols.length];
+        for (int i=0; i< extraVecs.length; ++i) {
+          Vec v = _skipCols==null||_skipCols.length<=i?null:_frame.vec(_skipCols[i]); //can be null
+          if (v!=null) extraVecs[i] = v;
+        }
+//        Log.info(_frame.toTwoDimTable(0, (int)_frame.numRows()));
+        Frame outputFrame = new Frame(_destKey);
+        for (int i = 0; i < frameVecs.length; ++i) {
+          Vec src = frameVecs[i];
+          if (_skipCols!=null && ArrayUtils.find(_skipCols, _frame._names[i])>=0) continue;
+          if (src.cardinality() > _maxLevels) {
+            Key<Frame> source = Key.make();
+            Key<Frame> dest = Key.make();
+            Frame train = new Frame(source, new String[]{"enum"}, new Vec[]{src});
+            DKV.put(train);
+            Log.info("Reducing the cardinality of a categorical column with " + src.cardinality() + " levels to " + _maxLevels);
+            Interaction inter = new Interaction();
+            inter._source_frame = train._key;
+            inter._max_factors = _maxLevels; // keep only this many most frequent levels
+            inter._min_occurrence = 2; // but need at least 2 observations for a level to be kept
+            inter._pairwise = false;
+            inter._factor_columns = train.names();
+            train = inter.execImpl(dest).get();
+            outputFrame.add(_frame.name(i) + ".top_" + _maxLevels + "_levels", train.anyVec().makeCopy());
+            train.remove();
+            DKV.remove(source);
+          } else {
+            outputFrame.add(_frame.name(i), frameVecs[i].makeCopy());
+          }
+        }
+        for (int i=0;i<extraVecs.length;++i) {
+          if (extraVecs[i]!=null)
+            outputFrame.add(_skipCols[i], extraVecs[i].makeCopy());
+        }
+//        Log.info(outputFrame.toTwoDimTable(0, (int)outputFrame.numRows()));
+        DKV.put(outputFrame);
+        tryComplete();
+      }
+    }
+
+    public Job<Frame> exec() {
+      if (_frame == null)
+        throw new IllegalArgumentException("Frame doesn't exist.");
+      Key<Frame> destKey = Key.makeSystem(Key.make().toString());
+      _job = new Job<>(destKey, Frame.class.getName(), "CategoricalEnumLimited");
+      int workAmount = _frame.lastVec().nChunks();
+      return _job.start(new CategoricalEnumLimitedDriver(_frame, destKey, _skipCols), workAmount);
+    }
+  }
+
+  /**
+   * Helper to convert a categorical variable into the first eigenvector of the dummy-expanded matrix.
+   */
   public static class CategoricalEigenEncoder {
     final Frame _frame;
     Job<Frame> _job;
@@ -798,7 +906,7 @@ public class FrameUtils {
   static public void shrinkDomainsToObservedSubset(Frame frameToModifyInPlace) {
     for (Vec v : frameToModifyInPlace.vecs()) {
       if (v.isCategorical()) {
-        long[] uniques = (v.min() >= 0 && v.max() < Integer.MAX_VALUE - 4) ? new VecUtils.CollectDomainFast((int)v.max()).doAll(v).domain() : new VecUtils.CollectDomain().doAll(v).domain();
+        long[] uniques = (v.min() >= 0 && v.max() < Integer.MAX_VALUE - 4) ? new VecUtils.CollectDomainFast((int)v.max()).doAll(v).domain() : new VecUtils.CollectIntegerDomain().doAll(v).domain();
         String[] newDomain = new String[uniques.length];
         final int[] fromTo = new int[(int)ArrayUtils.maxValue(uniques)+1];
         for (int i=0;i<newDomain.length;++i) {

@@ -55,7 +55,7 @@ public class AstStratifiedSplit extends AstPrimitive {
     checkIfCanStratifyBy(stratifyingColumn);
     randomizationSeed = randomizationSeed == -1 ? new Random().nextLong() : randomizationSeed;
     // Collect input vector domain
-    final long[] classes = new VecUtils.CollectDomain().doAll(stratifyingColumn).domain();
+    final long[] classes = new VecUtils.CollectIntegerDomain().doAll(stratifyingColumn).domain();
     // Number of output classes
     final int numClasses = stratifyingColumn.isNumeric() ? classes.length : stratifyingColumn.domain().length;
     

@@ -10,6 +10,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import os
 import warnings
+import webbrowser
+
 
 from h2o.backend import H2OConnection
 from h2o.backend import H2OConnectionConf
@@ -22,6 +24,7 @@ from .estimators.deeplearning import H2OAutoEncoderEstimator
 from .estimators.deeplearning import H2ODeepLearningEstimator
 from .estimators.deepwater import H2ODeepWaterEstimator
 from .estimators.estimator_base import H2OEstimator
+from .estimators.xgboost import H2OXGBoostEstimator
 from .estimators.gbm import H2OGradientBoostingEstimator
 from .estimators.glm import H2OGeneralizedLinearEstimator
 from .estimators.glrm import H2OGeneralizedLowRankEstimator
@@ -29,7 +32,6 @@ from .estimators.kmeans import H2OKMeansEstimator
 from .estimators.naive_bayes import H2ONaiveBayesEstimator
 from .estimators.random_forest import H2ORandomForestEstimator
 from .estimators.stackedensemble import H2OStackedEnsembleEstimator
-from .estimators.klime import H2OKLimeEstimator
 from .expr import ExprNode
 from .frame import H2OFrame
 from .grid.grid_search import H2OGridSearch
@@ -142,7 +144,8 @@ def version_check():
 
 def init(url=None, ip=None, port=None, https=None, insecure=None, username=None, password=None,
          cookies=None, proxy=None, start_h2o=True, nthreads=-1, ice_root=None, enable_assertions=True,
-         max_mem_size=None, min_mem_size=None, strict_version_check=None, ignore_config=False, **kwargs):
+         max_mem_size=None, min_mem_size=None, strict_version_check=None, ignore_config=False,
+         extra_classpath=None, **kwargs):
     """
     Attempt to connect to a local server, or if not successful start a new server and connect to it.
 
@@ -163,6 +166,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     :param min_mem_size: Minimum memory to use for the new h2o server.
     :param strict_version_check: If True, an error will be raised if the client and server versions don't match.
     :param ignore_config: Indicates whether a processing of a .h2oconfig file should be conducted or not. Default value is False.
+    :param extra_classpath: List of paths to libraries that should be included on the Java classpath when starting H2O from Python.
     :param kwargs: (all other deprecated attributes)
     """
     global h2oconn
@@ -182,6 +186,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     assert_is_type(max_mem_size, int, str, None)
     assert_is_type(min_mem_size, int, str, None)
     assert_is_type(strict_version_check, bool, None)
+    assert_is_type(extra_classpath, [str], None)
     assert_is_type(kwargs, {"proxies": {str: str}, "max_mem_size_GB": int, "min_mem_size_GB": int,
                             "force_connect": bool})
 
@@ -252,7 +257,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
             port = str(port) + "+"
         if not start_h2o: raise
         hs = H2OLocalServer.start(nthreads=nthreads, enable_assertions=enable_assertions, max_mem_size=mmax,
-                                  min_mem_size=mmin, ice_root=ice_root, port=port)
+                                  min_mem_size=mmin, ice_root=ice_root, port=port, extra_classpath=extra_classpath)
         h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=not insecure,
                                      auth=auth, proxy=proxy,cookies=cookies, verbose=True)
     if check_version:
@@ -352,7 +357,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     :param path: path(s) specifying the location of the data to import or a path to a directory of files to import
     :param destination_frame: The unique hex key assigned to the imported file. If none is given, a key will be
         automatically generated.
-    :param parse: If True, the file should be parsed after import.
+    :param parse: If True, the file should be parsed after import. If False, then a list is returned containing the file path.
     :param header: -1 means the first line is data, 0 means guess, 1 means first line is header.
     :param sep: The field separator character. Values on each line of the file are separated by
         this character. If not provided, the parser will automatically detect the separator.
@@ -697,8 +702,8 @@ def get_model(model_id):
     elif algo == "glrm":         m = H2OGeneralizedLowRankEstimator()
     elif algo == "glm":          m = H2OGeneralizedLinearEstimator()
     elif algo == "gbm":          m = H2OGradientBoostingEstimator()
-    elif algo == "klime":        m = H2OKLimeEstimator()
     elif algo == "deepwater":    m = H2ODeepWaterEstimator()
+    elif algo == "xgboost":      m = H2OXGBoostEstimator()
     elif algo == "deeplearning":
         if model_json["output"]["model_category"] == "AutoEncoder":
             m = H2OAutoEncoderEstimator()
@@ -938,13 +943,16 @@ def download_all_logs(dirname=".", filename=None):
 
 def save_model(model, path="", force=False):
     """
-    Save an H2O Model object to disk.
+    Save an H2O Model object to disk. (Note that ensemble binary models can now be saved using this method.)
 
     :param model: The model object to save.
     :param path: a path to save the model at (hdfs, s3, local)
     :param force: if True overwrite destination directory in case it exists, or throw exception if set to False.
 
     :returns: the path of the saved model
+
+    :examples:
+        >>> path = h2o.save_model(my_model, dir=my_path)
     """
     assert_is_type(model, ModelBase)
     assert_is_type(path, str)
@@ -955,7 +963,7 @@ def save_model(model, path="", force=False):
 
 def load_model(path):
     """
-    Load a saved H2O model from disk.
+    Load a saved H2O model from disk. (Note that ensemble binary models can now be loaded using this method.)
 
     :param path: the full path of the H2O Model to be imported.
 
@@ -1247,7 +1255,12 @@ def make_metrics(predicted, actual, domain=None, distribution=None):
               data={"domain": domain, "distribution": distribution})
     return res["model_metrics"]
 
+def flow():
+    """
+    Open H2O Flow in your browser.
 
+    """
+    webbrowser.open(connection().base_url, new = 1)
 #-----------------------------------------------------------------------------------------------------------------------
 # Private
 #-----------------------------------------------------------------------------------------------------------------------

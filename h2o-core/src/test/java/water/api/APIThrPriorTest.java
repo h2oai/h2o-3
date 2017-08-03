@@ -193,7 +193,3 @@ class Bogus extends ModelBuilder<BogusModel,BogusModel.BogusParameters,BogusMode
     }
   }
 }
-
-// Need this class, so a /3/Jobs can return the JSON'd version of it
-class BogusV3 extends ModelBuilderSchema<Bogus,BogusV3,ModelParametersSchemaV3> {}
-

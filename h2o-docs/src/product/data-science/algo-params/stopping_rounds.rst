@@ -1,7 +1,7 @@
 ``stopping_rounds``
 -------------------
 
-- Available in: GBM, DRF, Deep Learning
+- Available in: GBM, DRF, Deep Learning, AutoML, XGBoost
 - Hyperparameter: yes
 
 Description
@@ -14,6 +14,12 @@ Use this option to stop model training when the option selected for `stopping_me
 - ``stopping_tolerance=1e-3``
 
 then the model will stop training after reaching three scoring events in a row in which a model's missclassication value does not improve by **1e-3**. These stopping options are used to increase performance by restricting the number of models that get built. 
+
+The default value for this option varies depending on the algorithm:
+
+- GBM/DRF/XGBoost: ``stopping_rounds`` defaults to 0 (disabled)
+- Deep Learning: ``stopping_rounds`` defaults to 5 
+- AutoML: ``stopping_rounds`` defaults 3
 
 To disable this feature, specify 0. When disabled, the metric is computed on the validation data (if provided); otherwise, training data is used. 
 

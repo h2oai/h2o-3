@@ -219,24 +219,7 @@ open target/docs-website/h2o-docs/index.html
 
 ### 4.2. Setup on all Platforms
 
-> **Note**: The following instructions assume you have installed the latest version of [**pip**](https://pip.pypa.io/en/latest/installing/#install-or-upgrade-pip), which is installed with the latest version of [**Python**](https://www.python.org/downloads/).  
-
-##### Install required Python packages (prepending with `sudo` if unsuccessful)
-
-    pip install grip
-    pip install tabulate
-    pip install wheel
-    pip install scikit-learn
-
-Python tests require:
-
-    pip install scikit-learn
-    pip install numpy
-    pip install scipy
-    pip install pandas
-    pip install statsmodels
-    pip install patsy
-    pip install future
+The requirements for building / installing `h2o` are listed in file [h2o-py/conda/h2o/meta.yaml](h2o-py/conda/h2o/meta.yaml) file. Install the required Python packages (prepending with `sudo` if unsuccessful).
 
 ### 4.3. Setup on Windows
 
@@ -521,6 +504,61 @@ You need to:
 2.  Add these new projects to `h2o-3/settings.gradle`
 3.  Add the new Hadoop version to `HADOOP_VERSIONS` in `make-dist.sh`
 4.  Add the new Hadoop version to the list in `h2o-dist/buildinfo.json`
+
+
+### Secure user impersonation
+
+Hadoop supports [secure user impersonation](https://hadoop.apache.org/docs/r2.7.3/hadoop-project-dist/hadoop-common/Superusers.html) through its Java API.  A kerberos-authenticated user can be allowed to proxy any username that meets specified criteria entered in the NameNode's core-site.xml file.  This impersonation only applies to interactions with the Hadoop API or the APIs of Hadoop-related services that support it (this is not the same as switching to that user on the machine of origin).
+
+Setting up secure user impersonation (for h2o):
+
+1.  Create or find an id to use as proxy which has limited-to-no access to HDFS or related services; the proxy user need only be used to impersonate a user
+2.  (Required if not using h2odriver) If you are not using the driver (e.g. you wrote your own code against h2o's API using Hadoop), make the necessary code changes to impersonate users (see [org.apache.hadoop.security.UserGroupInformation](http://hadoop.apache.org/docs/r2.8.0/api/org/apache/hadoop/security/UserGroupInformation.html))
+3.  In either of Ambari/Cloudera Manager or directly on the NameNode's core-site.xml file, add 2/3 properties for the user we wish to use as a proxy (replace <proxyusername> with the simple user name - not the fully-qualified principal name).
+    * `hadoop.proxyuser.<proxyusername>.hosts`: the hosts the proxy user is allowed to perform impersonated actions on behalf of a valid user from
+    * `hadoop.proxyuser.<proxyusername>.groups`: the groups an impersonated user must belong to for impersonation to work with that proxy user
+    * `hadoop.proxyuser.<proxyusername>.users`: the users a proxy user is allowed to impersonate
+    * Example: ```
+               <property>
+                 <name>hadoop.proxyuser.myproxyuser.hosts</name>
+                 <value>host1,host2</value>
+               </property>
+               <property>
+                 <name>hadoop.proxyuser.myproxyuser.groups</name>
+                 <value>group1,group2</value>
+               </property>
+               <property>
+                 <name>hadoop.proxyuser.myproxyuser.users</name>
+                 <value>user1,user2</value>
+               </property>
+               ```
+4.  Restart core services such as HDFS & YARN for the changes to take effect
+
+Impersonated HDFS actions can be viewed in the hdfs audit log ('auth:PROXY' should appear in the `ugi=` field in entries where this is applicable).  YARN similarly should show 'auth:PROXY' somewhere in the Resource Manager UI.
+
+
+To use secure impersonation with h2o's Hadoop driver:
+
+*Before this is attempted, see Risks with impersonation, below*
+
+When using the h2odriver (e.g. when running with `hadoop jar ...`), specify `-principal <proxy user kerberos principal>`, `-keytab <proxy user keytab path>`, and `-run_as_user <hadoop username to impersonate>`, in addition to any other arguments needed.  If the configuration was successful, the proxy user will log in and impersonate the `-run_as_user` as long as that user is allowed by either the users or groups configuration property (configured above); this is enforced by HDFS & YARN, not h2o's code.  The driver effectively sets its security context as the impersonated user so all supported Hadoop actions will be performed as that user (e.g. YARN, HDFS APIs support securely impersonated users, but others may not).
+
+#### Precautions to take when leveraging secure impersonation
+
+*  The target use case for secure impersonation is applications or services that pre-authenticate a user and then use (in this case) the h2odriver on behalf of that user.  H2O's Steam is a perfect example: auth user in web app over SSL, impersonate that user when creating the h2o YARN container.
+*  The proxy user should have limited permissions in the Hadoop cluster; this means no permissions to access data or make API calls.  In this way, if it's compromised it would only have the power to impersonate a specific subset of the users in the cluster and only from specific machines.
+*  Use the `hadoop.proxyuser.<proxyusername>.hosts` property whenever possible or practical.
+*  Don't give the proxyusername's password or keytab to any user you don't want to impersonate another user (this is generally *any* user).  The point of impersonation is not to allow users to impersonate each other.  See the first bullet for the typical use case.
+*  Limit user logon to the machine the proxying is occurring from whenever practical.
+*  Make sure the keytab used to login the proxy user is properly secured and that users can't login as that id (via `su`, for instance)
+*  Never set hadoop.proxyuser.<proxyusername>.{users,groups} to '*' or 'hdfs', 'yarn', etc.  Allowing any user to impersonate hdfs, yarn, or any other important user/group should be done with extreme caution and *strongly* analyzed before it's allowed.
+
+#### Risks with secure impersonation
+
+*  The id performing the impersonation can be compromised like any other user id.
+*  Setting any `hadoop.proxyuser.<proxyusername>.{hosts,groups,users}` property to '*' can greatly increase exposure to security risk.
+*  When users aren't authenticated before being used with the driver (e.g. like Steam does via a secure web app/API), auditability of the process/system is difficult.
+
 
 ### Debugging HDFS
 

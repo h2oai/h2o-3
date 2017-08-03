@@ -9,7 +9,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
-from h2o.utils.typechecks import assert_is_type, Enum, numeric
+from h2o.utils.typechecks import assert_is_type, Enum, numeric, is_type
 
 
 class H2OStackedEnsembleEstimator(H2OEstimator):
@@ -48,8 +48,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def __init__(self, **kwargs):
         super(H2OStackedEnsembleEstimator, self).__init__()
         self._parms = {}
-        names_list = {"model_id", "training_frame", "response_column", "validation_frame", "base_models",
-                      "selection_strategy"}
+        names_list = {"model_id", "training_frame", "response_column", "validation_frame", "base_models"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -110,10 +109,8 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     @property
     def base_models(self):
         """
-        List of model ids which we can stack together.  Which ones are chosen depends on the selection_strategy
-        (currently, all models will be used since selection_strategy can only be set to choose_all).  Models must have
-        been cross-validated using nfolds > 1, fold_assignment equal to Modulo, and keep_cross_validation_folds must be
-        set to True.
+        List of model ids which we can stack together. Models must have been cross-validated using nfolds > 1, and folds
+        must be identical across models.
 
         Type: ``List[str]``  (default: ``[]``).
         """
@@ -121,22 +118,11 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
     @base_models.setter
     def base_models(self, base_models):
-        assert_is_type(base_models, None, [str])
-        self._parms["base_models"] = base_models
-
-
-    @property
-    def selection_strategy(self):
-        """
-        Strategy for choosing which models to stack.
-
-        One of: ``"choose_all"``.
-        """
-        return self._parms.get("selection_strategy")
-
-    @selection_strategy.setter
-    def selection_strategy(self, selection_strategy):
-        assert_is_type(selection_strategy, None, Enum("choose_all"))
-        self._parms["selection_strategy"] = selection_strategy
+         if is_type(base_models,[H2OEstimator]):
+            base_models = [b.model_id for b in base_models]
+            self._parms["base_models"] = base_models
+         else:
+            assert_is_type(base_models, None, [str])
+            self._parms["base_models"] = base_models
 
 

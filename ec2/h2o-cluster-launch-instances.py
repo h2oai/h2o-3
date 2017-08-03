@@ -40,6 +40,9 @@ securityGroupName = 'SecurityDisabled'
 numInstancesToLaunch = 2
 instanceType = 'm3.2xlarge'
 instanceNameRoot = 'h2o-instance'
+# set to a string USD amount if you'd like to request spot instances
+# read more about spot here: https://aws.amazon.com/ec2/spot/
+spotBid = None
 
 
 # Options to help debugging.
@@ -105,20 +108,71 @@ ec2 = boto.ec2.connect_to_region(regionName, debug=debug)
 
 print 'Launching', numInstancesToLaunch, 'instances.'
 
-reservation = ec2.run_instances(
-    image_id=amiId,
-    min_count=numInstancesToLaunch,
-    max_count=numInstancesToLaunch,
-    key_name=keyName,
-    instance_type=instanceType,
-    security_groups=[securityGroupName],
-    instance_profile_arn=iam_profile_resource_name,
-    instance_profile_name=iam_profile_name,
-    dry_run=dryRun
-)
+if spotBid is None:
+    reservation = ec2.run_instances(
+        image_id=amiID,
+        min_count=numInstancesToLaunch,
+        max_count=numInstancesToLaunch,
+        key_name=keyName,
+        instance_type=instanceType,
+        security_groups=[securityGroupName],
+        instance_profile_arn=iam_profile_resource_name,
+        instance_profile_name=iam_profile_name,
+        dry_run=dryRun
+    )
+else:
+    spotRequests = ec2.request_spot_instances(
+        price=spotBid,
+        image_id=amiID,
+        count=numInstancesToLaunch,
+        key_name=keyName,
+        instance_type=instanceType,
+        security_groups=[securityGroupName],
+        instance_profile_arn=iam_profile_resource_name,
+        instance_profile_name=iam_profile_name,
+        dry_run=dryRun,
+    )
 
-for i in range(numInstancesToLaunch):
-    instance = reservation.instances[i]
+    requestIDs = [request.id for request in spotRequests]
+    fulfilled = []
+
+    while requestIDs:
+        requests = ec2.get_all_spot_instance_requests(
+            request_ids=requestIDs,
+        )
+
+        for request in requests:
+            if request.instance_id:
+                requestIDs.remove(request.id)
+                fulfilled.append(request.instance_id)
+
+            # unrecoverable error without increasing the spot bid
+            elif request.status.code == u'price-too-low':
+                print request.status.message
+                print 'Cancelling Spot requests...'
+                # get original request ids since some requests may have already been fulfilled
+                ec2.cancel_spot_instance_requests(
+                    request_ids=[request.id for request in spotRequests],
+                )
+
+                print 'Exiting...'
+                sys.exit(1)
+
+            print request.id, request.status.message
+
+        print '%s/%s requests fulfilled' % (len(fulfilled), numInstancesToLaunch)
+
+        if requestIDs:
+            print 'Waiting for remaining requests to be fulfilled...'
+            time.sleep(5)
+
+    reservation = ec2.get_all_instances(
+        instance_ids=fulfilled,
+    )
+
+instances = reservation[0].instances
+
+for i, instance in enumerate(instances):
     print 'Waiting for instance', i+1, 'of', numInstancesToLaunch, '...'
     instance.update()
     while instance.state != 'running':
@@ -133,11 +187,9 @@ print
 print 'Creating output files: ', publicFileName, privateFileName
 print
 
-for i in range(numInstancesToLaunch):
-    instance = reservation.instances[i]
-    instanceName = ''
-    if 'Name' in instance.tags:
-        instanceName = instance.tags['Name'];
+for i, instance in enumerate(instances):
+    instanceName = instance.tags.get('Name', '')
+
     print 'Instance', i+1, 'of', numInstancesToLaunch
     print '    Name:   ', instanceName
     print '    PUBLIC: ', instance.public_dns_name

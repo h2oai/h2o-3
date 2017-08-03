@@ -47,7 +47,7 @@ public class PackedDomains {
       out.write(ZEROES);
 
       for (BufferedString bs : source) {
-        out.write(bs.getBuffer(), bs.getOffset(), bs.length() - bs.getOffset());
+        out.write(bs.getBuffer(), bs.getOffset(), bs.length());
         out.write(ZEROES, 0, 1);
       }
     } catch (IOException ignore) {}

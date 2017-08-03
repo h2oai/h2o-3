@@ -46,7 +46,7 @@
       sprintf("%s://%s:%s/%s/%s/%s", scheme, conn@ip, as.character(conn@port), conn@context_path, h2oRestApiVersion, urlSuffix)
 }
 
-.h2o.doRawREST <- function(conn, h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, binary=FALSE, ...) {
+.h2o.doRawREST <- function(conn, h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, binary=FALSE, autoML = FALSE, ...) {
   timeout_secs <- 0
   stopifnot(is(conn, "H2OConnection"))
   stopifnot(is.character(urlSuffix))
@@ -101,21 +101,26 @@
     queryString = sprintf("%s%s=%s", queryString, name, escaped_value)
     i = i + 1L
   }
-
   postBody = ""
   if (missing(fileUploadInfo)) {
-    # This is the typical case.
-    if (method == "POST") {
-      postBody = queryString
-    } else if (nzchar(queryString)) {
-      url = sprintf("%s?%s", url, queryString)
+      # This is the typical case.
+      if (method == "POST") {
+          postBody = queryString
+      } else if (nzchar(queryString)) {
+          url = sprintf("%s?%s", url, queryString)
+      }
+    } else {
+      stopifnot(method == "POST")
+      if (nzchar(queryString)) {
+        url = sprintf("%s?%s", url, queryString)
+      }
     }
-  } else {
-    stopifnot(method == "POST")
-    if (nzchar(queryString)) {
-      url = sprintf("%s?%s", url, queryString)
+    #For AutoML
+    if(autoML == TRUE){
+      postBody <- jsonlite::toJSON(parms,auto_unbox=TRUE,pretty=TRUE)
+      postBody <- sub('\"\\{', '\\{',postBody)
+      postBody <- sub('\\}\"', '\\}',postBody)
     }
-  }
 
   .__curlError = FALSE
   .__curlErrorMessage = ""
@@ -154,7 +159,7 @@
     #can then be brought back into R as a raw vector and then used in different ways, e.g. uncompressed
     #with the Rcompression package, or written to a file via writeBin. We can also convert the raw vector to of type
     #character.
-    tmp <- tryCatch(curlPerform(url = url,
+    tmp <- tryCatch(curlPerform(url = URLencode(url),
                                   customrequest = method,
                                   writefunction = write,
                                   headerfunction = h$update,
@@ -179,7 +184,7 @@
     h = basicHeaderGatherer()
     t = basicTextGatherer(.mapUnicode = FALSE)
     header['Expect'] = ''
-    tmp = tryCatch(postForm(uri = url,
+    tmp = tryCatch(postForm(uri = URLencode(url),
                             .params = list(fileUploadInfo = fileUploadInfo),
                             .opts=curlOptions(writefunction = t$update,
                                               headerfunction = h$update,
@@ -197,8 +202,12 @@
   } else if (method == "POST") {
     h = basicHeaderGatherer()
     t = basicTextGatherer(.mapUnicode = FALSE)
-    header['Expect'] = ''
-    tmp = tryCatch(curlPerform(url = url,
+    if(!autoML){
+      header['Expect'] = ''
+    }else{
+      header = "Content-Type: application/json"
+    }
+    tmp = tryCatch(curlPerform(url = URLencode(url),
                                postfields = postBody,
                                writefunction = t$update,
                                headerfunction = h$update,
@@ -292,7 +301,7 @@
                  parms = parms, method = "POST", fileUploadInfo = fileUploadInfo, ...)
 }
 
-.h2o.doREST <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, ...) {
+.h2o.doREST <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo,autoML=FALSE, ...) {
   stopifnot(is(conn, "H2OConnection"))
   stopifnot(is.character(urlSuffix))
   stopifnot(is.character(method))
@@ -302,7 +311,7 @@
   }
 
   .h2o.doRawREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
-                 parms = parms, method = method, fileUploadInfo, ...)
+                 parms = parms, method = method, fileUploadInfo,autoML=autoML, ...)
 }
 
 #' Just like doRawGET but fills in the default h2oRestApiVersion if none is provided
@@ -327,16 +336,16 @@
               parms = parms, method = "POST", ...)
 }
 
-.h2o.doSafeREST <- function(h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, ...) {
+.h2o.doSafeREST <- function(h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo,autoML=FALSE, ...) {
   stopifnot(is.character(urlSuffix))
   stopifnot(is.character(method))
   if (!missing(fileUploadInfo)) stopifnot(is(fileUploadInfo, "FileUploadInfo"))
 
   rv = .h2o.doREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
-                   parms = parms, method = method, fileUploadInfo = fileUploadInfo, ...)
+                   parms = parms, method = method, fileUploadInfo = fileUploadInfo,autoML=autoML, ...)
 
   if (rv$curlError) {
-  
+
     stop(sprintf("Unexpected CURL error: %s", rv$curlErrorMessage))
   } else if (rv$httpStatusCode != 200) {
     cat("\n")
@@ -548,7 +557,7 @@ print.H2OTable <- function(x, header=TRUE, ...) {
 # Error checking is performed.
 #
 # @return JSON object converted from the response payload
-.h2o.__remoteSend <- function(page, method = "GET", ..., .params = list(), raw=FALSE, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
+.h2o.__remoteSend <- function(page, method = "GET", ..., autoML = FALSE, .params = list(), raw=FALSE, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
   stopifnot(is.character(method))
   stopifnot(is.list(.params))
 
@@ -567,8 +576,13 @@ print.H2OTable <- function(x, header=TRUE, ...) {
 
   rawREST <- ""
 
-  if( !is.null(timeout) ) rawREST <- .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page, parms = .params, method = method, timeout = timeout)
-  else                    rawREST <- .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page, parms = .params, method = method)
+  if( !is.null(timeout) ){
+    rawREST <- .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page, parms = .params, method = method, timeout = timeout)
+  }else if(autoML == TRUE){
+    rawREST <- .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page, parms = .params, method = method,autoML=autoML)
+  }else{
+    rawREST <- .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page, parms = .params, method = method)
+  }
 
   if( raw ) rawREST
   else      .h2o.fromJSON(jsonlite::fromJSON(rawREST,simplifyDataFrame=FALSE))
@@ -606,6 +620,29 @@ h2o.killMinus3 <- function() {
   rv <- .h2o.doSafeGET(urlSuffix="KillMinus3")
 }
 
+.h2o.list_extensions <- function(endpoint){
+  res <- .h2o.fromJSON(jsonlite::fromJSON(.h2o.doSafeGET(urlSuffix = endpoint), simplifyDataFrame=FALSE))
+  lapply(res$capabilities, function(x) x$name)
+}
+
+#' List all H2O registered extensions
+#' @export
+h2o.list_all_extensions <- function() {
+  .h2o.list_extensions(endpoint = .h2o.__ALL_CAPABILITIES)
+}
+
+#' List registered core extensions
+#' @export
+h2o.list_core_extensions <- function() {
+  .h2o.list_extensions(endpoint = .h2o.__CORE_CAPABILITIES)
+}
+
+#' List registered API extensions
+#' @export
+h2o.list_api_extensions <- function() {
+  .h2o.list_extensions(endpoint = .h2o.__API_CAPABILITIES)
+}
+
 #' Print H2O cluster info
 #' @export
 h2o.clusterInfo <- function() {
@@ -631,6 +668,8 @@ h2o.clusterInfo <- function() {
     res <- .h2o.fromJSON(jsonlite::fromJSON(.h2o.doSafeGET(urlSuffix = .h2o.__CLOUD), simplifyDataFrame=FALSE))
   }
 
+  extensions <- h2o.list_api_extensions()
+
   nodeInfo <- res$nodes
   freeMem  <- sum(sapply(nodeInfo,function(x) as.numeric(x['free_mem']))) / (1024 * 1024 * 1024)
   numCPU   <- sum(sapply(nodeInfo,function(x) as.numeric(x['num_cpus'])))
@@ -645,7 +684,7 @@ h2o.clusterInfo <- function() {
   assign("IS_CLIENT", is_client, .pkg.env)
   m <- ": \n"
   if( is_client ) m <- " (in client mode): \n"
-  
+
   if (is.null(res$build_too_old)) {
     res$build_too_old <- TRUE
     res$build_age <- "PREHISTORIC"
@@ -665,8 +704,9 @@ h2o.clusterInfo <- function() {
   cat("    H2O Connection port:       ", port, "\n")
   cat("    H2O Connection proxy:      ", proxy, "\n")
   cat("    H2O Internal Security:     ", res$internal_security_enabled, "\n")
+  cat("    H2O API Extensions:        ", paste(extensions, collapse = ", "), "\n")
   cat("    R Version:                 ", R.version.string, "\n")
-  
+
   cpusLimited = sapply(nodeInfo, function(x) x[['num_cpus']] > 1L && x[['nthreads']] != 1L && x[['cpus_allowed']] == 1L)
   if(any(cpusLimited))
     warning("Number of CPU cores allowed is limited to 1 on some nodes.\n",
@@ -723,19 +763,19 @@ h2o.is_client <- function() get("IS_CLIENT", .pkg.env)
 
 #'
 #' Disable Progress Bar
-#' 
+#'
 #' @export
 h2o.no_progress <- function() assign("PROGRESS_BAR", FALSE, .pkg.env)
 
 #'
 #' Enable Progress Bar
-#' 
+#'
 #' @export
 h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
 
 #'
-#' Check if Progress Bar is Enabled 
-#' 
+#' Check if Progress Bar is Enabled
+#'
 .h2o.is_progress <- function() {
   progress <- mget("PROGRESS_BAR", .pkg.env, ifnotfound=TRUE)
   if (is.list(progress)) progress <- unlist(progress)
@@ -746,7 +786,7 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
 #   Job Polling
 #-----------------------------------------------------------------------------------------------------------------------
 
-.h2o.__waitOnJob <- function(job_key, pollInterval = 1) {
+.h2o.__waitOnJob <- function(job_key, pollInterval = 1, verboseModelScoringHistory=FALSE) {
   progressBar <- .h2o.is_progress()
   if (progressBar) pb <- txtProgressBar(style = 3L)
   keepRunning <- TRUE
@@ -763,7 +803,6 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
       }
 
       job = jobs[[1]]
-
       status = job$status
       stopifnot(is.character(status))
 
@@ -772,10 +811,10 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
         cat("\n\n")
         cat(job$exception)
         cat("\n\n")
-        
+
         if (!is.null(job$stacktrace)) {cat(job$stacktrace)}
         cat("\n")
-        
+
         m <- strsplit(jobs[[1]]$exception, "\n")[[1]][1]
         m <- gsub(".*msg ","",m)
         stop(m, call.=FALSE)
@@ -809,6 +848,11 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
 
       if (keepRunning) {
         Sys.sleep(pollInterval)
+        if(verboseModelScoringHistory){
+          cat(paste0("\nScoring History for Model ",job$dest$name, " at ", Sys.time(),"\n"))
+          print(paste0("Model Build is ", job$progress*100, "% done..."))
+          print(tail(h2o.getModel(job$dest$name)@model$scoring_history))
+        }
       } else {
         if (progressBar) {
           close(pb)

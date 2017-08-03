@@ -33,7 +33,7 @@
 #' @param init Initialization mode Must be one of: "Random", "PlusPlus", "Furthest", "User". Defaults to Furthest.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
-#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse". Defaults to AUTO.
+#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
 #' @return Returns an object of class \linkS4class{H2OClusteringModel}.
 #' @seealso \code{\link{h2o.cluster_sizes}}, \code{\link{h2o.totss}}, \code{\link{h2o.num_iterations}},
 #'          \code{\link{h2o.betweenss}}, \code{\link{h2o.tot_withinss}}, \code{\link{h2o.withinss}},
@@ -65,12 +65,12 @@ h2o.kmeans <- function(training_frame, x,
                        seed = -1,
                        init = c("Random", "PlusPlus", "Furthest", "User"),
                        max_runtime_secs = 0,
-                       categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse")
+                       categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited")
                        ) 
 {
 
   # Required args: training_frame
-  if( missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
+  if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
   # Training_frame must be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
      tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -156,5 +156,5 @@ h2o.kmeans <- function(training_frame, x,
   }
         
   # Error check and build model
-  .h2o.modelJob('kmeans', parms, h2oRestApiVersion=3) 
+  .h2o.modelJob('kmeans', parms, h2oRestApiVersion = 3) 
 }

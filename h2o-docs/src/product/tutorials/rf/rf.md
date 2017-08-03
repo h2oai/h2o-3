@@ -14,41 +14,42 @@ The data are composed of 3279 observations, 1557 attributes, and an a priori gro
 If you don't have any data of your own to work with, you can find some example datasets at <a href="http://data.h2o.ai" target="_blank">http://data.h2o.ai</a>.
 
 
-####Importing Data
+#### Importing Data
 Before creating a model, import data into H2O:
 
-0. Click the **Assist Me!** button (the last button in the row of buttons below the menus). 
+1. Click the **Assist Me!** button (the last button in the row of buttons below the menus). 
 
  ![Assist Me button](../images/Flow_AssistMeButton.png)
 
-0. Click the **importFiles** link and enter the file path to the dataset in the **Search** entry field.  
-0. Click the **Add all** link to add the file to the import queue, then click the **Import** button. 
+2. Click the **importFiles** link and enter the file path to the dataset in the **Search** entry field.  
+3. Click the **Add all** link to add the file to the import queue, then click the **Import** button. 
 
   ![Importing Files](../images/RF_ImportFile.png)
 
 
-####Parsing Data
+#### Parsing Data
+
 Now, parse the imported data: 
 
-0. Click the **Parse these files...** button. 
+1. Click the **Parse these files...** button. 
 
   **Note**: The default options typically do not need to be changed unless the data does not parse correctly. 
 
-0. From the drop-down **Parser** list, select the file type of the data set (Auto, XLS, CSV, or SVMLight). 
-0. If the data uses a separator, select it from the drop-down **Separator** list. 
-0. If the data uses a column header as the first row, select the **First row contains column names** radio button. If the first row contains data, select the **First row contains data** radio button. To have H2O automatically determine if the first row of the dataset contains column names or data, select the **Auto** radio button. 
-0. If the data uses apostrophes ( `'` - also known as single quotes), check the **Enable single quotes as a field quotation character** checkbox. 
-0. To delete the imported dataset after parsing, check the **Delete on done** checkbox. 
+2. From the drop-down **Parser** list, select the file type of the data set (Auto, XLS, CSV, or SVMLight). 
+3. If the data uses a separator, select it from the drop-down **Separator** list. 
+4. If the data uses a column header as the first row, select the **First row contains column names** radio button. If the first row contains data, select the **First row contains data** radio button. To have H2O automatically determine if the first row of the dataset contains column names or data, select the **Auto** radio button. 
+5. If the data uses apostrophes ( `'` - also known as single quotes), check the **Enable single quotes as a field quotation character** checkbox. 
+6. To delete the imported dataset after parsing, check the **Delete on done** checkbox. 
 
   **NOTE**: In general, we recommend enabling this option. Retaining data requires memory resources, but does not aid in modeling because unparsed data cannot be used by H2O.
 
-0. Review the data in the **Edit Column Names and Types** section.
-0. Click the **Next page** button until you reach the last page. 
+7. Review the data in the **Edit Column Names and Types** section.
+8. Click the **Next page** button until you reach the last page. 
 
    ![Page buttons](../images/Flow_PageButtons.png)
 
-0. For column 1559, select `Enum` from the drop-down column type menu. 
-0. Click the **Parse** button.  
+9. For column 1559, select `Enum` from the drop-down column type menu. 
+10. Click the **Parse** button.  
 
   ![Parsing Data](../images/RF_Parse.png)
 
@@ -58,14 +59,14 @@ Now, parse the imported data:
 
 ### Building a Model
 
-0. Once data are parsed, click the **View** button, then click the **Build Model** button. 
-0. Select `Distributed RF` from the drop-down **Select an algorithm** menu, then click the **Build model** button. 
-0. If the parsed ad.hex file is not already listed in the **Training_frame** drop-down list, select it. Otherwise, continue to the next step. 
-0. From the **Response column** drop-down list, select `C1`. 
-0. In the **Ntrees** field, specify the number of trees for the model to build. For this example, enter `150`. 
-0. In the **Max_depth** field, specify the maximum distance from the root to the terminal node. For this example, use the default value of `20`. 
-0. In the **Mtries** field, specify the number of features on which the trees will be split. For this example, enter `1000`. 
-0. Click the **Build Model** button. 
+1. Once data are parsed, click the **View** button, then click the **Build Model** button. 
+2. Select `Distributed RF` from the drop-down **Select an algorithm** menu, then click the **Build model** button. 
+3. If the parsed ad.hex file is not already listed in the **Training_frame** drop-down list, select it. Otherwise, continue to the next step. 
+4. From the **Response column** drop-down list, select `C1`. 
+5. In the **Ntrees** field, specify the number of trees for the model to build. For this example, enter `150`. 
+6. In the **Max_depth** field, specify the maximum distance from the root to the terminal node. For this example, use the default value of `20`. 
+7. In the **Mtries** field, specify the number of features on which the trees will be split. For this example, enter `1000`. 
+8. Click the **Build Model** button. 
 
    ![Random Forest Model Builder](../images/RF_BuildModel.png)
 

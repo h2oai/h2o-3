@@ -570,13 +570,6 @@ public final class ParseDataset {
   // files are parsed in parallel across the cluster), but we want to throttle
   // the parallelism on each node.
   private static class MultiFileParseTask extends MRTask<MultiFileParseTask> {
-    // TOO_MANY_KEYS_COUNT specifies when to disable parallel parse. We want to cover a scenario when
-    // we are working with too many keys made of small files - in this case the distributed parse
-    // doesn't work well because of the way chunks are distributed to nodes. We should switch to a local
-    // parse to make sure the work is uniformly distributed across the whole cluster.
-    private static final int TOO_MANY_KEYS_COUNT = 128;
-    // A file is considered to be small if it can fit into <SMALL_FILE_NCHUNKS> number of chunks.
-    private static final int SMALL_FILE_NCHUNKS = 10;
 
     private final ParseSetup _parseSetup; // The expected column layout
     private final VectorGroup _vg;    // vector group of the target dataset
@@ -729,20 +722,22 @@ public final class ParseDataset {
       try {
         switch( cpr ) {
         case NONE:
-          boolean disableParallelParse = (_keys.length > TOO_MANY_KEYS_COUNT) &&
-                  (vec.nChunks() <= SMALL_FILE_NCHUNKS) && _parseSetup._parse_type.isStreamParseSupported();
-          if( _parseSetup._parse_type.isParallelParseSupported() && (! disableParallelParse)) {
+          ParserInfo.ParseMethod pm = _parseSetup._parse_type.parseMethod(_keys.length,vec.nChunks());
+          if(pm == ParserInfo.ParseMethod.DistributedParse) {
             new DistributedParse(_vg, localSetup, _vecIdStart, chunkStartIdx, this, key, vec.nChunks()).dfork(vec).getResult(false);
             for( int i = 0; i < vec.nChunks(); ++i )
               _chunk2ParseNodeMap[chunkStartIdx + i] = vec.chunkKey(i).home_node().index();
-          } else {
+          } else if(pm == ParserInfo.ParseMethod.StreamParse){
+            localSetup = ParserService.INSTANCE.getByInfo(localSetup._parse_type).setupLocal(vec,localSetup);
             InputStream bvs = vec.openStream(_jobKey);
-            _dout[_lo] = streamParse(bvs, localSetup, makeDout(localSetup,chunkStartIdx,vec.nChunks()), bvs);
+            Parser p = localSetup.parser(_jobKey);
+            _dout[_lo] = ((FVecParseWriter) p.streamParse(bvs,makeDout(localSetup,chunkStartIdx,vec.nChunks()))).close(_fs);
             _errors = _dout[_lo].removeErrors();
             chunksAreLocal(vec,chunkStartIdx,key);
-          }
+          } else throw H2O.unimpl();
           break;
         case ZIP: {
+          localSetup = ParserService.INSTANCE.getByInfo(localSetup._parse_type).setupLocal(vec,localSetup);
           // Zipped file; no parallel decompression;
           InputStream bvs = vec.openStream(_jobKey);
           ZipInputStream zis = new ZipInputStream(bvs);
@@ -750,18 +745,17 @@ public final class ParseDataset {
           if (ZipUtil.isZipDirectory(key)) {  // file is a zip if multiple files
             zis.getNextEntry();          // first ZipEntry describes the directory
           }
-
           ZipEntry ze = zis.getNextEntry(); // Get the *FIRST* entry
           // There is at least one entry in zip file and it is not a directory.
           if( ze != null && !ze.isDirectory() )
             _dout[_lo] = streamParse(zis,localSetup, makeDout(localSetup,chunkStartIdx,vec.nChunks()), bvs);
             _errors = _dout[_lo].removeErrors();
-
           zis.close();       // Confused: which zipped file to decompress
           chunksAreLocal(vec,chunkStartIdx,key);
           break;
         }
         case GZIP: {
+          localSetup = ParserService.INSTANCE.getByInfo(localSetup._parse_type).setupLocal(vec,localSetup);
           InputStream bvs = vec.openStream(_jobKey);
           // Zipped file; no parallel decompression;
           _dout[_lo] = streamParse(new GZIPInputStream(bvs), localSetup, makeDout(localSetup,chunkStartIdx,vec.nChunks()),bvs);
@@ -812,7 +806,6 @@ public final class ParseDataset {
     private FVecParseWriter streamParse(final InputStream is, final ParseSetup localSetup,FVecParseWriter dout, InputStream bvs) throws IOException {
       // All output into a fresh pile of NewChunks, one per column
       Parser p = localSetup.parser(_jobKey);
-
       // assume 2x inflation rate
       if(localSetup._parse_type.isParallelParseSupported())
         p.streamParseZip(is, dout, bvs);

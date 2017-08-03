@@ -22,6 +22,23 @@ public final class Gram extends Iced<Gram> {
   int _fullN;
   final static int MIN_TSKSZ=10000;
 
+  private static class XXCache {
+    public final boolean lowerDiag;
+    public final boolean icptFirst;
+    public final double [][] xx;
+    public XXCache(double [][] xx, boolean lowerDiag, boolean icptFirst){
+      this.xx = xx;
+      this.lowerDiag = lowerDiag;
+      this.icptFirst = icptFirst;
+    }
+    public boolean match(boolean lowerDiag, boolean icptFirst){
+      return this.lowerDiag == lowerDiag && this.icptFirst == icptFirst;
+    }
+  }
+  public transient XXCache _xxCache;
+
+
+
   public Gram(DataInfo dinfo) {
     this(dinfo.fullN(), dinfo.largestCat(), dinfo.numNums(), dinfo._cats,true);
   }
@@ -34,6 +51,13 @@ public final class Gram extends Iced<Gram> {
     _denseN = dense;
     for( int i = 0; i < (_fullN - _diagN); ++i )
       _xx[i] = MemoryManager.malloc8d(diag + i + 1);
+  }
+
+  public Gram(double[][] xxCacheNew) {
+    _xx = xxCacheNew;
+    _xxCache = new XXCache(xxCacheNew,false,false);
+    _denseN = xxCacheNew.length;
+    _fullN = xxCacheNew.length;
   }
 
   public void dropIntercept(){
@@ -489,27 +513,47 @@ public final class Gram extends Iced<Gram> {
 
   public double[][] getXX(){return getXX(false, false);}
   public double[][] getXX(boolean lowerDiag, boolean icptFist) {
+    if(_xxCache != null && _xxCache.match(lowerDiag,icptFist)) return _xxCache.xx;
     final int N = _fullN;
     double[][] xx = new double[N][];
     for( int i = 0; i < N; ++i )
       xx[i] = MemoryManager.malloc8d(lowerDiag?i+1:N);
+    return getXX(xx, lowerDiag, icptFist);
+  }
+
+  public double[][]getXX(double[][] xalloc) { return getXX(xalloc,false, false);}
+  public double[][] getXX(double[][] xalloc, boolean lowerDiag, boolean icptFist) {
+    final int N = _fullN;
+    double[][] xx = xalloc;
     int off = 0;
-    if(icptFist) {
+    if(_hasIntercept && icptFist) {
       double [] icptRow = _xx[_xx.length-1];
       xx[0][0] = icptRow[icptRow.length-1];
       for(int i = 0; i < icptRow.length-1; ++i)
         xx[i+1][0] = icptRow[i];
       off = 1;
     }
-    for( int i = 0; i < _diag.length; ++i )
-      xx[i+off][i+off] = _diag[i];
-    for( int i = 0; i < _xx.length - off; ++i ) {
-      for( int j = 0; j < _xx[i].length; ++j ) {
-        xx[i + _diag.length + off][j + off] = _xx[i][j];
-        if(!lowerDiag)
-          xx[j + off][i + _diag.length + off] = _xx[i][j];
+    for( int i = 0; i < _diag.length; ++i ) {
+      xx[i + off][i + off] = _diag[i];
+      if(!lowerDiag) {
+        int col = i+off;
+        double [] xrow = xx[i+off];
+        for (int j = off; j < _xx.length; ++j)
+          xrow[j+_diagN] = _xx[j][col];
       }
     }
+    for( int i = 0; i < _xx.length - off; ++i ) {
+      double [] xrow = xx[i+_diag.length + off];
+      double [] xrowOld = _xx[i];
+      System.arraycopy(xrowOld,0,xrow,off,xrowOld.length);
+      if(!lowerDiag) {
+        int col = xrowOld.length-1;
+        int row = i+1;
+        for (int j = col+1; j < xrow.length; ++j)
+          xrow[j] = _xx[row++][col];
+      }
+    }
+    _xxCache = new XXCache(xx,lowerDiag,icptFist);
     return xx;
   }
 

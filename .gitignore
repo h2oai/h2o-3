@@ -96,7 +96,6 @@ gradle/buildnumber.properties
 
 # Ignore gradle home files
 caches
-wrapper
 native
 
 # Ignore Sublime Text project settings
@@ -106,3 +105,35 @@ native
 # Ignore Jupyter Notebook project files
 *.ipynb_checkpoints/
 *.ipynb
+
+h2o-docs/src/booklets/source/DeepLearningBooklet.top
+
+h2o-docs/src/booklets/source/DeepLearningBooklet.tui
+
+h2o-docs/src/booklets/source/DeepLearningBooklet-mpgraph.mp
+
+h2o-docs/src/booklets/source/GBMBooklet-mpgraph.mp
+
+h2o-docs/src/booklets/source/GBMBooklet.top
+
+h2o-docs/src/booklets/source/GBMBooklet.tui
+
+h2o-docs/src/booklets/source/GLMBooklet-mpgraph.mp
+
+h2o-docs/src/booklets/source/GLMBooklet.top
+
+h2o-docs/src/booklets/source/GLMBooklet.tui
+
+h2o-docs/src/booklets/source/PythonBooklet-mpgraph.mp
+
+h2o-docs/src/booklets/source/PythonBooklet.top
+
+h2o-docs/src/booklets/source/PythonBooklet.tui
+
+*.mp
+
+*.top
+
+*.tui
+
+*.gz(busy)

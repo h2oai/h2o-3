@@ -6,10 +6,10 @@ This is a simple example project to start coding with Sparkling Water.
 
 \textbf{Dependencies}
 
-This droplet uses Sparkling Water 1.6 which integrates:
+This droplet uses Sparkling Water 2.1 which integrates:
 \begin{itemize}
-\item Spark 1.6
-\item H2O 3.8 Tukey
+\item Spark 2.1
+\item H2O 3.10.5 Vajda
 \end{itemize}
 
 For more details see \texttt{build.gradle}.
@@ -116,7 +116,8 @@ Create application assembly which can be directly submitted to Spark cluster:
 ./gradlew shadowJar
 \end{lstlisting}
 
-The command creates jar file \texttt{build/libs/sparkling-water-droplet-app.jar} containing all necessary classes to run application on top of Spark cluster.
+The command creates jar file \texttt{build/libs/sparkling-water-droplet-}\\
+\texttt{app.jar} containing all necessary classes to run application on top of Spark cluster.
 
 Submit application to Spark cluster (in this case, local cluster is used):
 

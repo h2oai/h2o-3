@@ -789,21 +789,21 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Encoding scheme for categorical features
 
         One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``,
-        ``"label_encoder"``, ``"sort_by_response"``  (default: ``"auto"``).
+        ``"label_encoder"``, ``"sort_by_response"``, ``"enum_limited"``  (default: ``"auto"``).
         """
         return self._parms.get("categorical_encoding")
 
     @categorical_encoding.setter
     def categorical_encoding(self, categorical_encoding):
-        assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response"))
+        assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"))
         self._parms["categorical_encoding"] = categorical_encoding
 
 
     @property
     def calibrate_model(self):
         """
-        Use Platt Scaling to do model calibration. Transforms the outputs of a classification model into a probability
-        distribution over classes
+        Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more accurate estimates
+        of class probabilities.
 
         Type: ``bool``  (default: ``False``).
         """

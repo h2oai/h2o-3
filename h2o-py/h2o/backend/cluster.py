@@ -219,6 +219,7 @@ class H2OCluster(object):
             status += ", healthy"
         else:
             status += ", %d nodes are not healthy" % unhealthy_nodes
+        api_extensions = self.list_api_extensions()
         H2ODisplay([
             ["H2O cluster uptime:",        get_human_readable_time(self.cloud_uptime_millis)],
             ["H2O cluster version:",       self.version],
@@ -232,6 +233,7 @@ class H2OCluster(object):
             ["H2O connection url:",        h2o.connection().base_url],
             ["H2O connection proxy:",      h2o.connection().proxy],
             ["H2O internal security:",     self.internal_security_enabled],
+            ["H2O API Extensions:",        ', '.join(api_extensions)],
             ["Python version:",            "%d.%d.%d %s" % tuple(sys.version_info[:4])],
         ])
 
@@ -251,6 +253,21 @@ class H2OCluster(object):
         res = h2o.api("GET /3/NetworkTest")
         res["table"].show()
 
+
+
+    def list_all_extensions(self):
+        """List all available extensions on the h2o backend"""
+        return self._list_extensions("Capabilities")
+
+
+    def list_core_extensions(self):
+        """List available core extensions on the h2o backend"""
+        return self._list_extensions("Capabilities/Core")
+
+
+    def list_api_extensions(self):
+        """List available API extensions on the h2o backend"""
+        return self._list_extensions("Capabilities/API")
 
     @property
     def timezone(self):
@@ -284,6 +301,9 @@ class H2OCluster(object):
         other._props = {}
         other._retrieved_at = None
 
+    def _list_extensions(self, endpoint):
+        res = h2o.api("GET /3/" + endpoint)["capabilities"]
+        return [x["name"] for x in res]
 
 
 _cloud_v3_valid_keys = {"is_client", "build_number", "cloud_name", "locked", "node_idx", "consensus", "branch_name",

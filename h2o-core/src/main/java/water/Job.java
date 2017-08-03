@@ -1,11 +1,12 @@
 package water;
 
 import jsr166y.CountedCompleter;
-import java.util.Arrays;
 import water.H2O.H2OCountedCompleter;
 import water.api.schemas3.KeyV3;
 import water.util.ArrayUtils;
 import water.util.Log;
+
+import java.util.Arrays;
 
 /** Jobs are used to do minimal tracking of long-lifetime user actions,
  *  including progress-bar updates and the ability to review in progress or
@@ -53,6 +54,19 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     _result = key;              // Result (destination?) key
     _typeid = clz_of_T==null ? 0 : TypeMap.onIce(clz_of_T);
     _description = desc; 
+  }
+
+  /** Create a Job when a warning already exists due to bad model_id
+   *  @param key  Key of the final result
+   *  @param clz_of_T String class of the Keyed result
+   *  @param desc String description
+   *  @param warningStr String contains a warning on model_id*/
+  public Job(Key<T> key, String clz_of_T, String desc, String warningStr) {
+    this(key, clz_of_T, desc);
+    if (warningStr != null) {
+      _warns = new String[] {warningStr};
+    }
+
   }
 
   // Job Keys are pinned to this node (i.e., the node that invoked the
@@ -374,6 +388,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     if(_worked    != remote._worked    ) differ = true;
     if(_msg       != remote._msg       ) differ = true;
     if(_max_runtime_msecs != remote._max_runtime_msecs) differ = true;
+    if(! Arrays.equals(_warns, remote._warns)) differ = true;
     if( differ )
       synchronized(this) { 
         _stop_requested = remote._stop_requested;
@@ -384,6 +399,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
         _worked    = remote._worked    ;
         _msg       = remote._msg       ;
         _max_runtime_msecs = remote._max_runtime_msecs;
+        _warns     = remote._warns;
       }
   }
   @Override public Class<KeyV3.JobKeyV3> makeSchema() { return KeyV3.JobKeyV3.class; }

@@ -29,7 +29,7 @@ public class Handler extends H2OCountedCompleter<Handler> {
   }
 
   // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
-  Schema handle(int version, Route route, Properties parms, String post_body) throws Exception {
+  public Schema handle(int version, Route route, Properties parms, String post_body) throws Exception {
     Class<? extends Schema> handler_schema_class = getHandlerMethodInputSchema(route._handler_method);
     Schema schema = Schema.newInstance(handler_schema_class);
 
@@ -74,8 +74,7 @@ public class Handler extends H2OCountedCompleter<Handler> {
     // Version-specific unwind from the Iced back into the Schema
     return result;
   }
-
-  @IgnoreJRERequirement
+  
   protected StringBuffer markdown(Handler handler, int version, StringBuffer docs, String filename) {
     // TODO: version handling
     StringBuffer sb = new StringBuffer();

@@ -3,7 +3,6 @@ package hex.tree;
 import java.util.Arrays;
 import java.util.Random;
 
-import water.*;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 
@@ -19,8 +18,8 @@ import water.fvec.Chunk;
   /* @IN */ final protected double _rate;
   /* @IN */ final protected boolean _OOBEnabled;
 
-  public ReconstructTreeState(int ncols, int nclass, SharedTree st, double rate, Key[][] treeKeys, boolean oob) {
-    super(ncols,nclass,st,treeKeys);
+  public ReconstructTreeState(int ncols, int nclass, SharedTree st, double rate, CompressedForest cforest, boolean oob) {
+    super(ncols,nclass,st,cforest);
     _rate = rate;
     _OOBEnabled = oob;
   }
@@ -28,13 +27,13 @@ import water.fvec.Chunk;
   @Override public void map(Chunk[] chks) {
     double[] data = new double[_ncols];
     double [] preds = new double[_nclass+1];
-    int ntrees = _trees.length;
+    int ntrees = ntrees();
     Chunk weight = _st.hasWeightCol() ? _st.chk_weight(chks) : new C0DChunk(1, chks[0]._len);
     Chunk oobt = _st.chk_oobt(chks);
     Chunk resp = _st.chk_resp(chks);
     for( int tidx=0; tidx<ntrees; tidx++) { // tree
       // OOB RNG for this tree
-      Random rng = rngForTree(_trees[tidx], oobt.cidx());
+      Random rng = rngForTree(_forest._trees[tidx], oobt.cidx());
       for (int row = 0; row< oobt._len; row++) {
         double w = weight.atd(row);
         if (w==0) continue;
@@ -46,7 +45,7 @@ import water.fvec.Chunk;
           // Make a prediction
           for (int i=0;i<_ncols;i++) data[i] = chks[i].atd(row);
           Arrays.fill(preds, 0);
-          score0(data, preds, _trees[tidx]);
+          score0(data, preds, tidx);
           if (_nclass==1) preds[1]=preds[0]; // Only for regression, keep consistency
           // Write tree predictions
           for (int c=0;c<_nclass;c++) { // over all class

@@ -36,12 +36,13 @@ import org.apache.parquet.schema.MessageType;
 import water.fvec.Vec;
 import water.parser.ParseWriter;
 import water.parser.parquet.ChunkReadSupport;
-import water.parser.parquet.VecDataInputStream;
-import water.parser.parquet.VecFileSystem;
+import water.persist.VecDataInputStream;
 import water.util.Log;
 
 import static org.apache.parquet.bytes.BytesUtils.readIntLittleEndian;
 import static org.apache.parquet.hadoop.ParquetFileWriter.MAGIC;
+
+import water.persist.VecFileSystem;
 
 /**
  * Implementation of Parquet Reader working on H2O's Vecs.

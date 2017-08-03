@@ -1,5 +1,6 @@
 package water.parser;
 
+import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -9,7 +10,13 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.TreeSet;
 
+import water.Key;
 import water.TestUtil;
+import water.api.schemas3.ParseSetupV3;
+import water.fvec.Frame;
+import water.fvec.NFSFileVec;
+import water.fvec.Vec;
+import water.parser.orc.OrcParserProvider;
 import water.util.FileUtils;
 import water.util.Log;
 
@@ -74,6 +81,21 @@ public class ParseTestOrc extends TestUtil {
     static public void _preconditionJavaVersion() { // NOTE: the `_` force execution of this check after setup
         // Does not run test on Java6 since we are running on Hadoop lib
         Assume.assumeTrue("Java6 is not supported", !System.getProperty("java.version", "NA").startsWith("1.6"));
+    }
+
+    @Test public void testBadColumn(){
+        NFSFileVec nfs = makeNfsFileVec("smalldata/parser/orc/orc_split_elim.orc");
+        Key<Frame> outputKey = Key.make("orc_Test");
+        ParseSetup pstp = new ParseSetup(new ParseSetupV3());
+        pstp._parse_type = new OrcParserProvider.OrcParserInfo();
+        ParseSetup ps = ParseSetup.guessSetup(new Key[]{nfs._key}, pstp);
+        Assert.assertEquals(ps._parse_type.name(), "ORC");
+        System.out.println("ParseSetup");
+        System.out.println(ps);
+        ps._column_types[0] = Vec.T_BAD;
+        Frame fr = ParseDataset.parse(outputKey, new Key[]{nfs._key},true,ps);
+        Assert.assertTrue(fr.vec(0).isBad());
+        fr.delete();
     }
 
     @Test

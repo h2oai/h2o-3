@@ -95,14 +95,10 @@ public class GridSchemaV99 extends SchemaV3<Grid, GridSchemaV99> {
     // Default sort order -- TODO: Outsource
     if (sort_by == null && modelKeys.size() > 0 && modelKeys.get(0) != null) {
       Model m = DKV.getGet(modelKeys.get(0));
-      if (m!=null && m.isSupervised()) {
-        if (m._output.nclasses()>1) {
-          sort_by = "logloss";
-          decreasing = false;
-        } else {
-          sort_by = "residual_deviance";
-          decreasing = false;
-        }
+      Model.GridSortBy sortBy = m != null ? m.getDefaultGridSortBy() : null;
+      if (sortBy != null) {
+        sort_by = sortBy._name;
+        decreasing = sortBy._decreasing;
       }
     }
 

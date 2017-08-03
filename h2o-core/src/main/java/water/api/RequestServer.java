@@ -904,4 +904,42 @@ public class RequestServer extends HttpServlet {
     }
   }
 
+
+  /**
+   * Dummy Rest API context which is redirecting calls to static method API.
+   */
+  public static class DummyRestApiContext implements RestApiContext {
+    @Override
+    public Route registerEndpoint(String apiName, String methodUri,
+                                  Class<? extends Handler> handlerClass, String handlerMethod,
+                                  String summary) {
+      return RequestServer.registerEndpoint(apiName, methodUri, handlerClass, handlerMethod, summary);
+    }
+
+    @Override
+    public Route registerEndpoint(String apiName, String httpMethod, String url,
+                                  Class<? extends Handler> handlerClass, String handlerMethod,
+                                  String summary, HandlerFactory handlerFactory) {
+      return RequestServer.registerEndpoint(apiName, httpMethod, url, handlerClass, handlerMethod, summary, handlerFactory);
+    }
+
+    @Override
+    public Route registerEndpoint(String methodUri, Class<? extends RestApiHandler> handlerClass) {
+      return RequestServer.registerEndpoint(methodUri, handlerClass);
+    }
+
+    private Set<Schema> allSchemas = new HashSet<>();
+
+    @Override
+    public void registerSchema(Schema... schemas) {
+      for (Schema schema : schemas) {
+        allSchemas.add(schema);
+      }
+    }
+
+    public Schema[] getAllSchemas() {
+      return allSchemas.toArray(new Schema[0]);
+    }
+  };
+
 }

@@ -6,13 +6,26 @@ h2oEnsemble TO DO
 * TO DO: Add a check that CV folds produce training sets that have both pos/neg examples instead of a constant response col (in the case of imbalanced data)
 * TO DO: Update the `runtime` list to include times for `cv` and `baselearning`.  These were dropped in version 0.0.5.
 * TO DO: Add ability to generate predicted values using the `validation_frame` argument; currently this arg is ignored and doesn't do anything, and predictions must be made with the `predict.h2o.ensemble` function.  This should also include setting a new output object to store metrics.
-* TO DO: Add support for multi-class classification.
+* TO DO: Add support for multi-class classification. https://0xdata.atlassian.net/browse/PUBDEV-2355
+* TO DO: Add `h2o.glm_nn wrapper`. Documented here: https://0xdata.atlassian.net/browse/PUBDEV-3733
+* TO DO: Add support for other distributions. https://0xdata.atlassian.net/browse/PUBDEV-2277
+* TO DO: Add support for external cross-validation of the ensemble by adding an `nfolds` argument.
 
 
-h2oEnsemble 0.1.8.9001 (devel)
+h2oEnsemble 0.2.0  (2017-07-19)
+-----------------
+* The `family` argument of `h2o.ensemble` now supports the superset of family/distribution values for H2O algorithms, which is: "AUTO", "binomial", "gaussian", "quasibinomial", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber”.
+* Updated all h2o.algo.wrapper functions to be consistent with latest stable version of h2o (3.10.5.4), including new arguments that have been added since the previous release.
+* Added `h2o.naiveBayes.wrapper` function (classification only).  Documented here: https://0xdata.atlassian.net/browse/PUBDEV-2855
+
+
+h2oEnsemble 0.1.9  (2017-07-17)
 -----------------
 * Updated defaults for GLM wrapper `tweedie_variance_power` and `tweedie_link_power` to match `h2o.glm` defaults.
-* Added `./man/h2o.stack.Rd` file to the GitHub repo (it was accidentally missing).
+* Added `./man/h2o.stack.Rd` file to the GitHub repo (it was accidentally missing).  Documented here: https://0xdata.atlassian.net/browse/PUBDEV-3221
+* Fixed bug in `print.h2o.ensemble_performance` function.  Documented here: https://0xdata.atlassian.net/browse/PUBDEV-3731
+* Modified the h2o.ensemble and h2o.stack code examples to use data hosted on S3 instead of Berkeley servers.  Documented here: https://0xdata.atlassian.net/browse/PUBDEV-3581
+* Updated all h2o.algo.wrapper functions to be consistent with h2o >= 3.10.1.1.
 
 
 h2oEnsemble 0.1.8 (2016-03-29)

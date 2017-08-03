@@ -40,8 +40,10 @@ Additional Requirements
 
 -  **Hadoop**: Hadoop is not required to run H2O unless you want to deploy H2O on a Hadoop cluster. Supported versions are listed on the `Download page <http://www.h2o.ai/download/>`_ (when you select the Install on Hadoop tab) and include:
 
-   -  Cloudera CDH 5.2 or later (5.3 is recommended)
-   -  Hortonworks HDP 2.1 or later
+   -  Cloudera CDH 5.4 or later
+   -  Hortonworks HDP 2.2 or later
+   -  MapR 4.0 or later
+   -  IBM Open Platform 4.2
 
   Refer to the :ref:`on-hadoop` section for detailed information.
 
@@ -410,21 +412,21 @@ This section describes how to use H2O on Hadoop.
 Supported Versions
 ~~~~~~~~~~~~~~~~~~
 
--  CDH 5.2
--  CDH 5.3
 -  CDH 5.4
 -  CDH 5.5
 -  CDH 5.6
 -  CDH 5.7
 -  CDH 5.8
--  HDP 2.1
+-  CDH 5.10
 -  HDP 2.2
 -  HDP 2.3
 -  HDP 2.4
 -  HDP 2.5
+-  HDP 2.6
 -  MapR 4.0
 -  MapR 5.0
 -  MapR 5.1
+-  IOP 4.2
 
 **Important Points to Remember**:
 
@@ -821,24 +823,3 @@ After obtaining the IP address, point your browser to the specified ip address a
 
     library(h2o)
     dockerH2O <- h2o.init(ip = "192.168.59.103", port = 54321)
-
-
-Cloud Integration
------------------
-
-H2O is supported on a number of cloud environments, including
-
-- EC2 Instances and S3 Storage (RedHat AMI, Amazon Linux AMI, and Ubuntu AMI)
-- Microsoft Azure
-- IBM DSX
-
-Refer to the following topics:
-
-.. toctree::
-   :maxdepth: 1
-
-   cloud-integration/ec2-and-s3
-   cloud-integration/azure-hdi
-   cloud-integration/azure-dsvm
-   cloud-integration/ibm-dsx
-

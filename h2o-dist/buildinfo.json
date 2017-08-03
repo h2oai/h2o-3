@@ -19,16 +19,6 @@
 
     "hadoop_distributions" : [
         {
-            "distribution" : "cdh5.2",
-            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-cdh5.2.zip",
-            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-cdh5.2.zip"
-        },
-        {
-            "distribution" : "cdh5.3",
-            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-cdh5.3.zip",
-            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-cdh5.3.zip"
-        },
-        {
             "distribution" : "cdh5.4",
             "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-cdh5.4.zip",
             "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-cdh5.4.zip"
@@ -52,11 +42,6 @@
             "distribution" : "cdh5.8",
             "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-cdh5.8.zip",
             "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-cdh5.8.zip"
-        },
-        {
-            "distribution" : "hdp2.1",
-            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-hdp2.1.zip",
-            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-hdp2.1.zip"
         },
         {
             "distribution" : "hdp2.2",
@@ -193,7 +178,7 @@
             "path" : "docs-website/h2o-docs/booklets/GLMBooklet.pdf"
         },
         {
-            "name" : "DeepLearning",
+            "name" : "Deep Learning",
             "id"   : "booklet-deeplearning",
             "path" : "docs-website/h2o-docs/booklets/DeepLearningBooklet.pdf"
         },
@@ -213,9 +198,14 @@
             "path" : "docs-website/h2o-docs/booklets/PythonBooklet.pdf"
         },
         {
-            "name" : "SparklingWater",
+            "name" : "Sparkling Water",
             "id"   : "booklet-sparklingwater",
             "path" : "docs-website/h2o-docs/booklets/SparklingWaterBooklet.pdf"
+        },
+        {
+            "name" : "Deep Water",
+            "id"   : "booklet-deepwater",
+            "path" : "docs-website/h2o-docs/booklets/DeepWaterBooklet.pdf"
         }
     ]
 }

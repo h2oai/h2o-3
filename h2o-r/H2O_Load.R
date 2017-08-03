@@ -3,7 +3,8 @@ SPENCER.ROOT.PATH <- "/Users/spencer/0xdata/"
 LUDI.ROOT.PATH <- "/Users/ludirehak/"
 ARNO.ROOT.PATH <- "/home/arno/"
 AMY.ROOT.PATH <- "/Users/amy/"
-USER.PATHS <- c(SPENCER.ROOT.PATH, LUDI.ROOT.PATH, ARNO.ROOT.PATH, AMY.ROOT.PATH) 
+MAGNUS.ROOT.PATH <- "/Users/magnus/Git/"
+USER.PATHS <- c(SPENCER.ROOT.PATH, LUDI.ROOT.PATH, ARNO.ROOT.PATH, AMY.ROOT.PATH, MAGNUS.ROOT.PATH) 
 ROOT.PATH <- USER.PATHS [ sapply(USER.PATHS, dir.exists)]
 DEV.PATH  <- "h2o-3/h2o-r/h2o-package/R/"
 FULL.PATH <- paste(ROOT.PATH, DEV.PATH, sep="")
@@ -14,13 +15,13 @@ function() {
   to_src <- c("astfun.R", "classes.R", "config.R", "connection.R", "constants.R", "logging.R", "communication.R",
               "import.R", "frame.R", "kvstore.R", "grid.R", 
               "parse.R", "export.R", "models.R", "edicts.R", "glm.R", "glrm.R", "pca.R", "kmeans.R",
-              "gbm.R", "deeplearning.R", "deepwater.R", "naivebayes.R", "randomforest.R", "svd.R", "locate.R")
+              "gbm.R", "deeplearning.R", "deepwater.R", "naivebayes.R", "randomforest.R", "svd.R", "locate.R", "predict.R")
   require(jsonlite); require(RCurl)
   invisible(lapply(to_src,function(x){source(paste(FULL.PATH, x, sep = ""))}))
 }
 src()
 
-
 h <- conn <- h2o.init(strict_version_check = F)
+
 #hex <- as.h2o(iris)
 #hex <- h2o.importFile(h, paste(ROOT.PATH, "h2o-dev/smalldata/logreg/prostate.csv", sep = ""))

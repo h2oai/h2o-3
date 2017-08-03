@@ -1,5 +1,7 @@
 package water.parser;
 
+import water.Futures;
+import water.H2O;
 import water.Iced;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
@@ -8,7 +10,7 @@ import water.util.IcedHashMap;
 /** Class implementing ParseWriter, on behalf ParseSetup
  * to examine the contents of a file for guess the column types.
  */
-public class PreviewParseWriter extends Iced implements ParseWriter {
+public class PreviewParseWriter extends Iced implements StreamParseWriter {
   protected final static int MAX_PREVIEW_COLS  = 100;
   protected final static int MAX_PREVIEW_LINES = 10;
   protected int _nlines;
@@ -96,6 +98,12 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
         _data[_nlines][colIdx] = "NA";
     }
   }
+
+  @Override
+  public void addNAs(int colIdx, int nrow) {
+    throw H2O.unimpl();
+  }
+
   @Override public void addStrCol(int colIdx, BufferedString str) {
     if(colIdx < _ncols) {
       // Check for time
@@ -271,4 +279,16 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
 
   @Override
   public long lineNum() {return _nlines;}
+
+  @Override
+  public StreamParseWriter nextChunk() {throw H2O.unimpl();}
+
+  @Override
+  public StreamParseWriter reduce(StreamParseWriter dout) {throw H2O.unimpl();}
+
+  @Override
+  public StreamParseWriter close() {return this;}
+
+  @Override
+  public StreamParseWriter close(Futures fs) {return this;}
 }

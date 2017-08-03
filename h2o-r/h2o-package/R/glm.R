@@ -38,12 +38,13 @@
 #'        number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for datasets with many
 #'        columns. Coordinate descent is experimental (beta). Must be one of: "AUTO", "IRLSM", "L_BFGS",
 #'        "COORDINATE_DESCENT_NAIVE", "COORDINATE_DESCENT". Defaults to AUTO.
-#' @param alpha distribution of regularization between L1 and L2. Default value of alpha is 0 when SOLVER = 'L-BFGS', 0.5
-#'        otherwise
-#' @param lambda regularization strength
-#' @param lambda_search \code{Logical}. use lambda search starting at lambda max, given lambda is then interpreted as lambda min
+#' @param alpha Distribution of regularization between the L1 (Lasso) and L2 (Ridge) penalties. A value of 1 for alpha
+#'        represents Lasso regression, a value of 0 produces Ridge regression, and anything in between specifies the
+#'        amount of mixing between the two. Default value of alpha is 0 when SOLVER = 'L-BFGS'; 0.5 otherwise.
+#' @param lambda Regularization strength
+#' @param lambda_search \code{Logical}. Use lambda search starting at lambda max, given lambda is then interpreted as lambda min
 #'        Defaults to FALSE.
-#' @param early_stopping \code{Logical}. stop early when there is no more relative improvement on train or validation (if provided)
+#' @param early_stopping \code{Logical}. Stop early when there is no more relative improvement on train or validation (if provided)
 #'        Defaults to TRUE.
 #' @param nlambdas Number of lambdas to be used in a search. Default indicates: If alpha is zero, with lambda search set to True,
 #'        the value of nlamdas is set to 30 (fewer lambdas are needed for ridge regression) otherwise it is set to 100.
@@ -51,17 +52,17 @@
 #' @param standardize \code{Logical}. Standardize numeric columns to have zero mean and unit variance Defaults to TRUE.
 #' @param missing_values_handling Handling of missing values. Either MeanImputation or Skip. Must be one of: "MeanImputation", "Skip". Defaults
 #'        to MeanImputation.
-#' @param compute_p_values \code{Logical}. request p-values computation, p-values work only with IRLSM solver and no regularization
+#' @param compute_p_values \code{Logical}. Request p-values computation, p-values work only with IRLSM solver and no regularization
 #'        Defaults to FALSE.
-#' @param remove_collinear_columns \code{Logical}. in case of linearly dependent columns remove some of the dependent columns Defaults to FALSE.
-#' @param intercept \code{Logical}. include constant term in the model Defaults to TRUE.
+#' @param remove_collinear_columns \code{Logical}. In case of linearly dependent columns, remove some of the dependent columns Defaults to FALSE.
+#' @param intercept \code{Logical}. Include constant term in the model Defaults to TRUE.
 #' @param non_negative \code{Logical}. Restrict coefficients (not intercept) to be non-negative Defaults to FALSE.
 #' @param max_iterations Maximum number of iterations Defaults to -1.
 #' @param objective_epsilon Converge if  objective value changes less than this. Default indicates: If lambda_search is set to True the
 #'        value of objective_epsilon is set to .0001. If the lambda_search is set to False and lambda is equal to zero,
 #'        the value of objective_epsilon is set to .000001, for any other value of lambda the default value of
 #'        objective_epsilon is set to .0001. Defaults to -1.
-#' @param beta_epsilon converge if  beta changes less (using L-infinity norm) than beta esilon, ONLY applies to IRLSM solver
+#' @param beta_epsilon Converge if  beta changes less (using L-infinity norm) than beta esilon, ONLY applies to IRLSM solver
 #'        Defaults to 0.0001.
 #' @param gradient_epsilon Converge if  objective changes less (using L-infinity norm) than this, ONLY applies to L-BFGS solver. Default
 #'        indicates: If lambda_search is set to False and lambda is equal to zero, the default value of gradient_epsilon
@@ -69,12 +70,12 @@
 #'        values above are 1E-8 and 1E-6 respectively. Defaults to -1.
 #' @param link  Must be one of: "family_default", "identity", "logit", "log", "inverse", "tweedie". Defaults to
 #'        family_default.
-#' @param prior prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
+#' @param prior Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
 #'        of response does not reflect reality. Defaults to -1.
-#' @param lambda_min_ratio Min lambda used in lambda search, specified as a ratio of lambda_max. Default indicates: if the number of
+#' @param lambda_min_ratio Minimum lambda used in lambda search, specified as a ratio of lambda_max. Default indicates: if the number of
 #'        observations is greater than the number of variables then lambda_min_ratio is set to 0.0001; if the number of
 #'        observations is less than the number of variables then lambda_min_ratio is set to 0.01. Defaults to -1.
-#' @param beta_constraints beta constraints
+#' @param beta_constraints Beta constraints
 #' @param max_active_predictors Maximum number of active predictors during computation. Use as a stopping criterion to prevent expensive model
 #'        building with many predictors. Default indicates: If the IRLSM solver is used, the value of
 #'        max_active_predictors is set to 7000 otherwise it is set to 100000000. Defaults to -1.
@@ -85,7 +86,7 @@
 #'        be automatically computed to obtain class balance during training. Requires balance_classes.
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
 #'        balance_classes. Defaults to 5.0.
-#' @param max_hit_ratio_k Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
+#' @param max_hit_ratio_k Maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
 #'        Defaults to 0.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine
@@ -174,12 +175,12 @@ h2o.glm <- function(x, y, training_frame,
                     max_runtime_secs = 0
                     ) 
 {
-  #If x is missing, then assume user wants to use all columns as features.
-  if(missing(x)){
-     if(is.numeric(y)){
-         x <- setdiff(col(training_frame),y)
-     }else{
-         x <- setdiff(colnames(training_frame),y)
+  # If x is missing, then assume user wants to use all columns as features.
+  if (missing(x)) {
+     if (is.numeric(y)) {
+         x <- setdiff(col(training_frame), y)
+     } else {
+         x <- setdiff(colnames(training_frame), y)
      }
   }
   # if (!is.null(beta_constraints)) {
@@ -194,7 +195,7 @@ h2o.glm <- function(x, y, training_frame,
   }
 
   # Required args: training_frame
-  if( missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
+  if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
   # Training_frame must be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
      tryCatch(training_frame <- h2o.getFrame(training_frame),

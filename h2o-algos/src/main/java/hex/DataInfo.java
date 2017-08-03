@@ -65,6 +65,14 @@ public class DataInfo extends Keyed<DataInfo> {
     _catNAFill = catNAFill;
   }
 
+  public double normSub(int i) {
+    return _normSub == null?0:_normSub[i];
+  }
+
+  public double normMul(int i) {
+    return _normMul == null?1:_normMul[i];
+  }
+
   public enum TransformType {
     NONE, STANDARDIZE, NORMALIZE, DEMEAN, DESCALE;
 
@@ -925,6 +933,20 @@ public class DataInfo extends Keyed<DataInfo> {
           int j = numIds[i];
           numVals[i] = (numVals[i] - normSub[j])*normMul[j];
         }
+    }
+
+    public void addToArray(double scale, double []res) {
+      for (int i = 0; i < nBins; i++)
+        res[binIds[i]] += scale;
+      int numstart = numStart();
+      if (numIds != null) {
+        for (int i = 0; i < nNums; ++i)
+          res[numIds[i]] += scale * numVals[i];
+      } else for (int i = 0; i < numVals.length; ++i)
+        if (numVals[i] != 0)
+          res[numstart + i] += scale * numVals[i];
+      if (_intercept)
+        res[res.length - 1] += scale;
     }
   }
 

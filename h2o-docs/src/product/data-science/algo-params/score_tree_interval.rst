@@ -1,7 +1,7 @@
 ``score_tree_interval``
 ------------------------
 
-- Available in: GBM, DRF
+- Available in: GBM, DRF, XGBoost
 - Hyperparameter: no
 
 Description

@@ -9,13 +9,15 @@ import water.Key;
 import water.TypeMap;
 import water.api.schemas3.ModelParametersSchemaV3;
 import water.util.HttpResponseStatus;
+import water.util.Log;
 import water.util.PojoUtils;
 
 import java.util.Properties;
 
 public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchemaV3> extends Handler {
   // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
-  @Override S handle(int version, Route route, Properties parms, String postBody) throws Exception {
+  @Override
+  public S handle(int version, Route route, Properties parms, String postBody) throws Exception {
     // Peek out the desired algo from the URL
     String ss[] = route._url.split("/");
     String algoURLName = ss[3]; // {}/{3}/{ModelBuilders}/{gbm}/{parameters}
@@ -37,11 +39,21 @@ public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderS
 
     // User specified key, or make a default?
     String model_id = parms.getProperty("model_id");
+    String warningStr = null;
+    if ((model_id != null) && (model_id.contains("/"))) { // found / in model_id, replace with _ and set warning
+      String tempName = model_id;
+      model_id = model_id.replaceAll("/", "_");
+      warningStr = "Bad model_id: slash (/) found and replaced with _.  " + "Original model_id "+tempName +
+              " is now "+model_id+".";
+      Log.warn("model_id", warningStr);
+    }
     Key<Model> key = doTrain ? (model_id==null ? ModelBuilder.defaultKey(algoName) : Key.<Model>make(model_id)) : null;
     // Default Job for just this training
-    Job job = doTrain ? new Job<>(key,ModelBuilder.javaName(algoURLName),algoName) : null;
+    Job job = doTrain ? (warningStr!=null ? new Job<>(key,ModelBuilder.javaName(algoURLName),algoName, warningStr) :
+            new Job<>(key,ModelBuilder.javaName(algoURLName),algoName)) : null;
     // ModelBuilder
     B builder = ModelBuilder.make(algoURLName,job,key);
+
     schema.parameters.fillFromImpl(builder._parms); // Defaults for this builder into schema
     schema.parameters.fillFromParms(parms);         // Overwrite with user parms
     schema.parameters.fillImpl(builder._parms);     // Merged parms back over Model.Parameter object

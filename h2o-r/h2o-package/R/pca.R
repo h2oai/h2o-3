@@ -54,7 +54,7 @@ h2o.prcomp <- function(training_frame, x,
 {
 
   # Required args: training_frame
-  if( missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
+  if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
   # Training_frame must be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
      tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -101,5 +101,5 @@ h2o.prcomp <- function(training_frame, x,
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
   # Error check and build model
-  .h2o.modelJob('pca', parms, h2oRestApiVersion=3) 
+  .h2o.modelJob('pca', parms, h2oRestApiVersion = 3) 
 }

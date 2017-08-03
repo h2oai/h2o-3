@@ -9,6 +9,7 @@ import org.apache.hadoop.hive.serde2.io.HiveDecimalWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.joda.time.DateTime;
 import org.joda.time.MutableDateTime;
+import water.Futures;
 import water.H2O;
 import water.Job;
 import water.Key;
@@ -18,6 +19,7 @@ import water.util.ArrayUtils;
 import water.util.StringUtils;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -65,6 +67,27 @@ public class OrcParser extends Parser {
   private transient int _cidx;
 
   private transient HashMap<Integer,HashMap<Number,byte[]>> _toStringMaps = new HashMap<>();
+
+
+  @Override protected ParseWriter streamParse(final InputStream is, final StreamParseWriter dout) throws IOException {
+    List<StripeInformation> stripesInfo = ((OrcParseSetup) this._setup).getStripes();
+    StreamParseWriter nextChunk = dout;
+    Futures fs = new Futures();
+    for(int i = 0; i < stripesInfo.size(); i++) {
+      parseChunk(i, null, nextChunk);
+      nextChunk.close(fs);
+      if(dout != nextChunk)
+        dout.reduce(nextChunk);
+      if(i < stripesInfo.size()-1) nextChunk = nextChunk.nextChunk();
+    }
+    return dout;
+  }
+
+  @Override protected ParseWriter streamParseZip( final InputStream is, final StreamParseWriter dout, InputStream bvs ) throws IOException {
+    throw new UnsupportedOperationException("H2O Orc Parser does not support parsing of zipped orc files");
+  }
+
+
   /**
    * This method calculates the number of stripes that will be read for each chunk.  Since
    * only single threading is supported in reading each stripe, we will never split one stripe
@@ -109,11 +132,18 @@ public class OrcParser extends Parser {
         int colIndex = 0;
         for (int col = 0; col < batch.numCols; ++col) {  // read one column at a time;
           if (toInclude[col + 1]) { // only write a column if we actually want it
-            write1column(dataVectors[col], orcTypes[colIndex], colIndex, nrows, dout);
+            if(_setup.getColumnTypes()[colIndex] != Vec.T_BAD)
+              write1column(dataVectors[col], orcTypes[colIndex], colIndex, nrows, dout);
+            else dout.addNAs(col,nrows);
             colIndex++;
           }
         }
         rows  += currentBatchRow;    // record number of rows of data actually read
+      }
+      byte [] col_types = _setup.getColumnTypes();
+      for(int i = 0; i < col_types.length; ++i){
+        if(col_types[i] == Vec.T_BAD)
+          dout.addNAs(i,(int)rowCount);
       }
       perStripe.close();
     } catch(IOException ioe) {

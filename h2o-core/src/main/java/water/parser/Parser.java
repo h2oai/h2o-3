@@ -72,18 +72,9 @@ public abstract class Parser extends Iced {
   // Parse this one Chunk (in parallel with other Chunks)
   protected abstract ParseWriter parseChunk(int cidx, final ParseReader din, final ParseWriter dout);
 
-  ParseWriter streamParse( final InputStream is, final ParseWriter dout) throws IOException {
-    if (!_setup._parse_type.isParallelParseSupported) throw H2O.unimpl();
-    StreamData din = new StreamData(is);
-    int cidx=0;
-    // FIXME leaving _jobKey == null until sampling is done, this mean entire zip files
-    // FIXME are parsed for parseSetup
-    while( is.available() > 0 && (_jobKey == null || _jobKey.get().stop_requested()) )
-      parseChunk(cidx++, din, dout);
-    parseChunk(cidx, din, dout);     // Parse the remaining partial 32K buffer
-    return dout;
+  protected ParseWriter streamParse( final InputStream is, final StreamParseWriter dout) throws IOException {
+    return streamParseZip(is,dout,is);
   }
-
 
   /**
    *   This method performs guess setup with each file.  If will return true only if the number of columns/separator
@@ -205,7 +196,7 @@ public abstract class Parser extends Iced {
   // ------------------------------------------------------------------------
   // Zipped file; no parallel decompression; decompress into local chunks,
   // parse local chunks; distribute chunks later.
-  ParseWriter streamParseZip( final InputStream is, final StreamParseWriter dout, InputStream bvs ) throws IOException {
+  protected ParseWriter streamParseZip( final InputStream is, final StreamParseWriter dout, InputStream bvs ) throws IOException {
     // All output into a fresh pile of NewChunks, one per column
     if (!_setup._parse_type.isParallelParseSupported) throw H2O.unimpl();
     StreamParseWriter nextChunk = dout;
@@ -227,17 +218,48 @@ public abstract class Parser extends Iced {
     return dout;
   }
 
+  final static class ByteAryData implements ParseReader {
+    private final byte [] _bits;
+    public int _off;
+    final long _globalOffset;
+
+    public ByteAryData(byte [] bits, long globalOffset){
+      _bits = bits;
+      _globalOffset = globalOffset;
+    }
+
+    @Override
+    public byte[] getChunkData(int cidx) {
+      return cidx == 0?_bits:null;
+    }
+
+    @Override
+    public int getChunkDataStart(int cidx) {return -1;}
+
+    @Override
+    public void setChunkDataStart(int cidx, int offset) {
+      if(cidx == 0) _off = offset;
+    }
+
+    @Override
+    public long getGlobalByteOffset() {return _globalOffset;}
+  }
   /** Class implementing DataIns from a Stream (probably a GZIP stream)
    *  Implements a classic double-buffer reader.
    */
   final static class StreamData implements ParseReader {
-    public static int bufSz = 64*1024;
+    final int bufSz;
     final transient InputStream _is;
-    private byte[] _bits0 = new byte[bufSz];
-    private byte[] _bits1 = new byte[bufSz];
+    private byte[] _bits0;
+    private byte[] _bits1;
     private int _cidx0=-1, _cidx1=-1; // Chunk #s
     private int _coff0=-1, _coff1=-1; // Last used byte in a chunk
-    private StreamData(InputStream is){_is = is;}
+    protected StreamData(InputStream is){this(is,64*1024);}
+    protected StreamData(InputStream is, int bufSz){
+      _is = is; this.bufSz = bufSz;
+      _bits0 = new byte[bufSz];
+      _bits1 = new byte[bufSz];
+    }
     long _gOff;
     @Override public byte[] getChunkData(int cidx) {
       if( cidx == _cidx0 ) return _bits0;

@@ -1,0 +1,22 @@
+description = "H2O XGBoost support"
+
+dependencies {
+    compile project(":h2o-core")
+    compile project(":h2o-algos")
+    compile project(":h2o-genmodel")
+    compile project(":h2o-genmodel-ext-xgboost")
+
+    testCompile "junit:junit:${junitVersion}"
+    testCompile project(path: ":h2o-core", configuration: "testArchives")
+}
+
+apply from: "${rootDir}/gradle/dataCheck.gradle"
+
+test {
+    dependsOn ":h2o-core:testJar"
+    // Note: multi node tests are ignored right now!
+    dependsOn smalldataCheck, cpLibs, jar, testJar, testSingleNode //, testMultiNode
+
+    // Defeat task 'test' by running no tests.
+    exclude '**'
+}
