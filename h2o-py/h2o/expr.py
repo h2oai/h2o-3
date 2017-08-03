@@ -111,13 +111,15 @@ class ExprNode(object):
             self._cache.ncols = res['num_cols']
         return self
 
-    # Recursively build a rapids execution string.  Any object with more than
+    # Build a rapids execution string.  Any object with more than
     # MAGIC_REF_COUNT referrers will be cached as a temp until the next client GC
     # cycle - consuming memory.  Do Not Call This except when you need to do some
     # other cluster operation on the evaluated object.  Examples might be: lazy
     # dataset time parse vs changing the global timezone.  Global timezone change
     # is eager, so the time parse as to occur in the correct order relative to
     # the timezone change, so cannot be lazy.
+    #
+    # If the top argument is set to true, the current frame should be cached
     #
     def _get_ast_str(self, top):
         stack = collections.deque()
