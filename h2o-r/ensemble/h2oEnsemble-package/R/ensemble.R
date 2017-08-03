@@ -54,8 +54,10 @@ h2o.ensemble <- function(x, y, training_frame,
     # TO DO: Update this ylim calc when h2o.range method gets implemented for H2OFrame cols
     #ylim <- c(min(training_frame[,y]), max(training_frame[,y]))  #Used to enforce bounds
     ylim <- h2o.range(training_frame[,y])
-    if (ylim[1] <= 0) {
-      stop("family = gamma requires a positive respone")
+    if (family == "gamma") {
+      if (ylim[1] <= 0) {
+        stop("family = gamma requires a positive respone")
+      }      
     }
   } else {
     if (!is.factor(training_frame[,y])) {
