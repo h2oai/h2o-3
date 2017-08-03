@@ -161,6 +161,10 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
     _off=off;
   }
 
+  public void setLen(int len) {
+    _len=len;
+  }
+
   @Override public boolean equals(Object o){
     if(o instanceof BufferedString) {
       BufferedString str = (BufferedString) o;
