@@ -192,7 +192,7 @@ class ExprNode(object):
         return "".join(self._2_string(sb=[])) if pprint else ExprNode._collapse_sb(self._2_string(sb=[]))
 
     def _to_string(self):
-        return ' '.join(["(" + self._op] + [ExprNode._primitive_expr_to_string(a) for a in self._children] + [")"])
+        return self._get_ast_str(False)
 
     def _2_string(self, depth=0, sb=None):
         sb += ['\n', " " * depth, "(" + self._op, " "]
