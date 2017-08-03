@@ -16,8 +16,8 @@ import java.util.*;
 public class RapidsParser {
     private final String _str;  // Statement to parse and execute
     private int _x;             // Parse pointer, points to the index of the next character to be consumed
-    private Deque<AstRoot> out = new LinkedList<>();
-    private Deque<Integer> counter = new LinkedList<>();
+    private Deque<AstRoot> stack = new ArrayDeque<>();
+    private Deque<Integer> counter = new ArrayDeque<>();
 
     /**
      * Parse and return the expression represented by the rapids string.
@@ -67,13 +67,13 @@ public class RapidsParser {
             }
         }
 
-        AstRoot res = out.pollLast(); // if the Rapids expression is correct, there should be only single element
-        if (out.size() != 0){
+        AstRoot res = stack.poll(); // if the Rapids expression is correct, there should be only single element
+        if (stack.size() != 0){
             throw new Rapids.IllegalASTException("Syntax error: illegal Rapids expression `" + _str + "`");
         }
         return res;
     }
-    
+
     public static AstRoot parse(String rapids) {
         return new RapidsParser(rapids).parse();
     }
@@ -83,9 +83,9 @@ public class RapidsParser {
     //--------------------------------------------------------------------------------------------------------------------
 
     private void addRapidsOutput(AstRoot rapids){
-        out.add(rapids);
+        stack.push(rapids);
         if(!counter.isEmpty()) {
-            counter.add(counter.pollLast() + 1);
+            counter.push(counter.poll() + 1);
         }
     }
 
@@ -96,7 +96,7 @@ public class RapidsParser {
      */
     private void parseFunctionApplicationOpen(){
         eatChar('(');
-        counter.add(0); // create a new counter
+        counter.push(0); // create a new counter
     }
 
     /**
@@ -109,9 +109,9 @@ public class RapidsParser {
 
         ArrayList<AstRoot> asts = new ArrayList<>();
 
-        int numPoll = counter.pollLast();
+        int numPoll = counter.poll();
         for(int i = 0; i<numPoll; i++){
-            asts.add(out.pollLast());
+            asts.add(stack.poll());
         }
         Collections.reverse(asts);
 
@@ -132,7 +132,7 @@ public class RapidsParser {
      */
     private void parseFunctionDefinitionOpen(){
         eatChar('{');
-        counter.add(0); // create a new counter
+        counter.push(0); // create a new counter
 
         // Parse the list of ids
         addRapidsOutput(new AstStr("")); // 1-based ID list
@@ -159,12 +159,12 @@ public class RapidsParser {
         // Parse the body
         eatChar('}');
 
-        AstRoot body = out.pollLast();
+        AstRoot body = stack.poll();
 
         ArrayList<String> argNames = new ArrayList<>();
-        int numPoll = counter.pollLast() - 1; // -1 because of the body obtained above
+        int numPoll = counter.poll() - 1; // -1 because of the body obtained above
         for(int i = 0; i < numPoll; i++){
-            argNames.add(out.pollLast().exec(null).getStr()); // get back the string value of argument name
+            argNames.add(stack.poll().exec(null).getStr()); // get back the string value of argument name
         }
         Collections.reverse(argNames);
 
