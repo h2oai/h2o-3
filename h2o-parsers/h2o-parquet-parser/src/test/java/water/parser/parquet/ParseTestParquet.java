@@ -226,7 +226,7 @@ public class ParseTestParquet extends TestUtil {
         assertArrayEquals("Column names need to match!", ar("cat_field"), f.names());
         assertArrayEquals("Column types need to match!", ar(Vec.T_CAT), f.types());
         for (int row = 0; row < nrows(); row++) {
-          String catValue = row == 66 ? "weird\0" : "CAT_" + (row % 10);
+          String catValue = row == 66 ? "CAT_0_weird\0" : "CAT_" + (row % 10);
           assertEquals("Value in column string_field", catValue, f.vec(0).factor(f.vec(0).at8(row))
           );
         }
@@ -335,7 +335,7 @@ class ParquetFileGenerator {
     try {
       for (int i = 0; i < nrows; i++) {
         Group g = fact.newGroup();
-        String value = i == 66 ? "weird\0" : "CAT_" + (i % 10);
+        String value = i == 66 ? "CAT_0_weird\0" : "CAT_" + (i % 10);
         writer.write(g.append("cat_field", value));
       }
     } finally {
