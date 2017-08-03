@@ -2,16 +2,7 @@ package water.rapids;
 
 import water.H2O;
 import water.fvec.Frame;
-import water.rapids.ast.AstExec;
-import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
-import water.rapids.ast.params.AstId;
-import water.rapids.ast.params.AstNum;
-import water.rapids.ast.params.AstStr;
-
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.LinkedList;
 
 /**
  * <p> Rapids is an interpreter of abstract syntax trees.
