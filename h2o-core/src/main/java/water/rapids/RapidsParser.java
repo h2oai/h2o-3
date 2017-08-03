@@ -16,18 +16,8 @@ import java.util.*;
 public class RapidsParser {
     private final String _str;  // Statement to parse and execute
     private int _x;             // Parse pointer, points to the index of the next character to be consumed
-    private Deque<Pair> out = new LinkedList<>();
-
-    private static class Pair{
-        AstRoot rapid;
-        boolean splitter;
-        public Pair(AstRoot rapid, boolean meta){
-            this.rapid = rapid;
-            this.splitter = meta;
-        }
-
-    }
-
+    private Deque<AstRoot> out = new LinkedList<>();
+    private Deque<Integer> counter = new LinkedList<>();
 
     /**
      * Parse and return the expression represented by the rapids string.
@@ -46,44 +36,44 @@ public class RapidsParser {
                     parseFunctionApplicationOpen();
                     break;
                 case ')':
-                   parseFunctionApplicationClose();
-                   break;
+                    parseFunctionApplicationClose();
+                    break;
                 case '{':
                     parseFunctionDefinitionOpen();
                     break;
                 case '}':
-                   parseFunctionDefinitionClose();
+                    parseFunctionDefinitionClose();
                     break;
                 case '[':
-                    out.add(new Pair(parseList(), false));
+                    addRapidsOutput(parseList());
                     break;
                 case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
-                    out.add(new Pair(new AstNum(parseNumber()), false));
+                    addRapidsOutput(new AstNum(parseNumber()));
                     break;
                 case '-':
                     if(peek(1)>='0' && peek(1) <='9') {
-                        out.add(new Pair(new AstNum(parseNumber()), false));
+                        addRapidsOutput(new AstNum(parseNumber()));
                     } else {
-                        out.add(new Pair(new AstId(parseToken()), false));
+                        addRapidsOutput(new AstId(parseToken()));
                     }
                     break;
                 case '\"': case '\'':
-                    out.add(new Pair(new AstStr(parseString()), false));
+                    addRapidsOutput(new AstStr(parseString()));
                     break;
                 case ' ':
                     throw new Rapids.IllegalASTException("Expected an expression but ran out of text");
                 default:
-                    out.add(new Pair(new AstId(parseToken()), false));
+                    addRapidsOutput(new AstId(parseToken()));
             }
         }
 
-        AstRoot res = out.pollLast().rapid; // if the Rapids are correct there should be only single element
+        AstRoot res = out.pollLast(); // if the Rapids expression is correct, there should be only single element
         if (out.size() != 0){
             throw new Rapids.IllegalASTException("Syntax error: illegal Rapids expression `" + _str + "`");
         }
         return res;
     }
-
+    
     public static AstRoot parse(String rapids) {
         return new RapidsParser(rapids).parse();
     }
@@ -92,6 +82,12 @@ public class RapidsParser {
     // Private
     //--------------------------------------------------------------------------------------------------------------------
 
+    private void addRapidsOutput(AstRoot rapids){
+        out.add(rapids);
+        if(!counter.isEmpty()) {
+            counter.add(counter.pollLast() + 1);
+        }
+    }
 
     /**
      * Parse "function application" expression, i.e. pattern of the form "(func ...args)"
@@ -100,7 +96,7 @@ public class RapidsParser {
      */
     private void parseFunctionApplicationOpen(){
         eatChar('(');
-        out.add(new Pair(null, true));
+        counter.add(0); // create a new counter
     }
 
     /**
@@ -112,12 +108,12 @@ public class RapidsParser {
         eatChar(')');
 
         ArrayList<AstRoot> asts = new ArrayList<>();
-        while(!out.peekLast().splitter){
-            asts.add(out.pollLast().rapid);
+
+        int numPoll = counter.pollLast();
+        for(int i = 0; i<numPoll; i++){
+            asts.add(out.pollLast());
         }
         Collections.reverse(asts);
-        // remove the splitter
-        out.pollLast();
 
         AstExec res = new AstExec(asts);
         if (peek(0) == '-') {
@@ -126,7 +122,7 @@ public class RapidsParser {
             AstId tmpid = new AstId(parseToken());
             res = new AstExec(new AstRoot[]{new AstId("tmp="), tmpid, res});
         }
-        out.add(new Pair(res, false));
+        addRapidsOutput(res);
     }
 
     /**
@@ -136,10 +132,10 @@ public class RapidsParser {
      */
     private void parseFunctionDefinitionOpen(){
         eatChar('{');
+        counter.add(0); // create a new counter
 
-        out.add(new Pair(null, true));
         // Parse the list of ids
-        out.add(new Pair(new AstStr(""), false));  // 1-based ID list
+        addRapidsOutput(new AstStr("")); // 1-based ID list
         while (firstNonWhiteSpaceChar() != '.') {
             String id = parseToken();
             if (!Character.isJavaIdentifierStart(id.charAt(0)))
@@ -147,7 +143,7 @@ public class RapidsParser {
             for (char c : id.toCharArray())
                 if (!Character.isJavaIdentifierPart(c))
                     throw new Rapids.IllegalASTException("variable must be a valid Java identifier: " + id);
-            out.add(new Pair(new AstStr(id), false));
+            addRapidsOutput(new AstStr(id));
         }
 
         // Single dot separates the list of ids from the body of the function
@@ -163,19 +159,16 @@ public class RapidsParser {
         // Parse the body
         eatChar('}');
 
-        AstRoot body = out.pollLast().rapid;
+        AstRoot body = out.pollLast();
 
         ArrayList<String> argNames = new ArrayList<>();
-        while(!out.peekLast().splitter){
-            argNames.add(out.pollLast().rapid.exec(null).getStr());
+        int numPoll = counter.pollLast() - 1; // -1 because of the body obtained above
+        for(int i = 0; i < numPoll; i++){
+            argNames.add(out.pollLast().exec(null).getStr()); // get back the string value of argument name
         }
         Collections.reverse(argNames);
 
-        // remove the splitter
-        out.pollLast();
-
-
-        out.add(new Pair(new AstFunction(argNames, body), false));
+        addRapidsOutput(new AstFunction(argNames, body));
     }
 
     // Set of characters that cannot appear inside a token
