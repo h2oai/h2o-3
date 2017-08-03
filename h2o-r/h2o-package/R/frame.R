@@ -1794,16 +1794,29 @@ h2o.nlevels <- function(x) {
   if (!is.list(levels)) length(levels)
   else lapply(levels,length)
 }
+
+
 #'
 #' Set Levels of H2O Factor Column
 #'
 #' Works on a single categorical vector. New domains must be aligned with the old domains.
-#' This call has SIDE EFFECTS and mutates the column in place (does not make a copy).
+#' This call has SIDE EFFECTS and mutates the column in place (change of the levels will also affect all the frames
+#' that are referencing this column). If you want to make a copy of the column instead, use parameter in.place = FALSE.
 #'
 #' @param x A single categorical column.
 #' @param levels A character vector specifying the new levels. The number of new levels must match the number of old levels.
+#' @param in.place Indicates whether new domain will be directly applied to the column (in place change) or if a copy
+#'        of the column will be created with the given domain levels.
 #' @export
-h2o.setLevels <- function(x, levels) .newExpr("setDomain", chk.H2OFrame(x), levels)
+#' @examples
+#' \donttest{
+#' h2o.init()
+#' iris.hex <- as.h2o(iris)
+#' new.levels <- c("setosa", "versicolor", "caroliniana")
+#' iris.hex$Species <- h2o.setLevels(iris.hex$Species, new.levels, in.place = FALSE)
+#' h2o.levels(iris.hex$Species)
+#' }
+h2o.setLevels <- function(x, levels, in.place = TRUE) .newExpr("setDomain", chk.H2OFrame(x), in.place, levels)
 
 
 #'
