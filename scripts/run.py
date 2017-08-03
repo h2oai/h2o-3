@@ -262,7 +262,7 @@ class H2OCloudNode(object):
     """
 
     def __init__(self, is_client, cloud_num, nodes_per_cloud, node_num, cloud_name, h2o_jar, ip, base_port,
-                 xmx, cp, output_dir, test_ssl):
+                 xmx, output_dir, test_ssl):
         """
         Create a node in a cloud.
 
@@ -274,7 +274,6 @@ class H2OCloudNode(object):
         :param h2o_jar: Path to H2O jar file.
         :param base_port: The starting port number we are trying to get our nodes to listen on.
         :param xmx: Java memory parameter.
-        :param cp: Java classpath parameter.
         :param output_dir: The directory where we can create an output file for this process.
         :return The node object.
         """
@@ -287,7 +286,6 @@ class H2OCloudNode(object):
         self.ip = ip
         self.base_port = base_port
         self.xmx = xmx
-        self.cp = cp
         self.output_dir = output_dir
 
         self.port = -1
@@ -320,26 +318,22 @@ class H2OCloudNode(object):
         # to match the cdh3 cluster we're hard-wiring tests to
         # i.e. it won't make s3n/s3 break on ec2
 
-        if self.is_client:
-            main_class = "water.H2OClientApp"
-        else:
-            main_class = "water.H2OApp"
-
         if "JAVA_HOME" in os.environ:
             java = os.environ["JAVA_HOME"] + "/bin/java"
         else:
             java = "java"
-        classpath_sep = ";" if sys.platform == "win32" else ":"
-        classpath = self.h2o_jar if self.cp == "" else self.h2o_jar + classpath_sep + self.cp
+
         cmd = [java,
                # "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005",
                "-Xmx" + self.xmx,
                "-ea",
-               "-cp", classpath,
-               main_class,
+               "-jar", self.h2o_jar,
                "-name", self.cloud_name,
                "-baseport", str(self.my_base_port),
                "-ga_opt_out"]
+
+        if self.is_client:
+            cmd += ["-client"]
 
         # If the jacoco flag was included, then modify cmd to generate coverage
         # data using the jacoco agent
@@ -514,7 +508,7 @@ class H2OCloud(object):
     A class representing one of the H2O clouds.
     """
 
-    def __init__(self, cloud_num, use_client, nodes_per_cloud, h2o_jar, base_port, xmx, cp, output_dir, test_ssl):
+    def __init__(self, cloud_num, use_client, nodes_per_cloud, h2o_jar, base_port, xmx, output_dir, test_ssl):
         """
         Create a cloud.
         See node definition above for argument descriptions.
@@ -527,7 +521,6 @@ class H2OCloud(object):
         self.h2o_jar = h2o_jar
         self.base_port = base_port
         self.xmx = xmx
-        self.cp = cp
         self.output_dir = output_dir
         self.test_ssl = test_ssl
 
@@ -556,7 +549,7 @@ class H2OCloud(object):
                                 self.cloud_name,
                                 self.h2o_jar,
                                 "127.0.0.1", self.base_port,
-                                self.xmx, self.cp, self.output_dir,
+                                self.xmx, self.output_dir,
                                 self.test_ssl)
             if is_client:
                 self.client_nodes.append(node)
@@ -978,7 +971,7 @@ class TestRunner(object):
     def __init__(self,
                  test_root_dir,
                  use_cloud, use_cloud2, use_client, cloud_config, use_ip, use_port,
-                 num_clouds, nodes_per_cloud, h2o_jar, base_port, xmx, cp, output_dir,
+                 num_clouds, nodes_per_cloud, h2o_jar, base_port, xmx, output_dir,
                  failed_output_dir, path_to_tar, path_to_whl, produce_unit_reports,
                  testreport_dir, r_pkg_ver_chk, hadoop_namenode, on_hadoop, perf, test_ssl):
         """
@@ -995,7 +988,6 @@ class TestRunner(object):
         :param h2o_jar: Path to H2O jar file to run.
         :param base_port: Base H2O port (e.g. 54321) to start choosing from.
         :param xmx: Java -Xmx parameter.
-        :param cp: Java -cp parameter (appended to h2o.jar cp).
         :param output_dir: Directory for output files.
         :param failed_output_dir: Directory to copy failed test output.
         :param path_to_tar: path to h2o R package.
@@ -1069,7 +1061,7 @@ class TestRunner(object):
                 node_num += 1
         else:
             for i in range(self.num_clouds):
-                cloud = H2OCloud(i, self.use_client, self.nodes_per_cloud, h2o_jar, self.base_port, xmx, cp,
+                cloud = H2OCloud(i, self.use_client, self.nodes_per_cloud, h2o_jar, self.base_port, xmx,
                                  self.output_dir, self.test_ssl)
                 self.clouds.append(cloud)
 
@@ -1962,7 +1954,6 @@ g_use_ip = None
 g_use_port = None
 g_no_run = False
 g_jvm_xmx = "1g"
-g_jvm_cp = ""
 g_nopass = False
 g_nointernal = False
 g_convenient = False
@@ -2080,9 +2071,6 @@ def usage():
     print("    --norun          Perform side effects like wipe, but don't actually run tests.")
     print("")
     print("    --jvm.xmx        Configure size of launched JVM running H2O. E.g. '--jvm.xmx 3g'")
-    print("")
-    print("    --jvm.cp         Classpath argument, in addition to h2o.jar path. E.g. "
-          "'--jvm.cp /Users/h2o/mysql-connector-java-5.1.38-bin.jar'")
     print("")
     print("    --nopass         Run the NOPASS and NOFEATURE tests only and do not ignore any failures.")
     print("")
@@ -2207,7 +2195,6 @@ def parse_args(argv):
     global g_use_port
     global g_no_run
     global g_jvm_xmx
-    global g_jvm_cp
     global g_nopass
     global g_nointernal
     global g_convenient
@@ -2351,11 +2338,6 @@ def parse_args(argv):
             if i >= len(argv):
                 usage()
             g_jvm_xmx = argv[i]
-        elif s == "--jvm.cp":
-            i += 1
-            if i > len(argv):
-                usage()
-            g_jvm_cp = argv[i]
         elif s == "--norun":
             g_no_run = True
         elif s == "--noxunit":
@@ -2576,7 +2558,7 @@ def main(argv):
 
     g_runner = TestRunner(test_root_dir,
                           g_use_cloud, g_use_cloud2, g_use_client, g_config, g_use_ip, g_use_port,
-                          g_num_clouds, g_nodes_per_cloud, h2o_jar, g_base_port, g_jvm_xmx, g_jvm_cp,
+                          g_num_clouds, g_nodes_per_cloud, h2o_jar, g_base_port, g_jvm_xmx,
                           g_output_dir, g_failed_output_dir, g_path_to_tar, g_path_to_whl, g_produce_unit_reports,
                           testreport_dir, g_r_pkg_ver_chk, g_hadoop_namenode, g_on_hadoop, g_perf, g_test_ssl)
 

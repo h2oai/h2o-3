@@ -62,15 +62,12 @@ class H2OAutoML(object):
                  seed=None,
                  project_name=None):
 
-        #Check if H2O jar contains AutoML
-        try:
-            h2o.api("GET /3/Metadata/schemas/AutoMLV99")
-        except h2o.exceptions.H2OResponseError as e:
-            print(e)
+        # Check if AutoML extension is available
+        if not H2OAutoML.available():
             print("*******************************************************************\n" \
                   "*Please verify that your H2O jar has the proper AutoML extensions.*\n" \
-                  "*******************************************************************\n" \
-                  "\nVerbose Error Message:")
+                  "*******************************************************************\n")
+            raise RuntimeError("AutoML extension is not available")
 
         #If max_runtime_secs is not provided, then it is set to default (3600 secs)
         if max_runtime_secs is not 3600:
@@ -122,6 +119,15 @@ class H2OAutoML(object):
         self._automl_key = None
         self._leader_id = None
         self._leaderboard = None
+
+    @staticmethod
+    def available():
+        """
+        Ask the H2O server whether AutoML extension is available.
+
+        :return: True if a AutoML is available, False otherwise
+        """
+        return 'AutoML' in h2o.cluster().list_api_extensions()
 
     #---------------------------------------------------------------------------
     # Basic properties

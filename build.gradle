@@ -95,6 +95,10 @@ ext {
       project(':h2o-ext-xgboost')
     ]
 
+    extensionProjects = [
+      project(':h2o-automl')
+    ]
+
     scalaProjects = [
       project(':h2o-scala_2.10'),
       project(':h2o-scala_2.11'),
