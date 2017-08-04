@@ -449,7 +449,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         (same as learn_rate) Learning rate (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.3``).
         """
         return self._parms.get("eta")
 

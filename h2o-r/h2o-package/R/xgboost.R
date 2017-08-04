@@ -46,7 +46,7 @@
 #' @param min_rows (same as min_child_weight) Fewest allowed (weighted) observations in a leaf. Defaults to 10.
 #' @param min_child_weight (same as min_rows) Fewest allowed (weighted) observations in a leaf. Defaults to 0.
 #' @param learn_rate (same as eta) Learning rate (from 0.0 to 1.0) Defaults to 0.3.
-#' @param eta (same as learn_rate) Learning rate (from 0.0 to 1.0) Defaults to 0.
+#' @param eta (same as learn_rate) Learning rate (from 0.0 to 1.0) Defaults to 0.3.
 #' @param sample_rate (same as subsample) Row sample rate per tree (from 0.0 to 1.0) Defaults to 1.
 #' @param subsample (same as sample_rate) Row sample rate per tree (from 0.0 to 1.0) Defaults to 0.
 #' @param col_sample_rate (same as colsample_bylevel) Column sample rate (from 0.0 to 1.0) Defaults to 1.
@@ -106,7 +106,7 @@ h2o.xgboost <- function(x, y, training_frame,
                         min_rows = 10,
                         min_child_weight = 0,
                         learn_rate = 0.3,
-                        eta = 0,
+                        eta = 0.3,
                         sample_rate = 1,
                         subsample = 0,
                         col_sample_rate = 1,

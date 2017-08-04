@@ -64,7 +64,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public double _min_child_weight;
 
     public double _learn_rate = 0.3;
-    public double _eta;
+    public double _eta = 0.3;
 
     public double _learn_rate_annealing = 1;
 
@@ -155,7 +155,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     } else {
       params.put("nround", p._ntrees);
     }
-    if (p._eta != 0) {
+    if (p._eta != 0.3) {
       Log.info("Using user-provided parameter eta instead of learn_rate.");
       params.put("eta", p._eta);
       p._learn_rate = p._eta;
