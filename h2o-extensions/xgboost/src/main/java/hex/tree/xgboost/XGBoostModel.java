@@ -56,29 +56,29 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public MissingValuesHandling _missing_values_handling;
 
     public int _ntrees=50; // Number of trees in the final model. Grid Search, comma sep values:50,100,150,200
-    public int _n_estimators;
+    public int _n_estimators;  // This doesn't seem to be used anywhere... (not in clients)
 
-    public int _max_depth = 5; // Maximum tree depth. Grid Search, comma sep values:5,7
+    public int _max_depth = 6; // Maximum tree depth. Grid Search, comma sep values:5,7
 
-    public double _min_rows = 10;
-    public double _min_child_weight;
+    public double _min_rows = 1;
+    public double _min_child_weight = 1;
 
-    public double _learn_rate = 0.1;
-    public double _eta;
+    public double _learn_rate = 0.3;
+    public double _eta = 0.3;
 
     public double _learn_rate_annealing = 1;
 
     public double _sample_rate = 1.0;
-    public double _subsample;
+    public double _subsample = 1.0;
 
     public double _col_sample_rate = 1.0;
-    public double _colsample_bylevel;
+    public double _colsample_bylevel = 1.0;
 
     public double _col_sample_rate_per_tree = 1.0; //fraction of columns to sample for each tree
-    public double _colsample_bytree;
+    public double _colsample_bytree = 1.0;
 
-    public float _max_abs_leafnode_pred = Float.MAX_VALUE;
-    public float _max_delta_step;
+    public float _max_abs_leafnode_pred = 0;
+    public float _max_delta_step = 0;
 
     public int _score_tree_interval = 0; // score every so many trees (no matter what)
     public int _initial_score_interval = 4000; //Adding this parameter to take away the hard coded value of 4000 for scoring the first  4 secs
@@ -87,7 +87,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public float _gamma;
 
     // LightGBM specific (only for grow_policy == lossguide)
-    public int _max_bin = 255;
+    public int _max_bins = 256;
     public int _num_leaves = 255;
     public float _min_sum_hessian_in_leaf = 100;
     public float _min_data_in_leaf = 0;
@@ -155,7 +155,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     } else {
       params.put("nround", p._ntrees);
     }
-    if (p._eta != 0) {
+    if (p._eta != 0.3) {
       Log.info("Using user-provided parameter eta instead of learn_rate.");
       params.put("eta", p._eta);
       p._learn_rate = p._eta;
@@ -164,21 +164,21 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
     params.put("max_depth", p._max_depth);
     params.put("silent", p._quiet_mode);
-    if (p._subsample!=0) {
+    if (p._subsample!=1.0) {
       Log.info("Using user-provided parameter subsample instead of sample_rate.");
       params.put("subsample", p._subsample);
       p._sample_rate = p._subsample;
     } else {
       params.put("subsample", p._sample_rate);
     }
-    if (p._colsample_bytree!=0) {
+    if (p._colsample_bytree!=1.0) {
       Log.info("Using user-provided parameter colsample_bytree instead of col_sample_rate_per_tree.");
       params.put("colsample_bytree", p._colsample_bytree);
       p._col_sample_rate_per_tree = p._colsample_bytree;
     } else {
       params.put("colsample_bytree", p._col_sample_rate_per_tree);
     }
-    if (p._colsample_bylevel!=0) {
+    if (p._colsample_bylevel!=1.0) {
       Log.info("Using user-provided parameter colsample_bylevel instead of col_sample_rate.");
       params.put("colsample_bylevel", p._colsample_bylevel);
       p._col_sample_rate = p._colsample_bylevel;
@@ -198,7 +198,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     params.put("tree_method", p._tree_method.toString());
     params.put("grow_policy", p._grow_policy.toString());
     if (p._grow_policy== XGBoostParameters.GrowPolicy.lossguide) {
-      params.put("max_bin", p._max_bin);
+      params.put("max_bins", p._max_bins);
       params.put("num_leaves", p._num_leaves);
       params.put("min_sum_hessian_in_leaf", p._min_sum_hessian_in_leaf);
       params.put("min_data_in_leaf", p._min_data_in_leaf);
@@ -222,7 +222,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
         }
         else {
           Log.info("Using grow_gpu_hist (approximate) updater.");
-          params.put("max_bin", p._max_bin);
+          params.put("max_bins", p._max_bins);
           params.put("tree_method", "exact");
           params.put("updater", "grow_gpu_hist");
         }
@@ -233,7 +233,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       assert p._backend == XGBoostParameters.Backend.cpu;
       Log.info("Using CPU backend.");
     }
-    if (p._min_child_weight!=0) {
+    if (p._min_child_weight!=1) {
       Log.info("Using user-provided parameter min_child_weight instead of min_rows.");
       params.put("min_child_weight", p._min_child_weight);
       p._min_rows = p._min_child_weight;
