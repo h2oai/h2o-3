@@ -8,7 +8,6 @@ import water.fvec.ByteVec;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.parser.*;
-import water.util.ArrayUtils;
 
 /**
  * Parquet parser provider.
@@ -48,9 +47,7 @@ public class ParquetParserProvider extends ParserProvider {
     setup.setColumnTypes(types);
     for (int i = 0; i < types.length; i++)
       if (types[i] != requestedTypes[i])
-        setup._errs = ArrayUtils.append(setup._errs, new ParseWriter.ParseErr(inputs[0].toString(),
-                "Unsupported type override (" + Vec.TYPE_STR[types[i]] + " -> " + Vec.TYPE_STR[requestedTypes[i]] + "). Column " +
-                setup.getColumnNames()[i] + " will be parsed as " + Vec.TYPE_STR[types[i]]));
+        setup.addErrs(new ParseWriter.UnsupportedTypeOverride(inputs[0].toString(),Vec.TYPE_STR[types[i]], Vec.TYPE_STR[requestedTypes[i]], setup.getColumnNames()[i]));
     return setup;
   }
 

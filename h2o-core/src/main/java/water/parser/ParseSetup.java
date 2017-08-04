@@ -44,7 +44,13 @@ public class ParseSetup extends Iced {
 
   public void setFileName(String name) {_fileNames[0] = name;}
 
-  public ParseWriter.ParseErr[] _errs;
+  private ParseWriter.ParseErr[] _errs;
+  public final ParseWriter.ParseErr[] errs() { return _errs;}
+
+  public void addErrs(ParseWriter.ParseErr... errs){
+    _errs = ArrayUtils.append(_errs,errs);
+  }
+
   public int _chunk_size = FileVec.DFLT_CHUNK_SIZE;  // Optimal chunk size to be used store values
   PreviewParseWriter _column_previews = null;
 

@@ -326,7 +326,7 @@ public final class ParseDataset {
     // Check for job cancellation
     if ( job.stop_requested() ) return pds;
 
-    ParseWriter.ParseErr [] errs = ArrayUtils.append(setup._errs,mfpt._errors);
+    ParseWriter.ParseErr [] errs = ArrayUtils.append(setup.errs(),mfpt._errors);
     if(errs.length > 0) {
       // compute global line numbers for warnings/errs
       HashMap<String, Integer> fileChunkOffsets = new HashMap<>();

@@ -1,7 +1,5 @@
 package water.parser.orc;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.ql.io.orc.OrcFile;
 import org.apache.hadoop.hive.ql.io.orc.Reader;
 import org.apache.hadoop.hive.ql.io.orc.StripeInformation;
@@ -16,8 +14,6 @@ import water.persist.VecFileSystem;
 
 import java.io.IOException;
 import java.util.List;
-
-import static water.fvec.FileVec.getPathForKey;
 
 
 /**
@@ -86,6 +82,22 @@ public class OrcParserProvider extends ParserProvider {
     return OrcFile.createReader(VecFileSystem.VEC_PATH.getFileSystem(VecFileSystem.makeConfiguration(f)), VecFileSystem.VEC_PATH);
   }
 
+  /*
+  public static final byte T_BAD  =  0; // No none-NA rows (triple negative! all NAs or zero rows)
+  public static final byte T_UUID =  1; // UUID
+  public static final byte T_STR  =  2; // String
+  public static final byte T_NUM  =  3; // Numeric, but not categorical or time
+  public static final byte T_CAT  =  4; // Integer, with a categorical/factor String mapping
+  public static final byte T_TIME =  5; // Long msec since the Unix Epoch - with a variety of display/parse options
+   */
+  public static byte [][] supported_type_conversions = new byte[][]{
+      {0,0,0,0,0,0}, // T_BAD
+      {1,0,0,0,0,0}, // UUID
+      {1,0,0,0,1,1}, // T_STR
+      {1,0,0,0,0,0}, // T_NUM
+      {1,0,1,0,0,0}, // T_CAT
+      {1,0,0,0,0,0}, // T_TIME
+  };
   /**
    * This method will create the readers and others info needed to parse an orc file.
    * In addition, it will not over-ride the columnNames, columnTypes that the user
@@ -109,11 +121,19 @@ public class OrcParserProvider extends ParserProvider {
         stp.setAllColNames(columnNames);
       }
 
-      if (!(columnTypes == null) && (columnTypes.length == stp.getColumnTypes().length)) { // copy enum type only
+      if (columnTypes != null) { // copy enum type only
+
         byte[] old_columnTypes = stp.getColumnTypes();
         String[] old_columnTypeNames = stp.getColumnTypesString();
         for (int index = 0; index < columnTypes.length; index++) {
-          if (columnTypes[index] == Vec.T_CAT || columnTypes[index] == Vec.T_BAD)  // only copy the enum types
+          if(columnTypes[index] != old_columnTypes[index]){
+            if(supported_type_conversions[old_columnTypes[index]][columnTypes[index]] == 1){
+              old_columnTypes[index] = columnTypes[index];
+            } else {
+              stp.addErrs(new ParseWriter.UnsupportedTypeOverride(f._key.toString(),Vec.TYPE_STR[old_columnTypes[index]], Vec.TYPE_STR[columnTypes[index]],columnNames[index]));
+            }
+          }
+          if (columnTypes[index] == Vec.T_CAT || columnTypes[index] == Vec.T_BAD || columnTypes[index] == Vec.T_TIME)  // only copy the enum types
             old_columnTypes[index] = columnTypes[index];
         }
         stp.setColumnTypes(old_columnTypes);
