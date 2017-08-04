@@ -645,7 +645,7 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
           else {
             value = levelIndex;
           }
-        } else if (o instanceof Double && Double.isNaN((double)o)) {
+        } else if (o instanceof Double && !Double.isNaN((double)o)) {
           value = (double)o; //Missing factor is the only Double value allowed
         } else {
           throw new PredictUnknownTypeException(
