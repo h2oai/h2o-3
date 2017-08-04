@@ -43,8 +43,8 @@
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to LabelEncoder.
 #' @param ntrees (same as n_estimators) Number of trees. Defaults to 50.
 #' @param max_depth Maximum tree depth. Defaults to 6.
-#' @param min_rows (same as min_child_weight) Fewest allowed (weighted) observations in a leaf. Defaults to 10.
-#' @param min_child_weight (same as min_rows) Fewest allowed (weighted) observations in a leaf. Defaults to 0.
+#' @param min_rows (same as min_child_weight) Fewest allowed (weighted) observations in a leaf. Defaults to 1.
+#' @param min_child_weight (same as min_rows) Fewest allowed (weighted) observations in a leaf. Defaults to 1.
 #' @param learn_rate (same as eta) Learning rate (from 0.0 to 1.0) Defaults to 0.3.
 #' @param eta (same as learn_rate) Learning rate (from 0.0 to 1.0) Defaults to 0.3.
 #' @param sample_rate (same as subsample) Row sample rate per tree (from 0.0 to 1.0) Defaults to 1.
@@ -103,8 +103,8 @@ h2o.xgboost <- function(x, y, training_frame,
                         categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                         ntrees = 50,
                         max_depth = 6,
-                        min_rows = 10,
-                        min_child_weight = 0,
+                        min_rows = 1,
+                        min_child_weight = 1,
                         learn_rate = 0.3,
                         eta = 0.3,
                         sample_rate = 1,

@@ -404,7 +404,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         (same as min_child_weight) Fewest allowed (weighted) observations in a leaf.
 
-        Type: ``float``  (default: ``10``).
+        Type: ``float``  (default: ``1``).
         """
         return self._parms.get("min_rows")
 
@@ -419,7 +419,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         (same as min_rows) Fewest allowed (weighted) observations in a leaf.
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``1``).
         """
         return self._parms.get("min_child_weight")
 

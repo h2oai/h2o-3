@@ -56,12 +56,12 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public MissingValuesHandling _missing_values_handling;
 
     public int _ntrees=50; // Number of trees in the final model. Grid Search, comma sep values:50,100,150,200
-    public int _n_estimators;
+    public int _n_estimators;  // This doesn't seem to be used anywhere... (not in clients)
 
     public int _max_depth = 6; // Maximum tree depth. Grid Search, comma sep values:5,7
 
-    public double _min_rows = 10;
-    public double _min_child_weight;
+    public double _min_rows = 1;
+    public double _min_child_weight = 1;
 
     public double _learn_rate = 0.3;
     public double _eta = 0.3;
@@ -233,7 +233,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       assert p._backend == XGBoostParameters.Backend.cpu;
       Log.info("Using CPU backend.");
     }
-    if (p._min_child_weight!=0) {
+    if (p._min_child_weight!=1) {
       Log.info("Using user-provided parameter min_child_weight instead of min_rows.");
       params.put("min_child_weight", p._min_child_weight);
       p._min_rows = p._min_child_weight;
