@@ -1,0 +1,6 @@
+description = "H2O Kerberos Standalone support"
+
+dependencies {
+    compile project(":h2o-core")
+    compile project(":h2o-persist-hdfs")
+}
