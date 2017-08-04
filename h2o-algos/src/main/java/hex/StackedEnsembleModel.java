@@ -262,7 +262,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
         // NOTE: if we loosen this restriction and fold_column is set add a check below.
         Frame aTrainingFrame = aModel._parms.train();
-        if (trainingFrameChecksum != aTrainingFrame.checksum())
+        if (trainingFrameChecksum != aTrainingFrame.checksum() && !this._parms._is_cv_model)
           throw new H2OIllegalArgumentException("Base models are inconsistent: they use different training frames.  Found checksums: " + trainingFrameChecksum + " and: " + aTrainingFrame.checksum() + ".");
 
         NonBlockingHashSet<String> aNames = new NonBlockingHashSet<>();
