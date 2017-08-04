@@ -479,7 +479,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         (same as sample_rate) Row sample rate per tree (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``1``).
         """
         return self._parms.get("subsample")
 

@@ -69,7 +69,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public double _learn_rate_annealing = 1;
 
     public double _sample_rate = 1.0;
-    public double _subsample;
+    public double _subsample = 1.0;
 
     public double _col_sample_rate = 1.0;
     public double _colsample_bylevel;
@@ -164,7 +164,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
     params.put("max_depth", p._max_depth);
     params.put("silent", p._quiet_mode);
-    if (p._subsample!=0) {
+    if (p._subsample!=1.0) {
       Log.info("Using user-provided parameter subsample instead of sample_rate.");
       params.put("subsample", p._subsample);
       p._sample_rate = p._subsample;

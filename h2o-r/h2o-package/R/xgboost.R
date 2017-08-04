@@ -48,7 +48,7 @@
 #' @param learn_rate (same as eta) Learning rate (from 0.0 to 1.0) Defaults to 0.3.
 #' @param eta (same as learn_rate) Learning rate (from 0.0 to 1.0) Defaults to 0.3.
 #' @param sample_rate (same as subsample) Row sample rate per tree (from 0.0 to 1.0) Defaults to 1.
-#' @param subsample (same as sample_rate) Row sample rate per tree (from 0.0 to 1.0) Defaults to 0.
+#' @param subsample (same as sample_rate) Row sample rate per tree (from 0.0 to 1.0) Defaults to 1.
 #' @param col_sample_rate (same as colsample_bylevel) Column sample rate (from 0.0 to 1.0) Defaults to 1.
 #' @param colsample_bylevel (same as col_sample_rate) Column sample rate (from 0.0 to 1.0) Defaults to 0.
 #' @param col_sample_rate_per_tree (same as colsample_bytree) Column sample rate per tree (from 0.0 to 1.0) Defaults to 1.
@@ -108,7 +108,7 @@ h2o.xgboost <- function(x, y, training_frame,
                         learn_rate = 0.3,
                         eta = 0.3,
                         sample_rate = 1,
-                        subsample = 0,
+                        subsample = 1,
                         col_sample_rate = 1,
                         colsample_bylevel = 0,
                         col_sample_rate_per_tree = 1,
