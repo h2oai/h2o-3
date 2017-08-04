@@ -32,7 +32,7 @@ class H2OXGBoostEstimator(H2OEstimator):
                       "distribution", "tweedie_power", "categorical_encoding", "ntrees", "max_depth", "min_rows",
                       "min_child_weight", "learn_rate", "eta", "sample_rate", "subsample", "col_sample_rate",
                       "colsample_bylevel", "col_sample_rate_per_tree", "colsample_bytree", "max_abs_leafnode_pred",
-                      "max_delta_step", "score_tree_interval", "min_split_improvement", "gamma", "max_bin",
+                      "max_delta_step", "score_tree_interval", "min_split_improvement", "gamma", "max_bins",
                       "num_leaves", "min_sum_hessian_in_leaf", "min_data_in_leaf", "tree_method", "grow_policy",
                       "booster", "reg_lambda", "reg_alpha", "dmatrix_type", "backend", "gpu_id", "sample_type",
                       "normalize_type", "rate_drop", "one_drop", "skip_drop"}
@@ -389,7 +389,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         Maximum tree depth.
 
-        Type: ``int``  (default: ``5``).
+        Type: ``int``  (default: ``6``).
         """
         return self._parms.get("max_depth")
 
@@ -434,7 +434,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         (same as eta) Learning rate (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``0.1``).
+        Type: ``float``  (default: ``0.3``).
         """
         return self._parms.get("learn_rate")
 
@@ -625,18 +625,18 @@ class H2OXGBoostEstimator(H2OEstimator):
 
 
     @property
-    def max_bin(self):
+    def max_bins(self):
         """
         For tree_method=hist only: maximum number of bins
 
-        Type: ``int``  (default: ``255``).
+        Type: ``int``  (default: ``256``).
         """
-        return self._parms.get("max_bin")
+        return self._parms.get("max_bins")
 
-    @max_bin.setter
-    def max_bin(self, max_bin):
-        assert_is_type(max_bin, None, int)
-        self._parms["max_bin"] = max_bin
+    @max_bins.setter
+    def max_bins(self, max_bins):
+        assert_is_type(max_bins, None, int)
+        self._parms["max_bins"] = max_bins
 
 
     @property

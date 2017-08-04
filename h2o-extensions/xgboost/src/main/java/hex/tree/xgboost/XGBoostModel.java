@@ -58,12 +58,12 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public int _ntrees=50; // Number of trees in the final model. Grid Search, comma sep values:50,100,150,200
     public int _n_estimators;
 
-    public int _max_depth = 5; // Maximum tree depth. Grid Search, comma sep values:5,7
+    public int _max_depth = 6; // Maximum tree depth. Grid Search, comma sep values:5,7
 
     public double _min_rows = 10;
     public double _min_child_weight;
 
-    public double _learn_rate = 0.1;
+    public double _learn_rate = 0.3;
     public double _eta;
 
     public double _learn_rate_annealing = 1;
@@ -87,7 +87,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public float _gamma;
 
     // LightGBM specific (only for grow_policy == lossguide)
-    public int _max_bin = 255;
+    public int _max_bins = 256;
     public int _num_leaves = 255;
     public float _min_sum_hessian_in_leaf = 100;
     public float _min_data_in_leaf = 0;
@@ -198,7 +198,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     params.put("tree_method", p._tree_method.toString());
     params.put("grow_policy", p._grow_policy.toString());
     if (p._grow_policy== XGBoostParameters.GrowPolicy.lossguide) {
-      params.put("max_bin", p._max_bin);
+      params.put("max_bins", p._max_bins);
       params.put("num_leaves", p._num_leaves);
       params.put("min_sum_hessian_in_leaf", p._min_sum_hessian_in_leaf);
       params.put("min_data_in_leaf", p._min_data_in_leaf);
@@ -222,7 +222,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
         }
         else {
           Log.info("Using grow_gpu_hist (approximate) updater.");
-          params.put("max_bin", p._max_bin);
+          params.put("max_bins", p._max_bins);
           params.put("tree_method", "exact");
           params.put("updater", "grow_gpu_hist");
         }
