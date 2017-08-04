@@ -53,7 +53,7 @@
 #' @param colsample_bylevel (same as col_sample_rate) Column sample rate (from 0.0 to 1.0) Defaults to 0.
 #' @param col_sample_rate_per_tree (same as colsample_bytree) Column sample rate per tree (from 0.0 to 1.0) Defaults to 1.
 #' @param colsample_bytree (same as col_sample_rate_per_tree) Column sample rate per tree (from 0.0 to 1.0) Defaults to 0.
-#' @param max_abs_leafnode_pred (same as max_delta_step) Maximum absolute value of a leaf node prediction Defaults to 3.4028235e+38.
+#' @param max_abs_leafnode_pred (same as max_delta_step) Maximum absolute value of a leaf node prediction Defaults to 0.0.
 #' @param max_delta_step (same as max_abs_leafnode_pred) Maximum absolute value of a leaf node prediction Defaults to 0.0.
 #' @param score_tree_interval Score the model after every so many trees. Disabled if set to 0. Defaults to 0.
 #' @param min_split_improvement (same as gamma) Minimum relative improvement in squared error reduction for a split to happen Defaults to 0.0.
@@ -113,7 +113,7 @@ h2o.xgboost <- function(x, y, training_frame,
                         colsample_bylevel = 0,
                         col_sample_rate_per_tree = 1,
                         colsample_bytree = 0,
-                        max_abs_leafnode_pred = 3.4028235e+38,
+                        max_abs_leafnode_pred = 0.0,
                         max_delta_step = 0.0,
                         score_tree_interval = 0,
                         min_split_improvement = 0.0,

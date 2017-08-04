@@ -554,7 +554,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         (same as max_delta_step) Maximum absolute value of a leaf node prediction
 
-        Type: ``float``  (default: ``3.4028235e+38``).
+        Type: ``float``  (default: ``0``).
         """
         return self._parms.get("max_abs_leafnode_pred")
 
