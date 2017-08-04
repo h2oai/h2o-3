@@ -72,10 +72,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public double _subsample = 1.0;
 
     public double _col_sample_rate = 1.0;
-    public double _colsample_bylevel;
+    public double _colsample_bylevel = 1.0;
 
     public double _col_sample_rate_per_tree = 1.0; //fraction of columns to sample for each tree
-    public double _colsample_bytree;
+    public double _colsample_bytree = 1.0;
 
     public float _max_abs_leafnode_pred = 0;
     public float _max_delta_step = 0;
@@ -171,14 +171,14 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     } else {
       params.put("subsample", p._sample_rate);
     }
-    if (p._colsample_bytree!=0) {
+    if (p._colsample_bytree!=1.0) {
       Log.info("Using user-provided parameter colsample_bytree instead of col_sample_rate_per_tree.");
       params.put("colsample_bytree", p._colsample_bytree);
       p._col_sample_rate_per_tree = p._colsample_bytree;
     } else {
       params.put("colsample_bytree", p._col_sample_rate_per_tree);
     }
-    if (p._colsample_bylevel!=0) {
+    if (p._colsample_bylevel!=1.0) {
       Log.info("Using user-provided parameter colsample_bylevel instead of col_sample_rate.");
       params.put("colsample_bylevel", p._colsample_bylevel);
       p._col_sample_rate = p._colsample_bylevel;

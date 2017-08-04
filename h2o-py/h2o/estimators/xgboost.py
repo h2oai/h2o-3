@@ -509,7 +509,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         (same as col_sample_rate) Column sample rate (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``1``).
         """
         return self._parms.get("colsample_bylevel")
 
@@ -539,7 +539,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         (same as col_sample_rate_per_tree) Column sample rate per tree (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``1``).
         """
         return self._parms.get("colsample_bytree")
 
