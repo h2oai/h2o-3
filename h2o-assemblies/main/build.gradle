@@ -8,7 +8,8 @@ configurations {
     compile.exclude module: 'junit'
     compile.exclude module: 'mockito-all'
     compile.exclude module: 'zookeeper'
-    compile.exclude module: "javax.mail.glassfish"
+    compile.exclude module: 'javax.mail.glassfish'
+    compile.exclude module: 'servlet-api'
 }
 
 // Dependencies
