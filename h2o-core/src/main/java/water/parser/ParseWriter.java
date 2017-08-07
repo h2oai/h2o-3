@@ -3,8 +3,6 @@ package water.parser;
 import water.Freezable;
 import water.Iced;
 
-import static water.parser.ParseWriter.ParseErr.ErrLvl.WARN;
-
 /** Interface for writing results of parsing, accumulating numbers and
  *  strings or handling invalid lines & parse errors.  */
 public interface ParseWriter extends Freezable {
@@ -17,9 +15,6 @@ public interface ParseWriter extends Freezable {
       if (res == 0) return _err.compareTo(o._err);
       return (int) res < 0 ? -1 : 1;
     }
-
-    public enum ErrLvl { ERR,WARN}
-    public ErrLvl errLvl(){return WARN;}
     public ParseErr(){}
     public ParseErr(String file, String err) {
       this(err, 0, -1, -1);
