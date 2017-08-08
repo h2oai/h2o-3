@@ -22,9 +22,10 @@ javadoc {
 //
 
 dependencies {
+  testCompile "com.google.guava:guava:16.0.1"
   testCompile "junit:junit:${junitVersion}"
   compile "net.sf.opencsv:opencsv:2.3"
   compile "com.google.code.gson:gson:2.6.2"
   compile "com.google.protobuf.nano:protobuf-javanano:3.1.0"
-  compile "ai.h2o:deepwater-backend-api:1.0.3"
+  compile "ai.h2o:deepwater-backend-api:1.0.4"
 }

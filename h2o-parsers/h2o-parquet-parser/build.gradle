@@ -22,7 +22,9 @@ dependencies {
   testCompile project(path: ":h2o-core", configuration: "testArchives")
   testCompile("org.apache.parquet:parquet-avro:1.7.0")
   // We need correct version of MapRe Hadoop to run JUnits
-  testCompile("org.apache.hadoop:hadoop-client:$parquetHadoopVersion")
+  testCompile("org.apache.hadoop:hadoop-client:$parquetHadoopVersion") {
+    exclude module: "servlet-api"
+  }
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"

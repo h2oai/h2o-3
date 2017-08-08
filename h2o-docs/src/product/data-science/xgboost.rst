@@ -98,7 +98,7 @@ Defining an XGBoost Model
   - ``enum`` or ``Enum``: 1 column per categorical feature
   - ``one_hot_internal`` or ``OneHotInternal``: On the fly N+1 new cols for categorical features with N levels
   - ``one_hot_explicit`` or ``OneHotExplicit``: N+1 new columns for categorical features with N levels
-  - ``binary``: No more than 32 columns per categorical feature
+  - ``binary`` or ``Binary``: No more than 32 columns per categorical feature
   - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
   - ``label_encoder`` or ``LabelEncoder``: Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.) (default)
   - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.). This is useful in GBM/DRF, for example, when you have more levels than ``nbins_cats``, and where the top level splits now have a chance at separating the data with a split. 
@@ -110,37 +110,25 @@ Defining an XGBoost Model
 
 -  `ntrees <algo-params/ntrees.html>`__ (alias: ``n_estimators``): Specify the number of trees to build. This value defaults to 50.
 
--  `max_depth <algo-params/max_depth.html>`__: Specify the maximum tree depth. This value defaults to 5. Higher values will make the model more complex and can lead to overfitting. Setting this value to 0 specifies no limit. Note that a max_depth limit must be used if ``grow_policy=depthwise`` (default). 
+-  `max_depth <algo-params/max_depth.html>`__: Specify the maximum tree depth. This value defaults to 6. Higher values will make the model more complex and can lead to overfitting. Setting this value to 0 specifies no limit. Note that a max_depth limit must be used if ``grow_policy=depthwise`` (default). 
 
--  `min_rows <algo-params/min_rows.html>`__ (alias: ``min_child_weight``): Specify the minimum number of observations for a leaf (``nodesize`` in R). This value defaults to 10. 
+-  `min_rows <algo-params/min_rows.html>`__ (alias: ``min_child_weight``): Specify the minimum number of observations for a leaf (``nodesize`` in R). This value defaults to 1. 
 
--  **min_child_weight**: This is the same as ``min_rows`` except that this value defaults to 0.
-
--  `learn_rate <algo-params/learn_rate.html>`__ (alias: ``eta``): Specify the learning rate by which to shrink the feature weights. Shrinking feature weights after each boosting step makes the boosting process more conservative and prevents overfitting. The range is 0.0 to 1.0. This value defaults to 0.1.
-
--  **eta**: This is the same as ``learn_rate`` except that this value defaults to 0.
+-  `learn_rate <algo-params/learn_rate.html>`__ (alias: ``eta``): Specify the learning rate by which to shrink the feature weights. Shrinking feature weights after each boosting step makes the boosting process more conservative and prevents overfitting. The range is 0.0 to 1.0. This value defaults to 0.3.
 
 -  `sample_rate <algo-params/sample_rate.html>`__ (alias: ``subsample``): Specify the row sampling ratio of the training instance (x-axis). For example, setting this value to 0.5 tells XGBoost to randomly collected half of the data instances to grow trees. This value defaults to 1, and the range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
 
--  **subsample**: This is the same as ``sample_rate`` except that this value defaults to 0.
-
 -  `col_sample_rate <algo-params/col_sample_rate.html>`__ (alias: ``colsample_bylevel``): Specify the column sampling rate (y-axis) for each split in each level. This value defaults to 1.0, and the range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
-   
--  **colsample_bylevel**: This is the same as ``col_sample_rate`` except that this value defaults to 0.
 
 -  `col_sample_rate_per_tree <algo-params/col_sample_rate_per_tree.html>`__ (alias: ``colsample_bytree``: Specify the column subsampling rate per tree. This value defaults to 1.0 and can be a value from 0.0 to 1.0. Note that it is multiplicative with ``col_sample_rate``, so setting both parameters to 0.8, for example, results in 64% of columns being considered at any given node to split.
 
--  **colsample_bytree**: This is the sam eas ``col_sample_rate_per_tree`` except that this value defaults to 0. 
-
--  `max_abs_leafnode_pred <algo-params/max_abs_leafnode_pred.html>`__ (alias: ``max_delta_step``): Specifies the maximum delta step allowed in each tree’s weight estimation. This value defaults to 3.4028235e+38. Setting this value to 0 specifies no constraint. Setting this value to be greater than 0 can help making the update step more conservative and reduce overfitting by limiting the absolute value of a leafe node prediction. This option also helps in logistic regression when a class is extremely imbalanced. 
-
--  **max_delta_step**: This is the same as ``max_abs_leafnode_pred`` except that this value defaults to 0.
+-  `max_abs_leafnode_pred <algo-params/max_abs_leafnode_pred.html>`__ (alias: ``max_delta_step``): Specifies the maximum delta step allowed in each tree’s weight estimation. This value defaults to 0. Setting this value to 0 specifies no constraint. Setting this value to be greater than 0 can help making the update step more conservative and reduce overfitting by limiting the absolute value of a leafe node prediction. This option also helps in logistic regression when a class is extremely imbalanced. 
 
 -  `score_tree_interval <algo-params/score_tree_interval.html>`__: Score the model after every so many trees. This value is set to 0 (disabled) by default.
 
 -  `min_split_improvement <algo-params/min_split_improvement.html>`__ (alias: ``gamma``): The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range. This value defaults to 0.
 
--  **max_bin**: When ``tree_method="hist"``, specify the maximum number of bins for binning continuous features. This value defaults to 255.
+-  **max_bins**: When ``tree_method="hist"``, specify the maximum number of bins for binning continuous features. This value defaults to 256.
 
 -  **num_leaves**: When ``tree_method="hist"``, specify the maximum number of leaves to include each tree. This value defaults to 255.
 

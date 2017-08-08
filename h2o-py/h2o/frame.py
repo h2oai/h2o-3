@@ -425,6 +425,9 @@ class H2OFrame(object):
                 print(self.head().as_data_frame(fill_cache=True))
             else:
                 s = self.__unicode__()
+                stk = traceback.extract_stack()
+                if "IPython" in stk[-3][0]:
+                    s = "\n%s" % s
                 try:
                     print(s)
                 except UnicodeEncodeError:
@@ -996,7 +999,7 @@ class H2OFrame(object):
         :returns: A single-column H2OFrame with the desired levels.
         """
         assert_is_type(levels, [str])
-        return H2OFrame._expr(expr=ExprNode("setDomain", self, levels), cache=self._ex._cache)
+        return H2OFrame._expr(expr=ExprNode("setDomain", self, False, levels), cache=self._ex._cache)
 
 
     def set_names(self, names):

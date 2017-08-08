@@ -24,6 +24,7 @@ include 'h2o-jaas-pam'
 include 'h2o-automl'
 include 'h2o-genmodel-ext-xgboost'
 include 'h2o-ext-xgboost'
+include 'h2o-ext-krbstandalone'
 
 // GRPC support
 if ("true".equals(System.getenv("H2O_BUILD_GRPC"))) {
@@ -66,7 +67,7 @@ if (System.getProperty("user.name").equals("jenkins")
 
   // Default hadoop build targets
   def allTargets = [
-         "cdh5.4", "cdh5.5", "cdh5.6", "cdh5.7", "cdh5.8",
+         "cdh5.4", "cdh5.5", "cdh5.6", "cdh5.7", "cdh5.8", "cdh5.10",
          "hdp2.2", "hdp2.3", "hdp2.4", "hdp2.5", "hdp2.6",
          "mapr4.0", "mapr5.0", "mapr5.1", "mapr5.2", "iop4.2"
   ]

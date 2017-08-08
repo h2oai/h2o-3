@@ -245,6 +245,8 @@ Defining a DRF Model
 
 -  `calibrate_frame <algo-params/calibrate_frame.html>`__: Specifies the frame to be used for Platt scaling.
 
+-  **verbose**: Print scoring history to the console. For DRF, metrics are per tree. This value defaults to FALSE.
+
 Interpreting a DRF Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
 

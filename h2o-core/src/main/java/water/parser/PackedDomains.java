@@ -1,117 +1,131 @@
 package water.parser;
 
+import water.MemoryManager;
 import water.util.StringUtils;
 
-import java.io.*;
-import java.util.Arrays;
-
 import static water.util.ArrayUtils.*;
-/**
- * Recreated "packed domains" functionality, with tests
- * 
- * Created by vpatryshev on 4/12/17.
- */
+
 public class PackedDomains {
+
   public static int sizeOf(byte[] domain) {
     return encodeAsInt(domain, 0);
   }
-  
+
   public static String[] unpackToStrings(byte[] domain) {
-    int n = sizeOf(domain);
+    final int n = sizeOf(domain);
     String[] out = new String[n];
-    int p = 4;
+    int pos = 4;
     for (int i = 0; i < n; i++) {
-      int p0 = p;
-      while (domain[p] != 0 && p++ < domain.length);
-      out[i] = StringUtils.toString(domain, p0, p - p0);
-      p++;
+      int len = encodeAsInt(domain, pos);
+      pos += 4;
+      out[i] = StringUtils.toString(domain, pos, len);
+      pos += len;
     }
     return out;
   }
 
-
-  /** this one is for testing */
-  static byte[] pack(String... source) {
-    BufferedString[] bss = new BufferedString[source.length];
-    for (int i = 0; i < source.length; i++) {
-      bss[i] = new BufferedString(source[i]);
-    }
-    return pack(bss);
-  }
-
-  private static final byte[] ZEROES = new byte[]{0,0,0,0};
-  
   public static byte[] pack(BufferedString[] source) {
-    ByteArrayOutputStream out = new ByteArrayOutputStream();
-    try {
-      out.write(ZEROES);
+    int len = 0;
+    for (BufferedString bs : source)
+      len += bs.length();
+    byte[] data = new byte[len + (source.length + 1) * 4];
+    decodeAsInt(source.length, data, 0);
+    int pos = 4;
+    for (BufferedString bs : source) {
+      byte[] buff = bs.getBuffer();
+      decodeAsInt(bs.length(), data, pos);
+      pos += 4;
+      for (int i = bs.getOffset(); i < bs.getOffset() + bs.length(); i++)
+        data[pos++] = buff[i];
+    }
+    return data;
+  }
 
-      for (BufferedString bs : source) {
-        out.write(bs.getBuffer(), bs.getOffset(), bs.length());
-        out.write(ZEROES, 0, 1);
+  static int calcMergedSize(byte[] as, byte[] bs) {
+    int shared = 0;
+    int pA = 4;
+    int pB = 4;
+    BufferedString bsA = new BufferedString(as, 0, 0);
+    BufferedString bsB = new BufferedString(bs, 0, 0);
+    while ((pA < as.length) && (pB < bs.length)) {
+      int sizeA = encodeAsInt(as, pA);
+      bsA.setOff(pA + 4);
+      bsA.setLen(sizeA);
+      int sizeB = encodeAsInt(bs, pB);
+      bsB.setOff(pB + 4);
+      bsB.setLen(sizeB);
+      int x = bsA.compareTo(bsB);
+      if (x < 0) {
+        pA += sizeA + 4;
+      } else if (x > 0) {
+        pB += sizeB + 4;
+      } else {
+        shared += sizeA + 4;
+        pA += sizeA + 4;
+        pB += sizeA + 4;
       }
-    } catch (IOException ignore) {}
-    byte[] bytes = out.toByteArray();
-    decodeAsInt(source.length, bytes, 0);
-    return bytes;
+    }
+    return as.length + bs.length - 4 - shared;
   }
-  
-  private static void dump(InputStream from, OutputStream to) {
-    try {
-      int b;
-      while ((b = from.read()) >= 0) to.write(b);
-    } catch (IOException ignore) {}
-  }
-  
-  private static void dumpWord(InputStream from, OutputStream to) {
-    try {
-      int b;
-      while ((b = from.read()) > 0) to.write(b);
-      to.write(0);
-    } catch (IOException ignore) {}
-  }
-  
+
   public static byte[] merge(byte[] as, byte[] bs) {
-    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    int size = calcMergedSize(as, bs);
+    if (size == as.length)
+      return as;
+    if (size == bs.length)
+      return bs;
+    byte[] data = MemoryManager.malloc1(size);
 
-    InputStream ia = new ByteArrayInputStream(as, 4, as.length);
-    InputStream ib = new ByteArrayInputStream(bs, 4, bs.length);
-    
-    try {
-      out.write(ZEROES);
-      ia.mark(0);
-      ib.mark(0);
-      while (ia.available() > 0 || ib.available() > 0) {
-        if (ia.available() == 0) dump(ib, out);
-        else
-        if (ib.available() == 0) dump(ia, out);
-        else {
-          int a = ia.read();
-          int b = ib.read();
-          if (a == b) {
-            out.write(a);
-            if (a == 0) {
-              ia.mark(0); ib.mark(0);
-            }
-          }
-          else if (a < b) {
-            out.write(a); 
-            if (a != 0) dumpWord(ia, out);
-            ia.mark(0);
-            ib.reset();
-          } else {
-            out.write(b); 
-            if (b != 0) dumpWord(ib, out);
-            ib.mark(0);
-            ia.reset();
-          }
+    int shared = 0; // number of shared words
+    int pos = 4; // position in output
+    int pA = 4; // position in A
+    int pB = 4; // position in B
+
+    while (pA < as.length && pB < bs.length) {
+      int wordPos = pos;
+      pos += 4;
+
+      int wA = pA;
+      int sizeA = encodeAsInt(as, pA); pA += 4;
+      int endA = pA + sizeA;
+
+      int wB = pB;
+      int sizeB = encodeAsInt(bs, pB); pB += 4;
+      int endB = pB + sizeB;
+
+      int l = sizeA > sizeB ? sizeB : sizeA;
+      int comp = sizeA - sizeB;
+      for (int i = 0; i < l; i++) {
+        int x = (0xFF & as[pA]) - (0xFF & bs[pB]);
+        if (x != 0) {
+          comp = x;
+          break;
         }
+        data[pos++] = as[pA++];
+        pB++;
       }
-    } catch (IOException ignore) {}
-    byte[] bytes = out.toByteArray();
-    int n = 0;
-    for (byte b : bytes) if (b == 0) n++;
-    decodeAsInt(n - 4, bytes, 0);
-    return bytes;
+      if ((pA == endA) && (pB == endB)) { // words were the same
+        decodeAsInt(sizeA, data, wordPos);
+        shared++;
+      } else if (comp < 0) { // output word A
+        while (pA < endA)
+          data[pos++] = as[pA++];
+        decodeAsInt(sizeA, data, wordPos);
+        pB = wB;
+      } else { // output word B
+        while (pB < endB)
+          data[pos++] = bs[pB++];
+        decodeAsInt(sizeB, data, wordPos);
+        pA = wA;
+      }
+    }
+    while (pA < as.length)
+      data[pos++] = as[pA++];
+    while (pB < bs.length)
+      data[pos++] = bs[pB++];
+    int len = encodeAsInt(as, 0) + encodeAsInt(bs, 0) - shared;
+    decodeAsInt(len, data, 0);
+    return data;
   }
+
 }

@@ -42,11 +42,11 @@ public class ExternalFrameWriterClientTest extends TestUtil {
         String[] colNames = {"NUM", "BOOL", "STR", "TIMESTAMP"};
 
         // vector types are inferred from expected types
-        final byte[] expectedTypes = ExternalFrameUtils.prepareExpectedTypes(new Class[]{
-                Integer.class,
-                Boolean.class,
-                String.class,
-                Timestamp.class});
+        final byte[] expectedTypes = new byte[]{
+                ExternalFrameUtils.EXPECTED_INT,
+                ExternalFrameUtils.EXPECTED_BOOL,
+                ExternalFrameUtils.EXPECTED_STRING,
+                ExternalFrameUtils.EXPECTED_TIMESTAMP};
 
 
         ChunkUtils.initFrame(frameName, colNames);
@@ -63,7 +63,7 @@ public class ExternalFrameWriterClientTest extends TestUtil {
                     try {
                         ByteChannel sock = ExternalFrameUtils.getConnection(connStrings[currentIndex]);
                         ExternalFrameWriterClient writer = new ExternalFrameWriterClient(sock);
-                        writer.createChunks(frameName, expectedTypes,  currentIndex, 1000);
+                        writer.createChunks(frameName, expectedTypes,  currentIndex, 1000, null);
 
                         Timestamp time = new Timestamp(Calendar.getInstance().getTime().getTime());
                         for (int i = 0; i < 997; i++) {
@@ -113,7 +113,7 @@ public class ExternalFrameWriterClientTest extends TestUtil {
         }
 
 
-        ChunkUtils.finalizeFrame(frameName, rowsPerChunk, ExternalFrameUtils.vecTypesFromExpectedTypes(expectedTypes), null);
+        ChunkUtils.finalizeFrame(frameName, rowsPerChunk, ExternalFrameUtils.vecTypesFromExpectedTypes(expectedTypes, null), null);
 
         Frame frame = null;
         try {

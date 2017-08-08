@@ -218,6 +218,23 @@ public class ParseTestParquet extends TestUtil {
     assertFrameAssertion(assertion);
   }
 
+  @Test
+  public void testParseCategoricalsWithZeroCharacters() {
+    FrameAssertion assertion = new GenFrameAssertion("nullCharacters.parquet", TestUtil.ari(1, 100)) {
+      @Override protected File prepareFile() throws IOException { return ParquetFileGenerator.generateParquetFileWithNullCharacters(Files.createTempDir(), file, nrows()); }
+      @Override public void check(Frame f) {
+        assertArrayEquals("Column names need to match!", ar("cat_field"), f.names());
+        assertArrayEquals("Column types need to match!", ar(Vec.T_CAT), f.types());
+        for (int row = 0; row < nrows(); row++) {
+          String catValue = row == 66 ? "CAT_0_weird\0" : "CAT_" + (row % 10);
+          assertEquals("Value in column string_field", catValue, f.vec(0).factor(f.vec(0).at8(row))
+          );
+        }
+      }
+    };
+    assertFrameAssertion(assertion);
+  }
+
 }
 
 class ParquetFileGenerator {
@@ -298,6 +315,28 @@ class ParquetFileGenerator {
         if (i % 10 == 0) { g = g.append("string_field", "CAT_" + (i % 10)); }
         if (i % 10 == 0) { g = g.append("int32_field2", i); }
         writer.write(g.append("row", i));
+      }
+    } finally {
+      writer.close();
+    }
+    return f;
+  }
+
+  static File generateParquetFileWithNullCharacters(File parentDir, String filename, int nrows) throws IOException {
+    File f = new File(parentDir, filename);
+
+    Configuration conf = new Configuration();
+    MessageType schema = parseMessageType(
+            "message test { optional binary cat_field (UTF8); } ");
+    GroupWriteSupport.setSchema(schema, conf);
+    SimpleGroupFactory fact = new SimpleGroupFactory(schema);
+    ParquetWriter<Group> writer = new ParquetWriter<Group>(new Path(f.getPath()), new GroupWriteSupport(),
+            UNCOMPRESSED, 1024, 1024, 512, true, false, ParquetProperties.WriterVersion.PARQUET_2_0, conf);
+    try {
+      for (int i = 0; i < nrows; i++) {
+        Group g = fact.newGroup();
+        String value = i == 66 ? "CAT_0_weird\0" : "CAT_" + (i % 10);
+        writer.write(g.append("cat_field", value));
       }
     } finally {
       writer.close();

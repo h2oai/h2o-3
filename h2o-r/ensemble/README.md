@@ -26,14 +26,14 @@ The **h2oEnsemble** R package requires the **h2o** R package (and its dependenci
 The latest stable version, compatible with the latest stable version of h2o, be installed as follows:
 
 ```r
-install.packages("https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.2.0.tar.gz", repos = NULL)
+install.packages("https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.2.1.tar.gz", repos = NULL)
 ``` 
 
 To install **h2oEnsemble** for a previous stable release of H2O, you can replace the URL above with the URL in the table below that matches your H2O version.
 
 |H2O Stable Release| Recommended version| Other compatible versions |
 |:---------|:----------|:----------|
-|H2O 3.10.5.1 - [latest stable h2o](https://www.h2o.ai/download/) (>=Vajda)|[h2oEnsemble 0.2.0](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.2.0.tar.gz)| [h2oEnsemble 0.1.9](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.9.tar.gz)|
+|H2O 3.10.5.1 - [latest stable h2o](https://www.h2o.ai/download/) (>=Vajda)|[h2oEnsemble 0.2.1](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.2.1.tar.gz)| [h2oEnsemble 0.2.0](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.2.0.tar.gz), [h2oEnsemble 0.1.9](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.9.tar.gz)|
 |H2O 3.10.1.1 - [3.10.4.8](http://h2o-release.s3.amazonaws.com/h2o/rel-ueno/8/index.html) (Turnbull - Ueno)|[h2oEnsemble 0.1.9](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.9.tar.gz)| |
 |H2O 3.8.0.1 - [3.10.0.10](http://h2o-release.s3.amazonaws.com/h2o/rel-turing/10/index.html) (Tukey - Turing)|[h2oEnsemble 0.1.8](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.8.tar.gz)| [h2oEnsemble 0.1.7](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.7.tar.gz), [h2oEnsemble 0.1.6](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.6.tar.gz)|
 |H2O 3.6.0.1 - [3.6.0.8](http://h2o-release.s3.amazonaws.com/h2o/rel-tibshirani/8/index.html) (Tibshirani)|[h2oEnsemble 0.1.5](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.5.tar.gz)||

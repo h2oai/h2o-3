@@ -847,29 +847,29 @@ types.
 -  **beta_constraints**: (GLM) To use beta constraints, select a dataset from the drop-down menu. The selected frame is used
    to constraint the coefficient vector to provide upper and lower bounds.
 
--  **ntrees**: (GBM, DRF) Specify the number of trees.
+-  **ntrees**: (GBM, DRF, XGBoost) Specify the number of trees.
 
--  **max_depth**: (GBM, DRF) Specify the maximum tree depth.
+-  **max_depth**: (GBM, DRF, XGBoost) Specify the maximum tree depth.
 
--  **min_rows**: (GBM, DRF) Specify the minimum number of observations for a leaf ("nodesize" in R).
+-  **min_rows**: (GBM, DRF, XGBoost) Specify the minimum number of observations for a leaf ("nodesize" in R).
 
 -  **nbins**: (GBM, DRF) (Numerical [real/int] only) Specify the minimum number of bins for the histogram to build, then split at the best point.
 
 -  **nbins_cats**: (GBM, DRF) (Categorical [factors/enums] only) Specify the maximum number of bins for the histogram to build, then split at the best point. Higher values can lead to more overfitting. The levels are ordered alphabetically; if   there are more levels than bins, adjacent levels share bins. This value has a more significant impact on model fitness than **nbins**. Larger values may increase runtime, especially for deep trees and large clusters, so tuning may be required to find the optimal value for your configuration.
 
--  **learn_rate**: (GBM) Specify the learning rate. The range is 0.0 to 1.0.
+-  **learn_rate**: (GBM, XGBoost) Specify the learning rate. The range is 0.0 to 1.0.
 
 -  **distribution**: (GBM, DL) Select the distribution type from the drop-down list. The options are auto, bernoulli, multinomial, gaussian, poisson, gamma, or tweedie.
 
--  **sample_rate**: (GBM, DRF) Specify the row sampling rate (x-axis). The range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
+-  **sample_rate**: (GBM, DRF, XGBoost) Specify the row sampling rate (x-axis). The range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
 
--  **col_sample_rate**: (GBM, DRF) Specify the column sampling rate (y-axis). The range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
+-  **col_sample_rate**: (GBM, DRF, XGBoost) Specify the column sampling rate (y-axis). The range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
 
 -  **mtries**: (DRF) Specify the columns to randomly select at each level. If the default value of ``-1`` is used, the number of variables is the square root of the number of columns for classification and p/3 for regression (where p is the number of predictors).
 
 -  **binomial_double_trees**: (DRF) (Binary classification only) Build twice as many trees (one per class). Enabling this option  can lead to higher accuracy, while disabling can result in faster model building. This option is disabled by default.
 
--  **score_each_iteration**: (K-Means, DRF, Naïve Bayes, PCA, GBM, GLM) To score during each iteration of the model training, check this checkbox.
+-  **score_each_iteration**: (K-Means, DL, DRF, Naïve Bayes, PCA, GBM, GLM, XGBoost) To score during each iteration of the model training, check this checkbox.
 
 -  **k**\ \*: (K-Means, PCA) For K-Means, specify the number of clusters. For PCA, specify the rank of matrix approximation.
 
@@ -899,27 +899,27 @@ types.
 
 -  **min_sdev**: (Naïve Bayes) Specify the minimum standard deviation to use for observations without enough data.
 
--  **eps_sdev**: (Naïve Bayes) Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used.
+-  **eps_sdev**: (Naïve Bayes) Specify the threshold for standard deviation. If this threshold is not met, the **min_sdev** value is used.
 
 -  **min_prob**: (Naïve Bayes) Specify the minimum probability to use for observations without enough data.
 
--  **eps_prob**: (Naïve Bayes) Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used.
+-  **eps_prob**: (Naïve Bayes) Specify the threshold for standard deviation. If this threshold is not met, the **min_sdev** value is used.
 
 -  **compute_metrics**: (Naïve Bayes, PCA) To compute metrics on training data, check this checkbox. The Naïve Bayes classifier assumes independence between predictor variables conditional on the response, and a Gaussian distribution of numeric predictors with mean and standard deviation computed from the training dataset. When building a Naïve Bayes classifier, every row in the training dataset that contains at least one NA will be skipped completely. If the test dataset has missing values, then those predictors are omitted in the probability calculation during prediction.
 
 -  **max_models**: (AutoML) This option allows the user to specify the maximum number of models to build in an AutoML run. 
 
--  **max_runtime_secs**: (AutoML) This option controls how long the AutoML run will execute. This value defaults to 3600 seconds.
+-  **max_runtime_secs**: (XGBoost, AutoML) This option controls how long the AutoML run will execute. This value defaults to 3600 seconds.
 
 **Advanced Options**
 
--  **fold_assignment**: (GLM, GBM, DL, DRF, K-Means) (Applicable only if a value for **nfolds** is specified and **fold\_column** is not selected.) Select the cross-validation fold assignment scheme. The available options are Random or `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__.
+-  **fold_assignment**: (GLM, GBM, DL, DRF, K-Means, XGBoost) (Applicable only if a value for **nfolds** is specified and **fold\_column** is not selected.) Select the cross-validation fold assignment scheme. The available options are Random or `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__.
 
--  **fold_column**: (GLM, GBM, DL, DRF, K-Means) Select the column that contains the cross-validation fold index assignment per observation.
+-  **fold_column**: (GLM, GBM, DL, DRF, K-Means, XGBoost) Select the column that contains the cross-validation fold index assignment per observation.
 
--  **offset_column**: (GLM, DRF, GBM, DL) Select a column to use as the offset. *Note*: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__.
+-  **offset_column**: (GLM, DRF, GBM, DL, XGBoost) Select a column to use as the offset. *Note*: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__.
 
--  **weights_column**: (GLM, DL, DRF, GBM) Select a column to use for the observation weights. The specified ``weights_column`` must be included in the specified ``training_frame``. *Python only*: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``. *Note*: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
+-  **weights_column**: (GLM, DL, DRF, GBM, XGBoost) Select a column to use for the observation weights. The specified ``weights_column`` must be included in the specified ``training_frame``. *Python only*: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``. *Note*: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
 -  **loss**: (DL) Select the loss function. For DL, the options are Automatic, Quadratic, CrossEntropy, Huber, or Absolute and the default value is Automatic. Absolute, Quadratic, and Huber are applicable for regression or classification, while CrossEntropy is only applicable for classification. Huber can improve for regression problems with outliers.
 
@@ -945,7 +945,7 @@ types.
 
 -  **max_hit_ratio_k**: (DRF, DL, Naïve Bayes, GBM, GLM) Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multinomial only. To disable, enter 0.
 
--  **stopping_metric**: (GBM, DRF, DL, AutoML) Specify the metric to use for early stopping. The available options are:
+-  **stopping_metric**: (GBM, DRF, DL, XGBoost, AutoML) Specify the metric to use for early stopping. The available options are:
 
     - auto: This defaults to logloss for classification, deviance for regression
     - deviance
@@ -959,7 +959,7 @@ types.
     - misclassification
     - mean_per_class_error
 
--  **stopping_rounds**: (GBM, DRF, DL, AutoML) Stops training when the option selected for **stopping_metric** doesn’t improve for the specified number of training rounds, based on a simple moving average. To disable this feature, specify 0. The metric is computed on the validation data (if provided); otherwise, training data is used.
+-  **stopping_rounds**: (GBM, DRF, DL, XGBoost, AutoML) Stops training when the option selected for **stopping_metric** doesn’t improve for the specified number of training rounds, based on a simple moving average. To disable this feature, specify 0. The metric is computed on the validation data (if provided); otherwise, training data is used.
 
    **Note**: If cross-validation is enabled:
    
@@ -967,7 +967,7 @@ types.
    - The main model runs for the mean number of epochs.
    - N+1 models may be off by the number specified for stopping_rounds from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
 
--  **stopping_tolerance**: (GBM, DRF, DL, AutoML) This option specifies the tolerance value by which a model must improve before training ceases.
+-  **stopping_tolerance**: (GBM, DRF, DL, XGBoost, AutoML) This option specifies the tolerance value by which a model must improve before training ceases.
 
 -  **build_tree_one_node**: (DRF, GBM) To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. The default setting is disabled.
 
@@ -985,23 +985,67 @@ types.
 
 -  **hidden_dropout_ratios**: (DL) Specify the hidden layer dropout ratios to improve generalization. Specify one value per hidden layer, each value between 0 and 1 (exclusive). There is no default value. This option is applicable only if *TanhwithDropout*, *RectifierwithDropout*, or *MaxoutWithDropout* is selected from the **Activation** drop-down list.
 
--  **tweedie_power**: (DL, GBM) (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie power. The range is from 1 to 2. For a normal distribution, enter ``0``. For Poisson distribution, enter ``1``. For a gamma distribution, enter ``2``. For a compound Poisson-gamma distribution, enter a value greater than 1 but less than 2. For more information, refer to `Tweedie distribution <https://en.wikipedia.org/wiki/Tweedie_distribution>`__.
+-  **distribution**: (GBM, DL, XGBoost) Specify the distribution (i.e., the loss function). The options are AUTO, bernoulli, multinomial, gaussian, poisson, gamma, or tweedie. 
+
+  - If the distribution is ``bernoulli``, the the response column must be 2-class categorical
+  - If the distribution is ``multinomial``, the response column must be categorical.
+  - If the distribution is ``poisson``, the response column must be numeric.
+  - If the distribution is ``tweedie``, the response column must be numeric.
+  - If the distribution is ``gaussian``, the response column must be numeric.
+  - If the distribution is ``gamma``, the response column must be numeric.
+
+  AUTO distribution is performed by default. In this case, the algorithm will guess the model type based on the response column type. If the response column type is numeric, AUTO defaults to “gaussian”; if categorical, AUTO defaults to bernoulli or multinomial depending on the number of response categories.
+
+-  **tweedie_power**: (DL, GBM, XGBoost) (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie power. The range is from 1 to 2. For a normal distribution, enter ``0``. For Poisson distribution, enter ``1``. For a gamma distribution, enter ``2``. For a compound Poisson-gamma distribution, enter a value greater than 1 but less than 2. For more information, refer to `Tweedie distribution <https://en.wikipedia.org/wiki/Tweedie_distribution>`__.
+
+-  **categorical_encoding**: Specify one of the following encoding schemes for handling categorical features: Note that the default value varies based on the algorithm.
+
+  - ``AUTO``: Allow the algorithm to decide. This is determined by the algorithm.
+  - ``Enum``: 1 column per categorical feature
+  - ``OneHotInternal``: On the fly N+1 new cols for categorical features with N levels
+  - ``OneHotExplicit``: N+1 new columns for categorical features with N levels
+  - ``Binary``: No more than 32 columns per categorical feature
+  - ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
+  - ``LabelEncoder``: Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.) 
+  - ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.). This is useful in GBM/DRF, for example, when you have more levels than ``nbins_cats``, and where the top level splits now have a chance at separating the data with a split. 
+  - ``EnumLimited``: Automatically reduce categorical levels to the most prevalent ones during training and only keep the **T** most frequent levels.
 
 -  **score_interval**: (DL) Specify the shortest time interval (in seconds) to wait between model scoring.
 
 -  **score_training_samples**: (DL) Specify the number of training set samples for scoring. To use all training samples, enter 0.
 
--  **score_validation_samples**: (DL) (Requires selection from the **validation\_frame** drop-down list) This option is applicable to classification only. Specify the number of validation set samples for scoring. To use all validation set samples, enter 0.
+-  **score_validation_samples**: (DL) (Requires selection from the **validation_frame** drop-down list) This option is applicable to classification only. Specify the number of validation set samples for scoring. To use all validation set samples, enter 0.
 
 -  **score_duty_cycle**: (DL) Specify the maximum duty cycle fraction for scoring. A lower value results in more training and a higher value results in more scoring. The value must be greater than 0 and less than 1.
 
 -  **autoencoder**: (DL) Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default.
 
-	**Note**: This option requires a loss function other than CrossEntropy. If this option is enabled, **use\_all\_factor\_levels**  must be enabled.
+	**Note**: This option requires a loss function other than CrossEntropy. If this option is enabled, **use_all_factor_levels**  must be enabled.
+
+-  **col_sample_rate_per_tree**: (XGBoost) Specify the column subsampling rate per tree.
+
+-  **score_tree_interval**: (XGBoost) Score the model after every so many trees.
+
+-  **min_split_improvement**: (XGBoost) Specify the minimum relative improvement in squared error reduction in order for a split to happen.
+
+-  **num_leaves**: (XGBoost) When the tree_method is "hist", specify the maximum number of leaves to include each tree.
+
+-  **tree_method**: (XGBoost) Specify the construction tree method to use. This can be one of the following: 
+
+   - auto (default): Allow the algorithm to choose the best method. For small to medium dataset, "exact"  will be used. For very large datasets, "approx" will be used.
+   - exact: Use the exact greedy method.
+   - approx: Use an approximate greedy method.
+   - hist: Use a fast histogram optimized approximate greedy method.
+
+-  **grow_policy**: (XGBoost) Specify the way that new nodes are added to the tree. "depthwise" (default) splits at nodes that are closest to the root; "lossguide" splits at nodes with the highest loss change.
+
+-  **dmatrix_type**: (XGBoost) Specify the type of DMatrix. Valid options are "auto", "dense", and "sparse". Note that for a DMatrix type of "sparase", NAs and 0 are treated equally.
 
 **Expert Options**
 
--  **keep_cross_validation_predictions**: (GLM, GBM, DL, DRF, K-Means) To keep the cross-validation predictions, check this checkbox.
+-  **keep_cross_validation_predictions**: (GLM, GBM, DL, DRF, K-Means, XGBoost) To keep the cross-validation predictions, check this checkbox.
+
+-  **keep_cross_validation_fold_assignment**: (GBM, DRF, Deep Learning, GLM, Naïve-Bayes, K-Means, XGBoost) Enable this option to preserve the cross-validation fold assignment.
 
 -  **class_sampling_factors**: (DRF, GBM, DL) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. This option is only applicable for classification problems and when **balance_classes** is enabled.
 
@@ -1010,11 +1054,9 @@ types.
 
 -  **target_ratio_comm_to_comp**: (DL) Specify the target ratio of communication overhead to computation. This option is only enabled for multi-node operation and if **train_samples_per_iteration** equals -2 (auto-tuning).
 
--  **rho**: (DL) Specify the adaptive learning rate time decay factor. This option is only applicable if **adaptive\_rate** is
-   enabled.
+-  **rho**: (DL) Specify the adaptive learning rate time decay factor. This option is only applicable if **adaptive_rate** is enabled.
 
--  **epsilon**: (DL) Specify the adaptive learning rate time smoothing factor to avoid dividing by zero. This option is only
-   applicable if **adaptive_rate** is enabled.
+-  **epsilon**: (DL) Specify the adaptive learning rate time smoothing factor to avoid dividing by zero. This option is only applicable if **adaptive_rate** is enabled.
 
 -  **max_w2**: (DL) Specify the constraint for the squared sum of the incoming weights per unit (e.g., for Rectifier).
 
@@ -1065,7 +1107,39 @@ types.
 
 -  **nbins_top_level**: (DRF, GBM) (For numerical [real/int] columns only) Specify the maximum number of bins at the root level to use to build the histogram. This number will then be decreased by a factor of two per level.
 
--  **max_abs_leafnode_pred**: (GBM) The maximum absolute value of a leaf node prediction.
+-  **max_abs_leafnode_pred**: (GBM, XGBoost) The maximum absolute value of a leaf node prediction.
+
+-  **max_bin**: (XGBoost) For tree_method=hist only: specify the maximum number of bins for binning continuous features.
+
+-  **min_sum_hessian_in_leaf**: (XGBoost) For tree_method=hist only: the mininum sum of hessian in a leaf to keep splitting
+
+-  **min_data_in_leaf**: (XGBoost) For tree_method=hist only: the mininum data in a leaf to keep splitting
+
+-  **booster**: (XGBoost) Specify the booster type. This can be one of the following: "gbtree", "gblinear", or "dart". Note that "gbtree" and "dart" use a tree-based model while "gblinear" uses linear function. This value defaults to "gbtree".
+
+-  **reg_lambda**: (XGBoost) Specify a value for L2 regularization. 
+
+-  **reg_alpha**: (XGBoost) Specify a value for L1 regularization.
+
+-  **backend**: (XGBoost) Specify the backend type. This can be done of the following: "auto", "gpu", or "cpu". 
+
+-  **gpu_id**: (XGBoost) If a GPU backend is available, specify Which GPU to use. 
+
+-  **sample_type**: (XGBoost) For booster=dart only: specify whether the sampling type should be one of the following:
+
+  -  "uniform" (default): Dropped trees are selected uniformly.
+  -  "weighted": Dropped trees are selected in proportion to weight.
+
+-  **normalize_type**: (XGBoost) For booster=dart only: specify whether the normalization method. This can be one of the following:
+
+  -  "tree" (default): New trees have the same weight as each of the dropped trees 1 / (k + learning_rate).
+  -  "forest": New trees have the same weight as the sum of the dropped trees (1 / (1 + learning_rate).
+
+-  **rate_drop**: (XGBoost) For booster=dart only: specify a float value from 0 to 1 for the rate at which to drop previous trees during dropout.
+
+-  **one_drop**: (XGBoost) For booster=dart only: specify whether to enable one drop, which causes at least one tree to always drop during the dropout.
+
+-  **skip_drop**: (XGBoost) For booster=dart only: specify a float value from 0 to 1 for the skip drop. This determines the probability of skipping the dropout procedure during a boosting iteration. If a dropout is skipped, new trees are added in the same manner as "gbtree". Note that non-zero ``skip_drop`` has higher priority than ``rate_drop`` or ``one_drop``.
 
 -  **pred_noise_bandwidth**: (GBM) The bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions.
 
@@ -1112,7 +1186,7 @@ The following additional functions are available when viewing a model:
 - **Refresh**: Refreshes the model.
 - **Predict**: Use this model to make predictions.  
 - **Download POJO**: Generates a Plain Old Java Object (POJO) that can use the model outside of H2O. Note that a POJO can be run in standalone mode or it can be integrated into a platform, such as `Hadoop's Storm <https://github.com/h2oai/h2o-tutorials/tree/master/tutorials/streaming/storm>`__. To make the POJO work in your Java application, you will also need the ``h2o-genmodel.jar`` file (available via the **Download Generated Model** button or in ``h2o-3/h2o-genmodel/build/libs/h2o-genmodel.jar``). Note that POJOs are are not supported for XGBoost models.
-- **Download Model Deployment Package**: Downloads a zip file containing the Model ObJect, Optimized (MOJO). This file includes the outputting model information in JSON format. Note that MOJOs are only available for DRF, GBM, GLM, GLRM, K-Means, Word2vec, and XGBoost models. 
+- **Download Model Deployment Package (MOJO)**: Downloads a zip file containing the Model ObJect, Optimized (MOJO). This file includes the outputting model information in JSON format. Note that MOJOs are only available for DRF, GBM, GLM, GLRM, K-Means, Word2vec, and XGBoost models. 
 - **Export**: Exports a built model.
 - **Inspect**: Inspect the model. Clicking this button displays a data table of the model parameters and output information.
 - **Delete**: Deletes the model.
@@ -1164,7 +1238,11 @@ Exporting and Importing Models
 Run AutoML
 ^^^^^^^^^^
 
-AutoML automatically trains and tunes models while requiring as few parameters as possible. A user is only required to point to a dataset, identify the response column and optionally specify a time constraint, a maximum number of models constraint, and early stopping parameters. AutoML will then begin training models and will stop as specified in the configuration (i.e., when the maximum number of models has been reached, when the maximum run time has been reached, or when the stopping criteria are met). The outputted models will display on a leaderboard, showing the best results first. Stacked Ensembles will also be automatically trained on the collection of individual models to produce a highly predictive ensemble model which, in most cases, will be the top performing model in the AutoML leaderboard. Note that Stacked Ensembles are not yet available for multiclass classification problems, so in that case, only singleton models will be trained.
+AutoML automatically trains and tunes models while requiring as few parameters as possible. A user is only required to point to a dataset, identify the response column and optionally specify a time constraint, a maximum number of models constraint, and early stopping parameters. AutoML will then begin training models and will stop as specified in the configuration (i.e., when the maximum number of models has been reached, when the maximum run time has been reached, or when the stopping criteria are met). 
+
+Stacked Ensembles will also be automatically trained on the collection of individual models to produce a highly predictive ensemble model which, in most cases, will be the top performing model in the AutoML leaderboard. Note that Stacked Ensembles are not yet available for multiclass classification problems, so in that case, only singleton models will be trained.
+
+The outputted models will display on a leaderboard, showing the best results first. The Leaderboard Frame can be specified when configuring the AutoML run. The frame will not be used for anything besides creating the leaderboard. If a Leaderboard Frame is not specified, then one will be created from the Training Frame.
 
 To begin an AutoML run, select **Models > Run AutoML** from the top menu.
 
@@ -1180,7 +1258,16 @@ At a minimum, specify the training frame and the response column. (Note that by 
    :height: 423
    :width: 800
 
-After the run is completed, click the **View** button to view the Leaderboard.
+Click the **View** button to view the Leaderboard and/or monitor the current AutoML run.
+
+.. figure:: images/Flow_ViewButton.png
+   :alt: Running Job
+   :height: 438
+   :width: 1043
+
+After clicking **View**, the Leaderboard displays the list of models that were built in the order of ``mean_residual_deviance`` (best model first). While AutoML is running, click the **Monitor Live** button and scroll down to view a live feed of the User Feedback progress of AutoML. This section provides details about each step taken by AutoML, including the parameters being configured, the dataset's features, and model training information.
+
+**Note**: You can also monitor or view an AutoML run if the run was started through Python or R. In this case, open Flow, click **Admin > Jobs** from the top menu, then click the AutoML hyperlink.
 
 .. figure:: images/Flow_ViewLeaderboard.png
    :alt: Viewing the Leaderboard

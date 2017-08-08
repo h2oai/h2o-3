@@ -42,24 +42,24 @@
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to LabelEncoder.
 #' @param ntrees (same as n_estimators) Number of trees. Defaults to 50.
-#' @param max_depth Maximum tree depth. Defaults to 5.
-#' @param min_rows (same as min_child_weight) Fewest allowed (weighted) observations in a leaf. Defaults to 10.
-#' @param min_child_weight (same as min_rows) Fewest allowed (weighted) observations in a leaf. Defaults to 0.
-#' @param learn_rate (same as eta) Learning rate (from 0.0 to 1.0) Defaults to 0.1.
-#' @param eta (same as learn_rate) Learning rate (from 0.0 to 1.0) Defaults to 0.
+#' @param max_depth Maximum tree depth. Defaults to 6.
+#' @param min_rows (same as min_child_weight) Fewest allowed (weighted) observations in a leaf. Defaults to 1.
+#' @param min_child_weight (same as min_rows) Fewest allowed (weighted) observations in a leaf. Defaults to 1.
+#' @param learn_rate (same as eta) Learning rate (from 0.0 to 1.0) Defaults to 0.3.
+#' @param eta (same as learn_rate) Learning rate (from 0.0 to 1.0) Defaults to 0.3.
 #' @param sample_rate (same as subsample) Row sample rate per tree (from 0.0 to 1.0) Defaults to 1.
-#' @param subsample (same as sample_rate) Row sample rate per tree (from 0.0 to 1.0) Defaults to 0.
+#' @param subsample (same as sample_rate) Row sample rate per tree (from 0.0 to 1.0) Defaults to 1.
 #' @param col_sample_rate (same as colsample_bylevel) Column sample rate (from 0.0 to 1.0) Defaults to 1.
-#' @param colsample_bylevel (same as col_sample_rate) Column sample rate (from 0.0 to 1.0) Defaults to 0.
+#' @param colsample_bylevel (same as col_sample_rate) Column sample rate (from 0.0 to 1.0) Defaults to 1.
 #' @param col_sample_rate_per_tree (same as colsample_bytree) Column sample rate per tree (from 0.0 to 1.0) Defaults to 1.
-#' @param colsample_bytree (same as col_sample_rate_per_tree) Column sample rate per tree (from 0.0 to 1.0) Defaults to 0.
-#' @param max_abs_leafnode_pred (same as max_delta_step) Maximum absolute value of a leaf node prediction Defaults to 3.4028235e+38.
+#' @param colsample_bytree (same as col_sample_rate_per_tree) Column sample rate per tree (from 0.0 to 1.0) Defaults to 1.
+#' @param max_abs_leafnode_pred (same as max_delta_step) Maximum absolute value of a leaf node prediction Defaults to 0.0.
 #' @param max_delta_step (same as max_abs_leafnode_pred) Maximum absolute value of a leaf node prediction Defaults to 0.0.
 #' @param score_tree_interval Score the model after every so many trees. Disabled if set to 0. Defaults to 0.
 #' @param min_split_improvement (same as gamma) Minimum relative improvement in squared error reduction for a split to happen Defaults to 0.0.
 #' @param gamma (same as min_split_improvement) Minimum relative improvement in squared error reduction for a split to happen
 #'        Defaults to 0.0.
-#' @param max_bin For tree_method=hist only: maximum number of bins Defaults to 255.
+#' @param max_bins For tree_method=hist only: maximum number of bins Defaults to 256.
 #' @param num_leaves For tree_method=hist only: maximum number of leaves Defaults to 255.
 #' @param min_sum_hessian_in_leaf For tree_method=hist only: the mininum sum of hessian in a leaf to keep splitting Defaults to 100.0.
 #' @param min_data_in_leaf For tree_method=hist only: the mininum data in a leaf to keep splitting Defaults to 0.0.
@@ -102,23 +102,23 @@ h2o.xgboost <- function(x, y, training_frame,
                         tweedie_power = 1.5,
                         categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                         ntrees = 50,
-                        max_depth = 5,
-                        min_rows = 10,
-                        min_child_weight = 0,
-                        learn_rate = 0.1,
-                        eta = 0,
+                        max_depth = 6,
+                        min_rows = 1,
+                        min_child_weight = 1,
+                        learn_rate = 0.3,
+                        eta = 0.3,
                         sample_rate = 1,
-                        subsample = 0,
+                        subsample = 1,
                         col_sample_rate = 1,
-                        colsample_bylevel = 0,
+                        colsample_bylevel = 1,
                         col_sample_rate_per_tree = 1,
-                        colsample_bytree = 0,
-                        max_abs_leafnode_pred = 3.4028235e+38,
+                        colsample_bytree = 1,
+                        max_abs_leafnode_pred = 0.0,
                         max_delta_step = 0.0,
                         score_tree_interval = 0,
                         min_split_improvement = 0.0,
                         gamma = 0.0,
-                        max_bin = 255,
+                        max_bins = 256,
                         num_leaves = 255,
                         min_sum_hessian_in_leaf = 100.0,
                         min_data_in_leaf = 0.0,
@@ -245,8 +245,8 @@ h2o.xgboost <- function(x, y, training_frame,
     parms$min_split_improvement <- min_split_improvement
   if (!missing(gamma))
     parms$gamma <- gamma
-  if (!missing(max_bin))
-    parms$max_bin <- max_bin
+  if (!missing(max_bins))
+    parms$max_bins <- max_bins
   if (!missing(num_leaves))
     parms$num_leaves <- num_leaves
   if (!missing(min_sum_hessian_in_leaf))

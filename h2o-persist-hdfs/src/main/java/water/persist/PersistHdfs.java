@@ -1,7 +1,5 @@
 package water.persist;
 
-import com.google.common.io.ByteStreams;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 
@@ -14,7 +12,6 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -26,7 +23,6 @@ import water.MemoryManager;
 import water.Value;
 import water.api.HDFSIOException;
 import water.fvec.HDFSFileVec;
-import water.fvec.Vec;
 import water.util.FileUtils;
 import water.util.Log;
 
@@ -40,6 +36,16 @@ public final class PersistHdfs extends Persist {
   public static final Configuration CONF;
   /** Root path of HDFS */
   private final Path _iceRoot;
+
+  /**
+   * Filter out hidden files/directories (dot files, eg.: .crc).
+   * Note: This implementation differs from the filter used in Hadoop MR: we do not skip underscore-prefixed files.
+   * We already have another filter that takes care of on zero-length files (underscore files are typically empty anyway
+   * eg.: _SUCCESS)
+   */
+  private static final PathFilter HIDDEN_FILE_FILTER = new PathFilter() {
+    public boolean accept(Path p) { return ! p.getName().startsWith("."); }
+  };
 
   // Global HDFS initialization
   // FIXME: do not share it via classes, but initialize it by object
@@ -293,13 +299,13 @@ public final class PersistHdfs extends Persist {
       if( fs == null ) return;
 
       Futures futures = new Futures();
-      for( FileStatus file : fs.listStatus(p) ) {
+      for( FileStatus file : fs.listStatus(p, HIDDEN_FILE_FILTER) ) {
         Path pfs = file.getPath();
-        if( file.isDir() ) {
+        if(file.isDirectory()) {
           addFolder(fs, pfs, keys, failed);
         } else if (file.getLen() > 0){
-          Key k = null;
-          keys.add((k = HDFSFileVec.make(file.getPath().toString(), file.getLen(), futures)).toString());
+          Key k = HDFSFileVec.make(pfs.toString(), file.getLen(), futures);
+          keys.add(k.toString());
           Log.debug("PersistHdfs: DKV.put(" + k + ")");
         }
       }
