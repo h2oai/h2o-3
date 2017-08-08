@@ -16,7 +16,8 @@ public class XGBoostExtension extends AbstractH2OExtension {
           "Xgboost (enabled GPUs) needs: \n"
                   + "  - CUDA 8.0\n"
                   + "XGboost (minimal version) needs: \n"
-                  + "  - no req\n";
+                  + "  - GCC 4.7+\n"
+                  + "For more details, run in debug mode: `java -Dlog4j.configuration=file:///tmp/log4j.properties -jar h2o.jar`\n";
 
   public static String NAME = "XGBoost";
 
