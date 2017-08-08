@@ -62,14 +62,12 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     _modelKey = model == null ? null : model._key;
     _model_category = model == null ? null : model._output.getModelCategory();
     _model_checksum = model == null ? 0 : model.checksum();
-    _model = model;
     return this;
   }
 
   public ModelMetrics withFrame(Frame frame) {
     _frameKey = frame == null ? null : frame._key;
     try { _frame_checksum = frame.checksum(); } catch (Throwable t) { }
-    _frame = frame;
     return this;
   }
 
@@ -79,9 +77,9 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   }
 
   public ModelMetrics withDefaultKey() {
-    assert _model != null : "Model needs to be specified to generate ModelMetrics Key";
-    assert _frame != null : "Frame needs to be specified to generate ModelMetrics Key";
-    _key = buildKey(_model, _frame);
+    assert _modelKey != null : "Model key needs to be specified to generate ModelMetrics Key";
+    assert _frameKey != null : "Frame key needs to be specified to generate ModelMetrics Key";
+    _key = buildKey(model(), frame());
     return this;
   }
 
