@@ -21,11 +21,13 @@ import java.util.*;
  */
 public class ModelMetrics extends Keyed<ModelMetrics> {
   public String _description;
-  final Key _modelKey;
-  final Key _frameKey;
-  final ModelCategory _model_category;
-  final long _model_checksum;
-  long _frame_checksum;  // when constant column is dropped, frame checksum changed.  Need re-assign for GLRM.
+  // Model specific information
+  private Key _modelKey;
+  private ModelCategory _model_category;
+  private long _model_checksum;
+  // Frame specific information
+  private Key _frameKey;
+  private long _frame_checksum;  // when constant column is dropped, frame checksum changed.  Need re-assign for GLRM.
   public final long _scoring_time;
 
   // Cached fields - cached them when needed
@@ -38,15 +40,11 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   public ModelMetrics(Model model, Frame frame, long nobs, double MSE, String desc) {
     super(buildKey(model, frame));
     _description = desc;
-
-    _modelKey = model == null ? null : model._key;
-    _frameKey = frame == null ? null : frame._key;
-    _model_category = model == null ? null : model._output.getModelCategory();
-    _model_checksum = model == null ? 0 : model.checksum();
-    try { _frame_checksum = frame.checksum(); } catch (Throwable t) { }
     _MSE = MSE;
     _nobs = nobs;
     _scoring_time = System.currentTimeMillis();
+    withModel(model);
+    withFrame(frame);
   }
 
   private void setModelAndFrameFields(Model model, Frame frame) {
@@ -58,6 +56,33 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
       PojoUtils.setField(this, "_frame_checksum", frame.checksum());
     }
     catch (Throwable t) { }
+  }
+
+  public ModelMetrics withModel(Model model) {
+    _modelKey = model == null ? null : model._key;
+    _model_category = model == null ? null : model._output.getModelCategory();
+    _model_checksum = model == null ? 0 : model.checksum();
+    _model = model;
+    return this;
+  }
+
+  public ModelMetrics withFrame(Frame frame) {
+    _frameKey = frame == null ? null : frame._key;
+    try { _frame_checksum = frame.checksum(); } catch (Throwable t) { }
+    _frame = frame;
+    return this;
+  }
+
+  public ModelMetrics withDescription(String desc) {
+    _description = desc;
+    return this;
+  }
+
+  public ModelMetrics withDefaultKey() {
+    assert _model != null : "Model needs to be specified to generate ModelMetrics Key";
+    assert _frame != null : "Frame needs to be specified to generate ModelMetrics Key";
+    _key = buildKey(_model, _frame);
+    return this;
   }
 
   /**

@@ -517,13 +517,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           FileUtils.close(os);
         }
 
-        HashMap<String, DMatrix> watches = new HashMap<>();
-//        if (validMat!=null)
-//          watches.put("valid", validMat);
-//        else
-//          watches.put("train", trainMat);
-
         // create the backend
+        HashMap<String, DMatrix> watches = new HashMap<>();
         model.model_info()._booster = ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, model.createParams(), 0, watches, null, null);
 
         // train the model
@@ -601,7 +596,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           (timeToScore && _parms._score_tree_interval == 0) || // use time-based duty-cycle heuristic only if the user didn't specify _score_tree_interval
           manualInterval) {
         _timeLastScoreStart = now;
-        model.doScoring(booster, trainMat, validMat);
+        model.doScoring(booster, trainMat, _parms.train(), validMat, _parms.valid());
         _timeLastScoreEnd = System.currentTimeMillis();
         model.computeVarImp(booster.getFeatureScore(new File(tmpModelDir, FEATURE_MAP_FILENAME).getAbsolutePath()));
         XGBoostOutput out = model._output;
