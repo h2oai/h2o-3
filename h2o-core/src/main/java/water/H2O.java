@@ -763,6 +763,9 @@ final public class H2O {
     if (LogManager.getCurrentLoggers().hasMoreElements()) {
       _haveInheritedLog4jConfiguration = true;
       return;
+    } else if (System.getProperty("log4j.configuration") != null) {
+      _haveInheritedLog4jConfiguration = true;
+      return;
     }
 
     // Disable logging from a few specific classes at startup.
@@ -772,10 +775,9 @@ final public class H2O {
     // The trick is the output path / file isn't known until the H2O API PORT is chosen,
     // so real logger initialization has to happen somewhat late in the startup lifecycle.
     java.util.Properties p = new java.util.Properties();
-    p.setProperty("log4j.logger.org.reflections.Reflections", "WARN");
+    p.setProperty("log4j.rootCategory", "WARN, console");
     p.setProperty("log4j.logger.org.eclipse.jetty", "WARN");
 
-    p.setProperty("log4j.logger.ml.dmlc.xgboost4j.java", "ERROR, console");
     p.setProperty("log4j.appender.console", "org.apache.log4j.ConsoleAppender");
     p.setProperty("log4j.appender.console.layout", "org.apache.log4j.PatternLayout");
     p.setProperty("log4j.appender.console.layout.ConversionPattern", "%m%n");
