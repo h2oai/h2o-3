@@ -824,7 +824,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         L2 regularization
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``  (default: ``0``).
         """
         return self._parms.get("reg_lambda")
 
