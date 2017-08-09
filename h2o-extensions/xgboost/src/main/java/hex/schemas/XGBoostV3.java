@@ -32,6 +32,7 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "distribution",
         "tweedie_power",
         "categorical_encoding",
+        "quiet_mode",
 
         // model specific
         "ntrees",
@@ -54,6 +55,13 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "min_sum_hessian_in_leaf",
         "min_data_in_leaf",
 
+        //dart
+        "sample_type",
+        "normalize_type",
+        "rate_drop",
+        "one_drop",
+        "skip_drop",
+
         //xgboost only
         "tree_method",
         "grow_policy",
@@ -62,14 +70,7 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "reg_alpha",
         "dmatrix_type",
         "backend",
-        "gpu_id",
-
-        // dart
-        "sample_type",
-        "normalize_type",
-        "rate_drop",
-        "one_drop",
-        "skip_drop",
+        "gpu_id"
     };
 
     @API(help="(same as n_estimators) Number of trees.", gridable = true)

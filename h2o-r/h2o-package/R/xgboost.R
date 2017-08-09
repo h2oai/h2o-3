@@ -41,6 +41,7 @@
 #' @param tweedie_power Tweedie power for Tweedie regression, must be between 1 and 2. Defaults to 1.5.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to LabelEncoder.
+#' @param quiet_mode \code{Logical}. Enable quiet mode Defaults to TRUE.
 #' @param ntrees (same as n_estimators) Number of trees. Defaults to 50.
 #' @param max_depth Maximum tree depth. Defaults to 6.
 #' @param min_rows (same as min_child_weight) Fewest allowed (weighted) observations in a leaf. Defaults to 1.
@@ -63,6 +64,11 @@
 #' @param num_leaves For tree_method=hist only: maximum number of leaves Defaults to 255.
 #' @param min_sum_hessian_in_leaf For tree_method=hist only: the mininum sum of hessian in a leaf to keep splitting Defaults to 100.0.
 #' @param min_data_in_leaf For tree_method=hist only: the mininum data in a leaf to keep splitting Defaults to 0.0.
+#' @param sample_type For booster=dart only: sample_type Must be one of: "uniform", "weighted". Defaults to uniform.
+#' @param normalize_type For booster=dart only: normalize_type Must be one of: "tree", "forest". Defaults to tree.
+#' @param rate_drop For booster=dart only: rate_drop (0..1) Defaults to 0.0.
+#' @param one_drop \code{Logical}. For booster=dart only: one_drop Defaults to FALSE.
+#' @param skip_drop For booster=dart only: skip_drop (0..1) Defaults to 0.0.
 #' @param tree_method Tree method Must be one of: "auto", "exact", "approx", "hist". Defaults to auto.
 #' @param grow_policy Grow policy - depthwise is standard GBM, lossguide is LightGBM Must be one of: "depthwise", "lossguide".
 #'        Defaults to depthwise.
@@ -74,11 +80,6 @@
 #' @param backend Backend. By default (auto), a GPU is used if available. Must be one of: "auto", "gpu", "cpu". Defaults to
 #'        auto.
 #' @param gpu_id Which GPU to use.  Defaults to 0.
-#' @param sample_type For booster=dart only: sample_type Must be one of: "uniform", "weighted". Defaults to uniform.
-#' @param normalize_type For booster=dart only: normalize_type Must be one of: "tree", "forest". Defaults to tree.
-#' @param rate_drop For booster=dart only: rate_drop (0..1) Defaults to 0.0.
-#' @param one_drop \code{Logical}. For booster=dart only: one_drop Defaults to FALSE.
-#' @param skip_drop For booster=dart only: skip_drop (0..1) Defaults to 0.0.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree for GBM, DRF, & XGBoost. Metrics per epoch for Deep Learning). Defaults to FALSE.
 #' @export
 h2o.xgboost <- function(x, y, training_frame,
@@ -101,6 +102,7 @@ h2o.xgboost <- function(x, y, training_frame,
                         distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
                         tweedie_power = 1.5,
                         categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
+                        quiet_mode = TRUE,
                         ntrees = 50,
                         max_depth = 6,
                         min_rows = 1,
@@ -122,6 +124,11 @@ h2o.xgboost <- function(x, y, training_frame,
                         num_leaves = 255,
                         min_sum_hessian_in_leaf = 100.0,
                         min_data_in_leaf = 0.0,
+                        sample_type = c("uniform", "weighted"),
+                        normalize_type = c("tree", "forest"),
+                        rate_drop = 0.0,
+                        one_drop = FALSE,
+                        skip_drop = 0.0,
                         tree_method = c("auto", "exact", "approx", "hist"),
                         grow_policy = c("depthwise", "lossguide"),
                         booster = c("gbtree", "gblinear", "dart"),
@@ -130,11 +137,6 @@ h2o.xgboost <- function(x, y, training_frame,
                         dmatrix_type = c("auto", "dense", "sparse"),
                         backend = c("auto", "gpu", "cpu"),
                         gpu_id = 0,
-                        sample_type = c("uniform", "weighted"),
-                        normalize_type = c("tree", "forest"),
-                        rate_drop = 0.0,
-                        one_drop = FALSE,
-                        skip_drop = 0.0,
                         verbose = FALSE 
                         ) 
 {
@@ -211,6 +213,8 @@ h2o.xgboost <- function(x, y, training_frame,
     parms$tweedie_power <- tweedie_power
   if (!missing(categorical_encoding))
     parms$categorical_encoding <- categorical_encoding
+  if (!missing(quiet_mode))
+    parms$quiet_mode <- quiet_mode
   if (!missing(ntrees))
     parms$ntrees <- ntrees
   if (!missing(max_depth))
@@ -253,6 +257,16 @@ h2o.xgboost <- function(x, y, training_frame,
     parms$min_sum_hessian_in_leaf <- min_sum_hessian_in_leaf
   if (!missing(min_data_in_leaf))
     parms$min_data_in_leaf <- min_data_in_leaf
+  if (!missing(sample_type))
+    parms$sample_type <- sample_type
+  if (!missing(normalize_type))
+    parms$normalize_type <- normalize_type
+  if (!missing(rate_drop))
+    parms$rate_drop <- rate_drop
+  if (!missing(one_drop))
+    parms$one_drop <- one_drop
+  if (!missing(skip_drop))
+    parms$skip_drop <- skip_drop
   if (!missing(tree_method))
     parms$tree_method <- tree_method
   if (!missing(grow_policy))
@@ -269,16 +283,6 @@ h2o.xgboost <- function(x, y, training_frame,
     parms$backend <- backend
   if (!missing(gpu_id))
     parms$gpu_id <- gpu_id
-  if (!missing(sample_type))
-    parms$sample_type <- sample_type
-  if (!missing(normalize_type))
-    parms$normalize_type <- normalize_type
-  if (!missing(rate_drop))
-    parms$rate_drop <- rate_drop
-  if (!missing(one_drop))
-    parms$one_drop <- one_drop
-  if (!missing(skip_drop))
-    parms$skip_drop <- skip_drop
   # Error check and build model
   .h2o.modelJob('xgboost', parms, h2oRestApiVersion = 3, verbose=verbose) 
 }
