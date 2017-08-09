@@ -3133,7 +3133,7 @@ use.package <- function(package,
   if (package=="data.table") {
     if (!("bit64" %in% rownames(installed.packages())) || (packageVersion("bit64") < as.package_version("0.9.7"))) {
        # print out warning to install bit64 in order to use data.table
-      warning("data.table cannot be used without R package bit64 version 0.9.7 or higher.")
+      warning("data.table cannot be used without R package bit64 version 0.9.7 or higher.  Please upgrade to take advangage of data.table speedups.")
       return(FALSE)
     }
   }
