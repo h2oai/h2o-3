@@ -723,7 +723,7 @@ MAIN_LOOP:
       try {
         p.parseChunk(0,new ByteAryData(bits,0), dout);
         resSetup._column_previews = dout;
-        resSetup._errs = dout._errs;
+        resSetup.addErrs(dout._errs);
       } catch (Throwable e) {
         throw new RuntimeException(e);
       }

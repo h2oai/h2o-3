@@ -4,7 +4,6 @@ package hex.genmodel.utils;
  * Helper function for parsing the serialized model.
  */
 public class ParseUtils {
-
     public static double[] parseArrayOfDoubles(String input) {
         if (!(input.startsWith("[") && input.endsWith("]")))
             throw new NumberFormatException("Array should be enclosed in square brackets");
