@@ -3129,6 +3129,12 @@ use.package <- function(package,
   stopifnot(is.character(package), length(package)==1L,
             is.character(version), length(version)==1L,
             is.logical(use), length(use)==1L)
+
+  if ((package=="data.table") && !("bit64" %in% rownames(installed.packages()))) {
+     # print out warning to install bit64 in order to use data.table
+    warning("data.table cannot be used without R package bit64.")
+    return(FALSE)
+  }
   use && requireNamespace(package, quietly=TRUE) && (packageVersion(package) >= as.package_version(version))
 }
 
