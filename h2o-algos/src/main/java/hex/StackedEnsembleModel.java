@@ -25,15 +25,14 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
   // common parameters for the base models:
   public ModelCategory modelCategory;
-  public long trainingFrameChecksum = -1;
+  public long trainingFrameRows = -1;
 
   public String responseColumn = null;
   private NonBlockingHashSet<String> names = null;  // keep columns as a set for easier comparison
-  private NonBlockingHashSet<String> ignoredColumns = null;  // keep ignored_columns as a set for easier comparison
-  public int nfolds = -1;
-  public Parameters.FoldAssignmentScheme fold_assignment;
-  public String fold_column;
-  public long seed = -1;
+  public int nfolds = -1; //From 1st base model
+  public Parameters.FoldAssignmentScheme fold_assignment; //From 1st base model
+  public String fold_column; //From 1st base model
+  public long seed = -1; //From 1st base model
 
 
   // TODO: add a separate holdout dataset for the ensemble
@@ -243,7 +242,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
     Model aModel = null;
     boolean beenHere = false;
-    trainingFrameChecksum = _parms.train().checksum();
+    trainingFrameRows = _parms.train().numRows();
 
     for (Key<Model> k : _parms._base_models) {
       aModel = DKV.getGet(k);
@@ -251,36 +250,23 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         Log.warn("Failed to find base model; skipping: " + k);
         continue;
       }
+      if(!aModel.isSupervised()){
+        throw new H2OIllegalArgumentException("Base model is not supervised: " + aModel._key.toString());
+      }
 
       if (beenHere) {
-        // check that the base models are all consistent
-        if (_output._isSupervised ^ aModel.isSupervised())
-          throw new H2OIllegalArgumentException("Base models are inconsistent: there is a mix of supervised and unsupervised models: " + Arrays.toString(_parms._base_models));
+        // check that the base models are all consistent with first based model
 
         if (modelCategory != aModel._output.getModelCategory())
           throw new H2OIllegalArgumentException("Base models are inconsistent: there is a mix of different categories of models: " + Arrays.toString(_parms._base_models));
 
         // NOTE: if we loosen this restriction and fold_column is set add a check below.
         Frame aTrainingFrame = aModel._parms.train();
-        if (trainingFrameChecksum != aTrainingFrame.checksum() && !this._parms._is_cv_model)
-          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different training frames.  Found checksums: " + trainingFrameChecksum + " and: " + aTrainingFrame.checksum() + ".");
-
-        NonBlockingHashSet<String> aNames = new NonBlockingHashSet<>();
-        aNames.addAll(Arrays.asList(aModel._output._names));
-        if (! aNames.equals(this.names))
-          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different column lists.  Found: " + this.names + " and: " + aNames + ".");
-
-        NonBlockingHashSet<String> anIgnoredColumns = new NonBlockingHashSet<>();
-        if (null != aModel._parms._ignored_columns)
-          anIgnoredColumns.addAll(Arrays.asList(aModel._parms._ignored_columns));
-        if (! anIgnoredColumns.equals(this.ignoredColumns))
-          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different ignored_column lists.  Found: " + this.ignoredColumns + " and: " + aModel._parms._ignored_columns + ".");
+        if (trainingFrameRows != aTrainingFrame.numRows() && !this._parms._is_cv_model)
+          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different size(number of rows) training frames.  Found number of rows: " + trainingFrameRows + " and: " + aTrainingFrame.numRows() + ".");
 
         if (! responseColumn.equals(aModel._parms._response_column))
           throw new H2OIllegalArgumentException("Base models are inconsistent: they use different response columns.  Found: " + responseColumn + " and: " + aModel._parms._response_column + ".");
-
-        if (_output._domains.length != aModel._output._domains.length)
-          throw new H2OIllegalArgumentException("Base models are inconsistent: there is a mix of different numbers of domains (categorical levels): " + Arrays.toString(_parms._base_models));
 
         // TODO: we currently require xval; loosen this iff we add a separate holdout dataset for the ensemble
 
@@ -327,7 +313,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         // giving us inconsistencies.
       } else {
         // !beenHere: this is the first base_model
-        _output._isSupervised = aModel.isSupervised();
         this.modelCategory = aModel._output.getModelCategory();
         this._dist = new Distribution(distributionFamily(aModel));
         _output._domains = Arrays.copyOf(aModel._output._domains, aModel._output._domains.length);
@@ -337,19 +322,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         _output.setNames(aModel._output._names);
         this.names = new NonBlockingHashSet<>();
         this.names.addAll(Arrays.asList(aModel._output._names));
-
-        this.ignoredColumns = new NonBlockingHashSet<>();
-        if (null != aModel._parms._ignored_columns)
-          this.ignoredColumns.addAll(Arrays.asList(aModel._parms._ignored_columns));
-
-        // If the client has set _ignored_columns for the StackedEnsemble make sure it's
-        // consistent with the base_models:
-        if (null != this._parms._ignored_columns) {
-          NonBlockingHashSet<String> ensembleIgnoredColumns = new NonBlockingHashSet<>();
-          ensembleIgnoredColumns.addAll(Arrays.asList(this._parms._ignored_columns));
-          if (! ensembleIgnoredColumns.equals(this.ignoredColumns))
-            throw new H2OIllegalArgumentException("A StackedEnsemble takes its ignored_columns list from the base models.  An inconsistent list of ignored_columns was specified for the ensemble model.");
-        }
 
         responseColumn = aModel._parms._response_column;
 

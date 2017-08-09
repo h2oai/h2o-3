@@ -76,7 +76,6 @@ public class CheckSumTest extends TestUtil {
             StackedEnsembleModel.StackedEnsembleParameters stackedEnsembleParameters = new StackedEnsembleModel.StackedEnsembleParameters();
             stackedEnsembleParameters._train = train._key;
             stackedEnsembleParameters._response_column = "response";
-            stackedEnsembleParameters._fold_column = "fold_column";
             stackedEnsembleParameters._base_models = new Key[] {gbm._key,drf._key};
             StackedEnsemble stackedEnsembleJob = new StackedEnsemble(stackedEnsembleParameters);
             stackedEnsembleModel = stackedEnsembleJob.trainModel().get();
