@@ -300,23 +300,22 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   private Frame makePreds(Booster booster, DMatrix data, ModelMetrics[] mm, Key<Frame> destinationKey) throws XGBoostError {
     Frame predFrame;
+    // XGBoost prediction
     final float[][] preds = booster.predict(data);
     Vec resp = Vec.makeVec(data.getLabel(), Vec.newKey());
     float[] weights = data.getWeight();
+    // Output frame column names
+    String[] colNames = makeScoringNames();
     if (_output.nclasses()==1) {
       double[] dpreds = new double[preds.length];
       for (int j = 0; j < dpreds.length; ++j) {
         dpreds[j] = preds[j][0];
         assert(!Double.isNaN(dpreds[j])) : "Error: XGBoost predicted NAs.";
       }
-//      if (weights.length>0)
-//        for (int j = 0; j < dpreds.length; ++j)
-//          assert weights[j] == 1.0;
       Vec pred = Vec.makeVec(dpreds, Vec.newKey());
       mm[0] = ModelMetricsRegression.make(pred, resp, DistributionFamily.gaussian);
-      predFrame = new Frame(destinationKey, new Vec[]{pred}, true);
-    }
-    else if (_output.nclasses()==2) {
+      predFrame = new Frame(destinationKey, colNames, new Vec[]{pred});
+    } else if (_output.nclasses()==2) {
       double[] dpreds = new double[preds.length];
       for (int j = 0; j < dpreds.length; ++j)
         dpreds[j] = preds[j][0];
@@ -325,7 +324,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
           assert weights[j] == 1.0;
       Vec p1 = Vec.makeVec(dpreds, Vec.newKey());
       Vec p0 = p1.makeCon(0);
-      Vec label = p1.makeCon(0., Vec.T_CAT);
+      Vec label = p1.makeZero(_output.classNames());
       new MRTask() {
         public void map(Chunk l, Chunk p0, Chunk p1) {
           for (int i=0; i<l._len; ++i) {
@@ -336,12 +335,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
           }
         }
       }.doAll(label,p0,p1);
-      mm[0] = ModelMetricsBinomial.make(p1, resp);
-      label.setDomain(new String[]{"N","Y"}); // ignored
-      predFrame = new Frame(destinationKey, new Vec[]{label,p0,p1}, true);
-    }
-
-    else {
+      mm[0] = ModelMetricsBinomial.make(p1, resp, _output.classNames());
+      predFrame = new Frame(destinationKey, colNames, new Vec[]{label,p0,p1});
+    } else {
       String[] names = makeScoringNames();
       String[][] domains = new String[names.length][];
       domains[0] = _output.classNames();
