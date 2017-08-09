@@ -33,7 +33,7 @@ class H2OXGBoostEstimator(H2OEstimator):
                       "min_rows", "min_child_weight", "learn_rate", "eta", "sample_rate", "subsample",
                       "col_sample_rate", "colsample_bylevel", "col_sample_rate_per_tree", "colsample_bytree",
                       "max_abs_leafnode_pred", "max_delta_step", "score_tree_interval", "min_split_improvement",
-                      "gamma", "max_bins", "num_leaves", "min_sum_hessian_in_leaf", "min_data_in_leaf", "sample_type",
+                      "gamma", "max_bins", "max_leaves", "min_sum_hessian_in_leaf", "min_data_in_leaf", "sample_type",
                       "normalize_type", "rate_drop", "one_drop", "skip_drop", "tree_method", "grow_policy", "booster",
                       "reg_lambda", "reg_alpha", "dmatrix_type", "backend", "gpu_id"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
@@ -655,18 +655,18 @@ class H2OXGBoostEstimator(H2OEstimator):
 
 
     @property
-    def num_leaves(self):
+    def max_leaves(self):
         """
         For tree_method=hist only: maximum number of leaves
 
-        Type: ``int``  (default: ``255``).
+        Type: ``int``  (default: ``0``).
         """
-        return self._parms.get("num_leaves")
+        return self._parms.get("max_leaves")
 
-    @num_leaves.setter
-    def num_leaves(self, num_leaves):
-        assert_is_type(num_leaves, None, int)
-        self._parms["num_leaves"] = num_leaves
+    @max_leaves.setter
+    def max_leaves(self, max_leaves):
+        assert_is_type(max_leaves, None, int)
+        self._parms["max_leaves"] = max_leaves
 
 
     @property

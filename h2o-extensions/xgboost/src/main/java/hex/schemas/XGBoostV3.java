@@ -51,7 +51,7 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
 
         //lightgbm only
         "max_bins",
-        "num_leaves",
+        "max_leaves",
         "min_sum_hessian_in_leaf",
         "min_data_in_leaf",
 
@@ -129,7 +129,7 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
     public int max_bins;
 
     @API(help = "For tree_method=hist only: maximum number of leaves", level = API.Level.secondary, gridable = true)
-    public int num_leaves;
+    public int max_leaves;
 
     @API(help = "For tree_method=hist only: the mininum sum of hessian in a leaf to keep splitting", level = API.Level.expert, gridable = true)
     public float min_sum_hessian_in_leaf;

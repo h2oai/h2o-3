@@ -61,7 +61,7 @@
 #' @param gamma (same as min_split_improvement) Minimum relative improvement in squared error reduction for a split to happen
 #'        Defaults to 0.0.
 #' @param max_bins For tree_method=hist only: maximum number of bins Defaults to 256.
-#' @param num_leaves For tree_method=hist only: maximum number of leaves Defaults to 255.
+#' @param max_leaves For tree_method=hist only: maximum number of leaves Defaults to 0.
 #' @param min_sum_hessian_in_leaf For tree_method=hist only: the mininum sum of hessian in a leaf to keep splitting Defaults to 100.0.
 #' @param min_data_in_leaf For tree_method=hist only: the mininum data in a leaf to keep splitting Defaults to 0.0.
 #' @param sample_type For booster=dart only: sample_type Must be one of: "uniform", "weighted". Defaults to uniform.
@@ -121,7 +121,7 @@ h2o.xgboost <- function(x, y, training_frame,
                         min_split_improvement = 0.0,
                         gamma = 0.0,
                         max_bins = 256,
-                        num_leaves = 255,
+                        max_leaves = 0,
                         min_sum_hessian_in_leaf = 100.0,
                         min_data_in_leaf = 0.0,
                         sample_type = c("uniform", "weighted"),
@@ -251,8 +251,8 @@ h2o.xgboost <- function(x, y, training_frame,
     parms$gamma <- gamma
   if (!missing(max_bins))
     parms$max_bins <- max_bins
-  if (!missing(num_leaves))
-    parms$num_leaves <- num_leaves
+  if (!missing(max_leaves))
+    parms$max_leaves <- max_leaves
   if (!missing(min_sum_hessian_in_leaf))
     parms$min_sum_hessian_in_leaf <- min_sum_hessian_in_leaf
   if (!missing(min_data_in_leaf))
