@@ -130,20 +130,20 @@ Defining an XGBoost Model
 
 -  `min_split_improvement <algo-params/min_split_improvement.html>`__ (alias: ``gamma``): The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range. This value defaults to 0.
 
--  **max_bins**: When ``tree_method="hist"``, specify the maximum number of bins for binning continuous features. This value defaults to 256.
-
--  **num_leaves**: When ``tree_method="hist"``, specify the maximum number of leaves to include each tree. This value defaults to 255.
-
--  **min_sum_hessian_in_leaf**: When ``tree_method="hist"``, specify the mininum sum of hessian in a leaf to keep splitting. This value defaults to 100.
-
--  **min_data_in_leaf**: When ``tree_method="hist"``, specify the mininum data in a leaf to keep splitting. This value defaults to 0.
-
 -  **tree_method**: Specify the construction tree method to use. This can be one of the following: 
 
    - ``auto`` (default): Allow the algorithm to choose the best method. For small to medium dataset, ``exact``  will be used. For very large datasets, ``approx`` will be used.
    - ``exact``: Use the exact greedy method.
    - ``approx``: Use an approximate greedy method. This generates a new set of bins for each iteration.
    - ``hist``: Use a fast histogram optimized approximate greedy method. In this case, only a subset of possible split values are considered.
+
+-  **max_bins**: When ``tree_method="hist"``, specify the maximum number of bins for binning continuous features. This value defaults to 256.
+
+-  **max_leaves**: When ``tree_method="hist"``, specify the maximum number of leaves to include each tree. This value defaults to 0.
+
+-  **min_sum_hessian_in_leaf**: When ``tree_method="hist"``, specify the mininum sum of hessian in a leaf to keep splitting. This value defaults to 100.
+
+-  **min_data_in_leaf**: When ``tree_method="hist"``, specify the mininum data in a leaf to keep splitting. This value defaults to 0.
 
 -  **grow_policy**: Specify the way that new nodes are added to the tree. "depthwise" (default) splits at nodes that are closest to the root; "lossguide" splits at nodes with the highest loss change. Note that when the grow policy is "depthwise", then ``max_depth`` cannot be 0 (unlimited).
 
@@ -165,9 +165,11 @@ Defining an XGBoost Model
 
 -  **skip_drop**: When ``booster="dart"``, specify a float value from 0 to 1 for the skip drop. This determines the probability of skipping the dropout procedure during a boosting iteration. If a dropout is skipped, new trees are added in the same manner as "gbtree". Note that non-zero ``skip_drop`` has higher priority than ``rate_drop`` or ``one_drop``. This value defaults to 0.0.
 
--  **reg_lamda**: Specify a value for L2 regularization. This defaults to 1.0.
+-  **reg_lambda**: Specify a value for L2 regularization. This defaults to 0.
 
 -  **reg_alpha**: Specify a value for L1 regularization. This defaults to 0.
+
+-  **lambda_bias**: Specify a value for L2 regularization on bias. (Note that this does not apply to L1 regularization on bias because it is not important.) This value defaults to 0.
 
 -  **dmatrix_type**: Specify the type of DMatrix. Valid options include the following: "auto", "dense", and "sparse". Note that for ``dmatrix_type="sparse"``, NAs and 0 are treated equally. This value defaults to "auto".
 
@@ -177,20 +179,27 @@ Defining an XGBoost Model
 
 -  **verbose**: Print scoring history to the console. For XGBoost, metrics are per tree. This value defaults to FALSE.
 
-Light GBM Options
-~~~~~~~~~~~~~~~~~
+"LightGBM" Emulation Mode Options
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The following options are used to configure a light GBM (binning):
+LightGBM mode builds trees as deep as necessary by repeatedly splitting the one leaf that gives the biggest gain instead of splitting all leaves until a maximum depth is reached. H2O does not integrate `LightGBM <https://github.com/Microsoft/LightGBM>`__. Instead, H2O provides a method for emulating the LightGBM software using a certain set of options within XGBoost. This is done by setting the following options:
+
+::
+
+   tree_method=hist
+   grow_policy=lossguide
+
+When the above are configured, then the following additional "LightGBM" options are available:
 
 - ``max_bin``
-- ``num_leaves``
+- ``max_leaves``
 - ``min_sum_hessian_in_leaf``
 - ``min_data_in_leaf``
 
 XGBoost Only Options
 ~~~~~~~~~~~~~~~~~~~~
 
-As opposed to light GBM models, the following options configure a true XGBoost model (without binning).
+As opposed to light GBM models, the following options configure a true XGBoost model.
 
 - ``tree_method``
 - ``grow_policy``
