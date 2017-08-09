@@ -361,6 +361,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   }
 
   public static Key<ModelMetrics> buildKey(Model model, Frame frame) {
+    assert model != null && frame != null : "Ups! Somebody is trying to pass model="+model+" and frame="+frame;
     return frame==null || model == null ? null : buildKey(model._key, model.checksum(), frame._key, frame.checksum());
   }
 
