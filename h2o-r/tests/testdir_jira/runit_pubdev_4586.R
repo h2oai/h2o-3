@@ -2,6 +2,8 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../scripts/h2o-r-test-setup.R")
 
 test.pubdev_4586 = function() {
+    expect_true(h2o.xgboost.available())
+
     train <- h2o.importFile(locate("smalldata/iris/iris_train.csv"))
     test <- h2o.importFile(locate("smalldata/iris/iris_test.csv"))
 

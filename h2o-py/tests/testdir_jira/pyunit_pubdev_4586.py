@@ -6,6 +6,8 @@ from tests import pyunit_utils
 from h2o.estimators.xgboost import H2OXGBoostEstimator
 
 def test_pubdev_4586():
+    assert H2OXGBoostEstimator.available(), "H2O XGBoost is not available! Please check machine env!"
+
     train = h2o.import_file(pyunit_utils.locate("smalldata/iris/iris_train.csv"))
     test = h2o.import_file(pyunit_utils.locate("smalldata/iris/iris_test.csv"))
     x = train.columns
