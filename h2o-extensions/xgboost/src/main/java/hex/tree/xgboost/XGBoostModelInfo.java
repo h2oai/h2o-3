@@ -35,22 +35,12 @@ final public class XGBoostModelInfo extends Iced {
     _booster = null;
   }
 
-  void javaToNative() {
-    InputStream is = new ByteArrayInputStream(_boosterBytes);
-    try {
-      _booster = Booster.loadModel(is);
-    } catch (XGBoostError xgBoostError) {
-      xgBoostError.printStackTrace();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-  }
-
   void nativeToJava() {
     try {
       _boosterBytes = _booster.toByteArray();
     } catch (XGBoostError xgBoostError) {
       xgBoostError.printStackTrace();
+      throw new RuntimeException(xgBoostError);
     }
   }
 

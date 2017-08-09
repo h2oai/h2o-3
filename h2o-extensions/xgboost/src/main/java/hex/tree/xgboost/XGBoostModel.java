@@ -292,10 +292,22 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   // Fast scoring using the C++ data structures
   // However, we need to bring the data back to Java to compute the metrics
   // For multinomial, we also need to transpose the data - which is slow
-  private ModelMetrics makeMetrics(Booster booster, DMatrix data) throws XGBoostError {
-    ModelMetrics[] mm = new ModelMetrics[1];
-    makePreds(booster, data, mm, Key.<Frame>make()).remove();
-    return mm[0];
+  private ModelMetrics makeMetrics(Booster booster, DMatrix data, Frame dataFrame, String description) throws XGBoostError {
+    return makeMetrics(booster, data, dataFrame, description, null);
+  }
+  private ModelMetrics makeMetrics(Booster booster, DMatrix data, Frame dataFrame, String description,
+                                   Key<Frame> predFrameKey) throws XGBoostError {
+    ModelMetrics[] mms = new ModelMetrics[1];
+    Frame predictions = makePreds(booster, data, mms, predFrameKey);
+    if (predFrameKey == null) {
+        predictions.remove();
+    } else {
+      DKV.put(predictions);
+    }
+    ModelMetrics mm = mms[0]
+        .withModelAndFrame(this, dataFrame)
+        .withDescription(description);
+    return mm;
   }
 
   private Frame makePreds(Booster booster, DMatrix data, ModelMetrics[] mm, Key<Frame> destinationKey) throws XGBoostError {
@@ -339,9 +351,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       mm[0] = ModelMetricsBinomial.make(p1, resp);
       label.setDomain(new String[]{"N","Y"}); // ignored
       predFrame = new Frame(destinationKey, new Vec[]{label,p0,p1}, true);
-    }
-
-    else {
+    } else {
       String[] names = makeScoringNames();
       String[][] domains = new String[names.length][];
       domains[0] = _output.classNames();
@@ -374,20 +384,24 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
    * Score an XGBoost model on training and validation data (optional)
    * Note: every row is scored, all observation weights are assumed to be equal
    * @param booster xgboost model
-   * @param train training data
+   * @param train training data in the form of matrix
+   * @param trainFrame original training frame
    * @param valid validation data (optional, can be null)
+   * @param validFrame original validation frame, can be null
    * @throws XGBoostError
    */
-  public void doScoring(Booster booster, DMatrix train, DMatrix valid) throws XGBoostError {
-    ModelMetrics mm = makeMetrics(booster, train);
-    mm._description = "Metrics reported on training frame";
+  public void doScoring(Booster booster, DMatrix train, Frame trainFrame, DMatrix valid, Frame validFrame) throws XGBoostError {
+    ModelMetrics mm = makeMetrics(booster, train, trainFrame, "Metrics reported on training frame");
     _output._training_metrics = mm;
     _output._scored_train[_output._ntrees].fillFrom(mm);
+    addModelMetrics(mm);
+    // Optional validation part
     if (valid!=null) {
-      mm = makeMetrics(booster, valid);
-      mm._description = "Metrics reported on validation frame";
+      assert validFrame != null : "Validation frame (source of validation matrix) has to be not null!";
+      mm = makeMetrics(booster, valid, validFrame, "Metrics reported on validation frame");
       _output._validation_metrics = mm;
       _output._scored_valid[_output._ntrees].fillFrom(mm);
+      addModelMetrics(mm);
     }
   }
 
@@ -444,38 +458,16 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     try {
       DMatrix trainMat = convertFrametoDMatrix( model_info()._dataInfoKey, adaptFr,
           _parms._response_column, _parms._weights_column, _parms._fold_column, null, _output._sparse);
-      ModelMetrics[] mm = new ModelMetrics[1];
-      Frame preds = makePreds(model_info()._booster, trainMat, mm, Key.<Frame>make(destination_key));
-      //Update model
+      Key<Frame> destFrameKey = Key.<Frame>make(destination_key);
+      ModelMetrics mm = makeMetrics(model_info()._booster, trainMat, fr, "Prediction on frame " + fr._key, destFrameKey);
+      // Update model with newly computed model metrics
       if (computeMetrics){
-        final Key modelKey = ModelMetrics.buildKey(this,fr); //Make Key for Model Metrics
-        mm[0]._key = modelKey;
-        this.addModelMetrics(mm[0]);
+        this.addModelMetrics(mm);
         DKV.put(this);
       }
-      DKV.put(preds);
-      return preds;
+      return destFrameKey.get();
     } catch (XGBoostError xgBoostError) {
-      xgBoostError.printStackTrace();
+      throw new RuntimeException(xgBoostError);
     }
-    return null;
   }
-
-//  @Override
-//  protected ModelMetrics.MetricBuilder scoreMetrics(Frame adaptFrm) {
-//    Frame adaptFr = new Frame(adaptFrm);
-//    boolean computeMetrics = (!isSupervised() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
-//    String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
-//    try {
-//      DMatrix trainMat = convertFrametoDMatrix( model_info()._dataInfoKey, adaptFr,
-//          _parms._response_column, _parms._weights_column, _parms._fold_column, null, _output._sparse);
-//      ModelMetrics[] mm = new ModelMetrics[1];
-//      Frame preds = makePreds(model_info()._booster, trainMat, mm);
-//      return mm[0];
-//    } catch (XGBoostError xgBoostError) {
-//      xgBoostError.printStackTrace();
-//    }
-//    return null;
-//  }
-
 }
