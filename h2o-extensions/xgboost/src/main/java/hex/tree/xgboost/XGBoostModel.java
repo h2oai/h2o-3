@@ -305,10 +305,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       DKV.put(predictions);
     }
     ModelMetrics mm = mms[0]
-        .withModel(this)
-        .withFrame(dataFrame)
-        .withDescription(description)
-        .withDefaultKey();
+        .withModelAndFrame(this, dataFrame);
     return mm;
   }
 

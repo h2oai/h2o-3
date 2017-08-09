@@ -39,12 +39,11 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
 
   public ModelMetrics(Model model, Frame frame, long nobs, double MSE, String desc) {
     super(buildKey(model, frame));
+    withModelAndFrame(model, frame);
     _description = desc;
     _MSE = MSE;
     _nobs = nobs;
     _scoring_time = System.currentTimeMillis();
-    withModel(model);
-    withFrame(frame);
   }
 
   private void setModelAndFrameFields(Model model, Frame frame) {
@@ -58,28 +57,20 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     catch (Throwable t) { }
   }
 
-  public ModelMetrics withModel(Model model) {
+  public final ModelMetrics withModelAndFrame(Model model, Frame frame) {
     _modelKey = model == null ? null : model._key;
     _model_category = model == null ? null : model._output.getModelCategory();
     _model_checksum = model == null ? 0 : model.checksum();
-    return this;
-  }
 
-  public ModelMetrics withFrame(Frame frame) {
     _frameKey = frame == null ? null : frame._key;
-    try { _frame_checksum = frame.checksum(); } catch (Throwable t) { }
+    try { _frame_checksum = frame == null ? 0 : frame.checksum(); } catch (Throwable t) { }
+
+    _key = buildKey(model, frame);
     return this;
   }
 
   public ModelMetrics withDescription(String desc) {
     _description = desc;
-    return this;
-  }
-
-  public ModelMetrics withDefaultKey() {
-    assert _modelKey != null : "Model key needs to be specified to generate ModelMetrics Key";
-    assert _frameKey != null : "Frame key needs to be specified to generate ModelMetrics Key";
-    _key = buildKey(model(), frame());
     return this;
   }
 
@@ -110,8 +101,8 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     return sb.toString();
   }
 
-  public Model model() { return _model==null ? (_model=DKV.getGet(_modelKey)) : _model; }
-  public Frame frame() { return _frame==null ? (_frame=DKV.getGet(_frameKey)) : _frame; }
+  public final Model model() { return _model==null ? (_model=DKV.getGet(_modelKey)) : _model; }
+  public final Frame frame() { return _frame==null ? (_frame=DKV.getGet(_frameKey)) : _frame; }
 
   public double mse() { return _MSE; }
   public double rmse() { return Math.sqrt(_MSE);}
