@@ -1,6 +1,6 @@
-def call(final context, final String mode, final String commitMessage, final List<String> changes, final boolean ignoreChanges) {
+def call(final context, final String mode, final String commitMessage, final List<String> changes, final boolean ignoreChanges, final List<String> distributionsToBuild) {
   def buildConfig = new BuildConfig()
-  buildConfig.initialize(context, mode, commitMessage, changes, ignoreChanges)
+  buildConfig.initialize(context, mode, commitMessage, changes, ignoreChanges, distributionsToBuild)
   return buildConfig
 }
 
@@ -18,13 +18,17 @@ class BuildConfig {
   // Use this image for benchmark stages
   public static final String BENCHMARK_IMAGE = DOCKER_REGISTRY + '/opsh2oai/' + BENCHMARK_IMAGE_NAME + ':' + BENCHMARK_IMAGE_VERSION_TAG
 
+  private static final String HADOOP_IMAGE_NAME_PREFIX = 'h2o-3-hadoop'
+  private static final String HADOOP_IMAGE_VERSION_TAG = '46'
+
   public static final String COMPONENT_PY = 'py'
   public static final String COMPONENT_R = 'r'
   public static final String COMPONENT_JS = 'js'
   public static final String COMPONENT_JAVA = 'java'
   // Use to indicate, that the stage is not component dependent such as MOJO Compatibility Test,
   // always run
-  public static final String COMPONENT_ANY = 'none'
+  public static final String COMPONENT_ANY = 'any'
+  public static final String COMPONENT_HADOOP = 'hadoop'
 
   public static final String H2O_OPS_TOKEN = 'h2o-ops-personal-auth-token'
   private static final String COMMIT_STATE_PREFIX = 'H2O-3 Pipeline'
@@ -41,6 +45,8 @@ class BuildConfig {
   private String nodeLabel
   private String commitMessage
   private boolean ignoreRerun = false
+  private boolean buildHadoop
+  private List hadoopDistributionsToBuild
   private JenkinsMaster master
   private NodeLabels nodeLabels
   private LinkedHashMap changesMap = [
@@ -51,10 +57,13 @@ class BuildConfig {
     (COMPONENT_ANY): true
   ]
 
-  void initialize(final context, final String mode, final String commitMessage, final List<String> changes, final boolean ignoreChanges) {
+  void initialize(final context, final String mode, final String commitMessage, final List<String> changes,
+                  final boolean ignoreChanges, final List<String> distributionsToBuild) {
     this.mode = mode
     this.nodeLabel = nodeLabel
     this.commitMessage = commitMessage
+    this.buildHadoop = mode == 'MODE_HADOOP'
+    this.hadoopDistributionsToBuild = distributionsToBuild
     if (ignoreChanges) {
       markAllComponentsForTest()
     } else {
@@ -96,10 +105,18 @@ class BuildConfig {
     return nodeLabels.getBenchmarkNodeLabel()
   }
 
+  boolean getBuildHadoop() {
+    return buildHadoop
+  }
+
+  List getSupportedHadoopDistributions() {
+    return hadoopDistributionsToBuild
+  }
+
   List<String> getBuildEnv() {
     return [
-      "JAVA_VERSION=8",
-      "BUILD_HADOOP=false",
+      'JAVA_VERSION=8',
+      "BUILD_HADOOP=${buildHadoop}",
     ]
   }
 
@@ -126,10 +143,13 @@ class BuildConfig {
     return DEFAULT_IMAGE_VERSION_TAG
   }
 
+  String getHadoopImageVersion() {
+    return HADOOP_IMAGE_VERSION_TAG
+  }
+
   private void detectChanges(List<String> changes) {
-    // clear the changes map
     markAllComponentsForSkip()
-    // stages for component none should be executed always
+
     changesMap[COMPONENT_ANY] = true
 
     for (change in changes) {
@@ -153,13 +173,16 @@ class BuildConfig {
 
   private void markAllComponentsForSkip() {
     changesMap.each { k,v ->
-      // mark no changes for all components except COMPONENT_ANY
       changesMap[k] = k == COMPONENT_ANY
     }
   }
 
   GString getGitHubCommitStateContext(final String stageName) {
     return "${COMMIT_STATE_PREFIX} » ${stageName}"
+  }
+
+  String getSmokeHadoopImage(final String distribution, final String version) {
+      return "${DOCKER_REGISTRY}/opsh2oai/${HADOOP_IMAGE_NAME_PREFIX}-${distribution}-${version}:${HADOOP_IMAGE_VERSION_TAG}"
   }
 
   static enum JenkinsMaster {

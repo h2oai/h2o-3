@@ -1,13 +1,13 @@
 def call(final pipelineContext) {
 
-  def MODE_PR_TESTING_CODE = -1
   def MODE_PR_CODE = 0
   def MODE_BENCHMARK_CODE = 1
-  def MODE_MASTER_CODE = 2
-  def MODE_NIGHTLY_CODE = 3
+  def MODE_HADOOP_CODE = 2
+  def MODE_MASTER_CODE = 10
+  def MODE_NIGHTLY_CODE = 20
   def MODES = [
-    [name: 'MODE_PR_TESTING', code: MODE_PR_TESTING_CODE],
     [name: 'MODE_PR', code: MODE_PR_CODE],
+    [name: 'MODE_HADOOP', code: MODE_HADOOP_CODE],
     [name: 'MODE_BENCHMARK', code: MODE_BENCHMARK_CODE],
     [name: 'MODE_MASTER', code: MODE_MASTER_CODE],
     [name: 'MODE_NIGHTLY', code: MODE_NIGHTLY_CODE]
@@ -175,9 +175,22 @@ def call(final pipelineContext) {
     ]
   ]
 
+  def HADOOP_STAGES = []
+  for (distribution in pipelineContext.getBuildConfig().getSupportedHadoopDistributions()) {
+    HADOOP_STAGES += [
+      stageName: "${distribution.name.toUpperCase()} ${distribution.version} Smoke", target: 'test-hadoop-smoke',
+      timeoutValue: 15, component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_HADOOP, pipelineContext.getBuildConfig().COMPONENT_PY],
+      customData: [distribution: distribution.name, version: distribution.version], pythonVersion: '2.7',
+      executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopStage.groovy'
+    ]
+  }
+
   def modeCode = MODES.find{it['name'] == pipelineContext.getBuildConfig().getMode()}['code']
   if (modeCode == MODE_BENCHMARK_CODE) {
     executeInParallel(BENCHMARK_STAGES, pipelineContext)
+  } else if (modeCode == MODE_HADOOP_CODE) {
+    executeInParallel(HADOOP_STAGES, pipelineContext)
   } else {
     executeInParallel(SMOKE_STAGES, pipelineContext)
     def jobs = PR_STAGES

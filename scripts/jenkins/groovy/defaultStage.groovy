@@ -50,6 +50,7 @@ def call(final pipelineContext, final stageConfig) {
           }
 
           makeTarget {
+            customBuildAction = stageConfig.customBuildAction
             target = stageConfig.target
             hasJUnit = stageConfig.hasJUnit
             h2o3dir = h2oFolder

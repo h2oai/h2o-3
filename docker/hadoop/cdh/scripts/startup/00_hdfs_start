@@ -1,0 +1,3 @@
+#! /bin/bash
+
+for x in $(cd /etc/init.d && ls hadoop-hdfs-*); do service ${x} start; done
