@@ -137,15 +137,15 @@ Defining an XGBoost Model
    - ``approx``: Use an approximate greedy method. This generates a new set of bins for each iteration.
    - ``hist``: Use a fast histogram optimized approximate greedy method. In this case, only a subset of possible split values are considered.
 
--  **max_bins**: When ``tree_method="hist"``, specify the maximum number of bins for binning continuous features. This value defaults to 256.
-
--  **max_leaves**: When ``tree_method="hist"``, specify the maximum number of leaves to include each tree. This value defaults to 0.
-
--  **min_sum_hessian_in_leaf**: When ``tree_method="hist"``, specify the mininum sum of hessian in a leaf to keep splitting. This value defaults to 100.
-
--  **min_data_in_leaf**: When ``tree_method="hist"``, specify the mininum data in a leaf to keep splitting. This value defaults to 0.
-
 -  **grow_policy**: Specify the way that new nodes are added to the tree. "depthwise" (default) splits at nodes that are closest to the root; "lossguide" splits at nodes with the highest loss change. Note that when the grow policy is "depthwise", then ``max_depth`` cannot be 0 (unlimited).
+
+-  **max_bins**: When ``grow_policy="lossguide"`` and ``tree_method="hist"``, specify the maximum number of bins for binning continuous features. This value defaults to 256.
+
+-  **max_leaves**: When ``grow_policy="lossguide"`` and ``tree_method="hist"``, specify the maximum number of leaves to include each tree. This value defaults to 0.
+
+-  **min_sum_hessian_in_leaf**: When ``grow_policy="lossguide"`` and ``tree_method="hist"``, specify the mininum sum of hessian in a leaf to keep splitting. This value defaults to 100.
+
+-  **min_data_in_leaf**: When ``grow_policy="lossguide"`` and ``tree_method="hist"``, specify the mininum data in a leaf to keep splitting. This value defaults to 0.
 
 -  **booster**: Specify the booster type. This can be one of the following: "gbtree", "gblinear", or "dart". Note that "gbtree" and "dart" use a tree-based model while "gblinear" uses linear function. This value defaults to "gbtree". More information about the ``booster`` parameter is available `here <https://github.com/dmlc/xgboost/blob/master/doc/tutorials/dart.md>`__.
 
@@ -186,8 +186,8 @@ LightGBM mode builds trees as deep as necessary by repeatedly splitting the one 
 
 ::
 
-   tree_method=hist
-   grow_policy=lossguide
+   tree_method="hist"
+   grow_policy="lossguide"
 
 When the above are configured, then the following additional "LightGBM" options are available:
 
