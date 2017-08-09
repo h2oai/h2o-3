@@ -1,0 +1,67 @@
+#! /bin/bash
+
+HDP_VERSION=$(ls /usr/hdp/ | grep 2)
+echo "Generating yarn-site.xml for HDP ${HDP_VERSION}"
+echo '''
+<configuration>
+  <property>
+    <name>yarn.nodemanager.aux-services</name>
+    <value>mapreduce_shuffle</value>
+  </property>
+
+  <property>
+    <name>yarn.nodemanager.aux-services.mapreduce_shuffle.class</name>
+    <value>org.apache.hadoop.mapred.ShuffleHandler</value>
+  </property>
+
+  <property>
+    <name>yarn.log-aggregation-enable</name>
+    <value>true</value>
+  </property>
+
+  <property>
+    <name>yarn.dispatcher.exit-on-error</name>
+    <value>true</value>
+  </property>
+
+  <property>
+    <description>List of directories to store localized files in.</description>
+    <name>yarn.nodemanager.local-dirs</name>
+    <value>/var/lib/hadoop-yarn/cache/${user.name}/nm-local-dir</value>
+  </property>
+
+  <property>
+    <description>Where to store container logs.</description>
+    <name>yarn.nodemanager.log-dirs</name>
+    <value>/var/log/hadoop-yarn/containers</value>
+  </property>
+
+  <property>
+    <description>Where to aggregate logs to.</description>
+    <name>yarn.nodemanager.remote-app-log-dir</name>
+    <value>/var/log/hadoop-yarn/apps</value>
+  </property>
+
+  <property>
+     <name>yarn.application.classpath</name>
+     <value>$HADOOP_CONF_DIR,/usr/hdp/${HDP_VERSION}/hadoop-client/*,
+     /usr/hdp/${HDP_VERSION}/hadoop-client/lib/*,
+     /usr/hdp/${HDP_VERSION}/hadoop-hdfs-client/*,
+     /usr/hdp/${HDP_VERSION}/hadoop-hdfs-client/lib/*,
+     /usr/hdp/${HDP_VERSION}/hadoop-yarn-client/*,
+     /usr/hdp/${HDP_VERSION}/hadoop-yarn-client/lib/*</value>
+  </property>
+
+</configuration>
+''' > ${HADOOP_CONF_DIR}/yarn-site.xml
+
+
+echo '''
+yarn.nodemanager.linux-container-executor.group=hadoop
+banned.users=hdfs,yarn,mapred
+min.user.id=1000
+''' > /etc/hadoop/conf/container-executor.cfg
+chown root:hadoop /etc/hadoop/conf/container-executor.cfg
+chmod 400 /etc/hadoop/conf/container-executor.cfg
+chown root:hadoop /usr/hdp/${HDP_VERSION}/hadoop-yarn/bin/container-executor
+chmod 6050 /usr/hdp/${HDP_VERSION}/hadoop-yarn/bin/container-executor

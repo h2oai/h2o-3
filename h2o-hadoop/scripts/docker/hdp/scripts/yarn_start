@@ -1,0 +1,22 @@
+#! /bin/bash
+
+HDP_VERSION=$(ls /usr/hdp/ | grep 2)
+
+su - hdfs -c "hdfs dfs -mkdir -p /hdp/apps/${HDP_VERSION}/mapreduce/"
+su - hdfs -c "hdfs dfs -put /usr/hdp/current/hadoop-client/mapreduce.tar.gz /hdp/apps/${HDP_VERSION}/mapreduce/"
+su - hdfs -c "hdfs dfs -chown -R hdfs:hadoop /hdp"
+su - hdfs -c "hdfs dfs -chmod -R 555 /hdp/apps/${HDP_VERSION}/mapreduce"
+su - hdfs -c "hdfs dfs -chmod 444 /hdp/apps/${HDP_VERSION}/mapreduce/mapreduce.tar.gz"
+
+su - hdfs -c "hdfs dfs -mkdir -p /mr-history/tmp "
+su - hdfs -c "hdfs dfs -chmod -R 1777 /mr-history/tmp "
+su - hdfs -c "hdfs dfs -mkdir -p /mr-history/done "
+su - hdfs -c "hdfs dfs -chmod -R 1777 /mr-history/done"
+su - hdfs -c "hdfs dfs -chown -R $MAPRED_USER:$HDFS_USER /mr-history"
+su - hdfs -c "hdfs dfs -mkdir -p /app-logs"
+su - hdfs -c "hdfs dfs -chmod -R 1777 /app-logs"
+su - hdfs -c "hdfs dfs -chown $YARN_USER:$HDFS_USER /app-logs"
+
+su - yarn -c "/usr/hdp/current/hadoop-yarn-resourcemanager/sbin/yarn-daemon.sh --config $HADOOP_CONF_DIR start resourcemanager"
+su - yarn -c "/usr/hdp/current/hadoop-yarn-resourcemanager/sbin/yarn-daemon.sh --config $HADOOP_CONF_DIR start nodemanager"
+su - yarn -c "/usr/hdp/current/hadoop-mapreduce-historyserver/sbin/mr-jobhistory-daemon.sh --config $HADOOP_CONF_DIR start historyserver"

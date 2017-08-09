@@ -1,0 +1,14 @@
+#! /bin/bash
+
+set -e
+
+if [[ $(echo ${SETUP_H2O} | tr -s '[:upper:]' '[:lower:]') == 'true' ]]; then
+  export NIGHTLY_BUILD_ID=$(curl -s http://h2o-release.s3.amazonaws.com/h2o/master/latest.html | egrep -o "[0-9]{4,}")
+
+  echo "Downloading H2O with build ID ${NIGHTLY_BUILD_ID}"
+  su - h2o -c "wget http://h2o-release.s3.amazonaws.com/h2o/master/${NIGHTLY_BUILD_ID}/h2o-3.15.0.${NIGHTLY_BUILD_ID}-${DISTRIBUTION}${VERSION}.zip"
+  su - h2o -c 'unzip h2o*.zip'
+  su - h2o -c 'rm h2o*.zip'
+else
+  echo "Skipping H2O initialization"
+fi

@@ -1,0 +1,49 @@
+#! /usr/bin/groovy
+
+@Library('test-shared-library') _
+import ai.h2o.ci.Utils
+def utilsLib = new Utils()
+
+pipeline {
+  agent none
+
+  parameters {
+      string(name: 'gitBranch', defaultValue: 'mr/feature/dockers', description: 'H2O-3 branch to build')
+      string(name: 'version', description: 'CDH or HDP version')
+      choice(
+              choices: 'cdh\nhdp',
+              description: 'Hadoop Distribution',
+              name: 'distribution')
+  }
+
+  environment {
+      CREDENTIALS_ID = '0c10faaf-da0a-4a47-89b8-7aef9269a4fb'
+      GIT_URL = 'https://github.com/h2oai/h2o-3.git'
+      BUILD_HADOOP = 'true'
+  }
+
+  options {
+    ansiColor('xterm')
+    timestamps()
+    timeout(time: 60, unit: 'MINUTES')
+    // lets keep 11 logs, because currently we test against 11 various hadoop versions
+    buildDiscarder(logRotator(numToKeepStr: '11'))
+  }
+
+  stages {
+    stage('Execute Tests') {
+      agent {
+        dockerfile {
+          label "mr-0xc10"
+          filename "h2o-hadoop/scripts/docker/${params.distribution}/Dockerfile"
+          additionalBuildArgs "--build-arg VERSION=${params.version} --build-arg PATH_PREFIX=h2o-hadoop/scripts/docker/${params.distribution}"
+          args "-u root -v \${WORKSPACE}/h2o-hadoop/tests:/home/h2o/tests -e SETUP_H2O=TRUE -e START_H2O=TRUE -e RUN_TESTS=TRUE"
+          reuseNode true
+        }
+      }
+      steps {
+        sh "/usr/bin/startup.sh"
+      }
+    }
+  }
+}

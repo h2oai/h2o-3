@@ -1,0 +1,13 @@
+#! /bin/bash
+
+set -e
+
+if [[ $(echo ${START_H2O} | tr -s '[:upper:]' '[:lower:]') == 'true' ]]; then
+  cd /home/h2o/h2o*
+  cd python
+  pip install h2o-*.whl
+  cd ..
+  su - h2o -c 'hadoop jar h2o*/h2odriver.jar -nodes 1 -mapperXmx 1g -output jenkins_tests -disown'
+else
+  echo "Skipping H2O startup"
+fi

@@ -1,0 +1,58 @@
+#! /usr/bin/groovy
+
+parallel "CDH 5.4": {
+    stage ('CDH 5.4')
+    {
+        build job: 'michalr-hadoop-docker-test', parameters: [string(name: 'version', value: "5.4"), string(name: 'distribution', value: "cdh")]
+    }
+}, "CDH 5.5": {
+    stage ('CDH 5.5')
+    {
+        build job: 'michalr-hadoop-docker-test', parameters: [string(name: 'version', value: "5.5"), string(name: 'distribution', value: "cdh")]
+    }
+}, "CDH 5.6": {
+    stage ('CDH 5.6')
+    {
+        build job: 'michalr-hadoop-docker-test', parameters: [string(name: 'version', value: "5.6"), string(name: 'distribution', value: "cdh")]
+    }
+}, "CDH 5.7": {
+    stage ('CDH 5.7')
+    {
+        build job: 'michalr-hadoop-docker-test', parameters: [string(name: 'version', value: "5.7"), string(name: 'distribution', value: "cdh")]
+    }
+}, "CDH 5.8": {
+    stage ('CDH 5.8')
+    {
+        build job: 'michalr-hadoop-docker-test', parameters: [string(name: 'version', value: "5.8"), string(name: 'distribution', value: "cdh")]
+    }
+}, "CDH 5.10": {
+    stage ('CDH 5.10')
+    {
+        build job: 'michalr-hadoop-docker-test', parameters: [string(name: 'version', value: "5.10"), string(name: 'distribution', value: "cdh")]
+    }
+}, "HDP 2.2": {
+    stage ('HDP 2.2')
+    {
+        build job: 'michalr-hadoop-docker-test', parameters: [string(name: 'version', value: "2.2"), string(name: 'distribution', value: "hdp")]
+    }
+}, "HDP 2.3": {
+    stage ('HDP 2.3')
+    {
+        build job: 'michalr-hadoop-docker-test', parameters: [string(name: 'version', value: "2.3"), string(name: 'distribution', value: "hdp")]
+    }
+}, "HDP 2.4": {
+    stage ('HDP 2.4')
+    {
+        build job: 'michalr-hadoop-docker-test', parameters: [string(name: 'version', value: "2.4"), string(name: 'distribution', value: "hdp")]
+    }
+}, "HDP 2.5": {
+    stage ('HDP 2.5')
+    {
+        build job: 'michalr-hadoop-docker-test', parameters: [string(name: 'version', value: "2.5"), string(name: 'distribution', value: "hdp")]
+    }
+}, "HDP 2.6": {
+    stage ('HDP 2.6')
+    {
+        build job: 'michalr-hadoop-docker-test', parameters: [string(name: 'version', value: "2.6"), string(name: 'distribution', value: "hdp")]
+    }
+}
