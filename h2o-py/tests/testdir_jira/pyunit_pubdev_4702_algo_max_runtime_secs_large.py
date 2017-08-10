@@ -88,7 +88,7 @@ def algo_max_runtime_secs():
     training1_data = h2o.import_file(path=pyunit_utils.locate("smalldata/gridsearch/pca1000by25.csv"))
     x_indices = list(range(training1_data.ncol))
     model = H2OPCA(k=10, transform="STANDARDIZE", pca_method="Power", compute_metrics=True)
-    grabRuntimeInfo(err_bound*2, 2.0, model, training1_data, x_indices)
+    grabRuntimeInfo(err_bound, 2.0, model, training1_data, x_indices)
     cleanUp([training1_data, model])
 
     # kmeans
