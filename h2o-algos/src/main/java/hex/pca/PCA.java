@@ -13,7 +13,11 @@ import hex.gram.Gram;
 import hex.gram.Gram.GramTask;
 import hex.gram.Gram.OuterGramTask;
 import hex.pca.PCAModel.PCAParameters;
-import hex.svd.*;
+import hex.svd.SVD;
+import hex.svd.SVDModel;
+import hex.util.LinearAlgebraUtils;
+import no.uib.cipr.matrix.DenseMatrix;
+import no.uib.cipr.matrix.NotConvergedException;
 import water.DKV;
 import water.H2O;
 import water.HeartBeat;
@@ -339,35 +343,35 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
             throw new IllegalArgumentException("Found validation errors: " + validationErrors());
           }
 
-          // Compute SVD of Gram A'A/n using netlib-java (MTJ) library
+          // Compute SVD of Gram A'A/n using JAMA library
           // Note: Singular values ordered in weakly descending order by algorithm
           _job.update(1, "Calculating SVD of Gram matrix locally");
-          double[][] gramMatrix;
+          DenseMatrix gramJ = _wideDataset ? new DenseMatrix(ogtsk._gram.getXX()) : new DenseMatrix(gtsk._gram.getXX());
+          int gramDimension = gramJ.numRows();
+          no.uib.cipr.matrix.SVD svdJ;
           try {
-            gramMatrix = _wideDataset ? ogtsk._gram.getXX() : gtsk._gram.getXX();
-          } catch (NullPointerException e) {
-            e.printStackTrace();
-            throw e;
+            // Note: gramJ will be overwritten after this
+            svdJ = new no.uib.cipr.matrix.SVD(gramDimension, gramDimension).factor(gramJ);
+          } catch (NotConvergedException e) {
+            throw new RuntimeException(e);
           }
-          PCA.this._job.update(1, "Computing stats from SVD using "
-              + _parms.getSvdImplementation().toString());
-          SVDInterface svd = SVDFactory.createSVDImplementation(gramMatrix, _parms.getSvdImplementation());
-          double[][] rightEigenvectors = svd.getPrincipalComponents();
-          if (_wideDataset) {       // correct for the eigenvector by t(A)*eigenvector for wide dataset
-            transformEigenVectors(dinfo, rightEigenvectors);
-          }
-          double[] variances = svd.getVariances();
-          computeStatsFillModel(model, dinfo, variances, rightEigenvectors, gram, model._output._nobs);
+          _job.update(1, "Computing stats from SVD");
+          double[] Vt_1D = svdJ.getVt().getData();
+          double[][] Vt_2D = LinearAlgebraUtils.reshape1DArray(Vt_1D, gramDimension, gramDimension);
+          // correct for the eigenvector by t(A)*eigenvector for wide dataset
+          double[][] eigenVecs = _wideDataset ? transformEigenVectors(dinfo, Vt_2D) : Vt_2D;
+          computeStatsFillModel(model, dinfo, svdJ.getS(), eigenVecs, gram, model._output._nobs);
           model._output._training_time_ms.add(System.currentTimeMillis());
+          // TODO: replace Jama SVD with MTJ SVD in SVD.java
           // generate variables for scoring_history generation
-          LinkedHashMap<String, ArrayList> scoreTable = new LinkedHashMap<>();
+          LinkedHashMap<String, ArrayList> scoreTable = new LinkedHashMap<String, ArrayList>();
           scoreTable.put("Timestamp", model._output._training_time_ms);
           model._output._scoring_history = createScoringHistoryTableDR(scoreTable, "Scoring History for GramSVD",
-              _job.start_time());
-          //  model._output._scoring_history.tableHeader = "Scoring history from GLRM";
+                  _job.start_time());
+        //  model._output._scoring_history.tableHeader = "Scoring history from GLRM";
 
         } else if(_parms._pca_method == PCAParameters.Method.Power ||
-            _parms._pca_method == PCAParameters.Method.Randomized) {
+                _parms._pca_method == PCAParameters.Method.Randomized) {
           SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
           parms._train = _parms._train;
           parms._valid = _parms._valid;
