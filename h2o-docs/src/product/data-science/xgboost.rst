@@ -169,8 +169,6 @@ Defining an XGBoost Model
 
 -  **reg_alpha**: Specify a value for L1 regularization. This defaults to 0.
 
--  **lambda_bias**: Specify a value for L2 regularization on bias. (Note that this does not apply to L1 regularization on bias because it is not important.) This value defaults to 0.
-
 -  **dmatrix_type**: Specify the type of DMatrix. Valid options include the following: "auto", "dense", and "sparse". Note that for ``dmatrix_type="sparse"``, NAs and 0 are treated equally. This value defaults to "auto".
 
 -  **backend**: Specify the backend type. This can be done of the following: "auto", "gpu", or "cpu". By default (auto), a GPU is used if available.
