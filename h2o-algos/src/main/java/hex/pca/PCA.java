@@ -370,6 +370,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           parms._max_iterations = _parms._max_iterations;
           parms._seed = _parms._seed;
           parms._impute_missing = _parms._impute_missing;
+          parms._max_runtime_secs = _parms._max_runtime_secs;
 
           // Set method for computing SVD accordingly
           if(_parms._pca_method == PCAParameters.Method.Power) {
@@ -415,7 +416,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           parms._k = _parms._k;
           parms._max_iterations = _parms._max_iterations;
           parms._seed = _parms._seed;
-
+          parms._max_runtime_secs = _parms._max_runtime_secs;
           parms._recover_svd = true;
 
           parms._loss = GlrmLoss.Quadratic;

@@ -315,7 +315,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
             }
 
             stop = (task._reassigned_count < Math.max(1,train().numRows()*TOLERANCE) || model._output._iterations >= _parms._max_iterations);
-            if (stop) {
+            if (stop || stop_requested()) {
               if (model._output._iterations < _parms._max_iterations)
                 Log.info("Lloyds converged after " + model._output._iterations + " iterations.");
               else
