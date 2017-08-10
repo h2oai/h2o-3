@@ -1,6 +1,8 @@
 package water;
 
 
+import com.sun.org.apache.xpath.internal.operations.Bool;
+
 import water.api.RequestServer;
 import water.api.RestApiExtension;
 import water.api.SchemaServer;
@@ -11,6 +13,12 @@ import java.util.*;
 public class ExtensionManager {
 
   private static ExtensionManager extManager = new ExtensionManager();
+
+  /** System property to force enable/disable named REST API extension */
+  private static String PROP_TOGGLE_REST_EXT = H2O.OptArgs.SYSTEM_PROP_PREFIX + "ext.rest.toggle.";
+  
+  /** System property to force enable/disable named Core extension */
+  private static String PROP_TOGGLE_CORE_EXT = H2O.OptArgs.SYSTEM_PROP_PREFIX + "ext.core.toggle.";
 
   private ExtensionManager(){
   }
@@ -51,7 +59,7 @@ public class ExtensionManager {
     long before = System.currentTimeMillis();
     ServiceLoader<AbstractH2OExtension> extensionsLoader = ServiceLoader.load(AbstractH2OExtension.class);
     for (AbstractH2OExtension ext : extensionsLoader) {
-      if (ext.isEnabled()) {
+      if (isEnabled(ext)) {
         ext.init();
         coreExtensions.put(ext.getExtensionName(), ext);
       }
@@ -98,7 +106,7 @@ public class ExtensionManager {
     ServiceLoader<RestApiExtension> restApiExtensionLoader = ServiceLoader.load(RestApiExtension.class);
     for (RestApiExtension r : restApiExtensionLoader) {
       try {
-        if(areDependantCoreExtensionsEnabled(r.getRequiredCoreExtensions())) {
+        if (isEnabled(r)) {
           r.registerEndPoints(dummyRestApiContext);
           r.registerSchemas(dummyRestApiContext);
           restApiExtensions.put(r.getName(), r);
@@ -116,6 +124,20 @@ public class ExtensionManager {
 
     // Register all schemas
     SchemaServer.registerAllSchemasIfNecessary(dummyRestApiContext.getAllSchemas());
+  }
+
+  private boolean isEnabled(RestApiExtension r) {
+    String forceToggle = System.getProperty(PROP_TOGGLE_REST_EXT + r.getName());
+    return forceToggle != null
+           ? Boolean.valueOf(forceToggle)
+           : areDependantCoreExtensionsEnabled(r.getRequiredCoreExtensions());
+  }
+
+  private boolean isEnabled(AbstractH2OExtension r) {
+    String forceToggle = System.getProperty(PROP_TOGGLE_CORE_EXT + r.getExtensionName());
+    return forceToggle != null
+           ? Boolean.valueOf(forceToggle)
+           : r.isEnabled();
   }
 
   private String[] getRestApiExtensionNames(){
