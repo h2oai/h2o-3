@@ -1,8 +1,6 @@
 package water;
 
 
-import com.sun.org.apache.xpath.internal.operations.Bool;
-
 import water.api.RequestServer;
 import water.api.RestApiExtension;
 import water.api.SchemaServer;
