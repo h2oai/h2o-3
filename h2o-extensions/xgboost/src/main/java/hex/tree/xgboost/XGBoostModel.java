@@ -88,7 +88,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
     // LightGBM specific (only for grow_policy == lossguide)
     public int _max_bins = 256;
-    public int _num_leaves = 255;
+    public int _max_leaves = 0;
     public float _min_sum_hessian_in_leaf = 100;
     public float _min_data_in_leaf = 0;
 
@@ -199,7 +199,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     params.put("grow_policy", p._grow_policy.toString());
     if (p._grow_policy== XGBoostParameters.GrowPolicy.lossguide) {
       params.put("max_bins", p._max_bins);
-      params.put("num_leaves", p._num_leaves);
+      params.put("max_leaves", p._max_leaves);
       params.put("min_sum_hessian_in_leaf", p._min_sum_hessian_in_leaf);
       params.put("min_data_in_leaf", p._min_data_in_leaf);
     }
