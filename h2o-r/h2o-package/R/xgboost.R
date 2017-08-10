@@ -73,7 +73,7 @@
 #' @param grow_policy Grow policy - depthwise is standard GBM, lossguide is LightGBM Must be one of: "depthwise", "lossguide".
 #'        Defaults to depthwise.
 #' @param booster Booster type Must be one of: "gbtree", "gblinear", "dart". Defaults to gbtree.
-#' @param reg_lambda L2 regularization Defaults to 1.0.
+#' @param reg_lambda L2 regularization Defaults to 0.0.
 #' @param reg_alpha L1 regularization Defaults to 0.0.
 #' @param dmatrix_type Type of DMatrix. For sparse, NAs and 0 are treated equally. Must be one of: "auto", "dense", "sparse".
 #'        Defaults to auto.
@@ -132,7 +132,7 @@ h2o.xgboost <- function(x, y, training_frame,
                         tree_method = c("auto", "exact", "approx", "hist"),
                         grow_policy = c("depthwise", "lossguide"),
                         booster = c("gbtree", "gblinear", "dart"),
-                        reg_lambda = 1.0,
+                        reg_lambda = 0.0,
                         reg_alpha = 0.0,
                         dmatrix_type = c("auto", "dense", "sparse"),
                         backend = c("auto", "gpu", "cpu"),

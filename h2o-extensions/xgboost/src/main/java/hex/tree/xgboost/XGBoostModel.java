@@ -97,7 +97,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public GrowPolicy _grow_policy = GrowPolicy.depthwise;
     public Booster _booster = Booster.gbtree;
     public DMatrixType _dmatrix_type = DMatrixType.auto;
-    public float _reg_lambda = 1;
+    public float _reg_lambda = 0;
     public float _reg_alpha = 0;
 
     // Dart specific (booster == dart)
