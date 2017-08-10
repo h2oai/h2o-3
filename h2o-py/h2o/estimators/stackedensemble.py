@@ -64,7 +64,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     @property
     def training_frame(self):
         """
-        Id of the training data frame (Not required, to allow initial validation of model parameters).
+        Id of the training data frame.
 
         Type: ``H2OFrame``.
         """

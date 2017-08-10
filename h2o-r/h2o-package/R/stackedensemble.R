@@ -12,7 +12,7 @@
 #'        index, and increasing from left to right. (The response must be either an integer or a
 #'        categorical variable).
 #' @param model_id Destination id for this model; auto-generated if not specified.
-#' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
+#' @param training_frame Id of the training data frame.
 #' @param validation_frame Id of the validation data frame.
 #' @param base_models List of model ids which we can stack together. Models must have been cross-validated using nfolds > 1, and
 #'        folds must be identical across models. Defaults to [].
