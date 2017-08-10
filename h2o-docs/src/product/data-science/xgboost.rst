@@ -1,15 +1,17 @@
 XGBoost
 -------
 
-**Notes:**
-
-- This section is a work in progress.
-- XGBoost is not supported on Windows.
+**Note**: This section is a work in progress.
 
 Introduction
 ~~~~~~~~~~~~
 
-XGBoost is an optimized distributed gradient boosting library designed to be highly efficient, flexible, and portable. This algorithm provides parallel tree boosting (also known as GBDT, GBM) that solves many data science problems in a fast and accurate way. For many problems, XGBoost is the one of the best gradient boosting machine (GBM) frameworks today. 
+XGBoost is a supervised learning algorithm that implements a process called boosting to yield accurate
+models. Boosting refers to the ensemble learning technique of building many models sequentially, with each new model attempting to correct for the deficiencies in the previous model. In tree boosting, each new model that is added to the ensemble is a decision tree. XGBoost provides parallel tree boosting (also known as GBDT, GBM) that solves many data science problems in a fast and accurate way. For many problems, XGBoost is one of the best gradient boosting machine (GBM) frameworks today. 
+
+The H2O XGBoost implementation is based on two separated modules. The first module, `h2o-genmodel-ext-xgboost <https://github.com/h2oai/h2o-3/tree/master/h2o-genmodel-extensions/xgboost>`__, extends module `h2o-genmodel <https://github.com/h2oai/h2o-3/tree/master/h2o-genmodel>`__  and registers an XGBoost-specific MOJO. The module also contains all necessary XGBoost binary libraries. The module can contain multiple libraries for each platform to support different configurations (e.g., with/without GPU/OMP). H2O always tries to load the most powerful one (currently a library with GPU and OMP support). If it fails, then the loader tries the next one in a loader chain. For each platform, H2O provide an XGBoost library with minimal configuration (supports only single CPU) that serves as fallback in case all other libraries could not be loaded.
+
+The second module, `h2o-ext-xgboost <https://github.com/h2oai/h2o-3/tree/master/h2o-extensions/xgboost>`__, contains the actual XGBoost model and model builder code, which communicates with native XGBoost libraries via the JNI API. The module also provides all necessary REST API definitions to expose the XGBoost model builder to clients.
 
 Refer to the `XGBoost in H2O Machine Learning Platform <https://blog.h2o.ai/2017/06/xgboost-in-h2o-machine-learning-platform/>`__ blog post for an example of how to use XGBoost with the HIGGS dataset. 
 
@@ -128,24 +130,24 @@ Defining an XGBoost Model
 
 -  `min_split_improvement <algo-params/min_split_improvement.html>`__ (alias: ``gamma``): The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range. This value defaults to 0.
 
--  **max_bins**: When ``tree_method="hist"``, specify the maximum number of bins for binning continuous features. This value defaults to 256.
-
--  **num_leaves**: When ``tree_method="hist"``, specify the maximum number of leaves to include each tree. This value defaults to 255.
-
--  **min_sum_hessian_in_leaf**: When ``tree_method="hist"``, specify the mininum sum of hessian in a leaf to keep splitting. This value defaults to 100.
-
--  **min_data_in_leaf**: When ``tree_method="hist"``, specify the mininum data in a leaf to keep splitting. This value defaults to 0.
-
 -  **tree_method**: Specify the construction tree method to use. This can be one of the following: 
 
    - ``auto`` (default): Allow the algorithm to choose the best method. For small to medium dataset, ``exact``  will be used. For very large datasets, ``approx`` will be used.
    - ``exact``: Use the exact greedy method.
-   - ``approx``: Use an approximate greedy method.
-   - ``hist``: Use a fast histogram optimized approximate greedy method.
+   - ``approx``: Use an approximate greedy method. This generates a new set of bins for each iteration.
+   - ``hist``: Use a fast histogram optimized approximate greedy method. In this case, only a subset of possible split values are considered.
 
 -  **grow_policy**: Specify the way that new nodes are added to the tree. "depthwise" (default) splits at nodes that are closest to the root; "lossguide" splits at nodes with the highest loss change. Note that when the grow policy is "depthwise", then ``max_depth`` cannot be 0 (unlimited).
 
--  **booster**: Specify the booster type. This can be one of the following: "gbtree", "gblinear", or "dart". Note that "gbtree" and "dart" use a tree-based model while "gblinear" uses linear function. This value defaults to "gbtree".
+-  **max_bins**: When ``grow_policy="lossguide"`` and ``tree_method="hist"``, specify the maximum number of bins for binning continuous features. This value defaults to 256.
+
+-  **max_leaves**: When ``grow_policy="lossguide"`` and ``tree_method="hist"``, specify the maximum number of leaves to include each tree. This value defaults to 0.
+
+-  **min_sum_hessian_in_leaf**: When ``grow_policy="lossguide"`` and ``tree_method="hist"``, specify the mininum sum of hessian in a leaf to keep splitting. This value defaults to 100.
+
+-  **min_data_in_leaf**: When ``grow_policy="lossguide"`` and ``tree_method="hist"``, specify the mininum data in a leaf to keep splitting. This value defaults to 0.
+
+-  **booster**: Specify the booster type. This can be one of the following: "gbtree", "gblinear", or "dart". Note that "gbtree" and "dart" use a tree-based model while "gblinear" uses linear function. This value defaults to "gbtree". More information about the ``booster`` parameter is available `here <https://github.com/dmlc/xgboost/blob/master/doc/tutorials/dart.md>`__.
 
 -  **sample_type**: When ``booster="dart"``, specify whether the sampling type should be one of the following:
 
@@ -163,9 +165,11 @@ Defining an XGBoost Model
 
 -  **skip_drop**: When ``booster="dart"``, specify a float value from 0 to 1 for the skip drop. This determines the probability of skipping the dropout procedure during a boosting iteration. If a dropout is skipped, new trees are added in the same manner as "gbtree". Note that non-zero ``skip_drop`` has higher priority than ``rate_drop`` or ``one_drop``. This value defaults to 0.0.
 
--  **reg_lamda**: Specify a value for L2 regularization. This defaults to 1.0.
+-  **reg_lambda**: Specify a value for L2 regularization. This defaults to 0.
 
 -  **reg_alpha**: Specify a value for L1 regularization. This defaults to 0.
+
+-  **lambda_bias**: Specify a value for L2 regularization on bias. (Note that this does not apply to L1 regularization on bias because it is not important.) This value defaults to 0.
 
 -  **dmatrix_type**: Specify the type of DMatrix. Valid options include the following: "auto", "dense", and "sparse". Note that for ``dmatrix_type="sparse"``, NAs and 0 are treated equally. This value defaults to "auto".
 
@@ -175,31 +179,25 @@ Defining an XGBoost Model
 
 -  **verbose**: Print scoring history to the console. For XGBoost, metrics are per tree. This value defaults to FALSE.
 
+"LightGBM" Emulation Mode Options
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Light GBM
-~~~~~~~~~
+LightGBM mode builds trees as deep as necessary by repeatedly splitting the one leaf that gives the biggest gain instead of splitting all leaves until a maximum depth is reached. H2O does not integrate `LightGBM <https://github.com/Microsoft/LightGBM>`__. Instead, H2O provides a method for emulating the LightGBM software using a certain set of options within XGBoost. This is done by setting the following options:
 
-The following options are used to configure a light GBM:
+::
+
+   tree_method="hist"
+   grow_policy="lossguide"
+
+When the above are configured, then the following additional "LightGBM" options are available:
 
 - ``max_bin``
-- ``num_leaves``
+- ``max_leaves``
 - ``min_sum_hessian_in_leaf``
 - ``min_data_in_leaf``
 
-Dart
-~~~~
-
-The following additional parameters can be configured when ``booster=dart``: 
-
-- ``sample_type``
-- ``normalize_type``
-- ``rate_drop``
-- ``one_drop``
-- ``skip_drop``
-
-
-XGBoost Only
-~~~~~~~~~~~~
+XGBoost Only Options
+~~~~~~~~~~~~~~~~~~~~
 
 As opposed to light GBM models, the following options configure a true XGBoost model.
 
@@ -213,13 +211,22 @@ As opposed to light GBM models, the following options configure a true XGBoost m
 - ``backend``
 - ``gpu_id``
 
+
+Dart Booster Options
+~~~~~~~~~~~~~~~~~~~~
+
+The following additional parameters can be configured when ``booster=dart``: 
+
+- ``sample_type``
+- ``normalize_type``
+- ``rate_drop``
+- ``one_drop``
+- ``skip_drop``
+
 Limitations
 ~~~~~~~~~~~
 
 This section provides a list of XGBoost limitations - some of which will be addressed in a future release. In general, if XGBoost cannot be initialized for any reason (e.g., unsupported platform), then the algorithm is not exposed via REST API and is not available for clients. Clients can verify availability of the XGBoost by using the corresponding client API call. For example, in Python:
-
-In Limitations section, change the python is_available line to:
-is_xgboost_available = H2OXGBoostEstimator.available()
 
 ::
 
@@ -227,9 +234,11 @@ is_xgboost_available = H2OXGBoostEstimator.available()
 
 The list of limitations include:
 
-  1. Right now XGBoost is initialized only for single-node H2O clustersl however multi-node XGBoost support is coming soon.
+  1. XGBoost is not supported on Windows.
 
-  2. The list of supported platforms includes:
+  2. Right now XGBoost is initialized only for single-node H2O clusters; however multi-node XGBoost support is coming soon.
+
+  3. The list of supported platforms includes:
  
     +----------+-----------------+-----+-----+-----------------------+
     | Platform | Minimal XGBoost | OMP | GPU | Compilation OS        |
@@ -243,12 +252,20 @@ The list of limitations include:
 
     **Note**: Minimal XGBoost configuration includes support for a single CPU.
 
-  3. Because we are using native XGBoost libraries that depend on OS/platform libraries, it is possible that on older operating systems, XGBoost will not be able to find all necessary binary dependencies, and will not be initialized and available.
+  4. Because we are using native XGBoost libraries that depend on OS/platform libraries, it is possible that on older operating systems, XGBoost will not be able to find all necessary binary dependencies, and will not be initialized and available.
 
-  4. XGBoost GPU libraries are compiled against CUDA 8, which is a necessary runtime requirement in order to utilize XGBoost GPU support.
+  5. XGBoost GPU libraries are compiled against CUDA 8, which is a necessary runtime requirement in order to utilize XGBoost GPU support.
 
 FAQs
 ~~~~
+
+- **How does the algorithm handle missing values?**
+
+ Missing values are interpreted as containing information (i.e., missing for a reason), rather than missing at random. During tree building, split decisions for every node are found by minimizing the loss function and treating missing values as a separate category that can go either left or right. XGBoost will automatically learn which is the best direction to go when a value is missing. 
+
+-  **I have a dataset with a large number of missing values (more than 40%), and I'm generating models using XGBoost and H2O Gradient Boosting. Does XGBoost handle variables with missing values differently than H2O's Gradient Boosting?**
+
+  Missing values handling and variable importances are both slightly different between the two methods. Both treat missing values as information (i.e., they learn from them, and don't just impute with a simple constant). The variable importances are computed from the gains of their respective loss functions during tree construction. H2O uses squared error, and XGBoost uses a more complicated one based on gradient and hessian.
 
 -  **How does H2O's XGBoost create the d-matrix?**
 
@@ -266,13 +283,10 @@ FAQs
 
   By default, XGBoost converts every enum into the integer of its index (i.e., ``categorical_encoding="label_encoder"``). 
 
--  **I have a dataset with a large number of missing values (more than 40%), and I'm generating models using XGBoost and H2O Gradient Boosting. Does XGBoost handle variables with missing values differently than H2O's Gradient Boosting?**
-
-  Missing values handling and variable importances are both slightly different between the two methods. Both treat missing values as information (i.e., they learn from them, and don't just impute with a simple constant). The variable importances are computed from the gains of their respective loss functions during tree construction. H2O uses squared error, and XGBoost uses a more complicated one based on gradient and hessian.
-
-
 References
 ~~~~~~~~~~
 
-`Chen, Tianqi and Guestrin, Carlos Guestrin. "XGBoost: A Scalable Tree Boosting System." Version 3 (2016) <http://arxiv.org/abs/1603.02754>`__
+- Chen, Tianqi and Guestrin, Carlos Guestrin. "XGBoost: A Scalable Tree Boosting System." Version 3 (2016) `http://arxiv.org/abs/1603.02754 <http://arxiv.org/abs/1603.02754>`__
 
+
+- Mitchell R, Frank E. (2017) Accelerating the XGBoost algorithm using GPU computing. PeerJ Preprints 5:e2911v1 `https://doi.org/10.7287/peerj.preprints.2911v1 <https://doi.org/10.7287/peerj.preprints.2911v1>`__
