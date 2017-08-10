@@ -13,6 +13,8 @@ Defining a Word2vec Model
 
 -  `training_frame <algo-params/training_frame.html>`__: (Required) Specify the dataset used to build the model. **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
 
+-  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. This option defaults to 0 (disabled) by default.
+
 - **min_word_freq**: Specify an integer for the minimum word frequency. Word2vec will discard words that appear less than this number of times.
 
 - **word_model**: Specify "SkipGram" to use the Skip-Gram model when producing a distributed representation of words. When enabled, the model uses each word to predict the surrounding window of context words. The skip-gram architecture weighs close context words more heavily than more distant context words. Using Skip-Gram can increase model build time but performs better for infrequently used words. **NOTE**: This option is specified by default and cannot be disabled. It is currently the only approach supported in H2O. 

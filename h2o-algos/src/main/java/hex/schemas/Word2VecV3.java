@@ -19,7 +19,8 @@ public class Word2VecV3 extends ModelBuilderSchema<Word2Vec,Word2VecV3,Word2VecV
             "sent_sample_rate",
             "init_learning_rate",
             "epochs",
-            "pre_trained"
+            "pre_trained",
+            "max_runtime_secs"
     };
 
     /**

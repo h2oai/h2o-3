@@ -1145,7 +1145,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       List<String> colFormat = new ArrayList<>();
       colHeaders.add("Timestamp"); colTypes.add("string"); colFormat.add("%s");
       colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
-      colHeaders.add("Iteration"); colTypes.add("long"); colFormat.add("%d");
+      colHeaders.add("Iterations"); colTypes.add("long"); colFormat.add("%d");
       colHeaders.add("Step Size"); colTypes.add("double"); colFormat.add("%.5f");
       colHeaders.add("Objective"); colTypes.add("double"); colFormat.add("%.5f");
 
