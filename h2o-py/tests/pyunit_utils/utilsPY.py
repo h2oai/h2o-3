@@ -1404,7 +1404,7 @@ def assert_H2OTwoDimTable_equal(table1, table2, col_header_list, tolerance=1e-6,
 
                 # now we have the col header names, do the actual comparison
                 if str(table1.cell_values[name_ind1][0])==str(table2.cell_values[name_ind2][0]):
-                    randRange3 = generate_for_indices(len(table2.cell_values[name_ind2]), check_all, num_per_dim,1)
+                    randRange3 = generate_for_indices(min(len(table2.cell_values[name_ind2]), len(table1.cell_values[name_ind1])), check_all, num_per_dim,1)
                     for indC in randRange3:
                         val1 = table1.cell_values[name_ind1][indC]
                         val2 = table2.cell_values[name_ind2][indC]*flip_sign_vec[indC]

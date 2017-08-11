@@ -45,7 +45,7 @@ function() {
   x_indices <- c(1:h2o.ncol(training1_data))
   model <- h2o.prcomp(training_frame=training1_data, k=10, transform="STANDARDIZE", pca_method="Power", compute_metrics=TRUE)
   model2 <- h2o.prcomp(training_frame=training1_data, k=10, transform="STANDARDIZE", pca_method="Power", compute_metrics=TRUE, max_runtime_secs=model@model$run_time/(1000.0*fact_red))
-  test_pass_fail <- c(test_pass_fail, eval_test_runtime(model, model2, err_bound, fact_red))
+  test_pass_fail <- c(test_pass_fail, eval_test_runtime(model, model2, err_bound*2.0, 1.2))
   cleanUP(c(training1_data, model, model2))
 
   # kmeans
@@ -95,7 +95,7 @@ function() {
   print("*************  starting max_runtime_test for word2vec")
   text8.path <- locate("bigdata/laptop/text8.gz")
   words <- h2o.importFile(text8.path, destination_frame="words", col.names="word", col.types="String")
-  reduced <- words[1:h2o.nrow(words)/100,1]
+  reduced <- words[1:170000,1]
   w2v <- h2o.word2vec(reduced, min_word_freq=5, vec_size=50, sent_sample_rate=0.001,
   init_learning_rate=0.025, window_size=4)
   w2vn <- h2o.word2vec(reduced, min_word_freq=5, vec_size=50, sent_sample_rate=0.001,
