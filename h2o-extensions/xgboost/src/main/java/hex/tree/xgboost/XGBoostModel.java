@@ -423,7 +423,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   public double[] score0(double[] data, double[] preds, double offset) {
     DataInfo di = model_info._dataInfoKey.get();
     return XGBoostMojoModel.score0(data, offset, preds,
-            model_info._booster, di._nums, di._cats, di._catOffsets, di._useAllFactorLevels,
+            model_info.booster(), di._nums, di._cats, di._catOffsets, di._useAllFactorLevels,
             _output.nclasses(), _output._priorClassDist, defaultThreshold(), _output._sparse);
   }
 
@@ -459,7 +459,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       DMatrix trainMat = convertFrametoDMatrix( model_info()._dataInfoKey, adaptFr,
           _parms._response_column, _parms._weights_column, _parms._fold_column, null, _output._sparse);
       Key<Frame> destFrameKey = Key.<Frame>make(destination_key);
-      ModelMetrics mm = makeMetrics(model_info()._booster, trainMat, fr, "Prediction on frame " + fr._key, destFrameKey);
+      ModelMetrics mm = makeMetrics(model_info().booster(), trainMat, fr, "Prediction on frame " + fr._key, destFrameKey);
       // Update model with newly computed model metrics
       if (computeMetrics){
         this.addModelMetrics(mm);

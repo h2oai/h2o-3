@@ -24,9 +24,22 @@ final public class XGBoostModelInfo extends Iced {
 
   private TwoDimTable summaryTable;
 
-  transient Booster _booster;  //pointer to C++ process
+  private transient Booster _booster;  //pointer to C++ process
 
   Key<DataInfo> _dataInfoKey;
+
+  public final Booster booster() {
+    if (_booster == null) {
+      // We do not synchronize here since the booster should be setup/read
+      // only by single threaded driver, the same for setter below
+      _booster = javaToNative(_boosterBytes);
+    }
+    return _booster;
+  }
+
+  public final void setBooster(Booster booster) {
+      this._booster = booster;
+  }
 
   void nukeBackend() {
     if (_booster != null) {
@@ -41,6 +54,15 @@ final public class XGBoostModelInfo extends Iced {
     } catch (XGBoostError xgBoostError) {
       xgBoostError.printStackTrace();
       throw new RuntimeException(xgBoostError);
+    }
+  }
+
+  private static Booster javaToNative(byte[] boosterBytes) {
+    InputStream is = new ByteArrayInputStream(boosterBytes);
+    try {
+      return Booster.loadModel(is);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
     }
   }
 

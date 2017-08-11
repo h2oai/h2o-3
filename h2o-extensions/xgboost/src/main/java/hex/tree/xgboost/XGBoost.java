@@ -519,13 +519,13 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
         // create the backend
         HashMap<String, DMatrix> watches = new HashMap<>();
-        model.model_info()._booster = ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, model.createParams(), 0, watches, null, null);
+        model.model_info().setBooster(ml.dmlc.xgboost4j.java.XGBoost.train(trainMat, model.createParams(), 0, watches, null, null));
 
         // train the model
         scoreAndBuildTrees(model, trainMat, validMat, tmpModelDir);
 
         // final scoring
-        doScoring(model, model.model_info()._booster, trainMat, validMat, true, tmpModelDir);
+        doScoring(model, model.model_info().booster(), trainMat, validMat, true, tmpModelDir);
 
         // save the model to DKV
         model.model_info().nativeToJava();
@@ -540,17 +540,16 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     protected final void scoreAndBuildTrees(XGBoostModel model, DMatrix trainMat, DMatrix validMat, final File tmpModelDir) throws XGBoostError {
       for( int tid=0; tid< _parms._ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
-        boolean scored = doScoring(model, model.model_info()._booster, trainMat, validMat, false, tmpModelDir);
+        boolean scored = doScoring(model, model.model_info().booster(), trainMat, validMat, false, tmpModelDir);
         if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
-          doScoring(model, model.model_info()._booster, trainMat, validMat, true, tmpModelDir);
+          doScoring(model, model.model_info().booster(), trainMat, validMat, true, tmpModelDir);
           _job.update(_parms._ntrees-model._output._ntrees); //finish
           return;
         }
 
         Timer kb_timer = new Timer();
         try {
-//          model.model_info()._booster.setParam("eta", effective_learning_rate(model));
-          model.model_info()._booster.update(trainMat, tid);
+          model.model_info().booster().update(trainMat, tid);
         } catch (XGBoostError xgBoostError) {
           xgBoostError.printStackTrace();
         }
@@ -565,12 +564,12 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         model._output._training_time_ms = ArrayUtils.copyAndFillOf(model._output._training_time_ms, model._output._ntrees+1, System.currentTimeMillis());
         if (stop_requested() && !timeout()) throw new Job.JobCancelledException();
         if (timeout()) { //stop after scoring
-          if (!scored) doScoring(model, model.model_info()._booster, trainMat, validMat, true, tmpModelDir);
+          if (!scored) doScoring(model, model.model_info().booster(), trainMat, validMat, true, tmpModelDir);
           _job.update(_parms._ntrees-model._output._ntrees); //finish
           break;
         }
       }
-      doScoring(model, model.model_info()._booster, trainMat, validMat, true, tmpModelDir);
+      doScoring(model, model.model_info().booster(), trainMat, validMat, true, tmpModelDir);
     }
 
     long _firstScore = 0;
