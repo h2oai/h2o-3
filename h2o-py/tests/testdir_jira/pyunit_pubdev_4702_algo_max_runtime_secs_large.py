@@ -8,12 +8,10 @@ from h2o.estimators.gbm import H2OGradientBoostingEstimator
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 from h2o.estimators.glrm import H2OGeneralizedLowRankEstimator
 from h2o.estimators.kmeans import H2OKMeansEstimator
-from h2o.estimators.naive_bayes import H2ONaiveBayesEstimator
 from h2o.transforms.decomposition import H2OPCA
 from h2o.estimators.random_forest import H2ORandomForestEstimator
 from h2o.estimators.word2vec import H2OWord2vecEstimator
 from h2o.estimators.deepwater import H2ODeepWaterEstimator
-from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
 
 model_runtime = []  # store actual model runtime in seconds
 model_maxRuntime = []   # store given maximum runtime restrictions placed on building models for different algos
@@ -88,7 +86,7 @@ def algo_max_runtime_secs():
     training1_data = h2o.import_file(path=pyunit_utils.locate("smalldata/gridsearch/pca1000by25.csv"))
     x_indices = list(range(training1_data.ncol))
     model = H2OPCA(k=10, transform="STANDARDIZE", pca_method="Power", compute_metrics=True)
-    grabRuntimeInfo(err_bound*2, 2.0, model, training1_data, x_indices)
+    grabRuntimeInfo(err_bound*2, 1.2, model, training1_data, x_indices)
     cleanUp([training1_data, model])
 
     # kmeans
@@ -100,7 +98,7 @@ def algo_max_runtime_secs():
 
     # word2vec
     train = h2o.import_file(pyunit_utils.locate("bigdata/laptop/text8.gz"), header=1, col_types=["string"])
-    used = train[0:train.nrow/100, 0]
+    used = train[0:170000, 0]
     w2v_model = H2OWord2vecEstimator()
     grabRuntimeInfo(err_bound, 2.0, w2v_model, used, [], 0)
     cleanUp([train, used, w2v_model])
