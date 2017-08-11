@@ -745,7 +745,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             // 4) Normalize output frame columns by singular values to get left singular vectors
             model._output._v = ArrayUtils.transpose(model._output._v);  // Transpose to get V (since vectors were stored as rows)
             if (!_parms._only_v && !_parms._keep_u) {         // Delete U vecs if computed, but user does not want it returned
-              for (int index=0; index < _parms._nv; index++){
+              for (int index=0; index < uvecs.length; index++){
                 uvecs[index].remove();
               }
               model._output._u_key = null;
