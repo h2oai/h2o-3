@@ -1,6 +1,5 @@
 package water.api;
 
-import com.google.gson.Gson;
 import water.*;
 import water.api.schemas3.H2OErrorV3;
 import water.api.schemas3.H2OModelBuilderErrorV3;
@@ -314,12 +313,18 @@ public class RequestServer extends HttpServlet {
 
       resp.writeTo(response.getOutputStream());
 
+    } catch (IllegalArgumentException e) {  // This error type should be passed to clients.
+      try {
+        JettyHTTPD.sendResponseError(response, 500, e.getMessage());
+      } catch (IOException ex) {
+        ex.printStackTrace();
+      }
+      Log.err(e);
     } catch (IOException e) {
       e.printStackTrace();
       JettyHTTPD.setResponseStatus(response, 500);
       Log.err(e);
       // Trying to send an error message or stack trace will produce another IOException...
-
     } finally {
       JettyHTTPD.logRequest(method, request, response);
       // Handle shutdown if it was requested.
