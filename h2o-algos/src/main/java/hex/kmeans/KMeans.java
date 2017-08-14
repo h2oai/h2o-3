@@ -149,13 +149,17 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
             centers = ArrayUtils.append(centers, sampler._sampled);
 
             // Fill in sample centers into the model
-            if (stop_requested()) return null; // Stopped/cancelled
             model._output._centers_raw = destandardize(centers, _isCats, means, mults);
             model._output._tot_withinss = sqr._sqr / _train.numRows();
 
             model._output._iterations++;     // One iteration done
 
             model.update(_job); // Make early version of model visible, but don't update progress using update(1)
+            if (stop_requested()) {
+              if (timeout())
+                warn("_max_runtime_secs reached.", "KMeans exited before finishing all iterations.");
+              break; // Stopped/cancelled
+            }
           }
           // Recluster down to k cluster centers
           centers = recluster(centers, rand, k, _parms._init, _isCats);
@@ -314,8 +318,9 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
               _job.update(1); //1 more Lloyds iteration
             }
 
-            stop = (task._reassigned_count < Math.max(1,train().numRows()*TOLERANCE) || model._output._iterations >= _parms._max_iterations);
-            if (stop || stop_requested()) {
+            stop = (task._reassigned_count < Math.max(1,train().numRows()*TOLERANCE) ||
+                    model._output._iterations >= _parms._max_iterations || stop_requested());
+            if (stop) {
               if (model._output._iterations < _parms._max_iterations)
                 Log.info("Lloyds converged after " + model._output._iterations + " iterations.");
               else
@@ -953,5 +958,4 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       ArrayUtils.add(_size, mr._size);
     }
   }
-
 }

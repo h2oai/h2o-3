@@ -80,7 +80,6 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
       Log.info("Word2Vec: Starting to train model, " + _parms._epochs + " epochs.");
       long tstart = System.currentTimeMillis();
       for (int i = 0; i < _parms._epochs; i++) {
-        if (stop_requested()) break;
         long start = System.currentTimeMillis();
         WordVectorTrainer trainer = new WordVectorTrainer(_job, modelInfo).doAll(_parms.trainVec());
         long stop = System.currentTimeMillis();
@@ -94,6 +93,10 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
         double duration = (stop - start) / 1000.0;
         Log.info("Epoch " + i + " took "  + duration + "s; Words trained/s: " + actProcessedWords / duration);
         model._output._epochs=i;
+
+        if (stop_requested()) { // do at least one iteration to avoid null model being returned and all hell will break loose
+          break;
+        }
       }
       long tstop  = System.currentTimeMillis();
       Log.info("Total time: " + (tstop - tstart) / 1000.0);
