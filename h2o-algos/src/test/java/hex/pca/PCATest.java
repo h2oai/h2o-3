@@ -41,7 +41,7 @@ public class PCATest extends TestUtil {
   @Before public void setupPcaParameters() {
     pcaParameters = new PCAParameters();
     pcaParameters.setSvdImplementation(svdImplementation);
-    water.util.Log.info(pcaParameters.getSvdImplementation().name());
+    water.util.Log.info("pcaParameters._svdImplementation: " + pcaParameters.getSvdImplementation().name());
   }
 
   @Test public void testArrestsScoring() throws InterruptedException, ExecutionException {
