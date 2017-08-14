@@ -164,12 +164,13 @@ Scoring engine                                      H2O POJO
 Scoring latency SLA                                 Batch
 ==================================================  ===========================================================
 
-=========    ==================================================================================================
-Resource     Location
-=========    ==================================================================================================
-Git repos    https://github.com/h2oai/h2o-tutorials/tree/master/tutorials/hive_udf_template
-Tutorials    http://docs.h2o.ai/h2o-tutorials/latest-stable/tutorials/hive_udf_template/index.html
-=========    ==================================================================================================
+=============    ==================================================================================================
+Resource         Location
+=============    ==================================================================================================
+Git repos        https://github.com/h2oai/h2o-tutorials/tree/master/tutorials/hive_udf_template
+POJO Tutorial    http://docs.h2o.ai/h2o-tutorials/latest-stable/tutorials/hive_udf_template/hive_udf_pojo_template/index.html
+MOJO Tutorial    http://docs.h2o.ai/h2o-tutorials/latest-stable/tutorials/hive_udf_template/hive_udf_mojo_template/index.html
+=============    ==================================================================================================
 
 
 MOJO as a JAR Resource
