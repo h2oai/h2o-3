@@ -981,6 +981,10 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         model.update(_job);
       } finally {
         List<Key<Vec>> keep = new ArrayList<>();
+        if (model._output._iterations ==0) {
+          warn("_max_runtime_secs", "model may not be properly built due to timeout.  Set " +
+                  "max_runtime_secs to 0 or increase its value.");
+        }
         if (model != null) {
           Frame loadingFrm = DKV.getGet(model._output._representation_key);
           if (loadingFrm != null) for (Vec vec: loadingFrm.vecs()) keep.add(vec._key);

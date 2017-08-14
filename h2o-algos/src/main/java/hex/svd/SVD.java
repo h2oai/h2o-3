@@ -375,7 +375,11 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         int wEndColR = _parms._nv-1;
 
         while ((model._output._iterations < 10 || average_SEE > TOLERANCE) && model._output._iterations < _parms._max_iterations) {   // Run at least 10 iterations before tolerance cutoff
-          if(stop_requested()) break;
+          if(stop_requested()) {
+            if (timeout())
+              _job.warn("_train SVD: max_runtime_secs is reached.  Not all iterations are computed.");
+            break;
+          }
           _job.update(1, "Iteration " + String.valueOf(model._output._iterations+1) + " of randomized subspace iteration");
 
           // 2) Form \tilde{Y}_j = A'Q_{j-1} and compute \tilde{Y}_j = \tilde{Q}_j \tilde{R}_j factorization
@@ -701,9 +705,11 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           }
 
           for (int k = 1; k < _parms._nv; k++) {  // loop through for each eigenvalue/eigenvector...
-            if (stop_requested()) break;
-            if (_matrixRankReached) { // number of eigenvalues found is less than _nv
-              int newk = k-1;
+            if (_matrixRankReached || stop_requested()) { // number of eigenvalues found is less than _nv
+              if (timeout()) {
+                _job.warn("_train SVD: max_runtime_secs is reached.  Not all eigenvalues/eigenvectors are computed.");
+              }
+              int newk = k;
               _job.warn("_train SVD: Dataset is rank deficient.  _parms._nv was "+_parms._nv+" and is now set to "+newk);
               _parms._nv = newk;   // change number of eigenvector parameters to be the actual number of eigenvectors found
               break;
@@ -771,6 +777,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           qfrm = randSubIter(dinfo, model);
           u = directSVD(dinfo, qfrm, model, u_name);
           model._output._training_time_ms.add(System.currentTimeMillis());
+          if (stop_requested() && model._output._history_average_SEE.size()==0) {
+            model._output._history_average_SEE.add(Double.POSITIVE_INFINITY);
+          }
           model._output._history_average_SEE.add(model._output._history_average_SEE.get(model._output._history_average_SEE.size()-1)); // add last err back to it
           LinkedHashMap<String, ArrayList> scoreTable = new LinkedHashMap<String, ArrayList>();
           scoreTable.put("Timestamp", model._output._training_time_ms);
@@ -784,7 +793,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           model._output._v_key = Key.make(v_name);
           ArrayUtils.frame(model._output._v_key, null, model._output._v);
         }
-        if (_matrixRankReached) { // need to shorten the correct eigen stuff
+        if ((model._output._d != null) && _parms._nv < model._output._d.length) { // need to shorten the correct eigen stuff
           model._output._d = Arrays.copyOf(model._output._d, _parms._nv);
           for (int index=0; index < model._output._v.length; index++) {
             model._output._v[index] = Arrays.copyOf(model._output._v[index],  _parms._nv);
@@ -885,6 +894,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     String[] colHeaders = new String[_parms._nv];
     Arrays.fill(colTypes, "double");
     Arrays.fill(colFormats, "%5f");
+
     for(int i = 0; i < colHeaders.length; i++) colHeaders[i] = "sval" + String.valueOf(i + 1);
     return new TwoDimTable("Singular values", null, new String[1],
             colHeaders, colTypes, colFormats, "", new String[1][],
