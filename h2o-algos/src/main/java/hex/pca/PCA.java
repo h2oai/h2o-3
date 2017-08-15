@@ -14,10 +14,9 @@ import hex.gram.Gram.GramTask;
 import hex.gram.Gram.OuterGramTask;
 import hex.pca.PCAModel.PCAParameters;
 import hex.svd.SVD;
+import hex.svd.SVDFactory;
+import hex.svd.SVDInterface;
 import hex.svd.SVDModel;
-import hex.util.LinearAlgebraUtils;
-import no.uib.cipr.matrix.DenseMatrix;
-import no.uib.cipr.matrix.NotConvergedException;
 import water.DKV;
 import water.H2O;
 import water.HeartBeat;
@@ -42,28 +41,14 @@ import static water.util.ArrayUtils.mult;
  *
  */
 public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.PCAOutput> {
-  private boolean _wideDataset = false;         // default with wideDataset set to be false.
   // Number of columns in training set (p)
   private transient int _ncolExp;       // With categoricals expanded into 0/1 indicator cols
-
-  // Called from an http request
-  public PCA(PCAParameters parms) {
-    super(parms);
-    init(false);
-  }
-
-  public PCA(boolean startup_once) {
-    super(new PCAParameters(), startup_once);
-  }
-
+  boolean _wideDataset = false;         // default with wideDataset set to be false.
   @Override protected PCADriver trainModelImpl() { return new PCADriver(); }
-
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ ModelCategory.Clustering }; }
-
   @Override public boolean isSupervised() { return false; }
 
   @Override public boolean havePojo() { return true; }
-
   @Override public boolean haveMojo() { return false; }
 
   @Override protected void checkMemoryFootPrint_impl() {
@@ -106,9 +91,13 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   /*
     Set value of wideDataset.  Note that this routine is used for test purposes only and not for users.
  */
-  void setWideDataset(boolean isWide) {
+  public void setWideDataset(boolean isWide) {
     _wideDataset = isWide;
   }
+
+  // Called from an http request
+  public PCA(PCAParameters parms) { super(parms); init(false); }
+  public PCA(boolean startup_once) { super(new PCAParameters(),startup_once); }
 
   @Override
   public void init(boolean expensive) {
@@ -263,7 +252,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       PCAModel model = null;
       DataInfo dinfo = null, tinfo = null;
       DataInfo AE = null;
-      Gram gram;
+      Gram gram = null;
 
       try {
         init(true);   // Initialize parameters
@@ -280,14 +269,14 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
         if (!_parms._impute_missing) {    // added warning to user per request from Nidhi
           _job.warn("_train: Dataset used may contain fewer number of rows due to removal of rows with " +
-              "NA/missing values.  If this is not desirable, set impute_missing argument in pca call to " +
-              "TRUE/True/true/... depending on the client language.");
+                  "NA/missing values.  If this is not desirable, set impute_missing argument in pca call to " +
+                  "TRUE/True/true/... depending on the client language.");
         }
 
         if ((!_parms._impute_missing) && tranRebalanced.hasNAs()) { // remove NAs rows
           tinfo = new DataInfo(_train, _valid, 0, _parms._use_all_factor_levels, _parms._transform,
-              DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */
-              _parms._impute_missing, /* missingBucket */ false, /* weights */ false,
+                  DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */
+                  _parms._impute_missing, /* missingBucket */ false, /* weights */ false,
                     /* offset */ false, /* fold */ false, /* intercept */ false);
           DKV.put(tinfo._key, tinfo);
 
@@ -299,15 +288,12 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         }
 
         dinfo = new DataInfo(_train, _valid, 0, _parms._use_all_factor_levels, _parms._transform,
-            DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */
-            _parms._impute_missing, /* missingBucket */ false, /* weights */ false,
+                DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */
+                _parms._impute_missing, /* missingBucket */ false, /* weights */ false,
                   /* offset */ false, /* fold */ false, /* intercept */ false);
         DKV.put(dinfo._key, dinfo);
 
         if (!_parms._impute_missing && tranRebalanced.hasNAs()) {
-          if (tinfo == null) {
-            throw new NullPointerException("tinfo is null");
-          }
           // fixed the std and mean of dinfo to that of the frame before removing NA rows
           dinfo._normMul = tinfo._normMul;
           dinfo._numMeans = tinfo._numMeans;
@@ -336,42 +322,48 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           // and if the user specify k to be higher than min(number of columns, number of rows)
           if((model._output._nobs == 0) || (model._output._nobs < _parms._k )) {
             error("_train", "Number of row in _train is less than k. " +
-                "Consider setting impute_missing = TRUE or using pca_method = 'GLRM' instead or reducing the " +
-                "value of parameter k.");
+                    "Consider setting impute_missing = TRUE or using pca_method = 'GLRM' instead or reducing the " +
+                    "value of parameter k.");
           }
           if (error_count() > 0) {
             throw new IllegalArgumentException("Found validation errors: " + validationErrors());
           }
 
-          // Compute SVD of Gram A'A/n using JAMA library
+          // Compute SVD of Gram A'A/n using netlib-java (MTJ) library
           // Note: Singular values ordered in weakly descending order by algorithm
           _job.update(1, "Calculating SVD of Gram matrix locally");
-          DenseMatrix gramJ = _wideDataset ? new DenseMatrix(ogtsk._gram.getXX()) : new DenseMatrix(gtsk._gram.getXX());
-          int gramDimension = gramJ.numRows();
-          no.uib.cipr.matrix.SVD svdJ;
+          double[][] gramMatrix;
           try {
-            // Note: gramJ will be overwritten after this
-            svdJ = new no.uib.cipr.matrix.SVD(gramDimension, gramDimension).factor(gramJ);
-          } catch (NotConvergedException e) {
-            throw new RuntimeException(e);
+            gramMatrix = _wideDataset ? ogtsk._gram.getXX() : gtsk._gram.getXX();
+          } catch (NullPointerException e) {
+            e.printStackTrace();
+            throw e;
           }
-          _job.update(1, "Computing stats from SVD");
-          double[] Vt_1D = svdJ.getVt().getData();
-          double[][] Vt_2D = LinearAlgebraUtils.reshape1DArray(Vt_1D, gramDimension, gramDimension);
-          // correct for the eigenvector by t(A)*eigenvector for wide dataset
-          double[][] eigenVecs = _wideDataset ? transformEigenVectors(dinfo, Vt_2D) : Vt_2D;
-          computeStatsFillModel(model, dinfo, svdJ.getS(), eigenVecs, gram, model._output._nobs);
+          PCA.this._job.update(1, "Computing stats from SVD using "
+              + _parms.getSvdImplementation().toString());
+          SVDInterface svd = null;
+          try {
+            svd = SVDFactory.createSVDImplementation(gramMatrix, _parms.getSvdImplementation());
+          } catch (Exception e) {
+            e.printStackTrace();
+          }
+          assert svd != null;
+          double[][] rightEigenvectors = svd.getPrincipalComponents();
+          if (_wideDataset) {       // correct for the eigenvector by t(A)*eigenvector for wide dataset
+            transformEigenVectors(dinfo, rightEigenvectors);
+          }
+          double[] variances = svd.getVariances();
+          computeStatsFillModel(model, dinfo, variances, rightEigenvectors, gram, model._output._nobs);
           model._output._training_time_ms.add(System.currentTimeMillis());
-          // TODO: replace Jama SVD with MTJ SVD in SVD.java
           // generate variables for scoring_history generation
-          LinkedHashMap<String, ArrayList> scoreTable = new LinkedHashMap<String, ArrayList>();
+          LinkedHashMap<String, ArrayList> scoreTable = new LinkedHashMap<>();
           scoreTable.put("Timestamp", model._output._training_time_ms);
           model._output._scoring_history = createScoringHistoryTableDR(scoreTable, "Scoring History for GramSVD",
-                  _job.start_time());
-        //  model._output._scoring_history.tableHeader = "Scoring history from GLRM";
+              _job.start_time());
+          //  model._output._scoring_history.tableHeader = "Scoring history from GLRM";
 
         } else if(_parms._pca_method == PCAParameters.Method.Power ||
-                _parms._pca_method == PCAParameters.Method.Randomized) {
+            _parms._pca_method == PCAParameters.Method.Randomized) {
           SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
           parms._train = _parms._train;
           parms._valid = _parms._valid;
@@ -460,7 +452,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         _job.update(1, "Scoring and computing metrics on training data");
         if (_parms._compute_metrics) {
           model.score(_parms.train()).delete(); // This scores on the training data and appends a ModelMetrics
-          model._output._training_metrics = ModelMetrics.getFromDKV(model,_parms.train());
+          ModelMetrics mm = ModelMetrics.getFromDKV(model,_parms.train());
+          model._output._training_metrics = mm;
         }
 
         // At the end: validation scoring (no need to gather scoring history)
@@ -472,8 +465,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         model.update(_job);
 
 
-      } catch (Exception e) {
-        e.printStackTrace();
       } finally {
         if (model != null) {
           model.unlock(_job);
@@ -490,5 +481,4 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       }
     }
   }
-  
 }
