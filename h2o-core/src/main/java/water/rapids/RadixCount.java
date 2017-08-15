@@ -14,24 +14,18 @@ class RadixCount extends MRTask<RadixCount> {
   private Long2DArray _counts;
   private final int _shift;
   private final int _col;
-  private final long _base;
-  private final BigInteger _baseD;
+  private final BigInteger _base;
   // used to determine the unique DKV names since DF._key is null now and
   // before only an RTMP name anyway
   private final boolean _isLeft; 
   private final int _id_maps[][];
-  private final boolean _isNotDouble;
-  private final boolean _isNumeric;
 
-  RadixCount(boolean isLeft, long base, int shift, int col, int id_maps[][], boolean isNotDouble, BigInteger baseD, boolean isNumeric) {
+  RadixCount(boolean isLeft, BigInteger base, int shift, int col, int id_maps[][]) {
     _isLeft = isLeft;
     _base = base;
     _col = col;
     _shift = shift;
     _id_maps = id_maps;
-    _isNotDouble = isNotDouble;
-    _baseD = baseD;
-    _isNumeric = isNumeric;
   }
 
   // make a unique deterministic key as a function of frame, column and node
@@ -48,6 +42,7 @@ class RadixCount extends MRTask<RadixCount> {
 
   @Override public void map( Chunk chk ) {
     long tmp[] = _counts._val[chk.cidx()] = new long[256];
+    boolean isIntVal = chk.vec().isCategorical() || chk.vec().isInt();
     // TODO: assert chk instanceof integer or enum; -- but how since many
     // integers (C1,C2 etc)?  Alternatively: chk.getClass().equals(C8Chunk.class)
     if (!(_isLeft && chk.vec().isCategorical())) {  // for numeric columns
@@ -55,13 +50,10 @@ class RadixCount extends MRTask<RadixCount> {
         // There are no NA in this join column; hence branch-free loop. Most
         // common case as should never really have NA in join columns.
         for (int r = 0; r < chk._len; r++) {
-          if (_isNumeric) {
-            long ctrVal = _isNotDouble ? BigInteger.valueOf(chk.at8(r)).subtract(_baseD).add(BigInteger.ONE).shiftRight(_shift).longValue()
-                    : MathUtils.convertDouble2BigInteger(chk.atd(r)).subtract(_baseD).add(BigInteger.ONE).shiftRight(_shift).longValue();
-            tmp[(int) ctrVal]++;
-          } else {  // categorical
-            tmp[(int)((chk.at8(r)-_base+1) >> _shift)]++;
-          }
+          long ctrVal = isIntVal ?
+                  BigInteger.valueOf(chk.at8(r)).subtract(_base).add(BigInteger.ONE).shiftRight(_shift).longValue():
+                  MathUtils.convertDouble2BigInteger(chk.atd(r)).subtract(_base).add(BigInteger.ONE).shiftRight(_shift).longValue();
+          tmp[(int) ctrVal]++;
         }
       } else {    // contains NAs in column
         // There are some NA in the column so have to branch.  TODO: warn user
@@ -69,13 +61,10 @@ class RadixCount extends MRTask<RadixCount> {
         for (int r=0; r<chk._len; r++) {
           if (chk.isNA(r)) tmp[0]++;
           else {
-            if (_isNumeric) {
-              long ctrVal = _isNotDouble ? BigInteger.valueOf(chk.at8(r)).subtract(_baseD).add(BigInteger.ONE).shiftRight(_shift).longValue() :
-                      MathUtils.convertDouble2BigInteger(chk.atd(r)).subtract(_baseD).add(BigInteger.ONE).shiftRight(_shift).longValue();
-              tmp[(int) ctrVal]++;
-            } else {  // enum here
-              tmp[(int)((chk.at8(r)-_base+1) >> _shift)]++;
-            }
+            long ctrVal = isIntVal ?
+                    BigInteger.valueOf(chk.at8(r)).subtract(_base).add(BigInteger.ONE).shiftRight(_shift).longValue():
+                    MathUtils.convertDouble2BigInteger(chk.atd(r)).subtract(_base).add(BigInteger.ONE).shiftRight(_shift).longValue();
+            tmp[(int) ctrVal]++;
           }
 
           // Done - we will join NA to NA as data.table does
@@ -88,15 +77,17 @@ class RadixCount extends MRTask<RadixCount> {
       // first column (for MSB split) in an Enum
       // map left categorical to right levels using _id_maps
       assert _id_maps[0].length > 0;
-      assert _base==0;
+      assert _base.compareTo(BigInteger.ZERO)==0;
       if (chk.vec().naCnt() == 0) {
         for (int r=0; r<chk._len; r++) {
-          tmp[(_id_maps[0][(int)chk.at8(r)]+1) >> _shift]++;
+          tmp[BigInteger.valueOf(_id_maps[0][(int)chk.at8(r)]+1).shiftRight(_shift).intValue()]++;
+        //  tmp[(_id_maps[0][(int)chk.at8(r)]+1) >> _shift]++;
         }
       } else {
         for (int r=0; r<chk._len; r++) {
           if (chk.isNA(r)) tmp[0]++;
-          else tmp[(_id_maps[0][(int)chk.at8(r)]+1) >> _shift]++;
+          else tmp[BigInteger.valueOf(_id_maps[0][(int)chk.at8(r)]+1).shiftRight(_shift).intValue()]++;
+       //   else tmp[(_id_maps[0][(int)chk.at8(r)]+1) >> _shift]++;
         }
       }
     }

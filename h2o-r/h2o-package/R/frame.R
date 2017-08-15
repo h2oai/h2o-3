@@ -3122,7 +3122,7 @@ destination_frame.guess <- function(x) {
 #' options(op)
 use.package <- function(package, 
                         version="1.9.8"[package=="data.table"], 
-                        use=getOption("h2o.use.data.table", TRUE)[package=="data.table"]) {
+                        use=getOption("h2o.use.data.table", FALSE)[package=="data.table"]) {
   ## methods that depends on use.package default arguments (to have control in single place):
   # as.h2o.data.frame
   # as.data.frame.H2OFrame
@@ -3130,13 +3130,13 @@ use.package <- function(package,
             is.character(version), length(version)==1L,
             is.logical(use), length(use)==1L)
 
-  if (package=="data.table") {
-    if (!("bit64" %in% rownames(installed.packages())) || (packageVersion("bit64") < as.package_version("0.9.7"))) {
-       # print out warning to install bit64 in order to use data.table
-      warning("data.table cannot be used without R package bit64 version 0.9.7 or higher.  Please upgrade to take advangage of data.table speedups.")
-      return(FALSE)
-    }
-  }
+  # if (package=="data.table" && use) { # not sure if this is needed.  Keeping it for now.
+  #   if (!("bit64" %in% rownames(installed.packages())) || (packageVersion("bit64") < as.package_version("0.9.7"))) {
+  #      # print out warning to install bit64 in order to use data.table
+  #     warning("data.table cannot be used without R package bit64 version 0.9.7 or higher.  Please upgrade to take advangage of data.table speedups.")
+  #     return(FALSE)
+  #   }
+  # }
   use && requireNamespace(package, quietly=TRUE) && (packageVersion(package) >= as.package_version(version))
 }
 
@@ -3239,6 +3239,9 @@ as.h2o.data.frame <- function(x, destination_frame="", ...) {
 
 #' @rdname as.h2o
 #' @method as.h2o Matrix
+#' @details
+#' To speedup execution time for large sparse matrices, use h2o datatable.  Make sure you have installed and imported data.table and slam packages.
+#' Turn on h2o datatable by options("h2o.use.data.table"=TRUE)
 #' @export
 as.h2o.Matrix <- function(x, destination_frame="", ...) {
   
