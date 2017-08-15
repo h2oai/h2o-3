@@ -129,7 +129,7 @@ The examples below describe how to start H2O and create a model using R and Pyth
 
 	```bash
 	$ javac -cp h2o-genmodel.jar -J-Xms2g -J-XX:MaxPermSize=128m main.java
-	$ java -cp .:h2o-genmodel.jar main	
+	$ java -cp .;h2o-genmodel.jar main	
 	```
 
 The following output displays:
