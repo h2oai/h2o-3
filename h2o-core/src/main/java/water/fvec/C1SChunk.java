@@ -1,87 +1,44 @@
 package water.fvec;
 
-import water.util.UnsafeUtils;
+import water.util.PrettyPrint;
 
 /**
  * The scale/bias function, where data is in SIGNED bytes before scaling.
  */
-public class C1SChunk extends Chunk {
+public final class C1SChunk extends CSChunk {
+  C1SChunk( byte[] bs, long bias, int scale) {
+    super(bs,bias,scale,0);
+    if(scale < 0) { // check precision
+      double div = PrettyPrint.pow10(1, -scale);
+      for (int i = 0; i < _len; ++i) {
+        int x = 0xFF & _mem[_OFF + i];
+        if (x == C1Chunk._NA) continue;
+        if ((getD(x, C1Chunk._NA, Double.NaN)) != (x+bias)/div){
+          setDecimal();
+          break;
+        }
+      }
+    }
+  }
 
-  static protected final int _OFF=8+8;
-  private transient double _scale;
-  public double scale() { return _scale; }
-  private transient long _bias;
-  @Override public boolean hasFloat(){ return _scale != (long)_scale; }
-  C1SChunk( byte[] bs, long bias, double scale ) { _mem=bs; _start = -1; set_len(_mem.length-_OFF);
-    _bias = bias; _scale = scale;
-    UnsafeUtils.set8d(_mem, 0, scale);
-    UnsafeUtils.set8 (_mem,8,bias );
-  }
-  @Override protected final long at8_impl( int i ) {
-    long res = 0xFF&_mem[i+_OFF];
-    if( res == C1Chunk._NA ) throw new IllegalArgumentException("at8_abs but value is missing");
-    return (long)((res+_bias)*_scale);
-  }
   @Override protected final double atd_impl( int i ) {
-    long res = 0xFF&_mem[i+_OFF];
-    return (res == C1Chunk._NA)?Double.NaN:(res+_bias)*_scale;
+    return getD(0xFF&_mem[_OFF+i],C1Chunk._NA);
   }
   @Override protected final boolean isNA_impl( int i ) { return (0xFF&_mem[i+_OFF]) == C1Chunk._NA; }
-  @Override boolean set_impl(int i, long l) {
-    long res = (long)(l/_scale)-_bias; // Compressed value
-    double d = (res+_bias)*_scale;     // Reverse it
-    if( (long)d != l ) return false;   // Does not reverse cleanly?
-    if( !(0 <= res && res < 255) ) return false; // Out-o-range for a byte array
-    _mem[i+_OFF] = (byte)res;
+  @Override boolean setNA_impl(int idx) {
+    _mem[idx+_OFF] = (byte)C1Chunk._NA; return true;
+  }
+
+  @Override
+  protected boolean set_impl(int i, double x) {
+    if(Double.isNaN(x)) return setNA_impl(i);
+    int y = getScaledValue(x, C1Chunk._NA);
+    byte b = (byte)y;
+    if(getD(0xFF&b,C1Chunk._NA,Double.NaN) != x)
+      return false;
+    _mem[_OFF+i] = b;
+    assert !isNA_impl(i);
     return true;
-  }
-  @Override boolean set_impl(int i, double d) { return false; }
-  @Override boolean set_impl(int i, float f ) { return false; }
-  @Override boolean setNA_impl(int idx) { _mem[idx+_OFF] = (byte)C1Chunk._NA; return true; }
-
-  private void processRow(int r, ChunkVisitor v){
-    int res = 0xFF&_mem[r+_OFF];
-    if( res == C1Chunk._NA ) v.addNAs(1);
-    else v.addValue((res+_bias)*_scale);
-  }
-  private void processRow(int r, int exp, ChunkVisitor v){
-    int res = 0xFF&_mem[r+_OFF];
-    if( res == C1Chunk._NA ) v.addNAs(1);
-    else v.addValue((res+_bias),exp);
-  }
-
-  @Override
-  public <T extends ChunkVisitor> T processRows(T v, int from, int to) {
-    if(v.expandedVals()){
-      double x = Math.log10(_scale);
-      int e = (int)x;
-      assert x == e:"scale does not fit into int";
-      for(int i = from; i < to; i++) processRow(i,e,v);
-    } else
-      for(int i = from; i < to; i++) processRow(i,v);
-    return v;
-  }
-
-  @Override
-  public <T extends ChunkVisitor> T processRows(T v, int[] ids) {
-    if(v.expandedVals()){
-      double x = Math.log10(_scale);
-      int e = (int)x;
-      assert x == e:"scale does not fit into int";
-      for(int i:ids) processRow(i,e, v);
-    } else
-      for(int i:ids) processRow(i,v);
-    return v;
-  }
-
-  //public int pformat_len0() { return hasFloat() ? pformat_len0(_scale,3) : super.pformat_len0(); }
-  //public String  pformat0() { return hasFloat() ? "% 8.2e" : super.pformat0(); }
-  @Override public byte precision() { return (byte)Math.max(-Math.log10(_scale),0); }
-  @Override public final void initFromBytes () {
-    _start = -1;  _cidx = -1;
-    set_len(_mem.length-_OFF);
-    _scale= UnsafeUtils.get8d(_mem,0);
-    _bias = UnsafeUtils.get8 (_mem,8);
   }
 
   /**
@@ -92,10 +49,8 @@ public class C1SChunk extends Chunk {
    */
   @Override
   public double [] getDoubles(double [] vals, int from, int to, double NA){
-    for(int i = from; i < to; ++i) {
-      long res = 0xFF & _mem[_OFF+i];
-      vals[i-from] = res != C1Chunk._NA?(res + _bias)*_scale:NA;
-    }
+    for(int i = from; i < to; ++i)
+      vals[i-from] = getD(0xFF&_mem[_OFF+i],C1Chunk._NA,NA);
     return vals;
   }
   /**
@@ -106,11 +61,44 @@ public class C1SChunk extends Chunk {
   @Override
   public double [] getDoubles(double [] vals, int [] ids){
     int j = 0;
-    for(int i:ids) {
-      long res = 0xFF&_mem[_OFF+i];
-      vals[j++] = res != C1Chunk._NA?(res + _bias)*_scale:Double.NaN;
-    }
+    for(int i:ids)
+      vals[j++] = getD(0xFF&_mem[_OFF+i],C1Chunk._NA);
     return vals;
   }
+
+  private <T extends ChunkVisitor> void processRow(T v, int i, long bias, int exp){
+    long x = 0xFF & _mem[_OFF + i];
+    if(x == C1Chunk._NA) v.addNAs(1);
+    else v.addValue(x + bias, exp);
+  }
+
+  @Override
+  protected <T extends ChunkVisitor> T processRows2(T v, int from, int to, long bias, int exp) {
+    for(int i = from; i < to; ++i)
+      processRow(v,i,bias,exp);
+    return v;
+  }
+
+  @Override
+  protected <T extends ChunkVisitor> T processRows2(T v, int from, int to) {
+    for(int i = from; i < to; ++i)
+      v.addValue(getD(0xFF&_mem[_OFF+i],C1Chunk._NA));
+    return v;
+  }
+
+  @Override
+  protected <T extends ChunkVisitor> T processRows2(T v, int [] ids, long bias, int exp) {
+    for(int i:ids)
+      processRow(v,i,bias,exp);
+    return v;
+  }
+
+  @Override
+  protected <T extends ChunkVisitor> T processRows2(T v, int [] ids) {
+    for(int i:ids)
+      v.addValue(getD(0xFF&_mem[_OFF+i],C1Chunk._NA));
+    return v;
+  }
+
 
 }

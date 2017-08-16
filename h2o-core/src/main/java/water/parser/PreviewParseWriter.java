@@ -78,7 +78,7 @@ public class PreviewParseWriter extends Iced implements StreamParseWriter {
       else
         ++_nnums[colIdx];
       if (_nlines < MAX_PREVIEW_LINES)
-        _data[_nlines][colIdx] = Double.toString(number * water.util.PrettyPrint.pow10(exp));
+        _data[_nlines][colIdx] = Double.toString(water.util.PrettyPrint.pow10(number,exp));
     }
   }
   @Override public void addNumCol(int colIdx, double d) {

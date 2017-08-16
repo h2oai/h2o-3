@@ -123,7 +123,10 @@ public class PrettyPrint {
     1000000000000000000l,
   };
 
-  public static double pow10(int exp){ return ((exp >= -10 && exp <= 10)?powers10[exp+10]:Math.pow(10, exp)); }
+  public static double pow10(long m, int e){
+    return e < 0?m/pow10(-e):m*pow10(e);
+  }
+  private static double pow10(int exp){ return ((exp >= -10 && exp <= 10)?powers10[exp+10]:Math.pow(10, exp)); }
   public static long pow10i(int exp){ return ((exp > -1 && exp < 19)?powers10i[exp]:(long)Math.pow(10, exp)); }
   public static boolean fitsIntoInt(double d) { return Math.abs((int)d - d) < 1e-8; }
 
