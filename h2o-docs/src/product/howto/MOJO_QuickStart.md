@@ -125,13 +125,21 @@ The examples below describe how to start H2O and create a model using R and Pyth
 	}
 	``` 
 
-3. Compile and run in terminal window 2. 
-
+3. Compile in terminal window 2. 
 	```bash
 	$ javac -cp h2o-genmodel.jar -J-Xms2g -J-XX:MaxPermSize=128m main.java
+	```
+4. Run in terminal window 2.
+
+	For Linux and OS X users
+	```bash
 	$ java -cp .:h2o-genmodel.jar main	
 	```
-
+	For Windows users
+	```bash
+	$ java -cp .;h2o-genmodel.jar main	
+	```
+	
 The following output displays:
 
 ```bash
