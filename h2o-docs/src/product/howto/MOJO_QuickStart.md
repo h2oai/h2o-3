@@ -10,7 +10,7 @@ This document describes how to build and implement a MOJO (Model Object, Optimiz
 A MOJO (Model Object, Optimized) is an alternative to H2O's currently available
 [POJO](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/POJO_QuickStart.md). As with POJOs, H2O allows you to convert models that you build to MOJOs, which can then be deployed for scoring in real time.
 
-**Note**: MOJOs are supported for GBM, DRF, GLM, K-Means, and XGBoost models only.
+**Note**: MOJOs are supported for GBM, DRF, GLM, K-Means, SVM, Word2vec, and XGBoost models only.
 
 ## Benefit over POJOs
 
@@ -34,13 +34,13 @@ The examples below describe how to start H2O and create a model using R and Pyth
 1. Open a terminal window and start r.
 2. Run the following commands to build a simple GBM model. 
 
-	```R
+	```
 	library(h2o)
 	h2o.init(nthreads=-1)
-	path = system.file("extdata", "prostate.csv", package="h2o")
-	h2o_df = h2o.importFile(path)
-	h2o_df$RACE = as.factor(h2o_df$RACE)
-	model = h2o.gbm(y="CAPSULE",
+	path <- system.file("extdata", "prostate.csv", package="h2o")
+	h2o_df <- h2o.importFile(path)
+	h2o_df$CAPSULE <- as.factor(h2o_df$CAPSULE)
+	model <- h2o.gbm(y="CAPSULE",
 			x=c("AGE", "RACE", "PSA", "GLEASON"),
 			training_frame=h2o_df,
 			distribution="bernoulli",
@@ -51,8 +51,8 @@ The examples below describe how to start H2O and create a model using R and Pyth
 
 3. Download the MOJO and the resulting h2o-genmodel.jar file to a new **experiment** folder. Note that the ``h2o-genmodel.jar`` file is a library that supports scoring and contains the required readers and interpreters. This file is required when MOJO models are deployed to production.
 
-	```R
-	modelfile = model.download_mojo(path="~/experiment/", get_genmodel_jar=True)
+	```
+	modelfile <- h2o.download_mojo(model,path="~/experiments/", get_genmodel_jar=TRUE)
 	print("Model saved to " + modelfile)
 	Model saved to /Users/user/GBM_model_R_1475248925871_74.zip"
 	```
@@ -62,7 +62,7 @@ The examples below describe how to start H2O and create a model using R and Pyth
 1. Open a terminal window and start python. 
 2. Run the following commands to build a simple GBM model. The model, along with the **h2o-genmodel.jar** file will then be downloaded to an **experiment** folder. 
 
-	```R
+	```
 	import h2o
 	from h2o.estimators.gbm import H2OGradientBoostingEstimator
 	h2o.init()
@@ -79,7 +79,7 @@ The examples below describe how to start H2O and create a model using R and Pyth
 
 3. Download the MOJO and the resulting ``h2o-genmodel.jar`` file to a new **experiment** folder. Note that the ``h2o-genmodel.jar`` file is a library that supports scoring and contains the required readers and interpreters. This file is required when MOJO models are deployed to production.
 
-	```R
+	```
 	modelfile = model.download_mojo(path="~/experiment/", get_genmodel_jar=True)
 	print("Model saved to " + modelfile)
 	Model saved to /Users/user/GBM_model_python_1475248925871_888.zip           
@@ -129,6 +129,7 @@ The examples below describe how to start H2O and create a model using R and Pyth
 	```bash
 	$ javac -cp h2o-genmodel.jar -J-Xms2g -J-XX:MaxPermSize=128m main.java
 	```
+
 4. Run in terminal window 2.
 
 	For Linux and OS X users

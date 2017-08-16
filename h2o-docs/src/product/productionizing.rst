@@ -19,7 +19,7 @@ Users can refer to the following Quick Start files for more information about ge
 
 **Notes**: 
 
-- MOJOs are supported for DRF, GBM, GLM, GLRM, K-Means, Word2vec, and XGBoost models only.
+- MOJOs are supported for DRF, GBM, GLM, GLRM, K-Means, SVM, Word2vec, and XGBoost models only.
 - POJOs are not supported for XGBoost.
 
 Developers can refer to the the `POJO and MOJO Model Javadoc <http://docs.h2o.ai/h2o/latest-stable/h2o-genmodel/javadoc/index.html>`__.
