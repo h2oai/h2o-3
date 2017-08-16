@@ -247,7 +247,7 @@ Getting Started with Sparkling Water
 
 -  `Download Sparkling Water <http://www.h2o.ai/download/>`_: Go here to download Sparkling Water.
 
--  `Sparkling Water Development Documentation <https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md>`_: Read this document first to get started with Sparkling Water.
+-  `Sparkling Water Development Documentation <https://github.com/h2oai/sparkling-water/blob/master/doc/DEVEL.rst>`_: Read this document first to get started with Sparkling Water.
 
 -  `Launch on Hadoop and Import from HDFS <https://github.com/h2oai/sparkling-water/tree/master/examples#sparkling-water-on-hadoop>`_: Go here to learn how to start Sparkling Water on Hadoop.
 
@@ -261,7 +261,7 @@ Getting Started with Sparkling Water
 
 -  `Building Machine Learning Applications with Sparkling Water <http://docs.h2o.ai/h2o-tutorials/latest-stable/tutorials/sparkling-water/index.html>`_: This short tutorial describes project building and demonstrates the capabilities of Sparkling Water using Spark Shell to build a Deep Learning model.
 
--  `Sparkling Water FAQ <https://github.com/h2oai/sparkling-water/blob/master/README.md#faq>`_: This FAQ provides answers to many common questions about Sparkling Water.
+-  `Sparkling Water FAQ <https://github.com/h2oai/sparkling-water/blob/master/doc/FAQ.rst>`_: This FAQ provides answers to many common questions about Sparkling Water.
 
 -  `Connecting RStudio to Sparkling Water <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/Connecting_RStudio_to_Sparkling_Water.md>`_: This illustrated tutorial describes how to use RStudio to connect to Sparkling Water.
 

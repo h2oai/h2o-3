@@ -1,5 +1,5 @@
-Principal Compent Analysis (PCA)
---------------------------------
+Principal Component Analysis (PCA)
+----------------------------------
 
 Introduction
 ~~~~~~~~~~~~
