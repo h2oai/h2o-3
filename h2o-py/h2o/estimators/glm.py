@@ -600,9 +600,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def lambda_min_ratio(self):
         """
-        Minimum lambda used in lambda search, specified as a ratio of lambda_max. Default indicates: if the number of
-        observations is greater than the number of variables then lambda_min_ratio is set to 0.0001; if the number of
-        observations is less than the number of variables then lambda_min_ratio is set to 0.01.
+        Minimum lambda used in lambda search, specified as a ratio of lambda_max (the smallest lambda that drives all
+        coefficients to zero). Default indicates: if the number of observations is greater than the number of variables,
+        then lambda_min_ratio is set to 0.0001; if the number of observations is less than the number of variables, then
+        lambda_min_ratio is set to 0.01.
 
         Type: ``float``  (default: ``-1``).
         """
