@@ -2278,5 +2278,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     }
 
   }
+
+  @Override
+  public DeepLearningMojoWriter getMojo() {
+    return new DeepLearningMojoWriter(this);
+  }
 }
 

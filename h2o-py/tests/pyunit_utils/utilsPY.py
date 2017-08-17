@@ -154,7 +154,7 @@ def np_comparison_check(h2o_data, np_data, num_elements):
         assert np.absolute(h2o_val - np_val) < 1e-5, \
             "failed comparison check! h2o computed {0} and numpy computed {1}".format(h2o_val, np_val)
 
-def javapredict(algo, equality, train, test, x, y, compile_only=False, separator=",", setInvNumNA=False,**kwargs):
+def javapredict(algo, equality, train, test, x, y, compile_only=False, separator=",", setInvNumNA=False, pojo_model=True, save_model=False, **kwargs):
     print("Creating model in H2O")
     if algo == "gbm": model = H2OGradientBoostingEstimator(**kwargs)
     elif algo == "random_forest": model = H2ORandomForestEstimator(**kwargs)
@@ -176,17 +176,27 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, separator
     print("Downloading Java prediction model code from H2O")
     tmpdir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "results", pojoname))
     os.makedirs(tmpdir)
-    h2o.download_pojo(model, path=tmpdir)
-    h2o_genmodel_jar = os.path.join(tmpdir, "h2o-genmodel.jar")
-    assert os.path.exists(h2o_genmodel_jar), "Expected file {0} to exist, but it does not.".format(h2o_genmodel_jar)
-    print("h2o-genmodel.jar saved in {0}".format(h2o_genmodel_jar))
-    java_file = os.path.join(tmpdir, pojoname + ".java")
-    assert os.path.exists(java_file), "Expected file {0} to exist, but it does not.".format(java_file)
-    print("java code saved in {0}".format(java_file))
+    if pojo_model:
+        h2o.download_pojo(model, path=tmpdir)
+    else:
+        model.download_mojo(path=tmpdir)
+        #h2o.download_mojo(model, path=tmpdir)
 
-    print("Compiling Java Pojo")
-    javac_cmd = ["javac", "-cp", h2o_genmodel_jar, "-J-Xmx12g", "-J-XX:MaxPermSize=256m", java_file]
-    subprocess.check_call(javac_cmd)
+    if (save_model):
+        h2o.save_model(model, path=tmpdir, force=True)  # save model for later compare
+    # only need to compile for pojo
+    if (pojo_model):
+        h2o_genmodel_jar = os.path.join(tmpdir, "h2o-genmodel.jar")
+        assert os.path.exists(h2o_genmodel_jar), "Expected file {0} to exist, but it does not.".format(h2o_genmodel_jar)
+        print("h2o-genmodel.jar saved in {0}".format(h2o_genmodel_jar))
+        java_file = os.path.join(tmpdir, pojoname + ".java")
+        assert os.path.exists(java_file), "Expected file {0} to exist, but it does not.".format(java_file)
+        print("java code saved in {0}".format(java_file))
+
+
+        print("Compiling Java Pojo/Mojo")
+        javac_cmd = ["javac", "-cp", h2o_genmodel_jar, "-J-Xmx12g", "-J-XX:MaxPermSize=256m", java_file]
+        subprocess.check_call(javac_cmd)
 
     if not compile_only:
         print("Predicting in H2O")
@@ -217,16 +227,32 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, separator
         print("Running PredictCsv Java Program")
         out_pojo_csv = os.path.join(tmpdir, "out_pojo.csv")
         cp_sep = ";" if sys.platform == "win32" else ":"
-        java_cmd = ["java", "-ea", "-cp", h2o_genmodel_jar + cp_sep + tmpdir, "-Xmx12g", "-XX:MaxPermSize=2g",
-                    "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv",
-                    "--pojo", pojoname, "--input", in_csv, "--output", out_pojo_csv, "--separator", separator]
+        java_cmd=[]
+        utilFileDir = os.path.dirname(os.path.realpath(__file__))
+        genmodelJar = "h2o-assemblies/genmodel/build/libs/genmodel.jar"
+        h2o_genmodel_jar = os.path.normpath(os.path.join(utilFileDir, "../../..", genmodelJar))
+        if not(pojo_model):
+
+            java_cmd = ["java", "-ea", "-cp", h2o_genmodel_jar + cp_sep + tmpdir, "-Xmx12g", "-XX:MaxPermSize=2g",
+            "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv", "--input", in_csv, "--output",
+                        out_pojo_csv, "--separator", separator, "--mojo", os.path.join(tmpdir, pojoname)+".zip",
+                        "--decimal"]
+        else:
+            java_cmd = ["java", "-ea", "-cp", h2o_genmodel_jar + cp_sep + tmpdir, "-Xmx12g", "-XX:MaxPermSize=2g",
+                        "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv",
+                        "--model", pojoname, "--input", in_csv, "--output", out_pojo_csv, "--separator", separator]
+
         if setInvNumNA:
-            java_cmd.append("--setConvertInvalidNum")
+                java_cmd.append("--setConvertInvalidNum")
+
         p = subprocess.Popen(java_cmd, stdout=PIPE, stderr=STDOUT)
         o, e = p.communicate()
         print("Java output: {0}".format(o))
         assert os.path.exists(out_pojo_csv), "Expected file {0} to exist, but it does not.".format(out_pojo_csv)
-        predictions2 = h2o.upload_file(path=out_pojo_csv)
+        headerHere = 0
+        if not(pojo_model):
+            headerHere = 1
+        predictions2 = h2o.upload_file(path=out_pojo_csv, header=headerHere)
         print("Pojo predictions saved in {0}".format(out_pojo_csv))
 
         print("Comparing predictions between H2O and Java POJO")
@@ -239,13 +265,16 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, separator
         # Value
         for r in range(hr):
             hp = predictions[r, 0]
+
             if equality == "numeric":
-                pp = float.fromhex(predictions2[r, 0])
+                pp=predictions2[r,0]
+                if pojo_model:
+                    pp = float.fromhex(predictions2[r, 0])
                 assert abs(hp - pp) < 1e-4, \
                     "Expected predictions to be the same (within 1e-4) for row %d, but got %r and %r" % (r, hp, pp)
             elif equality == "class":
                 pp = predictions2[r, 0]
-                assert hp == pp, "Expected predictions to be the same for row %d, but got %r and %r" % (r, hp, pp)
+                assert float(hp) == pp, "Expected predictions to be the same for row %d, but got %r and %r" % (r, hp, pp)
             else:
                 raise ValueError
 
