@@ -275,10 +275,10 @@ Leaf Node Assignment
 Trees cluster observations into leaf nodes, and this information can be
 useful for feature engineering or model interpretability. Use
 **h2o.predict\_leaf\_node\_assignment(** *model*, *frame* **)** to get an H2OFrame
-with the leaf node assignments, or click the checkbox when making
+with the leaf node assignments, or click the **Compute Leafe Node Assignment** checkbox when making
 predictions from Flow. Those leaf nodes represent decision rules that
 can be fed to other models (i.e., GLM with lambda search and strong
-rules) to obtain a limited set of the most important rules.
+rules) to obtain a limited set of the most important rules. 
 
 FAQ
 ~~~

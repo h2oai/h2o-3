@@ -8,7 +8,7 @@ REST API from your Java program to a remote cluster and should meet the
 needs of most users.
 
 You can access the REST API documentation within Flow, or on our
-`documentation site <rest-api-reference.html>`__.
+`documentation site <../rest-api-reference.html>`__.
 
 Flow, Python, and R all rely on the REST API to run H2O. For example,
 each action in Flow translates into one or more REST API calls. The
@@ -28,7 +28,7 @@ To see how the REST API is used with H2O:
 
 The second way to use H2O with Java is to embed H2O within your Java
 application, similar to `Sparkling
-Water <https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md>`__.
+Water <https://github.com/h2oai/sparkling-water/blob/master/DEVEL.rst>`__.
 
 --------------
 
