@@ -140,7 +140,11 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       String[] colHeaders = new String[_parms._k];
       Arrays.fill(colTypes, "double");
       Arrays.fill(colFormats, "%5f");
-
+  
+      if (rowNames.length != pca._output._eigenvectors_raw.length) {
+        water.util.Log.err("rowNames.length == " + rowNames.length + ", pca._output._eigenvectors_raw.length == "
+            + pca._output._eigenvectors_raw.length);
+      }
       assert rowNames.length == pca._output._eigenvectors_raw.length;
       for (int i = 0; i < colHeaders.length; i++) {
         colHeaders[i] = "PC" + String.valueOf(i + 1);
@@ -346,6 +350,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
             svd = SVDFactory.createSVDImplementation(gramMatrix, _parms.getSvdImplementation());
           } catch (Exception e) {
             e.printStackTrace();
+            throw new RuntimeException(e);
           }
           assert svd != null;
           double[][] rightEigenvectors = svd.getPrincipalComponents();
