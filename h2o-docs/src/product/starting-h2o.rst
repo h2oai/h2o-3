@@ -285,8 +285,11 @@ Authentication Options
 -  ``-session_timeout <minutes>``: Specifies the number of minutes that a session can remain idle before the server invalidates the session and requests a new login. Requires ``-form_auth``. This defaults to no timeout.
 -  ``-internal_security_conf <filename>``: Specify the path (absolute or relative) to a file containing all internal security related configurations.
 
+H2O Networking
+~~~~~~~~~~~~~~
+
 H2O Internal Communication
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 By default, H2O selects the IP and PORT for internal communication automatically using the following this process (if not specified):
 
@@ -308,7 +311,7 @@ By default, H2O selects the IP and PORT for internal communication automatically
 
 
 Cloud Formation Behavior
-~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 New H2O nodes join to form a cloud during launch. After a job has
 started on the cloud, it prevents new members from joining.
@@ -327,7 +330,7 @@ entering the above command again to add another node (the number for #
 will vary).
 
 Clouding Up: Cluster Creation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 H2O provides two modes for cluster creation:
 
@@ -335,7 +338,8 @@ H2O provides two modes for cluster creation:
 -  Flatfile based
 
 Multicast
-^^^^^^^^^
+'''''''''
+
 In this mode, H2O is using IP multicast to announce existence of H2O nodes. Each node selects the same multicast group and port based on specified shared cloud name (see ``-name`` option). For example, for IPv4/PORT a generated multicast group is ``228.246.114.236:58614`` (for cloud name ``michal``), 
 for IPv6/PORT a generated multicast group is ``ff05:0:3ff6:72ec:0:0:3ff6:72ec:58614`` (for cloud name ``michal`` and link-local address which enforce link-local scope).
 
@@ -345,7 +349,8 @@ class ``water.util.NetworkUtils``).
 For more information about scopes, see the following `image <http://www.tcpipguide.com/free/diagrams/ipv6scope.png>`_. 
 
 Flatfile
-^^^^^^^^
+''''''''
+
 The flatfile describes a topology of a H2O cluster. The flatfile definition is passed via the ``-flatfile`` option. It needs to be passed at each node in the cluster, but definition does not be the same at each node. However, transitive closure of all definitions should contains all nodes. For example, for the following definition
 
 +---------+-------+-------+-------+
@@ -374,17 +379,17 @@ The flatfile contains a list of nodes in the form ``IP:PORT`` that are going to 
 	0:0:0:0:0:0:0:1:54323
 
 Web Server
-~~~~~~~~~~
+^^^^^^^^^^
 
 The web server IP is auto-configured in the same way as internal communication IP, nevertheless the created socket listens on all available interfaces. A specific API can be specified with the ``-web_ip`` option.
 
 Options
-^^^^^^^
+'''''''
 
 - ``-web_ip``: specifies IP for web server to expose REST API
 
 Dual Stacks
-~~~~~~~~~~~
+^^^^^^^^^^^
 
 Dual stack machines support IPv4 and IPv6 network stacks.
 Right now, H2O always prefer IPV4, however the preference can be changed via JVM system options ``java.net.preferIPv4Addresses`` and ``java.net.preferIPv6Addresses``. For example:

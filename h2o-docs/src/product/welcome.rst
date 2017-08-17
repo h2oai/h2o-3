@@ -249,7 +249,7 @@ Getting Started with Sparkling Water
 
 -  `Sparkling Water Development Documentation <https://github.com/h2oai/sparkling-water/blob/master/doc/DEVEL.rst>`_: Read this document first to get started with Sparkling Water.
 
--  `Launch on Hadoop and Import from HDFS <https://github.com/h2oai/sparkling-water/tree/master/examples#sparkling-water-on-hadoop>`_: Go here to learn how to start Sparkling Water on Hadoop.
+-  `Launch on Hadoop and Import from HDFS <https://github.com/h2oai/sparkling-water/blob/master/doc/devel/integ_tests.rst>`_: Go here to learn how to start Sparkling Water on Hadoop.
 
 -  `Sparkling Water Tutorials <https://github.com/h2oai/sparkling-water/tree/master/examples>`_: Go here for demos and examples.
 
