@@ -72,9 +72,10 @@
 #'        family_default.
 #' @param prior Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
 #'        of response does not reflect reality. Defaults to -1.
-#' @param lambda_min_ratio Minimum lambda used in lambda search, specified as a ratio of lambda_max. Default indicates: if the number of
-#'        observations is greater than the number of variables then lambda_min_ratio is set to 0.0001; if the number of
-#'        observations is less than the number of variables then lambda_min_ratio is set to 0.01. Defaults to -1.
+#' @param lambda_min_ratio Minimum lambda used in lambda search, specified as a ratio of lambda_max (the smallest lambda that drives all
+#'        coefficients to zero). Default indicates: if the number of observations is greater than the number of
+#'        variables, then lambda_min_ratio is set to 0.0001; if the number of observations is less than the number of
+#'        variables, then lambda_min_ratio is set to 0.01. Defaults to -1.
 #' @param beta_constraints Beta constraints
 #' @param max_active_predictors Maximum number of active predictors during computation. Use as a stopping criterion to prevent expensive model
 #'        building with many predictors. Default indicates: If the IRLSM solver is used, the value of

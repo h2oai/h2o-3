@@ -146,9 +146,9 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help = "Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean of response does not reflect reality.", level = Level.expert)
     public double prior;
 
-    @API(help = "Minimum lambda used in lambda search, specified as a ratio of lambda_max." +
-    " Default indicates: if the number of observations is greater than the number of variables then lambda_min_ratio" +
-    " is set to 0.0001; if the number of observations is less than the number of variables then lambda_min_ratio" +
+    @API(help = "Minimum lambda used in lambda search, specified as a ratio of lambda_max (the smallest lambda that drives all coefficients to zero)." +
+    " Default indicates: if the number of observations is greater than the number of variables, then lambda_min_ratio" +
+    " is set to 0.0001; if the number of observations is less than the number of variables, then lambda_min_ratio" +
     " is set to 0.01.", level = Level.expert)
     public double lambda_min_ratio;
 
