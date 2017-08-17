@@ -52,6 +52,12 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
   @API(help="HTTP status to return for this build.", json = false, direction=API.Direction.OUTPUT)
   public int __http_status; // The handler sets this to 400 if we're building and error_count > 0, else 200.
 
+  @API(help="Indicator, whether export to POJO is supported")
+  public boolean have_pojo;
+
+  @API(help="Indicator, whether export to MOJO is supported")
+  public boolean have_mojo;
+
   public ModelBuilderSchema() {
     this.parameters = createParametersSchema();
   }
@@ -107,6 +113,10 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
 
     this.can_build = builder.can_build();
     this.visibility = builder.builderVisibility();
+
+    this.have_pojo = builder.havePojo();
+    this.have_mojo = builder.haveMojo();
+
     job = builder._job == null ? null : new JobV3(builder._job);
     // In general, you can ask about a builder in-progress, and the error
     // message list can be growing - so you have to be prepared to read it
@@ -148,6 +158,10 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
     ab.putJSONA("messages", messages);
     ab.put1(',');
     ab.putJSON4("error_count", error_count);
+    ab.put1(',');
+    ab.putJSONStrUnquoted("have_pojo", Boolean.toString(have_pojo));
+    ab.put1(',');
+    ab.putJSONStrUnquoted("have_mojo", Boolean.toString(have_mojo));
     ab.put1(',');
 
     // Builds ModelParameterSchemaV2 objects for each field, and then calls writeJSON on the array

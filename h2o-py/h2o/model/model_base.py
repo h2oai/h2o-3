@@ -31,6 +31,8 @@ class ModelBase(backwards_compatible()):
         self._estimator_type = "unsupervised"
         self._future = False  # used by __repr__/show to query job state
         self._job = None  # used when _future is True
+        self._have_pojo = False
+        self._have_mojo = False
 
 
     @property
@@ -94,6 +96,16 @@ class ModelBase(backwards_compatible()):
     def type(self):
         """The type of model built: ``"classifier"`` or ``"regressor"`` or ``"unsupervised"``"""
         return self._estimator_type
+
+    @property
+    def have_pojo(self):
+        """True, if export to POJO is possible"""
+        return self._have_pojo
+
+    @property
+    def have_mojo(self):
+        """True, if export to MOJO is possible"""
+        return self._have_mojo
 
 
     def __repr__(self):
@@ -715,9 +727,10 @@ class ModelBase(backwards_compatible()):
         """
         assert_is_type(path, str)
         assert_is_type(get_genmodel_jar, bool)
-        if self.algo not in {"drf", "gbm", "deepwater", "xgboost", "glrm", "glm", "word2vec"}:
-            raise H2OValueError("MOJOs are currently supported for Distributed Random Forest, "
-                                "Gradient Boosting Machine, XGBoost, Deep Water, GLM, GLRM and word2vec models only.")
+
+        if not self.have_mojo:
+            raise H2OValueError("Export to MOJO not supported")
+
         if get_genmodel_jar:
             if genmodel_name == "":
                 h2o.api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, "h2o-genmodel.jar"))
@@ -737,6 +750,8 @@ class ModelBase(backwards_compatible()):
         """
         assert_is_type(path, str)
         assert_is_type(force, bool)
+        if not self.have_mojo:
+            raise H2OValueError("Export to MOJO not supported")
         path = os.path.join(os.getcwd() if path == "" else path, self.model_id + ".zip")
         return h2o.api("GET /99/Models.mojo/%s" % self.model_id, data={"dir": path, "force": force})["dir"]
 

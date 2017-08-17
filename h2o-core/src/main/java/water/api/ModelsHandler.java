@@ -139,6 +139,9 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
 
   public StreamingSchema fetchJavaCode(int version, ModelsV3 s) {
     final Model model = getFromDKV("key", s.model_id.key());
+    if (!model.havePojo()) {
+      throw H2O.unimpl(String.format("%s does not support export to POJO", model._parms.fullName()));
+    }
     final String filename = JCodeGen.toJavaId(s.model_id.key().toString()) + ".java";
     // Return stream writer for given model
     return new StreamingSchema(model.new JavaModelStreamWriter(s.preview), filename);
@@ -147,6 +150,9 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
   @SuppressWarnings("unused") // called from the RequestServer through reflection
   public StreamingSchema fetchMojo(int version, ModelsV3 s) {
     Model model = getFromDKV("key", s.model_id.key());
+    if (!model.haveMojo()) {
+      throw H2O.unimpl(String.format("%s does not support export to MOJO", model._parms.fullName()));
+    }
     String filename = JCodeGen.toJavaId(s.model_id.key().toString()) + ".zip";
     return new StreamingSchema(model.getMojo(), filename);
   }

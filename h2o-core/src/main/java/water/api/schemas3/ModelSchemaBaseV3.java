@@ -1,5 +1,6 @@
 package water.api.schemas3;
 
+import hex.ModelBuilder;
 import water.api.API;
 import water.api.schemas3.KeyV3.ModelKeyV3;
 import water.api.schemas3.KeyV3.FrameKeyV3;
@@ -35,6 +36,12 @@ public class ModelSchemaBaseV3<M extends hex.Model<M,?,?>, S extends ModelSchema
 
   @API(help="Timestamp for when this model was completed", direction=API.Direction.OUTPUT)
   public long timestamp;
+
+  @API(help="Indicator, whether export to POJO is available", direction=API.Direction.OUTPUT)
+  public boolean have_pojo;
+
+  @API(help="Indicator, whether export to MOJO is available", direction=API.Direction.OUTPUT)
+  public boolean have_mojo;
 
 
   public ModelSchemaBaseV3() {}
