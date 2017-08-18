@@ -19,6 +19,11 @@ public class XGBoostExtension extends AbstractH2OExtension {
                   + "  - GCC 4.7+\n"
                   + "For more details, run in debug mode: `java -Dlog4j.configuration=file:///tmp/log4j.properties -jar h2o.jar`\n";
 
+  // XGBoost initialization sequence was called flag
+  private boolean isInitCalled = false;
+  // XGBoost binary presence on the system
+  private boolean isXgboostPresent = false;
+
   public static String NAME = "XGBoost";
 
   @Override
@@ -34,10 +39,25 @@ public class XGBoostExtension extends AbstractH2OExtension {
       return false;
     }
     // Check if some native library was loaded
+    if (!isInitCalled) {
+      synchronized (this) {
+        if (!isInitCalled) {
+          isXgboostPresent = initXgboost();
+        }
+      }
+    }
+    return isXgboostPresent;
+  }
+
+  private final boolean initXgboost() {
     try {
       String libName = NativeLibLoader.getLoadedLibraryName();
       if (libName != null) {
         Log.info("Found XGBoost backend with library: " + libName);
+        String suffix = NativeLibLoader.getLoadedLibrarySuffix();
+        if (suffix.equals(NativeLibLoader.MINIMAL_LIB_SUFFIX)) {
+          Log.warn("Your system supports only minimal version of XGBoost (no GPUs, no multithreading)!");
+        }
         return true;
       } else {
         Log.warn("Cannot get XGBoost backend!" + XGBOOST_MIN_REQUIREMENTS);
@@ -45,7 +65,7 @@ public class XGBoostExtension extends AbstractH2OExtension {
       }
     } catch (IOException e) {
       // Ups no lib loaded or load failed
-      Log.warn("Cannot initialize XGBoost backend! " + XGBOOST_MIN_REQUIREMENTS, e);
+      Log.warn("Cannot initialize XGBoost backend! " + XGBOOST_MIN_REQUIREMENTS);
       return false;
     }
   }
