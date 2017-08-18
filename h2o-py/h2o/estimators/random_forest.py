@@ -32,7 +32,7 @@ class H2ORandomForestEstimator(H2OEstimator):
                       "stopping_metric", "stopping_tolerance", "max_runtime_secs", "seed", "build_tree_one_node",
                       "mtries", "sample_rate", "sample_rate_per_class", "binomial_double_trees", "checkpoint",
                       "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
-                      "histogram_type", "categorical_encoding", "calibrate_model", "calibration_frame"}
+                      "histogram_type", "categorical_encoding", "calibrate_model", "calibration_frame", "distribution"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -717,5 +717,21 @@ class H2ORandomForestEstimator(H2OEstimator):
     def calibration_frame(self, calibration_frame):
         assert_is_type(calibration_frame, None, H2OFrame)
         self._parms["calibration_frame"] = calibration_frame
+
+
+    @property
+    def distribution(self):
+        """
+        Distribution function
+
+        One of: ``"auto"``, ``"bernoulli"``, ``"multinomial"``, ``"gaussian"``, ``"poisson"``, ``"gamma"``,
+        ``"tweedie"``, ``"laplace"``, ``"quantile"``, ``"huber"``  (default: ``"auto"``).
+        """
+        return self._parms.get("distribution")
+
+    @distribution.setter
+    def distribution(self, distribution):
+        assert_is_type(distribution, None, Enum("auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"))
+        self._parms["distribution"] = distribution
 
 
