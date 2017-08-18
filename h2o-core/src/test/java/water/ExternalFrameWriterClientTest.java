@@ -29,10 +29,11 @@ public class ExternalFrameWriterClientTest extends TestUtil {
     @Test
     public void testWriting() throws IOException{
         // The api expects that empty frame has to be in the DKV before we start working with it
+        final Timestamp time = new Timestamp(Calendar.getInstance().getTime().getTime());
         WriteOperation testOp = new WriteOperation() {
             @Override
             public void doWrite(ExternalFrameWriterClient writer) throws IOException {
-                Timestamp time = new Timestamp(Calendar.getInstance().getTime().getTime());
+
                 for (int i = 0; i < 997; i++) {
                     writer.sendInt(i);
                     writer.sendBoolean(true);
@@ -40,7 +41,7 @@ public class ExternalFrameWriterClientTest extends TestUtil {
                     writer.sendTimestamp(time);
                 }
                 writer.sendInt(0);
-                writer.sendBoolean(true);
+                writer.sendBoolean(false);
                 writer.sendString(null);
                 writer.sendTimestamp(time);
 
@@ -94,22 +95,35 @@ public class ExternalFrameWriterClientTest extends TestUtil {
             assertEquals(frame.vec(2).get_type(), Vec.T_STR);
             assertEquals(frame.vec(3).get_type(), Vec.T_TIME);
             assertEquals(frame.numRows(), 1000 * connStrings.length);
-            // last row should be NA
-            assertEquals(frame.vec(0).at8(0), 0);
-
+            
             BufferedString buff = new BufferedString();
-            assertEquals(frame.vec(2).atStr(buff, 996).toString(), "str_996");
-            assertEquals(frame.vec(2).atStr(buff, 997), null);
-            assertEquals(frame.vec(2).atStr(buff, 998).toString(), "\u0080");
-            assertTrue(frame.vec(0).isNA(999));
-            assertTrue(frame.vec(1).isNA(999));
-            assertTrue(frame.vec(2).isNA(999));
-            assertTrue(frame.vec(3).isNA(999));
-
-        }finally {
-            if(frame != null){
-                frame.remove();
+            for (int i = 0; i < connStrings.length; i++) { // Writer segment (=chunk)
+                for (int localRow = 0; localRow < 997; localRow++) { // Local row in segment
+                    assertEquals(localRow, frame.vec(0).at8(localRow));
+                    assertEquals(1, frame.vec(1).at8(localRow));
+                    assertEquals("str_" + localRow, frame.vec(2).atStr(buff, localRow).toString());
+                    assertEquals(time.getTime(), frame.vec(3).at8(localRow));
+                }
+                // Row 997
+                int row = 997;
+                assertEquals(0, frame.vec(0).at8(row));
+                assertEquals(0, frame.vec(1).at8(row));
+                assertTrue(frame.vec(2).isNA(row));
+                assertEquals(time.getTime(), frame.vec(3).at8(row));
+                // Row 998
+                row = 998;
+                assertEquals(1, frame.vec(0).at8(row));
+                assertEquals(1, frame.vec(1).at8(row));
+                assertEquals("\u0080" , frame.vec(2).atStr(buff, row).toString());
+                assertEquals(time.getTime(), frame.vec(3).at8(row));
+                // Row 999
+                row = 999;
+                for (int c = 0; c < 4; c++) {
+                    assertTrue(frame.vec(c).isNA(row));
+                }
             }
+        } finally {
+            frame.remove();
         }
     }
 
@@ -239,19 +253,20 @@ public class ExternalFrameWriterClientTest extends TestUtil {
                 public void run() {
                     try {
                         ByteChannel sock = ExternalFrameUtils.getConnection(writeEndpoints[currentIndex]);
-                        ExternalFrameWriterClient writer = new ExternalFrameWriterClient(sock);
-                        writer.createChunks(op.frameName(), op.colTypes(),  currentIndex, op.nrows(), op.maxVecSizes());
-
-                        op.doWrite(writer);
-
                         try {
+                            ExternalFrameWriterClient writer = new ExternalFrameWriterClient(sock);
+                            writer.createChunks(op.frameName(), op.colTypes(),  currentIndex, op.nrows(), op.maxVecSizes());
+
+                            op.doWrite(writer);
+
                             writer.waitUntilAllWritten(10);
-                        } catch (ExternalFrameConfirmationException e){
-                            e.printStackTrace();
+                            
+                            rowsPerChunk[currentIndex] = op.nrows();
+                        } finally {
+                            sock.close();
                         }
-                        sock.close();
-                        rowsPerChunk[currentIndex] = op.nrows();
-                    } catch (IOException ignore) {
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
                     }
                 }
 
