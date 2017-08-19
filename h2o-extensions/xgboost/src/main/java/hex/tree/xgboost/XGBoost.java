@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.security.cert.Extension;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -335,7 +336,11 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     if (expensive) {
       if (_response.naCnt() > 0)
         error("_response_column", "Response contains missing values (NAs) - not supported by XGBoost.");
+      if (!ExtensionManager.getInstance().isCoreExtensionEnabled(XGBoostExtension.NAME)) {
+        error("XGBoost", "XGBoost is not available!");
+      }
     }
+
 
     // Initialize response based on given distribution family.
     // Regression: initially predict the response mean
