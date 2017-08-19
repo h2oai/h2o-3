@@ -43,6 +43,7 @@ public class XGBoostExtension extends AbstractH2OExtension {
       synchronized (this) {
         if (!isInitCalled) {
           isXgboostPresent = initXgboost();
+          isInitCalled = true;
         }
       }
     }
