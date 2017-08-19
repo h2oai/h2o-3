@@ -54,7 +54,7 @@ public class ExternalFrameUtils {
 
     public static byte[] vecTypesFromExpectedTypes(byte[] expectedTypes, int[] vecElemSizes){
         int size = expectedTypes.length;
-        if(vecElemSizes != null && vecElemSizes.length == 0){
+        if(vecElemSizes != null && vecElemSizes.length > 0){
             size = size - vecElemSizes.length;
             // length is number of simple expected types
             // plus length of all vectors. the expected
@@ -112,7 +112,6 @@ public class ExternalFrameUtils {
                     for (int j = 0; j < vecElemSizes[vectorCount]; j++) {
                         vecTypes[currentVecIdx] = Vec.T_NUM;
                         currentVecIdx++;
-                        break;
                     }
                     break;
                 default:
