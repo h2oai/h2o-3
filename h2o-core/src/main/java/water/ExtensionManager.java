@@ -145,4 +145,12 @@ public class ExtensionManager {
   private String[] getCoreExtensionNames(){
     return coreExtensions.keySet().toArray(new String[coreExtensions.keySet().size()]);
   }
+
+  public boolean isCoreExtensionEnabled(String name) {
+    if (coreExtensions.containsKey(name)) {
+      return coreExtensions.get(name).isEnabled();
+    } else {
+      return false;
+    }
+  }
 }
