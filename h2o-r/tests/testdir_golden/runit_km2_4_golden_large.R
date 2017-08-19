@@ -1,11 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../scripts/h2o-r-test-setup.R")
 
-
-
 test.kmsplit.golden <- function() {
   library(flexclust)
-  Log.info("Importing ozone.csv data...\n")
+  e<-tryCatch({Log.info("Importing ozone.csv data...\n")
   ozoneR <- read.csv(locate("smalldata/glm_test/ozone.csv"), header = TRUE)
   ozoneH2O <- h2o.uploadFile(locate("smalldata/glm_test/ozone.csv"))
   
@@ -26,12 +24,11 @@ test.kmsplit.golden <- function() {
   # switched to fixed random user_points
   # dataset has 111 data rows. seem randomly ordered
   startIdx <- c(1,20,100)
-    
   Log.info("Initial cluster centers:"); print(trainR[startIdx,])
   # fitR <- kmeans(trainR, centers = trainR[startIdx,], iter.max = 1000, algorithm = "Lloyd")
   fitR <- kcca(trainR, k = as.matrix(trainR[startIdx,], family = kccaFamily("kmeans"), control = list(iter.max = 1000)))
   fitH2O <- h2o.kmeans(trainH2O, user_points = trainH2O[startIdx,], standardize = FALSE)
-  
+
   Log.info("R Final Clusters:"); print(fitR@centers)
   Log.info("H2O Final Clusters:"); print(getCenters(fitH2O))
   expect_equivalent(as.matrix(getCenters(fitH2O)), fitR@centers)
@@ -68,9 +65,12 @@ test.kmsplit.golden <- function() {
 
   # one has dim names, the other doesn't. will get length error unless..
   # default tolerance is close to 1.5e-8. but should be comparing integers
-  expect_true(all.equal(forCompareH2O, forCompareR, check.attributes=FALSE))
-  
-  
+  expect_true(all.equal(forCompareH2O, forCompareR, check.attributes=FALSE)) }, error=function(x) x)
+
+  if (typeof(e)=="list") {  # only one type of error is acceptable
+    print(e[[1]])
+    expect_true(all(sapply("too close to the limit", grepl, e[[1]])))
+  }
 }
 
 doTest("KMeans Test: Golden Kmeans - Ozone Test/Train Split without Standardization", test.kmsplit.golden)
