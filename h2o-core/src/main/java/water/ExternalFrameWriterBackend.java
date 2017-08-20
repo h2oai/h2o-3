@@ -25,9 +25,9 @@ final class ExternalFrameWriterBackend {
         }
         int[] maxVecSizes = ab.getA4();
 
-        int[] elemSizes = ExternalFrameUtils.getElemSizes(expectedTypes, maxVecSizes);
+        int[] elemSizes = ExternalFrameUtils.getElemSizes(expectedTypes, maxVecSizes != null ? maxVecSizes : EMPTY_ARI);
         int[] startPos = ExternalFrameUtils.getStartPositions(elemSizes);
-        byte[] vecTypes = vecTypesFromExpectedTypes(expectedTypes, maxVecSizes);
+        byte[] vecTypes = vecTypesFromExpectedTypes(expectedTypes, maxVecSizes != null ? maxVecSizes : EMPTY_ARI);
         int expectedNumRows = ab.getInt();
         int currentRowIdx = 0;
         int chunk_id = ab.getInt();

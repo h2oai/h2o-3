@@ -17,6 +17,8 @@ import java.util.Random;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import static water.util.ArrayUtils.join;
+
 /**
  * Test external frame writer test
  */
@@ -195,6 +197,57 @@ public class ExternalFrameWriterClientTest extends TestUtil {
         assertVectorWrite(testOp);
     }
 
+    @Test
+    public void testMixedVectorWrite() throws IOException {
+        WriteOperation testOp = new WriteOperation() {
+            private final static int VEC_LEN = 100;
+            @Override
+            public void doWrite(ExternalFrameWriterClient writer) throws IOException {
+                for (int i = 0; i < nrows(); i++) {
+                    writer.sendSparseVector(new int[] {i}, new double[]{i});
+                    writer.sendInt(i);
+                    writer.sendDenseVector(vector(i, i, VEC_LEN));
+                }
+            }
+
+            @Override
+            public int nrows() {
+                return 10;
+            }
+
+            @Override
+            public String[] colNames() {
+                return join(join(names("SV", VEC_LEN), new String[] {"ROW_ID"}), names("DV", VEC_LEN));
+            }
+
+            @Override
+            public byte[] colTypes() {
+                return new byte[] { ExternalFrameUtils.EXPECTED_VECTOR,
+                                    ExternalFrameUtils.EXPECTED_INT,
+                                    ExternalFrameUtils.EXPECTED_VECTOR};
+            }
+
+            @Override
+            public int[] maxVecSizes() {
+                return new int[] {VEC_LEN, VEC_LEN};
+            }
+        };
+        
+        final String[] nodes = getH2ONodes();
+        // we will open 2 connection per h2o node
+        final String[] connStrings = ArrayUtils.join(nodes, nodes);
+
+        Frame frame = createFrame(testOp, connStrings);
+        try {
+            assertEquals("Number of columns", testOp.colNames().length, frame.numCols());
+            assertEquals("Number of rows", testOp.nrows() * connStrings.length, frame.numRows());
+
+        } finally {
+            frame.delete();
+        }
+    }
+
+
 
     static void assertVectorWrite(WriteOperation testOp) throws IOException {
 
@@ -312,7 +365,7 @@ abstract class WriteOperation {
     abstract public byte[] colTypes();
 
     public int[] maxVecSizes() {
-        return null;
+        return ExternalFrameUtils.EMPTY_ARI;
     }
 
 }

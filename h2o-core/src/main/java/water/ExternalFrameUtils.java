@@ -32,6 +32,9 @@ public class ExternalFrameUtils {
     public static final byte EXPECTED_TIMESTAMP = 9;
     public static final byte EXPECTED_VECTOR = 10;
 
+    /* Helper empty int array */
+    public static final int[] EMPTY_ARI = new int[0];
+
     /**
      * Meta Information used to specify whether we should expect sparse or dense vector
      */
@@ -53,14 +56,13 @@ public class ExternalFrameUtils {
     }
 
     public static byte[] vecTypesFromExpectedTypes(byte[] expectedTypes, int[] vecElemSizes){
+        assert vecElemSizes != null : "vecElemSizes should be not null!";
         int size = expectedTypes.length;
-        if(vecElemSizes != null && vecElemSizes.length > 0){
-            size = size - vecElemSizes.length;
-            // length is number of simple expected types
-            // plus length of all vectors. the expected
-            for(int vecSize: vecElemSizes){
-                size += vecSize;
-            }
+        size = size - vecElemSizes.length;
+        // length is number of simple expected types
+        // plus length of all vectors. the expected
+        for(int vecSize: vecElemSizes){
+            size += vecSize;
         }
 
         byte[] vecTypes = new byte[size];
@@ -113,13 +115,16 @@ public class ExternalFrameUtils {
                         vecTypes[currentVecIdx] = Vec.T_NUM;
                         currentVecIdx++;
                     }
+                    // We need to move pointer to the next vector
+                    vectorCount++;
                     break;
                 default:
                     throw new IllegalArgumentException("Unknown expected type: " + expectedType);
             }
         }
-       return vecTypes;
-
+        assert vecElemSizes.length == vectorCount : "Inconsistency in passed parameters:"
+                                                 + " vectors lenght specified, but no vector found";
+        return vecTypes;
     }
 
     static void sendIntArray(AutoBuffer ab, ByteChannel channel, int[] data) throws IOException{
@@ -268,6 +273,7 @@ public class ExternalFrameUtils {
     }
 
     static int[] getElemSizes(byte[] expectedTypes, int[] vecElemSizes){
+        assert vecElemSizes != null : "vecElemSizes should be not null!";
         int vecCount = 0;
         int[] elemSizes = new int[expectedTypes.length];
         for(int i = 0; i<expectedTypes.length; i++){
@@ -282,9 +288,11 @@ public class ExternalFrameUtils {
                 case EXPECTED_DOUBLE:
                 case EXPECTED_STRING:
                 case EXPECTED_TIMESTAMP: elemSizes[i] = 1; break;
-                case EXPECTED_VECTOR: elemSizes[i] = vecElemSizes[vecCount]; break;
+                case EXPECTED_VECTOR: elemSizes[i] = vecElemSizes[vecCount++]; break;
             }
         }
+        assert vecElemSizes.length == vecCount : "Inconsistency in passed parameters:"
+                                                 + " vectors lenght specified, but no vector found";
         return elemSizes;
     }
 
