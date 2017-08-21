@@ -574,7 +574,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public boolean isClassifier() { return isSupervised() && nclasses() > 1; }
     /** Is this model a binomial classification model? (v. a regression or clustering model) */
     public boolean isBinomialClassifier() { return isSupervised() && nclasses() == 2; }
-
+    /**Is this model a multinomial classification model (supervised and nclasses() > 2 */
+    public boolean isMultinomialClassifier() { return isSupervised() && nclasses() > 2; }
     /** Number of classes in the response column if it is categorical and the model is supervised. */
     public int nclasses() {
       String cns[] = classNames();
