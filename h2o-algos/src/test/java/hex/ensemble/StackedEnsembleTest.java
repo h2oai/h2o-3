@@ -39,6 +39,7 @@ public class StackedEnsembleTest extends TestUtil {
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
                 false, gaussian);
 
+        // Binomial tests
         basicEnsemble("./smalldata/junit/test_tree_minmax.csv",
                 null,
                 new StackedEnsembleTest.PrepData() { int prep(Frame fr) { return fr.find("response"); }
@@ -70,6 +71,25 @@ public class StackedEnsembleTest extends TestUtil {
                     return fr.find("IsArrDelayed"); }
                 },
                 false, DistributionFamily.bernoulli);
+
+        // Multinomial tests
+        basicEnsemble("./smalldata/logreg/prostate.csv",
+                null,
+                new StackedEnsembleTest.PrepData() { int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("RACE"); }
+                },
+                false, DistributionFamily.multinomial);
+
+        basicEnsemble("./smalldata/junit/cars.csv",
+                null,
+                new StackedEnsembleTest.PrepData() { int prep(Frame fr) { fr.remove("name").remove(); return fr.find("cylinders"); }
+                },
+                false, DistributionFamily.multinomial);
+
+        basicEnsemble("./smalldata/iris/iris_wheader.csv",
+                null,
+                new StackedEnsembleTest.PrepData() { int prep(Frame fr) {return fr.find("class"); }
+                },
+                false, DistributionFamily.multinomial);
     }
     // ==========================================================================
     public StackedEnsembleModel.StackedEnsembleOutput basicEnsemble(String training_file, String validation_file, StackedEnsembleTest.PrepData prep, boolean dupeTrainingFrameToValidationFrame, DistributionFamily family) {

@@ -82,7 +82,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     // Build up the names & domains.
     String[] names = makeScoringNames();
     String[][] domains = new String[names.length][];
-    domains[0] = names.length == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
+    domains[0] = names.length == 1 ? null : computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
 
     // TODO: optimize these DKV lookups:
     Frame levelOneFrame = new Frame(Key.<Frame>make("preds_levelone_" + this._key.toString() + fr._key));
@@ -104,6 +104,10 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       // TODO: parallel scoring for the base_models
       BigScore baseBs = (BigScore) base.makeBigScoreTask(domains, names, adaptedFrame, computeMetrics, true, j).doAll(names.length, Vec.T_NUM, adaptedFrame);
       Frame basePreds = baseBs.outputFrame(Key.<Frame>make("preds_base_" + this._key.toString() + fr._key), names, domains);
+      //Need to remove 'predict' column from multinomial since it contains outcome
+      if(base._output.isMultinomialClassifier()){
+        basePreds.remove("predict");
+      }
       base_prediction_frames[baseIdx] = basePreds;
       StackedEnsemble.addModelPredictionsToLevelOneFrame(base, basePreds, levelOneFrame);
       DKV.remove(basePreds._key); //Cleanup
