@@ -135,6 +135,7 @@ public class StackedEnsembleTest extends TestUtil {
             drfParameters._train = training_frame._key;
             drfParameters._valid = (validation_frame == null ? null : validation_frame._key);
             drfParameters._response_column = training_frame._names[idx];
+            drfParameters._distribution = family;
             drfParameters._ntrees = 5;
             drfParameters._max_depth = 4;
             drfParameters._min_rows = 1;
