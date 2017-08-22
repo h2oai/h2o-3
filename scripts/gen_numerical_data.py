@@ -11,7 +11,7 @@ from random import shuffle
 def gen_data():
     floatA = []
     intA = []
-    sizeMat = range(0,64)   # use to generate data of values 0, +/- 2^0 to +/1 2^64
+    sizeMat = range(0,30)   # use to generate data of values 0, +/- 2^0 to +/1 2^64
     lowBoundF = -100000
     upperBoundF = -1*lowBoundF      # 2 million rows
     upperBoundL = pow(2,35)
@@ -22,6 +22,22 @@ def gen_data():
     numRep = 2    # number of times to repeat array
     csvFile = "/Users/wendycwong/temp/TopBottomNRep4.csv"
     fMult = 1.1
+
+    fintA = []
+    ffloatA = []
+    for ind in range(0,1000):
+        floatA = []
+        intA = []
+        genRandomData(intA,floatA, sizeMat)
+        fintA.extend(intA)
+        ffloatA.extend(floatA)
+
+
+    shuffle(fintA)
+    shuffle(ffloatA)
+    bottom20FrameL = h2o.H2OFrame(python_obj=zip(fintA))
+    bottom20FrameF = h2o.H2OFrame(python_obj=zip(ffloatA))
+    h2o.download_csv(bottom20FrameL.cbind(bottom20FrameF), "/Users/wendycwong/temp/smallIntFloats.csv" )
 
     genStaticData(intA, floatA, upperBoundL, lowBoundF, upperBoundF, fMult)
     # save the correct sequence before shuffling for comparison purpose
