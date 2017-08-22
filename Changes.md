@@ -2,6 +2,36 @@
 
 ## H2O
 
+### Weierstrass (3.14.0.2) - 8/21/2017
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/2/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4804'>PUBDEV-4804</a>] - Fixed a broken link to the Hive tutorials from the Productionizing section in the User Guide.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4822'>PUBDEV-4822</a>] - Sparkling Water can now pass a data frame with a vector for conversion into H2OFrame. In prior versions, the vector was not properly expanded and resulted in a failure.  
+</li>
+</ul>
+                
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4802'>PUBDEV-4802</a>] - Added more tests to ensure that, when max_runtime_secs is set, the returned model works correctly.
+</li>
+</ul>
+    
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4812'>PUBDEV-4812</a>] - This version of H2O includes an option to force toggle (on/off) a specific extension. This enables users to enable the XGBoost REST API on a system that does not support XGBoost.  
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4829'>PUBDEV-4829</a>] - A warning now displays when the minimal XGBoost version is used.
+</li>
+</ul>
+
+
 ### Weierstrass (3.14.0.1) - 8/10/2017
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/1/index.html</a>
