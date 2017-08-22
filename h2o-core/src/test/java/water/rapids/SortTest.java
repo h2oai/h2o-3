@@ -214,13 +214,13 @@ public class SortTest extends TestUtil {
     // test double frame with NAs
     TestSortOneColumn("smalldata/synthetic/doubleFrame.csv", 0, true, false);
     // test integer frame where overflow will occur for col.max()-col.min()
-    TestSortOneColumn("smalldata/synthetic/bigIntFloatsOverflows.csv.zip", 0, false, false);
+//    TestSortOneColumn("smalldata/synthetic/bigIntFloatsOverflows.csv.zip", 0, false, false);
     // test integer frame where overflow will occur for col.max()-col.min(), with NAs
-    TestSortOneColumn("smalldata/synthetic/bigIntFloatsOverflows.csv.zip", 0, true, false);
+//    TestSortOneColumn("smalldata/synthetic/bigIntFloatsOverflows.csv.zip", 0, true, false);
     // test double frame where overflow will occur for col.max()-col.min()
-    TestSortOneColumn("smalldata/synthetic/bigIntFloatsOverflows.csv.zip", 1, false, false);
+//    TestSortOneColumn("smalldata/synthetic/bigIntFloatsOverflows.csv.zip", 1, false, false);
     // test double frame where overflow will occur for col.max()-col.min(), with NAs
-    TestSortOneColumn("smalldata/synthetic/bigIntFloatsOverflows.csv.zip", 1, true, false);
+//    TestSortOneColumn("smalldata/synthetic/bigIntFloatsOverflows.csv.zip", 1, true, false);
   }
 
   /*
