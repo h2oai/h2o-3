@@ -439,6 +439,7 @@ class H2OFrame(object):
         Display summary information about the frame.
 
         Summary includes min/mean/max/sigma and other rollup data.
+
         :param bool return_data: Return a dictionary of the summary output
         """
         if not self._ex._cache.is_valid(): self._frame()._ex._cache.fill()
@@ -1789,8 +1790,10 @@ class H2OFrame(object):
     def sort(self, by):
         """
         Return a new Frame that is sorted by column(s) in ascending order. A fully distributed and parallel sort.
+
         :param by: The column to sort by (either a single column name, or a list of column names, or
             a list of column indices)
+
         :return: a new sorted Frame
         """
         assert_is_type(by, str, int, [str, int])
@@ -1803,9 +1806,11 @@ class H2OFrame(object):
     def fillna(self,method="forward",axis=0,maxlen=1):
         """
         Return a new Frame that fills NA along a given axis and along a given direction with a maximum fill length
+
         :param method: ``"forward"`` or ``"backward"``
         :param axis:  0 for columnar-wise or 1 for row-wise fill
         :param maxlen: Max number of consecutive NA's to fill
+        
         :return: 
         """
         assert_is_type(axis, 0, 1)
