@@ -289,16 +289,65 @@ Sparkling Water Meetup Slide Decks
 PySparkling
 ~~~~~~~~~~~~
 
-**Note**: PySparkling requires Sparkling Water 1.6 or later.
+**Note**: PySparkling requires Sparkling Water 1.6 or later. Recommended Sparkling Water 2.0 or later. 
 
-H2O's PySparkling package is not available through ``pip``. (There is `another <https://pypi.python.org/pypi/pysparkling/>`__ similarly-named package.) H2O's PySparkling package requires `EasyInstall <http://peak.telecommunity.com/DevCenter/EasyInstall>`__.
+PySparkling can be installed by downloading and running the PySparkling shell or using ``pip``. Note that the steps below describe how to install with Sparkling Water 2.1. Follow similar instructions on the `Download page <http://h2o.ai/download>`__ for a different version of Sparkling Water.
 
-To install H2O's PySparkling package, use the egg file included in the distribution.
+Running the PySparkling Shell
+'''''''''''''''''''''''''''''
 
-1. Download `Spark 1.6 <https://spark.apache.org/downloads.html>`__.
-2. Set the ``SPARK_HOME`` and ``MASTER`` variables as described on the `Downloads page <http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.6/6/index.html>`__.
-3. Download `Sparkling Water 1.6 <http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.6/6/index.html>`__
-4. In the unpacked Sparkling Water directory, run the following command: ``easy_install --upgrade sparkling-water-1.6/py/dist/pySparkling-1.6-py2.7.egg``
+Perform the following steps to install H2O's PySparkling package. 
+
+1. Download `Spark 2.1.1 <https://spark.apache.org/downloads.html>`__.
+2. Point SPARK_HOME to the existing installation of Spark, and export the variable MASTER. For example:
+
+  ::
+
+    export SPARK_HOME="/path/to/spark/installation"
+    # To launch a local Spark cluster with 3 worker nodes with 2 cores and 1g per node.
+    export MASTER="local-cluster[3,2,1024]" 
+
+3. Download and unpack the Sparkling Water distribution.
+
+4. Run PySparkling shell.
+
+  ::
+
+    ./bin/pysparkling 
+
+5. In your PySparkling application, create H2OContext.
+
+  ::
+
+    from pysparkling import *
+    hc = H2OContext.getOrCreate(spark)
+
+Once you have H2OContext available, any API calls available in the H2O Python client can be used.
+
+PySparkling Installed from PyPi Repository
+''''''''''''''''''''''''''''''''''''''''''
+
+1. Install PySparkling using ``pip``.
+
+  ::
+
+    pip install pysparkling_2.1
+
+2. In your Python client, create a SparkSession. Note that for this step, you must have the PySpark package installed.
+
+  :: 
+
+    from pyspark.sql import SparkSession 
+    spark = SparkSession.builder.appName("SparklingWaterApp").getOrCreate()
+
+3. Start H2OContext.
+
+  ::
+
+    from pysparkling import *
+    hc = H2OContext.getOrCreate(spark)
+
+Once you have H2OContext available, any API calls available in the H2O Python client can be used.
 
 Python Users
 --------------
