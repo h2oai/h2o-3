@@ -22,7 +22,7 @@ stackedensemble.base_model_training_frame.test <- function() {
   nfolds <- 3
   
   # Train & Cross-validate a GBM
-  my_gbm <- h2o.gbm(x = x[1:10], 
+  my_gbm <- h2o.gbm(x = x[2:10], 
                     y = y, 
                     training_frame = train, 
                     distribution = "bernoulli",
@@ -59,7 +59,7 @@ stackedensemble.base_model_training_frame.test <- function() {
   
   
   # Next create two different training frames
-  train1 <- h2o.cbind(train[,1:10], train[,y])
+  train1 <- h2o.cbind(train[,2:10], train[,y])
   train2 <- h2o.cbind(train[,14:20], train[,y])
   
   # Train & Cross-validate a GBM
