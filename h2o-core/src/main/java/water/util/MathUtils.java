@@ -13,6 +13,7 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 
 public class MathUtils {
@@ -169,6 +170,12 @@ public class MathUtils {
   public static double approxSqrt(double x) {
     return Double.longBitsToDouble(((Double.doubleToLongBits(x) >> 32) + 1072632448) << 31);
   }
+
+  public static BigInteger convertDouble2BigInteger(double x) {
+    long tempValue = Double.doubleToRawLongBits(x);
+    return ((tempValue>>63)==0)?BigInteger.valueOf(tempValue).setBit(63):BigInteger.valueOf(tempValue^(-1));
+  }
+
   /** Fast approximate sqrt
    *  @return sqrt(x) with up to 5% relative error */
   public static float approxSqrt(float x) {

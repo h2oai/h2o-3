@@ -1789,6 +1789,7 @@ class H2OFrame(object):
     def sort(self, by):
         """
         Return a new Frame that is sorted by column(s) in ascending order. A fully distributed and parallel sort.
+        However, the original frame must not contain any String columns.
         :param by: The column to sort by (either a single column name, or a list of column names, or
             a list of column indices)
         :return: a new sorted Frame
