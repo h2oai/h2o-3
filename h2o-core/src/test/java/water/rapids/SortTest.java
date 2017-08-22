@@ -6,6 +6,7 @@ import water.*;
 import water.fvec.*;
 import water.nbhm.NonBlockingHashMapLong;
 import water.rapids.vals.ValFrame;
+import water.util.ArrayUtils;
 
 import java.io.IOException;
 import java.util.Random;
@@ -166,18 +167,130 @@ public class SortTest extends TestUtil {
     return fr;
   }
 
+
   @Test public void TestSortTimes() throws IOException {
+    Scope.enter();
     Frame fr=null, sorted=null;
     try {
-      fr = parse_test_file("smalldata/synthetic/sort_crash.csv");
+      fr = parse_test_file("sort_crash.csv");
       sorted = fr.sort(new int[]{0});
-      Vec vec = sorted.vec(0);
-      int len = (int)vec.length();
-      for( int i=1; i<len; i++ )
-        assertTrue( vec.at8(i-1) <= vec.at8(i) );
+      Scope.track(fr);
+      Scope.track(sorted);
+      testSort(sorted, fr,0);
     } finally {
-      if( fr != null ) fr.delete();
-      if( sorted != null ) sorted.delete();
+      Scope.exit();
+    }
+  }
+
+  @Test public void TestSortOverflows() throws IOException {
+    Scope.enter();
+    Frame fr=null, sorted=null;
+    try {
+      fr = ArrayUtils.frame(ar("Long", "Double"), ard(Long.MAX_VALUE, Double.MAX_VALUE),
+              ard(Long.MIN_VALUE+10, Double.MIN_VALUE),
+              ard(Long.MAX_VALUE, Double.MAX_VALUE), ard(-1152921504, Double.MIN_VALUE));
+      int colIndex = 0;
+      sorted = fr.sort(new int[]{colIndex}); // sort Long/integer first
+      Scope.track(fr);
+      Scope.track(sorted);
+      testSort(sorted, fr,colIndex);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+
+  @Test public void TestSortIntegersFloats() throws IOException {
+    // test small integers sort
+    TestSortOneColumn("smalldata/synthetic/smallIntFloats.csv.zip", 0, false, false);
+    // test small float sort
+    TestSortOneColumn("smalldata/synthetic/smallIntFloats.csv.zip", 1, false, false);
+    // test integer frame
+    TestSortOneColumn("smalldata/synthetic/integerFrame.csv", 0, false, false);
+    // test integer frame with NAs
+    TestSortOneColumn("smalldata/synthetic/integerFrame.csv", 0, true, false);
+    // test double frame
+    TestSortOneColumn("smalldata/synthetic/doubleFrame.csv", 0, false, false);
+    // test double frame with NAs
+    TestSortOneColumn("smalldata/synthetic/doubleFrame.csv", 0, true, false);
+    // test integer frame where overflow will occur for col.max()-col.min()
+    TestSortOneColumn("smalldata/synthetic/bigIntFloatsOverflows.csv.zip", 0, false, false);
+    // test integer frame where overflow will occur for col.max()-col.min(), with NAs
+    TestSortOneColumn("smalldata/synthetic/bigIntFloatsOverflows.csv.zip", 0, true, false);
+    // test double frame where overflow will occur for col.max()-col.min()
+    TestSortOneColumn("smalldata/synthetic/bigIntFloatsOverflows.csv.zip", 1, false, false);
+    // test double frame where overflow will occur for col.max()-col.min(), with NAs
+    TestSortOneColumn("smalldata/synthetic/bigIntFloatsOverflows.csv.zip", 1, true, false);
+  }
+
+  /*
+  Test sorting of integers and floats of small magnitude, 2^30 and no NANs or INFs
+ */
+  private static void TestSortOneColumn(String fileWithPath, int colIndex, boolean addNas, boolean addInfs) throws IOException {
+    Scope.enter();
+    Frame fr = null, sortedInt = null, sortedFloat = null;
+    try {
+      fr = parse_test_file(fileWithPath);
+      if (addNas) {
+        Random _rand = new Random();
+        int randRange = Math.min(10, (int)fr.numRows());
+        int numNAs = _rand.nextInt(randRange)+1;    // number of NAs to generate and insert
+
+        for (int index = 0; index < numNAs; index++) {
+          fr.vec(colIndex).setNA(_rand.nextInt((int)fr.numRows())); // insert NAs
+        }
+      }
+
+      if (addInfs && fr.vec(colIndex).isNumeric() && !fr.vec(colIndex).isInt()) {
+        Random _rand = new Random();
+        int  infRange = Math.min(10, (int)fr.numRows());
+        int numInfs = _rand.nextInt(infRange)+1;
+
+        for (int index = 0; index < numInfs; index++) {
+          fr.vec(colIndex).set(_rand.nextInt((int)fr.numRows()), Double.POSITIVE_INFINITY);
+          fr.vec(colIndex).set(_rand.nextInt((int)fr.numRows()), Double.NEGATIVE_INFINITY);
+        }
+      }
+      
+      Scope.track(fr);
+      sortedInt = fr.sort(new int[]{colIndex});
+      Scope.track(sortedInt);
+      testSort(sortedInt, fr, colIndex);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+
+  private static void testSort(Frame frSorted, Frame originalF, int colIndex) throws IOException {
+    Scope.enter();
+    Vec vec = frSorted.vec(colIndex);
+    Vec vecO = originalF.vec(colIndex);
+    Scope.track(vec);
+    Scope.track(vecO);
+    long naCnt = 0;   // make sure NAs are sorted at the beginning of frame
+
+    if (originalF.hasNAs()) {
+      naCnt = vecO.naCnt();
+    }
+
+    try {
+      // check size
+      assertTrue(frSorted.numRows() == originalF.numRows());  // make sure sizes are the same
+      assertTrue(vec.naCnt() == vecO.naCnt());                // NA counts agree
+      assertTrue(vec.pinfs() == vecO.pinfs());                // inf number agree
+      assertTrue(vec.ninfs() == vecO.ninfs());                // -inf number agree
+      int len = (int) vec.length();
+      // count the NAs first
+      for (int i = 0; i < naCnt; i++) {
+        assertTrue(Double.isNaN(vec.at(i)));
+      }
+      for (int i = 1; i < len; i++) {
+        if (!Double.isNaN(vec.at(i - 1)) && !Double.isNaN(vec.at(i)))
+          assertTrue(vec.at(i - 1) <= vec.at(i));
+      }
+    } finally {
+      Scope.exit();
     }
   }
 }
