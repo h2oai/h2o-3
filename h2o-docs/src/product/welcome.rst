@@ -40,8 +40,10 @@ Additional Requirements
 
 -  **Hadoop**: Hadoop is not required to run H2O unless you want to deploy H2O on a Hadoop cluster. Supported versions are listed on the `Download page <http://www.h2o.ai/download/>`_ (when you select the Install on Hadoop tab) and include:
 
-   -  Cloudera CDH 5.2 or later (5.3 is recommended)
-   -  Hortonworks HDP 2.1 or later
+   -  Cloudera CDH 5.4 or later
+   -  Hortonworks HDP 2.2 or later
+   -  MapR 4.0 or later
+   -  IBM Open Platform 4.2
 
   Refer to the :ref:`on-hadoop` section for detailed information.
 
@@ -245,9 +247,9 @@ Getting Started with Sparkling Water
 
 -  `Download Sparkling Water <http://www.h2o.ai/download/>`_: Go here to download Sparkling Water.
 
--  `Sparkling Water Development Documentation <https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md>`_: Read this document first to get started with Sparkling Water.
+-  `Sparkling Water Development Documentation <https://github.com/h2oai/sparkling-water/blob/master/doc/DEVEL.rst>`_: Read this document first to get started with Sparkling Water.
 
--  `Launch on Hadoop and Import from HDFS <https://github.com/h2oai/sparkling-water/tree/master/examples#sparkling-water-on-hadoop>`_: Go here to learn how to start Sparkling Water on Hadoop.
+-  `Launch on Hadoop and Import from HDFS <https://github.com/h2oai/sparkling-water/blob/master/doc/devel/integ_tests.rst>`_: Go here to learn how to start Sparkling Water on Hadoop.
 
 -  `Sparkling Water Tutorials <https://github.com/h2oai/sparkling-water/tree/master/examples>`_: Go here for demos and examples.
 
@@ -259,7 +261,7 @@ Getting Started with Sparkling Water
 
 -  `Building Machine Learning Applications with Sparkling Water <http://docs.h2o.ai/h2o-tutorials/latest-stable/tutorials/sparkling-water/index.html>`_: This short tutorial describes project building and demonstrates the capabilities of Sparkling Water using Spark Shell to build a Deep Learning model.
 
--  `Sparkling Water FAQ <https://github.com/h2oai/sparkling-water/blob/master/README.md#faq>`_: This FAQ provides answers to many common questions about Sparkling Water.
+-  `Sparkling Water FAQ <https://github.com/h2oai/sparkling-water/blob/master/doc/FAQ.rst>`_: This FAQ provides answers to many common questions about Sparkling Water.
 
 -  `Connecting RStudio to Sparkling Water <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/Connecting_RStudio_to_Sparkling_Water.md>`_: This illustrated tutorial describes how to use RStudio to connect to Sparkling Water.
 
@@ -287,16 +289,65 @@ Sparkling Water Meetup Slide Decks
 PySparkling
 ~~~~~~~~~~~~
 
-**Note**: PySparkling requires Sparkling Water 1.6 or later.
+**Note**: PySparkling requires Sparkling Water 1.6 or later. Recommended Sparkling Water 2.0 or later. 
 
-H2O's PySparkling package is not available through ``pip``. (There is `another <https://pypi.python.org/pypi/pysparkling/>`__ similarly-named package.) H2O's PySparkling package requires `EasyInstall <http://peak.telecommunity.com/DevCenter/EasyInstall>`__.
+PySparkling can be installed by downloading and running the PySparkling shell or using ``pip``. Note that the steps below describe how to install with Sparkling Water 2.1. Follow similar instructions on the `Download page <http://h2o.ai/download>`__ for a different version of Sparkling Water.
 
-To install H2O's PySparkling package, use the egg file included in the distribution.
+Running the PySparkling Shell
+'''''''''''''''''''''''''''''
 
-1. Download `Spark 1.6 <https://spark.apache.org/downloads.html>`__.
-2. Set the ``SPARK_HOME`` and ``MASTER`` variables as described on the `Downloads page <http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.6/6/index.html>`__.
-3. Download `Sparkling Water 1.6 <http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.6/6/index.html>`__
-4. In the unpacked Sparkling Water directory, run the following command: ``easy_install --upgrade sparkling-water-1.6/py/dist/pySparkling-1.6-py2.7.egg``
+Perform the following steps to install H2O's PySparkling package. 
+
+1. Download `Spark 2.1.1 <https://spark.apache.org/downloads.html>`__.
+2. Point SPARK_HOME to the existing installation of Spark, and export the variable MASTER. For example:
+
+  ::
+
+    export SPARK_HOME="/path/to/spark/installation"
+    # To launch a local Spark cluster with 3 worker nodes with 2 cores and 1g per node.
+    export MASTER="local-cluster[3,2,1024]" 
+
+3. Download and unpack the Sparkling Water distribution.
+
+4. Run PySparkling shell.
+
+  ::
+
+    ./bin/pysparkling 
+
+5. In your PySparkling application, create H2OContext.
+
+  ::
+
+    from pysparkling import *
+    hc = H2OContext.getOrCreate(spark)
+
+Once you have H2OContext available, any API calls available in the H2O Python client can be used.
+
+PySparkling Installed from PyPi Repository
+''''''''''''''''''''''''''''''''''''''''''
+
+1. Install PySparkling using ``pip``.
+
+  ::
+
+    pip install pysparkling_2.1
+
+2. In your Python client, create a SparkSession. Note that for this step, you must have the PySpark package installed.
+
+  :: 
+
+    from pyspark.sql import SparkSession 
+    spark = SparkSession.builder.appName("SparklingWaterApp").getOrCreate()
+
+3. Start H2OContext.
+
+  ::
+
+    from pysparkling import *
+    hc = H2OContext.getOrCreate(spark)
+
+Once you have H2OContext available, any API calls available in the H2O Python client can be used.
 
 Python Users
 --------------
@@ -410,21 +461,22 @@ This section describes how to use H2O on Hadoop.
 Supported Versions
 ~~~~~~~~~~~~~~~~~~
 
--  CDH 5.2
--  CDH 5.3
 -  CDH 5.4
 -  CDH 5.5
 -  CDH 5.6
 -  CDH 5.7
 -  CDH 5.8
--  HDP 2.1
+-  CDH 5.10
 -  HDP 2.2
 -  HDP 2.3
 -  HDP 2.4
 -  HDP 2.5
+-  HDP 2.6
 -  MapR 4.0
 -  MapR 5.0
 -  MapR 5.1
+-  MapR 5.2
+-  IOP 4.2
 
 **Important Points to Remember**:
 
@@ -821,24 +873,3 @@ After obtaining the IP address, point your browser to the specified ip address a
 
     library(h2o)
     dockerH2O <- h2o.init(ip = "192.168.59.103", port = 54321)
-
-
-Cloud Integration
------------------
-
-H2O is supported on a number of cloud environments, including
-
-- EC2 Instances and S3 Storage (RedHat AMI, Amazon Linux AMI, and Ubuntu AMI)
-- Microsoft Azure
-- IBM DSX
-
-Refer to the following topics:
-
-.. toctree::
-   :maxdepth: 1
-
-   cloud-integration/ec2-and-s3
-   cloud-integration/azure-hdi
-   cloud-integration/azure-dsvm
-   cloud-integration/ibm-dsx
-

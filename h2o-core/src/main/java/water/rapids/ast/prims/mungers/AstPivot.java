@@ -46,7 +46,7 @@ public class AstPivot extends AstBuiltin<AstPivot> {
     // Create the target Frame
     // Now sort on the index key, result is that unique keys will be localized
     Frame fr2 = fr.sort(new int[]{indexIdx});
-    final long[] classes = new VecUtils.CollectDomain().doAll(fr.vec(colIdx)).domain();
+    final long[] classes = new VecUtils.CollectIntegerDomain().doAll(fr.vec(colIdx)).domain();
     final int nClass = (fr.vec(colIdx).isNumeric() || fr.vec(colIdx).isTime()) ? classes.length : fr.vec(colIdx).domain().length;
     String[] header = null;
     if (fr.vec(colIdx).isNumeric()) {

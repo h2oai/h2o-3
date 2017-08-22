@@ -1,5 +1,5 @@
-Principal Compent Analysis (PCA)
---------------------------------
+Principal Component Analysis (PCA)
+----------------------------------
 
 Introduction
 ~~~~~~~~~~~~
@@ -17,68 +17,41 @@ since PCA guarantees that all dimensions of a manifold are orthogonal.
 Defining a PCA Model
 ~~~~~~~~~~~~~~~~~~~~
 
--  **model\_id**: (Optional) Specify a custom name for the model to use as
-   a reference. By default, H2O automatically generates a destination
-   key.
+-  `model_id <algo-params/model_id.html>`__: (Optional) Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
 
--  **training\_frame**: (Required) Specify the dataset used to build the
-   model. **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
+-  `training_frame <algo-params/training_frame.html>`__: (Required) Specify the dataset used to build the model. **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
 
--  **validation\_frame**: (Optional) Specify the dataset used to evaluate
-   the accuracy of the model.
+-  `validation_frame <algo-params/validation_frame.html>`__: (Optional) Specify the dataset used to evaluate the accuracy of the model.
 
--  **ignored\_columns**: (Optional) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column
-   name to add it to the list of columns excluded from the model. To add
-   all columns, click the **All** button. To remove a column from the
-   list of ignored columns, click the X next to the column name. To
-   remove all columns from the list of ignored columns, click the
-   **None** button. To search for a specific column, type the column
-   name in the **Search** field above the column list. To only show
-   columns with a specific percentage of missing values, specify the
-   percentage in the **Only show columns with more than 0% missing
-   values** field. To change the selections for the hidden columns, use
-   the **Select Visible** or **Deselect Visible** buttons.
+-  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
 
--  **ignore\_const\_cols**: Specify whether to ignore constant
-   training columns, since no information can be gained from them. This
-   option is enabled by default.
+-  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Specify whether to ignore constant training columns, since no information can be gained from them. This option is enabled by default.
 
--  **transform**: Specify the transformation method for the training
-   data: None, Standardize, Normalize, Demean, or Descale. The default
-   is None.
+-  `transform <algo-params/transform.html>`__: Specify the transformation method for the training data: None, Standardize, Normalize, Demean, or Descale. The default is None.
 
--  **pca\_method**: Specify the algorithm to use for computing the principal components:
+-  `pca_method <algo-params/pca_method.html>`__: Specify the algorithm to use for computing the principal components:
 
    -  **GramSVD**: Uses a distributed computation of the Gram matrix, followed by a local SVD using the JAMA package
    -  **Power**: Computes the SVD using the power iteration method (experimental)
    -  **Randomized**: Uses randomized subspace iteration method
    -  **GLRM**: Fits a generalized low-rank model with L2 loss function and no regularization and solves for the SVD using local matrix algebra (experimental)
 
--  **k**\ \*: Specify the rank of matrix approximation. The default is 1.
+-  `k <algo-params/k.html>`__: Specify the rank of matrix approximation. This can be a value from 1 to 9 and defaults to 1.
 
--  **max\_iterations**: Specify the number of training iterations. The
-   value must be between 1 and 1e6 and the default is 1000.
+-  `max_iterations <algo-params/max_iterations.html>`__: Specify the number of training iterations. The value must be between 1 and 1e6 and the default is 1000.
 
--  **seed**: Specify the random number generator (RNG) seed for
-   algorithm components dependent on randomization. The seed is
-   consistent for each H2O instance so that you can create models with
-   the same starting conditions in alternative configurations.
+-  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations.
 
--  **use\_all\_factor\_levels**: Specify whether to use all factor
-   levels in the possible set of predictors; if you enable this option,
-   sufficient regularization is required. By default, the first factor
-   level is skipped. For PCA models, this option ignores the first
-   factor level of each categorical column when expanding into indicator
-   columns.
+-  `use_all_factor_levels <algo-params/use_all_factor_levels.html>`__: Specify whether to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. For PCA models, this option ignores the first  factor level of each categorical column when expanding into indicator columns.
 
--  **compute\_metrics**: Enable metrics computations on the training
-   data.
+-  `compute_metrics <algo-params/compute_metrics.html>`__: Enable metrics computations on the training  data.
 
--  **score\_each\_iteration**: (Optional) Specify whether to score
-   during each iteration of the model training.
+-  `score_each_iteration <algo-params/score_each_iteration.html>`__: (Optional) Specify whether to score during each iteration of the model training.
 
--  **max\_runtime\_secs**: Maximum allowed runtime in seconds for model
-   training. Use 0 to disable.
+-  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+
+-  `impute_missing <algo-params/impute_missing.html>`__: Specifies whether to impute missing entries with the column mean value. This value defaults to False.
+
 
 Interpreting a PCA Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -127,14 +100,13 @@ FAQ
 
 -  **What if there are a large number of categorical factor levels?**
 
-  Each factor level (with the exception of the first, depending on whether **use\_all\_factor\_levels** is enabled) is assigned an indicator column. The indicator column is 1 if the observation corresponds to a particular factor; otherwise, it is 0. As a result, many factor levels result in a large Gram matrix and slower computation of the SVD.
+  Each factor level (with the exception of the first, depending on whether ``use_all_factor_levels`` is enabled) is assigned an indicator column. The indicator column is 1 if the observation corresponds to a particular factor; otherwise, it is 0. As a result, many factor levels result in a large Gram matrix and slower computation of the SVD.
 
 -  **How are categorical columns handled during model building?**
 
   If the GramSVD or Power methods are used, the categorical columns are expanded into 0/1 indicator columns for each factor level. The algorithm is then performed on this expanded training frame. For GLRM, the multidimensional loss function for categorical columns is discussed in Section 6.1 of `"Generalized Low Rank Models" <https://web.stanford.edu/~boyd/papers/pdf/glrm.pdf>`__ by Boyd et al.
 
--  **When running PCA, is it better to create a cluster that uses many
-   smaller nodes or fewer larger nodes?**
+-  **When running PCA, is it better to create a cluster that uses many smaller nodes or fewer larger nodes?**
 
   For PCA, this is dependent on the specified ``pca_method`` parameter:
 
@@ -143,10 +115,13 @@ FAQ
   -  For **GLRM**, the number of nodes depends on whether the dataset contains many categorical columns with many levels. If this is the case, we recommend using fewer larger nodes, since computing the loss function for categoricals is an intensive task. If the majority of the data is numeric and the categorical columns have only a small number of levels (~10-20), we recommend using many small nodes in the cluster.
   -  For **Power**, we recommend using fewer larger nodes because the intensive calculations are single-threaded. However, this method is only recommended for obtaining principal component values (such as ``k << ncol(train))`` because the other methods are far more efficient.
 
--  **I ran PCA on my dataset - how do I input the new parameters into a
-   model?**
+-  **I ran PCA on my dataset - how do I input the new parameters into a model?**
 
   After the PCA model has been built using ``h2o.prcomp``, use ``h2o.predict`` on the original data frame and the PCA model to produce the dimensionality-reduced representation. Use ``cbind`` to add the predictor column from the original data frame to the data frame produced by the output of ``h2o.predict``. At this point, you can build supervised learning models on the new data frame.
+
+- **How can I evaluate and choose the appropriate set of target dimensions for data?** 
+
+  The set of target dimensions can be chosen by inspecting the cumulative proportion of variance explained. (For example, select the number of components that explain 95% variance in data.) This information can be displayed using ``pca_model.summary()``. You can also view the variable importances using ``@model$importance`` in R or ``varimp()`` in Python
 
 PCA Algorithm
 ~~~~~~~~~~~~~

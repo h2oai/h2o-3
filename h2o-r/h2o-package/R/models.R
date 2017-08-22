@@ -94,13 +94,13 @@
 }
 
 
-.h2o.modelJob <- function( algo, params, h2oRestApiVersion=.h2o.__REST_API_VERSION ) {
+.h2o.modelJob <- function( algo, params, h2oRestApiVersion=.h2o.__REST_API_VERSION, verbose=FALSE) {
   if( !is.null(params$validation_frame) )
     .eval.frame(params$training_frame)
   if( !is.null(params$validation_frame) )
     .eval.frame(params$validation_frame)
   job <- .h2o.startModelJob(algo, params, h2oRestApiVersion)
-  h2o.getFutureModel(job)
+  h2o.getFutureModel(job, verbose = verbose)
 }
 
 .h2o.startModelJob <- function(algo, params, h2oRestApiVersion) {
@@ -159,9 +159,10 @@
 #'
 #' @rdname h2o.getFutureModel
 #' @param object H2OModel
+#' @param verbose Print model progress to console. Default is FALSE
 #' @export
-h2o.getFutureModel <- function(object) {
-  .h2o.__waitOnJob(object@job_key)
+h2o.getFutureModel <- function(object,verbose=FALSE) {
+  .h2o.__waitOnJob(object@job_key,verboseModelScoringHistory=verbose)
   h2o.getModel(object@model_id)
 }
 
@@ -394,8 +395,13 @@ predict.H2OModel <- function(object, newdata, ...) {
 
 #' @rdname predict.H2OModel
 #' @export
-h2o.predict <- predict.H2OModel
-
+h2o.predict <- function(object, newdata, ...){
+  if(class(object) == "H2OAutoML"){
+    return(predict.H2OAutoML(object, newdata, ...))
+  }else{
+    return(predict.H2OModel(object, newdata, ...))
+  }
+}
 #' Predict the Leaf Node Assignment on an H2O Model
 #'
 #' Obtains leaf node assignment from fitted H2O model objects.
@@ -1001,7 +1007,7 @@ h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 h2o.coef <- function(object) {
   if (is(object, "H2OModel")) {
     if (is.null(object@model$coefficients_table)) stop("Can only extract coefficeints from GLMs")
-    if (object@parameters$family != "multinomial") {
+    if (object@allparameters$family != "multinomial") {
       coefs <- object@model$coefficients_table$coefficients
       names(coefs) <- object@model$coefficients_table$names
     } else {
@@ -2440,7 +2446,7 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
 #' @param model A trained model (accepts a trained random forest, GBM,
 #' or deep learning model, will use \code{\link{h2o.std_coef_plot}}
 #' for a trained GLM
-#' @param num_of_features The number of features to be shown in the plot
+#' @param num_of_features The number of features shown in the plot (default is 10 or all if less than 10).
 #' @seealso \code{\link{h2o.std_coef_plot}} for GLM.
 #' @examples
 #' \donttest{
@@ -2467,8 +2473,13 @@ h2o.varimp_plot <- function(model, num_of_features = NULL){
   vi <- h2o.varimp(model)
 
   # check if num_of_features was passed as an integer, otherwise use all features
-  if(is.null(num_of_features)) {num_of_features = length(vi$variable)}
-  else if ((num_of_features != round(num_of_features)) || (num_of_features <= 0)) stop("num_of_features must be an integer greater than 0")
+  # default to 10 or less features if num_of_features is not specified
+  #  if(is.null(num_of_features)) {num_of_features = length(vi$variable)}
+  #  else if ((num_of_features != round(num_of_features)) || (num_of_features <= 0)) stop("num_of_features must be an integer greater than 0")
+  if(is.null(num_of_features)) {
+    feature_count = length(vi$variable)
+    num_of_features = ifelse(feature_count <= 10, length(vi$variable), 10)
+  } else if ((num_of_features != round(num_of_features)) || (num_of_features <= 0)) stop("num_of_features must be an integer greater than 0")
 
   # check the model type and then update the model title
   if(model@algorithm[1] == "deeplearning") {title = "Variable Importance: Deep Learning"}

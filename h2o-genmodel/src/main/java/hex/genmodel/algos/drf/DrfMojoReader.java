@@ -9,6 +9,11 @@ import java.io.IOException;
 public class DrfMojoReader extends SharedTreeMojoReader<DrfMojoModel> {
 
   @Override
+  public String getModelName() {
+    return "Distributed Random Forest";
+  }
+
+  @Override
   protected void readModelData() throws IOException {
     super.readModelData();
     _model._binomial_double_trees = readkv("binomial_double_trees");

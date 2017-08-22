@@ -426,17 +426,34 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   // Step 4: Run all the CV models and launch the main model
   public void cv_buildModels(int N, ModelBuilder<M, P, O>[] cvModelBuilders ) {
+    bulkBuildModels("cross-validation", _job, cvModelBuilders, nModelsInParallel(), 0 /*no job updates*/);
+    cv_computeAndSetOptimalParameters(cvModelBuilders);
+  }
+
+  /**
+   * Runs given model builders in bulk.
+   *
+   * @param modelType text description of group of models being built (for logging purposes)
+   * @param job parent job (processing will be stopped if stop of a parent job was requested)
+   * @param modelBuilders list of model builders to run in bulk
+   * @param parallelization level of parallelization (how many models can be built at the same time)
+   * @param updateInc update increment (0 = disable updates)
+   */
+  public static void bulkBuildModels(String modelType, Job job, ModelBuilder<?, ?, ?>[] modelBuilders,
+                                     int parallelization, int updateInc) {
+    final int N = modelBuilders.length;
     H2O.H2OCountedCompleter submodel_tasks[] = new H2O.H2OCountedCompleter[N];
     int nRunning=0;
     RuntimeException rt = null;
     for( int i=0; i<N; ++i ) {
-      if( _job.stop_requested() ) break; // Stop launching but still must block for all async jobs
-      Log.info("Building cross-validation model " + (i + 1) + " / " + N + ".");
-      cvModelBuilders[i]._start_time = System.currentTimeMillis();
-      submodel_tasks[i] = H2O.submitTask(cvModelBuilders[i].trainModelImpl());
-      if(++nRunning == nModelsInParallel()) { //piece-wise advance in training the CV models
+      if (job.stop_requested() ) break; // Stop launching but still must block for all async jobs
+      Log.info("Building " + modelType + " model " + (i + 1) + " / " + N + ".");
+      modelBuilders[i]._start_time = System.currentTimeMillis();
+      submodel_tasks[i] = H2O.submitTask(modelBuilders[i].trainModelImpl());
+      if(++nRunning == parallelization) { //piece-wise advance in training the models
         while (nRunning > 0) try {
           submodel_tasks[i + 1 - nRunning--].join();
+          if (updateInc > 0) job.update(updateInc); // One job finished
         } catch (RuntimeException t) {
           if (rt == null) rt = t;
         }
@@ -450,7 +467,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if(rt == null) rt = t;
       }
     if(rt != null) throw rt;
-    cv_computeAndSetOptimalParameters(cvModelBuilders);
   }
 
   private void buildMainModel() {
@@ -483,7 +499,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
       // free resources as early as possible
       if (adaptFr != null) {
-        Model.cleanup_adapt(adaptFr, cvValid);
+        Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, cvValid);
         DKV.remove(adaptFr._key,fs);
       }
       DKV.remove(cvModelBuilders[i]._parms._train,fs);
@@ -733,10 +749,21 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected void ignoreInvalidColumns(int npredictors, boolean expensive){}
 
   /**
+   * Makes sure the final model will fit in memory.
+   *
+   * Note: This method should not be overridden (override checkMemoryFootPrint_impl instead). It is
+   * not declared 'final' to not to break 3rd party implementations. It might be declared final in the future
+   * if necessary.
+   */
+  protected void checkMemoryFootPrint() {
+    if (Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.noMemoryCheck")) return; // skip check if disabled
+    checkMemoryFootPrint_impl();
+  }
+
+  /**
    * Override this method to call error() if the model is expected to not fit in memory, and say why
    */
-  protected void checkMemoryFootPrint() {}
-
+  protected void checkMemoryFootPrint_impl() {}
 
   transient double [] _distribution;
   transient protected double [] _priorClassDist;
@@ -966,52 +993,24 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // Toss out extra columns, complain about missing ones, remap categoricals
     Frame va = _parms.valid();  // User-given validation set
     if (va != null) {
-      if (va.numRows()==0) error("_validation_frame", "Validation frame must have > 0 rows.");
-      _valid = new Frame(null /* not putting this into KV */, va._names.clone(), va.vecs().clone());
-      try {
-        String[] msgs = Model.adaptTestForTrain(_valid, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec(), _toDelete, false);
-        _vresponse = _valid.vec(_parms._response_column);
-        if (_vresponse == null && _parms._response_column != null)
-          error("_validation_frame", "Validation frame must have a response column '" + _parms._response_column + "'.");
-        if (expensive) {
-          for (String s : msgs) {
-            Log.info(s);
-            warn("_valid", s);
-          }
-        }
-      } catch (IllegalArgumentException iae) {
-        error("_valid", iae.getMessage());
-      }
+      _valid = adaptFrameToTrain(va, "Validation Frame", "_validation_frame", expensive);
+      _vresponse = _valid.vec(_parms._response_column);
     } else {
       _valid = null;
       _vresponse = null;
     }
 
     if (expensive) {
-      String[] skipCols = new String[]{_parms._weights_column, _parms._offset_column, _parms._fold_column, _parms._response_column};
-      Frame newtrain = FrameUtils.categoricalEncoder(_train, skipCols, _parms._categorical_encoding, getToEigenVec());
-      if (newtrain!=_train) {
-        assert (newtrain._key != null);
+      Frame newtrain = encodeFrameCategoricals(_train, ! _parms._is_cv_model);
+      if (newtrain != _train) {
         _origNames = _train.names();
         _origDomains = _train.domains();
         setTrain(newtrain);
-        if (!_parms._is_cv_model)
-          Scope.track(_train);
-        else
-          _toDelete.put(_train._key, Arrays.toString(Thread.currentThread().getStackTrace()));
         separateFeatureVecs(); //fix up the pointers to the special vecs
       }
       if (_valid != null) {
-        Frame newvalid = FrameUtils.categoricalEncoder(_valid, skipCols, _parms._categorical_encoding, getToEigenVec());
-        if (newvalid!=_valid) {
-          assert(newvalid._key!=null);
-          _valid=newvalid;
-          if (!_parms._is_cv_model)
-            Scope.track(_valid); //for CV, need to score one more time in outer loop
-          else
-            _toDelete.put(_valid._key, Arrays.toString(Thread.currentThread().getStackTrace()));
-          _vresponse = _valid.vec(_parms._response_column);
-        }
+        _valid = encodeFrameCategoricals(_valid, ! _parms._is_cv_model /* for CV, need to score one more time in outer loop */);
+        _vresponse = _valid.vec(_parms._response_column);
       }
       boolean restructured = false;
       Vec[] vecs = _train.vecs();
@@ -1090,6 +1089,58 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (_parms._max_runtime_secs < 0) {
       error("_max_runtime_secs", "Max runtime (in seconds) must be greater than 0 (or 0 for unlimited).");
     }
+  }
+
+  /**
+   * Adapts a given frame to the same schema as the training frame.
+   * This includes encoding of categorical variables (if expensive is enabled).
+   *
+   * Note: This method should only be used during ModelBuilder initialization - it should be called in init(..) method.
+   *
+   * @param fr input frame
+   * @param frDesc frame description, eg. "Validation Frame" - will be shown in validation error messages
+   * @param field name of a field for validation errors
+   * @param expensive indicates full ("expensive") processing
+   * @return adapted frame
+   */
+  protected Frame init_adaptFrameToTrain(Frame fr, String frDesc, String field, boolean expensive) {
+    Frame adapted = adaptFrameToTrain(fr, frDesc, field, expensive);
+    if (expensive)
+      adapted = encodeFrameCategoricals(adapted, true);
+    return adapted;
+  }
+
+  private Frame adaptFrameToTrain(Frame fr, String frDesc, String field, boolean expensive) {
+    if (fr.numRows()==0) error(field, frDesc + " must have > 0 rows.");
+    Frame adapted = new Frame(null /* not putting this into KV */, fr._names.clone(), fr.vecs().clone());
+    try {
+      String[] msgs = Model.adaptTestForTrain(adapted, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec(), _toDelete, false);
+      Vec response = adapted.vec(_parms._response_column);
+      if (response == null && _parms._response_column != null)
+        error(field, frDesc + " must have a response column '" + _parms._response_column + "'.");
+      if (expensive) {
+        for (String s : msgs) {
+          Log.info(s);
+          warn(field, s);
+        }
+      }
+    } catch (IllegalArgumentException iae) {
+      error(field, iae.getMessage());
+    }
+    return adapted;
+  }
+
+  private Frame encodeFrameCategoricals(Frame fr, boolean scopeTrack) {
+    String[] skipCols = new String[]{_parms._weights_column, _parms._offset_column, _parms._fold_column, _parms._response_column};
+    Frame encoded = FrameUtils.categoricalEncoder(fr, skipCols, _parms._categorical_encoding, getToEigenVec(), _parms._max_categorical_levels);
+    if (encoded != fr) {
+      assert encoded._key != null;
+      if (scopeTrack)
+        Scope.track(encoded);
+      else
+        _toDelete.put(encoded._key, Arrays.toString(Thread.currentThread().getStackTrace()));
+    }
+    return encoded;
   }
 
   /**
@@ -1218,6 +1269,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     excluded.add("makeSchema");
     excluded.add("hr");
     excluded.add("frame");
+    excluded.add("model");
     excluded.add("remove");
     excluded.add("cm");
     excluded.add("auc_obj");
@@ -1301,34 +1353,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     Log.info(table);
     return table;
-  }
-
-  public static void bulkBuildModels(Job job, ModelBuilder[] modelBuilders, int parallelization) {
-    final int N = modelBuilders.length;
-    H2O.H2OCountedCompleter submodel_tasks[] = new H2O.H2OCountedCompleter[N];
-    int nRunning=0;
-    RuntimeException rt = null;
-    for( int i=0; i<N; ++i ) {
-      if (job.stop_requested() ) break; // Stop launching but still must block for all async jobs
-      modelBuilders[i]._start_time = System.currentTimeMillis();
-      submodel_tasks[i] = H2O.submitTask(modelBuilders[i].trainModelImpl());
-      if(++nRunning == parallelization) { //piece-wise advance in training the models
-        while (nRunning > 0) try {
-          submodel_tasks[i + 1 - nRunning--].join();
-          job.update(1); // One job finished
-        } catch (RuntimeException t) {
-          if (rt == null) rt = t;
-        }
-        if(rt != null) throw rt;
-      }
-    }
-    for( int i=0; i<N; ++i ) //all sub-models must be completed before the main model can be built
-      try {
-        submodel_tasks[i].join();
-      } catch(RuntimeException t){
-        if(rt == null) rt = t;
-      }
-    if(rt != null) throw rt;
   }
 
 }

@@ -62,7 +62,7 @@
 #' @param mtries Number of variables randomly sampled as candidates at each split. If set to -1, defaults to sqrt{p} for
 #'        classification and p/3 for regression (where p is the # of predictors Defaults to -1.
 #' @param sample_rate Row sample rate per tree (from 0.0 to 1.0) Defaults to 0.6320000291.
-#' @param sample_rate_per_class Row sample rate per tree per class (from 0.0 to 1.0)
+#' @param sample_rate_per_class A list of row sample rates per class (relative fraction for each class, from 0.0 to 1.0), for each tree
 #' @param binomial_double_trees \code{Logical}. For binary classification: Build 2x as many trees (one per class) - can lead to higher
 #'        accuracy. Defaults to FALSE.
 #' @param checkpoint Model checkpoint to resume training with.
@@ -72,7 +72,13 @@
 #' @param histogram_type What type of histogram to use for finding optimal split points Must be one of: "AUTO", "UniformAdaptive",
 #'        "Random", "QuantilesGlobal", "RoundRobin". Defaults to AUTO.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
-#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse". Defaults to AUTO.
+#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
+#' @param calibrate_model \code{Logical}. Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more
+#'        accurate estimates of class probabilities. Defaults to FALSE.
+#' @param calibration_frame Calibration frame for Platt Scaling
+#' @param distribution Distribution function Must be one of: "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma",
+#'        "tweedie", "laplace", "quantile", "huber". Defaults to AUTO.
+#' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree for GBM, DRF, & XGBoost. Metrics per epoch for Deep Learning). Defaults to FALSE.
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @export
@@ -115,20 +121,24 @@ h2o.randomForest <- function(x, y, training_frame,
                              col_sample_rate_per_tree = 1,
                              min_split_improvement = 1e-05,
                              histogram_type = c("AUTO", "UniformAdaptive", "Random", "QuantilesGlobal", "RoundRobin"),
-                             categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse")
+                             categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
+                             calibrate_model = FALSE,
+                             calibration_frame = NULL,
+                             distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
+                             verbose = FALSE 
                              ) 
 {
-  #If x is missing, then assume user wants to use all columns as features.
-  if(missing(x)){
-     if(is.numeric(y)){
-         x <- setdiff(col(training_frame),y)
-     }else{
-         x <- setdiff(colnames(training_frame),y)
+  # If x is missing, then assume user wants to use all columns as features.
+  if (missing(x)) {
+     if (is.numeric(y)) {
+         x <- setdiff(col(training_frame), y)
+     } else {
+         x <- setdiff(colnames(training_frame), y)
      }
   }
 
   # Required args: training_frame
-  if( missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
+  if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
   # Training_frame must be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
      tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -231,6 +241,12 @@ h2o.randomForest <- function(x, y, training_frame,
     parms$histogram_type <- histogram_type
   if (!missing(categorical_encoding))
     parms$categorical_encoding <- categorical_encoding
+  if (!missing(calibrate_model))
+    parms$calibrate_model <- calibrate_model
+  if (!missing(calibration_frame))
+    parms$calibration_frame <- calibration_frame
+  if (!missing(distribution))
+    parms$distribution <- distribution
   # Error check and build model
-  .h2o.modelJob('drf', parms, h2oRestApiVersion=3) 
+  .h2o.modelJob('drf', parms, h2oRestApiVersion = 3, verbose=verbose) 
 }

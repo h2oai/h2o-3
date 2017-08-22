@@ -11,7 +11,7 @@ PySparkling Water programs can be launched as an application, or in an interacti
 \begin{enumerate}
 \item Download Spark (if not already installed) from the Spark Downloads Page.
 
-Choose Spark release : 1.6.0
+Choose Spark release : 2.1.0
 
 Choose a package type: Pre-built for Hadoop 2.4 and later
 
@@ -30,8 +30,8 @@ export MASTER="local-cluster[3,2,1024]"
 
 \begin{lstlisting}[style=Bash]
 cd ~/Downloads
-unzip sparkling-water-1.6.1.zip
-cd sparkling-water-1.6.1
+unzip sparkling-water-2.1.8.zip
+cd sparkling-water-2.1.8
 \end{lstlisting}
 
 Start an interactive Python terminal:
@@ -52,15 +52,16 @@ hc= H2OContext(sc).start()
 import h2o
 \end{lstlisting}
 
-\item Follow this demo (\url{https://github.com/h2oai/h2o-world-2015-training/blob/master/tutorials/pysparkling/Chicago_Crime_Demo.ipynb}), which imports Chicago crime, census and weather data and predicts the probability of arrest.
+\item Follow this demo, which imports Chicago crime, census, and weather data. It also predicts the probability of arrest:
+ \url{https://github.com/h2oai/h2o-world-2015-training/blob/master/tutorials/pysparkling/Chicago_Crime_Demo.ipynb}
 
 \end{enumerate}
 
 Alternatively, to launch on YARN:
 
 \begin{lstlisting}[style=Bash]
-wget http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.6/1/sparkling-water-1.6.1.zip
-unzip sparkling-water-1.6.1.zip
+wget http://h2o-release.s3.amazonaws.com/sparkling-water/rel-2.1/8/sparkling-water-2.1.8.zip
+unzip sparkling-water-2.1.8.zip
  
 export SPARK_HOME="/path/to/spark/installation"
 export HADOOP_CONF_DIR=/etc/hadoop/conf
@@ -77,7 +78,7 @@ import h2o
 
 Or to launch as a Spark Package application:
 \begin{lstlisting}[style=Bash]
-$SPARK_HOME/bin/spark-submit --packages ai.h2o:sparkling-water-core_2.10:1.6.1 --py-files $SPARKLING_HOME/py/dist/pySparkling-1.6.1-py2.7.egg
+$SPARK_HOME/bin/spark-submit --packages ai.h2o:sparkling-water-core_2.11:2.1.8 --py-files $SPARKLING_HOME/py/dist/pySparkling-2.1.8-py2.7.egg
 $SPARKLING_HOME/py/examples/scripts/H2OContextDemo.py 
 \end{lstlisting}
 

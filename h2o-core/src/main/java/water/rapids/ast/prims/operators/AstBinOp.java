@@ -1,5 +1,6 @@
 package water.rapids.ast.prims.operators;
 
+import water.Futures;
 import water.H2O;
 import water.MRTask;
 import water.fvec.Chunk;
@@ -204,9 +205,13 @@ abstract public class AstBinOp extends AstPrimitive {
     final boolean categoricalOK = categoricalOK();
     final Vec oldvecs[] = oldfr.vecs();
     final Vec newvecs[] = newfr.vecs();
+    Futures fs = new Futures();
     for (int i = 0; i < oldvecs.length; i++)
-      if ((oldvecs[i].isCategorical() && !categoricalOK)) // categorical are OK (op is EQ/NE)
-        newvecs[i] = newvecs[i].makeCon(Double.NaN);
+      if ((oldvecs[i].isCategorical() && !categoricalOK)) { // categorical are OK (op is EQ/NE)
+        Vec cv = newvecs[i].makeCon(Double.NaN);
+        newfr.replace(i, cv).remove(fs);
+      }
+    fs.blockForPending();
     return new ValFrame(newfr);
   }
 

@@ -22,7 +22,7 @@ def generate_models(n_models, n_rows, n_cols, n_rows_per_model, n_trees, max_dep
     assert n_rows <= n_rows_per_model * n_models, "Too many rows"
     assert os.path.isdir(target_dir), "%s is not a directory" % target_dir
 
-    genmodel_jar = os.path.abspath("../../../h2o-genmodel/build/libs/h2o-genmodel-all.jar")
+    genmodel_jar = os.path.abspath("../../../h2o-assemblies/genmodel/build/libs/genmodel.jar")
     assert os.path.exists(genmodel_jar), "Cannot find " + genmodel_jar
 
     # Step 1: generate the dataset.

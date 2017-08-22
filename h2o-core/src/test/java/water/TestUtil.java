@@ -86,13 +86,15 @@ public class TestUtil extends Iced {
     x = Math.max(MINCLOUDSIZE, x);
     if( !_stall_called_before ) {
       H2O.main(args);
-      H2O.registerRestApis(System.getProperty("user.dir"));
+      H2O.registerResourceRoot(new File(System.getProperty("user.dir") + File.separator + "h2o-web/src/main/resources/www"));
+      H2O.registerResourceRoot(new File(System.getProperty("user.dir") + File.separator + "h2o-core/src/main/resources/www"));
+      ExtensionManager.getInstance().registerRestApiExtensions();
       _stall_called_before = true;
     }
     H2O.waitForCloudSize(x, timeout);
     _initial_keycnt = H2O.store_size();
     // Finalize registration of REST API to enable tests which are touching Schemas.
-    H2O.finalizeRegistration();
+    H2O.startServingRestApi();
   }
 
 
@@ -338,7 +340,7 @@ public class TestUtil extends Iced {
    * @param na_string string for NA in a column
    * @return
    */
-  protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types ) {
+  protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types, boolean disableParallelParse) {
     File folder = FileUtils.locateFile(fname);
     File[] files = contentsOf(fname, folder);
     Arrays.sort(files);
@@ -370,7 +372,7 @@ public class TestUtil extends Iced {
 
     if (column_types != null)
       p.setColumnTypes(column_types);
-
+    p.disableParallelParse = disableParallelParse;
     return ParseDataset.parse(Key.make(), res, true, p);
 
   }
@@ -597,8 +599,17 @@ public class TestUtil extends Iced {
     int ncomp = actual.getColDim();
     boolean[] flipped = new boolean[ncomp];
 
+    // better way to get sign
+    for (int j=0; j < ncomp; j++) {
+      for (int i = 0; i < nfeat; i++) {
+        if (Math.abs((Double) expected.get(i,j))>0.0 && Math.abs((Double) actual.get(i,j))>0.0) { // only non zeros
+          flipped[j] = !(Math.signum((Double)expected.get(i,j))==Math.signum((Double)actual.get(i,j)));
+          break;
+        }
+      }
+    }
+
     for(int j = 0; j < ncomp; j++) {
-      flipped[j] = Math.abs((double)expected.get(0,j) - (double)actual.get(0,j)) > threshold;
       for(int i = 0; i < nfeat; i++) {
         assertEquals((double) expected.get(i,j), flipped[j] ? -(double)actual.get(i,j) : (double)actual.get(i,j), threshold);
       }
@@ -752,7 +763,7 @@ public class TestUtil extends Iced {
         File f = generatedFile = prepareFile();
         System.out.println("File generated into: " + f.getCanonicalPath());
         if (f.isDirectory()) {
-          return parse_test_folder(f.getCanonicalPath(), null, ParseSetup.HAS_HEADER, null);
+          return parse_test_folder(f.getCanonicalPath(), null, ParseSetup.HAS_HEADER, null, false);
         } else {
           return parse_test_file(f.getCanonicalPath());
         }

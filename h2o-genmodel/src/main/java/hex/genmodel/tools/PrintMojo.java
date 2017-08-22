@@ -18,6 +18,7 @@ public class PrintMojo {
   private static int maxLevelsToPrintPerEdge = 10;
   private static boolean detail = false;
   private static String outputFileName = null;
+  private static String optionalTitle = null;
 
   public static void main(String[] args) {
     // Parse command line arguments
@@ -44,13 +45,15 @@ public class PrintMojo {
     System.out.println("Emit a human-consumable graph of a model for use with dot (graphviz).");
     System.out.println("The currently supported model types are DRF and GBM.");
     System.out.println("");
-    System.out.println("Usage:  java [...java args...] hex.genmodel.tools.PrintMojo [--tree n] [--levels n] [-o outputFileName]");
+    System.out.println("Usage:  java [...java args...] hex.genmodel.tools.PrintMojo [--tree n] [--levels n] [--title sss] [-o outputFileName]");
     System.out.println("");
     System.out.println("    --tree          Tree number to print.");
     System.out.println("                    [default all]");
     System.out.println("");
     System.out.println("    --levels        Number of levels per edge to print.");
     System.out.println("                    [default " + maxLevelsToPrintPerEdge + "]");
+    System.out.println("");
+    System.out.println("    --title         (Optional) Force title of tree graph.");
     System.out.println("");
     System.out.println("    --detail        Specify to print additional detailed information like node numbers.");
     System.out.println("");
@@ -98,6 +101,12 @@ public class PrintMojo {
               System.out.println("ERROR: invalid --levels argument (" + s + ")");
               System.exit(1);
             }
+            break;
+
+          case "--title":
+            i++;
+            if (i >= args.length) usage();
+            optionalTitle = args[i];
             break;
 
           case "--detail":
@@ -158,14 +167,14 @@ public class PrintMojo {
       if (printRaw) {
         g.print();
       }
-      g.printDot(os, maxLevelsToPrintPerEdge, detail);
+      g.printDot(os, maxLevelsToPrintPerEdge, detail, optionalTitle);
     }
     else if (genModel instanceof DrfMojoModel) {
       SharedTreeGraph g = ((DrfMojoModel) genModel)._computeGraph(treeToPrint);
       if (printRaw) {
         g.print();
       }
-      g.printDot(os, maxLevelsToPrintPerEdge, detail);
+      g.printDot(os, maxLevelsToPrintPerEdge, detail, optionalTitle);
     }
     else {
       System.out.println("ERROR: Unknown MOJO type");

@@ -1,14 +1,11 @@
 package water.parser;
 
 import org.apache.commons.lang.math.NumberUtils;
-import org.apache.http.ParseException;
 import water.fvec.Vec;
 import water.fvec.FileVec;
 import water.Key;
 import water.util.StringUtils;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -122,9 +119,7 @@ MAIN_LOOP:
             str.addBuff(bits);
           }
           if( !isNa &&
-              _setup._na_strings != null &&
-              _setup._na_strings.length > colIdx &&
-              str.isOneOf(_setup._na_strings[colIdx])) {
+              _setup.isNA(colIdx, str)) {
             isNa = true;
           }
           if (!isNa) {
@@ -624,7 +619,9 @@ MAIN_LOOP:
    *
    */
   static ParseSetup guessSetup(byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames, byte[] columnTypes, String[][] naStrings) {
-
+    int lastNewline = bits.length-1;
+    while(lastNewline > 0 && !CsvParser.isEOL(bits[lastNewline]))lastNewline--;
+    if(lastNewline > 0) bits = Arrays.copyOf(bits,lastNewline+1);
     String[] lines = getFirstLines(bits);
     if(lines.length==0 )
       throw new ParseDataset.H2OParseException("No data!");
@@ -721,13 +718,12 @@ MAIN_LOOP:
       for(; i > 0; --i)
         if(bits[i] == '\n') break;
       if(i > 0) bits = Arrays.copyOf(bits,i); // stop at the last full line
-      InputStream is = new ByteArrayInputStream(bits);
       CsvParser p = new CsvParser(resSetup, null);
       PreviewParseWriter dout = new PreviewParseWriter(resSetup._number_columns);
       try {
-        p.streamParse(is, dout);
+        p.parseChunk(0,new ByteAryData(bits,0), dout);
         resSetup._column_previews = dout;
-        resSetup._errs = dout._errs;
+        resSetup.addErrs(dout._errs);
       } catch (Throwable e) {
         throw new RuntimeException(e);
       }

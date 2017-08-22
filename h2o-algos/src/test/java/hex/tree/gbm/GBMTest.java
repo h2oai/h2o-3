@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import static hex.genmodel.utils.DistributionFamily.*;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static water.fvec.FVecTest.makeByteVec;
@@ -283,6 +284,51 @@ public class GBMTest extends TestUtil {
       if( gbm  != null ) gbm .delete();
       if( pred != null ) pred.remove();
       if( res  != null ) res .remove();
+      Scope.exit();
+    }
+  }
+
+  // Scoring should output original probabilities and probabilities calibrated by Platt Scaling
+  @Test public void testGBMPredictWithCalibration() {
+    GBMModel gbm = null;
+    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    Scope.enter();
+    try {
+      Frame train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
+      Frame calib = parse_test_file("smalldata/gbm_test/ecology_eval.csv");
+
+      // Fix training set
+      train.remove("Site").remove();     // Remove unique ID
+      Scope.track(train.vec("Angaus"));
+      train.replace(train.find("Angaus"), train.vecs()[train.find("Angaus")].toCategoricalVec());
+      Scope.track(train);
+      DKV.put(train); // Update frame after hacking it
+
+      // Fix calibration set (the same way as training)
+      Scope.track(calib.vec("Angaus"));
+      calib.replace(calib.find("Angaus"), calib.vecs()[calib.find("Angaus")].toCategoricalVec());
+      Scope.track(calib);
+      DKV.put(calib); // Update frame after hacking it
+
+      parms._train = train._key;
+      parms._calibrate_model = true;
+      parms._calibration_frame = calib._key;
+      parms._response_column = "Angaus"; // Train on the outcome
+      parms._distribution = DistributionFamily.multinomial;
+
+      gbm = new GBM(parms).trainModel().get();
+
+      Frame pred = parse_test_file("smalldata/gbm_test/ecology_eval.csv");
+      pred.remove("Angaus").remove();    // No response column during scoring
+      Scope.track(pred);
+      Frame res = Scope.track(gbm.score(pred));
+
+      assertArrayEquals(new String[]{"predict", "p0", "p1", "cal_p0", "cal_p1"}, res._names);
+      assertEquals(res.vec("cal_p0").mean(), 0.7860, 1e-4);
+      assertEquals(res.vec("cal_p1").mean(), 0.2139, 1e-4);
+    } finally {
+      if (gbm != null)
+        gbm.remove();
       Scope.exit();
     }
   }
@@ -2995,6 +3041,63 @@ public class GBMTest extends TestUtil {
       }
       Log.info(Arrays.toString(vals));
       Log.info(Arrays.toString(maes));
+    }
+  }
+
+  @Test
+  public void RegressionCars() {
+    Frame tfr = null;
+    Frame trainFrame = null;
+    Frame testFrame = null;
+    Frame preds = null;
+    GBMModel model = null;
+    Scope.enter();
+    try {
+      // Parse frame into H2O
+      tfr = parse_test_file("./smalldata/junit/cars.csv");
+      DKV.put(tfr);
+
+      // split into train/test
+      SplitFrame sf = new SplitFrame(tfr, new double[] { 0.7, 0.3 }, null);
+      sf.exec().get();
+      Key[] ksplits = sf._destination_frames;
+      trainFrame = (Frame)ksplits[0].get();
+      testFrame = (Frame)ksplits[1].get();
+
+      // define special columns
+//      String response = "cylinders"; // passes
+      String response = "economy (mpg)"; //fails
+
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = trainFrame._key;
+      parms._valid = testFrame._key;
+      parms._response_column = response;
+      parms._ignored_columns = new String[]{"name"};
+//      parms._dmatrix_type = GBMModel.GBMParameters.DMatrixType.dense;
+//      parms._backend = GBMModel.GBMParameters.Backend.cpu;
+//      parms._tree_method = GBMModel.GBMParameters.TreeMethod.exact;
+
+      model = new hex.tree.gbm.GBM(parms).trainModel().get();
+      Log.info(model);
+
+      preds = model.score(testFrame);
+      Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
+      Assert.assertEquals(
+          ((ModelMetricsRegression)model._output._validation_metrics).mae(),
+          ModelMetricsRegression.make(preds.anyVec(), testFrame.vec(response), DistributionFamily.gaussian).mae(),
+          1e-5
+      );
+      Assert.assertTrue(preds.anyVec().sigma() > 0);
+
+    } finally {
+      Scope.exit();
+      if (trainFrame!=null) trainFrame.remove();
+      if (testFrame!=null) testFrame.remove();
+      if (tfr!=null) tfr.remove();
+      if (preds!=null) preds.remove();
+      if (model!=null) {
+        model.delete();
+      }
     }
   }
 

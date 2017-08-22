@@ -8,9 +8,6 @@ import water.util.ArrayUtils;
 import water.util.FileUtils;
 import water.util.Log;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.StringReader;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -43,10 +40,17 @@ public class ParseSetup extends Iced {
   String[][] _data;           // First few rows of parsed/tokenized data
 
   String [] _fileNames = new String[]{"unknown"};
+  public  boolean disableParallelParse;
 
   public void setFileName(String name) {_fileNames[0] = name;}
 
-  public ParseWriter.ParseErr[] _errs;
+  private ParseWriter.ParseErr[] _errs;
+  public final ParseWriter.ParseErr[] errs() { return _errs;}
+
+  public void addErrs(ParseWriter.ParseErr... errs){
+    _errs = ArrayUtils.append(_errs,errs);
+  }
+
   public int _chunk_size = FileVec.DFLT_CHUNK_SIZE;  // Optimal chunk size to be used store values
   PreviewParseWriter _column_previews = null;
 
@@ -354,7 +358,7 @@ public class ParseSetup extends Iced {
         try {
           _gblSetup = guessSetup(bv, bits, _userSetup);
           for(ParseWriter.ParseErr e:_gblSetup._errs) {
-            e._byteOffset += e._cidx*Parser.StreamData.bufSz;
+//            e._byteOffset += e._cidx*Parser.StreamData.bufSz;
             e._cidx = 0;
             e._file = _file;
           }
@@ -622,25 +626,17 @@ public class ParseSetup extends Iced {
    * @param bytes Array of bytes (containing 0 or more newlines)
    * @return The longest line length in the given bytes
    */
-  private static final long maxLineLength(byte[] bytes) {
-    if (bytes.length >= 2) {
-      String st = new String(bytes);
-      StringReader sr = new StringReader(st);
-      BufferedReader br = new BufferedReader(sr);
-      String line;
-      long maxLineLength=0;
-      try {
-        while(true) {
-          line = br.readLine();
-          if (line == null) break;
-          maxLineLength = Math.max(line.length(), maxLineLength);
-        }
-      } catch (IOException e) {
-        return -1;
+  private static final int maxLineLength(byte[] bytes) {
+    int start = bytes.length;
+    int max = -1;
+    for(int i = 0; i < bytes.length; ++i){
+      if(CsvParser.isEOL(bytes[i])){
+        int delta = i-start+1;
+        max = Math.max(max,delta);
+        start = i+1;
       }
-      return maxLineLength;
     }
-    return -1;
+    return Math.max(max,bytes.length-start+1);
   }
 
   /**
@@ -660,6 +656,21 @@ public class ParseSetup extends Iced {
     } catch (IllegalAccessException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  /**
+   * Tests whether a given string represents a NA in a given column.
+   * Note: NAs are expected to be made ONLY of ASCII (7-bit) characters, NA constants in unicode won't be recognized.
+   * @param colIdx index of the column
+   * @param str string to be tested for NA
+   * @return true - string is one of the column's NAs, false otherwise
+   */
+  public boolean isNA(int colIdx, BufferedString str) {
+    if (_na_strings == null || colIdx >= _na_strings.length || _na_strings[colIdx] == null)
+      return false;
+    for (String naStr : _na_strings[colIdx])
+      if (str.equalsAsciiString(naStr)) return true;
+    return false;
   }
 
   public ParserInfo getParseType() {

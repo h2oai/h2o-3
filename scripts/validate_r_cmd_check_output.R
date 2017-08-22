@@ -8,7 +8,8 @@ whitelist = list(
                                   "Checking URLs requires 'libcurl' support in the R build",
                                   "Package has FOSS license, installs .class/.jar but has no 'java' directory",
                                   "Insufficient package version", # when we check older version of package than current available on CRAN
-                                  "Days since last update"), # when we submit to CRAN recently
+                                  "Days since last update", # when we submit to CRAN recently
+                                  "Number of updates in past 6 months"), # when we submit to CRAN too often
   "package dependencies" = c("No repository set, so cyclic dependency check skipped",
                              "Package suggested but not available for checking"),
   "installed package size" = c("installed size is .*Mb", # h2o.jar is installed

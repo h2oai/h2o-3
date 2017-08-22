@@ -47,6 +47,15 @@ task syncBigdataServer {
   }
 }
 
+task syncFread {
+  group = "Datasets"
+  description = "Downloads fread datasets."
+  doLast {
+      syncData('fread');
+  }
+}
+
+
 // sync is based on name, size, and the last modify date, currently md5 tags are ignored
 // note this drops the subdir name locally
 def syncData(subdir) {

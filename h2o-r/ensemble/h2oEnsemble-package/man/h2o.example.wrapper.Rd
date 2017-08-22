@@ -4,8 +4,9 @@
 \alias{h2o.gbm.wrapper}
 \alias{h2o.randomForest.wrapper}
 \alias{h2o.deeplearning.wrapper}
+\alias{h2o.naiveBayes.wrapper}
 \title{
-Wrapper functions for h2o algorithms
+H2O Ensemble wrapper functions for h2o algorithms
 }
 \description{
 This is an example h2o algorithm wrapper function.

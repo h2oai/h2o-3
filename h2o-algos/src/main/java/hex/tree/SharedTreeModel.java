@@ -1,7 +1,11 @@
 package hex.tree;
 
 import hex.*;
+
+import static hex.ModelCategory.Binomial;
 import static hex.genmodel.GenModel.createAuxKey;
+
+import hex.glm.GLMModel;
 import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.codegen.CodeGenerator;
@@ -69,6 +73,11 @@ public abstract class SharedTreeModel<
     public double _sample_rate = 0.632; //fraction of rows to sample for each tree
 
     public double[] _sample_rate_per_class; //fraction of rows to sample for each tree, per class
+
+    public boolean _calibrate_model = false; // Use Platt Scaling
+    public Key<Frame> _calibration_frame;
+
+    public Frame calib() { return _calibration_frame == null ? null : _calibration_frame.get(); }
 
     @Override public long progressUnits() { return _ntrees + (_histogram_type==HistogramType.QuantilesGlobal || _histogram_type==HistogramType.RoundRobin ? 1 : 0); }
 
@@ -160,6 +169,8 @@ public abstract class SharedTreeModel<
     public TwoDimTable _variable_importances;
     public VarImp _varimp;
 
+    public GLMModel _calib_model;
+
     public SharedTreeOutput( SharedTree b) {
       super(b);
       _ntrees = 0;              // No trees yet
@@ -187,7 +198,7 @@ public abstract class SharedTreeModel<
         DKV.put(keys[i]=ct._key,ct,fs);
         _treeStats.updateBy(trees[i]); // Update tree shape stats
 
-        CompressedTree ctAux = new CompressedTree(trees[i]._abAux.buf(),-1,-1,-1,-1,_domains);
+        CompressedTree ctAux = new CompressedTree(trees[i]._abAux.buf(),-1,-1,-1,-1);
         keysAux[i] = ctAux._key = Key.make(createAuxKey(ct._key.toString()));
         DKV.put(ctAux);
       }
@@ -239,7 +250,7 @@ public abstract class SharedTreeModel<
             Key[] keys = _output._treeKeys[tidx];
             for (Key key : keys) {
               if (key != null) {
-                String pred = DKV.get(key).<CompressedTree>get().getDecisionPath(input);
+                String pred = DKV.get(key).<CompressedTree>get().getDecisionPath(input,_output._domains);
                 output[col++] = pred;
               }
             }
@@ -268,14 +279,40 @@ public abstract class SharedTreeModel<
     return res;
   }
 
-  @Override protected double[] score0(double[] data, double[] preds, double weight, double offset) {
-    return score0(data, preds, weight, offset, _output._treeKeys.length);
-  }
-  @Override protected double[] score0(double[/*ncols*/] data, double[/*nclasses+1*/] preds) {
-    return score0(data, preds, 1.0, 0.0);
+  @Override
+  protected Frame postProcessPredictions(Frame predictFr) {
+    if (_output._calib_model == null)
+      return predictFr;
+    if (_output.getModelCategory() == Binomial) {
+      Key<Frame> calibInputKey = Key.make();
+      Frame calibOutput = null;
+      try {
+        Frame calibInput = new Frame(calibInputKey, new String[]{"p"}, new Vec[]{predictFr.vec(1)});
+        calibOutput = _output._calib_model.score(calibInput);
+        assert calibOutput._names.length == 3;
+        Vec[] calPredictions = calibOutput.remove(new int[]{1, 2});
+        // append calibrated probabilities to the prediction frame
+        predictFr.write_lock();
+        for (int i = 0; i < calPredictions.length; i++)
+          predictFr.add("cal_" + predictFr.name(1 + i), calPredictions[i]);
+        return predictFr.update();
+      } finally {
+        DKV.remove(calibInputKey);
+        if (calibOutput != null)
+          calibOutput.remove();
+      }
+    } else
+      throw H2O.unimpl("Calibration is only supported for binomial models");
   }
 
-  protected double[] score0(double[] data, double[] preds, double weight, double offset, int ntrees) {
+  @Override protected double[] score0(double[] data, double[] preds, double offset) {
+    return score0(data, preds, offset, _output._treeKeys.length);
+  }
+  @Override protected double[] score0(double[/*ncols*/] data, double[/*nclasses+1*/] preds) {
+    return score0(data, preds, 0.0);
+  }
+
+  protected double[] score0(double[] data, double[] preds, double offset, int ntrees) {
     // Prefetch trees into the local cache if it is necessary
     // Invoke scoring
     Arrays.fill(preds,0);
@@ -289,7 +326,7 @@ public abstract class SharedTreeModel<
     Key[] keys = _output._treeKeys[treeIdx];
     for( int c=0; c<keys.length; c++ ) {
       if (keys[c] != null) {
-        double pred = DKV.get(keys[c]).<CompressedTree>get().score(data);
+        double pred = DKV.get(keys[c]).<CompressedTree>get().score(data,_output._domains);
         assert (!Double.isInfinite(pred));
         preds[keys.length == 1 ? 0 : c + 1] += pred;
       }
@@ -338,6 +375,8 @@ public abstract class SharedTreeModel<
     for (Key[] ks : _output._treeKeysAux)
       for (Key k : ks)
         if( k != null ) k.remove(fs);
+    if (_output._calib_model != null)
+      _output._calib_model.remove(fs);
     return super.remove_impl(fs);
   }
 

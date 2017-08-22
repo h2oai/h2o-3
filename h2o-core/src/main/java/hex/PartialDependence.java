@@ -10,10 +10,7 @@ import water.util.TwoDimTable;
 
 import java.util.Arrays;
 
-/**
- * Create a Frame from scratch
- * If randomize = true, then the frame is filled with Random values.
- */
+
 public class PartialDependence extends Lockable<PartialDependence> {
   transient final public Job _job;
   public Key<Model> _model_id;
@@ -22,9 +19,21 @@ public class PartialDependence extends Lockable<PartialDependence> {
   public int _nbins = 20;
   public TwoDimTable[] _partial_dependence_data; //OUTPUT
 
-  public PartialDependence(Key<PartialDependence> dest) {
+  public PartialDependence(Key<PartialDependence> dest, Job j) {
     super(dest);
-    _job = new Job<>(dest, PartialDependence.class.getName(), "PartialDependence");
+    _job = j;
+  }
+
+  public PartialDependence(Key<PartialDependence> dest) {
+    this(dest, new Job<>(dest, PartialDependence.class.getName(), "PartialDependence"));
+  }
+
+  public PartialDependence execNested() {
+    checkSanityAndFillParams();
+    this.delete_and_lock(_job);
+    _frame_id.get().write_lock(_job._key);
+    new PartialDependenceDriver().compute2();
+    return this;
   }
 
   public Job<PartialDependence> execImpl() {

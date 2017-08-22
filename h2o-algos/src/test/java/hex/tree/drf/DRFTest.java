@@ -1390,6 +1390,47 @@ public class DRFTest extends TestUtil {
   }
 
   @Test
+  public void testMTryNegTwo() {
+    Frame tfr = null;
+    Vec old = null;
+    DRFModel drf1 = null;
+    Scope.enter();
+    try {
+        tfr = parse_test_file("smalldata/junit/cars_20mpg.csv");
+        tfr.remove("name").remove(); // Remove unique id
+        tfr.remove("economy").remove();
+        old = tfr.remove("economy_20mpg");
+        tfr.add("economy_20mpg", VecUtils.toCategoricalVec(old)); // response to last column
+        tfr.add("constantCol",tfr.anyVec().makeCon(1)); //DRF should not honor constant cols but still use all cols for split when mtries=-2
+        DKV.put(tfr);
+
+        DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+        parms._train = tfr._key;
+        parms._response_column = "economy_20mpg";
+        parms._ignored_columns = new String[]{"year"}; //Test to see if ignored column is not passed to DRF
+        parms._min_rows = 2;
+        parms._ntrees = 5;
+        parms._max_depth = 5;
+        parms._nfolds = 3;
+        parms._mtries = -2;
+
+        drf1 = new DRF(parms).trainModel().get();
+
+        ModelMetricsBinomial mm1 = (ModelMetricsBinomial) drf1._output._cross_validation_metrics;
+        Assert.assertTrue(mm1._auc != null);
+
+      } finally {
+          if (tfr != null) tfr.remove();
+          if (old != null) old.remove();
+          if (drf1 != null) {
+              drf1.deleteCrossValidationModels();
+              drf1.delete();
+          }
+          Scope.exit();
+      }
+    }
+
+  @Test
   public void testStochasticDRFEquivalent() {
     Frame tfr = null, vfr = null;
     DRFModel drf = null;

@@ -31,4 +31,10 @@ public class BinomialModelPrediction extends AbstractPrediction {
    * If they are valid numeric values, then they will sum up to 1.0.
    */
   public double[] classProbabilities;
+
+  /**
+   * Class probabilities calibrated by Platt Scaling. Optional, only calculated if the model supports it.
+   */
+  public double[] calibratedClassProbabilities;
+
 }

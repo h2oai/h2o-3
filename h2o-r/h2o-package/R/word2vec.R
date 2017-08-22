@@ -17,6 +17,7 @@
 #' @param init_learning_rate Set the starting learning rate Defaults to 0.025.
 #' @param epochs Number of training iterations to run Defaults to 5.
 #' @param pre_trained Id of a data frame that contains a pre-trained (external) word2vec model
+#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @export
 h2o.word2vec <- function(training_frame = NULL,
                          model_id = NULL,
@@ -28,12 +29,13 @@ h2o.word2vec <- function(training_frame = NULL,
                          sent_sample_rate = 0.001,
                          init_learning_rate = 0.025,
                          epochs = 5,
-                         pre_trained = NULL
+                         pre_trained = NULL,
+                         max_runtime_secs = 0
                          ) 
 {
 
   # training_frame is required if pre_trained frame is not specified
-  if( missing(pre_trained) && missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
+  if (missing(pre_trained) && missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
   # training_frame must be a key or an H2OFrame object
   if (!missing(training_frame) && !is.H2OFrame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -70,6 +72,8 @@ h2o.word2vec <- function(training_frame = NULL,
     parms$epochs <- epochs
   if (!missing(pre_trained))
     parms$pre_trained <- pre_trained
+  if (!missing(max_runtime_secs))
+    parms$max_runtime_secs <- max_runtime_secs
   # Error check and build model
-  .h2o.modelJob('word2vec', parms, h2oRestApiVersion=3) 
+  .h2o.modelJob('word2vec', parms, h2oRestApiVersion = 3) 
 }

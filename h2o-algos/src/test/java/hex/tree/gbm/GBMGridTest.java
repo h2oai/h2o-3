@@ -1,22 +1,12 @@
 package hex.tree.gbm;
 
+import hex.Model;
 import hex.genmodel.utils.DistributionFamily;
+import hex.grid.Grid;
+import hex.grid.GridSearch;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-
-import hex.Distribution;
-import hex.Model;
-import hex.grid.Grid;
-import hex.grid.GridSearch;
 import water.DKV;
 import water.Job;
 import water.Key;
@@ -25,6 +15,8 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.test.util.GridTestUtils;
 import water.util.ArrayUtils;
+
+import java.util.*;
 
 import static org.junit.Assert.assertTrue;
 import static water.util.ArrayUtils.interval;
@@ -160,6 +152,58 @@ public class GBMGridTest extends TestUtil {
       for (Model m : models) {
         assertTrue("Number of constructed models has to be equal to 1", modelKey == m._key);
       }
+    } finally {
+      if (old != null) {
+        old.remove();
+      }
+      if (fr != null) {
+        fr.remove();
+      }
+      if (grid != null) {
+        grid.remove();
+      }
+    }
+  }
+
+  //@Ignore("PUBDEV-4361")
+  @Test
+  public void testGridAccumulation() {
+    Grid grid = null;
+    Frame fr = null;
+    Vec old = null;
+    try {
+      fr = parse_test_file("smalldata/junit/cars_20mpg.csv");
+      fr.remove("name").remove(); // Remove unique id
+      old = fr.remove("economy");
+      fr.add("economy", old); // response to last column
+      DKV.put(fr);
+
+      // Setup random hyperparameter search space
+      HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
+        put("_distribution", new DistributionFamily[]{DistributionFamily.gaussian});
+        put("_ntrees", new Integer[]{2});
+        put("_max_depth", new Integer[]{2});
+        put("_learn_rate", new Double[]{.1});
+      }};
+
+      // Fire off a grid search
+      GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+      params._train = fr._key;
+      params._response_column = "economy";
+
+      Key<Grid> accumulating_grid = Key.make("accumulating_grid");
+
+      Job<Grid>gs = null;
+      // search once
+      gs = GridSearch.startGridSearch(accumulating_grid, params, hyperParms);
+      grid = gs.get();
+      // search again
+      gs = GridSearch.startGridSearch(accumulating_grid, params, hyperParms);
+      grid = gs.get();
+
+      // Check that duplicate model have not been constructed
+      Model[] models = grid.getModels();
+      assertTrue("Number of returned models has to be 1", models.length == 1);
     } finally {
       if (old != null) {
         old.remove();

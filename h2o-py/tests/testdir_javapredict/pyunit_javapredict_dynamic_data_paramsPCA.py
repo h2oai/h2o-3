@@ -40,7 +40,8 @@ def javapredict_dynamic_data():
     params = {}
     if random.randint(0,1): params['max_iterations'] = random.sample(list(range(1,1000)),1)[0]
     if random.randint(0,1): params['transform'] = random.sample(["NONE","STANDARDIZE","NORMALIZE","DEMEAN","DESCALE"],1)[0]
-    params['k'] = random.sample(list(range(1,min(train.ncol,train.nrow))),1)[0]
+    realNcol = train.ncol-1
+    params['k'] = random.sample(list(range(1,min(realNcol,train.nrow))),1)[0]
 
     print("Parameter list: {0}".format(params))
 

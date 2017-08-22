@@ -3,6 +3,8 @@ package hex.tree;
 import hex.*;
 import hex.genmodel.GenModel;
 import hex.genmodel.utils.DistributionFamily;
+import hex.glm.GLM;
+import hex.glm.GLMModel;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import hex.util.LinearAlgebraUtils;
@@ -58,6 +60,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   private transient float[/*nfeatures*/] _improvPerVar;
 
   protected Random _rand;
+
+  protected final Frame calib() { return _calib; }
+  protected transient Frame _calib;
 
   public boolean isSupervised(){return true;}
 
@@ -163,6 +168,20 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
     if( _train != null )
       _ncols = _train.numCols()-1-numSpecialCols();
+
+    // Calibration
+    Frame cf = _parms.calib();  // User-given calibration set
+    if (cf != null) {
+      if (! _parms._calibrate_model)
+        warn("_calibration_frame", "Calibration frame was specified but calibration was not requested.");
+      _calib = init_adaptFrameToTrain(cf, "Calibration Frame", "_calibration_frame", expensive);
+    }
+    if (_parms._calibrate_model) {
+      if (nclasses() != 2)
+        error("_calibrate_model", "Model calibration is only currently supported for binomial models.");
+      if (cf == null)
+        error("_calibrate_model", "Calibration frame was not specified.");
+    }
   }
 
   // --------------------------------------------------------------------------
@@ -354,7 +373,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // Reconstruct the working tree state from the checkpoint
       Timer t = new Timer();
       int ntreesFromCheckpoint = ((SharedTreeModel.SharedTreeParameters) _parms._checkpoint.<SharedTreeModel>get()._parms)._ntrees;
-      new ReconstructTreeState(_ncols, _nclass, st /*large, but cleaner code this way*/, _parms._sample_rate,_model._output._treeKeys, doOOBScoring()).doAll(_train, _parms._build_tree_one_node);
+      new ReconstructTreeState(_ncols, _nclass, st /*large, but cleaner code this way*/, _parms._sample_rate,
+              new CompressedForest(_model._output._treeKeys, _model._output._domains), doOOBScoring())
+              .doAll(_train, _parms._build_tree_one_node);
       for (int i = 0; i < ntreesFromCheckpoint; i++) _rand.nextLong(); //for determinism
       Log.info("Reconstructing OOB stats from checkpoint took " + t);
       if (DEV_DEBUG) {
@@ -652,8 +673,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         if (_model._output._ntrees>0 || scoreZeroTrees()) //don't score the 0-tree model - the error is too large
           out._scored_valid[out._ntrees].fillFrom(mmv);
       }
-      out._model_summary = createModelSummaryTable(out);
-      out._scoring_history = createScoringHistoryTable(out);
+      out._model_summary = createModelSummaryTable(out._ntrees, out._treeStats);
+      out._scoring_history = createScoringHistoryTable(out, out._scored_train, out._scored_valid, _job, out._training_time_ms);
       if( out._ntrees > 0 ) {    // Compute variable importances
         out._varimp = new hex.VarImp(_improvPerVar, out._names);
         out._variable_importances = hex.ModelMetrics.calcVarImp(out._varimp);
@@ -666,6 +687,36 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
     // Double update - after either scoring or variable importance
     if( updated ) _model.update(_job);
+
+    // Model Calibration (only for the final model, not CV models)
+    if (finalScoring && _parms._calibrate_model && (! _parms._is_cv_model)) {
+      Key<Frame> calibInputKey = Key.make();
+      try {
+        Scope.enter();
+        _job.update(0, "Calibrating probabilities");
+        Frame calibPredict = Scope.track(_model.score(calib(), null, _job, false));
+
+        Frame calibInput = new Frame(calibInputKey,
+                new String[]{"p", "response"}, new Vec[]{calibPredict.vec(1), calib().vec(_parms._response_column)});
+        DKV.put(calibInput);
+
+        Key<Model> calibModelKey = Key.make();
+        Job calibJob = new Job<>(calibModelKey, ModelBuilder.javaName("glm"), "Platt Scaling (GLM)");
+        GLM calibBuilder = ModelBuilder.make("GLM", calibJob, calibModelKey);
+        calibBuilder._parms._intercept = true;
+        calibBuilder._parms._response_column = "response";
+        calibBuilder._parms._train = calibInput._key;
+        calibBuilder._parms._family = GLMModel.GLMParameters.Family.binomial;
+        calibBuilder._parms._lambda = new double[] {0.0};
+
+        _model._output._calib_model = calibBuilder.trainModel().get();
+        _model.update(_job);
+      } finally {
+        Scope.exit();
+        DKV.remove(calibInputKey);
+      }
+    }
+
     return updated;
   }
 
@@ -686,7 +737,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       }
   }
 
-  private TwoDimTable createScoringHistoryTable(SharedTreeModel.SharedTreeOutput _output) {
+  public static TwoDimTable createScoringHistoryTable(Model.Output _output, ScoreKeeper[] _scored_train, ScoreKeeper[] _scored_valid, Job job, long[] _training_time_ms) {
     List<String> colHeaders = new ArrayList<>();
     List<String> colTypes = new ArrayList<>();
     List<String> colFormat = new ArrayList<>();
@@ -709,7 +760,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       colHeaders.add("Training Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
     }
 
-    if (valid() != null) {
+    if (_output._validation_metrics != null) {
       colHeaders.add("Validation RMSE"); colTypes.add("double"); colFormat.add("%.5f");
       if (_output.getModelCategory() == ModelCategory.Regression) {
         colHeaders.add("Validation MAE"); colTypes.add("double"); colFormat.add("%.5f");
@@ -728,8 +779,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
 
     int rows = 0;
-    for( int i = 0; i<_output._scored_train.length; i++ ) {
-      if (i != 0 && Double.isNaN(_output._scored_train[i]._rmse) && (_output._scored_valid == null || Double.isNaN(_output._scored_valid[i]._rmse))) continue;
+    for( int i = 0; i<_scored_train.length; i++ ) {
+      if (i != 0 && Double.isNaN(_scored_train[i]._rmse) && (_scored_valid == null || Double.isNaN(_scored_valid[i]._rmse))) continue;
       rows++;
     }
     TwoDimTable table = new TwoDimTable(
@@ -740,14 +791,14 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
             colFormat.toArray(new String[0]),
             "");
     int row = 0;
-    for( int i = 0; i<_output._scored_train.length; i++ ) {
-      if (i != 0 && Double.isNaN(_output._scored_train[i]._rmse) && (_output._scored_valid == null || Double.isNaN(_output._scored_valid[i]._rmse))) continue;
+    for( int i = 0; i<_scored_train.length; i++ ) {
+      if (i != 0 && Double.isNaN(_scored_train[i]._rmse) && (_scored_valid == null || Double.isNaN(_scored_valid[i]._rmse))) continue;
       int col = 0;
       DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
-      table.set(row, col++, fmt.print(_output._training_time_ms[i]));
-      table.set(row, col++, PrettyPrint.msecs(_output._training_time_ms[i] - _job.start_time(), true));
+      table.set(row, col++, fmt.print(_training_time_ms[i]));
+      table.set(row, col++, PrettyPrint.msecs(_training_time_ms[i] - job.start_time(), true));
       table.set(row, col++, i);
-      ScoreKeeper st = _output._scored_train[i];
+      ScoreKeeper st = _scored_train[i];
       table.set(row, col++, st._rmse);
       if (_output.getModelCategory() == ModelCategory.Regression) {
         table.set(row, col++, st._mae);
@@ -760,8 +811,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       }
       if (_output.isClassifier()) table.set(row, col++, st._classError);
 
-      if (_valid != null) {
-        st = _output._scored_valid[i];
+      if (_output._validation_metrics != null) {
+        st = _scored_valid[i];
         table.set(row, col++, st._rmse);
         if (_output.getModelCategory() == ModelCategory.Regression) {
           table.set(row, col++, st._mae);
@@ -779,22 +830,22 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     return table;
   }
 
-  private TwoDimTable createModelSummaryTable(SharedTreeModel.SharedTreeOutput _output) {
+  public static TwoDimTable createModelSummaryTable(int ntrees, TreeStats treeStats) {
     List<String> colHeaders = new ArrayList<>();
     List<String> colTypes = new ArrayList<>();
     List<String> colFormat = new ArrayList<>();
 
     colHeaders.add("Number of Trees"); colTypes.add("long"); colFormat.add("%d");
-    colHeaders.add("Number of Internal Trees"); colTypes.add("long"); colFormat.add("%d");
-    colHeaders.add("Model Size in Bytes"); colTypes.add("long"); colFormat.add("%d");
-
-    colHeaders.add("Min. Depth"); colTypes.add("long"); colFormat.add("%d");
-    colHeaders.add("Max. Depth"); colTypes.add("long"); colFormat.add("%d");
-    colHeaders.add("Mean Depth"); colTypes.add("double"); colFormat.add("%.5f");
-
-    colHeaders.add("Min. Leaves"); colTypes.add("long"); colFormat.add("%d");
-    colHeaders.add("Max. Leaves"); colTypes.add("long"); colFormat.add("%d");
-    colHeaders.add("Mean Leaves"); colTypes.add("double"); colFormat.add("%.5f");
+    if (treeStats!=null) {
+      colHeaders.add("Number of Internal Trees"); colTypes.add("long"); colFormat.add("%d");
+      colHeaders.add("Model Size in Bytes"); colTypes.add("long"); colFormat.add("%d");
+      colHeaders.add("Min. Depth"); colTypes.add("long"); colFormat.add("%d");
+      colHeaders.add("Max. Depth"); colTypes.add("long"); colFormat.add("%d");
+      colHeaders.add("Mean Depth"); colTypes.add("double"); colFormat.add("%.5f");
+      colHeaders.add("Min. Leaves"); colTypes.add("long"); colFormat.add("%d");
+      colHeaders.add("Max. Leaves"); colTypes.add("long"); colFormat.add("%d");
+      colHeaders.add("Mean Leaves"); colTypes.add("double"); colFormat.add("%.5f");
+    }
 
     final int rows = 1;
     TwoDimTable table = new TwoDimTable(
@@ -806,15 +857,17 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
             "");
     int row = 0;
     int col = 0;
-    table.set(row, col++, _output._ntrees);
-    table.set(row, col++, _output._treeStats._num_trees); //internal number of trees (more for multinomial)
-    table.set(row, col++, _output._treeStats._byte_size);
-    table.set(row, col++, _output._treeStats._min_depth);
-    table.set(row, col++, _output._treeStats._max_depth);
-    table.set(row, col++, _output._treeStats._mean_depth);
-    table.set(row, col++, _output._treeStats._min_leaves);
-    table.set(row, col++, _output._treeStats._max_leaves);
-    table.set(row, col++, _output._treeStats._mean_leaves);
+    table.set(row, col++, ntrees);
+    if (treeStats!=null) {
+      table.set(row, col++, treeStats._num_trees); //internal number of trees (more for multinomial)
+      table.set(row, col++, treeStats._byte_size);
+      table.set(row, col++, treeStats._min_depth);
+      table.set(row, col++, treeStats._max_depth);
+      table.set(row, col++, treeStats._mean_depth);
+      table.set(row, col++, treeStats._min_leaves);
+      table.set(row, col++, treeStats._max_leaves);
+      table.set(row, col++, treeStats._mean_leaves);
+    }
     return table;
   }
 
@@ -850,7 +903,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
   }
 
-  @Override protected void checkMemoryFootPrint() {
+  @Override protected void checkMemoryFootPrint_impl() {
     if (_model._output._ntrees == 0) return;
     int trees_so_far = _model._output._ntrees; //existing trees
     long model_mem_size = new ComputeModelSize(trees_so_far, _model._output._treeKeys).doAllNodes()._model_mem_size;

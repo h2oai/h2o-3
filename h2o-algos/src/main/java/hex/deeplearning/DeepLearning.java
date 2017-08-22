@@ -116,7 +116,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
     return dinfo;
   }
 
-  @Override protected void checkMemoryFootPrint() {
+  @Override protected void checkMemoryFootPrint_impl() {
     if (_parms._checkpoint != null) return;
     long p = hex.util.LinearAlgebraUtils.numColsExp(_train,true) - (_parms._autoencoder ? 0 : _train.lastVec().cardinality());
     String[][] dom = _train.domains();
@@ -128,17 +128,22 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
     }
 //    assert(makeDataInfo(_train, _valid, _parms).fullN() == p);
     long output = _parms._autoencoder ? p : Math.abs(_train.lastVec().cardinality());
-    // weights
-    long model_size = p * _parms._hidden[0];
-    int layer=1;
-    for (; layer < _parms._hidden.length; ++layer)
-      model_size += _parms._hidden[layer-1] * _parms._hidden[layer];
-    model_size += _parms._hidden[layer-1] * output;
+    long model_size = 0;
+    if (_parms._hidden.length==0) {
+      model_size += p * output;
+    } else {
+      // weights
+      model_size += p * _parms._hidden[0];
+      int layer = 1;
+      for (; layer < _parms._hidden.length; ++layer)
+        model_size += _parms._hidden[layer - 1] * _parms._hidden[layer];
+      model_size += _parms._hidden[layer - 1] * output;
 
-    // biases
-    for (layer=0; layer < _parms._hidden.length; ++layer)
-      model_size += _parms._hidden[layer];
-    model_size += output;
+      // biases
+      for (layer = 0; layer < _parms._hidden.length; ++layer)
+        model_size += _parms._hidden[layer];
+      model_size += output;
+    }
 
     if (model_size > 1e8) {
       String msg = "Model is too large: " + model_size + " parameters. Try reducing the number of neurons in the hidden layers (or reduce the number of categorical factors).";
@@ -474,6 +479,9 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         if (!_parms._quiet_mode) {
           Log.info("==============================================================================================================================================================================");
           if (stop_requested()) {
+            if (timeout())
+              warn("_max_runtime_secs", "Deep Learning model training was interrupted due to " +
+                      "timeout.  Increase _max_runtime_secs or set it to 0 to disable it.");
             Log.info("Deep Learning model training was interrupted.");
           } else {
             Log.info("Finished training the Deep Learning model.");

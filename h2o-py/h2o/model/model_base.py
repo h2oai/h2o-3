@@ -715,9 +715,9 @@ class ModelBase(backwards_compatible()):
         """
         assert_is_type(path, str)
         assert_is_type(get_genmodel_jar, bool)
-        if self.algo not in {"drf", "gbm", "deepwater", "glrm", "glm", "word2vec"}:
+        if self.algo not in {"drf", "gbm", "deepwater", "xgboost", "glrm", "glm", "word2vec"}:
             raise H2OValueError("MOJOs are currently supported for Distributed Random Forest, "
-                                "Gradient Boosting Machine, Deep Water, GLM, GLRM and word2vec models only.")
+                                "Gradient Boosting Machine, XGBoost, Deep Water, GLM, GLRM and word2vec models only.")
         if get_genmodel_jar:
             if genmodel_name == "":
                 h2o.api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, "h2o-genmodel.jar"))
@@ -789,9 +789,9 @@ class ModelBase(backwards_compatible()):
             plt.title("Validation Scoring History")
             plt.plot(scoring_history[timestep], scoring_history[metric])
 
-        elif self._model_json["algo"] in ("deeplearning", "deepwater", "drf", "gbm"):
+        elif self._model_json["algo"] in ("deeplearning", "deepwater", "xgboost", "drf", "gbm"):
             # Set timestep
-            if self._model_json["algo"] in ("gbm", "drf"):
+            if self._model_json["algo"] in ("gbm", "drf", "xgboost"):
                 assert_is_type(timestep, "AUTO", "duration", "number_of_trees")
                 if timestep == "AUTO":
                     timestep = "number_of_trees"
@@ -838,7 +838,7 @@ class ModelBase(backwards_compatible()):
                 plt.ylim(ylim)
                 plt.plot(scoring_history[timestep], scoring_history[training_metric])
 
-        else:  # algo is not glm, deeplearning, drf, gbm
+        else:  # algo is not glm, deeplearning, drf, gbm, xgboost
             raise H2OValueError("Plotting not implemented for this type of model")
         if not server: plt.show()
 
@@ -933,7 +933,7 @@ class ModelBase(backwards_compatible()):
         """
         Plot the variable importance for a trained model.
 
-        :param num_of_features: the number of features shown in the plot.
+        :param num_of_features: the number of features shown in the plot (default is 10 or all if less than 10).
         :param server: ?
 
         :returns: None.
@@ -962,9 +962,13 @@ class ModelBase(backwards_compatible()):
         # specify the bar lengths
         val = scaled_importances
 
-        # check that num_of_features is an integer
+        # # check that num_of_features is an integer
+        # if num_of_features is None:
+        #     num_of_features = len(val)
+
+        # default to 10 or less features if num_of_features is not specified
         if num_of_features is None:
-            num_of_features = len(val)
+            num_of_features = min(len(val), 10)
 
         fig, ax = plt.subplots(1, 1, figsize=(14, 10))
         # create separate plot for the case where num_of_features == 1
@@ -994,7 +998,8 @@ class ModelBase(backwards_compatible()):
             ax.yaxis.set_ticks_position("left")
             ax.xaxis.set_ticks_position("bottom")
             plt.yticks(pos[0:num_of_features], feature_labels[0:num_of_features])
-            ax.margins(y=0.5)
+            plt.ylim([min(pos[0:num_of_features])- 1, max(pos[0:num_of_features])+1])
+            # ax.margins(y=0.5)
 
         # check which algorithm was used to select right plot title
         if self._model_json["algo"] == "gbm":
@@ -1002,6 +1007,9 @@ class ModelBase(backwards_compatible()):
             if not server: plt.show()
         elif self._model_json["algo"] == "drf":
             plt.title("Variable Importance: H2O DRF", fontsize=20)
+            if not server: plt.show()
+        elif self._model_json["algo"] == "xgboost":
+            plt.title("Variable Importance: H2O XGBoost", fontsize=20)
             if not server: plt.show()
         # if H2ODeepLearningEstimator has variable_importances == True
         elif self._model_json["algo"] == "deeplearning":

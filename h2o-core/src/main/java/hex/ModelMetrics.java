@@ -21,11 +21,13 @@ import java.util.*;
  */
 public class ModelMetrics extends Keyed<ModelMetrics> {
   public String _description;
-  final Key _modelKey;
-  final Key _frameKey;
-  final ModelCategory _model_category;
-  final long _model_checksum;
-  long _frame_checksum;  // when constant column is dropped, frame checksum changed.  Need re-assign for GLRM.
+  // Model specific information
+  private Key _modelKey;
+  private ModelCategory _model_category;
+  private long _model_checksum;
+  // Frame specific information
+  private Key _frameKey;
+  private long _frame_checksum;  // when constant column is dropped, frame checksum changed.  Need re-assign for GLRM.
   public final long _scoring_time;
 
   // Cached fields - cached them when needed
@@ -37,13 +39,8 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
 
   public ModelMetrics(Model model, Frame frame, long nobs, double MSE, String desc) {
     super(buildKey(model, frame));
+    withModelAndFrame(model, frame);
     _description = desc;
-
-    _modelKey = model == null ? null : model._key;
-    _frameKey = frame == null ? null : frame._key;
-    _model_category = model == null ? null : model._output.getModelCategory();
-    _model_checksum = model == null ? 0 : model.checksum();
-    try { _frame_checksum = frame.checksum(); } catch (Throwable t) { }
     _MSE = MSE;
     _nobs = nobs;
     _scoring_time = System.currentTimeMillis();
@@ -58,6 +55,23 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
       PojoUtils.setField(this, "_frame_checksum", frame.checksum());
     }
     catch (Throwable t) { }
+  }
+
+  public final ModelMetrics withModelAndFrame(Model model, Frame frame) {
+    _modelKey = model == null ? null : model._key;
+    _model_category = model == null ? null : model._output.getModelCategory();
+    _model_checksum = model == null ? 0 : model.checksum();
+
+    _frameKey = frame == null ? null : frame._key;
+    try { _frame_checksum = frame == null ? 0 : frame.checksum(); } catch (Throwable t) { }
+
+    _key = buildKey(model, frame);
+    return this;
+  }
+
+  public ModelMetrics withDescription(String desc) {
+    _description = desc;
+    return this;
   }
 
   /**
@@ -87,8 +101,8 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     return sb.toString();
   }
 
-  public Model model() { return _model==null ? (_model=DKV.getGet(_modelKey)) : _model; }
-  public Frame frame() { return _frame==null ? (_frame=DKV.getGet(_frameKey)) : _frame; }
+  public final Model model() { return _model==null ? (_model=DKV.getGet(_modelKey)) : _model; }
+  public final Frame frame() { return _frame==null ? (_frame=DKV.getGet(_frameKey)) : _frame; }
 
   public double mse() { return _MSE; }
   public double rmse() { return Math.sqrt(_MSE);}

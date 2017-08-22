@@ -7,8 +7,8 @@ apply plugin: 'java'
 
 description = 'H2O mapreduce generic driver'
 
-sourceCompatibility = 1.6
-targetCompatibility = 1.6
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
 
 compileJava { 
   options.debug = true 
@@ -16,6 +16,7 @@ compileJava {
 
 dependencies {
   compile('org.apache.hadoop:hadoop-client:' + hadoopMavenArtifactVersion)
+  compile "org.eclipse.jetty.aggregate:jetty-all-server:8.1.17.v20150415"
   compile project(':h2o-app')
   compile project(":h2o-web")
   compile project(":h2o-avro-parser")

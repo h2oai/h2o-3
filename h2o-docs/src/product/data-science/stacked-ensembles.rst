@@ -49,17 +49,19 @@ The steps below describe the individual tasks involved in training and testing a
 Defining an H2O Stacked Ensemble Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  **model_id**: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
+-  `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
 
--  **training_frame**: Specify the dataset used to build the model. 
+-  `training_frame <algo-params/training_frame.html>`__ Specify the dataset used to build the model. 
 
--  **validation_frame**: Specify the dataset used to evaluate the accuracy of the model.
+-  `validation_frame <algo-params/validation_frame.html>`__: Specify the dataset used to evaluate the accuracy of the model.
 
--  **selection_strategy**: Specify the strategy for choosing which models to stack. Note that **choose_all** is currently the only selection strategy implemented. 
+-  **base_models**: Specify a list of model IDs that can be stacked together. Models must have been cross-validated using ``nfolds`` > 1, they all must use the same cross-validation folds, and ``keep_cross_validation_folds`` must be set to True. 
 
--  **base_models**: Specify a list of model IDs that can be stacked together. Models must have been cross-validated using ``nfolds`` > 1, they all must use the same cross-validation folds and ``keep_cross_validation_folds`` must be set to True.  
+  **Notes regarding** ``base_models``: 
 
-Regarding the base models: One way to guarantee identical folds across base models is to set **fold_assignment** = "Modulo" in all the base models.  Currently, using base models that were all trained with **fold_assignment** = "Modulo" is a strict requirement, but this will be `relaxed <https://0xdata.atlassian.net/browse/PUBDEV-3973>`__ in the next release to allow for identical user-specified folds or random folds that were generated with the same seed.
+    - One way to guarantee identical folds across base models is to set ``fold_assignment = "Modulo"`` in all the base models.  It is also possible to get identical folds by setting ``fold_assignment = "Random"`` when the same seed is used in all base models.
+
+    - In R, you can specify a list of models in the ``base_models`` parameter. 
 
 Also in a `future release <https://0xdata.atlassian.net/browse/PUBDEV-3743>`__, there will be an additional **metalearner** parameter which allows for the user to specify the metalearning algorithm used.  Currently, the metalearner is fixed as a default H2O GLM with non-negative weights.
 
@@ -318,8 +320,7 @@ FAQ
 
 -  **How do I save ensemble models?**
 
-  Currently, there is no support for saving ensembles, but this will be addressed in the next release.  `Binary save/load <https://0xdata.atlassian.net/browse/PUBDEV-3970>`__ as as well as `MOJO support <https://0xdata.atlassian.net/browse/PUBDEV-3877>`__ is planned for Stacked Ensemble models.  (More accurately, you can currently save an ensemble as a binary model, but there may be issues when loading it back in.)
-
+  H2O now supports saving and loading ensemble models. (Refer to `PUBDEV-3970 <https://0xdata.atlassian.net/browse/PUBDEV-3970>`__ for more information.) The steps are the same as those described in the `Saving and Loading a Model <../save-and-load-model.html>`__ section. Note that MOJO support is planned for Stacked Ensemble models in a future release. (See `PUBDEV-3877 <https://0xdata.atlassian.net/browse/PUBDEV-3877>`__.)
 
 -  **Will an stacked ensemble always perform better than a single model?**
   
@@ -329,7 +330,6 @@ FAQ
 -  **How do I improve the performance of an ensemble?**
   
   If you find that your ensemble is not performing better than the best base learner, then you can try a few different things.  First, look to see if there are base learners that are performing much worse than the other base learners (for example, a GLM).  If so, remove them from the ensemble and try again.  Second, you can try adding more models to the ensemble, especially models that add diversity to your set of base models.  Once `custom metalearner support <https://0xdata.atlassian.net/browse/PUBDEV-3743>`__ is added, you can try out different metalearners as well.
-
 
 -  **How does the algorithm handle missing values during training?**
 
@@ -351,7 +351,6 @@ FAQ
    column?**
 
   In the base learners, specify ``balance_classes``, ``class_sampling_factors`` and ``max_after_balance_size`` to control over/under-sampling.
-
 
 
 Additional Information

@@ -133,6 +133,14 @@ h2o.stack <- function(models,  #list of H2OModels
     metalearner_type <- "h2o"
   }
   
+  # Check that Naive Bayes is not specified for a regression problem
+  if (family == "gaussian") {
+    if (!("gaussian" %in% eval(formals(metalearner)$family))) {
+      # TO DO: should make this more generic and print specific wrapper name in violation
+      stop("The Naive Bayes function does not support regression, please choose a different metalearner.")
+    }    
+  }
+  
   # TO DO: Maybe remove this:
   # Do we want to rename this to `fit`? or overwrite original object...
   # Currently making a copy of the model

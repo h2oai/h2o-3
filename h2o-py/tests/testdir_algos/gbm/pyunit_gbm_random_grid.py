@@ -37,7 +37,7 @@ def airline_gbm_random_grid():
 
 
 
-    stacker = H2OStackedEnsembleEstimator(selection_strategy="choose_all", base_models=air_grid.model_ids)
+    stacker = H2OStackedEnsembleEstimator(base_models=air_grid.model_ids)
     print("created H2OStackedEnsembleEstimator")
     stacker.train(model_id="my_ensemble", y="IsDepDelayed", training_frame=air_hex)
     print("trained H2OStackedEnsembleEstimator")

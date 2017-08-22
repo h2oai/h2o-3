@@ -18,6 +18,8 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/beta_epsilon
    data-science/algo-params/binomial_double_trees
    data-science/algo-params/build_tree_one_node
+   data-science/algo-params/calibrate_frame
+   data-science/algo-params/calibrate_model
    data-science/algo-params/categorical_encoding
    data-science/algo-params/checkpoint
    data-science/algo-params/class_sampling_factors
@@ -39,6 +41,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/huber_alpha
    data-science/algo-params/ignore_const_cols
    data-science/algo-params/ignored_columns
+   data-science/algo-params/impute_missing
    data-science/algo-params/init
    data-science/algo-params/interactions
    data-science/algo-params/intercept
@@ -75,6 +78,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/ntrees
    data-science/algo-params/objective_epsilon
    data-science/algo-params/offset_column
+   data-science/algo-params/pca_method
    data-science/algo-params/pred_noise_bandwidth
    data-science/algo-params/quantile_alpha
    data-science/algo-params/remove_collinear_columns
@@ -89,9 +93,11 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/stopping_rounds
    data-science/algo-params/stopping_tolerance
    data-science/algo-params/training_frame
+   data-science/algo-params/transform
    data-science/algo-params/tweedie_link_power
    data-science/algo-params/tweedie_power
    data-science/algo-params/tweedie_variance_power
+   data-science/algo-params/use_all_factor_levels
    data-science/algo-params/user_points
    data-science/algo-params/validation_frame
    data-science/algo-params/weights_column

@@ -73,7 +73,7 @@
 #'        1). Defaults to 0.9.
 #' @param checkpoint Model checkpoint to resume training with.
 #' @param sample_rate Row sample rate per tree (from 0.0 to 1.0) Defaults to 1.
-#' @param sample_rate_per_class Row sample rate per tree per class (from 0.0 to 1.0)
+#' @param sample_rate_per_class A list of row sample rates per class (relative fraction for each class, from 0.0 to 1.0), for each tree
 #' @param col_sample_rate Column sample rate (from 0.0 to 1.0) Defaults to 1.
 #' @param col_sample_rate_change_per_level Relative change of the column sampling rate for every level (from 0.0 to 2.0) Defaults to 1.
 #' @param col_sample_rate_per_tree Column sample rate per tree (from 0.0 to 1.0) Defaults to 1.
@@ -83,7 +83,11 @@
 #' @param max_abs_leafnode_pred Maximum absolute value of a leaf node prediction Defaults to 1.797693135e+308.
 #' @param pred_noise_bandwidth Bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions Defaults to 0.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
-#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse". Defaults to AUTO.
+#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
+#' @param calibrate_model \code{Logical}. Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more
+#'        accurate estimates of class probabilities. Defaults to FALSE.
+#' @param calibration_frame Calibration frame for Platt Scaling
+#' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree for GBM, DRF, & XGBoost. Metrics per epoch for Deep Learning). Defaults to FALSE.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @examples
 #' \donttest{
@@ -146,15 +150,18 @@ h2o.gbm <- function(x, y, training_frame,
                     histogram_type = c("AUTO", "UniformAdaptive", "Random", "QuantilesGlobal", "RoundRobin"),
                     max_abs_leafnode_pred = 1.797693135e+308,
                     pred_noise_bandwidth = 0,
-                    categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse")
+                    categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
+                    calibrate_model = FALSE,
+                    calibration_frame = NULL,
+                    verbose = FALSE 
                     ) 
 {
-  #If x is missing, then assume user wants to use all columns as features.
-  if(missing(x)){
-     if(is.numeric(y)){
-         x <- setdiff(col(training_frame),y)
-     }else{
-         x <- setdiff(colnames(training_frame),y)
+  # If x is missing, then assume user wants to use all columns as features.
+  if (missing(x)) {
+     if (is.numeric(y)) {
+         x <- setdiff(col(training_frame), y)
+     } else {
+         x <- setdiff(colnames(training_frame), y)
      }
   }
   # Required maps for different names params, including deprecated params
@@ -162,7 +169,7 @@ h2o.gbm <- function(x, y, training_frame,
                 "y" = "response_column")
 
   # Required args: training_frame
-  if( missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
+  if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
   # Training_frame must be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
      tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -279,6 +286,10 @@ h2o.gbm <- function(x, y, training_frame,
     parms$pred_noise_bandwidth <- pred_noise_bandwidth
   if (!missing(categorical_encoding))
     parms$categorical_encoding <- categorical_encoding
+  if (!missing(calibrate_model))
+    parms$calibrate_model <- calibrate_model
+  if (!missing(calibration_frame))
+    parms$calibration_frame <- calibration_frame
   # Error check and build model
-  .h2o.modelJob('gbm', parms, h2oRestApiVersion=3) 
+  .h2o.modelJob('gbm', parms, h2oRestApiVersion = 3, verbose=verbose) 
 }

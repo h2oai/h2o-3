@@ -334,8 +334,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def alpha(self):
         """
-        distribution of regularization between L1 and L2. Default value of alpha is 0 when SOLVER = 'L-BFGS', 0.5
-        otherwise
+        Distribution of regularization between the L1 (Lasso) and L2 (Ridge) penalties. A value of 1 for alpha
+        represents Lasso regression, a value of 0 produces Ridge regression, and anything in between specifies the
+        amount of mixing between the two. Default value of alpha is 0 when SOLVER = 'L-BFGS'; 0.5 otherwise.
 
         Type: ``List[float]``.
         """
@@ -350,7 +351,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def lambda_(self):
         """
-        regularization strength
+        Regularization strength
 
         Type: ``List[float]``.
         """
@@ -365,7 +366,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def lambda_search(self):
         """
-        use lambda search starting at lambda max, given lambda is then interpreted as lambda min
+        Use lambda search starting at lambda max, given lambda is then interpreted as lambda min
 
         Type: ``bool``  (default: ``False``).
         """
@@ -380,7 +381,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def early_stopping(self):
         """
-        stop early when there is no more relative improvement on train or validation (if provided)
+        Stop early when there is no more relative improvement on train or validation (if provided)
 
         Type: ``bool``  (default: ``True``).
         """
@@ -441,7 +442,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def compute_p_values(self):
         """
-        request p-values computation, p-values work only with IRLSM solver and no regularization
+        Request p-values computation, p-values work only with IRLSM solver and no regularization
 
         Type: ``bool``  (default: ``False``).
         """
@@ -456,7 +457,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def remove_collinear_columns(self):
         """
-        in case of linearly dependent columns remove some of the dependent columns
+        In case of linearly dependent columns, remove some of the dependent columns
 
         Type: ``bool``  (default: ``False``).
         """
@@ -471,7 +472,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def intercept(self):
         """
-        include constant term in the model
+        Include constant term in the model
 
         Type: ``bool``  (default: ``True``).
         """
@@ -534,7 +535,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def beta_epsilon(self):
         """
-        converge if  beta changes less (using L-infinity norm) than beta esilon, ONLY applies to IRLSM solver
+        Converge if  beta changes less (using L-infinity norm) than beta esilon, ONLY applies to IRLSM solver
 
         Type: ``float``  (default: ``0.0001``).
         """
@@ -583,7 +584,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def prior(self):
         """
-        prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
+        Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
         of response does not reflect reality.
 
         Type: ``float``  (default: ``-1``).
@@ -599,9 +600,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def lambda_min_ratio(self):
         """
-        Min lambda used in lambda search, specified as a ratio of lambda_max. Default indicates: if the number of
-        observations is greater than the number of variables then lambda_min_ratio is set to 0.0001; if the number of
-        observations is less than the number of variables then lambda_min_ratio is set to 0.01.
+        Minimum lambda used in lambda search, specified as a ratio of lambda_max (the smallest lambda that drives all
+        coefficients to zero). Default indicates: if the number of observations is greater than the number of variables,
+        then lambda_min_ratio is set to 0.0001; if the number of observations is less than the number of variables, then
+        lambda_min_ratio is set to 0.01.
 
         Type: ``float``  (default: ``-1``).
         """
@@ -616,7 +618,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def beta_constraints(self):
         """
-        beta constraints
+        Beta constraints
 
         Type: ``H2OFrame``.
         """
@@ -725,7 +727,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def max_hit_ratio_k(self):
         """
-        Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
+        Maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
 
         Type: ``int``  (default: ``0``).
         """

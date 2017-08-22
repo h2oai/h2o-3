@@ -15,6 +15,9 @@
 \input{common/conf_listings.tex} %see note for `conf_top_print.tex` above
 %\input{common/conf_listings_colorized.tex}  % Work in progress....  Use this for online/pdf version
 
+\usepackage{url}
+\def\UrlBreaks{\do\/\do-\do_}
+
 \begin{document}
 
 
@@ -29,11 +32,9 @@
 \bigskip
 \line(1,0){250}  %inserts  horizontal line 
 
-\textsc{\small{Tomas Nykodym \hspace{10pt} Tom Kraljevic \hspace{10pt} Nadine Hussami   \hspace{10pt}}}
+\textsc{\small{Tomas Nykodym \hspace{10pt} Tom Kraljevic \hspace{10pt} Amy Wang}}
 
-\textsc{\small{ Ariel Rao \hspace{10pt} Amy Wang }}
-
-\textsc{\small{Edited by: Jessica Lanford}}
+\textsc{\small{Edited by: Angela Bartz}}
 \\
 \bigskip
 \line(1,0){250}  %inserts  horizontal line
@@ -42,7 +43,7 @@
 {\url{http://h2o.ai/resources/}}
 
 \bigskip
-\monthname \hspace{1pt}  \the\year: Fifth Edition
+\monthname \hspace{1pt}  \the\year: Sixth Edition
 
  
 \bigskip
@@ -67,9 +68,9 @@
 
 Generalized Linear Modeling with H2O\\
 
-by Tomas Nykodym, Tom Kraljevic, \\
-Nadine Hussami, Ariel Rao,  \& \ Amy Wang \\
-Edited by: Jessica Lanford
+by Tomas Nykodym, Tom Kraljevic, \&\ Amy Wang\\
+with assistance from Nadine Hussami \&\ Ariel Rao \\
+Edited by: Angela Bartz
 
 \bigskip
   Published by H2O.ai, Inc. \\
@@ -79,7 +80,7 @@ Mountain View, CA 94043\\
 \textcopyright \the\year \hspace{1pt} H2O.ai, Inc. All Rights Reserved. 
 \bigskip
 
-\monthname \hspace{1pt}  \the\year: Fifth Edition
+\monthname \hspace{1pt}  \the\year: Sixth Edition
 \bigskip
 
 Photos by \textcopyright H2O.ai, Inc.
@@ -423,7 +424,6 @@ own (Group).
 \waterExampleInPython
 \lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_poisson_example.py}
 
-\newpage
 \subsubsection{Gamma Models}
 The gamma distribution is useful for modeling a positive continuous response variable, where the conditional
 variance of the response grows with its mean but the coefficient of variation of the response $\sigma^2(y_i)/\mu_i$ is
@@ -445,7 +445,6 @@ argument.
 
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_gamma_example.R}
 
-\newpage
 \waterExampleInPython
 \lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_gamma_example.py}
 
@@ -464,11 +463,10 @@ The Tweedie distribution is parametrized by variance power $p$. It is defined fo
 \item $p>2$:  Stable, with support on the positive reals % (was 2?)
 \end{itemize}
 
-\newpage
 \waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_tweedie_example.R}
 
-\medskip
+\newpage
 \waterExampleInPython
 \lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_tweedie_example.py}
 
@@ -498,6 +496,7 @@ $$D = -2 \sum_{i=1}^{N} y_i  (y_i^{1-p} - \hat{y}_i^{1-p} ) - \frac{(y_i^{2 - p}
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
 
+\newpage
 \section{Building GLM Models in H2O}
 
 H2O's GLM implementation presents a high-performance distributed algorithm that scales linearly with the number
@@ -516,7 +515,6 @@ The following examples show how to coerce the data type of a column to a factor.
 \waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/coerce_column_to_factor.R}
 
-\newpage
 \waterExampleInPython
 \lstinputlisting[style=python]{GLM_Vignette_code_examples/coerce_column_to_factor.py}
 
@@ -604,6 +602,7 @@ ratio close to the default.
 
 \end{itemize}
 
+\newpage
 \subsection{Solver Selection}
 
 This section provides general guidelines for best performance from the H2O GLM implementation options. The optimal solver depends on the data properties and prior information regarding the variables (if available). 
@@ -664,6 +663,7 @@ Models built at the beginning of the lambda search have higher lambda values, co
 Models built at the end of the lambda search have
 lower lambda values, incorporate more predictors, and take a longer time to calculate the model. Set the \texttt{nlambdas} parameter for a lambda search to specify the number of models attempted across the search.
 
+\newpage
 \waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_stopping_criteria.R}
 
@@ -672,6 +672,7 @@ lower lambda values, incorporate more predictors, and take a longer time to calc
 
 %For performance reasons, we recommend not using any  $\ell_1$ penalty when using the L-BFGS solver, since
 %model building can be slower. It is often better to run lambda search with the IRLSM solver instead.
+\newpage
 \subsection{Advanced Features}
 
 H2O's GLM has several advanced features to help build better models.
@@ -680,7 +681,7 @@ H2O's GLM has several advanced features to help build better models.
 The \texttt{standardize} parameter, which is enabled by default, standardizes numeric columns to have zero mean and
 unit variance.  This parameter must be enabled (using \texttt{standardize=TRUE}) to produce standardized coefficient magnitudes in the model output.
 
-We recommend enabling standardization when using regularization (i.e. \texttt{lambda} is chosen by H2O or greater than 0). Only advanced users should disable standardization.
+We recommend enabling standardization when using regularization (i.e. \texttt{lambda} chosen by H2O or greater than 0). Only advanced users should disable this.
 
 \subsubsection{Auto-remove collinear columns}
 Collinear columns can cause problems during model fitting. The preferred way to deal with collinearity is to add some
@@ -729,6 +730,7 @@ or \texttt{fold\_column} parameters.
 \waterExampleInPython
 \lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_cross_validation.py}
 
+\newpage
 \subsubsection{Grid Search Over Alpha}
 
 Alpha search is not always necessary; changing its value to 0.5 (or 0 or 1 if we only want Ridge or Lasso,
@@ -806,6 +808,8 @@ The following sections represent the output produced by logistic regression (i.e
 
 \waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_model_output_10.R}
+
+\newpage
 \waterExampleInPython
 \lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_model_output_10.py}
 \newpage
@@ -1015,7 +1019,11 @@ In addition to predictions, you can view metrics such as area under curve (AUC) 
 
 Here is an example of making predictions on new data:
 
+\waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_binomial_predictions_without_response.R}
+
+\newpage
+\waterExampleInPython
 \lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_binomial_predictions_without_response.py}
 \begin{lstlisting}[style=output]
   predict        p0        p1
@@ -1088,6 +1096,7 @@ To determine the accuracy of your model, use the following guidelines:
 \begin{itemize}
 \item Look for conspicuously different cross-validation results between folds:
 
+\newpage
 \waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_compare_cross_validation_folds.R}
 
@@ -1211,7 +1220,7 @@ cost grows as the cube of the number of predictors increases, which is a computa
 \subsubsection{L-BFGS solver}
 In each iteration, L-BFGS computes a gradient at the current vector of coefficients and then computes an updated vector of coefficients in an approximated Newton-method step. 
 
-The cost of the coefficient update is $k*N$, where $N$ is number of predictors and $k$ is a constant, the cost of gradient computation is $M*N\over pn$ where $M$ is number of observations in the dataset and $pn$ is the number of CPU cores in the cluster. Since $k$ is a small constant, the runtime of L-BFGS is dominated by the gradient computation, which is fully parallelized, scaling L-BFGS almost linearly. 
+The cost of the coefficient update is $k*N$. $N$ is the number of predictors; $k$ is a constant. The cost of gradient computation is $M*N\over pn$ where $M$ is number of observations in the dataset and $pn$ is the number of CPU cores in the cluster. Since $k$ is a small constant, the runtime of L-BFGS is dominated by the gradient computation, which is fully parallelized, scaling L-BFGS almost linearly. 
 
 \subsection{FAQ}
 
@@ -1247,15 +1256,14 @@ H2O supports binomial models only; any extra levels in the test response will ge
 \item \texttt{solver}: A character string specifying the solver used: either \texttt{IRLSM}, which supports more features, or \texttt{L\_BFGS}, which scales better for datasets with many columns. 
 \item \texttt{standardize}: A logical value that indicates whether the numeric predictors should be standardized to have a mean of 0 and a variance of 1 prior to model training. 
 \item \texttt{family}: A description of the error distribution and corresponding link function to be used in the model. The following options are supported: \texttt{gaussian}, \texttt{binomial}, \texttt{gamma}, \texttt{multinomial}, \texttt{poisson}, \texttt{tweedie,} or \texttt{quasibinomial}. When a model is specified as Tweedie, users must also specify the appropriate Tweedie power. No default. %%need to specify `tweedie_variance_power` and `tweedie_link_power`??
-\item \texttt{link}: The link function relates the linear predictor to the distribution function. The default is the canonical link for the specified family. The full list of supported links: 
+\item \texttt{link}: The link function relates the linear predictor to the distribution function. The default is the canonical link for the specified family. The full list of supported links for each family: 
 	\begin{itemize}
-\item	{\textbf {gaussian}}: identity, log, inverse 
-\item {\textbf{binomial}}: logit 
-\item {\textbf{quasibinomial}}: logit
-\item {\textbf{multinomial}}: multinomial (family\_default)
-\item {\textbf{poisson}}: log, identity
-\item {\textbf{gamma}}: inverse, log, identity
-\item {\textbf{tweedie}}: tweedie 
+\item	{\textbf {logit}}: binomial, quasibinomial
+\item {\textbf{identity}}: gaussian, poisson, gamma 
+\item {\textbf{log}}: gaussian
+\item {\textbf{inverse}}: gaussian, gamma
+\item {\textbf{tweedie}}: tweedie
+\item {\textbf{multinomial}} (family\_default): multinomial 
 	\end{itemize}
 \item \texttt{tweedie\_variance\_power}: A numeric specifying the power for the variance function when \texttt{family = "tweedie"}.  Default is 0.
 \item \texttt{tweedie\_link\_power}: A numeric specifying the power for the link function when \texttt{family = "tweedie"}.  Default is 1.
@@ -1271,15 +1279,15 @@ H2O supports binomial models only; any extra levels in the test response will ge
 \item \texttt{keep\_cross\_validation\_predictions}: Specify whether to keep the predictions of the cross-validation models. 
 \item \texttt{beta\_constraints}: A data frame or \texttt{H2OParsedData} object with the columns \texttt{["names", "lower\_bounds", "upper\_bounds", \\ "beta\_given"]}, where each row corresponds to a predictor in the GLM. \texttt{"names"} contains the predictor names, \texttt{"lower\_bounds"/ \\ "upper\_bounds"} are the lower and upper bounds (respectively) of the beta, and  \texttt{"beta\_given"} is a user-specified starting value. 
 \item \texttt{offset\_column}: Specify the offset column. Note: Offsets are per-row “bias values” that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
-\item \texttt{weights\_column}: Specify the weights column. Note: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
-\item \texttt{intercept}: Logical; includes a constant term (intercept) in the model. If there are factor columns in your model, then the intercept must be included. %% <--- still true? copied from `has_intercept`
+\item \texttt{weights\_column}: Specify the weights column. These are per-row observation weights. This is typically the number of times a row is repeated. Non-integer values are also supported. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
+\item \texttt{intercept}: Logical; includes a constant term (intercept) in the model. Must be included if there are factor columns in your model. %% <--- still true? copied from `has_intercept`
 \item \texttt{max\_runtime\_secs}: Maximum allowed runtime in seconds for model training. Use 0 to disable.
 \item \texttt{missing\_values\_handling}: Handling of missing values. Either {\texttt{Skip}} or {\texttt{MeanImputation}} (default).
 \item \texttt{seed}: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations.
 \item \texttt{max\_active\_predictors}: Specify the maximum number of active predictors during computation. This value is used as a stopping criterium to prevent expensive model building with many predictors.
 \item \texttt{compute\_p\_values}: Request GLM to compute p-values. This is only applicable with no penalty (lambda = 0 and no beta constraints). Setting \texttt{remove\_collinear\_columns} is recommended. H2O will return an error if p-values are requested when there are collinear columns and the \texttt{remove\_collinear\_columns} flag is not enabled.
 \item \texttt{non\_negative}: Forces coefficients to have non-negative values.
-\item \texttt{remove\_collinear\_columns}: Specify whether to automatically remove collinear columns during model building. When enabled, collinear columns will be dropped from the model and will have a 0 coefficient in the returned model. This can only be set if there is no regularization (lambda=0).
+\item \texttt{remove\_collinear\_columns}: Specify whether to automatically remove collinear columns during model building. When enabled, collinear columns will be dropped from the model and will have a 0 coefficient in the returned model. This can only be set if there is no regularization.
 \item \texttt{interactions}: Optionally specify a list of predictor column indices to interact. All pairwise combinations will be computed for this list.
 \end{itemize}
 %Additional: 
@@ -1288,8 +1296,8 @@ H2O supports binomial models only; any extra levels in the test response will ge
 %Non-negative: Restricts coefficients to be non-negative. Default is false.
 %parallelism: @Is this just a python thing?
 
-
-\newpage
+\section{Acknowledgments}
+We would like to acknowledge the following individuals for their contributions to this booklet: Nadine Hussam, Ariel Rao, \&\ Jessica Lanford.
 
 \section{References}
 \bibliographystyle{plainnat}  
@@ -1322,7 +1330,6 @@ H2O supports binomial models only; any extra levels in the test response will ge
 
 \bibentry{rdocs}
 
-\newpage
 
 \section{Authors}
 
@@ -1334,21 +1341,12 @@ Tomas is our resident Software Engineer. He received his Masters degree from the
 
 Tom is VP of Engineering of Customer and Pre-Sales Engineering at H2O and key to the magic of engineering and customer happiness. Tom has an MS degree in Electrical Engineering from the University of Illinois (at Urbana-Champaign), and a BSE degree in Computer Engineering from the University of Michigan (at Ann Arbor).
 
-
-\textbf{Nadine Hussami}
-
-Nadine is a math hacker intern at H2O. She is a PhD student at Stanford University. Her main research interests include statistical learning and convex optimization. Before Stanford, she worked as an algorithm development engineer at Bina Technologies. She holds a Masters degree from Stanford in Electrical Engineering. 
-
-\textbf{Ariel Rao}
-
-Ariel is a data and math hacker intern at H2O. She is currently an undergraduate student at Carnegie Mellon University pursing degrees in Logic and Computation and Computer Science. Her interests include optimizing automated computation and formal verification.
-
 \textbf{Amy Wang}
 
 Amy is the Sales Engineering Lead at H2O. She graduated from Hunter College in NYC with a Masters in Applied Mathematics and Statistics with a heavy concentration on numerical analysis and financial mathematics. Her interest in applicable math eventually lead her to big data and finding the appropriate mediums for data analysis.
 
-\textbf{Jessica Lanford}
+\textbf{Angela Bartz}
 
-Jessica is a word hacker and seasoned technical communicator at H2O.ai. Having worked for some of the top companies in technology including Dell, AT$\&$T, and Lam Research, she is an expert at translating complex ideas to digestible articles.
+Angela is the doc whisperer at H2O.ai. With extensive experience in technical communication, she brings our products to life by documenting the many features and functionality of H2O. Having worked for companies both large and small, she is an expert at understanding her audience and translating complex ideas to user-friendly content. 
 
 \end{document}

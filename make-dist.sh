@@ -10,7 +10,7 @@ set -x
 
 # Set common variables.
 TOPDIR=$(cd `dirname $0` && pwd)
-HADOOP_VERSIONS="cdh5.2 cdh5.3 cdh5.4 cdh5.5 cdh5.6 cdh5.7 cdh5.8 hdp2.1 hdp2.2 hdp2.3 hdp2.4 hdp2.5 hdp2.6 mapr4.0 mapr5.0 mapr5.1 iop4.2"
+HADOOP_VERSIONS="cdh5.4 cdh5.5 cdh5.6 cdh5.7 cdh5.8 cdh5.10 hdp2.2 hdp2.3 hdp2.4 hdp2.5 hdp2.6 mapr4.0 mapr5.0 mapr5.1 mapr5.2 iop4.2"
 
 function make_zip_common {
   PROJECT_BASE=$1
@@ -24,7 +24,7 @@ function make_zip_common {
   cp h2o-py/dist/*whl $IMAGEDIR/python
 
   mkdir -p $IMAGEDIR/bindings/java
-  cp h2o-bindings/build/libs/h2o-bindings-*.jar $IMAGEDIR/bindings/java
+  cp h2o-bindings/build/distributions/h2o-bindings-*.zip $IMAGEDIR/bindings/java
 
   cd $IMAGEDIR/..
   zip -r ${PROJECT_BASE}.zip ${PROJECT_BASE}

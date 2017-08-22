@@ -141,7 +141,10 @@ def gen_module(schema, algo):
     yield "from h2o.estimators.estimator_base import H2OEstimator"
     yield "from h2o.exceptions import H2OValueError"
     yield "from h2o.frame import H2OFrame"
-    yield "from h2o.utils.typechecks import assert_is_type, Enum, numeric"
+    if classname == "H2OStackedEnsembleEstimator":
+        yield "from h2o.utils.typechecks import assert_is_type, Enum, numeric, is_type"
+    else:
+        yield "from h2o.utils.typechecks import assert_is_type, Enum, numeric"
     if extra_imports:
         yield reindent_block(extra_imports, 0) + ""
     yield ""
@@ -211,9 +214,17 @@ def gen_module(schema, algo):
             yield "        assert_is_type(%s, None, numeric, [numeric])" % pname
         elif pname in {"checkpoint", "pretrained_autoencoder"}:
             yield "        assert_is_type(%s, None, str, H2OEstimator)" % pname
+        elif pname in {"base_models"}:
+            yield "         if is_type(base_models,[H2OEstimator]):"
+            yield      "            %s = [b.model_id for b in %s]" % (pname,pname)
+            yield      "            self._parms[\"%s\"] = %s" % (sname, pname)
+            yield "         else:"
+            yield "            assert_is_type(%s, None, %s)" % (pname, ptype)
+            yield "            self._parms[\"%s\"] = %s" % (sname, pname)
         else:
             yield "        assert_is_type(%s, None, %s)" % (pname, ptype)
-        yield "        self._parms[\"%s\"] = %s" % (sname, pname)
+        if pname not in {"base_models"}:
+            yield "        self._parms[\"%s\"] = %s" % (sname, pname)
         yield ""
         yield ""
     if class_extra:
@@ -227,6 +238,7 @@ def gen_module(schema, algo):
 def algo_to_classname(algo):
     if algo == "deeplearning": return "H2ODeepLearningEstimator"
     if algo == "deepwater": return "H2ODeepWaterEstimator"
+    if algo == "xgboost": return "H2OXGBoostEstimator"
     if algo == "gbm": return "H2OGradientBoostingEstimator"
     if algo == "glm": return "H2OGeneralizedLinearEstimator"
     if algo == "glrm": return "H2OGeneralizedLowRankEstimator"
@@ -236,11 +248,10 @@ def algo_to_classname(algo):
     if algo == "svd": return "H2OSingularValueDecompositionEstimator"
     if algo == "pca": return "H2OPrincipalComponentAnalysisEstimator"
     if algo == "stackedensemble": return "H2OStackedEnsembleEstimator"
-    if algo == "klime": return "H2OKLimeEstimator"
     return "H2O" + algo.capitalize() + "Estimator"
 
 def extra_imports_for(algo):
-    if algo == "glm" or algo == "deepwater":
+    if algo == "glm" or algo == "deepwater" or algo == "xgboost":
         return "import h2o"
 
 def help_preamble_for(algo):
@@ -266,6 +277,8 @@ def help_preamble_for(algo):
             The default distribution function will guess the model type based on the response column type.
             Otherwise, the response column must be an enum for "bernoulli" or "multinomial", and numeric
             for all other distributions."""
+    if algo == "xgboost":
+        return """Builds a eXtreme Gradient Boosting model using the native XGBoost backend."""
     if algo == "naivebayes":
         return """
             The naive Bayes classifier assumes independence between predictor variables
@@ -401,6 +414,21 @@ def class_extra_for(algo):
                 return True
         """
 
+    elif algo == "xgboost":
+        return """
+        # Ask the H2O server whether a XGBoost model can be built (depends on availability of native backends)
+        @staticmethod
+        def available():
+            \"\"\"
+            Returns True if a XGBoost model can be built, or False otherwise.
+            \"\"\"
+            if "XGBoost" not in h2o.cluster().list_core_extensions():
+                print("Cannot build an XGBoost model - no backend found.")
+                return False
+            else:
+                return True
+        """
+
 def module_extra_for(algo):
     if algo == "deeplearning":
         return """
@@ -431,6 +459,8 @@ def gen_init(modules):
     for module, clz, category in sorted(modules):
         if clz == "H2OGridSearch": continue
         module_strs.append('"%s"' % clz)
+        if clz == "H2OAutoML": continue
+        module_strs.append('"%s"' % clz)
         yield "from .%s import %s" % (module, clz)
     yield ""
     yield "__all__ = ("
@@ -454,6 +484,8 @@ def gen_models_docs(modules):
             fullmodule = "h2o.estimators.%s.%s" % (module, clz)
             if clz == "H2OGridSearch":
                 fullmodule = "h2o.grid.grid_search.H2OGridSearch"
+            if clz == "H2OAutoML":
+                fullmodule = "h2o.automl.autoh2o.H2OAutoML"
             yield ":mod:`%s`" % clz
             yield "-" * (7 + len(clz))
             yield ".. autoclass:: %s" % fullmodule
@@ -471,7 +503,8 @@ def main():
 
     modules = [("deeplearning", "H2OAutoEncoderEstimator", "Unsupervised"),
                ("estimator_base", "H2OEstimator", "Miscellaneous"),
-               ("grid_search", "H2OGridSearch", "Miscellaneous")]
+               ("grid_search", "H2OGridSearch", "Miscellaneous"),
+               ("automl", "H2OAutoML", "Miscellaneous")]
     for name, mb in bi.model_builders().items():
         module = name
         if name == "drf": module = "random_forest"

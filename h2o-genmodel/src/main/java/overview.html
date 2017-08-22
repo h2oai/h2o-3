@@ -57,6 +57,10 @@ H2O allows you to convert the models you have built to a
 POJOs allow users to build a model using H2O and then deploy the model to score in real-time.
 
 <p></p>
+
+<b>Note:</b> POJOs are not supported for the XGBoost algorithm.
+
+<p></p>
 <!-- ============================================================ -->
 <!-- ============================================================ -->
 <br>
@@ -154,7 +158,12 @@ public class main {
 <h3>Step 5 (in terminal window 2): Compile and Run</h3>
 <pre>
 $ javac -cp h2o-genmodel.jar -J-Xmx2g -J-XX:MaxPermSize=128m gbm_pojo_test.java main.java
+
+# Linux and OS X users
 $ java -cp .:h2o-genmodel.jar main
+
+# Windows users
+$ java -cp .;h2o-genmodel.jar main
 </pre>
 
 The following output displays:
@@ -189,10 +198,10 @@ corresponding POJO from an R script:
 {@code
 library(h2o)
 h2o.init()
-path = system.file("extdata", "prostate.csv", package = "h2o")
-h2o_df = h2o.importFile(path)
-h2o_df$CAPSULE = as.factor(h2o_df$CAPSULE)
-model = h2o.glm(y = "CAPSULE",
+path <- system.file("extdata", "prostate.csv", package = "h2o")
+h2o_df <- h2o.importFile(path)
+h2o_df$CAPSULE <- as.factor(h2o_df$CAPSULE)
+model <- h2o.glm(y = "CAPSULE",
                 x = c("AGE", "RACE", "PSA", "GLEASON"),
                 training_frame = h2o_df,
                 family = "binomial")
@@ -302,7 +311,7 @@ A MOJO (Model Object, Optimized) is an alternative to H2O's currently available 
 POJOs, H2O allows you to convert models that you build to MOJOs, which can then be deployed
 for scoring in real time.
 <p></p>
-<b>Note</b>: MOJOs are supported for DRF and GBM algorithms only.
+<b>Note</b>: MOJOs are supported for DRF, GBM, GLM, GLRM, K-Means, SVM, Word2vec, and XGBoost algorithms only.
 
 <h3><u>Benefit of MOJOs over POJOs</u></h3>
 <p></p>
@@ -313,8 +322,9 @@ generic tree-walker code to navigate the model. The resulting executable is much
 faster than a POJO.
 <p></p>
 At large scale, new models are roughly 20-25 times smaller in disk space, 2-3 times faster
-during "hot" scoring, and 10-40 times faster in "cold" scoring compared to POJOs. These efficiency
-gains are larger the bigger the size of the model.
+during "hot" scoring (after JVM is able to optimize the typical execution paths), and 10-40 times
+faster in "cold" scoring (when JVM doesn't know yet know the execution paths) compared to POJOs.
+These efficiency gains are larger the bigger the size of the model.
 <p></p>
 H2O conducted in-house testing using models with 5000 trees of depth 25. At very small scale
 (50 trees / 5 depth), POJOs were found to perform approximately 10% faster than MOJOs for binomial
@@ -344,17 +354,15 @@ tree built in the model. Note that each tree file is saved as a binary file type
 
 <h5>Build and extract a model using R</h5>
 
-MOJOs are only supported for GBM, DRF, and GLM models.
-
 <ol><li>Open a terminal window and start r.</li>
     <li>Run the following commands to build a simple GBM model.
         <pre>
         library(h2o)
         h2o.init(nthreads=-1)
-        path = system.file("extdata", "prostate.csv", package="h2o")
-        h2o_df = h2o.importFile(path)
-        h2o_df$RACE = as.factor(h2o_df$RACE)
-        model = h2o.gbm(y="CAPSULE",
+        path <- system.file("extdata", "prostate.csv", package="h2o")
+        h2o_df <- h2o.importFile(path)
+        h2o_df$CAPSULE <- as.factor(h2o_df$CAPSULE)
+        model <- h2o.gbm(y="CAPSULE",
                         x=c("AGE", "RACE", "PSA", "GLEASON"),
                         training_frame=h2o_df,
                         distribution="bernoulli",
@@ -364,7 +372,7 @@ MOJOs are only supported for GBM, DRF, and GLM models.
         </pre>
     </li>
     <li>Download the MOJO and the resulting h2o-genmodel.jar file to a new **experiment** folder.
-        <pre>modelfile = model.download_mojo(path="~/experiment/", get_genmodel_jar=True)
+        <pre>modelfile <- h2o.download_mojo(model,path="~/experiments/", get_genmodel_jar=TRUE)
 		print("Model saved to " + modelfile)
 		Model saved to /Users/user/GBM_model_R_1475248925871_74.zip"
         </pre>
@@ -450,7 +458,12 @@ MOJOs are only supported for GBM, DRF, and GLM models.
         Compile and run in terminal window 2.
         <pre>
         $ javac -cp h2o-genmodel.jar -J-Xms2g -J-XX:MaxPermSize=128m main.java
+
+        # Linux and OS X users
         $ java -cp .:h2o-genmodel.jar main
+
+        # Windows users
+        $ java -cp .;h2o-genmodel.jar main
         </pre>
     </li>
 </ol>
@@ -478,8 +491,8 @@ the command line to make a .png file.
 <pre>
 library(h2o)
 h2o.init()
-df = h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-model = h2o.gbm(model_id = "model",
+df <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+model <- h2o.gbm(model_id = "model",
                 training_frame = df,
                 x = c("Year", "Month", "DayofMonth", "DayOfWeek", "UniqueCarrier"),
                 y = "IsDepDelayed",

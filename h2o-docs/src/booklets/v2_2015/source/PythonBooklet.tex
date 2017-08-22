@@ -2,6 +2,10 @@
 \input{common/conf_top_print.tex}  %settings for printed booklets - comment out by default, uncomment for print and comment out line above. don't save this change! "conf_top" should be default
 
 \input{common/conf_titles.tex}
+
+\usepackage{url}
+\def\UrlBreaks{\do\/\do-\do_}
+
 \input{generated_buildinfo.tex}
 
 \lstdefinestyle{pythoncode}{
@@ -36,9 +40,6 @@
 \\
 \bigskip
 \small
-\textsc{Spencer Aiello \hspace{10pt} Cliff Click  \hspace{10pt} }
-
-\textsc{Hank Roark  \hspace{10pt} Ludi Rehak}
 
 \textsc{Pasha Stetsenko}
 
@@ -52,7 +53,7 @@
 
 \bigskip
 
-\monthname \hspace{1pt}  \the\year: Fourth Edition
+\monthname \hspace{1pt}  \the\year: Fifth Edition
 
 \bigskip
 \end{center}
@@ -74,7 +75,9 @@
 {\raggedright 
 
 Machine Learning with Python and H2O\\
-  by Spencer Aiello, Cliff Click, Hank Roark, \\ Ludi Rehak, and Pasha Stetsenko \\
+  by Pasha Stetsenko \\
+  with assistance from Spencer Aiello, \\
+  Cliff Click, Hank Roark, \&\ Ludi Rehak \\
 Edited by: Angela Bartz
 \bigskip
 
@@ -85,7 +88,7 @@ Mountain View, CA 94043\\
 \textcopyright \the\year \hspace{1pt} H2O.ai, Inc. All Rights Reserved. 
 \bigskip
 
-\monthname \hspace{1pt}  \the\year: Fourth Edition
+\monthname \hspace{1pt}  \the\year: Fifth Edition
 \bigskip
 
 Photos by \textcopyright H2O.ai, Inc.
@@ -167,8 +170,6 @@ H2O requires Java; if you do not already have Java installed, install it from {\
 
 The easiest way to directly install H2O is  via a Python package.
 
-({\bf{Note}}: The examples in this document were created with H2O version \waterVersion.)
-
 \subsection{Installation in Python}
 
 To load a recent H2O package from PyPI, run:
@@ -236,7 +237,7 @@ To display the column types:
 To display the top and bottom of an H2OFrame:
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_view_top_and_bottom_of_frame.py}
 
-
+\newpage
 To display the column names:
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_display_column_names.py}
 
@@ -257,13 +258,13 @@ To select multiple columns by name, resulting in an H2OFrame:
 To select multiple columns by index, resulting in an H2OFrame:
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_select_multiple_columns_by_index.py}
 
+\newpage
 To select multiple rows by slicing, resulting in an H2OFrame: 
 
 \textbf{Note} By default, H2OFrame selection is for columns, so to slice by rows
 and get all columns, be explicit about selecting all columns:
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_select_rows_by_slicing.py}
 
-\newpage
 
 To select rows based on specific criteria, use Boolean masking:
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_select_rows_boolean.py}
@@ -281,8 +282,6 @@ To determine which rows are missing data for a given column (`1' indicates missi
 
 To change all missing values in a column to a different value:
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_change_missing_values_to_new_value.py}
-
-\newpage
 
 To determine the location of all missing data in an H2OFrame:
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_find_missing_data_in_frame.py}
@@ -325,7 +324,7 @@ For global substitution, use {\texttt{gsub}}.  Both {\texttt{sub}} and {\texttt{
 To split strings based on a regular expression:
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_split_using_regex.py}
 
-
+\newpage
 \subsection{Merging}
 To combine two H2OFrames together by appending one as rows and return a new H2OFrame:
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_combine_frames_append_one_as_rows.py}
@@ -413,11 +412,13 @@ In addition to loading data from Python objects, H2O can load data directly from
 \item CSV (delimited) files
 \item ORC
 \item SVMLite
+\item Parquet
 \end{itemize} &
 \begin{itemize}
 \item ARFF
 \item XLS
-\item XLST 
+\item XLSX 
+\item AVRO
 \end{itemize}
 \end{tabular}
 \end{frame}
@@ -454,6 +455,8 @@ H2O supports the following models:
   \item Na\"{i}ve Bayes
   \item Principal Components Analysis (PCA)
   \item K-means
+  \item Stacked Ensembles
+  \item XGBoost
 \end{itemize} &
 
 \begin{itemize}
@@ -461,6 +464,7 @@ H2O supports the following models:
   \item Gradient Boosting Machine (GBM)
   \item Generalized Low Rank Model (GLRM)
   \item Distributed Random Forest (DRF)
+  \item Word2vec
 \end{itemize}
 
 \end{tabular}
@@ -482,6 +486,10 @@ The list continues to grow, so check \url{www.h2o.ai} to see the latest addition
 
 {\textbf{Na\"{i}ve Bayes}}: Generates a probabilistic classifier that assumes the value of a particular feature is unrelated to the presence or absence of any other feature, given the class variable. It is often used in text categorization.
 
+{\textbf{Stacked Ensembles}}: Using multiple models built from different algorithms, Stacked Ensembles finds the optimal combination of a collection of prediction algorithms using a process known as "stacking."
+
+{\textbf{XGBoost}}: XGBoost is an optimized gradient boosting library that implements machine learning algorithms under the Gradient Boosting Machine (GBM) framework. For many problems, XGBoost is the one of the best GBM frameworks today.  In other cases, the H2O GBM algorithm comes out on top.  Both implementations are available on the H2O platform.
+
 \subsubsection{Unsupervised Learning}
 {\textbf{K-Means}}: Reveals groups or clusters of data points for segmentation. It clusters observations into $k$-number of points with the nearest mean.
 
@@ -490,6 +498,9 @@ The list continues to grow, so check \url{www.h2o.ai} to see the latest addition
 {\textbf{Generalized Low Rank Model (GLRM)}}: The method reconstructs missing values and identifies important features in heterogeneous data. It also recognizes a number of  interpretations of low rank factors, which allows clustering of examples or of features.
 
 {\textbf{Anomaly Detection}}: Identifies the outliers in your data by invoking the deep learning autoencoder, a powerful pattern recognition model.
+
+\subsubsection{Miscellaneous}
+{\textbf{Word2vec}}: Takes a text corpus as an input and produces the word vectors as output. The result is an H2O Word2vec model that can be exported as a binary model or as a MOJO.
 
 \subsection{Running Models}
 This section describes how to run the following model types:
@@ -503,6 +514,7 @@ This section describes how to run the following model types:
 \end{itemize}
 This section also shows how to generate predictions.
 
+\newpage
 \subsubsection{Gradient Boosting Machine (GBM)}
 To generate gradient boosting machine models for creating forward-learning ensembles,
 use {\texttt{H2OGradientBoostingEstimator}}.  
@@ -511,8 +523,6 @@ The construction of the estimator
 defines the parameters of the estimator and the call to
 {\texttt{H2OGradientBoostingEstimator.train}}  trains the estimator on
 the specified data.  This pattern is common for each of the H2O algorithms.
-
-\newpage
 
 \lstinputlisting[style=pythoncode]{python/python_train_gbm_model.py}
 
@@ -566,7 +576,7 @@ transformations, use {\texttt{h2o.transforms.decomposition.H2OPCA}}.
 This is the first step in Principal Components Regression.
 \lstinputlisting[style=pythoncode]{python/python_train_pca_model.py}
 
-
+\newpage
 \subsection{Grid Search}
 H2O supports grid search across hyperparameters:
 
@@ -585,7 +595,8 @@ To create a scikit-learn style pipeline using H2O transformers and estimators:
 To create a scikit-learn style hyperparameter grid search using k-fold cross validation:
 \lstinputlisting[style=pythoncode]{python/python_randomized_grid_search.py}
 
-
+\section{Acknowledgments}
+We would like to acknowledge the following individuals for their contributions to this booklet: Spencer Aiello, Cliff Click, Hank Roark, Ludi Rehak, and Jessica Lanford.
 
 \section{References}
 \bibliographystyle{plainnat}  %alphadin}

@@ -223,10 +223,11 @@ how to clone the repository, how to pull from the repository, and how to
 install required dependencies, refer to the `developer
 documentation <https://github.com/h2oai/h2o-3#41-building-from-the-command-line-quick-start>`_.
 
-There are two different argument types:
+There are three different argument types:
 
--  JVM arguments
--  H2O arguments
+-  JVM options
+-  H2O options
+-  Authentication options
 
 The arguments use the following format: java ``<JVM Options>`` -jar
 h2o.jar ``<H2O Options>``.
@@ -247,27 +248,48 @@ H2O Options
 ~~~~~~~~~~~
 
 -	``-h`` or ``-help``: Display this information in the command line output.
+- ``-version``: Specify to print version information and exit.
 -	``-name <H2OCloudName>``: Assign a name to the H2O instance in the cloud (where ``<H2OCloudName>`` is the name of the cloud). Nodes with the same cloud name will form an H2O cloud (also known as an H2O cluster).
 -	``-flatfile <FileName>``: Specify a flatfile of IP address for faster cloud formation (where ``<FileName>`` is the name of the flatfile).
--	``-ip <IPnodeAddress>``: specifies IP for the machine other than the default ``localhost``, for example:
+-	``-ip <IPnodeAddress>``: Specify an IP for the machine other than the default ``localhost``, for example:
     
     - IPv4: ``-ip 178.16.2.223`` 
     - IPv6: ``-ip 2001:db8:1234:0:0:0:0:1`` (Short version of IPv6 with ``::`` is not supported.) **Note**: If you are selecting a link-local address ``fe80::/96``, it is necessary to specify the *zone index* (e.g., ``%en0`` for ``fe80::2acf:e9ff:fe15:e0f3%en0``) in order to select the right interface.
 
 -	``-port <#>``: Specify a PORT used for REST API. The communication port will be the port with value +1 higher.
--	``-baseport`` specifies starting port to find a free port for REST API, the internal communication port will be port with value +1 higher.
+-	``-baseport``: Specifies the starting port to find a free port for REST API, the internal communication port will be port with value +1 higher.
 -	``-network <ip_address/subnet_mask>``: Specify an IP addresses with a subnet mask. The IP address discovery code binds to the first interface that matches one of the networks in the comma-separated list; to specify an IP address, use ``-network``. To specify a range, use a comma to separate the IP addresses: ``-network 123.45.67.0/22,123.45.68.0/24``. For example, ``10.1.2.0/24`` supports 256 possibilities. IPv4 and IPv6 addresses are supported. 
 
     - IPv4: ``-network 178.0.0.0/8``
     - IPv6: ``-network 2001:db8:1234:0:0:0:0:0/48`` (short version of IPv6 with ``::`` is not supported.)
 
 -	``-ice_root <fileSystemPath>``: Specify a directory for H2O to spill temporary data to disk (where ``<fileSystemPath>`` is the file path).
--  ``-flow_dir <server-side or HDFS directory>``: Specify a directory for saved flows. The default is ``/Users/h2o-<H2OUserName>/h2oflows``(where ``<H2OUserName>`` is your user name).
+-  ``-log_dir <fileSystemPath>\``: Specify the directory where H2O writes logs to disk. (This usually has a good default that you need not change.
+-  ``-log_level <TRACE,DEBUG,INFO,WARN,ERRR,FATAL>``: Specify to write messages at this logging level, or above. The default is INFO.
+-  ``-flow_dir <server-side or HDFS directory>``: Specify a directory for saved flows. The default is ``/Users/h2o-<H2OUserName>/h2oflows`` (where ``<H2OUserName>`` is your user name).
 -  ``-nthreads <#ofThreads>``: Specify the maximum number of threads in the low-priority batch work queue (where ``<#ofThreads>`` is the number of threads). 
 -  ``-client``: Launch H2O node in client mode. This is used mostly for running Sparkling Water.
+-  ``-context_path <context_path>``: The context path for jetty.
+
+Authentication Options
+~~~~~~~~~~~~~~~~~~~~~~
+
+-  ``-jks <filename>``: Specify a Java keystore file.
+-  ``-jks_pass <password>``: Specify the Java keystore password.
+-  ``-hash_login``: Specify to use Jetty HashLoginService. This defaults to False.
+-  ``-ldap_login``: Specify to use Jetty LdapLoginService. This defaults to False.
+-  ``-kerberos_login``: Specify to use Kerberos LoginService. This defaults to False.
+-  ``-pam_login``: Specify to use the Pluggable Authentication Module (PAM) LoginService. This defaults to False. 
+-  ``-login_conf <filename>``: Specify the LoginService configuration file.
+-  ``-form_auth``: Enables Form-based authentication for Flow. This defaults to Basic authentication.
+-  ``-session_timeout <minutes>``: Specifies the number of minutes that a session can remain idle before the server invalidates the session and requests a new login. Requires ``-form_auth``. This defaults to no timeout.
+-  ``-internal_security_conf <filename>``: Specify the path (absolute or relative) to a file containing all internal security related configurations.
+
+H2O Networking
+~~~~~~~~~~~~~~
 
 H2O Internal Communication
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 By default, H2O selects the IP and PORT for internal communication automatically using the following this process (if not specified):
 
@@ -289,7 +311,7 @@ By default, H2O selects the IP and PORT for internal communication automatically
 
 
 Cloud Formation Behavior
-~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 New H2O nodes join to form a cloud during launch. After a job has
 started on the cloud, it prevents new members from joining.
@@ -308,7 +330,7 @@ entering the above command again to add another node (the number for #
 will vary).
 
 Clouding Up: Cluster Creation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 H2O provides two modes for cluster creation:
 
@@ -316,7 +338,8 @@ H2O provides two modes for cluster creation:
 -  Flatfile based
 
 Multicast
-^^^^^^^^^
+'''''''''
+
 In this mode, H2O is using IP multicast to announce existence of H2O nodes. Each node selects the same multicast group and port based on specified shared cloud name (see ``-name`` option). For example, for IPv4/PORT a generated multicast group is ``228.246.114.236:58614`` (for cloud name ``michal``), 
 for IPv6/PORT a generated multicast group is ``ff05:0:3ff6:72ec:0:0:3ff6:72ec:58614`` (for cloud name ``michal`` and link-local address which enforce link-local scope).
 
@@ -326,7 +349,8 @@ class ``water.util.NetworkUtils``).
 For more information about scopes, see the following `image <http://www.tcpipguide.com/free/diagrams/ipv6scope.png>`_. 
 
 Flatfile
-^^^^^^^^
+''''''''
+
 The flatfile describes a topology of a H2O cluster. The flatfile definition is passed via the ``-flatfile`` option. It needs to be passed at each node in the cluster, but definition does not be the same at each node. However, transitive closure of all definitions should contains all nodes. For example, for the following definition
 
 +---------+-------+-------+-------+
@@ -355,17 +379,17 @@ The flatfile contains a list of nodes in the form ``IP:PORT`` that are going to 
 	0:0:0:0:0:0:0:1:54323
 
 Web Server
-~~~~~~~~~~
+^^^^^^^^^^
 
 The web server IP is auto-configured in the same way as internal communication IP, nevertheless the created socket listens on all available interfaces. A specific API can be specified with the ``-web_ip`` option.
 
 Options
-^^^^^^^
+'''''''
 
 - ``-web_ip``: specifies IP for web server to expose REST API
 
 Dual Stacks
-~~~~~~~~~~~
+^^^^^^^^^^^
 
 Dual stack machines support IPv4 and IPv6 network stacks.
 Right now, H2O always prefer IPV4, however the preference can be changed via JVM system options ``java.net.preferIPv4Addresses`` and ``java.net.preferIPv6Addresses``. For example:

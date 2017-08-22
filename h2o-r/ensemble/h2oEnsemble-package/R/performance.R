@@ -50,6 +50,14 @@ print.h2o.ensemble_performance <- function(x, metric = c("AUTO", "logloss", "MSE
       metric <- "MSE"
       family <- "gaussian"
     }
+  } else {
+    if (class(x$ensemble) == "H2OBinomialMetrics") {
+      family <- "binomial"
+    } else {
+      # Will need to update this when the following is complete:
+      # https://0xdata.atlassian.net/browse/PUBDEV-2277 
+      family <- "gaussian"
+    }
   }
 
   # Base learner test set AUC (for comparison)

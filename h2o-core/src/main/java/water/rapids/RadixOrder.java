@@ -1,10 +1,16 @@
 package water.rapids;
 
-import water.*;
+import water.H2O;
+import water.Key;
+import water.MRTask;
+import water.RPC;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
+import water.util.MathUtils;
+
+import java.math.BigInteger;
 
 
 // counted completer so that left and right index can run at the same time
@@ -12,9 +18,11 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
   private final Frame _DF;
   private final boolean _isLeft;
   private final int _whichCols[], _id_maps[][];
+  final boolean _isInt[];
+  final boolean _isCategorical[];
   final int _shift[];
   final int _bytesUsed[];
-  final long _base[];
+  final BigInteger _base[];
 
   RadixOrder(Frame DF, boolean isLeft, int whichCols[], int id_maps[][]) {
     _DF = DF;
@@ -23,7 +31,10 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
     _id_maps = id_maps;
     _shift = new int[_whichCols.length];   // currently only _shift[0] is used
     _bytesUsed = new int[_whichCols.length];
-    _base = new long[_whichCols.length];
+    //_base = new long[_whichCols.length];
+    _base = new BigInteger[_whichCols.length];
+    _isInt = new boolean[_whichCols.length];
+    _isCategorical = new boolean[_whichCols.length];
   }
 
   @Override
@@ -41,7 +52,7 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
     System.out.println("Time to use rollup stats to determine biggestBit: " + ((t1=System.nanoTime()) - t0) / 1e9); t0=t1;
 
     if( _whichCols.length > 0 )
-      new RadixCount(_isLeft, _base[0], _shift[0], _whichCols[0], _isLeft ? _id_maps : null ).doAll(_DF.vec(_whichCols[0]));
+      new RadixCount(_isLeft, _base[0], _shift[0], _whichCols[0], _isLeft ? _id_maps : null).doAll(_DF.vec(_whichCols[0]));
     System.out.println("Time of MSB count MRTask left local on each node (no reduce): " + ((t1=System.nanoTime()) - t0) / 1e9); t0=t1;
 
     // NOT TO DO:  we do need the full allocation of x[] and o[].  We need o[] anyway.  x[] will be compressed and dense.
@@ -103,12 +114,15 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
     for (int i=0; i<_whichCols.length; i++) {
       Vec col = _DF.vec(_whichCols[i]);
       // TODO: strings that aren't already categoricals and fixed precision double.
-      long max;
+      BigInteger max=BigInteger.ZERO;
+
+      _isInt[i] = col.isCategorical() || col.isInt();
+      _isCategorical[i] = col.isCategorical();
       if (col.isCategorical()) {
         // simpler and more robust for now for all categorical bases to be 0,
         // even though some subsets may be far above 0; i.e. forgo uncommon
         // efficiency savings for now
-        _base[i] = 0;  
+        _base[i] = BigInteger.ZERO;
         if (_isLeft) {
           // the left's levels have been matched to the right's levels and we
           // store the mapped values so it's that mapped range we need here (or
@@ -123,34 +137,61 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
           //_colMin[i] = ArrayUtils.minValue(_id_maps[i]);  
           // if we join to a small subset of levels starting at 0, we'll
           // benefit from the smaller range here, though
-          max = ArrayUtils.maxValue(_id_maps[i]); 
+          max = BigInteger.valueOf(ArrayUtils.maxValue(_id_maps[i]));
         } else {
-          max = (long)col.max();
+          max = BigInteger.valueOf((long)col.max());
         }
       } else {
-        _base[i] = (long)col.min();
-        max = (long)col.max();
+        if (col.isInt()) {
+          _base[i] = BigInteger.valueOf((long)col.min());
+          max = BigInteger.valueOf((long)col.max());
+        } else{
+          _base[i] = MathUtils.convertDouble2BigInteger(col.min());
+          max = MathUtils.convertDouble2BigInteger(col.max());
+        }
       }
-      long range = max - _base[i] + 2; // +1 for when min==max to include the bound, +1 for the leading NA spot
-      // number of bits starting from 1 easier to think about (for me)
-      int biggestBit = 1 + (int) Math.floor(Math.log(range) / Math.log(2));  
-      // TODO: feed back to R warnings()
-      if (biggestBit < 8) Log.warn("biggest bit should be >= 8 otherwise need to dip into next column (TODO)");  
-      assert biggestBit >= 1;
-      _shift[i] = Math.max(8, biggestBit)-8;
-      long MSBwidth = 1L<<_shift[i];
-      if (_base[i] % MSBwidth != 0) {
-        // choose base lower than minimum so as to align boundaries (unless
-        // minimum already on a boundary by chance)
-        _base[i] = MSBwidth * (_base[i]/MSBwidth + (_base[i]<0 ? -1 : 0));
-        assert _base[i] % MSBwidth == 0;
-      }
-      _bytesUsed[i] = (_shift[i]+15) / 8;
-      assert (biggestBit-1)/8 + 1 == _bytesUsed[i];
-      long chk = (max - _base[i] + 1L) >> _shift[i];  // relied on in RadixCount.map
+
+      // Compute the span or range between min and max.  Compute a
+      // shift amount to bring the high order bits of the range down
+      // low for radix sorting.  Lower the lower-bound to be an even
+      // power of the shift.
+      long chk = computeShift(max, i);
+      // On rare occasions, lowering the lower-bound also increases
+      // the span or range until another bit is needed in the sort.
+      // In this case, we need to re-compute the shift amount and
+      // perhaps use an even lower lower-bound.
+      if( chk == 256 ) chk = computeShift(max, i);
       assert chk <= 255;
       assert chk >= 0;
+
+      _bytesUsed[i] = Math.min(8, (_shift[i]+15) / 8);  // should not go over 8 bytes
+      //assert (biggestBit-1)/8 + 1 == _bytesUsed[i];
     }
+  }
+
+  // Compute the span or range between min and max.  Compute a
+  // shift amount to bring the high order bits of the range down
+  // low for radix sorting.  Lower the lower-bound to be an even
+  // power of the shift.
+  private long computeShift( final BigInteger max, final int i )  {
+    int biggestBit = 0;
+
+    int rangeD = max.subtract(_base[i]).add(BigInteger.ONE).add(BigInteger.ONE).bitLength();
+    biggestBit = _isInt[i] ? rangeD : (rangeD == 64 ? 64 : rangeD + 1);
+
+    // TODO: feed back to R warnings()
+    if (biggestBit < 8) Log.warn("biggest bit should be >= 8 otherwise need to dip into next column (TODO)");  
+    assert biggestBit >= 1;
+    _shift[i] = Math.max(8, biggestBit)-8;
+    long MSBwidth = 1L << _shift[i];
+
+    BigInteger msbWidth = BigInteger.valueOf(MSBwidth);
+    if (_base[i].mod(msbWidth).compareTo(BigInteger.ZERO) != 0) {
+      _base[i] =  _isInt[i]? msbWidth.multiply(_base[i].divide(msbWidth).add(_base[i].signum()<0?BigInteger.valueOf(-1L):BigInteger.ZERO))
+              :msbWidth.multiply (_base[i].divide(msbWidth));; // dealing with unsigned integer here
+      assert _base[i].mod(msbWidth).compareTo(BigInteger.ZERO) == 0;
+    }
+    return max.subtract(_base[i]).add(BigInteger.ONE).shiftRight(_shift[i]).intValue();
   }
 
   private static class SendSplitMSB extends MRTask<SendSplitMSB> {

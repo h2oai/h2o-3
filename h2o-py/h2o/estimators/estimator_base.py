@@ -86,7 +86,7 @@ class H2OEstimator(ModelBase):
 
     def train(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None,
               weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None,
-              model_id=None):
+              model_id=None, verbose=False):
         """
         Train the H2O model.
 
@@ -100,6 +100,7 @@ class H2OEstimator(ModelBase):
         :param weights_column: The name or index of the column in training_frame that holds the per-row weights.
         :param validation_frame: H2OFrame with validation data to be scored on while training.
         :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+        :param bool verbose: Print scoring history to stdout. Defaults to False.
         """
         assert_is_type(training_frame, H2OFrame)
         assert_is_type(validation_frame, None, H2OFrame)
@@ -111,7 +112,10 @@ class H2OEstimator(ModelBase):
         assert_is_type(weights_column, None, int, str)
         assert_is_type(max_runtime_secs, None, numeric)
         assert_is_type(model_id, None, str)
+        assert_is_type(verbose,bool)
         algo = self.algo
+        if verbose and algo not in ["drf","gbm","deeplearning","xgboost"]:
+            raise H2OValueError("Verbose should only be set to True for drf, gbm, deeplearning, and xgboost models")
         parms = self._parms.copy()
         if "__class__" in parms:  # FIXME: hackt for PY3
             del parms["__class__"]
@@ -201,7 +205,7 @@ class H2OEstimator(ModelBase):
             self._rest_version = rest_ver
             return
 
-        model.poll()
+        model.poll(verbose_model_scoring_history=verbose)
         model_json = h2o.api("GET /%d/Models/%s" % (rest_ver, model.dest_key))["models"][0]
         self._resolve_model(model.dest_key, model_json)
 
@@ -257,6 +261,7 @@ class H2OEstimator(ModelBase):
         if name == "H2OKMeansEstimator": return "kmeans"
         if name == "H2ONaiveBayesEstimator": return "naivebayes"
         if name == "H2ORandomForestEstimator": return "drf"
+        if name == "H2OXGBoostEstimator": return "xgboost"
         if name == "H2OPCA": return "pca"
         if name == "H2OSVD": return "svd"
 

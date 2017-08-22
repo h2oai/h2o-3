@@ -12,13 +12,14 @@ buildscript {
     //noinspection GroovyAssignabilityCheck
     dependencies {
         classpath 'org.ow2.asm:asm:5.1'
-        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.4'
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.0'
         classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.7.1'
         classpath 'com.github.townsfolk:gradle-release:1.2'
         classpath 'com.adaptc.gradle:nexus-workflow:0.6'
         classpath 'org.testng:testng:6.8'
-        classpath "be.insaneprogramming.gradle:animalsniffer-gradle-plugin:+"
+        classpath 'be.insaneprogramming.gradle:animalsniffer-gradle-plugin:+'
         classpath 'me.champeau.gradle:jmh-gradle-plugin:0.3.1'
+        classpath 'net.ltgt.gradle:gradle-apt-plugin:0.10'
         // Note: Analyze unused/undefined dependencies for each module - good for debugging
         // However, later it should be enabled by default
         //classpath 'ca.cutterslade.gradle:gradle-dependency-analyze:1.1.0'
@@ -27,6 +28,7 @@ buildscript {
 
 plugins {
     id "java"
+    id "com.github.hierynomus.license" version "0.14.0"
 }
 
 //
@@ -67,7 +69,11 @@ ext {
       project(':h2o-avro-parser'),
       project(':h2o-orc-parser'),
       project(':h2o-parquet-parser'),
-      project(':h2o-jaas-pam')
+      project(':h2o-jaas-pam'),
+      project(':h2o-automl'),
+      project(':h2o-genmodel-ext-xgboost'),
+      project(':h2o-ext-xgboost'),
+      project(':h2o-ext-krbstandalone')
     ]
 
     javaProjects = [
@@ -84,7 +90,11 @@ ext {
       project(':h2o-avro-parser'),
       project(':h2o-orc-parser'),
       project(':h2o-parquet-parser'),
-      project(':h2o-jaas-pam')
+      project(':h2o-jaas-pam'),
+      project(':h2o-automl'),
+      project(':h2o-genmodel-ext-xgboost'),
+      project(':h2o-ext-xgboost'),
+      project(':h2o-ext-krbstandalone')
     ]
 
     scalaProjects = [
@@ -109,7 +119,17 @@ ext {
 
     // Projects with micro-benchmarks
     ubenchProjects = [
-      project(':h2o-core')
+      project(':h2o-core'),
+      project(':h2o-algos')
+    ]
+    
+    // Apt required
+    // Only Java projects which needs to register core/rest/schema extensions
+    aptProjects = [
+      project(':h2o-core'),
+      project(':h2o-algos'),
+      project(':h2o-app'),
+      project(':h2o-automl')
     ]
 
     //
@@ -121,6 +141,16 @@ ext {
     junitVersion  = '4.12'
     jets3tVersion = '0.7.1'
     awsJavaSdkVersion = '1.8.3'
+
+    //
+    // Optional H2O modules which can be included h2o.jar assembly
+    // They can be enabled by passing parameter "-Pwith{componentName}=true"
+    // For example, `-PwithVisDataServer=true -PvisDataServerVersion=3.14.27`
+    optionalComponents = [
+            // NAME | VERSION | IS ENABLED? | HAS GENMODEL PART ?
+            [name: "visDataServer", version : "1.0.0-SNAPSHOT", enabled: false, genmodel: false ],
+            [name: "xgboost", version: "$version", enabled: true, genmodel: true ]
+    ]
 
     //
     // H2O's REST API version
@@ -188,19 +218,9 @@ subprojects {
     // to all projects
     if (project in publishedProjects) {
       apply from: "$rootDir/gradle/publish.gradle"
-      // Generate Java6 bytecode only if specified
-      if (project.hasProperty("doJava6Bytecode")) {
-        if (project.doJava6Bytecode == "true"
-            || (project.doJava6Bytecode == "auto"
-                && System.getProperty("user.name").equals("jenkins")
-                && System.getenv("JAVA_6_HOME"))) {
-          apply from: "$rootDir/gradle/java6bytecode.gradle"
-          // Always do animal sniffing for java6
-          ext.doAnimalSniffer = "true"
-          }
-      }
     }
 
+    // Note: this is deprecated and will be removed in the future
     apply from: "$rootDir/gradle/makeSupport.gradle"
 
     //
@@ -212,10 +232,10 @@ subprojects {
         apply from: "$rootDir/gradle/java.gradle"
         apply from: "$rootDir/gradle/cp.gradle"
         // Include Findbugs only if the property is specified
-        if (applyFindbugsPlugin) {
+        if (project.hasProperty("doFindbugs") && project.doFindbugs == "true") {
             apply from: "$rootDir/gradle/findbugs.gradle"
         }
-        if (project.hasProperty("doCheckStyle")) {
+        if (project.hasProperty("doCheckStyle") && project.doCheckStyle == "true") {
             apply from: "$rootDir/gradle/checkstyle.gradle"
         }
         if (project.hasProperty("doAnimalSniffer") && project.doAnimalSniffer == "true") {
@@ -227,6 +247,11 @@ subprojects {
         }
         // Analyze dependencies 
         //apply plugin: 'ca.cutterslade.analyze'
+        
+        // Apt preprocessor
+        if (project in aptProjects) {
+            apply from: "$rootDir/gradle/apt.gradle"
+        }
     }
 
     // Configure Scala projects
@@ -294,15 +319,14 @@ apply from: "gradle/s3sync.gradle"
 // See ~jenkins/bin/buildh2odev.sh.
 task buildH2oDevDist(type: Exec) {
     group='Dist'
-    H2OBuildVersion bv = new H2OBuildVersion(rootDir, version);
-    def buildTimeMillis = System.currentTimeMillis();
+    H2OBuildVersion bv = new H2OBuildVersion(rootDir, version)
+    def buildTimeMillis = System.currentTimeMillis()
     def buildTimeIso8601 = new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone("UTC"))
     def buildTimeLocal = new Date()
     def projectVersion = bv.getProjectVersion()
     def branchName = bv.getBranch()
     def buildNumber = bv.getBuildNumber()
     def lastCommitHash = bv.getLastCommitHash()
-    def java6home = System.getenv("JAVA_6_HOME")
 
     environment['BUILD_TIME_MILLIS'] = buildTimeMillis
     environment['BUILD_TIME_ISO8601'] = buildTimeIso8601
@@ -311,9 +335,7 @@ task buildH2oDevDist(type: Exec) {
     environment['BRANCH_NAME'] = branchName
     environment['BUILD_NUMBER'] = buildNumber
     environment['LAST_COMMIT_HASH'] = lastCommitHash
-    if (java6home != null) {
-      environment['JAVA_6_HOME'] = java6home
-    }
+    
     commandLine './make-dist.sh'
 }
 

@@ -740,7 +740,7 @@ public class DTree extends Iced {
       ab.put1(0).put2((char)65535); // Flag it special so the decompress doesn't look for top-level decision
     root().compress(ab, _abAux);      // Compress whole tree
     assert ab.position() == sz;
-    return new CompressedTree(ab.buf(),_nclass,_seed,tid,cls, domains);
+    return new CompressedTree(ab.buf(),_nclass,_seed,tid,cls);
   }
 
   static Split findBestSplitPoint(DHistogram hs, int col, double min_rows) {

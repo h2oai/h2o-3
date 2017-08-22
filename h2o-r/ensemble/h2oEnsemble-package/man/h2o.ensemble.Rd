@@ -9,12 +9,15 @@ This function creates a "Super Learner" (stacking) ensemble using the H2O base l
 \usage{
 h2o.ensemble(x, y, training_frame,  
   model_id = NULL, validation_frame = NULL,
-  family = c("AUTO", "binomial", "gaussian"),
+  family = c("AUTO", "binomial", "gaussian", "quasibinomial", 
+             "poisson", "gamma", "tweedie", 
+             "laplace", "quantile", "huber"),
   learner = c("h2o.glm.wrapper", "h2o.randomForest.wrapper",
               "h2o.gbm.wrapper", "h2o.deeplearning.wrapper"), 
   metalearner = "h2o.glm.wrapper", 
   cvControl = list(V = 5, shuffle = TRUE), 
-  seed = 1, parallel = "seq", 
+  seed = 1, 
+  parallel = "seq", 
   keep_levelone_data = TRUE)
 }
 \arguments{
@@ -28,7 +31,7 @@ The name of the response variable in the model.
 An H2OFrame object containing the variables in the model.
 }
   \item{family}{
-A description of the error distribution and link function to be used in the model.  This must be a character string.  Currently supports \code{"binomial"} and \code{"gaussian"}.  
+A description of the distribution function.  This must be a character string.  Defaults to \code{"AUTO"}, which means that it will use \code{"binomial"} for binary classification and \code{"gaussian"} for regression (determined by the column type of the response; a "numeric" response forces regression).  Must be one of: \code{"AUTO"}, \code{"binomial"}, \code{"gaussian"}, \code{"quasibinomial"}, \code{"poisson"}, \code{"gamma"}, \code{"tweedie"}, \code{"laplace"}, \code{"quantile"}, \code{"huber"}.  Binary classification requires \code{"binomial"}, and the rest are options for regression.  This will be passed on to the base learners, but if the base learner in a regression problem does not support the given distribution, then \code{"gaussian"} (default for regression) will be used instead. 
 }
   \item{model_id}{
 (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.
@@ -103,7 +106,7 @@ The version of the h2oEnsemble R package.
 }
 \references{
 \href{https://github.com/h2oai/h2o-3/tree/master/h2o-r/ensemble}{H2O Ensemble Homepage}	\cr
-\href{http://learn.h2o.ai/content/tutorials/ensembles-stacking/index.html}{H2O Ensemble Tutorial}	\cr
+\href{https://github.com/h2oai/h2o-tutorials/blob/master/tutorials/ensembles-stacking/h2oEnsemble_tutorial.md}{H2O Ensemble Tutorial}	\cr
 \cr	
 LeDell, E. (2015) Scalable Ensemble Learning and Computationally Efficient Variance Estimation (Doctoral Dissertation).  University of California, Berkeley, USA.\cr
 \url{http://www.stat.berkeley.edu/~ledell/papers/ledell-phd-thesis.pdf}\cr
@@ -130,13 +133,13 @@ Erin LeDell \email{erin@h2o.ai}
 # An example of binary classification on a local machine using h2o.ensemble
 
 library(h2oEnsemble)
-localH2O <- h2o.init(nthreads = -1) # Start H2O cluster using all available CPU threads
+h2o.init() # Start the H2O cluster
 
 
 # Import a sample binary outcome train/test set into R
-train <- h2o.importFile("http://www.stat.berkeley.edu/~ledell/data/higgs_10k.csv")
-test <- h2o.importFile("http://www.stat.berkeley.edu/~ledell/data/higgs_test_5k.csv")
-y <- "C1"
+train <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_train_5k.csv")
+test <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
+y <- "response"
 x <- setdiff(names(train), y)
 family <- "binomial"
 
@@ -148,17 +151,16 @@ test[,y] <- as.factor(test[,y])
 # Specify the base learner library & the metalearner
 learner <- c("h2o.glm.wrapper", "h2o.randomForest.wrapper", 
                "h2o.gbm.wrapper", "h2o.deeplearning.wrapper")
-metalearner <- "h2o.deeplearning.wrapper"
+metalearner <- "h2o.glm.wrapper"
 
 
-# Train the ensemble using 5-fold CV to generate level-one data
+# Train the ensemble using 5-fold CV (the default) to generate level-one data
 # More CV folds will take longer to train, but should increase performance
 fit <- h2o.ensemble(x = x, y = y, 
                     training_frame = train, 
                     family = family, 
                     learner = learner, 
-                    metalearner = metalearner,
-                    cvControl = list(V = 5, shuffle = TRUE))
+                    metalearner = metalearner)
 
 
 # Compute test set performance:
@@ -166,36 +168,37 @@ perf <- h2o.ensemble_performance(fit, newdata = test)
 
 # The "perf" object has a print method, so we can print default metric by typing: perf
 perf  # prints the following
+
 # Base learner performance, sorted by specified metric:
-#                   learner       AUC
-# 1          h2o.glm.wrapper 0.6871334
-# 4 h2o.deeplearning.wrapper 0.7261466
-# 2 h2o.randomForest.wrapper 0.7655972
-# 3          h2o.gbm.wrapper 0.7817096
+#                    learner       AUC
+# 1          h2o.glm.wrapper 0.6824304
+# 4 h2o.deeplearning.wrapper 0.7006335
+# 2 h2o.randomForest.wrapper 0.7570211
+# 3          h2o.gbm.wrapper 0.7780807
 # 
 # 
 # H2O Ensemble Performance on <newdata>:
 # ----------------
 # Family: binomial
 # 
-# Ensemble performance (AUC): 0.784785565758091
+# Ensemble performance (AUC): 0.781580655670451
 
 # To print the results for a particular metric, like MSE, do the following:
 print(perf, metric = "MSE")
 
 # Base learner performance, sorted by specified metric:
 #                    learner       MSE
-# 1          h2o.glm.wrapper 0.2216862
-# 4 h2o.deeplearning.wrapper 0.2182509
-# 2 h2o.randomForest.wrapper 0.1981485
-# 3          h2o.gbm.wrapper 0.1900497
+# 4 h2o.deeplearning.wrapper 0.2305775
+# 1          h2o.glm.wrapper 0.2225176
+# 2 h2o.randomForest.wrapper 0.2014339
+# 3          h2o.gbm.wrapper 0.1916273
 # 
 # 
 # H2O Ensemble Performance on <newdata>:
 # ----------------
 # Family: binomial
 # 
-# Ensemble performance (MSE): 0.189215219642971
+# Ensemble performance (MSE): 0.1898735479034431
 
 # By calculating the base learner test set metrics, we can compare the performance
 # of the ensemble to the top base learner - GBM is the top base learner, both by AUC and MSE.
@@ -223,9 +226,11 @@ data.frame(learner, auc)
 
 
 
-# If desired, you can generate predictions on the test set
-# This is useful if you need to calculate custom performance metrics in R (not provided by H2O)
+# If desired, you can generate predictions on the test set (as an H2OFrame)
 pp <- predict(fit, test)
+
+# This is useful if you need to calculate custom performance metrics in R (not provided by H2O)
+# To do so, you can pull the predictions and labels into local R memory
 predictions <- as.data.frame(pp$pred)[,3]  #third column, p1 is P(Y==1)
 labels <- as.data.frame(test[,y])[,1]
 

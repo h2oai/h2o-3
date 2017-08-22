@@ -1,9 +1,9 @@
-#Style Guide
+# Style Guide
 
 
-##Capitalization
+## Capitalization
 
-###Mixed
+### Mixed
 
 (always capitalize as below)
 
@@ -20,7 +20,7 @@
 - PyPI
 - RUnit
 
-###Initial Caps
+### Initial Caps
 
 (always capitalize as below)
 
@@ -45,7 +45,7 @@
 - Tweedie
 
 
-###Always All Caps
+### Always All Caps
 
 For any acronym, spell out in 1st use, then provide acronym in parentheses after; for pluralization, add a lowercase "s" (POJO -> POJOs, API -> APIs)
 
@@ -82,7 +82,7 @@ For any acronym, spell out in 1st use, then provide acronym in parentheses after
 - RDD (Resilient Distributed Dataset)
 - YARN (Yet Another Resource Negotiator) 
 
-###Always Lowercase
+### Always Lowercase
 
 (unless starting a sentence or in heading)
 
@@ -94,7 +94,7 @@ For any acronym, spell out in 1st use, then provide acronym in parentheses after
 - tahn
 
 
-##Algos
+## Algos
 
 - Naïve Bayes
 LATIN SMALL LETTER I WITH DIAERESIS
@@ -104,6 +104,6 @@ Unicode: U+00EF, UTF-8: C3 AF
 - K-means
 
 
-#One word (not two)
+# One word (not two)
 
 - Dataset

@@ -28,7 +28,7 @@ An application submission with Sparkling Water Fatjar is using the \texttt{--jar
 \pagebreak
 \begin{lstlisting}[style=Bash]
 $SPARK_HOME/bin/spark-submit \
-  --jars assembly/build/libs/sparkling-water-assembly-1.6.1-all.jar \
+  --jars assembly/build/libs/sparkling-water-assembly-2.1.8-all.jar \
   --class org.apache.spark.examples.h2o.CraigslistJobTitlesStreamingApp \
   /dev/null
 \end{lstlisting}
@@ -37,11 +37,11 @@ $SPARK_HOME/bin/spark-submit \
 
 Sparkling Water is also published as a Spark package. The benefit of using the package is that you can use it directly from your Spark distribution without need to download Sparkling Water.
 
-For example, if you have Spark version 1.6 and would like to use Sparkling Water version 1.6.1 and launch example \texttt{CraigslistJobTitlesStreamingApp}, then you can use the following command:
+For example, if you have Spark version 2.1 and would like to use Sparkling Water version 2.1.8 and launch example \texttt{CraigslistJobTitlesStreamingApp}, then you can use the following command:
 
 \begin{lstlisting}[style=Bash]
 $SPARK_HOME/bin/spark-submit \
-  --packages ai.h2o:sparkling-water-core_2.10:1.6.1,ai.h2o:sparkling-water-examples_2.10:1.6.1 \
+  --packages ai.h2o:sparkling-water-core_2.11:2.1.8,ai.h2o:sparkling-water-examples_2.11:2.1.8 \
   --class org.apache.spark.examples.h2o.CraigslistJobTitlesStreamingApp \
   /dev/null
 \end{lstlisting}
@@ -52,19 +52,12 @@ The similar command works for spark-shell:
 
 \begin{lstlisting}[style=Bash]
 $SPARK_HOME/bin/spark-shell \
- --packages ai.h2o:sparkling-water-core_2.10:1.6.1,ai.h2o:sparkling-water-examples_2.10:1.6.1 
+ --packages ai.h2o:sparkling-water-core_2.11:2.1.8,ai.h2o:sparkling-water-examples_2.11:2.1.8 
 \end{lstlisting}
 
-The same command works for Python programs:
+Note: When you are using Spark packages, you do not need to download Sparkling Water distribution. Spark installation is sufficient.
 
-\begin{lstlisting}[style=Bash]
-$SPARK_HOME/bin/spark-submit \
- --packages ai.h2o:sparkling-water-core_2.10:1.6.1,ai.h2o:sparkling-water-examples_2.10:1.6.1\
-  example.py
-\end{lstlisting}
-
-Note: When you are using Spark packages you do not need to download Sparkling Water distribution! Spark installation is sufficient!
-
+\newpage
 \subsection{Target Deployment Environments}
 Sparkling Water supports deployments to the following Spark cluster types:
 \begin{itemize}
@@ -82,7 +75,7 @@ $SPARK_HOME/bin/spark-submit \
   --conf spark.executor.memory=5g \
   --conf spark.driver.memory=5g \
   --master local[*] \
-  --packages ai.h2o:sparkling-water-examples_2.10:1.6.1 \
+  --packages ai.h2o:sparkling-water-examples_2.11:2.1.8 \
   --class org.apache.spark.examples.h2o.ChicagoCrimeApp \
   /dev/null
 \end{lstlisting}
@@ -97,7 +90,7 @@ $SPARK_HOME/bin/spark-submit \
   --conf spark.executor.memory=5g \
   --conf spark.driver.memory=5g \
   --master spark://machine-foo.bar.com:7077 \
-  --packages ai.h2o:sparkling-water-examples_2.10:1.6.1 \
+  --packages ai.h2o:sparkling-water-examples_2.11:2.1.8 \
   --class org.apache.spark.examples.h2o.ChicagoCrimeApp \
   /dev/null
 \end{lstlisting}
@@ -114,7 +107,7 @@ $SPARK_HOME/bin/spark-submit \
   --conf spark.driver.memory=5g \
   --num-executors 5 \
   --master yarn-client \
-  --packages ai.h2o:sparkling-water-examples_2.10:1.6.1 \
+  --packages ai.h2o:sparkling-water-examples_2.11:2.1.8 \
   --class org.apache.spark.examples.h2o.ChicagoCrimeApp \
   /dev/null
 \end{lstlisting}

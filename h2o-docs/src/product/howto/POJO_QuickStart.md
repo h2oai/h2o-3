@@ -2,14 +2,16 @@
 
 This document describes how to build and implement a POJO to use predictive scoring. Java developers should refer to the [Javadoc](http://docs.h2o.ai/h2o/latest-stable/h2o-genmodel/javadoc/index.html) for more information, including packages. 
 
- >**Note**: POJOs are not supported for source files larger than 1G. For more information, refer to the [FAQ](#POJO_Err) below. 
+ >**Notes**: POJOs are not supported for XGBoost. POJOs are also not supported for source files larger than 1G. For more information, refer to the [FAQ](#POJO_Err) below. 
  
  
 ## What is a POJO? 
 
 H2O allows you to convert the models you have built to a Plain Old Java Object (POJO), which can then be easily deployed within your Java app and scheduled to run on a specified dataset.
 
-POJOs allow users to build a model using H2O and then deploy the model to score in real-time, using the POJO model or a REST API call to a scoring server.
+POJOs allow users to build a model using H2O and then deploy the model to score in real-time, using the POJO model or a REST API call to a scoring server. 
+
+The only compilation and runtime dependency for a generated model is the ``h2o-genmodel.jar`` file produced as the build output of these packages. This file is a library that supports scoring, and it contains the base classes from which the POJO is derived from. (You can see "extends GenModel" in a pojo class. The GenModel class is part of this library.) The ``h2o-genmodel.jar`` file is required when POJO models are deployed to production.
 
 1. Start H2O in terminal window #1:
 
@@ -83,14 +85,25 @@ POJOs allow users to build a model using H2O and then deploy the model to score 
 	}
 	```
 
-5. Compile and run in terminal window 2:
+5. Compile in terminal window 2:
 
 	```
 	$ javac -cp h2o-genmodel.jar -J-Xmx2g -J-XX:MaxPermSize=128m gbm_pojo_test.java main.java
+	```
+
+6. Run in terminal window 2.
+
+   For Linux and OS X users
+	```
 	$ java -cp .:h2o-genmodel.jar main
 	```
 
-    The following output displays: 
+   For Windows users
+   ```
+	$ java -cp .;h2o-genmodel.jar main
+	```
+	
+The following output displays: 
 	
 	```
 	Label (aka prediction) is flight departure delayed: YES
@@ -113,10 +126,10 @@ Generated models can be extracted from H2O in the following ways:
 	```
 	library(h2o)
 	h2o.init()
-	path = system.file("extdata", "prostate.csv", package = "h2o")
-	h2o_df = h2o.importFile(path)
-	h2o_df$CAPSULE = as.factor(h2o_df$CAPSULE)
-	model = h2o.glm(y = "CAPSULE",
+	path <- system.file("extdata", "prostate.csv", package = "h2o")
+	h2o_df <- h2o.importFile(path)
+	h2o_df$CAPSULE <- as.factor(h2o_df$CAPSULE)
+	model <- h2o.glm(y = "CAPSULE",
 	                x = c("AGE", "RACE", "PSA", "GLEASON"),
 	                training_frame = h2o_df,
 	                family = "binomial")

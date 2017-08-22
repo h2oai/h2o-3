@@ -992,7 +992,7 @@ public class ParserTest extends TestUtil {
       Key[] keys = new Key[]{fv._key};
       ParseSetup guessedSetup = ParseSetup.guessSetup(keys, false, 1);
       Assert.assertEquals(guessedSetup._number_columns, 2);
-      Assert.assertEquals(0, guessedSetup._errs.length);
+      Assert.assertEquals(0, guessedSetup.errs().length);
       guessedSetup._column_names = new String[] {"c1", "c2", "c3", "c4"};
       guessedSetup._column_types = new byte[] {Vec.T_NUM, Vec.T_STR, Vec.T_NUM, Vec.T_STR};
       guessedSetup._number_columns = 4;

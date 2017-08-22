@@ -333,9 +333,9 @@ class H2OCache(object):
 
     #---- pretty printing ----
 
-    def _tabulate(self, tablefmt="simple", rollups=False):
+    def _tabulate(self, tablefmt="simple", rollups=False, rows=10):
         """Pretty tabulated string of all the cached data, and column names"""
-        if not self.is_valid(): self.fill()
+        if not self.is_valid(): self.fill(rows=rows)
         # Pretty print cached data
         d = collections.OrderedDict()
         # If also printing the rollup stats, build a full row-header

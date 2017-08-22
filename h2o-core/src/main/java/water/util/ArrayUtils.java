@@ -1,14 +1,12 @@
 package water.util;
 
 import water.*;
-import water.fvec.AppendableVec;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 
 import java.text.DecimalFormat;
 import java.util.*;
 
+import static java.lang.StrictMath.sqrt;
 import static water.util.RandomUtils.getRNG;
 
 /* Bulk Array Utilities */
@@ -79,6 +77,18 @@ public class ArrayUtils {
     return result;
   }
 
+  // return the sqrt of each element of the array.  Will overwrite the original array in this case
+  public static double[] sqrtArr(double [] x){
+    assert (x != null);
+    int len = x.length;
+
+    for (int index = 0; index < len; index++) {
+      assert (x[index]>=0.0);
+      x[index] = sqrt(x[index]);
+    }
+
+    return x;
+  }
   public static double l2norm2(double [] x){ return l2norm2(x, false); }
 
   public static double l2norm2(double [][] xs, boolean skipLast){
@@ -880,9 +890,12 @@ public class ArrayUtils {
     return cnt;
   }
 
-  public static boolean isInt(String s) {
-    int i = s.charAt(0)=='-' ? 1 : 0;
-    for(; i<s.length();i++) if (!Character.isDigit(s.charAt(i))) return false;
+  public static boolean isInt(String... ary) {
+    for(String s:ary) {
+      if (s == null || s.isEmpty()) return false;
+      int i = s.charAt(0) == '-' ? 1 : 0;
+      for (; i < s.length(); i++) if (!Character.isDigit(s.charAt(i))) return false;
+    }
     return true;
   }
 
@@ -918,8 +931,11 @@ public class ArrayUtils {
    * @param a a set of strings
    * @param b a set of strings
    * @return union of arrays
+   * // TODO: add tests
    */
   public static String[] domainUnion(String[] a, String[] b) {
+    if (a == null) return b;
+    if (b == null) return a;
     int cIinA = numInts(a);
     int cIinB = numInts(b);
     // Trivial case - all strings or ints, sorted
@@ -949,7 +965,8 @@ public class ArrayUtils {
    * precondition a!=null &amp;&amp; b!=null
    */
   public static String[] union(String[] a, String[] b, boolean lexo) {
-    assert a!=null && b!=null : "Union expect non-null input!";
+    if (a == null) return b;
+    if (b == null) return a;
     return union(a, b, 0, a.length, 0, b.length, lexo);
   }
   public static String[] union(String[] a, String[] b, int aoff, int alen, int boff, int blen, boolean lexo) {
@@ -1191,6 +1208,17 @@ public class ArrayUtils {
     }
     return c;
   }
+  public static double [] sortedMerge(double[] a, double [] b) {
+    double [] c = MemoryManager.malloc8d(a.length + b.length);
+    int i = 0, j = 0;
+    for(int k = 0; k < c.length; ++k){
+      if(i == a.length) c[k] = b[j++];
+      else if(j == b.length)c[k] = a[i++];
+      else if(b[j] < a[i]) c[k] = b[j++];
+      else c[k] = a[i++];
+    }
+    return c;
+  }
   // sparse sortedMerge (ids and vals)
   public static void sortedMerge(int[] aIds, double [] aVals, int[] bIds, double [] bVals, int [] resIds, double [] resVals) {
     int i = 0, j = 0;
@@ -1221,6 +1249,12 @@ public class ArrayUtils {
   }
 
   public static String[] select(String[] ary, int[] idxs) {
+    String [] res  = new String[idxs.length];
+    for(int i = 0; i < res.length; ++i)
+      res[i] = ary[idxs[i]];
+    return res;
+  }
+  public static String[] select(String[] ary, byte[] idxs) {
     String [] res  = new String[idxs.length];
     for(int i = 0; i < res.length; ++i)
       res[i] = ary[idxs[i]];
@@ -1406,6 +1440,104 @@ public class ArrayUtils {
       if(!x.equals(s))
         res[j++] = x;
     return res;
+  }
+
+  public static int[] sorted_set_diff(int[] x, int[] y) {
+    assert isSorted(x);
+    assert isSorted(y);
+    int [] res = new int[x.length];
+    int j = 0, k = 0;
+    for(int i = 0; i < x.length; i++){
+      while(j < y.length && y[j] < x[i])j++;
+      if(j == y.length || y[j] != x[i])
+        res[k++] = x[i];
+    }
+    return Arrays.copyOf(res,k);
+  }
+  /*
+      This class is written to copy the contents of a frame to a 2-D double array.
+   */
+  public static class FrameToArray extends MRTask<FrameToArray> {
+    int _startColIndex;   // first column index to extract
+    int _endColIndex;     // last column index to extract
+    int _rowNum;          // number of columns in
+    public double[][] _frameContent;
+
+    public FrameToArray(int startCol, int endCol, long rowNum, double[][] frameContent) {
+      assert ((startCol >= 0) && (endCol >= startCol) && (rowNum > 0));
+      _startColIndex = startCol;
+      _endColIndex = endCol;
+      _rowNum = (int) rowNum;
+      int colNum = endCol-startCol+1;
+
+      if (frameContent == null) { // allocate memory here if user has not provided one
+        _frameContent = MemoryManager.malloc8d(_rowNum, colNum);
+      } else {  // make sure we are passed the correct size 2-D double array
+        assert (_rowNum == frameContent.length && frameContent[0].length == colNum);
+        for (int index = 0; index < colNum; index++) { // zero fill use array
+          Arrays.fill(frameContent[index], 0.0);
+        }
+        _frameContent = frameContent;
+      }
+    }
+
+    @Override public void map(Chunk[] c) {
+      assert _endColIndex < c.length;
+      int endCol = _endColIndex+1;
+      int rowOffset = (int) c[0].start();   // real row index
+      int chkRows = c[0]._len;
+
+      for (int rowIndex = 0; rowIndex < chkRows; rowIndex++) {
+        for (int colIndex = _startColIndex; colIndex < endCol; colIndex++) {
+          _frameContent[rowIndex+rowOffset][colIndex-_startColIndex] = c[colIndex].atd(rowIndex);
+        }
+      }
+    }
+
+    @Override public void reduce(FrameToArray other) {
+      ArrayUtils.add(_frameContent, other._frameContent);
+    }
+
+    public double[][] getArray() {
+      return _frameContent;
+    }
+  }
+
+
+  /*
+				This class is written to a 2-D array to the frame instead of allocating new memory every time.
+	*/
+  public static class CopyArrayToFrame extends MRTask<CopyArrayToFrame> {
+    int _startColIndex;   // first column index to extract
+    int _endColIndex;     // last column index to extract
+    int _rowNum;          // number of columns in
+    public double[][] _frameContent;
+
+    public CopyArrayToFrame(int startCol, int endCol, long rowNum, double[][] frameContent) {
+      assert ((startCol >= 0) && (endCol >= startCol) && (rowNum > 0));
+
+      _startColIndex = startCol;
+      _endColIndex = endCol;
+      _rowNum = (int) rowNum;
+
+      int colNum = endCol-startCol+1;
+      assert (_rowNum == frameContent.length && frameContent[0].length == colNum);
+
+      _frameContent = frameContent;
+    }
+
+    @Override public void map(Chunk[] c) {
+      assert _endColIndex < c.length;
+      int endCol = _endColIndex+1;
+      int rowOffset = (int) c[0].start();   // real row index
+      int chkRows = c[0]._len;
+
+      for (int rowIndex = 0; rowIndex < chkRows; rowIndex++) {
+        for (int colIndex = _startColIndex; colIndex < endCol; colIndex++) {
+          c[colIndex].set(rowIndex, _frameContent[rowIndex+rowOffset][colIndex-_startColIndex]);
+        }
+      }
+    }
   }
 
   /** Create a new frame based on given row data.
@@ -1608,8 +1740,22 @@ public class ArrayUtils {
   }
 
   public static int encodeAsInt(byte[] b) {
-    assert b.length == 4 : "Cannot encode more then 4 bytes into int: len = " + b.length;
+    assert b.length == 4 : "Cannot encode more than 4 bytes into int: len = " + b.length;
     return (b[0]&0xFF)+((b[1]&0xFF)<<8)+((b[2]&0xFF)<<16)+((b[3]&0xFF)<<24);
+  }
+
+  public static int encodeAsInt(byte[] bs, int at) {
+    if (at + 4 > bs.length) throw new IndexOutOfBoundsException("Cannot encode more than 4 bytes into int: len = " + bs.length + ", pos=" + at);
+    return (bs[at]&0xFF)+((bs[at+1]&0xFF)<<8)+((bs[at+2]&0xFF)<<16)+((bs[at+3]&0xFF)<<24);
+  }
+
+  public static byte[] decodeAsInt(int what, byte[] bs, int at) {
+    if (bs.length < at + 4) throw new IndexOutOfBoundsException("Wrong position " + at + ", array length is " + bs.length);
+    for (int i = at; i < at+4 && i < bs.length; i++) {
+      bs[i] = (byte)(what&0xFF);
+      what >>= 8;
+    }
+    return bs;
   }
 
   /** Transform given long numbers into byte array.
@@ -1671,6 +1817,11 @@ public class ArrayUtils {
   }
 
   public static boolean isSorted(int[] vals) {
+    for (int i = 1; i < vals.length; ++i)
+      if (vals[i - 1] > vals[i]) return false;
+    return true;
+  }
+  public static boolean isSorted(double[] vals) {
     for (int i = 1; i < vals.length; ++i)
       if (vals[i - 1] > vals[i]) return false;
     return true;

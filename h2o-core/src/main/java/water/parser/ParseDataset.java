@@ -1,6 +1,5 @@
 package water.parser;
 
-import com.google.common.base.Charsets;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinTask;
 import jsr166y.RecursiveAction;
@@ -327,7 +326,7 @@ public final class ParseDataset {
     // Check for job cancellation
     if ( job.stop_requested() ) return pds;
 
-    ParseWriter.ParseErr [] errs = ArrayUtils.append(setup._errs,mfpt._errors);
+    ParseWriter.ParseErr [] errs = ArrayUtils.append(setup.errs(),mfpt._errors);
     if(errs.length > 0) {
       // compute global line numbers for warnings/errs
       HashMap<String, Integer> fileChunkOffsets = new HashMap<>();
@@ -488,12 +487,12 @@ public final class ParseDataset {
         _colCats[col].convertToUTF8(col + 1);
         _perColDomains[i] = _colCats[col].getColumnDomain();
         Arrays.sort(_perColDomains[i]);
-        _packedDomains[i] = packDomain(_perColDomains[i]);
+        _packedDomains[i] = PackedDomains.pack(_perColDomains[i]);
         i++;
       }
       Log.trace("Done locally collecting domains on each node.");
     }
-
+    
     @Override
     public void reduce(final GatherCategoricalDomainsTask other) {
       if (_packedDomains == null) {
@@ -502,116 +501,25 @@ public final class ParseDataset {
         H2OCountedCompleter[] domtasks = new H2OCountedCompleter[_catColIdxs.length];
         for (int i = 0; i < _catColIdxs.length; i++) {
           final int fi = i;
-          final GatherCategoricalDomainsTask fOther = other;
-          H2O.submitTask(domtasks[i] = new H2OCountedCompleter() {
+          domtasks[i] = new H2OCountedCompleter(currThrPriority()) {
             @Override
             public void compute2() {
-              // merge sorted packed domains with duplicate removal
-              final byte[] thisDom = _packedDomains[fi];
-              final byte[] otherDom = fOther._packedDomains[fi];
-              final int tLen = UnsafeUtils.get4(thisDom, 0), oLen = UnsafeUtils.get4(otherDom, 0);
-              int tDomLen = UnsafeUtils.get4(thisDom, 4);
-              int oDomLen = UnsafeUtils.get4(otherDom, 4);
-              BufferedString tCat = new BufferedString(thisDom, 8, tDomLen);
-              BufferedString oCat = new BufferedString(otherDom, 8, oDomLen);
-              int ti = 0, oi = 0, tbi = 8, obi = 8, mbi = 4, mergeLen = 0;
-              byte[] mergedDom = new byte[thisDom.length + otherDom.length];
-              // merge
-              while (ti < tLen && oi < oLen) {
-                // compare thisDom to otherDom
-                int x = tCat.compareTo(oCat);
-                // this < or equal to other
-                if (x <= 0) {
-                  UnsafeUtils.set4(mergedDom, mbi, tDomLen); //Store str len
-                  mbi += 4;
-                  for (int j = 0; j < tDomLen; j++)
-                    mergedDom[mbi++] = thisDom[tbi++];
-                  tDomLen = UnsafeUtils.get4(thisDom, tbi);
-                  assert tDomLen >= 0 : getClass().getName() + ".reduce/1: tDomLen=" + tDomLen + ", tbi=" + tbi + "; fi=" + fi + "/" + _catColIdxs.length + "packed size=" + thisDom.length + ", tlen=" + tLen;
-                  tbi += 4;
-                  tCat.set(thisDom, tbi, tDomLen);
-                  ti++;
-                  if (x == 0) { // this == other
-                    obi += oDomLen;
-                    oDomLen = UnsafeUtils.get4(otherDom, obi);
-                    obi += 4;
-                    assert oDomLen >= 0 : getClass().getName() + ".reduce/2: oDomLen=" + oDomLen + ", obi=" + obi;
-                    oCat.set(otherDom, obi, oDomLen);
-                    oi++;
-                  }
-                } else { // other < this
-                  UnsafeUtils.set4(mergedDom, mbi, oDomLen); //Store str len
-                  mbi += 4;
-                  for (int j = 0; j < oDomLen; j++)
-                    mergedDom[mbi++] = otherDom[obi++];
-                  oDomLen = UnsafeUtils.get4(otherDom, obi);
-                  obi += 4;
-                  assert oDomLen >= 0 : getClass().getName() + ".reduce/3: oDomLen=" + oDomLen + ", obi=" + obi;
-                  oCat.set(otherDom, obi, oDomLen);
-                  oi++;
-                }
-                mergeLen++;
-              }
-              // merge remainder of longer list
-              if (ti < tLen) {
-                tbi -= 4;
-                int remainder = thisDom.length - tbi;
-                System.arraycopy(thisDom,tbi,mergedDom,mbi,remainder);
-                mbi += remainder;
-                mergeLen += tLen - ti;
-              } else { //oi < oLen
-                obi -= 4;
-                int remainder = otherDom.length - obi;
-                System.arraycopy(otherDom,obi,mergedDom,mbi,remainder);
-                mbi += remainder;
-                mergeLen += oLen - oi;
-              }
-              _packedDomains[fi]  = Arrays.copyOf(mergedDom, mbi);// reduce size
-              UnsafeUtils.set4(_packedDomains[fi], 0, mergeLen);
-              Log.trace("Merged domain length is "+mergeLen+" for the "
-                  +PrettyPrint.withOrdinalIndicator(fi+1)+ " categorical column.");;
+              _packedDomains[fi] = PackedDomains.merge(_packedDomains[fi], other._packedDomains[fi]);
               tryComplete();
             }
-          });
+          };
         }
-        for (int i = 0; i < _catColIdxs.length; i++) if (domtasks[i] != null) domtasks[i].join();
+        ForkJoinTask.invokeAll(domtasks);
       }
       Log.trace("Done merging domains.");
     }
 
-    private byte[] packDomain(BufferedString[] domain) {
-      int totStrLen =0;
-      for(BufferedString dom : domain)
-        totStrLen += dom.length();
-      final byte[] packedDom = MemoryManager.malloc1(4 + (domain.length << 2) + totStrLen, false);
-      UnsafeUtils.set4(packedDom, 0, domain.length); //Store domain size
-      int i = 4;
-      for(BufferedString dom : domain) {
-        UnsafeUtils.set4(packedDom, i, dom.length()); //Store str len
-        i += 4;
-        byte[] buf = dom.getBuffer();
-        for(int j=0; j < buf.length; j++) //Store str chars
-          packedDom[i++] = buf[j];
-      }
-      return packedDom;
-    }
     public int getDomainLength(int colIdx) {
-      if (_packedDomains == null) return 0;
-      else return UnsafeUtils.get4(_packedDomains[colIdx], 0);
+      return _packedDomains == null ? 0 : PackedDomains.sizeOf(_packedDomains[colIdx]);
     }
 
     public String[] getDomain(int colIdx) {
-      if (_packedDomains == null) return null;
-      final int strCnt = UnsafeUtils.get4(_packedDomains[colIdx], 0);
-      final String[] res = new String[strCnt];
-      int j = 4;
-      for (int i=0; i < strCnt; i++) {
-        final int strLen = UnsafeUtils.get4(_packedDomains[colIdx], j);
-        j += 4;
-        res[i] = new String(_packedDomains[colIdx], j, strLen, Charsets.UTF_8);
-        j += strLen;
-      }
-      return res;
+      return _packedDomains == null ? null : PackedDomains.unpackToStrings(_packedDomains[colIdx]);
     }
   }
 
@@ -662,13 +570,6 @@ public final class ParseDataset {
   // files are parsed in parallel across the cluster), but we want to throttle
   // the parallelism on each node.
   private static class MultiFileParseTask extends MRTask<MultiFileParseTask> {
-    // TOO_MANY_KEYS_COUNT specifies when to disable parallel parse. We want to cover a scenario when
-    // we are working with too many keys made of small files - in this case the distributed parse
-    // doesn't work well because of the way chunks are distributed to nodes. We should switch to a local
-    // parse to make sure the work is uniformly distributed across the whole cluster.
-    private static final int TOO_MANY_KEYS_COUNT = 128;
-    // A file is considered to be small if it can fit into <SMALL_FILE_NCHUNKS> number of chunks.
-    private static final int SMALL_FILE_NCHUNKS = 10;
 
     private final ParseSetup _parseSetup; // The expected column layout
     private final VectorGroup _vg;    // vector group of the target dataset
@@ -821,20 +722,22 @@ public final class ParseDataset {
       try {
         switch( cpr ) {
         case NONE:
-          boolean disableParallelParse = (_keys.length > TOO_MANY_KEYS_COUNT) &&
-                  (vec.nChunks() <= SMALL_FILE_NCHUNKS) && _parseSetup._parse_type.isStreamParseSupported();
-          if( _parseSetup._parse_type.isParallelParseSupported() && (! disableParallelParse)) {
+          ParserInfo.ParseMethod pm = _parseSetup._parse_type.parseMethod(_keys.length,vec.nChunks());
+          if(pm == ParserInfo.ParseMethod.DistributedParse) {
             new DistributedParse(_vg, localSetup, _vecIdStart, chunkStartIdx, this, key, vec.nChunks()).dfork(vec).getResult(false);
             for( int i = 0; i < vec.nChunks(); ++i )
               _chunk2ParseNodeMap[chunkStartIdx + i] = vec.chunkKey(i).home_node().index();
-          } else {
+          } else if(pm == ParserInfo.ParseMethod.StreamParse){
+            localSetup = ParserService.INSTANCE.getByInfo(localSetup._parse_type).setupLocal(vec,localSetup);
             InputStream bvs = vec.openStream(_jobKey);
-            _dout[_lo] = streamParse(bvs, localSetup, makeDout(localSetup,chunkStartIdx,vec.nChunks()), bvs);
+            Parser p = localSetup.parser(_jobKey);
+            _dout[_lo] = ((FVecParseWriter) p.streamParse(bvs,makeDout(localSetup,chunkStartIdx,vec.nChunks()))).close(_fs);
             _errors = _dout[_lo].removeErrors();
             chunksAreLocal(vec,chunkStartIdx,key);
-          }
+          } else throw H2O.unimpl();
           break;
         case ZIP: {
+          localSetup = ParserService.INSTANCE.getByInfo(localSetup._parse_type).setupLocal(vec,localSetup);
           // Zipped file; no parallel decompression;
           InputStream bvs = vec.openStream(_jobKey);
           ZipInputStream zis = new ZipInputStream(bvs);
@@ -842,18 +745,17 @@ public final class ParseDataset {
           if (ZipUtil.isZipDirectory(key)) {  // file is a zip if multiple files
             zis.getNextEntry();          // first ZipEntry describes the directory
           }
-
           ZipEntry ze = zis.getNextEntry(); // Get the *FIRST* entry
           // There is at least one entry in zip file and it is not a directory.
           if( ze != null && !ze.isDirectory() )
             _dout[_lo] = streamParse(zis,localSetup, makeDout(localSetup,chunkStartIdx,vec.nChunks()), bvs);
             _errors = _dout[_lo].removeErrors();
-
           zis.close();       // Confused: which zipped file to decompress
           chunksAreLocal(vec,chunkStartIdx,key);
           break;
         }
         case GZIP: {
+          localSetup = ParserService.INSTANCE.getByInfo(localSetup._parse_type).setupLocal(vec,localSetup);
           InputStream bvs = vec.openStream(_jobKey);
           // Zipped file; no parallel decompression;
           _dout[_lo] = streamParse(new GZIPInputStream(bvs), localSetup, makeDout(localSetup,chunkStartIdx,vec.nChunks()),bvs);
@@ -904,7 +806,6 @@ public final class ParseDataset {
     private FVecParseWriter streamParse(final InputStream is, final ParseSetup localSetup,FVecParseWriter dout, InputStream bvs) throws IOException {
       // All output into a fresh pile of NewChunks, one per column
       Parser p = localSetup.parser(_jobKey);
-
       // assume 2x inflation rate
       if(localSetup._parse_type.isParallelParseSupported())
         p.streamParseZip(is, dout, bvs);
@@ -1046,7 +947,7 @@ public final class ParseDataset {
     }
 
     // Find & remove all partially built output chunks & vecs
-    private Futures onExceptionCleanup(Futures fs) {
+    Futures onExceptionCleanup(Futures fs) {
       int nchunks = _chunk2ParseNodeMap.length;
       int ncols = _parseSetup._number_columns;
       for( int i = 0; i < ncols; ++i ) {

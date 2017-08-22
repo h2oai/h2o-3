@@ -1,0 +1,12 @@
+description = "H2O AutoML"
+
+dependencies {
+  compile project(":h2o-genmodel")
+  compile project(":h2o-core")
+  compile project(":h2o-algos")
+
+  // Test dependencies only
+  testCompile "junit:junit:${junitVersion}"
+  testCompile project(path: ":h2o-core", configuration: "testArchives")
+}
+

@@ -98,7 +98,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       Frame specTrainFrame = _hyperSpaceWalker.getParams().train();
       Frame oldTrainFrame = grid.getTrainingFrame();
       if (oldTrainFrame != null && !specTrainFrame._key.equals(oldTrainFrame._key) ||
-          specTrainFrame.checksum() != oldTrainFrame.checksum())
+          oldTrainFrame != null && specTrainFrame.checksum() != oldTrainFrame.checksum())
         throw new H2OIllegalArgumentException("training_frame", "grid", "Cannot append new models to a grid with different training input");
       grid.write_lock(_job);
     } else {
@@ -290,7 +290,12 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     final Key<Model>[] modelKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
       @Override
       public boolean filter(KeySnapshot.KeyInfo k) {
-        return Value.isSubclassOf(k._type, Model.class) && ((Model)k._key.get())._parms.checksum() == checksum;
+        if (! Value.isSubclassOf(k._type, Model.class))
+          return false;
+        Model m = ((Model)k._key.get());
+        if ((m == null) || (m._parms == null))
+          return false;
+        return m._parms.checksum() == checksum;
       }
     }).keys();
 

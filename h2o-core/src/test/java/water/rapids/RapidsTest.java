@@ -19,6 +19,7 @@ import water.util.Log;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.Random;
 
 import static org.junit.Assert.*;
 import static water.rapids.Rapids.IllegalASTException;
@@ -435,6 +436,33 @@ public class RapidsTest extends TestUtil {
       }
     }
     return true;
+  }
+
+  /*
+  This test will generate a random sorted array and test only the index method of AstNumList.java. It will check
+  and make sure every index of the array is returned correctly by the index method.
+   */
+  @Test public void testAstNumListIndex() {
+    Random rand = new Random();
+    int numElement = 2000;
+    int[] array2H2O = new int[numElement];  // store sorted integer array
+    int arrayVal = rand.nextInt(Integer.SIZE-1);
+
+    for (int val = 0; val < numElement; val++) {
+      int randValue = rand.nextInt(100);
+      arrayVal += randValue;
+      if (randValue==0)   // avoid duplicated elements
+        arrayVal++;
+      array2H2O[val]=Math.abs(arrayVal);
+    }
+    AstNumList h2oArray = new AstNumList(array2H2O);
+    h2oArray._isSort=true;  // array is sorted
+    // check to make sure indext returned by method index is correct
+    for (int index=0; index < numElement; index++) {
+      int val = array2H2O[index];
+      int h2oIndex = (int) h2oArray.index(val);
+      assertEquals(index, h2oIndex);
+    }
   }
 
   @Test public void testRowSlice() {

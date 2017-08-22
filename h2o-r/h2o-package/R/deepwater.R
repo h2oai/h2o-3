@@ -35,7 +35,7 @@
 #'        weights are not allowed.
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
-#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse". Defaults to AUTO.
+#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
 #' @param overwrite_with_best_model \code{Logical}. If enabled, override the final model with the best model found during training. Defaults to
 #'        TRUE.
 #' @param epochs How many times the dataset should be iterated (streamed), can be fractional. Defaults to 10.
@@ -81,6 +81,8 @@
 #' @param sparse \code{Logical}. Sparse data handling (more efficient for data with lots of 0 values). Defaults to FALSE.
 #' @param gpu \code{Logical}. Whether to use a GPU (if available). Defaults to TRUE.
 #' @param device_id Device IDs (which GPUs to use). Defaults to [0].
+#' @param cache_data \code{Logical}. Whether to cache the data in memory (automatically disabled if data size is too large).
+#'        Defaults to TRUE.
 #' @param network_definition_file Path of file containing network definition (graph, architecture).
 #' @param network_parameters_file Path of file containing network (initial) parameters (weights, biases).
 #' @param mean_image_file Path of file containing the mean image data for data normalization.
@@ -113,7 +115,7 @@ h2o.deepwater <- function(x, y, training_frame,
                           offset_column = NULL,
                           weights_column = NULL,
                           score_each_iteration = FALSE,
-                          categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse"),
+                          categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                           overwrite_with_best_model = TRUE,
                           epochs = 10,
                           train_samples_per_iteration = -2,
@@ -147,6 +149,7 @@ h2o.deepwater <- function(x, y, training_frame,
                           sparse = FALSE,
                           gpu = TRUE,
                           device_id = c(0),
+                          cache_data = TRUE,
                           network_definition_file = NULL,
                           network_parameters_file = NULL,
                           mean_image_file = NULL,
@@ -158,17 +161,17 @@ h2o.deepwater <- function(x, y, training_frame,
                           problem_type = c("auto", "image", "dataset")
                           ) 
 {
-  #If x is missing, then assume user wants to use all columns as features.
-  if(missing(x)){
-     if(is.numeric(y)){
-         x <- setdiff(col(training_frame),y)
-     }else{
-         x <- setdiff(colnames(training_frame),y)
+  # If x is missing, then assume user wants to use all columns as features.
+  if (missing(x)) {
+     if (is.numeric(y)) {
+         x <- setdiff(col(training_frame), y)
+     } else {
+         x <- setdiff(colnames(training_frame), y)
      }
   }
 
   # Required args: training_frame
-  if( missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
+  if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
   # Training_frame must be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
      tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -291,6 +294,8 @@ h2o.deepwater <- function(x, y, training_frame,
     parms$gpu <- gpu
   if (!missing(device_id))
     parms$device_id <- device_id
+  if (!missing(cache_data))
+    parms$cache_data <- cache_data
   if (!missing(network_definition_file))
     parms$network_definition_file <- network_definition_file
   if (!missing(network_parameters_file))
@@ -310,20 +315,24 @@ h2o.deepwater <- function(x, y, training_frame,
   if (!missing(problem_type))
     parms$problem_type <- problem_type
   # Error check and build model
-  .h2o.modelJob('deepwater', parms, h2oRestApiVersion=3) 
+  .h2o.modelJob('deepwater', parms, h2oRestApiVersion = 3) 
 }
 
 #' Ask the H2O server whether a Deep Water model can be built (depends on availability of native backends)
-#' Returns True if a deep water model can be built, or False otherwise.
-#' @param h2oRestApiVersion (Optional) Specific version of the REST API to use
-#'
+#' Returns TRUE if a Deep Water model can be built, or FALSE otherwise.
+#' @param h2oRestApiVersion (Optional) Specific version of the REST API to use.
+#' @export
 h2o.deepwater.available <- function(h2oRestApiVersion = .h2o.__REST_API_VERSION) {
-visibility = .h2o.__remoteSend(method = "GET", h2oRestApiVersion = h2oRestApiVersion, .h2o.__MODEL_BUILDERS("deepwater"))$model_builders[["deepwater"]][["visibility"]]
+res <- .h2o.__remoteSend(method = "GET",
+h2oRestApiVersion = h2oRestApiVersion,
+page = .h2o.__MODEL_BUILDERS("deepwater"))
+visibility <- res$model_builders[["deepwater"]][["visibility"]]
 if (visibility == "Experimental") {
 print("Cannot build a Deep Water model - no backend found.")
-return(FALSE)
+available <- FALSE
 } else {
-return(TRUE)
+available <- TRUE
 }
+return(available)
 }
 

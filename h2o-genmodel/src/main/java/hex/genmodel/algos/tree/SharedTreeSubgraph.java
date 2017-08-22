@@ -7,14 +7,14 @@ import java.util.ArrayList;
  * Subgraph for representing a tree.
  * A subgraph contains nodes.
  */
-class SharedTreeSubgraph {
-  private final int subgraphNumber;
-  private final String name;
-  private SharedTreeNode rootNode;
+public class SharedTreeSubgraph {
+  public final int subgraphNumber;
+  public final String name;
+  public SharedTreeNode rootNode;
 
   // Even though all the nodes are reachable from rootNode, keep a second handy list of nodes.
   // For some bookkeeping tasks.
-  private ArrayList<SharedTreeNode> nodesArray;
+  public ArrayList<SharedTreeNode> nodesArray;
 
   /**
    * Create a new tree object.
@@ -85,7 +85,7 @@ class SharedTreeSubgraph {
     rootNode.printEdges();
   }
 
-  void printDot(PrintStream os, int maxLevelsToPrintPerEdge, boolean detail) {
+  void printDot(PrintStream os, int maxLevelsToPrintPerEdge, boolean detail, String optionalTitle) {
     os.println("");
     os.println("subgraph " + "cluster_" + subgraphNumber + " {");
     os.println("/* Nodes */");
@@ -108,11 +108,12 @@ class SharedTreeSubgraph {
     os.println("");
     os.println("/* Edges */");
     for (SharedTreeNode n : nodesArray) {
-      n.printDotEdges(os, maxLevelsToPrintPerEdge);
+      n.printDotEdges(os, maxLevelsToPrintPerEdge, rootNode.getWeight(), detail);
     }
     os.println("");
     os.println("fontsize=40");
-    os.println("label=\"" + name + "\"");
+    String title = SharedTreeNode.escapeQuotes((optionalTitle != null) ? optionalTitle : name);
+    os.println("label=\"" + title + "\"");
     os.println("}");
   }
 }

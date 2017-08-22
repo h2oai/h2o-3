@@ -198,4 +198,8 @@ public class StringUtils {
   public static byte[] toBytes(Object value) {
     return bytesOf(String.valueOf(value));
   }
+  
+  public static String toString(byte[] bytes, int from, int length) {
+    return new String(bytes, from, length, Charsets.UTF_8);
+  }
 }
