@@ -17,7 +17,7 @@ public class UserFeedback extends Keyed<UserFeedback> {
 
     UserFeedback old = DKV.getGet(this._key);
 
-    if (null == old) {
+    if (null == old || null == feedbackEvents) {
       feedbackEvents = new UserFeedbackEvent[0];
       DKV.put(this);
     }
@@ -26,7 +26,11 @@ public class UserFeedback extends Keyed<UserFeedback> {
   private UserFeedback() {
   }
 
-  public static String idForRun(Key<AutoML> runKey) { return "AutoML_Feedback_" + runKey.toString(); }
+  public static String idForRun(Key<AutoML> runKey) {
+    if (null == runKey)
+      return "AutoML_Feedback_dummy";
+    return "AutoML_Feedback_" + runKey.toString();
+  }
 
   /** Add a Debug UserFeedbackEvent and log. */
   public void debug(UserFeedbackEvent.Stage stage, String message) {
