@@ -48,7 +48,8 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def __init__(self, **kwargs):
         super(H2OStackedEnsembleEstimator, self).__init__()
         self._parms = {}
-        names_list = {"model_id", "training_frame", "response_column", "validation_frame", "base_models"}
+        names_list = {"model_id", "training_frame", "response_column", "validation_frame", "base_models",
+                      "keep_levelone_frame"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -124,5 +125,20 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
          else:
             assert_is_type(base_models, None, [str])
             self._parms["base_models"] = base_models
+
+
+    @property
+    def keep_levelone_frame(self):
+        """
+        Keep level one frame used for metalearner training.
+
+        Type: ``bool``  (default: ``False``).
+        """
+        return self._parms.get("keep_levelone_frame")
+
+    @keep_levelone_frame.setter
+    def keep_levelone_frame(self, keep_levelone_frame):
+        assert_is_type(keep_levelone_frame, None, bool)
+        self._parms["keep_levelone_frame"] = keep_levelone_frame
 
 
