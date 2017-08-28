@@ -6,7 +6,7 @@ import water.util.UnsafeUtils;
  * The empty-compression function, where data is in 'int's.
  */
 public class C4Chunk extends Chunk {
-  static protected final long _NA = Integer.MIN_VALUE;
+  static protected final int _NA = Integer.MIN_VALUE;
   C4Chunk( byte[] bs ) { _mem=bs; _start = -1; set_len(_mem.length>>2); }
   @Override protected final long at8_impl( int i ) {
     long res = UnsafeUtils.get4(_mem,i<<2);

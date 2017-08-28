@@ -115,7 +115,7 @@ public class NewChunkTest extends TestUtil {
       if(i % 5 == 0)
         assertTrue(c.isNA(i));
       else
-        assertEquals(values[i]*0.1, c.atd(i),1e-10);
+        assertEquals(values[i]/10.0, c.atd(i),1e-10);
     }
     // test switch to doubles
     nc = new NewChunkTestCpy(v,4);

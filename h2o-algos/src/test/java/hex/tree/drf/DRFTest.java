@@ -252,7 +252,7 @@ public class DRFTest extends TestUtil {
             20,
             1,
             10,
-            47.00716017021814
+        46.88452885668735
     );
 
   }
