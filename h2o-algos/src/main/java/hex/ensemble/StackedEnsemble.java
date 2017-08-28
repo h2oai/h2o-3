@@ -171,7 +171,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
      * Prepare a "level one" frame for a given set of models and actuals.  Used for preparing validation frames
      * for the metalearning step, and could also be used for bulk predictions for a StackedEnsemble.
      */
-    private Frame prepareLevelOneFrame(String levelOneKey, Key<Model>[] baseModelKeys, Frame actuals) {
+    private Frame prepareValidationLevelOneFrame(String levelOneKey, Key<Model>[] baseModelKeys, Frame actuals) {
       List<Model> baseModels = new ArrayList<>();
       List<Frame> baseModelPredictions = new ArrayList<>();
 
@@ -218,7 +218,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       if (_model._parms.valid() != null) {
         String levelOneKey = "levelone_validation_" + _model._key.toString();
         levelOneValidationFrame =
-                prepareLevelOneFrame(levelOneKey,
+                prepareValidationLevelOneFrame(levelOneKey,
                                      _model._parms._base_models,
                                      _model._parms.valid());
       }
