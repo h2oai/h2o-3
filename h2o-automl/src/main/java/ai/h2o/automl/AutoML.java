@@ -1081,12 +1081,18 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     Log.info(userFeedback.toString("User Feedback for AutoML Run " + this._key));
     Log.info();
 
-    Leaderboard trainingLeaderboard = Leaderboard.getOrMakeLeaderboard(projectName() + "_training", userFeedback, this.trainingFrame);
+    // Use a throwaway AutoML instance so the "New leader" message doesn't pollute our feedback
+    AutoML dummyAutoML = new AutoML();
+    UserFeedback dummyUF = new UserFeedback(dummyAutoML);
+    dummyAutoML.userFeedback = dummyUF;
+
+    Leaderboard trainingLeaderboard = Leaderboard.getOrMakeLeaderboard(projectName() + "_training", dummyUF, this.trainingFrame);
     trainingLeaderboard.addModels(this.leaderboard().getModelKeys());
     Log.info(trainingLeaderboard.toTwoDimTable("TRAINING FRAME Leaderboard for project " + projectName(), true).toString());
     Log.info();
 
-    Leaderboard validationLeaderboard = Leaderboard.getOrMakeLeaderboard(projectName() + "_validation", userFeedback, this.validationFrame);
+    // Use a throwawayUserFeedback instance so the "New leader" message doesn't pollute our feedback
+    Leaderboard validationLeaderboard = Leaderboard.getOrMakeLeaderboard(projectName() + "_validation", dummyUF, this.validationFrame);
     validationLeaderboard.addModels(this.leaderboard().getModelKeys());
     Log.info(validationLeaderboard.toTwoDimTable("VALIDATION FRAME Leaderboard for project " + projectName(), true).toString());
     Log.info();
