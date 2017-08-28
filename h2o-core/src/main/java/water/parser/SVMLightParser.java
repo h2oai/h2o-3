@@ -1,6 +1,5 @@
 package water.parser;
 
-import java.io.*;
 import java.util.Arrays;
 
 import water.Key;
@@ -193,7 +192,7 @@ class SVMLightParser extends Parser {
                     if(number <= colIdx)
                       err = "Columns come in non-increasing sequence. Got " + number + " after " + colIdx + ". Rest of the line is skipped.";
                     else if(exp != 0)
-                      err = "Got non-integer as column id: " + number*PrettyPrint.pow10(exp) + ". Rest of the line is skipped.";
+                      err = "Got non-integer as column id: " + PrettyPrint.pow10(number,exp) + ". Rest of the line is skipped.";
                     else
                       err = "column index out of range, " + number + " does not fit into integer." + " Rest of the line is skipped.";
                     dout.invalidLine(new ParseWriter.ParseErr(err,cidx,dout.lineNum(),offset + din.getGlobalByteOffset()));
@@ -362,7 +361,7 @@ class SVMLightParser extends Parser {
     @Override public void addNumCol(int colIdx, long number, int exp) {
       _ncols = Math.max(_ncols,colIdx);
       if(colIdx < MAX_PREVIEW_COLS && _nlines < MAX_PREVIEW_LINES)
-        _data[_nlines][colIdx] = Double.toString(number*PrettyPrint.pow10(exp));
+        _data[_nlines][colIdx] = Double.toString(PrettyPrint.pow10(number,exp));
     }
 
     @Override public void addNumCol(int colIdx, double d) {

@@ -385,29 +385,13 @@ public class AstMerge extends AstPrimitive {
     }
 
     protected static void addElem(NewChunk nc, Chunk c, int row) {
-      if (c.isNA(row)) nc.addNA();
-      else if (c instanceof CStrChunk) nc.addStr(c, row);
-      else if (c instanceof C16Chunk) nc.addUUID(c, row);
-      else if (c.hasFloat()) nc.addNum(c.atd(row));
-      else nc.addNum(c.at8(row), 0);
+      c.extractRows(nc,row,row+1);
     }
 
     protected static void addElem(NewChunk nc, Vec v, long absRow, BufferedString bStr) {
-      switch (v.get_type()) {
-        case Vec.T_NUM:
-          nc.addNum(v.at(absRow));
-          break;
-        case Vec.T_CAT:
-        case Vec.T_TIME:
-          if (v.isNA(absRow)) nc.addNA();
-          else nc.addNum(v.at8(absRow));
-          break;
-        case Vec.T_STR:
-          nc.addStr(v.atStr(bStr, absRow));
-          break;
-        default:
-          throw H2O.unimpl();
-      }
+      Chunk c = v.chunkForRow(absRow);
+      int relRow = (int)(absRow-c.start());
+      c.extractRows(nc,relRow,relRow+1);
     }
   }
 

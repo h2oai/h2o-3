@@ -23,7 +23,7 @@ test.glm.interactions <- function() {
     R_coef <- as.vector(m_R_coefs)[i]
     print( paste0("H2O Coeff: ",  h2o_coef))
     print( paste0("R   Coeff: ",  R_coef))
-    expect_true( abs( h2o_coef - R_coef) < 1e-12 )
+    expect_true( abs( h2o_coef - R_coef) < 1e-10 )
   }
 
   m_h2o_interaction <- h2o.glm(x=1:3,y=4,training_frame=as.h2o(iris), interactions=c(1,2,3), lambda=0, standardize=FALSE)
@@ -36,7 +36,7 @@ test.glm.interactions <- function() {
       R_coef <- as.vector(m_R_coefs)[i]
       print( paste0("H2O Coeff: ",  h2o_coef))
       print( paste0("R   Coeff: ",  R_coef))
-      expect_true( abs( h2o_coef - R_coef) < 1e-12 )
+      expect_true( abs( h2o_coef - R_coef) < 1e-10 )
     }
 }
 
