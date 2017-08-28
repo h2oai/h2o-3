@@ -247,16 +247,7 @@ class H2OLocalServer(object):
 
         # Find Java and check version. (Note that subprocess.check_output returns the output as a bytes object)
         java = self._find_java()
-        jver_bytes = subprocess.check_output([java, "-version"], stderr=subprocess.STDOUT)
-        jver = jver_bytes.decode(encoding="utf-8", errors="ignore")
-        if self._verbose:
-            print("  Java Version: " + jver.strip().replace("\n", "; "))
-        if "GNU libgcj" in jver:
-            raise H2OStartupError("Sorry, GNU Java is not supported for H2O.\n"
-                                  "Please download the latest 64-bit Java SE JDK from Oracle.")
-        if "Client VM" in jver:
-            warn("  You have a 32-bit version of Java. H2O works best with 64-bit Java.\n"
-                 "  Please download the latest 64-bit Java SE JDK from Oracle.\n")
+        self._check_java(java, self._verbose)
 
         if self._verbose:
             print("  Starting server from " + self._jar_path)
@@ -327,6 +318,18 @@ class H2OLocalServer(object):
                 raise H2OServerError("Server wasn't able to start in %f seconds." % elapsed_time)
             time.sleep(0.2)
 
+    @staticmethod
+    def _check_java(java, verbose):
+        jver_bytes = subprocess.check_output([java, "-version"], stderr=subprocess.STDOUT)
+        jver = jver_bytes.decode(encoding="utf-8", errors="ignore")
+        if verbose:
+            print("  Java Version: " + jver.strip().replace("\n", "; "))
+        if "GNU libgcj" in jver:
+            raise H2OStartupError("Sorry, GNU Java is not supported for H2O.\n"
+                                  "Please download the latest 64-bit Java SE JDK from Oracle.")
+        if "Client VM" in jver:
+            warn("  You have a 32-bit version of Java. H2O works best with 64-bit Java.\n"
+                 "  Please download the latest 64-bit Java SE JDK from Oracle.\n")
 
     @staticmethod
     def _find_java():
