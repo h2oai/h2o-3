@@ -11,6 +11,8 @@ import logging
 import os
 import warnings
 import webbrowser
+# Added for predict_json
+import subprocess
 
 
 from h2o.backend import H2OConnection
@@ -1256,6 +1258,79 @@ def make_metrics(predicted, actual, domain=None, distribution=None):
     res = api("POST /3/ModelMetrics/predictions_frame/%s/actuals_frame/%s" % (predicted.frame_id, actual.frame_id),
               data={"domain": domain, "distribution": distribution})
     return res["model_metrics"]
+
+gen_model_file_name = "h2o-genmodel.jar"
+h2o_predictor_class = "water.util.H2OPredictor"
+
+def find_file(name, path):
+    for root, dirs, files in os.walk(path):
+        if name in files:
+            return os.path.join(root, name)
+
+def check_java_process_and_version():
+    result = subprocess.call(["java", "-version"])
+    if result is not 0:
+        raise RuntimeError("Java process not found, exiting!!")
+
+    output = subprocess.check_output(["java", "-version"], stderr=subprocess.STDOUT)
+    #output = subprocess.Popen(["java", "-version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    #print output.communicate()
+    #print output.wait()
+    result = "0.0"
+    supported = False
+    if output.find("1.6.") is not -1:
+        result = "1.6"
+    elif output.find("1.7.") is not -1:
+        result = "1.7"
+        supported = True
+    elif output.find("1.8.") is not -1:
+        result = "1.8"
+        supported = True
+    return supported
+
+def predict_json(dir_path_to_genmodel_and_mojo, mojo_model_name, json_data, show_debug=False):
+
+    # Checking java
+    if not check_java_process_and_version():
+        raise RuntimeError("Error: Java version is not supported!!")
+
+        # Check both genmodel and pojo is availalbe in the same path
+    mojo_test = find_file(mojo_model_name, dir_path_to_genmodel_and_mojo)
+    if mojo_test is None:
+        raise RuntimeError("Error: MOJO model is not available in " + dir_path_to_genmodel_and_mojo + " folder.")
+
+
+    genmodel_test = find_file(gen_model_file_name, dir_path_to_genmodel_and_mojo)
+    if genmodel_test is None:
+        raise RuntimeError("Error:" + gen_model_file_name +  " is not available in " + dir_path_to_genmodel_and_mojo + " folder.")
+
+        # dir_path_to_genmodel_and_mojo > must start and ends with "/" or add to it
+    gen_model_arg = ".:"
+
+    if (dir_path_to_genmodel_and_mojo.endswith("/")):
+        gen_model_arg = gen_model_arg + dir_path_to_genmodel_and_mojo
+        temp_dir_path = dir_path_to_genmodel_and_mojo[:-1]
+    else:
+        gen_model_arg = gen_model_arg + dir_path_to_genmodel_and_mojo + "/"
+
+    gen_model_arg = (gen_model_arg
+                     + gen_model_file_name + ":"
+                     + temp_dir_path
+                     + ":genmodel.jar:/")
+    if (show_debug):
+        print(gen_model_arg)
+
+    if (dir_path_to_genmodel_and_mojo.endswith("/")):
+        mojo_model_args = dir_path_to_genmodel_and_mojo + mojo_model_name
+    else:
+        mojo_model_args = dir_path_to_genmodel_and_mojo +  "/" + mojo_model_name
+
+    if show_debug:
+        print(mojo_model_args)
+    if show_debug:
+        print(json_data)
+    return subprocess.check_output(["java" , "-Xmx4g", "-cp", gen_model_arg, h2o_predictor_class,
+                                    mojo_model_args, json_data], shell=False).decode()
 
 def flow():
     """
