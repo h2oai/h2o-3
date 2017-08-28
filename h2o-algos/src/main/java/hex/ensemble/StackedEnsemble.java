@@ -184,7 +184,14 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         Frame aPred = aModel.score(actuals, predsKey.toString()); // TODO: cache predictions
 
         baseModels.add(aModel);
-        baseModelPredictions.add(aPred);
+        if(!aModel._output.isMultinomialClassifier()){
+          baseModelPredictions.add(aPred);
+        }else {
+          List<String> predColNames= new ArrayList<>(Arrays.asList(aPred.names()));
+          predColNames.remove("predict");
+          String[] multClassNames  = predColNames.toArray(new String[0]);
+          baseModelPredictions.add(aPred.subframe(multClassNames));
+        }
       }
 
       Frame levelOne = prepareLevelOneFrame(levelOneKey, baseModels.toArray(new Model[0]), baseModelPredictions.toArray(new Frame[0]), actuals);
