@@ -1,0 +1,48 @@
+#! /bin/bash
+
+NC='\033[0m'
+RED='\033[91m'
+
+if [[ ${SPARK_VERSIONS} == '' ]]; then
+  echo "Skipping Spark download"
+  exit 0
+fi
+
+IFS=',' read -r -a array <<< ${SPARK_VERSIONS}
+for spark_version in "${array[@]}"; do
+  case "${spark_version}" in
+  1.6)
+    url=https://d3kbcqa49mib13.cloudfront.net/spark-1.6.3-bin-hadoop2.6.tgz
+    SPARKLING_WATER_VERSION=1.6.12
+    ;;
+  2.0)
+    url=https://d3kbcqa49mib13.cloudfront.net/spark-2.0.2-bin-hadoop2.7.tgz
+    SPARKLING_WATER_VERSION=2.0.15
+    ;;
+  2.1)
+    url=https://d3kbcqa49mib13.cloudfront.net/spark-2.1.1-bin-hadoop2.7.tgz
+    SPARKLING_WATER_VERSION=2.1.14
+    ;;
+  2.2)
+    url=https://d3kbcqa49mib13.cloudfront.net/spark-2.2.0-bin-hadoop2.7.tgz
+    SPARKLING_WATER_VERSION=2.2.0
+    ;;
+  *)
+    echo "Spark version ${spark_version} not supported"
+    exit 1
+    ;;
+  esac
+
+  echo "Downloading Spark ${RED}${spark_version}${NC}"
+  cd /opt
+  wget ${url}
+  tar -xzf spark-${spark_version}*.tgz
+  rm spark-${spark_version}*.tgz
+
+  SPARK_DIR=$(ls /opt | grep spark-${spark_version})
+  ACTIVATE_SPARK_SCRIPT_NAME=/opt/activate_spark_${spark_version}
+  echo """export SPARK_HOME=/opt/${SPARK_DIR}
+  echo -e \"Activating Spark ${RED}${spark_version}${NC} under ${RED}${SPARK_DIR}${NC}\"
+  """ > ${ACTIVATE_SPARK_SCRIPT_NAME}
+  chmod a+x ${ACTIVATE_SPARK_SCRIPT_NAME}
+done

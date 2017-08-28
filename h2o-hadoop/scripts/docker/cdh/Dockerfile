@@ -2,6 +2,7 @@ FROM nimmis/java:14.04-oracle-8-jdk
 
 ARG VERSION
 ARG PATH_PREFIX='.'
+ARG SPARK_VERSIONS=''
 
 ENV DISTRIBUTION 'cdh'
 ENV VERSION $VERSION
@@ -9,6 +10,8 @@ ENV SETUP_H2O TRUE
 ENV START_H2O TRUE
 ENV RUN_TESTS TRUE
 ENV ENTER_BASH FALSE
+ENV HADOOP_CONF_DIR /etc/hadoop/conf.pseudo
+ENV MASTER 'yarn-client'
 
 RUN echo "# Packages for Cloudera's Distribution for Hadoop, Version 5, on Ubuntu 14.04 amd64\n\
 deb [arch=amd64] http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh trusty-cdh${VERSION} contrib\n\
@@ -30,6 +33,11 @@ RUN service hadoop-hdfs-namenode init
 # Add H2O user
 RUN useradd -ms /bin/bash h2o
 
+# Download Spark if required
+COPY "${PATH_PREFIX}/../common/download_spark" "/usr/sbin/download_spark"
+RUN chmod 700 "/usr/sbin/download_spark"
+RUN /usr/sbin/download_spark
+
 # Copy startup scripts
 COPY "${PATH_PREFIX}/scripts/hdfs_start" "/etc/startup/00_hdfs_start"
 RUN chmod 700 "/etc/startup/00_hdfs_start"
@@ -44,7 +52,7 @@ RUN chmod 700 "/etc/startup/40_setup_h2o"
 COPY "${PATH_PREFIX}/../common/start_h2o" "/etc/startup/45_start_h2o"
 RUN chmod 700 "/etc/startup/45_start_h2o"
 COPY "${PATH_PREFIX}/../common/startup.sh" "/usr/bin/startup.sh"
-RUN chmod +x /usr/bin/startup.sh
+RUN chmod 700 /usr/bin/startup.sh
 
 # Expose ports
 # H2O

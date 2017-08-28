@@ -31,6 +31,8 @@ def init_args_parser():
     parser.add_argument('-v', '--version', type=str,
         help='Version of the Hadoop distribution.', required=True
     )
+    parser.add_argument('-s', '--spark-version', choices=['1.6', '2.0', '2.1', '2.2'], action='append', help="Version of Spark which should be installed.")
+    parser.add_argument('-t', '--tag', type=str, help="Tag of the image.")
     return parser
 
 def validate_version(distribution, version):
@@ -49,7 +51,17 @@ if __name__ == '__main__':
     args = parser.parse_args()
     validate_version(args.distribution, args.version)
     print("Building Docker image for %s version %s" % (args.distribution, args.version))
-    cmd = "docker build -t h2o-%s:%s --build-arg VERSION=%s --build-arg PATH_PREFIX=%s -f %s/Dockerfile ." % (args.distribution.lower(), args.version, args.version, args.distribution.lower(), args.distribution.lower())
+    spark_versions_argument = ''
+    tag = "h2o-%s:%s" % (args.distribution.lower(), args.version)
+    if args.spark_version:
+        args.spark_version.sort()
+        spark_versions_argument = '--build-arg SPARK_VERSIONS=%s ' % (",".join(args.spark_version))
+        tag = "h2o-%s-spark" % args.distribution.lower()
+        for spark_version in args.spark_version:
+            tag += '-%s' % spark_version
+        tag += ":%s" % args.version
+    cmd = "docker build -t %s --build-arg VERSION=%s --build-arg PATH_PREFIX=%s %s-f %s/Dockerfile ." % (tag, args.version, args.distribution.lower(), spark_versions_argument, args.distribution.lower())
+    print("Building image with cmd: %s" % cmd)
     process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stdin=subprocess.PIPE)
     for line in iter(process.stdout.readline, ''):
         sys.stdout.write(line)

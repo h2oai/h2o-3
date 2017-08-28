@@ -25,6 +25,15 @@ For example to build Docker image for CDH of version 5.8 execute:
 $ ./build.py --distribution CDH --version 5.8
 ```
 
+### Adding Spark ###
+It is possible to add multiple versions of Spark. To do so, use the `--spark-version` flags. For example to builde Docker image for CDH 5.8 with Spark with version 2.0 and 2.1 execute:
+
+```bash
+$ ./build.py --spark-version 2.0 --spark-version 2.1 --distribution CDH --version 5.8
+```
+
+Activating the particular Spark version is discussed in section **Customization**.
+
 ## Running ##
 To run the docker in default configuration use:
 
@@ -51,6 +60,7 @@ $ docker run -it \
     -e INIT_H2O=FALSE                                        `# do not download and start nighlty build of H2O` \
     -e RUN_TESTS=TRUE                                        `# run tests` \
     -e ENTER_BASH=TRUE                                       `# enter bash after running tests` \
+    -e ACTIVATE_SPARK=2.0                                    `# activates Spark 2.0` \
     -p 8088:8088                                             `# map port of Hadoop UI` \
     -p 54321:54321                                           `# map port of H2O` \
     h2o-<DISTRIBUTION>:<VERSION>                             `# specify which container to run`
@@ -62,7 +72,13 @@ The `run.py` script can be used to run the container as well. It is a wrapper sc
 $ ./run.py --help
 ```
 
+### Using Particular Spark Version ###
+The version of Spark can be specified via the environment variable `ACTIVATE_SPARK`. However it might be necessary to change the Spark version while running the contanier (for example because of tests). To do so, execute:
 
+```
+$ /opt/activate_spark_<SPARK_VERSION>
+```
+Use the script for the required version of Spark.
 
 ### ENV Variables ###
 The docker container contains several environment variables, which determine the behavior of the container:
@@ -83,7 +99,7 @@ For example, if `custom_test.py` should be run, execute following:
 $ docker run -v /path/to/tests:/startup h2o-<DISTRIBUTION>:<VERSION>
 ```
 
-### Custom startup script ###
+### Custom startup scripts ###
 Scripts run during startup are located under `/etc/startup`. They are being **naturally sorted** and **run in this order**. However content of this folder should not be edited, instead, the custom startup scripts should be added in following manner:
 
 * create a folder containing the required startup scripts on the host machine

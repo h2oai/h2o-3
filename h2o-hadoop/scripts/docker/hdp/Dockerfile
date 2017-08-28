@@ -4,6 +4,7 @@ WORKDIR /
 
 ARG VERSION
 ARG PATH_PREFIX='.'
+ARG SPARK_VERSIONS=''
 
 ENV DISTRIBUTION 'hdp'
 ENV VERSION $VERSION
@@ -11,6 +12,12 @@ ENV SETUP_H2O TRUE
 ENV START_H2O TRUE
 ENV RUN_TESTS TRUE
 ENV ENTER_BASH FALSE
+ENV HADOOP_CONF_DIR /usr/hdp/2*/hadoop/conf/
+ENV MASTER 'yarn-client'
+ENV YARN_DAEMON /usr/hdp/2*/hadoop-yarn/sbin/yarn-daemon.sh
+ENV MAPRED_USER mapred
+ENV YARN_USER yarn
+ENV HDFS_USER hdfs
 
 # Add HDP repository
 COPY ${PATH_PREFIX}/scripts/add_hdp_repo.sh /usr/sbin/add_hdp_repo.sh
@@ -33,13 +40,6 @@ RUN chown yarn:yarn /usr/hdp/2*/hadoop-mapreduce
 RUN chown -R root:hadoop /usr/hdp/current/hadoop-yarn*/bin/container-executor
 RUN chmod -R 6050 /usr/hdp/current/hadoop-yarn*/bin/container-executor
 
-# Export required ENV variables
-ENV YARN_DAEMON /usr/hdp/2*/hadoop-yarn/sbin/yarn-daemon.sh
-ENV HADOOP_CONF_DIR /usr/hdp/2*/hadoop/conf/
-ENV MAPRED_USER mapred
-ENV YARN_USER yarn
-ENV HDFS_USER hdfs
-
 # Copy conf.pseudo to hadoop conf folder
 RUN rm /usr/hdp/2*/hadoop/conf/*
 RUN cp /usr/hdp/2*/etc/hadoop/conf.pseudo/* /usr/hdp/2*/hadoop/conf/
@@ -61,6 +61,11 @@ RUN su - hdfs -c "/usr/hdp/current/hadoop-hdfs-namenode/../hadoop/bin/hdfs namen
 
 # Create h2o user
 RUN useradd -ms /bin/bash h2o
+
+# Download Spark if required
+COPY "${PATH_PREFIX}/../common/download_spark" "/usr/sbin/download_spark"
+RUN chmod 700 "/usr/sbin/download_spark"
+RUN /usr/sbin/download_spark
 
 # Copy startup scripts
 COPY "${PATH_PREFIX}/scripts/hdfs_start" "/etc/startup/00_hdfs_start"
