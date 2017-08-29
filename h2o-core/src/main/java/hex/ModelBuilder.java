@@ -110,20 +110,33 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /**
    *
-   * @param algo url name of the algo, for example gbm for Gradient Boosting Machine
+   * @param urlName url name of the algo, for example gbm for Gradient Boosting Machine
    * @return true, if model supports exporting to POJO
    */
-  public static boolean havePojo(String algo) {
-    return BUILDERS[ArrayUtils.find(ALGOBASES, algo)].havePojo();
+  public static boolean havePojo(String urlName) {
+    return BUILDERS[ensureBuilderIndex(urlName)].havePojo();
   }
 
   /**
    *
-   * @param algo url name of the algo, for example gbm for Gradient Boosting Machine
+   * @param urlName url name of the algo, for example gbm for Gradient Boosting Machine
    * @return true, if model supports exporting to MOJO
    */
-  public static boolean haveMojo(String algo) {
-    return BUILDERS[ArrayUtils.find(ALGOBASES, algo)].haveMojo();
+  public static boolean haveMojo(String urlName) {
+    return BUILDERS[ensureBuilderIndex(urlName)].haveMojo();
+  }
+
+  /**
+   * Returns <strong>valid</strong> index of given url name in {@link #ALGOBASES} or throws an exception.
+   * @param urlName url name to return the index for
+   * @return valid index, if url name is not present in {@link #ALGOBASES} throws an exception
+   */
+  private static int ensureBuilderIndex(String urlName) {
+    int index = ArrayUtils.find(ALGOBASES, urlName);
+    if (index < 0) {
+      throw new IllegalArgumentException(String.format("Cannot find Builder for algo url name %s", urlName));
+    }
+    return index;
   }
 
 
