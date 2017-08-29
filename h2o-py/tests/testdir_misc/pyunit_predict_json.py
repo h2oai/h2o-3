@@ -99,6 +99,61 @@ def predict_json_test(target_dir):
     assert bin_p0 == bin_p20, "expected predictions to be the same for binary and MOJO model for Binomial - p0"
     assert bin_p1 == bin_p21, "expected predictions to be the same for binary and MOJO model for Binomial - p1"
 
+    # =================================================================
+    # Multinomial
+    # =================================================================
+    iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
+
+    r = iris[0].runif()
+    train = iris[r < 0.90]
+    test = iris[r >= 0.10]
+
+    # Getting first row from test data frame
+    pdf = test[1,0:4]
+    x  = pdf.as_data_frame()
+    df_json = x.to_json(orient='records')
+
+    multi_gbm = H2OGradientBoostingEstimator()
+    multi_gbm.train(x=['C1','C2','C3','C4'],y='C5',training_frame=train)
+
+    pred_multi = multi_gbm.predict(pdf)
+    binary_res1  = pred_multi[0,1]
+    binary_res2  = pred_multi[0,2]
+    binary_res3  = pred_multi[0,3]
+    print("Multinomial prediction (Binary): p0: " + str(binary_res1))
+    print("Multinomial prediction (Binary): p1: " + str(binary_res2))
+    print("Multinomial prediction (Binary): p2: " + str(binary_res3))
+
+    print("\nDownloading MOJO @... " + target_dir)
+    time0 = time.time()
+    model_with_path = target_dir + "/" + mojo_file_name
+    genmodel_with_path = target_dir + "/" + gen_model_name
+    mojo_file = multi_gbm.download_mojo(path=model_with_path, get_genmodel_jar=True, genmodel_name=genmodel_with_path)
+    print("    => %s  (%d bytes)" % (mojo_file, os.stat(mojo_file).st_size))
+    assert os.path.exists(mojo_file)
+    print("    Time taken = %.3fs" % (time.time() - time0))
+    assert os.path.exists(model_with_path)
+    print("    => %s  (%d bytes)" % (model_with_path, os.stat(model_with_path).st_size))
+    assert os.path.exists(genmodel_with_path)
+    print("    => %s  (%d bytes)" % (genmodel_with_path, os.stat(genmodel_with_path).st_size))
+
+    print("\nPerforming Binomial Prediction using MOJO @... " + target_dir)
+    prediction_result = h2o.predict_json(target_dir,
+                                         mojo_file_name,
+                                         df_json)
+
+    multi_values = json.loads(prediction_result)[0]["classProbabilities"]
+    mojo_res1 = multi_values[0]
+    mojo_res2 = multi_values[1]
+    mojo_res3 = multi_values[2]
+    print("Multinomial prediction (MOJO): p0: " + str(mojo_res1))
+    print("Multinomial prediction (MOJO): p1: " + str(mojo_res2))
+    print("Multinomial prediction (MOJO): p2: " + str(mojo_res3))
+
+    assert binary_res1 == mojo_res1, "expected predictions to be the same for binary and MOJO model for Multinomial - p0"
+    assert binary_res2 == mojo_res2, "expected predictions to be the same for binary and MOJO model for Multinomial - p1"
+    assert binary_res3 == mojo_res3, "expected predictions to be the same for binary and MOJO model for Multinomial - p2"
+
 
 try:
     target_dir = tempfile.mkdtemp()
