@@ -1263,11 +1263,21 @@ gen_model_file_name = "h2o-genmodel.jar"
 h2o_predictor_class = "water.util.H2OPredictor"
 
 def find_file(name, path):
+    """
+    Helper function for predict_json() function to check if both MOJO and h2o-genmodel.jar are available
+    :param name: file name to find
+    :param path: folder/directory name with full path
+    :return: Successful path name or None if failed
+    """
     for root, dirs, files in os.walk(path):
         if name in files:
             return os.path.join(root, name)
 
 def check_java_process_and_version():
+    """
+    Helper function for predict_json() to check java version in the machine
+    :return: True/False if support java is available
+    """
     result = subprocess.call(["java", "-version"])
     if result is not 0:
         raise RuntimeError("Java process not found, exiting!!")
@@ -1289,23 +1299,36 @@ def check_java_process_and_version():
     return supported
 
 def predict_json(dir_path_to_genmodel_and_mojo, mojo_model_name, json_data, show_debug=False):
+    """
+    MOJO scoring function to take a pandas data frame as json string and use MOJO model as zip file to score
 
+    :param dir_path_to_genmodel_and_mojo: This is the local file system folder name where both h2o-genmodel.jar and MOJO zip file is stored.
+    :param mojo_model_name: This is the MOJO model file name which is download after model was build using H2O
+    :param json_data:  convert pandas frame to json (pd.to_json) and pass here
+    :param show_debug: True/False - Default ( Use True to see the full Java command line)
+    :return: score as json values
+    """
     # Checking java
     if not check_java_process_and_version():
         raise RuntimeError("Error: Java version is not supported!!")
 
-        # Check both genmodel and pojo is availalbe in the same path
+    # Check both genmodel and pojo is available in the same path
+    # Try assert?
+    # assert os.path.exists(dir_path_to_genmodel_and_mojo + "/" + mojo_model_name)
     mojo_test = find_file(mojo_model_name, dir_path_to_genmodel_and_mojo)
     if mojo_test is None:
         raise RuntimeError("Error: MOJO model is not available in " + dir_path_to_genmodel_and_mojo + " folder.")
 
 
+    # assert os.path.exists(dir_path_to_genmodel_and_mojo + "/" + gen_model_file_name)
     genmodel_test = find_file(gen_model_file_name, dir_path_to_genmodel_and_mojo)
     if genmodel_test is None:
         raise RuntimeError("Error:" + gen_model_file_name +  " is not available in " + dir_path_to_genmodel_and_mojo + " folder.")
 
         # dir_path_to_genmodel_and_mojo > must start and ends with "/" or add to it
     gen_model_arg = ".:"
+
+    temp_dir_path =  dir_path_to_genmodel_and_mojo
 
     if (dir_path_to_genmodel_and_mojo.endswith("/")):
         gen_model_arg = gen_model_arg + dir_path_to_genmodel_and_mojo
