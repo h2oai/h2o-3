@@ -154,7 +154,6 @@ def predict_json_test(target_dir):
     assert binary_res2 == mojo_res2, "expected predictions to be the same for binary and MOJO model for Multinomial - p1"
     assert binary_res3 == mojo_res3, "expected predictions to be the same for binary and MOJO model for Multinomial - p2"
 
-
 try:
     target_dir = tempfile.mkdtemp()
     if __name__ == "__main__":
@@ -162,6 +161,6 @@ try:
     else:
         predict_json_test(target_dir)
 finally:
-    #shutil.rmtree(target_dir)
+    shutil.rmtree(target_dir)
     print("Done!!")
 
