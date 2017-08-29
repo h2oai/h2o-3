@@ -1,6 +1,5 @@
 package water.api;
 
-import hex.Model;
 import water.*;
 import water.api.schemas3.H2OErrorV3;
 import water.api.schemas3.H2OModelBuilderErrorV3;
@@ -314,13 +313,6 @@ public class RequestServer extends HttpServlet {
 
       resp.writeTo(response.getOutputStream());
 
-    } catch (Model.UnsupportedConversionToJavaException e) {  // This error type should be passed to clients.
-      try {
-        JettyHTTPD.sendResponseError(response, 501, e.getMessage());
-      } catch (IOException ex) {
-        ex.printStackTrace();
-      }
-      Log.err(e);
     } catch (IOException e) {
       e.printStackTrace();
       JettyHTTPD.setResponseStatus(response, 500);

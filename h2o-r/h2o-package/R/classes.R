@@ -106,8 +106,8 @@ setMethod("show", "H2OConnection", function(object) {
 #' @slot algorithm A \code{character} string specifying the algorithm that were used to fit the model.
 #' @slot parameters A \code{list} containing the parameter settings that were used to fit the model that differ from the defaults.
 #' @slot allparameters A \code{list} containg all parameters used to fit the model.
-#' @slot have_mojo A \code{logical} indicating whether export to MOJO is supporter
-#' @slot have_pojo A \code{logical} indicating whether export to POJO is supporter
+#' @slot have_pojo A \code{logical} indicating whether export to POJO is supported
+#' @slot have_mojo A \code{logical} indicating whether export to MOJO is supported
 #' @slot model A \code{list} containing the characteristics of the model returned by the algorithm.
 #' @aliases H2OModel
 #' @export

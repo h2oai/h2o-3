@@ -1,7 +1,6 @@
 package water.api.schemas3;
 
 import hex.Model;
-import hex.ModelBuilder;
 import water.AutoBuffer;
 import water.H2O;
 import water.api.API;

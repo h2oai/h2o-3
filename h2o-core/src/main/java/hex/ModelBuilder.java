@@ -108,6 +108,24 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** gbm -> "hex.schemas." ; custAlgo -> "org.myOrg.schemas." */
   public static String schemaDirectory(String urlName) { return SCHEMAS[ArrayUtils.find(ALGOBASES,urlName)]; }
 
+  /**
+   *
+   * @param algo url name of the algo, for example gbm for Gradient Boosting Machine
+   * @return true, if model supports exporting to POJO
+   */
+  public static boolean havePojo(String algo) {
+    return BUILDERS[ArrayUtils.find(ALGOBASES, algo)].havePojo();
+  }
+
+  /**
+   *
+   * @param algo url name of the algo, for example gbm for Gradient Boosting Machine
+   * @return true, if model supports exporting to MOJO
+   */
+  public static boolean haveMojo(String algo) {
+    return BUILDERS[ArrayUtils.find(ALGOBASES, algo)].haveMojo();
+  }
+
 
   /** Factory method to create a ModelBuilder instance for given the algo name.
    *  Shallow clone of both the default ModelBuilder instance and a Parameter. */
