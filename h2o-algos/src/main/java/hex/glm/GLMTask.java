@@ -704,10 +704,14 @@ public abstract class GLMTask  {
       for(int i = 0; i < es.length; ++i) {
         if(Double.isNaN(ys[i]) || ws[i] == 0){es[i] = 0; continue;}
         double e = es[i], w = ws[i];
-        double yr = ys[i];
-        double ym = 1.0 / (Math.exp(-e) + 1.0);
-        if(ym != yr) _likelihood += w*((MathUtils.y_log_y(yr, ym)) + MathUtils.y_log_y(1 - yr, 1 - ym));
-        es[i] = ws[i] * (ym - yr);
+        double y = ys[i];
+        double p = 1.0 / (Math.exp(-e) + 1.0);
+        if(p != y) _likelihood += w * (
+                -(y * Math.log(p) + (1 - y) * Math.log(1 - p))
+//                        + y * Math.log(y) + (y - 1) * Math.log(1 - y)
+                // MathUtils.y_log_y(y, p) + MathUtils.y_log_y(1 - y, 1 - p)
+        );
+        es[i] = ws[i] * (p - y);
       }
     }
   }
