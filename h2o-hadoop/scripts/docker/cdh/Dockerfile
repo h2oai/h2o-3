@@ -4,14 +4,7 @@ ARG VERSION
 ARG PATH_PREFIX='.'
 ARG SPARK_VERSIONS=''
 
-ENV DISTRIBUTION 'cdh'
-ENV VERSION $VERSION
-ENV SETUP_H2O TRUE
-ENV START_H2O TRUE
-ENV RUN_TESTS TRUE
-ENV ENTER_BASH FALSE
-ENV HADOOP_CONF_DIR /etc/hadoop/conf.pseudo
-ENV MASTER 'yarn-client'
+ENV DISTRIBUTION='cdh' VERSION=$VERSION ENTER_BASH=FALSE HADOOP_CONF_DIR='/etc/hadoop/conf.pseudo' MASTER='yarn-client'
 
 RUN echo "# Packages for Cloudera's Distribution for Hadoop, Version 5, on Ubuntu 14.04 amd64\n\
 deb [arch=amd64] http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh trusty-cdh${VERSION} contrib\n\
@@ -19,13 +12,13 @@ deb-src http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh trusty-cdh${VER
 
 # Prepare Cloudera repository
 COPY ${PATH_PREFIX}/conf/cloudera.pref /etc/apt/preferences.d/cloudera.pref
-RUN wget http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh/archive.key -O archive.key && sudo apt-key add archive.key && \
+RUN wget http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh/archive.key -O archive.key && \
+    sudo apt-key add archive.key && \
     sudo apt-get update
 
 # Download necessary packages
-RUN apt-get install -y hadoop-conf-pseudo python-dev python-pip python-scipy
-RUN pip install requests --upgrade
-RUN pip install colorama future tabulate pandas
+RUN apt-get install -y hadoop-conf-pseudo python-dev python-pip python-scipy && \
+    pip install requests colorama future tabulate pandas --upgrade
 
 # Initialize namenode
 RUN service hadoop-hdfs-namenode init
@@ -33,32 +26,19 @@ RUN service hadoop-hdfs-namenode init
 # Add H2O user
 RUN useradd -ms /bin/bash h2o
 
-# Download Spark if required
-COPY "${PATH_PREFIX}/../common/download_spark" "/usr/sbin/download_spark"
-RUN chmod 700 "/usr/sbin/download_spark"
-RUN /usr/sbin/download_spark
+# Copy scripts
+COPY ${PATH_PREFIX}/../common/startup ${PATH_PREFIX}/scripts/startup /etc/startup/
+COPY ${PATH_PREFIX}/../common/bin/ /usr/bin/
+COPY ${PATH_PREFIX}/../common/sbin/ /usr/sbin/
 
-# Copy startup scripts
-COPY "${PATH_PREFIX}/scripts/hdfs_start" "/etc/startup/00_hdfs_start"
-RUN chmod 700 "/etc/startup/00_hdfs_start"
-COPY "${PATH_PREFIX}/../common/hdfs_setup" "/etc/startup/10_hdfs_setup"
-RUN chmod 700 "/etc/startup/10_hdfs_setup"
-COPY "${PATH_PREFIX}/../common/hdfs_create_h2o_home" "/etc/startup/20_hdfs_create_h2o_home"
-RUN chmod 700 "/etc/startup/20_hdfs_create_h2o_home"
-COPY "${PATH_PREFIX}/scripts/yarn_start" "/etc/startup/30_yarn_start"
-RUN chmod 700 "/etc/startup/30_yarn_start"
-COPY "${PATH_PREFIX}/../common/setup_h2o" "/etc/startup/40_setup_h2o"
-RUN chmod 700 "/etc/startup/40_setup_h2o"
-COPY "${PATH_PREFIX}/../common/start_h2o" "/etc/startup/45_start_h2o"
-RUN chmod 700 "/etc/startup/45_start_h2o"
-COPY "${PATH_PREFIX}/../common/startup.sh" "/usr/bin/startup.sh"
-RUN chmod 700 /usr/bin/startup.sh
+# Download Spark if required
+RUN chmod 700 /usr/sbin/download_spark && \
+    /usr/sbin/download_spark
 
 # Expose ports
-# H2O
-EXPOSE 54321
-# HADOOP UI
-EXPOSE 8088
+# H2O, HADOOP UI
+EXPOSE 54321 8088
 
 # Run this script on container run
+RUN chmod 700 /usr/bin/startup.sh
 CMD "/usr/bin/startup.sh"

@@ -6,55 +6,46 @@ ARG VERSION
 ARG PATH_PREFIX='.'
 ARG SPARK_VERSIONS=''
 
-ENV DISTRIBUTION 'hdp'
-ENV VERSION $VERSION
-ENV SETUP_H2O TRUE
-ENV START_H2O TRUE
-ENV RUN_TESTS TRUE
-ENV ENTER_BASH FALSE
-ENV HADOOP_CONF_DIR /usr/hdp/2*/hadoop/conf/
-ENV MASTER 'yarn-client'
-ENV YARN_DAEMON /usr/hdp/2*/hadoop-yarn/sbin/yarn-daemon.sh
-ENV MAPRED_USER mapred
-ENV YARN_USER yarn
-ENV HDFS_USER hdfs
+ENV DISTRIBUTION='hdp' VERSION=$VERSION ENTER_BASH=FALSE HADOOP_CONF_DIR='/usr/hdp/2*/hadoop/conf/' MASTER='yarn-client' YARN_DAEMON='/usr/hdp/2*/hadoop-yarn/sbin/yarn-daemon.sh' MAPRED_USER=mapred YARN_USER=yarn HDFS_USER=hdfs
+
+# Copy bin, sbin and startup scripts
+COPY ${PATH_PREFIX}/scripts/bin ${PATH_PREFIX}/../common/bin /usr/bin/
+COPY ${PATH_PREFIX}/scripts/sbin ${PATH_PREFIX}/../common/sbin /usr/sbin/
+COPY ${PATH_PREFIX}/scripts/startup ${PATH_PREFIX}/../common/startup /etc/startup/
 
 # Add HDP repository
-COPY ${PATH_PREFIX}/scripts/add_hdp_repo.sh /usr/sbin/add_hdp_repo.sh
-RUN chmod 700 /usr/sbin/add_hdp_repo.sh
-RUN /usr/sbin/add_hdp_repo.sh $VERSION
+RUN chmod 700 /usr/sbin/add_hdp_repo.sh && \
+    /usr/sbin/add_hdp_repo.sh $VERSION && \
+    rm /usr/sbin/add_hdp_repo.sh && \
+    apt-get update
 
 # Install HDP and required packages
-RUN apt-get install -y hadoop-conf-pseudo python-dev python-pip python-scipy
-RUN pip install requests --upgrade
-RUN pip install colorama future tabulate pandas
+RUN apt-get install -y hadoop-conf-pseudo python-dev python-pip python-scipy && \
+    pip install requests colorama future tabulate pandas --upgrade
 
 # Copy configs
-COPY ${PATH_PREFIX}/conf/hadoop-env.sh /etc/hadoop/conf/hadoop-env.sh
-COPY ${PATH_PREFIX}/conf/core-site.xml /etc/hadoop/conf/core-site.xml
+COPY ${PATH_PREFIX}/conf/ /etc/hadoop/conf/
 
 # Chown folders
-RUN chown hdfs:hdfs /usr/hdp/2*/hadoop
-RUN chown yarn:yarn /usr/hdp/2*/hadoop-yarn
-RUN chown yarn:yarn /usr/hdp/2*/hadoop-mapreduce
-RUN chown -R root:hadoop /usr/hdp/current/hadoop-yarn*/bin/container-executor
-RUN chmod -R 6050 /usr/hdp/current/hadoop-yarn*/bin/container-executor
+RUN chown hdfs:hdfs /usr/hdp/2*/hadoop && \
+    chown yarn:yarn /usr/hdp/2*/hadoop-yarn && \
+    chown yarn:yarn /usr/hdp/2*/hadoop-mapreduce && \
+    chown -R root:hadoop /usr/hdp/current/hadoop-yarn*/bin/container-executor && \
+    chmod -R 6050 /usr/hdp/current/hadoop-yarn*/bin/container-executor
 
 # Copy conf.pseudo to hadoop conf folder
-RUN rm /usr/hdp/2*/hadoop/conf/*
-RUN cp /usr/hdp/2*/etc/hadoop/conf.pseudo/* /usr/hdp/2*/hadoop/conf/
+RUN rm /usr/hdp/2*/hadoop/conf/* && \
+    cp /usr/hdp/2*/etc/hadoop/conf.pseudo/* /usr/hdp/2*/hadoop/conf/
 
 # Generate mapred-site.xml
-COPY ${PATH_PREFIX}/scripts/generate-mapred-site /usr/sbin/generate-mapred-site
-RUN chmod +x /usr/sbin/generate-mapred-site
-RUN /usr/sbin/generate-mapred-site
-RUN rm /usr/sbin/generate-mapred-site
+RUN chmod 700 /usr/sbin/generate-mapred-site && \
+    /usr/sbin/generate-mapred-site && \
+    rm /usr/sbin/generate-mapred-site
 
 # Generate yarn-site.xml
-COPY ${PATH_PREFIX}/scripts/generate-yarn-site /usr/sbin/generate-yarn-site
-RUN chmod +x /usr/sbin/generate-yarn-site
-RUN /usr/sbin/generate-yarn-site
-RUN rm /usr/sbin/generate-yarn-site
+RUN chmod 700 /usr/sbin/generate-yarn-site && \
+    /usr/sbin/generate-yarn-site && \
+    rm /usr/sbin/generate-yarn-site
 
 # Format namenode
 RUN su - hdfs -c "/usr/hdp/current/hadoop-hdfs-namenode/../hadoop/bin/hdfs namenode -format"
@@ -63,30 +54,12 @@ RUN su - hdfs -c "/usr/hdp/current/hadoop-hdfs-namenode/../hadoop/bin/hdfs namen
 RUN useradd -ms /bin/bash h2o
 
 # Download Spark if required
-COPY "${PATH_PREFIX}/../common/download_spark" "/usr/sbin/download_spark"
-RUN chmod 700 "/usr/sbin/download_spark"
-RUN /usr/sbin/download_spark
+RUN chmod 700 /usr/sbin/download_spark && \
+    /usr/sbin/download_spark
 
-# Copy startup scripts
-COPY "${PATH_PREFIX}/scripts/hdfs_start" "/etc/startup/00_hdfs_start"
-RUN chmod 700 "/etc/startup/00_hdfs_start"
-COPY "${PATH_PREFIX}/../common/hdfs_setup" "/etc/startup/10_hdfs_setup"
-RUN chmod 700 "/etc/startup/10_hdfs_setup"
-COPY "${PATH_PREFIX}/../common/hdfs_create_h2o_home" "/etc/startup/20_hdfs_create_h2o_home"
-RUN chmod 700 "/etc/startup/20_hdfs_create_h2o_home"
-COPY "${PATH_PREFIX}/scripts/yarn_start" "/etc/startup/30_yarn_start"
-RUN chmod 700 "/etc/startup/30_yarn_start"
-COPY "${PATH_PREFIX}/../common/setup_h2o" "/etc/startup/40_setup_h2o"
-RUN chmod 700 "/etc/startup/40_setup_h2o"
-COPY "${PATH_PREFIX}/../common/start_h2o" "/etc/startup/45_start_h2o"
-RUN chmod 700 "/etc/startup/45_start_h2o"
-COPY "${PATH_PREFIX}/../common/startup.sh" "/usr/bin/startup.sh"
-RUN chmod +x /usr/bin/startup.sh
+# Expose ports
+# H2O, Hadoop UI
+EXPOSE 54321 8088
 
-# Expose H2O and Hadoop UI ports
-# H2O
-EXPOSE 54321
-# HADOOP UI
-EXPOSE 8088
-
+RUN chmod 700 /usr/bin/startup.sh
 CMD "/usr/bin/startup.sh"

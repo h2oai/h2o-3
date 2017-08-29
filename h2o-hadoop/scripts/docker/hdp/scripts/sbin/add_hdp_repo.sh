@@ -53,4 +53,3 @@ echo -e "Building for HDP version ${GREEN}${hdp_version}${NC}"
 wget http://public-repo-1.hortonworks.com/HDP/ubuntu${ubuntu_repo_version}/2.x/updates/${hdp_version}/hdp.list -O /etc/apt/sources.list.d/hdp.list
 gpg --keyserver pgp.mit.edu --recv-keys B9733A7A07513CAD
 gpg -a --export 07513CAD | apt-key add -
-apt-get update
