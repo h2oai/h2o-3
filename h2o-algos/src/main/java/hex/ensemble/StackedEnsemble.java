@@ -266,11 +266,11 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       }else{
         DKV.remove(levelOneTrainingFrame._key); //Remove Level One Training Frame from DKV
       }
+      if (null != levelOneValidationFrame) {
+        DKV.remove(levelOneValidationFrame._key); //Remove Level One Validation Frame from DKV
+      }
       _model.update(_job);
       _model.unlock(_job);
-      if (null != levelOneValidationFrame) {
-          DKV.remove(levelOneValidationFrame._key); //Remove Level One Validation Frame from DKV
-        }
       }
     } // computeImpl
   }
