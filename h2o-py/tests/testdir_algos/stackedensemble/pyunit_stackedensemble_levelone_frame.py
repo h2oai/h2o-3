@@ -16,11 +16,9 @@ from tests import pyunit_utils
 def stackedensemble_levelone_frame_test():
 
     train = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_train.csv"))
-    test = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_test.csv"))
     y = "species"
     x = list(range(4))
     train[y] = train[y].asfactor()
-    test[y] = test[y].asfactor()
     nfolds = 5
     num_base_models = 2
     num_col_level_one_frame = (train[y].unique().nrow) * num_base_models + 1 #Predicting 3 classes across two base models + response (3*2+1)
@@ -47,13 +45,13 @@ def stackedensemble_levelone_frame_test():
 
     # Train a stacked ensemble using the GBM and GLM above
     stack = H2OStackedEnsembleEstimator(base_models=[my_gbm.model_id,  my_rf.model_id], keep_levelone_frame=True)
-    stack.train(x=x, y=y, training_frame=train, validation_frame=test)  # also test that validation_frame is working
+    stack.train(x=x, y=y, training_frame=train)  # also test that validation_frame is working
     level_one_frame = h2o.get_frame(stack.levelone_frame_id()["name"])
     assert level_one_frame.ncols == num_col_level_one_frame, "The number of columns in a level one frame should be numClasses * numBaseModels + 1."
     assert level_one_frame.nrows == train.nrows, "The number of rows in the level one frame should match train number of rows. "
 
     stack2 = H2OStackedEnsembleEstimator(base_models=[my_gbm.model_id,  my_rf.model_id])
-    stack2.train(x=x, y=y, training_frame=train, validation_frame=test)  # also test that validation_frame is working
+    stack2.train(x=x, y=y, training_frame=train)  # also test that validation_frame is working
     assert stack2.levelone_frame_id() is None, "Level one frame is only available when keep_levelone_frame is True."
 
 if __name__ == "__main__":

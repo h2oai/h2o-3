@@ -4,11 +4,9 @@ source("../../../scripts/h2o-r-test-setup.R")
 stackedensemble.levelone.test <- function() {
 
     train <- h2o.uploadFile(locate("smalldata/iris/iris_train.csv"))
-    test <- h2o.uploadFile(locate("smalldata/iris/iris_test.csv"))
     y <- "species"
     x <- setdiff(names(train), y)
     train[,y] <- as.factor(train[,y])
-    test[,y] <- as.factor(test[,y])
     nfolds <- 5
     num_base_models <- 2
     num_col_level_one_frame <- nrow(h2o.unique(train[y])) * num_base_models + 1 #Predicting 3 classes across two base models + response (3*2+1)
