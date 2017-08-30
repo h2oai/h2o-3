@@ -2,14 +2,22 @@
 
 import argparse
 import subprocess
-import os
 import sys
 
 DISTRIBUTION_CDH = 'CDH'
-SUPPORTED_CDH_VERSIONS = ['5.4', '5.5', '5.6', '5.7', '5.8', '5.10']
 DISTRIBUTION_HDP = 'HDP'
-SUPPORTED_HDP_VERSIONS = ['2.2', '2.3', '2.4', '2.5', '2.6']
 SUPPORTED_DISTRIBUTIONS = [DISTRIBUTION_CDH, DISTRIBUTION_HDP]
+
+SUPPORTED_CDH_VERSIONS = ['5.4', '5.5', '5.6', '5.7', '5.8', '5.10']
+SUPPORTED_HDP_VERSIONS = ['2.2', '2.3', '2.4', '2.5', '2.6']
+
+SUPPORTED_SPARK_VERSIONS = [
+    '1.6.0', '1.6.1', '1.6.2', '1.6.3',
+    '2.0.0', '2.0.1', '2.0.2',
+    '2.1.0', '2.1.1',
+    '2.2.0'
+]
+
 
 def pretty_print_array(array_to_print):
     if array_to_print is None or len(array_to_print) == 0:
@@ -22,29 +30,33 @@ def pretty_print_array(array_to_print):
 
 def init_args_parser():
     supported_distributions_text = pretty_print_array(SUPPORTED_DISTRIBUTIONS)
-    parser = argparse.ArgumentParser(description='Builds a Dockerfile for given Hadoop distribution and version.')
-    parser.add_argument('-d', '--distribution',
-        type=str, choices=SUPPORTED_DISTRIBUTIONS,
-        help='Distribution of Hadoop. Currently %s are supported.' % supported_distributions_text,
-        required=True
-    )
-    parser.add_argument('-v', '--version', type=str,
-        help='Version of the Hadoop distribution.', required=True
-    )
-    parser.add_argument('-s', '--spark-version', choices=['1.6', '2.0', '2.1', '2.2'], action='append', help="Version of Spark which should be installed.")
-    parser.add_argument('-t', '--tag', type=str, help="Tag of the image.")
-    return parser
+    args_parser = argparse.ArgumentParser(description='Builds a Dockerfile for given Hadoop distribution and version.')
+    args_parser.add_argument('-d', '--distribution',
+                             type=str, choices=SUPPORTED_DISTRIBUTIONS,
+                             help='Distribution of Hadoop. Currently %s are supported.' % supported_distributions_text,
+                             required=True
+                             )
+    args_parser.add_argument('-v', '--version', type=str,
+                             help='Version of the Hadoop distribution.', required=True
+                             )
+    args_parser.add_argument('-s', '--spark-version',
+                             choices=SUPPORTED_SPARK_VERSIONS,
+                             action='append', help="Version of Spark which should be installed.")
+    args_parser.add_argument('-t', '--tag', type=str, help="Tag of the image.")
+    return args_parser
+
 
 def validate_version(distribution, version):
     message = 'Version %s of %s not supported. Supported versions of %s are %s'
     if distribution == DISTRIBUTION_CDH:
-        if not version in SUPPORTED_CDH_VERSIONS:
+        if version not in SUPPORTED_CDH_VERSIONS:
             parser.error(message % (version, distribution, distribution, pretty_print_array(SUPPORTED_CDH_VERSIONS)))
     elif distribution == DISTRIBUTION_HDP:
-        if not version in SUPPORTED_HDP_VERSIONS:
+        if version not in SUPPORTED_HDP_VERSIONS:
             parser.error(message % (version, distribution, distribution, pretty_print_array(SUPPORTED_HDP_VERSIONS)))
     else:
         raise ValueError('Distribution %s not supported' % distribution)
+
 
 if __name__ == '__main__':
     parser = init_args_parser()
@@ -60,7 +72,8 @@ if __name__ == '__main__':
         for spark_version in args.spark_version:
             tag += '-%s' % spark_version
         tag += ":%s" % args.version
-    cmd = "docker build -t %s --build-arg VERSION=%s --build-arg PATH_PREFIX=%s %s-f %s/Dockerfile ." % (tag, args.version, args.distribution.lower(), spark_versions_argument, args.distribution.lower())
+    cmd = "docker build -t %s --build-arg VERSION=%s --build-arg PATH_PREFIX=%s %s-f %s/Dockerfile ." % (
+        tag, args.version, args.distribution.lower(), spark_versions_argument, args.distribution.lower())
     print("Building image with cmd: %s" % cmd)
     process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stdin=subprocess.PIPE)
     for line in iter(process.stdout.readline, ''):

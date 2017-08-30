@@ -6,12 +6,11 @@ ARG VERSION
 ARG PATH_PREFIX='.'
 ARG SPARK_VERSIONS=''
 
-ENV DISTRIBUTION='hdp' VERSION=$VERSION ENTER_BASH=FALSE HADOOP_CONF_DIR='/usr/hdp/2*/hadoop/conf/' MASTER='yarn-client' YARN_DAEMON='/usr/hdp/2*/hadoop-yarn/sbin/yarn-daemon.sh' MAPRED_USER=mapred YARN_USER=yarn HDFS_USER=hdfs
+ENV DISTRIBUTION='hdp' VERSION=$VERSION ENTER_BASH=FALSE HADOOP_CONF_DIR='/usr/hdp/2*/hadoop/conf/' MASTER='yarn-client' PATH=/opt/spark-current/bin:$PATH SPARK_HOME=/opt/spark-current YARN_DAEMON='/usr/hdp/2*/hadoop-yarn/sbin/yarn-daemon.sh' MAPRED_USER=mapred YARN_USER=yarn HDFS_USER=hdfs
 
-# Copy bin, sbin and startup scripts
-COPY ${PATH_PREFIX}/scripts/bin ${PATH_PREFIX}/../common/bin /usr/bin/
+# Copy bin and sbin scripts
+COPY ${PATH_PREFIX}/../common/bin /usr/bin/
 COPY ${PATH_PREFIX}/scripts/sbin ${PATH_PREFIX}/../common/sbin /usr/sbin/
-COPY ${PATH_PREFIX}/scripts/startup ${PATH_PREFIX}/../common/startup /etc/startup/
 
 # Add HDP repository
 RUN chmod 700 /usr/sbin/add_hdp_repo.sh && \
@@ -53,13 +52,16 @@ RUN su - hdfs -c "/usr/hdp/current/hadoop-hdfs-namenode/../hadoop/bin/hdfs namen
 # Create h2o user
 RUN useradd -ms /bin/bash h2o
 
-# Download Spark if required
-RUN chmod 700 /usr/sbin/download_spark && \
-    /usr/sbin/download_spark
+# Download Spark, if required
+RUN chmod 700 /usr/sbin/install_spark && \
+    /usr/sbin/install_spark
+
+# Copy startup scripts
+COPY ${PATH_PREFIX}/scripts/startup ${PATH_PREFIX}/../common/startup /etc/startup/
 
 # Expose ports
 # H2O, Hadoop UI
 EXPOSE 54321 8088
 
-RUN chmod 700 /usr/bin/startup.sh
-CMD "/usr/bin/startup.sh"
+RUN chmod 700 /usr/sbin/startup.sh
+CMD "/usr/sbin/startup.sh"

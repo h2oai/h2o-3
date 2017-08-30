@@ -8,7 +8,6 @@ pipeline {
   agent none
 
   parameters {
-      string(name: 'gitBranch', defaultValue: 'mr/feature/dockers', description: 'H2O-3 branch to build')
       string(name: 'version', description: 'CDH or HDP version')
       choice(
               choices: 'cdh\nhdp',
@@ -17,8 +16,6 @@ pipeline {
   }
 
   environment {
-      CREDENTIALS_ID = '0c10faaf-da0a-4a47-89b8-7aef9269a4fb'
-      GIT_URL = 'https://github.com/h2oai/h2o-3.git'
       BUILD_HADOOP = 'true'
   }
 
@@ -37,12 +34,12 @@ pipeline {
           label "mr-0xc10"
           filename "h2o-hadoop/scripts/docker/${params.distribution}/Dockerfile"
           additionalBuildArgs "--build-arg VERSION=${params.version} --build-arg PATH_PREFIX=h2o-hadoop/scripts/docker/${params.distribution}"
-          args "-u root -v \${WORKSPACE}/h2o-hadoop/tests:/home/h2o/tests -e SETUP_H2O=TRUE -e START_H2O=TRUE -e RUN_TESTS=TRUE"
+          args "-u root -v \${WORKSPACE}:/home/h2o/h2o-3 -v \${WORKSPACE}/h2o-hadoop/scripts/docker/common/custom_startup/:/startup/"
           reuseNode true
         }
       }
       steps {
-        sh "/usr/bin/startup.sh"
+        sh "/usr/sbin/startup.sh"
       }
     }
   }

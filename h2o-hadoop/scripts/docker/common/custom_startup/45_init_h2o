@@ -1,5 +1,0 @@
-#! /bin/bash
-
-set -e
-
-su - h2o -c 'hadoop jar h2o*/h2odriver.jar -nodes 1 -mapperXmx 1g -output jenkins_tests -disown'

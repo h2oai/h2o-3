@@ -4,7 +4,7 @@ ARG VERSION
 ARG PATH_PREFIX='.'
 ARG SPARK_VERSIONS=''
 
-ENV DISTRIBUTION='cdh' VERSION=$VERSION ENTER_BASH=FALSE HADOOP_CONF_DIR='/etc/hadoop/conf.pseudo' MASTER='yarn-client'
+ENV DISTRIBUTION='cdh' VERSION=$VERSION ENTER_BASH=FALSE HADOOP_CONF_DIR='/etc/hadoop/conf.pseudo' MASTER='yarn-client' PATH=/opt/spark-current/bin:$PATH SPARK_HOME=/opt/spark-current
 
 RUN echo "# Packages for Cloudera's Distribution for Hadoop, Version 5, on Ubuntu 14.04 amd64\n\
 deb [arch=amd64] http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh trusty-cdh${VERSION} contrib\n\
@@ -31,14 +31,14 @@ COPY ${PATH_PREFIX}/../common/startup ${PATH_PREFIX}/scripts/startup /etc/startu
 COPY ${PATH_PREFIX}/../common/bin/ /usr/bin/
 COPY ${PATH_PREFIX}/../common/sbin/ /usr/sbin/
 
-# Download Spark if required
-RUN chmod 700 /usr/sbin/download_spark && \
-    /usr/sbin/download_spark
+# Download Spark, if required
+RUN chmod 700 /usr/sbin/install_spark && \
+    /usr/sbin/install_spark
 
 # Expose ports
 # H2O, HADOOP UI
 EXPOSE 54321 8088
 
 # Run this script on container run
-RUN chmod 700 /usr/bin/startup.sh
-CMD "/usr/bin/startup.sh"
+RUN chmod 700 /usr/sbin/startup.sh
+CMD "/usr/sbin/startup.sh"

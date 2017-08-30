@@ -1,0 +1,23 @@
+#! /bin/bash
+
+set -e
+
+H2O_3_HOME=/home/h2o/h2o-3
+
+function cleanup {
+ rm ${H2O_3_HOME}/h2o-hadoop/tests/testsfile.txt
+}
+
+if [ -d ${H2O_3_HOME}/h2o-hadoop/tests/python ]; then
+    cd ${H2O_3_HOME}/h2o-hadoop/tests
+
+    echo -n > ${H2O_3_HOME}/h2o-hadoop/tests/testsfile.txt
+    trap cleanup EXIT
+    for x in $(ls python); do
+      echo ${H2O_3_HOME}/h2o-hadoop/tests/python/${x} >> ${H2O_3_HOME}/h2o-hadoop/tests/testsfile.txt
+    done
+
+    su - h2o -c "cd $(pwd); ../../scripts/run.py --wipeall --onHadoop --hadoopNamenode localhost --usecloud localhost:54321 --geterrs --testlist testsfile.txt"
+else
+    echo "Folder ${H2O_3_HOME}/h2o-hadoop/tests/python cannot be found, skipping tests"
+fi

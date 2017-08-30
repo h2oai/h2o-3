@@ -1,0 +1,36 @@
+#! /bin/bash
+
+NC='\033[0m'
+RED='\033[91m'
+
+if [[ ${SPARK_VERSIONS} ]]; then
+    IFS=',' read -r -a array <<< ${SPARK_VERSIONS}
+    for spark_version in "${array[@]}"; do
+      case "${spark_version}" in
+      1.6.*)
+        url=https://d3kbcqa49mib13.cloudfront.net/spark-${spark_version}-bin-hadoop2.6.tgz
+        SPARKLING_WATER_VERSION=1.6.12
+        ;;
+      2.*)
+        url=https://d3kbcqa49mib13.cloudfront.net/spark-${spark_version}-bin-hadoop2.7.tgz
+        ;;
+      *)
+        echo "Spark version ${spark_version} not supported"
+        exit 1
+        ;;
+      esac
+
+      echo "Downloading Spark ${RED}${spark_version}${NC}"
+      cd /opt
+      wget ${url}
+      tar -xzf spark-${spark_version}*.tgz
+      rm spark-${spark_version}*.tgz
+
+      SPARK_DIR=$(ls /opt | grep spark-${spark_version})
+      ACTIVATE_SPARK_SCRIPT_NAME=/usr/bin/activate_spark_${spark_version}
+      echo """ln -s -f /opt/${SPARK_DIR} /opt/spark-current
+    echo -e \"Activating Spark ${RED}${spark_version}${NC} under ${RED}${SPARK_DIR}${NC}\"
+      """ > ${ACTIVATE_SPARK_SCRIPT_NAME}
+      chmod a+x ${ACTIVATE_SPARK_SCRIPT_NAME}
+    done
+fi

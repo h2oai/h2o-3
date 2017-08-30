@@ -1,16 +1,25 @@
 #! /usr/bin/python
 
 import argparse
-import subprocess
 import os
-import sys
 import re
+import subprocess
+import sys
 
 DISTRIBUTION_CDH = 'CDH'
-SUPPORTED_CDH_VERSIONS = ['5.4', '5.5', '5.6', '5.7', '5.8', '5.10']
 DISTRIBUTION_HDP = 'HDP'
-SUPPORTED_HDP_VERSIONS = ['2.2', '2.3', '2.4', '2.5', '2.6']
 SUPPORTED_DISTRIBUTIONS = [DISTRIBUTION_CDH, DISTRIBUTION_HDP]
+
+SUPPORTED_CDH_VERSIONS = ['5.4', '5.5', '5.6', '5.7', '5.8', '5.10']
+SUPPORTED_HDP_VERSIONS = ['2.2', '2.3', '2.4', '2.5', '2.6']
+
+SUPPORTED_SPARK_VERSIONS = [
+    '1.6.0', '1.6.1', '1.6.2', '1.6.3',
+    '2.0.0', '2.0.1', '2.0.2',
+    '2.1.0', '2.1.1',
+    '2.2.0'
+]
+
 
 def pretty_print_array(array_to_print):
     if array_to_print is None or len(array_to_print) == 0:
@@ -20,19 +29,24 @@ def pretty_print_array(array_to_print):
     else:
         return "%s and %s" % (", ".join(array_to_print[:-1]), array_to_print[-1])
 
+
 def init_args_parser():
     supported_distributions_text = pretty_print_array(SUPPORTED_DISTRIBUTIONS)
     parser = argparse.ArgumentParser(description='Runs a Docker container for given Hadoop distribution and version.')
     parser.add_argument('--distribution', type=str, choices=SUPPORTED_DISTRIBUTIONS,
-        help='Distribution of Hadoop. Currently %s are supported.' % supported_distributions_text, required=True
-    )
+                        help='Distribution of Hadoop. Currently %s are supported.' % supported_distributions_text,
+                        required=True
+                        )
     parser.add_argument('--version', type=str, help='Version of the Hadoop distribution.', required=True)
     parser.add_argument('--scripts-path', type=str, help='Path to folder containing custom startup scripts.')
     parser.add_argument('-v', '--volume', type=str, action='append', help='Bind mount a volume.')
     parser.add_argument('-p', '--publish', action='append', help='Publish a container\'s port(s) to the host.')
-    parser.add_argument('-s', '--spark-version', choices=['1.6', '2.0', '2.1', '2.2'], help="Version of Spark to point to.")
+    parser.add_argument('-s', '--spark-version', choices=SUPPORTED_SPARK_VERSIONS,
+                        help="Version of Spark to point to.")
+    parser.add_argument('-c', '--custom-spark-path', type=str, help='Path to custom Spark')
     parser.add_argument('-t', '--tag', type=str, help="Tag of the docker image.")
     return parser
+
 
 if __name__ == '__main__':
     parser = init_args_parser()
@@ -60,7 +74,8 @@ if __name__ == '__main__':
                         images.append(image)
                         tag = "%s:%s" % (image, args.version)
             if len(images) > 0:
-                print("There are more docker imgages supporting Spark %s. Please select which to run: " % args.spark_version)
+                print(
+                "There are more docker imgages supporting Spark %s. Please select which to run: " % args.spark_version)
                 for i in range(len(images)):
                     print ("[%s] %s" % ((i + 1), images[i]))
                 input = raw_input('Run: ')
