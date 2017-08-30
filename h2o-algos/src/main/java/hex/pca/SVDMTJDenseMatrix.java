@@ -1,4 +1,4 @@
-package hex.svd;
+package hex.pca;
 
 import hex.util.LinearAlgebraUtils;
 import no.uib.cipr.matrix.DenseMatrix;

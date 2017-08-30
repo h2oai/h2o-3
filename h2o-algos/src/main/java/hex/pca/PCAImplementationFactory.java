@@ -1,10 +1,10 @@
-package hex.svd;
+package hex.pca;
 
 /**
  * @author mathemage <ha@h2o.ai>
  * created on 2.5.17
  */
-public class SVDFactory {
+public class PCAImplementationFactory {
   public static SVDInterface createSVDImplementation(double[][] gramMatrix, SVDImplementation implementation)
       throws Exception {
     switch (implementation) {

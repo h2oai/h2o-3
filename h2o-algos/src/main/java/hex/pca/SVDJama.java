@@ -1,4 +1,4 @@
-package hex.svd;
+package hex.pca;
 
 import Jama.Matrix;
 import Jama.SingularValueDecomposition;

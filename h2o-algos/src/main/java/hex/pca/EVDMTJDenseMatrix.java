@@ -1,4 +1,4 @@
-package hex.svd;
+package hex.pca;
 
 import hex.util.EigenPair;
 import hex.util.LinearAlgebraUtils;

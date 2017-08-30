@@ -2,7 +2,6 @@ package hex.pca;
 
 import hex.DataInfo;
 import hex.pca.PCAModel.PCAParameters;
-import hex.svd.SVDImplementation;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;

@@ -1,7 +1,6 @@
 package hex.pca;
 
 import hex.DataInfo;
-import hex.svd.SVDImplementation;
 import water.DKV;
 import water.Key;
 import water.fvec.Frame;

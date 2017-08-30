@@ -4,7 +4,6 @@ import hex.DataInfo;
 import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetrics;
-import hex.svd.SVDImplementation;
 import water.DKV;
 import water.Job;
 import water.Key;

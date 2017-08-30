@@ -14,8 +14,6 @@ import hex.gram.Gram.GramTask;
 import hex.gram.Gram.OuterGramTask;
 import hex.pca.PCAModel.PCAParameters;
 import hex.svd.SVD;
-import hex.svd.SVDFactory;
-import hex.svd.SVDInterface;
 import hex.svd.SVDModel;
 import water.DKV;
 import water.H2O;
@@ -347,7 +345,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
               + _parms.getSvdImplementation().toString());
           SVDInterface svd = null;
           try {
-            svd = SVDFactory.createSVDImplementation(gramMatrix, _parms.getSvdImplementation());
+            svd = PCAImplementationFactory.createSVDImplementation(gramMatrix, _parms.getSvdImplementation());
           } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);

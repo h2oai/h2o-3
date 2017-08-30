@@ -3,7 +3,6 @@ package hex.pca;
 import hex.DataInfo;
 import hex.SplitFrame;
 import hex.pca.PCAModel.PCAParameters;
-import hex.svd.SVDImplementation;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
