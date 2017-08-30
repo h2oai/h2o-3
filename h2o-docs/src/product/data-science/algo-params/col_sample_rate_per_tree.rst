@@ -7,7 +7,7 @@
 Description
 ~~~~~~~~~~~
 
-This option specifies the column sampling rate for each tree. This can be a value from 0.0 to 1.0. Note that it is multiplicative with ``col_sample_rate``, so setting both parameters to 0.8, for example, results in 64% of columns being considered at any given node to split.
+This option specifies the column sampling rate for each tree (without replacement). This can be a value from 0.0 to 1.0 and defaults to 1. Note that it is multiplicative with ``col_sample_rate``, so setting both parameters to 0.8, for example, results in 64% of columns being considered at any given node to split.
 
 For an example model using:
  

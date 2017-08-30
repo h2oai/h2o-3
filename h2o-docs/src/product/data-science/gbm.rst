@@ -106,21 +106,13 @@ Defining a GBM Model
   - If the distribution is ``gamma``, the response column must be numeric.
   - If the distribution is ``quantile``, the response column must be numeric.
 
--  `sample_rate <algo-params/sample_rate.html>`__: Specify the row sampling rate (x-axis). The range
-   is 0.0 to 1.0. Higher values may improve training accuracy. Test
-   accuracy improves when either columns or rows are sampled. For
-   details, refer to "Stochastic Gradient Boosting" (`Friedman,
-   1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
+-  `sample_rate <algo-params/sample_rate.html>`__: Specify the row sampling rate (x-axis). (Note that this method is sample without replacement.) The range is 0.0 to 1.0, and this value defaults to 1. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
 
--  `sample_rate_per_class <algo-params/sample_rate_per_class.html>`__: When building models from imbalanced datasets, this option specifies that each tree in the ensemble should sample from the full training dataset using a per-class-specific sampling rate rather than a global sample factor (as with `sample_rate`). The range for this option is 0.0 to 1.0. If this option is specified along with **sample_rate**, then only the first option that GBM encounters will be used.
+-  `sample_rate_per_class <algo-params/sample_rate_per_class.html>`__: When building models from imbalanced datasets, this option specifies that each tree in the ensemble should sample from the full training dataset using a per-class-specific sampling rate rather than a global sample factor (as with `sample_rate`). The range for this option is 0.0 to 1.0. Note that this method is sample without replacement.
 
--  `col_sample_rate <algo-params/col_sample_rate.html>`__: Specify the column sampling rate (y-axis). The
-   range is 0.0 to 1.0. Higher values may improve training accuracy.
-   Test accuracy improves when either columns or rows are sampled. For
-   details, refer to "Stochastic Gradient Boosting" (`Friedman,
-   1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
+-  `col_sample_rate <algo-params/col_sample_rate.html>`__: Specify the column sampling rate (y-axis). (Note that this method is sampling without replacement.) The range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
    
--  `col_sample_rate_change_per_level <algo-params/col_sample_rate_change_per_level.html>`__: This option specifies to change the column sampling rate as a function of the depth in the tree. For example:
+-  `col_sample_rate_change_per_level <algo-params/col_sample_rate_change_per_level.html>`__: This option specifies to change the column sampling rate as a function of the depth in the tree. This can be a value from 0.0 to 2.0 and defaults to 1. (Note that this method is sample without replacement.) For example:
 	
 	  level 1: **col\_sample_rate**
 	
@@ -132,7 +124,7 @@ Defining a GBM Model
 	
 	  etc. 
 
--  `col_sample_rate_per_tree <algo-params/col_sample_rate_per_tree.html>`__: Specify the column sample rate per tree. This can be a value from 0.0 to 1.0. Note that it is multiplicative with ``col_sample_rate``, so setting both parameters to 0.8, for example, results in 64% of columns being considered at any given node to split.
+-  `col_sample_rate_per_tree <algo-params/col_sample_rate_per_tree.html>`__: Specify the column sample rate per tree. This can be a value from 0.0 to 1.0 and defaults to 1. Note that it is multiplicative with ``col_sample_rate``, so setting both parameters to 0.8, for example, results in 64% of columns being considered at any given node to split. Note that this method is sample without replacement.
 
 -  `max_abs_leafnode_pred <algo-params/max_abs_leafnode_pred.html>`__: When building a GBM classification model, this option reduces overfitting by limiting the maximum absolute value of a leaf node prediction. This option defaults to Double.MAX_VALUE.
 

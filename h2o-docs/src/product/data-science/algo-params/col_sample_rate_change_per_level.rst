@@ -7,7 +7,7 @@
 Description
 ~~~~~~~~~~~
 
-This option specifies the relative change of the column sampling rate for every level. For example, if you want to specify how the sampling rate per split should change as a function of the tree depth, you might consider the following:
+This option specifies the relative change of the column sampling rate for every level (without replacement). For example, if you want to specify how the sampling rate per split should change as a function of the tree depth, you might consider the following:
 
 - level 0: ``col_sample_rate``
 - level 1: ``col_sample_rate`` * factor
