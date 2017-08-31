@@ -58,6 +58,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
     /** Which models can we choose from? */
     public Key<Model> _base_models[] = new Key[0];
+    public boolean _keep_levelone_frame = false;
   }
 
   public static class StackedEnsembleOutput extends Model.Output {
@@ -67,6 +68,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     public StackedEnsembleOutput(Job job) { _job = job; }
     // The metalearner model (e.g., a GLM that has a coefficient for each of the base_learners).
     public Model _metalearner;
+    public Frame _levelone_frame_id;
   }
 
   /**

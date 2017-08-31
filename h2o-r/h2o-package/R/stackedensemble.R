@@ -16,6 +16,7 @@
 #' @param validation_frame Id of the validation data frame.
 #' @param base_models List of model ids which we can stack together. Models must have been cross-validated using nfolds > 1, and
 #'        folds must be identical across models. Defaults to [].
+#' @param keep_levelone_frame \code{Logical}. Keep level one frame used for metalearner training. Defaults to FALSE.
 #' @examples
 #' 
 #' # See example R code here:
@@ -25,7 +26,8 @@
 h2o.stackedEnsemble <- function(x, y, training_frame,
                                 model_id = NULL,
                                 validation_frame = NULL,
-                                base_models = list()
+                                base_models = list(),
+                                keep_levelone_frame = FALSE
                                 ) 
 {
   # If x is missing, then assume user wants to use all columns as features.
@@ -73,6 +75,8 @@ h2o.stackedEnsemble <- function(x, y, training_frame,
     parms$validation_frame <- validation_frame
   if (!missing(base_models))
     parms$base_models <- base_models
+  if (!missing(keep_levelone_frame))
+    parms$keep_levelone_frame <- keep_levelone_frame
   # Error check and build model
   .h2o.modelJob('stackedensemble', parms, h2oRestApiVersion = 99) 
 }

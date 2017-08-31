@@ -261,14 +261,16 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       _model._output._metalearner = metaBuilder.get();
       _model.doScoreMetrics(_job);
       // _model._output._model_summary = createModelSummaryTable(model._output);
+      if(_parms._keep_levelone_frame) {
+        _model._output._levelone_frame_id = levelOneTrainingFrame; //Keep Level One Training Frame in Stacked Ensemble model object
+      }else{
+        DKV.remove(levelOneTrainingFrame._key); //Remove Level One Training Frame from DKV
+      }
+      if (null != levelOneValidationFrame) {
+        DKV.remove(levelOneValidationFrame._key); //Remove Level One Validation Frame from DKV
+      }
       _model.update(_job);
       _model.unlock(_job);
-
-      // Cleanup
-      DKV.remove(levelOneTrainingFrame._key);
-      if (null != levelOneValidationFrame)
-        DKV.remove(levelOneValidationFrame._key);
-
+      }
     } // computeImpl
   }
-}

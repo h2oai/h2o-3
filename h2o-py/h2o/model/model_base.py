@@ -686,6 +686,13 @@ class ModelBase(backwards_compatible()):
             return model["metalearner"]
         print("No metalearner for this model")
 
+    def levelone_frame_id(self):
+        """Fetch the levelone_frame_id for the model, if any.  Currently only used by H2OStackedEnsembleEstimator."""
+        model = self._model_json["output"]
+        if "levelone_frame_id" in model and model["levelone_frame_id"] is not None:
+            return model["levelone_frame_id"]
+        print("No levelone_frame_id for this model")
+
 
     def download_pojo(self, path="", get_genmodel_jar=False, genmodel_name=""):
         """
