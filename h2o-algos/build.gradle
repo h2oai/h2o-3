@@ -16,6 +16,9 @@ dependencies {
   compile 'com.github.fommil.netlib:all:1.1.2'
   compile('com.googlecode.matrix-toolkits-java:mtj:1.0.4') { exclude group: 'com.github.fommil.netlib' }
 
+  // Include dependencies for Intel DAAL
+  compile files("lib/daal-lnx32e-gnu.jar")
+
   // Test dependencies only
   testCompile "junit:junit:${junitVersion}"
   testCompile project(path: ":h2o-core", configuration: "testArchives")

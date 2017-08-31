@@ -137,3 +137,4 @@ h2o-docs/src/booklets/source/PythonBooklet.tui
 *.tui
 
 *.gz(busy)
+!/h2o-algos/lib/daal-lnx32e-gnu.jar
