@@ -9,7 +9,7 @@ class PCAImplementationFactory {
       throws Exception {
     switch (implementation) {
       case EVD_MTJ_DENSEMATRIX:
-        return new EVDMTJDenseMatrix(gramMatrix);
+        return new PCA_MTJ_EVD_DenseMatrix(gramMatrix);
       case EVD_MTJ_SYMM:
         return new EVDMTJSymm(gramMatrix);
       case MTJ:
