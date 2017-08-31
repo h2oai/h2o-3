@@ -11,7 +11,7 @@ import water.util.ArrayUtils;
  * @author mathemage <ha@h2o.ai>
  *         created on 1.5.17
  */
-public class EVDMTJDenseMatrix implements SVDInterface {
+public class EVDMTJDenseMatrix implements PCAInterface {
   private static DenseMatrix gramMatrix;
   private static no.uib.cipr.matrix.EVD evd;
   private static double[] eigenvalues;

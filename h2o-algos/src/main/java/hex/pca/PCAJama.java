@@ -7,12 +7,12 @@ import Jama.SingularValueDecomposition;
  * @author mathemage <ha@h2o.ai>
  * created on 1.5.17
  */
-public class SVDJama implements SVDInterface {
+public class PCAJama implements PCAInterface {
   private Matrix gramMatrix;
   private SingularValueDecomposition svd;
   private double[][] rightEigenvectors;
 
-  public SVDJama(double[][] gramMatrix) {
+  public PCAJama(double[][] gramMatrix) {
     this.gramMatrix = new Matrix(gramMatrix);
     runSVD();
   }

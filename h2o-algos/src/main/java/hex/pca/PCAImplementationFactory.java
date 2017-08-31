@@ -5,7 +5,7 @@ package hex.pca;
  * created on 2.5.17
  */
 class PCAImplementationFactory {
-  static SVDInterface createSVDImplementation(double[][] gramMatrix, PCAImplementation implementation)
+  static PCAInterface createSVDImplementation(double[][] gramMatrix, PCAImplementation implementation)
       throws Exception {
     switch (implementation) {
       case EVD_MTJ_DENSEMATRIX:
@@ -15,7 +15,7 @@ class PCAImplementationFactory {
       case MTJ:
         return new SVDMTJDenseMatrix(gramMatrix);
       case JAMA:
-        return new SVDJama(gramMatrix);
+        return new PCAJama(gramMatrix);
       default:
         throw new Exception("Unrecognized svdImplementation " + implementation.toString());
     }

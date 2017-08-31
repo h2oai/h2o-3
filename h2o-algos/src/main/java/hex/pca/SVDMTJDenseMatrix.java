@@ -8,7 +8,7 @@ import no.uib.cipr.matrix.NotConvergedException;
  * @author mathemage <ha@h2o.ai>
  * created on 1.5.17
  */
-public class SVDMTJDenseMatrix implements SVDInterface {
+public class SVDMTJDenseMatrix implements PCAInterface {
   private DenseMatrix gramMatrix;
   private no.uib.cipr.matrix.SVD svd;
   private double[][] rightEigenvectors;

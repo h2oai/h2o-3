@@ -343,7 +343,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           }
           PCA.this._job.update(1, "Computing stats from SVD using "
               + _parms.getSvdImplementation().toString());
-          SVDInterface svd = null;
+          PCAInterface svd = null;
           try {
             svd = PCAImplementationFactory.createSVDImplementation(gramMatrix, _parms.getSvdImplementation());
           } catch (Exception e) {
