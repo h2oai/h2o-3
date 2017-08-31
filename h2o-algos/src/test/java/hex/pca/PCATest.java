@@ -28,19 +28,19 @@ public class PCATest extends TestUtil {
   private PCAParameters pcaParameters;
 
   @Parameters
-  public static SVDImplementation[] parametersForSvdImplementation() {
-    return SVDImplementation.values();
+  public static PCAImplementation[] parametersForSvdImplementation() {
+    return hex.pca.PCAImplementation.values();
   }
 
   @Parameter
-  public SVDImplementation svdImplementation;
+  public PCAImplementation PCAImplementation;
 
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   @Before public void setupPcaParameters() {
     pcaParameters = new PCAParameters();
-    pcaParameters.setSvdImplementation(svdImplementation);
-    water.util.Log.info("pcaParameters._svdImplementation: " + pcaParameters.getSvdImplementation().name());
+    pcaParameters.setSvdImplementation(PCAImplementation);
+    water.util.Log.info("pcaParameters._PCAImplementation: " + pcaParameters.getSvdImplementation().name());
   }
 
   @Test public void testArrestsScoring() throws InterruptedException, ExecutionException {

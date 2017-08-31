@@ -40,15 +40,15 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     }
 
     // always set DEFAULT_SVD_IMPLEMENTATION to the fastest SVD implementation available
-    public static final SVDImplementation DEFAULT_SVD_IMPLEMENTATION = SVDImplementation.getFastestImplementation();
-    public SVDImplementation _svdImplementation = DEFAULT_SVD_IMPLEMENTATION;
+    public static final PCAImplementation DEFAULT_SVD_IMPLEMENTATION = PCAImplementation.getFastestImplementation();
+    public PCAImplementation _PCAImplementation = DEFAULT_SVD_IMPLEMENTATION;
 
-    public SVDImplementation getSvdImplementation() {
-      return _svdImplementation;
+    public PCAImplementation getSvdImplementation() {
+      return _PCAImplementation;
     }
 
-    public void setSvdImplementation(SVDImplementation svdImplementation) {
-      _svdImplementation = svdImplementation;
+    public void setSvdImplementation(PCAImplementation PCAImplementation) {
+      _PCAImplementation = PCAImplementation;
     }
   }
 

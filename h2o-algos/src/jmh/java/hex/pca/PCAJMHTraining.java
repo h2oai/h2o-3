@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 public class PCAJMHTraining extends PCAJMH {
   
   @Param({"JAMA", "MTJ", "EVD_MTJ_DENSEMATRIX", "EVD_MTJ_SYMM"})
-  private SVDImplementation svdImplementation;
+  private PCAImplementation PCAImplementation;
   
   public static void main(String[] args) throws RunnerException {
     Options opt = new OptionsBuilder()
@@ -35,7 +35,7 @@ public class PCAJMHTraining extends PCAJMH {
   @Setup(Level.Iteration)
   public void setup() {
   	super.setup();
-    paramsQuasar.setSvdImplementation(svdImplementation);
+    paramsQuasar.setSvdImplementation(PCAImplementation);
   }
   
   @TearDown(Level.Iteration)

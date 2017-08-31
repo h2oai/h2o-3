@@ -25,7 +25,7 @@ public class PCAWideDataSets {
 	private int dataSetCase;
 	private PCAModel pcaModel;
 	private Frame pcaScore;
-	private SVDImplementation svdImplementation;
+	private PCAImplementation PCAImplementation;
 
 	PCAWideDataSets(int dataSetCase) {
 		setDataSetCase(dataSetCase);
@@ -106,7 +106,7 @@ public class PCAWideDataSets {
 		parameters._transform = transformType;
 		parameters._use_all_factor_levels = true;
 		parameters._pca_method = GramSVD;
-		parameters.setSvdImplementation(getSvdImplementation());
+		parameters.setSvdImplementation(getPCAImplementation());
 		parameters._impute_missing = false;
 		parameters._seed = 12345;
 		
@@ -147,11 +147,11 @@ public class PCAWideDataSets {
 		return true;
 	}
 
-	public SVDImplementation getSvdImplementation() {
-		return svdImplementation;
+	public PCAImplementation getPCAImplementation() {
+		return PCAImplementation;
 	}
 
-	public void setSvdImplementation(SVDImplementation svdImplementation) {
-		this.svdImplementation = svdImplementation;
+	public void setPCAImplementation(PCAImplementation PCAImplementation) {
+		this.PCAImplementation = PCAImplementation;
 	}
 }

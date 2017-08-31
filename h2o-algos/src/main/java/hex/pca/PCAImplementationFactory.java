@@ -4,8 +4,8 @@ package hex.pca;
  * @author mathemage <ha@h2o.ai>
  * created on 2.5.17
  */
-public class PCAImplementationFactory {
-  public static SVDInterface createSVDImplementation(double[][] gramMatrix, SVDImplementation implementation)
+class PCAImplementationFactory {
+  static SVDInterface createSVDImplementation(double[][] gramMatrix, PCAImplementation implementation)
       throws Exception {
     switch (implementation) {
       case EVD_MTJ_DENSEMATRIX:

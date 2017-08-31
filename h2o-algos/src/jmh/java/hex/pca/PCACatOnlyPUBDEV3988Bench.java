@@ -36,7 +36,7 @@ import static water.TestUtil.stall_till_cloudsize;
 public class PCACatOnlyPUBDEV3988Bench {
 
   @Param({"JAMA", "MTJ", "EVD_MTJ_DENSEMATRIX", "EVD_MTJ_SYMM"})
-  private SVDImplementation svdImplementation;
+  private PCAImplementation PCAImplementation;
 
   private PCAParameters paramsCatOnlyPUBDEV3988;
   private PCAModel pcaModel;
@@ -73,7 +73,7 @@ public class PCACatOnlyPUBDEV3988Bench {
       paramsCatOnlyPUBDEV3988._k = 4;
       paramsCatOnlyPUBDEV3988._transform = DataInfo.TransformType.NONE;
       paramsCatOnlyPUBDEV3988._pca_method = GramSVD;
-      paramsCatOnlyPUBDEV3988.setSvdImplementation(svdImplementation);
+      paramsCatOnlyPUBDEV3988.setSvdImplementation(PCAImplementation);
       paramsCatOnlyPUBDEV3988._impute_missing = true;   // Don't skip rows with NA entries, but impute using mean of column
       paramsCatOnlyPUBDEV3988._seed = seed;
 

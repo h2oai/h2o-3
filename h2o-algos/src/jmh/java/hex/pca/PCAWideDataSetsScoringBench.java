@@ -28,7 +28,7 @@ public class PCAWideDataSetsScoringBench {
 	@Param({"1", "2", "3", "4", "5", "6"})
 	private int dataSetCase;
 	@Param({"JAMA", "MTJ", "EVD_MTJ_DENSEMATRIX", "EVD_MTJ_SYMM"})
-	private SVDImplementation svdImplementation;
+	private PCAImplementation PCAImplementation;
 
 	public static void main(String[] args) throws RunnerException {
 		Options opt = new OptionsBuilder()
@@ -44,7 +44,7 @@ public class PCAWideDataSetsScoringBench {
 		stall_till_cloudsize(1);
 		
 		pcaWideDataSetsBench = new PCAWideDataSets(dataSetCase);
-		pcaWideDataSetsBench.setSvdImplementation(svdImplementation);
+		pcaWideDataSetsBench.setPCAImplementation(PCAImplementation);
 		// train model to prepare for score()
 		pcaWideDataSetsBench.train();
 	}
