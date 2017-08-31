@@ -11,7 +11,7 @@ class PCAImplementationFactory {
       case EVD_MTJ_DENSEMATRIX:
         return new PCA_MTJ_EVD_DenseMatrix(gramMatrix);
       case EVD_MTJ_SYMM:
-        return new EVDMTJSymm(gramMatrix);
+        return new PCA_MTJ_EVD_SymmMatrix(gramMatrix);
       case MTJ:
         return new SVDMTJDenseMatrix(gramMatrix);
       case JAMA:

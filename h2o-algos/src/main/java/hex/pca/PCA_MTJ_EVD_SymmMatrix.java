@@ -11,13 +11,13 @@ import water.util.ArrayUtils;
  * @author mathemage <ha@h2o.ai>
  * created on 1.5.17
  */
-public class EVDMTJSymm implements PCAInterface {
+public class PCA_MTJ_EVD_SymmMatrix implements PCAInterface {
   private UpperSymmDenseMatrix symmGramMatrix;
   private no.uib.cipr.matrix.SymmDenseEVD symmDenseEVD;
   private double[][] eigenvectors;
   private double[] eigenvalues;
 
-  EVDMTJSymm(double[][] gramMatrix) {
+  PCA_MTJ_EVD_SymmMatrix(double[][] gramMatrix) {
     this.symmGramMatrix = new UpperSymmDenseMatrix(new DenseMatrix(gramMatrix));
     runEVD();
   }
