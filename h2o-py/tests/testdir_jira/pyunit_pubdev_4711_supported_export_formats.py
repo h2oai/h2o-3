@@ -46,7 +46,7 @@ def deeplearning_export():
     model = H2ODeepLearningEstimator(nfolds=random.randint(3, 10), fold_assignment="Modulo", hidden=[20, 20], epochs=10)
     model.train(x=predictors, y=response_col, training_frame=frame)
     h2o.download_pojo(model, path=RESULT_DIR)
-    expect_error(model.download_mojo, model="Deeplearning", format="MOJO")
+    model.download_mojo(path=RESULT_DIR)
 
 
 def gbm_export():

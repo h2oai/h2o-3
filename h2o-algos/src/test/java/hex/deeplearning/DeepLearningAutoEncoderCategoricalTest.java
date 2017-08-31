@@ -10,7 +10,6 @@ import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
-import water.util.FileUtils;
 import water.util.Log;
 
 public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {

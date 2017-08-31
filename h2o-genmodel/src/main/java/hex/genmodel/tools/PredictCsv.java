@@ -4,12 +4,10 @@ import au.com.bytecode.opencsv.CSVReader;
 import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
+import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
-import hex.genmodel.easy.prediction.BinomialModelPrediction;
-import hex.genmodel.easy.prediction.ClusteringModelPrediction;
-import hex.genmodel.easy.prediction.MultinomialModelPrediction;
-import hex.genmodel.easy.prediction.RegressionModelPrediction;
+import hex.genmodel.easy.prediction.*;
 
 import java.io.BufferedWriter;
 import java.io.FileReader;
@@ -85,13 +83,36 @@ public class PredictCsv {
     CSVReader reader = new CSVReader(new FileReader(inputCSVFileName), separator);
     String readline;
     BufferedWriter output = new BufferedWriter(new FileWriter(outputCSVFileName));
+    int lastCommaAutoEn = 0;
+    DeeplearningMojoModel thisModel = null;
 
     // Emit outputCSV column names.
     switch (category) {
       case AutoEncoder:
-        output.write(model.getHeader());
-        break;
+        thisModel = (DeeplearningMojoModel)this.model.m;
+        String[] cnames =  this.model.m.getNames();
+        lastCommaAutoEn = thisModel._units[0]-1;
+        for (int index = 0; index < thisModel._cats; index++) { // add names for categorical columns
+          String[] tdomains = thisModel._domains[index];
+          int tdomainLen = tdomains.length-1;
+          for (int index2 = 0; index2 <= tdomainLen; index2++ ) {
+            String temp = "reconstr_"+tdomains[index2];
+            output.write(temp);
 
+            if ((index2 < tdomainLen) || (thisModel._nums>0))
+              output.write(',');
+          }
+        }
+
+        int lastComma = cnames.length-1;
+        for (int index = thisModel._cats; index < cnames.length; index++) {  // add the numerical column names
+          String temp = "reconstr_"+cnames[index];
+          output.write(temp);
+
+          if (index < lastComma )
+            output.write(',');
+        }
+        break;
       case Binomial:
       case Multinomial:
         output.write("predict");
@@ -139,12 +160,16 @@ public class PredictCsv {
         // Do the prediction.
         // Emit the result to the output file.
         switch (category) {
-          case AutoEncoder: {
-            throw new UnsupportedOperationException();
-            // AutoEncoderModelPrediction p = model.predictAutoEncoder(row);
-            // break;
-          }
+          case AutoEncoder: { // write the expanded predictions out
+            AutoEncoderModelPrediction p = model.predictAutoEncoder(row);
+            for (int i=0; i < thisModel._units[0]; i++) {
+              output.write(myDoubleToString(p.reconstructed[i]));
 
+              if (i < lastCommaAutoEn)
+                output.write(',');
+            }
+            break;
+          }
           case Binomial: {
             BinomialModelPrediction p = model.predictBinomial(row);
             output.write(p.label);

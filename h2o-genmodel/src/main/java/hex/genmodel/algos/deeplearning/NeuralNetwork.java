@@ -8,8 +8,7 @@ import static hex.genmodel.algos.deeplearning.ActivationUtils.*;
 public class NeuralNetwork {  // represent one layer of neural network
   public String _activation;    // string that describe the activation function
   double _drop_out_ratio;              // drop_out_ratio for that layer
-  public DeeplearningMojoModel.StoreWeightsBias _weights;  // store layer weight
-  public DeeplearningMojoModel.StoreWeightsBias _bias;      // store layer bias
+  public DeeplearningMojoModel.StoreWeightsBias _weightsAndBias;  // store layer weight
   public double[] _inputs;     // store input to layer
   public double[] _outputs;    // layer output
   public int _outSize;         // number of nodes in this layer
@@ -18,20 +17,19 @@ public class NeuralNetwork {  // represent one layer of neural network
   List<String> _validActivation = Arrays.asList("Linear", "Softmax", "ExpRectifierWithDropout", "ExpRectifier",
           "Rectifier", "RectifierWithDropout", "MaxoutWithDropout", "Maxout", "TanhWithDropout", "Tanh");
 
-  public NeuralNetwork(String activation, double drop_out_ratio, DeeplearningMojoModel.StoreWeightsBias weights,
-                       DeeplearningMojoModel.StoreWeightsBias bias, double[] inputs, int outSize) {
-    validateInputs(activation, drop_out_ratio, weights._wOrBValues.length, bias._wOrBValues.length, inputs.length,
-            outSize);
+  public NeuralNetwork(String activation, double drop_out_ratio, DeeplearningMojoModel.StoreWeightsBias weightsAndBias,
+                       double[] inputs, int outSize) {
+    validateInputs(activation, drop_out_ratio, weightsAndBias._wValues.length, weightsAndBias._bValues.length,
+            inputs.length, outSize);
     _activation=activation;
     _drop_out_ratio=drop_out_ratio;
-    _weights=weights;
-    _bias=bias;
+    _weightsAndBias=weightsAndBias;
     _inputs=inputs;
     _outSize=outSize;
     _inSize=_inputs.length;
     _outputs = new double[_outSize];
     if ("Maxout".equals(_activation) || "MaxoutWithDropout".equals(_activation)) {
-      _maxK = bias._wOrBValues.length/outSize;
+      _maxK = weightsAndBias._bValues.length/outSize;
     }
   }
 
@@ -47,9 +45,9 @@ public class NeuralNetwork {  // represent one layer of neural network
     for (int k = 0; k < _maxK; k++) {
       for (int row = 0; row < _outSize; row++) {
         int countInd = _maxK*row+k;
-        input2ActFun[countInd] = _bias._wOrBValues[countInd];  //
+        input2ActFun[countInd] = _weightsAndBias._bValues[countInd];  //
         for (int col = 0; col < _inSize; col++) {
-          input2ActFun[countInd] += _inputs[col] * _weights._wOrBValues[_maxK*(row*_inSize+col)+k];
+          input2ActFun[countInd] += _inputs[col] * _weightsAndBias._wValues[_maxK*(row*_inSize+col)+k];
         }
       }
     }

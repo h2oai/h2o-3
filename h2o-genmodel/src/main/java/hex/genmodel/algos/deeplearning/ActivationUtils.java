@@ -45,7 +45,7 @@ public class ActivationUtils {
   public static class ExpRectifierDropoutOut extends ExpRectifierOut {
     public double[] eval(double[] input, double drop_out_ratio, int maxOutk) {
       double[] output = super.eval(input, drop_out_ratio, maxOutk);
-      applyDropout(output, (float) drop_out_ratio, input.length);
+      applyDropout(output, drop_out_ratio, input.length);
       return output;
     }
   }
@@ -133,7 +133,7 @@ public class ActivationUtils {
       double[] output = new double[nodeSize];
 
       for (int index=0; index < nodeSize; index++)
-        output[index] = 1-2/(1+(float)Math.exp(2*input[index]));
+        output[index] = 1-2/(1+Math.exp(2*input[index]));
 
       return output;
     }

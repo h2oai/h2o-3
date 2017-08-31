@@ -18,7 +18,6 @@ import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.rapids.Rapids;
-import water.util.FileUtils;
 import water.util.Log;
 
 import java.util.Arrays;

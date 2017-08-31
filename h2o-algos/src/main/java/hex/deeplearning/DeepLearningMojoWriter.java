@@ -42,6 +42,7 @@ public class DeepLearningMojoWriter extends ModelMojoWriter<DeepLearningModel,
     writekv("norm_resp_sub", _model_info.data_info._normRespSub);
     writekv("use_all_factor_levels", _parms._use_all_factor_levels);
     writekv("activation", _parms._activation);
+    writekv("distribution", _parms._distribution);
     boolean imputeMeans=_parms._missing_values_handling.equals(DeepLearningModel.DeepLearningParameters.MissingValuesHandling.MeanImputation);
     writekv("mean_imputation", imputeMeans);
     if (imputeMeans && _model_info.data_info._cats>0) { // only add this if there are categorical columns

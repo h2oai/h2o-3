@@ -1,7 +1,9 @@
 package hex.genmodel.algos.deeplearning;
 
+import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
+import hex.genmodel.utils.DistributionFamily;
 
 public class DeeplearningMojoModel extends MojoModel {
   public int _mini_batch_size;
@@ -18,10 +20,10 @@ public class DeeplearningMojoModel extends MojoModel {
   public boolean _imputeMeans;
   public int[] _units;  // size of neural network, input, hidden layers and output layer
   public double[] _all_drop_out_ratios; // input layer and hidden layers
-  public StoreWeightsBias[] _weights; // stores weights of different layers
-  public StoreWeightsBias[] _bias;    // store bias of different layers
+  public StoreWeightsBias[] _weightsAndBias; // stores weights of different layers
   public int[] _catNAFill; // if mean imputation is true, mode imputation for categorical columns
   public int _numLayers;    // number of neural network layers.
+  public DistributionFamily _family;
 
   /***
    * Should set up the neuron network frame work here
@@ -38,7 +40,8 @@ public class DeeplearningMojoModel extends MojoModel {
     int inputLayers = _numLayers-1;
     for (int index=0; index < (inputLayers); index++)
       _allActivations[index]=_activation;
-    _allActivations[inputLayers] = this.isClassifier()?"Softmax":"Linear";
+
+    _allActivations[inputLayers] = this.isAutoEncoder()?_activation:(this.isClassifier()?"Softmax":"Linear");
   }
 
   /***
@@ -52,83 +55,69 @@ public class DeeplearningMojoModel extends MojoModel {
   @Override
   public final double[] score0(double[] dataRow, double offset, double[] preds) {
     assert(dataRow != null) : "doubles are null"; // check to make sure data is not null
-    float[] input2Neurons = new float[_units[0]]; // store inputs into the neural network
+    double[] neuronsInput = new double[_units[0]]; // store inputs into the neural network
     double[] neuronsOutput;  // save output from a neural network layer
-    double[] neuronsInput;    // store input to neural network layer
 
     // transform inputs: NAs in categoricals are always set to new extra level.
-    setInput(dataRow, input2Neurons, _nums, _cats, _catoffsets, _normmul, _normsub, _use_all_factor_levels, true);
-    neuronsInput = convertFloat2Double(input2Neurons);
-
+    setInput(dataRow, neuronsInput, _nums, _cats, _catoffsets, _normmul, _normsub, _use_all_factor_levels, true);
 
     // proprogate inputs through neural network
     for (int layer=0; layer < _numLayers; layer++) {
-      NeuralNetwork oneLayer = new NeuralNetwork(_allActivations[layer], _all_drop_out_ratios[layer], _weights[layer],
-              _bias[layer], neuronsInput, _units[layer+1]);
+      NeuralNetwork oneLayer = new NeuralNetwork(_allActivations[layer], _all_drop_out_ratios[layer],
+              _weightsAndBias[layer], neuronsInput, _units[layer + 1]);
       neuronsOutput = oneLayer.fprop1Layer();
       neuronsInput = neuronsOutput;
     }
-    assert(_nclasses == neuronsInput.length) : "nclasses " + _nclasses + " neuronsOutput.length " + neuronsInput.length;
+    if (!this.isAutoEncoder())
+      assert (_nclasses == neuronsInput.length) : "nclasses " + _nclasses + " neuronsOutput.length " + neuronsInput.length;
     // Correction for classification or standardize outputs
-    if (this.isClassifier()) {
-    for (int i = 0; i < neuronsInput.length; ++i)
-      preds[1 + i] = neuronsInput[i];
-    if (_balanceClasses)
-      GenModel.correctProbabilities(preds, _priorClassDistrib, _modelClassDistrib);
-    preds[0] = GenModel.getPrediction(preds, _priorClassDistrib, dataRow, _defaultThreshold);
-  } else {
-    if (_normrespmul!=null && _normrespsub!=null)
-      preds[0] = neuronsInput[0] / _normrespmul[0] + _normrespsub[0];
-    else
-      preds[0] = neuronsInput[0];
-  }
-    return preds;
+    return modifyOutputs(neuronsInput, preds, dataRow);
   }
 
-  /***
-   * replace the missing numerical columns with column mean.
-   * @param input
-   * @return
-   */
-  private double[] imputeMissingWithMeans(float[] input) {
-    double[] out = new double[input.length];
-    int catNum = input.length-_nums;
+  public double[] modifyOutputs(double[] out, double[] preds, double[] dataRow) {
+    if (this.isAutoEncoder()) { // only perform unscale numerical value if need
+      if (_normmul != null && _normmul.length > 0) { // undo the standardization on output
+        int nodeSize = out.length - _nums;
+        for (int k = 0; k < nodeSize; k++) {
+          preds[k] = out[k];
+        }
 
-    for (int index = 0; index < catNum; index++) {
-      out[index] = (double) input[index];
-    }
-    if (_normsub != null) {
-      for (int index = catNum; index < input.length; index++) {
-        if (Double.isNaN(input[index]))
-          out[index] = _normsub[index-catNum];
-        else
-          out[index] = (double) input[index];
+        for (int k = 0; k < _nums; k++) {
+          int offset = nodeSize + k;
+          preds[offset] = out[offset] / _normmul[k] + _normsub[k];
+        }
+      } else {
+        for (int k = 0; k < out.length; k++) {
+          preds[k] = out[k];
+        }
       }
     } else {
-      for (int index = catNum; index < input.length; index++) {
-        if (Double.isNaN(input[index]))
-          out[index] = 0.0;
+      if (_family == DistributionFamily.modified_huber) {
+        preds[0] = -1;
+        preds[2] = _family.linkInv(preds[0]);
+        preds[1] = 1 - preds[2];
+      } else if (this.isClassifier()) {
+        assert (preds.length == out.length + 1);
+        for (int i = 0; i < preds.length - 1; ++i) {
+          preds[i + 1] = out[i];
+          if (Double.isNaN(preds[i + 1])) throw new RuntimeException("Predicted class probability NaN!");
+        }
+
+        if (_balanceClasses)
+          GenModel.correctProbabilities(preds, _priorClassDistrib, _modelClassDistrib);
+        preds[0] = GenModel.getPrediction(preds, _priorClassDistrib, dataRow, _defaultThreshold);
+      } else {
+        if (_normrespmul != null) //either both are null or none
+          preds[0] = (out[0] / _normrespmul[0] + _normrespsub[0]);
         else
-          out[index] = (double) input[index];
+          preds[0] = out[0];
+        // transform prediction to response space
+        preds[0] = _family.linkInv(preds[0]);
+        if (Double.isNaN(preds[0]))
+          throw new RuntimeException("Predicted regression target NaN!");
       }
     }
-    return out;
-  }
-
-  public static double[] convertFloat2Double(float[] input) {
-    int arraySize = input.length;
-    double[] output = new double[arraySize];
-    for (int index=0; index<arraySize; index++)
-      output[index] = (double) input[index];
-    return output;
-  }
-
-  public double[] fprop(float[] input2Neurons) {
-
-    double[] outputs = new double[_units[-1]];  // initiate neural network outputs
-
-
-    return outputs;
+    return preds;
   }
 
   @Override
@@ -136,12 +125,18 @@ public class DeeplearningMojoModel extends MojoModel {
     return score0(row, 0.0, preds);
   }
 
+  public int getPredsSize(ModelCategory mc) {
+    return (mc == ModelCategory.AutoEncoder)? _units[0]: (isClassifier()?nclasses()+1 :2);
+  }
+
   // class to store weight or bias for one neuron layer
   public static class StoreWeightsBias {
-    double[] _wOrBValues; // store weight or bias arrays
+    float[] _wValues; // store weight or bias arrays
+    double[] _bValues;
 
-    StoreWeightsBias(double[] values) {
-      _wOrBValues = values;
+    StoreWeightsBias(float[] wvalues, double[] bvalues) {
+      _wValues = wvalues;
+      _bValues = bvalues;
     }
   }
 }
