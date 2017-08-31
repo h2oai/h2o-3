@@ -11,14 +11,4 @@ public enum SVDImplementation {
   public static SVDImplementation getFastestImplementation() {
     return fastestImplementation;
   }
-  
-  public static String[] getEnumNames() {
-    SVDImplementation[] svdImplementations = values();
-    String[] enumNames = new String[svdImplementations.length];
-    int nameIndex = 0;
-    for (SVDImplementation enumType: svdImplementations) {
-      enumNames[nameIndex++] = enumType.toString();
-    }
-    return enumNames;
-  }
 }
