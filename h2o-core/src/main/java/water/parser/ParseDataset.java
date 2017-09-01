@@ -714,15 +714,18 @@ public final class ParseDataset {
       final int chunkStartIdx = _fileChunkOffsets[_lo];
       Log.trace("Begin a map stage of a file parse with start index " + chunkStartIdx + ".");
 
+      DecryptionTool decryptionTool = DecryptionTool.get(_parseSetup._decrypt_tool);
       byte[] zips = vec.getFirstBytes();
       ZipUtil.Compression cpr = ZipUtil.guessCompressionMethod(zips);
-      if (localSetup._check_header == ParseSetup.HAS_HEADER) //check for header on local file
-        localSetup._check_header = localSetup.parser(_jobKey).fileHasHeader(ZipUtil.unzipBytes(zips,cpr, localSetup._chunk_size), localSetup);
+      if (localSetup._check_header == ParseSetup.HAS_HEADER) { //check for header on local file
+        byte[] bits = decryptionTool.decryptFirstBytes(ZipUtil.unzipBytes(zips, cpr, localSetup._chunk_size));
+        localSetup._check_header = localSetup.parser(_jobKey).fileHasHeader(bits, localSetup);
+      }
       // Parse the file
       try {
         switch( cpr ) {
         case NONE:
-          ParserInfo.ParseMethod pm = _parseSetup._parse_type.parseMethod(_keys.length,vec.nChunks());
+          ParserInfo.ParseMethod pm = _parseSetup._parse_type.parseMethod(_keys.length, vec.nChunks(), ! decryptionTool.isTransparent());
           if(pm == ParserInfo.ParseMethod.DistributedParse) {
             new DistributedParse(_vg, localSetup, _vecIdStart, chunkStartIdx, this, key, vec.nChunks()).dfork(vec).getResult(false);
             for( int i = 0; i < vec.nChunks(); ++i )
@@ -731,7 +734,8 @@ public final class ParseDataset {
             localSetup = ParserService.INSTANCE.getByInfo(localSetup._parse_type).setupLocal(vec,localSetup);
             InputStream bvs = vec.openStream(_jobKey);
             Parser p = localSetup.parser(_jobKey);
-            _dout[_lo] = ((FVecParseWriter) p.streamParse(bvs,makeDout(localSetup,chunkStartIdx,vec.nChunks()))).close(_fs);
+            _dout[_lo] = ((FVecParseWriter) p.streamParse(decryptionTool.decryptInputStream(bvs),
+                    makeDout(localSetup,chunkStartIdx,vec.nChunks()))).close(_fs);
             _errors = _dout[_lo].removeErrors();
             chunksAreLocal(vec,chunkStartIdx,key);
           } else throw H2O.unimpl();
@@ -746,11 +750,12 @@ public final class ParseDataset {
             zis.getNextEntry();          // first ZipEntry describes the directory
           }
           ZipEntry ze = zis.getNextEntry(); // Get the *FIRST* entry
+          InputStream dec = decryptionTool.decryptInputStream(zis);
           // There is at least one entry in zip file and it is not a directory.
           if( ze != null && !ze.isDirectory() )
-            _dout[_lo] = streamParse(zis,localSetup, makeDout(localSetup,chunkStartIdx,vec.nChunks()), bvs);
+            _dout[_lo] = streamParse(dec,localSetup, makeDout(localSetup,chunkStartIdx,vec.nChunks()), bvs);
             _errors = _dout[_lo].removeErrors();
-          zis.close();       // Confused: which zipped file to decompress
+          dec.close();       // Confused: which zipped file to decompress
           chunksAreLocal(vec,chunkStartIdx,key);
           break;
         }
@@ -758,7 +763,8 @@ public final class ParseDataset {
           localSetup = ParserService.INSTANCE.getByInfo(localSetup._parse_type).setupLocal(vec,localSetup);
           InputStream bvs = vec.openStream(_jobKey);
           // Zipped file; no parallel decompression;
-          _dout[_lo] = streamParse(new GZIPInputStream(bvs), localSetup, makeDout(localSetup,chunkStartIdx,vec.nChunks()),bvs);
+          _dout[_lo] = streamParse(decryptionTool.decryptInputStream(new GZIPInputStream(bvs)),
+                  localSetup, makeDout(localSetup,chunkStartIdx,vec.nChunks()),bvs);
           _errors = _dout[_lo].removeErrors();
           // set this node as the one which processed all the chunks
           chunksAreLocal(vec,chunkStartIdx,key);

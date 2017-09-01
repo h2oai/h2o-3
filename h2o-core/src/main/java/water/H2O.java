@@ -229,6 +229,9 @@ final public class H2O {
     /** -internal_security_enabled is a boolean that indicates if internal communication paths are secured*/
     public boolean internal_security_enabled = false;
 
+    /** -decrypt_tool specifies the DKV key where a default decrypt tool will be installed*/
+    public String decrypt_tool = null;
+
     //-----------------------------------------------------------------------------------
     // Networking
     //-----------------------------------------------------------------------------------
