@@ -773,6 +773,11 @@ def show_progress():
     H2OJob.__PROGRESS_BAR__ = True
 
 
+def enable_fusions(flag):
+    """Enable expression tree local optimizations."""
+    ExprNode.__ENABLE_FUSIONS__ = flag
+
+
 def log_and_echo(message=""):
     """
     Log a message on the server-side logs.

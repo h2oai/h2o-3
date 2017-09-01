@@ -75,6 +75,9 @@ class ExprNode(object):
     #  2 for _get_ast_str frame, 2 for _get_ast_str local dictionary list, 1 for parent
     MAGIC_REF_COUNT = 5 if sys.gettrace() is None else 7  # M = debug ? 7 : 5
 
+    # Flag to control application of local expression tree optimizations
+    __ENABLE_FUSSIONS__ = True
+
     def __init__(self, op="", *args):
         # assert isinstance(op, str), op
         self._op = op  # Base opcode string
@@ -82,7 +85,8 @@ class ExprNode(object):
             a._ex if _is_fr(a) else a for a in args)  # ast children; if not None and _cache._id is not None then tmp
         self._cache = H2OCache()  # ncols, nrows, names, types
         # try to fuse/simplify expression
-        self._fuse()
+        if self.__ENABLE_FUSSIONS__:
+            self._fuse()
 
     def _eager_frame(self):
         if not self._cache.is_empty(): return

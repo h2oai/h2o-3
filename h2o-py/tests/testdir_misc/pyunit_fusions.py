@@ -52,6 +52,7 @@ def test_skip_fusion_expr():
     assert expr._op == "cols_py"
     assert expr.arg(0) == data._ex and expr.arg(1) == 1
 
+
 def test_skip_fusion_expr_negative():
     data = square_matrix(2)
     expr = ExprNode("cols_py", ExprNode("append", data, "dummy_vec", "dummy_name"), 33)
@@ -61,6 +62,7 @@ def test_skip_fusion_expr_negative():
     assert expr.arg(0)._op == "append" and expr.arg(1) == 33
     append_expr = expr.arg(0)
     assert append_expr.arg(0) == data._ex
+
 
 def test_skip_fusion():
     w = 3
@@ -74,6 +76,7 @@ def test_skip_fusion():
     assert expr._op == "append", "Append operator is used only as root op in the resulting expression"
     assert "append" not in _collect_all_ops(expr)[1:], "Append was elimited from rest of expression"
     assert data.dim == [2,6]
+
 
 def _collect_all_ops(e):
     return sum([_collect_all_ops(c) for c in e.args() if isinstance(c, ExprNode)], [e._op]) if e.args() else [e._op]
