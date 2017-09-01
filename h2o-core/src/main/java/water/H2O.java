@@ -585,6 +585,10 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         trgt.internal_security_conf = args[i];
       }
+      else if (s.matches("decrypt_tool")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.decrypt_tool = args[i];
+      }
       else if (s.matches("no_latest_check")) {
         trgt.noLatestCheck = true;
       }
