@@ -32,7 +32,7 @@ import static water.TestUtil.stall_till_cloudsize;
 @Timeout(time = JMHConfiguration.TIMEOUT_MINUTES, timeUnit = TimeUnit.MINUTES)
 public class PCAImputeMissingTrainingBench {
 
-	@Param({"JAMA", "MTJ", "EVD_MTJ_DENSEMATRIX", "EVD_MTJ_SYMM"})
+	@Param({"JAMA", "MTJ_SVD_DENSEMATRIX", "MTJ_EVD_DENSEMATRIX", "MTJ_EVD_SYMMMATRIX"})
 	private PCAImplementation PCAImplementation;
 
 	private PCAParameters paramsImputeMissing;

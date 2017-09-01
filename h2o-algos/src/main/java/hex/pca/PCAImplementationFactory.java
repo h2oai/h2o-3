@@ -8,11 +8,11 @@ class PCAImplementationFactory {
   static PCAInterface createSVDImplementation(double[][] gramMatrix, PCAImplementation implementation)
       throws Exception {
     switch (implementation) {
-      case EVD_MTJ_DENSEMATRIX:
+      case MTJ_EVD_DENSEMATRIX:
         return new PCA_MTJ_EVD_DenseMatrix(gramMatrix);
-      case EVD_MTJ_SYMM:
+      case MTJ_EVD_SYMMMATRIX:
         return new PCA_MTJ_EVD_SymmMatrix(gramMatrix);
-      case MTJ:
+      case MTJ_SVD_DENSEMATRIX:
         return new PCA_MTJ_SVD_DenseMatrix(gramMatrix);
       case JAMA:
         return new PCAJama(gramMatrix);

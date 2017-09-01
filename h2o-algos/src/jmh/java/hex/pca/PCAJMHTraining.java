@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 @Timeout(time = JMHConfiguration.TIMEOUT_MINUTES, timeUnit = TimeUnit.MINUTES)
 public class PCAJMHTraining extends PCAJMH {
   
-  @Param({"JAMA", "MTJ", "EVD_MTJ_DENSEMATRIX", "EVD_MTJ_SYMM"})
+  @Param({"JAMA", "MTJ_SVD_DENSEMATRIX", "MTJ_EVD_DENSEMATRIX", "MTJ_EVD_SYMMMATRIX"})
   private PCAImplementation PCAImplementation;
   
   public static void main(String[] args) throws RunnerException {
