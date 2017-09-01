@@ -19,6 +19,8 @@ class PCAImplementationFactory {
         return new PCA_MTJ_EVD_SymmMatrix(gramMatrix);
       case MTJ_SVD_DENSEMATRIX:
         return new PCA_MTJ_SVD_DenseMatrix(gramMatrix);
+      case DAAL_SVD_DENSEBATCH:
+        return new PCA_DAAL_SVD_DenseBatch(gramMatrix);
       case JAMA:
         return new PCAJama(gramMatrix);
       default:

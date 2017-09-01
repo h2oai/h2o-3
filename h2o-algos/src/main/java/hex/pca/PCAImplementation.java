@@ -5,7 +5,7 @@ package hex.pca;
  *         created on 2.5.17
  */
 public enum PCAImplementation {
-	MTJ_EVD_DENSEMATRIX, MTJ_EVD_SYMMMATRIX, MTJ_SVD_DENSEMATRIX, JAMA;
+	MTJ_EVD_DENSEMATRIX, MTJ_EVD_SYMMMATRIX, MTJ_SVD_DENSEMATRIX, DAAL_SVD_DENSEBATCH, JAMA;
   final static PCAImplementation fastestImplementation = MTJ_EVD_SYMMMATRIX;    // set to the fastest implementation
   
   public static PCAImplementation getFastestImplementation() {
