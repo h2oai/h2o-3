@@ -229,6 +229,9 @@ final public class H2O {
     /** -internal_security_enabled is a boolean that indicates if internal communication paths are secured*/
     public boolean internal_security_enabled = false;
 
+    /** -decrypt_tool specifies the DKV key where a default decrypt tool will be installed*/
+    public String decrypt_tool = null;
+
     //-----------------------------------------------------------------------------------
     // Networking
     //-----------------------------------------------------------------------------------
@@ -581,6 +584,10 @@ final public class H2O {
       else if (s.matches("internal_security_conf")) {
         i = s.incrementAndCheck(i, args);
         trgt.internal_security_conf = args[i];
+      }
+      else if (s.matches("decrypt_tool")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.decrypt_tool = args[i];
       }
       else if (s.matches("no_latest_check")) {
         trgt.noLatestCheck = true;

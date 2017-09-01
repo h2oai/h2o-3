@@ -41,6 +41,7 @@ public class ParseSetup extends Iced {
 
   String [] _fileNames = new String[]{"unknown"};
   public  boolean disableParallelParse;
+  String _decrypt_tool;
 
   public void setFileName(String name) {_fileNames[0] = name;}
 
@@ -331,6 +332,16 @@ public class ParseSetup extends Iced {
       byte [] bits = ZipUtil.getFirstUnzippedBytes(bv);
       // The bits can be null
       if (bits != null && bits.length > 0) {
+        String decryptToolId = _userSetup._decrypt_tool != null ? _userSetup._decrypt_tool : H2O.ARGS.decrypt_tool;
+        DecryptionTool decrypt = decryptToolId != null ? (DecryptionTool) DKV.getGet(decryptToolId) : null;
+        if (decrypt != null) {
+          byte[] plainBits = decrypt.decryptFirstBytes(bits);
+          if (plainBits != bits)
+            bits = plainBits;
+          else
+            decryptToolId = null;
+        }
+
         _empty = false;
 
         // get file size
@@ -357,6 +368,7 @@ public class ParseSetup extends Iced {
                 || decompRatio > 1.0) { */
         try {
           _gblSetup = guessSetup(bv, bits, _userSetup);
+          _gblSetup._decrypt_tool = decryptToolId;
           for(ParseWriter.ParseErr e:_gblSetup._errs) {
 //            e._byteOffset += e._cidx*Parser.StreamData.bufSz;
             e._cidx = 0;
