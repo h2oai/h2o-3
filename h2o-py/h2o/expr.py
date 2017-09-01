@@ -22,7 +22,7 @@ from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import repr2, viewitems, viewvalues
 from h2o.utils.shared_utils import _is_fr, _py_tmp_key
 from h2o.model.model_base import ModelBase
-
+from h2o.fusion import fuse
 
 class ExprNode(object):
     """
@@ -81,6 +81,8 @@ class ExprNode(object):
         self._children = tuple(
             a._ex if _is_fr(a) else a for a in args)  # ast children; if not None and _cache._id is not None then tmp
         self._cache = H2OCache()  # ncols, nrows, names, types
+        # try to fuse/simplify expression
+        self._fuse()
 
     def _eager_frame(self):
         if not self._cache.is_empty(): return
@@ -111,6 +113,9 @@ class ExprNode(object):
             self._cache.nrows = res['num_rows']
             self._cache.ncols = res['num_cols']
         return self
+
+    def _fuse(self):
+        fuse(self)(None)
 
     # Recursively build a rapids execution string.  Any object with more than
     # MAGIC_REF_COUNT referrers will be cached as a temp until the next client GC
@@ -162,6 +167,15 @@ class ExprNode(object):
                 ExprNode.rapids("(rm {})".format(self._cache._id))
         except (AttributeError, H2OConnectionError):
             pass
+
+    def arg(self, idx):
+        return self._children[idx]
+
+    def args(self):
+        return self._children
+
+    def narg(self):
+        return len(self._children)
 
     @staticmethod
     def _collapse_sb(sb):
