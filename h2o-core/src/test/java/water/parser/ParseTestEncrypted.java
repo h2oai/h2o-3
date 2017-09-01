@@ -33,7 +33,7 @@ public class ParseTestEncrypted extends TestUtil {
   @ClassRule
   public static TemporaryFolder tmp = new TemporaryFolder();
 
-  private static String PLAINTEXT_FILE = "smalldata/airlines/AirlinesTrain.csv";
+  private static String PLAINTEXT_FILE = "smalldata/demos/citibike_20k.csv";
 
   private static String KEYSTORE_TYPE = "JCEKS"; // Note: need to use JCEKS, default JKS cannot store non-private keys!
   private static String MY_CIPHER_SPEC = "AES/ECB/PKCS5Padding";
