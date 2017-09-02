@@ -1215,7 +1215,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   private GLMScore makeScoringTask(Frame adaptFrm, boolean generatePredictions, Job j){
     int responseId = adaptFrm.find(_output.responseName());
-    if(responseId >= -1 && adaptFrm.vec(responseId).isBad()) { // remove inserted invalid response
+    if(responseId > -1 && adaptFrm.vec(responseId).isBad()) { // remove inserted invalid response
       adaptFrm = new Frame(adaptFrm.names(),adaptFrm.vecs());
       adaptFrm.remove(responseId);
     }
