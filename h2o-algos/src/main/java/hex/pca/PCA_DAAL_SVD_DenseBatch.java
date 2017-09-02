@@ -1,30 +1,50 @@
 package hex.pca;
 
-import hex.util.EigenPair;
-import hex.util.LinearAlgebraUtils;
-import no.uib.cipr.matrix.DenseMatrix;
-import no.uib.cipr.matrix.NotConvergedException;
-import no.uib.cipr.matrix.UpperSymmDenseMatrix;
-import water.util.ArrayUtils;
+import com.intel.daal.algorithms.pca.*;
+import com.intel.daal.data_management.data.NumericTable;
+import com.intel.daal.data_management.data_source.DataSource;
+import com.intel.daal.data_management.data_source.FileDataSource;
+import com.intel.daal.services.DaalContext;
+
+import java.io.IOException;
 
 /**
  * @author mathemage <ha@h2o.ai>
  * created on 1.9.17
+ * based on Intel DAAL example PCASVDDenseBatch.java
  */
 public class PCA_DAAL_SVD_DenseBatch implements PCAInterface {
-  private UpperSymmDenseMatrix symmGramMatrix;
-  private no.uib.cipr.matrix.SymmDenseEVD symmDenseEVD;
   private double[][] eigenvectors;
-  private double[] eigenvalues;
+  private double[] variances;
+  
+  private static final String dataset       = "../data/batch/pca_normalized.csv";
+  private final DaalContext daalContext;
+  private final Batch pcaAlgorithm;
+  
+  PCA_DAAL_SVD_DenseBatch(double[][] gramMatrix) throws IOException {
+/*  	 TODO create DoubleArrayDataSource: DataSource
+     override com.intel.daal.data_management.data_source.DataSource.loadDataBlock();
+     */
+    daalContext = new DaalContext();
+  
+    FileDataSource dataSource = new FileDataSource(daalContext, dataset,
+        DataSource.DictionaryCreationFlag.DoDictionaryFromContext,
+        DataSource.NumericTableAllocationFlag.DoAllocateNumericTable);
+    dataSource.loadDataBlock();
 
-  PCA_DAAL_SVD_DenseBatch(double[][] gramMatrix) {
-    this.symmGramMatrix = new UpperSymmDenseMatrix(new DenseMatrix(gramMatrix));
-    runEVD();
+    pcaAlgorithm = new Batch(daalContext, Float.class, Method.svdDense);
+    
+    NumericTable data = dataSource.getNumericTable();
+    pcaAlgorithm.input.set(InputId.data, data);
+  
+    runSVD();
+    
+    daalContext.dispose();
   }
 
   @Override
   public double[] getVariances() {
-    return eigenvalues;
+    return variances;
   }
 
   @Override
@@ -32,21 +52,22 @@ public class PCA_DAAL_SVD_DenseBatch implements PCAInterface {
     return eigenvectors;
   }
 
-  private void runEVD() {
-    int gramDimension = symmGramMatrix.numRows();
-    try {
-      symmDenseEVD = no.uib.cipr.matrix.SymmDenseEVD.factorize(this.symmGramMatrix);
-    } catch (NotConvergedException e) {
-      throw new RuntimeException(e);
-    }
-    // initial eigenpairs
-    eigenvalues = symmDenseEVD.getEigenvalues();
-    double[] Vt_1D = symmDenseEVD.getEigenvectors().getData();
-    eigenvectors = LinearAlgebraUtils.reshape1DArray(Vt_1D, gramDimension, gramDimension);
-
-    // sort eigenpairs in descending order according to the magnitude of eigenvalues
-    EigenPair[] eigenPairs = LinearAlgebraUtils.createReverseSortedEigenpairs(eigenvalues, eigenvectors);
-    eigenvalues = LinearAlgebraUtils.extractEigenvaluesFromEigenpairs(eigenPairs);
-    eigenvectors = ArrayUtils.transpose(LinearAlgebraUtils.extractEigenvectorsFromEigenpairs(eigenPairs));
+  private void runSVD() {
+    Result res = pcaAlgorithm.compute();
+    NumericTable eigenValues = res.get(ResultId.eigenValues);
+/*    TODO create adapter pattern: DoubleBuffer -> Double[]
+class
+method: DoubleBuffer in -> Double[] out
+by querying DoubleBuffer getters
+* */
+//    DoubleBuffer.class
+	  
+    
+    // TODO experiment with get* -> dims, and use the adapter
+//    variances = eigenValues.getBlo
+  
+    // TODO create adapter pattern: DoubleBuffer -> Double[][]
+    // TODO experiment with get* -> dims, and use the adapter
+    NumericTable eigenVectors = res.get(ResultId.eigenVectors);
   }
 }
