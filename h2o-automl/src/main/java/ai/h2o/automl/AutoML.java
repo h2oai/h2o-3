@@ -809,16 +809,14 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       searchParams.put("col_sample_rate_per_tree", new Double[]{0.4, 0.6, 0.8, 1.0});
 */
 
-    Job<Grid>gbmJob = hyperparameterSearch("GBM", gbmParameters, searchParams);
+    Job<Grid>gbmJob = hyperparameterSearch(gridKey, "GBM", gbmParameters, searchParams);
     return gbmJob;
   }
 
-  public Job<Grid> defaultSearchDL1() {
+  public Job<Grid> defaultSearchDL1(Key<Grid> gridKey) {
     ///////////////////////////////////////////////////////////
     // do a random hyperparameter search with DL
     ///////////////////////////////////////////////////////////
-    // TODO: convert to using the REST API
-    Key<Grid> gridKey = Key.make("DL_grid_default_" + this._key.toString());
 
     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria = buildSpec.build_control.stopping_criteria;
 
@@ -840,16 +838,14 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     searchParams.put("_hidden", new Integer[][] { {50}, {200}, {500} });
     searchParams.put("_hidden_dropout_ratios", new Double[][] { { 0.0 }, { 0.1 }, { 0.2 }, { 0.3 }, { 0.4 }, { 0.5 } });
 
-    Job<Grid>dlJob = hyperparameterSearch("DL", dlParameters, searchParams);
+    Job<Grid>dlJob = hyperparameterSearch(gridKey, "DL", dlParameters, searchParams);
     return dlJob;
   }
 
-  public Job<Grid> defaultSearchDL2() {
+  public Job<Grid> defaultSearchDL2(Key<Grid> gridKey) {
     ///////////////////////////////////////////////////////////
     // do a random hyperparameter search with DL
     ///////////////////////////////////////////////////////////
-    // TODO: convert to using the REST API
-    Key<Grid> gridKey = Key.make("DL_grid_default_" + this._key.toString());
 
     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria = buildSpec.build_control.stopping_criteria;
 
@@ -871,16 +867,14 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     searchParams.put("_hidden", new Integer[][] { {50, 50}, {200, 200}, {500, 500} });
     searchParams.put("_hidden_dropout_ratios", new Double[][] { { 0.0, 0.0 }, { 0.1, 0.1 }, { 0.2, 0.2 }, { 0.3, 0.3 }, { 0.4, 0.4 }, { 0.5, 0.5 } });
 
-    Job<Grid>dlJob = hyperparameterSearch("DL", dlParameters, searchParams);
+    Job<Grid>dlJob = hyperparameterSearch(gridKey, "DL", dlParameters, searchParams);
     return dlJob;
   }
 
-  public Job<Grid> defaultSearchDL3() {
+  public Job<Grid> defaultSearchDL3(Key<Grid> gridKey) {
     ///////////////////////////////////////////////////////////
     // do a random hyperparameter search with DL
     ///////////////////////////////////////////////////////////
-    // TODO: convert to using the REST API
-    Key<Grid> gridKey = Key.make("DL_grid_default_" + this._key.toString());
 
     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria = buildSpec.build_control.stopping_criteria;
 
@@ -902,7 +896,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     searchParams.put("_hidden", new Integer[][] { {50, 50, 50}, {200, 200, 200}, {500, 500, 500} });
     searchParams.put("_hidden_dropout_ratios", new Double[][] { { 0.0, 0.0, 0.0 }, { 0.1, 0.1, 0.1 }, { 0.2, 0.2, 0.2 }, { 0.3, 0.3, 0.3 }, { 0.4, 0.4, 0.4 }, { 0.5, 0.5, 0.5 } });
 
-    Job<Grid>dlJob = hyperparameterSearch("DL", dlParameters, searchParams);
+    Job<Grid>dlJob = hyperparameterSearch(gridKey, "DL", dlParameters, searchParams);
     return dlJob;
   }
 
@@ -1008,12 +1002,16 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     Job<Grid> gbmJob = defaultSearchGBM(gbmGridKey);
     pollAndUpdateProgress(Stage.ModelTraining, "GBM hyperparameter search", 80, this.job(), gbmJob, JobType.HyperparamSearch);
 
+    //
+    // Build DL models
+    //
+    Key<Grid> dlGridKey = gridKey("DeepLearning");
 
     ///////////////////////////////////////////////////////////
     // build DL models with default search parameter set 1
     ///////////////////////////////////////////////////////////
     // TODO: run for only part of the remaining time?
-    Job<Grid>dlJob1 = defaultSearchDL1();
+    Job<Grid>dlJob1 = defaultSearchDL1(dlGridKey);
     pollAndUpdateProgress(Stage.ModelTraining, "DeepLearning hyperparameter search 1", 150, this.job(), dlJob1, JobType.HyperparamSearch);
 
 
@@ -1021,7 +1019,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // build DL models with default search parameter set 2
     ///////////////////////////////////////////////////////////
     // TODO: run for only part of the remaining time?
-    Job<Grid>dlJob2 = defaultSearchDL2();
+    Job<Grid>dlJob2 = defaultSearchDL2(dlGridKey);
     pollAndUpdateProgress(Stage.ModelTraining, "DeepLearning hyperparameter search 2", 200, this.job(), dlJob2, JobType.HyperparamSearch);
 
 
@@ -1029,7 +1027,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // build DL models with default search parameter set 3
     ///////////////////////////////////////////////////////////
     // TODO: run for only part of the remaining time?
-    Job<Grid>dlJob3 = defaultSearchDL3();
+    Job<Grid>dlJob3 = defaultSearchDL3(dlGridKey);
     pollAndUpdateProgress(Stage.ModelTraining, "DeepLearning hyperparameter search 3", 300, this.job(), dlJob3, JobType.HyperparamSearch);
 
 
