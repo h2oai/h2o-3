@@ -3001,11 +3001,12 @@ class H2OFrame(object):
         :param axis: 0 = apply to each column; 1 = apply to each row
         :returns: a new H2OFrame with the results of applying ``fun`` to the current frame.
         """
-        from .astfun import _bytecode_decompile_lambda
+        from .astfun import lambda_to_expr
         assert_is_type(axis, 0, 1)
         assert_is_type(fun, FunctionType)
         assert_satisfies(fun, fun.__name__ == "<lambda>")
-        res = _bytecode_decompile_lambda(fun.__code__)
+        #res = _bytecode_decompile_lambda(fun.__code__)
+        res = lambda_to_expr(fun)
         return H2OFrame._expr(expr=ExprNode("apply", self, 1 + (axis == 0), *res))
 
 

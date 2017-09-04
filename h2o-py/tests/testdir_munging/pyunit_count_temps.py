@@ -1,13 +1,13 @@
 from __future__ import print_function
 import sys, os
-sys.path.insert(1, os.path.join("..",".."))
+
+sys.path.insert(1, os.path.join("..", ".."))
 import h2o
 from tests import pyunit_utils
 
 
 def date_munge():
     crimes_path = pyunit_utils.locate("smalldata/chicago/chicagoCrimes10k.csv.zip")
-    # crimes_path = "smalldata/chicago/chicagoCrimes10k.csv.zip"
 
     hc = h2o.connection()
     assert hc.session_id  # Make sure the `POST /4/session` call has happened
@@ -18,12 +18,12 @@ def date_munge():
     # POST /3/Parse
     # GET /3/Job/{job_id}  (multiple times)
     # GET /3/Frames/crimes
-    crimes = h2o.import_file(path=crimes_path, destination_frame="crimes")
+    crimes = h2o.import_file(path=crimes_path, destination_frame="xxxx_crimes")
 
     rest1 = hc.requests_count
 
     crimes["Day"] = crimes["Date"].day()
-    crimes["Month"] = crimes["Date"].month() + 1    # Since H2O indexes from 0
+    crimes["Month"] = crimes["Date"].month() + 1  # Since H2O indexes from 0
     crimes["Year"] = crimes["Date"].year() + 1900  # Start of epoch is 1900
     crimes["WeekNum"] = crimes["Date"].week()
     crimes["WeekDay"] = crimes["Date"].dayOfWeek()
@@ -33,7 +33,8 @@ def date_munge():
     crimes["Weekend"] = (crimes["WeekDay"] == "Sun") | (crimes["WeekDay"] == "Sat")
     print("# of REST calls used: %d" % (hc.requests_count - rest1))
 
-    crimes["Season"] = crimes["Month"].cut([0, 2, 5, 7, 10, 12], ["Winter", "Spring", "Summer", "Autumn", "Winter"])
+    crimes["Season"] = crimes["Month"].cut([0, 2, 5, 7, 10, 12],
+                                           ["Winter", "Spring", "Summer", "Autumn", "Winter"])
     print("# of REST calls used: %d" % (hc.requests_count - rest1))
 
     crimes = crimes.drop("Date")
@@ -58,6 +59,7 @@ def date_munge():
     #                           ["Winter" "Spring" "Summer" "Autumn" "Winter"] FALSE TRUE 3) "Season") -3))}
     # GET /3/Frames/py8
     crimes.describe()
+
     print("# of REST calls used: %d" % (hc.requests_count - rest1))
 
     ntmps = pyunit_utils.temp_ctr() - tmps0
@@ -76,7 +78,8 @@ def test_date_munge():
     finally:
         h2o.enable_expr_optimizations(saved_flag)
 
+
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(test_date_munge())
+    pyunit_utils.standalone_test(test_date_munge)
 else:
     test_date_munge()
