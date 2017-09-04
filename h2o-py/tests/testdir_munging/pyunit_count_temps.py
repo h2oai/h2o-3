@@ -68,8 +68,15 @@ def date_munge():
     assert nrest == 2
 
 
+def test_date_munge():
+    saved_flag = h2o.is_fusions_enabled()
+    try:
+        h2o.enable_fusions(False)
+        date_munge()
+    finally:
+        h2o.enable_fusions(saved_flag)
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(date_munge)
+    pyunit_utils.standalone_test(test_date_munge())
 else:
-    date_munge()
+    test_date_munge()

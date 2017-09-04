@@ -778,6 +778,10 @@ def enable_fusions(flag):
     ExprNode.__ENABLE_FUSIONS__ = flag
 
 
+def is_fusions_enabled():
+    return ExprNode.__ENABLE_FUSIONS__
+
+
 def log_and_echo(message=""):
     """
     Log a message on the server-side logs.
