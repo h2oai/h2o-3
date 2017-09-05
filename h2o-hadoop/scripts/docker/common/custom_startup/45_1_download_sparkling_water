@@ -2,5 +2,6 @@
 
 if [[ ${DOWNLOAD_SW} ]]; then
     chmod 755 /usr/bin/download_sparkling_water
+    sync
     /usr/bin/download_sparkling_water ${DOWNLOAD_SW}
 fi

@@ -9,6 +9,15 @@ function cleanup {
 }
 
 if [ -d ${H2O_3_HOME}/h2o-hadoop/tests/python ]; then
+
+    echo "Downloading latest nightly build of H2O-3 to be used by scripts/run.py"
+    mkdir -p /home/h2o/h2o-stable
+    cd /home/h2o/h2o-stable
+
+    NIGHTLY_BUILD_ID=$(curl -s http://h2o-release.s3.amazonaws.com/h2o/master/latest.html | egrep -o "[0-9]{4,}")
+    wget http://h2o-release.s3.amazonaws.com/h2o/master/${NIGHTLY_BUILD_ID}/h2o-3.15.0.${NIGHTLY_BUILD_ID}.zip
+    unzip h2o-*.zip
+
     cd ${H2O_3_HOME}/h2o-hadoop/tests
 
     echo -n > ${H2O_3_HOME}/h2o-hadoop/tests/testsfile.txt
@@ -16,8 +25,12 @@ if [ -d ${H2O_3_HOME}/h2o-hadoop/tests/python ]; then
     for x in $(ls python); do
       echo ${H2O_3_HOME}/h2o-hadoop/tests/python/${x} >> ${H2O_3_HOME}/h2o-hadoop/tests/testsfile.txt
     done
-
-    su - h2o -c "cd $(pwd); ../../scripts/run.py --wipeall --onHadoop --hadoopNamenode localhost --usecloud localhost:54321 --geterrs --testlist testsfile.txt"
+    mkdir -p ${H2O_3_HOME}/h2o-hadoop/tests/results
+    chown h2o:h2o ${H2O_3_HOME}/h2o-hadoop/tests/results
+    chmod a+w ${H2O_3_HOME}/h2o-hadoop/tests
+    chmod a+w -R ${H2O_3_HOME}
+    echo "Running run.py scripts with cmd: ../../scripts/run.py --wipeall --onHadoop --hadoopNamenode localhost --usecloud localhost:54321 --h2ojar /home/h2o/h2o-stable/h2o*/h2o.jar --geterrs --testlist testsfile.txt"
+    su - h2o -c "cd $(pwd); ../../scripts/run.py --wipeall --onHadoop --hadoopNamenode localhost --usecloud localhost:54321 --h2ojar /home/h2o/h2o-stable/h2o*/h2o.jar --geterrs --testlist testsfile.txt"
 else
     echo "Folder ${H2O_3_HOME}/h2o-hadoop/tests/python cannot be found, skipping tests"
 fi

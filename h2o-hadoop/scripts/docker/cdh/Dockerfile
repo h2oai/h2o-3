@@ -33,6 +33,7 @@ COPY ${PATH_PREFIX}/../common/sbin/ /usr/sbin/
 
 # Download Spark, if required
 RUN chmod 700 /usr/sbin/install_spark && \
+    sync && \
     /usr/sbin/install_spark
 
 # Expose ports

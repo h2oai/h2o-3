@@ -35,7 +35,7 @@ $ ./build.py --spark-version 2.0 --spark-version 2.1 --distribution CDH --versio
 Activating the particular Spark version and adding custom built Spark is discussed in section **Customization**.
 
 ## Customization ##
-The following snippet shows the most usefull options available when running the container:
+The following snippet shows the most useful options available when running the container:
 
 ```bash
 $ docker run -it \
@@ -74,7 +74,7 @@ $ docker run -v /path/to/folder/containing/script/:/startup h2o-<DISTRIBUTION>:<
 At first the scripts from `/startup` will be copied to the `/etc/startup` folder, then they'll be made executable and then they'll be run.
 
 ## H2O ##
-H2O can be added to the container in two ways: 
+H2O can be added to the container in two ways:
 
 1. using the provided custom startup scripts
 2. using custom built H2O mounted under `/home/h2o/h2o`
@@ -82,11 +82,11 @@ H2O can be added to the container in two ways:
 ### Using Custom Startup Scripts ###
 The `common/custom_startup` folder contains multiple custom startup scripts. If this folder is mounted under `/startup`, the scripts together achieve following:
 
-* `40_1_download_h2o` - downloads the latest nighlty build of H2O
+* `40_1_download_h2o` - downloads the latest nightly build of H2O
   * if `SUPPRESS_H2O_DOWNLOAD` is set to `TRUE`, then does **nothing**
 * `40_2_init_h2o` - launches an instance of H2O on Hadoop
   * if there is *no* `/home/h2o/h2o*/h2odriver.jar` then does **nothing**
-* `45_1_download_sparkling_water` - downloads the specified version of 
+* `45_1_download_sparkling_water` - downloads the specified version of
   * if `DOWNLOAD_SW` *does not specify* a version of Sparkling Water, then does **nothing**
 * `50_run_tests` - run tests under /home/h2o/h2o-3/h2o-hadoop/tests/python
 	* if *no tests* are present, or the folder *does not exist*, **does nothing**
@@ -96,7 +96,7 @@ It is possible to use custom H2O build. To do so, mount the required build under
 
 
 ## Apache Spark ##
-Apache Spark might be present in the container is created, or a custom Spark might be provided. 
+Apache Spark might be present in the container is created, or a custom Spark might be provided.
 
 To activate a stable version of Spark present in the container, execute:
 
@@ -104,17 +104,16 @@ To activate a stable version of Spark present in the container, execute:
 $ /usr/bin/activate_spark_<SPARK_VERSION>
 ```
 
-This script creates symlink at `/opt/spark-current` to the folder where given Spark is installed. The `/opt/spark-current` folder is already added to `PATH` and the `SPARK_HOME` points to this folder. If the container contains multipls Sparks, it is possible to switch them as necessary while running the container.
+This script creates symlink at `/opt/spark-current` to the folder where given Spark is installed. The `/opt/spark-current` folder is already added to `PATH` and the `SPARK_HOME` points to this folder. If the container contains multiple Sparks, it is possible to switch them as necessary while running the container.
 
 ### Using Custom Build ###
-If a custom build version of Spark should be used, execute: 
+If a custom build version of Spark should be used, execute:
 
 ```
 $ /usr/bin/activate_spark_custom
 ```
 
 If no arguments are provided, then `/opt/spark-custom` will be symlinked. If the Spark installation from different location should be symlinked, provide the path to this installation as an argument of the script. For example:
-
 
 ```
 $ /usr/bin/activate_spark_custom /path/to/custom/spark/
@@ -127,6 +126,4 @@ Similar to H2O, Sparkling Water can be also added either from a release or from 
 It is possible to specify a version of Sparkling Water which should be downloaded and unzipped. To do so, use the `DOWNLOAD_SW` env variable, which should hold the required version of Sparkling Water, for example `DOWNLOAD_SW=2.0.15`
 
 ### Using Custom Build ###
-If a custom build version of Sparkling Water should be used
-
-
+If a custom build version of Sparkling Water should be used, it should mount it and a custom startup scripts should be used to initialize the Sparkling Water instance.

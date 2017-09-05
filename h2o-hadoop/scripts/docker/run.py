@@ -45,6 +45,7 @@ def init_args_parser():
                         help="Version of Spark to point to.")
     parser.add_argument('-c', '--custom-spark-path', type=str, help='Path to custom Spark')
     parser.add_argument('-t', '--tag', type=str, help="Tag of the docker image.")
+    parser.add_argument('-w', '--sparkling-water', type=str, help="Version of Sparkling Water which should be downloaded")
     return parser
 
 
@@ -87,6 +88,8 @@ if __name__ == '__main__':
                 except ValueError as e:
                     print("Selection not valid")
                     exit(1)
+    if args.sparkling_water:
+        cmd += "-e DOWNLOAD_SW=%s " % args.sparkling_water
     if args.tag:
         tag = "%s:%s" % (args.tag, args.version)
     cmd += tag

@@ -14,6 +14,7 @@ COPY ${PATH_PREFIX}/scripts/sbin ${PATH_PREFIX}/../common/sbin /usr/sbin/
 
 # Add HDP repository
 RUN chmod 700 /usr/sbin/add_hdp_repo.sh && \
+    sync && \
     /usr/sbin/add_hdp_repo.sh $VERSION && \
     rm /usr/sbin/add_hdp_repo.sh && \
     apt-get update
@@ -38,11 +39,13 @@ RUN rm /usr/hdp/2*/hadoop/conf/* && \
 
 # Generate mapred-site.xml
 RUN chmod 700 /usr/sbin/generate-mapred-site && \
+    sync && \
     /usr/sbin/generate-mapred-site && \
     rm /usr/sbin/generate-mapred-site
 
 # Generate yarn-site.xml
 RUN chmod 700 /usr/sbin/generate-yarn-site && \
+    sync && \
     /usr/sbin/generate-yarn-site && \
     rm /usr/sbin/generate-yarn-site
 
@@ -54,6 +57,7 @@ RUN useradd -ms /bin/bash h2o
 
 # Download Spark, if required
 RUN chmod 700 /usr/sbin/install_spark && \
+    sync && \
     /usr/sbin/install_spark
 
 # Copy startup scripts
