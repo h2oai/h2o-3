@@ -31,7 +31,7 @@ class Fusion(object):
 class FoldFusion(Fusion):
     """
     Fold fusion: support operators which
-    accepts array of parameters:
+    accepts array of parameters (e.g., append, cbind):
 
     For example: append dst (src col_name)+
       (append (append dst srcX col_name_Y) src_A col_name_B) is transformed to
