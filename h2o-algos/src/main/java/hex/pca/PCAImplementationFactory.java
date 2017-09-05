@@ -1,6 +1,9 @@
 package hex.pca;
 
 import hex.pca.jama.PCAJama;
+import hex.pca.mtj.PCA_MTJ_EVD_DenseMatrix;
+import hex.pca.mtj.PCA_MTJ_EVD_SymmMatrix;
+import hex.pca.mtj.PCA_MTJ_SVD_DenseMatrix;
 
 /**
  * @author mathemage <ha@h2o.ai>

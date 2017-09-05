@@ -1,5 +1,6 @@
-package hex.pca;
+package hex.pca.mtj;
 
+import hex.pca.PCAInterface;
 import hex.util.EigenPair;
 import hex.util.LinearAlgebraUtils;
 import no.uib.cipr.matrix.DenseMatrix;
@@ -17,7 +18,7 @@ public class PCA_MTJ_EVD_DenseMatrix implements PCAInterface {
   private static double[] eigenvalues;
   private static double[][] eigenvectors;
 
-  PCA_MTJ_EVD_DenseMatrix(double[][] gramMatrix) {
+  public PCA_MTJ_EVD_DenseMatrix(double[][] gramMatrix) {
     PCA_MTJ_EVD_DenseMatrix.gramMatrix = new DenseMatrix(gramMatrix);
     runEVD();
   }

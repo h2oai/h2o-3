@@ -1,5 +1,6 @@
-package hex.pca;
+package hex.pca.mtj;
 
+import hex.pca.PCAInterface;
 import hex.util.LinearAlgebraUtils;
 import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.NotConvergedException;
@@ -13,7 +14,7 @@ public class PCA_MTJ_SVD_DenseMatrix implements PCAInterface {
   private no.uib.cipr.matrix.SVD svd;
   private double[][] rightEigenvectors;
 
-  PCA_MTJ_SVD_DenseMatrix(double[][] gramMatrix) {
+  public PCA_MTJ_SVD_DenseMatrix(double[][] gramMatrix) {
     this.gramMatrix = new DenseMatrix(gramMatrix);
     runSVD();
   }
