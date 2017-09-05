@@ -1,10 +1,11 @@
-package hex.pca;
+package hex.pca.daal;
 
 import com.intel.daal.algorithms.pca.*;
 import com.intel.daal.data_management.data.NumericTable;
 import com.intel.daal.data_management.data_source.DataSource;
 import com.intel.daal.data_management.data_source.FileDataSource;
 import com.intel.daal.services.DaalContext;
+import hex.pca.PCAInterface;
 
 import java.io.IOException;
 
@@ -21,7 +22,7 @@ public class PCA_DAAL_SVD_DenseBatch implements PCAInterface {
   private final DaalContext daalContext;
   private final Batch pcaAlgorithm;
   
-  PCA_DAAL_SVD_DenseBatch(double[][] gramMatrix) throws IOException {
+  public PCA_DAAL_SVD_DenseBatch(double[][] gramMatrix) throws IOException {
 /*  	 TODO create DoubleArrayDataSource: DataSource
      override com.intel.daal.data_management.data_source.DataSource.loadDataBlock();
      */

@@ -1,5 +1,6 @@
 package hex.pca;
 
+import hex.pca.daal.PCA_DAAL_SVD_DenseBatch;
 import hex.pca.jama.PCAJama;
 import hex.pca.mtj.PCA_MTJ_EVD_DenseMatrix;
 import hex.pca.mtj.PCA_MTJ_EVD_SymmMatrix;
