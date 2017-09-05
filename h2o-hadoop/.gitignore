@@ -1,3 +1,4 @@
 # Tests
 tests/results
 tests/testsfile.txt
+!scripts/docker/common/bin
