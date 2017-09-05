@@ -1,7 +1,8 @@
-package hex.pca;
+package hex.pca.jama;
 
 import Jama.Matrix;
 import Jama.SingularValueDecomposition;
+import hex.pca.PCAInterface;
 
 /**
  * @author mathemage <ha@h2o.ai>

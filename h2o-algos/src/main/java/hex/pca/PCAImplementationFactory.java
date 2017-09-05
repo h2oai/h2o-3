@@ -1,5 +1,7 @@
 package hex.pca;
 
+import hex.pca.jama.PCAJama;
+
 /**
  * @author mathemage <ha@h2o.ai>
  * created on 2.5.17
