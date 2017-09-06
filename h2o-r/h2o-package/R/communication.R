@@ -851,11 +851,11 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
         if(verboseModelScoringHistory){
           cat(paste0("\nScoring History for Model ",job$dest$name, " at ", Sys.time(),"\n"))
           print(paste0("Model Build is ", job$progress*100, "% done..."))
-          tryCatch({
+          if(!is.null(job$progress_msg)){
             print(tail(h2o.getModel(job$dest$name)@model$scoring_history))
-          }, error = function(e){
+          }else{
             print("Scoring history is not available yet...") #Catch 404 with scoring history. Can occur when nfolds >=2
-          })
+          }
         }
       } else {
         if (progressBar) {
