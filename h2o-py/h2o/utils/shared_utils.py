@@ -17,7 +17,7 @@ import sys
 import subprocess
 import json
 ## Using Linux, windows and OSX supported path
-import ntpath
+## import ntpath
 
 from h2o.exceptions import H2OValueError
 from h2o.utils.compatibility import *  # NOQA
@@ -388,6 +388,7 @@ def predict_json(mojo_model, json, genmodelpath=None, labels=False, classpath=No
     :param mojo_model: This is the MOJO model file name which is download after model was build using H2O, you can pass it two ways:
            1. Full mojo model path i.e. /Users/avkashchauhan/src/github.com/h2oai/h2o-tutorials/tutorials/python_mojo_scoring/gbm_prostate_new.zip
            2. mojo name first i.e. gbm_prostate_new.zip and genmodelpath = /Users/avkashchauhan/src/github.com/h2oai/h2o-tutorials/tutorials/python_mojo_scoring
+           3. only mojo model name: In this case system uses os.path.abspath to get the folder where mojo is and then look for h2o-genmodel.jar in the same location
     :param json:  convert pandas frame to json (pd.to_json) and pass here
     :param genmodelpath: This is the local file system folder name where both h2o-genmodel.jar and MOJO zip file is stored.
     :param labels:     (Optional) True : Shows results, False: Does no show results and just pass result to given object
@@ -420,13 +421,18 @@ def predict_json(mojo_model, json, genmodelpath=None, labels=False, classpath=No
 
     ## Working on mojo_model
     mojo_model_path=None
-    head, tail = ntpath.split(mojo_model)
+
+    head, tail = os.path.split(mojo_model)
     if not head:
         if not genmodelpath:
-            raise RuntimeError("Error: given mojo model " + mojo_model + " does not have full path!")
+            # taking path from asbpath, which is based on given mojo model file name
+            head, tail = os.path.split(os.path.abspath(mojo_model))
+            mojo_model_path = head
         else:
+            # taking path from given genmodelpath
             mojo_model_path = genmodelpath
     else:
+        # Taking path from the path given with model mojo file
         mojo_model_path = head
 
     if not mojo_model_path:
@@ -434,7 +440,6 @@ def predict_json(mojo_model, json, genmodelpath=None, labels=False, classpath=No
 
     # mojo model name is
     mojo_model_name = tail
-
 
     # Mojo model is given by name only and separate path is given also
     # Check both genmodel and pojo is available in the same path
