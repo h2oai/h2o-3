@@ -97,8 +97,6 @@ __TESTS__ = [test_fold_fusion_append_expr, test_fold_fusion_cbind_expr,
              test_skip_fusion_expr, test_skip_fusion_expr_negative,
              test_skip_fusion]
 
-__TESTS__ = [test_skip_fusion]
-
 if __name__ == "__main__":
     for func in __TESTS__:
         pyunit_utils.standalone_test(func)
