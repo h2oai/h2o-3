@@ -45,7 +45,6 @@ The steps below describe the individual tasks involved in training and testing a
    b. Feed those predictions into the metalearner to generate the ensemble prediction.
 
 
-
 Defining an H2O Stacked Ensemble Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -55,6 +54,8 @@ Defining an H2O Stacked Ensemble Model
 
 -  `validation_frame <algo-params/validation_frame.html>`__: Specify the dataset used to evaluate the accuracy of the model.
 
+-  `y <algo-params/y.html>`__: (Required) Specify the column to use as the independent variable (response column). The data can be numeric or categorical.
+
 -  **base_models**: Specify a list of model IDs that can be stacked together. Models must have been cross-validated using ``nfolds`` > 1, they all must use the same cross-validation folds, and ``keep_cross_validation_folds`` must be set to True. 
 
   **Notes regarding** ``base_models``: 
@@ -62,6 +63,8 @@ Defining an H2O Stacked Ensemble Model
     - One way to guarantee identical folds across base models is to set ``fold_assignment = "Modulo"`` in all the base models.  It is also possible to get identical folds by setting ``fold_assignment = "Random"`` when the same seed is used in all base models.
 
     - In R, you can specify a list of models in the ``base_models`` parameter. 
+
+-  **keep_levelone_frame**: Keep the level one data frame that's constructed for the metalearning step. This option is disabled by default.
 
 Also in a `future release <https://0xdata.atlassian.net/browse/PUBDEV-3743>`__, there will be an additional **metalearner** parameter which allows for the user to specify the metalearning algorithm used.  Currently, the metalearner is fixed as a default H2O GLM with non-negative weights.
 
