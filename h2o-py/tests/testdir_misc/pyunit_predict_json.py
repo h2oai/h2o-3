@@ -7,6 +7,7 @@ import os
 import json
 sys.path.insert(1,"../../")
 import h2o
+import h2o.utils.shared_utils as hu
 import pandas as pd
 from tests import pyunit_utils
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
@@ -51,12 +52,16 @@ def predict_json_test(target_dir):
 
 
     print("\nPerforming Regression Prediction using MOJO @... " + target_dir)
-    prediction_result = h2o.predict_json(target_dir,
-                          mojo_file_name,
-                          df_json)
+    prediction_result = hu.predict_json(mojo_file_name,df_json,target_dir)
     p2 = json.loads(prediction_result)[0]["value"]
     print("Prediction result: " + str(p2))
     assert p1 == p2, "expected predictions to be the same for binary and MOJO model for regression"
+
+    prediction_result = hu.predict_json(os.path.join(target_dir,mojo_file_name), df_json)
+    p2 = json.loads(prediction_result)[0]["value"]
+    print("Prediction result: " + str(p2))
+    assert p1 == p2, "expected predictions to be the same for binary and MOJO model for regression"
+
 
     # =================================================================
     # Binomial
@@ -86,9 +91,18 @@ def predict_json_test(target_dir):
     print("    => %s  (%d bytes)" % (genmodel_with_path, os.stat(genmodel_with_path).st_size))
 
     print("\nPerforming Binomial Prediction using MOJO @... " + target_dir)
-    prediction_result = h2o.predict_json(target_dir,
-                                         mojo_file_name,
-                                         df_json)
+    prediction_result = hu.predict_json( mojo_file_name, df_json, target_dir)
+    bin_values = json.loads(prediction_result)[0]["classProbabilities"]
+
+    bin_p20 = bin_values[0]
+    bin_p21 = bin_values[1]
+    print("Binomial prediction: p0: " + str(bin_p20))
+    print("Binomial prediction: p1: " + str(bin_p21))
+
+    assert bin_p0 == bin_p20, "expected predictions to be the same for binary and MOJO model for Binomial - p0"
+    assert bin_p1 == bin_p21, "expected predictions to be the same for binary and MOJO model for Binomial - p1"
+
+    prediction_result = hu.predict_json(os.path.join(target_dir,mojo_file_name), df_json)
     bin_values = json.loads(prediction_result)[0]["classProbabilities"]
 
     bin_p20 = bin_values[0]
@@ -138,9 +152,21 @@ def predict_json_test(target_dir):
     print("    => %s  (%d bytes)" % (genmodel_with_path, os.stat(genmodel_with_path).st_size))
 
     print("\nPerforming Binomial Prediction using MOJO @... " + target_dir)
-    prediction_result = h2o.predict_json(target_dir,
-                                         mojo_file_name,
-                                         df_json)
+    prediction_result = hu.predict_json( mojo_file_name,df_json, target_dir)
+
+    multi_values = json.loads(prediction_result)[0]["classProbabilities"]
+    mojo_res1 = multi_values[0]
+    mojo_res2 = multi_values[1]
+    mojo_res3 = multi_values[2]
+    print("Multinomial prediction (MOJO): p0: " + str(mojo_res1))
+    print("Multinomial prediction (MOJO): p1: " + str(mojo_res2))
+    print("Multinomial prediction (MOJO): p2: " + str(mojo_res3))
+
+    assert binary_res1 == mojo_res1, "expected predictions to be the same for binary and MOJO model for Multinomial - p0"
+    assert binary_res2 == mojo_res2, "expected predictions to be the same for binary and MOJO model for Multinomial - p1"
+    assert binary_res3 == mojo_res3, "expected predictions to be the same for binary and MOJO model for Multinomial - p2"
+
+    prediction_result = hu.predict_json(os.path.join(target_dir,mojo_file_name),df_json)
 
     multi_values = json.loads(prediction_result)[0]["classProbabilities"]
     mojo_res1 = multi_values[0]

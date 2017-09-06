@@ -377,7 +377,7 @@ def find_file(name, path):
 def check_json(json_str):
     try:
         json_object = json.loads(json_str)
-    except ValueError, e:
+    except ValueError:
         raise RuntimeError("Error: Given JSON string does not look like valid JSON string.")
     return True
 
