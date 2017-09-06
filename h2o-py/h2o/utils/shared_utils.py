@@ -414,15 +414,15 @@ def predict_json(mojo_model, json, genmodelpath=None, labels=False, classpath=No
     if "Client VM" in jver:
         warn("  You have a 32-bit version of Java. H2O works best with 64-bit Java.\n"
              "  Please download the latest 64-bit Java SE JDK from Oracle.\n")
-    """
-
     # genmodelpath > must start and ends with "/" or add to it
 
     if sys.platform == "win32":
         separator = ";"
     else:
         separator = ":"
-
+    """
+    
+    separator = os.pathsep
     file_separator = os.sep
 
     gen_model_arg = "." + separator
@@ -488,7 +488,7 @@ def predict_json(mojo_model, json, genmodelpath=None, labels=False, classpath=No
     if classpath:
         gen_model_arg = classpath
 
-    result_output = subprocess.check_output(["java" , javaoptions, "-cp", gen_model_arg, h2o_predictor_class,
+    result_output = subprocess.check_output([java , javaoptions, "-cp", gen_model_arg, h2o_predictor_class,
                                              mojo_model_args, json], shell=False).decode()
 
     if labels:
