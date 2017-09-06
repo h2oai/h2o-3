@@ -6,7 +6,7 @@ ARG VERSION
 ARG PATH_PREFIX='.'
 ARG SPARK_VERSIONS=''
 
-ENV DISTRIBUTION='hdp' VERSION=$VERSION ENTER_BASH=FALSE HADOOP_CONF_DIR='/usr/hdp/2*/hadoop/conf/' MASTER='yarn-client' PATH=/opt/spark-current/bin:$PATH SPARK_HOME=/opt/spark-current YARN_DAEMON='/usr/hdp/2*/hadoop-yarn/sbin/yarn-daemon.sh' MAPRED_USER=mapred YARN_USER=yarn HDFS_USER=hdfs
+ENV DISTRIBUTION='hdp' VERSION=$VERSION ENTER_BASH=FALSE HADOOP_CONF_DIR='/usr/hdp/2*/hadoop/conf/' MASTER='yarn-client' PATH=/opt/spark-current/bin:$PATH SPARK_HOME=/opt/spark-current HADOOP_DAEMON=/usr/hdp/2*/hadoop/sbin/hadoop-daemon.sh YARN_DAEMON='/usr/hdp/2*/hadoop-yarn/sbin/yarn-daemon.sh' MAPRED_USER=mapred YARN_USER=yarn HDFS_USER=hdfs
 
 # Copy bin and sbin scripts
 COPY ${PATH_PREFIX}/../common/bin /usr/bin/

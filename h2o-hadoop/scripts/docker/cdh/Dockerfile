@@ -6,12 +6,12 @@ ARG SPARK_VERSIONS=''
 
 ENV DISTRIBUTION='cdh' VERSION=$VERSION ENTER_BASH=FALSE HADOOP_CONF_DIR='/etc/hadoop/conf.pseudo' MASTER='yarn-client' PATH=/opt/spark-current/bin:$PATH SPARK_HOME=/opt/spark-current
 
+# Prepare Cloudera repository
 RUN echo "# Packages for Cloudera's Distribution for Hadoop, Version 5, on Ubuntu 14.04 amd64\n\
 deb [arch=amd64] http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh trusty-cdh${VERSION} contrib\n\
 deb-src http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh trusty-cdh${VERSION} contrib\n" > /etc/apt/sources.list.d/cloudera.list
-
-# Prepare Cloudera repository
 COPY ${PATH_PREFIX}/conf/cloudera.pref /etc/apt/preferences.d/cloudera.pref
+
 RUN wget http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh/archive.key -O archive.key && \
     sudo apt-key add archive.key && \
     sudo apt-get update

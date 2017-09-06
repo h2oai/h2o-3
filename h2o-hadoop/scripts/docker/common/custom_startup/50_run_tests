@@ -15,8 +15,9 @@ if [ -d ${H2O_3_HOME}/h2o-hadoop/tests/python ]; then
     cd /home/h2o/h2o-stable
 
     NIGHTLY_BUILD_ID=$(curl -s http://h2o-release.s3.amazonaws.com/h2o/master/latest.html | egrep -o "[0-9]{4,}")
-    wget http://h2o-release.s3.amazonaws.com/h2o/master/${NIGHTLY_BUILD_ID}/h2o-3.15.0.${NIGHTLY_BUILD_ID}.zip
-    unzip h2o-*.zip
+    wget -O h2o_nightly.zip http://h2o-release.s3.amazonaws.com/h2o/master/${NIGHTLY_BUILD_ID}/h2o-3.15.0.${NIGHTLY_BUILD_ID}.zip
+    unzip h2o_nightly.zip
+    rm h2o_nightly.zip
 
     cd ${H2O_3_HOME}/h2o-hadoop/tests
 
@@ -26,10 +27,8 @@ if [ -d ${H2O_3_HOME}/h2o-hadoop/tests/python ]; then
       echo ${H2O_3_HOME}/h2o-hadoop/tests/python/${x} >> ${H2O_3_HOME}/h2o-hadoop/tests/testsfile.txt
     done
     mkdir -p ${H2O_3_HOME}/h2o-hadoop/tests/results
-    chown h2o:h2o ${H2O_3_HOME}/h2o-hadoop/tests/results
-    chmod a+w ${H2O_3_HOME}/h2o-hadoop/tests
-    chmod a+w -R ${H2O_3_HOME}
-    echo "Running run.py scripts with cmd: ../../scripts/run.py --wipeall --onHadoop --hadoopNamenode localhost --usecloud localhost:54321 --h2ojar /home/h2o/h2o-stable/h2o*/h2o.jar --geterrs --testlist testsfile.txt"
+    chown -R h2o:h2o ${H2O_3_HOME}
+    # --h2ojar must be specified, otherwise run.py tests script complains about missing H2O
     su - h2o -c "cd $(pwd); ../../scripts/run.py --wipeall --onHadoop --hadoopNamenode localhost --usecloud localhost:54321 --h2ojar /home/h2o/h2o-stable/h2o*/h2o.jar --geterrs --testlist testsfile.txt"
 else
     echo "Folder ${H2O_3_HOME}/h2o-hadoop/tests/python cannot be found, skipping tests"

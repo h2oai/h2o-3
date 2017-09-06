@@ -4,7 +4,7 @@ set -e
 
 DEFAULT_CUSTOM_SPARK_PATH=/opt/spark-custom
 custom_spark_path=${DEFAULT_CUSTOM_SPARK_PATH}
-if [[ ${1} ]]; then
+if [[ ${1} != '' ]]; then
     custom_spark_path=${1}
 fi
 
