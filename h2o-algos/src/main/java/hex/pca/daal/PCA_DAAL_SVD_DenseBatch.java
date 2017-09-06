@@ -15,7 +15,7 @@ import java.io.IOException;
  * based on Intel DAAL example PCASVDDenseBatch.java
  */
 public class PCA_DAAL_SVD_DenseBatch implements PCAInterface {
-  private double[][] eigenvectors;
+  private double[][] principalComponents;
   private double[] variances;
   
   private static final String dataset       = "../data/batch/pca_normalized.csv";
@@ -50,7 +50,7 @@ public class PCA_DAAL_SVD_DenseBatch implements PCAInterface {
 
   @Override
   public double[][] getPrincipalComponents() {
-    return eigenvectors;
+    return principalComponents;
   }
 
   private void runSVD() {
