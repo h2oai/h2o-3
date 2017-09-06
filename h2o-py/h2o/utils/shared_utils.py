@@ -14,10 +14,15 @@ import itertools
 import os
 import re
 import sys
+import subprocess
+import json
+## Using Linux, windows and OSX supported path
+import ntpath
 
 from h2o.exceptions import H2OValueError
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type, is_type, numeric
+from h2o.backend.server import H2OLocalServer
 
 _id_ctr = 0
 
@@ -25,6 +30,8 @@ _id_ctr = 0
 # only contain characters allowed within the "segment" part of the URL (see RFC 3986). Additionally, we
 # forbid all characters that are declared as "illegal" in Key.java.
 _id_allowed_characters = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
+
+__all__ = ("predict_json", )
 
 
 def _py_tmp_key(append):
@@ -352,6 +359,129 @@ is_num_list = _is_num_list
 is_str_list = _is_str_list
 handle_python_lists = _handle_python_lists
 check_lists_of_lists = _check_lists_of_lists
+
+gen_model_file_name = "h2o-genmodel.jar"
+h2o_predictor_class = "water.util.H2OPredictor"
+
+def find_file(name, path):
+    """
+    Helper function for predict_json() function to check if both MOJO and h2o-genmodel.jar are available
+    :param name: file name to find
+    :param path: folder/directory name with full path
+    :return: Successful path name or None if failed
+    """
+    for root, dirs, files in os.walk(path):
+        if name in files:
+            return os.path.join(root, name)
+
+def check_json(json_str):
+    try:
+        json_object = json.loads(json_str)
+    except ValueError, e:
+        raise RuntimeError("Error: Given JSON string does not look like valid JSON string.")
+    return True
+
+def predict_json(mojo_model, json, genmodelpath=None, labels=False, classpath=None, javaoptions='-Xmx4g', show_debug=False):
+    """
+    MOJO scoring function to take a pandas data frame as json string and use MOJO model as zip file to score
+
+    :param mojo_model: This is the MOJO model file name which is download after model was build using H2O, you can pass it two ways:
+           1. Full mojo model path i.e. /Users/avkashchauhan/src/github.com/h2oai/h2o-tutorials/tutorials/python_mojo_scoring/gbm_prostate_new.zip
+           2. mojo name first i.e. gbm_prostate_new.zip and genmodelpath = /Users/avkashchauhan/src/github.com/h2oai/h2o-tutorials/tutorials/python_mojo_scoring
+    :param json:  convert pandas frame to json (pd.to_json) and pass here
+    :param genmodelpath: This is the local file system folder name where both h2o-genmodel.jar and MOJO zip file is stored.
+    :param labels:     (Optional) True : Shows results, False: Does no show results and just pass result to given object
+    :param javaoptions: (Optional) These are the Java string options given by the user
+    :param show_debug: True/False - Default ( Use True to see the full Java command line)
+    :return: score as json values
+    """
+    # Verifying JSON
+    if show_debug:
+        print(json)
+
+    check_json(json)
+
+    # Checking java
+    java = H2OLocalServer._find_java()
+
+    jver_bytes = subprocess.check_output([java, "-version"], stderr=subprocess.STDOUT)
+    jver = jver_bytes.decode(encoding="utf-8", errors="ignore")
+    if show_debug:
+        print("  Java Version: " + jver.strip().replace("\n", "; "))
+    if "GNU libgcj" in jver:
+        raise H2OStartupError("Sorry, GNU Java is not supported for H2O.\n"
+                              "Please download the latest 64-bit Java SE JDK from Oracle.")
+    if "Client VM" in jver:
+        warn("  You have a 32-bit version of Java. H2O works best with 64-bit Java.\n"
+             "  Please download the latest 64-bit Java SE JDK from Oracle.\n")
+
+    # genmodelpath > must start and ends with "/" or add to it
+    gen_model_arg = ".:"
+
+    ## Working on mojo_model
+    mojo_model_path=None
+    head, tail = ntpath.split(mojo_model)
+    if not head:
+        if not genmodelpath:
+            raise RuntimeError("Error: given mojo model " + mojo_model + " does not have full path!")
+        else:
+            mojo_model_path = genmodelpath
+    else:
+        mojo_model_path = head
+
+    if not mojo_model_path:
+        raise RuntimeError("Error: given mojo model " + mojo_model + " does not have full path!")
+
+    # mojo model name is
+    mojo_model_name = tail
+
+
+    # Mojo model is given by name only and separate path is given also
+    # Check both genmodel and pojo is available in the same path
+    mojo_test = find_file(mojo_model_name, mojo_model_path)
+    if mojo_test is None:
+        raise RuntimeError("Error: MOJO model " + mojo_model_name + " is not available in " + mojo_model_path + " folder.")
+
+
+    genmodel_test = find_file(gen_model_file_name, mojo_model_path)
+    if genmodel_test is None:
+        raise RuntimeError("Error:" + gen_model_file_name +  " is not available in " + mojo_model_path + " folder.")
+
+
+    temp_dir_path =  mojo_model_path
+
+    if mojo_model_path.endswith("/"):
+        gen_model_arg = gen_model_arg + mojo_model_path
+        temp_dir_path = mojo_model_path[:-1]
+    else:
+        gen_model_arg = gen_model_arg + mojo_model_path + "/"
+
+    gen_model_arg = (gen_model_arg
+                     + gen_model_file_name + ":"
+                     + temp_dir_path
+                     + ":genmodel.jar:/")
+
+    if (show_debug):
+        print(gen_model_arg)
+
+    if mojo_model_path.endswith("/"):
+        mojo_model_args = mojo_model_path + mojo_model_name
+    else:
+        mojo_model_args = mojo_model_path +  "/" + mojo_model_name
+
+    if show_debug:
+        print(mojo_model_args)
+
+    if classpath:
+        gen_model_arg = classpath
+
+    result_output = subprocess.check_output(["java" , javaoptions, "-cp", gen_model_arg, h2o_predictor_class,
+                                             mojo_model_args, json], shell=False).decode()
+
+    if labels:
+        print(result_output)
+
+    return result_output
 
 
 def deprecated(message):
