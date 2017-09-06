@@ -3,11 +3,7 @@
 Using Flow - H2O's Web UI
 =========================
 
-.. todo:: change the image links all to point to git hub if that's called for
-.. todo:: find all links and change so that they point to the right location
 .. todo:: add section on how to add outside algos to Flows buildModel dropdown menu
-.. todo:: add section on how to access models trained or data imported using R, Python, or Sparkling Water
-.. todo:: add section in Flow explaining how to impute values (if not currently included)
 
 ---------------------------------
 
@@ -812,7 +808,7 @@ types.
 
 -  **nfolds**: (GLM, GBM, DL, DRF) Specify the number of folds for cross-validation.
 
--  **response_column**: (Required for GLM, GBM, DL, DRF, Naïve Bayes) Select the column to use as the independent variable.
+-  **response_column**: (Required for GBM, DRF, Deep Learning, GLM, Naïve-Bayes, Stacked Ensembles, AutoML, XGBoost) Select the column to use as the independent variable.
 
 -  **ignored_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
 
@@ -910,6 +906,8 @@ types.
 -  **max_models**: (AutoML) This option allows the user to specify the maximum number of models to build in an AutoML run. 
 
 -  **max_runtime_secs**: (XGBoost, AutoML) This option controls how long the AutoML run will execute. This value defaults to 3600 seconds.
+
+-  **keep_levelone_frame**: (Stacked Ensembles) Keep the level one data frame that's constructed for the metalearning step. This option is disabled by default.
 
 **Advanced Options**
 

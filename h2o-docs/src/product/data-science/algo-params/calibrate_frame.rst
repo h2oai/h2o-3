@@ -99,27 +99,27 @@ Examples
     # Train an H2O GBM Model with Calibration
     ecology_gbm = H2OGradientBoostingEstimator(ntrees = 10, max_depth = 5, min_rows = 10,
                                                learn_rate = 0.1, distribution = "multinomial",
-                                               weights_column = "weight", calibrate_model = True,
-                                               calibration_frame = calib)
-    ecology_gbm.train(x = predictors, y = "Angaus", training_frame = train)
+                                               calibrate_model = True, calibration_frame = calib)
+    ecology_gbm.train(x = predictors, y = "Angaus", training_frame = train, weights_column = "weight")
 
-    predicted = ecology_gbm.predict(calib)
+    predicted = ecology_gbm.predict(train)
 
     # View the calibrated predictions appended to the original predictions
     predicted
-      predict        p0         p1    cal_p0     cal_p1
-    ---------  --------  ---------  --------  ---------
-            0  0.881607  0.118393   0.925676  0.0743243
-            0  0.917786  0.0822144  0.945076  0.0549236
-            0  0.697753  0.302247   0.706711  0.293289
-            1  0.538659  0.461341   0.367735  0.632265
-            1  0.442108  0.557892   0.197091  0.802909
-            1  0.382415  0.617585   0.125879  0.874121
-            0  0.923423  0.0765771  0.947633  0.0523671
-            0  0.879797  0.120203   0.924555  0.0754445
-            0  0.811017  0.188983   0.868916  0.131084
-            0  0.709102  0.290898   0.727279  0.272721
+      predict        p0         p1     cal_p0     cal_p1
+    ---------  --------  ---------  ---------  ---------
+            1  0.319428  0.680572   0.185613   0.814387
+            0  0         0          0.0274573  0.972543
+            0  0.90577   0.0942296  0.913323   0.0866773
+            0  0.783394  0.216606   0.825601   0.174399
+            0  0.899183  0.100817   0.909852   0.0901482
+            0  0         0          0.0274573  0.972543
+            0  0.909846  0.090154   0.915409   0.0845909
+            1  0.456384  0.543616   0.358169   0.641831
+            0  0         0          0.0274573  0.972543
+            0  0.918923  0.0810765  0.919893   0.0801069
 
-    [256 rows x 5 columns]
+    [744 rows x 5 columns]
+
 
 
