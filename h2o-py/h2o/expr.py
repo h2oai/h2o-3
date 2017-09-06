@@ -76,7 +76,7 @@ class ExprNode(object):
     MAGIC_REF_COUNT = 5 if sys.gettrace() is None else 7  # M = debug ? 7 : 5
 
     # Flag to control application of local expression tree optimizations
-    __ENABLE_FUSSIONS__ = True
+    __ENABLE_FUSIONS__ = True
 
     def __init__(self, op="", *args):
         # assert isinstance(op, str), op
@@ -85,7 +85,7 @@ class ExprNode(object):
             a._ex if _is_fr(a) else a for a in args)  # ast children; if not None and _cache._id is not None then tmp
         self._cache = H2OCache()  # ncols, nrows, names, types
         # try to fuse/simplify expression
-        if self.__ENABLE_FUSSIONS__:
+        if self.__ENABLE_FUSIONS__:
             self._fuse()
 
     def _eager_frame(self):
