@@ -105,11 +105,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public final boolean isSupervised() { return _output.isSupervised(); }
 
   public boolean havePojo() {
-    return ModelBuilder.havePojo(_parms.algoName().toLowerCase());
+    return ModelBuilder.havePojo(_parms.algoName());
   }
 
   public boolean haveMojo() {
-    return ModelBuilder.haveMojo(_parms.algoName().toLowerCase());
+    return ModelBuilder.haveMojo(_parms.algoName());
   }
 
   /**

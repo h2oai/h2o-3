@@ -132,9 +132,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * @return valid index, if url name is not present in {@link #ALGOBASES} throws an exception
    */
   private static int ensureBuilderIndex(String urlName) {
-    int index = ArrayUtils.find(ALGOBASES, urlName);
+    final String formattedName = urlName.toLowerCase();
+    int index = ArrayUtils.find(ALGOBASES, formattedName);
     if (index < 0) {
-      throw new IllegalArgumentException(String.format("Cannot find Builder for algo url name %s", urlName));
+      throw new IllegalArgumentException(String.format("Cannot find Builder for algo url name %s", formattedName));
     }
     return index;
   }
