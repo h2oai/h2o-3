@@ -16,8 +16,6 @@ import re
 import sys
 import subprocess
 import json
-## Using Linux, windows and OSX supported path
-## import ntpath
 
 from h2o.exceptions import H2OValueError
 from h2o.utils.compatibility import *  # NOQA
@@ -412,12 +410,22 @@ def predict_json(mojo_model, json, genmodelpath=None, labels=False, classpath=No
     if "GNU libgcj" in jver:
         raise H2OStartupError("Sorry, GNU Java is not supported for H2O.\n"
                               "Please download the latest 64-bit Java SE JDK from Oracle.")
+    """
     if "Client VM" in jver:
         warn("  You have a 32-bit version of Java. H2O works best with 64-bit Java.\n"
              "  Please download the latest 64-bit Java SE JDK from Oracle.\n")
+    """
 
     # genmodelpath > must start and ends with "/" or add to it
-    gen_model_arg = ".:"
+
+    if sys.platform == "win32":
+        separator = ";"
+    else:
+        separator = ":"
+
+    file_separator = os.sep
+
+    gen_model_arg = "." + separator
 
     ## Working on mojo_model
     mojo_model_path=None
@@ -455,24 +463,24 @@ def predict_json(mojo_model, json, genmodelpath=None, labels=False, classpath=No
 
     temp_dir_path =  mojo_model_path
 
-    if mojo_model_path.endswith("/"):
+    if mojo_model_path.endswith(file_separator):
         gen_model_arg = gen_model_arg + mojo_model_path
         temp_dir_path = mojo_model_path[:-1]
     else:
-        gen_model_arg = gen_model_arg + mojo_model_path + "/"
+        gen_model_arg = gen_model_arg + mojo_model_path + file_separator
 
     gen_model_arg = (gen_model_arg
-                     + gen_model_file_name + ":"
+                     + gen_model_file_name + separator
                      + temp_dir_path
-                     + ":genmodel.jar:/")
+                     + separator + "genmodel.jar" + separator + file_separator)
 
     if (show_debug):
         print(gen_model_arg)
 
-    if mojo_model_path.endswith("/"):
+    if mojo_model_path.endswith(file_separator):
         mojo_model_args = mojo_model_path + mojo_model_name
     else:
-        mojo_model_args = mojo_model_path +  "/" + mojo_model_name
+        mojo_model_args = mojo_model_path +  file_separator + mojo_model_name
 
     if show_debug:
         print(mojo_model_args)
