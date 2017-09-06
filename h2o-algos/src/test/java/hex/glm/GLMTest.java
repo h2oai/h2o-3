@@ -28,8 +28,12 @@ public class GLMTest  extends TestUtil {
 
   public static void testScoring(GLMModel m, Frame fr) {
     Scope.enter();
-    // standard predictions
+    // try scoring without response
     Frame fr2 = new Frame(fr);
+    fr2.remove(m._output.responseName());
+//    Frame preds0 = Scope.track(m.score(fr2));
+//    fr2.add(m._output.responseName(),fr.vec(m._output.responseName()));
+    // standard predictions
     Frame preds = Scope.track(m.score(fr2));
     m.adaptTestForTrain(fr2,true,false);
     fr2.remove(fr2.numCols()-1); // remove response
