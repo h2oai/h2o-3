@@ -22,7 +22,7 @@ from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import repr2, viewitems, viewvalues
 from h2o.utils.shared_utils import _is_fr, _py_tmp_key
 from h2o.model.model_base import ModelBase
-from h2o.fusion import fuse
+from h2o.expr_optimizer import optimize
 
 class ExprNode(object):
     """
@@ -76,7 +76,7 @@ class ExprNode(object):
     MAGIC_REF_COUNT = 5 if sys.gettrace() is None else 7  # M = debug ? 7 : 5
 
     # Flag to control application of local expression tree optimizations
-    __ENABLE_FUSIONS__ = True
+    __ENABLE_EXPR_OPTIMIZATIONS__ = True
 
     def __init__(self, op="", *args):
         # assert isinstance(op, str), op
@@ -85,8 +85,8 @@ class ExprNode(object):
             a._ex if _is_fr(a) else a for a in args)  # ast children; if not None and _cache._id is not None then tmp
         self._cache = H2OCache()  # ncols, nrows, names, types
         # try to fuse/simplify expression
-        if self.__ENABLE_FUSIONS__:
-            self._fuse()
+        if self.__ENABLE_EXPR_OPTIMIZATIONS__:
+            self._optimize()
 
     def _eager_frame(self):
         if not self._cache.is_empty(): return
@@ -118,8 +118,8 @@ class ExprNode(object):
             self._cache.ncols = res['num_cols']
         return self
 
-    def _fuse(self):
-        fuse(self)(None)
+    def _optimize(self):
+        optimize(self)(ctx=None)
 
     # Recursively build a rapids execution string.  Any object with more than
     # MAGIC_REF_COUNT referrers will be cached as a temp until the next client GC

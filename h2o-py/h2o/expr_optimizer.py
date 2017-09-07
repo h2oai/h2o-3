@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-Rapids expression fusion.
+Rapids expression optimizer.
 
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
@@ -9,28 +9,43 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import h2o.expr
 
-class Fusion(object):
-    #
-    # Generic fusion representation
-    #
+
+class ExprOptimization(object):
+    """
+    A generic Rapids expression optimizer
+
+    """
+
     def __init__(self, supported_ops):
         self._supported_ops = supported_ops
 
     def supports(self, op):
-        # Supports given operator
+        """
+        A quick check if this optimization supports given operator.
+        """
         return op in self._supported_ops
 
     def is_applicable(self, expr):
-        # Is fusion applicable for given operator
+        """
+        Is this optimization applicable for given operator
+        This is expensive check and can results in traversal
+        of Rapids expression tree.
+        """
         return False
 
     def get_fusion(self, expr):
-        # Return fusion which is mapping from ExprNode to ExprNode
+        """
+        Return a function is transform given expression and context to ExprNode
+
+        :param expr:  expression to optimize
+        :return:  a function from context to ExprNode
+        """
         return id(expr)
 
-class FoldFusion(Fusion):
+
+class FoldExprOptimization(ExprOptimization):
     """
-    Fold fusion: support operators which
+    Fold optimization: support operators which
     accepts array of parameters (e.g., append, cbind):
 
     For example: append dst (src col_name)+
@@ -40,6 +55,7 @@ class FoldFusion(Fusion):
     Objective:
       - the folding save a temporary variable during evaluation
     """
+
     def __init__(self):
         super(self.__class__, self).__init__(["append", "cbind"])
 
@@ -54,11 +70,13 @@ class FoldFusion(Fusion):
             nested_expr = expr.arg(0)
             expr._children = nested_expr._children + expr._children[1:]
             return expr
+
         return fusion_fce
 
-class SkipFusion(Fusion):
+
+class SkipExprOptimization(ExprOptimization):
     """
-    The skip fusion removes unnecessary operators
+    The skip optimization removes unnecessary nodes
     from expression tree.
 
     For example:
@@ -67,6 +85,7 @@ class SkipFusion(Fusion):
 
     Note: right now this is really specific version only
     """
+
     def __init__(self):
         super(self.__class__, self).__init__(["cols_py"])
 
@@ -87,12 +106,13 @@ class SkipFusion(Fusion):
             if isinstance(cols_py_select, int) and cols_py_select < append_ncols:
                 expr._children = tuple([append_dst]) + expr._children[1:]
             return expr
+
         return fusion_fce
 
 
-def fuse(expr):
+def optimize(expr):
     assert isinstance(expr, h2o.expr.ExprNode)
-    all_fusions = get_fusions(expr._op)
+    all_fusions = get_optimization(expr._op)
     applicable_fusions = [f for f in all_fusions if f.is_applicable(expr)]
     # at this point we should select the right fusion operator, but
     # we just pick the first one
@@ -101,22 +121,28 @@ def fuse(expr):
     else:
         return id(expr)
 
-def get_fusions(op):
-    return [f for f in __REGISTERED_FUSIONS__ if f.supports(op)]
+
+def get_optimization(op):
+    return [f for f in __REGISTERED_EXPR_OPTIMIZATIONS__ if f.supports(op)]
+
 
 def id(expr):
-    #
-    # Identity transformation
-    #
+    """
+    This is identity optimization.
+    :param expr:  expression to optimize
+    :return:  a function which always returns expr
+    """
+
     def identity(ctx):
         return expr
+
     return identity
+
 
 #
 # Global fusions registered
 #
-__REGISTERED_FUSIONS__ = [
-    FoldFusion(),
-    SkipFusion()
+__REGISTERED_EXPR_OPTIMIZATIONS__ = [
+    FoldExprOptimization(),
+    SkipExprOptimization()
 ]
-
