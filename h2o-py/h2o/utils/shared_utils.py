@@ -421,7 +421,7 @@ def predict_json(mojo_model, json, genmodelpath=None, labels=False, classpath=No
     else:
         separator = ":"
     """
-    
+
     separator = os.pathsep
     file_separator = os.sep
 
