@@ -164,7 +164,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
       for (int i = _bytesUsed[0] - 1; (i >= endLen && i >= 0); i--) {
         this_x[offset + i] = keyArray[i - offIndex];
       }
-
+        // add on the key values with values from other columns
       for (int c=1; c<chk.length; c++) {  // TO DO: left align subsequent
         offset += _bytesUsed[c-1];     // advance offset by the previous field width
         if (chk[c].isNA(r)) continue;  // NA is a zero field so skip over as java initializes memory to 0 for us always
@@ -175,12 +175,14 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
                   MathUtils.convertDouble2BigInteger(chk[c].atd(r)).subtract(_base[c]).add(BigInteger.ONE);
         }
         keyArray = thisx.toByteArray();  // switched already here.
-        offIndex = keyArray.length > 8 ? -1 : _bytesUsed[0] - keyArray.length;
+        offIndex = keyArray.length > 8 ? -1 : _bytesUsed[c] - keyArray.length;
         endLen = _bytesUsed[c] - (keyArray.length > 8 ? 8 : keyArray.length);
         for (int i = _bytesUsed[c] - 1; (i >= endLen && i >= 0); i--) {
           this_x[offset + i] = keyArray[i - offIndex];
         }
       }
+
+
     }
   }
 
