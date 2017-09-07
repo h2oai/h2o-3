@@ -57,7 +57,7 @@ class FoldExprOptimization(ExprOptimization):
     """
 
     def __init__(self):
-        super(self.__class__, self).__init__(["append", "cbind"])
+        super(self.__class__, self).__init__(["append", "cbind", "rbind"])
 
     def is_applicable(self, expr):
         # Only applicable if the source parameter is the same operator
@@ -111,12 +111,12 @@ class SkipExprOptimization(ExprOptimization):
 
 def optimize(expr):
     assert isinstance(expr, h2o.expr.ExprNode)
-    all_fusions = get_optimization(expr._op)
-    applicable_fusions = [f for f in all_fusions if f.is_applicable(expr)]
-    # at this point we should select the right fusion operator, but
+    all_optimizers = get_optimization(expr._op)
+    applicable_optimizers = [f for f in all_optimizers if f.is_applicable(expr)]
+    # at this point we should select the right optimizer operator, but
     # we just pick the first one
-    if applicable_fusions:
-        return applicable_fusions[0].get_optimizer(expr)
+    if applicable_optimizers:
+        return applicable_optimizers[0].get_optimizer(expr)
     else:
         return id(expr)
 
@@ -139,7 +139,7 @@ def id(expr):
 
 
 #
-# Global fusions registered
+# Global register of available expression optimizations
 #
 __REGISTERED_EXPR_OPTIMIZATIONS__ = [
     FoldExprOptimization(),
