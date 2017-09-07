@@ -56,12 +56,12 @@ public class ParserInfo extends Iced<ParserInfo> {
   /*
   localSetup.disableParallelParse ||
    */
-  public ParseMethod parseMethod(int nfiles, int nchunks, boolean encrypted){
+  public ParseMethod parseMethod(int nfiles, int nchunks){
     if(isStreamParseSupported()) {
-      if (!isParallelParseSupported() || (nfiles > TOO_MANY_KEYS_COUNT && (nchunks <= SMALL_FILE_NCHUNKS)) || encrypted)
+      if (!isParallelParseSupported() || (nfiles > TOO_MANY_KEYS_COUNT && (nchunks <= SMALL_FILE_NCHUNKS)))
         return ParseMethod.StreamParse;
     }
-    if(isParallelParseSupported() && (! encrypted))
+    if(isParallelParseSupported())
       return ParseMethod.DistributedParse;
     throw H2O.unimpl();
   }
