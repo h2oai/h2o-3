@@ -1,5 +1,5 @@
-import sys
 import h2o
+import sys
 
 sys.path.insert(1, "../../")
 from tests import pyunit_utils
@@ -8,18 +8,46 @@ from h2o import H2OFrame
 from h2o.expr import ExprNode
 
 
+def _assert_expr_results_eq(expr_provider):
+    flag = h2o.is_expr_optimizations_enabled()
+    try:
+        # Get result of optimized expression
+        h2o.enable_expr_optimizations(True)
+        opt_expr = expr_provider()
+        opt_result = H2OFrame._expr(opt_expr)
+        # Get result of full expression
+        h2o.enable_expr_optimizations(False)
+        noopt_expr = expr_provider()
+        noopt_result = H2OFrame._expr(noopt_expr)
+        assert noopt_result.as_data_frame(use_pandas=False) == opt_result.as_data_frame(
+            use_pandas=False)
+        return opt_expr, noopt_expr
+    finally:
+        h2o.enable_expr_optimizations(flag)
+
+
 def test_fold_optimization_append_expr():
-    data = single_column_frame()
-    expr = ExprNode("append", ExprNode("append", data, "dummy_1", "col_1"), "dummy_2", "col_2")
+    data_dst = single_column_frame()
+    data_src = single_column_frame()
+
+    def get_expr():
+        return ExprNode("append", ExprNode("append", data_dst, data_src, "COL_1"), data_src,
+                        "COL_2")
+
+    (expr, _) = _assert_expr_results_eq(get_expr)
 
     assert expr._op == "append", "Operator name should be `append`"
     assert len(expr._children) == 1 + 2 + 2, "2 append calls should be folded into a single call"
-    assert expr._children[1:] == ("dummy_1", "col_1", "dummy_2", "col_2")
+    assert expr._children[1:] == (data_src._ex, "COL_1", data_src._ex, "COL_2")
 
 
 def test_fold_optimization_cbind_expr():
     data = single_column_frame()
-    expr = ExprNode("cbind", ExprNode("cbind", ExprNode("cbind", data, data), data, data), data)
+
+    def get_expr():
+        return ExprNode("cbind", ExprNode("cbind", ExprNode("cbind", data, data), data, data), data)
+
+    (expr, _) = _assert_expr_results_eq(get_expr)
 
     assert expr._op == "cbind", "Result operator is still cbind"
     assert len(expr._children) == 5, "Results has 5 arguments"
@@ -30,8 +58,12 @@ def test_fold_optimization_rbind_expr():
     data0 = square_matrix(3, 0)
     data1 = square_matrix(3, 1)
     data2 = square_matrix(3, 2)
-    expr = ExprNode("rbind", ExprNode("rbind", ExprNode("rbind", data0, data1), data0, data1),
-                    data2)
+
+    def get_expr():
+        return ExprNode("rbind", ExprNode("rbind", ExprNode("rbind", data0, data1), data0, data1),
+                        data2)
+
+    (expr, _) = _assert_expr_results_eq(get_expr)
 
     assert expr._op == "rbind", "Result operator is still cbind"
     assert len(expr._children) == 5, "Results has 5 arguments"
@@ -66,19 +98,29 @@ def test_fold_optimization_cbind():
 
 
 def test_skip_optimization_expr():
-    data = square_matrix(2)
-    expr = ExprNode("cols_py", ExprNode("append", data, "dummy_vec", "dummy_name"), 1)
+    src_vec = single_column_frame()
+    data = square_matrix(src_vec.nrow)
+
+    def get_expr():
+        return ExprNode("cols_py", ExprNode("append", data, src_vec, "dummy_name"), 1)
+
+    (expr, _) = _assert_expr_results_eq(get_expr)
 
     assert expr._op == "cols_py"
     assert expr.arg(0) == data._ex and expr.arg(1) == 1
 
 
 def test_skip_optimization_expr_negative():
-    data = square_matrix(2)
-    expr = ExprNode("cols_py", ExprNode("append", data, "dummy_vec", "dummy_name"), 33)
+    src_vec = single_column_frame()
+    data = square_matrix(src_vec.nrow)
+
+    def get_expr():
+        return ExprNode("cols_py", ExprNode("append", data, src_vec, "dummy_name"), src_vec.nrow)
+
+    (expr, _) = _assert_expr_results_eq(get_expr)
 
     assert expr._op == "cols_py"
-    assert expr.arg(0)._op == "append" and expr.arg(1) == 33
+    assert expr.arg(0)._op == "append" and expr.arg(1) == src_vec.nrow
     append_expr = expr.arg(0)
     assert append_expr.arg(0) == data._ex
 
