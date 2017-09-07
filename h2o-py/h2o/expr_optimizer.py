@@ -33,7 +33,7 @@ class ExprOptimization(object):
         """
         return False
 
-    def get_fusion(self, expr):
+    def get_optimizer(self, expr):
         """
         Return a function is transform given expression and context to ExprNode
 
@@ -62,16 +62,15 @@ class FoldExprOptimization(ExprOptimization):
     def is_applicable(self, expr):
         # Only applicable if the source parameter is the same operator
         assert isinstance(expr, h2o.expr.ExprNode)
-        assert any(expr._children)
-        return expr._children[0]._op == expr._op
+        return any(expr._children) and expr._children[0]._op == expr._op
 
-    def get_fusion(self, expr):
-        def fusion_fce(ctx):
+    def get_optimizer(self, expr):
+        def foptimizer(ctx):
             nested_expr = expr.arg(0)
             expr._children = nested_expr._children + expr._children[1:]
             return expr
 
-        return fusion_fce
+        return foptimizer
 
 
 class SkipExprOptimization(ExprOptimization):
@@ -97,8 +96,8 @@ class SkipExprOptimization(ExprOptimization):
         # Also `append` dst argument needs to have properly filled cache
         return expr.narg() == 2 and f_kid._op == "append" and f_kid.arg(0)._cache.ncols_valid()
 
-    def get_fusion(self, expr):
-        def fusion_fce(ctx):
+    def get_optimizer(self, expr):
+        def foptimizer(ctx):
             append_expr = expr.arg(0)
             append_dst = append_expr.arg(0)
             cols_py_select = expr.arg(1)
@@ -107,7 +106,7 @@ class SkipExprOptimization(ExprOptimization):
                 expr._children = tuple([append_dst]) + expr._children[1:]
             return expr
 
-        return fusion_fce
+        return foptimizer
 
 
 def optimize(expr):
@@ -117,7 +116,7 @@ def optimize(expr):
     # at this point we should select the right fusion operator, but
     # we just pick the first one
     if applicable_fusions:
-        return applicable_fusions[0].get_fusion(expr)
+        return applicable_fusions[0].get_optimizer(expr)
     else:
         return id(expr)
 
