@@ -55,7 +55,8 @@ class H2OLocalServer(object):
             # do something with the server -- probably connect to it
     """
 
-    _TIME_TO_START = 10  # Maximum time we wait for the server to start up (in seconds)
+    ## (Avkash) Changing the maximum time to wait as 60 seconds to match with the same time in to R API. ##
+    _TIME_TO_START = 60  # Maximum time we wait for the server to start up (in seconds)
     _TIME_TO_KILL = 3    # Maximum time we wait for the server to shut down until we kill it (in seconds)
 
 
