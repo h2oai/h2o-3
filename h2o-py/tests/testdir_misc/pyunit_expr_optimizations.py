@@ -161,7 +161,7 @@ def single_column_frame():
 
 def square_matrix(w, cell_value=None):
     row = [cell_value] * w if cell_value is not None else range(0, w)
-    return H2OFrame([row for i in range(0, w)])
+    return H2OFrame(python_obj = [list(row) for i in range(0, w)])
 
 
 __TESTS__ = [test_fold_optimization_append_expr, test_fold_optimization_cbind_expr,
