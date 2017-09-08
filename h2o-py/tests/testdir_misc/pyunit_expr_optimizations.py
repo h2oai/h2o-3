@@ -8,7 +8,7 @@ from h2o import H2OFrame
 from h2o.expr import ExprNode
 
 
-def _assert_expr_results_eq(expr_provider):
+def _assert_expr_results_eq(expr_provider, skip_expr_assert=False):
     flag = h2o.is_expr_optimizations_enabled()
     try:
         # Get result of optimized expression
@@ -19,8 +19,10 @@ def _assert_expr_results_eq(expr_provider):
         h2o.enable_expr_optimizations(False)
         noopt_expr = expr_provider()
         noopt_result = H2OFrame._expr(noopt_expr)
+        if not skip_expr_assert:
+            assert opt_expr._debug_print() != noopt_expr._debug_print(), "The optimization should simplify expression!"
         assert noopt_result.as_data_frame(use_pandas=False) == opt_result.as_data_frame(
-            use_pandas=False)
+            use_pandas=False), "Results with/without expression optimization should match!"
         return opt_expr, noopt_expr
     finally:
         h2o.enable_expr_optimizations(flag)
@@ -78,6 +80,8 @@ def test_fold_optimization_rbind_expr():
 
 
 def test_fold_optimization_append():
+    assert h2o.is_expr_optimizations_enabled(), "Expression optimization needs to be enabled"
+
     data = single_column_frame()
     data["col_1"] = 1
     data["col_2"] = 2
@@ -89,6 +93,8 @@ def test_fold_optimization_append():
 
 
 def test_fold_optimization_cbind():
+    assert h2o.is_expr_optimizations_enabled(), "Expression optimization needs to be enabled"
+
     data = single_column_frame()
     data = data.cbind(data).cbind(data).cbind(data)
 
@@ -117,7 +123,7 @@ def test_skip_optimization_expr_negative():
     def get_expr():
         return ExprNode("cols_py", ExprNode("append", data, src_vec, "dummy_name"), src_vec.nrow)
 
-    (expr, _) = _assert_expr_results_eq(get_expr)
+    (expr, _) = _assert_expr_results_eq(get_expr, skip_expr_assert=True)
 
     assert expr._op == "cols_py"
     assert expr.arg(0)._op == "append" and expr.arg(1) == src_vec.nrow
@@ -126,6 +132,7 @@ def test_skip_optimization_expr_negative():
 
 
 def test_skip_optimization():
+    assert h2o.is_expr_optimizations_enabled(), "Expression optimization needs to be enabled"
     w = 3
     data = square_matrix(w)
     for i in range(w):
@@ -159,6 +166,7 @@ def square_matrix(w, cell_value=None):
 
 __TESTS__ = [test_fold_optimization_append_expr, test_fold_optimization_cbind_expr,
              test_fold_optimization_append, test_fold_optimization_cbind,
+             test_fold_optimization_rbind_expr,
              test_skip_optimization_expr, test_skip_optimization_expr_negative,
              test_skip_optimization]
 
