@@ -35,7 +35,8 @@ class ExprOptimization(object):
 
     def get_optimizer(self, expr):
         """
-        Return a function is transform given expression and context to ExprNode
+        Return a function is transform given expression and context to ExprNode.
+        The function always expects that it is applied in applicable context.
 
         :param expr:  expression to optimize
         :return:  a function from context to ExprNode
@@ -90,20 +91,23 @@ class SkipExprOptimization(ExprOptimization):
 
     def is_applicable(self, expr):
         assert isinstance(expr, h2o.expr.ExprNode)
-        assert any(expr._children)
-        f_kid = expr.arg(0)
-        # Now only supports single 'cols_py' parameters, and composition with append
-        # Also `append` dst argument needs to have properly filled cache
-        return expr.narg() == 2 and f_kid._op == "append" and f_kid.arg(0)._cache.ncols_valid()
+        if any(expr._children):
+            append_expr = expr.arg(0)
+            # Now only supports single 'cols_py' parameters, and composition with append
+            # Also `append` dst argument needs to have properly filled cache
+            if expr.narg() == 2 and append_expr._op == "append" and any(append_expr._children):
+                append_dst = append_expr.arg(0)
+                cols_py_select = expr.arg(1)
+                return isinstance(cols_py_select, int) and append_dst._cache.ncols_valid() and cols_py_select < append_dst._cache.ncols
+
+        return False
 
     def get_optimizer(self, expr):
         def foptimizer(ctx):
+            # The optimizier always expects that it is applied in applicable context
             append_expr = expr.arg(0)
             append_dst = append_expr.arg(0)
-            cols_py_select = expr.arg(1)
-            append_ncols = append_dst._cache.ncols
-            if isinstance(cols_py_select, int) and cols_py_select < append_ncols:
-                expr._children = tuple([append_dst]) + expr._children[1:]
+            expr._children = tuple([append_dst]) + expr._children[1:]
             return expr
 
         return foptimizer
@@ -118,7 +122,7 @@ def optimize(expr):
     if applicable_optimizers:
         return applicable_optimizers[0].get_optimizer(expr)
     else:
-        return id(expr)
+        return None
 
 
 def get_optimization(op):

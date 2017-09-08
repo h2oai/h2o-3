@@ -119,7 +119,12 @@ class ExprNode(object):
         return self
 
     def _optimize(self):
-        optimize(self)(ctx=None)
+        while True:
+            opt = optimize(self)
+            if opt is not None:
+                opt(ctx=None)
+            else:
+                break
 
     # Recursively build a rapids execution string.  Any object with more than
     # MAGIC_REF_COUNT referrers will be cached as a temp until the next client GC
