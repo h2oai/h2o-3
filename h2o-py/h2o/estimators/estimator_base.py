@@ -197,8 +197,8 @@ class H2OEstimator(ModelBase):
         parms = {k: H2OEstimator._keyify_if_h2oframe(parms[k]) for k in parms}
         rest_ver = parms.pop("_rest_version") if "_rest_version" in parms else 3
 
-        model = H2OJob(h2o.api("POST /%d/ModelBuilders/%s" % (rest_ver, self.algo), data=parms),
-                       job_type=(self.algo + " Model Build"))
+        model_builder_json = h2o.api("POST /%d/ModelBuilders/%s" % (rest_ver, self.algo), data=parms)
+        model = H2OJob(model_builder_json, job_type=(self.algo + " Model Build"))
 
         if self._future:
             self._job = model
@@ -225,6 +225,8 @@ class H2OEstimator(ModelBase):
         m = model_class()
         m._id = model_id
         m._model_json = model_json
+        m._have_pojo = model_json.get('have_pojo', True)
+        m._have_mojo = model_json.get('have_mojo', True)
         m._metrics_class = metrics_class
         m._parms = self._parms
         m._estimator_type = self._estimator_type

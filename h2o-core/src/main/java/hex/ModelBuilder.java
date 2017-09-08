@@ -108,6 +108,38 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** gbm -> "hex.schemas." ; custAlgo -> "org.myOrg.schemas." */
   public static String schemaDirectory(String urlName) { return SCHEMAS[ArrayUtils.find(ALGOBASES,urlName)]; }
 
+  /**
+   *
+   * @param urlName url name of the algo, for example gbm for Gradient Boosting Machine
+   * @return true, if model supports exporting to POJO
+   */
+  public static boolean havePojo(String urlName) {
+    return BUILDERS[ensureBuilderIndex(urlName)].havePojo();
+  }
+
+  /**
+   *
+   * @param urlName url name of the algo, for example gbm for Gradient Boosting Machine
+   * @return true, if model supports exporting to MOJO
+   */
+  public static boolean haveMojo(String urlName) {
+    return BUILDERS[ensureBuilderIndex(urlName)].haveMojo();
+  }
+
+  /**
+   * Returns <strong>valid</strong> index of given url name in {@link #ALGOBASES} or throws an exception.
+   * @param urlName url name to return the index for
+   * @return valid index, if url name is not present in {@link #ALGOBASES} throws an exception
+   */
+  private static int ensureBuilderIndex(String urlName) {
+    final String formattedName = urlName.toLowerCase();
+    int index = ArrayUtils.find(ALGOBASES, formattedName);
+    if (index < 0) {
+      throw new IllegalArgumentException(String.format("Cannot find Builder for algo url name %s", formattedName));
+    }
+    return index;
+  }
+
 
   /** Factory method to create a ModelBuilder instance for given the algo name.
    *  Shallow clone of both the default ModelBuilder instance and a Parameter. */

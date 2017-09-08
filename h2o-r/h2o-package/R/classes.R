@@ -54,7 +54,7 @@ setRefClass("H2OConnectionMutableState",
 #' is not found at port 54321.
 #' @slot ip A \code{character} string specifying the IP address of the H2O cloud.
 #' @slot port A \code{numeric} value specifying the port number of the H2O cloud.
-#' @slot proxy A \code{character} specifying the proxy path of the H2O cloud.  
+#' @slot proxy A \code{character} specifying the proxy path of the H2O cloud.
 #' @slot https Set this to TRUE to use https instead of http.
 #' @slot insecure Set this to TRUE to disable SSL certificate checking.
 #' @slot username Username to login with.
@@ -106,11 +106,13 @@ setMethod("show", "H2OConnection", function(object) {
 #' @slot algorithm A \code{character} string specifying the algorithm that were used to fit the model.
 #' @slot parameters A \code{list} containing the parameter settings that were used to fit the model that differ from the defaults.
 #' @slot allparameters A \code{list} containg all parameters used to fit the model.
+#' @slot have_pojo A \code{logical} indicating whether export to POJO is supported
+#' @slot have_mojo A \code{logical} indicating whether export to MOJO is supported
 #' @slot model A \code{list} containing the characteristics of the model returned by the algorithm.
 #' @aliases H2OModel
 #' @export
 setClass("H2OModel",
-         representation(model_id="character", algorithm="character", parameters="list", allparameters="list", model="list"),
+         representation(model_id="character", algorithm="character", parameters="list", allparameters="list", have_pojo="logical", have_mojo="logical", model="list"),
          prototype(model_id=NA_character_),
          contains="VIRTUAL")
 
@@ -531,7 +533,7 @@ setClass("H2OModelFuture", representation(job_key="character", model_id="charact
 #' @slot grid_id the final identifier of grid
 #' @slot model_ids  list of model IDs which are included in the grid object
 #' @slot hyper_names  list of parameter names used for grid search
-#' @slot failed_params  list of model parameters which caused a failure during model building, 
+#' @slot failed_params  list of model parameters which caused a failure during model building,
 #'                      it can contain a null value
 #' @slot failure_details  list of detailed messages which correspond to failed parameters field
 #' @slot failure_stack_traces  list of stack traces corresponding to model failures reported by

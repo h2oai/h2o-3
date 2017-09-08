@@ -882,6 +882,9 @@ def download_pojo(model, path="", get_jar=True, jar_name=""):
     assert_is_type(path, str)
     assert_is_type(get_jar, bool)
 
+    if not model.have_pojo:
+        raise H2OValueError("Export to POJO not supported")
+
     if path == "":
         java_code = api("GET /3/Models.java/%s" % model.model_id)
         print(java_code)

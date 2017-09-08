@@ -104,6 +104,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   public final boolean isSupervised() { return _output.isSupervised(); }
 
+  public boolean havePojo() {
+    return ModelBuilder.havePojo(_parms.algoName());
+  }
+
+  public boolean haveMojo() {
+    return ModelBuilder.haveMojo(_parms.algoName());
+  }
+
   /**
    * Identifies the default ordering method for models returned from Grid Search
    * @return default sort-by
@@ -1615,7 +1623,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                                    CodeGeneratorPipeline classCtx,
                                    CodeGeneratorPipeline fileCtx,
                                    boolean verboseCode) {
-    throw new IllegalArgumentException("This model type does not support conversion to Java");
+    throw new UnsupportedOperationException("This model type does not support conversion to Java");
   }
 
   // Wrapper around the main predict call, including the signature and return value
