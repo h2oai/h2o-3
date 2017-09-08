@@ -1,9 +1,8 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../scripts/h2o-r-test-setup.R")
-if ("slam" %in% rownames(installed.packages()))
-  library(slam)
-if ("data.table" %in% rownames(installed.packages()))
-  library(data.table)
+
+library(slam)
+library(data.table)
 
 # In PUBDEV-4630: it was complaint by some users that as.h2o is very slow with spare matrices.  Hence,
 # Peter Ellis suggested a fix for this.  His fix fixed the speed problem but was generating wrong answers.
