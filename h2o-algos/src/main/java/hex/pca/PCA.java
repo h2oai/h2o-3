@@ -139,10 +139,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       Arrays.fill(colTypes, "double");
       Arrays.fill(colFormats, "%5f");
   
-      if (rowNames.length != pca._output._eigenvectors_raw.length) {
-        water.util.Log.err("rowNames.length == " + rowNames.length + ", pca._output._eigenvectors_raw.length == "
-            + pca._output._eigenvectors_raw.length);
-      }
       assert rowNames.length == pca._output._eigenvectors_raw.length;
       for (int i = 0; i < colHeaders.length; i++) {
         colHeaders[i] = "PC" + String.valueOf(i + 1);
@@ -332,7 +328,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           }
 
           // Compute SVD of Gram A'A/n using netlib-java (MTJ) library
-          // Note: Singular values ordered in weakly descending order by algorithm
           _job.update(1, "Calculating SVD of Gram matrix locally");
           double[][] gramMatrix;
           try {
@@ -341,8 +336,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
             e.printStackTrace();
             throw e;
           }
-          PCA.this._job.update(1, "Computing stats from SVD using "
-              + _parms.getSvdImplementation().toString());
           PCAInterface svd = null;
           try {
             svd = PCAImplementationFactory.createSVDImplementation(gramMatrix, _parms.getSvdImplementation());
@@ -353,9 +346,11 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           assert svd != null;
           double[][] rightEigenvectors = svd.getPrincipalComponents();
           if (_wideDataset) {       // correct for the eigenvector by t(A)*eigenvector for wide dataset
-            transformEigenVectors(dinfo, rightEigenvectors);
+            rightEigenvectors = transformEigenVectors(dinfo, rightEigenvectors);
           }
           double[] variances = svd.getVariances();
+          PCA.this._job.update(1, "Computing stats from SVD using "
+              + _parms.getSvdImplementation().toString());
           computeStatsFillModel(model, dinfo, variances, rightEigenvectors, gram, model._output._nobs);
           model._output._training_time_ms.add(System.currentTimeMillis());
           // generate variables for scoring_history generation
