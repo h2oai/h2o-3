@@ -27,7 +27,7 @@ if [ -d ${H2O_3_HOME}/h2o-hadoop/tests/python ]; then
       echo ${H2O_3_HOME}/h2o-hadoop/tests/python/${x} >> ${H2O_3_HOME}/h2o-hadoop/tests/testsfile.txt
     done
     mkdir -p ${H2O_3_HOME}/h2o-hadoop/tests/results
-    chown -R h2o:h2o ${H2O_3_HOME}
+    chmod -R a+w ${H2O_3_HOME}
     # --h2ojar must be specified, otherwise run.py tests script complains about missing H2O
     su - h2o -c "cd $(pwd); ../../scripts/run.py --wipeall --onHadoop --hadoopNamenode localhost --usecloud localhost:54321 --h2ojar /home/h2o/h2o-stable/h2o*/h2o.jar --geterrs --testlist testsfile.txt"
 else
