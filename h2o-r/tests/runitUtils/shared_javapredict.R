@@ -42,11 +42,11 @@ doJavapredictTest <- function(model,test_file,test_frame,params, separator=",", 
 
   print("Setting up for Java POJO") 
   # for missing column names, H2O use C1, C2,...  R uses X, Y,...
-  test_with_response <- read.csv(test_file, header=T)
+  test_with_response <- h2o.importFile(test_file, header=T)
   names(test_with_response) = names(test_frame) # replace R column names with H2O column names
-  test_without_response <- test_with_response[,params$x]
+  test_without_response <- as.data.frame(test_with_response[,params$x])
   if(is.null(ncol(test_without_response))) {
-    test_without_response <- data.frame(test_without_response)
+    test_without_response <- as.data.frame(test_without_response)
     colnames(test_without_response) <- params$x
   }
   #write.csv(test_without_response, file = sprintf("%s/in.csv", tmpdir_name), row.names=F, quote=F)
