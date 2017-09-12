@@ -3,6 +3,7 @@ FROM nimmis/java:14.04-oracle-8-jdk
 ARG VERSION
 ARG PATH_PREFIX='.'
 ARG SPARK_VERSIONS=''
+ARG DEFAULT_USER_UID=2117
 
 ENV DISTRIBUTION='cdh' VERSION=$VERSION ENTER_BASH=FALSE HADOOP_CONF_DIR='/etc/hadoop/conf.pseudo' MASTER='yarn-client' PATH=/opt/spark-current/bin:$PATH SPARK_HOME=/opt/spark-current
 
@@ -24,7 +25,7 @@ RUN apt-get install -y hadoop-conf-pseudo python-dev python-pip python-scipy && 
 RUN service hadoop-hdfs-namenode init
 
 # Add H2O user
-RUN useradd -ms /bin/bash h2o
+RUN adduser --disabled-password --gecos "" -u ${DEFAULT_USER_UID} h2o
 
 # Copy scripts
 COPY ${PATH_PREFIX}/../common/startup ${PATH_PREFIX}/scripts/startup /etc/startup/

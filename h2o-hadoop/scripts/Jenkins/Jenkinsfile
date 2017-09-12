@@ -2,6 +2,7 @@
 
 @Library('test-shared-library') _
 import ai.h2o.ci.Utils
+
 def utilsLib = new Utils()
 
 pipeline {
@@ -23,8 +24,8 @@ pipeline {
     ansiColor('xterm')
     timestamps()
     timeout(time: 60, unit: 'MINUTES')
-    // lets keep 11 logs, because currently we test against 11 various hadoop versions
-    buildDiscarder(logRotator(numToKeepStr: '11'))
+    // lets keep 33 logs, because currently we test against 11 various hadoop versions
+    buildDiscarder(logRotator(numToKeepStr: '33'))
   }
 
   stages {
@@ -33,7 +34,7 @@ pipeline {
         dockerfile {
           label "mr-0xc10"
           filename "h2o-hadoop/scripts/docker/${params.distribution}/Dockerfile"
-          additionalBuildArgs "--build-arg VERSION=${params.version} --build-arg PATH_PREFIX=h2o-hadoop/scripts/docker/${params.distribution}"
+          additionalBuildArgs "--build-arg VERSION=${params.version} --build-arg PATH_PREFIX=h2o-hadoop/scripts/docker/${params.distribution} --build-arg DEFAULT_USER_UID=\$(id -u)"
           args "-u root -v \${WORKSPACE}:/home/h2o/h2o-3 -v \${WORKSPACE}/h2o-hadoop/scripts/docker/common/custom_startup/:/startup/"
           reuseNode true
         }
