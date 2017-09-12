@@ -330,12 +330,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           // Compute SVD of Gram A'A/n using netlib-java (MTJ) library
           _job.update(1, "Calculating SVD of Gram matrix locally");
           double[][] gramMatrix;
-          try {
-            gramMatrix = _wideDataset ? ogtsk._gram.getXX() : gtsk._gram.getXX();
-          } catch (NullPointerException e) {
-            e.printStackTrace();
-            throw e;
-          }
+          gramMatrix = _wideDataset ? ogtsk._gram.getXX() : gtsk._gram.getXX();
           PCAInterface svd = null;
           try {
             svd = PCAImplementationFactory.createSVDImplementation(gramMatrix, _parms.getSvdImplementation());
