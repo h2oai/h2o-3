@@ -84,7 +84,6 @@ public class PCACatOnlyPUBDEV3988Bench {
       if (trainingFrame != null) {
         trainingFrame.delete();
       }
-      e.printStackTrace();
       throw e;
     }
   }
