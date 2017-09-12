@@ -41,7 +41,10 @@ public class ParseSetup extends Iced {
 
   String [] _fileNames = new String[]{"unknown"};
   public  boolean disableParallelParse;
+<<<<<<< HEAD
   String _decrypt_tool;
+=======
+>>>>>>> origin/tomas/pubdev_4416
 
   public void setFileName(String name) {_fileNames[0] = name;}
 

@@ -725,6 +725,7 @@ public final class ParseDataset {
       try {
         switch( cpr ) {
         case NONE:
+<<<<<<< HEAD
           ParserInfo.ParseMethod pm = _parseSetup._parse_type.parseMethod(_keys.length, vec.nChunks());
           if (pm == ParserInfo.ParseMethod.DistributedParse && ! decryptionTool.isTransparent())
             pm = ParserInfo.ParseMethod.StreamParse;
@@ -741,6 +742,23 @@ public final class ParseDataset {
             _errors = _dout[_lo].removeErrors();
             chunksAreLocal(vec,chunkStartIdx,key);
           } else throw H2O.unimpl();
+=======
+          boolean disableParallelParse = localSetup.disableParallelParse || (_keys.length > TOO_MANY_KEYS_COUNT) &&
+                  (vec.nChunks() <= SMALL_FILE_NCHUNKS) && _parseSetup._parse_type.isStreamParseSupported();
+          if( _parseSetup._parse_type.isParallelParseSupported() && (! disableParallelParse)) {
+            new DistributedParse(_vg, localSetup, _vecIdStart, chunkStartIdx, this, key, vec.nChunks()).dfork(vec).getResult(false);
+            for( int i = 0; i < vec.nChunks(); ++i )
+              _chunk2ParseNodeMap[chunkStartIdx + i] = vec.chunkKey(i).home_node().index();
+          } else {
+            localSetup = ParserService.INSTANCE.getByInfo(localSetup._parse_type).setupLocal(vec,localSetup);
+            InputStream bvs = vec.openStream(_jobKey);
+            Parser p = localSetup.parser(_jobKey);
+            _dout[_lo] = ((FVecParseWriter) p.streamParse(bvs,makeDout(localSetup,chunkStartIdx,vec.nChunks()))).close(_fs);
+            _errors = _dout[_lo].removeErrors();
+            chunksAreLocal(vec,chunkStartIdx,key);
+
+          }
+>>>>>>> origin/tomas/pubdev_4416
           break;
         case ZIP: {
           localSetup = ParserService.INSTANCE.getByInfo(localSetup._parse_type).setupLocal(vec,localSetup);
@@ -757,7 +775,11 @@ public final class ParseDataset {
           if( ze != null && !ze.isDirectory() )
             _dout[_lo] = streamParse(dec,localSetup, makeDout(localSetup,chunkStartIdx,vec.nChunks()), bvs);
             _errors = _dout[_lo].removeErrors();
+<<<<<<< HEAD
           dec.close();       // Confused: which zipped file to decompress
+=======
+          zis.close();       // Confused: which zipped file to decompress
+>>>>>>> origin/tomas/pubdev_4416
           chunksAreLocal(vec,chunkStartIdx,key);
           break;
         }
