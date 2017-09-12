@@ -332,12 +332,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           double[][] gramMatrix;
           gramMatrix = _wideDataset ? ogtsk._gram.getXX() : gtsk._gram.getXX();
           PCAInterface svd = null;
-          try {
-            svd = PCAImplementationFactory.createSVDImplementation(gramMatrix, _parms.getSvdImplementation());
-          } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-          }
+          svd = PCAImplementationFactory.createSVDImplementation(gramMatrix, _parms.getSvdImplementation());
           assert svd != null;
           double[][] rightEigenvectors = svd.getPrincipalComponents();
           if (_wideDataset) {       // correct for the eigenvector by t(A)*eigenvector for wide dataset
@@ -456,8 +451,11 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           model._output._validation_metrics = ModelMetrics.getFromDKV(model,_parms.valid());
         }
         model.update(_job);
-
-
+  
+  
+      } catch (Exception e) {
+        e.printStackTrace();
+        throw new RuntimeException(e);
       } finally {
         if (model != null) {
           model.unlock(_job);
