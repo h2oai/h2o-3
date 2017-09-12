@@ -6,11 +6,9 @@ library(testthat)
 test.sort = function() {
 
   X = h2o.uploadFile(locate("smalldata/synthetic/smallIntFloats.csv.zip"))
-  sorted_column_names = c("C1",  "C10")
   sorted_column_indices = c(1,2)
-  browser()
   X_sorted = h2o.arrange(X, C1, C10)
-  check_sorted_two_columns(X_sorted, sorted_column_indices, prob=0.2)
+  check_sorted_two_columns(X_sorted, sorted_column_indices, prob=0.01)
 }
 
 check_sorted_two_columns <- function(frame, column_indices, prob=0.5) {
@@ -20,7 +18,7 @@ check_sorted_two_columns <- function(frame, column_indices, prob=0.5) {
         if (colInd == column_indices[1]) {  # comparison for first column
           expect_true(frame[rowInd, colInd] <= frame[rowInd+1, colInd], info="Wrong sorting")
         } else {
-          if (frame[rowInd, column_indices[1]] <= frame[rowInd+1, column_indices[1]]) {
+          if (frame[rowInd, column_indices[1]] == frame[rowInd+1, column_indices[1]]) {
             expect_true(frame[rowInd, colInd] <= frame[rowInd+1, colInd], info="Wrong sorting")
           }
         }
