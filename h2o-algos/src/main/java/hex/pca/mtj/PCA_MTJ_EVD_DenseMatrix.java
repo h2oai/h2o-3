@@ -13,17 +13,17 @@ import water.util.ArrayUtils;
  *         created on 1.5.17
  */
 public class PCA_MTJ_EVD_DenseMatrix implements PCAInterface {
-  private static DenseMatrix gramMatrix;
-  private static no.uib.cipr.matrix.EVD evd;
-  private static double[] eigenvalues;
-  private static double[][] eigenvectors;
+  private DenseMatrix gramMatrix;
+  private no.uib.cipr.matrix.EVD evd;
+  private double[] eigenvalues;
+  private double[][] eigenvectors;
 
   public PCA_MTJ_EVD_DenseMatrix(double[][] gramMatrix) {
-    PCA_MTJ_EVD_DenseMatrix.gramMatrix = new DenseMatrix(gramMatrix);
+    this.gramMatrix = new DenseMatrix(gramMatrix);
     runEVD();
   }
 
-  private static void runEVD() {
+  private void runEVD() {
     int gramDimension = gramMatrix.numRows();
     try {
       evd = no.uib.cipr.matrix.EVD.factorize(gramMatrix);
