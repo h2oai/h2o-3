@@ -48,6 +48,7 @@ def init_args_parser():
     parser.add_argument('-c', '--custom-spark-path', type=str, help='Path to custom Spark')
     parser.add_argument('-t', '--tag', type=str, help="Tag of the docker image.")
     parser.add_argument('-w', '--sparkling-water', type=str, help="Version of Sparkling Water which should be downloaded")
+    parser.add_argument('-u', '--user', type=str, help="Username or UID (format: <name|uid>[:<group|gid>])")
     return parser
 
 
@@ -109,6 +110,9 @@ if __name__ == '__main__':
 
     if args.sparkling_water:
         cmd += "-e DOWNLOAD_SW=%s " % args.sparkling_water
+
+    if args.user:
+        cmd +="-u %s " % args.user
 
     cmd += tag
     print("Running container with cmd: %s" % cmd)

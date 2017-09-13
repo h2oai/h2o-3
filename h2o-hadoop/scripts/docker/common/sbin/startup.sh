@@ -13,8 +13,8 @@ if [[ -d /startup && $(ls /startup) ]]; then
     echo -e "\tAdding startup script ${RED}${x}${NC}"
     cp ${x} /etc/startup
     chmod 700 /etc/startup/${x}
-    sync
   done
+  sync
   echo "###### Custom startup scripts added ######"
   echo
 fi

@@ -87,6 +87,7 @@ The `common/custom_startup` folder contains multiple custom startup scripts. If 
 
 * `40_1_download_h2o` - downloads the latest nightly build of H2O
   * if `SUPPRESS_H2O_DOWNLOAD` is set to `TRUE`, then does **nothing**
+  * by default the download times out after 10 minutes, this might be altered by setting the `H2O_DOWNLOAD_TIMEOUT` (see `timeout` command for more information)
 * `40_2_init_h2o` - launches an instance of H2O on Hadoop
   * if there is *no* `/home/h2o/h2o*/h2odriver.jar` then does **nothing**
 * `45_1_download_sparkling_water` - downloads the specified version of Sparkling Water

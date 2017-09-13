@@ -3,12 +3,55 @@
 set -e
 
 if [[ $(echo ${SUPPRESS_H2O_DOWNLOAD} | tr -s '[:upper:]' '[:lower:]') != 'true' ]]; then
+    if [[ ${H2O_DOWNLOAD_TIMEOUT} == '' ]]; then
+        H2O_DOWNLOAD_TIMEOUT=10m
+    fi
+
     NIGHTLY_BUILD_ID=$(curl -s http://h2o-release.s3.amazonaws.com/h2o/master/latest.html | egrep -o "[0-9]{4,}")
-    echo "Downloading H2O with build ID ${NIGHTLY_BUILD_ID}"
-    su - h2o -c "wget http://h2o-release.s3.amazonaws.com/h2o/master/${NIGHTLY_BUILD_ID}/h2o-3.15.0.${NIGHTLY_BUILD_ID}-${DISTRIBUTION}${VERSION}.zip"
-    su - h2o -c 'unzip h2o*.zip'
-    su - h2o -c 'rm h2o*.zip'
-    cd /home/h2o/h2o*/python
+    H2O_VERSION=$(curl -s http://h2o-release.s3.amazonaws.com/h2o/master/${NIGHTLY_BUILD_ID}/buildinfo.json | egrep -o "project_version.*" | egrep -o "[0-9]+[^\"]*")
+
+    su - h2o -c """
+      CURRENT_ATTEMPT=1
+      MAX_RETIRES=5
+      while (( CURRENT_ATTEMPT <= MAX_RETIRES )); do
+        echo \"Downloading H2O ${H2O_VERSION}. Timeout set to ${H2O_DOWNLOAD_TIMEOUT}. Attempt #\${CURRENT_ATTEMPT}\"
+        rm -f h2o-${H2O_VERSION}-${DISTRIBUTION}${VERSION}.zip
+        rm -f wget-log*
+        # Sometimes the wget is really slow, therefore if not downloaded in given time frame, try again, usually it is faster
+        timeout ${H2O_DOWNLOAD_TIMEOUT} wget http://h2o-release.s3.amazonaws.com/h2o/master/${NIGHTLY_BUILD_ID}/h2o-${H2O_VERSION}-${DISTRIBUTION}${VERSION}.zip
+        if [[ \${?} == 0 ]]; then
+          echo \"H2O downloaded successfully\"
+          unzip h2o-${H2O_VERSION}-${DISTRIBUTION}${VERSION}.zip
+          rm h2o-${H2O_VERSION}-${DISTRIBUTION}${VERSION}.zip
+          break
+        fi
+        (( CURRENT_ATTEMPT += 1 ))
+      done
+
+      mkdir -p /home/h2o/h2o-stable
+      cd /home/h2o/h2o-stable
+      CURRENT_ATTEMPT=1
+      MAX_RETIRES=5
+      while (( CURRENT_ATTEMPT <= MAX_RETIRES )); do
+        echo \"Downloading latest nightly build of H2O-3 to be used by scripts/run.py. Timeout set to ${H2O_DOWNLOAD_TIMEOUT}. Attempt #\${CURRENT_ATTEMPT}\"
+        rm -f h2o-${H2O_VERSION}.zip
+        rm -f wget-log*
+        # Sometimes the wget is really slow, therefore if not downloaded in given time frame, try again, usually it is faster
+        timeout ${H2O_DOWNLOAD_TIMEOUT} wget http://h2o-release.s3.amazonaws.com/h2o/master/${NIGHTLY_BUILD_ID}/h2o-${H2O_VERSION}.zip
+        if [[ \${?} == 0 ]]; then
+          unzip h2o-${H2O_VERSION}.zip
+          rm h2o-${H2O_VERSION}.zip
+          echo \"H2O downloaded successfully\"
+          break
+        fi
+        (( CURRENT_ATTEMPT += 1 ))
+      done
+    """
+    if [[ ! -d /home/h2o/h2o-${H2O_VERSION}-${DISTRIBUTION}${VERSION}/python ]]; then
+        echo "Download failed"
+        exit 1
+    fi
+    cd /home/h2o/h2o-${H2O_VERSION}-${DISTRIBUTION}${VERSION}/python
     pip install h2o-*.whl
 else
     echo "Download of H2O is suppressed"

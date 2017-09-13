@@ -3,7 +3,7 @@ FROM nimmis/java:14.04-oracle-8-jdk
 ARG VERSION
 ARG PATH_PREFIX='.'
 ARG SPARK_VERSIONS=''
-ARG DEFAULT_USER_UID=2117
+ARG DEFAULT_USER_UID=1000
 
 ENV DISTRIBUTION='cdh' VERSION=$VERSION ENTER_BASH=FALSE HADOOP_CONF_DIR='/etc/hadoop/conf.pseudo' MASTER='yarn-client' PATH=/opt/spark-current/bin:$PATH SPARK_HOME=/opt/spark-current
 

@@ -2,9 +2,9 @@
 
 set -e
 
-if [ -f /home/h2o/h2o*/h2odriver.jar ]; then
-    su - h2o -c "echo \"Launching H2O from \$(pwd)/h2o*/h2odriver.jar...\""
-    su - h2o -c 'hadoop jar h2o*/h2odriver.jar -nodes 1 -mapperXmx 1g -output jenkins_tests -disown'
+if [ -f /home/h2o/h2o*${DISTRIBUTION}${VERSION}*/h2odriver.jar ]; then
+    su - h2o -c "cd h2o*${DISTRIBUTION}${VERSION}* && echo \"Launching H2O from \$(pwd)...\""
+    su - h2o -c 'hadoop jar h2o*${DISTRIBUTION}${VERSION}*/h2odriver.jar -nodes 1 -mapperXmx 1g -output jenkins_tests -disown'
 else
-    echo "H2O Driver cannot be found under /home/h2o/h2o*/h2odriver.jar, Skipping H2O launch"
+    echo "H2O Driver cannot be found under /home/h2o/h2o*${DISTRIBUTION}${VERSION}*/h2odriver.jar, Skipping H2O launch"
 fi

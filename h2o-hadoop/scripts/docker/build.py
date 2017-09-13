@@ -3,6 +3,7 @@
 import argparse
 import subprocess
 import sys
+import os
 
 DISTRIBUTION_CDH = 'CDH'
 DISTRIBUTION_HDP = 'HDP'
@@ -24,15 +25,14 @@ def pretty_print_array(array_to_print):
         return ""
     if len(array_to_print) == 1:
         return str(array_to_print[0])
-    else:
-        return "%s and %s" % (", ".join(array_to_print[:-1]), array_to_print[-1])
+    return "%s and %s" % (", ".join(array_to_print[:-1]), array_to_print[-1])
 
 
 def init_args_parser():
     args_parser = argparse.ArgumentParser(description='Builds a docker image for given Hadoop distribution and version.')
     args_parser.add_argument('-d', '--distribution',
                              type=str, choices=SUPPORTED_DISTRIBUTIONS,
-                             help='Distribution of Hadoop.',
+                             help='Hadoop Distribution.',
                              required=True
                              )
     args_parser.add_argument('-v', '--version', type=str,
@@ -41,18 +41,19 @@ def init_args_parser():
     args_parser.add_argument('-s', '--spark-version',
                              choices=SUPPORTED_SPARK_VERSIONS,
                              action='append', help="Version of Spark which should be installed.")
-    args_parser.add_argument('-t', '--tag', type=str, help="Tag of the image.")
+    args_parser.add_argument('-t', '--tag', type=str, help="Image tag.")
+    args_parser.add_argument('-u', '--uid', type=int, help="UID of user h2o. Default is the uid of user invoking this script.")
     return args_parser
 
 
 def validate_version(distribution, version):
-    message = 'Version %s of %s not supported. Supported versions of %s are %s'
+    message = 'Version %s of %s not supported. Supported versions are %s'
     if distribution == DISTRIBUTION_CDH:
         if version not in SUPPORTED_CDH_VERSIONS:
-            parser.error(message % (version, distribution, distribution, pretty_print_array(SUPPORTED_CDH_VERSIONS)))
+            parser.error(message % (version, distribution, pretty_print_array(SUPPORTED_CDH_VERSIONS)))
     elif distribution == DISTRIBUTION_HDP:
         if version not in SUPPORTED_HDP_VERSIONS:
-            parser.error(message % (version, distribution, distribution, pretty_print_array(SUPPORTED_HDP_VERSIONS)))
+            parser.error(message % (version, distribution, pretty_print_array(SUPPORTED_HDP_VERSIONS)))
     else:
         raise ValueError('Distribution %s not supported' % distribution)
 
@@ -76,8 +77,12 @@ if __name__ == '__main__':
     else:
         tag = "h2o-%s:%s" % (args.distribution.lower(), args.version)
 
-    cmd = "docker build -t %s --build-arg VERSION=%s --build-arg PATH_PREFIX=%s %s-f %s/Dockerfile ." % (
-        tag, args.version, args.distribution.lower(), spark_versions_argument, args.distribution.lower())
+    uid = os.getuid()
+    if args.uid:
+        uid = args.uid
+
+    cmd = "docker build -t %s --build-arg VERSION=%s --build-arg PATH_PREFIX=%s --build-arg DEFAULT_USER_UID=%s %s-f %s/Dockerfile ." % (
+        tag, args.version, args.distribution.lower(), uid, spark_versions_argument, args.distribution.lower())
     print("Building image with cmd: %s" % cmd)
     process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stdin=subprocess.PIPE)
     for line in iter(process.stdout.readline, ''):

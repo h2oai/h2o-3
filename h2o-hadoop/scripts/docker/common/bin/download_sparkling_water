@@ -8,6 +8,6 @@ fi
 cd /home/h2o
 echo Downloading Sparkling Water ${1}
 IFS='.' read -ra version_artifacts <<< ${1}
-wget "http://h2o-release.s3.amazonaws.com/sparkling-water/rel-${version_artifacts[0]}.${version_artifacts[1]}/${version_artifacts[2]}/sparkling-water-${version_artifacts[0]}.${version_artifacts[1]}.${version_artifacts[2]}.zip"
-unzip sparkling-water-${version_artifacts[0]}.${version_artifacts[1]}.${version_artifacts[2]}.zip
-rm sparkling-water-${version_artifacts[0]}.${version_artifacts[1]}.${version_artifacts[2]}.zip
+su - h2o -c "wget http://h2o-release.s3.amazonaws.com/sparkling-water/rel-${version_artifacts[0]}.${version_artifacts[1]}/${version_artifacts[2]}/sparkling-water-${version_artifacts[0]}.${version_artifacts[1]}.${version_artifacts[2]}.zip"
+su - h2o -c "unzip sparkling-water-${version_artifacts[0]}.${version_artifacts[1]}.${version_artifacts[2]}.zip"
+su - h2o -c "rm sparkling-water-${version_artifacts[0]}.${version_artifacts[1]}.${version_artifacts[2]}.zip"
