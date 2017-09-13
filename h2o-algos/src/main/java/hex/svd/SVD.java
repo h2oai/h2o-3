@@ -32,7 +32,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 
 import static hex.util.DimensionReductionUtils.createScoringHistoryTableDR;
-import static hex.util.DimensionReductionUtils.transformEigenVectors;
+import static hex.util.DimensionReductionUtils.getTransformedEigenvectors;
 import static java.lang.StrictMath.sqrt;
 import static water.util.ArrayUtils.*;
 
@@ -744,7 +744,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             for (int vecIndex = 0; vecIndex < _parms._nv; vecIndex++) {
               model._output._d[vecIndex] = Math.sqrt(model._output._nobs*_estimatedSingularValues[vecIndex]);
             }
-            model._output._v = transformEigenVectors(dinfo, transpose(model._output._v));
+            model._output._v = getTransformedEigenvectors(dinfo, transpose(model._output._v));
           }
 
           if (!_wideDataset) {

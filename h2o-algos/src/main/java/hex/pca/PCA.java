@@ -336,7 +336,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           assert svd != null;
           double[][] rightEigenvectors = svd.getPrincipalComponents();
           if (_wideDataset) {       // correct for the eigenvector by t(A)*eigenvector for wide dataset
-            rightEigenvectors = transformEigenVectors(dinfo, rightEigenvectors);
+            rightEigenvectors = getTransformedEigenvectors(dinfo, rightEigenvectors);
           }
           double[] variances = svd.getVariances();
           PCA.this._job.update(1, "Computing stats from SVD using "
