@@ -244,8 +244,6 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
 
     if not start_h2o:
         print("Warning: if you don't want to start local H2O server, then use of `h2o.connect()` is preferred.")
-    if ip and ip != "localhost" and ip != "127.0.0.1" and start_h2o:
-        print("Warning: connecting to remote server but falling back to local... Did you mean to use `h2o.connect()`?")
     try:
         h2oconn = H2OConnection.open(url=url, ip=ip, port=port, https=https,
                                      verify_ssl_certificates=verify_ssl_certificates,
@@ -257,6 +255,8 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
         if port and not str(port).endswith("+"):
             port = str(port) + "+"
         if not start_h2o: raise
+        if ip and not (ip == "localhost" or ip == "127.0.0.1"):
+            raise H2OConnectionError('Can only start H2O launcher if IP address is localhost.')
         hs = H2OLocalServer.start(nthreads=nthreads, enable_assertions=enable_assertions, max_mem_size=mmax,
                                   min_mem_size=mmin, ice_root=ice_root, port=port, extra_classpath=extra_classpath)
         h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=not insecure,
