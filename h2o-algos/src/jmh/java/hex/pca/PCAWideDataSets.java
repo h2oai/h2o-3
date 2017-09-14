@@ -106,7 +106,7 @@ public class PCAWideDataSets {
 		parameters._transform = transformType;
 		parameters._use_all_factor_levels = true;
 		parameters._pca_method = GramSVD;
-		parameters.setSvdImplementation(getPCAImplementation());
+		parameters._pca_implementation = getPCAImplementation();
 		parameters._impute_missing = false;
 		parameters._seed = 12345;
 		

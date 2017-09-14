@@ -29,6 +29,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
 
     public DataInfo.TransformType _transform = DataInfo.TransformType.NONE; // Data transformation
     public Method _pca_method = Method.GramSVD;   // Method for computing PCA
+    public PCAImplementation _pca_implementation = PCAImplementation.getFastestImplementation();   // PCA implementation
     public int _k = 1;                     // Number of principal components
     public int _max_iterations = 1000;     // Max iterations
     public boolean _use_all_factor_levels = false;   // When expanding categoricals, should first level be kept or dropped?
@@ -37,18 +38,6 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
 
     public enum Method {
       GramSVD, Power, Randomized, GLRM
-    }
-
-    // always set DEFAULT_SVD_IMPLEMENTATION to the fastest SVD implementation available
-    public static final PCAImplementation DEFAULT_SVD_IMPLEMENTATION = PCAImplementation.getFastestImplementation();
-    public PCAImplementation _PCAImplementation = DEFAULT_SVD_IMPLEMENTATION;
-
-    public PCAImplementation getSvdImplementation() {
-      return _PCAImplementation;
-    }
-
-    public void setSvdImplementation(PCAImplementation PCAImplementation) {
-      _PCAImplementation = PCAImplementation;
     }
   }
 

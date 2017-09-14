@@ -52,8 +52,8 @@ public class PCAWideDataSetsTests extends TestUtil {
 		@Before
 		public void setupPcaParameters() {
 			pcaParameters = new PCAParameters();
-			pcaParameters.setSvdImplementation(PCAImplementation);
-			water.util.Log.info("pcaParameters._PCAImplementation: " + pcaParameters.getSvdImplementation().name());
+			pcaParameters._pca_implementation = PCAImplementation;
+			water.util.Log.info("pcaParameters._PCAImplementation: " + pcaParameters._pca_implementation.name());
 		}
 
 		/*

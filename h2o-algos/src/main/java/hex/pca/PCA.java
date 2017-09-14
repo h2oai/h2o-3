@@ -332,7 +332,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           double[][] gramMatrix;
           gramMatrix = _wideDataset ? ogtsk._gram.getXX() : gtsk._gram.getXX();
           PCAInterface svd = null;
-          svd = PCAImplementationFactory.createSVDImplementation(gramMatrix, _parms.getSvdImplementation());
+          svd = PCAImplementationFactory.createSVDImplementation(gramMatrix, _parms._pca_implementation);
           assert svd != null;
           double[][] rightEigenvectors = svd.getPrincipalComponents();
           if (_wideDataset) {       // correct for the eigenvector by t(A)*eigenvector for wide dataset
@@ -340,7 +340,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           }
           double[] variances = svd.getVariances();
           PCA.this._job.update(1, "Computing stats from SVD using "
-              + _parms.getSvdImplementation().toString());
+              + _parms._pca_implementation.toString());
           computeStatsFillModel(model, dinfo, variances, rightEigenvectors, gram, model._output._nobs);
           model._output._training_time_ms.add(System.currentTimeMillis());
           // generate variables for scoring_history generation
