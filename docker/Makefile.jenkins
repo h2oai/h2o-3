@@ -1,0 +1,71 @@
+#
+# Docker image tagging
+#
+.NOTPARALLEL: all
+
+docker-runtime:
+	@echo "+--Building Runtime Docker Image--+"
+	docker build -t mr-h2o3-runtime:${DOCKER_VERSION_TAG} -f Dockerfile .
+
+build-h2o-3:
+	@echo "+--Building H2O-3--+"
+	@echo
+	@echo "+--Cleaning--+"
+	./gradlew clean
+	@echo
+	@echo "+--Building--+"
+	./gradlew build -x test
+
+test-phantomjs:
+	cd h2o-web && ../scripts/run.py --wipeall --test lib/h2o-flow/build/js/headless-test.js --jvm.xmx 4g
+
+test-phantomjs-medium:
+	cd h2o-web && ../scripts/run.py --wipeall --test lib/h2o-flow/build/js/headless-test.js --jvm.xmx 4g
+
+test-phantomjs-small:
+	cd h2o-web && ../scripts/run.py --wipeall --test lib/h2o-flow/build/js/headless-test.js --jvm.xmx 4g
+
+test-py-init:
+	pip uninstall h2o -y || true
+	pip install h2o-py/dist/*.whl
+	cd h2o-py/tests/testdir_jira && python h2o.init_test_HOQE-16.py
+
+test-py-booklets:
+	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --wipeall --norun
+	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --baseport 52524 --jvm.xmx 5g --test pybooklet.deeplearning.vignette.py
+	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --baseport 52524 --jvm.xmx 5g --test pybooklet.gbm.vignette.py
+	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --baseport 53534 --jvm.xmx 5g --test pybooklet.glm.vignette.py
+
+test-pyunit-small:
+	cd h2o-py/tests/ && rm -f -r testdir_hdfs
+	cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 3g
+
+test-py-demos:
+	cd h2o-py/demos/ && ../../scripts/run.py --wipeall --numclouds 4 --baseport 56789 --jvm.xmx 10g
+
+test-pyunit-medium-large:
+	cd h2o-py/tests/ && rm -f -r testdir_hdfs
+	cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 1 --numnodes 5 --jvm.xmx 15g
+
+test-r-init:
+	R CMD INSTALL h2o-r/R/src/contrib/h2o_*.*.*.*.tar.gz
+	cd h2o-r/tests/testdir_jira && R -f h2o.init_test_HOQE-16.R
+
+test-runit-datatable:
+	rm -f -r h2o-r/tests/testdir_demos
+	rm -f -r h2o-*/tests/testdir_hdfs
+	cd h2o-r/tests/testdir_perf && ../../../scripts/run.py --wipeall --test runit_repeating_merge.R  --numclouds 1 --numnodes 2 --jvm.xmx 20g
+
+test-runit-medium_large:
+	rm -f -r h2o-r/tests/testdir_demos
+	rm -f -r h2o-*/tests/testdir_hdfs
+	cd h2o-r/tests && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 2 --numnodes 2 --jvm.xmx 20g
+
+test-runit-small:
+	rm -f -r h2o-r/tests/testdir_demos
+	rm -f -r h2o-*/tests/testdir_hdfs
+	cd h2o-r/tests && ../../scripts/run.py --wipeall --geterrs --testsize s --geterrs --numclouds 5 --jvm.xmx 4g
+
+test-runit-small-client-mode:
+	rm -f -r h2o-*/tests/testdir_hdfs
+	cd h2o-r/tests && ../../scripts/run.py --wipeall --client --testsize s --numclouds 4 --jvm.xmx 4g

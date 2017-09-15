@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# Script for installing R from source
+# To achieve an optimal build, add the necessary flags to ./configure in this script.
+# See: https://stackoverflow.com/questions/8343686/how-to-install-2-different-r-versions-on-debian#comment10292265_8344873
+#
+# Resources:
+#
+# https://raw.githubusercontent.com/DominikMueller64/install_R_source/master/install_R_source.sh
+# https://stackoverflow.com/questions/8343686/how-to-install-2-different-r-versions-on-debian
+# https://stackoverflow.com/questions/24019503/installing-multiple-versions-of-r
+# https://support.rstudio.com/hc/en-us/articles/215488098-Installing-multiple-versions-of-R
+# http://cran.r-project.org/doc/manuals/r-patched/R-admin.html#Installation
+
+# exit on error
+set -e
+
+R_VERSION=$1
+R_VERSION_HOME="/usr/local/R/${R_VERSION}"
+
+# Create temporary directory
+mkdir -p $HOME/R_tmp
+cd $HOME/R_tmp
+
+# Download and extract R source
+echo Downloading R source
+wget https://cran.r-project.org/src/base/R-3/R-${R_VERSION}.tar.gz
+tar xvzf R-${R_VERSION}.tar.gz
+rm R-${R_VERSION}.tar.gz
+
+# Configure and make
+cd R-${R_VERSION}
+./configure --prefix=${R_VERSION_HOME} --with-x=no
+make
+make install
+chmod a+w -R ${R_VERSION_HOME}/lib/R/library
+
+# Cleanup
+cd ../..
+rm -rf $HOME/R_tmp
+
+# Create symbolic link
+ln -s ${R_VERSION_HOME}/bin/R /usr/bin/R-${R_VERSION}
+ln -s ${R_VERSION_HOME}/bin/Rscript /usr/bin/Rscript-${R_VERSION}
+echo The R-${R_VERSION} executable is now available in /usr/bin/R-${R_VERSION}
+
+# Create dirs for current R and make them writable
+mkdir -p /usr/local/R/current/bin/
+chmod a+w /usr/local/R/current/bin/
+
+echo "Generate activate script"
+# Create activation script
+echo """#! /bin/bash
+
+ln -s -f ${R_VERSION_HOME}/bin/R /usr/local/R/current/bin/R
+ln -s -f ${R_VERSION_HOME}/bin/Rscript /usr/local/R/current/bin/Rscript""" > /usr/bin/activate_R_${R_VERSION}
+chmod a+x /usr/bin/activate_R_${R_VERSION}
+
