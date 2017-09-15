@@ -25,20 +25,25 @@
 #'        progress bar.
 #' @param parse_type (Optional) Specify which parser type H2O will use.
 #'        Valid types are "ARFF", "XLS", "CSV", "SVMLight"
+#' @param decrypt_tool (Optional) Specify a Decryption Tool (key-reference
+#'        acquired by calling \link{h2o.decryptionSetup}.
 #' @param chunk_size size of chunk of (input) data in bytes
 #' @seealso \link{h2o.importFile}, \link{h2o.parseSetup}
 #' @export
 h2o.parseRaw <- function(data, pattern="", destination_frame = "", header=NA, sep = "", col.names=NULL,
-                         col.types=NULL, na.strings=NULL, blocking=FALSE, parse_type = NULL, chunk_size = NULL) {
+                         col.types=NULL, na.strings=NULL, blocking=FALSE, parse_type = NULL, chunk_size = NULL,
+                         decrypt_tool = NULL) {
   # Check and parse col.types in case col.types is supplied col.name = col.type vec
   if( length(names(col.types)) > 0 & typeof(col.types) != "list" ) {
     parse.params <- h2o.parseSetup(data, pattern="", destination_frame, header, sep, col.names, col.types = NULL,
-                                   na.strings = na.strings, parse_type = parse_type, chunk_size = chunk_size)
+                                   na.strings = na.strings, parse_type = parse_type, chunk_size = chunk_size,
+                                   decrypt_tool = decrypt_tool)
     idx = match(names(col.types), parse.params$column_names)
     parse.params$column_types[idx] = as.character(col.types)
   } else {
     parse.params <- h2o.parseSetup(data, pattern="", destination_frame, header, sep, col.names, col.types,
-                                   na.strings = na.strings, parse_type = parse_type, chunk_size = chunk_size)
+                                   na.strings = na.strings, parse_type = parse_type, chunk_size = chunk_size,
+                                   decrypt_tool = decrypt_tool)
   }
   for(w in parse.params$warnings){
     cat('WARNING:',w,'\n')
@@ -56,7 +61,8 @@ h2o.parseRaw <- function(data, pattern="", destination_frame = "", header=NA, se
             na_strings = .collapse.array(parse.params$na_strings),
             chunk_size = parse.params$chunk_size,
             delete_on_done = parse.params$delete_on_done,
-            blocking = blocking
+            blocking = blocking,
+            decrypt_tool = .decrypt_tool_id(parse.params$decrypt_tool)
             )
 
   # Perform the parse
@@ -118,7 +124,7 @@ h2o.parseRaw <- function(data, pattern="", destination_frame = "", header=NA, se
 #' @seealso \link{h2o.parseRaw}
 #' @export
 h2o.parseSetup <- function(data, pattern="", destination_frame = "", header = NA, sep = "", col.names = NULL, col.types = NULL,
-                           na.strings = NULL, parse_type = NULL, chunk_size = NULL) {
+                           na.strings = NULL, parse_type = NULL, chunk_size = NULL, decrypt_tool = NULL) {
 
   # Allow single frame or list of frames; turn singleton into a list
   if( is.H2OFrame(data) ) data <- list(data)
@@ -145,6 +151,9 @@ h2o.parseSetup <- function(data, pattern="", destination_frame = "", header = NA
 
   # check the na.strings
   if( !is.null(na.strings) ) parseSetup.params$na_strings <- .collapse.array(na.strings)
+
+  # set decrypt_tool
+  if( !is.null(decrypt_tool) ) parseSetup.params$decrypt_tool <- .decrypt_tool_id(decrypt_tool)
 
   parseSetup <- .h2o.__remoteSend(.h2o.__PARSE_SETUP, method = "POST", .params = parseSetup.params)
   # set the column names
@@ -194,6 +203,9 @@ h2o.parseSetup <- function(data, pattern="", destination_frame = "", header = NA
   # set chunk_size
   if( !is.null(chunk_size) ) parseSetup$chunk_size <- chunk_size
 
+  # set decrypt_tool
+  if( !is.null(decrypt_tool) ) parseSetup$decrypt_tool <- .decrypt_tool_id(decrypt_tool)
+
   # make a name only if there was no destination_frame ( i.e. !nzchar("") == TRUE )
   if( !nzchar(destination_frame) ) destination_frame <- .key.make(parseSetup$destination_frame)
 
@@ -211,8 +223,72 @@ h2o.parseSetup <- function(data, pattern="", destination_frame = "", header = NA
         na_strings         = parseSetup$na_strings,
         chunk_size         = parseSetup$chunk_size,
         delete_on_done     = TRUE,
-        warnings           = parseSetup$warnings
+        warnings           = parseSetup$warnings,
+        decrypt_tool       = parseSetup$decrypt_tool
         )
+}
+
+#'
+#' Setup a Decryption Tool
+#'
+#' If your source file is encrypted - setup a Decryption Tool and then provide
+#' the reference (result of this function) to the import functions.
+#'
+#' @param keystore An H2OFrame object referencing a loaded Java Keystore (see example).
+#' @param keystore_type (Optional) Specification of Keystore type, defaults to JCEKS.
+#' @param key_alias Which key from the keystore to use for decryption.
+#' @param password Password to the keystore and the key.
+#' @param decrypt_tool (Optional) Name of the decryption tool.
+#' @param decrypt_impl (Optional) Java class name implementing the Decryption Tool.
+#' @param cipher_spec Specification of a cipher (eg.: AES/ECB/PKCS5Padding).
+#' @seealso \link{h2o.importFile}, \link{h2o.parseSetup}
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' ksPath <- system.file("extdata", "keystore.jks", package = "h2o")
+#' keystore <- h2o.importFile(path = ksPath, parse = FALSE) # don't parse, keep as a binary file
+#' cipher <- "AES/ECB/PKCS5Padding"
+#' pwd <- "Password123"
+#' kAlias <- "secretKeyAlias"
+#' dt <- h2o.decryptionSetup(keystore, key_alias = kAlias, password = pwd, cipher_spec = cipher)
+#' dataPath <- system.file("extdata", "prostate.csv.aes", package = "h2o")
+#' data <- h2o.importFile(dataPath, decrypt_tool = dt)
+#' summary(data)
+#' }
+#' @export
+h2o.decryptionSetup <- function(keystore, keystore_type = "JCEKS", key_alias = NA_character_, password = NA_character_,
+                                decrypt_tool = "", decrypt_impl = "water.parser.GenericDecryptionTool", cipher_spec = NA_character_) {
+
+  # Validate inputs
+  chk.H2OFrame(keystore)
+
+  if (!is.character(keystore_type) || is.na(keystore_type) || !nzchar(keystore_type))
+    stop("`keystore_type` must be a non-empty character string")
+  if (!is.character(key_alias) || is.na(key_alias) || !nzchar(key_alias))
+    stop("`key_alias` must be a non-empty character string")
+  if (!is.character(password) || is.na(password) || !nzchar(password))
+    stop("`password` must be a non-empty character string")
+  if (!is.character(decrypt_impl) || is.na(decrypt_impl) || !nzchar(decrypt_impl))
+    stop("`decrypt_impl` must be a non-empty character string")
+  if (!is.character(cipher_spec) || is.na(cipher_spec) || !nzchar(cipher_spec))
+    stop("`cipher_spec` must be a non-empty character string")
+
+  .key.validate(decrypt_tool)
+
+  # Prepare Decryption Setup
+  setup <- list(
+    decrypt_impl = decrypt_impl,
+    keystore_id = attr(keystore, "id"),
+    keystore_type = keystore_type,
+    key_alias = key_alias,
+    password = password,
+    cipher_spec = cipher_spec
+  )
+  if (! nzchar(decrypt_tool))
+    setup$decrypt_tool_id <- decrypt_tool
+
+  .h2o.__remoteSend(.h2o.__DECRYPTION_SETUP, method = "POST", .params = setup)
 }
 
 #'
@@ -245,4 +321,10 @@ h2o.parseSetup <- function(data, pattern="", destination_frame = "", header = NA
     print("col.types=list(by.col.names=c('C1','C3','C99'),types=c('Numeric','Numeric','Enum')), or equivalently")
     print("col.types=list(by.col.idx=c(1,3,99),types=c('Numeric','Numeric','Enum')). Note: `by.col.names` and")
     print("`by.col.idx` cannot be specified simultaneously.")
+}
+
+.decrypt_tool_id <- function(decrypt_tool) {
+    if (! is.null(decrypt_tool) && is(decrypt_tool, "list"))
+      return(decrypt_tool$decrypt_tool_id$name)
+    return(decrypt_tool)
 }

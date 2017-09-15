@@ -106,8 +106,8 @@ public class Example {
                                                                   0,
                                                                   0,
                                                                   0,
-                                                                  null
-                                                                  ).execute().body();
+                                                                  null,
+                                                                  null).execute().body();
             System.out.println("parseSetupBody: " + parseSetupBody);
 
             // STEP 3: parse into columnar Frame
@@ -129,7 +129,7 @@ public class Example {
                                                    parseSetupBody.chunkSize,
                                                    true,
                                                    true,
-                                                   null).execute().body();
+                                                   null, null).execute().body();
             System.out.println("parseBody: " + parseBody);
 
             // STEP 5: Train the model (NOTE: step 4 is polling, which we don't require because we specified blocking for the parse above)

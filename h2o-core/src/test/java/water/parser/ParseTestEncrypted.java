@@ -144,16 +144,15 @@ public class ParseTestEncrypted extends TestUtil {
       ds._cipher_spec = MY_CIPHER_SPEC;
 
       // 3. Instantiate & Install the Decryption Tool into DKV
-      Scope.track_generic(DecryptionTool.make(ds));
+      Keyed<DecryptionTool> dt = Scope.track_generic(DecryptionTool.make(ds));
 
       // 4. Load encrypted file into a ByteVec
       Vec encVec = Scope.track(makeNfsFileVec(new File(tmp.getRoot(), _encrypted_name).getAbsolutePath()));
 
       // 5. Create Parse Setup with a given Decryption Tool
-      ParseSetup ps = new ParseSetup(new ParseSetupV3());
-      ps._decrypt_tool = "aes_decrypt_tool";
+      ParseSetup ps = new ParseSetup(new ParseSetupV3()).setDecryptTool(dt._key);
       ParseSetup guessedSetup = ParseSetup.guessSetup(new Key[]{encVec._key}, ps);
-      assertEquals("aes_decrypt_tool", guessedSetup._decrypt_tool);
+      assertEquals("aes_decrypt_tool", guessedSetup._decrypt_tool.toString());
       assertEquals("CSV", guessedSetup._parse_type.name());
 
       // 6. Parse encrypted dataset

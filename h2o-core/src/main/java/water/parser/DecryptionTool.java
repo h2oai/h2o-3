@@ -1,10 +1,11 @@
 package water.parser;
 
 import water.DKV;
+import water.Iced;
 import water.Key;
 import water.Keyed;
 import water.fvec.ByteVec;
-import water.fvec.Vec;
+import water.fvec.Frame;
 
 import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
@@ -47,7 +48,7 @@ public abstract class DecryptionTool extends Keyed<DecryptionTool> {
    * @param key a valid DKV key or null
    * @return instance of Decryption Tool for a valid key, Null Decryption tool for a null key
    */
-  public static DecryptionTool get(String key) {
+  public static DecryptionTool get(Key<DecryptionTool> key) {
     if (key == null)
       return new NullDecryptionTool();
     DecryptionTool decrypt = DKV.getGet(key);
@@ -60,7 +61,8 @@ public abstract class DecryptionTool extends Keyed<DecryptionTool> {
    * @return SecretKey
    */
   static SecretKeySpec readSecretKey(DecryptionSetup ds) {
-    ByteVec ksVec = DKV.getGet(ds._keystore_id);
+    Keyed<?> ksObject = DKV.getGet(ds._keystore_id);
+    ByteVec ksVec = (ByteVec) (ksObject instanceof Frame ? ((Frame) ksObject).vec(0) : ksObject);
     InputStream ksStream = ksVec.openStream(null /*job key*/);
     try {
       KeyStore keystore = KeyStore.getInstance(ds._keystore_type);
@@ -85,6 +87,8 @@ public abstract class DecryptionTool extends Keyed<DecryptionTool> {
    * @return instance of a Decryption Tool
    */
   public static DecryptionTool make(DecryptionSetup ds) {
+    if (ds._decrypt_tool_id == null)
+      ds._decrypt_tool_id = Key.make();
     try {
       Class<?> dtClass = DecryptionTool.class.getClassLoader().loadClass(ds._decrypt_impl);
       if (! DecryptionTool.class.isAssignableFrom(dtClass)) {
@@ -106,14 +110,14 @@ public abstract class DecryptionTool extends Keyed<DecryptionTool> {
   /**
    * Blueprint of the Decryption Tool
    */
-  public static class DecryptionSetup {
-    Key<DecryptionTool> _decrypt_tool_id; // where will be the instantiated tool installed
-    String _decrypt_impl = GenericDecryptionTool.class.getName(); // implementation
-    Key<Vec> _keystore_id; // where to find Java KeyStore file
-    String _keystore_type; // what kind of KeyStore is used
-    String _key_alias; // what is the alias of the key in the keystore
-    char[] _password; // password to the keystore and to the keyentry
-    String _cipher_spec; // specification of the cipher (and padding)
+  public static class DecryptionSetup extends Iced<DecryptionSetup> {
+    public Key<DecryptionTool> _decrypt_tool_id; // where will be the instantiated tool installed
+    public String _decrypt_impl = GenericDecryptionTool.class.getName(); // implementation
+    public Key<?> _keystore_id; // where to find Java KeyStore file (Frame key or Vec key)
+    public String _keystore_type; // what kind of KeyStore is used
+    public String _key_alias; // what is the alias of the key in the keystore
+    public char[] _password; // password to the keystore and to the keyentry
+    public String _cipher_spec; // specification of the cipher (and padding)
   }
 
 }
