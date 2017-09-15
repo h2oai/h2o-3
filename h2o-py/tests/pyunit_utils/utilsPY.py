@@ -2761,7 +2761,7 @@ def compareOneNumericColumn(frame1, frame2, col_ind, rows, tolerance, numElement
         val2 = frame2[row_ind, col_ind]
 
         if not(math.isnan(val1)) and not(math.isnan(val2)): # both frames contain valid elements
-            diff = abs(val1-val2)
+            diff = abs(val1-val2)/max(1, abs(val1), abs(val2))
             assert diff <= tolerance, "failed frame values check! frame1 value = {0}, frame2 value =  {1}, " \
                                       "at row {2}, column {3}.  The difference is {4}.".format(val1, val2, row_ind,
                                                                                                col_ind, diff)
@@ -2987,3 +2987,16 @@ def check_ignore_cols_automl(models,names,x,y):
         else:
             assert set(h2o.get_model(model).params["ignored_columns"]["actual"]) == set(names) - {y} - set(x), \
                 "ignored columns are not honored for model " + model
+
+
+def compare_numeric_frames(f1, f2, prob=0.5, tol=1e-6):
+    assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "The two frames are of different sizes."
+    temp1 = f1.asnumeric()
+    temp2 = f2.asnumeric()
+    for colInd in range(f1.ncol):
+        for rowInd in range(f2.nrow):
+            if (random.uniform(0,1) < prob):
+                diff = abs(temp1[rowInd, colInd]-temp2[rowInd, colInd])/max(1.0, abs(temp1[rowInd, colInd]),
+                                                                            abs(temp2[rowInd, colInd]))
+                assert diff<=tol, "Failed frame values check! frame1 value: {0}, frame2 value: " \
+                                  "{1}".format(temp1[rowInd, colInd], temp2[rowInd, colInd])

@@ -159,7 +159,8 @@ def grabRuntimeInfo(err_bound, reduction_factor, model, training_data, x_indices
     # capture model runtime with
     model_runtime_overrun.append((actual_model_runtime[-1]-model_maxRuntime[-1])*1.0/model_maxRuntime[-1])
 
-    print("Model: {0}, \nMax_runtime_sec: {1}, \nActual_model_runtime_sec: {2}, "
+    print("Model: {0}, \nOriginal model runtime with no time restriction (sec): {1}".format(algo_names[-1], model_runtime[-1]))
+    print("Max_runtime_sec: {1}, \nActual_model_runtime_sec: {2}, "
           "\nRun time overrun: {3}".format(algo_names[-1], model_maxRuntime[-1],
                                                actual_model_runtime[-1], model_runtime_overrun[-1]))
     print("Number of epochs/iterations/trees without max_runtime_sec restriction: {0}"
@@ -176,7 +177,7 @@ def grabRuntimeInfo(err_bound, reduction_factor, model, training_data, x_indices
 
 def checkIteration(model):
     if model._model_json["output"]["scoring_history"] != None:
-        epochList=pyunit_utils.extract_scoring_history_field(model, "epochs")
+        epochList=pyunit_utils.extract_scoring_history_field(model, "iterations")
         if (epochList==None):   # return the scoring history length as number of iteration estimate
             return len(model._model_json["output"]["scoring_history"].cell_values)
         return epochList[-1]

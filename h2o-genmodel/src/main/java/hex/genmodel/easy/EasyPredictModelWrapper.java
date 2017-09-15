@@ -54,7 +54,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class EasyPredictModelWrapper implements java.io.Serializable {
   // These private members are read-only after the constructor.
-  private final GenModel m;
+  public final GenModel m;
   private final HashMap<String, Integer> modelColumnNameToIndexMap;
   private final HashMap<Integer, HashMap<String, Integer>> domainMap;
 
@@ -253,7 +253,7 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     output = m.score0(rawData, output);
 
     AutoEncoderModelPrediction p = new AutoEncoderModelPrediction();
-    p.original = expandRawData(rawData, size);
+    p.original = expandRawData(rawData, output.length);
     p.reconstructed = output;
     p.reconstructedRowData = reconstructedToRowData(output);
 
