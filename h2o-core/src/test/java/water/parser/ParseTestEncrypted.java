@@ -152,7 +152,7 @@ public class ParseTestEncrypted extends TestUtil {
       // 5. Create Parse Setup with a given Decryption Tool
       ParseSetup ps = new ParseSetup(new ParseSetupV3()).setDecryptTool(dt._key);
       ParseSetup guessedSetup = ParseSetup.guessSetup(new Key[]{encVec._key}, ps);
-      assertEquals("aes_decrypt_tool", guessedSetup._decrypt_tool);
+      assertEquals("aes_decrypt_tool", guessedSetup._decrypt_tool.toString());
       assertEquals("CSV", guessedSetup._parse_type.name());
 
       // 6. Parse encrypted dataset
