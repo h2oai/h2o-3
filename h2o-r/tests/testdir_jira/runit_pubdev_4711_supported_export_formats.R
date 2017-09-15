@@ -43,7 +43,7 @@ deeplearning_export <- function() {
   frame <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"), "prostate")
   model <- h2o.deeplearning(x = c(3, 4, 5, 6, 7, 8, 9), y = 2, training_frame = frame)
   h2o.download_pojo(model, path = RESULT_DIR)
-  expect_error(model, MOJO)
+  h2o.download_mojo(model, path = RESULT_DIR)
 }
 
 gbm_export <- function() {

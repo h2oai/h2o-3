@@ -153,7 +153,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   }
 
   public int getPredsSize(ModelCategory mc) {
-    return (mc == ModelCategory.DimReduction)? nclasses() : getPredsSize();
+    return (mc == ModelCategory.DimReduction)? nclasses() :getPredsSize();
   }
 
   public static String createAuxKey(String k) {
@@ -513,10 +513,36 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   /** ??? */
   public String getHeader() { return null; }
 
-  // Helper for DeepWater and XGBoost (models that require explicit one-hot encoding on the fly)
+  // Helper for DeepWater, DeepLearning and XGBoost (models that require explicit one-hot encoding on the fly)
   static public void setInput(final double[] from, float[] to, int _nums, int _cats, int[] _catOffsets, double[] _normMul, double[] _normSub, boolean useAllFactorLevels, boolean replaceMissingWithZero) {
-    float[] nums = new float[_nums]; // a bit wasteful - reallocated each time
+    double[] nums = new double[_nums]; // a bit wasteful - reallocated each time
     int[] cats = new int[_cats]; // a bit wasteful - reallocated each time
+
+    setCats(from, nums, cats, _cats, _catOffsets, _normMul, _normSub, useAllFactorLevels);
+
+    assert(to.length == _nums + _catOffsets[_cats]);
+    Arrays.fill(to, 0f);
+    for (int i = 0; i < _cats; ++i)
+      to[cats[i]] = 1f; // one-hot encode categoricals
+    for (int i = 0; i < _nums; ++i)
+      to[_catOffsets[_cats] + i] = Double.isNaN(nums[i]) ? (replaceMissingWithZero ? 0 : Float.NaN) : (float)nums[i];
+  }
+
+  // Helper for Deeplearning, note: we assume nums and cats are allocated already and being re-used
+  static public void setInput(final double[] from, double[] to, double[] nums, int[] cats, int _nums, int _cats,
+                              int[] _catOffsets, double[] _normMul, double[] _normSub, boolean useAllFactorLevels, boolean replaceMissingWithZero) {
+    setCats(from, nums, cats, _cats, _catOffsets, _normMul, _normSub, useAllFactorLevels);
+
+    assert(to.length == _nums + _catOffsets[_cats]);
+    Arrays.fill(to, 0f);
+    for (int i = 0; i < _cats; ++i)
+      to[cats[i]] = 1f; // one-hot encode categoricals
+    for (int i = 0; i < _nums; ++i)
+      to[_catOffsets[_cats] + i] = Double.isNaN(nums[i]) ? (replaceMissingWithZero ? 0 : Double.NaN) : nums[i];
+  }
+
+  static public void setCats(final double[] from, double[] nums, int[] cats, int _cats, int[] _catOffsets,
+                             double[] _normMul, double[] _normSub, boolean useAllFactorLevels) {
     for (int i = 0; i < _cats; ++i) {
       if (Double.isNaN(from[i])) {
         cats[i] = (_catOffsets[i + 1] - 1); //use the extra level for NAs made during training
@@ -532,18 +558,24 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     }
     for (int i = _cats; i < from.length; ++i) {
       double d = from[i];
-      if (_normMul != null) d = (d - _normSub[i - _cats]) * _normMul[i - _cats];
-      nums[i - _cats] = (float)d; //can be NaN for missing numerical data
+
+      if ((_normMul != null) && (_normMul.length >0)) {
+        d = (d - _normSub[i - _cats]) * _normMul[i - _cats];
+      }
+      nums[i - _cats] = d; //can be NaN for missing numerical data
     }
-    assert(to.length == _nums + _catOffsets[_cats]);
-    Arrays.fill(to, 0f);
-    for (int i = 0; i < _cats; ++i)
-      to[cats[i]] = 1f; // one-hot encode categoricals
-    for (int i = 0; i < _nums; ++i)
-      to[_catOffsets[_cats] + i] = Double.isNaN(nums[i]) ? (replaceMissingWithZero ? 0 : Float.NaN) : nums[i];
   }
 
-  public static void img2pixels(BufferedImage img, int w, int h, int channels, float[] pixels, int start, float[] mean) throws IOException {
+
+  public static float[] convertDouble2Float(double[] input) {
+    int arraySize = input.length;
+    float[] output = new float[arraySize];
+    for (int index=0; index<arraySize; index++)
+      output[index] = (float) input[index];
+    return output;
+  }
+
+   public static void img2pixels(BufferedImage img, int w, int h, int channels, float[] pixels, int start, float[] mean) throws IOException {
     // resize the image
     BufferedImage scaledImg = new BufferedImage(w, h, img.getType());
     Graphics2D g2d = scaledImg.createGraphics();
@@ -581,5 +613,8 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
       }
     }
   }
+
+  // Helpers for deeplearning mojo
+
 
 }
