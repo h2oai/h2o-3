@@ -715,9 +715,9 @@ class ModelBase(backwards_compatible()):
         """
         assert_is_type(path, str)
         assert_is_type(get_genmodel_jar, bool)
-        if self.algo not in {"drf", "gbm", "deepwater", "xgboost", "glrm", "glm", "word2vec"}:
-            raise H2OValueError("MOJOs are currently supported for Distributed Random Forest, "
-                                "Gradient Boosting Machine, XGBoost, Deep Water, GLM, GLRM and word2vec models only.")
+        if self.algo not in {"drf", "gbm", "deepwater", "xgboost", "glrm", "glm", "word2vec", "deeplearning"}:
+            raise H2OValueError("MOJOs are currently supported for Distributed Random Forest, Gradient Boosting "
+                                "Machine, XGBoost, Deep Water, Deep Learning, GLM, GLRM and word2vec models only.")
         if get_genmodel_jar:
             if genmodel_name == "":
                 h2o.api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, "h2o-genmodel.jar"))
