@@ -64,7 +64,7 @@ doJavapredictTest <- function(model,test_file,test_frame,params, separator=",", 
   if (setInvNumNA)
     cmd <- paste(cmd, " --setConvertInvalidNum")
 
-  
+
   safeSystem(cmd)
 
   print("Comparing predictions between H2O and Java POJO")

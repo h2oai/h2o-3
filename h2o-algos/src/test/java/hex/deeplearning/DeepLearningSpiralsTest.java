@@ -1,8 +1,8 @@
 package hex.deeplearning;
 
+import hex.ModelMetricsBinomial;
 import hex.ScoreKeeper;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
-import hex.ModelMetricsBinomial;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -13,7 +13,6 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
-import water.util.FileUtils;
 import water.util.Log;
 
 public class DeepLearningSpiralsTest extends TestUtil {
