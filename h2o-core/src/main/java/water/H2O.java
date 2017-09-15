@@ -13,6 +13,7 @@ import water.exceptions.H2OFailException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.init.*;
 import water.nbhm.NonBlockingHashMap;
+import water.parser.DecryptionTool;
 import water.parser.ParserService;
 import water.persist.PersistManager;
 import water.util.*;
@@ -2171,4 +2172,9 @@ final public class H2O {
   public static H2ONode getClientByIPPort(String ipPort){
     return CLIENTS_MAP.get(ipPort);
   }
+
+  public static Key<DecryptionTool> defaultDecryptionTool() {
+    return H2O.ARGS.decrypt_tool != null ? Key.<DecryptionTool>make(H2O.ARGS.decrypt_tool) : null;
+  }
+
 }
