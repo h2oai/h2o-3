@@ -231,13 +231,13 @@ h2o.parseSetup <- function(data, pattern="", destination_frame = "", header = NA
 #'
 #' Setup a Decryption Tool
 #'
-#' If your source file is encrypted install a Decryption Tool and then provide
-#' the reference to the Tool to the import functions.
+#' If your source file is encrypted - setup a Decryption Tool and then provide
+#' the reference (result of this function) to the import functions.
 #'
-#' @param data An H2OFrame object referencing a loaded Java Keystore (see example).
-#' @param keystore_type (Optional) Specification of Keystore type.
-#' @param destination_frame (Optional) The hex key assigned to the parsed file.
+#' @param keystore An H2OFrame object referencing a loaded Java Keystore (see example).
+#' @param keystore_type (Optional) Specification of Keystore type, defaults to JCEKS.
 #' @param key_alias Which key from the keystore to use for decryption.
+#' @param password Password to the keystore and the key.
 #' @param decrypt_tool (Optional) Name of the decryption tool.
 #' @param decrypt_impl (Optional) Java class name implementing the Decryption Tool.
 #' @param cipher_spec Specification of a cipher (eg.: AES/ECB/PKCS5Padding).
@@ -248,15 +248,14 @@ h2o.parseSetup <- function(data, pattern="", destination_frame = "", header = NA
 #' h2o.init()
 #' ksPath <- system.file("extdata", "keystore.jks", package = "h2o")
 #' keystore <- h2o.importFile(path = ksPath, parse = FALSE) # don't parse, keep as a binary file
-#' dt <- h2o.decryptionSetup(keystore, key_alias = "secretKeyAlias", password = "Password123",
-#                            cipher = "AES/ECB/PKCS5Padding")
+#' dt <- h2o.decryptionSetup(keystore, key_alias = "secretKeyAlias", password = "Password123", cipher = "AES/ECB/PKCS5Padding")
 #' dataPath <- system.file("extdata", "prostate.csv.aes", package = "h2o")
 #' data <- h2o.importFile(dataPath, decrypt_tool = dt)
 #' summary(data)
 #' }
 #' @export
-h2o.decryptionSetup <- function(keystore, keystore_type = "JCEKS", key_alias = NA_Character, password = NA_Character,
-                                decrypt_tool = "", decrypt_impl = "water.parser.GenericDecryptionTool", cipher_spec = NA_Character) {
+h2o.decryptionSetup <- function(keystore, keystore_type = "JCEKS", key_alias = NA_character_, password = NA_character_,
+                                decrypt_tool = "", decrypt_impl = "water.parser.GenericDecryptionTool", cipher_spec = NA_character_) {
 
   # Validate inputs
   chk.H2OFrame(keystore)
