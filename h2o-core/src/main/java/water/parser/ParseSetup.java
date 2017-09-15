@@ -41,7 +41,7 @@ public class ParseSetup extends Iced {
 
   String [] _fileNames = new String[]{"unknown"};
   public  boolean disableParallelParse;
-  String _decrypt_tool;
+  Key<DecryptionTool> _decrypt_tool;
 
   public void setFileName(String name) {_fileNames[0] = name;}
 
@@ -59,7 +59,7 @@ public class ParseSetup extends Iced {
     this(ps._parse_type,
          ps._separator, ps._single_quotes, ps._check_header, ps._number_columns,
          ps._column_names, ps._column_types, ps._domains, ps._na_strings, ps._data,
-         new ParseWriter.ParseErr[0], ps._chunk_size);
+         new ParseWriter.ParseErr[0], ps._chunk_size, ps._decrypt_tool);
   }
 
 
@@ -68,9 +68,17 @@ public class ParseSetup extends Iced {
         false,ParseSetup.NO_HEADER,1,null,new byte[]{Vec.T_NUM},null,null,null, new ParseWriter.ParseErr[0]);
   }
 
+
   // This method was called during guess setup, lot of things are null, like ctypes.
   // when it is called again, it either contains the guess column types or it will have user defined column types
-  public ParseSetup(ParserInfo parse_type, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[] columnNames, byte[] ctypes, String[][] domains, String[][] naStrings, String[][] data, ParseWriter.ParseErr[] errs, int chunkSize) {
+  public ParseSetup(ParserInfo parse_type, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[] columnNames,
+                    byte[] ctypes, String[][] domains, String[][] naStrings, String[][] data, ParseWriter.ParseErr[] errs,
+                    int chunkSize) {
+    this(parse_type, sep, singleQuotes, checkHeader, ncols, columnNames, ctypes, domains, naStrings, data, errs, chunkSize, null);
+  }
+  public ParseSetup(ParserInfo parse_type, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[] columnNames,
+                    byte[] ctypes, String[][] domains, String[][] naStrings, String[][] data, ParseWriter.ParseErr[] errs,
+                    int chunkSize, Key<DecryptionTool> decrypt_tool) {
     _parse_type = parse_type;
     _separator = sep;
     _single_quotes = singleQuotes;
@@ -83,6 +91,7 @@ public class ParseSetup extends Iced {
     _data = data;
     _chunk_size = chunkSize;
     _errs = errs;
+    _decrypt_tool = decrypt_tool;
   }
 
   /**
@@ -103,7 +112,8 @@ public class ParseSetup extends Iced {
          null, ps.na_strings,
          null,
          new ParseWriter.ParseErr[0],
-         ps.chunk_size);
+         ps.chunk_size,
+         ps.decrypt_tool != null ? ps.decrypt_tool.key() : null);
   }
 
   /**
@@ -200,7 +210,10 @@ public class ParseSetup extends Iced {
   public final ParseSetup getFinalSetup(Key[] inputKeys, ParseSetup demandedSetup) {
     ParserProvider pp = ParserService.INSTANCE.getByInfo(_parse_type);
     if (pp != null) {
-      return pp.createParserSetup(inputKeys, demandedSetup);
+      ParseSetup ps = pp.createParserSetup(inputKeys, demandedSetup);
+      if (demandedSetup._decrypt_tool != null)
+        ps._decrypt_tool = demandedSetup._decrypt_tool;
+      return ps;
     }
 
     throw new H2OIllegalArgumentException("Unknown parser configuration! Configuration=" + this);
@@ -332,14 +345,15 @@ public class ParseSetup extends Iced {
       byte [] bits = ZipUtil.getFirstUnzippedBytes(bv);
       // The bits can be null
       if (bits != null && bits.length > 0) {
-        String decryptToolId = _userSetup._decrypt_tool != null ? _userSetup._decrypt_tool : H2O.ARGS.decrypt_tool;
-        DecryptionTool decrypt = decryptToolId != null ? (DecryptionTool) DKV.getGet(decryptToolId) : null;
+        Key<DecryptionTool> decryptToolKey = _userSetup._decrypt_tool != null ?
+                _userSetup._decrypt_tool : H2O.defaultDecryptionTool();
+        DecryptionTool decrypt = DKV.getGet(decryptToolKey);
         if (decrypt != null) {
           byte[] plainBits = decrypt.decryptFirstBytes(bits);
           if (plainBits != bits)
             bits = plainBits;
           else
-            decryptToolId = null;
+            decryptToolKey = null;
         }
 
         _empty = false;
@@ -368,7 +382,7 @@ public class ParseSetup extends Iced {
                 || decompRatio > 1.0) { */
         try {
           _gblSetup = guessSetup(bv, bits, _userSetup);
-          _gblSetup._decrypt_tool = decryptToolId;
+          _gblSetup._decrypt_tool = decryptToolKey;
           for(ParseWriter.ParseErr e:_gblSetup._errs) {
 //            e._byteOffset += e._cidx*Parser.StreamData.bufSz;
             e._cidx = 0;
@@ -534,7 +548,6 @@ public class ParseSetup extends Iced {
       }
     }
   }
-
 
   private String file() {
     String [] names = _fileNames;
@@ -736,6 +749,11 @@ public class ParseSetup extends Iced {
 
   public ParseSetup setChunkSize(int chunk_size) {
     this._chunk_size = chunk_size;
+    return this;
+  }
+
+  public ParseSetup setDecryptTool(Key<DecryptionTool> decrypt_tool) {
+    this._decrypt_tool = decrypt_tool;
     return this;
   }
 

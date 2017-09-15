@@ -77,6 +77,9 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 .h2o.__PARSE          <- "Parse"         # Sample Usage: Parse?source_keys=["nfs://path/to/data"]&destination_frame=KEYNAME&parse_type=CSV&separator=44&number_columns=5&check_header=0&single_quotes=false&column_names=["C1",%20"C2",%20"C3",%20"C4",%20"C5"]
 .h2o.__PARSE_SVMLIGHT <- "ParseSVMLight" # Sample Usage: Parse?source_keys=["nfs://path/to/data"]&destination_frame=KEYNAME
 
+#' Decryption Endpoints
+.h2o.__DECRYPTION_SETUP <- "DecryptionSetup"
+
 #' Inspect/Summary Endpoints
 .h2o.__FRAMES         <- "Frames"        # Frames/<key>    example: http://localhost:54321/3/Frames/meow.hex
 .h2o.__COL_SUMMARY <- function(key, col) URLencode(paste(.h2o.__FRAMES, key, "columns", col, "summary", sep = "/"))

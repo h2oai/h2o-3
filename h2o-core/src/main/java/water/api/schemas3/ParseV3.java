@@ -50,6 +50,9 @@ public class ParseV3 extends RequestSchemaV3<Iced, ParseV3> {
   @API(help="Block until the parse completes (as opposed to returning early and requiring polling")
   public boolean blocking;
 
+  @API(help="Key-reference to an initialized instance of a Decryption Tool")
+  public KeyV3.DecryptionToolKeyV3 decrypt_tool;
+
   // Output fields
   @API(help="Parse job", direction=API.Direction.OUTPUT)
   public JobV3 job;

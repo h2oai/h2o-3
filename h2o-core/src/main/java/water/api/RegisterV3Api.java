@@ -54,6 +54,10 @@ public class RegisterV3Api extends AbstractRegister {
             "POST /3/Parse", ParseHandler.class, "parse",
             "Parse a raw byte-oriented Frame into a useful columnar data Frame."); // NOTE: prefer POST due to higher content limits
 
+    context.registerEndpoint("setupDecryption",
+            "POST /3/DecryptionSetup", DecryptionSetupHandler.class, "setupDecryption",
+            "Install a decryption tool for parsing of encrypted data.");
+
     context.registerEndpoint("parseSvmLight",
             "POST /3/ParseSVMLight", ParseHandler.class, "parseSVMLight",
             "Parse a raw byte-oriented Frame into a useful columnar data Frame."); // NOTE: prefer POST due to higher content limits

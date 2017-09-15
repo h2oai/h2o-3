@@ -52,6 +52,8 @@
 #' @param progressBar (Optional) When FALSE, tell H2O parse call to block
 #'        synchronously instead of polling.  This can be faster for small
 #'        datasets but loses the progress bar.
+#' @param decrypt_tool (Optional) Specify a Decryption Tool (key-reference
+#'        acquired by calling \link{h2o.decryptionSetup}.
 #' @seealso \link{h2o.import_sql_select}, \link{h2o.import_sql_table}, \link{h2o.parseRaw}
 #' @examples
 #' \donttest{
@@ -74,16 +76,16 @@
 #' @name h2o.importFile
 #' @export
 h2o.importFile <- function(path, destination_frame = "", parse = TRUE, header=NA, sep = "", col.names=NULL,
-                           col.types=NULL, na.strings=NULL) {
+                           col.types=NULL, na.strings=NULL, decrypt_tool=NULL) {
   h2o.importFolder(path, pattern = "", destination_frame=destination_frame, parse, header, sep, col.names, col.types,
-                   na.strings=na.strings)
+                   na.strings=na.strings, decrypt_tool=decrypt_tool)
 }
 
 
 #' @rdname h2o.importFile
 #' @export
 h2o.importFolder <- function(path, pattern = "", destination_frame = "", parse = TRUE, header = NA, sep = "",
-                             col.names = NULL, col.types=NULL, na.strings=NULL) {
+                             col.names = NULL, col.types=NULL, na.strings=NULL, decrypt_tool=NULL) {
   if(!is.character(path) || is.na(path) || !nzchar(path)) stop("`path` must be a non-empty character string")
   if(!is.character(pattern) || length(pattern) != 1L || is.na(pattern)) stop("`pattern` must be a character string")
   .key.validate(destination_frame)
@@ -113,7 +115,7 @@ h2o.importFolder <- function(path, pattern = "", destination_frame = "", parse =
 if(parse) {
     srcKey <- res$destination_frames
     return( h2o.parseRaw(data=.newH2OFrame(op="ImportFolder",id=srcKey,-1,-1),pattern=pattern, destination_frame=destination_frame,
-            header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings) )
+            header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings, decrypt_tool=decrypt_tool) )
 }
   myData <- lapply(res$destination_frames, function(x) .newH2OFrame( op="ImportFolder", id=x,-1,-1))  # do not gc, H2O handles these nfs:// vecs
   if(length(res$destination_frames) == 1L)
@@ -134,7 +136,7 @@ h2o.importHDFS <- function(path, pattern = "", destination_frame = "", parse = T
 #' @export
 h2o.uploadFile <- function(path, destination_frame = "",
                            parse = TRUE, header = NA, sep = "", col.names = NULL,
-                           col.types = NULL, na.strings = NULL, progressBar = FALSE, parse_type=NULL) {
+                           col.types = NULL, na.strings = NULL, progressBar = FALSE, parse_type=NULL, decrypt_tool=NULL) {
   if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
     stop("`path` must be a non-empty character string")
   .key.validate(destination_frame)
@@ -158,7 +160,9 @@ h2o.uploadFile <- function(path, destination_frame = "",
   destination_frame <- if( destination_frame == "" ) .key.make(strsplit(basename(path), "\\.")[[1]][1]) else destination_frame
   if (parse) {
     if (verbose) pt <- proc.time()[[3]]
-    ans <- h2o.parseRaw(data=rawData, destination_frame=destination_frame, header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings, blocking=!progressBar, parse_type = parse_type)
+    ans <- h2o.parseRaw(data=rawData, destination_frame=destination_frame, header=header, sep=sep, col.names=col.names,
+                        col.types=col.types, na.strings=na.strings, blocking=!progressBar, parse_type = parse_type,
+                        decrypt_tool = decrypt_tool)
     if (verbose) cat(sprintf("parsing data using 'h2o.parseRaw' took %.2fs\n", proc.time()[[3]]-pt))
     ans
   } else {
