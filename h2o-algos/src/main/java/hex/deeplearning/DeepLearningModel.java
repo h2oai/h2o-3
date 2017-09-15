@@ -985,9 +985,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       JCodeGen.toClassWithArray(sb, "static", "NORMSUB", model_info().data_info()._normSub);//, "Standardization/Normalization offset for numerical variables.");
     }
     if (model_info().data_info()._cats > 0) {
-      JCodeGen.toStaticVar(sb, "CATS", new int[model_info().data_info()._cats], "Workspace for storing categorical input variables.");
+      sb.i(0).p("// Thread-local workspace for storing categorical input variables.").nl();
+      sb.i(0).p("final int[] CATS = new int[" + model_info().data_info()._cats +"];").nl();
     }
-    JCodeGen.toStaticVar(sb, "CATOFFSETS", model_info().data_info()._catOffsets, "Workspace for categorical offsets.");
+    JCodeGen.toStaticVar(sb, "CATOFFSETS", model_info().data_info()._catOffsets, "Offset into the workspace for categorical variables.");
     if (model_info().data_info()._normRespMul != null) {
       JCodeGen.toStaticVar(sb, "NORMRESPMUL", model_info().data_info()._normRespMul, "Standardization/Normalization scaling factor for response.");
       JCodeGen.toStaticVar(sb, "NORMRESPSUB", model_info().data_info()._normRespSub, "Standardization/Normalization offset for response.");
