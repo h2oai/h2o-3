@@ -248,7 +248,10 @@ h2o.parseSetup <- function(data, pattern="", destination_frame = "", header = NA
 #' h2o.init()
 #' ksPath <- system.file("extdata", "keystore.jks", package = "h2o")
 #' keystore <- h2o.importFile(path = ksPath, parse = FALSE) # don't parse, keep as a binary file
-#' dt <- h2o.decryptionSetup(keystore, key_alias = "secretKeyAlias", password = "Password123", cipher = "AES/ECB/PKCS5Padding")
+#' cipher <- "AES/ECB/PKCS5Padding"
+#' pwd <- "Password123"
+#' kAlias <- "secretKeyAlias"
+#' dt <- h2o.decryptionSetup(keystore, key_alias = kAlias, password = pwd, cipher_spec = cipher)
 #' dataPath <- system.file("extdata", "prostate.csv.aes", package = "h2o")
 #' data <- h2o.importFile(dataPath, decrypt_tool = dt)
 #' summary(data)
