@@ -1050,7 +1050,7 @@ class H2OFrame(object):
         if self.names is None:
             self._frame()._ex._cache.fill()
         else:
-            self._ex._cache._names = self.names[:col] + [name] + self.names[col + 1:]
+            self._ex._cache._names = self.names[:col_index] + [name] + self.names[col_index + 1:]
             self._ex._cache._types[name] = self._ex._cache._types.pop(oldname)
         return
 
