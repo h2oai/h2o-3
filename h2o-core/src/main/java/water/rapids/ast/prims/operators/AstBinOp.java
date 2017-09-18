@@ -161,7 +161,7 @@ abstract public class AstBinOp extends AstPrimitive {
   public abstract double op(double l, double r);
 
   public double str_op(BufferedString l, BufferedString r) {
-    throw H2O.fail();
+    throw H2O.unimpl("Binary operation '" + str() + "' is not supported on String columns.");
   }
 
   /**
