@@ -104,11 +104,10 @@ The only compilation and runtime dependency for a generated model is the ``h2o-g
 	```
 	
 The following output displays: 
-	
-	```
+
 	Label (aka prediction) is flight departure delayed: YES
 	Class probabilities: 0.4319916897116479,0.5680083102883521
-	```	
+
 
 ## Extracting Models from H2O
 
