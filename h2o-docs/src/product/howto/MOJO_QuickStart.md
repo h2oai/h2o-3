@@ -10,7 +10,7 @@ This document describes how to build and implement a MOJO (Model Object, Optimiz
 A MOJO (Model Object, Optimized) is an alternative to H2O's currently available
 [POJO](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/POJO_QuickStart.md). As with POJOs, H2O allows you to convert models that you build to MOJOs, which can then be deployed for scoring in real time.
 
-**Note**: MOJOs are supported for GBM, DRF, GLM, K-Means, SVM, Word2vec, and XGBoost models only.
+**Note**: MOJOs are supported for Deep Learning, DRF, GBM, GLM, K-Means, SVM, Word2vec, and XGBoost models only.
 
 ## Benefit over POJOs
 
