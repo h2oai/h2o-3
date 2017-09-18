@@ -19,7 +19,7 @@ Users can refer to the following Quick Start files for more information about ge
 
 **Notes**: 
 
-- MOJOs are supported for DRF, GBM, GLM, GLRM, K-Means, Word2vec, and XGBoost models only.
+- MOJOs are supported for Deep Learning, DRF, GBM, GLM, GLRM, K-Means, SVM, Word2vec, and XGBoost models only.
 - POJOs are not supported for XGBoost.
 
 Developers can refer to the the `POJO and MOJO Model Javadoc <http://docs.h2o.ai/h2o/latest-stable/h2o-genmodel/javadoc/index.html>`__.
@@ -164,12 +164,13 @@ Scoring engine                                      H2O POJO
 Scoring latency SLA                                 Batch
 ==================================================  ===========================================================
 
-=========    ==================================================================================================
-Resource     Location
-=========    ==================================================================================================
-Git repos    https://github.com/h2oai/h2o-tutorials/tree/master/tutorials/hive_udf_template
-Tutorials    http://docs.h2o.ai/h2o-tutorials/latest-stable/tutorials/hive_udf_template/index.html
-=========    ==================================================================================================
+=============    ==================================================================================================
+Resource         Location
+=============    ==================================================================================================
+Git repos        https://github.com/h2oai/h2o-tutorials/tree/master/tutorials/hive_udf_template
+POJO Tutorial    http://docs.h2o.ai/h2o-tutorials/latest-stable/tutorials/hive_udf_template/hive_udf_pojo_template/index.html
+MOJO Tutorial    http://docs.h2o.ai/h2o-tutorials/latest-stable/tutorials/hive_udf_template/hive_udf_mojo_template/index.html
+=============    ==================================================================================================
 
 
 MOJO as a JAR Resource
