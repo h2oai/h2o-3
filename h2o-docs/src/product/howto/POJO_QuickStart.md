@@ -85,19 +85,29 @@ The only compilation and runtime dependency for a generated model is the ``h2o-g
 	}
 	```
 
-5. Compile and run in terminal window 2:
+5. Compile in terminal window 2:
 
 	```
 	$ javac -cp h2o-genmodel.jar -J-Xmx2g -J-XX:MaxPermSize=128m gbm_pojo_test.java main.java
+	```
+
+6. Run in terminal window 2.
+
+   For Linux and OS X users
+	```
 	$ java -cp .:h2o-genmodel.jar main
 	```
 
-    The following output displays: 
-	
+   For Windows users
+   ```
+	$ java -cp .;h2o-genmodel.jar main
 	```
+	
+The following output displays: 
+
 	Label (aka prediction) is flight departure delayed: YES
 	Class probabilities: 0.4319916897116479,0.5680083102883521
-	```	
+
 
 ## Extracting Models from H2O
 
@@ -115,10 +125,10 @@ Generated models can be extracted from H2O in the following ways:
 	```
 	library(h2o)
 	h2o.init()
-	path = system.file("extdata", "prostate.csv", package = "h2o")
-	h2o_df = h2o.importFile(path)
-	h2o_df$CAPSULE = as.factor(h2o_df$CAPSULE)
-	model = h2o.glm(y = "CAPSULE",
+	path <- system.file("extdata", "prostate.csv", package = "h2o")
+	h2o_df <- h2o.importFile(path)
+	h2o_df$CAPSULE <- as.factor(h2o_df$CAPSULE)
+	model <- h2o.glm(y = "CAPSULE",
 	                x = c("AGE", "RACE", "PSA", "GLEASON"),
 	                training_frame = h2o_df,
 	                family = "binomial")
