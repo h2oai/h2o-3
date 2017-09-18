@@ -29,6 +29,7 @@ def weights_gamma():
 
 
 if __name__ == "__main__":
+  h2o.enable_expr_optimizations(False)
   pyunit_utils.standalone_test(weights_gamma)
 else:
   weights_gamma()

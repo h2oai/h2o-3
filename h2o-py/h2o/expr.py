@@ -74,7 +74,7 @@ class ExprNode(object):
 
     # Magical count-of-5:   (get 2 more when looking at it in debug mode)
     #  2 for _get_ast_str frame, 2 for _get_ast_str local dictionary list, 1 for parent
-    MAGIC_REF_COUNT = 3 if sys.gettrace() is None else 5  # M = debug ? 6 : 4
+    MAGIC_REF_COUNT = 4 if sys.gettrace() is None else 6  # M = debug ? 6 : 4
 
     # Flag to control application of local expression tree optimizations
     __ENABLE_EXPR_OPTIMIZATIONS__ = True
@@ -151,7 +151,8 @@ class ExprNode(object):
                 else:
                     s = "({}".format(head._op)
                     gc_ref_cnt = len(gc.get_referrers(head))
-                    if (top and head == self) or gc_ref_cnt >= ExprNode.MAGIC_REF_COUNT:
+                    print(gc.get_referrers(head))
+                    if (top and head is self) or gc_ref_cnt >= ExprNode.MAGIC_REF_COUNT:
                         head._cache._id = _py_tmp_key(append=h2o.connection().session_id)
                         s = "(tmp= {} {}".format(head._cache._id, s)
                         stack.append('@')
@@ -215,7 +216,7 @@ class ExprNode(object):
         return "".join(self._2_string(sb=[])) if pprint else ExprNode._collapse_sb(self._2_string(sb=[]))
 
     def _to_string(self):
-        return ' '.join(["(" + self._op] + [ExprNode._arg_to_expr(a) for a in self._children] + [")"])
+        return self._get_ast_str(False)
 
     def _2_string(self, depth=0, sb=None):
         sb += ['\n', " " * depth, "(" + self._op, " "]
