@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class EasyPredictModelWrapperTest {
   private static class MyModel extends GenModel {
     MyModel(String[] names, String[][] domains) {
-      super(names, domains);
+      super(names, domains, null);
     }
 
     @Override
@@ -184,7 +184,7 @@ public class EasyPredictModelWrapperTest {
   private static class MyWordEmbeddingModel extends MojoModel implements WordEmbeddingModel {
 
     public MyWordEmbeddingModel() {
-      super(new String[0], new String[0][]);
+      super(new String[0], new String[0][], null);
     }
 
     @Override
@@ -256,7 +256,7 @@ public class EasyPredictModelWrapperTest {
     };
 
     private MyAutoEncoderModel() {
-      super(new String[] {"Species", "Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width"}, DOMAINS);
+      super(new String[] {"Species", "Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width"}, DOMAINS, null);
     }
 
     @Override

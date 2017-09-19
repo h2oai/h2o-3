@@ -47,7 +47,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
 
   protected abstract void readModelData() throws IOException;
 
-  protected abstract M makeModel(String[] columns, String[][] domains);
+  protected abstract M makeModel(String[] columns, String[][] domains, String responseColumn);
 
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -129,10 +129,11 @@ public abstract class ModelMojoReader<M extends MojoModel> {
   private void readAll() throws IOException {
     String[] columns = (String[]) _lkv.get("[columns]");
     String[][] domains = parseModelDomains(columns.length);
-    _model = makeModel(columns, domains);
+    boolean isSupervised = readkv("supervised");
+    _model = makeModel(columns, domains, isSupervised ? columns[columns.length - 1] : null);
     _model._uuid = readkv("uuid");
     _model._category = hex.ModelCategory.valueOf((String) readkv("category"));
-    _model._supervised = readkv("supervised");
+    _model._supervised = isSupervised;
     _model._nfeatures = readkv("n_features");
     _model._nclasses = readkv("n_classes");
     _model._balanceClasses = readkv("balance_classes");

@@ -430,8 +430,8 @@ public abstract class SharedTreeMojoModel extends MojoModel {
     // Private
     //------------------------------------------------------------------------------------------------------------------
 
-    protected SharedTreeMojoModel(String[] columns, String[][] domains) {
-        super(columns, domains);
+    protected SharedTreeMojoModel(String[] columns, String[][] domains, String responseColumn) {
+        super(columns, domains, responseColumn);
     }
 
     /**

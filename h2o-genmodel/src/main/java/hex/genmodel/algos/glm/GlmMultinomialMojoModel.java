@@ -5,8 +5,8 @@ public class GlmMultinomialMojoModel extends GlmMojoModelBase {
   private int P;
   private int noff;
 
-  GlmMultinomialMojoModel(String[] columns, String[][] domains) {
-    super(columns, domains);
+  GlmMultinomialMojoModel(String[] columns, String[][] domains, String responseColumn) {
+    super(columns, domains, responseColumn);
   }
 
   @Override

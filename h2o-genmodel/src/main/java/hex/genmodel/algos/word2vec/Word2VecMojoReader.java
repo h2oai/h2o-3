@@ -40,8 +40,8 @@ public class Word2VecMojoReader extends ModelMojoReader<Word2VecMojoModel> {
   }
 
   @Override
-  protected Word2VecMojoModel makeModel(String[] columns, String[][] domains) {
-    return new Word2VecMojoModel(columns, domains);
+  protected Word2VecMojoModel makeModel(String[] columns, String[][] domains, String responseColumn) {
+    return new Word2VecMojoModel(columns, domains, responseColumn);
   }
 
 }

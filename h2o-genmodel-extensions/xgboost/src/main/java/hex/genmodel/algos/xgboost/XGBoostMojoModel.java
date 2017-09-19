@@ -19,12 +19,13 @@ public final class XGBoostMojoModel extends MojoModel {
   public boolean _useAllFactorLevels;
   public boolean _sparse;
 
-  public XGBoostMojoModel(String[] columns, String[][] domains) {
-    super(columns, domains);
+  public XGBoostMojoModel(String[] columns, String[][] domains, String responseColumn) {
+    super(columns, domains, responseColumn);
   }
 
-  public XGBoostMojoModel(String[] columns, String[][] domains, Booster _booster, int _nums, int _cats, int[] _catOffsets, boolean _useAllFactorLevels, boolean _sparse) {
-    super(columns, domains);
+  public XGBoostMojoModel(String[] columns, String[][] domains, String responseColumn,
+                          Booster _booster, int _nums, int _cats, int[] _catOffsets, boolean _useAllFactorLevels, boolean _sparse) {
+    super(columns, domains, responseColumn);
     this._booster = _booster;
     this._nums = _nums;
     this._cats = _cats;

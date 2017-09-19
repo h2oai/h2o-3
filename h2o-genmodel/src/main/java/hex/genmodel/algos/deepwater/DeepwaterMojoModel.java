@@ -37,8 +37,8 @@ public class DeepwaterMojoModel extends MojoModel {
   RuntimeOptions _opts;
   BackendParams _backendParams;
 
-  DeepwaterMojoModel(String[] columns, String[][] domains) {
-    super(columns, domains);
+  DeepwaterMojoModel(String[] columns, String[][] domains, String responseColumn) {
+    super(columns, domains, responseColumn);
   }
 
 

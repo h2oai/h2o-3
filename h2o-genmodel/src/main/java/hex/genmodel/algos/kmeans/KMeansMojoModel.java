@@ -11,8 +11,8 @@ public class KMeansMojoModel extends MojoModel {
   double[] _mults;
   int[] _modes;
 
-  KMeansMojoModel(String[] columns, String[][] domains) {
-    super(columns, domains);
+  KMeansMojoModel(String[] columns, String[][] domains, String responseColumn) {
+    super(columns, domains, responseColumn);
   }
 
   @Override
