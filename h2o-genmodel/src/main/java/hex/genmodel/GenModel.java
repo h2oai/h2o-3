@@ -23,14 +23,26 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
    *  response col enums for SupervisedModels.  */
   public final String[][] _domains;
 
+  /** Name of the response column used for training (only for supervised models). */
+  public final String _responseColumn;
+
   /** Name of the column with offsets (used for certain types of models). */
   public String _offsetColumn;
 
 
-  public GenModel(String[] names, String[][] domains) {
+  public GenModel(String[] names, String[][] domains, String responseColumn) {
     _names = names;
     _domains = domains;
-    _offsetColumn = null;
+    _responseColumn = responseColumn;
+  }
+
+  /**
+   * @deprecated This constructor is deprecated and will be removed in a future version.
+   *             use {@link #GenModel(String[] names, String[][] domains, String responseColumn)()} instead.
+   */
+  @Deprecated
+  public GenModel(String[] names, String[][] domains) {
+    this(names, domains, null);
   }
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -79,7 +91,9 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
 
   /** The name of the response column. */
   @Override public String getResponseName() {
-    return _names[getResponseIdx()];
+    // Note: _responseColumn is not set when deprecated constructor GenModel(String[] names, String[][] domains) is used
+    int r = getResponseIdx();
+    return r < _names.length ? _names[r] : _responseColumn;
   }
 
   /** Returns the index of the response column inside getDomains(). */

@@ -9,8 +9,8 @@ public class Word2VecMojoModel extends MojoModel implements WordEmbeddingModel {
   int _vecSize;
   HashMap<String, float[]> _embeddings;
 
-  Word2VecMojoModel(String[] columns, String[][] domains) {
-    super(columns, domains);
+  Word2VecMojoModel(String[] columns, String[][] domains, String responseName) {
+    super(columns, domains, responseName);
   }
 
   @Override

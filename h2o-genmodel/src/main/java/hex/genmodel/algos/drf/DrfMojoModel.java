@@ -11,8 +11,8 @@ public final class DrfMojoModel extends SharedTreeMojoModel {
     protected boolean _binomial_double_trees;
 
 
-    public DrfMojoModel(String[] columns, String[][] domains) {
-        super(columns, domains);
+    public DrfMojoModel(String[] columns, String[][] domains, String responseColumn) {
+        super(columns, domains, responseColumn);
     }
 
     /**
