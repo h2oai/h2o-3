@@ -70,19 +70,32 @@ public class AstIfElse extends AstPrimitive {
       if (vec.min() != 0 || vec.max() != 0) {
         tval = exec_check(env, stk, tst, asts[2], fr);
         break;
-      }
-    final boolean has_tfr = tval != null && tval.isFrame();
-    final String ts = (tval != null && tval.isStr()) ? tval.getStr() : null;
-    final double td = (tval != null && tval.isNum()) ? tval.getNum() : Double.NaN;
-    final int[] tsIntMap = new int[tst.numCols()];
-
+      } else
+        tval = Unevaluated.INSTANCE;
     // If all nonzero's (or NA's), then never execute false.
     Val fval = null;
     for (Vec vec : tst.vecs())
       if (vec.nzCnt() + vec.naCnt() < vec.length()) {
         fval = exec_check(env, stk, tst, asts[3], fr);
         break;
-      }
+      } else
+        fval = Unevaluated.INSTANCE;
+
+    // If one of the ASTs was not evaluated use the other one as a placeholder (only the type information of the placeholder will be used)
+    if (tval == Unevaluated.INSTANCE && fval == Unevaluated.INSTANCE) { // neither of them are defined, result will NAs
+      tval = null;
+      fval = null;
+    } else if (tval == Unevaluated.INSTANCE) { // true-AST is unevaluated, use false-value as a placeholder with correct type
+      tval = fval;
+    } else if (fval == Unevaluated.INSTANCE) { // false-AST is unevaluated, use true-value as a placeholder with correct type
+      fval = tval;
+    }
+
+    final boolean has_tfr = tval != null && tval.isFrame();
+    final String ts = (tval != null && tval.isStr()) ? tval.getStr() : null;
+    final double td = (tval != null && tval.isNum()) ? tval.getNum() : Double.NaN;
+    final int[] tsIntMap = new int[tst.numCols()];
+
     final boolean has_ffr = fval != null && fval.isFrame();
     final String fs = (fval != null && fval.isStr()) ? fval.getStr() : null;
     final double fd = (fval != null && fval.isNum()) ? fval.getNum() : Double.NaN;
@@ -233,5 +246,12 @@ public class AstIfElse extends AstPrimitive {
     }
     return new ValRow(ds, ns);
   }
+
+  private static class Unevaluated extends Val {
+    static Unevaluated INSTANCE = new Unevaluated();
+    @Override
+    public int type() { return -1; }
+  }
+
 }
 
