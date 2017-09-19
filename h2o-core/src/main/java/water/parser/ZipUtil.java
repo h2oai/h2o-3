@@ -11,15 +11,13 @@ import water.util.Log;
 import water.util.UnsafeUtils;
 
 import java.io.ByteArrayInputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-import java.util.zip.ZipInputStream;
+import java.util.zip.*;
 
 import static water.fvec.FileVec.getPathForKey;
 
@@ -186,13 +184,13 @@ abstract class ZipUtil {
     if( cmp == Compression.NONE ) return bs; // No compression
     // Wrap the bytes in a stream
     ByteArrayInputStream bais = new ByteArrayInputStream(bs);
-    InputStream is = null;
+    InflaterInputStream is = null;
     try {
-      if( cmp == Compression.ZIP ) {
+      if (cmp == Compression.ZIP) {
         ZipInputStream zis = new ZipInputStream(bais);
         ZipEntry ze = zis.getNextEntry(); // Get the *FIRST* entry
         // There is at least one entry in zip file and it is not a directory.
-        if( ze == null || ze.isDirectory() )
+        if (ze == null || ze.isDirectory())
           zis.getNextEntry(); // read the next entry which should be a file
         is = zis;
       } else {
@@ -204,18 +202,22 @@ abstract class ZipUtil {
       bs = new byte[bs.length * 2];
       // Now read from the compressed stream
       int off = 0;
-      while( off < bs.length ) {
+      while (off < bs.length) {
         int len = is.read(bs, off, bs.length - off);
-        if( len < 0 )
+        if (len < 0)
           break;
         off += len;
-        if( off == bs.length ) { // Dataset is uncompressing alot! Need more space...
-          if( bs.length >= chkSize )
+        if (off == bs.length) { // Dataset is uncompressing alot! Need more space...
+          if (bs.length >= chkSize)
             break; // Already got enough
           bs = Arrays.copyOf(bs, bs.length * 2);
         }
-      } 
-    } catch( IOException ioe ) { 
+      }
+    } catch (EOFException eof) {
+      // EOF Exception happens for data with low compression factor (eg. DEFLATE method)
+      // There is generally no way to avod this exception, we have to ignore it here
+      Log.trace(eof);
+    } catch( IOException ioe ) {
       throw Log.throwErr(ioe); 
     } finally { 
       try { if( is != null ) is.close(); } catch( IOException ignore ) { }

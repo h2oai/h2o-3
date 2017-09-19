@@ -13,6 +13,7 @@ import water.exceptions.H2OFailException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.init.*;
 import water.nbhm.NonBlockingHashMap;
+import water.parser.DecryptionTool;
 import water.parser.ParserService;
 import water.persist.PersistManager;
 import water.util.*;
@@ -228,6 +229,9 @@ final public class H2O {
 
     /** -internal_security_enabled is a boolean that indicates if internal communication paths are secured*/
     public boolean internal_security_enabled = false;
+
+    /** -decrypt_tool specifies the DKV key where a default decrypt tool will be installed*/
+    public String decrypt_tool = null;
 
     //-----------------------------------------------------------------------------------
     // Networking
@@ -581,6 +585,10 @@ final public class H2O {
       else if (s.matches("internal_security_conf")) {
         i = s.incrementAndCheck(i, args);
         trgt.internal_security_conf = args[i];
+      }
+      else if (s.matches("decrypt_tool")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.decrypt_tool = args[i];
       }
       else if (s.matches("no_latest_check")) {
         trgt.noLatestCheck = true;
@@ -2164,4 +2172,9 @@ final public class H2O {
   public static H2ONode getClientByIPPort(String ipPort){
     return CLIENTS_MAP.get(ipPort);
   }
+
+  public static Key<DecryptionTool> defaultDecryptionTool() {
+    return H2O.ARGS.decrypt_tool != null ? Key.<DecryptionTool>make(H2O.ARGS.decrypt_tool) : null;
+  }
+
 }
