@@ -138,7 +138,7 @@
 #' library(h2o)
 #' h2o.init()
 #' iris.hex <- as.h2o(iris)
-#' iris.dl <- h2o.deeplearning(x = 1:4, y = 5, training_frame = iris.hex)
+#' iris.dl <- h2o.deeplearning(x = 1:4, y = 5, training_frame = iris.hex, seed=123456)
 #' 
 #' # now make a prediction
 #' predictions <- h2o.predict(iris.dl, iris.hex)
