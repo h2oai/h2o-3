@@ -64,11 +64,10 @@ public class AstIfElse extends AstPrimitive {
     Frame tst = val.getFrame();
 
     // If all zero's, return false and never execute true.
-    Frame fr = new Frame(tst);
     Val tval = null;
     for (Vec vec : tst.vecs())
       if (vec.min() != 0 || vec.max() != 0) {
-        tval = exec_check(env, stk, tst, asts[2], fr);
+        tval = exec_check(env, stk, tst, asts[2]);
         break;
       } else
         tval = Unevaluated.INSTANCE;
@@ -76,7 +75,7 @@ public class AstIfElse extends AstPrimitive {
     Val fval = null;
     for (Vec vec : tst.vecs())
       if (vec.nzCnt() + vec.naCnt() < vec.length()) {
-        fval = exec_check(env, stk, tst, asts[3], fr);
+        fval = exec_check(env, stk, tst, asts[3]);
         break;
       } else
         fval = Unevaluated.INSTANCE;
@@ -100,6 +99,12 @@ public class AstIfElse extends AstPrimitive {
     final String fs = (fval != null && fval.isStr()) ? fval.getStr() : null;
     final double fd = (fval != null && fval.isNum()) ? fval.getNum() : Double.NaN;
     final int[] fsIntMap = new int[tst.numCols()];
+
+    Frame fr = new Frame();
+    if (has_tfr)
+      fr.add(tval.getFrame());
+    if (has_ffr)
+      fr.add(fval.getFrame());
 
     String[][] domains = null;
     final int[][] maps = new int[tst.numCols()][];
@@ -201,13 +206,12 @@ public class AstIfElse extends AstPrimitive {
     return map;
   }
 
-  Val exec_check(Env env, Env.StackHelp stk, Frame tst, AstRoot ast, Frame xfr) {
+  Val exec_check(Env env, Env.StackHelp stk, Frame tst, AstRoot ast) {
     Val val = ast.exec(env);
     if (val.isFrame()) {
       Frame fr = stk.track(val).getFrame();
       if (tst.numCols() != fr.numCols() || tst.numRows() != fr.numRows())
         throw new IllegalArgumentException("ifelse test frame and other frames must match dimensions, found " + tst + " and " + fr);
-      xfr.add(fr);
     }
     return val;
   }
