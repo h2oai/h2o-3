@@ -25,7 +25,7 @@ public class Word2VecMojoReaderTest {
   private static class TestedWord2VecMojoReader extends Word2VecMojoReader {
 
     private TestedWord2VecMojoReader() {
-      _model = new Word2VecMojoModel(new String[0], new String[0][]);
+      _model = new Word2VecMojoModel(new String[0], new String[0][], null);
     }
 
     @Override

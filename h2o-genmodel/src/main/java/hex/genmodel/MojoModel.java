@@ -59,8 +59,8 @@ public abstract class MojoModel extends GenModel {
   @Override public String getUUID() { return _uuid; }
 
 
-  protected MojoModel(String[] columns, String[][] domains) {
-    super(columns, domains);
+  protected MojoModel(String[] columns, String[][] domains, String responseColumn) {
+    super(columns, domains, responseColumn);
   }
-  
+
 }

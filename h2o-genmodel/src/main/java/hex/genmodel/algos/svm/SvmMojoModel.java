@@ -11,8 +11,8 @@ public class SvmMojoModel extends MojoModel {
     double defaultThreshold;
     double threshold;
 
-    SvmMojoModel(String[] columns, String[][] domains) {
-        super(columns, domains);
+    SvmMojoModel(String[] columns, String[][] domains, String responseColumn) {
+        super(columns, domains, responseColumn);
     }
 
     @Override

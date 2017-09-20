@@ -52,7 +52,7 @@ public class GlmMojoReaderTest {
         if (! "family".equals(key)) throw new UnsupportedOperationException("Unexpected property: " + key);
         return "multinomial";
       }
-    }.makeModel(cols, domain);
+    }.makeModel(cols, domain, "c");
     assertTrue(model instanceof GlmMultinomialMojoModel);
     assertTrue(cols == model._names);
     assertTrue(domain == model._domains);

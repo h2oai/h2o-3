@@ -13,8 +13,8 @@ public final class GbmMojoModel extends SharedTreeMojoModel {
     public DistributionFamily _family;
     public double _init_f;
 
-    public GbmMojoModel(String[] columns, String[][] domains) {
-        super(columns, domains);
+    public GbmMojoModel(String[] columns, String[][] domains, String responseColumn) {
+        super(columns, domains, responseColumn);
     }
 
 

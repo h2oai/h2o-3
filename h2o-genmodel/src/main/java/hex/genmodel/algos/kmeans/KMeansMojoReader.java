@@ -26,8 +26,8 @@ public class KMeansMojoReader extends ModelMojoReader<KMeansMojoModel> {
   }
 
   @Override
-  protected KMeansMojoModel makeModel(String[] columns, String[][] domains) {
-    return new KMeansMojoModel(columns, domains);
+  protected KMeansMojoModel makeModel(String[] columns, String[][] domains, String responseColumn) {
+    return new KMeansMojoModel(columns, domains, responseColumn);
   }
 
 }

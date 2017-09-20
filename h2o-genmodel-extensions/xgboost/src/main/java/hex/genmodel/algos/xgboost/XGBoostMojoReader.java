@@ -34,7 +34,7 @@ public class XGBoostMojoReader extends ModelMojoReader<XGBoostMojoModel> {
   }
 
   @Override
-  protected XGBoostMojoModel makeModel(String[] columns, String[][] domains) {
-    return new XGBoostMojoModel(columns, domains);
+  protected XGBoostMojoModel makeModel(String[] columns, String[][] domains, String responseColumn) {
+    return new XGBoostMojoModel(columns, domains, responseColumn);
   }
 }
