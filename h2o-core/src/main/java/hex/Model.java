@@ -1542,7 +1542,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   /** Generate implementation for super class. */
   protected SBPrintStream toJavaSuper(String modelName, SBPrintStream sb) {
-    return sb.nl().ip("public " + modelName + "() { super(NAMES,DOMAINS); }").nl();
+    String responseName = isSupervised() ? '"' + _output.responseName() + '"': null;
+    return sb.nl().ip("public " + modelName + "() { super(NAMES,DOMAINS," + responseName + "); }").nl();
   }
 
   private SBPrintStream toJavaNAMES(SBPrintStream sb, CodeGeneratorPipeline fileCtx) {
@@ -1703,7 +1704,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           throw H2O.fail("Internal POJO compilation failed",e);
         }
 
-        features = MemoryManager.malloc8d(genmodel._names.length);
+        // Check some model metadata
+        assert _output.responseName() == null || _output.responseName().equals(genmodel.getResponseName());
+
+        features = MemoryManager.malloc8d(genmodel.nfeatures());
         double[] predictions = MemoryManager.malloc8d(genmodel.nclasses() + 1);
 
         // Compare predictions, counting mis-predicts

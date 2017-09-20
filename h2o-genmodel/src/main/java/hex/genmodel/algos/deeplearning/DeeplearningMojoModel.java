@@ -32,8 +32,8 @@ public class DeeplearningMojoModel extends MojoModel {
    * @param columns
    * @param domains
    */
-  DeeplearningMojoModel(String[] columns, String[][] domains) {
-    super(columns, domains);
+  DeeplearningMojoModel(String[] columns, String[][] domains, String responseColumn) {
+    super(columns, domains, responseColumn);
   }
 
   public void init() {

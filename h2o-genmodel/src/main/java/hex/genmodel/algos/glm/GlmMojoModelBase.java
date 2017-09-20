@@ -18,8 +18,8 @@ abstract class GlmMojoModelBase extends MojoModel {
 
   String _family;
 
-  GlmMojoModelBase(String[] columns, String[][] domains) {
-    super(columns, domains);
+  GlmMojoModelBase(String[] columns, String[][] domains, String responseColumn) {
+    super(columns, domains, responseColumn);
   }
 
   void init() { /* do nothing by default */ }

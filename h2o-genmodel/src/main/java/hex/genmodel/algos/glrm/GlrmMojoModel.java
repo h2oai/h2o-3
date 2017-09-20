@@ -54,8 +54,8 @@ public class GlrmMojoModel extends MojoModel {
   }
 
 
-  protected GlrmMojoModel(String[] columns, String[][] domains) {
-    super(columns, domains);
+  protected GlrmMojoModel(String[] columns, String[][] domains, String responseColumn) {
+    super(columns, domains, responseColumn);
   }
 
   @Override public int getPredsSize(ModelCategory mc) {

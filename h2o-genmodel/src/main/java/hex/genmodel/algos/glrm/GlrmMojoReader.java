@@ -50,8 +50,8 @@ public class GlrmMojoReader extends ModelMojoReader<GlrmMojoModel> {
   }
 
   @Override
-  protected GlrmMojoModel makeModel(String[] columns, String[][] domains) {
-    return new GlrmMojoModel(columns, domains);
+  protected GlrmMojoModel makeModel(String[] columns, String[][] domains, String responseColumn) {
+    return new GlrmMojoModel(columns, domains, responseColumn);
   }
 
 }
