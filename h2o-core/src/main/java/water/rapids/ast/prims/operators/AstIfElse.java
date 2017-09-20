@@ -61,7 +61,9 @@ public class AstIfElse extends AstPrimitive {
     // Frame test.  Frame result.
     if (val.type() == Val.ROW)
       return row_ifelse((ValRow) val, asts[2].exec(env), asts[3].exec(env));
+
     Frame tst = val.getFrame();
+    Frame fr = new Frame(tst);
 
     // If all zero's, return false and never execute true.
     Val tval = null;
@@ -100,7 +102,6 @@ public class AstIfElse extends AstPrimitive {
     final double fd = (fval != null && fval.isNum()) ? fval.getNum() : Double.NaN;
     final int[] fsIntMap = new int[tst.numCols()];
 
-    Frame fr = new Frame();
     if (has_tfr)
       fr.add(tval.getFrame());
     if (has_ffr)
