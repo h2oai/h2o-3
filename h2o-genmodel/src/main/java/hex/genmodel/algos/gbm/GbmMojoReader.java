@@ -22,7 +22,7 @@ public class GbmMojoReader extends SharedTreeMojoReader<GbmMojoModel> {
   }
 
   @Override
-  protected GbmMojoModel makeModel(String[] columns, String[][] domains) {
-    return new GbmMojoModel(columns, domains);
+  protected GbmMojoModel makeModel(String[] columns, String[][] domains, String responseColumn) {
+    return new GbmMojoModel(columns, domains, responseColumn);
   }
 }

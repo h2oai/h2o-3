@@ -36,12 +36,12 @@ public class GlmMojoReader extends ModelMojoReader<GlmMojoModelBase> {
   }
 
   @Override
-  protected GlmMojoModelBase makeModel(String[] columns, String[][] domains) {
+  protected GlmMojoModelBase makeModel(String[] columns, String[][] domains, String responseColumn) {
     String family = readkv("family");
     if ("multinomial".equals(family))
-      return new GlmMultinomialMojoModel(columns, domains);
+      return new GlmMultinomialMojoModel(columns, domains, responseColumn);
     else
-      return new GlmMojoModel(columns, domains);
+      return new GlmMojoModel(columns, domains, responseColumn);
   }
 
 }

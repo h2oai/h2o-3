@@ -105,7 +105,7 @@ public class DeepwaterMojoReader extends ModelMojoReader<DeepwaterMojoModel> {
   }
 
   @Override
-  protected DeepwaterMojoModel makeModel(String[] columns, String[][] domains) {
-    return new DeepwaterMojoModel(columns, domains);
+  protected DeepwaterMojoModel makeModel(String[] columns, String[][] domains, String responseColumn) {
+    return new DeepwaterMojoModel(columns, domains, responseColumn);
   }
 }

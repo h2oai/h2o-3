@@ -26,8 +26,8 @@ public class SvmMojoReader extends ModelMojoReader<SvmMojoModel> {
     }
 
     @Override
-    protected SvmMojoModel makeModel(String[] columns, String[][] domains) {
-        return new SvmMojoModel(columns, domains);
+    protected SvmMojoModel makeModel(String[] columns, String[][] domains, String responseColumn) {
+        return new SvmMojoModel(columns, domains, responseColumn);
     }
 }
 
