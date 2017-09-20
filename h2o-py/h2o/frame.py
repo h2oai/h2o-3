@@ -3005,7 +3005,6 @@ class H2OFrame(object):
         assert_is_type(axis, 0, 1)
         assert_is_type(fun, FunctionType)
         assert_satisfies(fun, fun.__name__ == "<lambda>")
-        #res = _bytecode_decompile_lambda(fun.__code__)
         res = lambda_to_expr(fun)
         return H2OFrame._expr(expr=ExprNode("apply", self, 1 + (axis == 0), *res))
 
