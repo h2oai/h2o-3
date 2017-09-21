@@ -108,15 +108,20 @@ public abstract class ModelMojoReader<M extends MojoModel> {
    * trimmed to remove the leading and trailing whitespace. Removes escaping of the new line characters in enabled.
    */
   protected Iterable<String> readtext(String name, boolean unescapeNewlines) throws IOException {
-    BufferedReader br = _reader.getTextFile(name);
-    String line;
     ArrayList<String> res = new ArrayList<>(50);
-    while (true) {
-      line = br.readLine();
-      if (line == null) break;
-      if (unescapeNewlines)
-        line = StringEscapeUtils.unescapeNewlines(line);
-      res.add(line.trim());
+    BufferedReader br = _reader.getTextFile(name);
+    try {
+      String line;
+      while (true) {
+        line = br.readLine();
+        if (line == null) break;
+        if (unescapeNewlines)
+          line = StringEscapeUtils.unescapeNewlines(line);
+        res.add(line.trim());
+      }
+      br.close();
+    } finally {
+      try { br.close(); } catch (IOException e) { /* ignored */ }
     }
     return res;
   }
@@ -144,45 +149,50 @@ public abstract class ModelMojoReader<M extends MojoModel> {
   }
 
   private static Map<String, Object> parseModelInfo(MojoReaderBackend reader) throws IOException {
-    BufferedReader br = reader.getTextFile("model.ini");
     Map<String, Object> info = new HashMap<>();
-    String line;
-    int section = 0;
-    int ic = 0;  // Index for `columns` array
-    String[] columns = new String[0];  // array of column names, will be initialized later
-    Map<Integer, String> domains = new HashMap<>();  // map of (categorical column index => name of the domain file)
-    while (true) {
-      line = br.readLine();
-      if (line == null) break;
-      line = line.trim();
-      if (line.startsWith("#") || line.isEmpty()) continue;
-      if (line.equals("[info]"))
-        section = 1;
-      else if (line.equals("[columns]")) {
-        section = 2;  // Enter the [columns] section
-        if (! info.containsKey("n_columns"))
-          throw new IOException("`n_columns` variable is missing in the model info.");
-        int n_columns = Integer.parseInt(((RawValue) info.get("n_columns"))._val);
-        columns = new String[n_columns];
-        info.put("[columns]", columns);
-      } else if (line.equals("[domains]")) {
-        section = 3; // Enter the [domains] section
-        info.put("[domains]", domains);
-      } else if (section == 1) {
-        // [info] section: just parse key-value pairs and store them into the `info` map.
-        String[] res = line.split("\\s*=\\s*", 2);
-        info.put(res[0], res[0].equals("uuid")? res[1] : new RawValue(res[1]));
-      } else if (section == 2) {
-        // [columns] section
-        if (ic >= columns.length)
-          throw new IOException("`n_columns` variable is too small.");
-        columns[ic++] = line;
-      } else if (section == 3) {
-        // [domains] section
-        String[] res = line.split(":\\s*", 2);
-        int col_index = Integer.parseInt(res[0]);
-        domains.put(col_index, res[1]);
+    BufferedReader br = reader.getTextFile("model.ini");
+    try {
+      String line;
+      int section = 0;
+      int ic = 0;  // Index for `columns` array
+      String[] columns = new String[0];  // array of column names, will be initialized later
+      Map<Integer, String> domains = new HashMap<>();  // map of (categorical column index => name of the domain file)
+      while (true) {
+        line = br.readLine();
+        if (line == null) break;
+        line = line.trim();
+        if (line.startsWith("#") || line.isEmpty()) continue;
+        if (line.equals("[info]"))
+          section = 1;
+        else if (line.equals("[columns]")) {
+          section = 2;  // Enter the [columns] section
+          if (! info.containsKey("n_columns"))
+            throw new IOException("`n_columns` variable is missing in the model info.");
+          int n_columns = Integer.parseInt(((RawValue) info.get("n_columns"))._val);
+          columns = new String[n_columns];
+          info.put("[columns]", columns);
+        } else if (line.equals("[domains]")) {
+          section = 3; // Enter the [domains] section
+          info.put("[domains]", domains);
+        } else if (section == 1) {
+          // [info] section: just parse key-value pairs and store them into the `info` map.
+          String[] res = line.split("\\s*=\\s*", 2);
+          info.put(res[0], res[0].equals("uuid")? res[1] : new RawValue(res[1]));
+        } else if (section == 2) {
+          // [columns] section
+          if (ic >= columns.length)
+            throw new IOException("`n_columns` variable is too small.");
+          columns[ic++] = line;
+        } else if (section == 3) {
+          // [domains] section
+          String[] res = line.split(":\\s*", 2);
+          int col_index = Integer.parseInt(res[0]);
+          domains.put(col_index, res[1]);
+        }
       }
+      br.close();
+    } finally {
+      try { br.close(); } catch (IOException e) { /* ignored */ }
     }
     return info;
   }
@@ -200,15 +210,20 @@ public abstract class ModelMojoReader<M extends MojoModel> {
       String domfile = info[1];
       String[] domain = new String[n_elements];
       BufferedReader br = _reader.getTextFile("domains/" + domfile);
-      String line;
-      int id = 0;  // domain elements counter
-      while (true) {
-        line = br.readLine();
-        if (line == null) break;
-        domain[id++] = line;
+      try {
+        String line;
+        int id = 0;  // domain elements counter
+        while (true) {
+          line = br.readLine();
+          if (line == null) break;
+          domain[id++] = line;
+        }
+        if (id != n_elements)
+          throw new IOException("Not enough elements in the domain file");
+        br.close();
+      } finally {
+        try { br.close(); } catch (IOException ioe) { /* ignored */ }
       }
-      if (id != n_elements)
-        throw new IOException("Not enough elements in the domain file");
       domains[col_index] = domain;
     }
     return domains;
