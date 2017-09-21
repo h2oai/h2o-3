@@ -23,20 +23,20 @@ public abstract class ModelMojoReader<M extends MojoModel> {
 
 
   public static MojoModel readFrom(MojoReaderBackend reader) throws IOException {
-    Map<String, Object> info = parseModelInfo(reader);
-    if (! info.containsKey("algorithm"))
-      throw new IllegalStateException("Unable to find information about the model's algorithm.");
-    String algo = String.valueOf(info.get("algorithm"));
-    ModelMojoReader mmr = ModelMojoFactory.INSTANCE.getMojoReader(algo);
-    mmr._lkv = info;
-    mmr._reader = reader;
     try {
+      Map<String, Object> info = parseModelInfo(reader);
+      if (! info.containsKey("algorithm"))
+        throw new IllegalStateException("Unable to find information about the model's algorithm.");
+      String algo = String.valueOf(info.get("algorithm"));
+      ModelMojoReader mmr = ModelMojoFactory.INSTANCE.getMojoReader(algo);
+      mmr._lkv = info;
+      mmr._reader = reader;
       mmr.readAll();
+      return mmr._model;
     } finally {
-      if (mmr instanceof Closeable)
-        ((Closeable) mmr).close();
+      if (reader instanceof Closeable)
+        ((Closeable) reader).close();
     }
-    return mmr._model;
   }
 
   public abstract String getModelName();
