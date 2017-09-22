@@ -2,6 +2,63 @@
 
 ## H2O
 
+### Weierstrass (3.14.0.3) - 9/18/2017
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/3/index.html</a>
+
+<h4>Technical Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4873'>PUBDEV-4873</a>] - Introduced a Python client side AST optimization.
+</li>
+</ul>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3525'>PUBDEV-3525</a>] - In R, `h2o.arrange()` can now sort on a float column.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4723'>PUBDEV-4723</a>] - The `as_data_frame()` function no longer drops rows with NAs when `use_pandas` is set to TRUE.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4735'>PUBDEV-4735</a>] - In Deep Learning POJOs, fixed an issue in the sharing stage between threads.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4739'>PUBDEV-4739</a>] - Fixed an issue in R that caused `h2o.sub` to fail to retain the column names of the frame.
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4757'>PUBDEV-4757</a>] - Running ifelse() on a constant column no longer results in an error. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4846'>PUBDEV-4846</a>] - Using + on string columns now works correctly.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4848'>PUBDEV-4848</a>] - Fixed an issue that caused a POJO and a MOJO to return different column names with the `getNames()` method.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4849'>PUBDEV-4849</a>] - The R and Python clients now have consistent timeout numbers.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4868'>PUBDEV-4868</a>] - Fixed an issue that resulted in an AIOOB error when predicting with GLM. NA responses are now removed prior to GLM scoring.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4909'>PUBDEV-4909</a>] - The set_name method now works correctly in the Python client. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4921'>PUBDEV-4921</a>] - Replaced the deprecated Clock class in timing.gradle.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4937'>PUBDEV-4937</a>] - The MOJO Reader now closes open files after reading.
+</li>
+</ul>
+
+
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4628'>PUBDEV-4628</a>] - MOJO support has been extended  to include the Deep Learning algorithm.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4845'>PUBDEV-4845</a>] - Added the ability to import an encrypted (AES128) file into H2O. This can be configured glovally by specifying the `-decrypt_tool` option and installing the tool in DKV. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4904'>PUBDEV-4904</a>] - The Decryption API is now exposed in the REST API and in the R client.
+</li>
+</ul>
+        
+<h4>Docs</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4811'>PUBDEV-4811</a>] - Updated the MOJO Quick Start Guide to show separator differences between Linux/OS X and Windows. Also updated the R example to match the Python example.
+</li>
+</ul>
+
 ### Weierstrass (3.14.0.2) - 8/21/2017
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/2/index.html</a>
@@ -30,7 +87,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/2/
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4829'>PUBDEV-4829</a>] - A warning now displays when the minimal XGBoost version is used.
 </li>
 </ul>
-
 
 ### Weierstrass (3.14.0.1) - 8/10/2017
 
