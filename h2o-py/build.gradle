@@ -1,5 +1,3 @@
-import org.apache.tools.ant.taskdefs.condition.Os
-
 description = "H2O Python Package"
 
 dependencies {
@@ -20,11 +18,11 @@ ext {
 }
 
 task setProjectVersion << {
-    File INIT = new File([T, "h2o", "__init__.py"].join(File.separator))
+    File INIT = file("${getProjectDir()}/h2o/__init__.py")
     println "    INIT.path = " + INIT.path
     def txt = INIT.text
     txt = txt.replaceAll("SUBST_PROJECT_VERSION", PROJECT_VERSION)
-            .replaceAll("SUBST_PROJECT_BUILDINFO", bv.toString())
+            .replaceAll("SUBST_PROJECT_BUILDINFO", buildVersion.toString())
 
     INIT.write(txt)
 }
