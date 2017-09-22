@@ -1526,6 +1526,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     sb.p("public class ").p(modelName).p(" extends GenModel {").nl().ii(1);
     sb.ip("public hex.ModelCategory getModelCategory() { return hex.ModelCategory." + _output
         .getModelCategory() + "; }").nl();
+    sb.ip("public String getResponseName() { return \"" + _output._names[_output._domains.length - 1] + "\";}").nl();
     toJavaInit(sb, fileCtx).nl();
     toJavaNAMES(sb, fileCtx);
     toJavaNCLASSES(sb);
