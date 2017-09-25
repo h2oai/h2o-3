@@ -1,13 +1,4 @@
-import org.apache.tools.ant.taskdefs.condition.Os
-
 description = "H2O Python Package"
-
-String pythonexe = "python"
-String pipexe = "pip"
-if (System.env.VIRTUAL_ENV) {
-    pythonexe = "${System.env.VIRTUAL_ENV}/bin/python".toString()
-    pipexe = "${System.env.VIRTUAL_ENV}/bin/pip".toString()
-}
 
 dependencies {
     compile project(":h2o-assemblies:main")
@@ -17,27 +8,23 @@ def buildVersion = new H2OBuildVersion(rootDir, version)
 
 ext {
     PROJECT_VERSION = buildVersion.getProjectVersion()
+    pythonexe       = findProperty("pythonExec") ?: "python"
+    pipexe          = findProperty("pipExec") ?: "pip"
+    if (System.env.VIRTUAL_ENV) {
+        pythonexe = "${System.env.VIRTUAL_ENV}/bin/python".toString()
+        pipexe = "${System.env.VIRTUAL_ENV}/bin/pip".toString()
+    }
+    testsPath        = file("tests")
 }
 
+task setProjectVersion << {
+    File INIT = file("${getProjectDir()}/h2o/__init__.py")
+    println "    INIT.path = " + INIT.path
+    def txt = INIT.text
+    txt = txt.replaceAll("SUBST_PROJECT_VERSION", PROJECT_VERSION)
+            .replaceAll("SUBST_PROJECT_BUILDINFO", buildVersion.toString())
 
-task makeOutputDir(type: Exec) {
-    if (Os.isFamily(Os.FAMILY_WINDOWS)) {
-        commandLine getOsSpecificCommandLine(['if not exist "build\\tmp" mkdir', 'build\\tmp'])
-    } else {
-        commandLine getOsSpecificCommandLine(['mkdir', '-p', 'build/tmp'])
-    }
-}
-
-
-task setProjectVersion {
-    doLast {
-        File INIT = file("${getProjectDir()}/h2o/__init__.py")
-        println "    INIT.path =" + INIT.path
-        def txt = INIT.text
-        txt = txt.replaceAll("SUBST_PROJECT_VERSION", PROJECT_VERSION)
-                .replaceAll("SUBST_PROJECT_BUILDINFO", buildVersion.toString())
-        INIT.write(txt)
-    }
+    INIT.write(txt)
 }
 
 task resetProjectVersion {
@@ -57,14 +44,17 @@ task verifyDependencies(type: Exec) {
     ])
 }
 
-task buildDist(type: Exec, dependsOn: [verifyDependencies, setProjectVersion, makeOutputDir]) {
+task buildDist(type: Exec) {
+    dependsOn verifyDependencies
+    dependsOn setProjectVersion
+
     doFirst {
-        standardOutput = new FileOutputStream("build/tmp/h2o-py_buildDist.out")
+        file("${buildDir}/tmp").mkdirs()
+        standardOutput = new FileOutputStream(file("${buildDir}/tmp/h2o-py_buildDist.out"))
     }
     commandLine getOsSpecificCommandLine([pythonexe, "setup.py", "bdist_wheel"])
 }
 
-def testsPath = file("./tests")
 task smokeTest(type: Exec) {
     dependsOn build
     workingDir testsPath
@@ -72,16 +62,23 @@ task smokeTest(type: Exec) {
     if (project.hasProperty("jacocoCoverage")) {
         args << '--jacoco'
     }
-    commandLine args
+    commandLine getOsSpecificCommandLine(args)
 }
-
 
 //
 // Cleanup tasks
 //
 
+task pythonVersion(type: Exec) {
+    doFirst {
+        println(System.env.VIRTUAL_ENV)
+        println(environment)
+    }
+    commandLine getOsSpecificCommandLine([pythonexe, "--version"])
+}
+
 task cleanUpSmokeTest(type: Delete) {
-    delete file("${getProjectDir()}/results")
+    delete file("tests/results")
 }
 
 task cleanCoverageData(type: Delete) {
@@ -89,10 +86,13 @@ task cleanCoverageData(type: Delete) {
 }
 
 task cleaner(type: Delete) {
-    delete file("${getProjectDir()}/dist")
-    delete file("${getProjectDir()}/h2o.egg-info")
-    delete file("${getProjectDir()}/build")
-    delete fileTree(dir: "$projectDir/h2o", include: '**/*.pyc')
+    doFirst {
+        println "Cleaning..."
+    }
+    delete file("dist/")
+    delete file("h2o.egg-info/")
+    delete file("build/")
+    delete fileTree(dir: "$projectDir/h2o" , include: '**/*.pyc')
 }
 
 //

@@ -16,12 +16,8 @@ dependencies {
     publishedJars project(path: ':h2o-assemblies:genmodel', configuration: 'shadow')
 }
 
-static def getOsSpecificCommandLine(args) {
-  return Os.isFamily(Os.FAMILY_WINDOWS) ? [ 'cmd', '/c' ] + args : args
-}
-
 static def checkPrerequisite(name) {
-  def prefix = Os.isFamily(Os.FAMILY_WINDOWS) ? 'cmd /c ' : ''
+  def prefix = Os.isFamily(Os.FAMILY_WINDOWS) ? 'cmd /c ' : '/usr/bin/env '
   def command = prefix + name + ' -v'
   def proc
   try {
@@ -40,7 +36,7 @@ static def checkPrerequisite(name) {
 
 task checkClientPrerequisites {
     doLast {
-    def nodeInstallationInstruction = """\
+        def nodeInstallationInstruction = """\
 
 To install node.js, try one of these:
 
@@ -57,29 +53,18 @@ Use the official installer at http://nodejs.org/download/
 
 """
 
-    def nodeFailureMessage = "Could not detect a node.js installation on this system.\nInstall node.js and try again.\n" + nodeInstallationInstruction
+        def nodeFailureMessage = "Could not detect a node.js installation on this system.\nInstall node.js and try again.\n" + nodeInstallationInstruction
 
-    if (checkPrerequisite('node') != 0) {
-        if (Os.isFamily(Os.FAMILY_MAC)) {
-            if (checkPrerequisite('/usr/local/bin/node') != 0) {
+        if (checkPrerequisite('node') != 0) {
+            if (Os.isFamily(Os.FAMILY_MAC)) {
+                if (checkPrerequisite('/usr/local/bin/node') != 0) {
+                    throw new StopExecutionException(nodeFailureMessage)
+                }
+            } else {
                 throw new StopExecutionException(nodeFailureMessage)
             }
-        } else {
-            throw new StopExecutionException(nodeFailureMessage)
         }
     }
-
-//  def npmFailureMessage = "Could not find command 'npm'.\nRe-install node.js and try again.\n" + nodeInstallationInstruction
-//  if (checkPrerequisite('npm') != 0) {
-//    if (Os.isFamily(Os.FAMILY_MAC)) {
-//      if (checkPrerequisite('/usr/local/bin/npm') != 0) {
-//        throw new StopExecutionException(npmFailureMessage)
-//      }
-//    } else {
-//      throw new StopExecutionException(npmFailureMessage)
-//    }
-//  }
-}
 }
 
 task installNpmPackages(type: Exec) {
@@ -169,14 +154,6 @@ task copyHelpImages(type: Copy) {
   from "$rootDir/h2o-docs/src/product/flow/images"
   into "$rootDir/h2o-web/src/main/resources/www/flow/help/images"
 }
-
-// CNC: Turn off phantomjs smokeTest until flow changes hit master
-//task smokeTest(type: Exec) {
-//    dependsOn build
-//    println "phantom.js (Flow) smoke test (../scripts/run.py --wipeall --test ./lib/h2o-flow/build/js/headless-test.js)..."
-//    workingDir new File(".")
-//    commandLine '../scripts/run.py', '--wipeall', '--test', './lib/h2o-flow/build/js/headless-test.js'
-//}
 
 task cleanUpSmokeTest {
     doLast {
