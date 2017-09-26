@@ -124,30 +124,23 @@ public final class DefaultParserProviders {
         if (pp == this || pp.info().equals(GUESS_INFO)) continue;
         // Else try to guess with given provider
         try {
-          ParseSetup ps = pp.guessFormatSetup(bv, bits, userSetup);
-          if (ps == null)
-            continue; // parser rejected the data, try next parser
-          if (! GUESS_INFO.equals(ps._parse_type)) {
-            parseSetup = ps;
+          ParseSetup ps = pp.guessInitSetup(bv, bits, userSetup);
+          if (ps != null) { // found a parser for the data type
             provider = pp;
-            break; // found a parser for the data type
+            parseSetup = ps;
+            break;
           }
-          // we have a candidate to try
-          ps = pp.guessDataSetup(bv, bits, ps);
-          if (ps != null)
-            return ps;
         } catch( Throwable ignore ) {
           /*ignore failed parse attempt*/
           Log.trace("Guesser failed for parser type", pp.info(), ignore);
         }
       }
-      if (provider != null) {
-        // we have a correct provider, finish parse setup & don't ignore the exceptions
-        parseSetup = provider.guessDataSetup(bv, bits, parseSetup);
-        if (parseSetup != null)
-          return parseSetup;
-      }
-      throw new ParseDataset.H2OParseException("Cannot determine file type.");
+
+      if (provider == null)
+        throw new ParseDataset.H2OParseException("Cannot determine file type.");
+
+      // finish parse setup & don't ignore the exceptions
+      return provider.guessFinalSetup(bv, bits, parseSetup);
     }
 
     @Override

@@ -28,12 +28,12 @@ public class ParquetParserProvider extends BinaryParserProvider {
   }
 
   @Override
-  public ParseSetup guessFormatSetup(ByteVec v, byte[] bits, ParseSetup userSetup) {
+  public ParseSetup guessInitSetup(ByteVec v, byte[] bits, ParseSetup userSetup) {
     return ParquetParser.guessFormatSetup(v, bits);
   }
 
   @Override
-  public ParseSetup guessDataSetup(ByteVec v, byte[] bits, ParseSetup ps) {
+  public ParseSetup guessFinalSetup(ByteVec v, byte[] bits, ParseSetup ps) {
     return ParquetParser.guessDataSetup(v, (ParquetParser.ParquetParseSetup) ps);
   }
 

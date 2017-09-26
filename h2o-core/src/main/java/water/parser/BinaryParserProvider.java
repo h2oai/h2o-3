@@ -11,13 +11,13 @@ public abstract class BinaryParserProvider extends ParserProvider {
    * {@inheritDoc}
    */
   @Override
-  public abstract ParseSetup guessFormatSetup(ByteVec v, byte[] bits, ParseSetup userSetup);
+  public abstract ParseSetup guessInitSetup(ByteVec v, byte[] bits, ParseSetup userSetup);
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public abstract ParseSetup guessDataSetup(ByteVec v, byte[] bits, ParseSetup ps);
+  public abstract ParseSetup guessFinalSetup(ByteVec v, byte[] bits, ParseSetup ps);
 
   @Override
   @Deprecated
