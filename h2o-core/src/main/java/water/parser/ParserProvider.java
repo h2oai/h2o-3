@@ -46,7 +46,7 @@ public abstract class ParserProvider {
    * Any exception thrown by this method will signal that this ParserProvider doesn't support
    * the input data.
    *
-   * Parsers of data formats that provide metadata (eg. a binary file format like Parquet) should use the
+   * Parsers of data formats that provide metadata (eg. a binary file formats like Parquet) should use the
    * file metadata to identify the parse type and possibly other properties of the ParseSetup
    * that can be determined just from the metadata itself. The goal should be perform the least amount of operations
    * to correctly determine the ParseType (any exception means - format is not supported!).

@@ -4,6 +4,7 @@ import java.util.List;
 
 import water.Job;
 import water.Key;
+import water.exceptions.H2OUnsupportedDataFileException;
 import water.fvec.ByteVec;
 import water.util.Log;
 
@@ -130,7 +131,9 @@ public final class DefaultParserProviders {
             parseSetup = ps;
             break;
           }
-        } catch( Throwable ignore ) {
+        } catch (H2OUnsupportedDataFileException e) {
+          throw e;
+        } catch (Throwable ignore) {
           /*ignore failed parse attempt*/
           Log.trace("Guesser failed for parser type", pp.info(), ignore);
         }

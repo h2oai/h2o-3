@@ -12,13 +12,16 @@ import org.apache.parquet.schema.Type;
 import water.Job;
 import water.Key;
 
+import water.exceptions.H2OUnsupportedDataFileException;
 import water.fvec.ByteVec;
 import water.fvec.Chunk;
 import water.fvec.Vec;
 import water.parser.*;
+import water.util.IcedHashMapGeneric;
 import water.util.Log;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 
 /**
@@ -164,12 +167,24 @@ public class ParquetParser extends Parser {
   }
 
   private static void checkCompatibility(ParquetMetadata metadata) {
+    // make sure we can map Parquet blocks to Chunks
     for (BlockMetaData block : metadata.getBlocks()) {
       if (block.getRowCount() > Integer.MAX_VALUE) {
-        throw new RuntimeException("Current implementation doesn't support Parquet files with blocks larger than " +
-                Integer.MAX_VALUE + " rows."); // because we map each block to a single H2O Chunk
+        IcedHashMapGeneric.IcedHashMapStringObject dbg = new IcedHashMapGeneric.IcedHashMapStringObject();
+        dbg.put("startingPos", block.getStartingPos());
+        dbg.put("rowCount", block.getRowCount());
+        throw new H2OUnsupportedDataFileException("Unsupported Parquet file (technical limitation).",
+                "Current implementation doesn't support Parquet files with blocks larger than " +
+                Integer.MAX_VALUE + " rows.", dbg); // because we map each block to a single H2O Chunk
       }
     }
+    // check that file doesn't have nested structures
+    MessageType schema = metadata.getFileMetaData().getSchema();
+    for (String[] path : schema.getPaths())
+      if (path.length != 1) {
+        throw new H2OUnsupportedDataFileException("Parquet files with nested structures are not supported.",
+                "Detected a column with a nested structure " + Arrays.asList(path));
+      }
   }
 
   private static ParquetPreviewParseWriter readFirstRecords(ParquetParseSetup initSetup, ByteVec vec, int cnt) {
