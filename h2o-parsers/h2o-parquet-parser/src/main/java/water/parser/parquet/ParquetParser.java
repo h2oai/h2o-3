@@ -64,7 +64,7 @@ public class ParquetParser extends Parser {
     return dout;
   }
 
-  public static ParseSetup guessSetup(ByteVec vec, byte[] bits) {
+  public static ParquetParseSetup guessFormatSetup(ByteVec vec, byte[] bits) {
     if (bits.length < MAGIC.length) {
       return null;
     }
@@ -73,15 +73,25 @@ public class ParquetParser extends Parser {
     }
     // seems like we have a Parquet file
     byte[] metadataBytes = VecParquetReader.readFooterAsBytes(vec);
-    ParquetMetadata metadata = VecParquetReader.readFooter(metadataBytes, ParquetMetadataConverter.NO_FILTER);
+    ParquetMetadata metadata = VecParquetReader.readFooter(metadataBytes);
     checkCompatibility(metadata);
-    ParquetPreviewParseWriter ppWriter = readFirstRecords(metadata, vec, MAX_PREVIEW_RECORDS);
-    return ppWriter.toParseSetup(metadataBytes);
+    return toInitialSetup(metadata.getFileMetaData().getSchema(), metadataBytes);
+  }
+
+  private static ParquetParseSetup toInitialSetup(MessageType parquetSchema, byte[] metadataBytes) {
+    byte[] roughTypes = roughGuessTypes(parquetSchema);
+    String[] columnNames = columnNames(parquetSchema);
+    return new ParquetParseSetup(columnNames, roughTypes, null, metadataBytes);
+  }
+
+  public static ParquetParseSetup guessDataSetup(ByteVec vec, ParquetParseSetup ps) {
+    ParquetPreviewParseWriter ppWriter = readFirstRecords(ps, vec, MAX_PREVIEW_RECORDS);
+    return ppWriter.toParseSetup(ps.parquetMetadata);
   }
 
   /**
    * Overrides unsupported type conversions/mappings specified by the user.
-   * @param vec byte vec holding binary parquet data
+   * @param vec byte vec holding bin\ary parquet data
    * @param requestedTypes user-specified target types
    * @return corrected types
    */
@@ -120,10 +130,10 @@ public class ParquetParser extends Parser {
       super();
     }
 
-    ParquetPreviewParseWriter(MessageType parquetSchema) {
-      super(parquetSchema.getPaths().size());
-      _colNames = columnNames(parquetSchema);
-      _roughTypes = roughGuessTypes(parquetSchema);
+    ParquetPreviewParseWriter(ParquetParseSetup setup) {
+      super(setup.getColumnNames().length);
+      _colNames = setup.getColumnNames();
+      _roughTypes = setup.getColumnTypes();
       setColumnNames(_colNames);
       _nlines = 0;
       _data[0] = new String[_colNames.length];
@@ -134,7 +144,7 @@ public class ParquetParser extends Parser {
       return correctTypeConversions(_roughTypes, super.guessTypes());
     }
 
-    ParseSetup toParseSetup(byte[] parquetMetadata) {
+    ParquetParseSetup toParseSetup(byte[] parquetMetadata) {
       byte[] types = guessTypes();
       return new ParquetParseSetup(_colNames, types, _data, parquetMetadata);
     }
@@ -162,9 +172,10 @@ public class ParquetParser extends Parser {
     }
   }
 
-  private static ParquetPreviewParseWriter readFirstRecords(ParquetMetadata metadata, ByteVec vec, int cnt) {
+  private static ParquetPreviewParseWriter readFirstRecords(ParquetParseSetup initSetup, ByteVec vec, int cnt) {
+    ParquetMetadata metadata = VecParquetReader.readFooter(initSetup.parquetMetadata);
     ParquetMetadata startMetadata = new ParquetMetadata(metadata.getFileMetaData(), Collections.singletonList(findFirstBlock(metadata)));
-    ParquetPreviewParseWriter ppWriter = new ParquetPreviewParseWriter(metadata.getFileMetaData().getSchema());
+    ParquetPreviewParseWriter ppWriter = new ParquetPreviewParseWriter(initSetup);
     VecParquetReader reader = new VecParquetReader(vec, startMetadata, ppWriter, ppWriter._roughTypes);
     try {
       int recordCnt = 0;

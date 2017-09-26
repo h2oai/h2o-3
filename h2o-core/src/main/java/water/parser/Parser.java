@@ -92,9 +92,8 @@ public abstract class Parser extends Iced {
   private boolean checkFileNHeader(final InputStream is, final StreamParseWriter dout, StreamData din, int cidx)
           throws IOException {
     byte[] headerBytes = ZipUtil.unzipForHeader(din.getChunkData(cidx), this._setup._chunk_size);
-    ParseSetup ps = ParseSetup.guessSetup(null, headerBytes, GUESS_INFO, ParseSetup.GUESS_SEP,
-            ParseSetup.GUESS_COL_CNT, this._setup._single_quotes, ParseSetup.GUESS_HEADER,
-            null, null, null, null);
+    ParseSetup ps = ParseSetup.guessSetup(null, headerBytes, new ParseSetup(GUESS_INFO, ParseSetup.GUESS_SEP,
+            this._setup._single_quotes, ParseSetup.GUESS_HEADER, ParseSetup.GUESS_COL_CNT, null, null));
     // check to make sure datasets in file belong to the same dataset
     // just check for number for number of columns/separator here.  Ignore the column type, user can force it
     if ((this._setup._number_columns != ps._number_columns) || (this._setup._separator != ps._separator)) {

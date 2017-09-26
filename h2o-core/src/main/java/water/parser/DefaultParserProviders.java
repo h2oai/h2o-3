@@ -1,7 +1,5 @@
 package water.parser;
 
-import org.apache.commons.math3.analysis.function.Abs;
-
 import java.util.List;
 
 import water.Job;
@@ -115,32 +113,48 @@ public final class DefaultParserProviders {
     }
 
     @Override
-    public Parser createParser(ParseSetup setup, Key<Job> jobKey) {
-      throw new UnsupportedOperationException("Guess parser provided does not know how to create a new parser! Use a specific parser!");
-    }
-
-    @Override
-    public ParseSetup guessSetup(ByteVec bv, byte[] bits, byte sep, int ncols, boolean singleQuotes,
-                                 int checkHeader, String[] columnNames, byte[] columnTypes,
-                                 String[][] domains, String[][] naStrings) {
+    protected ParseSetup guessSetup_impl(ByteVec bv, byte[] bits, ParseSetup userSetup) {
       List<ParserProvider> pps = ParserService.INSTANCE.getAllProviders(true); // Sort them based on priorities
+
+      ParseSetup parseSetup = null;
+      ParserProvider provider = null;
 
       for (ParserProvider pp : pps) {
         // Do not do recursive call
         if (pp == this || pp.info().equals(GUESS_INFO)) continue;
         // Else try to guess with given provider
         try {
-          ParseSetup ps = pp.guessSetup(bv, bits, sep, ncols, singleQuotes, checkHeader, columnNames, columnTypes, domains, naStrings);
-          if( ps != null) {
-            return ps;
+          ParseSetup ps = pp.guessFormatSetup(bv, bits, userSetup);
+          if (ps == null)
+            continue; // parser rejected the data, try next parser
+          if (! GUESS_INFO.equals(ps._parse_type)) {
+            parseSetup = ps;
+            provider = pp;
+            break; // found a parser for the data type
           }
+          // we have a candidate to try
+          ps = pp.guessDataSetup(bv, bits, ps);
+          if (ps != null)
+            return ps;
         } catch( Throwable ignore ) {
           /*ignore failed parse attempt*/
           Log.trace("Guesser failed for parser type", pp.info(), ignore);
         }
       }
+      if (provider != null) {
+        // we have a correct provider, finish parse setup & don't ignore the exceptions
+        parseSetup = provider.guessDataSetup(bv, bits, parseSetup);
+        if (parseSetup != null)
+          return parseSetup;
+      }
       throw new ParseDataset.H2OParseException("Cannot determine file type.");
     }
+
+    @Override
+    public Parser createParser(ParseSetup setup, Key<Job> jobKey) {
+      throw new UnsupportedOperationException("Guess parser provided does not know how to create a new parser! Use a specific parser!");
+    }
+
   }
 
   static abstract class AbstractParserProvide extends ParserProvider {

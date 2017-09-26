@@ -40,6 +40,7 @@ import water.persist.VecDataInputStream;
 import water.util.Log;
 
 import static org.apache.parquet.bytes.BytesUtils.readIntLittleEndian;
+import static org.apache.parquet.format.converter.ParquetMetadataConverter.NO_FILTER;
 import static org.apache.parquet.hadoop.ParquetFileWriter.MAGIC;
 
 import water.persist.VecFileSystem;
@@ -140,6 +141,10 @@ public class VecParquetReader implements Closeable {
         Log.warn("Failed to close Vec data input stream", e);
       }
     }
+  }
+
+  public static ParquetMetadata readFooter(byte[] metadataBytes) {
+    return readFooter(metadataBytes, NO_FILTER);
   }
 
   public static ParquetMetadata readFooter(byte[] metadataBytes, MetadataFilter filter) {
