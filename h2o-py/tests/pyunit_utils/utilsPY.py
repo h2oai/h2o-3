@@ -3000,3 +3000,21 @@ def compare_numeric_frames(f1, f2, prob=0.5, tol=1e-6):
                                                                             abs(temp2[rowInd, colInd]))
                 assert diff<=tol, "Failed frame values check! frame1 value: {0}, frame2 value: " \
                                   "{1}".format(temp1[rowInd, colInd], temp2[rowInd, colInd])
+
+def check_sorted_2_columns(frame1, sorted_column_indices, prob=0.5):
+    for colInd in sorted_column_indices:
+        for rowInd in range(0, frame1.nrow-1):
+            if (random.uniform(0.0,1.0) < prob):
+                if colInd == sorted_column_indices[0]:
+                    if not(math.isnan(frame1[rowInd, colInd])) and not(math.isnan(frame1[rowInd+1,colInd])):
+                        assert frame1[rowInd,colInd] <= frame1[rowInd+1,colInd], "Wrong sort order: value at row {0}: {1}, value at " \
+                                                               "row {2}: {3}".format(rowInd, frame1[rowInd,colInd],
+                                                                                     rowInd+1, frame1[rowInd+1,colInd])
+                else: # for second column
+                    if not(math.isnan(frame1[rowInd, sorted_column_indices[0]])) and not(math.isnan(frame1[rowInd+1,sorted_column_indices[0]])):
+                        if (frame1[rowInd,sorted_column_indices[0]]==frame1[rowInd+1, sorted_column_indices[0]]):  # meaningful to compare row entries then
+                            if not(math.isnan(frame1[rowInd, colInd])) and not(math.isnan(frame1[rowInd+1,colInd])):
+                                assert frame1[rowInd,colInd] <= frame1[rowInd+1,colInd], "Wrong sort order: value at row {0}: {1}, value at " \
+                                                                           "row {2}: {3}".format(rowInd, frame1[rowInd,colInd],
+                                                                                                 rowInd+1, frame1[rowInd+1,colInd])
+
