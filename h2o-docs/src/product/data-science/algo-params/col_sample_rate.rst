@@ -1,15 +1,15 @@
 ``col_sample_rate``
 -------------------
 
-- Available in: GBM, DRF
+- Available in: GBM, XGBoost
 - Hyperparameter: yes
 
 Description
 ~~~~~~~~~~~
 
-Specify the column sampling rate (y-axis). This acceptable value range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. (For details, refer to “`Stochastic Gradient Boosting” (Friedman, 1999) <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
+Specify the column (y-axis) sampling rate (without replacement). This acceptable value range is 0.0 to 1.0, and this value defaults to 1. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. (For details, refer to “`Stochastic Gradient Boosting” (Friedman, 1999) <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
 
-The following illustrates how column sampling is implemented for GBM and DRF. 
+The following illustrates how column sampling is implemented. 
 
 For an example model using:
  

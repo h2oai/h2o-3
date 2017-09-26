@@ -1,9 +1,4 @@
 import org.apache.tools.ant.taskdefs.condition.Os
-import java.nio.file.FileSystems
-import java.nio.file.Files
-import java.nio.file.Path
-import java.util.zip.GZIPOutputStream
-import static java.nio.file.StandardCopyOption.*;
 
 defaultTasks 'build_rh2o'
 description = "H2O R Package"
@@ -18,20 +13,6 @@ dependencies {
 def getOS() {
     String os = [Os.FAMILY_WINDOWS, Os.FAMILY_MAC, Os.FAMILY_UNIX].find {String family -> Os.isFamily(family) }
     return os
-}
-
-def getOsSpecificCommandLine(args) { return Os.isFamily(Os.FAMILY_WINDOWS) ? [ 'cmd', '/c' ] + args : args }
-def newPath(String first, String... args) { return FileSystems.getDefault().getPath(first, args) }
-def copyFile(src, tgt) {
-    if (!(src instanceof Path)) src = newPath(*(src as List))
-    if (!(tgt instanceof Path)) tgt = newPath(*(tgt as List))
-    Files.copy(src, tgt, COPY_ATTRIBUTES, REPLACE_EXISTING)
-}
-
-def gzip(String s, String outFile){
-    GZIPOutputStream zipStream = new GZIPOutputStream(new FileOutputStream(outFile))
-    zipStream.write(s.getBytes())
-    zipStream.close()
 }
 
 def bv = new H2OBuildVersion(rootDir, version)
@@ -49,10 +30,12 @@ ext {
     H2O_R_SOURCE_FILE  = "h2o_${PROJECT_VERSION}.tar.gz"
 }
 
-task untar << {
-    copy {
-        from tarTree(resources.gzip(H2O_R_SOURCE_FILE))
-        into getProjectDir()
+task untar {
+    doLast {
+        copy {
+            from tarTree(resources.gzip(H2O_R_SOURCE_FILE))
+            into getProjectDir()
+        }
     }
 }
 
@@ -86,59 +69,65 @@ task pdflatex(type: Exec) {
 
 pdflatex.onlyIf{ SYS_OS != "windows"}
 
-task setProperties << {
-    project.ext.BUILD_BRANCH = BUILD_BRANCH
-    project.ext.R_VERSION    = getRVersion.output()
-    project.ext.PDF_LATEX    = (pdflatex.output()).toLowerCase().contains("pdflatex") ? pdflatex.output() : ""
-    println "    Git Branch: " + BUILD_BRANCH
-    println "    R Version: " + R_VERSION
-    println "    PDF LATEX: " + PDF_LATEX
+task setProperties {
+    doLast {
+        project.ext.BUILD_BRANCH = BUILD_BRANCH
+        project.ext.R_VERSION = getRVersion.output()
+        project.ext.PDF_LATEX = (pdflatex.output()).toLowerCase().contains("pdflatex") ? pdflatex.output() : ""
+        println "    Git Branch: " + BUILD_BRANCH
+        println "    R Version: " + R_VERSION
+        println "    PDF LATEX: " + PDF_LATEX
+    }
 }
 
-task setDevPackageFiles << {
-    File DEV_DESC_TEMP   = new File([T,"..","h2o-3-DESCRIPTION.template"]                      .join(File.separator))
-    File DEV_DESCRIPTION = new File([T,"..","h2o-3-DESCRIPTION"]                               .join(File.separator))
-    def txt = ""
-    def today = new Date()
-    txt = DEV_DESC_TEMP.text
-    txt = txt.replaceAll("SUBST_PROJECT_VERSION", PROJECT_VERSION).replaceAll("SUBST_PROJECT_BRANCH", BUILD_BRANCH).replaceAll("SUBST_PROJECT_DATE", today.format("YYYY-MM-dd"))
-    DEV_DESCRIPTION.write(txt)
+task setDevPackageFiles {
+    doLast {
+        File DEV_DESC_TEMP = new File([T, "..", "h2o-3-DESCRIPTION.template"].join(File.separator))
+        File DEV_DESCRIPTION = new File([T, "..", "h2o-3-DESCRIPTION"].join(File.separator))
+        def txt = ""
+        def today = new Date()
+        txt = DEV_DESC_TEMP.text
+        txt = txt.replaceAll("SUBST_PROJECT_VERSION", PROJECT_VERSION).replaceAll("SUBST_PROJECT_BRANCH", BUILD_BRANCH).replaceAll("SUBST_PROJECT_DATE", today.format("YYYY-MM-dd"))
+        DEV_DESCRIPTION.write(txt)
+    }
 }
 
-task setPackageFiles << {
-    File h2oRd       = new File([T, "h2o-package", "man", "h2o-package.Rd"]                  .join(File.separator))
-    File DESCRIPTION = new File([T, "h2o-package", "DESCRIPTION"]                            .join(File.separator))
-    File DESC_TEMP   = new File([T, "h2o-DESCRIPTION.template"]                              .join(File.separator))
-    File h2oRd_TEMP  = new File([T, "h2o-package.template"]                                  .join(File.separator))
-    File build_branch= new File([T, "h2o-package", "inst", "branch.txt"]                     .join(File.separator))
-    File build_num   = new File([T, "h2o-package", "inst", "buildnum.txt"]                   .join(File.separator))
-    File src_info    = new File([T, "h2o-package", "inst", "source_code_repository_info.txt"].join(File.separator))
-    def txt = ""
-    def today = new Date()
-    txt = DESC_TEMP.text
-    txt = txt.replaceAll("SUBST_PROJECT_VERSION", PROJECT_VERSION).replaceAll("SUBST_PROJECT_BRANCH", BUILD_BRANCH).replaceAll("SUBST_PROJECT_DATE", today.format("YYYY-MM-dd"))
-    DESCRIPTION.write(txt)
-    txt = h2oRd_TEMP.text
-    txt = txt.replaceAll("SUBST_PROJECT_VERSION", PROJECT_VERSION).replaceAll("SUBST_PROJECT_BRANCH", BUILD_BRANCH).replaceAll("SUBST_PROJECT_DATE", today.toString())
-    h2oRd.parentFile.mkdirs()
-    h2oRd.write(txt)
-    build_branch.write(BUILD_BRANCH + "\n")
-    build_num.write(BUILD_NUMBER + "\n")
-    src_info.write("https://github.com/h2oai/h2o-dev")
+task setPackageFiles {
+    doLast {
+        File h2oRd = new File([T, "h2o-package", "man", "h2o-package.Rd"].join(File.separator))
+        File DESCRIPTION = new File([T, "h2o-package", "DESCRIPTION"].join(File.separator))
+        File DESC_TEMP = new File([T, "h2o-DESCRIPTION.template"].join(File.separator))
+        File h2oRd_TEMP = new File([T, "h2o-package.template"].join(File.separator))
+        File build_branch = new File([T, "h2o-package", "inst", "branch.txt"].join(File.separator))
+        File build_num = new File([T, "h2o-package", "inst", "buildnum.txt"].join(File.separator))
+        File src_info = new File([T, "h2o-package", "inst", "source_code_repository_info.txt"].join(File.separator))
+        def txt = ""
+        def today = new Date()
+        txt = DESC_TEMP.text
+        txt = txt.replaceAll("SUBST_PROJECT_VERSION", PROJECT_VERSION).replaceAll("SUBST_PROJECT_BRANCH", BUILD_BRANCH).replaceAll("SUBST_PROJECT_DATE", today.format("YYYY-MM-dd"))
+        DESCRIPTION.write(txt)
+        txt = h2oRd_TEMP.text
+        txt = txt.replaceAll("SUBST_PROJECT_VERSION", PROJECT_VERSION).replaceAll("SUBST_PROJECT_BRANCH", BUILD_BRANCH).replaceAll("SUBST_PROJECT_DATE", today.toString())
+        h2oRd.parentFile.mkdirs()
+        h2oRd.write(txt)
+        build_branch.write(BUILD_BRANCH + "\n")
+        build_num.write(BUILD_NUMBER + "\n")
+        src_info.write("https://github.com/h2oai/h2o-dev")
+    }
 }
 
 task buildPackageDocumentation(type: Exec) {
     doFirst {
-        standardOutput = new FileOutputStream("build/tmp/h2o-r_buildPackageDocumentation.out")
-        errorOutput = new FileOutputStream("build/tmp/h2o-r_buildPackageDocumentation.err")
+        standardOutput = new FileOutputStream("${buildDir}/tmp/h2o-r_buildPackageDocumentation.out")
+        errorOutput = new FileOutputStream("${buildDir}/tmp/h2o-r_buildPackageDocumentation.err")
     }
     commandLine getOsSpecificCommandLine(['R', "-q", "-e", "library(devtools); document('h2o-package');"])
 }
 
 task genPDF(type: Exec) {
     doFirst {
-        standardOutput = new FileOutputStream("build/tmp/h2o-r_genPDF.out")
-        errorOutput = new FileOutputStream("build/tmp/h2o-r_genPDF.err")
+        standardOutput = new FileOutputStream("${buildDir}/tmp/h2o-r_genPDF.out")
+        errorOutput = new FileOutputStream("${buildDir}/tmp/h2o-r_genPDF.err")
     }
     ignoreExitValue=true
     if (SYS_OS == "windows") commandLine 'cmd', '/c', 'R', 'CMD', "Rd2pdf", "--force", "--output=h2o_package.pdf", "--title=\"h2o\"", "--no-preview", "h2o-package\\man"
@@ -147,60 +136,67 @@ task genPDF(type: Exec) {
 
 genPDF.onlyIf { PDF_LATEX != "" && SYS_OS != "windows" }
 
-task cpPDF << {
-    new File([T,"R"].join(File.separator)).mkdirs()
-    copyFile([T,"h2o_package.pdf"], [T,"R", "h2o_package.pdf"])
+task cpPDF(type: Copy) {
+    from "${projectDir}/h2o_package.pdf"
+    into "${projectDir}/R/"
 }
 
 cpPDF.onlyIf { PDF_LATEX.contains("pdflatex") }
 
-task cpH2OAppJar << {
-    def path = [T, "h2o-package", "inst", "java"].join(File.separator)
-    File f = new File(path)
-    f.deleteDir()
-    new File(path).mkdirs()
-    copyFile([T,"..", "build", "h2o.jar"],[T, "h2o-package", "inst", "java", "h2o.jar"])
+task cpH2OAppJar(type: Copy) {
+    from "${rootDir}/build/h2o.jar"
+    into "${projectDir}/h2o-package/inst/java/"
 }
 
 task buildPKG(type: Exec) {
     doFirst {
-        standardOutput = new FileOutputStream("build/tmp/h2o-r_buildPKG.out")
+        standardOutput = new FileOutputStream("${buildDir}/tmp/h2o-r_buildPKG.out")
     }
     commandLine getOsSpecificCommandLine(['R', 'CMD', 'build', 'h2o-package'])
 }
 
-task cpToR << {
-    new File([T, "R", "src", "contrib"].join(File.separator)).mkdirs()
-    copyFile([T, "README.md"], [T, "R", "README.md"])
-    copyFile([T, H2O_R_SOURCE_FILE], [T, "R", "src", "contrib", H2O_R_SOURCE_FILE])
+task cpToR {
+    doLast {
+        copy {
+            from "${projectDir}/README.md"
+            into "${projectDir}/R"
+        }
+        copy {
+            from "${projectDir}/${H2O_R_SOURCE_FILE}"
+            into "${projectDir}/R/src/contrib"
+        }
+    }
 }
 task publishPKG(type: Exec) { commandLine getOsSpecificCommandLine(['Rscript', "-e", "tools::write_PACKAGES('R/src/contrib')"]) }
 
 
-task cleanUp << {
-    new File([T, "h2o_package.pdf"].join(File.separator)).delete()
-    new File([T, "h2o-package", "man"].join(File.separator)).deleteDir()
-    new File([T, "h2o-package", "inst", "branch.txt"].join(File.separator)).delete()
-    new File([T, "h2o-package", "inst", "buildnum.txt"].join(File.separator)).delete()
-    new File([T, "h2o-package", "inst", "java"].join(File.separator)).deleteDir()
-    new File([T, "h2o"].join(File.separator)).deleteDir()
-    new File([T, "PACKAGES"].join(File.separator)).delete()
-    new File([T, "R"].join(File.separator)).deleteDir()
-    new File([T, "build"].join(File.separator)).deleteDir()
-    new File(T).eachFile { if (it.name =~ "tar" || it.name =~ "zip" || it.name =~ "gz") it.delete() }
+task cleanUp {
+    doLast {
+        new File([T, "h2o_package.pdf"].join(File.separator)).delete()
+        new File([T, "h2o-package", "man"].join(File.separator)).deleteDir()
+        new File([T, "h2o-package", "inst", "branch.txt"].join(File.separator)).delete()
+        new File([T, "h2o-package", "inst", "buildnum.txt"].join(File.separator)).delete()
+        new File([T, "h2o-package", "inst", "java"].join(File.separator)).deleteDir()
+        new File([T, "h2o"].join(File.separator)).deleteDir()
+        new File([T, "PACKAGES"].join(File.separator)).delete()
+        new File([T, "R"].join(File.separator)).deleteDir()
+        new File([T, "build"].join(File.separator)).deleteDir()
+        new File(T).eachFile { if (it.name =~ "tar" || it.name =~ "zip" || it.name =~ "gz") it.delete() }
+    }
 }
 
-task cleaner << {
-    new File([T, "h2o_package.pdf"].join(File.separator)).delete()
-    new File([T, "h2o"].join(File.separator)).deleteDir()
-    new File([T, "PACKAGES"].join(File.separator)).delete()
-    new File(T).eachFile { if (it.name =~ "tar" || it.name =~ "zip" || it.name =~ "gz") it.delete() }
+task cleaner {
+    doLast {
+        new File([T, "h2o_package.pdf"].join(File.separator)).delete()
+        new File([T, "h2o"].join(File.separator)).deleteDir()
+        new File([T, "PACKAGES"].join(File.separator)).delete()
+        new File(T).eachFile { if (it.name =~ "tar" || it.name =~ "zip" || it.name =~ "gz") it.delete() }
+    }
 }
 
 def testsPath = new File("./tests")
 
 task smokeTest(type: Exec) {
-    println "R smoke test (run.py --wipeall --testsize s)..."
     workingDir testsPath
 	def args = ['python', 'run.py', '--wipeall', '--testsize', 's']
     if (project.hasProperty("jacocoCoverage")) {
@@ -209,8 +205,10 @@ task smokeTest(type: Exec) {
     commandLine args
 }
 
-task cleanUpSmokeTest << {
-    new File([T, "tests/results"].join(File.separator)).deleteDir()
+task cleanUpSmokeTest {
+    doLast {
+        new File([T, "tests/results"].join(File.separator)).deleteDir()
+    }
 }
 
 clean.dependsOn cleanUp, cleanUpSmokeTest

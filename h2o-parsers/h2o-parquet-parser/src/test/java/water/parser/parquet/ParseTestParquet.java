@@ -28,11 +28,14 @@ import static org.apache.parquet.hadoop.metadata.CompressionCodecName.UNCOMPRESS
 import static org.apache.parquet.schema.MessageTypeParser.parseMessageType;
 import static org.junit.Assert.*;
 
+import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.fvec.RollupStatsHelpers;
+import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.BufferedString;
+import water.parser.ParseDataset;
+import water.parser.ParseSetup;
 
 /**
  * Test suite for Parquet parser.
@@ -42,7 +45,7 @@ public class ParseTestParquet extends TestUtil {
   private static double EPSILON = 1e-9;
 
   @BeforeClass
-  static public void setup() { TestUtil.stall_till_cloudsize(5); }
+  static public void setup() { TestUtil.stall_till_cloudsize(1); }
 
   @Test
   public void testParseSimple() {
@@ -54,6 +57,73 @@ public class ParseTestParquet extends TestUtil {
       assertEquals(Arrays.asList(expected._names), Arrays.asList(actual._names));
       assertEquals(Arrays.asList(expected.typesStr()), Arrays.asList(actual.typesStr()));
       assertTrue(isBitIdentical(expected, actual));
+    } finally {
+      if (expected != null) expected.delete();
+      if (actual != null) actual.delete();
+    }
+  }
+
+  @Test
+  public void testParseWithTypeOverride() {
+    Frame expected = null, actual = null;
+    try {
+      NFSFileVec nfs = makeNfsFileVec("smalldata/parser/parquet/airlines-simple.snappy.parquet");
+      Key[] keys = new Key[]{nfs._key};
+      ParseSetup guessedSetup = ParseSetup.guessSetup(keys, false, ParseSetup.GUESS_HEADER);
+
+      // attempt to override a Enum type to String
+      byte[] types = guessedSetup.getColumnTypes();
+      types[1] = Vec.T_STR;
+      guessedSetup.setColumnTypes(types);
+
+      // parse the file with the modified setup
+      ParseDataset pd = ParseDataset.forkParseDataset(Key.<Frame>make(), keys, guessedSetup, true);
+      actual = pd._job.get();
+
+      expected = parse_test_file("smalldata/airlines/AirlinesTrain.csv.zip");
+      expected.replace(1, expected.vec(1).toStringVec()).remove();
+
+      // type is String instead of Enum
+      assertEquals("String", actual.typesStr()[1]);
+      assertEquals(Arrays.asList(expected._names), Arrays.asList(actual._names));
+      assertEquals(Arrays.asList(expected.typesStr()), Arrays.asList(actual.typesStr()));
+      assertTrue(isBitIdentical(expected, actual));
+
+      // no warnings were generated
+      assertNull(pd._job.warns());
+    } finally {
+      if (expected != null) expected.delete();
+      if (actual != null) actual.delete();
+    }
+  }
+
+  @Test
+  public void testParseWithInvalidTypeOverride() {
+    Frame expected = null, actual = null;
+    try {
+      NFSFileVec nfs = makeNfsFileVec("smalldata/parser/parquet/airlines-simple.snappy.parquet");
+      Key[] keys = new Key[]{nfs._key};
+      ParseSetup guessedSetup = ParseSetup.guessSetup(keys, false, ParseSetup.GUESS_HEADER);
+
+      // attempt to override a Numeric type to String
+      byte[] types = guessedSetup.getColumnTypes();
+      types[9] = Vec.T_STR;
+      guessedSetup.setColumnTypes(types);
+
+      // parse the file with the modified setup
+      ParseDataset pd = ParseDataset.forkParseDataset(Key.<Frame>make(), keys, guessedSetup, true);
+      actual = pd._job.get();
+
+      // type stayed the same
+      assertEquals("Numeric", actual.typesStr()[9]);
+      expected = parse_test_file("smalldata/airlines/AirlinesTrain.csv.zip");
+      assertEquals(Arrays.asList(expected._names), Arrays.asList(actual._names));
+      assertEquals(Arrays.asList(expected.typesStr()), Arrays.asList(actual.typesStr()));
+      assertTrue(isBitIdentical(expected, actual));
+
+      // proper warnings were generated
+      assertEquals(1, pd._job.warns().length);
+      assertTrue(pd._job.warns()[0].endsWith("error = 'Unsupported type override (Numeric -> String). Column Distance will be parsed as Numeric'"));
     } finally {
       if (expected != null) expected.delete();
       if (actual != null) actual.delete();
@@ -99,7 +169,7 @@ public class ParseTestParquet extends TestUtil {
           assertEquals("Value in column mylong", 2 + row, f.vec(2).at8(row));
           assertEquals("Value in column myfloat", 3.1f + row, f.vec(3).at(row), EPSILON);
           assertEquals("Value in column myfloat", 4.1 + row, f.vec(4).at(row), EPSILON);
-          assertEquals("Value in column mystring", "hello world: " + row, f.vec(7).atStr(bs, row).bytesToString());
+          assertEquals("Value in column mystring", "hello world: " + row, f.vec(7).atStr(bs, row).toSanitizedString());
           assertEquals("Value in column myenum", row % 2 == 0 ? "a" : "b", f.vec(8).factor(f.vec(8).at8(row)));
         }
       }
@@ -142,6 +212,23 @@ public class ParseTestParquet extends TestUtil {
             assertTrue(f.vec(3).isNA(row));
           }
           assertEquals("Value in column row", row, f.vec(2).at8(row));
+        }
+      }
+    };
+    assertFrameAssertion(assertion);
+  }
+
+  @Test
+  public void testParseCategoricalsWithZeroCharacters() {
+    FrameAssertion assertion = new GenFrameAssertion("nullCharacters.parquet", TestUtil.ari(1, 100)) {
+      @Override protected File prepareFile() throws IOException { return ParquetFileGenerator.generateParquetFileWithNullCharacters(Files.createTempDir(), file, nrows()); }
+      @Override public void check(Frame f) {
+        assertArrayEquals("Column names need to match!", ar("cat_field"), f.names());
+        assertArrayEquals("Column types need to match!", ar(Vec.T_CAT), f.types());
+        for (int row = 0; row < nrows(); row++) {
+          String catValue = row == 66 ? "CAT_0_weird\0" : "CAT_" + (row % 10);
+          assertEquals("Value in column string_field", catValue, f.vec(0).factor(f.vec(0).at8(row))
+          );
         }
       }
     };
@@ -228,6 +315,28 @@ class ParquetFileGenerator {
         if (i % 10 == 0) { g = g.append("string_field", "CAT_" + (i % 10)); }
         if (i % 10 == 0) { g = g.append("int32_field2", i); }
         writer.write(g.append("row", i));
+      }
+    } finally {
+      writer.close();
+    }
+    return f;
+  }
+
+  static File generateParquetFileWithNullCharacters(File parentDir, String filename, int nrows) throws IOException {
+    File f = new File(parentDir, filename);
+
+    Configuration conf = new Configuration();
+    MessageType schema = parseMessageType(
+            "message test { optional binary cat_field (UTF8); } ");
+    GroupWriteSupport.setSchema(schema, conf);
+    SimpleGroupFactory fact = new SimpleGroupFactory(schema);
+    ParquetWriter<Group> writer = new ParquetWriter<Group>(new Path(f.getPath()), new GroupWriteSupport(),
+            UNCOMPRESSED, 1024, 1024, 512, true, false, ParquetProperties.WriterVersion.PARQUET_2_0, conf);
+    try {
+      for (int i = 0; i < nrows; i++) {
+        Group g = fact.newGroup();
+        String value = i == 66 ? "CAT_0_weird\0" : "CAT_" + (i % 10);
+        writer.write(g.append("cat_field", value));
       }
     } finally {
       writer.close();

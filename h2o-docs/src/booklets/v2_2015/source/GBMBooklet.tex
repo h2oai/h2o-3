@@ -253,10 +253,10 @@ and then picking the optimal split point among the bins.
 
 To specify a model that considers all factors individually (and perform an optimal group split,
 where every level goes in the right direction based on the training response), specify \texttt{nbins\_cats} to be at least as large as the number of factors.
-Values greater than 1024 (the maximum number of levels supported in R) are supported, but might increase model training time.
+For users familiar with R, values greater than 1024 are supported, but might increase model training time. (Note that 1024 represents the maximum number of levels supported in R; H2O has a limit of 10 million levels.)
 
 The value of \texttt{nbins\_cats} for categorical factors has a much greater impact on the generalization error rate than \texttt{nbins} for real- or integer-valued columns (where higher values mainly lead to more accurate numerical split points).
-For columns with many factors, a small \texttt{nbins\_cats} value can add randomness to the split decisions (since the columns are grouped together somewhat arbitrarily), while large values can lead to perfect splits, resulting in overfitting.
+For columns with many factors, a small \texttt{nbins\_cats} value can add randomness to the split decisions (since the factor levels get grouped together somewhat arbitrarily), while large values can lead to perfect splits, resulting in overfitting.
 
 \newpage
 \subsection{Key Parameters}

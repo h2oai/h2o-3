@@ -1,7 +1,6 @@
 package hex.genmodel;
 
 import hex.ModelCategory;
-import hex.genmodel.utils.GenmodelBitSet;
 import water.genmodel.IGeneratedModel;
 
 import java.awt.*;
@@ -24,14 +23,26 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
    *  response col enums for SupervisedModels.  */
   public final String[][] _domains;
 
+  /** Name of the response column used for training (only for supervised models). */
+  public final String _responseColumn;
+
   /** Name of the column with offsets (used for certain types of models). */
   public String _offsetColumn;
 
 
-  public GenModel(String[] names, String[][] domains) {
+  public GenModel(String[] names, String[][] domains, String responseColumn) {
     _names = names;
     _domains = domains;
-    _offsetColumn = null;
+    _responseColumn = responseColumn;
+  }
+
+  /**
+   * @deprecated This constructor is deprecated and will be removed in a future version.
+   *             use {@link #GenModel(String[] names, String[][] domains, String responseColumn)()} instead.
+   */
+  @Deprecated
+  public GenModel(String[] names, String[][] domains) {
+    this(names, domains, null);
   }
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -80,7 +91,9 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
 
   /** The name of the response column. */
   @Override public String getResponseName() {
-    return _names[getResponseIdx()];
+    // Note: _responseColumn is not set when deprecated constructor GenModel(String[] names, String[][] domains) is used
+    int r = getResponseIdx();
+    return r < _names.length ? _names[r] : _responseColumn;
   }
 
   /** Returns the index of the response column inside getDomains(). */
@@ -154,8 +167,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   }
 
   public int getPredsSize(ModelCategory mc) {
-    return (mc == ModelCategory.DimReduction)? nclasses() :
-           (mc == ModelCategory.AutoEncoder)? nfeatures() : getPredsSize();
+    return (mc == ModelCategory.DimReduction)? nclasses() :getPredsSize();
   }
 
   public static String createAuxKey(String k) {
@@ -515,10 +527,36 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   /** ??? */
   public String getHeader() { return null; }
 
-  // Helper for DeepWater
-  static public void setInput(final double[] from, float[] to, int _nums, int _cats, int[] _catOffsets, double[] _normMul, double[] _normSub, boolean useAllFactorLevels) {
-    float[] nums = new float[_nums]; // a bit wasteful - reallocated each time
+  // Helper for DeepWater, DeepLearning and XGBoost (models that require explicit one-hot encoding on the fly)
+  static public void setInput(final double[] from, float[] to, int _nums, int _cats, int[] _catOffsets, double[] _normMul, double[] _normSub, boolean useAllFactorLevels, boolean replaceMissingWithZero) {
+    double[] nums = new double[_nums]; // a bit wasteful - reallocated each time
     int[] cats = new int[_cats]; // a bit wasteful - reallocated each time
+
+    setCats(from, nums, cats, _cats, _catOffsets, _normMul, _normSub, useAllFactorLevels);
+
+    assert(to.length == _nums + _catOffsets[_cats]);
+    Arrays.fill(to, 0f);
+    for (int i = 0; i < _cats; ++i)
+      to[cats[i]] = 1f; // one-hot encode categoricals
+    for (int i = 0; i < _nums; ++i)
+      to[_catOffsets[_cats] + i] = Double.isNaN(nums[i]) ? (replaceMissingWithZero ? 0 : Float.NaN) : (float)nums[i];
+  }
+
+  // Helper for Deeplearning, note: we assume nums and cats are allocated already and being re-used
+  static public void setInput(final double[] from, double[] to, double[] nums, int[] cats, int _nums, int _cats,
+                              int[] _catOffsets, double[] _normMul, double[] _normSub, boolean useAllFactorLevels, boolean replaceMissingWithZero) {
+    setCats(from, nums, cats, _cats, _catOffsets, _normMul, _normSub, useAllFactorLevels);
+
+    assert(to.length == _nums + _catOffsets[_cats]);
+    Arrays.fill(to, 0f);
+    for (int i = 0; i < _cats; ++i)
+      to[cats[i]] = 1f; // one-hot encode categoricals
+    for (int i = 0; i < _nums; ++i)
+      to[_catOffsets[_cats] + i] = Double.isNaN(nums[i]) ? (replaceMissingWithZero ? 0 : Double.NaN) : nums[i];
+  }
+
+  static public void setCats(final double[] from, double[] nums, int[] cats, int _cats, int[] _catOffsets,
+                             double[] _normMul, double[] _normSub, boolean useAllFactorLevels) {
     for (int i = 0; i < _cats; ++i) {
       if (Double.isNaN(from[i])) {
         cats[i] = (_catOffsets[i + 1] - 1); //use the extra level for NAs made during training
@@ -532,20 +570,26 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
           cats[i] = (_catOffsets[i + 1] - 1);
       }
     }
-    for (int i = _cats; i < _cats + _nums; ++i) {
+    for (int i = _cats; i < from.length; ++i) {
       double d = from[i];
-      if (_normMul != null) d = (d - _normSub[i - _cats]) * _normMul[i - _cats];
-      nums[i - _cats] = (float)d; //can be NaN for missing numerical data
+
+      if ((_normMul != null) && (_normMul.length >0)) {
+        d = (d - _normSub[i - _cats]) * _normMul[i - _cats];
+      }
+      nums[i - _cats] = d; //can be NaN for missing numerical data
     }
-    assert(to.length == _nums + _catOffsets[_cats]);
-    Arrays.fill(to, 0f);
-    for (int i = 0; i < _cats; ++i)
-      to[cats[i]] = 1f; // one-hot encode categoricals
-    for (int i = 0; i < _nums; ++i)
-      to[_catOffsets[_cats] + i] = Double.isNaN(nums[i]) ? 0f : nums[i];
   }
 
-  public static void img2pixels(BufferedImage img, int w, int h, int channels, float[] pixels, int start, float[] mean) throws IOException {
+
+  public static float[] convertDouble2Float(double[] input) {
+    int arraySize = input.length;
+    float[] output = new float[arraySize];
+    for (int index=0; index<arraySize; index++)
+      output[index] = (float) input[index];
+    return output;
+  }
+
+   public static void img2pixels(BufferedImage img, int w, int h, int channels, float[] pixels, int start, float[] mean) throws IOException {
     // resize the image
     BufferedImage scaledImg = new BufferedImage(w, h, img.getType());
     Graphics2D g2d = scaledImg.createGraphics();
@@ -583,5 +627,8 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
       }
     }
   }
+
+  // Helpers for deeplearning mojo
+
 
 }

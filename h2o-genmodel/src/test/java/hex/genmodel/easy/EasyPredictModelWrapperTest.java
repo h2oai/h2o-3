@@ -5,15 +5,11 @@ import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.word2vec.WordEmbeddingModel;
 import hex.genmodel.easy.exception.PredictUnknownCategoricalLevelException;
-import hex.genmodel.easy.prediction.BinomialModelPrediction;
-import hex.genmodel.easy.prediction.SortedClassProbability;
-import hex.genmodel.easy.prediction.Word2VecPrediction;
+import hex.genmodel.easy.prediction.*;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -21,7 +17,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class EasyPredictModelWrapperTest {
   private static class MyModel extends GenModel {
     MyModel(String[] names, String[][] domains) {
-      super(names, domains);
+      super(names, domains, null);
     }
 
     @Override
@@ -188,7 +184,7 @@ public class EasyPredictModelWrapperTest {
   private static class MyWordEmbeddingModel extends MojoModel implements WordEmbeddingModel {
 
     public MyWordEmbeddingModel() {
-      super(new String[0], new String[0][]);
+      super(new String[0], new String[0][], null);
     }
 
     @Override
@@ -214,6 +210,76 @@ public class EasyPredictModelWrapperTest {
     @Override
     public ModelCategory getModelCategory() {
       return ModelCategory.WordEmbedding;
+    }
+  }
+
+  @Test
+  public void testAutoEncoderModel() throws Exception {
+    MyAutoEncoderModel rawModel = new MyAutoEncoderModel();
+    EasyPredictModelWrapper m = new EasyPredictModelWrapper(rawModel);
+
+    RowData row = new RowData();
+    row.put("Species", "versicolor");
+    row.put("Sepal.Length", 7.0);
+    row.put("Sepal.Width", 3.2);
+    row.put("Petal.Length", 4.7);
+    row.put("Petal.Width", 1.4);
+
+    AbstractPrediction p = m.predict(row);
+    Assert.assertTrue(p instanceof AutoEncoderModelPrediction);
+    AutoEncoderModelPrediction aep = (AutoEncoderModelPrediction) p;
+    Assert.assertArrayEquals(new double[]{0.0, 1.0, 0.0, 0.0, 7.0, 3.2, 4.7, 1.4}, aep.original, 0.01);
+    Assert.assertArrayEquals(new double[]{0.0, 1.3124, 0.4864, 0.0, 6.1729, 3.0573, 17.8372, 1.1993}, aep.reconstructed, 0.001);
+    Map<String, Object> expected = new HashMap<String, Object>() {{
+      put("Petal.Length", 17.8372);
+      put("Petal.Width", 1.1993);
+      put("Sepal.Width", 3.0573);
+      put("Sepal.Length", 6.1729);
+      put("Species", new HashMap<String, Object>() {{
+        put(null, 0.0);
+        put("setosa", 0.0);
+        put("virginica", 0.4864);
+        put("versicolor", 1.3124);
+       }});
+    }};
+    Assert.assertEquals(expected, aep.reconstructedRowData);
+  }
+
+  private static class MyAutoEncoderModel extends GenModel {
+
+    private static final String[][] DOMAINS = new String[][] {
+      /* Species */ new String[]{"setosa", "versicolor", "virginica"},
+      /* Sepal.Length */ null,
+      /* Sepal.Width */ null,
+      /* Petal.Length */ null,
+      /* Petal.Width */ null
+    };
+
+    private MyAutoEncoderModel() {
+      super(new String[] {"Species", "Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width"}, DOMAINS, null);
+    }
+
+    @Override
+    public ModelCategory getModelCategory() { return ModelCategory.AutoEncoder; }
+    @Override
+    public boolean isSupervised() { return false; }
+    @Override
+    public int nfeatures() { return 5; }
+    @Override
+    public int nclasses() { return 8; }
+    @Override
+    public String getUUID() { return null; }
+    @Override
+    public int getPredsSize() { return nclasses(); }
+
+    @Override
+    public double[] score0(double[] row, double[] preds) {
+      // 7.0,3.2,4.7,1.4,"versicolor"
+      final double[] result = {0,1.3124,0.4864,0,6.1729,3.0573,17.8372,1.1993};
+      Assert.assertArrayEquals(new double[]{1.0,7.0,3.2,4.7,1.4}, row, 0.0001);
+      Assert.assertEquals(result.length, preds.length);
+      System.arraycopy(result, 0, preds, 0, result.length);
+      return result;
     }
   }
 

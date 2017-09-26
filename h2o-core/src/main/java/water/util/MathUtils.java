@@ -13,10 +13,10 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 
 public class MathUtils {
-
   public static double weightedSigma(long nobs, double wsum, double xSum, double xxSum) {
     double reg = 1.0/wsum;
     return nobs <= 1? 0 : Math.sqrt(xxSum*reg - (xSum*xSum) * reg * reg);
@@ -140,7 +140,7 @@ public class MathUtils {
     private double[] variance(double[] res) {
       for (int i = 0; i < res.length; ++i) {
         long nobs = _nobs - _naCnt[i];
-        res[i] = (nobs / (nobs - 1.0)) * _m2[i] / _wsums[i];
+        res[i] = nobs == 0?0:(nobs / (nobs - 1.0)) * _m2[i] / _wsums[i];
       }
       return res;
     }
@@ -170,6 +170,12 @@ public class MathUtils {
   public static double approxSqrt(double x) {
     return Double.longBitsToDouble(((Double.doubleToLongBits(x) >> 32) + 1072632448) << 31);
   }
+
+  public static BigInteger convertDouble2BigInteger(double x) {
+    long tempValue = Double.doubleToRawLongBits(x);
+    return ((tempValue>>63)==0)?BigInteger.valueOf(tempValue).setBit(63):BigInteger.valueOf(tempValue^(-1));
+  }
+
   /** Fast approximate sqrt
    *  @return sqrt(x) with up to 5% relative error */
   public static float approxSqrt(float x) {

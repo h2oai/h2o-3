@@ -26,7 +26,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     }
 
     @API(help="optional project name used to group models from multiple runs into a leaderboard; derived from the training data name if not specified")
-    public String project;
+    public String project_name;
 
     @API(help="loss function", direction=API.Direction.INPUT)
     public String loss;
@@ -53,8 +53,8 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     @API(help = "Path of validation data to import and parse, in any form that H2O accepts, including local files or directories, s3, hdfs, etc.", direction=API.Direction.INPUT)
     public ImportFilesV3 validation_path;
 
-    @API(help = "Path of test data to import and parse, in any form that H2O accepts, including local files or directories, s3, hdfs, etc.", direction=API.Direction.INPUT)
-    public ImportFilesV3 test_path;
+    @API(help = "Path of test data (to create the leaderboard) to import and parse, in any form that H2O accepts, including local files or directories, s3, hdfs, etc.", direction=API.Direction.INPUT)
+    public ImportFilesV3 leaderboard_path;
 
     @API(help = "Used to override default settings for training and test data parsing.", direction=API.Direction.INPUT)
     public ParseSetupV3 parse_setup;
@@ -68,20 +68,37 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     @API(help = "ID of the validation data frame.", direction=API.Direction.INPUT)
     public KeyV3.FrameKeyV3 validation_frame;
 
-    @API(help = "ID of the test data frame.", direction=API.Direction.INPUT)
-    public KeyV3.FrameKeyV3 test_frame;
+    @API(help = "ID of the leaderboard/test data frame.", direction=API.Direction.INPUT)
+    public KeyV3.FrameKeyV3 leaderboard_frame;
 
     @API(help = "Response column",
-         direction=API.Direction.INPUT,
-         is_member_of_frames = {"training_frame", "validation_frame", "test_frame"},
-         is_mutually_exclusive_with = {"ignored_columns"},
-         required = false
+            direction=API.Direction.INPUT,
+            is_member_of_frames = {"training_frame", "validation_frame", "leaderboard_frame"},
+            is_mutually_exclusive_with = {"ignored_columns", "fold_column", "weights_column"},
+            required = false
       )
     public FrameV3.ColSpecifierV3 response_column;
 
+    @API(help = "Fold column for cross-validation",
+            direction=API.Direction.INPUT,
+            is_member_of_frames = {"training_frame", "validation_frame", "leaderboard_frame"},
+            is_mutually_exclusive_with = {"ignored_columns", "response_column", "weights_column"},
+            required = false
+    )
+    public FrameV3.ColSpecifierV3 fold_column;
+
+    @API(help = "Weights column, specifying row weights for model training",
+            direction=API.Direction.INPUT,
+            is_member_of_frames = {"training_frame", "validation_frame", "leaderboard_frame"},
+            is_mutually_exclusive_with = {"ignored_columns", "response_column", "fold_column"},
+            required = false
+    )
+    public FrameV3.ColSpecifierV3 weights_column;
+
     @API(help = "Names of columns to ignore for training",
          direction=API.Direction.INPUT,
-         is_member_of_frames = {"training_frame", "validation_frame", "test_frame"},
+         is_member_of_frames = {"training_frame", "validation_frame", "leaderboard_frame"},
+         is_mutually_exclusive_with = {"response_column", "fold_column", "weights_column"},
          required = false
       )
     public String[] ignored_columns;

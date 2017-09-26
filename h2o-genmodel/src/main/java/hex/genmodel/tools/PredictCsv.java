@@ -1,12 +1,13 @@
 package hex.genmodel.tools;
 
+import au.com.bytecode.opencsv.CSVReader;
 import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
+import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.prediction.*;
-import au.com.bytecode.opencsv.CSVReader;
 
 import java.io.BufferedWriter;
 import java.io.FileReader;
@@ -14,21 +15,20 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 /**
- * Simple driver program for reading a CSV file and making predictions.
+ * Simple driver program for reading a CSV file and making predictions.  Added support for separators that are
+ * not commas. User needs to add the --separator separator_string to the input call.  Do not escape
+ * the special Java characters, I will do it for you.
  *
  * This driver program is used as a test harness by several tests in the testdir_javapredict directory.
  * <p></p>
  * See the top-of-tree master version of this file <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-genmodel/src/main/java/hex/genmodel/tools/PredictCsv.java" target="_blank">here on github</a>.
  */
 public class PredictCsv {
-  private String modelName;
-
   private String inputCSVFileName;
-
   private String outputCSVFileName;
-
   private boolean useDecimalOutput = false;
-
+  public char separator = ',';   // separator used to delimite input datasets
+  public boolean setInvNumNA = false;    // enable .setConvertInvalidNumbersToNa(true)
   // Model instance
   private EasyPredictModelWrapper model;
 
@@ -63,7 +63,6 @@ public class PredictCsv {
         case "N/A":
         case "-":
           continue;
-
         default:
           row.put(columnName, cellData);
       }
@@ -81,16 +80,39 @@ public class PredictCsv {
 
   private void run() throws Exception {
     ModelCategory category = model.getModelCategory();
-
-    CSVReader reader = new CSVReader(new FileReader(inputCSVFileName));
+    CSVReader reader = new CSVReader(new FileReader(inputCSVFileName), separator);
+    String readline;
     BufferedWriter output = new BufferedWriter(new FileWriter(outputCSVFileName));
+    int lastCommaAutoEn = 0;
+    DeeplearningMojoModel thisModel = null;
 
     // Emit outputCSV column names.
     switch (category) {
       case AutoEncoder:
-        output.write(model.getHeader());
-        break;
+        thisModel = (DeeplearningMojoModel)this.model.m;
+        String[] cnames =  this.model.m.getNames();
+        lastCommaAutoEn = thisModel._units[0]-1;
+        for (int index = 0; index < thisModel._cats; index++) { // add names for categorical columns
+          String[] tdomains = thisModel._domains[index];
+          int tdomainLen = tdomains.length-1;
+          for (int index2 = 0; index2 <= tdomainLen; index2++ ) {
+            String temp = "reconstr_"+tdomains[index2];
+            output.write(temp);
 
+            if ((index2 < tdomainLen) || (thisModel._nums>0))
+              output.write(',');
+          }
+        }
+
+        int lastComma = cnames.length-1;
+        for (int index = thisModel._cats; index < cnames.length; index++) {  // add the numerical column names
+          String temp = "reconstr_"+cnames[index];
+          output.write(temp);
+
+          if (index < lastComma )
+            output.write(',');
+        }
+        break;
       case Binomial:
       case Multinomial:
         output.write("predict");
@@ -120,18 +142,17 @@ public class PredictCsv {
     //       all the rows to the score function, in which case it can evaluate each tree for each row, avoiding
     //       multiple rounds of fetching each tree from the filesystem.
     //
-    int lineNum = 0;
+    int lineNum=1;    // count number of lines of input dataset file parsed
     try {
       String[] inputColumnNames = null;
       String[] splitLine;
-      while ((splitLine = reader.readNext()) != null) {
-        lineNum++;
+      //Reader in the column names here.
+      if ((splitLine=reader.readNext()) != null)
+        inputColumnNames=splitLine;
+      else  // file empty, throw an error
+        throw new Exception("Input dataset file is empty!");
 
-        // Handle the header.
-        if (lineNum == 1) {
-          inputColumnNames = splitLine;
-          continue;
-        }
+      while ((splitLine = reader.readNext()) != null) {
 
         // Parse the CSV line.  Don't handle quoted commas.  This isn't a parser test.
         RowData row = formatDataRow(splitLine, inputColumnNames);
@@ -139,12 +160,16 @@ public class PredictCsv {
         // Do the prediction.
         // Emit the result to the output file.
         switch (category) {
-          case AutoEncoder: {
-            throw new UnsupportedOperationException();
-            // AutoEncoderModelPrediction p = model.predictAutoEncoder(row);
-            // break;
-          }
+          case AutoEncoder: { // write the expanded predictions out
+            AutoEncoderModelPrediction p = model.predictAutoEncoder(row);
+            for (int i=0; i < thisModel._units[0]; i++) {
+              output.write(myDoubleToString(p.reconstructed[i]));
 
+              if (i < lastCommaAutoEn)
+                output.write(',');
+            }
+            break;
+          }
           case Binomial: {
             BinomialModelPrediction p = model.predictBinomial(row);
             output.write(p.label);
@@ -188,6 +213,7 @@ public class PredictCsv {
         }
 
         output.write("\n");
+        lineNum++;
       }
     }
     catch (Exception e) {
@@ -195,11 +221,11 @@ public class PredictCsv {
       System.out.println("");
       e.printStackTrace();
       System.exit(1);
+    } finally {
+      // Clean up.
+      output.close();
+      reader.close();
     }
-
-    // Clean up.
-    output.close();
-    reader.close();
   }
 
 
@@ -213,51 +239,63 @@ public class PredictCsv {
 
   private void loadPojo(String className) throws Exception {
     GenModel genModel = (GenModel) Class.forName(className).newInstance();
-    model = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config().setModel(genModel).setConvertUnknownCategoricalLevelsToNa(true));
+    model = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config().setModel(genModel).setConvertUnknownCategoricalLevelsToNa(true).setConvertInvalidNumbersToNa(setInvNumNA));
   }
 
   private void loadMojo(String modelName) throws IOException {
     GenModel genModel = MojoModel.load(modelName);
-    model = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config().setModel(genModel).setConvertUnknownCategoricalLevelsToNa(true));
+    model = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config().setModel(genModel).setConvertUnknownCategoricalLevelsToNa(true).setConvertInvalidNumbersToNa(setInvNumNA));
   }
 
   private static void usage() {
     System.out.println("");
     System.out.println("Usage:  java [...java args...] hex.genmodel.tools.PredictCsv --mojo mojoName");
-    System.out.println("             --pojo pojoName --input inputFile --output outputFile --decimal");
+    System.out.println("             --pojo pojoName --input inputFile --output outputFile --separator sepStr --decimal --setConvertInvalidNum");
     System.out.println("");
     System.out.println("     --mojo    Name of the zip file containing model's MOJO.");
     System.out.println("     --pojo    Name of the java class containing the model's POJO. Either this ");
     System.out.println("               parameter or --model must be specified.");
-    System.out.println("     --input   CSV file containing the test data set to score.");
+    System.out.println("     --input   text file containing the test data set to score.");
     System.out.println("     --output  Name of the output CSV file with computed predictions.");
+    System.out.println("     --separator Separator to be used in input file containing test data set.");
     System.out.println("     --decimal Use decimal numbers in the output (default is to use hexademical).");
+    System.out.println("     --setConvertInvalidNum Will call .setConvertInvalidNumbersToNa(true) when loading models.");
     System.out.println("");
     System.exit(1);
   }
 
   private void parseArgs(String[] args) {
     try {
+      String pojoMojoModelNames = ""; // store Pojo/Mojo/Model names
+      int loadType = 0; // 0: load pojo, 1: load mojo, 2: load model
       for (int i = 0; i < args.length; i++) {
         String s = args[i];
         if (s.equals("--header")) continue;
         if (s.equals("--decimal"))
           useDecimalOutput = true;
+        else if (s.equals("--setConvertInvalidNum"))
+          setInvNumNA=true;
         else {
           i++;
           if (i >= args.length) usage();
           String sarg = args[i];
           switch (s) {
-            case "--model":  loadModel(sarg); break;
-            case "--mojo":   loadMojo(sarg); break;
-            case "--pojo":   loadPojo(sarg); break;
+            case "--model":  pojoMojoModelNames=sarg; loadType=2; break;//loadModel(sarg); break;
+            case "--mojo":   pojoMojoModelNames=sarg; loadType=1; break;//loadMojo(sarg); break;
+            case "--pojo":   pojoMojoModelNames=sarg; loadType=0; break;//loadPojo(sarg); break;
             case "--input":  inputCSVFileName = sarg; break;
             case "--output": outputCSVFileName = sarg; break;
+            case "--separator": separator=sarg.charAt(sarg.length()-1);; break;
             default:
               System.out.println("ERROR: Unknown command line argument: " + s);
               usage();
           }
         }
+      }
+      switch(loadType) {
+        case 0: loadPojo(pojoMojoModelNames); break;
+        case 1: loadMojo(pojoMojoModelNames); break;
+        case 2: loadModel(pojoMojoModelNames); break;
       }
     } catch (Exception e) {
       e.printStackTrace();

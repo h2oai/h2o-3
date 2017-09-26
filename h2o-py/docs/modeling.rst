@@ -31,12 +31,6 @@ Supervised
     :show-inheritance:
     :members:
 
-:mod:`H2OKLimeEstimator`
-------------------------
-.. autoclass:: h2o.estimators.klime.H2OKLimeEstimator
-    :show-inheritance:
-    :members:
-
 :mod:`H2ONaiveBayesEstimator`
 -----------------------------
 .. autoclass:: h2o.estimators.naive_bayes.H2ONaiveBayesEstimator
@@ -52,6 +46,12 @@ Supervised
 :mod:`H2OStackedEnsembleEstimator`
 ----------------------------------
 .. autoclass:: h2o.estimators.stackedensemble.H2OStackedEnsembleEstimator
+    :show-inheritance:
+    :members:
+
+:mod:`H2OXGBoostEstimator`
+--------------------------
+.. autoclass:: h2o.estimators.xgboost.H2OXGBoostEstimator
     :show-inheritance:
     :members:
 
@@ -92,6 +92,12 @@ Unsupervised
 
 Miscellaneous
 +++++++++++++
+
+:mod:`H2OAutoML`
+----------------
+.. autoclass:: h2o.automl.autoh2o.H2OAutoML
+    :show-inheritance:
+    :members:
 
 :mod:`H2OEstimator`
 -------------------

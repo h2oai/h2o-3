@@ -8,7 +8,7 @@ public class AutoMLsV99 extends RequestSchemaV3<AutoMLHandler.AutoMLs, AutoMLsV9
 
   // Input fields
   @API(help="Name of project of interest", json=false)
-  public String project;
+  public String project_name;
 
   // Output fields
   @API(help="AutoMLs", direction=API.Direction.OUTPUT)

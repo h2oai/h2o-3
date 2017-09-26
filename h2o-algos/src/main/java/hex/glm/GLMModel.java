@@ -50,11 +50,22 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public String []   _coefficient_names;
   }
 
+
   public RegularizationPath getRegularizationPath() {
     RegularizationPath rp = new RegularizationPath();
     rp._coefficient_names = _output._coefficient_names;
     int N = _output._submodels.length;
     int P = _output._dinfo.fullN() + 1;
+    if(_parms._family == Family.multinomial){
+      String [] classNames = _output._domains[_output._domains.length-1];
+      String [] coefNames = new String[P*_output.nclasses()];
+      for(int c = 0; c < _output.nclasses(); ++c){
+        for(int i = 0; i < P; ++i)
+          coefNames[c*P+i] = _output._coefficient_names[i] + "_" + classNames[c];
+      }
+      rp._coefficient_names = coefNames;
+      P*=_output.nclasses();
+    }
     rp._lambdas = new double[N];
     rp._coefficients = new double[N][];
     rp._explained_deviance_train = new double[N];
@@ -98,7 +109,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-    if(domain == null && _parms._family == Family.binomial)
+    if(domain == null && (_parms._family == Family.binomial || _parms._family == Family.quasibinomial))
       domain = binomialClassNames;
     return new GLMMetricBuilder(domain, _ymu, new GLMWeightsFun(_parms), _output.bestSubmodel().rank(), true, _parms._intercept);
   }
@@ -108,13 +119,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       return ArrayUtils.flat(_output._global_beta_multinomial);
     return _output._global_beta;
   }
-  public double [] beta() { return _output._global_beta;}
+  public double [] beta() { return beta_internal();}
   public double [] beta(double lambda) {
     for(int i = 0 ; i < _output._submodels.length; ++i)
       if(_output._submodels[i].lambda_value == lambda)
         return _output._dinfo.denormalizeBeta(_output._submodels[i].getBeta(MemoryManager.malloc8d(_output._dinfo.fullN()+1)));
     throw new RuntimeException("no such lambda value, lambda = " + lambda);
   }
+
   public double [] beta_std(double lambda) {
     for(int i = 0 ; i < _output._submodels.length; ++i)
       if(_output._submodels[i].lambda_value == lambda)
@@ -334,6 +346,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case gaussian:
           return _link == Link.identity;
         case binomial:
+        case quasibinomial:
           return _link == Link.logit;
         case poisson:
           return _link == Link.log;
@@ -724,7 +737,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   @Override
   protected String[][] scoringDomains(){
     String [][] domains = _output._domains;
-    if(_parms._family == Family.binomial && _output._domains[_output._dinfo.responseChunkId(0)] == null) {
+    if((_parms._family == Family.binomial || _parms._family == Family.quasibinomial) && _output._domains[_output._dinfo.responseChunkId(0)] == null) {
       domains = domains.clone();
       domains[_output._dinfo.responseChunkId(0)] = binomialClassNames;
     }
@@ -828,6 +841,21 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       String[] cnames = glm._dinfo.coefNames();
       String [] names = glm._dinfo._adaptedFrame._names;
       String [][] domains = glm._dinfo._adaptedFrame.domains();
+      if(glm._parms._family == Family.quasibinomial){
+        double [] mins = glm._dinfo._adaptedFrame.lastVec().mins();
+        double [] maxs = glm._dinfo._adaptedFrame.lastVec().maxs();
+        double l = mins[0];
+        double u = maxs[0];
+        if(!(l<u))
+          throw new IllegalArgumentException("quasibinomail family expects response to have two distinct values");
+        for(int i = 0; i < mins.length; ++i){
+          if((mins[i]-l)*(mins[i]-u) != 0)
+            throw new IllegalArgumentException("quasibinomail family expects response to have two distinct values, got mins = " + Arrays.toString(mins) + ", maxs = " + Arrays.toString(maxs));
+          if((maxs[i]-l)*(maxs[i]-u) != 0)
+            throw new IllegalArgumentException("quasibinomail family expects response to have two distinct values, got mins = " + Arrays.toString(mins) + ", maxs = " + Arrays.toString(maxs));
+        }
+        domains[domains.length-1] = new String[]{Double.toString(l),Double.toString(u)};
+      }
       int id = glm._generatedWeights == null?-1:ArrayUtils.find(names, glm._generatedWeights);
       if(id >= 0) {
         _dinfo._weights = false;
@@ -844,7 +872,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _domains = domains;
       _coefficient_names = Arrays.copyOf(cnames, cnames.length + 1);
       _coefficient_names[_coefficient_names.length-1] = "Intercept";
-      _binomial = glm._parms._family == Family.binomial;
+      _binomial = (glm._parms._family == Family.binomial || glm._parms._family == Family.quasibinomial);
       _nclasses = glm.nclasses();
       _multinomial = _nclasses > 2;
 
@@ -953,7 +981,18 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public HashMap<String,Double> coefficients(){
     HashMap<String, Double> res = new HashMap<>();
     final double [] b = beta();
-    if(b != null) for(int i = 0; i < b.length; ++i)res.put(_output._coefficient_names[i],b[i]);
+    if(b == null) return res;
+    if(_parms._family == Family.multinomial){
+      String [] responseDomain = _output._domains[_output._domains.length-1];
+      int len = b.length/_output.nclasses();
+      assert b.length == len*_output.nclasses();
+      for(int c = 0; c < _output.nclasses(); ++c) {
+        String prefix =  responseDomain[c] + "_";
+        for (int i = 0; i < len; ++i)
+          res.put(prefix + _output._coefficient_names[i], b[c*len+i]);
+      }
+    } else for (int i = 0; i < b.length; ++i)
+        res.put(_output._coefficient_names[i], b[i]);
     return res;
   }
 
@@ -1013,8 +1052,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   private static ThreadLocal<double[]> _eta = new ThreadLocal<>();
 
-  @Override protected double[] score0(double[] data, double[] preds){return score0(data,preds,1,0);}
-  @Override protected double[] score0(double[] data, double[] preds, double w, double o) {
+  @Override protected double[] score0(double[] data, double[] preds){return score0(data,preds,0);}
+  @Override protected double[] score0(double[] data, double[] preds, double o) {
     if(_parms._family == Family.multinomial) {
       if(o != 0) throw H2O.unimpl("Offset is not implemented for multinomial.");
       double[] eta = _eta.get();
@@ -1175,6 +1214,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
 
   private GLMScore makeScoringTask(Frame adaptFrm, boolean generatePredictions, Job j){
+    int responseId = adaptFrm.find(_output.responseName());
+    if(responseId > -1 && adaptFrm.vec(responseId).isBad()) { // remove inserted invalid response
+      adaptFrm = new Frame(adaptFrm.names(),adaptFrm.vecs());
+      adaptFrm.remove(responseId);
+    }
     // Build up the names & domains.
     final boolean computeMetrics = adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad();
     String [] domain = _output.nclasses()<=1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();

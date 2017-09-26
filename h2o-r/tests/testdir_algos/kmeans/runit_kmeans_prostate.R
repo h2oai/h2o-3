@@ -6,7 +6,6 @@ source("../../../scripts/h2o-r-test-setup.R")
 # Test k-means clustering on prostate.csv
 test.km.prostate <- function() {
   Log.info("Importing prostate.csv data...\n")
-  # prostate.hex = h2o.importURL( "https..//raw.github.com/0xdata/h2o/master/smalldata/logreg/prostate.csv", "prostate.hex")
   # prostate.hex = h2o.importFile( normalizePath("../../../smalldata/logreg/prostate.csv"))
   prostate.hex <- h2o.uploadFile( locate("smalldata/logreg/prostate.csv"))
   prostate.sum <- summary(prostate.hex)

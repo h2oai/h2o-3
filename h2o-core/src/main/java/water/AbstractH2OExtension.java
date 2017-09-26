@@ -3,7 +3,6 @@ package water;
 import water.init.AbstractBuildVersion;
 import water.util.Log;
 
-@SuppressWarnings("unused")
 public abstract class AbstractH2OExtension {
   /**
    * @return The name of this extension.
@@ -66,5 +65,10 @@ public abstract class AbstractH2OExtension {
    */
   public void printInitialized() {
     Log.info(getExtensionName() + " extension initialized");
+  }
+
+  /** Is this extension enabled? */
+  public boolean isEnabled() {
+    return true;
   }
 }

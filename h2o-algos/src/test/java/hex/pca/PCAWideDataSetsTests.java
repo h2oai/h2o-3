@@ -13,15 +13,15 @@ import water.util.Log;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 
-import static org.junit.Assert.assertTrue;
 import static water.TestUtil.parse_test_file;
+import static org.junit.Assert.assertTrue;
 
 /**
 	* Created by wendycwong on 2/27/17.
 	*/
 public class PCAWideDataSetsTests extends TestUtil {
 		public static final double _TOLERANCE = 1e-6;
-		public static final String _smallDataset = "smalldata/pca_test/decathlon.csv";
+		public static  String _smallDataset = "smalldata/pca_test/decathlon.csv";
 		public static final String _prostateDataset = "smalldata/prostate/prostate_cat.csv";
 		public static final DataInfo.TransformType[] _transformTypes = {DataInfo.TransformType.NONE,
 										DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.DEMEAN, DataInfo.TransformType.DESCALE};
@@ -49,18 +49,24 @@ public class PCAWideDataSetsTests extends TestUtil {
 		*/
 		@Test
 		public void testWideDataSetGramSVD() throws InterruptedException, ExecutionException {
-				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GramSVD, _TOLERANCE, _smallDataset,
-												false, true, _transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 1
-				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GramSVD, _TOLERANCE, _smallDataset,
-												true, true, _transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 2
-				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GramSVD, _TOLERANCE, _smallDataset,
-												false, false, _transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 3
-				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GramSVD, _TOLERANCE, _smallDataset,
-												true, false, _transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 4
-				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GramSVD, _TOLERANCE, _prostateDataset,
-												false, false, _transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 5
-				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GramSVD, _TOLERANCE, _prostateDataset,
-				true, false, _transformTypes[_rand.nextInt(_transformTypes.length)]);		  // case 6
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GramSVD, PCAModel.PCAParameters.Method.GramSVD,
+												_TOLERANCE, _smallDataset, false, true,
+												_transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 1
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GramSVD, PCAModel.PCAParameters.Method.GramSVD,
+												_TOLERANCE, _smallDataset, true, true,
+												_transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 2
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GramSVD, PCAModel.PCAParameters.Method.GramSVD,
+												_TOLERANCE, _smallDataset, false, false,
+												_transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 3
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GramSVD, PCAModel.PCAParameters.Method.GramSVD,
+												_TOLERANCE, _smallDataset, true, false,
+												_transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 4
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GramSVD, PCAModel.PCAParameters.Method.GramSVD,
+												_TOLERANCE, _prostateDataset, false, false,
+												_transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 5
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GramSVD, PCAModel.PCAParameters.Method.GramSVD,
+												_TOLERANCE, _prostateDataset, true, false,
+												_transformTypes[_rand.nextInt(_transformTypes.length)]);		  // case 6
 		}
 
 
@@ -74,18 +80,24 @@ public class PCAWideDataSetsTests extends TestUtil {
 */
 		@Test
 		public void testWideDataSetPower() throws InterruptedException, ExecutionException {
-				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.Power, _TOLERANCE, _smallDataset,
-												false, true, _transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 1
-				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.Power, _TOLERANCE, _smallDataset,
-												true, true, _transformTypes[_rand.nextInt(_transformTypes.length)]);   // case 2
-				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.Power, _TOLERANCE, _smallDataset,
-												false, false, _transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 3
-				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.Power, _TOLERANCE, _smallDataset,
-												true, false, _transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 4
-				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.Power, _TOLERANCE, _prostateDataset,
-												false, false, _transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 5
-				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.Power, _TOLERANCE, _prostateDataset,
-												true, false, _transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 6
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GramSVD, PCAModel.PCAParameters.Method.Power,
+												_TOLERANCE, _smallDataset, false, true,
+												_transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 1
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GramSVD,
+												PCAModel.PCAParameters.Method.Power, _TOLERANCE, _smallDataset, true, true,
+												_transformTypes[_rand.nextInt(_transformTypes.length)]);   // case 2
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GramSVD,
+												PCAModel.PCAParameters.Method.Power, _TOLERANCE, _smallDataset, false, false,
+												_transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 3
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GramSVD,
+												PCAModel.PCAParameters.Method.Power, _TOLERANCE, _smallDataset, true, false,
+												_transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 4
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GramSVD,
+												PCAModel.PCAParameters.Method.Power, _TOLERANCE, _prostateDataset, false, false,
+												_transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 5
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GramSVD,
+												PCAModel.PCAParameters.Method.Power, _TOLERANCE, _prostateDataset, true, false,
+												_transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 6
 		}
 
 		/*
@@ -98,18 +110,51 @@ public class PCAWideDataSetsTests extends TestUtil {
 		*/
 		@Test
 		public void testWideDataSetRandomized() throws InterruptedException, ExecutionException {
-				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.Randomized, _TOLERANCE, _smallDataset,
-												false, true, _transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 1
-				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.Randomized, _TOLERANCE, _smallDataset,
-												true, true, _transformTypes[_rand.nextInt(_transformTypes.length)]);   // case 2
-				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.Randomized, _TOLERANCE, _smallDataset,
-												false, false, _transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 3
-				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.Randomized, _TOLERANCE, _smallDataset,
-												true, false, _transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 4
-				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.Randomized, _TOLERANCE, _prostateDataset,
-												false, false, _transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 5
-				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.Randomized, _TOLERANCE, _prostateDataset,
-												true, false, _transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 6
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GramSVD,
+												PCAModel.PCAParameters.Method.Randomized, _TOLERANCE, _smallDataset, false, true,
+												_transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 1
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GramSVD,
+												PCAModel.PCAParameters.Method.Randomized, _TOLERANCE, _smallDataset, true, true,
+												_transformTypes[_rand.nextInt(_transformTypes.length)]);   // case 2
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GramSVD,
+												PCAModel.PCAParameters.Method.Randomized, _TOLERANCE, _smallDataset, false, false,
+												_transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 3
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GramSVD,
+												PCAModel.PCAParameters.Method.Randomized, _TOLERANCE, _smallDataset, true, false,
+												_transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 4
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GramSVD,
+												PCAModel.PCAParameters.Method.Randomized, _TOLERANCE, _prostateDataset, false, false,
+												_transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 5
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GramSVD,
+												PCAModel.PCAParameters.Method.Randomized, _TOLERANCE, _prostateDataset, true, false,
+												_transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 6
+		}
+
+		/*
+	This unit test will test that pca method GLRM works with wide datasets.  It will first build a model
+	using GramSVD under normal setting (_wideDataset is set to false).  Next, it builds a GLRM model with
+	_wideDataSet set to true.  The eigenvalues and eigenvectors from the two models are compared.  Test will fail
+	if any difference exceeds 1e-6 only for numerical dataset.  For categorical datasets, GLRM will not
+	generate the same set of eigenvalues/vectors.  Hence for datasets with Enum columns, we will compare the two
+	models built with normal and widedataset GLRM.
+*/
+		@Test
+		public void testWideDataSetGLRM() throws InterruptedException, ExecutionException {
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GramSVD, PCAModel.PCAParameters.Method.GLRM,
+												0.0001, _smallDataset, false, true,
+												_transformTypes[1]);  // case 1 numerical
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GLRM, PCAModel.PCAParameters.Method.GLRM,_TOLERANCE,
+												_smallDataset, true, true, _transformTypes[_rand.nextInt(_transformTypes.length)]);   // case 2
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GLRM, PCAModel.PCAParameters.Method.GLRM,_TOLERANCE,
+												_smallDataset, false, false, _transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 3
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GLRM, PCAModel.PCAParameters.Method.GLRM,_TOLERANCE,
+												_smallDataset, true, false, _transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 4
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GLRM, PCAModel.PCAParameters.Method.GLRM, _TOLERANCE,
+												_prostateDataset, false, false,
+												_transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 5
+				ActualPCATests.testWideDataSets(PCAModel.PCAParameters.Method.GLRM, PCAModel.PCAParameters.Method.GLRM, _TOLERANCE,
+												_prostateDataset, true, false,
+												_transformTypes[_rand.nextInt(_transformTypes.length)]);  // case 6
 		}
 }
 
@@ -117,7 +162,8 @@ public class PCAWideDataSetsTests extends TestUtil {
 		This class performs the actual PCA tests.
  */
 class ActualPCATests {
-		public static void testWideDataSets(PCAModel.PCAParameters.Method pcaMethod, double tolerance, String datafile,
+		public static void testWideDataSets(PCAModel.PCAParameters.Method pcaMethod, PCAModel.PCAParameters.Method pcaMethod2,
+																																						double tolerance, String datafile,
 																																						boolean addNAs, boolean removeColumns, DataInfo.TransformType transformType)
 										throws InterruptedException, ExecutionException {
 				Scope.enter();
@@ -145,7 +191,7 @@ class ActualPCATests {
 						parms._transform = transformType;
 						Log.info("Data transformation applied is "+parms._transform.name());
 						parms._use_all_factor_levels = true;
-						parms._pca_method = PCAModel.PCAParameters.Method.GramSVD;
+						parms._pca_method = pcaMethod;
 						parms._impute_missing = false;
 						parms._seed = 12345;
 						PCA pcaParms = new PCA(parms);
@@ -154,7 +200,7 @@ class ActualPCATests {
 						Scope.track(scoreN);
 						Scope.track_generic(modelN);
 
-						parms._pca_method = pcaMethod;
+						parms._pca_method = pcaMethod2;
 						PCA pcaParmsW = new PCA(parms);
 						pcaParmsW.setWideDataset(true);  // force to treat dataset as wide even though it is not.
 						modelW = pcaParmsW.trainModel().get();
@@ -166,10 +212,14 @@ class ActualPCATests {
 						TestUtil.checkStddev(modelW._output._std_deviation, modelN._output._std_deviation, tolerance);
 						boolean[] flippedEig = TestUtil.checkEigvec(modelW._output._eigenvectors, modelN._output._eigenvectors, tolerance);
 						TestUtil.checkProjection(scoreW, scoreN, tolerance, flippedEig);
-						// Build a POJO, check results with original PCA
-						assertTrue(modelN.testJavaScoring(train, scoreN, tolerance));
-						// Build a POJO, check results with wide dataset PCA
-						assertTrue(modelW.testJavaScoring(train, scoreW, tolerance));
+
+						if (!(pcaMethod == PCAModel.PCAParameters.Method.GLRM)) {	// GLRM only works with numerical columns well
+
+								// Build a POJO, check results with original PCA
+								assertTrue(modelN.testJavaScoring(train, scoreN, tolerance));
+								// Build a POJO, check results with wide dataset PCA
+								assertTrue(modelW.testJavaScoring(train, scoreW, tolerance));
+						}
 				} finally {
 						Scope.exit();
 				}

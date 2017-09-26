@@ -1,15 +1,15 @@
 ``distribution``
 ----------------
 
-- Available in: GBM, Deep Learning
+- Available in: GBM, Deep Learning, XGBoost
 - Hyperparameter: yes
 
 Description
 ~~~~~~~~~~~
 
-Unlike in GLM, where users specify both a distribution ``family`` and a ``link`` for the loss function, in GBM and Deep Learning, distributions and loss functions are tightly coupled. In these algorithms, a loss function is specified using the ``distribution`` parameter. When specifying the distribution, the loss function is automatically selected as well. For exponential families (such as Poisson, Gamma, and Tweedie), the canonical logarithmic link function is used.
+Unlike in GLM, where users specify both a distribution ``family`` and a ``link`` for the loss function, in GBM, Deep Learning, and XGBoost, distributions and loss functions are tightly coupled. In these algorithms, a loss function is specified using the ``distribution`` parameter. When specifying the distribution, the loss function is automatically selected as well. For exponential families (such as Poisson, Gamma, and Tweedie), the canonical logarithmic link function is used.
 
-By default, the GBM/Deep Learning loss function method performs AUTO distribution. In this case, the algorithm will guess the model type based on the response column type (specified using ``y``). More specifically, if the response column type is numeric, AUTO defaults to "gaussian"; if categorical, AUTO defaults to bernoulli or multinomial depending on the number of response categories.
+By default, the loss function method performs AUTO distribution. In this case, the algorithm will guess the model type based on the response column type (specified using ``y``). More specifically, if the response column type is numeric, AUTO defaults to "gaussian"; if categorical, AUTO defaults to bernoulli or multinomial depending on the number of response categories.
 
 Certain cases can exist, however, in which the median starting value for this loss function can lead to poor results (for example, if the median is the lowest or highest value in a tree node). The ``distribution`` option allows you to specify a different method. Available methods include AUTO, bernoulli, multinomial, gaussian, poisson, gamma, laplace, quantile, huber, and tweedie.
 
@@ -22,6 +22,8 @@ Certain cases can exist, however, in which the median starting value for this lo
 - If the distribution is ``quantile``, the response column must be numeric.
 - If the distribution is ``huber``, the response column must be numeric.
 - If the distribution is ``tweedie``, the response column must be numeric.
+
+**NOTE**: ``laplace``, ``quantile``, and ``huber`` are NOT available in XGBoost.
 
 The following general guidelines apply when selecting a distribution:
 
@@ -42,9 +44,9 @@ The following general guidelines apply when selecting a distribution:
 
 When ``tweedie`` is specified, users must also specify a ``tweedie_power`` value. Users can tune over this option with values > 1.0 and < 2.0. More information is available `here <https://en.wikipedia.org/wiki/Tweedie_distribution>`__.	
 
-When ``quantile`` is specified, then users can also specify a ``quantile_alpha`` value, which defines the desired quantile when performing quantile regression. For example, if you want to predict the 80th percentile of a column's value, then you can specify ``quantile_alpha=0.8``. The ``quantile_alpha`` value defaults to 0.5 (i.e., the median value, and essentially the same as specifying ``distribution=laplace``).
+When ``quantile`` is specified, then users can also specify a ``quantile_alpha`` value, which defines the desired quantile when performing quantile regression. For example, if you want to predict the 80th percentile of a column's value, then you can specify ``quantile_alpha=0.8``. The ``quantile_alpha`` value defaults to 0.5 (i.e., the median value, and essentially the same as specifying ``distribution=laplace``). Note that this option is not available in XGBoost. 
 
-When ``huber`` is specified, then users can also specify a ``huber_alpha`` value. This indicates the top percentile of error that should be considered as outliers. 
+When ``huber`` is specified, then users can also specify a ``huber_alpha`` value. This indicates the top percentile of error that should be considered as outliers. Note that this option is not available in XGBoost.
 
 For all distributions except ``multinomial``, you can specify an ``offset_column``. Offsets are per-row “bias values” that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__. 
 

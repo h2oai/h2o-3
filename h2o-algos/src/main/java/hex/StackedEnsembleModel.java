@@ -15,20 +15,26 @@ import water.util.ReflectionUtils;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 
-import static hex.Model.Parameters.FoldAssignmentScheme.Modulo;
+import static hex.Model.Parameters.FoldAssignmentScheme.AUTO;
+import static hex.Model.Parameters.FoldAssignmentScheme.Random;
 
 /**
  * An ensemble of other models, created by <i>stacking</i> with the SuperLearner algorithm or a variation.
  */
 public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnsembleModel.StackedEnsembleParameters,StackedEnsembleModel.StackedEnsembleOutput> {
 
+  // common parameters for the base models:
   public ModelCategory modelCategory;
-  public long trainingFrameChecksum = -1;
+  public long trainingFrameRows = -1;
 
   public String responseColumn = null;
   private NonBlockingHashSet<String> names = null;  // keep columns as a set for easier comparison
-  private NonBlockingHashSet<String> ignoredColumns = null;  // keep ignored_columns as a set for easier comparison
-  public int nfolds = -1;
+  public int nfolds = -1; //From 1st base model
+  public Parameters.FoldAssignmentScheme fold_assignment; //From 1st base model
+  public String fold_column; //From 1st base model
+  public long seed = -1; //From 1st base model
+
+
   // TODO: add a separate holdout dataset for the ensemble
   // TODO: add a separate overall cross-validation for the ensemble, including _fold_column and FoldAssignmentScheme / _fold_assignment
 
@@ -42,14 +48,17 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     public String javaName() { return StackedEnsembleModel.class.getName(); }
     @Override public long progressUnits() { return 1; }  // TODO
 
+    /*
     public static enum SelectionStrategy { choose_all }
 
     // TODO: make _selection_strategy an object:
-    /** How do we choose which models to stack? */
+    // How do we choose which models to stack?
     public SelectionStrategy _selection_strategy;
+    */
 
     /** Which models can we choose from? */
     public Key<Model> _base_models[] = new Key[0];
+    public boolean _keep_levelone_frame = false;
   }
 
   public static class StackedEnsembleOutput extends Model.Output {
@@ -59,6 +68,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     public StackedEnsembleOutput(Job job) { _job = job; }
     // The metalearner model (e.g., a GLM that has a coefficient for each of the base_learners).
     public Model _metalearner;
+    public Frame _levelone_frame_id;
   }
 
   /**
@@ -74,7 +84,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     // Build up the names & domains.
     String[] names = makeScoringNames();
     String[][] domains = new String[names.length][];
-    domains[0] = names.length == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
+    domains[0] = names.length == 1 ? null : computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
 
     // TODO: optimize these DKV lookups:
     Frame levelOneFrame = new Frame(Key.<Frame>make("preds_levelone_" + this._key.toString() + fr._key));
@@ -96,18 +106,21 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       // TODO: parallel scoring for the base_models
       BigScore baseBs = (BigScore) base.makeBigScoreTask(domains, names, adaptedFrame, computeMetrics, true, j).doAll(names.length, Vec.T_NUM, adaptedFrame);
       Frame basePreds = baseBs.outputFrame(Key.<Frame>make("preds_base_" + this._key.toString() + fr._key), names, domains);
+      //Need to remove 'predict' column from multinomial since it contains outcome
+      if(base._output.isMultinomialClassifier()){
+        basePreds.remove("predict");
+      }
       base_prediction_frames[baseIdx] = basePreds;
       StackedEnsemble.addModelPredictionsToLevelOneFrame(base, basePreds, levelOneFrame);
+      DKV.remove(basePreds._key); //Cleanup
 
-      Model.cleanup_adapt(adaptedFrame, fr);
+      Frame.deleteTempFrameAndItsNonSharedVecs(adaptedFrame, fr);
 
       baseIdx++;
     }
 
     levelOneFrame.add(this.responseColumn, adaptFrm.vec(this.responseColumn));
-
     // TODO: what if we're running multiple in parallel and have a name collision?
-    DKV.put(levelOneFrame);
     Log.info("Finished creating \"level one\" frame for scoring: " + levelOneFrame.toString());
 
     // Score the dataset, building the class distribution & predictions
@@ -115,8 +128,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     Model metalearner = this._output._metalearner;
     Frame levelOneAdapted = new Frame(levelOneFrame);
     metalearner.adaptTestForTrain(levelOneAdapted, true, computeMetrics);
-
-    DKV.put(levelOneAdapted);
 
     String[] metaNames = metalearner.makeScoringNames();
     String[][] metaDomains = new String[metaNames.length][];
@@ -127,7 +138,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
     if (computeMetrics) {
       ModelMetrics mmMetalearner = metaBs._mb.makeModelMetrics(metalearner, levelOneFrame, levelOneAdapted, metaBs.outputFrame());
-
       // This has just stored a ModelMetrics object for the (metalearner, preds_levelone) Model/Frame pair.
       // We need to be able to look it up by the (this, fr) pair.
       // The ModelMetrics object for the metalearner will be removed when the metalearner is removed.
@@ -135,7 +145,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       this.addModelMetrics(mmStackedEnsemble);
     }
 
-    Model.cleanup_adapt(levelOneAdapted, levelOneFrame);
+    Frame.deleteTempFrameAndItsNonSharedVecs(levelOneAdapted, levelOneFrame);
     return metaBs.outputFrame(Key.<Frame>make(destination_key), metaNames, metaDomains);
   }
 
@@ -163,7 +173,8 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
   }
 
   public ModelMetrics doScoreMetricsOneFrame(Frame frame, Job job) {
-      this.predictScoreImpl(frame, new Frame(frame), null, job, true);
+      Frame pred = this.predictScoreImpl(frame, new Frame(frame), null, job, true);
+      pred.remove();
       return ModelMetrics.getFromDKV(this, frame);
   }
 
@@ -237,7 +248,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
     Model aModel = null;
     boolean beenHere = false;
-    trainingFrameChecksum = _parms.train().checksum();
+    trainingFrameRows = _parms.train().numRows();
 
     for (Key<Model> k : _parms._base_models) {
       aModel = DKV.getGet(k);
@@ -245,46 +256,53 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         Log.warn("Failed to find base model; skipping: " + k);
         continue;
       }
+      if(!aModel.isSupervised()){
+        throw new H2OIllegalArgumentException("Base model is not supervised: " + aModel._key.toString());
+      }
 
       if (beenHere) {
-        // check that the base models are all consistent
-        if (_output._isSupervised ^ aModel.isSupervised())
-          throw new H2OIllegalArgumentException("Base models are inconsistent: there is a mix of supervised and unsupervised models: " + Arrays.toString(_parms._base_models));
+        // check that the base models are all consistent with first based model
 
         if (modelCategory != aModel._output.getModelCategory())
           throw new H2OIllegalArgumentException("Base models are inconsistent: there is a mix of different categories of models: " + Arrays.toString(_parms._base_models));
 
+        // NOTE: if we loosen this restriction and fold_column is set add a check below.
         Frame aTrainingFrame = aModel._parms.train();
-        if (trainingFrameChecksum != aTrainingFrame.checksum())
-          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different training frames.  Found checksums: " + trainingFrameChecksum + " and: " + aTrainingFrame.checksum() + ".");
-
-        NonBlockingHashSet<String> aNames = new NonBlockingHashSet<>();
-        aNames.addAll(Arrays.asList(aModel._output._names));
-        if (! aNames.equals(this.names))
-          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different column lists.  Found: " + this.names + " and: " + aNames + ".");
-
-        NonBlockingHashSet<String> anIgnoredColumns = new NonBlockingHashSet<>();
-        if (null != aModel._parms._ignored_columns)
-          anIgnoredColumns.addAll(Arrays.asList(aModel._parms._ignored_columns));
-        if (! anIgnoredColumns.equals(this.ignoredColumns))
-          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different ignored_column lists.  Found: " + this.ignoredColumns + " and: " + aModel._parms._ignored_columns + ".");
+        if (trainingFrameRows != aTrainingFrame.numRows() && !this._parms._is_cv_model)
+          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different size(number of rows) training frames.  Found number of rows: " + trainingFrameRows + " and: " + aTrainingFrame.numRows() + ".");
 
         if (! responseColumn.equals(aModel._parms._response_column))
           throw new H2OIllegalArgumentException("Base models are inconsistent: they use different response columns.  Found: " + responseColumn + " and: " + aModel._parms._response_column + ".");
 
-        if (_output._domains.length != aModel._output._domains.length)
-          throw new H2OIllegalArgumentException("Base models are inconsistent: there is a mix of different numbers of domains (categorical levels): " + Arrays.toString(_parms._base_models));
+        // TODO: we currently require xval; loosen this iff we add a separate holdout dataset for the ensemble
 
-        if (nfolds != aModel._parms._nfolds)
+        if (aModel._parms._fold_assignment != fold_assignment) {
+          if ((aModel._parms._fold_assignment == AUTO && fold_assignment == Random) ||
+                  (aModel._parms._fold_assignment == Random && fold_assignment == AUTO)) {
+            // A-ok
+          } else {
+            throw new H2OIllegalArgumentException("Base models are inconsistent: they use different fold_assignments.");
+          }
+        }
+
+        // If we have a fold_column make sure nfolds is consistent
+        if (aModel._parms._fold_column == null && nfolds != aModel._parms._nfolds)
           throw new H2OIllegalArgumentException("Base models are inconsistent: they use different values for nfolds.");
 
-        // TODO: loosen this iff _parms._valid or if we add a separate holdout dataset for the ensemble
-        if (aModel._parms._nfolds < 2)
+        // If we don't have a fold_column require nfolds > 1
+        if (aModel._parms._fold_column == null && aModel._parms._nfolds < 2)
           throw new H2OIllegalArgumentException("Base model does not use cross-validation: " + aModel._parms._nfolds);
 
-        // TODO: loosen this iff it's consistent, like if we have a _fold_column
-        if (aModel._parms._fold_assignment != Modulo)
-          throw new H2OIllegalArgumentException("Base model does not use Modulo for cross-validation: " + aModel._parms._nfolds);
+        // NOTE: we already check that the training_frame checksums are the same, so
+        // we don't need to check the Vec checksums here:
+        if (aModel._parms._fold_column != null &&
+                ! aModel._parms._fold_column.equals(fold_column))
+          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different fold_columns.");
+
+        if (aModel._parms._fold_column == null &&
+                fold_assignment == Random &&
+                aModel._parms._seed != seed)
+          throw new H2OIllegalArgumentException("Base models are inconsistent: they use random-seeded crossfold validation but have different seeds.");
 
         if (! aModel._parms._keep_cross_validation_predictions)
           throw new H2OIllegalArgumentException("Base model does not keep cross-validation predictions: " + aModel._parms._nfolds);
@@ -301,7 +319,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         // giving us inconsistencies.
       } else {
         // !beenHere: this is the first base_model
-        _output._isSupervised = aModel.isSupervised();
         this.modelCategory = aModel._output.getModelCategory();
         this._dist = new Distribution(distributionFamily(aModel));
         _output._domains = Arrays.copyOf(aModel._output._domains, aModel._output._domains.length);
@@ -312,25 +329,16 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         this.names = new NonBlockingHashSet<>();
         this.names.addAll(Arrays.asList(aModel._output._names));
 
-        this.ignoredColumns = new NonBlockingHashSet<>();
-        if (null != aModel._parms._ignored_columns)
-          this.ignoredColumns.addAll(Arrays.asList(aModel._parms._ignored_columns));
-
-        // If the client has set _ignored_columns for the StackedEnsemble make sure it's
-        // consistent with the base_models:
-        if (null != this._parms._ignored_columns) {
-          NonBlockingHashSet<String> ensembleIgnoredColumns = new NonBlockingHashSet<>();
-          ensembleIgnoredColumns.addAll(Arrays.asList(this._parms._ignored_columns));
-          if (! ensembleIgnoredColumns.equals(this.ignoredColumns))
-            throw new H2OIllegalArgumentException("A StackedEnsemble takes its ignored_columns list from the base models.  An inconsistent list of ignored_columns was specified for the ensemble model.");
-        }
-
         responseColumn = aModel._parms._response_column;
 
         if (! responseColumn.equals(_parms._response_column))
           throw  new H2OIllegalArgumentException("StackedModel response_column must match the response_column of each base model.  Found: " + responseColumn + " and: " + _parms._response_column);
 
         nfolds = aModel._parms._nfolds;
+        fold_assignment = aModel._parms._fold_assignment;
+        if (fold_assignment == AUTO) fold_assignment = Random;
+        fold_column = aModel._parms._fold_column;
+        seed = aModel._parms._seed;
         _parms._distribution = aModel._parms._distribution;
         beenHere = true;
       }
@@ -349,5 +357,26 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
     return super.remove_impl(fs);
   }
+
+  /** Write out models (base + metalearner) */
+  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
+    //Metalearner
+    ab.putKey(_output._metalearner._key);
+    //Base Models
+    for (Key<Model> ks : _parms._base_models)
+        ab.putKey(ks);
+    return super.writeAll_impl(ab);
+  }
+
+  /** Read in models (base + metalearner) */
+  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
+    //Metalearner
+    ab.getKey(_output._metalearner._key,fs);
+    //Base Models
+    for (Key<Model> ks : _parms._base_models)
+      ab.getKey(ks,fs);
+    return super.readAll_impl(ab,fs);
+  }
+
 }
 

@@ -208,7 +208,7 @@ class H2OFrame(object):
     def refresh(self):
         """Reload frame information from the backend H2O server."""
         self._ex._cache.flush()
-        self._frame(True)
+        self._frame(fill_cache=True)
 
 
 
@@ -221,7 +221,7 @@ class H2OFrame(object):
         """The list of column names (List[str])."""
         if not self._ex._cache.names_valid():
             self._ex._cache.flush()
-            self._frame(True)
+            self._frame(fill_cache=True)
         return list(self._ex._cache.names)
 
     @names.setter
@@ -234,7 +234,7 @@ class H2OFrame(object):
         """Number of rows in the dataframe (int)."""
         if not self._ex._cache.nrows_valid():
             self._ex._cache.flush()
-            self._frame(True)
+            self._frame(fill_cache=True)
         return self._ex._cache.nrows
 
 
@@ -243,7 +243,7 @@ class H2OFrame(object):
         """Number of columns in the dataframe (int)."""
         if not self._ex._cache.ncols_valid():
             self._ex._cache.flush()
-            self._frame(True)
+            self._frame(fill_cache=True)
         return self._ex._cache.ncols
 
 
@@ -258,7 +258,7 @@ class H2OFrame(object):
         """The dictionary of column name/type pairs."""
         if not self._ex._cache.types_valid():
             self._ex._cache.flush()
-            self._frame(True)
+            self._frame(fill_cache=True)
         return dict(self._ex._cache.types)
 
 
@@ -289,7 +289,7 @@ class H2OFrame(object):
         assert_is_type(col, int, str)
         if not self._ex._cache.types_valid() or not self._ex._cache.names_valid():
             self._ex._cache.flush()
-            self._frame(True)
+            self._frame(fill_cache=True)
         types = self._ex._cache.types
         if is_type(col, str):
             if col in types:
@@ -387,11 +387,10 @@ class H2OFrame(object):
     def __iter__(self):
         return (self[i] for i in range(self.ncol))
 
-
     def __unicode__(self):
         if sys.gettrace() is None:
             if self._ex is None: return "This H2OFrame has been removed."
-            table = self._frame()._ex._cache._tabulate("simple", False)
+            table = self._frame(fill_cache=True)._ex._cache._tabulate("simple", False)
             nrows = "%d %s" % (self.nrow, "row" if self.nrow == 1 else "rows")
             ncols = "%d %s" % (self.ncol, "column" if self.ncol == 1 else "columns")
             return "%s\n\n[%s x %s]" % (table, nrows, ncols)
@@ -418,14 +417,17 @@ class H2OFrame(object):
         if H2ODisplay._in_ipy():
             import IPython.display
             if use_pandas and can_use_pandas():
-                IPython.display.display(self.head().as_data_frame(True))
+                IPython.display.display(self.head().as_data_frame(fill_cache=True))
             else:
                 IPython.display.display_html(self._ex._cache._tabulate("html", False), raw=True)
         else:
             if use_pandas and can_use_pandas():
-                print(self.head().as_data_frame(True))
+                print(self.head().as_data_frame(fill_cache=True))
             else:
                 s = self.__unicode__()
+                stk = traceback.extract_stack()
+                if "IPython" in stk[-3][0]:
+                    s = "\n%s" % s
                 try:
                     print(s)
                 except UnicodeEncodeError:
@@ -437,6 +439,7 @@ class H2OFrame(object):
         Display summary information about the frame.
 
         Summary includes min/mean/max/sigma and other rollup data.
+
         :param bool return_data: Return a dictionary of the summary output
         """
         if not self._ex._cache.is_valid(): self._frame()._ex._cache.fill()
@@ -472,10 +475,10 @@ class H2OFrame(object):
         self.summary()
 
 
-    def _frame(self, fill_cache=False):
+    def _frame(self, rows=10, fill_cache=False):
         self._ex._eager_frame()
         if fill_cache:
-            self._ex._cache.fill()
+            self._ex._cache.fill(rows=rows)
         return self
 
 
@@ -492,7 +495,8 @@ class H2OFrame(object):
         assert_is_type(cols, int)
         nrows = min(self.nrows, rows)
         ncols = min(self.ncols, cols)
-        return self[:nrows, :ncols]
+        newdt = self[:nrows, :ncols]
+        return newdt._frame(rows=nrows, fill_cache=True)
 
 
     def tail(self, rows=10, cols=200):
@@ -509,7 +513,8 @@ class H2OFrame(object):
         nrows = min(self.nrows, rows)
         ncols = min(self.ncols, cols)
         start_idx = self.nrows - nrows
-        return self[start_idx:start_idx + nrows, :ncols]
+        newdt = self[start_idx:start_idx + nrows, :ncols]
+        return newdt._frame(rows=nrows, fill_cache=True)
 
 
     def logical_negation(self):
@@ -995,7 +1000,7 @@ class H2OFrame(object):
         :returns: A single-column H2OFrame with the desired levels.
         """
         assert_is_type(levels, [str])
-        return H2OFrame._expr(expr=ExprNode("setDomain", self, levels), cache=self._ex._cache)
+        return H2OFrame._expr(expr=ExprNode("setDomain", self, False, levels), cache=self._ex._cache)
 
 
     def set_names(self, names):
@@ -1045,7 +1050,7 @@ class H2OFrame(object):
         if self.names is None:
             self._frame()._ex._cache.fill()
         else:
-            self._ex._cache._names = self.names[:col] + [name] + self.names[col + 1:]
+            self._ex._cache._names = self.names[:col_index] + [name] + self.names[col_index + 1:]
             self._ex._cache._types[name] = self._ex._cache._types.pop(oldname)
         return
 
@@ -1234,7 +1239,7 @@ class H2OFrame(object):
         """
         if can_use_pandas() and use_pandas:
             import pandas
-            return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False)
+            return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False, skip_blank_lines=False)
         frame = [row for row in csv.reader(StringIO(self.get_frame_data()))]
         if not header:
             frame.pop(0)
@@ -1785,17 +1790,34 @@ class H2OFrame(object):
     def sort(self, by):
         """
         Return a new Frame that is sorted by column(s) in ascending order. A fully distributed and parallel sort.
+        However, the original frame must not contain any String columns.
+
         :param by: The column to sort by (either a single column name, or a list of column names, or
             a list of column indices)
+
         :return: a new sorted Frame
         """
         assert_is_type(by, str, int, [str, int])
         if type(by) != list: by = [by]
         for c in by:
-            if self.type(c) not in ["enum","time","int"]:
-                raise H2OValueError("Sort by column: " + str(c) + " not of enum, time, or int type")
+            if self.type(c) not in ["enum","time","int","real"]:
+                raise H2OValueError("Sort by column: " + str(c) + " not of enum, time, int, or real type")
         return H2OFrame._expr(expr=ExprNode("sort",self,by))
 
+    def fillna(self,method="forward",axis=0,maxlen=1):
+        """
+        Return a new Frame that fills NA along a given axis and along a given direction with a maximum fill length
+
+        :param method: ``"forward"`` or ``"backward"``
+        :param axis:  0 for columnar-wise or 1 for row-wise fill
+        :param maxlen: Max number of consecutive NA's to fill
+        
+        :return: 
+        """
+        assert_is_type(axis, 0, 1)
+        assert_is_type(method,str)
+        assert_is_type(maxlen, int)
+        return H2OFrame._expr(expr=ExprNode("h2o.fillna",self,method,axis,maxlen))
 
     def impute(self, column=-1, method="mean", combine_method="interpolate", by=None, group_by_frame=None, values=None):
         """
@@ -2479,7 +2501,7 @@ class H2OFrame(object):
         :param index: Index is a column that will be the row label
         :param column: The labels for the columns in the pivoted Frame
         :param value: The column of values for the given index and column label
-        :return:
+        :returns:
         """
         assert_is_type(index, str)
         assert_is_type(column, str)
@@ -2496,6 +2518,61 @@ class H2OFrame(object):
         if self.type(index) not in ["enum","time","int"]:
             raise H2OValueError("'index' argument is not type enum, time or int")
         return H2OFrame._expr(expr=ExprNode("pivot",self,index,column,value))
+
+    def topNBottomN(self, column=0, nPercent=10, grabTopN=-1):
+        """
+        Given a column name or one column index, a percent N, this function will return the top or bottom N% of the
+         values of the column of a frame.  The column must be a numerical column.
+    
+        :param column: a string for column name or an integer index
+        :param nPercent: a top or bottom percentage of the column values to return
+        :param grabTopN: -1 to grab bottom N percent and 1 to grab top N percent
+        :returns: a H2OFrame containing two columns.  The first column contains the original row indices where
+            the top/bottom values are extracted from.  The second column contains the values.
+        """
+        assert (nPercent >= 0) and (nPercent<=100.0), "nPercent must be between 0.0 and 100.0"
+        assert round(nPercent*0.01*self.nrows)>0, "Increase nPercent.  Current value will result in top 0 row."
+
+        if isinstance(column, int):
+            if (column < 0) or (column>=self.ncols):
+                raise H2OValueError("Invalid column index H2OFrame")
+            else:
+                colIndex = column
+        else:       # column is a column name
+            col_names = self.names
+            if column not in col_names:
+                raise H2OValueError("Column name not found H2OFrame")
+            else:
+                colIndex = col_names.index(column)
+
+        if not(self[colIndex].isnumeric()):
+            raise H2OValueError("Wrong column type!  Selected column must be numeric.")
+
+        return H2OFrame._expr(expr=ExprNode("topn", self, colIndex, nPercent, grabTopN))
+
+    def topN(self, column=0, nPercent=10):
+        """
+        Given a column name or one column index, a percent N, this function will return the top N% of the values
+        of the column of a frame.  The column must be a numerical column.
+    
+        :param column: a string for column name or an integer index
+        :param nPercent: a top percentage of the column values to return
+        :returns: a H2OFrame containing two columns.  The first column contains the original row indices where
+            the top values are extracted from.  The second column contains the top nPercent values.
+        """
+        return self.topNBottomN(column, nPercent, 1)
+
+    def bottomN(self, column=0, nPercent=10):
+        """
+        Given a column name or one column index, a percent N, this function will return the bottom N% of the values
+        of the column of a frame.  The column must be a numerical column.
+    
+        :param column: a string for column name or an integer index
+        :param nPercent: a bottom percentage of the column values to return
+        :returns: a H2OFrame containing two columns.  The first column contains the original row indices where
+            the bottom values are extracted from.  The second column contains the bottom nPercent values.
+        """
+        return self.topNBottomN(column, nPercent, -1)
 
     def sub(self, pattern, replacement, ignore_case=False):
         """

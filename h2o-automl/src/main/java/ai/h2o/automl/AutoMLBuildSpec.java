@@ -46,7 +46,7 @@ public class AutoMLBuildSpec extends Iced {
      * (e.g., "airlines" and "iris").  If the user doesn't set it we use the basename
      * of the training file name.
      */
-    public String project = null;
+    public String project_name = null;
     public String loss = "AUTO";  // TODO: plumb through
     public HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria stopping_criteria;
   }
@@ -60,7 +60,7 @@ public class AutoMLBuildSpec extends Iced {
   static final public class AutoMLInput extends Iced {
     public ImportFilesV3.ImportFiles training_path;
     public ImportFilesV3.ImportFiles validation_path;
-    public ImportFilesV3.ImportFiles test_path;
+    public ImportFilesV3.ImportFiles leaderboard_path;
 
     public ParseSetup parse_setup;
 
@@ -69,9 +69,11 @@ public class AutoMLBuildSpec extends Iced {
 
     public Key<Frame> training_frame;
     public Key<Frame> validation_frame;
-    public Key<Frame> test_frame;
+    public Key<Frame> leaderboard_frame;
 
     public String response_column;
+    public String fold_column;
+    public String weights_column;
     public String[] ignored_columns;
   }
 
@@ -111,8 +113,8 @@ public class AutoMLBuildSpec extends Iced {
       return project_cached;
 
     // allow the user to override:
-    if (null != build_control.project) {
-      project_cached = build_control.project;
+    if (null != build_control.project_name) {
+      project_cached = build_control.project_name;
       return project_cached;
     }
 
@@ -122,18 +124,28 @@ public class AutoMLBuildSpec extends Iced {
     String[] path = specified.split("/");
     project_cached = path[path.length - 1]
             .replace(".hex", "")
+
             .replace(".CSV", "")
+            .replace(".ZIP", "")
+            .replace(".GZ", "")
+            .replace(".TXT", "")
             .replace(".XLS", "")
             .replace(".XSLX", "")
+            .replace(".SVM", "")
             .replace(".SVMLight", "")
-            .replace(".ARFF", "")
             .replace(".ORC", "")
+            .replace(".ARFF", "")
+
             .replace(".csv", "")
+            .replace(".zip", "")
+            .replace(".gz", "")
+            .replace(".txt", "")
             .replace(".xls", "")
             .replace(".xslx", "")
             .replace(".svmlight", "")
-            .replace(".arff", "")
-            .replace(".orc", "");
+            .replace(".svm", "")
+            .replace(".orc", "")
+            .replace(".arff", "");
     project_cached = "automl_" + project_cached;
     return project_cached;
   }

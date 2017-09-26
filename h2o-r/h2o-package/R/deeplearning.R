@@ -25,7 +25,9 @@
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
-#'        weights are not allowed.
+#'        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the
+#'        data frame. This is typically the number of times a row is repeated, but non-integer values are supported as
+#'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 #' @param offset_column Offset column. This will be added to the combination of columns before applying the link function.
 #' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
 #'        FALSE.
@@ -106,7 +108,7 @@
 #' @param force_load_balance \code{Logical}. Force extra load balancing to increase training speed for small datasets (to keep all cores
 #'        busy). Defaults to TRUE.
 #' @param variable_importances \code{Logical}. Compute variable importances for input features (Gedeon method) - can be slow for large
-#'        networks. Defaults to FALSE.
+#'        networks. Defaults to TRUE.
 #' @param replicate_training_data \code{Logical}. Replicate the entire training dataset onto every node for faster training on small datasets.
 #'        Defaults to TRUE.
 #' @param single_node_mode \code{Logical}. Run on a single node for fine-tuning of model parameters. Defaults to FALSE.
@@ -126,18 +128,19 @@
 #' @param export_weights_and_biases \code{Logical}. Whether to export Neural Network weights and biases to H2O Frames. Defaults to FALSE.
 #' @param mini_batch_size Mini-batch size (smaller leads to better fit, larger can speed up and generalize better). Defaults to 1.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
-#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse". Defaults to AUTO.
+#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
 #' @param elastic_averaging \code{Logical}. Elastic averaging between compute nodes can improve distributed model convergence.
 #'        #Experimental Defaults to FALSE.
 #' @param elastic_averaging_moving_rate Elastic averaging moving rate (only if elastic averaging is enabled). Defaults to 0.9.
 #' @param elastic_averaging_regularization Elastic averaging regularization strength (only if elastic averaging is enabled). Defaults to 0.001.
+#' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree for GBM, DRF, & XGBoost. Metrics per epoch for Deep Learning). Defaults to FALSE.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @examples
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
 #' iris.hex <- as.h2o(iris)
-#' iris.dl <- h2o.deeplearning(x = 1:4, y = 5, training_frame = iris.hex)
+#' iris.dl <- h2o.deeplearning(x = 1:4, y = 5, training_frame = iris.hex, seed=123456)
 #' 
 #' # now make a prediction
 #' predictions <- h2o.predict(iris.dl, iris.hex)
@@ -208,7 +211,7 @@ h2o.deeplearning <- function(x, y, training_frame,
                              diagnostics = TRUE,
                              fast_mode = TRUE,
                              force_load_balance = TRUE,
-                             variable_importances = FALSE,
+                             variable_importances = TRUE,
                              replicate_training_data = TRUE,
                              single_node_mode = FALSE,
                              shuffle_training_data = FALSE,
@@ -223,23 +226,24 @@ h2o.deeplearning <- function(x, y, training_frame,
                              reproducible = FALSE,
                              export_weights_and_biases = FALSE,
                              mini_batch_size = 1,
-                             categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse"),
+                             categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                              elastic_averaging = FALSE,
                              elastic_averaging_moving_rate = 0.9,
-                             elastic_averaging_regularization = 0.001
+                             elastic_averaging_regularization = 0.001,
+                             verbose = FALSE 
                              ) 
 {
-  #If x is missing, then assume user wants to use all columns as features.
-  if(missing(x)){
-     if(is.numeric(y)){
-         x <- setdiff(col(training_frame),y)
-     }else{
-         x <- setdiff(colnames(training_frame),y)
+  # If x is missing, then assume user wants to use all columns as features.
+  if (missing(x)) {
+     if (is.numeric(y)) {
+         x <- setdiff(col(training_frame), y)
+     } else {
+         x <- setdiff(colnames(training_frame), y)
      }
   }
 
   # Required args: training_frame
-  if( missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
+  if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
   # Training_frame must be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
      tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -436,7 +440,7 @@ h2o.deeplearning <- function(x, y, training_frame,
   if (!missing(elastic_averaging_regularization))
     parms$elastic_averaging_regularization <- elastic_averaging_regularization
   # Error check and build model
-  .h2o.modelJob('deeplearning', parms, h2oRestApiVersion=3) 
+  .h2o.modelJob('deeplearning', parms, h2oRestApiVersion = 3, verbose=verbose) 
 }
 
 #' Anomaly Detection via H2O Deep Learning Model

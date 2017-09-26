@@ -1,0 +1,58 @@
+apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'java'
+apply plugin: 'com.github.hierynomus.license'
+
+description = "H2O GenModel Assembly which is embedded into H2O.jar"
+
+// Dependencies
+dependencies {
+    compile project(":h2o-genmodel")
+}
+
+// Include optional components
+for (comp in optionalComponents) {
+    def compName = comp['name']
+    def compVersion = comp['version']
+    def compEnabled = comp['enabled']
+    def compPropName = "with${compName.capitalize()}"
+    def compPropVersionName = "${compName}Version"
+    def compIsGenModel = comp['genmodel']
+    def compPropGenModelName = "${compPropName}GenModel"
+
+    if (!project.hasProperty(compPropVersionName)) {
+        project.ext.set(compPropVersionName, compVersion)
+    }
+    if (compIsGenModel) {
+        if (compEnabled || project.hasProperty(compPropName) && project.property(compPropName)) {
+            logger.lifecycle("== ${project.path}: Using optional genmodel component: ${compName}, version ${project.findProperty(compPropVersionName)}")
+            apply from: "$rootDir/gradle/components/${compName}-genmodel.gradle"
+        }
+    }
+}
+
+shadowJar {
+  mergeServiceFiles()
+  classifier = ''
+  exclude 'META-INF/*.DSA'
+  exclude 'META-INF/*.SF'
+  exclude 'synchronize.properties'
+  exclude 'uploader.properties'
+  exclude 'test.properties'
+  exclude 'cockpitlite.properties'
+  exclude 'devpay_products.properties'
+  transform(com.github.jengelman.gradle.plugins.shadow.transformers.IncludeResourceTransformer.class) {
+    file = file("${buildDir}/reports/license/dependency-license.xml")
+    resource = "META-INF/license/h2o-depenencies-licenses.xml"
+  }
+}
+
+artifacts {
+  archives shadowJar
+}
+
+// Disable regular jar since the project is empty
+jar.enabled = false
+// Plug ShadowJar task into execution graph
+shadowJar.dependsOn(project.tasks.getByName('downloadLicenses'))
+build.dependsOn shadowJar
+

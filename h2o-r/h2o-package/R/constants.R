@@ -52,6 +52,11 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
                    data.frame(type = "character", scalar = FALSE, row.names = "string[]",     stringsAsFactors = FALSE),
                    data.frame(type = "character", scalar = TRUE,  row.names = "VecSpecifier", stringsAsFactors = FALSE))
 
+#' Capabilities endpoints
+.h2o.__ALL_CAPABILITIES  <- "Capabilities"
+.h2o.__CORE_CAPABILITIES <- "Capabilities/Core"
+.h2o.__API_CAPABILITIES  <- "Capabilities/API"
+
 #' Administrative Endpoints
 .h2o.__JOBS           <- "Jobs"          # Jobs/$90w3r52hfej_JOB_KEY_12389471jsdfs
 .h2o.__CLOUD          <- "Cloud?skip_ticks=true"
@@ -71,6 +76,9 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 .h2o.__PARSE_SETUP    <- "ParseSetup"    # Sample Usage: ParseSetup?source_keys=["nfs://asdfsdf...", "nfs://..."]
 .h2o.__PARSE          <- "Parse"         # Sample Usage: Parse?source_keys=["nfs://path/to/data"]&destination_frame=KEYNAME&parse_type=CSV&separator=44&number_columns=5&check_header=0&single_quotes=false&column_names=["C1",%20"C2",%20"C3",%20"C4",%20"C5"]
 .h2o.__PARSE_SVMLIGHT <- "ParseSVMLight" # Sample Usage: Parse?source_keys=["nfs://path/to/data"]&destination_frame=KEYNAME
+
+#' Decryption Endpoints
+.h2o.__DECRYPTION_SETUP <- "DecryptionSetup"
 
 #' Inspect/Summary Endpoints
 .h2o.__FRAMES         <- "Frames"        # Frames/<key>    example: http://localhost:54321/3/Frames/meow.hex

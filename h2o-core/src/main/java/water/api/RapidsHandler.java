@@ -1,6 +1,5 @@
 package water.api;
 
-import org.reflections.Reflections;
 import water.H2O;
 import water.Key;
 import water.api.schemas3.*;
@@ -8,16 +7,14 @@ import water.api.schemas3.RapidsHelpV3.RapidsExpressionV3;
 import water.api.schemas4.InputSchemaV4;
 import water.api.schemas4.SessionIdV4;
 import water.exceptions.H2OIllegalArgumentException;
-import water.rapids.ast.AstRoot;
 import water.rapids.Rapids;
 import water.rapids.Session;
 import water.rapids.Val;
+import water.rapids.ast.AstRoot;
 import water.util.Log;
 import water.util.StringUtils;
 
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 
 public class RapidsHandler extends Handler {
 
@@ -60,32 +57,27 @@ public class RapidsHandler extends Handler {
   }
 
   public RapidsHelpV3 genHelp(int version, SchemaV3 noschema) {
-    Reflections reflections = new Reflections("water.rapids");
+    Iterator<AstRoot> iterator = ServiceLoader.load(AstRoot.class).iterator();
+    List<AstRoot> rapids = new ArrayList<>();
+    while (iterator.hasNext()) {
+      rapids.add(iterator.next());
+    }
+
+    ArrayList<RapidsExpressionV3> expressions = new ArrayList<>();
+    for(AstRoot expr: rapids){
+      expressions.add(processAstClass(expr));
+    }
+
     RapidsHelpV3 res = new RapidsHelpV3();
-    res.syntax = processAstClass(AstRoot.class, reflections);
+    res.expressions = expressions.toArray(new RapidsExpressionV3[expressions.size()]);
     return res;
   }
 
-  private RapidsExpressionV3 processAstClass(Class<? extends AstRoot> clz, Reflections refl) {
-    ArrayList<RapidsExpressionV3> subs = new ArrayList<>();
-    for (Class<? extends AstRoot> subclass : refl.getSubTypesOf(clz))
-      if (subclass.getSuperclass() == clz)
-        subs.add(processAstClass(subclass, refl));
-
+  private RapidsExpressionV3 processAstClass(AstRoot expr) {
     RapidsExpressionV3 target = new RapidsExpressionV3();
-    target.name = clz.getSimpleName();
-    target.is_abstract = Modifier.isAbstract(clz.getModifiers());
-    if (!target.is_abstract) {
-      try {
-        AstRoot m = clz.newInstance();
-        target.pattern = m.example();
-        target.description = m.description();
-      }
-      catch (IllegalAccessException e) { throw H2O.fail("A"); }
-      catch (InstantiationException e) { throw H2O.fail("B"); }
-    }
-    target.sub = subs.toArray(new RapidsExpressionV3[subs.size()]);
-
+    target.name = expr.getClass().getSimpleName();
+    target.pattern = expr.example();
+    target.description = expr.description();
     return target;
   }
 
@@ -127,5 +119,6 @@ public class RapidsHandler extends Handler {
       return out;
     }
   }
+
 
 }

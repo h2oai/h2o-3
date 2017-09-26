@@ -88,7 +88,10 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
       is_mutually_exclusive_with = {"ignored_columns", "response_column"},
       help = "Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it" +
           " from the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice." +
-          " Negative weights are not allowed.")
+          " Negative weights are not allowed. Note: Weights are per-row observation weights and do not increase the" +
+          " size of the data frame. This is typically the number of times a row is repeated, but non-integer values are" +
+          " supported as well. During training, rows with higher weights matter more, due to the larger loss function" +
+          " pre-factor.")
   public FrameV3.ColSpecifierV3 weights_column;
 
   @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,
@@ -110,9 +113,13 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
   public Model.Parameters.FoldAssignmentScheme fold_assignment;
 
   @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,
-          values = {"AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse"},
+          values = {"AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"},
           help = "Encoding scheme for categorical features")
   public Model.Parameters.CategoricalEncodingScheme categorical_encoding;
+
+  @API(level = API.Level.secondary, direction = API.Direction.INPUT, gridable = true,
+      help = "For every categorical feature, only use this many most frequent categorical levels for model training. Only used for categorical_encoding == EnumLimited.")
+  public int max_categorical_levels;
 
   @API(level = API.Level.critical, direction = API.Direction.INOUT,
       is_member_of_frames = {"training_frame", "validation_frame"},

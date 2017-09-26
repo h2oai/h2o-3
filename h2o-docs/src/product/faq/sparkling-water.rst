@@ -48,46 +48,30 @@ or
 
 --------------
 
-**How can I save and load a K-means model using Sparkling Water?**
+**How do I save and load models using Sparkling Water?**
 
-The following example code defines the save and load functions
-explicitly.
+Models can be saved and loaded in Sparkling Water using the ``water.support.ModelSerializationSupport class``. For example:
 
 ::
 
-    import water._
-    import _root_.hex._
-    import java.net.URI
-    import water.serial.ObjectTreeBinarySerializer
-    // Save H2O model (as binary)
-    def exportH2OModel(model : Model[_,_,_], destination: URI): URI = {
-      val modelKey = model._key.asInstanceOf[Key[_ <: Keyed[_ <: Keyed[_ <: AnyRef]]]]
-      val keysToExport = model.getPublishedKeys()
-      // Prepend model key
-      keysToExport.add(0, modelKey)
+  #Test model
+  val model = h2oModel
 
-      new ObjectTreeBinarySerializer().save(keysToExport, destination)
-      destination
-    }
+  #Export model on disk
+  ModelSerializationSupport.exportModel(model, destinationURI)
 
-    // Get model from H2O DKV and Save to disk
-    val gbmModel: _root_.hex.tree.gbm.GBMModel = DKV.getGet("model")
-    exportH2OModel(gbmModel, new File("../h2omodel.bin").toURI)
+  # Export the POJO model
+  ModelSerializationSupport.exportPOJOModel(model, desinationURI)
 
+  #Load the model from disk
+  val loadedModel = ModelSerializationSupport.loadModel(pathToModel)
 
+  
+Note that you can also specify type of model to be loaded:
 
-    def loadH2OModel[M <: Model[_, _, _]](source: URI) : M = {
-        val l = new ObjectTreeBinarySerializer().load(source)
-        l.get(0).get().asInstanceOf[M]
-      }
-    // Load H2O model
-    def loadH2OModel[M <: Model[_, _, _]](source: URI) : M = {
-        val l = new ObjectTreeBinarySerializer().load(source)
-        l.get(0).get().asInstanceOf[M]
-      }
-      
-    // Load model
-    val h2oModel: Model[_, _, _] = loadH2OModel(new File("../h2omodel.bin").toURI)
+::
+
+  val loadedModel = ModelSerializationSupport.loadMode[TYPE_OF_MODEL]l(pathToModel)
 
 --------------
 
@@ -154,12 +138,13 @@ standalone version.
 
 There are two methods:
 
--  Use
-   ``$SPARK_HOME/bin/spark-shell --packages ai.h2o:sparkling-water-core_2.10:1.3.3``
+Use
+   
+   ``$SPARK_HOME/bin/spark-shell --packages ai.h2o:sparkling-water-core_2.11:2.1.12``
 
 or
 
--  ``bin/sparkling-shell``
+  ``bin/sparkling-shell``
 
 The software distribution provides example scripts in the
 ``examples/scripts`` directory:
@@ -171,7 +156,8 @@ For either method, initialize H2O as shown in the following example:
 ::
 
     import org.apache.spark.h2o._
-    val h2oContext = new H2OContext(sc).start()
+    val h2oContext = H2OContext.getOrCreate(spark)
+    import h2oContext._
 
 After successfully launching H2O, the following output displays:
 
@@ -215,14 +201,13 @@ The "magic" behind ``run-example.sh`` is a regular Spark Submit:
 
 ::
 
-	$SPARK_HOME/bin/spark-submit ChicagoCrimeAppSmall --packages ai.h2o:sparkling-water-core_2.10:1.3.3 --packages ai.h2o:sparkling-water-examples_2.10:1.3.3
+	$SPARK_HOME/bin/spark-submit ChicagoCrimeAppSmall --packages ai.h2o:sparkling-water-core_2.11:2.1.12 --packages ai.h2o:sparkling-water-examples_2.11:2.1.12
 
 --------------
 
-**How do I use Sparkling Water with Databricks cloud?**
+**How do I use Sparkling Water with Databricks?**
 
-Sparkling Water compatibility with Databricks cloud is still in
-development.
+Refer to `Using H2O Sparking Water with Databricks <../cloud-integration/databricks.html>`__ for information on how to use Sparkling Water with Databricks.
 
 --------------
 
@@ -247,4 +232,3 @@ documentation <https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md>`__
 
 After starting ``H2OServices`` by starting ``H2OContext``, point your
 client to the IP address and port number specified in ``H2OContext``.
-

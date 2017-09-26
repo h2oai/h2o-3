@@ -1,4 +1,4 @@
-#H2O 3.0 is here!
+# H2O 3.0 is here!
 
 The new version of H2O offers a single integrated and tested platform for enterprise and open-source use, enhanced usability through a new web user interface (UI) with embeddable workflows, elegant APIs, and direct integration for Python and Sparkling Water. 
 

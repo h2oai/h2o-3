@@ -104,10 +104,10 @@ public class CStrChunkTest extends TestUtil {
     nc.addStr(new BufferedString("bar"));
     Chunk c = nc.compress();
     assertTrue("first 100 entries are NA",c.isNA(0) && c.isNA(99));
-    assertTrue("Sparse string has values",c.atStr(new BufferedString(),100).sameString("foo"));
+    assertTrue("Sparse string has values",c.atStr(new BufferedString(),100).equalsAsciiString("foo"));
     assertTrue("NA",c.isNA(101));
     final BufferedString bufferedString = c.atStr(new BufferedString(), 102);
-    Assert.assertTrue("Sparse string has values: expected `bar`, got " + bufferedString, bufferedString.sameString("bar"));
+    Assert.assertTrue("Sparse string has values: expected `bar`, got " + bufferedString, bufferedString.equalsAsciiString("bar"));
   }
   
   @Test

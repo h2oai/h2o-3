@@ -1,8 +1,0 @@
-ext {
-  hadoopVersion = 'cdh5.2'
-  hadoopMavenArtifactVersion = '2.5.0-cdh5.2.0'
-  orcSupported = false
-}
-
-apply from: '../driverjar.gradle'
-

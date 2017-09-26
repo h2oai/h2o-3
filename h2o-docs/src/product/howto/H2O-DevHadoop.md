@@ -1,5 +1,7 @@
 # ... On Hadoop
 
+>**Note**: This topic is no longer being maintained. Refer to [Hadoop Users](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/welcome.rst#hadoop-users) for the most up-to-date documentation.
+
 Currently supported versions:
 
 - CDH 5.2
@@ -54,14 +56,14 @@ Tutorial
 The following tutorial will walk the user through the download or build of H2O and the parameters involved in launching H2O from the command line.
 
 
-0. Download the latest H2O release for your version of Hadoop. Refer to the <a href="http://www.h2o.ai/download/h2o/hadoop">H2O on Hadoop Download page</a>.
+1. Download the latest H2O release for your version of Hadoop. Refer to the <a href="http://www.h2o.ai/download/h2o/hadoop">H2O on Hadoop Download page</a>.
 
-0. Prepare the job input on the Hadoop Node by unzipping the build file and changing to the directory with the Hadoop and H2O's driver jar files.
+2. Prepare the job input on the Hadoop Node by unzipping the build file and changing to the directory with the Hadoop and H2O's driver jar files.
 
 		unzip h2o-{{project_version}}-*.zip
 		cd h2o-{{project_version}}-*
 
-0. To launch H2O nodes and form a cluster on the Hadoop cluster, run:
+3. To launch H2O nodes and form a cluster on the Hadoop cluster, run:
 
 		hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName
 
@@ -73,7 +75,7 @@ The following tutorial will walk the user through the download or build of H2O a
 
 	 - *output* is the name of the directory created each time a H2O cloud is created so it is necessary for the name to be unique each time it is launched.
 
-0. To monitor your job, direct your web browser to your standard job tracker Web UI.
+4. To monitor your job, direct your web browser to your standard job tracker Web UI.
 To access H2O's Web UI, direct your web browser to one of the launched instances. If you are unsure where your JVM is launched,
 review the output from your command after the nodes has clouded up and formed a cluster. Any of the nodes' IP addresses will work as there is no master node.
 

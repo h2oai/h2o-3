@@ -70,6 +70,8 @@ public class ModelSchemaV3<
     // Key<? extends Model> k = m._key;
     this.model_id = new ModelKeyV3<>(m._key);
     this.checksum = m.checksum();
+    this.have_pojo = m.havePojo();
+    this.have_mojo = m.haveMojo();
     parameters = createParametersSchema();
     parameters.fillFromImpl(m._parms);
     parameters.model_id = model_id;

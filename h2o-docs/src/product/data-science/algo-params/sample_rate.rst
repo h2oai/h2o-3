@@ -1,13 +1,13 @@
 ``sample_rate``
 ---------------
 
-- Available in: GBM, DRF 
+- Available in: GBM, DRF, XGBoost 
 - Hyperparameter: yes
 
 Description
 ~~~~~~~~~~~
 
-This option is used to specify the row sampling rate (x-axis). The range is 0.0 to 1.0. Row and column sampling (``sample_rate`` and ``col_sample_rate``) can improve generalization and lead to lower validation and test set errors. Good general values for large datasets are around 0.7 to 0.8 (sampling 70-80 percent of the data) for both parameters, as higher values generally improve training accuracy.
+This option is used to specify the row (x-axis) sampling rate (without replacement). The range is 0.0 to 1.0. In GBM and XGBoost, this value defaults to 1; in DRF, this value defaults to 0.6320000291. Row and column sampling (``sample_rate`` and ``col_sample_rate``) can improve generalization and lead to lower validation and test set errors. Good general values for large datasets are around 0.7 to 0.8 (sampling 70-80 percent of the data) for both parameters, as higher values generally improve training accuracy.
 
 For highly imbalanced classification datasets, stratified row sampling based on response class membership can help improve predictive accuracy. This is configured with ``sample_rate_per_class`` (array of ratios, one per response class in lexicographic order).
 

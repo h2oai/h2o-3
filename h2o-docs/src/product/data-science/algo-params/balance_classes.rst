@@ -9,7 +9,9 @@ Description
 
 During model training, you might find that the majority of your data belongs in a single class. For example, consider a binary classification model that has 100 rows, with 80 rows labeled as class 1 and the remaining 20 rows labeled as class 2. This is a common scenario, given that machine learning attempts to predict class 1 with the highest accuracy. It can also be an example of an imbalanced dataset, in this case, with a ratio of 4:1. 
 
-The ``balance_classes`` option can be used to balance the class distribution. When enabled, H2O will either undersample the majority classes or oversample the minority classes. In addition, if this option is enabled, then you can also specify a value for the ``class_sampling_factors`` and ``max_after_balance_size`` options. 
+The ``balance_classes`` option can be used to balance the class distribution. When enabled, H2O will either undersample the majority classes or oversample the minority classes. Note that the resulting model will also correct the final probabilities ("undo the sampling") using a monotonic transform, so the predicted probabilities of the first model will differ from a second model. However, because AUC only cares about ordering, it won't be affected.
+
+If this option is enabled, then you can also specify a value for the ``class_sampling_factors`` and ``max_after_balance_size`` options.  
 
 **Notes**:
 
@@ -17,11 +19,14 @@ The ``balance_classes`` option can be used to balance the class distribution. Wh
 - This option only applies to classification problems. 
 - Enabling this option can increase the size of the data frame.
 
+Refer to the following link for more information about balance classes: `https://gking.harvard.edu/files/0s.pdf <https://gking.harvard.edu/files/0s.pdf>`__. 
+
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
 - `class_sampling_factors <class_sampling_factors.html>`__
 - `max_after_balance_size <max_after_balance_size.html>`__
+- `weights_column <weights_column.html>`__
 
 Example
 ~~~~~~~

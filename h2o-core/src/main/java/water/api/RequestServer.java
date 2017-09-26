@@ -1,6 +1,5 @@
 package water.api;
 
-import com.google.gson.Gson;
 import water.*;
 import water.api.schemas3.H2OErrorV3;
 import water.api.schemas3.H2OModelBuilderErrorV3;
@@ -319,7 +318,6 @@ public class RequestServer extends HttpServlet {
       JettyHTTPD.setResponseStatus(response, 500);
       Log.err(e);
       // Trying to send an error message or stack trace will produce another IOException...
-
     } finally {
       JettyHTTPD.logRequest(method, request, response);
       // Handle shutdown if it was requested.
@@ -527,7 +525,8 @@ public class RequestServer extends HttpServlet {
           path[2].equals("Log") ||
           path[2].equals("Progress") ||
           path[2].equals("Typeahead") ||
-          path[2].equals("WaterMeterCpuTicks");
+          path[2].equals("WaterMeterCpuTicks") ||
+          path[2].equals("DecryptionSetup"); // contains password information
       }
     };
   }
@@ -903,5 +902,43 @@ public class RequestServer extends HttpServlet {
       return os.toByteArray();
     }
   }
+
+
+  /**
+   * Dummy Rest API context which is redirecting calls to static method API.
+   */
+  public static class DummyRestApiContext implements RestApiContext {
+    @Override
+    public Route registerEndpoint(String apiName, String methodUri,
+                                  Class<? extends Handler> handlerClass, String handlerMethod,
+                                  String summary) {
+      return RequestServer.registerEndpoint(apiName, methodUri, handlerClass, handlerMethod, summary);
+    }
+
+    @Override
+    public Route registerEndpoint(String apiName, String httpMethod, String url,
+                                  Class<? extends Handler> handlerClass, String handlerMethod,
+                                  String summary, HandlerFactory handlerFactory) {
+      return RequestServer.registerEndpoint(apiName, httpMethod, url, handlerClass, handlerMethod, summary, handlerFactory);
+    }
+
+    @Override
+    public Route registerEndpoint(String methodUri, Class<? extends RestApiHandler> handlerClass) {
+      return RequestServer.registerEndpoint(methodUri, handlerClass);
+    }
+
+    private Set<Schema> allSchemas = new HashSet<>();
+
+    @Override
+    public void registerSchema(Schema... schemas) {
+      for (Schema schema : schemas) {
+        allSchemas.add(schema);
+      }
+    }
+
+    public Schema[] getAllSchemas() {
+      return allSchemas.toArray(new Schema[0]);
+    }
+  };
 
 }

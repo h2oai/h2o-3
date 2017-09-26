@@ -161,7 +161,9 @@ h2o.getModel <- function(model_id) {
       type    <- mapping[1L, 1L]
       scalar  <- mapping[1L, 2L]
 
-      if (type == "numeric" && value == "Infinity")
+      if(type == "numeric" && class(value) == "list" && length(value) == 0) #Special case when using deep learning with 0 hidden units
+        value <- 0
+      else if (type == "numeric" && value == "Infinity")
         value <- Inf
       else if (type == "numeric" && value == "-Infinity")
         value <- -Inf
@@ -208,6 +210,8 @@ h2o.getModel <- function(model_id) {
                algorithm     = json$algo,
                parameters    = parameters,
                allparameters = allparams,
+               have_pojo     = json$have_pojo,
+               have_mojo     = json$have_mojo,
                model         = model)
 }
 
@@ -239,6 +243,9 @@ h2o.getModel <- function(model_id) {
 #' @export
 h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE, jar_name="") {
 
+  if (!(model@have_pojo)){
+    stop(paste0(model@algrithm, ' does not support export to POJO'))
+  }
   if(!is.null(path) && !(is.character(path))){
     stop("The 'path' variable should be of type character")
   }
@@ -308,15 +315,14 @@ h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE, jar_n
 #' @export
 h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmodel_name="") {
 
+  if (!(model@have_mojo)){
+    stop(paste0(model@algorithm, ' does not support export to MOJO'))
+  }
   if(!(is.character(path))){
     stop("The 'path' variable should be of type character")
   }
   if(!(is.logical(get_genmodel_jar))){
     stop("The 'get_genmodel_jar' variable should be of type logical/boolean")
-  }
-
-  if(!(model@algorithm %in% c("drf","gbm","deepwater","glrm","glm","word2vec"))){
-    stop("MOJOs are currently supported for Distributed Random Forest, Gradient Boosting Method, Deep Water, GLM, GLRM and word2vec models only.")
   }
 
   if(!(file.exists(path))){

@@ -32,10 +32,12 @@
 #' @param offset_column Offset column. This will be added to the combination of columns before applying the link function.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
-#'        weights are not allowed.
+#'        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the
+#'        data frame. This is typically the number of times a row is repeated, but non-integer values are supported as
+#'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
-#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse". Defaults to AUTO.
+#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
 #' @param overwrite_with_best_model \code{Logical}. If enabled, override the final model with the best model found during training. Defaults to
 #'        TRUE.
 #' @param epochs How many times the dataset should be iterated (streamed), can be fractional. Defaults to 10.
@@ -115,7 +117,7 @@ h2o.deepwater <- function(x, y, training_frame,
                           offset_column = NULL,
                           weights_column = NULL,
                           score_each_iteration = FALSE,
-                          categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse"),
+                          categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                           overwrite_with_best_model = TRUE,
                           epochs = 10,
                           train_samples_per_iteration = -2,
@@ -161,17 +163,17 @@ h2o.deepwater <- function(x, y, training_frame,
                           problem_type = c("auto", "image", "dataset")
                           ) 
 {
-  #If x is missing, then assume user wants to use all columns as features.
-  if(missing(x)){
-     if(is.numeric(y)){
-         x <- setdiff(col(training_frame),y)
-     }else{
-         x <- setdiff(colnames(training_frame),y)
+  # If x is missing, then assume user wants to use all columns as features.
+  if (missing(x)) {
+     if (is.numeric(y)) {
+         x <- setdiff(col(training_frame), y)
+     } else {
+         x <- setdiff(colnames(training_frame), y)
      }
   }
 
   # Required args: training_frame
-  if( missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
+  if (missing(training_frame)) stop("argument 'training_frame' is missing, with no default")
   # Training_frame must be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
      tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -315,20 +317,24 @@ h2o.deepwater <- function(x, y, training_frame,
   if (!missing(problem_type))
     parms$problem_type <- problem_type
   # Error check and build model
-  .h2o.modelJob('deepwater', parms, h2oRestApiVersion=3) 
+  .h2o.modelJob('deepwater', parms, h2oRestApiVersion = 3) 
 }
 
 #' Ask the H2O server whether a Deep Water model can be built (depends on availability of native backends)
-#' Returns True if a deep water model can be built, or False otherwise.
-#' @param h2oRestApiVersion (Optional) Specific version of the REST API to use
-#'
+#' Returns TRUE if a Deep Water model can be built, or FALSE otherwise.
+#' @param h2oRestApiVersion (Optional) Specific version of the REST API to use.
+#' @export
 h2o.deepwater.available <- function(h2oRestApiVersion = .h2o.__REST_API_VERSION) {
-visibility = .h2o.__remoteSend(method = "GET", h2oRestApiVersion = h2oRestApiVersion, .h2o.__MODEL_BUILDERS("deepwater"))$model_builders[["deepwater"]][["visibility"]]
+res <- .h2o.__remoteSend(method = "GET",
+h2oRestApiVersion = h2oRestApiVersion,
+page = .h2o.__MODEL_BUILDERS("deepwater"))
+visibility <- res$model_builders[["deepwater"]][["visibility"]]
 if (visibility == "Experimental") {
 print("Cannot build a Deep Water model - no backend found.")
-return(FALSE)
+available <- FALSE
 } else {
-return(TRUE)
+available <- TRUE
 }
+return(available)
 }
 

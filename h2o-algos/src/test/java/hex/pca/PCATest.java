@@ -289,4 +289,38 @@ public class PCATest extends TestUtil {
       Scope.exit();
     }
   }
+
+  /*
+  This test will make sure that when the test dataset contains columns that are different from
+  the training dataset, a warning should be generated to warn the user.
+   */
+  @Test public void testIrisScoreWarning() throws InterruptedException, ExecutionException {
+    PCAModel model = null;
+    Frame fr = null, fr2= null;
+    Frame tr = null, te= null;
+    Scope.enter();
+
+    try {
+      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      tr = parse_test_file("smalldata/iris/iris_wheader_bad_cnames.csv");
+      Scope.track(fr);
+      Scope.track(tr);
+
+      PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
+      parms._train=fr._key;
+ //     parms._valid = tr._key;
+      parms._k = 4;
+      parms._max_iterations = 1000;
+      parms._pca_method = PCAParameters.Method.GramSVD;
+
+      model = new PCA(parms).trainModel().get();
+      Scope.track_generic(model);
+
+      // Done building model; produce a score column with cluster choices
+      fr2 = model.score(tr);
+      Scope.track(fr2);
+    } finally {
+      Scope.exit();
+    }
+  }
 }

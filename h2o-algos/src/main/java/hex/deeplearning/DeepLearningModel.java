@@ -593,7 +593,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
   @Override
   protected double[] score0(double[] data, double[] preds) {
-    return score0(data, preds, 1, 0);
+    return score0(data, preds, 0);
   }
 
   /**
@@ -690,7 +690,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
    * @return preds, can contain NaNs
    */
   @Override
-  public double[] score0(double[] data, double[] preds, double weight, double offset) {
+  public double[] score0(double[] data, double[] preds, double offset) {
     int mb=0;
     int n=1;
 
@@ -985,9 +985,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       JCodeGen.toClassWithArray(sb, "static", "NORMSUB", model_info().data_info()._normSub);//, "Standardization/Normalization offset for numerical variables.");
     }
     if (model_info().data_info()._cats > 0) {
-      JCodeGen.toStaticVar(sb, "CATS", new int[model_info().data_info()._cats], "Workspace for storing categorical input variables.");
+      sb.i(0).p("// Thread-local workspace for storing categorical input variables.").nl();
+      sb.i(0).p("final int[] CATS = new int[" + model_info().data_info()._cats +"];").nl();
     }
-    JCodeGen.toStaticVar(sb, "CATOFFSETS", model_info().data_info()._catOffsets, "Workspace for categorical offsets.");
+    JCodeGen.toStaticVar(sb, "CATOFFSETS", model_info().data_info()._catOffsets, "Offset into the workspace for categorical variables.");
     if (model_info().data_info()._normRespMul != null) {
       JCodeGen.toStaticVar(sb, "NORMRESPMUL", model_info().data_info()._normRespMul, "Standardization/Normalization scaling factor for response.");
       JCodeGen.toStaticVar(sb, "NORMRESPSUB", model_info().data_info()._normRespSub, "Standardization/Normalization offset for response.");
@@ -1011,23 +1012,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     sb.i(1).p("// Thread-local storage for neuron activation values.").nl();
     sb.i(1).p("final double[][] ACTIVATION = new double[][] {").nl();
     for (int i=0; i<neurons.length; i++) {
-      String colInfoClazz = mname + "_Activation_"+i;
-      sb.i(2).p("/* ").p(neurons[i].getClass().getSimpleName()).p(" */ ");
-      sb.p(colInfoClazz).p(".VALUES");
+      sb.i(2).p("/* ").p(neurons[i].getClass().getSimpleName()).p(" */ ").p("new double[").p(layers[i]).p("]");
       if (i!=neurons.length-1) sb.p(',');
       sb.nl();
     }
     sb.i(1).p("};").nl();
-    fileCtx.add(new CodeGenerator() {
-      @Override
-      public void generate(JCodeSB out) {
-        for (int i=0; i<neurons.length; i++) {
-          String colInfoClazz = mname + "_Activation_"+i;
-          out.i().p("// Neuron activation values for ").p(neurons[i].getClass().getSimpleName()).p(" layer").nl();
-          JCodeGen.toClassWithArray(out, null, colInfoClazz, new double[layers[i]]);
-        }
-      }
-    });
 
     // biases
     sb.i(1).p("// Neuron bias values.").nl();
@@ -1634,7 +1623,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      * The implemented method (by Gedeon) considers the weights connecting the
      * input features to the first two hidden layers.
      */
-    public boolean _variable_importances = false;
+    public boolean _variable_importances = true;
 
     /**
      * Enable fast mode (minor approximation in back-propagation), should not affect results significantly.
@@ -1734,7 +1723,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     void validate(DeepLearning dl, boolean expensive) {
       boolean classification = expensive || dl.nclasses() != 0 ? dl.isClassifier() : _loss == CrossEntropy || _loss == ModifiedHuber;
       if (_loss == ModifiedHuber) dl.error("_loss", "ModifiedHuber loss function is not supported yet.");
-      if (_hidden == null || _hidden.length == 0) dl.error("_hidden", "There must be at least one hidden layer.");
+//      if (_hidden == null || _hidden.length == 0) dl.error("_hidden", "There must be at least one hidden layer.");
+      if (_hidden == null) _hidden = new int[0];
       for (int h : _hidden) if (h <= 0) dl.error("_hidden", "Hidden layer size must be positive.");
       if (_mini_batch_size < 1)
         dl.error("_mini_batch_size", "Mini-batch size must be >= 1");
@@ -2288,6 +2278,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       }
     }
 
+  }
+
+  @Override
+  public DeepLearningMojoWriter getMojo() {
+    return new DeepLearningMojoWriter(this);
   }
 }
 

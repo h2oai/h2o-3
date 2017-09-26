@@ -5,19 +5,22 @@ import water.*;
 import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
 import water.util.IcedHashMap;
 import water.util.Log;
 import water.util.TwoDimTable;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import static water.DKV.getGet;
 import static water.Key.make;
-import water.util.ArrayUtils;
 /**
  * Utility to track all the models built for a given dataset type.
  * <p>
- * Note that if a new Leaderboard is made for the same project it'll
+ * Note that if a new Leaderboard is made for the same project_name it'll
  * keep using the old model list, which allows us to run AutoML multiple
  * times and keep adding to the leaderboard.
  * <p>
@@ -32,7 +35,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
    * Identifier for models that should be grouped together in the leaderboard
    * (e.g., "airlines" and "iris").
    */
-  private final String project;
+  private final String project_name;
 
   /**
    * List of models for this leaderboard, sorted by metric so that the best is first,
@@ -43,11 +46,11 @@ public class Leaderboard extends Keyed<Leaderboard> {
   private Key<Model>[] models = new Key[0];
 
   /**
-   * Test set ModelMetrics objects for the models.
+   * Leaderboard/test set ModelMetrics objects for the models.
    * <p>
    * Updated inside addModels().
    */
-  private IcedHashMap<Key<ModelMetrics>, ModelMetrics> test_set_metrics = new IcedHashMap<>();
+  private IcedHashMap<Key<ModelMetrics>, ModelMetrics> leaderboard_set_metrics = new IcedHashMap<>();
 
   /**
    * Sort metrics for the models in this leaderboard, in the same order as the models.
@@ -91,7 +94,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
   /**
    * Frame for which we return the metrics, by default.
    */
-  private Frame testFrame;
+  private Frame leaderboardFrame;
 
   /** HIDEME! */
   private Leaderboard() {
@@ -101,21 +104,24 @@ public class Leaderboard extends Keyed<Leaderboard> {
   /**
    *
    */
-  public Leaderboard(String project, UserFeedback userFeedback, Frame testFrame) {
-    this._key = make(idForProject(project));
-    Leaderboard old = DKV.getGet(this._key);
-
-    if (null != old) {
-      // pick up where we left off
-      // note that if subsequent runs use a different test frame the models are re-scored
-      this.models = old.models;
-      this.test_set_metrics = old.test_set_metrics;
-      this.sort_metrics = old.sort_metrics;
-    }
-    this.project = project;
+  private Leaderboard(String project_name, UserFeedback userFeedback, Frame leaderboardFrame) {
+    this._key = make(idForProject(project_name));
+    this.project_name = project_name;
     this.userFeedback = userFeedback;
-    this.testFrame = testFrame;
+    this.leaderboardFrame = leaderboardFrame;
     DKV.put(this);
+  }
+
+  public static Leaderboard getOrMakeLeaderboard(String project_name, UserFeedback userFeedback, Frame leaderboardFrame) {
+    Leaderboard exists = DKV.getGet(Key.make(idForProject(project_name)));
+    if (null != exists) {
+      exists.userFeedback = userFeedback;
+      exists.leaderboardFrame = leaderboardFrame;
+      DKV.put(exists);
+      return exists;
+    }
+
+    return new Leaderboard(project_name, userFeedback, leaderboardFrame);
   }
 
   // satisfy typing for job return type...
@@ -128,10 +134,10 @@ public class Leaderboard extends Keyed<Leaderboard> {
     }
   }
 
-  public static String idForProject(String project) { return "AutoML_Leaderboard_" + project; }
+  public static String idForProject(String project_name) { return "AutoML_Leaderboard_" + project_name; }
 
   public String getProject() {
-    return project;
+    return project_name;
   }
 
   public void setMetricAndDirection(String metric,String[] otherMetrics, boolean sortDecreasing){
@@ -166,6 +172,11 @@ public class Leaderboard extends Keyed<Leaderboard> {
     if (null == this._key)
       throw new H2OIllegalArgumentException("Can't add models to a Leaderboard which isn't in the DKV.");
 
+    // This can happen if a grid or model build timed out:
+    if (null == newModels || newModels.length < 1) {
+      return;
+    }
+
     if (this.sort_metric == null) {
       // lazily set to default for this model category
       setDefaultMetricAndDirection(newModels[0].get());
@@ -176,7 +187,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     new TAtomic<Leaderboard>() {
       @Override
       final public Leaderboard atomic(Leaderboard old) {
-        if (old == null) old = new Leaderboard();
+        if (old == null) old = new Leaderboard(project_name, userFeedback, leaderboardFrame);
 
         final Key<Model>[] oldModels = old.models;
         final Key<Model> oldLeader = (oldModels == null || 0 == oldModels.length) ? null : oldModels[0];
@@ -193,8 +204,8 @@ public class Leaderboard extends Keyed<Leaderboard> {
         reallyNewModels.removeAll(Arrays.asList(oldModels));
 
         // Try fetching ModelMetrics for *all* models, not just reallyNewModels,
-        // because the testFrame might have changed.
-        old.test_set_metrics = new IcedHashMap<>();
+        // because the leaderboardFrame might have changed.
+        old.leaderboard_set_metrics = new IcedHashMap<>();
         for (Key<Model> aKey : old.models) {
           Model aModel = aKey.get();
           if (null == aModel) {
@@ -202,18 +213,17 @@ public class Leaderboard extends Keyed<Leaderboard> {
             continue;
           }
 
-          ModelMetrics mm = ModelMetrics.getFromDKV(aModel, testFrame);
+          ModelMetrics mm = ModelMetrics.getFromDKV(aModel, leaderboardFrame);
           if (mm == null) {
-            Frame preds = aModel.score(testFrame);
-            mm = ModelMetrics.getFromDKV(aModel, testFrame);
+            Frame preds = aModel.score(leaderboardFrame);
+            mm = ModelMetrics.getFromDKV(aModel, leaderboardFrame);
           }
-          old.test_set_metrics.put(mm._key, mm);
+          old.leaderboard_set_metrics.put(mm._key, mm);
         }
 
-        // Sort by metric on the test set.
-        // TODO TODO TODO this sorts by the metrics in Model._output
+        // Sort by metric on the leaderboard/test set.
         try {
-          List<Key<Model>> modelsSorted = ModelMetrics.sortModelsByMetric(testFrame, sort_metric, sort_decreasing, Arrays.asList(old.models));
+          List<Key<Model>> modelsSorted = ModelMetrics.sortModelsByMetric(leaderboardFrame, sort_metric, sort_decreasing, Arrays.asList(old.models));
           old.models = modelsSorted.toArray(new Key[0]);
         }
         catch (H2OIllegalArgumentException e) {
@@ -222,13 +232,13 @@ public class Leaderboard extends Keyed<Leaderboard> {
         }
 
         Model[] models = new Model[old.models.length];
-        old.sort_metrics = old.getSortMetrics(old.sort_metric, old.test_set_metrics, testFrame, modelsForModelKeys(old.models, models));
-        if(sort_metric.equals("auc")){ //Binomial case
-          old.logloss= old.getOtherMetrics("logloss", old.test_set_metrics, testFrame, modelsForModelKeys(old.models, models));
-        }else if(sort_metric.equals("mean_residual_deviance")){ //Regression case
-          old.rmse= old.getOtherMetrics("rmse", old.test_set_metrics, testFrame, modelsForModelKeys(old.models, models));
-          old.mae= old.getOtherMetrics("mae", old.test_set_metrics, testFrame, modelsForModelKeys(old.models, models));
-          old.rmsle= old.getOtherMetrics("rmsle", old.test_set_metrics, testFrame, modelsForModelKeys(old.models, models));
+        old.sort_metrics = old.getSortMetrics(old.sort_metric, old.leaderboard_set_metrics, leaderboardFrame, modelsForModelKeys(old.models, models));
+        if (sort_metric.equals("auc")){ //Binomial case
+          old.logloss= old.getOtherMetrics("logloss", old.leaderboard_set_metrics, leaderboardFrame, modelsForModelKeys(old.models, models));
+        } else if (sort_metric.equals("mean_residual_deviance")){ //Regression case
+          old.rmse= old.getOtherMetrics("rmse", old.leaderboard_set_metrics, leaderboardFrame, modelsForModelKeys(old.models, models));
+          old.mae= old.getOtherMetrics("mae", old.leaderboard_set_metrics, leaderboardFrame, modelsForModelKeys(old.models, models));
+          old.rmsle= old.getOtherMetrics("rmsle", old.leaderboard_set_metrics, leaderboardFrame, modelsForModelKeys(old.models, models));
         }
 
         // If we're updated leader let this know so that it can notify the user
@@ -243,18 +253,17 @@ public class Leaderboard extends Keyed<Leaderboard> {
     // We've updated the DKV but not this instance, so:
     Leaderboard updated = DKV.getGet(this._key);
     this.models = updated.models;
-    this.test_set_metrics = updated.test_set_metrics;
+    this.leaderboard_set_metrics = updated.leaderboard_set_metrics;
     this.sort_metrics = updated.sort_metrics;
-    if(sort_metric.equals("auc")){ //Binomial case
+    if (sort_metric.equals("auc")){ //Binomial case
       this.logloss = updated.logloss;
-    }else if(sort_metric.equals("mean_residual_deviance")){ //Regression
+    } else if (sort_metric.equals("mean_residual_deviance")){ //Regression
       this.rmse = updated.rmse;
       this.mae = updated.mae;
       this.rmsle = updated.rmsle;
     }
 
     // always
-    EckoClient.updateLeaderboard(this);
     if (null != newLeader[0]) {
       userFeedback.info(UserFeedbackEvent.Stage.ModelTraining, "New leader: " + newLeader[0]);
     }
@@ -262,12 +271,16 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
 
   public void addModel(final Key<Model> key) {
+    if (null == key) return;
+
     Key<Model>keys[] = new Key[1];
     keys[0] = key;
     addModels(keys);
   }
 
   public void addModel(final Model model) {
+    if (null == model) return;
+
     Key<Model>keys[] = new Key[1];
     keys[0] = model._key;
     addModels(keys);
@@ -330,6 +343,9 @@ public class Leaderboard extends Keyed<Leaderboard> {
     return modelKeys[0].get();
   }
 
+  /** Return the number of models in this Leaderboard. */
+  public int getModelCount() { return getModelKeys().length; }
+
   /*
   public long[] getTimestamps(Model[] models) {
     long[] timestamps = new long[models.length];
@@ -341,22 +357,22 @@ public class Leaderboard extends Keyed<Leaderboard> {
   */
 
   public double[] getSortMetrics() {
-    return getSortMetrics(this.sort_metric, this.test_set_metrics, this.testFrame, this.getModels());
+    return getSortMetrics(this.sort_metric, this.leaderboard_set_metrics, this.leaderboardFrame, this.getModels());
   }
 
-  public static double[] getOtherMetrics(String other_metric, IcedHashMap<Key<ModelMetrics>, ModelMetrics> test_set_metrics, Frame testFrame, Model[] models) {
+  public static double[] getOtherMetrics(String other_metric, IcedHashMap<Key<ModelMetrics>, ModelMetrics> leaderboard_set_metrics, Frame leaderboardFrame, Model[] models) {
     double[] other_metrics = new double[models.length];
     int i = 0;
     for (Model m : models)
-      other_metrics[i++] = ModelMetrics.getMetricFromModelMetric(test_set_metrics.get(ModelMetrics.buildKey(m, testFrame)), other_metric);
+      other_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(m, leaderboardFrame)), other_metric);
     return other_metrics;
   }
 
-  public static double[] getSortMetrics(String sort_metric, IcedHashMap<Key<ModelMetrics>, ModelMetrics> test_set_metrics, Frame testFrame, Model[] models) {
+  public static double[] getSortMetrics(String sort_metric, IcedHashMap<Key<ModelMetrics>, ModelMetrics> leaderboard_set_metrics, Frame leaderboardFrame, Model[] models) {
     double[] sort_metrics = new double[models.length];
     int i = 0;
     for (Model m : models)
-      sort_metrics[i++] = ModelMetrics.getMetricFromModelMetric(test_set_metrics.get(ModelMetrics.buildKey(m, testFrame)), sort_metric);
+      sort_metrics[i++] = ModelMetrics.getMetricFromModelMetric(leaderboard_set_metrics.get(ModelMetrics.buildKey(m, leaderboardFrame)), sort_metric);
     return sort_metrics;
   }
 
@@ -489,10 +505,22 @@ public class Leaderboard extends Keyed<Leaderboard> {
           "%s"};
 
   public static final TwoDimTable makeTwoDimTable(String tableHeader, String sort_metric, String[] other_metric, int length) {
+    assert sort_metric != null || (sort_metric == null && length == 0) :
+        "sort_metrics needs to be always not-null for non-empty array!";
+    
     String[] rowHeaders = new String[length];
     for (int i = 0; i < length; i++) rowHeaders[i] = "" + i;
 
-    if(sort_metric.equals("mean_per_class_error")){ //Multinomial
+    if (sort_metric == null && length == 0) {
+      // empty TwoDimTable
+      return new TwoDimTable(tableHeader,
+              "no models in this leaderboard",
+              new String[0],
+              new String[0],
+              new String[0],
+              new String[0],
+              "-");
+    } else if ("mean_per_class_error".equals(sort_metric)){ //Multinomial
       return new TwoDimTable(tableHeader,
               "models sorted in order of " + sort_metric + ", best first",
               rowHeaders,
@@ -500,7 +528,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
               Leaderboard.colTypesMultinomial,
               Leaderboard.colFormatsMultinomial,
               "#");
-    }else if(sort_metric.equals("auc")){ //Binomial
+    } else if("auc".equals(sort_metric)){ //Binomial
       return new TwoDimTable(tableHeader,
               "models sorted in order of " + sort_metric + ", best first",
               rowHeaders,
@@ -547,7 +575,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
   }
 
   public TwoDimTable toTwoDimTable() {
-    return toTwoDimTable("Leaderboard for project: " + project, false);
+    return toTwoDimTable("Leaderboard for project_name: " + project_name, false);
   }
 
   public TwoDimTable toTwoDimTable(String tableHeader, boolean leftJustifyModelIds) {
@@ -585,12 +613,12 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
   //private static final SimpleDateFormat timestampFormat = new SimpleDateFormat("HH:mm:ss.SSS");
 
-  //public static String toString(String project, Model[] models, String fieldSeparator, String lineSeparator, boolean includeTitle, boolean includeHeader, boolean includeTimestamp) {
-  public static String toString(String project, Model[] models, String fieldSeparator, String lineSeparator, boolean includeTitle, boolean includeHeader) {
+  //public static String toString(String project_name, Model[] models, String fieldSeparator, String lineSeparator, boolean includeTitle, boolean includeHeader, boolean includeTimestamp) {
+  public static String toString(String project_name, Model[] models, String fieldSeparator, String lineSeparator, boolean includeTitle, boolean includeHeader) {
     StringBuilder sb = new StringBuilder();
     if (includeTitle) {
-      sb.append("Leaderboard for project \"")
-              .append(project)
+      sb.append("Leaderboard for project_name \"")
+              .append(project_name)
               .append("\": ");
 
       if (models.length == 0) {
@@ -637,8 +665,8 @@ public class Leaderboard extends Keyed<Leaderboard> {
   }
 
   public String toString(String fieldSeparator, String lineSeparator) {
-    //return toString(project, getModels(), fieldSeparator, lineSeparator, true, true, false);
-    return toString(project, getModels(), fieldSeparator, lineSeparator, true, true);
+    //return toString(project_name, getModels(), fieldSeparator, lineSeparator, true, true, false);
+    return toString(project_name, getModels(), fieldSeparator, lineSeparator, true, true);
   }
 
   @Override

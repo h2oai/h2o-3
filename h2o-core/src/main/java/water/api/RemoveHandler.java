@@ -1,6 +1,7 @@
 package water.api;
 
 import water.DKV;
+import water.H2O;
 import water.Keyed;
 import water.Lockable;
 import water.api.schemas3.RemoveV3;
@@ -13,6 +14,7 @@ public class RemoveHandler extends Handler {
       if (val instanceof Lockable) ((Lockable) val).delete(); // Fails if object already locked
       else val.remove(); // Unconditional delete
     }
+    H2O.updateNotIdle();
     return u;
   }
 }

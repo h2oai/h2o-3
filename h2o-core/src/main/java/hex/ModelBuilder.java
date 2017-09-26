@@ -108,6 +108,38 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** gbm -> "hex.schemas." ; custAlgo -> "org.myOrg.schemas." */
   public static String schemaDirectory(String urlName) { return SCHEMAS[ArrayUtils.find(ALGOBASES,urlName)]; }
 
+  /**
+   *
+   * @param urlName url name of the algo, for example gbm for Gradient Boosting Machine
+   * @return true, if model supports exporting to POJO
+   */
+  public static boolean havePojo(String urlName) {
+    return BUILDERS[ensureBuilderIndex(urlName)].havePojo();
+  }
+
+  /**
+   *
+   * @param urlName url name of the algo, for example gbm for Gradient Boosting Machine
+   * @return true, if model supports exporting to MOJO
+   */
+  public static boolean haveMojo(String urlName) {
+    return BUILDERS[ensureBuilderIndex(urlName)].haveMojo();
+  }
+
+  /**
+   * Returns <strong>valid</strong> index of given url name in {@link #ALGOBASES} or throws an exception.
+   * @param urlName url name to return the index for
+   * @return valid index, if url name is not present in {@link #ALGOBASES} throws an exception
+   */
+  private static int ensureBuilderIndex(String urlName) {
+    final String formattedName = urlName.toLowerCase();
+    int index = ArrayUtils.find(ALGOBASES, formattedName);
+    if (index < 0) {
+      throw new IllegalArgumentException(String.format("Cannot find Builder for algo url name %s", formattedName));
+    }
+    return index;
+  }
+
 
   /** Factory method to create a ModelBuilder instance for given the algo name.
    *  Shallow clone of both the default ModelBuilder instance and a Parameter. */
@@ -426,17 +458,34 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   // Step 4: Run all the CV models and launch the main model
   public void cv_buildModels(int N, ModelBuilder<M, P, O>[] cvModelBuilders ) {
+    bulkBuildModels("cross-validation", _job, cvModelBuilders, nModelsInParallel(), 0 /*no job updates*/);
+    cv_computeAndSetOptimalParameters(cvModelBuilders);
+  }
+
+  /**
+   * Runs given model builders in bulk.
+   *
+   * @param modelType text description of group of models being built (for logging purposes)
+   * @param job parent job (processing will be stopped if stop of a parent job was requested)
+   * @param modelBuilders list of model builders to run in bulk
+   * @param parallelization level of parallelization (how many models can be built at the same time)
+   * @param updateInc update increment (0 = disable updates)
+   */
+  public static void bulkBuildModels(String modelType, Job job, ModelBuilder<?, ?, ?>[] modelBuilders,
+                                     int parallelization, int updateInc) {
+    final int N = modelBuilders.length;
     H2O.H2OCountedCompleter submodel_tasks[] = new H2O.H2OCountedCompleter[N];
     int nRunning=0;
     RuntimeException rt = null;
     for( int i=0; i<N; ++i ) {
-      if( _job.stop_requested() ) break; // Stop launching but still must block for all async jobs
-      Log.info("Building cross-validation model " + (i + 1) + " / " + N + ".");
-      cvModelBuilders[i]._start_time = System.currentTimeMillis();
-      submodel_tasks[i] = H2O.submitTask(cvModelBuilders[i].trainModelImpl());
-      if(++nRunning == nModelsInParallel()) { //piece-wise advance in training the CV models
+      if (job.stop_requested() ) break; // Stop launching but still must block for all async jobs
+      Log.info("Building " + modelType + " model " + (i + 1) + " / " + N + ".");
+      modelBuilders[i]._start_time = System.currentTimeMillis();
+      submodel_tasks[i] = H2O.submitTask(modelBuilders[i].trainModelImpl());
+      if(++nRunning == parallelization) { //piece-wise advance in training the models
         while (nRunning > 0) try {
           submodel_tasks[i + 1 - nRunning--].join();
+          if (updateInc > 0) job.update(updateInc); // One job finished
         } catch (RuntimeException t) {
           if (rt == null) rt = t;
         }
@@ -450,7 +499,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if(rt == null) rt = t;
       }
     if(rt != null) throw rt;
-    cv_computeAndSetOptimalParameters(cvModelBuilders);
   }
 
   private void buildMainModel() {
@@ -483,7 +531,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
       // free resources as early as possible
       if (adaptFr != null) {
-        Model.cleanup_adapt(adaptFr, cvValid);
+        Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, cvValid);
         DKV.remove(adaptFr._key,fs);
       }
       DKV.remove(cvModelBuilders[i]._parms._train,fs);
@@ -733,10 +781,21 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected void ignoreInvalidColumns(int npredictors, boolean expensive){}
 
   /**
+   * Makes sure the final model will fit in memory.
+   *
+   * Note: This method should not be overridden (override checkMemoryFootPrint_impl instead). It is
+   * not declared 'final' to not to break 3rd party implementations. It might be declared final in the future
+   * if necessary.
+   */
+  protected void checkMemoryFootPrint() {
+    if (Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.noMemoryCheck")) return; // skip check if disabled
+    checkMemoryFootPrint_impl();
+  }
+
+  /**
    * Override this method to call error() if the model is expected to not fit in memory, and say why
    */
-  protected void checkMemoryFootPrint() {}
-
+  protected void checkMemoryFootPrint_impl() {}
 
   transient double [] _distribution;
   transient protected double [] _priorClassDist;
@@ -1105,7 +1164,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   private Frame encodeFrameCategoricals(Frame fr, boolean scopeTrack) {
     String[] skipCols = new String[]{_parms._weights_column, _parms._offset_column, _parms._fold_column, _parms._response_column};
-    Frame encoded = FrameUtils.categoricalEncoder(fr, skipCols, _parms._categorical_encoding, getToEigenVec());
+    Frame encoded = FrameUtils.categoricalEncoder(fr, skipCols, _parms._categorical_encoding, getToEigenVec(), _parms._max_categorical_levels);
     if (encoded != fr) {
       assert encoded._key != null;
       if (scopeTrack)
@@ -1242,6 +1301,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     excluded.add("makeSchema");
     excluded.add("hr");
     excluded.add("frame");
+    excluded.add("model");
     excluded.add("remove");
     excluded.add("cm");
     excluded.add("auc_obj");
@@ -1325,34 +1385,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     Log.info(table);
     return table;
-  }
-
-  public static void bulkBuildModels(Job job, ModelBuilder[] modelBuilders, int parallelization) {
-    final int N = modelBuilders.length;
-    H2O.H2OCountedCompleter submodel_tasks[] = new H2O.H2OCountedCompleter[N];
-    int nRunning=0;
-    RuntimeException rt = null;
-    for( int i=0; i<N; ++i ) {
-      if (job.stop_requested() ) break; // Stop launching but still must block for all async jobs
-      modelBuilders[i]._start_time = System.currentTimeMillis();
-      submodel_tasks[i] = H2O.submitTask(modelBuilders[i].trainModelImpl());
-      if(++nRunning == parallelization) { //piece-wise advance in training the models
-        while (nRunning > 0) try {
-          submodel_tasks[i + 1 - nRunning--].join();
-          job.update(1); // One job finished
-        } catch (RuntimeException t) {
-          if (rt == null) rt = t;
-        }
-        if(rt != null) throw rt;
-      }
-    }
-    for( int i=0; i<N; ++i ) //all sub-models must be completed before the main model can be built
-      try {
-        submodel_tasks[i].join();
-      } catch(RuntimeException t){
-        if(rt == null) rt = t;
-      }
-    if(rt != null) throw rt;
   }
 
 }

@@ -20,9 +20,7 @@ import water.util.ArrayUtils;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class GLMTest  extends TestUtil {
 
@@ -30,8 +28,12 @@ public class GLMTest  extends TestUtil {
 
   public static void testScoring(GLMModel m, Frame fr) {
     Scope.enter();
-    // standard predictions
+    // try scoring without response
     Frame fr2 = new Frame(fr);
+    fr2.remove(m._output.responseName());
+//    Frame preds0 = Scope.track(m.score(fr2));
+//    fr2.add(m._output.responseName(),fr.vec(m._output.responseName()));
+    // standard predictions
     Frame preds = Scope.track(m.score(fr2));
     m.adaptTestForTrain(fr2,true,false);
     fr2.remove(fr2.numCols()-1); // remove response
@@ -81,7 +83,6 @@ public class GLMTest  extends TestUtil {
       Chunk[] outputChks = Arrays.copyOfRange(chks, chks.length - nout, chks.length);
       chks = Arrays.copyOf(chks, chks.length - nout);
       Chunk off = new C0DChunk(0, chks[0]._len);
-      Chunk w = new C0DChunk(1, chks[0]._len);
       double[] tmp = new double[_m._output._dinfo._cats + _m._output._dinfo._nums];
       double[] predictions = new double[nout];
       double[] outputs = new double[nout];
@@ -90,12 +91,11 @@ public class GLMTest  extends TestUtil {
         chks = Arrays.copyOf(chks, chks.length - 1);
       }
       if (_weights) {
-        w = chks[chks.length - 1];
         chks = Arrays.copyOf(chks, chks.length - 1);
       }
       for (int i = 0; i < chks[0]._len; ++i) {
         if (_weights || _offset)
-          _m.score0(chks, w.atd(i), off.atd(i), i, tmp, predictions);
+          _m.score0(chks, off.atd(i), i, tmp, predictions);
         else
           _m.score0(chks, i, tmp, predictions);
         for (int j = 0; j < predictions.length; ++j)
@@ -1048,6 +1048,38 @@ public class GLMTest  extends TestUtil {
     f.delete();
   }
 
+
+  @Test @Ignore public void testConstantColumns(){
+    GLMModel model1 = null, model2 = null, model3 = null, model4 = null;
+    Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/allyears2k_headers.zip");
+    Vec y = fr.vec("IsDepDelayed").makeCopy(null);
+    fr.replace(fr.find("IsDepDelayed"),y).remove();
+      Vec weights = fr.anyVec().makeZero();
+      new MRTask(){
+        @Override public void map(Chunk c){
+          int i = 0;
+          for(i = 0; i < c._len; ++i){
+            long rid = c.start()+i;
+            if(rid >= 1999) break;
+            c.set(i,1);
+          }
+        }
+      }.doAll(weights);
+      fr.add("weights", weights);
+      DKV.put(fr);
+      GLMParameters parms = new GLMParameters(Family.gaussian);
+      parms._train = fr._key;
+      parms._weights_column = "weights";
+      parms._lambda_search = true;
+      parms._alpha = new double[]{0};
+      parms._response_column = "IsDepDelayed";
+      parms._ignored_columns = new String[]{"DepTime", "ArrTime", "Cancelled", "CancellationCode", "DepDelay", "Diverted", "CarrierDelay", "WeatherDelay", "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"};
+      parms._standardize = true;
+      model1 = new GLM(parms).trainModel().get();
+      model1.delete();
+    fr.delete();
+  }
+
   // test categorical autoexpansions, run on airlines which has several categorical columns,
   // once on explicitly expanded data, once on h2o autoexpanded and compare the results
   @Test
@@ -1323,7 +1355,7 @@ public class GLMTest  extends TestUtil {
 
 
   public static double residualDeviance(GLMModel m) {
-    if (m._parms._family == Family.binomial) {
+    if (m._parms._family == Family.binomial || m._parms._family == Family.quasibinomial) {
       ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM) m._output._training_metrics;
       return metrics._resDev;
     } else {
@@ -1370,7 +1402,7 @@ public class GLMTest  extends TestUtil {
   }
 
   public static double resDOF(GLMModel m) {
-    if (m._parms._family == Family.binomial) {
+    if (m._parms._family == Family.binomial || m._parms._family == Family.quasibinomial) {
       ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM) m._output._training_metrics;
       return metrics._residualDegressOfFreedom;
     } else {
@@ -1399,7 +1431,7 @@ public class GLMTest  extends TestUtil {
   }
 
   public static double nullDeviance(GLMModel m) {
-    if (m._parms._family == Family.binomial) {
+    if (m._parms._family == Family.binomial || m._parms._family == Family.quasibinomial) {
       ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM) m._output._training_metrics;
       return metrics._nullDev;
     } else {
@@ -1569,7 +1601,7 @@ public class GLMTest  extends TestUtil {
     }
 
     // test it behaves like binomial on binary data
-    GLMModel model = null, model2 = null, model3 = null, model4 = null;
+    GLMModel model = null;
     Frame fr = parse_test_file("smalldata/glm_test/prostate_cat_replaced.csv");
     try {
       Scope.enter();
@@ -1584,6 +1616,7 @@ public class GLMTest  extends TestUtil {
       params._ignored_columns = new String[]{"ID"};
       params._train = fr._key;
       params._lambda = new double[]{0};
+      params._nfolds = 5;
       params._standardize = false;
       params._link = Link.logit;
 //      params._missing_values_handling = MissingValuesHandling.Skip;
@@ -1598,10 +1631,10 @@ public class GLMTest  extends TestUtil {
       assertEquals(371, resDOF(model), 0);
     } finally {
       fr.delete();
-      if(model != null)model.delete();
-      if(model2 != null)model2.delete();
-      if(model3 != null)model3.delete();
-      if(model4 != null)model4.delete();
+      if(model != null){
+        model.deleteCrossValidationModels();
+        model.delete();
+      }
       Scope.exit();
     }
   }
@@ -1707,6 +1740,78 @@ public class GLMTest  extends TestUtil {
       }
     }
   }
+
+  /**
+   * Test that lambda search gets (almost) the same result as running the model for each lambda separately.
+   */
+  @Test public void testCustomLambdaSearch(){
+    Key pros = Key.make("prostate");
+    Frame f = parse_test_file(pros, "smalldata/glm_test/prostate_cat_replaced.csv");
+
+    for(Family fam:new Family[]{Family.multinomial,Family.binomial}) {
+      for (double alpha : new double[]{0, .5, 1}) {
+        for (Solver s : Solver.values()) {
+          if (s == Solver.COORDINATE_DESCENT_NAIVE || s== Solver.AUTO) continue;
+//          if(fam == Family.multinomial && (s != Solver.L_BFGS || alpha != 0)) continue;
+          try {
+            Scope.enter();
+            GLMParameters parms = new GLMParameters(fam);
+            parms._train = pros;
+            parms._alpha = new double[]{alpha};
+            parms._solver = s;
+            parms._lambda = new double[]{10, 1, .1, 1e-5, 0};
+            parms._lambda_search = true;
+            parms._response_column = fam == Family.multinomial?"RACE":"CAPSULE";
+            GLMModel model = new GLM(parms).trainModel().get();
+            GLMModel.RegularizationPath rp = model.getRegularizationPath();
+            for (int i = 0; i < parms._lambda.length; ++i) {
+              GLMParameters parms2 = new GLMParameters(fam);
+              parms2._train = pros;
+              parms2._alpha = new double[]{alpha};
+              parms2._solver = s;
+              parms2._lambda = new double[]{parms._lambda[i]};
+              parms2._lambda_search = false;
+              parms2._response_column = fam == Family.multinomial?"RACE":"CAPSULE";
+              parms2._beta_epsilon = 1e-5;
+              parms2._objective_epsilon = 1e-8;
+              GLMModel model2 = new GLM(parms2).trainModel().get();
+              double[] beta_ls = rp._coefficients_std[i];
+              double [] beta = fam == Family.multinomial?ArrayUtils.flat(model2._output.getNormBetaMultinomial()):model2._output.getNormBeta();
+              System.out.println(ArrayUtils.pprint(new double[][]{beta,beta_ls}));
+              // Can't compare beta here, have to compare objective value
+              double null_dev = ((GLMMetrics) model2._output._training_metrics).null_deviance();
+              double res_dev_ls = null_dev * (1 - rp._explained_deviance_train[i]);
+              double likelihood_ls = .5 * res_dev_ls;
+              double likelihood = .5 * ((GLMMetrics) model2._output._training_metrics).residual_deviance();
+              double nobs = model._nobs;
+              if(fam == Family.multinomial){
+                beta = beta.clone();
+                beta_ls = beta_ls.clone();
+                int P = beta.length/model._output.nclasses();
+                assert beta.length == P*model._output.nclasses();
+                for(int j = P-1; j < beta.length; j += P) {
+                  beta[j] = 0;
+                  beta_ls[j] = 0;
+                }
+              }
+              double obj_ls = likelihood_ls / nobs + ((1 - alpha) * parms._lambda[i] * .5 * ArrayUtils.l2norm2(beta_ls, true)) + alpha * parms._lambda[i] * ArrayUtils.l1norm(beta_ls, true);
+              double obj = likelihood / nobs + ((1 - alpha) * parms._lambda[i] * .5 * ArrayUtils.l2norm2(beta, true)) + alpha * parms._lambda[i] * ArrayUtils.l1norm(beta, true);
+              Assert.assertEquals(obj, obj_ls, 2*parms._objective_epsilon);
+              model2.delete();
+            }
+            model.delete();
+          } finally {
+            Scope.exit();
+          }
+        }
+      }
+    }
+    f.delete();
+  }
+
+
+
+
   /**
    * Test strong rules on arcene datasets (10k predictors, 100 rows).
    * Should be able to obtain good model (~100 predictors, ~1 explained deviance) with up to 250 active predictors.
@@ -1734,7 +1839,7 @@ public class GLMTest  extends TestUtil {
       params._max_iterations = 100000;
       params._max_active_predictors = 10000;
       params._alpha = new double[]{1};
-      for(Solver s: new Solver[]{ Solver.IRLSM, Solver.COORDINATE_DESCENT}){//Solver.COORDINATE_DESCENT,}) { // LBFGS lambda-search is too slow now
+      for(Solver s: new Solver[]{Solver.IRLSM, Solver.COORDINATE_DESCENT}){//Solver.COORDINATE_DESCENT,}) { // LBFGS lambda-search is too slow now
         params._solver = s;
         GLM glm = new GLM( params, modelKey);
         glm.trainModel().get();

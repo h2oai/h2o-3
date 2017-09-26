@@ -159,7 +159,7 @@
     #can then be brought back into R as a raw vector and then used in different ways, e.g. uncompressed
     #with the Rcompression package, or written to a file via writeBin. We can also convert the raw vector to of type
     #character.
-    tmp <- tryCatch(curlPerform(url = url,
+    tmp <- tryCatch(curlPerform(url = URLencode(url),
                                   customrequest = method,
                                   writefunction = write,
                                   headerfunction = h$update,
@@ -184,7 +184,7 @@
     h = basicHeaderGatherer()
     t = basicTextGatherer(.mapUnicode = FALSE)
     header['Expect'] = ''
-    tmp = tryCatch(postForm(uri = url,
+    tmp = tryCatch(postForm(uri = URLencode(url),
                             .params = list(fileUploadInfo = fileUploadInfo),
                             .opts=curlOptions(writefunction = t$update,
                                               headerfunction = h$update,
@@ -207,7 +207,7 @@
     }else{
       header = "Content-Type: application/json"
     }
-    tmp = tryCatch(curlPerform(url = url,
+    tmp = tryCatch(curlPerform(url = URLencode(url),
                                postfields = postBody,
                                writefunction = t$update,
                                headerfunction = h$update,
@@ -620,6 +620,29 @@ h2o.killMinus3 <- function() {
   rv <- .h2o.doSafeGET(urlSuffix="KillMinus3")
 }
 
+.h2o.list_extensions <- function(endpoint){
+  res <- .h2o.fromJSON(jsonlite::fromJSON(.h2o.doSafeGET(urlSuffix = endpoint), simplifyDataFrame=FALSE))
+  lapply(res$capabilities, function(x) x$name)
+}
+
+#' List all H2O registered extensions
+#' @export
+h2o.list_all_extensions <- function() {
+  .h2o.list_extensions(endpoint = .h2o.__ALL_CAPABILITIES)
+}
+
+#' List registered core extensions
+#' @export
+h2o.list_core_extensions <- function() {
+  .h2o.list_extensions(endpoint = .h2o.__CORE_CAPABILITIES)
+}
+
+#' List registered API extensions
+#' @export
+h2o.list_api_extensions <- function() {
+  .h2o.list_extensions(endpoint = .h2o.__API_CAPABILITIES)
+}
+
 #' Print H2O cluster info
 #' @export
 h2o.clusterInfo <- function() {
@@ -644,6 +667,8 @@ h2o.clusterInfo <- function() {
     Sys.sleep(threeSeconds)
     res <- .h2o.fromJSON(jsonlite::fromJSON(.h2o.doSafeGET(urlSuffix = .h2o.__CLOUD), simplifyDataFrame=FALSE))
   }
+
+  extensions <- h2o.list_api_extensions()
 
   nodeInfo <- res$nodes
   freeMem  <- sum(sapply(nodeInfo,function(x) as.numeric(x['free_mem']))) / (1024 * 1024 * 1024)
@@ -679,6 +704,7 @@ h2o.clusterInfo <- function() {
   cat("    H2O Connection port:       ", port, "\n")
   cat("    H2O Connection proxy:      ", proxy, "\n")
   cat("    H2O Internal Security:     ", res$internal_security_enabled, "\n")
+  cat("    H2O API Extensions:        ", paste(extensions, collapse = ", "), "\n")
   cat("    R Version:                 ", R.version.string, "\n")
 
   cpusLimited = sapply(nodeInfo, function(x) x[['num_cpus']] > 1L && x[['nthreads']] != 1L && x[['cpus_allowed']] == 1L)
@@ -760,7 +786,7 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
 #   Job Polling
 #-----------------------------------------------------------------------------------------------------------------------
 
-.h2o.__waitOnJob <- function(job_key, pollInterval = 1) {
+.h2o.__waitOnJob <- function(job_key, pollInterval = 1, verboseModelScoringHistory=FALSE) {
   progressBar <- .h2o.is_progress()
   if (progressBar) pb <- txtProgressBar(style = 3L)
   keepRunning <- TRUE
@@ -777,7 +803,6 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
       }
 
       job = jobs[[1]]
-
       status = job$status
       stopifnot(is.character(status))
 
@@ -823,6 +848,15 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
 
       if (keepRunning) {
         Sys.sleep(pollInterval)
+        if(verboseModelScoringHistory){
+          cat(paste0("\nScoring History for Model ",job$dest$name, " at ", Sys.time(),"\n"))
+          print(paste0("Model Build is ", job$progress*100, "% done..."))
+          if(!is.null(job$progress_msg)){
+            print(tail(h2o.getModel(job$dest$name)@model$scoring_history))
+          }else{
+            print("Scoring history is not available yet...") #Catch 404 with scoring history. Can occur when nfolds >=2
+          }
+        }
       } else {
         if (progressBar) {
           close(pb)

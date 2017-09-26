@@ -1129,6 +1129,63 @@ h2o.pivot <- function(x, index, column, value){
   }
   .newExpr("pivot", x, .quote(index), .quote(column), .quote(value))
 }
+
+# H2O topBottomN
+#
+# topBottomN function will will grab the top N percent or botom N percent of values of a column and return it in a
+#  H2OFrame.
+#
+# @param x an H2OFrame
+# @param column is a column name or column index to grab the top N percent value from
+# @param nPercent a top percentage values to grab
+# @param grabTopN if -1 grab bottom percentage, 1 grab top percentage
+# @return An H2OFrame with 2 columns: first column is the original row indices, second column contains the values
+h2o.topBottomN <- function(x, column, nPercent, grabTopN){
+  cnames = names(x)
+  colIndex=0
+  if (typeof(column)=="character") {  # verify column
+    if (!column %in% cnames) stop("column name not found in dataframe")
+    colIndex = ((which(column==cnames ))-1)
+
+  } else {  # column is number
+    if ((column <= 0) || (column > ncol(x))) stop("Illegal column index")
+    colIndex = (column-1)
+  }
+
+  # verify nPercent
+  if ((nPercent <  0) || nPercent > 100) stop("nPercent is between 0 and 100.")
+  if (nPercent*0.01*nrow(x) < 1) stop("Increase nPercent.  Current value will result in top 0 row.")
+  if (!h2o.isnumeric(x[colIndex+1])) stop("Wrong column type!  Selected column must be numeric.")
+
+  .newExpr("topn", x, colIndex, nPercent,grabTopN)
+}
+
+#' H2O topN
+#'
+#' Extract the top N percent  of values of a column and return it in a H2OFrame.
+#'
+#' @param x an H2OFrame
+#' @param column is a column name or column index to grab the top N percent value from
+#' @param nPercent is a top percentage value to grab
+#' @return An H2OFrame with 2 columns.  The first column is the original row indices, second column contains the topN values
+#' @export
+h2o.topN <- function(x, column, nPercent) {
+  h2o.topBottomN(x, column, nPercent, 1)
+}
+#' H2O bottomN
+#'
+#' bottomN function will will grab the bottom N percent of values of a column and return it in a H2OFrame.
+#' Extract the top N percent of values of a column and return it in a H2OFrame.
+#'
+#' @param x an H2OFrame
+#' @param column is a column name or column index to grab the top N percent value from
+#' @param nPercent is a bottom percentage value to grab
+#' @return An H2OFrame with 2 columns.  The first column is the original row indices, second column contains the bottomN values
+#' @export
+h2o.bottomN <- function(x, column, nPercent) {
+  h2o.topBottomN(x, column, nPercent, -1)
+}
+
 #-----------------------------------------------------------------------------------------------------------------------
 # Time & Date
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1737,16 +1794,29 @@ h2o.nlevels <- function(x) {
   if (!is.list(levels)) length(levels)
   else lapply(levels,length)
 }
+
+
 #'
 #' Set Levels of H2O Factor Column
 #'
 #' Works on a single categorical vector. New domains must be aligned with the old domains.
-#' This call has SIDE EFFECTS and mutates the column in place (does not make a copy).
+#' This call has SIDE EFFECTS and mutates the column in place (change of the levels will also affect all the frames
+#' that are referencing this column). If you want to make a copy of the column instead, use parameter in.place = FALSE.
 #'
 #' @param x A single categorical column.
 #' @param levels A character vector specifying the new levels. The number of new levels must match the number of old levels.
+#' @param in.place Indicates whether new domain will be directly applied to the column (in place change) or if a copy
+#'        of the column will be created with the given domain levels.
 #' @export
-h2o.setLevels <- function(x, levels) .newExpr("setDomain", chk.H2OFrame(x), levels)
+#' @examples
+#' \donttest{
+#' h2o.init()
+#' iris.hex <- as.h2o(iris)
+#' new.levels <- c("setosa", "versicolor", "caroliniana")
+#' iris.hex$Species <- h2o.setLevels(iris.hex$Species, new.levels, in.place = FALSE)
+#' h2o.levels(iris.hex$Species)
+#' }
+h2o.setLevels <- function(x, levels, in.place = TRUE) .newExpr("setDomain", chk.H2OFrame(x), in.place, levels)
 
 
 #'
@@ -3059,6 +3129,14 @@ use.package <- function(package,
   stopifnot(is.character(package), length(package)==1L,
             is.character(version), length(version)==1L,
             is.logical(use), length(use)==1L)
+
+  # if (package=="data.table" && use) { # not sure if this is needed.  Keeping it for now.
+  #   if (!("bit64" %in% rownames(installed.packages())) || (packageVersion("bit64") < as.package_version("0.9.7"))) {
+  #      # print out warning to install bit64 in order to use data.table
+  #     warning("data.table cannot be used without R package bit64 version 0.9.7 or higher.  Please upgrade to take advangage of data.table speedups.")
+  #     return(FALSE)
+  #   }
+  # }
   use && requireNamespace(package, quietly=TRUE) && (packageVersion(package) >= as.package_version(version))
 }
 
@@ -3161,6 +3239,9 @@ as.h2o.data.frame <- function(x, destination_frame="", ...) {
 
 #' @rdname as.h2o
 #' @method as.h2o Matrix
+#' @details
+#' To speedup execution time for large sparse matrices, use h2o datatable.  Make sure you have installed and imported data.table and slam packages.
+#' Turn on h2o datatable by options("h2o.use.data.table"=TRUE)
 #' @export
 as.h2o.Matrix <- function(x, destination_frame="", ...) {
   
@@ -3171,12 +3252,22 @@ as.h2o.Matrix <- function(x, destination_frame="", ...) {
   .key.validate(destination_frame)
   if ( destination_frame=="" ) # .h2o.readSVMLight wont handle ""
     destination_frame <- .key.make("Matrix") # only used if `x` variable name not valid key
-  
-  tmpf <- tempfile(fileext = ".svm")
-  .h2o.write.matrix.svmlight(x, file = tmpf)
-  h2f <- .h2o.readSVMLight(tmpf, destination_frame = destination_frame)
-  file.remove(tmpf)
-  h2f
+
+  if (use.package("data.table") && use.package("slam", version="0.1.40", TRUE)) {
+    drs <- slam::as.simple_triplet_matrix(x)# need to convert sparse matrix x to a simple triplet matrix format
+    thefile <- tempfile()
+    .h2o.write_stm_svm(drs, file = thefile)
+    h2f <<- h2o.uploadFile(thefile, parse_type = "SVMLight", destination_frame=destination_frame)
+    unlink(thefile)
+    h2f[, -1]   # remove the first column
+  } else {
+    warning("as.h2o can be slow for large sparse matrices.  Install packages data.table and slam to speed up as.h2o.")
+    tmpf <- tempfile(fileext = ".svm")
+    .h2o.write.matrix.svmlight(x, file = tmpf)
+    h2f <- .h2o.readSVMLight(tmpf, destination_frame = destination_frame)
+    file.remove(tmpf)
+    h2f
+  }
 }
 
 .h2o.write.matrix.svmlight <- function(matrix, file) {
@@ -3191,6 +3282,44 @@ as.h2o.Matrix <- function(x, destination_frame="", ...) {
     line <- sprintf("%s %s\n", target, features)
     cat(line)
   })
+}
+
+.h2o.calc_stm_svm <- function(stm, y){
+  # Convert a simple triplet matrix to svm format
+  # author Peter Ellis
+  # return a character vector of length n
+  # fixed bug to return rows of zeros instead of repeating other rows
+  # returns a character vector of length y ready for writing in svm format
+  if(!"simple_triplet_matrix" %in% class(stm)){
+    stop("stm must be a simple triple matrix")
+  }
+  if(!is.vector(y) | nrow(stm) != length(y)){
+    stop("y should be a vector of length equal to number of rows of stm")
+  }
+  n <- length(y)
+
+  # data table solution thanks to roland
+  rowLeft <- setdiff(c(1:n), unique(stm$i))
+  nrowLeft <- length(rowLeft)
+  i=NULL  # serves no purpose except to pass the R cmd cran check
+  j=NULL
+  v=NULL
+  jv=NULL
+  stm2 <- data.table::data.table(i = c(stm$i,rowLeft), j = c(stm$j,rep(1,nrowLeft)), v = c(stm$v,rep(0,nrowLeft)))
+  res <- stm2[, list(i, jv = paste(j, v, sep = ":"))][order(i), list(res = paste(jv, collapse = " ")), by = i][["res"]]
+
+  out <- paste(y, res)
+
+  return(out)
+}
+
+.h2o.write_stm_svm <- function(stm, y = rep(1, nrow(stm)), file){
+  # param stm a simple triplet matrix (class exported slam) of features (ie explanatory variables)
+  # param y a vector of labels.  If not provided, a dummy of 1s is provided
+  # param file file to write to.
+  # author Peter Ellis
+  out <- .h2o.calc_stm_svm(stm, y)
+  writeLines(out, con = file)
 }
 
 #'
@@ -3539,7 +3668,7 @@ h2o.merge <- function(x, y, by=intersect(names(x), names(y)), by.x=by, by.y=by, 
 }
 
 
-#' Sorts H2OFrame by the columns specified. Returns a new H2OFrame, like dplyr::arrange.
+#' Sorts H2OFrame by the columns specified. H2OFrame should not contain any String columns.  Otherwise, an error will be thrown.  Returns a new H2OFrame, like dplyr::arrange.
 #'
 #' @param x The H2OFrame input to be sorted.
 #' @param \dots The column names to sort by.
@@ -3576,15 +3705,36 @@ h2o.relevel <- function(x,y) {
 #' \code{"all"} will include \code{NAs} in computation of functions. \code{"rm"} will completely
 #' remove all \code{NA} fields. \code{"ignore"} will remove \code{NAs} from the numerator but keep
 #' the rows for computational purposes. If a list smaller than the number of columns groups is
-#' supplied, the list will be padded by \code{"ignore"}.
+#' supplied, the list will be padded by \code{"ignore"}. 
 #'
-#' Similar to \code{na.methods}, \code{col.names} will pad the list with the default column names if
-#' the length is less than the number of colums groups supplied.
+#' Note that to specify a list of column names in the \code{gb.control} list, you must add the 
+#' \code{col.names} argument. Similar to \code{na.methods}, \code{col.names} will pad the list with 
+#' the default column names if the length is less than the number of colums groups supplied. 
+#'
+#' Supported functions include \code{nrow}. This function is required and accepts a string for the 
+#' name of the generated column. Other supported aggregate functions accept \code{col} and \code{na} 
+#' arguments for specifying columns and the handling of NAs (\code{"all"}, \code{"ignore"}, and 
+#  \code{"rm"}) and include the following: \code{count} counts the number of rows in each group of a 
+#' GroupBy object; \code{max} calculates the maximum of each column specified in \code{col} for each 
+#' group of a GroupBy object; \code{mean} calculates the mean of each column specified in \code{col} 
+#' for each group of a GroupBy object; \code{min} calculates the minimum of each column specified in 
+#' \code{col} for each group of a GroupBy object; \code{mode} calculates the mode of each column 
+#' specified in \code{col} for each group of a GroupBy object; \code{sd} calculates the standard 
+#' deviation of each column specified in \code{col} for each group of a GroupBy object; \code{ss} 
+#' calculates the sum of squares of each column specified in \code{col} for each group of a GroupBy 
+#' object; \code{sum} calculates the sum of each column specified in \code{col} for each group of a 
+#' GroupBy object; and \code{var} calculates the variance of each column specified in \code{col} for 
+#' each group of a GroupBy object. If an aggregate is provided without a value (for example, as 
+#' \code{max} in \code{sum(col="X1", na="all").mean(col="X5", na="all").max()}), then it is assumed 
+#' that the aggregation should apply to all columns except the GroupBy columns. Note again that 
+#' \code{nrow} is required and cannot be empty.
+#'
 #' @param data an H2OFrame object.
 #' @param by a list of column names
-#' @param \dots any supported aggregate function.
+#' @param \dots any supported aggregate function. See \code{Details:} for more help.
 #' @param gb.control a list of how to handle \code{NA} values in the dataset as well as how to name
-#'        output columns. See \code{Details:} for more help.
+#'        output columns. The method is specified using the \code{rm.method} argument. See 
+#'        \code{Details:} for more help.
 #' @return Returns a new H2OFrame object with columns equivalent to the number of
 #'         groups created
 #' @export
@@ -3918,6 +4068,32 @@ h2o.isax <- function(x, num_words, max_cardinality, optimize_card = FALSE){
   .newExpr("isax", x, num_words, max_cardinality, optimize_card)
 }
 
+
+#'
+#' fillNA
+#'
+#' Fill NA's in a sequential manner up to a specified limit
+#'
+#' @param x an H2OFrame
+#' @param method A String: "forward" or "backward"
+#' @param axis An Integer 1 for row-wise fill (default), 2 for column-wise fill
+#' @param maxlen An Integer for maximum number of consecutive NA's to fill
+#' @return An H2OFrame after filling missing values
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' fr.with.nas = h2o.createFrame(categorical_fraction=0.0,missing_fraction=0.7,rows=6,cols=2,seed=123)
+#' fr <- h2o.fillna(fr.with.nas, "forward", axis=1, maxlen=2L)
+#' }
+#' @export
+h2o.fillna <- function(x, method="forward", axis=1, maxlen=1L) {
+  if(! axis %in% c(1,2)) stop("axis must be 1 or 2")
+  if(axis == 2) axis_arg=0 else axis_arg=1
+  if(! method %in% c("forward","backward")) stop("method must be forward or backward")
+  if(! is.integer(maxlen)) stop("max len must be an integer (e.g., 2L)")
+  .newExpr("h2o.fillna", x, .quote(method), axis_arg, maxlen)
+}
 
 #-----------------------------------------------------------------------------------------------------------------------
 # String Operations

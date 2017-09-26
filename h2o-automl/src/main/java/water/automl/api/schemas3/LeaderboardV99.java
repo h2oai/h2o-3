@@ -11,7 +11,7 @@ public class LeaderboardV99 extends Schema<Leaderboard, LeaderboardV99> {
    * (e.g., "airlines" and "iris").
    */
   @API(help="Identifier for models that should be grouped together in the leaderboard", direction=API.Direction.INOUT)
-  public final String project = "<default>";
+  public final String project_name = "<default>";
 
   /**
    * List of models for this leaderboard, sorted by metric so that the best is first

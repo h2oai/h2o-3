@@ -154,7 +154,7 @@ def np_comparison_check(h2o_data, np_data, num_elements):
         assert np.absolute(h2o_val - np_val) < 1e-5, \
             "failed comparison check! h2o computed {0} and numpy computed {1}".format(h2o_val, np_val)
 
-def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs):
+def javapredict(algo, equality, train, test, x, y, compile_only=False, separator=",", setInvNumNA=False,**kwargs):
     print("Creating model in H2O")
     if algo == "gbm": model = H2OGradientBoostingEstimator(**kwargs)
     elif algo == "random_forest": model = H2ORandomForestEstimator(**kwargs)
@@ -206,6 +206,7 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs)
         f = open(in_csv, "r+")
         csv = f.read()
         csv = re.sub('\"', "", csv)
+        csv = re.sub(",", separator, csv)       # replace with arbitrary separator for input dataset
         f.seek(0)
         f.write(csv)
         f.truncate()
@@ -218,7 +219,9 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs)
         cp_sep = ";" if sys.platform == "win32" else ":"
         java_cmd = ["java", "-ea", "-cp", h2o_genmodel_jar + cp_sep + tmpdir, "-Xmx12g", "-XX:MaxPermSize=2g",
                     "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv",
-                    "--pojo", pojoname, "--input", in_csv, "--output", out_pojo_csv]
+                    "--pojo", pojoname, "--input", in_csv, "--output", out_pojo_csv, "--separator", separator]
+        if setInvNumNA:
+            java_cmd.append("--setConvertInvalidNum")
         p = subprocess.Popen(java_cmd, stdout=PIPE, stderr=STDOUT)
         o, e = p.communicate()
         print("Java output: {0}".format(o))
@@ -245,7 +248,6 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs)
                 assert hp == pp, "Expected predictions to be the same for row %d, but got %r and %r" % (r, hp, pp)
             else:
                 raise ValueError
-
 
 def javamunge(assembly, pojoname, test, compile_only=False):
     """
@@ -1402,7 +1404,7 @@ def assert_H2OTwoDimTable_equal(table1, table2, col_header_list, tolerance=1e-6,
 
                 # now we have the col header names, do the actual comparison
                 if str(table1.cell_values[name_ind1][0])==str(table2.cell_values[name_ind2][0]):
-                    randRange3 = generate_for_indices(len(table2.cell_values[name_ind2]), check_all, num_per_dim,1)
+                    randRange3 = generate_for_indices(min(len(table2.cell_values[name_ind2]), len(table1.cell_values[name_ind1])), check_all, num_per_dim,1)
                     for indC in randRange3:
                         val1 = table1.cell_values[name_ind1][indC]
                         val2 = table2.cell_values[name_ind2][indC]*flip_sign_vec[indC]
@@ -2746,7 +2748,7 @@ def compareOneNumericColumn(frame1, frame2, col_ind, rows, tolerance, numElement
 
     row_indices = []
     if numElements > 0:
-        row_indices = random.sample(xrange(rows), numElements)
+        row_indices = random.sample(range(rows), numElements)
     else:
         numElements = rows  # Compare all elements
         row_indices = list(range(rows))
@@ -2759,7 +2761,7 @@ def compareOneNumericColumn(frame1, frame2, col_ind, rows, tolerance, numElement
         val2 = frame2[row_ind, col_ind]
 
         if not(math.isnan(val1)) and not(math.isnan(val2)): # both frames contain valid elements
-            diff = abs(val1-val2)
+            diff = abs(val1-val2)/max(1, abs(val1), abs(val2))
             assert diff <= tolerance, "failed frame values check! frame1 value = {0}, frame2 value =  {1}, " \
                                       "at row {2}, column {3}.  The difference is {4}.".format(val1, val2, row_ind,
                                                                                                col_ind, diff)
@@ -2978,9 +2980,41 @@ def model_seed_sorted_by_time(model_list):
     return model_seed_list
 
 def check_ignore_cols_automl(models,names,x,y):
+    models = sum(models.as_data_frame().values.tolist(),[])
     for model in models:
         if "StackedEnsemble" in model:
             continue
         else:
             assert set(h2o.get_model(model).params["ignored_columns"]["actual"]) == set(names) - {y} - set(x), \
                 "ignored columns are not honored for model " + model
+
+
+def compare_numeric_frames(f1, f2, prob=0.5, tol=1e-6):
+    assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "The two frames are of different sizes."
+    temp1 = f1.asnumeric()
+    temp2 = f2.asnumeric()
+    for colInd in range(f1.ncol):
+        for rowInd in range(f2.nrow):
+            if (random.uniform(0,1) < prob):
+                diff = abs(temp1[rowInd, colInd]-temp2[rowInd, colInd])/max(1.0, abs(temp1[rowInd, colInd]),
+                                                                            abs(temp2[rowInd, colInd]))
+                assert diff<=tol, "Failed frame values check! frame1 value: {0}, frame2 value: " \
+                                  "{1}".format(temp1[rowInd, colInd], temp2[rowInd, colInd])
+
+def check_sorted_2_columns(frame1, sorted_column_indices, prob=0.5):
+    for colInd in sorted_column_indices:
+        for rowInd in range(0, frame1.nrow-1):
+            if (random.uniform(0.0,1.0) < prob):
+                if colInd == sorted_column_indices[0]:
+                    if not(math.isnan(frame1[rowInd, colInd])) and not(math.isnan(frame1[rowInd+1,colInd])):
+                        assert frame1[rowInd,colInd] <= frame1[rowInd+1,colInd], "Wrong sort order: value at row {0}: {1}, value at " \
+                                                               "row {2}: {3}".format(rowInd, frame1[rowInd,colInd],
+                                                                                     rowInd+1, frame1[rowInd+1,colInd])
+                else: # for second column
+                    if not(math.isnan(frame1[rowInd, sorted_column_indices[0]])) and not(math.isnan(frame1[rowInd+1,sorted_column_indices[0]])):
+                        if (frame1[rowInd,sorted_column_indices[0]]==frame1[rowInd+1, sorted_column_indices[0]]):  # meaningful to compare row entries then
+                            if not(math.isnan(frame1[rowInd, colInd])) and not(math.isnan(frame1[rowInd+1,colInd])):
+                                assert frame1[rowInd,colInd] <= frame1[rowInd+1,colInd], "Wrong sort order: value at row {0}: {1}, value at " \
+                                                                           "row {2}: {3}".format(rowInd, frame1[rowInd,colInd],
+                                                                                                 rowInd+1, frame1[rowInd+1,colInd])
+

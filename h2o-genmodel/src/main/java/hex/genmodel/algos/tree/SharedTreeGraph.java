@@ -8,7 +8,7 @@ import java.util.ArrayList;
  * A graph contains subgraphs (trees).
  */
 public class SharedTreeGraph {
-  private ArrayList<SharedTreeSubgraph> subgraphArray = new ArrayList<>();
+  public ArrayList<SharedTreeSubgraph> subgraphArray = new ArrayList<>();
 
   /**
    * Make a new forest.

@@ -5,6 +5,7 @@ import hex.PartialDependence;
 import hex.grid.Grid;
 import water.*;
 import water.api.API;
+import water.parser.DecryptionTool;
 import water.rapids.Assembly;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
@@ -110,6 +111,11 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
   public static class PartialDependenceKeyV3 extends KeyV3<Iced, PartialDependenceKeyV3, PartialDependence> {
     public PartialDependenceKeyV3() {}
     public PartialDependenceKeyV3(Key<PartialDependence> key) { super(key); }
+  }
+
+  public static class DecryptionToolKeyV3 extends KeyV3<Iced, DecryptionToolKeyV3, DecryptionTool> {
+    public DecryptionToolKeyV3() {}
+    public DecryptionToolKeyV3(Key<DecryptionTool> key) { super(key); }
   }
 
   @Override public S fillFromImpl(Iced i) {

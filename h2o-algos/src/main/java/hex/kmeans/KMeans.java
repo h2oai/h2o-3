@@ -42,7 +42,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
   public KMeans( KMeansModel.KMeansParameters parms, Job job) { super(parms,job); init(false); }
   public KMeans(boolean startup_once) { super(new KMeansModel.KMeansParameters(),startup_once); }
 
-  @Override protected void checkMemoryFootPrint() {
+  @Override protected void checkMemoryFootPrint_impl() {
     long mem_usage = 8 /*doubles*/ * _parms._k * _train.numCols() * (_parms._standardize ? 2 : 1);
     long max_mem = H2O.SELF._heartbeat.get_free_mem();
     if (mem_usage > max_mem) {
@@ -149,13 +149,17 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
             centers = ArrayUtils.append(centers, sampler._sampled);
 
             // Fill in sample centers into the model
-            if (stop_requested()) return null; // Stopped/cancelled
             model._output._centers_raw = destandardize(centers, _isCats, means, mults);
             model._output._tot_withinss = sqr._sqr / _train.numRows();
 
             model._output._iterations++;     // One iteration done
 
             model.update(_job); // Make early version of model visible, but don't update progress using update(1)
+            if (stop_requested()) {
+              if (timeout())
+                warn("_max_runtime_secs reached.", "KMeans exited before finishing all iterations.");
+              break; // Stopped/cancelled
+            }
           }
           // Recluster down to k cluster centers
           centers = recluster(centers, rand, k, _parms._init, _isCats);
@@ -314,7 +318,8 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
               _job.update(1); //1 more Lloyds iteration
             }
 
-            stop = (task._reassigned_count < Math.max(1,train().numRows()*TOLERANCE) || model._output._iterations >= _parms._max_iterations);
+            stop = (task._reassigned_count < Math.max(1,train().numRows()*TOLERANCE) ||
+                    model._output._iterations >= _parms._max_iterations || stop_requested());
             if (stop) {
               if (model._output._iterations < _parms._max_iterations)
                 Log.info("Lloyds converged after " + model._output._iterations + " iterations.");
@@ -446,7 +451,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       List<String> colFormat = new ArrayList<>();
       colHeaders.add("Timestamp"); colTypes.add("string"); colFormat.add("%s");
       colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
-      colHeaders.add("Iteration"); colTypes.add("long"); colFormat.add("%d");
+      colHeaders.add("Iterations"); colTypes.add("long"); colFormat.add("%d");
       if (_parms._estimate_k) {
         colHeaders.add("Number of Clusters");
         colTypes.add("long");
@@ -953,5 +958,4 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       ArrayUtils.add(_size, mr._size);
     }
   }
-
 }

@@ -1,4 +1,4 @@
-doJavapredictTest <- function(model,test_file,test_frame,params) {
+doJavapredictTest <- function(model,test_file,test_frame,params, separator=",", setInvNumNA=FALSE) {
   conn <- h2o.getConnection()
   myIP <- conn@ip
   myPort <- conn@port
@@ -40,14 +40,18 @@ doJavapredictTest <- function(model,test_file,test_frame,params) {
   cmd <- sprintf(   "%s/out_h2o.csv", tmpdir_name)
   write.csv(prediction1, cmd, quote=FALSE, row.names=FALSE)
 
-  print("Setting up for Java POJO")
-  test_with_response <- read.csv(test_file, header=T)
-  test_without_response <- test_with_response[,params$x]
+  print("Setting up for Java POJO") 
+  # for missing column names, H2O use C1, C2,...  R uses X, Y,...
+  test_with_response <- h2o.importFile(test_file, header=T)
+  names(test_with_response) = names(test_frame) # replace R column names with H2O column names
+  test_without_response <- as.data.frame(test_with_response[,params$x])
   if(is.null(ncol(test_without_response))) {
-    test_without_response <- data.frame(test_without_response)
+    test_without_response <- as.data.frame(test_without_response)
     colnames(test_without_response) <- params$x
   }
-  write.csv(test_without_response, file = sprintf("%s/in.csv", tmpdir_name), row.names=F, quote=F)
+  #write.csv(test_without_response, file = sprintf("%s/in.csv", tmpdir_name), row.names=F, quote=F)
+  file = sprintf("%s/in.csv", tmpdir_name)
+  write.table(test_without_response, file, sep=separator, row.names=FALSE, quote=FALSE)
   cmd <- sprintf("curl http://%s:%s/3/h2o-genmodel.jar > %s/h2o-genmodel.jar", myIP, myPort, tmpdir_name)
   if (.Platform$OS.type == "windows") shell(cmd)
   else safeSystem(cmd)
@@ -55,8 +59,12 @@ doJavapredictTest <- function(model,test_file,test_frame,params) {
   safeSystem(cmd)
 
   print("Predicting with Java POJO")
-  if (.Platform$OS.type == "windows") cmd <- sprintf("java -ea -cp %s/h2o-genmodel.jar;%s -Xmx4g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m hex.genmodel.tools.PredictCsv --header --model %s --input %s/in.csv --output %s/out_pojo.csv", tmpdir_name, tmpdir_name, model_key, tmpdir_name, tmpdir_name)
-  else cmd <- sprintf("java -ea -cp %s/h2o-genmodel.jar:%s -Xmx4g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m hex.genmodel.tools.PredictCsv --header --pojo %s --input %s/in.csv --output %s/out_pojo.csv", tmpdir_name, tmpdir_name, model_key, tmpdir_name, tmpdir_name)
+  if (.Platform$OS.type == "windows") cmd <- sprintf("java -ea -cp %s/h2o-genmodel.jar;%s -Xmx4g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m hex.genmodel.tools.PredictCsv --header --model %s --input %s/in.csv --output %s/out_pojo.csv --separator %s", tmpdir_name, tmpdir_name, model_key, tmpdir_name, tmpdir_name, separator)
+  else cmd <- sprintf("java -ea -cp %s/h2o-genmodel.jar:%s -Xmx4g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m hex.genmodel.tools.PredictCsv --header --pojo %s --input %s/in.csv --output %s/out_pojo.csv --separator %s", tmpdir_name, tmpdir_name, model_key, tmpdir_name, tmpdir_name, separator)
+  if (setInvNumNA)
+    cmd <- paste(cmd, " --setConvertInvalidNum")
+
+
   safeSystem(cmd)
 
   print("Comparing predictions between H2O and Java POJO")

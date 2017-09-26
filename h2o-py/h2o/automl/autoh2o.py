@@ -13,19 +13,54 @@ class H2OAutoML(object):
     a random grid of Gradient Boosting Machines (GBMs), a random grid of Deep Neural Nets,
     and a Stacked Ensemble of all the models.
 
+    :param int max_runtime_secs: This argument controls how long the AutoML run will execute. Defaults to 3600 seconds (1 hour).
+    :param int max_models: Specify the maximum number of models to build in an AutoML run. (Does not include the Stacked Ensemble model.)
+    :param str stopping_metric: Specifies the metric to use for early stopping. Defaults to ``"AUTO"``.
+      The available options are:
+      ``AUTO`` (This defaults to ``logloss`` for classification, ``deviance`` for regression),
+      ``deviance``, ``logloss``, ``mse``, ``rmse``, ``mae``, ``rmsle``, ``auc``, ``lift_top_group``,
+      ``misclassification``, ``mean_per_class_error``.
+    :param float stopping_tolerance: This option specifies the relative tolerance for the metric-based stopping
+      to stop the AutoML run if the improvement is less than this value. This value defaults to 0.001
+      if the dataset is at least 1 million rows; otherwise it defaults to a value determined by the size of the dataset
+      and the non-NA-rate.  In that case, the value is computed as 1/sqrt(nrows * non-NA-rate).
+    :param int stopping_rounds: This argument stops training new models in the AutoML run when the option selected for
+      stopping_metric doesn't improve for the specified number of models, based on a simple moving average.
+      To disable this feature, set it to 0. Defaults to 3 and must be an non-negative integer.
+    :param int seed: Set a seed for reproducibility. AutoML can only guarantee reproducibility if ``max_models`` or
+      early stopping is used because ``max_runtime_secs`` is resource limited, meaning that if the resources are
+      not the same between runs, AutoML may be able to train more models on one run vs another.  Defaults to ``None``.
+    :param str project_name: Character string to identify an AutoML project. Defaults to ``None``, which means
+      a project name will be auto-generated based on the training frame ID.  More models can be trained on an
+      existing AutoML project by specifying the same project name in muliple calls to the AutoML function
+      (as long as the same training frame is used in subsequent runs).
+
     :examples:
-    >>> # Setting up an H2OAutoML object
-    >>> build_control = {
-    >>>              'stopping_criteria': {
-    >>>              'stopping_rounds': 3,
-    >>>              'stopping_tolerance': 0.001
-    >>>            }
-    >>>        }
-    >>> project_name = "Project1"
-    >>> build_control["project"] = project_name
-    >>> aml = H2OAutoML(max_runtime_secs=30, project_name=project_name, build_control=build_control)
+    >>> import h2o
+    >>> from h2o.automl import H2OAutoML
+    >>> h2o.init()
+    >>> # Import a sample binary outcome train/test set into H2O
+    >>> train = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
+    >>> test = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
+    >>> # Identify predictors and response
+    >>> x = train.columns
+    >>> y = "response"
+    >>> x.remove(y)
+    >>> # For binary classification, response should be a factor
+    >>> train[y] = train[y].asfactor()
+    >>> test[y] = test[y].asfactor()
+    >>> # Run AutoML for 30 seconds
+    >>> aml = H2OAutoML(max_runtime_secs = 30)
+    >>> aml.train(x = x, y = y,training_frame = train,leaderboard_frame = test)
     """
-    def __init__(self, max_runtime_secs=None, project_name=None, build_control=None):
+    def __init__(self,
+                 max_runtime_secs=3600,
+                 max_models=None,
+                 stopping_metric="AUTO",
+                 stopping_tolerance=None,
+                 stopping_rounds=3,
+                 seed=None,
+                 project_name=None):
 
         #Check if H2O jar contains AutoML
         try:
@@ -37,30 +72,48 @@ class H2OAutoML(object):
                   "*******************************************************************\n" \
                   "\nVerbose Error Message:")
 
-        #If max_runtime_secs is not provided, then it is set to default (600 secs)
-        if max_runtime_secs is None:
-            max_runtime_secs = 600
-            self.max_runtime_secs = max_runtime_secs
-        else:
+        #If max_runtime_secs is not provided, then it is set to default (3600 secs)
+        if max_runtime_secs is not 3600:
             assert_is_type(max_runtime_secs,int)
-            self.max_runtime_secs = max_runtime_secs
+        self.max_runtime_secs = max_runtime_secs
 
-        #If build_control is not provided, then a minimum build_control is constructed with just max_runtime_secs
-        if build_control is None:
-            self.build_control = {
-                'stopping_criteria': {
-                    'max_runtime_secs': self.max_runtime_secs,
-                }
+        #Make bare minimum build_control
+        self.build_control = {
+            'stopping_criteria': {
+                'max_runtime_secs': self.max_runtime_secs,
             }
-        else:
-            assert_is_type(build_control,dict)
-            self.build_control = build_control
-            self.build_control["stopping_criteria"]["max_runtime_secs"] = self.max_runtime_secs
+        }
 
-        #Set project name if provided. It None, then we set in .train() to "automl_" + training_frame.frame_id
+        #Add other parameters to build_control if available
+        if max_models is not None:
+            assert_is_type(max_models,int)
+            self.build_control["stopping_criteria"]["max_models"] = max_models
+        self.max_models = max_models
+
+        if stopping_metric is not "AUTO":
+            assert_is_type(stopping_metric,str)
+        self.build_control["stopping_criteria"]["stopping_metric"] = stopping_metric
+        self.stopping_metric = stopping_metric
+
+        if stopping_tolerance is not None:
+            assert_is_type(stopping_tolerance,float)
+            self.build_control["stopping_criteria"]["stopping_tolerance"] = stopping_tolerance
+        self.stopping_tolerence = stopping_tolerance
+
+        if stopping_rounds is not 3:
+            assert_is_type(stopping_rounds,int)
+        self.build_control["stopping_criteria"]["stopping_rounds"] = stopping_rounds
+        self.stopping_rounds = stopping_rounds    
+
+        if seed is not None:
+            assert_is_type(seed,int)
+            self.build_control["stopping_criteria"]["seed"] = seed
+            self.seed = seed
+
+        #Set project name if provided. If None, then we set in .train() to "automl_" + training_frame.frame_id
         if project_name is not None:
             assert_is_type(project_name,str)
-            self.build_control["project"] = project_name
+            self.build_control["project_name"] = project_name
             self.project_name = project_name
         else:
             self.project_name = None
@@ -70,36 +123,76 @@ class H2OAutoML(object):
         self._leader_id = None
         self._leaderboard = None
 
-    def train(self, x=None, y=None, training_frame=None, validation_frame=None, test_frame=None):
+    #---------------------------------------------------------------------------
+    # Basic properties
+    #---------------------------------------------------------------------------
+    @property
+    def leader(self):
         """
-        Begins the automl task, which is a background task that incrementally improves
-        over time. At any point, the user may use the "predict"/"performance"
-        to inspect the incremental
+        Retrieve the top model from an H2OAutoML object
+
+        :return: an H2O model
+
+        :examples:
+        >>> # Set up an H2OAutoML object
+        >>> aml = H2OAutoML(max_runtime_secs=30)
+        >>> # Launch H2OAutoML
+        >>> aml.train(y=y, training_frame=training_frame)
+        >>> # Get the top model
+        >>> aml.leader
+        """
+        return h2o.get_model(self._leader_id)
+
+    @property
+    def leaderboard(self):
+        """
+        Retrieve the leaderboard from an H2OAutoML object
+
+        :return: an H2OFrame with model ids in the first column and evaluation metric in the second column sorted
+                 by the evaluation metric
+
+        :examples:
+        >>> # Set up an H2OAutoML object
+        >>> aml = H2OAutoML(max_runtime_secs=30)
+        >>> # Launch H2OAutoML
+        >>> aml.train(y=y, training_frame=training_frame)
+        >>> # Get the leaderboard
+        >>> aml.leaderboard
+        """
+        return self._leaderboard
+
+    #---------------------------------------------------------------------------
+    # Training AutoML
+    #---------------------------------------------------------------------------
+    def train(self, x = None, y = None, training_frame = None, fold_column = None, 
+              weights_column = None, validation_frame = None, leaderboard_frame=None):
+        """
+        Begins an AutoML task, a background task that automatically builds a number of models
+        with various algorithms and tracks their performance in a leaderboard. At any point 
+        in the process you may use H2O's performance or prediction functions on the resulting 
+        models.
 
         :param x: A list of column names or indices indicating the predictor columns.
         :param y: An index or a column name indicating the response column.
+        :param fold_column: The name or index of the column in training_frame that holds per-row fold
+            assignments.
+        :param weights_column: The name or index of the column in training_frame that holds per-row weights.
         :param training_frame: The H2OFrame having the columns indicated by x and y (as well as any
             additional columns specified by fold, offset, and weights).
         :param validation_frame: H2OFrame with validation data to be scored on while training.
-        :param test_frame: H2OFrame with test data to be scored on in the leaderboard.
+        :param leaderboard_frame: H2OFrame with test data to be scored on in the leaderboard.
 
         :returns: An H2OAutoML object.
 
         :examples:
         >>> # Set up an H2OAutoML object
-        >>> # Setting up an H2OAutoML object
-        >>> build_control = {
-        >>>              'stopping_criteria': {
-        >>>              'stopping_rounds': 3,
-        >>>              'stopping_tolerance': 0.001
-        >>>            }
-        >>>        }
-        >>> aml = H2OAutoML(max_runtime_secs=30, build_control=build_control)
+        >>> aml = H2OAutoML(max_runtime_secs=30)
         >>> # Launch H2OAutoML
         >>> aml.train(y=y, training_frame=training_frame)
         """
         ncols = training_frame.ncols
         names = training_frame.names
+
         #Minimal required arguments are training_frame and y (response)
         if y is None:
             raise ValueError('The response column (y) is not set; please set it to the name of the column that you are trying to predict in your data.')
@@ -122,13 +215,21 @@ class H2OAutoML(object):
             assert_is_type(training_frame, H2OFrame)
             input_spec['training_frame'] = training_frame.frame_id
 
+        if fold_column is not None:
+            assert_is_type(fold_column,int,str)
+            input_spec['fold_column'] = fold_column
+
+        if weights_column is not None:
+            assert_is_type(weights_column,int,str)
+            input_spec['weights_column'] = weights_column
+
         if validation_frame is not None:
             assert_is_type(training_frame, H2OFrame)
             input_spec['validation_frame'] = validation_frame.frame_id
 
-        if test_frame is not None:
+        if leaderboard_frame is not None:
             assert_is_type(training_frame, H2OFrame)
-            input_spec['test_frame'] = test_frame.frame_id
+            input_spec['leaderboard_frame'] = leaderboard_frame.frame_id
 
         if x is not None:
             assert_is_type(x,list)
@@ -145,7 +246,10 @@ class H2OAutoML(object):
                     xset.add(xi)
             x = list(xset)
             ignored_columns = set(names) - {y} - set(x)
-            input_spec['ignored_columns'] = list(ignored_columns)
+            if fold_column is not None: ignored_columns = ignored_columns.remove(fold_column)
+            if weights_column is not None: ignored_columns = ignored_columns.remove(weights_column)
+            if ignored_columns is not None:
+                input_spec['ignored_columns'] = list(ignored_columns)
 
         automl_build_params = dict(input_spec = input_spec)
 
@@ -163,56 +267,10 @@ class H2OAutoML(object):
         self._automl_key = self._job.dest_key
         self._job.poll()
         self._fetch()
-        if self.project_name is None:
-            self.project_name = "automl_" + training_frame.frame_id
 
-    @property
-    def leader(self):
-        """
-        Retrieve the top model from an H2OAutoML object
-
-        :return: an H2O model
-
-        :examples:
-        >>> # Set up an H2OAutoML object
-        >>> build_control = {
-        >>>              'stopping_criteria': {
-        >>>              'stopping_rounds': 3,
-        >>>              'stopping_tolerance': 0.001
-        >>>            }
-        >>>        }
-        >>> aml = H2OAutoML(max_runtime_secs=30, build_control=build_control)
-        >>> # Launch H2OAutoML
-        >>> aml.train(y=y, training_frame=training_frame)
-        >>> # Get the top model
-        >>> aml.leader
-        """
-        return h2o.get_model(self._leader_id)
-
-    @property
-    def leaderboard(self):
-        """
-        Retrieve the leaderboard from an H2OAutoML object
-
-        :return: an H2OFrame with model ids in the first column and evaluation metric in the second column sorted
-                 by the evaluation metric
-
-        :examples:
-        >>> # Set up an H2OAutoML object
-        >>> build_control = {
-        >>>              'stopping_criteria': {
-        >>>              'stopping_rounds': 3,
-        >>>              'stopping_tolerance': 0.001
-        >>>            }
-        >>>        }
-        >>> aml = H2OAutoML(max_runtime_secs=30, build_control=build_control)
-        >>> # Launch H2OAutoML
-        >>> aml.train(y=y, training_frame=training_frame)
-        >>> # Get the leaderboard
-        >>> aml.leaderboard
-        """
-        return self._leaderboard
-
+    #---------------------------------------------------------------------------
+    # Predict with AutoML
+    #---------------------------------------------------------------------------
     def predict(self, test_data):
         """
         Predict on a dataset.
@@ -223,13 +281,7 @@ class H2OAutoML(object):
 
         :examples:
         >>> #Set up an H2OAutoML object
-        >>> build_control = {
-        >>>              'stopping_criteria': {
-        >>>              'stopping_rounds': 3,
-        >>>              'stopping_tolerance': 0.001
-        >>>            }
-        >>>        }
-        >>> aml = H2OAutoML(max_runtime_secs=30, build_control=build_control)
+        >>> aml = H2OAutoML(max_runtime_secs=30)
         >>> # Launch H2OAutoML
         >>> aml.train(y=y, training_frame=training_frame)
         >>> #Predict with #1 model from H2OAutoML leaderboard
@@ -252,7 +304,7 @@ class H2OAutoML(object):
             self._leader_id = leaderboard_list[0]
         else:
             self._leader_id = None
-        self._leaderboard = res["leaderboard_table"]
+        self._leaderboard = h2o.H2OFrame(res["leaderboard_table"].as_data_frame())[1:]
         return self._leader_id is not None
 
     def _get_params(self):

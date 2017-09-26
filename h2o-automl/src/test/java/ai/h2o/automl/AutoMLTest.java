@@ -5,6 +5,8 @@ import org.junit.Test;
 import water.Key;
 import water.fvec.Frame;
 
+import java.util.Date;
+
 public class AutoMLTest extends TestUtil {
 
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
@@ -20,7 +22,7 @@ public class AutoMLTest extends TestUtil {
       autoMLBuildSpec.build_control.loss = "AUTO";
       autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(5);
 
-      aml = AutoML.makeAutoML(Key.<AutoML>make(), autoMLBuildSpec);
+      aml = AutoML.makeAutoML(Key.<AutoML>make(), new Date(), autoMLBuildSpec);
       AutoML.startAutoML(aml);
       aml.get();
 

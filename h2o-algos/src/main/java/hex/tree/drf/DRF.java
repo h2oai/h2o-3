@@ -1,7 +1,7 @@
 package hex.tree.drf;
 
-import hex.genmodel.utils.DistributionFamily;
 import hex.ModelCategory;
+import hex.genmodel.utils.DistributionFamily;
 import hex.tree.*;
 import hex.tree.DTree.DecidedNode;
 import hex.tree.DTree.LeafNode;
@@ -12,6 +12,7 @@ import water.MRTask;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+
 import java.util.Random;
 
 import static hex.genmodel.GenModel.getPrediction;
@@ -23,7 +24,8 @@ import static hex.tree.drf.TreeMeasuresCollector.asVotes;
  *  Based on "Elements of Statistical Learning, Second Edition, page 387"
  */
 public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel.DRFParameters, hex.tree.drf.DRFModel.DRFOutput> {
-
+  private static final double ONEBOUND=1+1e-12;    // due to fixed precision
+  private static final double ZEROBOUND=-1e-12;    // due to fixed precision
   @Override public ModelCategory[] can_build() {
     return new ModelCategory[]{
       ModelCategory.Regression,
@@ -52,12 +54,12 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
   @Override public void init(boolean expensive) {
     super.init(expensive);
     // Initialize local variables
-    if( _parms._mtries < 1 && _parms._mtries != -1 )
-      error("_mtries", "mtries must be -1 (converted to sqrt(features)), or >= 1 but it is " + _parms._mtries);
+    if( _parms._mtries < 1 && _parms._mtries != -1 && _parms._mtries != -2 )
+      error("_mtries", "mtries must be -1 (converted to sqrt(features)) or -2 (All features) or >= 1 but it is " + _parms._mtries);
     if( _train != null ) {
       int ncols = _train.numCols();
-      if( _parms._mtries != -1 && !(1 <= _parms._mtries && _parms._mtries < ncols /*ncols includes the response*/))
-        error("_mtries","Computed mtries should be -1 or in interval [1,"+ncols+"[ but it is " + _parms._mtries);
+      if( _parms._mtries != -1 && _parms._mtries != -2 && !(1 <= _parms._mtries && _parms._mtries < ncols /*ncols includes the response*/))
+        error("_mtries","Computed mtries should be -1 or -2 or in interval [1,"+ncols+"[ but it is " + _parms._mtries);
     }
     if (_parms._distribution == DistributionFamily.AUTO) {
       if (_nclass == 1) _parms._distribution = DistributionFamily.gaussian;
@@ -103,9 +105,16 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     @Override protected void initializeModelSpecifics() {
       _mtry_per_tree = Math.max(1, (int)(_parms._col_sample_rate_per_tree * _ncols));
       if (!(1 <= _mtry_per_tree && _mtry_per_tree <= _ncols)) throw new IllegalArgumentException("Computed mtry_per_tree should be in interval <1,"+_ncols+"> but it is " + _mtry_per_tree);
-      _mtry = (_parms._mtries==-1) ? // classification: mtry=sqrt(_ncols), regression: mtry=_ncols/3
-              ( isClassifier() ? Math.max((int)Math.sqrt(_ncols),1) : Math.max(_ncols/3,1))  : _parms._mtries;
-      if (!(1 <= _mtry && _mtry <= _ncols)) throw new IllegalArgumentException("Computed mtry should be in interval <1,"+_ncols+"> but it is " + _mtry);
+      if(_parms._mtries==-2){ //mtries set to -2 would use all columns in each split regardless of what column has been dropped during train
+        _mtry = _ncols;
+      }else if(_parms._mtries==-1) {
+        _mtry = (isClassifier() ? Math.max((int) Math.sqrt(_ncols), 1) : Math.max(_ncols / 3, 1)); // classification: mtry=sqrt(_ncols), regression: mtry=_ncols/3
+      }else{
+        _mtry = _parms._mtries;
+      }
+      if (!(1 <= _mtry && _mtry <= _ncols)) {
+        throw new IllegalArgumentException("Computed mtry should be in interval <1," + _ncols + "> but it is " + _mtry);
+      }
 
       _initialPrediction = isClassifier() ? 0 : getInitialValue();
       // Initialize TreeVotes for classification, MSE arrays for regression
@@ -327,6 +336,10 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     }
     else if (_nclass==2 && _model.binomialOpt()) {
       fs[1] = weight * chk_tree(chks, 0).atd(row) / chk_oobt(chks).atd(row);
+      if (fs[1]>1 && fs[1]<=ONEBOUND)
+        fs[1] = 1.0;
+      else if (fs[1]<0 && fs[1]>=ZEROBOUND)
+        fs[1] = 0.0;
       assert(fs[1] >= 0 && fs[1] <= 1);
       fs[2] = 1. - fs[1];
     }

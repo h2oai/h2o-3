@@ -3,7 +3,7 @@ colorama
 future
 requests
 tabulate
-
+slam
 cython
 twine
 urllib3

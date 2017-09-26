@@ -28,51 +28,52 @@ public class LogsHandler extends Handler {
           name = "debug";
         }
 
-        if (name.equals("stdout") || name.equals("stderr")) {
-          LinuxProcFileReader lpfr = new LinuxProcFileReader();
-          lpfr.read();
-          if (! lpfr.valid()) {
-            log = "This option only works for Linux hosts";
-          }
-          else {
-            String pid = lpfr.getProcessID();
-            String fdFileName = "/proc/" + pid + "/fd/" + (name.equals("stdout") ? "1" : "2");
-            File f = new File(fdFileName);
-            logPathFilename = f.getCanonicalPath();
-            if (logPathFilename.startsWith("/dev")) {
-              log = "Unsupported when writing to console";
+        switch (name) {
+          case "stdout":
+          case "stderr":
+            LinuxProcFileReader lpfr = new LinuxProcFileReader();
+            lpfr.read();
+            if (!lpfr.valid()) {
+              log = "This option only works for Linux hosts";
+            } else {
+              String pid = lpfr.getProcessID();
+              String fdFileName = "/proc/" + pid + "/fd/" + (name.equals("stdout") ? "1" : "2");
+              File f = new File(fdFileName);
+              logPathFilename = f.getCanonicalPath();
+              if (logPathFilename.startsWith("/dev")) {
+                log = "Unsupported when writing to console";
+              }
+              if (logPathFilename.startsWith("socket")) {
+                log = "Unsupported when writing to a socket";
+              }
+              if (logPathFilename.startsWith("pipe")) {
+                log = "Unsupported when writing to a pipe";
+              }
+              if (logPathFilename.equals(fdFileName)) {
+                log = "Unsupported when writing to a pipe";
+              }
+              Log.trace("LogPathFilename calculation: " + logPathFilename);
             }
-            if (logPathFilename.startsWith("socket")) {
-              log = "Unsupported when writing to a socket";
+            break;
+          case "trace":
+          case "debug":
+          case "info":
+          case "warn":
+          case "error":
+          case "fatal":
+          case "httpd":
+            if(!Log.isLoggingFor(name)){
+              log = "Logging for "+ name.toUpperCase() + " is not enabled as the log level is set to " + Log.LVLS[Log.getLogLevel()]+".";
+            }else {
+              try {
+                logPathFilename = Log.getLogFilePath(name);
+              } catch (Exception e) {
+                log = "H2O logging not configured.";
+              }
             }
-            if (logPathFilename.startsWith("pipe")) {
-              log = "Unsupported when writing to a pipe";
-            }
-            if (logPathFilename.equals(fdFileName)) {
-              log = "Unsupported when writing to a pipe";
-            }
-            Log.trace("LogPathFilename calculation: " + logPathFilename);
-          }
-        }
-        else if (  name.equals("trace")
-                || name.equals("debug")
-                || name.equals("info")
-                || name.equals("warn")
-                || name.equals("error")
-                || name.equals("fatal")
-                || name.equals("httpd")
-                ) {
-          name = water.util.Log.getLogFileName(name);
-          try {
-            String logDir = Log.getLogDir();
-            logPathFilename = logDir + File.separator + name;
-          }
-          catch (Exception e) {
-            log = "H2O logging not configured.";
-          }
-        }
-        else {
-          throw new IllegalArgumentException("Illegal log file name requested (try 'default')");
+            break;
+          default:
+            throw new IllegalArgumentException("Illegal log file name requested (try 'default')");
         }
 
         if (log == null) {
@@ -112,23 +113,58 @@ public class LogsHandler extends Handler {
     }
   }
 
+
+  private static H2ONode getH2ONode(String nodeIdx){
+      try
+      {
+        int numNodeIdx = Integer.parseInt(nodeIdx);
+
+        if ((numNodeIdx < -1) || (numNodeIdx >= H2O.CLOUD.size())) {
+          throw new IllegalArgumentException("H2O node with the specified index does not exist!");
+        }else if(numNodeIdx == -1){
+              return H2O.SELF;
+          }else{
+              return H2O.CLOUD._memary[numNodeIdx];
+          }
+      }
+      catch(NumberFormatException nfe)
+      {
+        // not a number, try to parse for ipPort
+        if (nodeIdx.equals("self")) {
+          return H2O.SELF;
+        } else {
+          H2ONode node = H2O.CLOUD.getNodeByIpPort(nodeIdx);
+          if (node != null){
+            return node;
+          } else {
+            // it still can be client
+            H2ONode client = H2O.getClientByIPPort(nodeIdx);
+            if (client != null) {
+              return client;
+            } else {
+              // the ipport does not represent any existing h2o cloud member or client
+              throw new IllegalArgumentException("No H2O node running as part of this cloud on " + nodeIdx + " does not exist!");
+            }
+          }
+        }
+      }
+  }
+
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public LogsV3 fetch(int version, LogsV3 s) {
-    int nodeidx = s.nodeidx;
-    if ((nodeidx < -1) || (nodeidx >= H2O.CLOUD.size())) {
-      throw new IllegalArgumentException("node does not exist");
-    }
 
+
+    H2ONode node = getH2ONode(s.nodeidx);
     String filename = s.name;
     if (filename != null) {
       if (filename.contains(File.separator)) {
-        throw new IllegalArgumentException("filename may not contain File.separator character");
+        throw new IllegalArgumentException("Filename may not contain File.separator character.");
       }
     }
 
     GetLogTask t = new GetLogTask();
     t.name = filename;
-    if (nodeidx == -1) {
+    if (H2O.SELF.equals(node)) {
       // Local node.
       try {
         t.doIt();
@@ -136,16 +172,14 @@ public class LogsHandler extends Handler {
       catch (Exception e) {
         Log.err(e);
       }
-    }
-    else {
+    } else {
       // Remote node.
-      Log.trace("GetLogTask starting to node " + nodeidx + "...");
-      H2ONode node = H2O.CLOUD._memary[nodeidx];
+      Log.trace("GetLogTask starting to node  " + node._key + " ...");
       new RPC<>(node, t).call().get();
-      Log.trace("GetLogTask completed to node " + nodeidx);
+      Log.trace("GetLogTask completed to node " + node._key);
     }
 
-    if (! t.success) {
+    if (!t.success) {
       throw new RuntimeException("GetLogTask failed");
     }
 

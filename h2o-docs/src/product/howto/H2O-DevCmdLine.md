@@ -1,5 +1,7 @@
 # ... From the Cmd Line
 
+>**Note**: This topic is no longer being maintained. Refer to [Starting H2O from the Command Line](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/starting-h2o.rst#from-the-command-line) for the most up-to-date documentation.
+
 You can use Terminal (OS X) or the Command Prompt (Windows) to launch H2O 3.0. When you launch from the command line, you can include additional instructions to H2O 3.0, such as how many nodes to launch, how much memory to allocate for each node, assign names to the nodes in the cloud, and more. 
 
 >**Note**: H2O requires some space in the `/tmp` directory to launch. If you cannot launch H2O, try freeing up some space in the `/tmp` directory, then try launching H2O again. 
@@ -13,7 +15,7 @@ There are two different argument types:
 
 The arguments use the following format: java `<JVM Options>` -jar h2o.jar `<H2O Options>`.  
 
-##JVM Options
+## JVM Options
 
 - `-version`: Display Java version info. 
 - `-Xmx<Heap Size>`: To set the total heap size for an H2O node, configure the memory allocation option `-Xmx`. By default, this option is set to 1 Gb (`-Xmx1g`). When launching nodes, we recommend allocating a total of four times the memory of your data. 
@@ -21,7 +23,7 @@ The arguments use the following format: java `<JVM Options>` -jar h2o.jar `<H2O 
 > **Note**: Do not try to launch H2O with more memory than you have available. 
 
 
-##H2O Options
+## H2O Options
 
 - `-h` or `-help`: Display this information in the command line output. 
 - `-name <H2OCloudName>`: Assign a name to the H2O instance in the cloud (where `<H2OCloudName>` is the name of the cloud). Nodes with the same cloud name will form an H2O cloud (also known as an H2O cluster). 
@@ -40,7 +42,7 @@ The arguments use the following format: java `<JVM Options>` -jar h2o.jar `<H2O 
 - `-client`: Launch H2O node in client mode. This is used mostly for running Sparkling Water. 
 
 
-##H2O Internal Communication
+## H2O Internal Communication
 
 By default, H2O selects the IP and PORT for internal communication automatically using the following this process (if not specified):
 
@@ -62,7 +64,7 @@ By default, H2O selects the IP and PORT for internal communication automatically
   - `-port`
   - `-baseport` 
 
-##Cloud Formation Behavior
+## Cloud Formation Behavior
 
 New H2O nodes join to form a cloud during launch. After a job has started on the cloud, it  prevents new members from joining. 
 

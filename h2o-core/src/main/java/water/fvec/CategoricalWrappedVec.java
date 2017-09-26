@@ -78,7 +78,7 @@ public class CategoricalWrappedVec extends WrappedVec {
     // The source Vec does not have a domain, hence is an integer column.  The
     // to[] mapping has the set of unique numbers, we need to map from those
     // numbers to the index to the numbers.
-    if( from==null ) {
+    if( from==null) {
       setDomain(to);
       if( fromIsBad ) { _map = new int[0]; return; }
       int min = Integer.valueOf(to[0]);

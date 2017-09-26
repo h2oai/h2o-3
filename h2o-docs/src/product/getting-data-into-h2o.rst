@@ -14,25 +14,39 @@ H2O currently supports the following file types:
 - ARFF
 - XLS
 - XLSX
-- Avro (without multifile parsing or column type modification)
+- Avro version 1.8.0 (without multifile parsing or column type modification)
 - Parquet
 
-Note that ORC is available only if H2O is running as a Hadoop job. 
+**Notes**: 
+ 
+ - ORC is available only if H2O is running as a Hadoop job. 
+ - Users can also import Hive files that are saved in ORC format. 
 
 .. _data_sources:
 
 Data Sources
 ------------
 
-H2O supports data ingest from various data sources. Natively, a local file system, HDFS and S3 are supported. Additional data sources can be accessed through a generic HDFS API, such as Alluxio or OpenStack Swift.
+H2O supports data ingest from various data sources. Natively, a local file system, remote file systems, HDFS, S3, and some relational databases are supported. Additional data sources can be accessed through a generic HDFS API, such as Alluxio or OpenStack Swift.
 
 Default Data Sources
 ~~~~~~~~~~~~~~~~~~~~
 
-- local file system
+- Local File System 
+- Remote File
 - S3 
 - HDFS
 - JDBC
+
+Local File System
+~~~~~~~~~~~~~~~~~
+
+Data from a local machine can be uploaded to H2O via a push from the client. For more information, refer to `Uploading a File <data-munging/uploading-data.html>`__.
+
+Remote File
+~~~~~~~~~~~
+
+Data that is hosted on the Internet can be imported into H2O by specifying the URL. For more information, refer to `Importing a File <data-munging/importing-data.html>`__.
 
 HDFS-like Data Sources
 ~~~~~~~~~~~~~~~~~~~~~~

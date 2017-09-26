@@ -13,15 +13,11 @@ configurations {
 
 dependencies {
     // Dependency on shared model support which is served by web backend as a file
-    publishedJars project(path: ':h2o-genmodel', configuration: 'shadow')
-}
-
-static def getOsSpecificCommandLine(args) {
-  return Os.isFamily(Os.FAMILY_WINDOWS) ? [ 'cmd', '/c' ] + args : args
+    publishedJars project(path: ':h2o-assemblies:genmodel', configuration: 'shadow')
 }
 
 static def checkPrerequisite(name) {
-  def prefix = Os.isFamily(Os.FAMILY_WINDOWS) ? 'cmd /c ' : ''
+  def prefix = Os.isFamily(Os.FAMILY_WINDOWS) ? 'cmd /c ' : '/usr/bin/env '
   def command = prefix + name + ' -v'
   def proc
   try {
@@ -38,8 +34,9 @@ static def checkPrerequisite(name) {
   return 0
 }
 
-task checkClientPrerequisites << {
-  def nodeInstallationInstruction = """\
+task checkClientPrerequisites {
+    doLast {
+        def nodeInstallationInstruction = """\
 
 To install node.js, try one of these:
 
@@ -56,28 +53,18 @@ Use the official installer at http://nodejs.org/download/
 
 """
 
-  def nodeFailureMessage = "Could not detect a node.js installation on this system.\nInstall node.js and try again.\n" + nodeInstallationInstruction
+        def nodeFailureMessage = "Could not detect a node.js installation on this system.\nInstall node.js and try again.\n" + nodeInstallationInstruction
 
-  if (checkPrerequisite('node') != 0) {
-    if (Os.isFamily(Os.FAMILY_MAC)) {
-      if (checkPrerequisite('/usr/local/bin/node') != 0) {
-        throw new StopExecutionException(nodeFailureMessage)
-      }
-    } else {
-      throw new StopExecutionException(nodeFailureMessage)
+        if (checkPrerequisite('node') != 0) {
+            if (Os.isFamily(Os.FAMILY_MAC)) {
+                if (checkPrerequisite('/usr/local/bin/node') != 0) {
+                    throw new StopExecutionException(nodeFailureMessage)
+                }
+            } else {
+                throw new StopExecutionException(nodeFailureMessage)
+            }
+        }
     }
-  }
-
-//  def npmFailureMessage = "Could not find command 'npm'.\nRe-install node.js and try again.\n" + nodeInstallationInstruction
-//  if (checkPrerequisite('npm') != 0) {
-//    if (Os.isFamily(Os.FAMILY_MAC)) {
-//      if (checkPrerequisite('/usr/local/bin/npm') != 0) {
-//        throw new StopExecutionException(npmFailureMessage)
-//      }
-//    } else {
-//      throw new StopExecutionException(npmFailureMessage)
-//    }
-//  }
 }
 
 task installNpmPackages(type: Exec) {
@@ -100,9 +87,15 @@ task deleteLegacyFlowBundleFromWebRoot(type: Delete) {
   delete 'lib/h2o-flow/build/js/flow.js'
 }
 
-task copyFlowBundleFromDrift() << {
-  def f = new File('h2o-web/lib/h2o-flow/build/js/flow.js')
-  new URL('https://cdn.rawgit.com/h2oai/drift/664a4870e576e1c58a0e47fa557a7cb29dbf47dc/build/flow.js').withInputStream{ i -> f.withOutputStream{ it << i }}
+task copyFlowBundleFromDrift() {
+    doLast {
+        def f = new File('h2o-web/lib/h2o-flow/build/js/flow.js')
+        new URL('https://cdn.rawgit.com/h2oai/drift/664a4870e576e1c58a0e47fa557a7cb29dbf47dc/build/flow.js').withInputStream { i ->
+            f.withOutputStream {
+                it << i
+            }
+        }
+    }
 }
 
 task copyFlowToWebRoot(type: Copy) {
@@ -112,7 +105,7 @@ task copyFlowToWebRoot(type: Copy) {
 
 task copyGenModelJarToWebRoot(type: Copy) {
   from {
-      configurations.publishedJars.filter { it.name.startsWith("h2o-genmodel") }
+      configurations.publishedJars.filter { it.name.contains("genmodel") }
   }
   into "src/main/resources/www/${h2oRESTApiVersion}/"
   rename { filename -> "h2o-genmodel.jar"}
@@ -124,7 +117,6 @@ task copyDeepWaterJarToWebRoot(type: Copy) {
   }
   into "src/main/resources/www/${h2oRESTApiVersion}/"
 }
-
 
 task deleteBowerModules(type: Delete) {
   delete 'lib'
@@ -163,16 +155,10 @@ task copyHelpImages(type: Copy) {
   into "$rootDir/h2o-web/src/main/resources/www/flow/help/images"
 }
 
-// CNC: Turn off phantomjs smokeTest until flow changes hit master
-//task smokeTest(type: Exec) {
-//    dependsOn build
-//    println "phantom.js (Flow) smoke test (../scripts/run.py --wipeall --test ./lib/h2o-flow/build/js/headless-test.js)..."
-//    workingDir new File(".")
-//    commandLine '../scripts/run.py', '--wipeall', '--test', './lib/h2o-flow/build/js/headless-test.js'
-//}
-
-task cleanUpSmokeTest << {
-    new File(["results"].join(File.separator)).deleteDir()
+task cleanUpSmokeTest {
+    doLast {
+        new File(["results"].join(File.separator)).deleteDir()
+    }
 }
 
 task compileAndInstallDocFiles(type: Exec) {

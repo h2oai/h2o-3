@@ -188,13 +188,9 @@ Defining a DRF Model
    regression (where p is the number of predictors). The range is -1 to
    >=1.
 
--  `sample_rate <algo-params/sample_rate.html>`__: Specify the row sampling rate (x-axis). The range
-   is 0.0 to 1.0. Higher values may improve training accuracy. Test
-   accuracy improves when either columns or rows are sampled. For
-   details, refer to "Stochastic Gradient Boosting" (`Friedman,
-   1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
+-  `sample_rate <algo-params/sample_rate.html>`__: Specify the row sampling rate (x-axis). (Note that this method is sample without replacement.) The range is 0.0 to 1.0, and this value defaults to 0.6320000291. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
 
--  `sample_rate_per_class <algo-params/sample_rate_per_class.html>`__: When building models from imbalanced datasets, this option specifies that each tree in the ensemble should sample from the full training dataset using a per-class-specific sampling rate rather than a global sample factor (as with `sample_rate`). The range for this option is 0.0 to 1.0. If this option is specified along with **sample_rate**, then only the first option that DRF encounters will be used.
+-  `sample_rate_per_class <algo-params/sample_rate_per_class.html>`__: When building models from imbalanced datasets, this option specifies that each tree in the ensemble should sample from the full training dataset using a per-class-specific sampling rate rather than a global sample factor (as with `sample_rate`). The range for this option is 0.0 to 1.0. Note that this method is sample without replacement.
 
 -  `binomial_double_trees <algo-params/binomial_double_trees.html>`__: (Binary classification only) Build twice
    as many trees (one per class). Enabling this option can lead to
@@ -205,7 +201,7 @@ Defining a DRF Model
    previously trained model. Use this option to build a new model as a
    continuation of a previously generated model.
 
--  `col_sample_rate_change_per_level <algo-params/col_sample_rate_change_per_level.html>`__: This option specifies to change the column sampling rate as a function of the depth in the tree. For example:
+-  `col_sample_rate_change_per_level <algo-params/col_sample_rate_change_per_level.html>`__: This option specifies to change the column sampling rate as a function of the depth in the tree. This can be a value from 0.0 to 2.0 and defaults to 1. (Note that this method is sample without replacement.) For example:
 
    level 1: **col\_sample_rate**
   
@@ -217,7 +213,7 @@ Defining a DRF Model
   
    etc.
 
--  `col_sample_rate_per_tree <algo-params/col_sample_rate_per_tree.html>`__: Specify the column sample rate per tree. This can be a value from 0.0 to 1.0. Note that it is multiplicative with ``col_sample_rate``, so setting both parameters to 0.8, for example, results in 64% of columns being considered at any given node to split.
+-  `col_sample_rate_per_tree <algo-params/col_sample_rate_per_tree.html>`__: Specify the column sample rate per tree. This can be a value from 0.0 to 1.0 and defaults to 1. Note that this method is sample without replacement.
 
 -  `min_split_improvement <algo-params/min_split_improvement.html>`__: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range.
 
@@ -240,6 +236,12 @@ Defining a DRF Model
   - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
   - ``label_encoder`` or ``LabelEncoder``:  Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.)
   - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.). This is useful in GBM/DRF, for example, when you have more levels than ``nbins_cats``, and where the top level splits now have a chance at separating the data with a split. 
+
+-  `calibrate_model <algo-params/calibrate_model.html>`__: Use Platt scaling to calculate calibrated class probabilities. Defaults to False.
+
+-  `calibrate_frame <algo-params/calibrate_frame.html>`__: Specifies the frame to be used for Platt scaling.
+
+-  **verbose**: Print scoring history to the console. For DRF, metrics are per tree. This value defaults to FALSE.
 
 Interpreting a DRF Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -269,10 +271,10 @@ Leaf Node Assignment
 Trees cluster observations into leaf nodes, and this information can be
 useful for feature engineering or model interpretability. Use
 **h2o.predict\_leaf\_node\_assignment(** *model*, *frame* **)** to get an H2OFrame
-with the leaf node assignments, or click the checkbox when making
+with the leaf node assignments, or click the **Compute Leafe Node Assignment** checkbox when making
 predictions from Flow. Those leaf nodes represent decision rules that
 can be fed to other models (i.e., GLM with lambda search and strong
-rules) to obtain a limited set of the most important rules.
+rules) to obtain a limited set of the most important rules. 
 
 FAQ
 ~~~
@@ -280,6 +282,8 @@ FAQ
 -  **How does the algorithm handle missing values during training?**
 
   Missing values are interpreted as containing information (i.e., missing for a reason), rather than missing at random. During tree building, split decisions for every node are found by minimizing the loss function and treating missing values as a separate category that can go either left or right.
+
+  **Note**: Unlike in GLM, in DRF numerical values are handled the same way as categorical values. Missing values are not imputed with the mean, as is done by default in GLM.
 
 -  **How does the algorithm handle missing values during testing?**
 
@@ -366,4 +370,8 @@ DRF Algorithm
 References
 ~~~~~~~~~~
 
-`P. Geurts, D. Ernst., and L. Wehenkel, “Extremely randomized trees”, Machine Learning, 63(1), 3-42, 2006. <http://link.springer.com/article/10.1007%2Fs10994-006-6226-1>`_
+`P. Geurts, D. Ernst., and L. Wehenkel, "Extremely randomized trees", Machine Learning, 63(1), 3-42, 2006. <http://link.springer.com/article/10.1007%2Fs10994-006-6226-1>`_
+
+`Niculescu-Mizil, Alexandru and Caruana, Rich, "Predicting Good Probabilities with Supervised Learning", Ithaca, NY, 2005. <http://www.datascienceassn.org/sites/default/files/Predicting%20good%20probabilities%20with%20supervised%20learning.pdf>`__ 
+
+`Nee, Daniel, "Calibrating Classifier Probabilities", 2014 <http://danielnee.com/tag/platt-scaling>`__

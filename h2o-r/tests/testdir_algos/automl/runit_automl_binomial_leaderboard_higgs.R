@@ -16,10 +16,10 @@ automl.leaderboard.test <- function() {
   train[,y] <- as.factor(train[,y])
   test[,y] <- as.factor(test[,y])
 
-  # Train AutoML with just a training_frame & test_frame
+  # Train AutoML with just a training_frame & leaderboard_frame
   aml <- h2o.automl(y = y,
                     training_frame = train,
-                    test_frame = test,
+                    leaderboard_frame = test,
                     max_runtime_secs = 30)
 
   # Get test set AUC from leaderboard vs h2o.performance() and check that it matches

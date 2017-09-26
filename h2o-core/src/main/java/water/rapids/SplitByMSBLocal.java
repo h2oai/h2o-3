@@ -4,15 +4,17 @@ import water.*;
 import water.fvec.Chunk;
 import water.util.ArrayUtils;
 import water.util.Log;
+import water.util.MathUtils;
 import water.util.PrettyPrint;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Hashtable;
 
 class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
   private final boolean _isLeft;
   private final int _shift, _batchSize, _bytesUsed[], _keySize;
-  private final long _base[];
+  private final BigInteger _base[];
   private final int  _col[];
   private final Key _linkTwoMRTask;
   private final int _id_maps[][];
@@ -23,7 +25,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
   private long _numRowsOnThisNode;
 
   static Hashtable<Key,SplitByMSBLocal> MOVESHASH = new Hashtable<>();
-  SplitByMSBLocal(boolean isLeft, long base[], int shift, int keySize, int batchSize, int bytesUsed[], int[] col, Key linkTwoMRTask, int[][] id_maps) {
+  SplitByMSBLocal(boolean isLeft, BigInteger base[], int shift, int keySize, int batchSize, int bytesUsed[], int[] col, Key linkTwoMRTask, int[][] id_maps) {
     _isLeft = isLeft;
     // we only currently use the shift (in bits) for the first column for the
     // MSB (which we don't know from bytesUsed[0]). Otherwise we use the
@@ -73,7 +75,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
       _x[msb] = new byte[nbatch][];
       int b;
       for (b = 0; b < nbatch-1; b++) {
-        _o[msb][b] = new long[_batchSize];          // TO DO?: use MemoryManager.malloc8()
+        _o[msb][b] = new long[_batchSize];          // TODO?: use MemoryManager.malloc8()
         _x[msb][b] = new byte[_batchSize * _keySize];
       }
       _o[msb][b] = new long[lastSize];
@@ -121,19 +123,31 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     // although, it will be most cache efficient (holding one page of each
     // column's _mem, plus a page of this_x, all contiguous.  At the cost of
     // more instructions.
+    boolean[] isIntCols = new boolean[chk.length];
+    for (int c=0; c < chk.length; c++){
+      isIntCols[c] = chk[c].vec().isCategorical() || chk[c].vec().isInt();
+    }
+
     for (int r=0; r<chk[0]._len; r++) {    // tight, branch free and cache efficient (surprisingly)
       int MSBvalue = 0;  // default for NA
-      long thisx = 0;
+     //long thisx = 0;
+      BigInteger thisx = BigInteger.ZERO;
       if (!chk[0].isNA(r)) {
-        thisx = chk[0].at8(r);
         // TODO: restore branch-free again, go by column and retain original
         // compression with no .at8()
-        if (_isLeft && _id_maps[0]!=null) thisx = _id_maps[0][(int)thisx] + 1;
-        // may not be worth that as has to be global minimum so will rarely be
-        // able to use as raw, but when we can maybe can do in bulk
-        else thisx = thisx - _base[0] + 1;    // +1 leaving 0'th offset from base to mean NA
-        MSBvalue = (int)(thisx >> _shift);   // NA are counted in the first bin
+        if (_isLeft && _id_maps[0]!=null) { // dealing with enum columns
+          thisx = BigInteger.valueOf(_id_maps[0][(int)chk[0].at8(r)] + 1);
+          MSBvalue = thisx.shiftRight(_shift).intValue();
+          // may not be worth that as has to be global minimum so will rarely be
+          // able to use as raw, but when we can maybe can do in bulk
+        } else {    // dealing with numeric columns (int or double) or enum
+          thisx = isIntCols[0] ?
+                  BigInteger.valueOf(chk[0].at8(r)).subtract(_base[0]).add(BigInteger.ONE):
+                  MathUtils.convertDouble2BigInteger(chk[0].atd(r)).subtract(_base[0]).add(BigInteger.ONE);
+          MSBvalue = thisx.shiftRight(_shift).intValue();
+        }
       }
+
       long target = myCounts[MSBvalue]++;
       int batch = (int) (target / _batchSize);
       int offset = (int) (target % _batchSize);
@@ -142,19 +156,29 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
 
       byte this_x[] = _x[MSBvalue][batch];
       offset *= _keySize; // can't overflow because batchsize was chosen above to be maxByteSize/max(keysize,8)
-      for (int i = _bytesUsed[0] - 1; i >= 0; i--) {   // a loop because I don't believe System.arraycopy() can copy parts of (byte[])long to byte[]
-        this_x[offset + i] = (byte) (thisx & 0xFFL);
-        thisx >>= 8;
+
+      byte keyArray[] = thisx.toByteArray();  // switched already here.
+      int offIndex = keyArray.length > 8 ? -1 : _bytesUsed[0] - keyArray.length;
+      int endLen = _bytesUsed[0] - (keyArray.length > 8 ? 8 : keyArray.length);
+
+      for (int i = _bytesUsed[0] - 1; (i >= endLen && i >= 0); i--) {
+        this_x[offset + i] = keyArray[i - offIndex];
       }
+        // add on the key values with values from other columns
       for (int c=1; c<chk.length; c++) {  // TO DO: left align subsequent
         offset += _bytesUsed[c-1];     // advance offset by the previous field width
         if (chk[c].isNA(r)) continue;  // NA is a zero field so skip over as java initializes memory to 0 for us always
-        thisx = chk[c].at8(r);         // TODO : compress with a scale factor such as dates stored as ms since epoch / 3600000L
-        if (_isLeft && _id_maps[c] != null) thisx = _id_maps[c][(int)thisx] + 1;
-        else thisx = thisx - _base[c] + 1;
-        for (int i = _bytesUsed[c] - 1; i >= 0; i--) {
-          this_x[offset + i] = (byte) (thisx & 0xFFL);
-          thisx >>= 8;
+        if (_isLeft && _id_maps[c] != null) thisx = BigInteger.valueOf(_id_maps[c][(int)chk[c].at8(r)] + 1);
+        else {
+          thisx =  isIntCols[c]?
+                  BigInteger.valueOf(chk[c].at8(r)).subtract(_base[c]).add(BigInteger.ONE):
+                  MathUtils.convertDouble2BigInteger(chk[c].atd(r)).subtract(_base[c]).add(BigInteger.ONE);
+        }
+        keyArray = thisx.toByteArray();  // switched already here.
+        offIndex = keyArray.length > 8 ? -1 : _bytesUsed[c] - keyArray.length;
+        endLen = _bytesUsed[c] - (keyArray.length > 8 ? 8 : keyArray.length);
+        for (int i = _bytesUsed[c] - 1; (i >= endLen && i >= 0); i--) {
+          this_x[offset + i] = keyArray[i - offIndex];
         }
       }
     }

@@ -6,7 +6,7 @@ import water.util.UnsafeUtils;
  * The empty-compression function, where data is in shorts.
  */
 public class C2Chunk extends Chunk {
-  static protected final long _NA = Short.MIN_VALUE;
+  static protected final int _NA = Short.MIN_VALUE;
   static protected final int _OFF=0;
 
   C2Chunk( byte[] bs ) { _mem=bs; _start = -1; set_len(_mem.length>>1); }

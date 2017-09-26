@@ -26,6 +26,8 @@ Imports: graphics,
 Suggests: ggplot2,
           mlbench,
           Matrix,
+          slam,
+          bit64 (>= 0.9.7),
           data.table (>= 1.9.8)
 Collate:
          'astfun.R'
@@ -53,11 +55,12 @@ Collate:
          'deeplearning.R'
          'stackedensemble.R'
          'deepwater.R'
+         'xgboost.R'
          'randomforest.R'
          'naivebayes.R'
          'word2vec.R'
          'w2vutils.R'
-         'klime.R'
          'locate.R'
          'grid.R'
+         'predict.R'
          'zzz.R'

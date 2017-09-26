@@ -20,44 +20,53 @@ final class ExternalFrameWriterBackend {
     static void handleWriteToChunk(ByteChannel sock, AutoBuffer ab) throws IOException {
         String frameKey = ab.getStr();
         byte[] expectedTypes = ab.getA1();
-        assert expectedTypes != null;
-        byte[] vecTypes = vecTypesFromExpectedTypes(expectedTypes);
+        if( expectedTypes == null){
+          throw new RuntimeException("Expected types can't be null.");
+        }
+        int[] maxVecSizes = ab.getA4();
+
+        int[] elemSizes = ExternalFrameUtils.getElemSizes(expectedTypes, maxVecSizes != null ? maxVecSizes : EMPTY_ARI);
+        int[] startPos = ExternalFrameUtils.getStartPositions(elemSizes);
+        byte[] vecTypes = vecTypesFromExpectedTypes(expectedTypes, maxVecSizes != null ? maxVecSizes : EMPTY_ARI);
         int expectedNumRows = ab.getInt();
         int currentRowIdx = 0;
         int chunk_id = ab.getInt();
         NewChunk[] nchnk = ChunkUtils.createNewChunks(frameKey, vecTypes, chunk_id);
         assert nchnk != null;
         while (currentRowIdx < expectedNumRows) {
-            for(int colIdx = 0; colIdx<expectedTypes.length; colIdx++){
-                switch (expectedTypes[colIdx]) {
+            for(int typeIdx = 0; typeIdx < expectedTypes.length; typeIdx++){
+                switch (expectedTypes[typeIdx]) {
                     case EXPECTED_BOOL: // fall through to byte since BOOL is internally stored in frame as number (byte)
                     case EXPECTED_BYTE:
-                        store(ab, nchnk[colIdx], ab.get1());
+                        store(ab, nchnk[startPos[typeIdx]], ab.get1());
                         break;
                     case EXPECTED_CHAR:
-                        store(ab, nchnk[colIdx], ab.get2());
+                        store(ab, nchnk[startPos[typeIdx]], ab.get2());
                         break;
                     case EXPECTED_SHORT:
-                        store(ab, nchnk[colIdx], ab.get2s());
+                        store(ab, nchnk[startPos[typeIdx]], ab.get2s());
                         break;
                     case EXPECTED_INT:
-                        store(ab, nchnk[colIdx], ab.getInt());
+                        store(ab, nchnk[startPos[typeIdx]], ab.getInt());
                         break;
                     case EXPECTED_TIMESTAMP: // fall through to long since TIMESTAMP is internally stored in frame as long
                     case EXPECTED_LONG:
-                        store(ab, nchnk[colIdx], ab.get8());
+                        store(ab, nchnk[startPos[typeIdx]], ab.get8());
                         break;
                     case EXPECTED_FLOAT:
-                        store(nchnk[colIdx], ab.get4f());
+                        store(nchnk[startPos[typeIdx]], ab.get4f());
                         break;
                     case EXPECTED_DOUBLE:
-                        store(nchnk[colIdx], ab.get8d());
+                        store(nchnk[startPos[typeIdx]], ab.get8d());
                         break;
                     case EXPECTED_STRING:
-                        store(ab, nchnk[colIdx], ab.getStr());
+                        store(ab, nchnk[startPos[typeIdx]], ab.getStr());
+                        break;
+                    case EXPECTED_VECTOR:
+                        storeVector(ab, nchnk, elemSizes[typeIdx], startPos[typeIdx]);
                         break;
                     default:
-                        throw new IllegalArgumentException("Unknown expected type: " + expectedTypes[colIdx]);
+                        throw new IllegalArgumentException("Unknown expected type: " + expectedTypes[typeIdx]);
                 }
             }
             currentRowIdx++;
@@ -74,6 +83,51 @@ final class ExternalFrameWriterBackend {
         AutoBuffer outputAb = new AutoBuffer();
         outputAb.put1(ExternalFrameHandler.CONFIRM_WRITING_DONE);
         writeToChannel(outputAb, sock);
+    }
+
+    private static void storeVector(AutoBuffer ab, NewChunk[] nchnk, int maxVecSize, int startPos){
+      boolean isSparse = ab.getZ();
+      if(isSparse){
+        int[] indices = ab.getA4();
+        double[] values = ab.getA8d();
+
+        if(values == null){
+          throw new RuntimeException("Values of sparse Vector can't be null!");
+        }
+        if(indices == null){
+          throw new RuntimeException("Indices of sparse Vector can't be null!");
+        }
+
+        // store values
+        int zeroSectionStart = 0;
+        for(int i = 0; i < indices.length; i++){
+          for(int zeroIdx = zeroSectionStart; zeroIdx < indices[i]; zeroIdx++ ){
+            store(nchnk[startPos + zeroIdx], 0);
+          }
+          store(nchnk[startPos + indices[i]], values[i]);
+          zeroSectionStart = indices[i] + 1;
+        }
+
+        // fill remaining zeros
+        int lastIdx = indices.length == 0 ? 0 : indices[indices.length - 1];
+        for(int j = lastIdx; j< maxVecSize; j++) {
+          store(nchnk[startPos + j], 0);
+        }
+      } else {
+        double[] values = ab.getA8d();
+        if(values == null){
+          throw new RuntimeException("Values of dense Vector can't be null!");
+        }
+        // fill values
+        for(int j = 0; j< values.length; j++){
+          store(nchnk[startPos + j], values[j]);
+        }
+
+        // fill remaining zeros
+        for(int j = values.length; j < maxVecSize; j++){
+          store(nchnk[startPos + j], 0);
+        }
+      }
     }
 
     private static void store(AutoBuffer ab, NewChunk chunk, long data){

@@ -206,11 +206,14 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
   /**
    * Hadoop heartbeat keepalive thread.  Periodically update a counter so that
    * jobtracker knows not to kill the job.
+   *
+   * Default jobtracker timeout is 10 minutes, so this should be sufficiently
+   * under that.
    */
   public class CounterThread extends Thread {
     Context _context;
     Counter _counter;
-    final int TEN_SECONDS_MILLIS = 10 * 1000;
+    final int SIXTY_SECONDS_MILLIS = 60 * 1000;
 
     CounterThread (Context context, Counter counter) {
       _context = context;
@@ -224,10 +227,57 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
         _context.progress();
         _counter.increment(1);
         try {
-          Thread.sleep (TEN_SECONDS_MILLIS);
+          Thread.sleep (SIXTY_SECONDS_MILLIS);
         }
         catch (Exception ignore) {}
       }
+    }
+  }
+
+  /**
+   * Under unusual debugging circumstances, it can be helpful to print out the command line arguments in this format.
+   * @param arr Array of command-line arguments.
+   */
+  private static void printArgs(String[] arr) {
+    Log.info("");
+    Log.info("----- printArgs -----");
+    for (int i = 0; i < arr.length; i++) {
+      String s = arr[i];
+      Log.info(i);
+      if (s == null) {
+        Log.info("null");
+      }
+      else {
+        Log.info(s);
+      }
+    }
+    Log.info("----------");
+  }
+
+  /**
+   * This shouldn't be necessary, but is.  In one really weird Hadoop environment, we saw an argument coming across
+   * from the driver as null.  This shouldn't be possible but it happened.  So repair it here, by forcing a null
+   * to really be the empty string.
+   *
+   * @param args Array of command line arguments
+   */
+  private static void repairNullArgsAndWarnIfNecessary(String[] args) {
+    boolean haveANullArg = false;
+    for (String s : args) {
+      if (s == null) {
+        haveANullArg = true;
+        break;
+      }
+    }
+
+    if (haveANullArg) {
+      Log.warn("Found a null command-line argument; printing all command-line arguments out now");
+      printArgs(args);
+    }
+
+    for (int i = 0; i < args.length; i++) {
+      String s = args[i];
+      args[i] = (s == null) ? "" : s;
     }
   }
 
@@ -313,6 +363,7 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
       H2O.setEmbeddedH2OConfig(_embeddedH2OConfig);
       Log.POST(11, "After setEmbeddedH2OConfig");
       //-------------------------------------------------------------
+      repairNullArgsAndWarnIfNecessary(args);
       water.H2OApp.main(args);
       //-------------------------------------------------------------
       Log.POST(12, "After main");
@@ -320,6 +371,7 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
     catch (Exception e) {
       Log.POST(13, "Exception in main");
       Log.POST(13, e.toString());
+      e.printStackTrace();
     }
 
     Log.POST(14, "Waiting for exit");

@@ -7,6 +7,11 @@ import java.io.IOException;
 public class KMeansMojoReader extends ModelMojoReader<KMeansMojoModel> {
 
   @Override
+  public String getModelName() {
+    return "K-means";
+  }
+
+  @Override
   protected void readModelData() throws IOException {
     _model._standardize = readkv("standardize");
     if (_model._standardize) {
@@ -21,8 +26,8 @@ public class KMeansMojoReader extends ModelMojoReader<KMeansMojoModel> {
   }
 
   @Override
-  protected KMeansMojoModel makeModel(String[] columns, String[][] domains) {
-    return new KMeansMojoModel(columns, domains);
+  protected KMeansMojoModel makeModel(String[] columns, String[][] domains, String responseColumn) {
+    return new KMeansMojoModel(columns, domains, responseColumn);
   }
 
 }

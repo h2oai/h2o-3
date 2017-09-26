@@ -16,6 +16,11 @@ import java.util.UUID;
 public class DeepwaterMojoReader extends ModelMojoReader<DeepwaterMojoModel> {
 
   @Override
+  public String getModelName() {
+    return "Deep Water";
+  }
+
+  @Override
   protected void readModelData() throws IOException {
     try {
       _model._network = readblob("model_network");
@@ -100,7 +105,7 @@ public class DeepwaterMojoReader extends ModelMojoReader<DeepwaterMojoModel> {
   }
 
   @Override
-  protected DeepwaterMojoModel makeModel(String[] columns, String[][] domains) {
-    return new DeepwaterMojoModel(columns, domains);
+  protected DeepwaterMojoModel makeModel(String[] columns, String[][] domains, String responseColumn) {
+    return new DeepwaterMojoModel(columns, domains, responseColumn);
   }
 }

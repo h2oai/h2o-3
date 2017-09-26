@@ -7,13 +7,13 @@ import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
-import org.reflections.Reflections;
 import water.UDPRebooted.ShutdownTsk;
 import water.api.RequestServer;
 import water.exceptions.H2OFailException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.init.*;
 import water.nbhm.NonBlockingHashMap;
+import water.parser.DecryptionTool;
 import water.parser.ParserService;
 import water.persist.PersistManager;
 import water.util.*;
@@ -23,12 +23,12 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -174,7 +174,7 @@ final public class H2O {
 
     System.out.print(s);
 
-    for (AbstractH2OExtension e : H2O.getExtensions()) {
+    for (AbstractH2OExtension e : extManager.getCoreExtensions()) {
       e.printHelp();
     }
   }
@@ -185,96 +185,13 @@ final public class H2O {
   public static final OptArgs ARGS = new OptArgs();
 
   /**
-   * A class containing all of the arguments for H2O.
+   * A class containing all of the authentication arguments for H2O.
    */
   public static class
-    OptArgs {
-    // Prefix of hidden system properties
-    public static final String SYSTEM_PROP_PREFIX = "sys.ai.h2o.";
-    public static final String SYSTEM_DEBUG_CORS = H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.cors";
-    //-----------------------------------------------------------------------------------
-    // Help and info
-    //-----------------------------------------------------------------------------------
-    /** -help, -help=true; print help and exit*/
-    public boolean help = false;
-
-    /** -version, -version=true; print version and exit */
-    public boolean version = false;
+    BaseArgs {
 
     //-----------------------------------------------------------------------------------
-    // Clouding
-    //-----------------------------------------------------------------------------------
-    /** -name=name; Set cloud name */
-    public String name = System.getProperty("user.name"); // Cloud name
-
-    /** -flatfile=flatfile; Specify a list of cluster IP addresses */
-    public String flatfile;
-
-    /** -port=####; Specific Browser/API/HTML port */
-    public int port;
-
-    /** -baseport=####; Port to start upward searching from. */
-    public int baseport = 54321;
-
-    /** -web_ip=ip4_or_ip6; IP used for web server. By default it listen to all interfaces. */
-    public String web_ip = null;
-
-    /** -ip=ip4_or_ip6; Named IP4/IP6 address instead of the default */
-    public String ip;
-
-    /** -network=network; Network specification for acceptable interfaces to bind to */
-    public String network;
-
-    /** -client, -client=true; Client-only; no work; no homing of Keys (but can cache) */
-    public boolean client;
-
-    /** -user_name=user_name; Set user name */
-    public String user_name = System.getProperty("user.name");
-
-    //-----------------------------------------------------------------------------------
-    // Node configuration
-    //-----------------------------------------------------------------------------------
-    /** -ice_root=ice_root; ice root directory; where temp files go */
-    public String ice_root;
-
-    /** -cleaner; enable user-mode spilling of big data to disk in ice_root */
-    public boolean cleaner = false;
-
-    /** -nthreads=nthreads; Max number of F/J threads in the low-priority batch queue */
-    public short nthreads= (short)Runtime.getRuntime().availableProcessors();
-
-    /** -log_dir=/path/to/dir; directory to save logs in */
-    public String log_dir;
-
-    /** -flow_dir=/path/to/dir; directory to save flows in */
-    public String flow_dir;
-
-    /** -disable_web; disable Jetty and REST API interface */
-    public boolean disable_web = false;
-
-    /** -context_path=jetty_context_path; the context path for jetty */
-    public String context_path = "";
-
-    //-----------------------------------------------------------------------------------
-    // HDFS & AWS
-    //-----------------------------------------------------------------------------------
-    /** -hdfs_config=hdfs_config; configuration file of the HDFS */
-    public String hdfs_config = null;
-
-    /** -hdfs_skip=hdfs_skip; used by Hadoop driver to not unpack and load any HDFS jar file at runtime. */
-    public boolean hdfs_skip = false;
-
-    /** -aws_credentials=aws_credentials; properties file for aws credentials */
-    public String aws_credentials = null;
-
-    /** --ga_hadoop_ver=ga_hadoop_ver; Version string for Hadoop */
-    public String ga_hadoop_ver = null;
-
-    /** --ga_opt_out; Turns off usage reporting to Google Analytics  */
-    public boolean ga_opt_out = false;
-
-    //-----------------------------------------------------------------------------------
-    // Authentication
+    // Authentication & Security
     //-----------------------------------------------------------------------------------
     /** -jks is Java KeyStore file on local filesystem */
     public String jks = null;
@@ -301,14 +218,110 @@ final public class H2O {
     public boolean form_auth = false;
 
     /** -session_timeout maximum duration of session inactivity in minutes **/
-    private String session_timeout_spec = null; // raw value specified by the user
+    String session_timeout_spec = null; // raw value specified by the user
     public int session_timeout = 0; // parsed value (in minutes)
+
+    /** -user_name=user_name; Set user name */
+    public String user_name = System.getProperty("user.name");
 
     /** -internal_security_conf path (absolute or relative) to a file containing all internal security related configurations */
     public String internal_security_conf = null;
 
     /** -internal_security_enabled is a boolean that indicates if internal communication paths are secured*/
     public boolean internal_security_enabled = false;
+
+    /** -decrypt_tool specifies the DKV key where a default decrypt tool will be installed*/
+    public String decrypt_tool = null;
+
+    //-----------------------------------------------------------------------------------
+    // Networking
+    //-----------------------------------------------------------------------------------
+    /** -port=####; Specific Browser/API/HTML port */
+    public int port;
+
+    /** -baseport=####; Port to start upward searching from. */
+    public int baseport = 54321;
+
+    /** -web_ip=ip4_or_ip6; IP used for web server. By default it listen to all interfaces. */
+    public String web_ip = null;
+
+    /** -ip=ip4_or_ip6; Named IP4/IP6 address instead of the default */
+    public String ip;
+
+    /** -network=network; Network specification for acceptable interfaces to bind to */
+    public String network;
+
+    /** -context_path=jetty_context_path; the context path for jetty */
+    public String context_path = "";
+  }
+
+  /**
+   * A class containing all of the arguments for H2O.
+   */
+  public static class
+    OptArgs extends BaseArgs {
+    // Prefix of hidden system properties
+    public static final String SYSTEM_PROP_PREFIX = "sys.ai.h2o.";
+    public static final String SYSTEM_DEBUG_CORS = H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.cors";
+    //-----------------------------------------------------------------------------------
+    // Help and info
+    //-----------------------------------------------------------------------------------
+    /** -help, -help=true; print help and exit*/
+    public boolean help = false;
+
+    /** -version, -version=true; print version and exit */
+    public boolean version = false;
+
+    //-----------------------------------------------------------------------------------
+    // Clouding
+    //-----------------------------------------------------------------------------------
+    /** -name=name; Set cloud name */
+    public String name = System.getProperty("user.name"); // Cloud name
+
+    /** -flatfile=flatfile; Specify a list of cluster IP addresses */
+    public String flatfile;
+
+    //-----------------------------------------------------------------------------------
+    // Node configuration
+    //-----------------------------------------------------------------------------------
+    /** -ice_root=ice_root; ice root directory; where temp files go */
+    public String ice_root;
+
+    /** -cleaner; enable user-mode spilling of big data to disk in ice_root */
+    public boolean cleaner = false;
+
+    /** -nthreads=nthreads; Max number of F/J threads in the low-priority batch queue */
+    public short nthreads= (short)Runtime.getRuntime().availableProcessors();
+
+    /** -log_dir=/path/to/dir; directory to save logs in */
+    public String log_dir;
+
+    /** -flow_dir=/path/to/dir; directory to save flows in */
+    public String flow_dir;
+
+    /** -disable_web; disable Jetty and REST API interface */
+    public boolean disable_web = false;
+
+    /** -client, -client=true; Client-only; no work; no homing of Keys (but can cache) */
+    public boolean client;
+
+    //-----------------------------------------------------------------------------------
+    // HDFS & AWS
+    //-----------------------------------------------------------------------------------
+    /** -hdfs_config=hdfs_config; configuration file of the HDFS */
+    public String hdfs_config = null;
+
+    /** -hdfs_skip=hdfs_skip; used by Hadoop driver to not unpack and load any HDFS jar file at runtime. */
+    public boolean hdfs_skip = false;
+
+    /** -aws_credentials=aws_credentials; properties file for aws credentials */
+    public String aws_credentials = null;
+
+    /** --ga_hadoop_ver=ga_hadoop_ver; Version string for Hadoop */
+    public String ga_hadoop_ver = null;
+
+    /** --ga_opt_out; Turns off usage reporting to Google Analytics  */
+    public boolean ga_opt_out = false;
 
     //-----------------------------------------------------------------------------------
     // Debugging
@@ -398,80 +411,93 @@ final public class H2O {
       parseFailed("Argument " + _lastMatchedFor + " must be an integer (was given '" + a + "')" );
       return 0;
     }
+
+    public int parsePort(String portString){
+      int portNum = parseInt(portString);
+      if(portNum < 0 || portNum > 65535){
+        parseFailed("Argument " + _lastMatchedFor + " must be an integer between 0 and 65535");
+        return 0;
+      }else{
+        return portNum;
+      }
+    }
+
     @Override public String toString() { return _s; }
   }
-
 
   /**
    * Dead stupid argument parser.
    */
-  private static void parseArguments(String[] args) {
-    for (AbstractH2OExtension e : H2O.getExtensions()) {
+  static void parseArguments(String[] args) {
+    for (AbstractH2OExtension e : extManager.getCoreExtensions()) {
       args = e.parseArguments(args);
     }
+    parseH2OArgumentsTo(args, ARGS);
+  }
 
+  static OptArgs parseH2OArgumentsTo(String[] args, OptArgs trgt) {
     for (int i = 0; i < args.length; i++) {
       OptString s = new OptString(args[i]);
       if (s.matches("h") || s.matches("help")) {
-        ARGS.help = true;
+        trgt.help = true;
       }
       else if (s.matches("version")) {
-        ARGS.version = true;
+        trgt.version = true;
       }
       else if (s.matches("name")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.name = args[i];
+        trgt.name = args[i];
       }
       else if (s.matches("flatfile")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.flatfile = args[i];
+        trgt.flatfile = args[i];
       }
       else if (s.matches("port")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.port = s.parseInt(args[i]);
+        trgt.port = s.parsePort(args[i]);
       }
       else if (s.matches("baseport")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.baseport = s.parseInt(args[i]);
+        trgt.baseport = s.parsePort(args[i]);
       }
       else if (s.matches("ip")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.ip = args[i];
+        trgt.ip = args[i];
       }
       else if (s.matches("web_ip")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.web_ip = args[i];
+        trgt.web_ip = args[i];
       }
       else if (s.matches("network")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.network = args[i];
+        trgt.network = args[i];
       }
       else if (s.matches("client")) {
-        ARGS.client = true;
+        trgt.client = true;
       }
       else if (s.matches("user_name")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.user_name = args[i];
+        trgt.user_name = args[i];
       }
       else if (s.matches("ice_root")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.ice_root = args[i];
+        trgt.ice_root = args[i];
       }
       else if (s.matches("log_dir")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.log_dir = args[i];
+        trgt.log_dir = args[i];
       }
       else if (s.matches("flow_dir")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.flow_dir = args[i];
+        trgt.flow_dir = args[i];
       }
       else if (s.matches("disable_web")) {
-        ARGS.disable_web = true;
+        trgt.disable_web = true;
       }
       else if (s.matches("context_path")) {
         i = s.incrementAndCheck(i, args);
         String value = args[i];
-        ARGS.context_path = value.startsWith("/")
+        trgt.context_path = value.startsWith("/")
                             ? value.trim().length() == 1
                               ? "" : value
                             : "/" + value;
@@ -482,91 +508,96 @@ final public class H2O {
         if (nthreads >= 1) { //otherwise keep default (all cores)
           if (nthreads > Short.MAX_VALUE)
             throw H2O.unimpl("Can't handle more than " + Short.MAX_VALUE + " threads.");
-          ARGS.nthreads = (short) nthreads;
+          trgt.nthreads = (short) nthreads;
         }
       }
       else if (s.matches("hdfs_config")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.hdfs_config = args[i];
+        trgt.hdfs_config = args[i];
       }
       else if (s.matches("hdfs_skip")) {
-        ARGS.hdfs_skip = true;
+        trgt.hdfs_skip = true;
       }
       else if (s.matches("aws_credentials")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.aws_credentials = args[i];
+        trgt.aws_credentials = args[i];
       }
       else if (s.matches("ga_hadoop_ver")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.ga_hadoop_ver = args[i];
+        trgt.ga_hadoop_ver = args[i];
       }
       else if (s.matches("ga_opt_out")) {
         // JUnits pass this as a system property, but it usually a flag without an arg
         if (i+1 < args.length && args[i+1].equals("yes")) i++;
-        ARGS.ga_opt_out = true;
+        trgt.ga_opt_out = true;
       }
       else if (s.matches("log_level")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.log_level = args[i];
+        trgt.log_level = args[i];
       }
       else if (s.matches("random_udp_drop")) {
-        ARGS.random_udp_drop = true;
+        trgt.random_udp_drop = true;
       }
       else if (s.matches("md5skip")) {
-        ARGS.md5skip = true;
+        trgt.md5skip = true;
       }
       else if (s.matches("quiet")) {
-        ARGS.quiet = true;
+        trgt.quiet = true;
       }
       else if(s.matches("useUDP")) {
-        ARGS.useUDP = true;
+        trgt.useUDP = true;
       }
       else if(s.matches("cleaner")) {
-        ARGS.cleaner = true;
+        trgt.cleaner = true;
       }
       else if (s.matches("jks")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.jks = args[i];
+        trgt.jks = args[i];
       }
       else if (s.matches("jks_pass")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.jks_pass = args[i];
+        trgt.jks_pass = args[i];
       }
       else if (s.matches("hash_login")) {
-        ARGS.hash_login = true;
+        trgt.hash_login = true;
       }
       else if (s.matches("ldap_login")) {
-        ARGS.ldap_login = true;
+        trgt.ldap_login = true;
       }
       else if (s.matches("kerberos_login")) {
-        ARGS.kerberos_login = true;
+        trgt.kerberos_login = true;
       }
       else if (s.matches("pam_login")) {
-        ARGS.pam_login = true;
+        trgt.pam_login = true;
       }
       else if (s.matches("login_conf")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.login_conf = args[i];
+        trgt.login_conf = args[i];
       }
       else if (s.matches("form_auth")) {
-        ARGS.form_auth = true;
+        trgt.form_auth = true;
       }
       else if (s.matches("session_timeout")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.session_timeout_spec = args[i];
-        try { ARGS.session_timeout = Integer.parseInt(args[i]); } catch (Exception e) { /* ignored */ }
+        trgt.session_timeout_spec = args[i];
+        try { trgt.session_timeout = Integer.parseInt(args[i]); } catch (Exception e) { /* ignored */ }
       }
       else if (s.matches("internal_security_conf")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.internal_security_conf = args[i];
+        trgt.internal_security_conf = args[i];
+      }
+      else if (s.matches("decrypt_tool")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.decrypt_tool = args[i];
       }
       else if (s.matches("no_latest_check")) {
-        ARGS.noLatestCheck = true;
+        trgt.noLatestCheck = true;
       }
       else {
         parseFailed("Unknown argument (" + s + ")");
       }
     }
+    return trgt;
   }
 
   private static void validateArguments() {
@@ -611,7 +642,7 @@ final public class H2O {
     }
 
     // Validate extension arguments
-    for (AbstractH2OExtension e : H2O.getExtensions()) {
+    for (AbstractH2OExtension e : extManager.getCoreExtensions()) {
       e.validateArguments();
     }
   }
@@ -740,6 +771,9 @@ final public class H2O {
     if (LogManager.getCurrentLoggers().hasMoreElements()) {
       _haveInheritedLog4jConfiguration = true;
       return;
+    } else if (System.getProperty("log4j.configuration") != null) {
+      _haveInheritedLog4jConfiguration = true;
+      return;
     }
 
     // Disable logging from a few specific classes at startup.
@@ -749,109 +783,19 @@ final public class H2O {
     // The trick is the output path / file isn't known until the H2O API PORT is chosen,
     // so real logger initialization has to happen somewhat late in the startup lifecycle.
     java.util.Properties p = new java.util.Properties();
-    p.setProperty("log4j.logger.org.reflections.Reflections", "WARN");
+    p.setProperty("log4j.rootCategory", "WARN, console");
     p.setProperty("log4j.logger.org.eclipse.jetty", "WARN");
+
+    p.setProperty("log4j.appender.console", "org.apache.log4j.ConsoleAppender");
+    p.setProperty("log4j.appender.console.layout", "org.apache.log4j.PatternLayout");
+    p.setProperty("log4j.appender.console.layout.ConversionPattern", "%m%n");
+
     PropertyConfigurator.configure(p);
     System.setProperty("org.eclipse.jetty.LEVEL", "WARN");
 
     // Log jetty stuff to stdout for now.
     // TODO:  figure out how to wire this into log4j.
     System.setProperty("org.eclipse.jetty.util.log.class", "org.eclipse.jetty.util.log.StdErrLog");
-  }
-
-  //-------------------------------------------------------------------------------------------------------------------
-
-  // Be paranoid and check that this doesn't happen twice.
-  private static boolean extensionsRegistered = false;
-  private static long registerExtensionsMillis = 0;
-
-  /**
-   * Register H2O extensions.
-   * <p/>
-   * Use reflection to find all classes that inherit from water.AbstractH2OExtension
-   * and call H2O.addExtension() for each.
-   */
-  public static void registerExtensions() {
-    if (extensionsRegistered) {
-      throw H2O.fail("Extensions already registered");
-    }
-
-    long before = System.currentTimeMillis();
-
-    // Disallow schemas whose parent is in another package because it takes ~4s to do the getSubTypesOf call.
-    String[] packages = new String[]{"water", "hex"};
-    ServiceLoader<AbstractH2OExtension> extensionsLoader = ServiceLoader.load(AbstractH2OExtension.class);
-    for (AbstractH2OExtension e : extensionsLoader) {
-      e.init();
-      extensions.add(e);
-    }
-
-    extensionsRegistered = true;
-
-    registerExtensionsMillis = System.currentTimeMillis() - before;
-  }
-
-  private static ArrayList<AbstractH2OExtension> extensions = new ArrayList<>();
-
-  public static void addExtension(AbstractH2OExtension e) {
-    extensions.add(e);
-  }
-
-  public static ArrayList<AbstractH2OExtension> getExtensions() {
-    return extensions;
-  }
-
-  //-------------------------------------------------------------------------------------------------------------------
-
-  // Be paranoid and check that this doesn't happen twice.
-  private static boolean apisRegistered = false;
-
-  /**
-   * Register REST API routes.
-   *
-   * Use reflection to find all classes that inherit from {@link water.api.AbstractRegister}
-   * and call the register() method for each.
-   *
-   * @param relativeResourcePath Relative path from running process working dir to find web resources.
-   */
-  public static void registerRestApis(String relativeResourcePath) {
-    if (apisRegistered) {
-      throw H2O.fail("APIs already registered");
-    }
-
-    // Log extension registrations here so the message is grouped in the right spot.
-    for (AbstractH2OExtension e : H2O.getExtensions()) {
-      e.printInitialized();
-    }
-    Log.info("Registered " + H2O.getExtensions().size() + " extensions in: " + registerExtensionsMillis + "mS");
-
-    long before = System.currentTimeMillis();
-
-    // Disallow schemas whose parent is in another package because it takes ~4s to do the getSubTypesOf call.
-    String[] packages = new String[] { "water", "hex" };
-
-    for (String pkg : packages) {
-      Reflections reflections = new Reflections(pkg);
-      Log.debug("Registering REST APIs for package: " + pkg);
-      for (Class registerClass : reflections.getSubTypesOf(water.api.AbstractRegister.class)) {
-        if (!Modifier.isAbstract(registerClass.getModifiers())) {
-          try {
-            Log.debug("Found REST API registration for class: " + registerClass.getName());
-            Object instance = registerClass.newInstance();
-            water.api.AbstractRegister r = (water.api.AbstractRegister) instance;
-            r.register(relativeResourcePath);
-          }
-          catch (Exception e) {
-            throw H2O.fail(e.toString());
-          }
-        }
-      }
-    }
-
-    apisRegistered = true;
-
-    long registerApisMillis = System.currentTimeMillis() - before;
-    Log.info("Registered: " + RequestServer.numRoutes() + " REST APIs in: " + registerApisMillis + "mS");
   }
 
   //-------------------------------------------------------------------------------------------------------------------
@@ -948,14 +892,93 @@ final public class H2O {
 
   //-------------------------------------------------------------------------------------------------------------------
 
+  // This piece of state is queried by Steam.
+  // It's used to inform the Admin user the last time each H2O instance did something.
+  // Admins can take this information and decide whether to kill idle clusters to reclaim tied up resources.
+
+  private static volatile long lastTimeSomethingHappenedMillis = System.currentTimeMillis();
+
+  private static volatile AtomicInteger activeRapidsExecs = new AtomicInteger();
+
+  /**
+   * Get the number of milliseconds the H2O cluster has been idle.
+   * @return milliseconds since the last interesting thing happened.
+   */
+  public static long getIdleTimeMillis() {
+    long latestEndTimeMillis = -1;
+
+    // If there are any running rapids queries, consider that not idle.
+    if (activeRapidsExecs.get() > 0) {
+      updateNotIdle();
+    }
+    else {
+      // If there are any running jobs, consider that not idle.
+      // Remember the latest job ending time as well.
+      Job[] jobs = Job.jobs();
+      for (int i = jobs.length - 1; i >= 0; i--) {
+        Job j = jobs[i];
+        if (j.isRunning()) {
+          updateNotIdle();
+          break;
+        }
+
+        if (j.end_time() > latestEndTimeMillis) {
+          latestEndTimeMillis = j.end_time();
+        }
+      }
+    }
+
+    long latestTimeMillis = Math.max(latestEndTimeMillis, lastTimeSomethingHappenedMillis);
+
+    // Calculate milliseconds and clamp at zero.
+    long now = System.currentTimeMillis();
+    long deltaMillis = now - latestTimeMillis;
+    if (deltaMillis < 0) {
+      deltaMillis = 0;
+    }
+    return deltaMillis;
+  }
+
+  /**
+   * Update the last time that something happened to reset the idle timer.
+   * This is meant to be callable safely from almost anywhere.
+   */
+  public static void updateNotIdle() {
+    lastTimeSomethingHappenedMillis = System.currentTimeMillis();
+  }
+
+  /**
+   * Increment the current number of active Rapids exec calls.
+   */
+  public static void incrementActiveRapidsCounter() {
+    updateNotIdle();
+    activeRapidsExecs.incrementAndGet();
+  }
+
+  /**
+   * Decrement the current number of active Rapids exec calls.
+   */
+  public static void decrementActiveRapidsCounter() {
+    updateNotIdle();
+    activeRapidsExecs.decrementAndGet();
+  }
+
+  //-------------------------------------------------------------------------------------------------------------------
+
   // Atomically set once during startup.  Guards against repeated startups.
   public static final AtomicLong START_TIME_MILLIS = new AtomicLong(); // When did main() run
 
   // Used to gate default worker threadpool sizes
   public static final int NUMCPUS = Runtime.getRuntime().availableProcessors();
-  // Best-guess process ID
-  public static long PID = -1L;
 
+  // Best-guess process ID
+  public static final long PID;
+  static {
+    PID = getCurrentPID();
+  }
+
+  // Extension Manager instance
+  private static final ExtensionManager extManager = ExtensionManager.getInstance();
 
   /**
    * Throw an exception that will cause the request to fail, but the cluster to continue.
@@ -1304,9 +1327,13 @@ final public class H2O {
   }
 
   public static String getURL(String schema) {
-    return String.format(H2O.SELF_ADDRESS instanceof Inet6Address
-                         ? "%s://[%s]:%d%s" : "%s://%s:%d%s",
-                         schema, H2O.SELF_ADDRESS.getHostAddress(), H2O.API_PORT, H2O.ARGS.context_path);
+    return getURL(schema, H2O.SELF_ADDRESS, H2O.API_PORT, H2O.ARGS.context_path);
+  }
+
+  public static String getURL(String schema, InetAddress address, int port, String contextPath) {
+    return String.format(address instanceof Inet6Address
+                    ? "%s://[%s]:%d%s" : "%s://%s:%d%s",
+            schema, address.getHostAddress(), port, contextPath);
   }
 
   // The multicast discovery port
@@ -1372,8 +1399,8 @@ final public class H2O {
    * It is updated also when a new client appears. */
   private static HashSet<H2ONode> STATIC_H2OS = null;
 
-  /* List of all clients that ever connected to this cloud */
-  private static Map<H2ONode.H2Okey, H2ONode> CLIENTS_MAP = new ConcurrentHashMap<>();
+  /* List of all clients that ever connected to this cloud. Keys are IP:PORT of these clients */
+  private static Map<String, H2ONode> CLIENTS_MAP = new ConcurrentHashMap<>();
 
   // Reverse cloud index to a cloud; limit of 256 old clouds.
   static private final H2O[] CLOUDS = new H2O[256];
@@ -1416,7 +1443,7 @@ final public class H2O {
       Log.warn("");
     }
 
-    for (AbstractH2OExtension e : H2O.getExtensions()) {
+    for (AbstractH2OExtension e : extManager.getCoreExtensions()) {
       String n = e.getExtensionName() + " ";
       AbstractBuildVersion abv = e.getBuildVersion();
       Log.info(n + "Build git branch: ", abv.branchName());
@@ -1446,13 +1473,6 @@ final public class H2O {
 
   /** Initializes the local node and the local cloud with itself as the only member. */
   private static void startLocalNode() {
-    PID = -1L;
-    try {
-      String n = ManagementFactory.getRuntimeMXBean().getName();
-      int i = n.indexOf('@');
-      if( i != -1 ) PID = Long.parseLong(n.substring(0, i));
-    } catch( Throwable ignore ) { }
-
     // Figure self out; this is surprisingly hard
     NetworkInit.initializeNetworkSockets();
     // Do not forget to put SELF into the static configuration (to simulate
@@ -1478,6 +1498,10 @@ final public class H2O {
     SELF._heartbeat._jar_md5 = JarHash.JARHASH;
     SELF._heartbeat._client = ARGS.client;
     SELF._heartbeat._cloud_name_hash = ARGS.name.hashCode();
+
+    if(ARGS.client){
+      reportClient(H2O.SELF); // report myself as the client to myself
+    }
   }
 
   /** Starts the worker threads, receiver threads, heartbeats and all other
@@ -1517,13 +1541,12 @@ final public class H2O {
 
   }
 
-  // Callbacks to add new Requests & menu items
-  static private volatile boolean _doneRequests;
-
+  @Deprecated
   static public void register(
-      String method_url, Class<? extends water.api.Handler> hclass, String method, String apiName, String summary
+          String method_url, Class<? extends water.api.Handler> hclass, String method, String apiName, String summary
   ) {
-    if (_doneRequests) throw new IllegalArgumentException("Cannot add more Requests once the list is finalized");
+    Log.warn("The H2O.register method is deprecated and will be removed in the next major release." +
+            "Please register REST API endpoints as part of their corresponding REST API extensions!");
     RequestServer.registerEndpoint(apiName, method_url, hclass, method, summary);
   }
 
@@ -1532,13 +1555,22 @@ final public class H2O {
   }
 
   /** Start the web service; disallow future URL registration.
-   *  Blocks until the server is up.  */
+   *  Blocks until the server is up.
+   *
+   *  @deprecated use starServingRestApi
+   */
+  @Deprecated
   static public void finalizeRegistration() {
-    if (_doneRequests || H2O.ARGS.disable_web) return;
-    _doneRequests = true;
+    startServingRestApi();
+  }
 
-    water.api.SchemaServer.registerAllSchemasIfNecessary();
-    jetty.acceptRequests();
+  /**
+   * This switch Jetty into accepting mode.
+   */
+  public static void startServingRestApi() {
+    if (!H2O.ARGS.disable_web) {
+      jetty.acceptRequests();
+    }
   }
 
   // --------------------------------------------------------------------------
@@ -1550,7 +1582,31 @@ final public class H2O {
   // A dense array indexing all Cloud members. Fast reversal from "member#" to
   // Node.  No holes.  Cloud size is _members.length.
   public final H2ONode[] _memary;
+
+  // mapping from a node ip to node index
+  private final HashMap<String, Integer> _node_ip_to_index;
   final int _hash;
+
+  public H2ONode getNodeByIpPort(String ipPort) {
+    if(_node_ip_to_index != null) {
+      Integer index = _node_ip_to_index.get(ipPort);
+      if (index != null) {
+        if(index == -1){
+          return H2O.SELF;
+        } else if(index < -1 || index >= _memary.length){
+          throw new RuntimeException("Mapping from node id to node index contains: " + index + ", however this node" +
+                  "does not exist!");
+        }
+        return _memary[index];
+      } else {
+        // no node with such ip:port
+        return null;
+      }
+    } else {
+      // mapping is null, no cloud ready yet
+      return null;
+    }
+  }
 
   // A dense integer identifier that rolls over rarely. Rollover limits the
   // number of simultaneous nested Clouds we are operating on in-parallel.
@@ -1563,6 +1619,10 @@ final public class H2O {
   H2O( H2ONode[] h2os, int hash, int idx ) {
     _memary = h2os;             // Need to clone?
     java.util.Arrays.sort(_memary);       // ... sorted!
+    _node_ip_to_index = new HashMap<>();
+    for(H2ONode node: _memary){
+      _node_ip_to_index.put(node.getIpPortString(), node.index());
+    }
     _hash = hash;               // And record hash for cloud rollover
     _idx = (char)(idx&0x0ff);   // Roll-over at 256
   }
@@ -1787,7 +1847,10 @@ final public class H2O {
 
   // --------------------------------------------------------------------------
   public static void main( String[] args ) {
-    long time0 = System.currentTimeMillis();
+   H2O.configureLogging();
+   extManager.registerCoreExtensions();
+
+   long time0 = System.currentTimeMillis();
 
    if (checkUnsupportedJava())
      throw new RuntimeException("Unsupported Java version");
@@ -1881,7 +1944,6 @@ final public class H2O {
           Log.POST(11, ste.toString());
       }
     }
-
     // Epic Hunt for the correct self InetAddress
     long time4 = System.currentTimeMillis();
     Log.info("IPv6 stack selected: " + IS_IPV6);
@@ -1903,9 +1965,9 @@ final public class H2O {
     long time5 = System.currentTimeMillis();
     startLocalNode();
 
-    // Allow extensions to perform initialization that requires the network.
+    // Allow core extensions to perform initialization that requires the network.
     long time6 = System.currentTimeMillis();
-    for (AbstractH2OExtension ext: extensions) {
+    for (AbstractH2OExtension ext: extManager.getCoreExtensions()) {
       ext.onLocalNodeStarted();
     }
 
@@ -1990,6 +2052,21 @@ final public class H2O {
     Log.debug("    Start network services: " + (time10 - time9) + "ms");
     Log.debug("    Cloud up: " + (time11 - time10) + "ms");
     Log.debug("    Start GA: " + (time12 - time11) + "ms");
+  }
+
+  /** Find PID of the current process, use -1 if we can't find the value. */
+  private static long getCurrentPID() {
+    try {
+      String n = ManagementFactory.getRuntimeMXBean().getName();
+      int i = n.indexOf('@');
+      if(i != -1) {
+        return Long.parseLong(n.substring(0, i));
+      } else {
+        return -1L;
+      }
+    } catch(Throwable ignore) {
+      return -1L;
+    }
   }
 
   // Die horribly
@@ -2077,7 +2154,7 @@ final public class H2O {
   }
 
   public static H2ONode reportClient(H2ONode client){
-    H2ONode oldClient = CLIENTS_MAP.put(client._key, client);
+    H2ONode oldClient = CLIENTS_MAP.put(client.getIpPortString(), client);
     if(oldClient == null){
       Log.info("New client discovered at " + client);
     }
@@ -2085,14 +2162,19 @@ final public class H2O {
   }
 
   public static H2ONode removeClient(H2ONode client){
-    return CLIENTS_MAP.remove(client._key);
+    return CLIENTS_MAP.remove(client.getIpPortString());
   }
 
   public static HashSet<H2ONode> getClients(){
     return new HashSet<>(CLIENTS_MAP.values());
   }
 
-  public static Map<H2ONode.H2Okey, H2ONode> getClientsByKey(){
-    return new HashMap<>(CLIENTS_MAP);
+  public static H2ONode getClientByIPPort(String ipPort){
+    return CLIENTS_MAP.get(ipPort);
   }
+
+  public static Key<DecryptionTool> defaultDecryptionTool() {
+    return H2O.ARGS.decrypt_tool != null ? Key.<DecryptionTool>make(H2O.ARGS.decrypt_tool) : null;
+  }
+
 }

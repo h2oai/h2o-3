@@ -31,6 +31,8 @@ class ModelBase(backwards_compatible()):
         self._estimator_type = "unsupervised"
         self._future = False  # used by __repr__/show to query job state
         self._job = None  # used when _future is True
+        self._have_pojo = False
+        self._have_mojo = False
 
 
     @property
@@ -94,6 +96,16 @@ class ModelBase(backwards_compatible()):
     def type(self):
         """The type of model built: ``"classifier"`` or ``"regressor"`` or ``"unsupervised"``"""
         return self._estimator_type
+
+    @property
+    def have_pojo(self):
+        """True, if export to POJO is possible"""
+        return self._have_pojo
+
+    @property
+    def have_mojo(self):
+        """True, if export to MOJO is possible"""
+        return self._have_mojo
 
 
     def __repr__(self):
@@ -178,50 +190,6 @@ class ModelBase(backwards_compatible()):
         else:
             j = H2OJob(h2o.api("POST /4/Predictions/models/%s/frames/%s" % (self._id, test_data.frame_id),
                                data={"deep_features_hidden_layer_name": layer}), "deepfeatures")
-        j.poll()
-        return h2o.get_frame(j.dest_key)
-
-    def loco(self, frame, loco_frame_id=None, replace_val=None):
-        """
-        Leave One Covariate Out (LOCO)
-
-        Calculates row-wise variable importance's by re-scoring a trained supervised model and measuring the impact of setting
-        each variable to missing or it’s most central value(mean or median & mode for categorical's)
-
-        :param frame: An H2OFrame to score
-        :param loco_frame_id: Destination id for this job; auto-generated if not specified.
-        :param replace_val: Value to replace columns ("mean" or "median") by (Default is to set columns to missing).
-        :returns: An H2OFrame displaying the base prediction (model scored with all predictors) and the difference in predictions
-                  when variables are dropped/replaced. The difference displayed is the base prediction substracted from
-                  the new prediction (when a variable is dropped/replaced with mean/median/mode) for binomial classification
-                  and regression problems. For multinomial problems, the sum of the absolute value of differences across classes
-                  is calculated per column dropped/replaced.
-
-        :examples:
-          >>>
-          >>> iris_h2o = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
-          >>> g = h2o.h2o.H2OGradientBoostingEstimator()
-          >>> g.train(x=list(range(0,4)),y="C5",training_frame=iris_h2o)
-          >>> g.loco(fr)
-          >>> g.loco(fr, replace_val="mean")
-          >>> g.loco(fr,replace_val="median")
-
-        """
-        assert_is_type(frame, h2o.H2OFrame)
-        kwargs = {}
-        kwargs["model"] = self._id
-        kwargs["frame"] = frame.frame_id
-        if loco_frame_id is not None:
-            assert_is_type(loco_frame_id, str)
-            kwargs["loco_frame_id"] = loco_frame_id
-        if replace_val is not None:
-            assert_is_type(replace_val, str)
-            if replace_val not in ["mean","median"]:
-                raise H2OValueError("repalce_val must be either mean or median, but got " + replace_val)
-            kwargs["replace_val"] = replace_val
-
-        j = H2OJob(h2o.api("POST /3/LeaveOneCovarOut",
-                   data=kwargs),"loco")
         j.poll()
         return h2o.get_frame(j.dest_key)
 
@@ -730,6 +698,13 @@ class ModelBase(backwards_compatible()):
             return model["metalearner"]
         print("No metalearner for this model")
 
+    def levelone_frame_id(self):
+        """Fetch the levelone_frame_id for the model, if any.  Currently only used by H2OStackedEnsembleEstimator."""
+        model = self._model_json["output"]
+        if "levelone_frame_id" in model and model["levelone_frame_id"] is not None:
+            return model["levelone_frame_id"]
+        print("No levelone_frame_id for this model")
+
 
     def download_pojo(self, path="", get_genmodel_jar=False, genmodel_name=""):
         """
@@ -759,9 +734,10 @@ class ModelBase(backwards_compatible()):
         """
         assert_is_type(path, str)
         assert_is_type(get_genmodel_jar, bool)
-        if self.algo not in {"drf", "gbm", "deepwater", "glrm", "glm", "word2vec"}:
-            raise H2OValueError("MOJOs are currently supported for Distributed Random Forest, "
-                                "Gradient Boosting Machine, Deep Water, GLM, GLRM and word2vec models only.")
+
+        if not self.have_mojo:
+            raise H2OValueError("Export to MOJO not supported")
+
         if get_genmodel_jar:
             if genmodel_name == "":
                 h2o.api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, "h2o-genmodel.jar"))
@@ -781,6 +757,8 @@ class ModelBase(backwards_compatible()):
         """
         assert_is_type(path, str)
         assert_is_type(force, bool)
+        if not self.have_mojo:
+            raise H2OValueError("Export to MOJO not supported")
         path = os.path.join(os.getcwd() if path == "" else path, self.model_id + ".zip")
         return h2o.api("GET /99/Models.mojo/%s" % self.model_id, data={"dir": path, "force": force})["dir"]
 
@@ -833,9 +811,9 @@ class ModelBase(backwards_compatible()):
             plt.title("Validation Scoring History")
             plt.plot(scoring_history[timestep], scoring_history[metric])
 
-        elif self._model_json["algo"] in ("deeplearning", "deepwater", "drf", "gbm"):
+        elif self._model_json["algo"] in ("deeplearning", "deepwater", "xgboost", "drf", "gbm"):
             # Set timestep
-            if self._model_json["algo"] in ("gbm", "drf"):
+            if self._model_json["algo"] in ("gbm", "drf", "xgboost"):
                 assert_is_type(timestep, "AUTO", "duration", "number_of_trees")
                 if timestep == "AUTO":
                     timestep = "number_of_trees"
@@ -882,7 +860,7 @@ class ModelBase(backwards_compatible()):
                 plt.ylim(ylim)
                 plt.plot(scoring_history[timestep], scoring_history[training_metric])
 
-        else:  # algo is not glm, deeplearning, drf, gbm
+        else:  # algo is not glm, deeplearning, drf, gbm, xgboost
             raise H2OValueError("Plotting not implemented for this type of model")
         if not server: plt.show()
 
@@ -1051,6 +1029,9 @@ class ModelBase(backwards_compatible()):
             if not server: plt.show()
         elif self._model_json["algo"] == "drf":
             plt.title("Variable Importance: H2O DRF", fontsize=20)
+            if not server: plt.show()
+        elif self._model_json["algo"] == "xgboost":
+            plt.title("Variable Importance: H2O XGBoost", fontsize=20)
             if not server: plt.show()
         # if H2ODeepLearningEstimator has variable_importances == True
         elif self._model_json["algo"] == "deeplearning":

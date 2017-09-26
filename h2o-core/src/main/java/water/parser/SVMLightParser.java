@@ -1,6 +1,5 @@
 package water.parser;
 
-import java.io.*;
 import java.util.Arrays;
 
 import water.Key;
@@ -25,18 +24,15 @@ class SVMLightParser extends Parser {
   /** Try to parse the bytes as svm light format, return a ParseSetupHandler with type 
    *  SVMLight if the input is in svm light format, throw an exception otherwise.
    */
-  public static ParseSetup guessSetup(byte [] bytes) {
-    // find the last eof
-    int i = bytes.length-1;
-    while(i > 0 && bytes[i] != '\n') --i;
-    assert i >= 0;
-    InputStream is = new ByteArrayInputStream(Arrays.copyOf(bytes,i));
+  public static ParseSetup guessSetup(byte [] bits) {
+    int lastNewline = bits.length-1;
+    while(lastNewline > 0 && !CsvParser.isEOL(bits[lastNewline]))lastNewline--;
+    if(lastNewline > 0) bits = Arrays.copyOf(bits,lastNewline+1);
     SVMLightParser p = new SVMLightParser(new ParseSetup(SVMLight_INFO,
             ParseSetup.GUESS_SEP, false,ParseSetup.GUESS_HEADER,ParseSetup.GUESS_COL_CNT,
             null,null,null,null,null), null);
     SVMLightInspectParseWriter dout = new SVMLightInspectParseWriter();
-    try{ p.streamParse(is, dout);
-    } catch(IOException e) { throw new RuntimeException(e); }
+    p.parseChunk(0,new ByteAryData(bits,0), dout);
     if (dout._ncols > 0 && dout._nlines > 0 && dout._nlines > dout._invalidLines)
       return new ParseSetup(SVMLight_INFO, ParseSetup.GUESS_SEP,
             false,ParseSetup.NO_HEADER,dout._ncols,null,dout.guessTypes(),null,null,dout._data, dout.removeErrors());
@@ -196,7 +192,7 @@ class SVMLightParser extends Parser {
                     if(number <= colIdx)
                       err = "Columns come in non-increasing sequence. Got " + number + " after " + colIdx + ". Rest of the line is skipped.";
                     else if(exp != 0)
-                      err = "Got non-integer as column id: " + number*PrettyPrint.pow10(exp) + ". Rest of the line is skipped.";
+                      err = "Got non-integer as column id: " + PrettyPrint.pow10(number,exp) + ". Rest of the line is skipped.";
                     else
                       err = "column index out of range, " + number + " does not fit into integer." + " Rest of the line is skipped.";
                     dout.invalidLine(new ParseWriter.ParseErr(err,cidx,dout.lineNum(),offset + din.getGlobalByteOffset()));
@@ -365,7 +361,7 @@ class SVMLightParser extends Parser {
     @Override public void addNumCol(int colIdx, long number, int exp) {
       _ncols = Math.max(_ncols,colIdx);
       if(colIdx < MAX_PREVIEW_COLS && _nlines < MAX_PREVIEW_LINES)
-        _data[_nlines][colIdx] = Double.toString(number*PrettyPrint.pow10(exp));
+        _data[_nlines][colIdx] = Double.toString(PrettyPrint.pow10(number,exp));
     }
 
     @Override public void addNumCol(int colIdx, double d) {

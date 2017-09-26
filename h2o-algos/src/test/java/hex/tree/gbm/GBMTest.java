@@ -1780,7 +1780,7 @@ public class GBMTest extends TestUtil {
 
       // Build a POJO, validate same results
       Assert.assertTrue(gbm.testJavaScoring(pred, res, 1e-15));
-      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 10.69611) < 1e-4);
+      Assert.assertEquals( 10.69611, ((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance,1e-1);
 
     } finally {
       parms._train.remove();
@@ -2545,7 +2545,7 @@ public class GBMTest extends TestUtil {
 
       // Build a POJO, validate same results
       Assert.assertTrue(gbm.testJavaScoring(pred, res, 1e-15));
-      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._MSE - 1485) < 1);
+      Assert.assertEquals( 1485, ((ModelMetricsRegression)gbm._output._training_metrics)._MSE,50);
       Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 256.88) < 1);
 
     } finally {
@@ -2647,15 +2647,13 @@ public class GBMTest extends TestUtil {
       parms._seed = 0xdecaf;
       parms._distribution = huber;
       parms._huber_alpha = 1e-2; //everything is an outlier and we should get laplace loss
-
       gbm = new GBM(parms).trainModel().get();
-
       Assert.assertEquals(8.05716257,((ModelMetricsRegression)gbm._output._training_metrics)._MSE,0.3);
 
       // Huber loss can be derived from MAE since no obs weights
       double delta = 0.0047234; //hardcoded from output
       double MAE = 1.42298; //see laplace above
-      Assert.assertEquals((2*MAE-delta)*delta,((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance,2e-4);
+      Assert.assertEquals((2*MAE-delta)*delta,((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance,1e-1);
 
     } finally {
       if (tfr != null) tfr.delete();
@@ -3041,6 +3039,63 @@ public class GBMTest extends TestUtil {
       }
       Log.info(Arrays.toString(vals));
       Log.info(Arrays.toString(maes));
+    }
+  }
+
+  @Test
+  public void RegressionCars() {
+    Frame tfr = null;
+    Frame trainFrame = null;
+    Frame testFrame = null;
+    Frame preds = null;
+    GBMModel model = null;
+    Scope.enter();
+    try {
+      // Parse frame into H2O
+      tfr = parse_test_file("./smalldata/junit/cars.csv");
+      DKV.put(tfr);
+
+      // split into train/test
+      SplitFrame sf = new SplitFrame(tfr, new double[] { 0.7, 0.3 }, null);
+      sf.exec().get();
+      Key[] ksplits = sf._destination_frames;
+      trainFrame = (Frame)ksplits[0].get();
+      testFrame = (Frame)ksplits[1].get();
+
+      // define special columns
+//      String response = "cylinders"; // passes
+      String response = "economy (mpg)"; //fails
+
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = trainFrame._key;
+      parms._valid = testFrame._key;
+      parms._response_column = response;
+      parms._ignored_columns = new String[]{"name"};
+//      parms._dmatrix_type = GBMModel.GBMParameters.DMatrixType.dense;
+//      parms._backend = GBMModel.GBMParameters.Backend.cpu;
+//      parms._tree_method = GBMModel.GBMParameters.TreeMethod.exact;
+
+      model = new hex.tree.gbm.GBM(parms).trainModel().get();
+      Log.info(model);
+
+      preds = model.score(testFrame);
+      Assert.assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
+      Assert.assertEquals(
+          ((ModelMetricsRegression)model._output._validation_metrics).mae(),
+          ModelMetricsRegression.make(preds.anyVec(), testFrame.vec(response), DistributionFamily.gaussian).mae(),
+          1e-5
+      );
+      Assert.assertTrue(preds.anyVec().sigma() > 0);
+
+    } finally {
+      Scope.exit();
+      if (trainFrame!=null) trainFrame.remove();
+      if (testFrame!=null) testFrame.remove();
+      if (tfr!=null) tfr.remove();
+      if (preds!=null) preds.remove();
+      if (model!=null) {
+        model.delete();
+      }
     }
   }
 

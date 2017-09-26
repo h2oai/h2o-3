@@ -20,6 +20,8 @@ This section provides examples of common tasks performed when preparing data for
    data-munging/combining-columns
    data-munging/slicing-rows
    data-munging/slicing-columns
+   data-munging/fillnas
    data-munging/replacing-values
    data-munging/splitting-datasets
    data-munging/imputing-data
+   data-munging/pivot

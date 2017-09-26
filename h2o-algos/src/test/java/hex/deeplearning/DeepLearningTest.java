@@ -1443,6 +1443,62 @@ public class DeepLearningTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testNoHiddenLayerRegression() {
+    Frame tfr = null;
+    DeepLearningModel dl = null;
+    DeepLearningModel dl2 = null;
+
+    try {
+      tfr = parse_test_file("./smalldata/logreg/prostate.csv");
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._epochs = 1000;
+      parms._response_column = "AGE";
+      parms._hidden = new int[]{};
+      dl = new DeepLearning(parms).trainModel().get();
+      Frame res = dl.score(tfr);
+      assertTrue(dl.testJavaScoring(tfr, res, 1e-5));
+      res.remove();
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (dl != null) dl.delete();
+      if (dl2 != null) dl2.delete();
+    }
+  }
+
+  @Test
+  public void testNoHiddenLayerClassification() {
+    Frame tfr = null;
+    DeepLearningModel dl = null;
+    DeepLearningModel dl2 = null;
+
+    try {
+      tfr = parse_test_file("./smalldata/logreg/prostate.csv");
+      for (String s : new String[]{
+          "CAPSULE"
+      }) {
+        Vec resp = tfr.vec(s).toCategoricalVec();
+        tfr.remove(s).remove();
+        tfr.add(s, resp);
+        DKV.put(tfr);
+      }
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._epochs = 1000;
+      parms._response_column = "CAPSULE";
+      parms._hidden = null; // that works too, not just empty array
+      dl = new DeepLearning(parms).trainModel().get();
+      Frame res = dl.score(tfr);
+      assertTrue(dl.testJavaScoring(tfr, res, 1e-5));
+      res.remove();
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (dl != null) dl.delete();
+      if (dl2 != null) dl2.delete();
+    }
+  }
+
   @Ignore
   public void testConvergenceAUC_ModifiedHuber() {
     Frame tfr = null;

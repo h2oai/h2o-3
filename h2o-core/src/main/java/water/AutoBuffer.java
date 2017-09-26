@@ -38,6 +38,11 @@ import water.util.TwoDimTable;
  *  @author <a href="mailto:cliffc@h2o.ai"></a>
  */
 public final class AutoBuffer {
+
+  // Maximum size of an array we allow to allocate (the value is designed
+  // to mimic the behavior of OpenJDK libraries)
+  private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
+
   // The direct ByteBuffer for schlorping data about.
   // Set to null to indicate the AutoBuffer is closed.
   ByteBuffer _bb;
@@ -51,16 +56,15 @@ public final class AutoBuffer {
   // remote-writing AutoBuffers which are still deciding UDP vs TCP.  Not-null
   // for open AutoBuffers doing file i/o or reading any TCP/UDP or having
   // written at least one buffer to TCP/UDP.
-  private ByteChannel _chan;
+  private Channel _chan;
 
-  // A Stream for moving data in or out.  Null unless this AutoBuffer is
+  // A Stream for moving data in.  Null unless this AutoBuffer is
   // stream-based, in which case _chan field is null.  This path supports
   // persistance: reading and writing objects from different H2O cluster
   // instances (but exactly the same H2O revision).  The only required
   // similarity is same-classes-same-fields; changes here will probably
   // silently crash.  If the fields are named the same but the semantics
   // differ, then again the behavior is probably silent crash.
-  private OutputStream _os;
   private  InputStream _is;
   private short[] _typeMap; // Mapping from input stream map to current map, or null
 
@@ -249,17 +253,16 @@ public final class AutoBuffer {
 
   /** Write to a persistent Stream, including all TypeMap info to allow later
    *  reloading (by the same exact rev of H2O). */
-  public AutoBuffer( OutputStream os, boolean persist ) { 
+  public AutoBuffer( OutputStream os, boolean persist ) {
     _bb = ByteBuffer.wrap(MemoryManager.malloc1(BBP_BIG._size)).order(ByteOrder.nativeOrder());
     _read = false;
-    _os = os; 
-    if( persist ) put1(0x1C).put1(0xED).putStr(H2O.ABV.projectVersion()).putAStr(TypeMap.CLAZZES); 
-    else put1(0);
-
-    _chan = null;
+    _chan = Channels.newChannel(os);
     _h2o = null;
     _firstPage = true;
     _persist = 0;
+
+    if( persist ) put1(0x1C).put1(0xED).putStr(H2O.ABV.projectVersion()).putAStr(TypeMap.CLAZZES);
+    else put1(0);
   }
 
   /** Read from a persistent Stream (including all TypeMap info) into same
@@ -413,7 +416,7 @@ public final class AutoBuffer {
   public final int close() {
     //if( _size > 2048 ) System.out.println("Z="+_zeros+" / "+_size+", A="+_arys);
     if( isClosed() ) return 0;            // Already closed
-    assert _h2o != null || _chan != null || _os != null || _is != null; // Byte-array backed should not be closed
+    assert _h2o != null || _chan != null || _is != null; // Byte-array backed should not be closed
 
     try {
       if( _chan == null ) {     // No channel?
@@ -421,16 +424,10 @@ public final class AutoBuffer {
           if( _is != null ) _is.close();
           return 0;
         } else {                // Write
-          if( _os != null ) {   // Final stream write bits
-            _os.write(_bb.array(),0,_bb.position());
-            _os.close();
-            return 0;
-          } else {
-            // For small-packet write, send via UDP.  Since nothing is sent until
-            // now, this close() call trivially orders - since the reader will not
-            // even start (much less close()) until this packet is sent.
-            if( _bb.position() < MTU) return udpSend();
-          }
+          // For small-packet write, send via UDP.  Since nothing is sent until
+          // now, this close() call trivially orders - since the reader will not
+          // even start (much less close()) until this packet is sent.
+          if( _bb.position() < MTU) return udpSend();
           // oops - Big Write, switch to TCP and finish out there
         }
       }
@@ -461,7 +458,7 @@ public final class AutoBuffer {
           _chan = null;         // No channel now, since i/o error
           throw ioe;            // Rethrow after close
         } finally {
-          if( !_read ) _h2o.freeTCPSocket(_chan); // Recycle writable TCP channel
+          if( !_read ) _h2o.freeTCPSocket((ByteChannel) _chan); // Recycle writable TCP channel
           restorePriority();        // And if we raised priority, lower it back
         }
 
@@ -500,12 +497,12 @@ public final class AutoBuffer {
   // the task has been cancelled (still sending ack ack back).
   void drainClose() {
     if( isClosed() ) return;              // Already closed
-    final ByteChannel chan = _chan;       // Read before closing
+    final Channel chan = _chan;       // Read before closing
     assert _h2o != null || chan != null;  // Byte-array backed should not be closed
     if( chan != null ) {                  // Channel assumed sick from prior IOException
       try { chan.close(); } catch( IOException ignore ) {} // Silently close
       _chan = null;                       // No channel now!
-      if( !_read && SocketChannelUtils.isSocketChannel(chan)) _h2o.freeTCPSocket(chan); // Recycle writable TCP channel
+      if( !_read && SocketChannelUtils.isSocketChannel(chan)) _h2o.freeTCPSocket((ByteChannel) chan); // Recycle writable TCP channel
     }
     restorePriority();          // And if we raised priority, lower it back
     bbFree();
@@ -643,7 +640,7 @@ public final class AutoBuffer {
   }
 
   private int readAnInt() throws IOException {
-    if (_is == null) return _chan.read(_bb);
+    if (_is == null) return ((ReadableByteChannel) _chan).read(_bb);
 
     final byte[] array = _bb.array();
     final int position = _bb.position();
@@ -658,10 +655,12 @@ public final class AutoBuffer {
   /** Put as needed to keep from overflowing the ByteBuffer. */
   private ByteBuffer putSp( int sz ) {
     assert !_read;
-    while (sz > _bb.remaining()) {
-      if ((_h2o==null && _chan == null) || (_bb.hasArray() && _bb.capacity() < BBP_BIG._size))
+    if (sz > _bb.remaining()) {
+      if ((_h2o == null && _chan == null) || (_bb.hasArray() && _bb.capacity() < BBP_BIG._size))
         expandByteBuffer(sz);
-      else sendPartial();
+      else
+        sendPartial();
+      assert sz <= _bb.remaining();
     }
     return _bb;
   }
@@ -681,7 +680,7 @@ public final class AutoBuffer {
       //for( int i=0; i < _bb.limit(); i++ ) if( _bb.get(i)==0 ) _zeros++;
       long ns = System.nanoTime();
       while( _bb.hasRemaining() ) {
-        _chan.write(_bb);
+        ((WritableByteChannel) _chan).write(_bb);
         if( RANDOM_TCP_DROP != null && SocketChannelUtils.isSocketChannel(_chan) && RANDOM_TCP_DROP.nextInt(100) == 0 )
           throw new IOException("Random TCP Write Fail");
       }
@@ -705,18 +704,17 @@ public final class AutoBuffer {
   // increase the size of the backing array,
   // otherwise dump into a large direct buffer
   private ByteBuffer expandByteBuffer(int sizeHint) {
-    long needed = (long) sizeHint - _bb.remaining() + _bb.capacity(); // Max needed is 2G
-    if (needed > Integer.MAX_VALUE) {
-      throw new IllegalArgumentException("Cannot allocate more than 2GB array: sizeHint="+sizeHint+", "
-                                         + "needed="+needed
-                                         + ", bb.remaining()=" + _bb.remaining() + ", bb.capacity()="+_bb.capacity());
-    }
+    final long needed = (long) sizeHint - _bb.remaining() + _bb.capacity(); // Max needed is 2G
     if ((_h2o==null && _chan == null) || (_bb.hasArray() && needed < MTU)) {
+      if (needed > MAX_ARRAY_SIZE) {
+        throw new IllegalArgumentException("Cannot allocate more than 2GB array: sizeHint="+sizeHint+", "
+                + "needed="+needed
+                + ", bb.remaining()=" + _bb.remaining() + ", bb.capacity()="+_bb.capacity());
+      }
       byte[] ary = _bb.array();
       // just get twice what is currently needed but not more then max array size (2G)
       // Be careful not to overflow because of integer math!
-      int newLen = (int) Math.min(1L << (water.util.MathUtils.log2(needed)+1), Integer.MAX_VALUE - 1L);
-      newLen = Math.min(Integer.MAX_VALUE-100, newLen); // hard stop just below 32bit limit
+      int newLen = (int) Math.min(1L << (water.util.MathUtils.log2(needed)+1), MAX_ARRAY_SIZE);
       int oldpos = _bb.position();
       _bb = ByteBuffer.wrap(MemoryManager.arrayCopyOfRange(ary,0,newLen),oldpos,newLen-oldpos)
           .order(ByteOrder.nativeOrder());

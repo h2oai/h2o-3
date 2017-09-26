@@ -86,7 +86,7 @@ class H2OEstimator(ModelBase):
 
     def train(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None,
               weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None,
-              model_id=None):
+              model_id=None, verbose=False):
         """
         Train the H2O model.
 
@@ -100,6 +100,7 @@ class H2OEstimator(ModelBase):
         :param weights_column: The name or index of the column in training_frame that holds the per-row weights.
         :param validation_frame: H2OFrame with validation data to be scored on while training.
         :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+        :param bool verbose: Print scoring history to stdout. Defaults to False.
         """
         assert_is_type(training_frame, H2OFrame)
         assert_is_type(validation_frame, None, H2OFrame)
@@ -111,7 +112,10 @@ class H2OEstimator(ModelBase):
         assert_is_type(weights_column, None, int, str)
         assert_is_type(max_runtime_secs, None, numeric)
         assert_is_type(model_id, None, str)
+        assert_is_type(verbose,bool)
         algo = self.algo
+        if verbose and algo not in ["drf","gbm","deeplearning","xgboost"]:
+            raise H2OValueError("Verbose should only be set to True for drf, gbm, deeplearning, and xgboost models")
         parms = self._parms.copy()
         if "__class__" in parms:  # FIXME: hackt for PY3
             del parms["__class__"]
@@ -193,15 +197,15 @@ class H2OEstimator(ModelBase):
         parms = {k: H2OEstimator._keyify_if_h2oframe(parms[k]) for k in parms}
         rest_ver = parms.pop("_rest_version") if "_rest_version" in parms else 3
 
-        model = H2OJob(h2o.api("POST /%d/ModelBuilders/%s" % (rest_ver, self.algo), data=parms),
-                       job_type=(self.algo + " Model Build"))
+        model_builder_json = h2o.api("POST /%d/ModelBuilders/%s" % (rest_ver, self.algo), data=parms)
+        model = H2OJob(model_builder_json, job_type=(self.algo + " Model Build"))
 
         if self._future:
             self._job = model
             self._rest_version = rest_ver
             return
 
-        model.poll()
+        model.poll(verbose_model_scoring_history=verbose)
         model_json = h2o.api("GET /%d/Models/%s" % (rest_ver, model.dest_key))["models"][0]
         self._resolve_model(model.dest_key, model_json)
 
@@ -221,6 +225,8 @@ class H2OEstimator(ModelBase):
         m = model_class()
         m._id = model_id
         m._model_json = model_json
+        m._have_pojo = model_json.get('have_pojo', True)
+        m._have_mojo = model_json.get('have_mojo', True)
         m._metrics_class = metrics_class
         m._parms = self._parms
         m._estimator_type = self._estimator_type
@@ -257,6 +263,7 @@ class H2OEstimator(ModelBase):
         if name == "H2OKMeansEstimator": return "kmeans"
         if name == "H2ONaiveBayesEstimator": return "naivebayes"
         if name == "H2ORandomForestEstimator": return "drf"
+        if name == "H2OXGBoostEstimator": return "xgboost"
         if name == "H2OPCA": return "pca"
         if name == "H2OSVD": return "svd"
 

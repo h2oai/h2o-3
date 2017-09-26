@@ -587,45 +587,56 @@ final public class DeepLearningModelInfo extends Iced<DeepLearningModelInfo> {
     float[] vi = new float[units[0]];
     Arrays.fill(vi, 0f);
 
-    float[][] Qik = new float[units[0]][units[2]]; //importance of input i on output k
-    float[] sum_wj = new float[units[1]]; //sum of incoming weights into first hidden layer
-    float[] sum_wk = new float[units[2]]; //sum of incoming weights into output layer (or second hidden layer)
-    for (float[] Qi : Qik) Arrays.fill(Qi, 0f);
-    Arrays.fill(sum_wj, 0f);
-    Arrays.fill(sum_wk, 0f);
-
-    // compute sum of absolute incoming weights
-    for (int j = 0; j < units[1]; j++) {
+    if (units.length==2) {
+      // no hidden layers
       for (int i = 0; i < units[0]; i++) {
-        float wij = get_weights(0).get(j, i);
-        sum_wj[j] += Math.abs(wij);
-      }
-    }
-    for (int k = 0; k < units[2]; k++) {
-      for (int j = 0; j < units[1]; j++) {
-        float wjk = get_weights(1).get(k, j);
-        sum_wk[k] += Math.abs(wjk);
-      }
-    }
-    // compute importance of input i on output k as product of connecting weights going through j
-    for (int i = 0; i < units[0]; i++) {
-      for (int k = 0; k < units[2]; k++) {
+        // sum up abs weights going out from each input neuron
         for (int j = 0; j < units[1]; j++) {
           float wij = get_weights(0).get(j, i);
-          float wjk = get_weights(1).get(k, j);
-          //Qik[i][k] += Math.abs(wij)/sum_wj[j] * wjk; //Wong,Gedeon,Taggart '95
-          Qik[i][k] += Math.abs(wij) / sum_wj[j] * Math.abs(wjk) / sum_wk[k]; //Gedeon '97
+          vi[i] += Math.abs(wij);
         }
       }
+    } else {
+      float[][] Qik = new float[units[0]][units[2]]; //importance of input i on output k
+      float[] sum_wj = new float[units[1]]; //sum of incoming weights into first hidden layer
+      float[] sum_wk = new float[units[2]]; //sum of incoming weights into output layer (or second hidden layer)
+      for (float[] Qi : Qik) Arrays.fill(Qi, 0f);
+      Arrays.fill(sum_wj, 0f);
+      Arrays.fill(sum_wk, 0f);
+
+      // compute sum of absolute incoming weights
+      for (int j = 0; j < units[1]; j++) {
+        for (int i = 0; i < units[0]; i++) {
+          float wij = get_weights(0).get(j, i);
+          sum_wj[j] += Math.abs(wij);
+        }
+      }
+      for (int k = 0; k < units[2]; k++) {
+        for (int j = 0; j < units[1]; j++) {
+          float wjk = get_weights(1).get(k, j);
+          sum_wk[k] += Math.abs(wjk);
+        }
+      }
+      // compute importance of input i on output k as product of connecting weights going through j
+      for (int i = 0; i < units[0]; i++) {
+        for (int k = 0; k < units[2]; k++) {
+          for (int j = 0; j < units[1]; j++) {
+            float wij = get_weights(0).get(j, i);
+            float wjk = get_weights(1).get(k, j);
+            //Qik[i][k] += Math.abs(wij)/sum_wj[j] * wjk; //Wong,Gedeon,Taggart '95
+            Qik[i][k] += Math.abs(wij) / sum_wj[j] * Math.abs(wjk) / sum_wk[k]; //Gedeon '97
+          }
+        }
+      }
+      // normalize Qik over all outputs k
+      for (int k = 0; k < units[2]; k++) {
+        float sumQk = 0;
+        for (int i = 0; i < units[0]; i++) sumQk += Qik[i][k];
+        for (int i = 0; i < units[0]; i++) Qik[i][k] /= sumQk;
+      }
+      // importance for feature i is the sum over k of i->k importances
+      for (int i = 0; i < units[0]; i++) vi[i] = ArrayUtils.sum(Qik[i]);
     }
-    // normalize Qik over all outputs k
-    for (int k = 0; k < units[2]; k++) {
-      float sumQk = 0;
-      for (int i = 0; i < units[0]; i++) sumQk += Qik[i][k];
-      for (int i = 0; i < units[0]; i++) Qik[i][k] /= sumQk;
-    }
-    // importance for feature i is the sum over k of i->k importances
-    for (int i = 0; i < units[0]; i++) vi[i] = ArrayUtils.sum(Qik[i]);
 
     //normalize importances such that max(vi) = 1
     ArrayUtils.div(vi, ArrayUtils.maxValue(vi));

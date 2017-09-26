@@ -24,6 +24,7 @@ import water.exceptions.H2OAbstractRuntimeException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.nbhm.NonBlockingHashMap;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 import water.util.IcedHashMapGeneric;
@@ -48,44 +49,45 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   private final static boolean verifyImmutability = true; // check that trainingFrame hasn't been messed with
   private final static SimpleDateFormat fullTimestampFormat = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss.S");
+  private final static SimpleDateFormat timestampFormatForKeys = new SimpleDateFormat("yyyyMMdd_HHmmss");
 
   private AutoMLBuildSpec buildSpec;     // all parameters for doing this AutoML build
   private Frame origTrainingFrame;       // untouched original training frame
   private boolean didValidationSplit = false;
-  private boolean didTestSplit = false;
+  private boolean didLeaderboardSplit = false;
 
   public AutoMLBuildSpec getBuildSpec() {
     return buildSpec;
   }
 
-  public Frame getTrainingFrame() {
-    return trainingFrame;
-  }
+  public Frame getTrainingFrame() { return trainingFrame; }
+  public Frame getValidationFrame() { return validationFrame; }
+  public Frame getLeaderboardFrame() { return leaderboardFrame; }
 
-  public Frame getValidationFrame() {
-    return validationFrame;
-  }
-
-  public Vec getResponseColumn() {
-    return responseColumn;
-  }
+  public Vec getResponseColumn() { return responseColumn; }
+  public Vec getFoldColumn() { return foldColumn; }
+  public Vec getWeightsColumn() { return weightsColumn; }
 
   public FrameMetadata getFrameMetadata() {
     return frameMetadata;
   }
 
-  private Frame trainingFrame;   // munged training frame: can add and remove Vecs, but not mutate Vec data in place
-  private Frame validationFrame; // optional validation frame; the training_frame is split automagically if it's not specified
-  private Frame testFrame;       // optional test frame used for leaderboard scoring; the validation_frame is split automagically if it's not specified
+  private Frame trainingFrame;    // required training frame: can add and remove Vecs, but not mutate Vec data in place
+  private Frame validationFrame;  // optional validation frame; the training_frame is split automagically if it's not specified
+  private Frame leaderboardFrame; // optional test frame used for leaderboard scoring; the validation_frame is split automagically if it's not specified
 
   private Vec responseColumn;
-  FrameMetadata frameMetadata;           // metadata for trainingFrame
+  private Vec foldColumn;
+  private Vec weightsColumn;
+
+  private FrameMetadata frameMetadata;           // metadata for trainingFrame
 
   // TODO: remove dead code
-  // TODO: more than one grid key!
-  private Key<Grid> gridKey;             // Grid key from GridSearch
+  private Key<Grid> gridKeys[] = new Key[0];  // Grid key for the GridSearches
   private boolean isClassification;
 
+  private Date startTime;
+  static private Date lastStartTime; // protect against two runs with the same second in the timestamp
   private long stopTimeMs;
   private Job job;                  // the Job object for the build of this AutoML.  TODO: can we have > 1?
 
@@ -111,16 +113,15 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     super(null);
   }
   // https://0xdata.atlassian.net/browse/STEAM-52  --more interesting user options
-  public AutoML(Key<AutoML> key, AutoMLBuildSpec buildSpec) {
+  public AutoML(Key<AutoML> key, Date startTime, AutoMLBuildSpec buildSpec) {
     super(key);
 
-    Date startTime = new Date();
-
-    userFeedback = new UserFeedback(this); // Don't use until we set this.project
+    this.startTime = startTime;
+    userFeedback = new UserFeedback(this); // Don't use until we set this.project_name
 
     this.buildSpec = buildSpec;
 
-    userFeedback.info(Stage.Workflow, "AutoML job created: " + fullTimestampFormat.format(startTime));
+    userFeedback.info(Stage.Workflow, "AutoML job created: " + fullTimestampFormat.format(this.startTime));
 
     handleDatafileParameters(buildSpec);
 
@@ -142,8 +143,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       }
     }
 
-    userFeedback.info(Stage.Workflow, "Project: " + project());
-    leaderboard = new Leaderboard(project(), userFeedback, this.testFrame);
+    userFeedback.info(Stage.Workflow, "Project: " + projectName());
+    leaderboard = Leaderboard.getOrMakeLeaderboard(projectName(), userFeedback, this.leaderboardFrame);
 
     /*
     TODO
@@ -160,66 +161,66 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   /**
-   * If the user hasn't specified validation or test data split it off for them.
-   *                                                             <p>
-   * The user can specify:                                       <p>
-   * 1. training only                                            <p>
-   * 2. training + validation                                    <p>
-   * 3. training + test                                          <p>
-   * 4. training + validation + test                             <p>
-   *                                                             <p>
-   * In the top three cases we auto-split:                       <p>
-   * 1. training -> training:validation:test 70:15:15            <p>
-   * 2. validation -> validation:test 50:50                      <p>
-   * 3. training -> training:validation 70:30, test used as-is   <p>
-   *                                                             <p>
+   * If the user hasn't specified validation or leaderboard data split it off for them.
+   *                                                                  <p>
+   * The user can specify:                                            <p>
+   * 1. training only                                                 <p>
+   * 2. training + validation                                         <p>
+   * 3. training + leaderboard                                        <p>
+   * 4. training + validation + leaderboard                           <p>
+   *                                                                  <p>
+   * In the top three cases we auto-split:                            <p>
+   * 1. training -> training:validation:leaderboard 70:15:15          <p>
+   * 2. validation -> validation:leaderboard 50:50                    <p>
+   * 3. training -> training:validation 70:30, leaderboard used as-is <p>
+   *                                                                  <p>
    * TODO: should the size of the splits adapt to origTrainingFrame.numRows()?
    */
   private void optionallySplitDatasets() {
-    if (null == this.validationFrame && null == this.testFrame) {
+    if (null == this.validationFrame && null == this.leaderboardFrame) {
       // case 1:
       Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(origTrainingFrame,
-              new Key[] { Key.make("training_" + origTrainingFrame._key),
-                      Key.make("validation_" + origTrainingFrame._key),
-                      Key.make("test_" + origTrainingFrame._key)},
+              new Key[] { Key.make("automl_training_" + origTrainingFrame._key),
+                      Key.make("automl_validation_" + origTrainingFrame._key),
+                      Key.make("automl_leaderboard_" + origTrainingFrame._key)},
               new double[] { 0.7, 0.15, 0.15 },
               buildSpec.build_control.stopping_criteria.seed());
       this.trainingFrame = splits[0];
       this.validationFrame = splits[1];
-      this.testFrame = splits[2];
+      this.leaderboardFrame = splits[2];
       this.didValidationSplit = true;
-      this.didTestSplit = true;
-      userFeedback.info(Stage.DataImport, "Automatically split the training data into training, validation and test datasets in the ratio 0.70:0.15:0.15");
+      this.didLeaderboardSplit = true;
+      userFeedback.info(Stage.DataImport, "Automatically split the training data into training, validation and leaderboard datasets in the ratio 0.70:0.15:0.15");
 
-    } else if (null != this.validationFrame && null == this.testFrame) {
+    } else if (null != this.validationFrame && null == this.leaderboardFrame) {
       // case 2:
       Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(validationFrame,
-              new Key[] { Key.make("validation_" + origTrainingFrame._key),
-                      Key.make("test_" + origTrainingFrame._key)},
+              new Key[] { Key.make("automl_validation_" + origTrainingFrame._key),
+                      Key.make("automl_leaderboard_" + origTrainingFrame._key)},
               new double[] { 0.5, 0.5 },
               buildSpec.build_control.stopping_criteria.seed());
       this.validationFrame = splits[0];
-      this.testFrame = splits[1];
+      this.leaderboardFrame = splits[1];
       this.didValidationSplit = true;
-      this.didTestSplit = true;
-      userFeedback.info(Stage.DataImport, "Automatically split the validation data into validation and test datasets in the ratio 0.5:0.5");
+      this.didLeaderboardSplit = true;
+      userFeedback.info(Stage.DataImport, "Automatically split the validation data into validation and leaderboard datasets in the ratio 0.5:0.5");
 
-    } else if (null == this.validationFrame && null != this.testFrame) {
+    } else if (null == this.validationFrame && null != this.leaderboardFrame) {
       // case 3:
       Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(origTrainingFrame,
-              new Key[] { Key.make("training_" + origTrainingFrame._key),
-                      Key.make("validation_" + origTrainingFrame._key)},
+              new Key[] { Key.make("automl_training_" + origTrainingFrame._key),
+                      Key.make("automl_validation_" + origTrainingFrame._key)},
               new double[] { 0.7, 0.3 },
               buildSpec.build_control.stopping_criteria.seed());
 
       this.trainingFrame = splits[0];
       this.validationFrame = splits[1];
       this.didValidationSplit = true;
-      this.didTestSplit = false;
+      this.didLeaderboardSplit = false;
       userFeedback.info(Stage.DataImport, "Automatically split the training data into training and validation datasets in the ratio 0.5:0.5");
-    } else if (null != this.validationFrame && null != this.testFrame) {
+    } else if (null != this.validationFrame && null != this.leaderboardFrame) {
       // case 4: leave things as-is
-      userFeedback.info(Stage.DataImport, "Training, validation and test datasets were all specified; not auto-splitting.");
+      userFeedback.info(Stage.DataImport, "Training, validation and leaderboard datasets were all specified; not auto-splitting.");
     } else {
       // can't happen
       throw new UnsupportedOperationException("Bad code in handleDatafileParameters");
@@ -229,34 +230,44 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private void handleDatafileParameters(AutoMLBuildSpec buildSpec) {
     this.origTrainingFrame = DKV.getGet(buildSpec.input_spec.training_frame);
     this.validationFrame = DKV.getGet(buildSpec.input_spec.validation_frame);
-    this.testFrame = DKV.getGet(buildSpec.input_spec.test_frame);
+    this.leaderboardFrame = DKV.getGet(buildSpec.input_spec.leaderboard_frame);
 
     if (null == buildSpec.input_spec.training_frame && null != buildSpec.input_spec.training_path)
       this.origTrainingFrame = importParseFrame(buildSpec.input_spec.training_path, buildSpec.input_spec.parse_setup);
     if (null == buildSpec.input_spec.validation_frame && null != buildSpec.input_spec.validation_path)
       this.validationFrame = importParseFrame(buildSpec.input_spec.validation_path, buildSpec.input_spec.parse_setup);
-    if (null == buildSpec.input_spec.test_frame && null != buildSpec.input_spec.test_path)
-      this.testFrame = importParseFrame(buildSpec.input_spec.test_path, buildSpec.input_spec.parse_setup);
+    if (null == buildSpec.input_spec.leaderboard_frame && null != buildSpec.input_spec.leaderboard_path)
+      this.leaderboardFrame = importParseFrame(buildSpec.input_spec.leaderboard_path, buildSpec.input_spec.parse_setup);
 
+    // check training_frame and any columns that were specified:
     if (null == this.origTrainingFrame)
       throw new H2OIllegalArgumentException("No training frame; user specified training_path: " +
               buildSpec.input_spec.training_path +
               " and training_frame: " + buildSpec.input_spec.training_frame);
-
     if (this.origTrainingFrame.find(buildSpec.input_spec.response_column) == -1) {
       throw new H2OIllegalArgumentException("Response column " + buildSpec.input_spec.response_column + "is not in " +
+              "the training frame.");
+    }
+    if (buildSpec.input_spec.fold_column != null && this.origTrainingFrame.find(buildSpec.input_spec.fold_column) == -1) {
+      throw new H2OIllegalArgumentException("Fold column " + buildSpec.input_spec.fold_column + "is not in " +
+              "the training frame.");
+    }
+    if (buildSpec.input_spec.weights_column != null && this.origTrainingFrame.find(buildSpec.input_spec.weights_column) == -1) {
+      throw new H2OIllegalArgumentException("Weights column " + buildSpec.input_spec.weights_column + "is not in " +
               "the training frame.");
     }
 
     optionallySplitDatasets();
 
     if (null == this.trainingFrame) {
-      // we didn't need to split off the validation_frame or test_frame ourselves
+      // we didn't need to split off the validation_frame or leaderboard_frame ourselves
       this.trainingFrame = new Frame(origTrainingFrame);
       DKV.put(this.trainingFrame);
     }
 
     this.responseColumn = trainingFrame.vec(buildSpec.input_spec.response_column);
+    this.foldColumn = trainingFrame.vec(buildSpec.input_spec.fold_column);
+    this.weightsColumn = trainingFrame.vec(buildSpec.input_spec.weights_column);
 
     if (verifyImmutability) {
       // check that we haven't messed up the original Frame
@@ -267,14 +278,15 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       for (int i = 0; i < originalTrainingFrameVecs.length; i++)
         originalTrainingFrameChecksums[i] = originalTrainingFrameVecs[i].checksum();
     }
+    DKV.put(this);
   }
 
 
-  public static AutoML makeAutoML(Key<AutoML> key, AutoMLBuildSpec buildSpec) {
+  public static AutoML makeAutoML(Key<AutoML> key, Date startTime, AutoMLBuildSpec buildSpec) {
     // if (buildSpec.input_spec.parse_setup == null)
     //   buildSpec.input_spec.parse_setup = ParseSetup.guessSetup(); // use defaults!
 
-    AutoML autoML = new AutoML(key, buildSpec);
+    AutoML autoML = new AutoML(key, startTime, buildSpec);
 
     if (null == autoML.trainingFrame)
       throw new H2OIllegalArgumentException("No training data has been specified, either as a path or a key.");
@@ -413,36 +425,66 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     // pick up any stragglers:
     if (JobType.HyperparamSearch == subJobType) {
-      Grid grid = (Grid)subJob._result.get();
-      int gridCount = grid.getModelCount();
-      if (gridCount > gridLastCount) {
-        userFeedback.info(Stage.ModelTraining,
-                "Built: " + gridCount + " models for search: " + name);
-        this.addModels(grid.getModelKeys());
-        gridLastCount = gridCount;
+      if (subJob.isCrashed()) {
+        userFeedback.info(stage, name + " failed: " + subJob.ex().toString());
+      } else {
+        Grid grid = (Grid) subJob._result.get();
+        int gridCount = grid.getModelCount();
+        if (gridCount > gridLastCount) {
+          userFeedback.info(Stage.ModelTraining,
+                  "Built: " + gridCount + " models for search: " + name);
+          this.addModels(grid.getModelKeys());
+          gridLastCount = gridCount;
+        }
+        userFeedback.info(stage, name + " complete");
       }
     } else if (JobType.ModelBuild == subJobType) {
-      this.addModel((Model)subJob._result.get());
+      if (subJob.isCrashed()) {
+        userFeedback.info(stage, name + " failed: " + subJob.ex().toString());
+      } else {
+        userFeedback.info(stage, name + " complete");
+        this.addModel((Model) subJob._result.get());
+      }
     }
 
     // add remaining work
     parentJob.update(workContribution - lastWorkedSoFar);
 
-    userFeedback.info(stage, name + " complete");
-    //FIXME Bad call here. Should revist later
+    //FIXME Bad call here. Should revisit later
     try { jobs.remove(subJob); } catch (NullPointerException npe) {} // stop() can null jobs; can't just do a pre-check, because there's a race
 
   }
 
+  // These are per (possibly concurrent) AutoML run.
+  // All created keys for a run use the unique AutoML
+  // run timestamp, so we can't have name collisions.
   private int individualModelsTrained = 0;
+  private NonBlockingHashMap<String, Integer> algoInstanceCounters = new NonBlockingHashMap<>();
+  private NonBlockingHashMap<String, Integer> gridInstanceCounters = new NonBlockingHashMap<>();
+
+  private int nextInstanceCounter(String algoName, NonBlockingHashMap<String, Integer> instanceCounters) {
+    synchronized (instanceCounters) {
+      int instanceNum = 0;
+      if (instanceCounters.containsKey(algoName))
+        instanceNum = instanceCounters.get(algoName) + 1;
+      instanceCounters.put(algoName, instanceNum);
+      return instanceNum;
+    }
+  }
+  private Key<Model> modelKey(String algoName) {
+    return Key.make(algoName + "_" + nextInstanceCounter(algoName, algoInstanceCounters) + "_AutoML_" + timestampFormatForKeys.format(this.startTime));
+  }
+
   /**
    * Helper for hex.ModelBuilder.
    * @return
    */
   public Job trainModel(Key<Model> key, String algoURLName, Model.Parameters parms) {
     String algoName = ModelBuilder.algoName(algoURLName);
-    if (null == key) key = ModelBuilder.defaultKey(algoName);
-    Job job = new Job<>(key,ModelBuilder.javaName(algoURLName), algoName);
+
+    if (null == key) key = modelKey(algoName);
+
+    Job job = new Job<>(key, ModelBuilder.javaName(algoURLName), algoName);
     ModelBuilder builder = ModelBuilder.make(algoURLName, job, key);
     Model.Parameters defaults = builder._parms;
     builder._parms = parms;
@@ -477,15 +519,37 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return builder.trainModel();
   }
 
+  private Key<Grid> gridKey(String algoName) {
+    return Key.make(algoName + "_grid_" + nextInstanceCounter(algoName, gridInstanceCounters) + "_AutoML_" + timestampFormatForKeys.format(this.startTime));
+  }
+
+  private void addGridKey(Key<Grid> gridKey) {
+    gridKeys = Arrays.copyOf(gridKeys, gridKeys.length + 1);
+    gridKeys[gridKeys.length - 1] = gridKey;
+  }
+
   /**
    * Do a random hyperparameter search.  Caller must eventually do a <i>get()</i>
    * on the returned Job to ensure that it's complete.
-   * @param algoName
-   * @param baseParms
-   * @param searchParms
+   * @param algoName name of the algo, e.g. "GBM"; used for messages and for building the grid key
+   * @param baseParms ModelBuilder parameter values that are common across all models in the search
+   * @param searchParms hyperparameter search space
    * @return the started hyperparameter search job
    */
   public Job<Grid> hyperparameterSearch(String algoName, Model.Parameters baseParms, Map<String, Object[]> searchParms) {
+    return hyperparameterSearch(null, algoName, baseParms, searchParms);
+  }
+
+  /**
+   * Do a random hyperparameter search.  Caller must eventually do a <i>get()</i>
+   * on the returned Job to ensure that it's complete.
+   * @param gridKey optional grid key
+   * @param algoName name of the algo, e.g. "GBM"; used for messages and for building the grid key if it's not specified
+   * @param baseParms ModelBuilder parameter values that are common across all models in the search
+   * @param searchParms hyperparameter search space
+   * @return the started hyperparameter search job
+   */
+  public Job<Grid> hyperparameterSearch(Key<Grid> gridKey, String algoName, Model.Parameters baseParms, Map<String, Object[]> searchParms) {
     setCommonModelBuilderParams(baseParms);
 
     if (remainingModels() <= 0) {
@@ -500,16 +564,17 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       searchCriteria.set_max_runtime_secs(Math.min(searchCriteria.max_runtime_secs(),
               timeRemainingMs() / 1000.0));
 
+    if (searchCriteria.max_runtime_secs() <= 0.001) {
+      userFeedback.info(Stage.ModelTraining,"AutoML: out of time; skipping " + algoName + " hyperparameter search");
+      return null;
+    }
+
     if (searchCriteria.max_models() == 0)
       searchCriteria.set_max_models(remainingModels());
     else
       searchCriteria.set_max_models(Math.min(searchCriteria.max_models(),
               remainingModels()));
 
-    if (searchCriteria.max_runtime_secs() <= 0.001) {
-      userFeedback.info(Stage.ModelTraining,"AutoML: out of time; skipping " + algoName + " hyperparameter search");
-      return null;
-    }
     userFeedback.info(Stage.ModelTraining, "AutoML: starting " + algoName + " hyperparameter search");
 
     // If the caller hasn't set ModelBuilder stopping criteria, set it from our global criteria.
@@ -536,7 +601,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // then use a sequence starting with the same seed given for the model build.
     // Don't use the same exact seed so that, e.g., if we build two GBMs they don't
     // do the same row and column sampling.
-    gridKey = Key.make(algoName + "_grid_" + this._key.toString());
+    if (null == gridKey) gridKey = gridKey(algoName);
+    addGridKey(gridKey);
     Job<Grid> gridJob = GridSearch.startGridSearch(gridKey,
             baseParms,
             searchParms,
@@ -553,12 +619,20 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       params._valid = validationFrame._key;
     params._response_column = buildSpec.input_spec.response_column;
     params._ignored_columns = buildSpec.input_spec.ignored_columns;
+    params._seed = buildSpec.build_control.stopping_criteria.seed();
 
     // currently required, for the base_models, for stacking:
     if (! (params instanceof StackedEnsembleModel.StackedEnsembleParameters)) {
-      params._nfolds = 5;
-      params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
       params._keep_cross_validation_predictions = true;
+
+      // TODO: StackedEnsemble doesn't support weights or xval yet in score0
+      params._fold_column = buildSpec.input_spec.fold_column;
+      params._weights_column = buildSpec.input_spec.weights_column;
+
+      if (buildSpec.input_spec.fold_column == null) {
+        params._nfolds = 5;
+        params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+      }
     }
   }
 
@@ -598,9 +672,87 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     drfParameters._stopping_tolerance = this.buildSpec.build_control.stopping_criteria.stopping_tolerance();
 
-    Job randomForestJob = trainModel(ModelBuilder.defaultKey("XRT"), "drf", drfParameters);
+    Job randomForestJob = trainModel(modelKey("XRT"), "drf", drfParameters);
     return randomForestJob;
   }
+
+
+  /**
+   * Build Arno's magical 5 default GBMs.
+   * @param gridKey
+   */
+  void defaultGBMs(Key<Grid> gridKey) {
+    if (exceededSearchLimits("default GBMs")) return;
+
+    GBMModel.GBMParameters gbmParameters = new GBMModel.GBMParameters();
+    setCommonModelBuilderParams(gbmParameters);
+
+    gbmParameters._score_tree_interval = 5;
+    gbmParameters._histogram_type = SharedTreeModel.SharedTreeParameters.HistogramType.AUTO;
+
+    Map<String, Object[]> searchParams = new HashMap<>();
+    searchParams.put("_ntrees", new Integer[]{10000});
+    searchParams.put("_sample_rate", new Double[]{ 0.80 });
+    searchParams.put("_col_sample_rate", new Double[]{ 0.8 });
+    searchParams.put("_col_sample_rate_per_tree", new Double[]{ 0.8 });
+
+    //    searchParams.put("_learn_rate", new Double[]{0.001, 0.005, 0.008, 0.01, 0.05, 0.08, 0.1, 0.5, 0.8});
+    //    searchParams.put("_min_split_improvement", new Double[]{1e-4, 1e-5});
+
+    Job<Grid>gbmJob = null;
+
+    // Default 1:
+    searchParams.put("_max_depth", new Integer[]{ 6 });
+    searchParams.put("_min_rows", new Integer[]{ 1 });
+
+    gbmJob = hyperparameterSearch(gridKey, "GBM", gbmParameters, searchParams);
+    pollAndUpdateProgress(Stage.ModelTraining, "GBM 1", 10, this.job(), gbmJob, JobType.HyperparamSearch);
+
+    // Default 2:
+    searchParams.put("_max_depth", new Integer[]{ 7 });
+    searchParams.put("_min_rows", new Integer[]{ 10 });
+
+    gbmJob = hyperparameterSearch(gridKey, "GBM", gbmParameters, searchParams);
+    pollAndUpdateProgress(Stage.ModelTraining, "GBM 2", 10, this.job(), gbmJob, JobType.HyperparamSearch);
+
+    // Default 3:
+    searchParams.put("_max_depth", new Integer[]{ 8 });
+    searchParams.put("_min_rows", new Integer[]{ 10 });
+
+    gbmJob = hyperparameterSearch(gridKey, "GBM", gbmParameters, searchParams);
+    pollAndUpdateProgress(Stage.ModelTraining, "GBM 3", 10, this.job(), gbmJob, JobType.HyperparamSearch);
+
+    // Default 4:
+    searchParams.put("_max_depth", new Integer[]{ 10 });
+    searchParams.put("_min_rows", new Integer[]{ 10 });
+
+    gbmJob = hyperparameterSearch(gridKey, "GBM", gbmParameters, searchParams);
+    pollAndUpdateProgress(Stage.ModelTraining, "GBM 4", 10, this.job(), gbmJob, JobType.HyperparamSearch);
+
+    // Default 5:
+    searchParams.put("_max_depth", new Integer[]{ 15 });
+    searchParams.put("_min_rows", new Integer[]{ 100 });
+
+    gbmJob = hyperparameterSearch(gridKey, "GBM", gbmParameters, searchParams);
+    pollAndUpdateProgress(Stage.ModelTraining, "GBM 5", 10, this.job(), gbmJob, JobType.HyperparamSearch);
+
+    return;
+  }
+
+
+  Job<DeepLearningModel>defaultDeepLearning() {
+    if (exceededSearchLimits("DeepLearning")) return null;
+
+    DeepLearningModel.DeepLearningParameters deepLearningParameters = new DeepLearningModel.DeepLearningParameters();
+    setCommonModelBuilderParams(deepLearningParameters);
+
+    deepLearningParameters._stopping_tolerance = this.buildSpec.build_control.stopping_criteria.stopping_tolerance();
+    deepLearningParameters._hidden = new int[]{ 10, 10, 10 };
+
+    Job deepLearningJob = trainModel(null, "deeplearning", deepLearningParameters);
+    return deepLearningJob;
+  }
+
 
   public Job<Grid> defaultSearchGLM() {
     ///////////////////////////////////////////////////////////
@@ -616,7 +768,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         setCommonModelBuilderParams(glmParameters);
 
     glmParameters._lambda_search = true;
-    glmParameters._family = getResponseColumn().isBinary() ? GLMModel.GLMParameters.Family.binomial :
+    glmParameters._family = getResponseColumn().isBinary() && !(getResponseColumn().isNumeric()) ? GLMModel.GLMParameters.Family.binomial :
             getResponseColumn().isCategorical() ? GLMModel.GLMParameters.Family.multinomial :
                     GLMModel.GLMParameters.Family.gaussian;  // TODO: other continuous distributions!
 
@@ -628,12 +780,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return glmJob;
   }
 
-  public Job<Grid> defaultSearchGBM() {
+  public Job<Grid> defaultSearchGBM(Key<Grid> gridKey) {
     ///////////////////////////////////////////////////////////
     // do a random hyperparameter search with GBM
     ///////////////////////////////////////////////////////////
-    // TODO: convert to using the REST API
-    Key<Grid> gridKey = Key.make("GBM_grid_default_" + this._key.toString());
 
     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria = buildSpec.build_control.stopping_criteria;
 
@@ -659,16 +809,14 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       searchParams.put("col_sample_rate_per_tree", new Double[]{0.4, 0.6, 0.8, 1.0});
 */
 
-    Job<Grid>gbmJob = hyperparameterSearch("GBM", gbmParameters, searchParams);
+    Job<Grid>gbmJob = hyperparameterSearch(gridKey, "GBM", gbmParameters, searchParams);
     return gbmJob;
   }
 
-  public Job<Grid> defaultSearchDL1() {
+  public Job<Grid> defaultSearchDL1(Key<Grid> gridKey) {
     ///////////////////////////////////////////////////////////
     // do a random hyperparameter search with DL
     ///////////////////////////////////////////////////////////
-    // TODO: convert to using the REST API
-    Key<Grid> gridKey = Key.make("DL_grid_default_" + this._key.toString());
 
     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria = buildSpec.build_control.stopping_criteria;
 
@@ -690,16 +838,14 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     searchParams.put("_hidden", new Integer[][] { {50}, {200}, {500} });
     searchParams.put("_hidden_dropout_ratios", new Double[][] { { 0.0 }, { 0.1 }, { 0.2 }, { 0.3 }, { 0.4 }, { 0.5 } });
 
-    Job<Grid>dlJob = hyperparameterSearch("DL", dlParameters, searchParams);
+    Job<Grid>dlJob = hyperparameterSearch(gridKey, "DL", dlParameters, searchParams);
     return dlJob;
   }
 
-  public Job<Grid> defaultSearchDL2() {
+  public Job<Grid> defaultSearchDL2(Key<Grid> gridKey) {
     ///////////////////////////////////////////////////////////
     // do a random hyperparameter search with DL
     ///////////////////////////////////////////////////////////
-    // TODO: convert to using the REST API
-    Key<Grid> gridKey = Key.make("DL_grid_default_" + this._key.toString());
 
     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria = buildSpec.build_control.stopping_criteria;
 
@@ -721,16 +867,14 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     searchParams.put("_hidden", new Integer[][] { {50, 50}, {200, 200}, {500, 500} });
     searchParams.put("_hidden_dropout_ratios", new Double[][] { { 0.0, 0.0 }, { 0.1, 0.1 }, { 0.2, 0.2 }, { 0.3, 0.3 }, { 0.4, 0.4 }, { 0.5, 0.5 } });
 
-    Job<Grid>dlJob = hyperparameterSearch("DL", dlParameters, searchParams);
+    Job<Grid>dlJob = hyperparameterSearch(gridKey, "DL", dlParameters, searchParams);
     return dlJob;
   }
 
-  public Job<Grid> defaultSearchDL3() {
+  public Job<Grid> defaultSearchDL3(Key<Grid> gridKey) {
     ///////////////////////////////////////////////////////////
     // do a random hyperparameter search with DL
     ///////////////////////////////////////////////////////////
-    // TODO: convert to using the REST API
-    Key<Grid> gridKey = Key.make("DL_grid_default_" + this._key.toString());
 
     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria = buildSpec.build_control.stopping_criteria;
 
@@ -752,7 +896,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     searchParams.put("_hidden", new Integer[][] { {50, 50, 50}, {200, 200, 200}, {500, 500, 500} });
     searchParams.put("_hidden_dropout_ratios", new Double[][] { { 0.0, 0.0, 0.0 }, { 0.1, 0.1, 0.1 }, { 0.2, 0.2, 0.2 }, { 0.3, 0.3, 0.3 }, { 0.4, 0.4, 0.4 }, { 0.5, 0.5, 0.5 } });
 
-    Job<Grid>dlJob = hyperparameterSearch("DL", dlParameters, searchParams);
+    Job<Grid>dlJob = hyperparameterSearch(gridKey, "DL", dlParameters, searchParams);
     return dlJob;
   }
 
@@ -763,12 +907,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     StackedEnsembleModel.StackedEnsembleParameters stackedEnsembleParameters = new StackedEnsembleModel.StackedEnsembleParameters();
     stackedEnsembleParameters._base_models = allModelKeys.toArray(new Key[0]);
-    stackedEnsembleParameters._selection_strategy = StackedEnsembleModel.StackedEnsembleParameters.SelectionStrategy.choose_all;
+    stackedEnsembleParameters._valid = (getValidationFrame() == null ? null : getValidationFrame()._key);
+    //stackedEnsembleParameters._selection_strategy = StackedEnsembleModel.StackedEnsembleParameters.SelectionStrategy.choose_all;
     Job ensembleJob = trainModel(null, "stackedensemble", stackedEnsembleParameters);
     return ensembleJob;
   }
 
-  Job<DeepWaterModel>defaulDeepWater() {
+  Job<DeepWaterModel> defaultDeepWater() {
     if (exceededSearchLimits("DeepWater")) return null;
 
     DeepWaterParameters deepWaterParameters = new DeepWaterParameters();
@@ -833,45 +978,64 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     Job<Grid>glmJob = defaultSearchGLM();
     pollAndUpdateProgress(Stage.ModelTraining, "GLM hyperparameter search", 50, this.job(), glmJob, JobType.HyperparamSearch);
 
-    // TODO: build GBMs with Arno's default settings, using 1-grid Cartesian searches
-    // into the same grid object as the search below.
-    // Can't do until PUBDEV-4361 is fixed.
+
+    ///////////////////////////////////////////////////////////
+    // build five GBMs with Arno's default settings, using 1-grid
+    // Cartesian searches into the same grid object as the search
+    // below.
+    ///////////////////////////////////////////////////////////
+    Key<Grid> gbmGridKey = gridKey("GBM");
+    defaultGBMs(gbmGridKey);  // NOTE: does its own polling, 5 models with 10 work units each
+
+
+    ///////////////////////////////////////////////////////////
+    // build a fast DL model with almost default settings...
+    ///////////////////////////////////////////////////////////
+    Job<DeepLearningModel>defaultDeepLearningJob = defaultDeepLearning();
+    pollAndUpdateProgress(Stage.ModelTraining, "Default Deep Learning build", 20, this.job(), defaultDeepLearningJob, JobType.ModelBuild);
+
 
     ///////////////////////////////////////////////////////////
     // build GBMs with the default search parameters
     ///////////////////////////////////////////////////////////
     // TODO: run for only part of the remaining time?
-    Job<Grid> gbmJob = defaultSearchGBM();
-    pollAndUpdateProgress(Stage.ModelTraining, "GBM hyperparameter search", 150, this.job(), gbmJob, JobType.HyperparamSearch);
+    Job<Grid> gbmJob = defaultSearchGBM(gbmGridKey);
+    pollAndUpdateProgress(Stage.ModelTraining, "GBM hyperparameter search", 80, this.job(), gbmJob, JobType.HyperparamSearch);
+
+    //
+    // Build DL models
+    //
+    Key<Grid> dlGridKey = gridKey("DeepLearning");
 
     ///////////////////////////////////////////////////////////
-    // build DL models with the default search parameter set 1
+    // build DL models with default search parameter set 1
     ///////////////////////////////////////////////////////////
     // TODO: run for only part of the remaining time?
-    Job<Grid>dlJob1 = defaultSearchDL1();
+    Job<Grid>dlJob1 = defaultSearchDL1(dlGridKey);
     pollAndUpdateProgress(Stage.ModelTraining, "DeepLearning hyperparameter search 1", 150, this.job(), dlJob1, JobType.HyperparamSearch);
 
 
     ///////////////////////////////////////////////////////////
-    // build DL models with the default search parameter set 2
+    // build DL models with default search parameter set 2
     ///////////////////////////////////////////////////////////
     // TODO: run for only part of the remaining time?
-    Job<Grid>dlJob2 = defaultSearchDL2();
+    Job<Grid>dlJob2 = defaultSearchDL2(dlGridKey);
     pollAndUpdateProgress(Stage.ModelTraining, "DeepLearning hyperparameter search 2", 200, this.job(), dlJob2, JobType.HyperparamSearch);
 
 
     ///////////////////////////////////////////////////////////
-    // build DL models with the default search parameter set 3
+    // build DL models with default search parameter set 3
     ///////////////////////////////////////////////////////////
     // TODO: run for only part of the remaining time?
-    Job<Grid>dlJob3 = defaultSearchDL3();
+    Job<Grid>dlJob3 = defaultSearchDL3(dlGridKey);
     pollAndUpdateProgress(Stage.ModelTraining, "DeepLearning hyperparameter search 3", 300, this.job(), dlJob3, JobType.HyperparamSearch);
+
 
     ///////////////////////////////////////////////////////////
     // build a DeepWater model
     ///////////////////////////////////////////////////////////
     if (DeepWater.haveBackend()) {
-      Job<DeepWaterModel> defaultDeepWaterJob = defaulDeepWater();
+      Job<DeepWaterModel> defaultDeepWaterJob = defaultDeepWater();
       pollAndUpdateProgress(Stage.ModelTraining, "Default DeepWater build", 50, this.job(), defaultDeepWaterJob, JobType.ModelBuild);
     }
 
@@ -915,19 +1079,26 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     Log.info(userFeedback.toString("User Feedback for AutoML Run " + this._key));
     Log.info();
 
-    Leaderboard trainingLeaderboard = new Leaderboard(project() + "_training", userFeedback, this.trainingFrame);
-    trainingLeaderboard.addModels(this.leaderboard.getModelKeys());
-    Log.info(trainingLeaderboard.toTwoDimTable("TRAINING FRAME Leaderboard for project " + project(), true).toString());
+    // Use a throwaway AutoML instance so the "New leader" message doesn't pollute our feedback
+    AutoML dummyAutoML = new AutoML();
+    UserFeedback dummyUF = new UserFeedback(dummyAutoML);
+    dummyAutoML.userFeedback = dummyUF;
+
+    Leaderboard trainingLeaderboard = Leaderboard.getOrMakeLeaderboard(projectName() + "_training", dummyUF, this.trainingFrame);
+    trainingLeaderboard.addModels(this.leaderboard().getModelKeys());
+    Log.info(trainingLeaderboard.toTwoDimTable("TRAINING FRAME Leaderboard for project " + projectName(), true).toString());
     Log.info();
 
-    Leaderboard validationLeaderboard = new Leaderboard(project() + "_validation", userFeedback, this.validationFrame);
-    validationLeaderboard.addModels(this.leaderboard.getModelKeys());
-    Log.info(validationLeaderboard.toTwoDimTable("VALIDATION FRAME Leaderboard for project " + project(), true).toString());
+    // Use a throwawayUserFeedback instance so the "New leader" message doesn't pollute our feedback
+    Leaderboard validationLeaderboard = Leaderboard.getOrMakeLeaderboard(projectName() + "_validation", dummyUF, this.validationFrame);
+    validationLeaderboard.addModels(this.leaderboard().getModelKeys());
+    Log.info(validationLeaderboard.toTwoDimTable("VALIDATION FRAME Leaderboard for project " + projectName(), true).toString());
     Log.info();
 
-    Log.info(leaderboard.toTwoDimTable("Leaderboard for project " + project(), true).toString());
+    Log.info(leaderboard().toTwoDimTable("Leaderboard for project " + projectName(), true).toString());
 
     possiblyVerifyImmutability();
+
     // gather more data? build more models? start applying transforms? what next ...?
     stop();
   } // end of learn()
@@ -939,8 +1110,29 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
    * @return
    */
   public static AutoML startAutoML(AutoMLBuildSpec buildSpec) {
-    // TODO: name this job better
-    AutoML aml = AutoML.makeAutoML(Key.<AutoML>make(), buildSpec);
+    Date startTime = new Date();  // this is the one and only startTime for this run
+
+    synchronized (AutoML.class) {
+      // protect against two runs whose startTime is the same second
+      if (lastStartTime != null) {
+        while (lastStartTime.getYear() == startTime.getYear() &&
+                lastStartTime.getMonth() == startTime.getMonth() &&
+                lastStartTime.getDate() == startTime.getDate() &&
+                lastStartTime.getHours() == startTime.getHours() &&
+                lastStartTime.getMinutes() == startTime.getMinutes() &&
+                lastStartTime.getSeconds() == startTime.getSeconds())
+          try {
+            Thread.sleep(1000);
+          }
+          catch (InterruptedException e) {}
+          startTime = new Date();
+      }
+      lastStartTime = startTime;
+    }
+
+    String keyString = "AutoML_" + timestampFormatForKeys.format(startTime);
+    AutoML aml = AutoML.makeAutoML(Key.<AutoML>make(keyString), startTime, buildSpec);
+
     DKV.put(aml);
     startAutoML(aml);
     return aml;
@@ -993,7 +1185,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     leaderboard.deleteWithChildren();
     // implicit: feedback.delete();
     delete(); // is it safe to do leaderboard.delete() now?
-    if (gridKey != null) gridKey.remove();
+
+    for (Key<Grid> gridKey : gridKeys)
+      gridKey.remove();
 
     // If the Frame was made here (e.g. buildspec contained a path, then it will be deleted
     if (buildSpec.input_spec.training_frame == null) {
@@ -1019,34 +1213,46 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return DKV.getGet(this.job._key);
   }
 
-  public Leaderboard leaderboard() { return leaderboard._key.get(); }
-  public Model leader() { return (leaderboard == null ? null : leaderboard().getLeader()); }
+  public Leaderboard leaderboard() { return (leaderboard == null ? null : leaderboard._key.get()); }
+  public Model leader() { return (leaderboard() == null ? null : leaderboard().getLeader()); }
 
-  public UserFeedback userFeedback() { return userFeedback._key.get(); }
+  public UserFeedback userFeedback() { return userFeedback == null ? null : userFeedback._key.get(); }
 
-  public String project() {
-    return buildSpec.project();
+  public String projectName() {
+    return buildSpec == null ? null : buildSpec.project();
   }
 
+  // If we have multiple AutoML engines running on the same
+  // project they will be updating the Leaderboard concurrently,
+  // so always use leaderboard() instead of the raw field, to get
+  // it from the DKV.
+  //
+  // Also, the leaderboard will reject duplicate models, so use
+  // the difference in Leaderboard length here:
   public void addModels(final Key<Model>[] newModels) {
-    modelCount.addAndGet(newModels.length);
-    leaderboard.addModels(newModels);
+    int before = leaderboard().getModelCount();
+    leaderboard().addModels(newModels);
+    int after = leaderboard().getModelCount();
+    modelCount.addAndGet(after - before);
   }
 
   public void addModel(final Key<Model> newModel) {
-    modelCount.addAndGet(1);
-    leaderboard.addModel(newModel);
+    int before = leaderboard().getModelCount();
+    leaderboard().addModel(newModel);
+    int after = leaderboard().getModelCount();
+    modelCount.addAndGet(after - before);
   }
 
   public void addModel(final Model newModel) {
-    modelCount.addAndGet(1);
-    leaderboard.addModel(newModel);
+    int before = leaderboard().getModelCount();
+    leaderboard().addModel(newModel);
+    int after = leaderboard().getModelCount();
+    modelCount.addAndGet(after - before);
   }
 
   // satisfy typing for job return type...
   public static class AutoMLKeyV3 extends KeyV3<Iced, AutoMLKeyV3, AutoML> {
-    public AutoMLKeyV3() {
-    }
+    public AutoMLKeyV3() { }
 
     public AutoMLKeyV3(Key<AutoML> key) {
       super(key);

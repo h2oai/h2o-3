@@ -13,6 +13,7 @@ import water.TestUtil;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.File;
 import java.io.IOException;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -26,8 +27,11 @@ import static org.mockito.Mockito.when;
 public class CustomHttpFilterTest extends TestUtil {
   @BeforeClass static public void setup() {
     stall_till_cloudsize(1);
-    new RegisterResourceRoots().register(System.getProperty("user.dir")+ "/..");  // h2o-core/.., register the web bits (so we don't get errs below)
-    H2O.finalizeRegistration();  // calls jetty.acceptRequests
+    // h2o-core/.., register the web bits (so we don't get errs below)
+    String relativeResourcePath = System.getProperty("user.dir")+ "/..";
+    H2O.registerResourceRoot(new File(relativeResourcePath + File.separator + "h2o-web/src/main/resources/www"));
+    H2O.registerResourceRoot(new File(relativeResourcePath + File.separator + "h2o-core/src/main/resources/www"));
+    H2O.startServingRestApi();  // calls jetty.acceptRequests
   }
 
   @Test public void testNoLog() throws Exception {

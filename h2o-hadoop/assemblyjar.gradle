@@ -3,8 +3,8 @@ apply plugin: 'com.github.johnrengelman.shadow'
 
 description = 'H2O HDFS client shadowjar for Hadoop ' + hadoopVersion
 
-sourceCompatibility = 1.6
-targetCompatibility = 1.6
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
 
 dependencies {
   if (project.hasProperty('notYarn')) {

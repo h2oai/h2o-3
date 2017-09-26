@@ -3,7 +3,6 @@ package hex.genmodel.easy;
 import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.algos.deepwater.DeepwaterMojoModel;
-import hex.genmodel.algos.word2vec.Word2VecMojoModel;
 import hex.genmodel.algos.word2vec.WordEmbeddingModel;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.exception.PredictNumberFormatException;
@@ -21,6 +20,7 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -54,7 +54,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class EasyPredictModelWrapper implements java.io.Serializable {
   // These private members are read-only after the constructor.
-  private final GenModel m;
+  public final GenModel m;
   private final HashMap<String, Integer> modelColumnNameToIndexMap;
   private final HashMap<Integer, HashMap<String, Integer>> domainMap;
 
@@ -239,15 +239,80 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
 
   /**
    * Make a prediction on a new data point using an AutoEncoder model.
-   *
    * @param data A new data point.
    * @return The prediction.
    * @throws PredictException
    */
   public AutoEncoderModelPrediction predictAutoEncoder(RowData data) throws PredictException {
-    double[] preds = preamble(ModelCategory.AutoEncoder, data);
-    throw new RuntimeException("Unimplemented " + preds.length);
+    validateModelCategory(ModelCategory.AutoEncoder);
+
+    int size = m.getPredsSize(ModelCategory.AutoEncoder);
+    double[] output = new double[size];
+    double[] rawData = nanArray(m.nfeatures());
+    rawData = fillRawData(data, rawData);
+    output = m.score0(rawData, output);
+
+    AutoEncoderModelPrediction p = new AutoEncoderModelPrediction();
+    p.original = expandRawData(rawData, output.length);
+    p.reconstructed = output;
+    p.reconstructedRowData = reconstructedToRowData(output);
+
+    return p;
   }
+
+  /**
+   * Creates a 1-hot encoded representation of the input data.
+   * @param data raw input as seen by the score0 function
+   * @param size target size of the output array
+   * @return 1-hot encoded data
+   */
+  private double[] expandRawData(double[] data, int size) {
+    double[] expanded = new double[size];
+    int pos = 0;
+    for (int i = 0; i < data.length; i++) {
+      if (m._domains[i] == null) {
+        expanded[pos] = data[i];
+        pos++;
+      } else {
+        int idx = Double.isNaN(data[i]) ? m._domains[i].length : (int) data[i];
+        expanded[pos + idx] = 1.0;
+        pos += m._domains[i].length + 1;
+      }
+    }
+    return expanded;
+  }
+
+  /**
+   * Converts output of AutoEncoder to a RowData structure. Categorical fields are represented by
+   * a map of domain values -> reconstructed values, missing domain value is represented by a 'null' key
+   * @param reconstructed raw output of AutoEncoder
+   * @return reconstructed RowData structure
+   */
+  private RowData reconstructedToRowData(double[] reconstructed) {
+    RowData rd = new RowData();
+    int pos = 0;
+    for (int i = 0; i < m.nfeatures(); i++) {
+      Object value;
+      if (m._domains[i] == null) {
+        value = reconstructed[pos++];
+      } else {
+        value = catValuesAsMap(m._domains[i], reconstructed, pos);
+        pos += m._domains[i].length + 1;
+      }
+      rd.put(m._names[i], value);
+    }
+    return rd;
+  }
+
+  private static Map<String, Double> catValuesAsMap(String[] cats, double[] reconstructed, int offset) {
+    Map<String, Double> result = new HashMap<>(cats.length + 1);
+    for (int i = 0; i < cats.length; i++) {
+      result.put(cats[i], reconstructed[i + offset]);
+    }
+    result.put(null, reconstructed[offset + cats.length]);
+    return result;
+  }
+
   /**
    * Make a prediction on a new data point using a Dimension Reduction model (PCA, GLRM)
    * @param data A new data point.
@@ -409,25 +474,6 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     return p;
   }
 
-  /**
-   * Make a prediction on a new data point using a k-LIME model.
-   *
-   * @param data A new data point.
-   * @return The prediction.
-   * @throws PredictException
-   */
-  public KLimeModelPrediction predictKLime(RowData data) throws PredictException {
-    double[] preds = preamble(ModelCategory.Regression, data);
-
-    KLimeModelPrediction p = new KLimeModelPrediction();
-    p.value = preds[0];
-    p.cluster = (int) preds[1];
-    p.reasonCodes = new double[preds.length - 2];
-    System.arraycopy(preds, 2, p.reasonCodes, 0, p.reasonCodes.length);
-
-    return p;
-  }
-
   //----------------------------------------------------------------------
   // Transparent methods passed through to GenModel.
   //----------------------------------------------------------------------
@@ -489,10 +535,12 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     return predict(data, new double[m.getPredsSize(c)]);
   }
 
-  private void setToNaN(double[] arr) {
-    for (int i = 0; i < arr.length; i++) {
+  private static double[] nanArray(int len) {
+    double[] arr = new double[len];
+    for (int i = 0; i < len; i++) {
       arr[i] = Double.NaN;
     }
+    return arr;
   }
 
   private double[] fillRawData(RowData data, double[] rawData) throws PredictException {
@@ -610,10 +658,10 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
   }
 
   private double[] predict(RowData data, double[] preds) throws PredictException {
-    double[] rawData = new double[m.nfeatures()];
-    setToNaN(rawData);
+    double[] rawData = nanArray(m.nfeatures());
     rawData = fillRawData(data, rawData);
     preds = m.score0(rawData, preds);
     return preds;
   }
+
 }

@@ -251,7 +251,9 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from the
         dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
-        weights are not allowed.
+        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the data
+        frame. This is typically the number of times a row is repeated, but non-integer values are supported as well.
+        During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
         Type: ``str``.
         """
@@ -789,13 +791,13 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Encoding scheme for categorical features
 
         One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``,
-        ``"label_encoder"``, ``"sort_by_response"``  (default: ``"auto"``).
+        ``"label_encoder"``, ``"sort_by_response"``, ``"enum_limited"``  (default: ``"auto"``).
         """
         return self._parms.get("categorical_encoding")
 
     @categorical_encoding.setter
     def categorical_encoding(self, categorical_encoding):
-        assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response"))
+        assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"))
         self._parms["categorical_encoding"] = categorical_encoding
 
 

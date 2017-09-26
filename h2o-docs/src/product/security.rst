@@ -181,6 +181,8 @@ For the client side, connection options exist.
 For the server side, startup options exist to facilitate security. These
 are detailed below.
 
+-------------
+
 HTTPS
 ~~~~~
 
@@ -318,6 +320,8 @@ standalone H2O using your Keystore:
     # Run H2O using the newly generated self-signed keystore.
     java -jar h2o.jar -jks mykeystore.jks -jks_pass mypass
 
+----------------
+
 Kerberos Authentication
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -443,6 +447,7 @@ Example:
 
     $SPARK_HOME/bin/spark-submit --class water.SparklingWaterDriver --conf spark.ext.h2o.kerberos.login=true --conf spark.ext.h2o.user.name=kerb_principal --conf spark.ext.h2o.login.conf=kerb.conf sparkling-water-assembly-0.2.17-SNAPSHOT-all.jar
 
+----------------
 
 LDAP Authentication
 ~~~~~~~~~~~~~~~~~~~
@@ -576,6 +581,122 @@ Example:
     $SPARK_HOME/bin/spark-submit --class water.SparklingWaterDriver --conf spark.ext.h2o.ldap.login=true --conf spark.ext.h2o.login.conf=/path/to/ldap.conf sparkling-water-assembly-0.2.17-SNAPSHOT-all.jar
 
     $SPARK_HOME/bin/spark-submit --class water.SparklingWaterDriver --conf spark.ext.h2o.ldap.login=true --conf spark.ext.h2o.user.name=myLDAPusername --conf spark.ext.h2o.login.conf=/path/to/ldap.conf sparkling-water-assembly-0.2.17-SNAPSHOT-all.jar
+
+-------------
+
+Pluggable Authentication Module (PAM) Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This section describes H2O client and server side configuration for `PAM authentication <https://en.wikipedia.org/wiki/Pluggable_authentication_module>`__. 
+
+PAM H2O Client Side
+^^^^^^^^^^^^^^^^^^^
+
+Flow UI Client
+''''''''''''''
+
+When PAM authentication is enabled, the user will be presented with a username and password dialog box when attempting to reach Flow. 
+
+
+R Client
+''''''''
+
+The following code snippet demonstrates connecting to an H2O cluster
+with authentication:
+
+::
+
+    h2o.init(ip = "a.b.c.d", port = 54321, username = "myusername", password = "mypassword")
+
+Python Client
+'''''''''''''
+
+For Python, connecting to H2O with authentication is similar:
+
+::
+
+    h2o.init(ip = "a.b.c.d", port = 54321, username = "myusername", password = "mypassword")
+
+
+PAM H2O Server Side
+^^^^^^^^^^^^^^^^^^^
+
+You must provide a simple configuration file that specifies the PAM login module.
+
+**Example pam.conf**
+
+::
+
+  pamloginmodule {
+       de.codedo.jaas.PamLoginModule required
+       service = h2o;
+  };
+
+Note that the name of the service is user configurable, and this name must match the name of the PAM authentication module that you created for the "h2o service".
+
+
+Standalone H2O
+''''''''''''''
+
+The following options are required for PAM authentication:
+
+::
+
+  -pam_login
+      Use PAM LoginService
+
+  -login_conf <filename>
+        LoginService configuration file
+       
+  -user_name <username>
+        Override name of user for which access is allowed
+
+  -form_auth
+        Optionally enable form-based authentication for Flow
+
+  -session_timeout
+        If form_auth is enabled, optionally specify the number of minutes 
+        that a session can remain idle before the server invalidates the 
+        session and requests a new login
+
+**Example**
+
+::
+
+  java -jar h2o.jar -pam_login -login_conf pam.conf -user_name
+
+H2O on Hadoop
+'''''''''''''
+
+The following options are available:
+
+::
+
+  -pam_login
+      Use PAM LoginService
+
+  -login_conf <filename>
+        LoginService configuration file
+       
+  -user_name <username>
+        Override name of user for which access is allowed
+
+  -form_auth
+        Optionally enable form-based authentication for Flow
+
+  -session_timeout
+        If form_auth is enabled, optionally specify the number of minutes 
+        that a session can remain idle before the server invalidates the 
+        session and requests a new login
+
+
+**Example**
+
+::
+
+  hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -pam_login -login_conf pam.conf -output hdfsOutputDirectory -user_name
+
+-------------
 
 Hash File Authentication
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -715,7 +836,7 @@ The user can also manually generate keystore/truststore and properties file as d
 
 ::
 
-  hadoop jar h2odriver.jar -nodes 4 -mapperXmx 6g -output hdfsOutputDirName -internal_security security.properties
+  hadoop jar h2odriver.jar -nodes 4 -mapperXmx 6g -output hdfsOutputDirName -internal_security_conf security.properties
 
 
 Standalone/AWS
@@ -734,16 +855,16 @@ In this case, the user has to generate the keystores, truststores, and propertie
     h2o_ssl_jts_internal=truststore.jks
     h2o_ssl_jts_password=password
 
-3. To start an SSL-enabled node, pass the location to the properties file using the ``-internal_security`` flag
+3. To start an SSL-enabled node, pass the location to the properties file using the ``-internal_security_conf`` flag
 
  ::
 
-  java -jar h2o.jar -internal_security security.properties
+  java -jar h2o.jar -internal_security_conf security.properties
 
 Configuration
 ~~~~~~~~~~~~~
 
-To enable this feature, set the ``-internal_security`` parameter when starting an H2O node, and point that to a configuration file (key=value format) that contains the following values:
+To enable this feature, set the ``-internal_security_conf`` parameter when starting an H2O node, and point that to a configuration file (key=value format) that contains the following values:
 
 - ``h2o_ssl_jks_internal`` (required): The path (absolute or relative) to the key-store file used for internal SSL communication
 - ``h2o_ssl_jks_password`` (required): The password for the internal key-store

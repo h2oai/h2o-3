@@ -13,8 +13,8 @@ public class GlmMojoModel extends GlmMojoModelBase {
   private Function1 _linkFn;
   private boolean _binomial;
 
-  GlmMojoModel(String[] columns, String[][] domains) {
-    super(columns, domains);
+  GlmMojoModel(String[] columns, String[][] domains, String responseColumn) {
+    super(columns, domains, responseColumn);
   }
 
   @Override

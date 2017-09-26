@@ -1,28 +1,7 @@
 Saving and Loading a Model
 ==========================
 
-This section describes how to save and load models using Flow, R, and Python. 
-
-In Flow
--------
-
-There are a number of ways you can save your model in Flow. 
-
-- In the web UI, click the **Flow** menu, then click **Save Flow**. Your flow is saved to the *Flows* tab in the **Help** sidebar on the right.
-- In the web UI, click the **Flow** menu, then click **Download this Flow...**. Depending on your browser and configuration, your flow is saved to the "Downloads" folder (by default) or to the location you specify in the pop-up **Save As** window if it appears.
-- For DRF, GBM, and DL models only: Use model checkpointing to resume training a model. Copy the ``model_id`` number from a built model and paste it into the *checkpoint* field in the ``buildModel`` cell.
-
- **Note**: When you are running H2O on Hadoop, H2O tries to determine the home HDFS directory so it can use that as the download location. If the default home HDFS directory is not found, manually set the download location from the command line using the ``-flow_dir`` parameter. For example, 
-
- ::
-
-	hadoop jar h2odriver.jar <...> -flow_dir hdfs:///user/yourname/yourflowdir). 
-
- You can view the default download directory in the logs by clicking **Admin > View logs...** and looking for the line that begins with ``Flow dir:``.
-
-After a Flow is saved, you can load it by clicking on the **Flows** tab in the right sidebar. Then in the pop-up confirmation window that appears, select **Load Notebook**. Refer to `Loading Flows <flow.html#loading-flows>`__ for more information. 
-
-In Flow, you can also import specific models rather than entire Flows. Refer to `Exporting and Importing Models <flow.html#exporting-and-importing-models>`__ for more information. 
+This section describes how to save and load models using R, Python, and Flow. 
 
 In R and Python
 ---------------
@@ -65,14 +44,14 @@ In R and Python, you can save a model locally or to HDFS using the ``h2o.saveMod
 .. example-code::
    .. code-block:: r
 
-	# build the model
-	model <- h2o.glm(model params)
+    # build the model
+    model <- h2o.glm(model params)
 
-	# save the model to HDFS
-	hdfs_name_node <- "node-1"
-	hdfs_tmp_dir <- "/tmp/runit”
-	model_path <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_tmp_dir)
-	h2o.saveModel(model, dir=model_path, name="mymodel")
+    # save the model to HDFS
+    hdfs_name_node <- "node-1"
+    hdfs_tmp_dir <- "/tmp/runit"
+    model_path <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_tmp_dir)
+    h2o.saveModel(model, dir=model_path, name="mymodel")
 
    .. code-block:: python
 
@@ -84,3 +63,8 @@ In R and Python, you can save a model locally or to HDFS using the ``h2o.saveMod
 	hdfs_name_node = "node-1"
 	hdfs_model_path = sprintf("hdfs://%s%s", hdfs_name_node, hdfs_tmp_dir)
 	new_model_path = h2o.save_model(h2o_glm, "hdfs://" + hdfs_name_node + "/" + hdfs_model_path)
+
+In Flow
+-------
+
+The steps for saving and loading models in Flow are described in the **Using Flow - H2O's Web UI** section. Specifically, refer to `Exporting and Importing Models <flow.html#exporting-and-importing-models>`__ for information about loading models into Flow. 
