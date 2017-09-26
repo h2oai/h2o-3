@@ -1800,8 +1800,8 @@ class H2OFrame(object):
         assert_is_type(by, str, int, [str, int])
         if type(by) != list: by = [by]
         for c in by:
-            if self.type(c) not in ["enum","time","int"]:
-                raise H2OValueError("Sort by column: " + str(c) + " not of enum, time, or int type")
+            if self.type(c) not in ["enum","time","int","real"]:
+                raise H2OValueError("Sort by column: " + str(c) + " not of enum, time, int, or real type")
         return H2OFrame._expr(expr=ExprNode("sort",self,by))
 
     def fillna(self,method="forward",axis=0,maxlen=1):
