@@ -8,7 +8,7 @@ test.sort = function() {
   X = h2o.uploadFile(locate("smalldata/synthetic/smallIntFloats.csv.zip"))
   sorted_column_indices = c(1,2)
   X_sorted = h2o.arrange(X, C1, C10)
-  check_sorted_two_columns(X_sorted, sorted_column_indices, prob=0.01)
+  check_sorted_two_columns(X_sorted, sorted_column_indices, prob=0.001)
 }
 
 check_sorted_two_columns <- function(frame, column_indices, prob=0.5) {
