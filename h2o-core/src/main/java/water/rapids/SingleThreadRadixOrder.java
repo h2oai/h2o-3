@@ -237,11 +237,11 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
       // copy two halves to contiguous temp memory, do the below, then split it back to the two halves afterwards.
       // Straddles batches very rarely (at most once per batch) so no speed impact at all.
       _xbatch = new byte[len * _keySize];
-      System.arraycopy(_xbatch, 0, _x[batch0], (int)((start % _batchSize)*_keySize), len0*_keySize);
-      System.arraycopy(_xbatch, len0*_keySize, _x[batch1], 0, (len-len0)*_keySize);
+      System.arraycopy(_x[batch0], (int)((start % _batchSize)*_keySize),_xbatch, 0,  len0*_keySize);
+      System.arraycopy( _x[batch1], 0,_xbatch, len0*_keySize, (len-len0)*_keySize);
       _obatch = new long[len];
-      System.arraycopy(_obatch, 0, _o[batch0], (int)(start % _batchSize), len0);
-      System.arraycopy(_obatch, len0, _o[batch1], 0, len-len0);
+      System.arraycopy(_o[batch0], (int)(start % _batchSize), _obatch, 0, len0);
+      System.arraycopy(_o[batch1], 0, _obatch, len0, len-len0);
       start = 0;
     } else {
       _xbatch = _x[batch0];  // taking this outside the loop does indeed make quite a big different (hotspot isn't catching this, then)
@@ -265,10 +265,10 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     }
     if (batch1 != batch0) {
       // Put the sorted data back into original two places straddling the boundary
-      System.arraycopy(_x[batch0], (int)(origstart % _batchSize) *_keySize, _xbatch, 0, len0*_keySize);
-      System.arraycopy(_x[batch1], 0, _xbatch, len0*_keySize, (len-len0)*_keySize);
-      System.arraycopy(_o[batch0], (int)(origstart % _batchSize), _obatch, 0, len0);
-      System.arraycopy(_o[batch1], 0, _obatch, len0, len-len0);
+      System.arraycopy(_xbatch, 0,_x[batch0], (int)(origstart % _batchSize) *_keySize,  len0*_keySize);
+      System.arraycopy(_xbatch, len0*_keySize,_x[batch1], 0,  (len-len0)*_keySize);
+      System.arraycopy( _obatch, 0,_o[batch0], (int)(origstart % _batchSize), len0);
+      System.arraycopy(_obatch, len0,_o[batch1], 0,  len-len0);
     }
   }
 
@@ -318,6 +318,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     }
     long rollSum = 0;
     for (int c = 0; c < 256; c++) {
+      if (rollSum == len) break;  // done, all other bins are zero, no need to loop through them all
       final long tmp = thisHist[c];
       // important to skip zeros for logic below to undo cumulate.  Worth the
       // branch to save a deeply iterative memset back to zero
