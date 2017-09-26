@@ -8,7 +8,7 @@ def sort():
     df = h2o.import_file(pyunit_utils.locate("smalldata/synthetic/smallIntFloats.csv.zip"))
     sorted_column_indices = [0,1]
     df1 = df.sort(sorted_column_indices).asnumeric()
-    pyunit_utils.check_sorted_2_columns(df1, sorted_column_indices, prob=0.05) # check some rows
+    pyunit_utils.check_sorted_2_columns(df1, sorted_column_indices, prob=0.001) # check some rows
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(sort)
