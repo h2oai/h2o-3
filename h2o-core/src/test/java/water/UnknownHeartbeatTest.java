@@ -35,7 +35,6 @@ public class UnknownHeartbeatTest extends TestUtil{
     ab.close();
 
     // Verify that we don't have a new client
-    assertEquals(H2O.CLOUD.size(), 1);
     assertEquals(H2O.getClients().size(), 0);
   }
 }
