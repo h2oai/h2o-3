@@ -38,14 +38,10 @@ Perform the following steps in R to install H2O. Copy and paste these commands o
 
  ::
 
-	if (! ("methods" %in% rownames(installed.packages()))) { install.packages("methods") }
-	if (! ("statmod" %in% rownames(installed.packages()))) { install.packages("statmod") }
-	if (! ("stats" %in% rownames(installed.packages()))) { install.packages("stats") }
-	if (! ("graphics" %in% rownames(installed.packages()))) { install.packages("graphics") }
-	if (! ("RCurl" %in% rownames(installed.packages()))) { install.packages("RCurl") }
-	if (! ("jsonlite" %in% rownames(installed.packages()))) { install.packages("jsonlite") }
-	if (! ("tools" %in% rownames(installed.packages()))) { install.packages("tools") }
-	if (! ("utils" %in% rownames(installed.packages()))) { install.packages("utils") }
+    pkgs <- c("RCurl","jsonlite")
+    for (pkg in pkgs) {
+      if (! (pkg %in% rownames(installed.packages()))) { install.packages(pkg) }
+    }
 
 3. Download and install the H2O package for R.
 
