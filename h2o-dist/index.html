@@ -671,7 +671,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                     if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }<br/>
                     <br/>
                     <em># Next, we download packages that H<sub>2</sub>O depends on.</em><br/>
-                    pkgs &lt;- c("statmod","RCurl","jsonlite")<br/>
+                    pkgs &lt;- c("RCurl","jsonlite")<br/>
                     for (pkg in pkgs) {<br/>
                       if (! (pkg %in% rownames(installed.packages()))) { install.packages(pkg) }<br/>
                     }<br/>
