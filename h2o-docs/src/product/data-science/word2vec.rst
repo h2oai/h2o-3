@@ -6,6 +6,8 @@ Introduction
 
 The Word2vec algorithm takes a text `corpus <https://en.wikipedia.org/wiki/Corpus_linguistics>`__ as an input and produces the word vectors as output. The algorithm first creates a vocabulary from the training text data and then learns vector representations of the words. The vector space can include hundreds of dimensions, with each unique word in the sample corpus being assigned a corresponding vector in the space. In addition, words that share similar contexts in the corpus are placed in close proximity to one another in the space. The result is an H2O Word2vec model that can be exported as a binary model or as a MOJO. This file can be used as features in many natural language processing and machine learning applications. 
 
+**Note**: This Word2vec implementation is written in Java and is not compatible with other implementations that, for example, are written in C++. In addition, importing models in binary format is not supported.
+
 Defining a Word2vec Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
