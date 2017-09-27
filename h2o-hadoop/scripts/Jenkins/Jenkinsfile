@@ -16,9 +16,8 @@ pipeline {
   options {
     ansiColor('xterm')
     timestamps()
-    timeout(time: 60, unit: 'MINUTES')
-    // lets keep 33 logs, because currently we test against 11 various hadoop versions
-    buildDiscarder(logRotator(numToKeepStr: '33'))
+    timeout(time: 45, unit: 'MINUTES')
+    buildDiscarder(logRotator(daysToKeepStr: '25'))
   }
 
   stages {
