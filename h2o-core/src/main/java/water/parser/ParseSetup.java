@@ -568,16 +568,20 @@ public class ParseSetup extends Iced {
    * @param bits Initial bytes from a parse source
    * @return ParseSetup settings from looking at all files
    */
-  public static ParseSetup guessSetup( ByteVec bv, byte [] bits, ParseSetup userSetup ) {
-    return guessSetup(bv, bits, userSetup._parse_type, userSetup._separator, GUESS_COL_CNT, userSetup._single_quotes, userSetup._check_header, userSetup._column_names, userSetup._column_types, null, null);
-  }
-
-  public static ParseSetup guessSetup(ByteVec bv, byte [] bits, ParserInfo parserType, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames, byte[] columnTypes, String[][] domains, String[][] naStrings ) {
-    ParserProvider pp = ParserService.INSTANCE.getByInfo(parserType);
+  public static ParseSetup guessSetup(ByteVec bv, byte [] bits, ParseSetup userSetup) {
+    ParserProvider pp = ParserService.INSTANCE.getByInfo(userSetup._parse_type);
     if (pp != null) {
-      return pp.guessSetup(bv, bits, sep, ncols, singleQuotes, checkHeader, columnNames, columnTypes, domains, naStrings);
+      return pp.guessSetup(bv, bits, userSetup.toInitialSetup());
     }
     throw new ParseDataset.H2OParseException("Cannot determine file type.");
+  }
+
+  /**
+   * Sanitizes a user-provided Parse Setup
+   * @return initial ParseSetup object to be passed to the ParserProvider
+   */
+  private ParseSetup toInitialSetup() {
+    return new ParseSetup(_parse_type, _separator, _single_quotes, _check_header, GUESS_COL_CNT, _column_names, _column_types, null, null, null);
   }
 
   /**

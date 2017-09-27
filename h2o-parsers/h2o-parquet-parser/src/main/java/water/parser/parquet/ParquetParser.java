@@ -12,13 +12,16 @@ import org.apache.parquet.schema.Type;
 import water.Job;
 import water.Key;
 
+import water.exceptions.H2OUnsupportedDataFileException;
 import water.fvec.ByteVec;
 import water.fvec.Chunk;
 import water.fvec.Vec;
 import water.parser.*;
+import water.util.IcedHashMapGeneric;
 import water.util.Log;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 
 /**
@@ -64,7 +67,7 @@ public class ParquetParser extends Parser {
     return dout;
   }
 
-  public static ParseSetup guessSetup(ByteVec vec, byte[] bits) {
+  public static ParquetParseSetup guessFormatSetup(ByteVec vec, byte[] bits) {
     if (bits.length < MAGIC.length) {
       return null;
     }
@@ -73,15 +76,25 @@ public class ParquetParser extends Parser {
     }
     // seems like we have a Parquet file
     byte[] metadataBytes = VecParquetReader.readFooterAsBytes(vec);
-    ParquetMetadata metadata = VecParquetReader.readFooter(metadataBytes, ParquetMetadataConverter.NO_FILTER);
+    ParquetMetadata metadata = VecParquetReader.readFooter(metadataBytes);
     checkCompatibility(metadata);
-    ParquetPreviewParseWriter ppWriter = readFirstRecords(metadata, vec, MAX_PREVIEW_RECORDS);
-    return ppWriter.toParseSetup(metadataBytes);
+    return toInitialSetup(metadata.getFileMetaData().getSchema(), metadataBytes);
+  }
+
+  private static ParquetParseSetup toInitialSetup(MessageType parquetSchema, byte[] metadataBytes) {
+    byte[] roughTypes = roughGuessTypes(parquetSchema);
+    String[] columnNames = columnNames(parquetSchema);
+    return new ParquetParseSetup(columnNames, roughTypes, null, metadataBytes);
+  }
+
+  public static ParquetParseSetup guessDataSetup(ByteVec vec, ParquetParseSetup ps) {
+    ParquetPreviewParseWriter ppWriter = readFirstRecords(ps, vec, MAX_PREVIEW_RECORDS);
+    return ppWriter.toParseSetup(ps.parquetMetadata);
   }
 
   /**
    * Overrides unsupported type conversions/mappings specified by the user.
-   * @param vec byte vec holding binary parquet data
+   * @param vec byte vec holding bin\ary parquet data
    * @param requestedTypes user-specified target types
    * @return corrected types
    */
@@ -120,10 +133,10 @@ public class ParquetParser extends Parser {
       super();
     }
 
-    ParquetPreviewParseWriter(MessageType parquetSchema) {
-      super(parquetSchema.getPaths().size());
-      _colNames = columnNames(parquetSchema);
-      _roughTypes = roughGuessTypes(parquetSchema);
+    ParquetPreviewParseWriter(ParquetParseSetup setup) {
+      super(setup.getColumnNames().length);
+      _colNames = setup.getColumnNames();
+      _roughTypes = setup.getColumnTypes();
       setColumnNames(_colNames);
       _nlines = 0;
       _data[0] = new String[_colNames.length];
@@ -134,7 +147,7 @@ public class ParquetParser extends Parser {
       return correctTypeConversions(_roughTypes, super.guessTypes());
     }
 
-    ParseSetup toParseSetup(byte[] parquetMetadata) {
+    ParquetParseSetup toParseSetup(byte[] parquetMetadata) {
       byte[] types = guessTypes();
       return new ParquetParseSetup(_colNames, types, _data, parquetMetadata);
     }
@@ -154,17 +167,30 @@ public class ParquetParser extends Parser {
   }
 
   private static void checkCompatibility(ParquetMetadata metadata) {
+    // make sure we can map Parquet blocks to Chunks
     for (BlockMetaData block : metadata.getBlocks()) {
       if (block.getRowCount() > Integer.MAX_VALUE) {
-        throw new RuntimeException("Current implementation doesn't support Parquet files with blocks larger than " +
-                Integer.MAX_VALUE + " rows."); // because we map each block to a single H2O Chunk
+        IcedHashMapGeneric.IcedHashMapStringObject dbg = new IcedHashMapGeneric.IcedHashMapStringObject();
+        dbg.put("startingPos", block.getStartingPos());
+        dbg.put("rowCount", block.getRowCount());
+        throw new H2OUnsupportedDataFileException("Unsupported Parquet file (technical limitation).",
+                "Current implementation doesn't support Parquet files with blocks larger than " +
+                Integer.MAX_VALUE + " rows.", dbg); // because we map each block to a single H2O Chunk
       }
     }
+    // check that file doesn't have nested structures
+    MessageType schema = metadata.getFileMetaData().getSchema();
+    for (String[] path : schema.getPaths())
+      if (path.length != 1) {
+        throw new H2OUnsupportedDataFileException("Parquet files with nested structures are not supported.",
+                "Detected a column with a nested structure " + Arrays.asList(path));
+      }
   }
 
-  private static ParquetPreviewParseWriter readFirstRecords(ParquetMetadata metadata, ByteVec vec, int cnt) {
+  private static ParquetPreviewParseWriter readFirstRecords(ParquetParseSetup initSetup, ByteVec vec, int cnt) {
+    ParquetMetadata metadata = VecParquetReader.readFooter(initSetup.parquetMetadata);
     ParquetMetadata startMetadata = new ParquetMetadata(metadata.getFileMetaData(), Collections.singletonList(findFirstBlock(metadata)));
-    ParquetPreviewParseWriter ppWriter = new ParquetPreviewParseWriter(metadata.getFileMetaData().getSchema());
+    ParquetPreviewParseWriter ppWriter = new ParquetPreviewParseWriter(initSetup);
     VecParquetReader reader = new VecParquetReader(vec, startMetadata, ppWriter, ppWriter._roughTypes);
     try {
       int recordCnt = 0;
