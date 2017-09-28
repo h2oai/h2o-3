@@ -3,13 +3,6 @@ package water;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.nio.channels.DatagramChannel;
-
 import static org.junit.Assert.assertEquals;
 
 public class UnknownHeartbeatTest extends TestUtil{
@@ -18,7 +11,7 @@ public class UnknownHeartbeatTest extends TestUtil{
   }
 
   @Test
-  public void testIgnoreUnknownHeartBeat() throws IOException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+  public void testIgnoreUnknownHeartBeat() {
     HeartBeat hb = new HeartBeat();
     hb._cloud_name_hash = 777;
     hb._client = true;
