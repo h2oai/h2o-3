@@ -12,7 +12,7 @@ import water.parser.*;
 /**
  * Parquet parser provider.
  */
-public class ParquetParserProvider extends ParserProvider {
+public class ParquetParserProvider extends BinaryParserProvider {
 
   /* Setup for this parser */
   static ParserInfo PARQUET_INFO = new ParserInfo("PARQUET", DefaultParserProviders.MAX_CORE_PRIO + 30, true, false, false);
@@ -28,10 +28,13 @@ public class ParquetParserProvider extends ParserProvider {
   }
 
   @Override
-  public ParseSetup guessSetup(ByteVec vec, byte[] bits, byte sep, int ncols, boolean singleQuotes,
-                               int checkHeader, String[] columnNames, byte[] columnTypes,
-                               String[][] domains, String[][] naStrings) {
-    return ParquetParser.guessSetup(vec, bits);
+  public ParseSetup guessInitSetup(ByteVec v, byte[] bits, ParseSetup userSetup) {
+    return ParquetParser.guessFormatSetup(v, bits);
+  }
+
+  @Override
+  public ParseSetup guessFinalSetup(ByteVec v, byte[] bits, ParseSetup ps) {
+    return ParquetParser.guessDataSetup(v, (ParquetParser.ParquetParseSetup) ps);
   }
 
   @Override
