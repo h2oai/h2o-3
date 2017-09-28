@@ -26,7 +26,7 @@ test.kmsplit.golden <- function() {
   startIdx <- c(1,20,100)
   Log.info("Initial cluster centers:"); print(trainR[startIdx,])
   # fitR <- kmeans(trainR, centers = trainR[startIdx,], iter.max = 1000, algorithm = "Lloyd")
-  fitR <<- kcca(trainR, k = as.matrix(trainR[startIdx,], family = kccaFamily("kmeans"), control = list(iter.max = 1000)))
+  fitR <<- kcca(trainR, k = as.matrix(trainR[startIdx,]), family = kccaFamily("kmeans"), control = list(iter.max = 1000))
   fitH2O <<- h2o.kmeans(trainH2O, user_points = trainH2O[startIdx,], standardize = FALSE)
 
 
