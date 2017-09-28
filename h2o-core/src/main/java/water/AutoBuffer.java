@@ -1001,7 +1001,7 @@ public final class AutoBuffer {
   int  getFlag( ) { return getSz(1+2+4+1).get(1+2+4); }
 
   /**
-   * Write UDP into the ByteBuffer with custom port sender's port number
+   * Write UDP into the ByteBuffer with custom sender's port number
    *
    * This method sets the ctrl, port, task.
    * Ready to write more bytes afterwards
