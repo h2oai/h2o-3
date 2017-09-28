@@ -1000,7 +1000,15 @@ public final class AutoBuffer {
   // Get the flag in the next 1 byte
   int  getFlag( ) { return getSz(1+2+4+1).get(1+2+4); }
 
-  // Set the ctrl, port, task.  Ready to write more bytes afterwards
+  /**
+   * Write UDP into the ByteBuffer with custom port sender's port number
+   *
+   * This method sets the ctrl, port, task.
+   * Ready to write more bytes afterwards
+   *
+   * @param type type of the UDP datagram
+   * @param senderPort port of the sender of the datagram
+   */
   AutoBuffer putUdp(UDP.udp type, int senderPort){
     assert _bb.position() == 0;
     putSp(_bb.position()+1+2);
@@ -1009,6 +1017,14 @@ public final class AutoBuffer {
     return this;
   }
 
+  /**
+   * Write UDP into the ByteBuffer with the current node as the sender.
+   *
+   * This method sets the ctrl, port, task.
+   * Ready to write more bytes afterwards
+   *
+   * @param type type of the UDP datagram
+   */
   AutoBuffer putUdp (UDP.udp type) {
     return putUdp(type, H2O.H2O_PORT); // Outgoing port is always the sender's (me) port
   }
