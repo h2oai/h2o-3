@@ -1849,6 +1849,7 @@ final public class H2O {
   public static void main( String[] args ) {
    H2O.configureLogging();
    extManager.registerCoreExtensions();
+   extManager.registerListenerExtensions();
 
    long time0 = System.currentTimeMillis();
 
