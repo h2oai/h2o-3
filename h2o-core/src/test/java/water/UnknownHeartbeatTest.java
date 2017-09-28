@@ -24,13 +24,9 @@ public class UnknownHeartbeatTest extends TestUtil{
     hb._client = true;
     hb._jar_md5 = H2O.SELF._heartbeat._jar_md5;
 
-    AutoBuffer ab = new AutoBuffer(H2O.SELF,H2O.MAX_PRIORITY);
-
-    Method putSpMethod = AutoBuffer.class.getDeclaredMethod("putSp", int.class);
-    putSpMethod.setAccessible(true);
-    putSpMethod.invoke(ab, ab._bb.position()+1+2);
-    ab._bb.put    ((byte)UDP.udp.heartbeat.ordinal());
-    ab._bb.putChar((char)65400);
+    AutoBuffer ab = new AutoBuffer(H2O.SELF, H2O.MAX_PRIORITY);
+    ab.put1((byte)UDP.udp.heartbeat.ordinal());
+    ab.put2((char)65400);
     hb.write(ab);
     ab.close();
 
