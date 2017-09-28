@@ -3,10 +3,12 @@
 # contains following R versions:
 #   - 3.4.1
 #   - 3.3.3
-#   - 3.2.5
-#   - 3.1.3
-#   - 3.0.3
 #   - installed R versions can be overriden by setting the R_VERSIONS build arg
+# contains following Python versions:
+#   - 2.7
+#   - 3.5
+#   - 3.6
+#   - installed Python versions can be overriden by setting the PYTHON_VERSIONS build arg
 ########################################################################
 
 # pull base image
