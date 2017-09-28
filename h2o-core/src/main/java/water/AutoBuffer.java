@@ -1001,12 +1001,16 @@ public final class AutoBuffer {
   int  getFlag( ) { return getSz(1+2+4+1).get(1+2+4); }
 
   // Set the ctrl, port, task.  Ready to write more bytes afterwards
-  AutoBuffer putUdp (UDP.udp type) {
+  AutoBuffer putUdp(UDP.udp type, int senderPort){
     assert _bb.position() == 0;
     putSp(_bb.position()+1+2);
     _bb.put    ((byte)type.ordinal());
-    _bb.putChar((char)H2O.H2O_PORT  ); // Outgoing port is always the sender's (me) port
+    _bb.putChar((char)senderPort    );
     return this;
+  }
+
+  AutoBuffer putUdp (UDP.udp type) {
+    return putUdp(type, H2O.H2O_PORT); // Outgoing port is always the sender's (me) port
   }
 
   AutoBuffer putTask(UDP.udp type, int tasknum) {
