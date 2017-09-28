@@ -34,7 +34,7 @@ pipeline {
           steps {
             sh """
                 cd docker
-                docker build -t mr-h2o3-runtime .
+                docker build -t h2o-3-runtime .
             """
           }
         }
@@ -47,8 +47,8 @@ pipeline {
               withCredentials([usernamePassword(credentialsId: "${params.dockerRegistry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
                   sh """
                         docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${params.dockerRegistry}
-                        docker tag mr-h2o3-runtime:latest docker.h2o.ai/opsh2oai/mr-h2o3-runtime:latest
-                        docker push ${params.dockerRegistry}/opsh2oai/mr-h2o3-runtime:latest
+                        docker tag h2o-3-runtime:latest docker.h2o.ai/opsh2oai/h2o-3-runtime:latest
+                        docker push ${params.dockerRegistry}/opsh2oai/h2o-3-runtime:latest
                     """
               }
           }

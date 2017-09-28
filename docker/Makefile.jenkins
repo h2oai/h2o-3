@@ -5,7 +5,7 @@
 
 docker-runtime:
 	@echo "+--Building Runtime Docker Image--+"
-	docker build -t mr-h2o3-runtime:${DOCKER_VERSION_TAG} -f Dockerfile .
+	docker build -t h2o-3-runtime:${DOCKER_VERSION_TAG} -f Dockerfile .
 
 build-h2o-3:
 	@echo "+--Building H2O-3--+"
@@ -15,15 +15,6 @@ build-h2o-3:
 	@echo
 	@echo "+--Building--+"
 	./gradlew build -x test
-
-test-phantomjs:
-	cd h2o-web && ../scripts/run.py --wipeall --test lib/h2o-flow/build/js/headless-test.js --jvm.xmx 4g
-
-test-phantomjs-medium:
-	cd h2o-web && ../scripts/run.py --wipeall --test lib/h2o-flow/build/js/headless-test.js --jvm.xmx 4g
-
-test-phantomjs-small:
-	cd h2o-web && ../scripts/run.py --wipeall --test lib/h2o-flow/build/js/headless-test.js --jvm.xmx 4g
 
 test-py-init:
 	pip uninstall h2o -y || true
@@ -46,26 +37,3 @@ test-py-demos:
 test-pyunit-medium-large:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
 	cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 1 --numnodes 5 --jvm.xmx 15g
-
-test-r-init:
-	R CMD INSTALL h2o-r/R/src/contrib/h2o_*.*.*.*.tar.gz
-	cd h2o-r/tests/testdir_jira && R -f h2o.init_test_HOQE-16.R
-
-test-runit-datatable:
-	rm -f -r h2o-r/tests/testdir_demos
-	rm -f -r h2o-*/tests/testdir_hdfs
-	cd h2o-r/tests/testdir_perf && ../../../scripts/run.py --wipeall --test runit_repeating_merge.R  --numclouds 1 --numnodes 2 --jvm.xmx 20g
-
-test-runit-medium_large:
-	rm -f -r h2o-r/tests/testdir_demos
-	rm -f -r h2o-*/tests/testdir_hdfs
-	cd h2o-r/tests && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 2 --numnodes 2 --jvm.xmx 20g
-
-test-runit-small:
-	rm -f -r h2o-r/tests/testdir_demos
-	rm -f -r h2o-*/tests/testdir_hdfs
-	cd h2o-r/tests && ../../scripts/run.py --wipeall --geterrs --testsize s --geterrs --numclouds 5 --jvm.xmx 4g
-
-test-runit-small-client-mode:
-	rm -f -r h2o-*/tests/testdir_hdfs
-	cd h2o-r/tests && ../../scripts/run.py --wipeall --client --testsize s --numclouds 4 --jvm.xmx 4g
