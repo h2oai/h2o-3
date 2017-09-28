@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# Script for installing all R versions specified as comma separated list
+# in ${1} or in ${R_VERSIONS}.
+
+# exit on error
+set -e
+
+VERSIONS_TO_INSTALL=${1}
+if [[ ! -n ${VERSIONS_TO_INSTALL} ]]; then
+  VERSIONS_TO_INSTALL=${R_VERSIONS}
+fi
+if [[ ! -n ${VERSIONS_TO_INSTALL} ]]; then
+  echo "Either R_VERSIONS must be set or provide and argument containing required versions"
+  exit 1
+fi
+
+wget https://s3.amazonaws.com/h2o-r/linux/LiblineaR_1.94-2.tar.gz
+
+IFS=',' read -r -a array <<< ${VERSIONS_TO_INSTALL}
+for r_version in "${array[@]}"; do
+  echo "Installing R ${r_version}"
+  install_R_version ${r_version}
+
+  echo "Activating R ${r_version}"
+  activate_R_${r_version}
+
+  echo "Installing dependencies for R ${r_version}"
+  /usr/local/R/current/bin/R -e 'chooseCRANmirror(graphics=FALSE, ind=54);install.packages(c("R.utils", "AUC", "mlbench", "Hmisc", "flexclust", "randomForest", "bit64", "HDtweedie", "RCurl", "jsonlite", "statmod", "devtools", "roxygen2", "testthat", "Rcpp", "fpc", "RUnit", "ade4", "glmnet", "gbm", "ROCR", "e1071", "ggplot2", "LiblineaR"))'
+  /usr/local/R/current/bin/R CMD INSTALL LiblineaR_1.94-2.tar.gz
+done
+
+rm LiblineaR_1.94-2.tar.gz

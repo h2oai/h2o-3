@@ -1,0 +1,39 @@
+#
+# Docker image tagging
+#
+.NOTPARALLEL: all
+
+docker-runtime:
+	@echo "+--Building Runtime Docker Image--+"
+	docker build -t h2o-3-runtime:${DOCKER_VERSION_TAG} -f Dockerfile .
+
+build-h2o-3:
+	@echo "+--Building H2O-3--+"
+	@echo
+	@echo "+--Cleaning--+"
+	./gradlew clean
+	@echo
+	@echo "+--Building--+"
+	./gradlew build -x test
+
+test-py-init:
+	pip uninstall h2o -y || true
+	pip install h2o-py/dist/*.whl
+	cd h2o-py/tests/testdir_jira && python h2o.init_test_HOQE-16.py
+
+test-py-booklets:
+	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --wipeall --norun
+	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --baseport 52524 --jvm.xmx 5g --test pybooklet.deeplearning.vignette.py
+	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --baseport 52524 --jvm.xmx 5g --test pybooklet.gbm.vignette.py
+	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --baseport 53534 --jvm.xmx 5g --test pybooklet.glm.vignette.py
+
+test-pyunit-small:
+	cd h2o-py/tests/ && rm -f -r testdir_hdfs
+	cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 3g
+
+test-py-demos:
+	cd h2o-py/demos/ && ../../scripts/run.py --wipeall --numclouds 4 --baseport 56789 --jvm.xmx 10g
+
+test-pyunit-medium-large:
+	cd h2o-py/tests/ && rm -f -r testdir_hdfs
+	cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 1 --numnodes 5 --jvm.xmx 15g
