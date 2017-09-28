@@ -1520,10 +1520,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     sb.p("import java.util.Map;").nl();
     sb.p("import hex.genmodel.GenModel;").nl();
     sb.p("import hex.genmodel.annotations.ModelPojo;").nl();
+    for (Class<?> clz : getPojoInterfaces())
+      sb.p("import ").p(clz.getName()).p(";").nl();
     sb.nl();
     String algo = this.getClass().getSimpleName().toLowerCase().replace("model", "");
     sb.p("@ModelPojo(name=\"").p(modelName).p("\", algorithm=\"").p(algo).p("\")").nl();
-    sb.p("public class ").p(modelName).p(" extends GenModel {").nl().ii(1);
+    sb.p("public class ").p(modelName).p(" extends GenModel ").p(makeImplementsClause()).p("{").nl().ii(1);
     sb.ip("public hex.ModelCategory getModelCategory() { return hex.ModelCategory." + _output
         .getModelCategory() + "; }").nl();
     toJavaInit(sb, fileCtx).nl();
@@ -1534,11 +1536,25 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     toJavaSuper(modelName, sb); //
     sb.p("  public String getUUID() { return Long.toString("+checksum()+"L); }").nl();
     toJavaPredict(sb, fileCtx, verboseCode);
+    toJavaTransform(sb, fileCtx, verboseCode);
     sb.p("}").nl().di(1);
     fileCtx.generate(sb); // Append file context
     sb.nl();
     return sb;
   }
+
+  private SB makeImplementsClause() {
+    SB sb = new SB();
+    Class<?>[] interfaces = getPojoInterfaces();
+    if (interfaces.length == 0)
+      return sb;
+    for (int i = 0; i < interfaces.length - 1; i++)
+      sb.p(interfaces[i].getSimpleName()).p(", ");
+    sb.p(interfaces[interfaces.length - 1].getSimpleName()).p(' ');
+    return sb;
+  }
+
+  protected Class<?>[] getPojoInterfaces() { return new Class<?>[0]; }
 
   /** Generate implementation for super class. */
   protected SBPrintStream toJavaSuper(String modelName, SBPrintStream sb) {
@@ -1647,6 +1663,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return ccsb;
   }
 
+  // Generates optional "transform" method, transform method will have a different signature depending on the algo
+  // Empty by default - can be overriden by Model implementation
+  protected SBPrintStream toJavaTransform(SBPrintStream ccsb,
+                                          CodeGeneratorPipeline fileCtx,
+                                          boolean verboseCode) { // ccsb = classContext
+    return ccsb;
+  }
+
   // Convenience method for testing: build Java, convert it to a class &
   // execute it: compare the results of the new class's (JIT'd) scoring with
   // the built-in (interpreted) scoring on this dataset.  Returns true if all
@@ -1659,6 +1683,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return testJavaScoring(data, model_predictions, rel_epsilon, abs_epsilon, 0.1);
   }
   public boolean testJavaScoring(Frame data, Frame model_predictions, double rel_epsilon, double abs_epsilon, double fraction) {
+    return testJavaScoring(data, model_predictions, new EasyPredictModelWrapper.Config(), rel_epsilon, abs_epsilon, fraction);
+  }
+  public boolean testJavaScoring(Frame data, Frame model_predictions, EasyPredictModelWrapper.Config config,
+                                 double rel_epsilon, double abs_epsilon, double fraction) {
     ModelBuilder mb = ModelBuilder.make(_parms.algoName().toLowerCase(), null, null);
     boolean havePojo = mb.havePojo();
     boolean haveMojo = mb.haveMojo();
@@ -1754,7 +1782,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         }
 
         EasyPredictModelWrapper epmw = new EasyPredictModelWrapper(
-                new EasyPredictModelWrapper.Config().setModel(genmodel).setConvertUnknownCategoricalLevelsToNa(true)
+                config.setModel(genmodel).setConvertUnknownCategoricalLevelsToNa(true)
         );
         RowData rowData = new RowData();
         BufferedString bStr = new BufferedString();

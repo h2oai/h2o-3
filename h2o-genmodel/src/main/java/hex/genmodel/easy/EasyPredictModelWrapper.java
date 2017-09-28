@@ -2,6 +2,7 @@ package hex.genmodel.easy;
 
 import hex.ModelCategory;
 import hex.genmodel.GenModel;
+import hex.genmodel.IClusteringModel;
 import hex.genmodel.algos.deepwater.DeepwaterMojoModel;
 import hex.genmodel.algos.word2vec.WordEmbeddingModel;
 import hex.genmodel.easy.exception.PredictException;
@@ -60,6 +61,7 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
 
   private final boolean convertUnknownCategoricalLevelsToNa;
   private final boolean convertInvalidNumbersToNa;
+  private final boolean useExtendedOutput;
   private final ConcurrentHashMap<String,AtomicLong> unknownCategoricalLevelsSeenPerColumn;
 
   /**
@@ -69,6 +71,7 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     private GenModel model;
     private boolean convertUnknownCategoricalLevelsToNa = false;
     private boolean convertInvalidNumbersToNa = false;
+    private boolean useExtendedOutput = false;
 
     /**
      * Specify model object to wrap.
@@ -117,6 +120,24 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     public boolean getConvertInvalidNumbersToNa() {
       return convertInvalidNumbersToNa;
     }
+
+    /**
+     * Specify whether to include additional metadata in the prediction output.
+     * This feature needs to be supported by a particular model and type of metadata
+     * is model specific.
+     *
+     * @param value if true, then the Prediction result will contain extended information
+     *              about the prediction (this will be specific to a particular model).
+     * @return this config object
+     */
+    public Config setUseExtendedOutput(boolean value) {
+      useExtendedOutput = value;
+      return this;
+    }
+
+    public boolean getUseExtendedOutput() {
+      return useExtendedOutput;
+    }
   }
 
   /**
@@ -138,6 +159,7 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     unknownCategoricalLevelsSeenPerColumn = new ConcurrentHashMap<>();
     convertUnknownCategoricalLevelsToNa = config.getConvertUnknownCategoricalLevelsToNa();
     convertInvalidNumbersToNa = config.getConvertInvalidNumbersToNa();
+    useExtendedOutput = config.getUseExtendedOutput();
     setupConvertUnknownCategoricalLevelsToNa();
 
     // Create map of input variable domain information.
@@ -450,10 +472,20 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
    * @throws PredictException
    */
   public ClusteringModelPrediction predictClustering(RowData data) throws PredictException {
-    double[] preds = preamble(ModelCategory.Clustering, data);
-
     ClusteringModelPrediction p = new ClusteringModelPrediction();
-    p.cluster = (int) preds[0];
+    if (useExtendedOutput && (m instanceof IClusteringModel)) {
+      IClusteringModel cm = (IClusteringModel) m;
+      // setup raw input
+      double[] rawData = nanArray(m.nfeatures());
+      rawData = fillRawData(data, rawData);
+      // get cluster assignment & distances
+      final int k = cm.getNumClusters();
+      p.distances = new double[k];
+      p.cluster = cm.distances(rawData, p.distances);
+    } else {
+      double[] preds = preamble(ModelCategory.Clustering, data);
+      p.cluster = (int) preds[0];
+    }
 
     return p;
   }

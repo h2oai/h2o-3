@@ -3,6 +3,7 @@ package hex.kmeans;
 import hex.ModelMetrics;
 import hex.ModelMetricsClustering;
 import hex.SplitFrame;
+import hex.genmodel.easy.EasyPredictModelWrapper;
 import org.junit.*;
 import water.DKV;
 import water.Key;
@@ -397,6 +398,34 @@ public class KMeansTest extends TestUtil {
       // Done building model; produce a score column with cluster choices
       fr2 = kmm.score(fr);
       Assert.assertTrue(kmm.testJavaScoring(fr,fr2,1e-15));
+
+    } finally {
+      if( fr  != null ) fr.delete();
+      if( fr2 != null ) fr2.delete();
+      if( kmm != null ) kmm.delete();
+    }
+  }
+
+  @Test public void testPOJOWithDistances() {
+    // Ignore test if the compiler failed to load
+    Assume.assumeTrue(water.util.JCodeGen.canCompile());
+
+    KMeansModel kmm = null;
+    Frame fr = null, fr2= null;
+    try {
+      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
+      parms._train = fr._key;
+      parms._k = 3;
+      parms._standardize = true;
+      parms._max_iterations = 10;
+      parms._init = KMeans.Initialization.Random;
+      kmm = doSeed(parms,0);
+
+      // Done building model; produce a score column with cluster choices
+      fr2 = kmm.score(fr);
+      EasyPredictModelWrapper.Config config = new EasyPredictModelWrapper.Config().setUseExtendedOutput(true);
+      Assert.assertTrue(kmm.testJavaScoring(fr, fr2, config,1e-15, 1e-15, 0.1));
 
     } finally {
       if( fr  != null ) fr.delete();

@@ -202,6 +202,66 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
   }
 
   @Override
+  protected SBPrintStream toJavaTransform(SBPrintStream ccsb,
+                                          CodeGeneratorPipeline fileCtx,
+                                          boolean verboseCode) { // ccsb = classContext
+    ccsb.nl();
+    ccsb.ip("// Pass in data in a double[], in a same way as to the score0 function.").nl();
+    ccsb.ip("// Cluster distances will be stored into the distances[] array. Function").nl();
+    ccsb.ip("// will return the closest cluster. This way the caller can avoid to call").nl();
+    ccsb.ip("// score0(..) to retrieve the cluster where the data point belongs.").nl();
+    ccsb.ip("public final int distances( double[] data, double[] distances ) {").nl();
+    toJavaDistancesBody(ccsb.ii(1));
+    ccsb.ip("return cluster;").nl();
+    ccsb.di(1).ip("}").nl();
+
+    ccsb.nl();
+    ccsb.ip("// Returns number of cluster used by this model.").nl();
+    ccsb.ip("public final int getNumClusters() {").nl();
+    toJavaGetNumClustersBody(ccsb.ii(1));
+    ccsb.ip("return nclusters;").nl();
+    ccsb.di(1).ip("}").nl();
+
+    // Output class context
+    CodeGeneratorPipeline classCtx = new CodeGeneratorPipeline(); //new SB().ii(1);
+    classCtx.generate(ccsb.ii(1));
+    ccsb.di(1);
+    return ccsb;
+  }
+
+  private void toJavaDistancesBody(SBPrintStream body) {
+
+    // This is model name
+    final String mname = JCodeGen.toJavaId(_key.toString());
+
+    if(_parms._standardize) {
+      // Distances function body: Standardize data first
+      body.ip("Kmeans_preprocessData(data,")
+              .pj(mname + "_MEANS", "VALUES,")
+              .pj(mname + "_MULTS", "VALUES,")
+              .pj(mname + "_MODES", "VALUES")
+              .p(");").nl();
+      // Distances function body: main work function is a utility in GenModel class.
+      body.ip("int cluster = KMeans_distances(")
+              .pj(mname + "_CENTERS", "VALUES")
+              .p(", data, DOMAINS, distances); ").nl(); // at function level
+    } else {
+      // Distances function body: main work function is a utility in GenModel class.
+      body.ip("int cluster = KMeans_distances(")
+              .pj(mname + "_CENTERS", "VALUES")
+              .p(",data, DOMAINS, distances);").nl(); // at function level
+    }
+  }
+
+  private void toJavaGetNumClustersBody(SBPrintStream body) {
+
+    // This is model name
+    final String mname = JCodeGen.toJavaId(_key.toString());
+
+    body.ip("int nclusters = ").pj(mname + "_CENTERS", "VALUES").p(".length;").nl();
+  }
+
+  @Override
   protected boolean toJavaCheckTooBig() {
     return _parms._standardize ?
             _output._centers_std_raw.length * _output._centers_std_raw[0].length > 1e6 :
