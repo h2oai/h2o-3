@@ -6,7 +6,7 @@ import water.util.Log;
  * A simple message which informs cluster about a new client
  * which was connected or about existing client who wants to disconnect.
  * The event is used only in flatfile mode where in case of connecting, it
- * it allows the client to connect to a single node, which will
+ * allows the client to connect to a single node, which will
  * inform a cluster about the client. Hence, the rest of nodes will
  * start ping client with heartbeat, and vice versa.
  */
@@ -15,6 +15,12 @@ public class UDPClientEvent extends UDP {
   @Override
   AutoBuffer call(AutoBuffer ab) {
     // Handle only by non-client nodes
+
+    // Ignore messages from different cloud
+    if(ab._h2o._heartbeat._cloud_name_hash != H2O.SELF._heartbeat._cloud_name_hash) {
+      return ab;
+    }
+
     if (ab._h2o != H2O.SELF && !H2O.ARGS.client) {
       ClientEvent ce = new ClientEvent().read(ab);
       switch(ce.type){
