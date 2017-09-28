@@ -26,7 +26,7 @@ public class UnknownHeartbeatTest extends TestUtil{
 
     AutoBuffer ab = new AutoBuffer(H2O.SELF, H2O.MAX_PRIORITY);
     ab.put1((byte)UDP.udp.heartbeat.ordinal());
-    ab.put2((char)65400);
+    ab.put2((char)65400); // put different port name to simulate heartbeat from non-existent node
     hb.write(ab);
     ab.close();
 
