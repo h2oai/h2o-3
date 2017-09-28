@@ -16,6 +16,10 @@ build-h2o-3:
 	@echo "+--Building--+"
 	./gradlew build -x test
 
+test-py-smoke:
+	cd h2o-py/tests/ && rm -f -r testdir_hdfs
+	cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist ../../tests/pyunitSmokeTestList --numclouds 6 --jvm.xmx 3g
+
 test-py-init:
 	pip uninstall h2o -y || true
 	pip install h2o-py/dist/*.whl
