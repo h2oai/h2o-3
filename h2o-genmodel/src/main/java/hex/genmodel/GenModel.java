@@ -385,6 +385,20 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     return min;
   }
 
+  // Outputs distances from a given point to all cluster centers, returns index of the closest cluster center
+  public static int KMeans_distances(double[][] centers, double[] point, String[][] domains, double[] distances) {
+    int min = -1;
+    double minSqr = Double.MAX_VALUE;
+    for (int cluster = 0; cluster < centers.length; cluster++) {
+      distances[cluster] = KMeans_distance(centers[cluster], point, domains);
+      if (distances[cluster] < minSqr) {      // Record nearest cluster center
+        min = cluster;
+        minSqr = distances[cluster];
+      }
+    }
+    return min;
+  }
+
   // only used for GLRM initialization - inverse of distance to each cluster center normalized to sum to one
   public static double[] KMeans_simplex(double[][] centers, double[] point, String[][] domains) {
     double[] dist = new double[centers.length];
