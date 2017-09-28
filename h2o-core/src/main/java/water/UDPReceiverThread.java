@@ -73,6 +73,7 @@ public class UDPReceiverThread extends Thread {
   // Basic packet handling:
   //   - Timeline record it
   static public void basic_packet_handling( AutoBuffer ab ) throws java.io.IOException {
+
     // Randomly drop 1/10th of the packets, as-if broken network.  Dropped
     // packets are timeline recorded before dropping - and we still will
     // respond to timelines and suicide packets.
@@ -94,8 +95,9 @@ public class UDPReceiverThread extends Thread {
     }
 
     // Suicide packet?  Short-n-sweet...
-    if( ctrl == UDP.udp.rebooted.ordinal())
-      UDPRebooted.checkForSuicide(ctrl, ab);
+    if( ctrl == UDP.udp.rebooted.ordinal()) {
+        UDPRebooted.checkForSuicide(ctrl, ab);
+    }
 
     // Drop the packet.
     if( drop != 0 ) return;

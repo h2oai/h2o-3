@@ -24,7 +24,7 @@ public class UDPRebooted extends UDP {
 
     public void send(H2ONode target) {
       assert this != none;
-      new AutoBuffer(target,udp.rebooted._prior).putUdp(udp.rebooted).put1(ordinal()).close();
+      new AutoBuffer(target,udp.rebooted._prior).putUdp(udp.rebooted).put1(ordinal()).putInt(H2O.SELF._heartbeat._cloud_name_hash).close();
     }
     void broadcast() { send(H2O.SELF); }
   }
@@ -32,7 +32,10 @@ public class UDPRebooted extends UDP {
   static void checkForSuicide(int first_byte, AutoBuffer ab) {
     if( first_byte != UDP.udp.rebooted.ordinal() ) return;
     int type = ab.get1();
-    suicide( T.values()[type], ab._h2o);
+    int cloud_name_hash_origin = ab.getInt();
+    if(cloud_name_hash_origin == H2O.SELF._heartbeat._cloud_name_hash) {
+      suicide(T.values()[type], ab._h2o);
+    }
   }
 
 
