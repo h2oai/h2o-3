@@ -20,6 +20,9 @@ def h2o_to_float(h2o, pd):
     return (h2o.astype(float), pd)
 
 
+def pd_to_int(h2o, pd):
+    return (h2o, pd.apply(lambda x: 1 if x else 0))
+
 #
 # List of operators which are usable in lambda expression
 # as parameter of `apply` function.
@@ -61,7 +64,7 @@ OPS_VEC_TO_VEC = {
     "floor" : [lambda col: col.floor(), [0], lambda col: np.floor(col), h2o_to_float],
     "log" : [lambda col: col.log(), [], lambda col: np.log(col), None],
     "select" : [lambda x: x["PSA"], [1], None, None],
-    "select2": [lambda x: x['PSA'] > x['VOL'], [1], None, None],
+    "select2": [lambda x: x['PSA'] > x['VOL'], [1], None, pd_to_int],
     "select3": [lambda x: 1 if x['PSA'] > x['VOL'] else 0, [], None, None]
 }
 
