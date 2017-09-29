@@ -56,7 +56,7 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
   // These private members are read-only after the constructor.
   public final GenModel m;
   private final HashMap<String, Integer> modelColumnNameToIndexMap;
-  private final HashMap<Integer, HashMap<String, Integer>> domainMap;
+  public final HashMap<Integer, HashMap<String, Integer>> domainMap;
 
   private final boolean convertUnknownCategoricalLevelsToNa;
   private final boolean convertInvalidNumbersToNa;
