@@ -17,6 +17,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
+import static water.util.ArrayUtils.initBooleanArrays;
+
 /** A collection of named {@link Vec}s, essentially an R-like Distributed Data Frame.
  *
  *  <p>Frames represent a large distributed 2-D table with named columns
@@ -1578,7 +1580,23 @@ public class Frame extends Lockable<Frame> {
 
   @Override public Class<KeyV3.FrameKeyV3> makeSchema() { return KeyV3.FrameKeyV3.class; }
 
-  /** Sort rows of a frame, using the set of columns as keys.
+  /** Sort rows of a frame, using the set of columns as keys.  User can specify sorting direction for each sorting
+   * column in a boolean array.  For example, if we want to sort columns 0, 1, 2 and want to sort 0 in ascending
+   * direction, 1 and 2 in descending direction for frame fr, the call to make is fr.sort(new int[2]{0,1,2},
+   * new boolean[2]{true, false, false}.
+   *
    *  @return Copy of frame, sorted */
-  public Frame sort( int[] cols ) { return Merge.sort(this,cols); }
+  public Frame sort( int[] cols ) {
+    boolean[] ascending;
+    if (cols!=null && cols.length>0)
+      ascending = initBooleanArrays(cols.length, true);
+    else
+      ascending = new boolean[0];
+
+    return sort(cols, ascending);
+  }
+
+  public Frame sort(int[] cols, boolean[] ascending) {
+    return Merge.sort(this, cols, ascending);
+  }
 }

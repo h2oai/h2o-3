@@ -261,6 +261,24 @@ public class SortTest extends TestUtil {
     }
   }
 
+  @Test public void TestSortIntegersDescend() throws IOException {
+    Scope.enter();
+    Frame fr, sortedInt;
+    try {
+      fr = parse_test_file("smalldata/synthetic/integerFrame.csv");
+      sortedInt = fr.sort(new int[]{0}, new boolean[]{false});
+      Scope.track(fr);
+      Scope.track(sortedInt);
+
+      long numRows = fr.numRows();
+      assert numRows==sortedInt.numRows();
+      for (long index = 1; index < numRows; index++) {
+        assertTrue(sortedInt.vec(0).at8(index) >= sortedInt.vec(0).at8(index));
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
 
   private static void testSort(Frame frSorted, Frame originalF, int colIndex) throws IOException {
     Scope.enter();

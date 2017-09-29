@@ -119,6 +119,9 @@ public class Rapids {
   // Set of characters that may appear in a number. Note that "NaN" or "nan" is also a number.
   private static Set<Character> validNumberCharacters = StringUtils.toCharacterSet("0123456789.-+eEnNaA");
 
+  private static Set<Character> validBooleanCharacters = StringUtils.toCharacterSet("FALSEfalseTRUEtrue");
+
+  private static Set<Character> validInitBooleanCharacters = StringUtils.toCharacterSet("FfTt");
   // List of all "simple" backslash-escape sequences (i.e. those that are only 2-characters long, i.e. '\n')
   private static Map<Character, Character> simpleEscapeSequences =
       CollectionUtils.createMap(StringUtils.toCharacterArray("ntrfb'\"\\"),
@@ -211,15 +214,24 @@ public class Rapids {
   }
 
   /**
-   * Parse and return a list of tokens: either a list of strings, or a list of numbers.
+   * Parse and return a list of tokens: either a list of strings, a list of numbers or a list of booleans.
    * We do not support lists of mixed types, or lists containing variables (for now).
    */
   private AstParameter parseList() {
     eatChar('[');
     char nextChar = skipWS();
-    AstParameter res = isQuote(nextChar)? parseStringList() : parseNumList();
+    AstParameter res = isQuote(nextChar)? parseStringList() :
+            (validInitBooleanCharacters.contains(peek(0))?parseBooleanList():parseNumList());
     eatChar(']');
     return res;
+  }
+
+  private AstStrList parseBooleanList() { // parse a list of booleans
+    ArrayList<String> strs = new ArrayList<>(10);
+    while (skipWS() != ']') { // grab all boolean array values
+      strs.add(booleanV());
+    }
+    return new AstStrList(strs);
   }
 
   /**
@@ -329,6 +341,16 @@ public class Rapids {
     } catch (NumberFormatException e) {
       throw new IllegalASTException(e.toString());
     }
+  }
+
+  private String booleanV() {
+    int start = _x;
+    while (validBooleanCharacters.contains(peek(0))) _x++;
+    if (start == _x) throw new IllegalASTException("Missing a boolean variable");
+    String s = _str.substring(start, _x).toLowerCase();
+    if (!(s.equals("true") || s.equals("false")))
+      throw new IllegalASTException("Boolean values (true/True/TRUE/false/False/FALSE) are expected...");
+    return s.toLowerCase();
   }
 
   /**

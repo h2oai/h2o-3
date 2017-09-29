@@ -19,13 +19,15 @@ class RadixCount extends MRTask<RadixCount> {
   // before only an RTMP name anyway
   private final boolean _isLeft; 
   private final int _id_maps[][];
+  private final boolean _ascending;
 
-  RadixCount(boolean isLeft, BigInteger base, int shift, int col, int id_maps[][]) {
+  RadixCount(boolean isLeft, BigInteger base, int shift, int col, int id_maps[][], boolean ascending) {
     _isLeft = isLeft;
     _base = base;
     _col = col;
     _shift = shift;
     _id_maps = id_maps;
+    _ascending = ascending;
   }
 
   // make a unique deterministic key as a function of frame, column and node
@@ -51,8 +53,8 @@ class RadixCount extends MRTask<RadixCount> {
         // common case as should never really have NA in join columns.
         for (int r = 0; r < chk._len; r++) {
           long ctrVal = isIntVal ?
-                  BigInteger.valueOf(chk.at8(r)).subtract(_base).add(BigInteger.ONE).shiftRight(_shift).longValue():
-                  MathUtils.convertDouble2BigInteger(chk.atd(r)).subtract(_base).add(BigInteger.ONE).shiftRight(_shift).longValue();
+                  BigInteger.valueOf(_ascending?chk.at8(r):chk.at8(r)*(-1)).subtract(_base).add(BigInteger.ONE).shiftRight(_shift).longValue():
+                  MathUtils.convertDouble2BigInteger(_ascending?chk.atd(r):chk.atd(r)*(-1)).subtract(_base).add(BigInteger.ONE).shiftRight(_shift).longValue();
           tmp[(int) ctrVal]++;
         }
       } else {    // contains NAs in column
@@ -62,8 +64,8 @@ class RadixCount extends MRTask<RadixCount> {
           if (chk.isNA(r)) tmp[0]++;
           else {
             long ctrVal = isIntVal ?
-                    BigInteger.valueOf(chk.at8(r)).subtract(_base).add(BigInteger.ONE).shiftRight(_shift).longValue():
-                    MathUtils.convertDouble2BigInteger(chk.atd(r)).subtract(_base).add(BigInteger.ONE).shiftRight(_shift).longValue();
+                    BigInteger.valueOf(_ascending?chk.at8(r):chk.at8(r)*(-1)).subtract(_base).add(BigInteger.ONE).shiftRight(_shift).longValue():
+                    MathUtils.convertDouble2BigInteger(_ascending?chk.atd(r):chk.atd(r)*(-1)).subtract(_base).add(BigInteger.ONE).shiftRight(_shift).longValue();
             tmp[(int) ctrVal]++;
           }
 

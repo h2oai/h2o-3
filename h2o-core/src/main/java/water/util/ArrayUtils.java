@@ -742,6 +742,13 @@ public class ArrayUtils {
       if( elem==ls[i] ) return i;
     return -1;
   }
+
+  public static boolean[] initBooleanArrays(int arrayLen, boolean val) {
+    boolean[] allreal = new boolean[arrayLen];
+    for (int index=0; index<arrayLen; index++)
+      allreal[index]=val;
+    return allreal;
+  }
   // behaves like Arrays.binarySearch, but is slower -> Just good for tiny arrays (length<20)
   public static int linearSearch(double[] vals, double v) {
     final int N=vals.length;
