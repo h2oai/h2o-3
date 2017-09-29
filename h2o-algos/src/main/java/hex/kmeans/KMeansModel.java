@@ -4,6 +4,7 @@ import hex.ClusteringModel;
 import hex.ModelMetrics;
 import hex.ModelMetricsClustering;
 import hex.ToEigenVec;
+import hex.genmodel.IClusteringModel;
 import hex.util.LinearAlgebraUtils;
 import water.DKV;
 import water.Job;
@@ -152,6 +153,12 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
   @Override protected double data(Chunk[] chks, int row, int col){
     return Kmeans_preprocessData(chks[col].atd(row),col,_output._normSub,_output._normMul,_output._mode);
   }
+
+  @Override
+  protected Class<?>[] getPojoInterfaces() {
+    return new Class<?>[]{IClusteringModel.class};
+  }
+
   // Override in subclasses to provide some top-level model-specific goodness
   @Override protected void toJavaPredictBody(SBPrintStream body,
                                              CodeGeneratorPipeline classCtx,
