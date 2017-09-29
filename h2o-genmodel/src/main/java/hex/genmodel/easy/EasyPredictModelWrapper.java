@@ -562,7 +562,7 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
   }
 
   // This should have been called predict(), because that's what it does
-  private double[] preamble(ModelCategory c, RowData data) throws PredictException {
+  protected double[] preamble(ModelCategory c, RowData data) throws PredictException {
     validateModelCategory(c);
     return predict(data, new double[m.getPredsSize(c)]);
   }
@@ -575,7 +575,7 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     return arr;
   }
 
-  private double[] fillRawData(RowData data, double[] rawData) throws PredictException {
+  protected double[] fillRawData(RowData data, double[] rawData) throws PredictException {
 
     // TODO: refactor
     boolean isImage = m instanceof DeepwaterMojoModel && ((DeepwaterMojoModel) m)._problem_type.equals("image");
@@ -689,7 +689,7 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     return rawData;
   }
 
-  private double[] predict(RowData data, double[] preds) throws PredictException {
+  protected double[] predict(RowData data, double[] preds) throws PredictException {
     double[] rawData = nanArray(m.nfeatures());
     rawData = fillRawData(data, rawData);
     preds = m.score0(rawData, preds);
