@@ -135,7 +135,7 @@ status:
     --------------------------  ---------------------------
 
 If pip was used to perform a versioned install of the h2o module, then the version field
-would display display something other than `(unknown)`.
+would display something other than `(unknown)`.
 
 Listing Cluster Contents
 ++++++++++++++++++++++++
