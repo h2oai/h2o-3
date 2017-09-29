@@ -38,7 +38,7 @@ public abstract class Paxos {
   static synchronized int doHeartbeat( H2ONode h2o ) {
     // Kill somebody if the jar files mismatch.  Do not attempt to deal with
     // mismatched jars.
-    if( !h2o._heartbeat.check_jar_md5() ) {
+    if( !h2o._heartbeat.check_jar_md5() && !h2o._heartbeat._client) {
       if( H2O.CLOUD.size() > 1 ) {
         Log.warn("Killing "+h2o+" because of H2O version mismatch (md5 differs).");
         UDPRebooted.T.mismatch.send(h2o);
