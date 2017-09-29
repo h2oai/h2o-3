@@ -11,10 +11,10 @@ build-h2o-3:
 	@echo "+--Building H2O-3--+"
 	@echo
 	@echo "+--Cleaning--+"
-	./gradlew clean
+	./gradlew clean --gradle-user-home /gradle-user-home
 	@echo
 	@echo "+--Building--+"
-	./gradlew build -x test
+	./gradlew build -x test --gradle-user-home /gradle-user-home
 
 test-py-smoke:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
