@@ -1548,6 +1548,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     Class<?>[] interfaces = getPojoInterfaces();
     if (interfaces.length == 0)
       return sb;
+    sb.p("implements ");
     for (int i = 0; i < interfaces.length - 1; i++)
       sb.p(interfaces[i].getSimpleName()).p(", ");
     sb.p(interfaces[interfaces.length - 1].getSimpleName()).p(' ');
@@ -1731,6 +1732,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           e.printStackTrace();
           throw H2O.fail("Internal POJO compilation failed",e);
         }
+
+        // Check that POJO has the expected interfaces
+        for (Class<?> clz : getPojoInterfaces())
+          if (! clz.isInstance(genmodel))
+            throw new IllegalStateException("POJO is expected to implement interface " + clz.getName());
 
         // Check some model metadata
         assert _output.responseName() == null || _output.responseName().equals(genmodel.getResponseName());
