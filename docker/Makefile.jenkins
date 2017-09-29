@@ -16,6 +16,10 @@ build-h2o-3:
 	@echo "+--Building--+"
 	./gradlew build -x test
 
+test-package-py:
+	cd h2o-py/tests/ && rm -f -r testdir_hdfs
+	zip -r test-package-py.zip h2o-py/tests/ h2o-py/dist/*.whl h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py docker/Makefile.jenkins tests/pyunitSmokeTestList h2o-py/scripts/h2o-py-test-setup.py
+
 test-py-smoke:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
 	cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist ../../tests/pyunitSmokeTestList --numclouds 6 --jvm.xmx 3g
