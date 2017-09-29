@@ -295,6 +295,7 @@ def _get_func_name(op, args):
     if op == "sum" and len(args) > 0 and args[0]: op = "sumNA"
     if op == "min" and len(args) > 0 and args[0]: op = "minNA"
     if op == "max" and len(args) > 0 and args[0]: op = "maxNA"
+    if op == "nacnt": op = "naCnt"
     return op
 
 
