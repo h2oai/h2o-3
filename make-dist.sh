@@ -174,4 +174,5 @@ cat h2o-dist/buildinfo.json \
   | sed -e "s/SUBST_BRANCH_NAME/${BRANCH_NAME}/g" \
   | sed -e "s/SUBST_BUILD_NUMBER/${BUILD_NUMBER}/g" \
   | sed -e "s/SUBST_LAST_COMMIT_HASH/${LAST_COMMIT_HASH}/g" \
+  | sed -e "s/SUBST_SHA256_HASH/${SHA256_HASH}/g" \
   > target/buildinfo.json
