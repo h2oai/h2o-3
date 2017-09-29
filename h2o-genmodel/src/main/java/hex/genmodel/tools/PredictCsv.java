@@ -4,7 +4,6 @@ import au.com.bytecode.opencsv.CSVReader;
 import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
-import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.prediction.*;
@@ -81,31 +80,40 @@ public class PredictCsv {
   private void run() throws Exception {
     ModelCategory category = model.getModelCategory();
     CSVReader reader = new CSVReader(new FileReader(inputCSVFileName), separator);
-    String readline;
     BufferedWriter output = new BufferedWriter(new FileWriter(outputCSVFileName));
-    int lastCommaAutoEn = 0;
-    DeeplearningMojoModel thisModel = null;
+    int lastCommaAutoEn = -1; // for deeplearning model in autoencoder mode
 
     // Emit outputCSV column names.
     switch (category) {
       case AutoEncoder:
-        thisModel = (DeeplearningMojoModel)this.model.m;
         String[] cnames =  this.model.m.getNames();
-        lastCommaAutoEn = thisModel._units[0]-1;
-        for (int index = 0; index < thisModel._cats; index++) { // add names for categorical columns
-          String[] tdomains = thisModel._domains[index];
+        int numCats = this.model.domainMap.size();
+        int numNums = this.model.m.nfeatures()-numCats;
+        String[][] domainValues = this.model.m.getDomainValues();
+        int lastCatIdx = numCats-1;
+        //int additionalCatCols = this.model.getUnknownCategoricalLevelsSeenPerColumn().size();
+       // ConcurrentHashMap<String, AtomicLong> temp = this.model.getUnknownCategoricalLevelsSeenPerColumn();
+
+        for (int index = 0; index <= lastCatIdx  ; index++) { // add names for categorical columns
+          String[] tdomains = domainValues[index]; //this.model.m.getDomainValues(index)
           int tdomainLen = tdomains.length-1;
           for (int index2 = 0; index2 <= tdomainLen; index2++ ) {
+            lastCommaAutoEn++;
             String temp = "reconstr_"+tdomains[index2];
             output.write(temp);
-
-            if ((index2 < tdomainLen) || (thisModel._nums>0))
-              output.write(',');
+            output.write(',');
           }
+
+          lastCommaAutoEn++;
+          String temp = "reconstr_" + cnames[index] + ".missing(NA)"; // add missing(NA) column as last column name
+          output.write(temp);
+          if (numNums > 0 || index < lastCatIdx)
+            output.write(',');
         }
 
         int lastComma = cnames.length-1;
-        for (int index = thisModel._cats; index < cnames.length; index++) {  // add the numerical column names
+        for (int index = numCats; index < cnames.length; index++) {  // add the numerical column names
+          lastCommaAutoEn++;
           String temp = "reconstr_"+cnames[index];
           output.write(temp);
 
@@ -153,16 +161,14 @@ public class PredictCsv {
         throw new Exception("Input dataset file is empty!");
 
       while ((splitLine = reader.readNext()) != null) {
-
         // Parse the CSV line.  Don't handle quoted commas.  This isn't a parser test.
         RowData row = formatDataRow(splitLine, inputColumnNames);
-
         // Do the prediction.
         // Emit the result to the output file.
         switch (category) {
           case AutoEncoder: { // write the expanded predictions out
             AutoEncoderModelPrediction p = model.predictAutoEncoder(row);
-            for (int i=0; i < thisModel._units[0]; i++) {
+            for (int i=0; i < p.reconstructed.length; i++) {
               output.write(myDoubleToString(p.reconstructed[i]));
 
               if (i < lastCommaAutoEn)
