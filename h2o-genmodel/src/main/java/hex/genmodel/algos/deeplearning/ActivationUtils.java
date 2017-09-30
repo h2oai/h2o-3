@@ -52,7 +52,7 @@ public class ActivationUtils {
 
   public static double[] applyDropout(double[] input, double drop_out_ratio, int nodeSize) {
     if (drop_out_ratio > 0) {
-      double multFact = 1 - drop_out_ratio;
+      double multFact = 1.0 - drop_out_ratio;
       for (int index = 0; index < nodeSize; index++)
         input[index] *= multFact;
     }
@@ -66,7 +66,7 @@ public class ActivationUtils {
       double[] output = new double[nodeSize];
 
       for (int index = 0; index < nodeSize; index++) {
-        output[index] = input[index] >= 0 ? input[index] : Math.exp(input[index]) - 1;
+        output[index] = input[index] >= 0 ? input[index] : Math.exp(input[index]) - 1.0;
       }
       return output;
     }
@@ -133,10 +133,9 @@ public class ActivationUtils {
       double[] output = new double[nodeSize];
 
       for (int index=0; index < nodeSize; index++)
-        output[index] = 1-2/(1+Math.exp(2*input[index]));
+        output[index] = 1.0-2.0/(1.0+Math.exp(2.0*input[index]));
 
       return output;
     }
   }
-
 }

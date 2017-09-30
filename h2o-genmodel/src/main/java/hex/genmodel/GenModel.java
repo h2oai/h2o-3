@@ -557,6 +557,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
 
   static public void setCats(final double[] from, double[] nums, int[] cats, int _cats, int[] _catOffsets,
                              double[] _normMul, double[] _normSub, boolean useAllFactorLevels) {
+    Arrays.fill(cats, 0);
     for (int i = 0; i < _cats; ++i) {
       if (Double.isNaN(from[i])) {
         cats[i] = (_catOffsets[i + 1] - 1); //use the extra level for NAs made during training
