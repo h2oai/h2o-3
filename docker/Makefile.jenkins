@@ -43,3 +43,7 @@ test-py-demos:
 test-pyunit-medium-large:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
 	cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 1 --numnodes 5 --jvm.xmx 15g
+
+test-r-smoke:
+	cd h2o-r/tests/ && rm -f -r testdir_hdfs
+	cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist ../../tests/runitSmokeTestList --numclouds 8 --jvm.xmx 3g
