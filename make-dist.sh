@@ -126,6 +126,9 @@ cp -p h2o-bindings/build/libs/*.jar target/bindings/java
 mkdir target/maven
 cp -rp build/repo target/maven
 
+# Generate SHA256 from zip file
+(cd target && sha256sum h2o-*.zip > sha256.txt)
+
 # Build main h2o sphinx documentation.
 cd h2o-docs/src/product
 sphinx-build -b html -d _build/doctrees . _build/html
