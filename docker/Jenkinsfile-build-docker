@@ -8,7 +8,7 @@ pipeline {
     agent { label AGENT_LABEL }
 
     parameters {
-      string(name: 'gitBranch', defaultValue: 'mr/feature/h2o3-runtime-docker', description: 'Branch to load the Dockerfile from.')
+      string(name: 'gitBranch', defaultValue: 'master', description: 'Branch to load the Dockerfile from.')
       booleanParam(name: 'publishDockerImage', defaultValue: true, description: 'If true, publish the docker image')
       string(name: 'dockerRegistry', defaultValue: 'docker.h2o.ai')
     }
