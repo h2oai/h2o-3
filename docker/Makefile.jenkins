@@ -20,6 +20,10 @@ test-package-py:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
 	zip -r test-package-py.zip h2o-py/tests/ h2o-py/demos/ h2o-docs/src/booklets/v2_2015/source h2o-py/dist/*.whl h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py docker/Makefile.jenkins tests/pyunitSmokeTestList h2o-py/scripts/h2o-py-test-setup.py
 
+test-package-r:
+	cd h2o-py/tests/ && rm -f -r testdir_hdfs
+	zip -r test-package-r.zip h2o-r/h2o-package/R/ h2o-r/tests/ h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py docker/Makefile.jenkins tests/runitSmokeTestList h2o-r/scripts/h2o-r-test-setup.R
+
 test-py-smoke:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
 	cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist ../../tests/pyunitSmokeTestList --numclouds 6 --jvm.xmx 3g
@@ -43,3 +47,25 @@ test-py-demos:
 test-pyunit-medium-large:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
 	cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 1 --numnodes 5 --jvm.xmx 15g
+
+test-r-smoke:
+	cd h2o-r/tests/ && rm -f -r testdir_hdfs
+	cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist ../../tests/runitSmokeTestList --numclouds 8 --jvm.xmx 3g
+
+test-r-small:
+	cd h2o-r/tests/ && rm -f -r testdir_hdfs
+	cd h2o-r/tests/ && rm -f -r testdir_demos
+	cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --geterrs --numclouds 5 --jvm.xmx 4g
+
+test-r-small-client-mode:
+	cd h2o-r/tests/ && rm -f -r testdir_hdfs
+	cd h2o-r/tests/ && ../../scripts/run.py --wipeall --client --testsize s --numclouds 4 --jvm.xmx 4g
+
+test-r-medium-large:
+	cd h2o-r/tests/ && rm -f -r testdir_hdfs
+	cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 2 --numnodes 2 --jvm.xmx 20g
+
+test-r-datatable:
+	cd h2o-r/tests/ && rm -f -r testdir_hdfs
+	cd h2o-r/tests/ && rm -f -r testdir_demos
+	cd h2o-r/tests/testdir_perf && ../../../scripts/run.py --wipeall --test runit_repeating_merge.R  --numclouds 1 --numnodes 2 --jvm.xmx 20g
