@@ -126,6 +126,9 @@ cp -p h2o-bindings/build/libs/*.jar target/bindings/java
 mkdir target/maven
 cp -rp build/repo target/maven
 
+# Generate SHA256 from zip file
+SHA256_HASH=$(sha256sum target/h2o-*.zip) > target/sha256.txt
+
 # Build main h2o sphinx documentation.
 cd h2o-docs/src/product
 sphinx-build -b html -d _build/doctrees . _build/html
@@ -174,5 +177,4 @@ cat h2o-dist/buildinfo.json \
   | sed -e "s/SUBST_BRANCH_NAME/${BRANCH_NAME}/g" \
   | sed -e "s/SUBST_BUILD_NUMBER/${BUILD_NUMBER}/g" \
   | sed -e "s/SUBST_LAST_COMMIT_HASH/${LAST_COMMIT_HASH}/g" \
-  | sed -e "s/SUBST_SHA256_HASH/${SHA256_HASH}/g" \
   > target/buildinfo.json
