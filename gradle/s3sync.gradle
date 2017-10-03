@@ -72,12 +72,6 @@ def syncData(subdir) {
   while (needMoreData) {
       def remoteFiles = new XmlSlurper().parseText(new URL("https://h2o-public-test-data.s3.amazonaws.com/?marker=$lastKey").getText())
       needMoreData = remoteFiles.IsTruncated == "true"
-      // If no such file appears on the first result page skip to next page
-      if (remoteFiles.Contents.findAll{it.Key =~ subdir}.size() == 0) {
-          lastKey = remoteFiles.Contents.last().Key
-          continue
-      }
-
       remoteFiles.Contents.findAll{it.Key =~ subdir}.each { rfile ->
         def match = false
         def rname = localDestDir + rfile.Key.text().substring(trimLength).replaceAll("/", Matcher.quoteReplacement(File.separator))
