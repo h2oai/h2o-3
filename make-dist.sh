@@ -127,7 +127,7 @@ mkdir target/maven
 cp -rp build/repo target/maven
 
 # Generate SHA256 from zip file
-sha256sum target/h2o-*.zip > target/sha256.txt
+(cd target && sha256sum h2o-*.zip > sha256.txt)
 
 # Build main h2o sphinx documentation.
 cd h2o-docs/src/product
