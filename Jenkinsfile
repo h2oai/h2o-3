@@ -1,4 +1,4 @@
-@Library('h2o3-shared-lib@mr/ita-9-run-for-pr') _
+@Library('h2o3-shared-lib') _
 
 def SIZE_MEDIUM_LARGE = 'medium-large'
 def SIZE_SMALL = 'small'
