@@ -26,8 +26,9 @@ test-package-py:
 test-package-r:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
 	zip -r test-package-r.zip h2o-r/h2o-package/R/ h2o-r/tests/ \
-		h2o-r/R/src/contrib/h2o*.tar.gz h2o-assemblies/genmodel/build/libs/genmodel.jar \
-		scripts/run.py docker/Makefile.jenkins tests/runitSmokeTestList \
+		cd h2o-docs/src/booklets/v2_2015/source h2o-r/R/src/contrib/h2o*.tar.gz \
+		h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py \
+		docker/Makefile.jenkins tests/runitSmokeTestList \
 		h2o-r/scripts/h2o-r-test-setup.R scripts/validate_r_cmd_check_output.R \
 		scripts/validate_r_cmd_check_output.py
 
@@ -88,5 +89,11 @@ test-r-cmd-check-as-cran:
 	fuser -k 59999/tcp || /bin/true
 
 test-r-booklets:
+	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --wipeall --norun
+	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --jvm.xmx 15g --test rbooklet.deeplearning.vignette.R
+	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --jvm.xmx 15g --test rbooklet.gbm.vignette.R
+	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --jvm.xmx 15g --test rbooklet.glm.vignette.R
+	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --jvm.xmx 15g --test rbooklet.r.vignette.R
+
 test-r-demos-medium-large:
 test-r-demos-small:
