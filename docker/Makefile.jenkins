@@ -18,11 +18,18 @@ build-h2o-3:
 
 test-package-py:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
-	zip -r test-package-py.zip h2o-py/tests/ h2o-py/demos/ h2o-docs/src/booklets/v2_2015/source h2o-py/dist/*.whl h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py docker/Makefile.jenkins tests/pyunitSmokeTestList h2o-py/scripts/h2o-py-test-setup.py
+	zip -r test-package-py.zip h2o-py/tests/ h2o-py/demos/ \
+	h2o-docs/src/booklets/v2_2015/source h2o-py/dist/*.whl \
+	h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py \
+	docker/Makefile.jenkins tests/pyunitSmokeTestList h2o-py/scripts/h2o-py-test-setup.py
 
 test-package-r:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
-	zip -r test-package-r.zip h2o-r/h2o-package/R/ h2o-r/tests/ h2o-r/R/src/contrib/h2o*.tar.gz h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py docker/Makefile.jenkins tests/runitSmokeTestList h2o-r/scripts/h2o-r-test-setup.R
+	zip -r test-package-r.zip h2o-r/h2o-package/R/ h2o-r/tests/ \
+		h2o-r/R/src/contrib/h2o*.tar.gz h2o-assemblies/genmodel/build/libs/genmodel.jar \
+		scripts/run.py docker/Makefile.jenkins tests/runitSmokeTestList \
+		h2o-r/scripts/h2o-r-test-setup.R scripts/validate_r_cmd_check_output.R \
+		scripts/validate_r_cmd_check_output.py
 
 test-py-smoke:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
@@ -73,8 +80,13 @@ test-r-datatable:
 test-r-cmd-check:
 	cd h2o-r/R/src/contrib && OPENBLAS_MAIN_FREE=1 H2O_R_CMD_CHECK_DOC_EXAMPLES_IP=127.0.0.1 H2O_R_CMD_CHECK_DOC_EXAMPLES_PORT=59999 _R_CHECK_FORCE_SUGGESTS_=FALSE R CMD check --run-dontrun --run-donttest h2o_*.*.*.*.tar.gz
 	fuser -k 59999/tcp || /bin/true
-	
+
 test-r-cmd-check-as-cran:
+	cd h2o-r/R/src/contrib && OPENBLAS_MAIN_FREE=1 H2O_R_CMD_CHECK_DOC_EXAMPLES_IP=127.0.0.1 H2O_R_CMD_CHECK_DOC_EXAMPLES_PORT=59999 _R_CHECK_FORCE_SUGGESTS_=FALSE R CMD check --as-cran h2o_*.*.*.*.tar.gz
+	cd h2o-r/R/src/contrib && OPENBLAS_MAIN_FREE=1 H2O_R_CMD_CHECK_DOC_EXAMPLES_IP=127.0.0.1 H2O_R_CMD_CHECK_DOC_EXAMPLES_PORT=59999 _R_CHECK_FORCE_SUGGESTS_=FALSE [ -f ../../../../scripts/validate_r_cmd_check_output.R ] && Rscript ../../../../scripts/validate_r_cmd_check_output.R
+	cd h2o-r/R/src/contrib && OPENBLAS_MAIN_FREE=1 H2O_R_CMD_CHECK_DOC_EXAMPLES_IP=127.0.0.1 H2O_R_CMD_CHECK_DOC_EXAMPLES_PORT=59999 _R_CHECK_FORCE_SUGGESTS_=FALSE python ../../../../scripts/validate_r_cmd_check_output.py || true
+	fuser -k 59999/tcp || /bin/true
+
 test-r-booklets:
 test-r-demos-medium-large:
 test-r-demos-small:
