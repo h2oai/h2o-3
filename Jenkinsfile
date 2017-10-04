@@ -113,7 +113,7 @@ if (env.CHANGE_BRANCH != null && env.CHANGE_BRANCH != '') {
   cancelPreviousBuilds()
 }
 
-node ('docker') {
+node ('docker && !mr-0xc8') {
   withDockerEnvironment(customEnv, 4, 'HOURS') {
 
     stage ('Checkout Sources') {
