@@ -22,10 +22,13 @@ public class ExtensionManager {
 
   private HashMap<String, AbstractH2OExtension> coreExtensions = new HashMap<>();
   private HashMap<String, RestApiExtension> restApiExtensions = new HashMap<>();
+  private HashMap<String, H2OListenerExtension> listenerExtensions = new HashMap<>();
   private long registerCoreExtensionsMillis = 0;
+  private long registerListenerExtensionsMillis = 0;
   // Be paranoid and check that this doesn't happen twice.
   private boolean extensionsRegistered = false;
   private boolean restApiExtensionsRegistered = false;
+  private boolean listenerExtensionsRegistered = false;
 
 
   public Collection<AbstractH2OExtension> getCoreExtensions() {
@@ -93,6 +96,10 @@ public class ExtensionManager {
     Log.info("Registered " + coreExtensions.size() + " core extensions in: " + registerCoreExtensionsMillis + "ms");
     Log.info("Registered H2O core extensions: " + Arrays.toString(getCoreExtensionNames()));
 
+    if(listenerExtensions.size() > 0) {
+      Log.info("Registered: " + listenerExtensions.size() + " listener extensions in: " + registerListenerExtensionsMillis + "ms");
+      Log.info("Registered Listeners extensions: " + Arrays.toString(getListenerExtensionNames()));
+    }
     long before = System.currentTimeMillis();
     RequestServer.DummyRestApiContext dummyRestApiContext = new RequestServer.DummyRestApiContext();
     ServiceLoader<RestApiExtension> restApiExtensionLoader = ServiceLoader.load(RestApiExtension.class);
@@ -126,6 +133,10 @@ public class ExtensionManager {
     return coreExtensions.keySet().toArray(new String[coreExtensions.keySet().size()]);
   }
 
+  private String[] getListenerExtensionNames(){
+    return listenerExtensions.keySet().toArray(new String[listenerExtensions.keySet().size()]);
+  }
+
   public boolean isCoreExtensionEnabled(String name) {
     if (coreExtensions.containsKey(name)) {
       return coreExtensions.get(name).isEnabled();
@@ -133,4 +144,31 @@ public class ExtensionManager {
       return false;
     }
   }
+
+  /**
+   * Register various listener extensions
+   *
+   * Use reflection to find all classes that inherit from {@link water.api.AbstractRegister}
+   * and call the register() method for each.
+   *
+   */
+  public void registerListenerExtensions() {
+    if (listenerExtensionsRegistered) {
+      throw H2O.fail("Listeners already registered");
+    }
+
+    long before = System.currentTimeMillis();
+    ServiceLoader<H2OListenerExtension> extensionsLoader = ServiceLoader.load(H2OListenerExtension.class);
+    for (H2OListenerExtension ext : extensionsLoader) {
+      ext.init();
+      listenerExtensions.put(ext.getName(), ext);
+    }
+    listenerExtensionsRegistered = true;
+    registerListenerExtensionsMillis = System.currentTimeMillis() - before;
+  }
+
+  public Collection<H2OListenerExtension> getListenerExtensions(){
+    return listenerExtensions.values();
+  }
+
 }
