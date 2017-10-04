@@ -805,7 +805,7 @@ compareFrames <- function(frame1, frame2, prob=0.5, tolerance=1e-6) {
     temp2=as.numeric(frame2[,colInd])
     for (rowInd in range(1,nrow(frame1))) {
       if (runif(1,0,1) < prob)
-        expect_true(abs(temp1[rowInd,1]-temp2[rowInd,1])< tolerance, info="frame1 != frame2 ")
+        expect_true(abs(temp1[rowInd,1]-temp2[rowInd,1])< tolerance, info=paste0("Error at row ", rowInd, ". Frame 1 value ", temp1[rowInd, 1], ". Frame 2 value ", temp2[rowInd, 1]))
     }
   }
 }
