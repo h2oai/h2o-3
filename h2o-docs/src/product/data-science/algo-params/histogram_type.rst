@@ -7,6 +7,12 @@
 Description
 ~~~~~~~~~~~
 
+Histogram aggregation is commonly used to speed up the split finding process in decision tree algorithms. Instead of considering every possible way to split a set of training instances based on a given feature, the problem can be simplified by considering discrete sections of the feature space.
+
+For example if we have some feature ranging from 0-100 and 10M training instances, a traditional tree algorithm will enumerate over all 10M training instances to find a split. Instead the feature space could be evenly divided into 10 regions (0-10,10-20,...,90-100). The information from training instances is then aggregated into these histogram bins, and the process of finding a split now only requires enumerating over 10 possible split points.
+
+The histogram_type option specifies to the method of calculating these bin boundaries. The option has an impact on the possible split points a tree algorithm is able to select.
+
 By default (AUTO) GBM/DRF bins from min...max in steps of (max-min)/N.  Use this option to specify the type of histogram to use for finding optimal split points. Available types include:
 
 - AUTO
@@ -17,7 +23,7 @@ By default (AUTO) GBM/DRF bins from min...max in steps of (max-min)/N.  Use this
 
 When ``histogram_type="UniformAdaptive"`` is specified, each feature is binned into buckets of equal step size (not population). This is the fastest method, and usually performs well, but can lead to less accurate splits if the distribution is highly skewed.
 
-When ``histogram_type="Random"`` is specified, the algorithm will sample N-1 points from min...max and use the sorted list of those to find the best split.
+When ``histogram_type="Random"`` is specified, the algorithm will sample N-1 points from min...max and use the sorted list of those to find the best split. The cut points are random rather than uniform. For example, to generate 4 bins for some feature ranging from 0-100, 3 random numbers would be generated in this range (13.2, 89.12, 45.0). The sorted list of these random numbers forms the histogram bin boundaries e.g. (0-13.2, 13.2-45.0, 45.0-89.12, 89.12-100).
 
 When ``histogram_type="QuantilesGlobal"`` is specified, the feature distribution is taken into account with a quantile-based binning (where buckets have equal population). This computes ``nbins`` quantiles for each numeric (non-binary) column, then refines/pads each bucket (between two quantiles) uniformly (and randomly for remainders) into a total of ``nbins_top_level`` bins. This set of split points is then used for all levels of the tree: each leaf node histogram gets min/max-range adjusted (based on its population range) and also linearly refined/padded to end up with exactly ``nbins`` (level) bins to pick the best split from. For integer columns where this ends up with more than the unique number of distinct values, the algorithm falls back to the pure-integer buckets.
 
