@@ -114,15 +114,7 @@ if (env.CHANGE_BRANCH != null && env.CHANGE_BRANCH != '') {
   cancelPreviousBuilds()
 }
 
-def rootNodeLabel = Globals.DEFAULT_NODE_LABEL
-if (env.BUILD_URL.contains(Globals.PR_MACHINE)) {
-  echo "Running under ${Globals.PR_MACHINE} machine, can use ${Globals.MASTER_NODE_LABEL} as root node."
-  rootNodeLabel = Globals.MASTER_NODE_LABEL
-} else {
-  echo "Running under ${Globals.MASTER_MACHINE} machine."
-}
-
-node (rootNodeLabel) {
+node (getRootNodeLabel()) {
   node (Globals.DEFAULT_NODE_LABEL) {
     withDockerEnvironment(customEnv, 4, 'HOURS') {
 
