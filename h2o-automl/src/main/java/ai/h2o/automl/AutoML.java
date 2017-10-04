@@ -269,6 +269,14 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     this.foldColumn = trainingFrame.vec(buildSpec.input_spec.fold_column);
     this.weightsColumn = trainingFrame.vec(buildSpec.input_spec.weights_column);
 
+    this.userFeedback.info(Stage.DataImport, "training frame: " + this.trainingFrame.toString().replace("\n", " ") + " checksum: " + this.trainingFrame.checksum());
+    this.userFeedback.info(Stage.DataImport, "validation frame: " + this.validationFrame.toString().replace("\n", " ") + " checksum: " + this.validationFrame.checksum());
+    this.userFeedback.info(Stage.DataImport, "leaderboard frame: " + this.leaderboardFrame.toString().replace("\n", " ") + " checksum: " + this.leaderboardFrame.checksum());
+
+    this.userFeedback.info(Stage.DataImport, "response column: " + buildSpec.input_spec.response_column);
+    this.userFeedback.info(Stage.DataImport, "fold column: " + this.foldColumn);
+    this.userFeedback.info(Stage.DataImport, "weights column: " + this.weightsColumn);
+
     if (verifyImmutability) {
       // check that we haven't messed up the original Frame
       originalTrainingFrameVecs = origTrainingFrame.vecs().clone();

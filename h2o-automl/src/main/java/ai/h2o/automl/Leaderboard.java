@@ -96,6 +96,11 @@ public class Leaderboard extends Keyed<Leaderboard> {
    */
   private Frame leaderboardFrame;
 
+  /**
+   * Checksum for the Frame for which we return the metrics, by default.
+   */
+  private long leaderboardFrameChecksum;
+
   /** HIDEME! */
   private Leaderboard() {
     throw new UnsupportedOperationException("Do not call the default constructor Leaderboard().");
@@ -109,6 +114,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     this.project_name = project_name;
     this.userFeedback = userFeedback;
     this.leaderboardFrame = leaderboardFrame;
+    this.leaderboardFrameChecksum = leaderboardFrame.checksum();
     DKV.put(this);
   }
 
@@ -117,6 +123,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     if (null != exists) {
       exists.userFeedback = userFeedback;
       exists.leaderboardFrame = leaderboardFrame;
+      exists.leaderboardFrameChecksum = leaderboardFrame.checksum();
       DKV.put(exists);
       return exists;
     }
@@ -140,7 +147,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
     return project_name;
   }
 
-  public void setMetricAndDirection(String metric,String[] otherMetrics, boolean sortDecreasing){
+  public void setMetricAndDirection(String metric, String[] otherMetrics, boolean sortDecreasing) {
     this.sort_metric = metric;
     this.other_metrics = otherMetrics;
     this.sort_decreasing = sortDecreasing;
@@ -183,30 +190,26 @@ public class Leaderboard extends Keyed<Leaderboard> {
     }
 
     final Key<Model> newLeader[] = new Key[1]; // only set if there's a new leader
+    final double newLeaderSortMetric[] = new double[1];
 
     new TAtomic<Leaderboard>() {
       @Override
-      final public Leaderboard atomic(Leaderboard old) {
-        if (old == null) old = new Leaderboard(project_name, userFeedback, leaderboardFrame);
+      final public Leaderboard atomic(Leaderboard updating) {
+        if (updating == null) updating = new Leaderboard(project_name, userFeedback, leaderboardFrame);
 
-        final Key<Model>[] oldModels = old.models;
+        final Key<Model>[] oldModels = updating.models;
         final Key<Model> oldLeader = (oldModels == null || 0 == oldModels.length) ? null : oldModels[0];
 
         // eliminate duplicates
         Set<Key<Model>> uniques = new HashSet(oldModels.length + newModels.length);
         uniques.addAll(Arrays.asList(oldModels));
         uniques.addAll(Arrays.asList(newModels));
-        old.models = uniques.toArray(new Key[0]);
+        updating.models = uniques.toArray(new Key[0]);
 
-        // TODO: remove from tatomic?
-        // which models are really new?  we need to call score on them
-        Set<Key<Model>> reallyNewModels = new HashSet<>(uniques);
-        reallyNewModels.removeAll(Arrays.asList(oldModels));
-
-        // Try fetching ModelMetrics for *all* models, not just reallyNewModels,
-        // because the leaderboardFrame might have changed.
-        old.leaderboard_set_metrics = new IcedHashMap<>();
-        for (Key<Model> aKey : old.models) {
+        // Try fetching ModelMetrics for *all* models, not just
+        // new models, because the leaderboardFrame might have changed.
+        updating.leaderboard_set_metrics = new IcedHashMap<>();
+        for (Key<Model> aKey : updating.models) {
           Model aModel = aKey.get();
           if (null == aModel) {
             userFeedback.warn(UserFeedbackEvent.Stage.ModelTraining, "Model in the leaderboard has unexpectedly been deleted from H2O: " + aKey);
@@ -218,35 +221,38 @@ public class Leaderboard extends Keyed<Leaderboard> {
             Frame preds = aModel.score(leaderboardFrame);
             mm = ModelMetrics.getFromDKV(aModel, leaderboardFrame);
           }
-          old.leaderboard_set_metrics.put(mm._key, mm);
+          updating.leaderboard_set_metrics.put(mm._key, mm);
         }
 
         // Sort by metric on the leaderboard/test set.
         try {
-          List<Key<Model>> modelsSorted = ModelMetrics.sortModelsByMetric(leaderboardFrame, sort_metric, sort_decreasing, Arrays.asList(old.models));
-          old.models = modelsSorted.toArray(new Key[0]);
-        }
-        catch (H2OIllegalArgumentException e) {
+          List<Key<Model>> modelsSorted = ModelMetrics.sortModelsByMetric(leaderboardFrame, sort_metric, sort_decreasing, Arrays.asList(updating.models));
+          updating.models = modelsSorted.toArray(new Key[0]);
+        } catch (H2OIllegalArgumentException e) {
           Log.warn("ModelMetrics.sortModelsByMetric failed: " + e);
           throw e;
         }
 
-        Model[] models = new Model[old.models.length];
-        old.sort_metrics = old.getSortMetrics(old.sort_metric, old.leaderboard_set_metrics, leaderboardFrame, modelsForModelKeys(old.models, models));
-        if (sort_metric.equals("auc")){ //Binomial case
-          old.logloss= old.getOtherMetrics("logloss", old.leaderboard_set_metrics, leaderboardFrame, modelsForModelKeys(old.models, models));
-        } else if (sort_metric.equals("mean_residual_deviance")){ //Regression case
-          old.rmse= old.getOtherMetrics("rmse", old.leaderboard_set_metrics, leaderboardFrame, modelsForModelKeys(old.models, models));
-          old.mae= old.getOtherMetrics("mae", old.leaderboard_set_metrics, leaderboardFrame, modelsForModelKeys(old.models, models));
-          old.rmsle= old.getOtherMetrics("rmsle", old.leaderboard_set_metrics, leaderboardFrame, modelsForModelKeys(old.models, models));
+        Model[] updating_models = new Model[updating.models.length];
+        modelsForModelKeys(updating.models, updating_models);
+
+        updating.sort_metrics = getSortMetrics(updating.sort_metric, updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+        if (sort_metric.equals("auc")) { // Binomial case
+          updating.logloss = getOtherMetrics("logloss", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+        } else if (sort_metric.equals("mean_residual_deviance")) { // Regression case
+          updating.rmse = getOtherMetrics("rmse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+          updating.mae = getOtherMetrics("mae", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
+          updating.rmsle = getOtherMetrics("rmsle", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
         }
 
         // If we're updated leader let this know so that it can notify the user
         // (outside the tatomic, since it can take a long time).
-        if (oldLeader == null || ! oldLeader.equals(old.models[0]))
-          newLeader[0] = old.models[0];
+        if (oldLeader == null || !oldLeader.equals(updating.models[0])) {
+          newLeader[0] = updating.models[0];
+          newLeaderSortMetric[0] = updating.sort_metrics[0];
+        }
 
-        return old;
+        return updating;
       } // atomic
     }.invoke(this._key);
 
@@ -255,9 +261,9 @@ public class Leaderboard extends Keyed<Leaderboard> {
     this.models = updated.models;
     this.leaderboard_set_metrics = updated.leaderboard_set_metrics;
     this.sort_metrics = updated.sort_metrics;
-    if (sort_metric.equals("auc")){ //Binomial case
+    if (sort_metric.equals("auc")) { // Binomial case
       this.logloss = updated.logloss;
-    } else if (sort_metric.equals("mean_residual_deviance")){ //Regression
+    } else if (sort_metric.equals("mean_residual_deviance")) { // Regression
       this.rmse = updated.rmse;
       this.mae = updated.mae;
       this.rmsle = updated.rmsle;
@@ -265,9 +271,10 @@ public class Leaderboard extends Keyed<Leaderboard> {
 
     // always
     if (null != newLeader[0]) {
-      userFeedback.info(UserFeedbackEvent.Stage.ModelTraining, "New leader: " + newLeader[0]);
+      userFeedback.info(UserFeedbackEvent.Stage.ModelTraining,
+              "New leader: " + newLeader[0] + ", " + sort_metric + ": " + newLeaderSortMetric[0]);
     }
-  }
+  } // addModels
 
 
   public void addModel(final Key<Model> key) {
