@@ -63,6 +63,11 @@ def SMALL_JOBS = [
     stageName: 'R3.4 Datatable', target: 'test-r-datatable', rVersion: '3.4.1',
     timeoutValue: 20, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
     filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
+  ],
+  [
+    stageName: 'R3.4 CMD Check', target: 'test-r-cmd-check', rVersion: '3.4.1',
+    timeoutValue: 15, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
+    filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
   ]
 ]
 

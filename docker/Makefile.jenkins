@@ -22,7 +22,7 @@ test-package-py:
 
 test-package-r:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
-	zip -r test-package-r.zip h2o-r/h2o-package/R/ h2o-r/tests/ h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py docker/Makefile.jenkins tests/runitSmokeTestList h2o-r/scripts/h2o-r-test-setup.R
+	zip -r test-package-r.zip h2o-r/h2o-package/R/ h2o-r/tests/ h2o-r/R/src/contrib/h2o*.tar.gz h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py docker/Makefile.jenkins tests/runitSmokeTestList h2o-r/scripts/h2o-r-test-setup.R
 
 test-py-smoke:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
@@ -69,3 +69,12 @@ test-r-datatable:
 	cd h2o-r/tests/ && rm -f -r testdir_hdfs
 	cd h2o-r/tests/ && rm -f -r testdir_demos
 	cd h2o-r/tests/testdir_perf && ../../../scripts/run.py --wipeall --test runit_repeating_merge.R  --numclouds 1 --numnodes 2 --jvm.xmx 20g
+
+test-r-cmd-check:
+	cd h2o-r/R/src/contrib && OPENBLAS_MAIN_FREE=1 H2O_R_CMD_CHECK_DOC_EXAMPLES_IP=127.0.0.1 H2O_R_CMD_CHECK_DOC_EXAMPLES_PORT=59999 _R_CHECK_FORCE_SUGGESTS_=FALSE R CMD check --run-dontrun --run-donttest h2o_*.*.*.*.tar.gz
+	fuser -k 59999/tcp || /bin/true
+	
+test-r-cmd-check-as-cran:
+test-r-booklets:
+test-r-demos-medium-large:
+test-r-demos-small:
