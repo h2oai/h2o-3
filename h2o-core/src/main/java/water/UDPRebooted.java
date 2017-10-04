@@ -12,7 +12,8 @@ import water.util.Log;
 
 public class UDPRebooted extends UDP {
   public static boolean BIG_DEBUG = false;
-  
+  public static byte MAGIC_SAFE_CLUSTER_KILL_BYTE = 42;
+
   public static enum T {
     none,
     reboot,
@@ -24,15 +25,40 @@ public class UDPRebooted extends UDP {
 
     public void send(H2ONode target) {
       assert this != none;
-      new AutoBuffer(target,udp.rebooted._prior).putUdp(udp.rebooted).put1(ordinal()).close();
+      // Note! To ensure that H2O version without the PUBDEV-4959 fix does not bring H2O with this fix into some unwanted
+      // state we need to first discover if we are indeed receiving shutdown packet from a H2O version with this fix.
+      // For this, we overload this first byte which is sent in both versions and contain ordinal number of the request type.
+      // If we choose number different than the possible ordinal number we can safely discover on which version we are running.
+
+      // When we discover that we run on a new version we can check if
+      // the shutdown request comes from the node in the current cluster
+      // otherwise we just ignore the request
+      new AutoBuffer(target,udp.rebooted._prior)
+              .putUdp(udp.rebooted)
+              .put1(MAGIC_SAFE_CLUSTER_KILL_BYTE)
+              .put1(ordinal())
+              .putInt(H2O.SELF._heartbeat._cloud_name_hash)
+              .close();
     }
     void broadcast() { send(H2O.SELF); }
   }
-
   static void checkForSuicide(int first_byte, AutoBuffer ab) {
     if( first_byte != UDP.udp.rebooted.ordinal() ) return;
-    int type = ab.get1();
-    suicide( T.values()[type], ab._h2o);
+    int shutdownPacketType = ab.get1();
+    if(shutdownPacketType == MAGIC_SAFE_CLUSTER_KILL_BYTE) { // we are running on a version with PUBDEV-4959 fix
+      shutdownPacketType = ab.get1(); // read the real type
+      int cloud_name_hash_origin = ab.getInt();
+      if (cloud_name_hash_origin == H2O.SELF._heartbeat._cloud_name_hash) {
+        suicide(T.values()[shutdownPacketType], ab._h2o);
+      }else {
+        ListenerService.getInstance().report("shutdown_fail", cloud_name_hash_origin);
+      }
+    }else{
+      ListenerService.getInstance().report("shutdown_ignored");
+      Log.warn("Receive "+ T.values()[shutdownPacketType].toString()+ " request from H2O with older version than 3.14.0.4. This request" +
+              " will be ignored");
+    }
+    // if we receive request from H2O with a wrong version, just ignore the request
   }
 
 
