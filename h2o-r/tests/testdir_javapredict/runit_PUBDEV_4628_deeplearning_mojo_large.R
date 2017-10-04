@@ -13,7 +13,6 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.deeplearning.mojo <-
   function() {
-    h2o.removeAll()
     #----------------------------------------------------------------------
     # Run the test
     #----------------------------------------------------------------------
@@ -79,6 +78,7 @@ buildModelSaveMojo <- function(params) {
   model_key <- model@model_id
   tmpdir_name <- sprintf("%s/tmp_model_%s", sandbox(), as.character(Sys.getpid()))
   h2o.saveMojo(model, path = tmpdir_name, force = TRUE) # save mojo
+  h2o.saveModel(model, path = tmpdir_name, force=TRUE) # save model to compare mojo/h2o predict offline
   
   return(list("model"=model, "dirName"=tmpdir_name))
 }
@@ -132,4 +132,4 @@ setParmsData <- function(numTest=1000) {
   return(list("params" = params, "tDataset" = test_frame))
 }
 
-doTest("GBM test", test.deeplearning.mojo)
+doTest("Deeplearning mojo test", test.deeplearning.mojo)

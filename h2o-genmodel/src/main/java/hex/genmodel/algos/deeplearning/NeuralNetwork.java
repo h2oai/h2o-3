@@ -34,21 +34,57 @@ public class NeuralNetwork {  // represent one layer of neural network
   }
 
   public double[] fprop1Layer() {
-    double[] input2ActFun = formNNInputs();
+    double[] input2ActFun = _maxK==1?formNNInputs():formNNInputsMaxOut();
     ActivationFunctions createActivations = createActFuns(_activation); // choose activation function
     return createActivations.eval(input2ActFun, _drop_out_ratio, _maxK); // apply activation function to form NN outputs
   }
 
+  /*
+  This method matches the exact operation of gemv_row_optimized in order to match all the bits
+   */
   public double[] formNNInputs() {
+    double[] input2ActFun = new double[_outSize];
+    int cols = _inputs.length;
+    int rows = input2ActFun.length;
+    int extra=cols-cols%8;
+    int multiple = (cols/8)*8-1;
+    int idx = 0;
+    for (int row = 0; row < rows; row++) {
+      double psum0 = 0, psum1 = 0, psum2 = 0, psum3 = 0, psum4 = 0, psum5 = 0, psum6 = 0, psum7 = 0;
+
+      for (int col=0; col < multiple; col+=8) {
+        int off=idx+col;
+        psum0 += _weightsAndBias._wValues[off    ] * _inputs[col    ];
+        psum1 += _weightsAndBias._wValues[off + 1] * _inputs[col + 1];
+        psum2 += _weightsAndBias._wValues[off + 2] * _inputs[col + 2];
+        psum3 += _weightsAndBias._wValues[off + 3] * _inputs[col + 3];
+        psum4 += _weightsAndBias._wValues[off + 4] * _inputs[col + 4];
+        psum5 += _weightsAndBias._wValues[off + 5] * _inputs[col + 5];
+        psum6 += _weightsAndBias._wValues[off + 6] * _inputs[col + 6];
+        psum7 += _weightsAndBias._wValues[off + 7] * _inputs[col + 7];
+      }
+      input2ActFun[row] += psum0+psum1+psum2+psum3;
+      input2ActFun[row] += psum4+psum5+psum6+psum7;
+
+      for (int col = extra; col<cols;col++) {
+        input2ActFun[row] += _weightsAndBias._wValues[idx+col]*_inputs[col];
+      }
+      input2ActFun[row] += _weightsAndBias._bValues[row];
+      idx += cols;
+    }
+    return input2ActFun;
+  }
+
+  public double[] formNNInputsMaxOut() {
     double[] input2ActFun = new double[_outSize*_maxK];
 
     for (int k = 0; k < _maxK; k++) {
       for (int row = 0; row < _outSize; row++) {
         int countInd = _maxK*row+k;
-        input2ActFun[countInd] = _weightsAndBias._bValues[countInd];  //
         for (int col = 0; col < _inSize; col++) {
           input2ActFun[countInd] += _inputs[col] * _weightsAndBias._wValues[_maxK*(row*_inSize+col)+k];
         }
+        input2ActFun[countInd] += _weightsAndBias._bValues[countInd];  //
       }
     }
     return input2ActFun;

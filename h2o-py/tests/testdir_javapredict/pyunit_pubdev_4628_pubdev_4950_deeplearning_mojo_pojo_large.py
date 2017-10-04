@@ -31,7 +31,7 @@ def deeplearning_mojo_pojo():
        # pred_pojo = pyunit_utils.pojo_predict(deeplearningModel, TMPDIR, MOJONAME)
         h2o.save_model(deeplearningModel, path=TMPDIR, force=True)  # save model for debugging
         print("Comparing mojo predict and h2o predict...")
-        pyunit_utils.compare_numeric_frames(pred_h2o, pred_mojo, 0.1, tol=1e-6)
+        pyunit_utils.compare_numeric_frames(pred_h2o, pred_mojo, 0.1, tol=1e-10)    # make sure operation sequence is preserved from Tomk
       #  print("Comparing pojo predict and h2o predict...")
       #  pyunit_utils.compare_numeric_frames(pred_mojo, pred_pojo, 0.1, tol=1e-6)
     except Exception as ex:

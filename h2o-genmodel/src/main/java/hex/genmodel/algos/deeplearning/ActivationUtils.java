@@ -66,7 +66,7 @@ public class ActivationUtils {
       double[] output = new double[nodeSize];
 
       for (int index = 0; index < nodeSize; index++) {
-        output[index] = input[index] >= 0 ? input[index] : Math.exp(input[index]) - 1.0;
+        output[index] = input[index] >= 0 ? input[index] : Math.exp(input[index]) - 1;
       }
       return output;
     }
@@ -133,7 +133,7 @@ public class ActivationUtils {
       double[] output = new double[nodeSize];
 
       for (int index=0; index < nodeSize; index++)
-        output[index] = 1.0-2.0/(1.0+Math.exp(2.0*input[index]));
+        output[index] = 1.-2./(1.+Math.exp(2.*input[index]));
 
       return output;
     }
