@@ -3052,8 +3052,8 @@ def compare_numeric_frames(f1, f2, prob=0.5, tol=1e-6):
             if (random.uniform(0,1) < prob):
                 diff = abs(temp1[rowInd, colInd]-temp2[rowInd, colInd])/max(1.0, abs(temp1[rowInd, colInd]),
                                                                             abs(temp2[rowInd, colInd]))
-                assert diff<=tol, "Failed frame values check at row {2}! frame1 value: {0}, frame2 value: " \
-                                  "{1}".format(temp1[rowInd, colInd], temp2[rowInd, colInd], rowInd)
+                assert diff<=tol, "Failed frame values check at row {2} and column {3}! frame1 value: {0}, frame2 value: " \
+                                  "{1}".format(temp1[rowInd, colInd], temp2[rowInd, colInd], rowInd, colInd)
 
 def check_sorted_2_columns(frame1, sorted_column_indices, prob=0.5):
     for colInd in sorted_column_indices:
