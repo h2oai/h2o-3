@@ -582,6 +582,14 @@ Example:
 
     $SPARK_HOME/bin/spark-submit --class water.SparklingWaterDriver --conf spark.ext.h2o.ldap.login=true --conf spark.ext.h2o.user.name=myLDAPusername --conf spark.ext.h2o.login.conf=/path/to/ldap.conf sparkling-water-assembly-0.2.17-SNAPSHOT-all.jar
 
+
+LDAP Authentication and MapR
+''''''''''''''''''''''''''''
+
+The following information is for users who authentication with LDAP on MapR, which uses a proprietary Hadoop configuration property that specifies the configuration file. Additional information is available here: `http://doc.mapr.com/display/MapR/mapr.login.conf <http://doc.mapr.com/display/MapR/mapr.login.conf>`__.
+
+In order to make LDAP authentication work, add the ldap.conf definition to the MapR configuration file in **/opt/mapr/conf/mapr.login.conf**.  
+
 -------------
 
 Pluggable Authentication Module (PAM) Authentication
