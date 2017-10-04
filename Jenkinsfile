@@ -1,5 +1,7 @@
 @Library('h2o3-shared-lib') _
 
+import ai.h2o3.ci.Globals
+
 def SIZE_MEDIUM_LARGE = 'medium-large'
 def SIZE_SMALL = 'small'
 
@@ -102,7 +104,6 @@ properties(
 )
 
 def customEnv = [
-  "H2O_GIT_URL=https://github.com/h2oai/h2o-3.git",
   "JAVA_VERSION=8",
   "BUILD_HADOOP=false",
   "GRADLE_USER_HOME=../gradle-user-home",
@@ -113,43 +114,53 @@ if (env.CHANGE_BRANCH != null && env.CHANGE_BRANCH != '') {
   cancelPreviousBuilds()
 }
 
-node ('docker && !mr-0xc8') {
-  withDockerEnvironment(customEnv, 4, 'HOURS') {
+def rootNodeLabel = Globals.DEFAULT_NODE_LABEL
+if (env.BUILD_URL.contains(Globals.PR_MACHINE)) {
+  echo "Running under ${Globals.PR_MACHINE} machine, can use ${Globals.MASTER_NODE_LABEL} as root node."
+  rootNodeLabel = Globals.MASTER_NODE_LABEL
+} else {
+  echo "Running under ${Globals.MASTER_MACHINE} machine."
+}
 
-    stage ('Checkout Sources') {
-      currentBuild.displayName = "${params.testsSize} #${currentBuild.id}"
-      checkoutH2O()
-      setJobDescription()
-    }
+node (rootNodeLabel) {
+  node (Globals.DEFAULT_NODE_LABEL) {
+    withDockerEnvironment(customEnv, 4, 'HOURS') {
 
-    stage ('Build H2O-3') {
-      withEnv(["PYTHON_VERSION=${params.pythonVersion}", "R_VERSION=${params.rVersion}"]) {
-        try {
-          buildTarget {
-            target = 'build-h2o-3'
-            hasJUnit = false
-            archiveFiles = false
+      stage ('Checkout Sources') {
+        currentBuild.displayName = "${params.testsSize} #${currentBuild.id}"
+        checkoutH2O()
+        setJobDescription()
+      }
+
+      stage ('Build H2O-3') {
+        withEnv(["PYTHON_VERSION=${params.pythonVersion}", "R_VERSION=${params.rVersion}"]) {
+          try {
+            buildTarget {
+              target = 'build-h2o-3'
+              hasJUnit = false
+              archiveFiles = false
+            }
+            buildTarget {
+              target = 'test-package-py'
+              hasJUnit = false
+              archiveFiles = false
+            }
+            buildTarget {
+              target = 'test-package-r'
+              hasJUnit = false
+              archiveFiles = false
+            }
+          } finally {
+            archiveArtifacts """
+              h2o-3/docker/Makefile.jenkins,
+              h2o-3/h2o-py/dist/*.whl,
+              h2o-3/build/h2o.jar,
+              h2o-3/h2o-3/src/contrib/h2o_*.tar.gz,
+              h2o-3/h2o-assemblies/genmodel/build/libs/genmodel.jar,
+              h2o-3/test-package-*.zip,
+              **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/tests.txt, **/status.*
+            """
           }
-          buildTarget {
-            target = 'test-package-py'
-            hasJUnit = false
-            archiveFiles = false
-          }
-          buildTarget {
-            target = 'test-package-r'
-            hasJUnit = false
-            archiveFiles = false
-          }
-        } finally {
-          archiveArtifacts """
-            h2o-3/docker/Makefile.jenkins,
-            h2o-3/h2o-py/dist/*.whl,
-            h2o-3/build/h2o.jar,
-            h2o-3/h2o-3/src/contrib/h2o_*.tar.gz,
-            h2o-3/h2o-assemblies/genmodel/build/libs/genmodel.jar,
-            h2o-3/test-package-*.zip,
-            **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/tests.txt, **/status.*
-          """
         }
       }
     }
