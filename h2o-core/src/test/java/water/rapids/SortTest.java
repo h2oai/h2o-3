@@ -20,7 +20,7 @@ public class SortTest extends TestUtil {
     Frame fr = null, res = null;
 
     // Stable sort columns 1 and 2
-    String tree = "(sort hex [1 2])";
+    String tree = "(sort hex [1 2] [1 1])";
     try {
 
       // Build a frame which is unsorted on small-count categoricals in columns
@@ -168,7 +168,7 @@ public class SortTest extends TestUtil {
   }
 
 
-  @Test public void TestSortTimes() throws IOException {
+  @Test public void testSortTimes() throws IOException {
     Scope.enter();
     Frame fr=null, sorted=null;
     try {
@@ -182,7 +182,7 @@ public class SortTest extends TestUtil {
     }
   }
 
-  @Test public void TestSortOverflows() throws IOException {
+  @Test public void testSortOverflows() throws IOException {
     Scope.enter();
     Frame fr=null, sorted=null;
     try {
@@ -200,19 +200,19 @@ public class SortTest extends TestUtil {
   }
 
 
-  @Test public void TestSortIntegersFloats() throws IOException {
+  @Test public void testSortIntegersFloats() throws IOException {
     // test small integers sort
-    TestSortOneColumn("smalldata/synthetic/smallIntFloats.csv.zip", 0, false, false);
+    testSortOneColumn("smalldata/synthetic/smallIntFloats.csv.zip", 0, false, false);
     // test small float sort
-    TestSortOneColumn("smalldata/synthetic/smallIntFloats.csv.zip", 1, false, false);
+    testSortOneColumn("smalldata/synthetic/smallIntFloats.csv.zip", 1, false, false);
     // test integer frame
-    TestSortOneColumn("smalldata/synthetic/integerFrame.csv", 0, false, false);
+    testSortOneColumn("smalldata/synthetic/integerFrame.csv", 0, false, false);
     // test integer frame with NAs
-    TestSortOneColumn("smalldata/synthetic/integerFrame.csv", 0, true, false);
+    testSortOneColumn("smalldata/synthetic/integerFrame.csv", 0, true, false);
     // test double frame
-    TestSortOneColumn("smalldata/synthetic/doubleFrame.csv", 0, false, false);
+    testSortOneColumn("smalldata/synthetic/doubleFrame.csv", 0, false, false);
     // test double frame with NAs
-    TestSortOneColumn("smalldata/synthetic/doubleFrame.csv", 0, true, false);
+    testSortOneColumn("smalldata/synthetic/doubleFrame.csv", 0, true, false);
     // test integer frame where overflow will occur for col.max()-col.min()
   //  TestSortOneColumn("smalldata/synthetic/bigIntFloatsOverflows.csv.zip", 0, false, false);
     // test integer frame where overflow will occur for col.max()-col.min(), with NAs
@@ -226,7 +226,7 @@ public class SortTest extends TestUtil {
   /*
   Test sorting of integers and floats of small magnitude, 2^30 and no NANs or INFs
  */
-  private static void TestSortOneColumn(String fileWithPath, int colIndex, boolean addNas, boolean addInfs) throws IOException {
+  private static void testSortOneColumn(String fileWithPath, int colIndex, boolean addNas, boolean addInfs) throws IOException {
     Scope.enter();
     Frame fr = null, sortedInt = null, sortedFloat = null;
     try {
@@ -261,6 +261,24 @@ public class SortTest extends TestUtil {
     }
   }
 
+  @Test public void testSortIntegersDescend() throws IOException {
+    Scope.enter();
+    Frame fr, sortedInt;
+    try {
+      fr = parse_test_file("smalldata/synthetic/integerFrame.csv");
+      sortedInt = fr.sort(new int[]{0}, new int[]{-1});
+      Scope.track(fr);
+      Scope.track(sortedInt);
+
+      long numRows = fr.numRows();
+      assert numRows==sortedInt.numRows();
+      for (long index = 1; index < numRows; index++) {
+        assertTrue(sortedInt.vec(0).at8(index) >= sortedInt.vec(0).at8(index));
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
 
   private static void testSort(Frame frSorted, Frame originalF, int colIndex) throws IOException {
     Scope.enter();
