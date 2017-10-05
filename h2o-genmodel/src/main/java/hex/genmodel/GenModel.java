@@ -464,7 +464,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     //   double avg_dist = sqr / pts; // average distance per feature/column/dimension
     //   sqr = sqr * point.length;    // Total dist is average*#dimensions
     if( 0 < pts && pts < point.length ) {
-      double scale = point.length / pts;
+      double scale = ((double) point.length) / pts;
       sqr *= scale;
 //      for (int i=0; i<colSum.length; ++i) {
 //        colSum[i] *= Math.sqrt(scale);
@@ -497,7 +497,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     //   double avg_dist = sqr / pts; // average distance per feature/column/dimension
     //   sqr = sqr * point.length;    // Total dist is average*#dimensions
     if( 0 < pts && pts < point.length )
-      sqr *= point.length / pts;
+      sqr *= ((double) point.length) / pts;
     return sqr;
   }
 
