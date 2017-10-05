@@ -17,7 +17,7 @@ import random
 import re
 import subprocess
 from subprocess import STDOUT,PIPE
-from h2o.utils.shared_utils import temp_ctr
+from h2o.utils.shared_utils import temp_ctr # do not remove this, bad coding legacy.
 from h2o.model.binomial import H2OBinomialModel
 from h2o.model.clustering import H2OClusteringModel
 from h2o.model.multinomial import H2OMultinomialModel
@@ -3052,8 +3052,8 @@ def compare_numeric_frames(f1, f2, prob=0.5, tol=1e-6):
             if (random.uniform(0,1) < prob):
                 diff = abs(temp1[rowInd, colInd]-temp2[rowInd, colInd])/max(1.0, abs(temp1[rowInd, colInd]),
                                                                             abs(temp2[rowInd, colInd]))
-                assert diff<=tol, "Failed frame values check at row {2}! frame1 value: {0}, frame2 value: " \
-                                  "{1}".format(temp1[rowInd, colInd], temp2[rowInd, colInd], rowInd)
+                assert diff<=tol, "Failed frame values check at row {2} and column {3}! frame1 value: {0}, frame2 value: " \
+                                  "{1}".format(temp1[rowInd, colInd], temp2[rowInd, colInd], rowInd, colInd)
 
 def check_sorted_2_columns(frame1, sorted_column_indices, prob=0.5):
     for colInd in sorted_column_indices:
