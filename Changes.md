@@ -2,6 +2,50 @@
 
 ## H2O
 
+### Weierstrass (3.14.0.4) - 9/18/2017
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/4/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4870'>PUBDEV-4870</a>] - Fixed an issue that caused sorting to be done incorrectly.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4917'>PUBDEV-4917</a>] - Only relevant clients (the ones with the same cloud name) are now reported to H2O. </li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4954'>PUBDEV-4954</a>] - Improved error messaging in the case where H2O fails to parse a valid Parquet file.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4959'>PUBDEV-4959</a>] - Fixed an issue that allowed nodes from different clusters to kill different H2O clusters. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4979'>PUBDEV-4979</a>] - Fixed an issue that caused K-Means to improperly calculate scaled distance.
+</li>
+</ul>
+                
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4925'>PUBDEV-4925</a>] - Nightly and stable releases will now have published sha256 hashes.
+</li>
+</ul>
+    
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4404'>PUBDEV-4404</a>] - The h2o.sort() function now includes an `ascending` parameter that allows you to  specify whether a numeric column should be sorted in ascending or descending order.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4964'>PUBDEV-4964</a>] - H2O no longer terminates when an incompatible client tries to connect.
+</li>
+</ul>
+    
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4949'>PUBDEV-4949</a>] - Updated the list of required packages for the H2O-3 R client on the H2O Download site and in the User Guide.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4966'>PUBDEV-4966</a>] - Added an FAQ to the <a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/faq/java.html">User Guide FAQ</a> describing how Java 9 users can switch to a supported Java version. 
+</li>
+</ul>
+
+
 ### Weierstrass (3.14.0.3) - 9/18/2017
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/3/index.html</a>
