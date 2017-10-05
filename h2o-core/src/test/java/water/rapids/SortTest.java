@@ -168,7 +168,7 @@ public class SortTest extends TestUtil {
   }
 
 
-  @Test public void TestSortTimes() throws IOException {
+  @Test public void testSortTimes() throws IOException {
     Scope.enter();
     Frame fr=null, sorted=null;
     try {
@@ -182,7 +182,7 @@ public class SortTest extends TestUtil {
     }
   }
 
-  @Test public void TestSortOverflows() throws IOException {
+  @Test public void testSortOverflows() throws IOException {
     Scope.enter();
     Frame fr=null, sorted=null;
     try {
@@ -200,19 +200,19 @@ public class SortTest extends TestUtil {
   }
 
 
-  @Test public void TestSortIntegersFloats() throws IOException {
+  @Test public void testSortIntegersFloats() throws IOException {
     // test small integers sort
-    TestSortOneColumn("smalldata/synthetic/smallIntFloats.csv.zip", 0, false, false);
+    testSortOneColumn("smalldata/synthetic/smallIntFloats.csv.zip", 0, false, false);
     // test small float sort
-    TestSortOneColumn("smalldata/synthetic/smallIntFloats.csv.zip", 1, false, false);
+    testSortOneColumn("smalldata/synthetic/smallIntFloats.csv.zip", 1, false, false);
     // test integer frame
-    TestSortOneColumn("smalldata/synthetic/integerFrame.csv", 0, false, false);
+    testSortOneColumn("smalldata/synthetic/integerFrame.csv", 0, false, false);
     // test integer frame with NAs
-    TestSortOneColumn("smalldata/synthetic/integerFrame.csv", 0, true, false);
+    testSortOneColumn("smalldata/synthetic/integerFrame.csv", 0, true, false);
     // test double frame
-    TestSortOneColumn("smalldata/synthetic/doubleFrame.csv", 0, false, false);
+    testSortOneColumn("smalldata/synthetic/doubleFrame.csv", 0, false, false);
     // test double frame with NAs
-    TestSortOneColumn("smalldata/synthetic/doubleFrame.csv", 0, true, false);
+    testSortOneColumn("smalldata/synthetic/doubleFrame.csv", 0, true, false);
     // test integer frame where overflow will occur for col.max()-col.min()
   //  TestSortOneColumn("smalldata/synthetic/bigIntFloatsOverflows.csv.zip", 0, false, false);
     // test integer frame where overflow will occur for col.max()-col.min(), with NAs
@@ -226,7 +226,7 @@ public class SortTest extends TestUtil {
   /*
   Test sorting of integers and floats of small magnitude, 2^30 and no NANs or INFs
  */
-  private static void TestSortOneColumn(String fileWithPath, int colIndex, boolean addNas, boolean addInfs) throws IOException {
+  private static void testSortOneColumn(String fileWithPath, int colIndex, boolean addNas, boolean addInfs) throws IOException {
     Scope.enter();
     Frame fr = null, sortedInt = null, sortedFloat = null;
     try {
@@ -261,7 +261,7 @@ public class SortTest extends TestUtil {
     }
   }
 
-  @Test public void TestSortIntegersDescend() throws IOException {
+  @Test public void testSortIntegersDescend() throws IOException {
     Scope.enter();
     Frame fr, sortedInt;
     try {

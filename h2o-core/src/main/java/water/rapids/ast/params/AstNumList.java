@@ -98,22 +98,6 @@ public class AstNumList extends AstParameter {
     this(ArrayUtils.copyFromIntArray(list));
   }
 
-  /**
-   * reutnr the _bases array as integer array
-   * @return
-   */
-  public int[] getIntBases() {
-    if ((_bases != null) && (_bases.length>0)) {
-      int baseLen = _bases.length;
-      int[] intBase = new int[baseLen];
-
-      for (int index=0; index < baseLen; index++)
-        intBase[index] = (int) _bases[index];
-      return intBase;
-     } else
-      return new int[0];
-  }
-
   // This is a special syntatic form; the number-list never executes and hits
   // the execution stack
   @Override

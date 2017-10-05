@@ -3668,7 +3668,7 @@ h2o.merge <- function(x, y, by=intersect(names(x), names(y)), by.x=by, by.y=by, 
 }
 
 
-#' Sorts H2OFrame by the columns specified. H2OFrame should not contain any String columns.  Otherwise, an error will be thrown.  To sort column cx in descending order, do desc(c1).  Returns a new H2OFrame, like dplyr::arrange.
+#' Sorts H2OFrame by the columns specified. H2OFrame should not contain any String columns.  Otherwise, an error will be thrown.  To sort column c1 in descending order, do desc(c1).  Returns a new H2OFrame, like dplyr::arrange.
 #'
 #' @param x The H2OFrame input to be sorted.
 #' @param \dots The column names to sort by.
@@ -3676,9 +3676,10 @@ h2o.merge <- function(x, y, by=intersect(names(x), names(y)), by.x=by, by.y=by, 
 #' @export
 h2o.arrange <- function(x, ...) {
   by <- as.character(substitute(list(...))[-1])
+  browser()
   ascend <- as.character(substitute(list(...))[-1]) # initialize to same length as by
   if (!length(by)) stop("Please provide at least one column to sort by")
-  for (index in range(1, length(by))) {
+  for (index in c(1:length(by))) {
     if (sapply("desc", grepl, by[index])) {
       ascend[index]<- -1
       trueName <- sub("\\).*", "", sub(".*\\(", "", by[index]))

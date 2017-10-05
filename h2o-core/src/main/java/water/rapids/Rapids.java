@@ -34,7 +34,7 @@ import java.util.Set;
  *
  * <p> Variables are lexically scoped inside 'let' expressions or at the top-level
  * looked-up in the DKV directly (and must refer to a known type that is valid
- * on the execution stack).s
+ * on the execution stack).
  */
 public class Rapids {
   private final String _str;  // Statement to parse and execute
@@ -119,9 +119,6 @@ public class Rapids {
   // Set of characters that may appear in a number. Note that "NaN" or "nan" is also a number.
   private static Set<Character> validNumberCharacters = StringUtils.toCharacterSet("0123456789.-+eEnNaA");
 
-  private static Set<Character> validBooleanCharacters = StringUtils.toCharacterSet("FALSEfalseTRUEtrue");
-
-  private static Set<Character> validInitBooleanCharacters = StringUtils.toCharacterSet("FfTt");
   // List of all "simple" backslash-escape sequences (i.e. those that are only 2-characters long, i.e. '\n')
   private static Map<Character, Character> simpleEscapeSequences =
       CollectionUtils.createMap(StringUtils.toCharacterArray("ntrfb'\"\\"),
@@ -214,7 +211,7 @@ public class Rapids {
   }
 
   /**
-   * Parse and return a list of tokens: either a list of strings, a list of numbers or a list of booleans.
+   * Parse and return a list of tokens: either a list of strings, or a list of numbers.
    * We do not support lists of mixed types, or lists containing variables (for now).
    */
   private AstParameter parseList() {

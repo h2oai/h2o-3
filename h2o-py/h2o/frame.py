@@ -1805,7 +1805,7 @@ class H2OFrame(object):
         for c in by:
             if self.type(c) not in ["enum","time","int","real"]:
                 raise H2OValueError("Sort by column: " + str(c) + " not of enum, time, int, or real type")
-        if len(ascending)>0:  # user did not specify sort direction, assume all columns assending
+        if len(ascending)>0:  # user did not specify sort direction, assume all columns ascending
             assert len(ascending)==len(by), "Sorting direction must be specified for each sorted column."
             for index in range(len(by)):
                 ascendingI[index]=1 if ascending[index] else -1
