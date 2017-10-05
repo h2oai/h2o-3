@@ -29,7 +29,7 @@ public class JettyProxy extends AbstractHTTPD {
     ServletHolder proxyServlet = new ServletHolder(Transparent.class);
     proxyServlet.setInitParameter("ProxyTo", _proxyTo);
     proxyServlet.setInitParameter("Prefix", "/");
-    proxyServlet.setInitParameter("BasicAuth", _credentials.toBasicAuth());
+    proxyServlet.setInitParameter("Password", _credentials._password);
     context.addServlet(proxyServlet, "/*");
     handlerWrapper.setHandler(context);
   }
@@ -43,17 +43,23 @@ public class JettyProxy extends AbstractHTTPD {
    * Transparent proxy that automatically adds authentication to each request
    */
   public static class Transparent extends ProxyServlet.Transparent {
-    private String _basicAuth;
+    private String _password;
 
     @Override
     public void init(ServletConfig config) throws ServletException {
       super.init(config);
-      _basicAuth = config.getInitParameter("BasicAuth");
+      _password = config.getInitParameter("Password");
     }
 
     @Override
     protected void customizeExchange(HttpExchange exchange, HttpServletRequest request) {
-      exchange.setRequestHeader("Authorization", _basicAuth);
+      exchange.setRequestHeader("Authorization", getBasicAuth(request));
+    }
+
+    private String getBasicAuth(HttpServletRequest request) {
+      // Note: we need to use the authenticated user and pass it to the H2O node
+      // H2O will be responsible of authorizing the user (it will reject it if the cluster was started for another user)
+      return "Basic " + B64Code.encode(request.getUserPrincipal().getName() + ":" + _password);
     }
   }
 
@@ -69,10 +75,6 @@ public class JettyProxy extends AbstractHTTPD {
     private Credentials(String _user, String _password) {
       this._user = _user;
       this._password = _password;
-    }
-
-    public String toBasicAuth() {
-      return "Basic " + B64Code.encode(_user + ":" + _password);
     }
 
     public String toHashFileEntry() {
