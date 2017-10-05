@@ -30,6 +30,14 @@ def algo_max_runtime_secs():
     global err_bound
     seed = 12345
 
+    # GLRM, do not make sense to stop in the middle of an iteration
+    training1_data = h2o.import_file(path=pyunit_utils.locate("smalldata/gridsearch/glrmdata1000x25.csv"))
+    x_indices = list(range(training1_data.ncol))
+    model = H2OGeneralizedLowRankEstimator(k=10, loss="Quadratic", gamma_x=0.3,
+                                           gamma_y=0.3, transform="STANDARDIZE")
+    grabRuntimeInfo(err_bound, 2.0, model, training1_data, x_indices)
+    cleanUp([training1_data, model])
+
     # deeplearning
     training1_data = h2o.import_file(path=pyunit_utils.locate("smalldata/gridsearch/gaussian_training1_set.csv"))
     y_index = training1_data.ncol-1
@@ -73,14 +81,6 @@ def algo_max_runtime_secs():
         model = H2ODeepWaterEstimator(epochs=50, hidden=[4096, 4096, 4096], hidden_dropout_ratios=[0.2, 0.2, 0.2])
         grabRuntimeInfo(err_bound, 2.0, model, training1_data, x_indices, y_index)
         cleanUp([training1_data, model])
-
-    # GLRM, do not make sense to stop in the middle of an iteration
-    training1_data = h2o.import_file(path=pyunit_utils.locate("smalldata/gridsearch/glrmdata1000x25.csv"))
-    x_indices = list(range(training1_data.ncol))
-    model = H2OGeneralizedLowRankEstimator(k=10, loss="Quadratic", gamma_x=0.3,
-                                           gamma_y=0.3, transform="STANDARDIZE")
-    grabRuntimeInfo(err_bound, 2.0, model, training1_data, x_indices)
-    cleanUp([training1_data, model])
 
     # PCA
     training1_data = h2o.import_file(path=pyunit_utils.locate("smalldata/gridsearch/pca1000by25.csv"))
@@ -178,7 +178,7 @@ def grabRuntimeInfo(err_bound, reduction_factor, model, training_data, x_indices
 def checkIteration(model):
     if model._model_json["output"]["scoring_history"] != None:
         epochList=pyunit_utils.extract_scoring_history_field(model, "iterations")
-        if (epochList==None):   # return the scoring history length as number of iteration estimate
+        if (epochList==None) or len(epochList)==0:   # return the scoring history length as number of iteration estimate
             return len(model._model_json["output"]["scoring_history"].cell_values)
         return epochList[-1]
     elif "epochs" in model._model_json["output"]:
