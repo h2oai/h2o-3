@@ -7,15 +7,23 @@ import water.fvec.Vec;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import static water.rapids.SingleThreadRadixOrder.getSortedOXHeaderKey;
 
 public class Merge {
 
+  public static Frame sort(final Frame fr, int[] cols) {
+    int numCol = cols.length;
+    int[] ascending = new int[numCol];
+    Arrays.fill(ascending,1);
+
+    return sort(fr, cols, ascending); // default is to sort in ascending order
+  }
   // Radix-sort a Frame using the given columns as keys.
   // This is a fully distributed and parallel sort.
   // It is not currently an in-place sort, so the data is doubled and a sorted copy is returned.
-  public static Frame sort( final Frame fr, int[] cols ) {
+  public static Frame sort(final Frame fr, int[] cols, int[] ascending) {
     if( cols.length==0 )        // Empty key list
       return fr;                // Return original frame
     for( int col : cols )
@@ -32,11 +40,31 @@ public class Merge {
       }
     }
 
-    return Merge.merge(fr, new Frame(new Vec[0]), cols, new int[0], true/*allLeft*/, id_maps);
+    return Merge.merge(fr, new Frame(new Vec[0]), cols, new int[0], true/*allLeft*/, id_maps, ascending, new int[0]);
   }
 
+  public static Frame merge(final Frame leftFrame, final Frame riteFrame, final int leftCols[], final int riteCols[],
+                            boolean allLeft, int[][] id_maps) {
+
+    int[] ascendingL, ascendingR;
+
+    if (leftCols != null && leftCols.length>0) {
+      ascendingL = new int[leftCols.length];
+      Arrays.fill(ascendingL, 1);
+    } else
+      ascendingL = new int[0];
+
+    if (riteCols != null && riteCols.length > 0) {
+      ascendingR = new int[riteCols.length];
+      Arrays.fill(ascendingR, 1);
+    } else
+      ascendingR = new int[0];
+
+    return merge(leftFrame, riteFrame, leftCols, riteCols, allLeft, id_maps, ascendingL, ascendingR);
+  }
   // single-threaded driver logic.  Merge left and right frames based on common columns.
-  public static Frame merge(final Frame leftFrame, final Frame riteFrame, final int leftCols[], final int riteCols[], boolean allLeft, int[][] id_maps) {
+  public static Frame merge(final Frame leftFrame, final Frame riteFrame, final int leftCols[], final int riteCols[],
+                            boolean allLeft, int[][] id_maps, int[] ascendingL, int[] ascendingR) {
     final boolean hasRite = riteCols.length > 0;
 
     // map missing levels to -1 (rather than increasing slots after the end)
@@ -55,8 +83,8 @@ public class Merge {
     // Running 3 consecutive times on an idle cluster showed that running left
     // and right in parallel was a little slower (97s) than one by one (89s).
     // TODO: retest in future
-    RadixOrder leftIndex = createIndex(true ,leftFrame,leftCols,id_maps);
-    RadixOrder riteIndex = createIndex(false,riteFrame,riteCols,id_maps);
+    RadixOrder leftIndex = createIndex(true ,leftFrame,leftCols,id_maps, ascendingL);
+    RadixOrder riteIndex = createIndex(false,riteFrame,riteCols,id_maps, ascendingR);
 
     // TODO: start merging before all indexes had been created. Use callback?
 
@@ -265,10 +293,10 @@ public class Merge {
     return fr;
   }
 
-  private static RadixOrder createIndex(boolean isLeft, Frame fr, int[] cols, int[][] id_maps) {
+  private static RadixOrder createIndex(boolean isLeft, Frame fr, int[] cols, int[][] id_maps, int[] ascending) {
     System.out.println("\nCreating "+(isLeft ? "left" : "right")+" index ...");
     long t0 = System.nanoTime();
-    RadixOrder idxTask = new RadixOrder(fr, isLeft, cols, id_maps);
+    RadixOrder idxTask = new RadixOrder(fr, isLeft, cols, id_maps, ascending);
     H2O.submitTask(idxTask);    // each of those launches an MRTask
     idxTask.join(); 
     System.out.println("***\n*** Creating "+(isLeft ? "left" : "right")+" index took: " + (System.nanoTime() - t0) / 1e9 + "\n***\n");
