@@ -3680,16 +3680,16 @@ h2o.arrange <- function(x, ...) {
   if (!length(by)) stop("Please provide at least one column to sort by")
   for (index in range(1, length(by))) {
     if (sapply("desc", grepl, by[index])) {
-      ascend[index]<-"FALSE"
+      ascend[index]<- -1
       trueName <- sub("\\).*", "", sub(".*\\(", "", by[index]))
       by[index] <- trueName
     } else {
-      ascend[index]<-"TRUE"
+      ascend[index]<- 1
     }
   }
   by <- checkMatch(by, names(x))
   if (anyDuplicated(by)) stop("Some duplicate column names have been provided")
-  .newExpr("sort", x, by-1L, ascend)
+  .newExpr("sort", x, by-1L, as.numeric(ascend))
 }
 
 

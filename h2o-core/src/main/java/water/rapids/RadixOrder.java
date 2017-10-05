@@ -23,9 +23,9 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
   final int _shift[];
   final int _bytesUsed[];
   final BigInteger _base[];
-  final boolean[] _ascending;  // 0 to sort ASC, 1 to sort DESC
+  final int[] _ascending;  // 0 to sort ASC, 1 to sort DESC
 
-  RadixOrder(Frame DF, boolean isLeft, int whichCols[], int id_maps[][], boolean[] ascending) {
+  RadixOrder(Frame DF, boolean isLeft, int whichCols[], int id_maps[][], int[] ascending) {
     _DF = DF;
     _isLeft = isLeft;
     _whichCols = whichCols;
@@ -147,11 +147,11 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
         double colMin = col.min();
         double colMax = col.max();
         if (col.isInt()) {
-          _base[i] = BigInteger.valueOf(_ascending[i]?(long)colMin:(long)colMax*(-1));
-          max = BigInteger.valueOf(_ascending[i]?(long)colMax:(long)colMin*(-1));
+          _base[i] = BigInteger.valueOf(Math.min((long)colMin, (long)colMax*(_ascending[i])));
+          max = BigInteger.valueOf(Math.max((long)colMax, (long)colMin*(_ascending[i])));
         } else{
-          _base[i] = MathUtils.convertDouble2BigInteger(_ascending[i]?col.min():colMax*(-1));
-          max = MathUtils.convertDouble2BigInteger(_ascending[i]?col.max():colMin*(-1));
+          _base[i] = MathUtils.convertDouble2BigInteger(Math.min(col.min(), colMax*(_ascending[i])));
+          max = MathUtils.convertDouble2BigInteger(Math.max(col.max(), colMin*(_ascending[i])));
         }
       }
 

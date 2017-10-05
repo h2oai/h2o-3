@@ -34,7 +34,7 @@ import java.util.Set;
  *
  * <p> Variables are lexically scoped inside 'let' expressions or at the top-level
  * looked-up in the DKV directly (and must refer to a known type that is valid
- * on the execution stack).
+ * on the execution stack).s
  */
 public class Rapids {
   private final String _str;  // Statement to parse and execute
@@ -220,18 +220,9 @@ public class Rapids {
   private AstParameter parseList() {
     eatChar('[');
     char nextChar = skipWS();
-    AstParameter res = isQuote(nextChar)? parseStringList() :
-            (validInitBooleanCharacters.contains(peek(0))?parseBooleanList():parseNumList());
+    AstParameter res = isQuote(nextChar)? parseStringList() : parseNumList();
     eatChar(']');
     return res;
-  }
-
-  private AstStrList parseBooleanList() { // parse a list of booleans
-    ArrayList<String> strs = new ArrayList<>(10);
-    while (skipWS() != ']') { // grab all boolean array values
-      strs.add(booleanV());
-    }
-    return new AstStrList(strs);
   }
 
   /**
@@ -341,16 +332,6 @@ public class Rapids {
     } catch (NumberFormatException e) {
       throw new IllegalASTException(e.toString());
     }
-  }
-
-  private String booleanV() {
-    int start = _x;
-    while (validBooleanCharacters.contains(peek(0))) _x++;
-    if (start == _x) throw new IllegalASTException("Missing a boolean variable");
-    String s = _str.substring(start, _x).toLowerCase();
-    if (!(s.equals("true") || s.equals("false")))
-      throw new IllegalASTException("Boolean values (true/True/TRUE/false/False/FALSE) are expected...");
-    return s.toLowerCase();
   }
 
   /**

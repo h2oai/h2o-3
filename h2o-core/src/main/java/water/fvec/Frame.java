@@ -17,8 +17,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
-import static water.util.ArrayUtils.initBooleanArrays;
-
 /** A collection of named {@link Vec}s, essentially an R-like Distributed Data Frame.
  *
  *  <p>Frames represent a large distributed 2-D table with named columns
@@ -1587,16 +1585,18 @@ public class Frame extends Lockable<Frame> {
    *
    *  @return Copy of frame, sorted */
   public Frame sort( int[] cols ) {
-    boolean[] ascending;
-    if (cols!=null && cols.length>0)
-      ascending = initBooleanArrays(cols.length, true);
-    else
-      ascending = new boolean[0];
+    int[] ascending;
+    if (cols!=null && cols.length>0) {
+      ascending = new int[cols.length];
+      Arrays.fill(ascending, 1);
+    } else {
+      ascending = new int[0];
+    }
 
     return sort(cols, ascending);
   }
 
-  public Frame sort(int[] cols, boolean[] ascending) {
+  public Frame sort(int[] cols, int[] ascending) {
     return Merge.sort(this, cols, ascending);
   }
 }

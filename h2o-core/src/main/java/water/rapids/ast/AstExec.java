@@ -56,7 +56,7 @@ public class AstExec extends AstRoot {
       throw new IllegalArgumentException("Expected a function but found " + fun.getClass());
     AstPrimitive ast = fun.getFun();
     int nargs = ast.nargs();
-    if (nargs != -1 && nargs != _asts.length && !(fun.toString().equals("sort") && _asts.length==(nargs-1)))
+    if (nargs != -1 && nargs != _asts.length)
       throw new IllegalArgumentException(
           "Incorrect number of arguments; '" + ast + "' expects " + (nargs - 1) + " but was passed " + (_asts.length - 1));
     try (Env.StackHelp stk = env.stk()) {

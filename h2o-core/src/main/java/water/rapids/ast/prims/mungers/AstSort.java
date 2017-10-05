@@ -6,12 +6,11 @@ import water.rapids.Merge;
 import water.rapids.ast.AstParameter;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
-import water.rapids.ast.params.AstStrList;
+import water.rapids.ast.params.AstNum;
+import water.rapids.ast.params.AstNumList;
 import water.rapids.vals.ValFrame;
 
 import java.util.Arrays;
-
-import static water.util.ArrayUtils.initBooleanArrays;
 
 
 /** Sort the whole frame by the given columns.  However, an error will be thrown if there are
@@ -25,19 +24,11 @@ public class AstSort extends AstPrimitive {
   @Override public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     int[] cols = ((AstParameter)asts[2]).columns(fr.names());
-    int numCols = cols.length;
-    boolean[] sortAsc;
-    if (asts.length == 4) {
-      if (asts[3] instanceof AstStrList) { // R client send a string list, convert to boolean[]
-        sortAsc = convertStrA2BoolA(((AstStrList) asts[3])._strs);
-      } else {  // R can send a string all by itself
-        if (asts[3].str().toLowerCase().equals("true"))
-          sortAsc = initBooleanArrays(numCols, true);
-        else
-          sortAsc = initBooleanArrays(numCols, false);
-      }
-    } else   // may have been called without enough arguments.  Sorting will be ascending by default
-      sortAsc = initBooleanArrays(numCols, true);
+    int[] sortAsc;
+    if (asts[3] instanceof AstNumList)
+      sortAsc = ((AstNumList) asts[3]).getIntBases();
+    else
+      sortAsc = new int[]{(int) ((AstNum) asts[3]).getNum()};  // R client can send 1 element for some reason
 
     String[] colTypes = fr.typesStr();
     assert sortAsc.length==cols.length;
@@ -45,17 +36,5 @@ public class AstSort extends AstPrimitive {
       throw new IllegalArgumentException("Input frame contains String columns.  Remove String columns before " +
               "calling sort again.");
     return new ValFrame(Merge.sort(fr,cols, sortAsc));
-  }
-
-  public static boolean[] convertStrA2BoolA(String[] ascStr) {
-    int numCols = ascStr.length;
-    boolean[] boolA = new boolean[numCols];
-    for (int index = 0; index < numCols; index++) {
-      if (ascStr[index].toLowerCase().equals("false"))
-        boolA[index]=false;
-      else
-        boolA[index]=true;
-    }
-    return boolA;
   }
 }

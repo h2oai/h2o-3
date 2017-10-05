@@ -1801,14 +1801,15 @@ class H2OFrame(object):
         assert_is_type(by, str, int, [str, int])
         if type(by) != list: by = [by]
         if type(ascending) != list: ascending = [ascending]   # convert to list
+        ascendingI=[1]*len(by)  # intitalize sorting direction to ascending by default
         for c in by:
             if self.type(c) not in ["enum","time","int","real"]:
                 raise H2OValueError("Sort by column: " + str(c) + " not of enum, time, int, or real type")
-        if (len(ascending)==0):  # user did not specify sort direction, assume all columns assending
-            ascending = [True]*len(by)
-        else:
+        if len(ascending)>0:  # user did not specify sort direction, assume all columns assending
             assert len(ascending)==len(by), "Sorting direction must be specified for each sorted column."
-        return H2OFrame._expr(expr=ExprNode("sort",self,by,ascending))
+            for index in range(len(by)):
+                ascendingI[index]=1 if ascending[index] else -1
+        return H2OFrame._expr(expr=ExprNode("sort",self,by,ascendingI))
 
     def fillna(self,method="forward",axis=0,maxlen=1):
         """

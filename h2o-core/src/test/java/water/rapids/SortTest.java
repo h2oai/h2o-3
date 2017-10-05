@@ -20,7 +20,7 @@ public class SortTest extends TestUtil {
     Frame fr = null, res = null;
 
     // Stable sort columns 1 and 2
-    String tree = "(sort hex [1 2])";
+    String tree = "(sort hex [1 2] [1 1])";
     try {
 
       // Build a frame which is unsorted on small-count categoricals in columns
@@ -266,7 +266,7 @@ public class SortTest extends TestUtil {
     Frame fr, sortedInt;
     try {
       fr = parse_test_file("smalldata/synthetic/integerFrame.csv");
-      sortedInt = fr.sort(new int[]{0}, new boolean[]{false});
+      sortedInt = fr.sort(new int[]{0}, new int[]{-1});
       Scope.track(fr);
       Scope.track(sortedInt);
 
