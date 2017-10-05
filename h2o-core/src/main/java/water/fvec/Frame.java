@@ -1585,15 +1585,7 @@ public class Frame extends Lockable<Frame> {
    *
    *  @return Copy of frame, sorted */
   public Frame sort( int[] cols ) {
-    int[] ascending;
-    if (cols!=null && cols.length>0) {
-      ascending = new int[cols.length];
-      Arrays.fill(ascending, 1);
-    } else {
-      ascending = new int[0];
-    }
-
-    return sort(cols, ascending);
+    return Merge.sort(this,cols);
   }
 
   public Frame sort(int[] cols, int[] ascending) {
