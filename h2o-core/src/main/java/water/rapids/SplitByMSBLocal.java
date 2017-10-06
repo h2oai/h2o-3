@@ -18,6 +18,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
   private final int  _col[];
   private final Key _linkTwoMRTask;
   private final int _id_maps[][];
+  private final int[] _ascending;
 
   private transient long _counts[][];
   private transient long _o[][][];  // transient ok because there is no reduce here between nodes, and important to save shipping back to caller.
@@ -25,7 +26,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
   private long _numRowsOnThisNode;
 
   static Hashtable<Key,SplitByMSBLocal> MOVESHASH = new Hashtable<>();
-  SplitByMSBLocal(boolean isLeft, BigInteger base[], int shift, int keySize, int batchSize, int bytesUsed[], int[] col, Key linkTwoMRTask, int[][] id_maps) {
+  SplitByMSBLocal(boolean isLeft, BigInteger base[], int shift, int keySize, int batchSize, int bytesUsed[], int[] col, Key linkTwoMRTask, int[][] id_maps, int[] ascending) {
     _isLeft = isLeft;
     // we only currently use the shift (in bits) for the first column for the
     // MSB (which we don't know from bytesUsed[0]). Otherwise we use the
@@ -35,6 +36,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     _keySize = keySize;
     _linkTwoMRTask = linkTwoMRTask;
     _id_maps = id_maps;
+    _ascending = ascending;
   }
 
   @Override protected void setupLocal() {
@@ -142,8 +144,8 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
           // able to use as raw, but when we can maybe can do in bulk
         } else {    // dealing with numeric columns (int or double) or enum
           thisx = isIntCols[0] ?
-                  BigInteger.valueOf(chk[0].at8(r)).subtract(_base[0]).add(BigInteger.ONE):
-                  MathUtils.convertDouble2BigInteger(chk[0].atd(r)).subtract(_base[0]).add(BigInteger.ONE);
+                  BigInteger.valueOf(_ascending[0]*chk[0].at8(r)).subtract(_base[0]).add(BigInteger.ONE):
+                  MathUtils.convertDouble2BigInteger(_ascending[0]*chk[0].atd(r)).subtract(_base[0]).add(BigInteger.ONE);
           MSBvalue = thisx.shiftRight(_shift).intValue();
         }
       }
@@ -171,8 +173,8 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
         if (_isLeft && _id_maps[c] != null) thisx = BigInteger.valueOf(_id_maps[c][(int)chk[c].at8(r)] + 1);
         else {
           thisx =  isIntCols[c]?
-                  BigInteger.valueOf(chk[c].at8(r)).subtract(_base[c]).add(BigInteger.ONE):
-                  MathUtils.convertDouble2BigInteger(chk[c].atd(r)).subtract(_base[c]).add(BigInteger.ONE);
+                  BigInteger.valueOf(_ascending[c]*chk[c].at8(r)).subtract(_base[c]).add(BigInteger.ONE):
+                  MathUtils.convertDouble2BigInteger(_ascending[c]*chk[c].atd(r)).subtract(_base[c]).add(BigInteger.ONE);
         }
         keyArray = thisx.toByteArray();  // switched already here.
         offIndex = keyArray.length > 8 ? -1 : _bytesUsed[c] - keyArray.length;
