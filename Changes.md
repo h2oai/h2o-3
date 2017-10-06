@@ -2,7 +2,7 @@
 
 ## H2O
 
-### Weierstrass (3.14.0.4) - 10/5/2017
+### Weierstrass (3.14.0.4) - 10/6/2017
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/4/index.html</a>
 
