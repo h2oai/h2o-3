@@ -11,6 +11,16 @@ function() {
   seed <- 12345
   test_pass_fail <- c()
 
+  # GLRM, do not make sense to stop in the middle of an iteration
+  print("*************  starting max_runtime_test for GLRM")
+  training1_data <- h2o.uploadFile(locate("smalldata/gridsearch/glrmdata1000x25.csv"))
+  model <- h2o.glrm(training1_data, k=10, loss="Quadratic", gamma_x=0.3,
+                    gamma_y=0.3, transform="STANDARDIZE")
+  model2 <- h2o.glrm(training1_data, k=10, loss="Quadratic", gamma_x=0.3,
+                     gamma_y=0.3, transform="STANDARDIZE", max_runtime_secs=model@model$run_time/(1000.0*fact_red))
+  test_pass_fail <- c(test_pass_fail, eval_test_runtime(model, model2, err_bound, fact_red))
+  cleanUP(c(training1_data, model, model2))
+  
 # GBM run
   print("*************  starting max_runtime_test for GBM")
   training1_data <- h2o.importFile(locate("smalldata/gridsearch/multinomial_training1_set.csv"))
@@ -80,16 +90,6 @@ function() {
   } else {
     print("*************  deepwater is skipped.  Not availabe.")
   }
-  
-  # GLRM, do not make sense to stop in the middle of an iteration
-  print("*************  starting max_runtime_test for GLRM")
-  training1_data <- h2o.uploadFile(locate("smalldata/gridsearch/glrmdata1000x25.csv"))
-  model <- h2o.glrm(training1_data, k=10, loss="Quadratic", gamma_x=0.3,
-                                         gamma_y=0.3, transform="STANDARDIZE")
-  model2 <- h2o.glrm(training1_data, k=10, loss="Quadratic", gamma_x=0.3,
-                   gamma_y=0.3, transform="STANDARDIZE", max_runtime_secs=model@model$run_time/(1000.0*fact_red))
-  test_pass_fail <- c(test_pass_fail, eval_test_runtime(model, model2, err_bound, fact_red))
-  cleanUP(c(training1_data, model, model2))
 
   # word2vec
   print("*************  starting max_runtime_test for word2vec")
@@ -129,6 +129,10 @@ eval_test_runtime<-function(model1, model2, err_bound, fact_red) {
   new_iter <- get_iteration(model2)
   if (length(new_iter) > 1)
     new_iter <- new_iter[length(new_iter)]
+  if (is.na(old_iter) || is.na(new_iter)) {
+    print(paste("+++++++++++ The model was not given enough time to run.  No statistic is available."))
+    return(0)
+  }
   print(paste("model iterations/epochs/trees without max_runtime_secs: ", old_iter, sep=' '))
   print(paste("model iterations/epochs/trees with max_runtime_secs: ", new_iter, sep=' '))
   iteration_drop <- old_iter-new_iter
