@@ -1578,7 +1578,17 @@ public class Frame extends Lockable<Frame> {
 
   @Override public Class<KeyV3.FrameKeyV3> makeSchema() { return KeyV3.FrameKeyV3.class; }
 
-  /** Sort rows of a frame, using the set of columns as keys.
+  /** Sort rows of a frame, using the set of columns as keys.  User can specify sorting direction for each sorting
+   * column in a boolean array.  For example, if we want to sort columns 0, 1, 2 and want to sort 0 in ascending
+   * direction, 1 and 2 in descending direction for frame fr, the call to make is fr.sort(new int[2]{0,1,2},
+   * new boolean[2]{true, false, false}.
+   *
    *  @return Copy of frame, sorted */
-  public Frame sort( int[] cols ) { return Merge.sort(this,cols); }
+  public Frame sort( int[] cols ) {
+    return Merge.sort(this,cols);
+  }
+
+  public Frame sort(int[] cols, int[] ascending) {
+    return Merge.sort(this, cols, ascending);
+  }
 }
