@@ -5,8 +5,10 @@ import org.eclipse.jetty.security.*;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.bio.SocketConnector;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.server.session.HashSessionManager;
@@ -17,6 +19,10 @@ import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import water.util.Log;
 
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.Collections;
 
 public abstract class AbstractHTTPD {
@@ -255,5 +261,25 @@ public abstract class AbstractHTTPD {
   }
 
   protected abstract void registerHandlers(HandlerWrapper handlerWrapper, ServletContextHandler context);
+
+  protected void sendUnauthorizedResponse(HttpServletResponse response, String message) throws IOException {
+    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, message);
+  }
+
+  public class AuthenticationHandler extends AbstractHandler {
+    @Override
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException {
+
+      if (!_args.ldap_login && !_args.kerberos_login && !_args.pam_login) return;
+
+      String loginName = request.getUserPrincipal().getName();
+      if (!loginName.equals(_args.user_name)) {
+        Log.warn("Login name (" + loginName + ") does not match cluster owner name (" + _args.user_name + ")");
+        sendUnauthorizedResponse(response, "Login name does not match cluster owner name");
+        baseRequest.setHandled(true);
+      }
+    }
+  }
 
 }
