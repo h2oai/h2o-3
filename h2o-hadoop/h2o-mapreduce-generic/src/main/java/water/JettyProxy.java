@@ -53,7 +53,8 @@ public class JettyProxy extends AbstractHTTPD {
 
     @Override
     protected void customizeExchange(HttpExchange exchange, HttpServletRequest request) {
-      exchange.setRequestHeader("Authorization", getBasicAuth(request));
+      if (request.getUserPrincipal() != null) // add authentication only if the request is authenticated
+        exchange.setRequestHeader("Authorization", getBasicAuth(request));
     }
 
     private String getBasicAuth(HttpServletRequest request) {
