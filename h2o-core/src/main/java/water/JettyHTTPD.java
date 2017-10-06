@@ -104,6 +104,7 @@ public class JettyHTTPD extends AbstractHTTPD {
     return H2O.fail(message);
   }
 
+  @Override
   protected void registerHandlers(HandlerWrapper handlerWrapper, ServletContextHandler context) {
     context.addServlet(NpsBinServlet.class,   "/3/NodePersistentStorage.bin/*");
     context.addServlet(PostFileServlet.class, "/3/PostFile.bin");
@@ -142,6 +143,11 @@ public class JettyHTTPD extends AbstractHTTPD {
       }
       setCommonResponseHttpHeaders(response);
     }
+  }
+
+  @Override
+  protected void sendUnauthorizedResponse(HttpServletResponse response, String message) throws IOException {
+    sendResponseError(response, HttpServletResponse.SC_UNAUTHORIZED, message);
   }
 
   @SuppressWarnings("unused")
@@ -210,22 +216,6 @@ public class JettyHTTPD extends AbstractHTTPD {
     }
     private boolean isLoginTarget(String target) {
       return target.equals(_loginTarget) || target.equals(_errorTarget);
-    }
-  }
-
-  public class AuthenticationHandler extends AbstractHandler {
-    @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-        throws IOException, ServletException {
-
-      if (!H2O.ARGS.ldap_login && !H2O.ARGS.kerberos_login && !H2O.ARGS.pam_login) return;
-
-      String loginName = request.getUserPrincipal().getName();
-      if (!loginName.equals(H2O.ARGS.user_name)) {
-        Log.warn("Login name (" + loginName + ") does not match cluster owner name (" + H2O.ARGS.user_name + ")");
-        sendResponseError(response, HttpServletResponse.SC_UNAUTHORIZED, "Login name does not match cluster owner name");
-        baseRequest.setHandled(true);
-      }
     }
   }
 
