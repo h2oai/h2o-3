@@ -98,8 +98,6 @@ test-r-booklets:
 test-r-demos-small:
 	cd h2o-r/demos && ../../scripts/run.py --wipeall --norun
 	cd h2o-r/demos && ../../scripts/run.py --wipeall --testsize s --numclouds 4 --jvm.xmx 2g
-	cd ../h2o-package/demo && ../../../scripts/run.py --wipeall --norun
-	cd ../h2o-package/demo && ../../../scripts/run.py --wipeall --testsize s --numclouds 4 ---jvm.xmx 2g
 
 test-r-demos-medium-large:
 	cd h2o-r/demos && ../../scripts/run.py --wipeall --norun
