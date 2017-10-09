@@ -4,7 +4,7 @@
 
 ### Weierstrass (3.14.0.5) - 10/9/2017
 
-Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/4/index.html</a>
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/4/index.html</a>
 
 <h4>Bug</h4>
 
