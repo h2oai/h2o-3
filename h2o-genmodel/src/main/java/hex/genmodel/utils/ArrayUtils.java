@@ -32,14 +32,16 @@ public class ArrayUtils {
    * @return
    */
   public static boolean isBoolColumn(String[] domains) {
-    if (domains.length == 2) {  // check domain names to be true/false
-      if (domains[0].equalsIgnoreCase("true") && domains[1].equalsIgnoreCase("false"))
-        return true;
-      else if (domains[1].equalsIgnoreCase("true") && domains[0].equalsIgnoreCase("false"))
-        return true;
-    } else if (domains.length==1) {
-      if (domains[0].equalsIgnoreCase("true") || domains[0].equalsIgnoreCase("false")) {
-        return true;
+    if (domains != null) {
+      if (domains.length == 2) {  // check domain names to be true/false
+        if (domains[0].equalsIgnoreCase("true") && domains[1].equalsIgnoreCase("false"))
+          return true;
+        else if (domains[1].equalsIgnoreCase("true") && domains[0].equalsIgnoreCase("false"))
+          return true;
+      } else if (domains.length == 1) {
+        if (domains[0].equalsIgnoreCase("true") || domains[0].equalsIgnoreCase("false")) {
+          return true;
+        }
       }
     }
     return false;

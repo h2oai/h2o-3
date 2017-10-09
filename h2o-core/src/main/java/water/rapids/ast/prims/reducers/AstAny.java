@@ -34,10 +34,11 @@ public class AstAny extends AstPrimitive {
     if (val.isNum()) return new ValNum(val.getNum() == 0 ? 0 : 1);
     for (Vec vec : val.getFrame().vecs()) {
       String[] domainV = vec.domain();
-      if (!isBoolColumn(domainV))
+      if (domainV != null && !isBoolColumn(domainV))  // contain domain that are not true/fale levels
         return new ValNum(0);         // not a boolean column
-      long trueCount = domainV[0].equalsIgnoreCase("true")?(vec.length()-vec.nzCnt()):vec.nzCnt();
-      if (trueCount + vec.naCnt() > 0)
+      long trueCount = ((domainV != null) && domainV[0].equalsIgnoreCase("true"))
+              ?(vec.length()-vec.nzCnt()):vec.nzCnt()+vec.naCnt();
+      if (trueCount > 0)
         return new ValNum(1);   // Some nonzeros in there somewhere
     }
     return new ValNum(0);

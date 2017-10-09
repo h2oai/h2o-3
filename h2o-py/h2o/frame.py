@@ -1119,7 +1119,7 @@ class H2OFrame(object):
 
 
     def any(self):
-        """Return True if any element in the frame is either True or NA."""
+        """Return True if any element in the frame is either True, non-zero or NA."""
         return bool(ExprNode("any", self)._eager_scalar())
 
 
@@ -1129,7 +1129,7 @@ class H2OFrame(object):
 
 
     def all(self):
-        """Return True if every element in the frame is either True or NA."""
+        """Return True if every element in the frame is either True, non-zero or NA."""
         return bool(ExprNode("all", self)._eager_scalar())
 
 
