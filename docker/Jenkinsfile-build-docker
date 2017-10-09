@@ -1,68 +1,68 @@
 #! /usr/bin/groovy
 
-def AGENT_LABEL = 'mr-0xc10'
+def AGENT_LABEL = 'docker && !mr-0xc8'
 def DOCKER_FILE_PATH = 'docker/Dockerfile'
 
 pipeline {
 
-    agent { label AGENT_LABEL }
+  agent { label AGENT_LABEL }
 
-    parameters {
-      string(name: 'gitBranch', defaultValue: 'master', description: 'Branch to load the Dockerfile from.')
-      booleanParam(name: 'publishDockerImage', defaultValue: true, description: 'If true, publish the docker image')
-      string(name: 'dockerRegistry', defaultValue: 'docker.h2o.ai')
+  parameters {
+    string(name: 'gitBranch', defaultValue: 'master', description: 'Branch to load the Dockerfile from.')
+    booleanParam(name: 'publishDockerImage', defaultValue: true, description: 'If true, publish the docker image')
+    string(name: 'dockerRegistry', defaultValue: 'docker.h2o.ai')
+  }
+
+  environment {
+    H2O_GIT_URL = 'https://github.com/h2oai/h2o-3.git'
+  }
+
+  options {
+    ansiColor('xterm')
+    timestamps()
+    timeout(time: 2, unit: 'HOURS')
+  }
+
+  stages {
+    stage ('Checkout Sources') {
+      steps {
+        git url: env.H2O_GIT_URL, branch: params.gitBranch
+      }
     }
 
-    environment {
-        H2O_GIT_URL = 'https://github.com/h2oai/h2o-3.git'
+    stage ('Build Docker Image') {
+      steps {
+        sh """
+        cd docker
+        docker build --no-cache -t h2o-3-runtime .
+        """
+      }
     }
 
-    options {
-        ansiColor('xterm')
-        timestamps()
-        timeout(time: 2, unit: 'HOURS')
-    }
-
-    stages {
-        stage ('Checkout Sources') {
-            steps {
-                git url: env.H2O_GIT_URL, branch: params.gitBranch
-            }
+    stage ('Publish Docker Image') {
+      when {
+        expression { params.publishDockerImage }
+      }
+      steps {
+        withCredentials([usernamePassword(credentialsId: "${params.dockerRegistry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
+          sh """
+          docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${params.dockerRegistry}
+          docker tag h2o-3-runtime:latest docker.h2o.ai/opsh2oai/h2o-3-runtime:latest
+          docker push ${params.dockerRegistry}/opsh2oai/h2o-3-runtime:latest
+          """
         }
-
-        stage ('Build Docker Image') {
-          steps {
-            sh """
-                cd docker
-                docker build -t h2o-3-runtime .
-            """
-          }
-        }
-
-        stage ('Publish Docker Image') {
-          when {
-            expression { params.publishDockerImage }
-          }
-          steps {
-              withCredentials([usernamePassword(credentialsId: "${params.dockerRegistry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
-                  sh """
-                        docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${params.dockerRegistry}
-                        docker tag h2o-3-runtime:latest docker.h2o.ai/opsh2oai/h2o-3-runtime:latest
-                        docker push ${params.dockerRegistry}/opsh2oai/h2o-3-runtime:latest
-                    """
-              }
-          }
-        }
+      }
     }
+  }
 
-    post {
-        failure {
-            emailext (
-                  subject: "FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
-                  body: """<p>FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
-                    <p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>""",
-                  to: "michalr@h2o.ai"
-            )
-        }
+  post {
+    failure {
+      emailext (
+        subject: "FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+        body: """<p>FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
+        <p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>""",
+        to: "michalr@h2o.ai"
+        )
+      }
     }
-}
+  }
