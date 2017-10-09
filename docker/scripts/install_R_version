@@ -56,3 +56,12 @@ ln -s -f ${R_VERSION_HOME}/bin/R /usr/local/R/current/bin/R
 ln -s -f ${R_VERSION_HOME}/bin/Rscript /usr/local/R/current/bin/Rscript""" > /usr/bin/activate_R_${R_VERSION}
 chmod a+x /usr/bin/activate_R_${R_VERSION}
 
+# Activate this R version
+echo "Activating R ${R_VERSION}"
+activate_R_${R_VERSION}
+
+# Install dependencies
+echo "Installing dependencies for R ${R_VERSION}"
+/usr/local/R/current/bin/R -e 'chooseCRANmirror(graphics=FALSE, ind=54);install.packages(c("dplyr", "text2vec", "R.utils", "AUC", "mlbench", "Hmisc", "flexclust", "randomForest", "bit64", "HDtweedie", "RCurl", "jsonlite", "statmod", "devtools", "roxygen2", "testthat", "Rcpp", "fpc", "RUnit", "ade4", "gbm", "ROCR", "e1071", "ggplot2", "LiblineaR", "slam"))'
+/usr/local/R/current/bin/R -e 'chooseCRANmirror(graphics=FALSE, ind=54);library(devtools);install_version("glmnet", version = "2.0-2")'
+/usr/local/R/current/bin/R CMD INSTALL LiblineaR_1.94-2.tar.gz

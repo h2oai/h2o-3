@@ -37,7 +37,7 @@ RUN \
   libcurl4-openssl-dev libfreetype6 libfreetype6-dev libfontconfig1 libfontconfig1-dev build-essential chrpath \
   libssl-dev libxft-dev git unzip python-pip python-dev python-virtualenv libmysqlclient-dev texlive \
   texlive-fonts-extra texlive-htmlxml python3 python3-dev python3-pip python3-virtualenv software-properties-common \
-  python-software-properties texinfo texlive-bibtex-extra texlive-formats-extra texlive-generic-extra && \
+  python-software-properties texinfo texlive-bibtex-extra texlive-formats-extra texlive-generic-extra nodejs-legacy && \
   apt-get -y build-dep r-base
 
 # Add repositories
@@ -52,6 +52,14 @@ RUN \
   echo debconf shared/accepted-oracle-license-v1-1 seen true | debconf-set-selections && \
   DEBIAN_FRONTEND=noninteractive apt-get install -y oracle-java8-installer
 
+# Install from source dependencies
+RUN \
+  wget https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2 && \
+  tar xvjf phantomjs-2.1.1-linux-x86_64.tar.bz2 -C /usr/local/share/ && \
+  rm phantomjs-2.1.1-linux-x86_64.tar.bz2 && \
+  ln -sf /usr/local/share/phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/local/bin && \
+  apt-get clean
+
 # Copy required scripts
 COPY scripts/install_R_version scripts/install_R_versions scripts/install_python_versions /usr/sbin/
 RUN \
@@ -62,20 +70,6 @@ RUN \
 # Install Python
 RUN \
   /usr/sbin/install_python_versions
-
-# Install nodeJS
-RUN \
-  curl -sL https://deb.nodesource.com/setup_7.x | bash - && \
-  apt-get update -q -y && \
-  apt-get install -y nodejs
-
-# Install from source dependencies
-RUN \
-  wget https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2 && \
-  tar xvjf phantomjs-2.1.1-linux-x86_64.tar.bz2 -C /usr/local/share/ && \
-  rm phantomjs-2.1.1-linux-x86_64.tar.bz2 && \
-  ln -sf /usr/local/share/phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/local/bin && \
-  apt-get clean
 
 # Install R with different versions
 RUN \
