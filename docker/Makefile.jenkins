@@ -25,7 +25,7 @@ test-package-py:
 
 test-package-r:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
-	zip -r test-package-r.zip h2o-r/h2o-package/R/ h2o-r/tests/ \
+	zip -r test-package-r.zip h2o-r/h2o-package/R/ h2o-r/tests/ h2o-r/demos/ \
 		cd h2o-docs/src/booklets/v2_2015/source h2o-r/R/src/contrib/h2o*.tar.gz \
 		h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py \
 		docker/Makefile.jenkins tests/runitSmokeTestList \
