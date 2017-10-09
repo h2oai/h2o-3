@@ -7,6 +7,8 @@ import water.rapids.vals.ValNum;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 
+import static hex.genmodel.utils.ArrayUtils.isBoolColumn;
+
 /**
  * Bulk AND operation on a scalar or numeric column; NAs count as true.  Returns 0 or 1.
  */
@@ -30,9 +32,14 @@ public class AstAll extends AstPrimitive {
   public ValNum apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Val val = stk.track(asts[1].exec(env));
     if (val.isNum()) return new ValNum(val.getNum() == 0 ? 0 : 1);
-    for (Vec vec : val.getFrame().vecs())
-      if (vec.nzCnt() + vec.naCnt() < vec.length())
+    for (Vec vec : val.getFrame().vecs()) {
+      String[] domainV = vec.domain();
+      if (!isBoolColumn(domainV))
+        return new ValNum(0);         // not a boolean column
+      long trueCount = domainV[0].equalsIgnoreCase("true")?(vec.length()-vec.nzCnt()):vec.nzCnt();
+      if (trueCount + vec.naCnt() < vec.length())
         return new ValNum(0);   // Some zeros in there somewhere
+    }
     return new ValNum(1);
   }
 }
