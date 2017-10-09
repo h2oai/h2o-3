@@ -74,11 +74,11 @@ def SMALL_JOBS = [
   //   timeoutValue: 10, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
   //   filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
   // ],
-  // [
-  //   stageName: 'R3.4 Booklets', target: 'test-r-booklets', rVersion: '3.4.1',
-  //   timeoutValue: 50, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
-  //   filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
-  // ],
+  [
+    stageName: 'R3.4 Booklets', target: 'test-r-booklets', rVersion: '3.4.1',
+    timeoutValue: 50, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
+    filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
+  ],
   [
     stageName: 'R3.4 Demos Small', target: 'test-r-demos-small', rVersion: '3.4.1',
     timeoutValue: 15, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
@@ -107,11 +107,11 @@ def MEDIUM_LARGE_JOBS = [
   //   timeoutValue: 70, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
   //   filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
   // ],
-  // [
-  //   stageName: 'R3.4 Medium-large', target: 'test-r-medium-large', rVersion: '3.4.1',
-  //   timeoutValue: 3, timeoutUnit: 'HOURS', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
-  //   filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
-  // ]
+  [
+    stageName: 'R3.4 Demos Medium-large', target: 'test-r-demos-medium-large', rVersion: '3.4.1',
+    timeoutValue: 3, timeoutUnit: 'HOURS', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
+    filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
+  ]
 ]
 
 properties(
