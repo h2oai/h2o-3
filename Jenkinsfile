@@ -1,4 +1,4 @@
-@Library('h2o3-shared-lib') _
+@Library('h2o3-shared-lib@mr/ita-21-r-jobs') _
 
 import ai.h2o3.ci.Globals
 
@@ -8,7 +8,7 @@ def SIZE_SMALL = 'small'
 def SMOKE_JOBS = [
   [
     stageName: 'Py2.7 Smoke', target: 'test-py-smoke', pythonVersion: '2.7',
-    timeoutValue: 8, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py',
+    timeoutValue: 8, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py', rInstall: false,
     filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
   ],
   [
@@ -21,32 +21,32 @@ def SMOKE_JOBS = [
 def SMALL_JOBS = [
   // [
   //   stageName: 'Py2.7 Booklets', target: 'test-py-booklets', pythonVersion: '2.7',
-  //   timeoutValue: 40, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py',
+  //   timeoutValue: 40, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py', rInstall: false,
   //   filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
   // ],
   // [
   //   stageName: 'Py2.7 Demos', target: 'test-py-demos', pythonVersion: '2.7',
-  //   timeoutValue: 15, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py',
+  //   timeoutValue: 15, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py', rInstall: false,
   //   filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
   // ],
   // [
   //   stageName: 'Py2.7 Init', target: 'test-py-init', pythonVersion: '2.7',
-  //   timeoutValue: 5, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py',
+  //   timeoutValue: 5, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py', rInstall: false,
   //   filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
   // ],
   // [
   //   stageName: 'Py2.7 Small', target: 'test-pyunit-small', pythonVersion: '2.7',
-  //   timeoutValue: 45, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py',
+  //   timeoutValue: 45, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py', rInstall: false,
   //   filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
   // ],
   // [
   //   stageName: 'Py3.5 Small', target: 'test-pyunit-small', pythonVersion: '3.5',
-  //   timeoutValue: 45, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py',
+  //   timeoutValue: 45, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py', rInstall: false,
   //   filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
   // ],
   // [
   //   stageName: 'Py3.6 Small', target: 'test-pyunit-small', pythonVersion: '3.6',
-  //   timeoutValue: 45, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py',
+  //   timeoutValue: 45, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py', rInstall: false,
   //   filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
   // ],
   // [
@@ -64,21 +64,21 @@ def SMALL_JOBS = [
   //   timeoutValue: 20, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
   //   filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
   // ],
-  [
-    stageName: 'R3.4 CMD Check', target: 'test-r-cmd-check', rVersion: '3.4.1',
-    timeoutValue: 15, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
-    filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
-  ],
-  [
-    stageName: 'R3.4 CMD Check as CRAN', target: 'test-r-cmd-check-as-cran', rVersion: '3.4.1',
-    timeoutValue: 10, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
-    filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
-  ],
-  [
-    stageName: 'R3.4 Booklets', target: 'test-r-booklets', rVersion: '3.4.1',
-    timeoutValue: 50, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
-    filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
-  ],
+  // [
+  //   stageName: 'R3.4 CMD Check', target: 'test-r-cmd-check', rVersion: '3.4.1',
+  //   timeoutValue: 15, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
+  //   filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
+  // ],
+  // [
+  //   stageName: 'R3.4 CMD Check as CRAN', target: 'test-r-cmd-check-as-cran', rVersion: '3.4.1',
+  //   timeoutValue: 10, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
+  //   filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
+  // ],
+  // [
+  //   stageName: 'R3.4 Booklets', target: 'test-r-booklets', rVersion: '3.4.1',
+  //   timeoutValue: 50, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
+  //   filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
+  // ],
   [
     stageName: 'R3.4 Demos Small', target: 'test-r-demos-small', rVersion: '3.4.1',
     timeoutValue: 15, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
@@ -89,17 +89,17 @@ def SMALL_JOBS = [
 def MEDIUM_LARGE_JOBS = [
   // [
   //   stageName: 'Py2.7 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '2.7',
-  //   timeoutValue: 90, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py',
+  //   timeoutValue: 90, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py', rInstall: false,
   //   filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt, h2o-py/tests/testdir_dynamic_tests/testdir_algos/glm/Rsandbox*/*.csv'
   // ],
   // [
   //   stageName: 'Py3.5 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
-  //   timeoutValue: 90, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py',
+  //   timeoutValue: 90, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py', rInstall: false,
   //   filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt, h2o-py/tests/testdir_dynamic_tests/testdir_algos/glm/Rsandbox*/*.csv'
   // ],
   // [
   //   stageName: 'Py3.6 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.6',
-  //   timeoutValue: 90, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py',
+  //   timeoutValue: 90, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py', rInstall: false,
   //   filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt, h2o-py/tests/testdir_dynamic_tests/testdir_algos/glm/Rsandbox*/*.csv'
   // ],
   // [
@@ -107,11 +107,11 @@ def MEDIUM_LARGE_JOBS = [
   //   timeoutValue: 70, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
   //   filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
   // ],
-  [
-    stageName: 'R3.4 Medium-large', target: 'test-r-medium-large', rVersion: '3.4.1',
-    timeoutValue: 3, timeoutUnit: 'HOURS', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
-    filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
-  ]
+  // [
+  //   stageName: 'R3.4 Medium-large', target: 'test-r-medium-large', rVersion: '3.4.1',
+  //   timeoutValue: 3, timeoutUnit: 'HOURS', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
+  //   filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
+  // ]
 ]
 
 properties(
@@ -207,6 +207,7 @@ def executeInParallel(jobs, customEnv, customMakefileURL) {
             hasJUnit = c['hasJUnit']
             filesToArchive = c['filesToArchive']
             pipInstall = c['pipInstall']
+            rInstall = c['rInstall']
             lang = c['lang']
           }
         }
