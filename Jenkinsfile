@@ -182,7 +182,7 @@ node (getRootNodeLabel()) {
       }
     }
   }
-  executeInParallel(SMOKE_JOBS, customEnv, params.customMakefileURL)
+  // executeInParallel(SMOKE_JOBS, customEnv, params.customMakefileURL)
 
   def jobs = SMALL_JOBS
   if (params.testsSize.toLowerCase() == SIZE_MEDIUM_LARGE.toLowerCase()) {
