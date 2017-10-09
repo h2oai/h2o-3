@@ -25,6 +25,28 @@ public class ArrayUtils {
     return sum;
   }
 
+  /**
+   * Check to see if a column is a boolean column.  A boolean column should contains only two
+   * levels and the string describing the domains should be true/false
+   * @param domains
+   * @return
+   */
+  public static boolean isBoolColumn(String[] domains) {
+    if (domains != null) {
+      if (domains.length == 2) {  // check domain names to be true/false
+        if (domains[0].equalsIgnoreCase("true") && domains[1].equalsIgnoreCase("false"))
+          return true;
+        else if (domains[1].equalsIgnoreCase("true") && domains[0].equalsIgnoreCase("false"))
+          return true;
+      } else if (domains.length == 1) {
+        if (domains[0].equalsIgnoreCase("true") || domains[0].equalsIgnoreCase("false")) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   public static int maxIndex(double[] from, Random rand) {
     assert rand != null;
     int result = 0;
