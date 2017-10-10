@@ -2,6 +2,7 @@ package hex.tree.xgboost;
 
 import hex.DataInfo;
 import ml.dmlc.xgboost4j.java.Booster;
+import ml.dmlc.xgboost4j.java.BoosterHelper;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import water.Iced;
@@ -60,7 +61,7 @@ final public class XGBoostModelInfo extends Iced {
   private static Booster javaToNative(byte[] boosterBytes) {
     InputStream is = new ByteArrayInputStream(boosterBytes);
     try {
-      return Booster.loadModel(is);
+      return BoosterHelper.loadModel(is);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

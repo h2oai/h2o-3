@@ -1,7 +1,7 @@
 package hex.genmodel.algos.xgboost;
 
 import hex.genmodel.ModelMojoReader;
-import ml.dmlc.xgboost4j.BoosterHelper;
+import ml.dmlc.xgboost4j.java.BoosterHelper;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 
 import java.io.ByteArrayInputStream;
