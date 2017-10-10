@@ -12,7 +12,7 @@ H2O-3 (this repository) is the third incarnation of H2O, and the successor to [H
 
 * [Downloading H2O-3](#Downloading)
 * [Open Source Resources](#Resources)
-    * [Issue Tracking and Feature Requests](#IssueTracking) 
+    * [Issue Tracking and Feature Requests](#IssueTracking)
     * [List of H2O Resources](#OpenSourceResources)
 * [Using H2O-3 Code Artifacts (libraries)](#Artifacts)
 * [Building H2O-3](#Building)
@@ -64,23 +64,23 @@ You can browse and create new issues in our open source **JIRA**:  <http://jira.
     1.  Click `Create an acccount` near the bottom of the login box
     1.  Once you have created an account and logged in, use the `Create` button on the menu to create an issue
     1.  Create H2O-3 issues in the [PUBDEV](https://0xdata.atlassian.net/projects/PUBDEV/issues) project.  (Note: Sparkling Water questions should be filed under the [SW](https://0xdata.atlassian.net/projects/SW/issues) project.)
-*	You can also vote for feature requests and/or other issues. Voting can help H2O prioritize the features that are included in each release. 
+*	You can also vote for feature requests and/or other issues. Voting can help H2O prioritize the features that are included in each release.
 	1. Go to the [H2O JIRA page](https://0xdata.atlassian.net/).
 	2. Click **Log In** to either log in or create an account if you do not already have one.
 	3. Search for the feature that you want to prioritize, or create a new feature.
-	4. Click on the **Vote for this issue** link. This is located on the right side of the issue under the **People** section. 
+	4. Click on the **Vote for this issue** link. This is located on the right side of the issue under the **People** section.
 
 <a name="OpenSourceResources"></a>
 ### 2.2 List of H2O Resources
 
 *  GitHub
     * <https://github.com/h2oai/h2o-3>
-*  JIRA -- file bug reports / track issues here 
+*  JIRA -- file bug reports / track issues here
     * The [PUBDEV](https://0xdata.atlassian.net/projects/PUBDEV/issues) project contains issues for the current H2O-3 project)
 *  Stack Overflow -- ask all code/software questions here
     * <http://stackoverflow.com/questions/tagged/h2o>
 *  Cross Validated (Stack Exchange) -- ask algorithm/theory questions here
-    * <https://stats.stackexchange.com/questions/tagged/h2o> 
+    * <https://stats.stackexchange.com/questions/tagged/h2o>
 *  h2ostream Google Group -- ask non-code related questions here
     * Web: <https://groups.google.com/d/forum/h2ostream>
     * Mail to: [h2ostream@googlegroups.com](mailto:h2ostream@googlegroups.com)
@@ -88,7 +88,7 @@ You can browse and create new issues in our open source **JIRA**:  <http://jira.
     * <https://gitter.im/h2oai/h2o-3>    
 *  Documentation
     * H2O User Guide (main docs): <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/index.html>
-    * All H2O documenation links: <http://docs.h2o.ai> 
+    * All H2O documenation links: <http://docs.h2o.ai>
     * Nightly build page (nightly docs linked in page): <https://s3.amazonaws.com/h2o-release/h2o/master/latest.html>
 *  Download (pre-built packages)
     * <http://h2o.ai/download>
@@ -141,11 +141,27 @@ Refer to the [h2o-droplets GitHub repository](https://github.com/h2oai/h2o-dropl
 <a name="Building"></a>
 ## 4. Building H2O-3
 
-Getting started with H2O development requires [JDK 1.7](http://www.oracle.com/technetwork/java/javase/downloads/), [Node.js](https://nodejs.org/), and Gradle.  We use the Gradle wrapper (called `gradlew`) to ensure up-to-date local versions of Gradle and other dependencies are installed in your development directory.
+Getting started with H2O development requires [JDK 1.7](http://www.oracle.com/technetwork/java/javase/downloads/), [Node.js](https://nodejs.org/), Gradle and Python.  We use the Gradle wrapper (called `gradlew`) to ensure up-to-date local versions of Gradle and other dependencies are installed in your development directory.
 
-### 4.1. Building from the command line (Quick Start)
+### 4.1. Before building
 
-To build H2O from the repository, perform the following steps. 
+Installation of `h2o` requires properly set up Python environment and following packages:
+```
+grip
+colorama
+future
+tabulate
+requests
+wheel
+```
+To install these packages you can use [pip](https://pip.pypa.io/en/stable/installing/) or [conda](https://conda.io/).
+If you have troubles installing these packages on *Windows*, please follow section [Setup on Windows](#SetupWin) of this guide.
+> (Note: It is recommended to use some virtual environment such as [VirtualEnv](https://virtualenv.pypa.io/), to install all packages. )
+
+
+### 4.2. Building from the command line (Quick Start)
+
+To build H2O from the repository, perform the following steps.
 
 
 #### Recipe 1: Clone fresh, build, skip tests, and run H2O
@@ -176,7 +192,7 @@ cd h2o-3
 ./gradlew build
 ```
 
->**Notes**: 
+>**Notes**:
 >
 > - Running tests starts five test JVMs that form an H2O cluster and requires at least 8GB of RAM (preferably 16GB of RAM).
 > - Running `./gradlew syncRPackages` is supported on Windows, OS X, and Linux, and is strongly recommended but not required. `./gradlew syncRPackages` ensures a complete and consistent environment with pre-approved versions of the packages required for tests and builds. The packages can be installed manually, but we recommend setting an ENV variable and using `./gradlew syncRPackages`. To set the ENV variable, use the following format (where `${WORKSPACE} can be any path):
@@ -217,15 +233,12 @@ git pull
 open target/docs-website/h2o-docs/index.html
 ```
 
-### 4.2. Setup on all Platforms
-
-The requirements for building / installing `h2o` are listed in file [h2o-py/conda/h2o/meta.yaml](h2o-py/conda/h2o/meta.yaml) file. Install the required Python packages (prepending with `sudo` if unsuccessful).
-
+<a name="SetupWin"></a>
 ### 4.3. Setup on Windows
 
-##### Step 1: Download and install [WinPython](https://winpython.github.io). 
+##### Step 1: Download and install [WinPython](https://winpython.github.io).
   From the command line, validate `python` is using the newly installed package by using `which python` (or `sudo which python`). [Update the Environment variable](https://github.com/winpython/winpython/wiki/Environment) with the WinPython path.
-  
+
 ###### Step 2: Install required Python packages:
 
     pip install grip
@@ -238,26 +251,26 @@ Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-
 
     javac -version
 
-The CLASSPATH variable also needs to be set to the lib subfolder of the JDK: 
+The CLASSPATH variable also needs to be set to the lib subfolder of the JDK:
 
     CLASSPATH=/<path>/<to>/<jdk>/lib
 
 ##### Step 4. Install Node.js
 
-Install [Node.js](http://nodejs.org/download/) and add the installed directory `C:\Program Files\nodejs`, which must include node.exe and npm.cmd to PATH if not already prepended. 
+Install [Node.js](http://nodejs.org/download/) and add the installed directory `C:\Program Files\nodejs`, which must include node.exe and npm.cmd to PATH if not already prepended.
 
 ##### Step 5. Install R, the required packages, and Rtools:
 
 Install [R](http://www.r-project.org/) and add the bin directory to your PATH if not already included.
 
 <a name="InstallRPackagesInUnix"></a>
-Install the following R packages: 
+Install the following R packages:
 
 - [RCurl](http://cran.r-project.org/package=RCurl)
 - [jsonlite](http://cran.r-project.org/package=jsonlite)
 - [statmod](http://cran.r-project.org/package=statmod)
 - [devtools](http://cran.r-project.org/package=devtools)
-- [roxygen2](http://cran.r-project.org/package=roxygen2) 
+- [roxygen2](http://cran.r-project.org/package=roxygen2)
 - [testthat](http://cran.r-project.org/package=testthat)
 
 To install these packages from within an R session:
@@ -265,7 +278,7 @@ To install these packages from within an R session:
 ```r
 pkgs <- c("RCurl", "jsonlite", "statmod", "devtools", "roxygen2", "testthat")
 for (pkg in pkgs) {
-  if (! (pkg %in% rownames(installed.packages()))) install.packages(pkg) 
+  if (! (pkg %in% rownames(installed.packages()))) install.packages(pkg)
 }
 ```
 Note that [libcurl](http://curl.haxx.se) is required for installation of the **RCurl** R package.
@@ -274,12 +287,12 @@ Finally, install [Rtools](http://cran.r-project.org/bin/windows/Rtools/), which 
 >**NOTE**: During Rtools installation, do **not** install Cygwin.dll.
 
 ##### Step 6. Install [Cygwin](https://cygwin.com/setup-x86_64.exe)
-**NOTE**: During installation of Cygwin, deselect the Python packages to avoid a conflict with the Python.org package. 
+**NOTE**: During installation of Cygwin, deselect the Python packages to avoid a conflict with the Python.org package.
 
 ###### Step 6b. Validate Cygwin
-If Cygwin is already installed, remove the Python packages or ensure that Native Python is before Cygwin in the PATH variable. 
+If Cygwin is already installed, remove the Python packages or ensure that Native Python is before Cygwin in the PATH variable.
 
-##### Step 7. Update or validate the Windows PATH variable to include R, Java JDK, Cygwin. 
+##### Step 7. Update or validate the Windows PATH variable to include R, Java JDK, Cygwin.
 
 ##### Step 8. Git Clone [h2o-3](https://github.com/h2oai/h2o-3.git)
 
@@ -313,20 +326,20 @@ Using Homebrew:
 
     brew install node
 
-Otherwise, install from the [NodeJS website](http://nodejs.org/download/). 
+Otherwise, install from the [NodeJS website](http://nodejs.org/download/).
 
 ##### Step 3. Install R and the required packages:
 
 Install [R](http://www.r-project.org/) and add the bin directory to your PATH if not already included.
 
 <a name="InstallRPackagesInUnix"></a>
-Install the following R packages: 
+Install the following R packages:
 
 - [RCurl](http://cran.r-project.org/package=RCurl)
 - [jsonlite](http://cran.r-project.org/package=jsonlite)
 - [statmod](http://cran.r-project.org/package=statmod)
 - [devtools](http://cran.r-project.org/package=devtools)
-- [roxygen2](http://cran.r-project.org/package=roxygen2) 
+- [roxygen2](http://cran.r-project.org/package=roxygen2)
 - [testthat](http://cran.r-project.org/package=testthat)
 
 To install these packages from within an R session:
@@ -334,7 +347,7 @@ To install these packages from within an R session:
 ```r
 pkgs <- c("RCurl", "jsonlite", "statmod", "devtools", "roxygen2", "testthat")
 for (pkg in pkgs) {
-  if (! (pkg %in% rownames(installed.packages()))) install.packages(pkg) 
+  if (! (pkg %in% rownames(installed.packages()))) install.packages(pkg)
 }
 ```
 Note that [libcurl](http://curl.haxx.se) is required for installation of the **RCurl** R package.
@@ -373,12 +386,12 @@ Installation instructions can be found here [R installation](http://cran.r-proje
 
 To install the required packages, follow the [same instructions as for OS X above](#InstallRPackagesInUnix).
 
->**Note**: If the process fails to install RStudio Server on Linux, run one of the following: 
+>**Note**: If the process fails to install RStudio Server on Linux, run one of the following:
 >
 >`sudo apt-get install libcurl4-openssl-dev`
 >
 >or
-> 
+>
 >`sudo apt-get install libcurl4-gnutls-dev`
 
 ##### Step 4. Git Clone [h2o-3](https://github.com/h2oai/h2o-3.git)
@@ -406,7 +419,7 @@ Download and update h2o-3 source codes:
 
     curl -sL https://deb.nodesource.com/setup_0.12 | sudo bash -
     sudo apt-get install -y nodejs
-   
+
 
 ##### Steps 2-4. Follow steps 2-4 for Ubuntu 14.04 (above)
 
@@ -437,7 +450,7 @@ sudo alternatives --install /usr/bin/jar jar /opt/jdk1.7.0_79/bin/jar 2
 sudo alternatives --install /usr/bin/javac javac /opt/jdk1.7.0_79/bin/javac 2
 sudo alternatives --set jar /opt/jdk1.7.0_79/bin/jar
 sudo alternatives --set javac /opt/jdk1.7.0_79/bin/javac
-                                                                                                                                                                       
+
 cd /opt
 
 sudo wget http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-5.noarch.rpm
@@ -591,13 +604,13 @@ index af3b929..097af85 100644
    compile project(":h2o-genmodel")
 +  compile project(":h2o-persist-hdfs")
  }
- 
+
 diff --git a/h2o-persist-hdfs/build.gradle b/h2o-persist-hdfs/build.gradle
 index 41b96b2..6368ea9 100644
 --- a/h2o-persist-hdfs/build.gradle
 +++ b/h2o-persist-hdfs/build.gradle
 @@ -2,5 +2,6 @@ description = "H2O Persist HDFS"
- 
+
  dependencies {
    compile project(":h2o-core")
 -  compile("org.apache.hadoop:hadoop-client:2.0.0-cdh4.3.0")
@@ -609,11 +622,11 @@ index 41b96b2..6368ea9 100644
 <a name="Sparkling"></a>
 ## 7. Sparkling Water
 
-Sparkling Water combines two open-source technologies: Apache Spark and the H2O Machine Learning platform.  It makes H2O’s library of advanced algorithms, including Deep Learning, GLM, GBM, K-Means, and Distributed Random Forest, accessible from Spark workflows. Spark users can select the best features from either platform to meet their Machine Learning needs.  Users can combine Spark's RDD API and Spark MLLib with H2O’s machine learning algorithms, or use H2O independently of Spark for the model building process and post-process the results in Spark. 
+Sparkling Water combines two open-source technologies: Apache Spark and the H2O Machine Learning platform.  It makes H2O’s library of advanced algorithms, including Deep Learning, GLM, GBM, K-Means, and Distributed Random Forest, accessible from Spark workflows. Spark users can select the best features from either platform to meet their Machine Learning needs.  Users can combine Spark's RDD API and Spark MLLib with H2O’s machine learning algorithms, or use H2O independently of Spark for the model building process and post-process the results in Spark.
 
 **Sparkling Water Resources**:
 
-* [Download page for pre-built packages](http://h2o.ai/download/) 
+* [Download page for pre-built packages](http://h2o.ai/download/)
 * [Sparkling Water GitHub repository](https://github.com/h2oai/sparkling-water)  
 * [README](https://github.com/h2oai/sparkling-water/blob/master/README.md)
 * [Developer documentation](https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md)
@@ -623,21 +636,21 @@ Sparkling Water combines two open-source technologies: Apache Spark and the H2O 
 
 ### Documenation Homepage
 
-The main H2O documentation is the [H2O User Guide](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/index.html).  Visit <http://docs.h2o.ai> for the top-level introduction to documentation on H2O projects. 
+The main H2O documentation is the [H2O User Guide](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/index.html).  Visit <http://docs.h2o.ai> for the top-level introduction to documentation on H2O projects.
 
 
-### Generate REST API documentation 
+### Generate REST API documentation
 
-To generate the REST API documentation, use the following commands: 
+To generate the REST API documentation, use the following commands:
 
     cd ~/h2o-3
     cd py
     python ./generate_rest_api_docs.py  # to generate Markdown only
     python ./generate_rest_api_docs.py --generate_html  --github_user GITHUB_USER --github_password GITHUB_PASSWORD # to generate Markdown and HTML
 
-The default location for the generated documentation is `build/docs/REST`. 
+The default location for the generated documentation is `build/docs/REST`.
 
-If the build fails, try `gradlew clean`, then `git clean -f`. 
+If the build fails, try `gradlew clean`, then `git clean -f`.
 
 ### Bleeding edge build documentation
 
@@ -680,9 +693,9 @@ H2O algorithm booklets are available at the [Documentation Homepage](http://docs
 
 **Formatted booklet citation examples**:
 
-Arora, A., Candel, A., Lanford, J., LeDell, E., and Parmar, V. (Oct. 2016). _Deep Learning with H2O_. <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/DeepLearningBooklet.pdf>. 
+Arora, A., Candel, A., Lanford, J., LeDell, E., and Parmar, V. (Oct. 2016). _Deep Learning with H2O_. <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/DeepLearningBooklet.pdf>.
 
-Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _Gradient Boosted Models with H2O_. <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GBMBooklet.pdf>. 
+Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _Gradient Boosted Models with H2O_. <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GBMBooklet.pdf>.
 
 
 <a name="Community"></a>
@@ -727,7 +740,7 @@ Mark Landry
 Erin LeDell
 Oleg Rogynskyy
 Nick Martin
-Nancy Jordan 
+Nancy Jordan
 Nishant Kalonia
 Nadine Hussami
 Jeff Cramer
