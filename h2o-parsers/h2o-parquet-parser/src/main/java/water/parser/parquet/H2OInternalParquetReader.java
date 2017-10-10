@@ -49,6 +49,10 @@ import static org.apache.parquet.Preconditions.checkNotNull;
 
 import water.util.Log;
 
+/**
+ * WARNING: H2O-Customized copy of Parquet's InternalParquetRecordReader, see SW-542 for explanation
+ * Customization include: similification, H2O's logging 
+ */
 class H2OInternalParquetRecordReader<T> {
 
   private ColumnIOFactory columnIOFactory = null;
