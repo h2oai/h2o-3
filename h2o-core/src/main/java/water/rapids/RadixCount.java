@@ -47,11 +47,11 @@ class RadixCount extends MRTask<RadixCount> {
     boolean isIntVal = chk.vec().isCategorical() || chk.vec().isInt();
     // TODO: assert chk instanceof integer or enum; -- but how since many
     // integers (C1,C2 etc)?  Alternatively: chk.getClass().equals(C8Chunk.class)
-    if (!(_isLeft && chk.vec().isCategorical())) {  // for numeric columns
+    if (!(_isLeft && chk.vec().isCategorical())) {  // for numeric columns or to deal with the rite frame during merge
       if (chk.vec().naCnt() == 0) { // no NAs in column
         // There are no NA in this join column; hence branch-free loop. Most
         // common case as should never really have NA in join columns.
-        for (int r = 0; r < chk._len; r++) {
+        for (int r = 0; r < chk._len; r++) {    // note that 0th bucket here is for rows to exclude from merge result
           long ctrVal = isIntVal ?
                   BigInteger.valueOf(chk.at8(r)*_ascending).subtract(_base).add(BigInteger.ONE).shiftRight(_shift).longValue():
                   MathUtils.convertDouble2BigInteger(_ascending*chk.atd(r)).subtract(_base).add(BigInteger.ONE).shiftRight(_shift).longValue();
