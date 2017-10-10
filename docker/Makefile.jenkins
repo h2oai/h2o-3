@@ -2,6 +2,7 @@
 # Docker image tagging
 #
 .NOTPARALLEL: all
+SHELL:=/bin/bash
 
 build-h2o-3:
 	@echo "+--Building H2O-3--+"
@@ -12,21 +13,15 @@ build-h2o-3:
 	@echo "+--Building--+"
 	./gradlew build -x test
 
+################
+# PYTHON TESTS #
+################
 test-package-py:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
 	zip -r test-package-py.zip h2o-py/tests/ h2o-py/demos/ \
 	h2o-docs/src/booklets/v2_2015/source h2o-py/dist/*.whl \
 	h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py \
 	docker/Makefile.jenkins tests/pyunitSmokeTestList h2o-py/scripts/h2o-py-test-setup.py
-
-test-package-r:
-	cd h2o-py/tests/ && rm -f -r testdir_hdfs
-	zip -r test-package-r.zip h2o-r/h2o-package/R/ h2o-r/tests/ h2o-r/demos/ h2o-r/h2o-package/demo \
-		cd h2o-docs/src/booklets/v2_2015/source h2o-r/R/src/contrib/h2o*.tar.gz \
-		h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py \
-		docker/Makefile.jenkins tests/runitSmokeTestList \
-		h2o-r/scripts/h2o-r-test-setup.R scripts/validate_r_cmd_check_output.R \
-		scripts/validate_r_cmd_check_output.py
 
 test-py-smoke:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
@@ -51,6 +46,13 @@ test-py-demos:
 test-pyunit-medium-large:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
 	cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 1 --numnodes 5 --jvm.xmx 15g
+
+###########
+# R TESTS #
+###########
+test-package-r:
+	cd h2o-py/tests/ && rm -f -r testdir_hdfs
+	zip -r test-package-r.zip h2o-r/h2o-package/R/ h2o-r/tests/ h2o-assemblies/genmodel/build/libs/genmodel.jar scripts/run.py docker/Makefile.jenkins tests/runitSmokeTestList h2o-r/scripts/h2o-r-test-setup.R
 
 test-r-smoke:
 	cd h2o-r/tests/ && rm -f -r testdir_hdfs
@@ -101,6 +103,9 @@ test-r-demos-medium-large:
 	cd h2o-r/demos && ../../scripts/run.py --wipeall --norun
 	cd h2o-r/demos && ../../scripts/run.py --wipeall --testsize ml --numclouds 1 --numnodes 3 --jvm.xmx 15g
 
+##############
+# PHANTOM JS #
+##############
 test-package-js:
 	zip -r test-package-js \
 		docker/Makefile.jenkins tests/ignoreFlowSmokeTestList scripts/run.py \
@@ -117,3 +122,20 @@ test-phantom-js-medium:
 
 test-phantom-js:
 	cd h2o-web && ../scripts/run.py --wipeall --geterrs --test lib/h2o-flow/build/js/headless-test.js --jvm.xmx 4g
+
+########
+# JAVA #
+########
+test-package-java:
+	zip -r test-package-java.zip \
+		docker/Makefile.jenkins \
+		gradlew gradle/ gradle.properties settings.gradle build.gradle **/build.gradle \
+		buildSrc/ **/build **/src/test **/testMultiNode.sh **/testSingleNode.sh multiNodeUtils.sh sort_crash.csv \
+		tests/doOnlyJunitSmokeTestList \
+		h2o-core/src/
+
+test-junit-smoke:
+	DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test h2o-scala_2.10:test h2o-scala_2.11:test #h2o-core:test h2o-algos:test h2o-scala_2.10:test h2o-scala_2.11:test
+
+test-junit:
+	IGNORE=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew test -x h2o-persist-s3:test
