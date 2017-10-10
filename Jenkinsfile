@@ -20,6 +20,11 @@ def SMOKE_JOBS = [
     stageName: 'PhantomJS Smoke', target: 'test-phantom-js-smoke',
     timeoutValue: 10, lang: 'js',
     filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
+  ],
+  [
+    stageName: 'Java8 Smoke', target: 'test-junit-smoke',
+    timeoutValue: 20, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'java', rInstall: false, pipInstall: false,
+    filesToArchive: '**/*.log, **/out.*, **/*out.txt, **/tests.txt'
   ]
 ]
 
@@ -103,6 +108,11 @@ def SMALL_JOBS = [
     stageName: 'PhantomJS', target: 'test-phantom-js',
     timeoutValue: 45, lang: 'js',
     filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/tests.txt, **/*lib_h2o-flow_build_js_headless-test.js.out.txt'
+  ],
+  [
+    stageName: 'Java8 JUnit', target: 'test-junit',
+    timeoutValue: 100, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'java', rInstall: false, pipInstall: false,
+    filesToArchive: '**/*.log, **/out.*, **/*out.txt, **/tests.txt, **/*status*'
   ]
 ]
 
@@ -197,6 +207,11 @@ node (getRootNodeLabel()) {
               hasJUnit = false
               archiveFiles = false
             }
+            buildTarget {
+              target = 'test-package-java'
+              hasJUnit = false
+              archiveFiles = false
+            }
           } finally {
             archiveArtifacts """
               h2o-3/docker/Makefile.jenkins,
@@ -212,6 +227,7 @@ node (getRootNodeLabel()) {
       }
     }
   }
+
   executeInParallel(SMOKE_JOBS, customEnv, params.customMakefileURL)
 
   def jobs = SMALL_JOBS
