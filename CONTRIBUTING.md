@@ -24,7 +24,7 @@ If you're an Open Source community member you should send these to one of:
 * The h2ostream mailing list, at: [https://groups.google.com/forum/#!forum/h2ostream](https://groups.google.com/forum/#!forum/h2ostream)
 * Gitter chat, at [https://gitter.im/h2oai/h2o-3](https://gitter.im/h2oai/h2o-3)
 
-All bugs and feature requests get added to the JIRA tracking system at [https://0xdata.atlassian.net/](https://0xdata.atlassian.net/), where you can track their progress. 
+All bugs and feature requests get added to the JIRA tracking system at [https://0xdata.atlassian.net/projects/PUBDEV](https://0xdata.atlassian.net/projects/PUBDEV), where you can track their progress. 
 
 >***Note***: JIRA issues for customers with Enterprise Support contracts go into a private project so that customer information is kept secure. Contact support@h2o.ai for more information.
 
@@ -78,7 +78,7 @@ For Scala tests see the Sparkling Water GitHub repo.
 
 You can contribute R, Python, Java or Scala code for H2O, either for bug fixes or new features.  If you have your own idea about what to work on a good place to begin is to discuss it with us on [Gitter](https://gitter.im/h2oai/h2o-3) so that we can help point you in the right direction.
 
-For ideas about what to work on see our [JIRA ticket system](https://0xdata.atlassian.net/issues/?filter=14201).
+For ideas about what to work on see our [JIRA ticket system](https://0xdata.atlassian.net/projects/PUBDEV).
 
 Clone the H2O-3 GitHub repo, create a branch for your work, and after you're done make sure all the tests pass.  New code must come with tests.
 
