@@ -38,14 +38,20 @@ public abstract class Paxos {
   static synchronized int doHeartbeat( H2ONode h2o ) {
     // Kill somebody if the jar files mismatch.  Do not attempt to deal with
     // mismatched jars.
-    if( !h2o._heartbeat.check_jar_md5() && !h2o._heartbeat._client) {
-      if( H2O.CLOUD.size() > 1 ) {
-        Log.warn("Killing "+h2o+" because of H2O version mismatch (md5 differs).");
-        UDPRebooted.T.mismatch.send(h2o);
-      } else {
-        H2O.die("Attempting to join "+h2o+" with an H2O version mismatch (md5 differs).  (Is H2O already running?)  Exiting.");
+    if( !h2o._heartbeat._client) {
+      // don't check md5 for client nodes
+      if (!h2o._heartbeat.check_jar_md5()) {
+        if (H2O.CLOUD.size() > 1) {
+          Log.warn("Killing " + h2o + " because of H2O version mismatch (md5 differs).");
+          UDPRebooted.T.mismatch.send(h2o);
+        } else {
+          H2O.die("Attempting to join " + h2o + " with an H2O version mismatch (md5 differs).  (Is H2O already running?)  Exiting.");
+        }
+        return 0;
       }
-      return 0;
+    }else{
+      // Just report that client with different md5 tried to connect
+      ListenerService.getInstance().report("client_wrong_md5", new Object[]{h2o._heartbeat._jar_md5});
     }
     
     if(h2o._heartbeat._cloud_name_hash != H2O.SELF._heartbeat._cloud_name_hash){
