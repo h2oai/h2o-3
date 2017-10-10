@@ -46,6 +46,7 @@ class Check:
             r"^Maintainer:",
             r"^New maintainer:",
             r"^\s*Tom Kraljevic",
+            r"^Version contains large components .*",
             r"^Insufficient package version .*",
             r"^\Days since last update: .*",
             r"^Old maintainer\(s\):",
@@ -76,6 +77,7 @@ class Check:
             r"^ OK",
 
             r"^Package has FOSS license, installs .class/.jar but has no 'java' directory.",
+            r"^Size of tarball: .* bytes",
             r"^\* DONE",
 
             r"^The Date field is over a month old.*",
