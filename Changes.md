@@ -2,6 +2,18 @@
 
 ## H2O
 
+### Weierstrass (3.14.0.6) - 10/9/2017
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/6/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/6/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/SW-542'>SW-542</a>] - Fixed an issue that prevented Sparkling Water from importing Parquet files.
+</li>
+</ul>
+
+
 ### Weierstrass (3.14.0.5) - 10/9/2017
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/4/index.html</a>
