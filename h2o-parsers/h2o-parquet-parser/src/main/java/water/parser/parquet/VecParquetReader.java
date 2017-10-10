@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.parquet.hadoop;
+package water.parser.parquet;
 
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
@@ -30,12 +30,12 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.parquet.format.converter.ParquetMetadataConverter;
 
 import static org.apache.parquet.format.converter.ParquetMetadataConverter.MetadataFilter;
+
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.MessageType;
 import water.fvec.Vec;
 import water.parser.ParseWriter;
-import water.parser.parquet.ChunkReadSupport;
 import water.persist.VecDataInputStream;
 import water.util.Log;
 
@@ -51,7 +51,6 @@ import water.persist.VecFileSystem;
  * Note: This class was derived from Parquet's ParquetReader implementation. We cannot directly
  * use the original implementation because it uses Hadoop FileSystem to access source data (and also Parquet summary files),
  * it uses its own parallel implementation for reading metadata information which doesn't fit into H2O's architecture.
- * We need to keep this class in package "org.apache.parquet.hadoop" to get access to Parquet's InternalParquetRecordReader.
  */
 public class VecParquetReader implements Closeable {
 
@@ -62,7 +61,7 @@ public class VecParquetReader implements Closeable {
   private final ParseWriter writer;
   private final byte[] chunkSchema;
 
-  private InternalParquetRecordReader<Integer> reader;
+  private H2OInternalParquetRecordReader<Integer> reader;
 
   public VecParquetReader(Vec vec, ParquetMetadata metadata, ParseWriter writer, byte[] chunkSchema) {
     this.vec = vec;
@@ -95,9 +94,9 @@ public class VecParquetReader implements Closeable {
     assert reader == null;
     List<BlockMetaData> blocks = metadata.getBlocks();
     MessageType fileSchema = metadata.getFileMetaData().getSchema();
-    reader = new InternalParquetRecordReader<>(new ChunkReadSupport(writer, chunkSchema));
+    reader = new H2OInternalParquetRecordReader<>(new ChunkReadSupport(writer, chunkSchema));
     Configuration conf = VecFileSystem.makeConfiguration(vec);
-    reader.initialize(fileSchema, metadata.getFileMetaData().getKeyValueMetaData(), VecFileSystem.VEC_PATH, blocks, conf);
+    reader.initialize(fileSchema, metadata.getFileMetaData(), VecFileSystem.VEC_PATH, blocks, conf);
   }
 
   @Override
@@ -105,6 +104,10 @@ public class VecParquetReader implements Closeable {
     if (reader != null) {
       reader.close();
     }
+  }
+
+  public long getInvalidRecordCount() {
+    return reader != null ? reader.getUnmaterializableRecordCount() : -1;
   }
 
   public static byte[] readFooterAsBytes(Vec vec) {
