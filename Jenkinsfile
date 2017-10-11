@@ -6,21 +6,21 @@ def SIZE_MEDIUM_LARGE = 'medium-large'
 def SIZE_SMALL = 'small'
 
 def SMOKE_JOBS = [
-  // [
-  //   stageName: 'Py2.7 Smoke', target: 'test-py-smoke', pythonVersion: '2.7',
-  //   timeoutValue: 8, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py', rInstall: false,
-  //   filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
-  // ],
-  // [
-  //   stageName: 'R3.4 Smoke', target: 'test-r-smoke', rVersion: '3.4.1',
-  //   timeoutValue: 8, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
-  //   filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
-  // ],
-  // [
-  //   stageName: 'PhantomJS Smoke', target: 'test-phantom-js-smoke',
-  //   timeoutValue: 10, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'js', rInstall: false, pipInstall: false,
-  //   filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
-  // ],
+  [
+    stageName: 'Py2.7 Smoke', target: 'test-py-smoke', pythonVersion: '2.7',
+    timeoutValue: 8, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py', rInstall: false,
+    filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
+  ],
+  [
+    stageName: 'R3.4 Smoke', target: 'test-r-smoke', rVersion: '3.4.1',
+    timeoutValue: 8, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
+    filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
+  ],
+  [
+    stageName: 'PhantomJS Smoke', target: 'test-phantom-js-smoke',
+    timeoutValue: 10, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'js', rInstall: false, pipInstall: false,
+    filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
+  ],
   [
     stageName: 'Java8 Smoke', target: 'test-junit-smoke',
     timeoutValue: 20, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'java', rInstall: false, pipInstall: false,
@@ -203,7 +203,7 @@ node (getRootNodeLabel()) {
     }
   }
 
-  executeInParallel(SMOKE_JOBS, customEnv, params.customMakefileURL)
+  // executeInParallel(SMOKE_JOBS, customEnv, params.customMakefileURL)
 
   def jobs = SMALL_JOBS
   if (params.testsSize.toLowerCase() == SIZE_MEDIUM_LARGE.toLowerCase()) {
