@@ -136,6 +136,7 @@ test-package-java:
 	find . -type f -name testMultiNode.sh | zip test-package-java.zip -@
 	find . -type f -name testSingleNode.sh | zip test-package-java.zip -@
 	find . -type f -name build.gradle | zip test-package-java.zip -@
+	find . -type f -name *.js | zip test-package-java.zip -@
 	find . -type d -name build | zip -r test-package-java.zip -x *.jar -@
 	find . -type d -name test | zip -r test-package-java.zip -@
 
