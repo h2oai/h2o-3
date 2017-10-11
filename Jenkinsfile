@@ -8,17 +8,17 @@ def SIZE_SMALL = 'small'
 def SMOKE_JOBS = [
   [
     stageName: 'Py2.7 Smoke', target: 'test-py-smoke', pythonVersion: '2.7',
-    timeoutValue: 8, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py', rInstall: false,
+    timeoutValue: 8, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py',
     filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
   ],
   [
     stageName: 'R3.4 Smoke', target: 'test-r-smoke', rVersion: '3.4.1',
-    timeoutValue: 8, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
+    timeoutValue: 8, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r',
     filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
   ],
   [
     stageName: 'PhantomJS Smoke', target: 'test-phantom-js-smoke',
-    timeoutValue: 10, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'js', rInstall: false, pipInstall: false,
+    timeoutValue: 10, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'js',
     filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
   ]
 ]
@@ -26,77 +26,77 @@ def SMOKE_JOBS = [
 def SMALL_JOBS = [
   [
     stageName: 'Py2.7 Booklets', target: 'test-py-booklets', pythonVersion: '2.7',
-    timeoutValue: 40, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py', rInstall: false,
+    timeoutValue: 40, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py',
     filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
   ],
   [
     stageName: 'Py2.7 Demos', target: 'test-py-demos', pythonVersion: '2.7',
-    timeoutValue: 15, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py', rInstall: false,
+    timeoutValue: 15, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py',
     filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
   ],
   [
     stageName: 'Py2.7 Init', target: 'test-py-init', pythonVersion: '2.7',
-    timeoutValue: 5, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: false, lang: 'py', rInstall: false,
+    timeoutValue: 5, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: false, lang: 'py',
     filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
   ],
   [
     stageName: 'Py2.7 Small', target: 'test-pyunit-small', pythonVersion: '2.7',
-    timeoutValue: 45, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py', rInstall: false,
+    timeoutValue: 45, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py',
     filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
   ],
   [
     stageName: 'Py3.5 Small', target: 'test-pyunit-small', pythonVersion: '3.5',
-    timeoutValue: 45, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py', rInstall: false,
+    timeoutValue: 45, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py',
     filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
   ],
   [
     stageName: 'Py3.6 Small', target: 'test-pyunit-small', pythonVersion: '3.6',
-    timeoutValue: 45, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py', rInstall: false,
+    timeoutValue: 45, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py',
     filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
   ],
   [
     stageName: 'R3.4 Small', target: 'test-r-small', rVersion: '3.4.1',
-    timeoutValue: 90, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
+    timeoutValue: 90, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r',
     filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
   ],
   [
     stageName: 'R3.4 Small Client Mode', target: 'test-r-small-client-mode', rVersion: '3.4.1',
-    timeoutValue: 2, timeoutUnit: 'HOURS', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
+    timeoutValue: 2, timeoutUnit: 'HOURS', numToKeep: '25', hasJUnit: true, lang: 'r',
     filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
   ],
   [
     stageName: 'R3.4 Datatable', target: 'test-r-datatable', rVersion: '3.4.1',
-    timeoutValue: 20, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
+    timeoutValue: 20, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r',
     filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
   ],
   [
     stageName: 'R3.4 CMD Check', target: 'test-r-cmd-check', rVersion: '3.4.1',
-    timeoutValue: 15, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: false, lang: 'r', pipInstall: false,
+    timeoutValue: 15, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: false, lang: 'r',
     filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
   ],
   [
     stageName: 'R3.4 CMD Check as CRAN', target: 'test-r-cmd-check-as-cran', rVersion: '3.4.1',
-    timeoutValue: 10, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: false, lang: 'r', pipInstall: false,
+    timeoutValue: 10, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: false, lang: 'r',
     filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
   ],
   [
     stageName: 'R3.4 Booklets', target: 'test-r-booklets', rVersion: '3.4.1',
-    timeoutValue: 50, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
+    timeoutValue: 50, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r',
     filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
   ],
   [
     stageName: 'R3.4 Demos Small', target: 'test-r-demos-small', rVersion: '3.4.1',
-    timeoutValue: 15, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
+    timeoutValue: 15, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r',
     filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
   ],
   [
     stageName: 'PhantomJS Small', target: 'test-phantom-js-small',
-    timeoutValue: 45, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'js', rInstall: false, pipInstall: false,
+    timeoutValue: 45, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'js',
     filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
   ],
   [
     stageName: 'PhantomJS', target: 'test-phantom-js',
-    timeoutValue: 45, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'js', rInstall: false, pipInstall: false,
+    timeoutValue: 45, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'js',
     filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
   ]
 ]
@@ -104,32 +104,32 @@ def SMALL_JOBS = [
 def MEDIUM_LARGE_JOBS = [
   [
     stageName: 'Py2.7 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '2.7',
-    timeoutValue: 90, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py', rInstall: false,
+    timeoutValue: 90, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py',
     filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt, h2o-py/tests/testdir_dynamic_tests/testdir_algos/glm/Rsandbox*/*.csv'
   ],
   [
     stageName: 'Py3.5 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
-    timeoutValue: 90, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py', rInstall: false,
+    timeoutValue: 90, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py',
     filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt, h2o-py/tests/testdir_dynamic_tests/testdir_algos/glm/Rsandbox*/*.csv'
   ],
   [
     stageName: 'Py3.6 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.6',
-    timeoutValue: 90, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py', rInstall: false,
+    timeoutValue: 90, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py',
     filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt, h2o-py/tests/testdir_dynamic_tests/testdir_algos/glm/Rsandbox*/*.csv'
   ],
   [
     stageName: 'R3.4 Medium-large', target: 'test-r-medium-large', rVersion: '3.4.1',
-    timeoutValue: 70, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
+    timeoutValue: 70, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r',
     filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
   ],
   [
     stageName: 'R3.4 Demos Medium-large', target: 'test-r-demos-medium-large', rVersion: '3.4.1',
-    timeoutValue: 3, timeoutUnit: 'HOURS', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
+    timeoutValue: 3, timeoutUnit: 'HOURS', numToKeep: '25', hasJUnit: true, lang: 'r',
     filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
   ],
   [
     stageName: 'PhantomJS Medium', target: 'test-phantom-js-medium',
-    timeoutValue: 45, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'js', rInstall: false, pipInstall: false,
+    timeoutValue: 45, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'js',
     filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
   ]
 ]
@@ -231,8 +231,6 @@ def executeInParallel(jobs, customEnv, customMakefileURL) {
             numToKeep = c['numToKeep']
             hasJUnit = c['hasJUnit']
             filesToArchive = c['filesToArchive']
-            pipInstall = c['pipInstall']
-            rInstall = c['rInstall']
             lang = c['lang']
           }
         }
