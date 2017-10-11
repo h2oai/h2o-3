@@ -69,3 +69,20 @@ test-r-datatable:
 	cd h2o-r/tests/ && rm -f -r testdir_hdfs
 	cd h2o-r/tests/ && rm -f -r testdir_demos
 	cd h2o-r/tests/testdir_perf && ../../../scripts/run.py --wipeall --test runit_repeating_merge.R  --numclouds 1 --numnodes 2 --jvm.xmx 20g
+
+test-package-js:
+	zip -r test-package-js \
+		docker/Makefile.jenkins tests/ignoreFlowSmokeTestList scripts/run.py \
+		h2o-web/lib/h2o-flow/build/js/headless-test.js
+
+test-phantom-js-smoke:
+	./scripts/run.py --wipeall --geterrs --test h2o-web/lib/h2o-flow/build/js/headless-test.js --jvm.xmx 4g --pto 14400 --ptt test-small --excludelist tests/ignoreFlowSmokeTestList
+
+test-phantom-js-small:
+	./scripts/run.py --wipeall --geterrs --test h2o-web/lib/h2o-flow/build/js/headless-test.js --jvm.xmx 4g --pto 14400 --ptt test-small
+
+test-phantom-js-medium:
+	./scripts/run.py --wipeall --geterrs --test h2o-web/lib/h2o-flow/build/js/headless-test.js --jvm.xmx 20g --pto 14400 --ptt test-medium
+
+test-phantom-js:
+	cd h2o-web && ../scripts/run.py --wipeall --geterrs --test lib/h2o-flow/build/js/headless-test.js --jvm.xmx 4g
