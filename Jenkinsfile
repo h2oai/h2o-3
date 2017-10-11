@@ -15,6 +15,11 @@ def SMOKE_JOBS = [
     stageName: 'R3.4 Smoke', target: 'test-r-smoke', rVersion: '3.4.1',
     timeoutValue: 8, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
     filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
+  ],
+  [
+    stageName: 'PhantomJS Smoke', target: 'test-phantom-js-smoke',
+    timeoutValue: 10, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'js', rInstall: false, pipInstall: false,
+    filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
   ]
 ]
 
@@ -63,6 +68,16 @@ def SMALL_JOBS = [
     stageName: 'R3.4 Datatable', target: 'test-r-datatable', rVersion: '3.4.1',
     timeoutValue: 20, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
     filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
+  ],
+  [
+    stageName: 'PhantomJS Small', target: 'test-phantom-js-small',
+    timeoutValue: 45, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'js', rInstall: false, pipInstall: false,
+    filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
+  ],
+  [
+    stageName: 'PhantomJS', target: 'test-phantom-js',
+    timeoutValue: 45, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'js', rInstall: false, pipInstall: false,
+    filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
   ]
 ]
 
@@ -86,6 +101,11 @@ def MEDIUM_LARGE_JOBS = [
     stageName: 'R3.4 Medium-large', target: 'test-r-medium-large', rVersion: '3.4.1',
     timeoutValue: 70, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
     filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
+  ],
+  [
+    stageName: 'PhantomJS Medium', target: 'test-phantom-js-medium',
+    timeoutValue: 45, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'js', rInstall: false, pipInstall: false,
+    filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
   ]
 ]
 
@@ -139,6 +159,11 @@ node (getRootNodeLabel()) {
             }
             buildTarget {
               target = 'test-package-r'
+              hasJUnit = false
+              archiveFiles = false
+            }
+            buildTarget {
+              target = 'test-package-js'
               hasJUnit = false
               archiveFiles = false
             }
