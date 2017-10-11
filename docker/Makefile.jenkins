@@ -3,10 +3,6 @@
 #
 .NOTPARALLEL: all
 
-docker-runtime:
-	@echo "+--Building Runtime Docker Image--+"
-	docker build -t h2o-3-runtime:${DOCKER_VERSION_TAG} -f Dockerfile .
-
 build-h2o-3:
 	@echo "+--Building H2O-3--+"
 	@echo
