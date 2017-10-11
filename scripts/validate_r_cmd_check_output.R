@@ -7,6 +7,8 @@ whitelist = list(
   "CRAN incoming feasibility" = c("Maintainer:",
                                   "Checking URLs requires 'libcurl' support in the R build",
                                   "Package has FOSS license, installs .class/.jar but has no 'java' directory",
+                                  "Version contains large components .*",
+                                  "Size of tarball: .* bytes",
                                   "Insufficient package version", # when we check older version of package than current available on CRAN
                                   "Days since last update", # when we submit to CRAN recently
                                   "Number of updates in past 6 months"), # when we submit to CRAN too often
