@@ -130,13 +130,14 @@ test-package-java:
 	zip -r test-package-java.zip \
 		docker/Makefile.jenkins \
 		gradlew gradle/ gradle.properties settings.gradle multiNodeUtils.sh \
-		buildSrc/ sort_crash.csv h2o-web/make-help.js \
-		tests/doOnlyJunitSmokeTestList \
+		buildSrc/ sort_crash.csv h2o-web/make-help.js h2o-docs/src/product/flow/README.md \
+		tests/doOnlyJunitSmokeTestList h2o-web/node_modules/.bin/bower \
 		h2o-core/src/
 	find . -type f -name testMultiNode.sh | zip test-package-java.zip -@
 	find . -type f -name testSingleNode.sh | zip test-package-java.zip -@
 	find . -type f -name build.gradle | zip test-package-java.zip -@
-	find h2o-web/ -type f -name *.json | zip test-package-java.zip -@
+	find . -type f -name *.json | zip test-package-java.zip -x smalldata/*json -@
+	find . -type f -name *.js | zip test-package-java.zip -@
 	find . -type d -name build | zip -r test-package-java.zip -x *.jar -@
 	find . -type d -name test | zip -r test-package-java.zip -@
 
