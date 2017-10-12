@@ -36,7 +36,7 @@ def SMALL_JOBS = [
   ],
   [
     stageName: 'Py2.7 Init', target: 'test-py-init', pythonVersion: '2.7',
-    timeoutValue: 5, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'py', rInstall: false,
+    timeoutValue: 5, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: false, lang: 'py', rInstall: false,
     filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
   ],
   [
@@ -71,12 +71,12 @@ def SMALL_JOBS = [
   ],
   [
     stageName: 'R3.4 CMD Check', target: 'test-r-cmd-check', rVersion: '3.4.1',
-    timeoutValue: 15, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
+    timeoutValue: 15, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: false, lang: 'r', pipInstall: false,
     filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
   ],
   [
     stageName: 'R3.4 CMD Check as CRAN', target: 'test-r-cmd-check-as-cran', rVersion: '3.4.1',
-    timeoutValue: 10, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: true, lang: 'r', pipInstall: false,
+    timeoutValue: 10, timeoutUnit: 'MINUTES', numToKeep: '25', hasJUnit: false, lang: 'r', pipInstall: false,
     filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
   ],
   [
