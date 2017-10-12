@@ -31,7 +31,7 @@ At a minimum, we recommend the following for compatibility with H2O:
 
    -  Scala 2.10 or later
    -  R version 3 or later
-   -  Python 2.7.x or 3.5.x
+   -  Python 2.7.x or 3.5.x. Note that Python 3.6 is not yet supported.
 
 -  **Browser**: An internet browser is required to use H2O's web UI, Flow. Supported versions include the latest version of Chrome, Firefox, Safari, or Internet Explorer.
 
