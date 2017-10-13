@@ -12,12 +12,9 @@ def h2oimport_sql_table():
     """
 
     command_list = ['connection_url', 'table', 'username', 'password', 'columns', 'optimize']
-    try:
-        allargs = inspect.getargspec(h2o.import_sql_table)
-        for arg_name in command_list:
-            assert arg_name in allargs.args, "argument "+arg_name+" is missing from h2o.import_sql_table() command"
-    except Exception as e:
-        assert False, "h2o.import_sql_table() command is not working."
+    allargs = inspect.getargspec(h2o.import_sql_table)
+    for arg_name in command_list:
+        assert arg_name in allargs.args, "argument "+arg_name+" is missing from h2o.import_sql_table() command"
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(h2oimport_sql_table)

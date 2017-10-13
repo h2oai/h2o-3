@@ -3676,7 +3676,6 @@ h2o.merge <- function(x, y, by=intersect(names(x), names(y)), by.x=by, by.y=by, 
 #' @export
 h2o.arrange <- function(x, ...) {
   by <- as.character(substitute(list(...))[-1])
-  browser()
   ascend <- as.character(substitute(list(...))[-1]) # initialize to same length as by
   if (!length(by)) stop("Please provide at least one column to sort by")
   for (index in c(1:length(by))) {
