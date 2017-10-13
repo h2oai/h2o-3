@@ -56,6 +56,9 @@ test-r-smoke:
 	cd h2o-r/tests/ && rm -f -r testdir_hdfs
 	cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist ../../tests/runitSmokeTestList --numclouds 8 --jvm.xmx 3g
 
+test-r-init:
+	cd h2o-r/tests/testdir_jira && R -f h2o.init_test_HOQE-16.R
+
 test-r-small:
 	cd h2o-r/tests/ && rm -f -r testdir_hdfs
 	cd h2o-r/tests/ && rm -f -r testdir_demos
