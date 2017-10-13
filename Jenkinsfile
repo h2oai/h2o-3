@@ -1,4 +1,4 @@
-@Library('h2o3-shared-lib@mr/ita-40-remove-args') _
+@Library('h2o3-shared-lib') _
 
 import ai.h2o3.ci.Globals
 
@@ -144,7 +144,7 @@ properties(
             choice(name: 'testsSize', description:'Choose small for smoke and small tests only. Medium-large runs medium-large test as well.', choices: "${SIZE_SMALL}\n${SIZE_MEDIUM_LARGE}")
           ]
       ),
-      buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '25', numToKeepStr: ''))
+      buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '25'))
   ]
 )
 
