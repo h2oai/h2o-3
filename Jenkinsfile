@@ -55,6 +55,11 @@ def SMALL_JOBS = [
     filesToArchive: '**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt'
   ],
   [
+    stageName: 'R3.4 Init', target: 'test-r-init', rVersion: '3.4.1',
+    timeoutValue: 5, hasJUnit: false, lang: 'r',
+    filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
+  ],
+  [
     stageName: 'R3.4 Small', target: 'test-r-small', rVersion: '3.4.1',
     timeoutValue: 90, lang: 'r',
     filesToArchive: '**/results/*, **/*tmp_model*, **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt'
