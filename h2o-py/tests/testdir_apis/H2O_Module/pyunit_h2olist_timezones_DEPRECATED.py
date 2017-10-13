@@ -11,14 +11,10 @@ def h2olist_timezones():
     Python API test: h2o.list_timezones()
     Deprecated, use h2o.cluster().list_timezones().
     """
-    try:
-        timezones = h2o.list_timezones()
-        assert_is_type(timezones, H2OFrame)
-        assert timezones.nrow==460, "h2o.get_timezone() returns frame with wrong row number."
-        assert timezones.ncol==1, "h2o.get_timezone() returns frame with wrong column number."
-    except Exception as e:
-        assert False, "h2o.list_timezones() command is not working."
-
+    timezones = h2o.list_timezones()
+    assert_is_type(timezones, H2OFrame)
+    assert timezones.nrow==460, "h2o.get_timezone() returns frame with wrong row number."
+    assert timezones.ncol==1, "h2o.get_timezone() returns frame with wrong column number."
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(h2olist_timezones)
