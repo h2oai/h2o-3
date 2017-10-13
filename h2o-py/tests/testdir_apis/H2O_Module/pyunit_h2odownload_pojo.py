@@ -11,20 +11,17 @@ def h2odownload_pojo():
 
     Copied from glm_download_pojo.py
     """
+    h2o_df = h2o.import_file(pyunit_utils.locate("smalldata/prostate/prostate.csv"))
+    h2o_df['CAPSULE'] = h2o_df['CAPSULE'].asfactor()
+    binomial_fit = H2OGeneralizedLinearEstimator(family = "binomial")
+    binomial_fit.train(y = "CAPSULE", x = ["AGE", "RACE", "PSA", "GLEASON"], training_frame = h2o_df)
     try:
-        h2o_df = h2o.import_file(pyunit_utils.locate("smalldata/prostate/prostate.csv"))
-        h2o_df['CAPSULE'] = h2o_df['CAPSULE'].asfactor()
-        binomial_fit = H2OGeneralizedLinearEstimator(family = "binomial")
-        binomial_fit.train(y = "CAPSULE", x = ["AGE", "RACE", "PSA", "GLEASON"], training_frame = h2o_df)
-        try:
-            results_dir = pyunit_utils.locate("results")    # find directory path to results folder
-            h2o.download_pojo(binomial_fit,path=results_dir)
-            assert os.path.isfile(os.path.join(results_dir, "h2o-genmodel.jar")), "h2o.download_pojo() " \
-                                                                                  "command is not working."
-        except:
-            h2o.download_pojo(binomial_fit)     # just print pojo to screen if directory does not exists
-    except Exception as e:
-        assert False, "h2o.download_pojo() command is not working."
+        results_dir = pyunit_utils.locate("results")    # find directory path to results folder
+        h2o.download_pojo(binomial_fit,path=results_dir)
+        assert os.path.isfile(os.path.join(results_dir, "h2o-genmodel.jar")), "h2o.download_pojo() " \
+                                                                              "command is not working."
+    except:
+        h2o.download_pojo(binomial_fit)     # just print pojo to screen if directory does not exists
 
 
 if __name__ == "__main__":

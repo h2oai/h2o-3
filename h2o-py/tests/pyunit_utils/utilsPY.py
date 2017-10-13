@@ -4,6 +4,8 @@ standard_library.install_aliases()
 from builtins import range
 from past.builtins import basestring
 import sys, os
+import numpy as np
+import operator
 
 try:        # works with python 2.7 not 3
     from StringIO import StringIO
@@ -38,6 +40,8 @@ import copy
 import json
 import math
 from random import shuffle
+import scipy.special
+from h2o.utils.typechecks import assert_is_type
 
 
 def check_models(model1, model2, use_cross_validation=False, op='e'):
@@ -2968,6 +2972,7 @@ def cannaryHDFSTest(hdfs_name_node, file_name):
         else:       # exception is caused by other reasons.
             return False
 
+
 def extract_scoring_history_field(aModel, fieldOfInterest):
     """
     Given a fieldOfInterest that are found in the model scoring history, this function will extract the list
@@ -2987,7 +2992,6 @@ def extract_scoring_history_field(aModel, fieldOfInterest):
         return cellValues
     else:
         return None
-
 
 def model_run_time_sorted_by_time(model_list):
     """
@@ -3032,6 +3036,7 @@ def model_seed_sorted_by_time(model_list):
                 break
 
     return model_seed_list
+
 
 def check_ignore_cols_automl(models,names,x,y):
     models = sum(models.as_data_frame().values.tolist(),[])
@@ -3081,4 +3086,76 @@ def check_sorted_2_columns(frame1, sorted_column_indices, prob=0.5, ascending=[T
                                     assert frame1[rowInd,colInd] >= frame1[rowInd+1,colInd], "Wrong sort order: value at row {0}: {1}, value at " \
                                                                                              "row {2}: {3}".format(rowInd, frame1[rowInd,colInd],
                                                                                                                    rowInd+1, frame1[rowInd+1,colInd])
+
+def assert_correct_frame_operation(sourceFrame, h2oResultFrame, operString):
+    """
+    This method checks each element of a numeric H2OFrame and throw an assert error if its value does not
+    equal to the same operation carried out by python.
+
+    :param sourceFrame: original H2OFrame.
+    :param h2oResultFrame: H2OFrame after operation on original H2OFrame is carried out.
+    :param operString: str representing one of 'abs', 'acos', 'acosh', 'asin', 'asinh', 'atan', 'atanh',
+        'ceil', 'cos', 'cosh', 'cospi', 'cumprod', 'cumsum', 'digamma', 'exp', 'expm1', 'floor', 'round',
+        'sin', 'sign', 'round', 'sinh', 'tan', 'tanh'
+    :return: None.
+    """
+    validStrings = ['acos', 'acosh', 'asin', 'asinh', 'atan', 'atanh', 'ceil', 'cos', 'cosh',
+                     'exp', 'floor', 'gamma', 'lgamma', 'log', 'log10', 'sin', 'sinh',
+                    'sqrt', 'tan', 'tanh', 'trigamma', 'expm1']
+    npValidStrings = ['log2', 'sign']
+    nativeStrings = ['round', 'abs', 'cumsum']
+    multpi = ['cospi', 'sinpi', 'tanpi']
+    others = ['log1p', 'signif', 'trigamma', 'digamma', 'cumprod']
+    # check for valid operString
+    assert operString in validStrings+npValidStrings+nativeStrings+multpi+others, "Illegal operator " \
+                                                                           "{0} specified.".format(operString)
+    result_comp = lambda x:x # default method
+
+    if operString == "log1p":
+        result_comp = lambda x:math.log(x+1)
+    elif operString == 'signif':
+        result_comp = lambda x:round(x, 7)
+    elif operString == 'trigamma':
+        result_comp = lambda x:scipy.special.polygamma(1, x)
+    elif operString == 'digamma':
+        result_comp = lambda x:scipy.special.polygamma(0, x)
+    elif operString=='cumprod':
+        result_comp = lambda x:factorial(x)
+       # stringOperations = 'result_val = factorial(sourceFrame[row_ind, col_ind])'
+    elif operString in validStrings:
+        result_comp = lambda x:getattr(math, operString)(x)
+    elif operString in nativeStrings:
+        result_comp =lambda x:__builtins__.get(operString)(x)
+        stringOperations = 'result_val = '+operString+'(sourceFrame[row_ind, col_ind])'
+    elif operString in npValidStrings:
+        result_comp = lambda x:getattr(np, operString)(x)
+      #  stringOperations = 'result_val = np.'+operString+'(sourceFrame[row_ind, col_ind])'
+    elif operString in multpi:
+        result_comp = lambda x:getattr(math, operString.split('p')[0])(x*math.pi)
+        #stringOperations = 'result_val = math.'+operString.split('p')[0]+'(sourceFrame[row_ind, col_ind]*math.pi)'
+
+    for col_ind in range(sourceFrame.ncols):
+        for row_ind in range(sourceFrame.nrows):
+            result_val = result_comp(sourceFrame[row_ind, col_ind])
+            assert abs(h2oResultFrame[row_ind, col_ind]-result_val) <= 1e-6, \
+                " command {0}({3}) is not working. Expected: {1}. Received: {2}".format(operString, result_val,
+                                                                                   h2oResultFrame[row_ind, col_ind], sourceFrame[row_ind, col_ind])
+
+def factorial(n):
+    """
+    Defined my own factorial just in case using python2.5 or less.
+
+    :param n:
+    :return:
+    """
+    if n>0 and n<2:
+        return 1
+    if n>=2:
+        return n*factorial(n-1)
+
+def cumop(items, op, colInd=0):   # take in one column only
+    res = [None]*len(items)
+    for index in range(len(items)):
+        res[index] = op(res[index-1], items[index, colInd]) if index > 0 else items[index, colInd]
+    return res
 
