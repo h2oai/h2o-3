@@ -13,12 +13,8 @@ def h2oremove_all():
     by just checking the argument list which should be empty.
     """
     # call with no arguments
-    try:
-        allargs = inspect.getargspec(h2o.remove_all)
-        assert len(allargs.args)==0, "h2o.remove_all() should have no arguments!"
-    except Exception as e:
-        assert False, "h2o.remove_all() command is not working."
-
+    allargs = inspect.getargspec(h2o.remove_all)
+    assert len(allargs.args)==0, "h2o.remove_all() should have no arguments!"
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(h2oremove_all)
