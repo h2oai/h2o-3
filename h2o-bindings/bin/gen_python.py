@@ -343,6 +343,8 @@ def init_extra_for(algo):
         return """self._parms["_rest_version"] = 3"""
     if algo == "stackedensemble":
         return """self._parms["_rest_version"] = 99"""
+    if algo == "aggregator":
+        return """self._parms["_rest_version"] = 99"""
 
 def class_extra_for(algo):
     if algo == "glm":
