@@ -1,9 +1,11 @@
 def call(mode, nodeLabel) {
 
+  def MODE_PR_TESTING_CODE = -1
   def MODE_PR_CODE = 0
   def MODE_MASTER_CODE = 1
   def MODE_NIGHTLY_CODE = 2
   def MODES = [
+    [name: 'MODE_PR_TESTING', code: MODE_PR_TESTING_CODE],
     [name: 'MODE_PR', code: MODE_PR_CODE],
     [name: 'MODE_MASTER', code: MODE_MASTER_CODE],
     [name: 'MODE_NIGHTLY', code: MODE_NIGHTLY_CODE]
@@ -25,7 +27,51 @@ def call(mode, nodeLabel) {
     ]
   ]
 
-  // Stages executed after each push to PR.
+  // Stages for PRs in testing phase, executed after each push to PR.
+  def PR_TESTING_STAGES = [
+    [
+      stageName: 'Py2.7 Demos', target: 'test-py-demos', pythonVersion: '2.7',
+      timeoutValue: 15, lang: 'py'
+    ],
+    [
+      stageName: 'Py2.7 Init', target: 'test-py-init', pythonVersion: '2.7',
+      timeoutValue: 5, hasJUnit: false, lang: 'py'
+    ],
+    [
+      stageName: 'Py2.7 Small', target: 'test-pyunit-small', pythonVersion: '2.7',
+      timeoutValue: 45, lang: 'py'
+    ],
+    [
+      stageName: 'Py3.5 Small', target: 'test-pyunit-small', pythonVersion: '3.5',
+      timeoutValue: 45, lang: 'py'
+    ],
+    [
+      stageName: 'Py3.6 Small', target: 'test-pyunit-small', pythonVersion: '3.6',
+      timeoutValue: 45, lang: 'py'
+    ],
+    [
+      stageName: 'R3.4 Init', target: 'test-r-init', rVersion: '3.4.1',
+      timeoutValue: 5, hasJUnit: false, lang: 'r'
+    ],
+    [
+      stageName: 'R3.4 Small', target: 'test-r-small', rVersion: '3.4.1',
+      timeoutValue: 90, lang: 'r'
+    ],
+    [
+      stageName: 'R3.4 CMD Check', target: 'test-r-cmd-check', rVersion: '3.4.1',
+      timeoutValue: 15, hasJUnit: false, lang: 'r'
+    ],
+    [
+      stageName: 'R3.4 CMD Check as CRAN', target: 'test-r-cmd-check-as-cran', rVersion: '3.4.1',
+      timeoutValue: 10, hasJUnit: false, lang: 'r'
+    ],
+    [
+      stageName: 'R3.4 Demos Small', target: 'test-r-demos-small', rVersion: '3.4.1',
+      timeoutValue: 15, lang: 'r'
+    ]
+  ]
+
+  // Stages executed after each push to PR branch.
   def PR_STAGES = [
     [
       stageName: 'Py2.7 Booklets', target: 'test-py-booklets', pythonVersion: '2.7',
@@ -148,12 +194,18 @@ def call(mode, nodeLabel) {
   executeInParallel(SMOKE_STAGES, nodeLabel)
 
   def modeCode = MODES.find{it['name'] == mode}['code']
-  def jobs = PR_STAGES
-  if (modeCode >= MODE_MASTER_CODE) {
-    jobs += MASTER_STAGES
-  }
-  if (modeCode >= MODE_NIGHTLY_CODE) {
-    jobs += NIGHTLY_STAGES
+  // FIXME: Remove the if and KEEP only the else once the initial PR tests in real environment are completed
+  def jobs = null
+  if (modeCode == MODE_PR_TESTING_CODE) {
+    jobs = PR_TESTING_STAGES
+  } else {
+    jobs = PR_STAGES
+    if (modeCode >= MODE_MASTER_CODE) {
+      jobs += MASTER_STAGES
+    }
+    if (modeCode >= MODE_NIGHTLY_CODE) {
+      jobs += NIGHTLY_STAGES
+    }
   }
   executeInParallel(jobs, nodeLabel)
 }
