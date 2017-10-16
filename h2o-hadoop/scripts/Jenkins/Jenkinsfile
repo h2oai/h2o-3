@@ -16,7 +16,6 @@ pipeline {
   options {
     ansiColor('xterm')
     timestamps()
-    timeout(time: 45, unit: 'MINUTES')
     buildDiscarder(logRotator(daysToKeepStr: '25'))
   }
 
@@ -37,7 +36,9 @@ pipeline {
         }
       }
       steps {
-        sh "/usr/sbin/startup.sh"
+        timeout (time:45, unit:'MINUTES') {
+          sh "/usr/sbin/startup.sh"
+        }
       }
     }
   }
