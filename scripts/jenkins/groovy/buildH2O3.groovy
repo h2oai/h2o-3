@@ -1,12 +1,15 @@
 def call() {
 
+  def PYTHON_VERSION = '3.5'
+  def R_VERSION = '3.4.1'
+
   // Load required scripts
   def insideDocker = load('h2o-3/scripts/jenkins/groovy/insideDocker.groovy')
   def buildTarget = load('h2o-3/scripts/jenkins/groovy/buildTarget.groovy')
   def customEnv = load('h2o-3/scripts/jenkins/groovy/customEnv.groovy')
 
   // Launch docker container, build h2o-3, create test packages and archive artifacts
-  def buildEnv = customEnv() + "PYTHON_VERSION=${env.pythonVersion}" + "R_VERSION=${env.rVersion}"
+  def buildEnv = customEnv() + "PYTHON_VERSION=${PYTHON_VERSION}" + "R_VERSION=${R_VERSION}"
   insideDocker(buildEnv, 15, 'MINUTES') {
     stage ('Build H2O-3') {
       try {
