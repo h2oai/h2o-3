@@ -110,10 +110,6 @@ def call(mode, nodeLabel) {
       timeoutValue: 120, lang: 'r'
     ],
     [
-      stageName: 'R3.4 Datatable', target: 'test-r-datatable', rVersion: '3.4.1',
-      timeoutValue: 20, lang: 'r'
-    ],
-    [
       stageName: 'R3.4 CMD Check', target: 'test-r-cmd-check', rVersion: '3.4.1',
       timeoutValue: 15, hasJUnit: false, lang: 'r'
     ],
@@ -130,10 +126,6 @@ def call(mode, nodeLabel) {
       timeoutValue: 15, lang: 'r'
     ],
     [
-      stageName: 'PhantomJS Small', target: 'test-phantom-js-small',
-      timeoutValue: 45, lang: 'js'
-    ],
-    [
       stageName: 'PhantomJS', target: 'test-phantom-js',
       timeoutValue: 45, lang: 'js'
     ],
@@ -148,10 +140,6 @@ def call(mode, nodeLabel) {
     [
       stageName: 'R3.4 Demos Medium-large', target: 'test-r-demos-medium-large', rVersion: '3.4.1',
       timeoutValue: 120, lang: 'r'
-    ],
-    [
-      stageName: 'PhantomJS Medium', target: 'test-phantom-js-medium',
-      timeoutValue: 45, lang: 'js'
     ]
   ]
 
@@ -164,6 +152,18 @@ def call(mode, nodeLabel) {
     [
       stageName: 'Py3.5 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
       timeoutValue: 90, lang: 'py'
+    ],
+    [
+      stageName: 'R3.4 Datatable', target: 'test-r-datatable', rVersion: '3.4.1',
+      timeoutValue: 20, lang: 'r'
+    ],
+    [
+      stageName: 'PhantomJS Small', target: 'test-phantom-js-small',
+      timeoutValue: 45, lang: 'js'
+    ],
+    [
+      stageName: 'PhantomJS Medium', target: 'test-phantom-js-medium',
+      timeoutValue: 45, lang: 'js'
     ]
   ]
 
