@@ -1,0 +1,59 @@
+def DEFAULT_NODE_LABEL = 'docker && !mr-0xc8 && !mr-0xg2'
+
+def executeTestStages = null
+
+ansiColor('xterm') {
+  timestamps {
+
+    // TODO: ENABLE WHEN THE SANDBOX IS ADJUSTED ACCORDINGLY ON B4
+    // cancelPreviousBuilds()
+
+    // Checkout and build H2O-3, create test packages and archive the scripts;
+    // run this on H2O-3 usable docker node, because we don't want to overload
+    // master
+    node (DEFAULT_NODE_LABEL) {
+      dir ('h2o-3') {
+        // clear the folder
+        deleteDir()
+        // checkout H2O-3
+        retry(3) {
+          timeout(time: 1, unit: 'MINUTES') {
+            echo "###### Checkout H2O-3 ######"
+            checkout scm
+          }
+        }
+      }
+
+      def setJobProperties = load('h2o-3/scripts/jenkins/groovy/setJobProperties.groovy')
+      setJobProperties()
+
+      def prepareH2O3 = load('h2o-3/scripts/jenkins/groovy/prepareH2O3.groovy')
+      prepareH2O3()
+
+      // Load the executeTestStages script
+      executeTestStages = load('h2o-3/scripts/jenkins/groovy/executeTestStages.groovy')
+    }
+
+    executeTestStages('MODE_PR_TESTING', DEFAULT_NODE_LABEL)
+  }
+}
+
+def cancelPreviousBuilds() {
+  echo "###### Cancelling all previous builds ######"
+  def hi = Hudson.instance
+  def pname = env.JOB_NAME.split('/')[0]
+
+  hi.getItem(pname).getItem(env.JOB_BASE_NAME).getBuilds().each{ build ->
+    def exec = build.getExecutor()
+
+    if (build.number != currentBuild.number && exec != null) {
+      exec.interrupt(
+        Result.ABORTED,
+        new CauseOfInterruption.UserInterruption(
+          "Aborted by #${currentBuild.id}"
+        )
+      )
+      println("Aborted previous running build #${build.number}")
+    }
+  }
+}

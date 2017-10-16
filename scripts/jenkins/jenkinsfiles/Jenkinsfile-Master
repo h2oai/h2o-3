@@ -1,0 +1,33 @@
+def DEFAULT_NODE_LABEL = 'docker && !mr-0xc8 && !mr-0xg2'
+
+def executeTestStages = null
+
+ansiColor('xterm') {
+  timestamps {
+
+    node (DEFAULT_NODE_LABEL) {
+      dir ('h2o-3') {
+        // clear the folder
+        deleteDir()
+        // checkout H2O-3
+        retry(3) {
+          timeout(time: 1, unit: 'MINUTES') {
+            echo "###### Checkout H2O-3 ######"
+            checkout scm
+          }
+        }
+      }
+
+      def setJobProperties = load('h2o-3/scripts/jenkins/groovy/setJobProperties.groovy')
+      setJobProperties()
+
+      def prepareH2O3 = load('h2o-3/scripts/jenkins/groovy/prepareH2O3.groovy')
+      prepareH2O3()
+
+      // Load the executeTestStages script
+      executeTestStages = load('h2o-3/scripts/jenkins/groovy/executeTestStages.groovy')
+    }
+
+    executeTestStages('MODE_MASTER', DEFAULT_NODE_LABEL)
+  }
+}
