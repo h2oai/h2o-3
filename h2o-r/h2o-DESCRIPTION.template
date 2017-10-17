@@ -30,6 +30,7 @@ Suggests: ggplot2,
           bit64 (>= 0.9.7),
           data.table (>= 1.9.8)
 Collate:
+         'aggregator.R'
          'astfun.R'
          'automl.R'
          'classes.R'
