@@ -13,61 +13,69 @@ def call(mode, nodeLabel) {
 
   // Job will execute PR_STAGES only if these are green.
   def SMOKE_STAGES = [
+    // [
+    //   stageName: 'Py2.7 Smoke', target: 'test-py-smoke', pythonVersion: '2.7',
+    //   timeoutValue: 8, lang: 'py'
+    // ],
+    // [
+    //   stageName: 'R3.4 Smoke', target: 'test-r-smoke', rVersion: '3.4.1',
+    //   timeoutValue: 8, lang: 'r'
+    // ],
+    // [
+    //   stageName: 'PhantomJS Smoke', target: 'test-phantom-js-smoke',
+    //   timeoutValue: 10, lang: 'js'
+    // ],
     [
-      stageName: 'Py2.7 Smoke', target: 'test-py-smoke', pythonVersion: '2.7',
-      timeoutValue: 8, lang: 'py'
-    ],
-    [
-      stageName: 'R3.4 Smoke', target: 'test-r-smoke', rVersion: '3.4.1',
-      timeoutValue: 8, lang: 'r'
-    ],
-    [
-      stageName: 'PhantomJS Smoke', target: 'test-phantom-js-smoke',
-      timeoutValue: 10, lang: 'js'
+      stageName: 'Java8 Smoke', target: 'test-junit-smoke',
+      timeoutValue: 20, lang: 'java',
     ]
   ]
 
   // Stages for PRs in testing phase, executed after each push to PR.
   def PR_TESTING_STAGES = [
+    // [
+    //   stageName: 'Py2.7 Demos', target: 'test-py-demos', pythonVersion: '2.7',
+    //   timeoutValue: 15, lang: 'py'
+    // ],
+    // [
+    //   stageName: 'Py2.7 Init', target: 'test-py-init', pythonVersion: '2.7',
+    //   timeoutValue: 5, hasJUnit: false, lang: 'py'
+    // ],
+    // [
+    //   stageName: 'Py2.7 Small', target: 'test-pyunit-small', pythonVersion: '2.7',
+    //   timeoutValue: 45, lang: 'py'
+    // ],
+    // [
+    //   stageName: 'Py3.5 Small', target: 'test-pyunit-small', pythonVersion: '3.5',
+    //   timeoutValue: 45, lang: 'py'
+    // ],
+    // [
+    //   stageName: 'Py3.6 Small', target: 'test-pyunit-small', pythonVersion: '3.6',
+    //   timeoutValue: 45, lang: 'py'
+    // ],
+    // [
+    //   stageName: 'R3.4 Init', target: 'test-r-init', rVersion: '3.4.1',
+    //   timeoutValue: 5, hasJUnit: false, lang: 'r'
+    // ],
+    // [
+    //   stageName: 'R3.4 Small', target: 'test-r-small', rVersion: '3.4.1',
+    //   timeoutValue: 90, lang: 'r'
+    // ],
+    // [
+    //   stageName: 'R3.4 CMD Check', target: 'test-r-cmd-check', rVersion: '3.4.1',
+    //   timeoutValue: 15, hasJUnit: false, lang: 'r'
+    // ],
+    // [
+    //   stageName: 'R3.4 CMD Check as CRAN', target: 'test-r-cmd-check-as-cran', rVersion: '3.4.1',
+    //   timeoutValue: 10, hasJUnit: false, lang: 'r'
+    // ],
+    // [
+    //   stageName: 'R3.4 Demos Small', target: 'test-r-demos-small', rVersion: '3.4.1',
+    //   timeoutValue: 15, lang: 'r'
+    // ],
     [
-      stageName: 'Py2.7 Demos', target: 'test-py-demos', pythonVersion: '2.7',
-      timeoutValue: 15, lang: 'py'
-    ],
-    [
-      stageName: 'Py2.7 Init', target: 'test-py-init', pythonVersion: '2.7',
-      timeoutValue: 5, hasJUnit: false, lang: 'py'
-    ],
-    [
-      stageName: 'Py2.7 Small', target: 'test-pyunit-small', pythonVersion: '2.7',
-      timeoutValue: 45, lang: 'py'
-    ],
-    [
-      stageName: 'Py3.5 Small', target: 'test-pyunit-small', pythonVersion: '3.5',
-      timeoutValue: 45, lang: 'py'
-    ],
-    [
-      stageName: 'Py3.6 Small', target: 'test-pyunit-small', pythonVersion: '3.6',
-      timeoutValue: 45, lang: 'py'
-    ],
-    [
-      stageName: 'R3.4 Init', target: 'test-r-init', rVersion: '3.4.1',
-      timeoutValue: 5, hasJUnit: false, lang: 'r'
-    ],
-    [
-      stageName: 'R3.4 Small', target: 'test-r-small', rVersion: '3.4.1',
-      timeoutValue: 90, lang: 'r'
-    ],
-    [
-      stageName: 'R3.4 CMD Check', target: 'test-r-cmd-check', rVersion: '3.4.1',
-      timeoutValue: 15, hasJUnit: false, lang: 'r'
-    ],
-    [
-      stageName: 'R3.4 CMD Check as CRAN', target: 'test-r-cmd-check-as-cran', rVersion: '3.4.1',
-      timeoutValue: 10, hasJUnit: false, lang: 'r'
-    ],
-    [
-      stageName: 'R3.4 Demos Small', target: 'test-r-demos-small', rVersion: '3.4.1',
-      timeoutValue: 15, lang: 'r'
+      stageName: 'Java8 JUnit', target: 'test-junit',
+      timeoutValue: 100, lang: 'java'
     ]
   ]
 
@@ -140,6 +148,10 @@ def call(mode, nodeLabel) {
     [
       stageName: 'R3.4 Demos Medium-large', target: 'test-r-demos-medium-large', rVersion: '3.4.1',
       timeoutValue: 120, lang: 'r'
+    ],
+    [
+      stageName: 'Java8 JUnit', target: 'test-junit',
+      timeoutValue: 100, timeoutUnit: 'MINUTES', lang: 'java'
     ]
   ]
 

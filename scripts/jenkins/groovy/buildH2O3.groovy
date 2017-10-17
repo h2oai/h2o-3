@@ -33,6 +33,11 @@ def call() {
           hasJUnit = false
           archiveFiles = false
         }
+        buildTarget {
+          target = 'test-package-java'
+          hasJUnit = false
+          archiveFiles = false
+        }
       } finally {
         archiveArtifacts """
           h2o-3/docker/Makefile.jenkins,
