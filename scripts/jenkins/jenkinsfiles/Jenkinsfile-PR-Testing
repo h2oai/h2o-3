@@ -5,8 +5,7 @@ def executeTestStages = null
 ansiColor('xterm') {
   timestamps {
 
-    // TODO: ENABLE WHEN THE SANDBOX IS ADJUSTED ACCORDINGLY ON B4
-    // cancelPreviousBuilds()
+    cancelPreviousBuilds()
 
     // Checkout and build H2O-3, create test packages and archive the scripts;
     // run this on H2O-3 usable docker node, because we don't want to overload
