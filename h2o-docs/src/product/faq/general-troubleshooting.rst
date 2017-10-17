@@ -101,7 +101,7 @@ and H2O should launch successfully.
 
 --------------
 
-**I am not launching on Hadoop. How can i increase the amount of time that H2O allows for expected nodes to connect?**
+**I am not launching on Hadoop. How can I increase the amount of time that H2O allows for expected nodes to connect?**
 
 For cluster startup, if you are not launching on Hadoop, then you will not need to specify a timeout. You can add additional nodes to the cloud as long as you haven't submitted any jobs to the cluster. When you do submit a job to the cluster, the cluster will lock and will print a message similar to `"Locking cloud to new members, because <reason>..."`.
 

@@ -1,7 +1,7 @@
 Merging Two Datasets
 --------------------
 
-You can use the Merge function to combine two datasets that share a common column name. By default, all columns in common are used as the merge key; uncommon will be ignored. Also, if you want to use only a subset of the columns in common, rename the other columns so the columns are unique in the merged result.
+You can use the `merge` function to combine two datasets that share a common column name. By default, all columns in common are used as the merge key; uncommon will be ignored. Also, if you want to use only a subset of the columns in common, rename the other columns so the columns are unique in the merged result.
 
 Note that in order for a merge to work in multinode clusters, one of the datasets must be small enough to exist in every node.  
 
@@ -57,8 +57,8 @@ Note that in order for a merge to work in multinode clusters, one of the dataset
    
    .. code-block:: python
    
-	>>> h2o.init()
 	>>> import h2o
+	>>> h2o.init()
 	>>> import numpy as np
 	
 	# Create a dataset by inputting raw data. 
