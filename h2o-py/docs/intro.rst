@@ -50,9 +50,9 @@ Apache v2 licence. All of the source code is on
 `google group mailing list <https://groups.google.com/forum/#!forum/h2ostream>`_,
 and our `JIRA ticketing system <http://jira.0xdata.com>`_
 is also open for public use. Last, but not least, we regularly engage the machine learning
-community all over the nation with a very busy `meetup schedule <http://h2o.ai/events/>`_
+community all over the nation with a very busy `meetup schedule <https://www.h2o.ai/community/>`_
 (so if you're not in The Valley, no sweat, we're probably coming to your area soon!),
-and finally, we host our very own `H2O World conference <http://h2o.ai/h2o-world/>`_.
+and finally, we host our very own `H2O World conference <http://h2oworld.h2o.ai/>`_.
 
 The rest of this document explains a few of the client-server details and the general
 programming model for interacting with H2O from Python.
