@@ -191,6 +191,7 @@ def call(mode, nodeLabel) {
     ]
   ]
 
+  // run smoke tests, the tests relevant for this mode
   executeInParallel(SMOKE_STAGES, nodeLabel)
 
   def modeCode = MODES.find{it['name'] == mode}['code']
@@ -211,7 +212,6 @@ def call(mode, nodeLabel) {
 }
 
 def executeInParallel(jobs, nodeLabel) {
-
   parallel(jobs.collectEntries { c ->
     [
       c['stageName'], {
@@ -248,8 +248,6 @@ def defaultTestPipeline(nodeLabel, body) {
     config.hasJUnit = true
   }
 
-
-
   node(nodeLabel) {
     echo "Pulling scripts"
     step ([$class: 'CopyArtifact',
@@ -266,49 +264,65 @@ def defaultTestPipeline(nodeLabel, body) {
 
     insideDocker(buildEnv, config.timeoutValue, 'MINUTES') {
       stage(config.stageName) {
-        dir ('h2o-3') {
+        def stageDir = stageNameToDirName(config.stageName)
+        def h2oFolder = stageDir + '/h2o-3'
+        dir(stageDir) {
           deleteDir()
         }
-        unpackTestPackage(config.lang)
+
+        unpackTestPackage(config.lang, stageDir)
+
         if (config.lang == 'py') {
-          installPythonPackage()
+          installPythonPackage(h2oFolder)
         }
+
         if (config.lang == 'r') {
-          installRPackage()
+          installRPackage(h2oFolder)
         }
+
         buildTarget {
           target = config.target
           hasJUnit = config.hasJUnit
+          h2o3dir = h2oFolder
         }
       }
     }
   }
 }
 
-def installPythonPackage() {
+def installPythonPackage(String h2o3dir) {
   sh """
     echo "Activating Python ${env.PYTHON_VERSION}"
     . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
-    pip install h2o-3/h2o-py/dist/*.whl
+    pip install ${h2o3dir}/h2o-py/dist/*.whl
   """
 }
 
-def installRPackage() {
+def installRPackage(String h2o3dir) {
   sh """
     echo "Activating R ${env.R_VERSION}"
     activate_R_${env.R_VERSION}
-    R CMD INSTALL h2o-3/h2o-r/R/src/contrib/h2o*.tar.gz
+    R CMD INSTALL ${h2o3dir}/h2o-r/R/src/contrib/h2o*.tar.gz
   """
 }
 
-def unpackTestPackage(lang) {
+def unpackTestPackage(lang, String stageDir) {
   echo "Pulling test package"
   step ([$class: 'CopyArtifact',
     projectName: env.JOB_NAME,
+    fingerprintArtifacts: true,
     filter: "h2o-3/test-package-${lang}.zip, h2o-3/build/h2o.jar",
-    selector: [$class: 'SpecificBuildSelector', buildNumber: env.BUILD_ID]
+    selector: [$class: 'SpecificBuildSelector', buildNumber: env.BUILD_ID],
+    target: stageDir + '/'
   ]);
-  sh "cd h2o-3 && unzip test-package-${lang}.zip && rm test-package-${lang}.zip"
+  sh "cd ${stageDir}/h2o-3 && unzip test-package-${lang}.zip && rm test-package-${lang}.zip"
+}
+
+def stageNameToDirName(String stageName) {
+  if (stageName != null) {
+    return stageName.toLowerCase().replace(' ', '-')
+  }
+  return null
 }
 
 return this
