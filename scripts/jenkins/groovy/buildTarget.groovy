@@ -4,13 +4,13 @@ def call(body) {
   body.delegate = config
   body()
 
-  def FILES_TO_ARCHIVE = """
-  **/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/*ipynb.out.txt,
-  **/results/*, **/*tmp_model*,
-  h2o-py/tests/testdir_dynamic_tests/testdir_algos/glm/Rsandbox*/*.csv,
-  **/tests.txt, **/*lib_h2o-flow_build_js_headless-test.js.out.txt,
-  **/*.code, **/package_version_check_out.txt
-  """
+  def FILES_TO_ARCHIVE = [
+    "**/*.log", "**/out.*", "**/*py.out.txt", "**/java*out.txt", "**/*ipynb.out.txt",
+    "**/results/*", "**/*tmp_model*",
+    "**/h2o-py/tests/testdir_dynamic_tests/testdir_algos/glm/Rsandbox*/*.csv",
+    "**/tests.txt", "**/*lib_h2o-flow_build_js_headless-test.js.out.txt",
+    "**/*.code", "**/package_version_check_out.txt"
+  ]
 
   if (config.archiveFiles == null) {
     config.archiveFiles = true
@@ -20,19 +20,23 @@ def call(body) {
     config.hasJUnit = true
   }
 
+  if (config.h2o3dir == null) {
+    config.h2o3dir = 'h2o-3'
+  }
+
   try {
-    execMake(config.target)
+    execMake(config.target, config.h2o3dir)
   } finally {
     if (config.hasJUnit) {
       junit testResults: '**/test-results/*.xml', keepLongStdio: true, allowEmptyResults: true
     }
     if (config.archiveFiles) {
-      archiveArtifacts artifacts: FILES_TO_ARCHIVE, allowEmptyArchive: true
+      archiveArtifacts artifacts: FILES_TO_ARCHIVE.collect{"${config.h2o3dir}/${it}"}.join(', '), allowEmptyArchive: true
     }
   }
 }
 
-def execMake(target) {
+def execMake(target, String h2o3dir) {
   sh """
     export JAVA_HOME=/usr/lib/jvm/java-8-oracle
     export USER=jenkins
@@ -43,7 +47,7 @@ def execMake(target) {
     echo "Activating R ${env.R_VERSION}"
     activate_R_${env.R_VERSION}
 
-    cd h2o-3
+    cd ${h2o3dir}
     echo "Linking small and bigdata"
     rm -f smalldata
     ln -s -f /home/0xdiag/smalldata
