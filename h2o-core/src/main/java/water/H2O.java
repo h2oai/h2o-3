@@ -1584,7 +1584,7 @@ final public class H2O {
   public final H2ONode[] _memary;
 
   // mapping from a node ip to node index
-  private final HashMap<String, Integer> _node_ip_to_index;
+  public final HashMap<String, Integer> _node_ip_to_index;
   final int _hash;
 
   public H2ONode getNodeByIpPort(String ipPort) {
