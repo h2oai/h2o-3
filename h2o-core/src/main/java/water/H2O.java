@@ -1584,7 +1584,7 @@ final public class H2O {
   public final H2ONode[] _memary;
 
   // mapping from a node ip to node index
-  private final HashMap<String, Integer> _node_ip_to_index;
+  private HashMap<String, Integer> _node_ip_to_index;
   final int _hash;
 
   public H2ONode getNodeByIpPort(String ipPort) {
@@ -1619,10 +1619,6 @@ final public class H2O {
   H2O( H2ONode[] h2os, int hash, int idx ) {
     _memary = h2os;             // Need to clone?
     java.util.Arrays.sort(_memary);       // ... sorted!
-    _node_ip_to_index = new HashMap<>();
-    for(H2ONode node: _memary){
-      _node_ip_to_index.put(node.getIpPortString(), node.index());
-    }
     _hash = hash;               // And record hash for cloud rollover
     _idx = (char)(idx&0x0ff);   // Roll-over at 256
   }
@@ -1637,6 +1633,11 @@ final public class H2O {
       CLOUDS[idx] = CLOUD = new H2O(h2os,hash,idx);
     }
     SELF._heartbeat._cloud_size=(char)CLOUD.size();
+
+    H2O.CLOUD._node_ip_to_index = new HashMap<>();
+    for(H2ONode node: H2O.CLOUD._memary){
+      H2O.CLOUD._node_ip_to_index.put(node.getIpPortString(), node.index());
+    }
   }
 
   // Is nnn larger than old (counting for wrap around)? Gets confused if we
