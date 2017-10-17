@@ -79,20 +79,12 @@ Interpreting a K-Means Model
 
 By default, the following output displays:
 
--  A graph of the scoring history (number of iterations vs. average
-   within the cluster's sum of squares)
--  Output (model category, validation metrics if applicable, and centers
-   std)
--  Model Summary (number of clusters, number of categorical columns,
-   number of iterations, avg. within sum of squares, avg. sum of
-   squares, avg. between the sum of squares)
--  Scoring history (number of iterations, avg. change of standardized
-   centroids, avg. within cluster sum of squares)
--  Training metrics (model name, checksum name, frame name, frame
-   checksum name, description if applicable, model category, duration in
-   ms, scoring time, predictions, MSE, avg. within sum of squares, avg.
-   between sum of squares)
--  Centroid statistics (centroid number, size, within sum of squares)
+-  A graph of the scoring history (number of iterations vs. average within the cluster's sum of squares)
+-  Output (model category, validation metrics if applicable, and centers std)
+-  Model Summary Model Summary (number of clusters, number of categorical columns, number of iterations, total within sum of squares, total sum of squares, total between the sum of squares. Note that Flow also returns the number of rows.)
+-  Scoring history (duration, number of iterations, number of reassigned observations, number of within cluster sum of squares)
+-  Training metrics (model name, checksum name, frame name, frame checksum name, description if applicable, model category, scoring time, predictions, MSE, RMSE, total within sum of squares, total sum of squares, total between sum of squares)
+-  Centroid statistics (centroid number, size, within cluster sum of squares)
 -  Cluster means (centroid number, column)
 
 K-Means randomly chooses starting points and converges to a local minimum of centroids. The number of clusters is arbitrary and should be thought of as a tuning parameter. The output is a matrix of the cluster assignments and the coordinates of the cluster centers in terms of the originally chosen attributes. Your cluster centers may differ slightly from run to run as this problem is Non-deterministic Polynomial-time (NP)-hard.
