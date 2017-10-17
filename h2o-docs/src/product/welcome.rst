@@ -31,7 +31,7 @@ At a minimum, we recommend the following for compatibility with H2O:
 
    -  Scala 2.10 or later
    -  R version 3 or later
-   -  Python 2.7.x or 3.5.x. Note that Python 3.6 is not yet supported.
+   -  Python 2.7.x, 3.5.x, 3.6.x 
 
 -  **Browser**: An internet browser is required to use H2O's web UI, Flow. Supported versions include the latest version of Chrome, Firefox, Safari, or Internet Explorer.
 
@@ -47,7 +47,7 @@ Additional Requirements
 
   Refer to the :ref:`on-hadoop` section for detailed information.
 
--  **Conda 2.7 or 3.5 repo**: Conda is not required to run H2O unless you want to run H2O on the Anaconda Cloud. Refer to the :ref:`anaconda` section for more information.
+-  **Conda 2.7, 3.5, or 3.6 repo**: Conda is not required to run H2O unless you want to run H2O on the Anaconda Cloud. Refer to the :ref:`anaconda` section for more information.
 
 -  **Spark**: Version 1.6 or 2.0. Spark is only required if you want to run `Sparkling Water <https://github.com/h2oai/sparkling-water>`__.
 
@@ -366,7 +366,7 @@ Pythonistas will be glad to know that H2O now provides support for this popular 
 Anaconda Cloud Users
 ~~~~~~~~~~~~~~~~~~~~
 
-You can run H2O in an Anaconda Cloud environment. Conda 2.7 and 3.5 repos are supported as are a number of H2O versions. Refer to `https://anaconda.org/h2oai/h2o/files <https://anaconda.org/h2oai/h2o/files>`__ to view a list of available H2O versions. Anaconda users can refer to the `Install on Anaconda Cloud <downloading.html#install-on-anaconda-cloud>`__ section for information about installing H2O in an Anaconda Cloud.
+You can run H2O in an Anaconda Cloud environment. Conda 2.7, 3.5, and 3.6 repos are supported as are a number of H2O versions. Refer to `https://anaconda.org/h2oai/h2o/files <https://anaconda.org/h2oai/h2o/files>`__ to view a list of available H2O versions. Anaconda users can refer to the `Install on Anaconda Cloud <downloading.html#install-on-anaconda-cloud>`__ section for information about installing H2O in an Anaconda Cloud.
 
 R Users
 -------
@@ -412,7 +412,7 @@ For Java developers, the following resources will help you create your own custo
 -  `h2o-genmodel (POJO/MOJO) Javadoc <../h2o-genmodel/javadoc/index.html>`_: Provides a step-by-step guide to creating and implementing POJOs or MOJOs in a Java application.
 
 Developers
---------------
+----------
 
 If you're looking to use H2O to help you develop your own apps, the following links will provide helpful references.
 

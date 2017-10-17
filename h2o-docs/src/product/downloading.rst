@@ -15,8 +15,8 @@ Download and Run
   ::
 
 	cd ~/Downloads
-	unzip h2o-3.10.4.3.zip
-	cd h2o-3.10.4.3
+	unzip h2o-3.14.0.3.zip
+	cd h2o-3.14.0.3.3
 	java -jar h2o.jar
 
 3. Point your browser to http://localhost:54321.
@@ -109,13 +109,13 @@ Run the following commands in a Terminal window to install H2O for Python.
 Install on Anaconda Cloud
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This section describes how to set up and run H2O in an Anaconda Cloud environment. Conda 2.7 and 3.5 repos are supported as are a number of H2O versions. Refer to `https://anaconda.org/h2oai/h2o/files <https://anaconda.org/h2oai/h2o/files>`__ to view a list of available H2O versions.
+This section describes how to set up and run H2O in an Anaconda Cloud environment. Conda 2.7, 3.5, and 3.6 repos are supported as are a number of H2O versions. Refer to `https://anaconda.org/h2oai/h2o/files <https://anaconda.org/h2oai/h2o/files>`__ to view a list of available H2O versions.
 
 Open a terminal window and run the following command to install H2O on the Anaconda Cloud. 
       
    ::
 
-     user$ conda install -c h2oai h2o=3.10.4.3
+     user$ conda install -c h2oai h2o=3.14.0.3
 
 **Note**: The H2O version in the above command should match the version that you want to download. 
 
@@ -126,12 +126,12 @@ Install on Hadoop
 
 1. Go to `http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html <http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html>`__. Click on the **Install on Hadoop** tab, and download H2O for your version of Hadoop. This is a zip file that contains everything you need to get started.
 
-2. Unpack the zip file and launch a 6g instance of H2O. The example below describes how to unpack version 3.10.4.3. Replace this version with the version that you downloaded.
+2. Unpack the zip file and launch a 6g instance of H2O. The example below describes how to unpack version 3.14.0.3. Replace this version with the version that you downloaded.
 
  ::
 
-	unzip h2o-3.10.4.3-*.zip
-	cd h2o-3.10.4.3-*
+	unzip h2o-3.14.0.3-*.zip
+	cd h2o-3.14.0.3-*
 	hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName
 
 3. Point your browser to H2O. (See "Open H2O Flow in your web browser" in the output below.)
