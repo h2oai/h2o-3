@@ -1593,7 +1593,8 @@ final public class H2O {
       if (index != null) {
         if(index == -1){
           return H2O.SELF;
-        } else if(index < -1 || index >= _memary.length){
+        } else if(index <= -1 || index >= _memary.length){
+          // index -1 should not happen anymore as well
           throw new RuntimeException("Mapping from node id to node index contains: " + index + ", however this node" +
                   "does not exist!");
         }
