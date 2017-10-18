@@ -1,5 +1,7 @@
 from __future__ import print_function
 import sys
+import calendar
+import time
 sys.path.insert(1,"../../../")
 from tests import pyunit_utils
 import h2o
@@ -56,16 +58,22 @@ def h2o_H2OFrame_day():
     assert checkyear.any(), "h2o.H2OFrame.year() command is not working."
 
     datetimeF=datetime[0]
-    mktime_datetime = h2o.H2OFrame.moment(year=datetimeF.year(), month=datetimeF.month(), day=datetimeF.day(),
+    moment_datetime = h2o.H2OFrame.moment(year=datetimeF.year(), month=datetimeF.month(), day=datetimeF.day(),
                                       hour=datetimeF.hour(), minute=datetimeF.minute(), second=datetimeF.second(),
-                                      msec=0, date=None, time=None)
-    assert_is_type(mktime_datetime, H2OFrame)
+                                      msec=int(datetimeF[0,0] % 1000), date=None, time=None)
+    assert_is_type(moment_datetime, H2OFrame)
+    assert abs(datetime[0,0]-moment_datetime[0,0]) < 1e-6, "h2o.H2OFrame.moment() command is not working."
 
     datetimeF=datetime[0]
     mktime_datetime = h2o.H2OFrame.mktime(year=datetimeF.year(), month=datetimeF.month(), day=datetimeF.day(),
                                           hour=datetimeF.hour(), minute=datetimeF.minute(),
-                                          second=datetimeF.second(), msec=0)
-    diff = 2789999999.0
+                                          second=datetimeF.second(), msec=int(datetimeF[0,0] % 1000))
+    # Since mktime returns 0-based months and days but datetimeF isn't 0-based,
+    # we need to add 1 month 1 day = 2764800000 to the datetimeF timestamp.
+    # When we send datetime to mktime, mktime loads this datetime as it's in local timezone,
+    # but the returned timestamp is in UTC, we need to correct this, thus the + current_utc_offset
+    current_utc_offset = ((calendar.timegm(time.gmtime()) - calendar.timegm(time.localtime())) * 1000)
+    diff = 2764800000 + current_utc_offset
     assert_is_type(mktime_datetime, H2OFrame)
     assert abs(datetime[0,0]+diff-mktime_datetime[0,0]) < 1e-6, "h2o.H2OFrame.mktime() command is not working."
 
