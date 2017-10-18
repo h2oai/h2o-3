@@ -58,6 +58,10 @@ def call(mode, nodeLabel) {
       timeoutValue: 90, lang: 'r'
     ],
     [
+      stageName: 'R3.4 Medium-large', target: 'test-r-medium-large', rVersion: '3.4.1',
+      timeoutValue: 70, lang: 'r'
+    ],
+    [
       stageName: 'R3.4 CMD Check', target: 'test-r-cmd-check', rVersion: '3.4.1',
       timeoutValue: 15, hasJUnit: false, lang: 'r'
     ],
