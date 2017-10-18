@@ -4,6 +4,7 @@ import hex.genmodel.GenModel;
 import water.MRTask;
 import water.Scope;
 import water.exceptions.H2OIllegalArgumentException;
+import water.fvec.C8DVolatileChunk;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -221,7 +222,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     @Override
     public void cachePrediction(double[] cdist, Chunk[] chks, int row, int cacheChunkIdx, Model m) {
       assert cdist.length == 3;
-      chks[cacheChunkIdx].set(row, cdist[cdist.length - 1]);
+      ((C8DVolatileChunk) chks[cacheChunkIdx]).getValues()[row] = cdist[cdist.length - 1];
     }
 
     public String toString(){
