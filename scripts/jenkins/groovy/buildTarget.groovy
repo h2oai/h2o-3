@@ -28,7 +28,7 @@ def call(body) {
     execMake(config.target, config.h2o3dir)
   } finally {
     if (config.hasJUnit) {
-      junit testResults: '**/test-results/*.xml', keepLongStdio: true, allowEmptyResults: true
+      junit testResults: "${config.h2o3dir}/**/test-results/*.xml", allowEmptyResults: true, keepLongStdio: true
     }
     if (config.archiveFiles) {
       archiveArtifacts artifacts: FILES_TO_ARCHIVE.collect{"${config.h2o3dir}/${it}"}.join(', '), allowEmptyArchive: true
