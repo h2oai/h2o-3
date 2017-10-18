@@ -34,12 +34,12 @@ test.pubdev.2372 <- function(conn){
 	expect_equal(gain_table$response_rate/min(gain_table$cumulative_response_rate),gain_table$lift)
 
 	probs = c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.85,0.9,0.95,0.96,0.97,0.98,0.99)
-	
+
 	h2o_quantile = as.numeric(h2o.quantile(pred[,3],probs = probs))
 	gain_prob = sort(gain_table$lower_threshold)
 #  print(h2o_quantile)
 #  print(gain_prob)
-	expect_equal(h2o_quantile,gain_prob,tolerance= 1e-8)
+	expect_equal(h2o_quantile,gain_prob,tolerance= 1e-7)
 
 	R_quantile = as.numeric(quantile(pred_prob[,1],probs = probs))
 #  print(R_quantile)
