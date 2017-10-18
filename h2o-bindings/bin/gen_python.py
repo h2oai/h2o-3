@@ -347,6 +347,15 @@ def init_extra_for(algo):
         return """self._parms["_rest_version"] = 99"""
 
 def class_extra_for(algo):
+    if algo == "aggregator":
+        # Add output_frame to model
+        return """
+            @property
+            def output_frame(self):
+                if (self._model_json is not None and
+                    self._model_json.get("output", {}).get("output_frame", {}).get("name") is not None):
+                    out_frame_name = self._model_json["output"]["output_frame"]["name"]
+                    return H2OFrame.get_frame(out_frame_name)"""
     if algo == "glm":
         # Before we were replacing .lambda property with .Lambda. However that violates Python naming conventions for
         # variables, so now we prefer to map that property to .lambda_. The old name remains, for compatibility reasons.
