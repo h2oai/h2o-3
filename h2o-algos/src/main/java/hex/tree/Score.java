@@ -3,11 +3,13 @@ package hex.tree;
 import hex.*;
 import hex.genmodel.GenModel;
 import hex.genmodel.utils.DistributionFamily;
+import water.Iced;
 import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.Log;
 
 /** Score the tree columns, and produce a confusion matrix and AUC
  */
@@ -17,19 +19,33 @@ public class Score extends MRTask<Score> {
   final boolean _oob;           // Computed on OOB
   final Key<Vec> _kresp;        // Response vector key (might be either train or validation)
   final ModelCategory _mcat;    // Model category (Binomial, Regression, etc)
-  ModelMetrics.MetricBuilder _mb;
-//  GainsLift.GainsLiftBuilder _gainsLiftBuilder;
+  ModelMetricsSupervised.MetricBuilderSupervised _mb;
   final boolean _computeGainsLift;
+  final ScoreIncInfo _sii;      // Incremental scoring (on a validation dataset), null indicates full scoring
+  final Frame _preds;           // Prediction cache (typically not too many Vecs => it is not too costly embed the object in MRTask)
 
   /** Compute ModelMetrics on the testing dataset.
    *  It expect already adapted validation dataset which is adapted to a model
    *  and contains a response which is adapted to confusion matrix domain.
    */
-  public Score(SharedTree bldr, boolean is_train, boolean oob, Key<Vec> kresp, ModelCategory mcat, boolean computeGainsLift) { _bldr = bldr; _is_train = is_train; _oob = oob; _kresp = kresp; _mcat = mcat; _computeGainsLift = computeGainsLift; }
+  public Score(SharedTree bldr, boolean is_train, boolean oob, Vec kresp, ModelCategory mcat, boolean computeGainsLift, Frame preds) {
+    this(bldr, is_train, null, oob, kresp, mcat, computeGainsLift, preds);
+  }
 
-  @Override public void map( Chunk chks[] ) {
+  public Score(SharedTree bldr, ScoreIncInfo sii, boolean oob, Vec kresp, ModelCategory mcat, boolean computeGainsLift, Frame preds) {
+    this(bldr, false, sii, oob, kresp, mcat, computeGainsLift, preds);
+  }
+
+  private Score(SharedTree bldr, boolean is_train, ScoreIncInfo sii, boolean oob, Vec kresp, ModelCategory mcat, boolean computeGainsLift, Frame preds) {
+    _bldr = bldr; _is_train = is_train; _sii = sii; _oob = oob; _kresp = kresp._key; _mcat = mcat; _computeGainsLift = computeGainsLift;
+    _preds = computeGainsLift ? preds : null; // don't keep the prediction cache if we don't need to compute gainslift
+    assert (! _is_train) || (_sii == null);
+  }
+
+  @Override public void map(Chunk allchks[]) {
+    final Chunk[] chks = getScoringChunks(allchks);
     Chunk ys = _bldr.chk_resp(chks);  // Response
-    Model m = _bldr._model;
+    SharedTreeModel m = _bldr._model;
     Chunk weightsChunk = m._output.hasWeights() ? chks[m._output.weightsIdx()] : null;
     Chunk offsetChunk = m._output.hasOffset() ? chks[m._output.offsetIdx()] : null;
     final int nclass = _bldr.nclasses();
@@ -40,7 +56,7 @@ public class Score extends MRTask<Score> {
     // If this is a score-on-train AND DRF, then oobColIdx makes sense,
     // otherwise this field is unused.
     final int oobColIdx = _bldr.idx_oobt();
-    _mb = m.makeMetricBuilder(domain);
+    _mb = (ModelMetricsSupervised.MetricBuilderSupervised) m.makeMetricBuilder(domain);
 //    _gainsLiftBuilder = _bldr._model._output.nclasses()==2 ? new GainsLift.GainsLiftBuilder(_fr.vec(_bldr.idx_tree(0)).pctiles()) : null;
     final double[] cdists = _mb._work; // Temp working array for class distributions
     // If working a validation set, need to push thru official model scoring
@@ -59,6 +75,8 @@ public class Score extends MRTask<Score> {
       double offset = offsetChunk!=null?offsetChunk.atd(row):0;
       if( _is_train ) // Passed in the model-specific columns
         _bldr.score2(chks, weight, offset, cdists, row); // Use the training data directly (per-row predictions already made)
+      else if (_sii != null)
+        m.score0Incremental(_sii, chks, offset, row, tmp, cdists); // Incremental scoring (only use new trees)
       else            // Must score "the hard way"
         m.score0(chks, offset, row, tmp, cdists);
 
@@ -70,18 +88,73 @@ public class Score extends MRTask<Score> {
       if( nclass > 1 ) cdists[0] = GenModel.getPrediction(cdists, m._output._priorClassDist, tmp, m.defaultThreshold()); // Fill in prediction
       val[0] = (float)ys.atd(row);
       _mb.perRow(cdists, val, weight, offset, m);
+      if (_preds != null)
+        _mb.cachePrediction(cdists, allchks, row, chks.length, m);
     }
   }
 
-  @Override public void reduce( Score t ) {
+  // scoring chunks are those chunks that make the input to one of the scoring functions
+  private Chunk[] getScoringChunks(Chunk[] allChunks) {
+    if (_preds == null)
+      return allChunks;
+    Chunk[] chks = new Chunk[allChunks.length - _preds.numCols()];
+    System.arraycopy(allChunks, 0, chks, 0, chks.length);
+    return chks;
+  }
+
+  @Override
+  protected boolean modifiesVolatileVecs() {
+    return _sii != null || _preds != null;
+  }
+
+  @Override public void reduce(Score t ) {
     _mb.reduce(t._mb);
   }
 
-  // Run after the doAll scoring to convert the MetricsBuilder to a ModelMetrics
-  ModelMetricsSupervised makeModelMetrics(SharedTreeModel model, Frame fr) {
-    Frame preds = (model._output.nclasses()==2 && _computeGainsLift) || model._parms._distribution == DistributionFamily.huber ? model.score(fr) : null;
-    ModelMetricsSupervised mms = (ModelMetricsSupervised) _mb.makeModelMetrics(model, fr, null, preds);
-    if (preds != null) preds.remove();
-    return mms;
+  ModelMetricsSupervised scoreAndMakeModelMetrics(SharedTreeModel model, Frame fr, Frame adaptedFr, boolean buildTreeOneNode) {
+    Frame input = _preds != null ? new Frame(adaptedFr).add(_preds) : adaptedFr;
+    return doAll(input, buildTreeOneNode)
+            .makeModelMetrics(model, fr, adaptedFr, _preds);
   }
+
+  // Run after the doAll scoring to convert the MetricsBuilder to a ModelMetrics
+  private ModelMetricsSupervised makeModelMetrics(SharedTreeModel model, Frame fr, Frame adaptedFr, Frame preds) {
+    ModelMetrics mm;
+    if (model._output.nclasses() == 2 && _computeGainsLift) {
+      if (preds == null)
+      assert preds != null : "Predictions were pre-created";
+      mm = _mb.makeModelMetrics(model, fr, adaptedFr, preds);
+    } else {
+      boolean calculatePreds = preds == null && model._parms._distribution == DistributionFamily.huber;
+      // FIXME: PUBDEV-4992 we should avoid doing full scoring!
+      if (calculatePreds) {
+        Log.warn("Going to calculate predictions from scratch. This can be expensive for large models! See PUBDEV-4992");
+        preds = model.score(fr);
+      }
+      mm = _mb.makeModelMetrics(model, fr, null, preds);
+      if (calculatePreds && (preds != null))
+        preds.remove();
+    }
+    return (ModelMetricsSupervised) mm;
+  }
+
+  static Frame makePredictionCache(SharedTreeModel model, Vec resp) {
+    ModelMetricsSupervised.MetricBuilderSupervised mb = (ModelMetricsSupervised.MetricBuilderSupervised) model.makeMetricBuilder(resp.domain());
+    return mb.makePredictionCache(model, resp);
+  }
+
+  public static class ScoreIncInfo extends Iced<ScoreIncInfo> {
+    public final int _startTree;
+    public final int _workspaceColIdx;
+    public final int _workspaceColCnt;
+    public final int _predsAryOffset;
+
+    public ScoreIncInfo(int startTree, int workspaceColIdx, int workspaceColCnt, int predsAryOffset) {
+      _startTree = startTree;
+      _workspaceColIdx = workspaceColIdx;
+      _workspaceColCnt = workspaceColCnt;
+      _predsAryOffset = predsAryOffset;
+    }
+  }
+
 }
