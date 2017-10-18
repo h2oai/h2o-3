@@ -1376,17 +1376,20 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     for( int i=0; i< tmp.length; i++ )
       tmp[i] = chks[i].atd(row_in_chunk);
     double [] scored = score0(tmp, preds, offset);
-    if(isSupervised()) {
-      // Correct probabilities obtained from training on oversampled data back to original distribution
-      // C.f. http://gking.harvard.edu/files/0s.pdf Eq.(27)
-      if( _output.isClassifier()) {
-        if (_parms._balance_classes)
-          GenModel.correctProbabilities(scored, _output._priorClassDist, _output._modelClassDist);
-        //assign label at the very end (after potentially correcting probabilities)
-        scored[0] = hex.genmodel.GenModel.getPrediction(scored, _output._priorClassDist, tmp, defaultThreshold());
-      }
-    }
+    if(isSupervised())
+      score0PostProcessSupervised(scored, tmp);
     return scored;
+  }
+
+  protected final void score0PostProcessSupervised(double[] scored, double[] tmp) {
+    // Correct probabilities obtained from training on oversampled data back to original distribution
+    // C.f. http://gking.harvard.edu/files/0s.pdf Eq.(27)
+    if( _output.isClassifier()) {
+      if (_parms._balance_classes)
+        GenModel.correctProbabilities(scored, _output._priorClassDist, _output._modelClassDist);
+      //assign label at the very end (after potentially correcting probabilities)
+      scored[0] = hex.genmodel.GenModel.getPrediction(scored, _output._priorClassDist, tmp, defaultThreshold());
+    }
   }
 
   /** Subclasses implement the scoring logic.  The data is pre-loaded into a

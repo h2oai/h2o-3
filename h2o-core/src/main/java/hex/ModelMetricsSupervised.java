@@ -1,7 +1,9 @@
 package hex;
 
 import water.H2O;
+import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.Vec;
 
 public class ModelMetricsSupervised extends ModelMetrics {
   public final String[] _domain;// Name of classes
@@ -48,5 +50,14 @@ public class ModelMetricsSupervised extends ModelMetrics {
      *@param preds Optional predictions (can be null), only used to compute Gains/Lift table for binomial problems  @return
      */
     @Override public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) { return null; }
+
+    public Frame makePredictionCache(Model m, Vec response) {
+      return null;
+    }
+
+    public void cachePrediction(double[] cdist, Chunk[] chks, int row, int cacheChunkIdx, Model m) {
+      throw new UnsupportedOperationException("Should be overriden in implementation (together with makePredictionCache(..)).");
+    }
+
   }
 }

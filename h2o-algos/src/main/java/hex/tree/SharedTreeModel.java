@@ -305,6 +305,10 @@ public abstract class SharedTreeModel<
       throw H2O.unimpl("Calibration is only supported for binomial models");
   }
 
+  protected double[] score0Incremental(Score.ScoreIncInfo sii, Chunk chks[], double offset, int row_in_chunk, double[] tmp, double[] preds) {
+    return score0(chks, offset, row_in_chunk, tmp, preds); // by default delegate to non-incremental implementation
+  }
+
   @Override protected double[] score0(double[] data, double[] preds, double offset) {
     return score0(data, preds, offset, _output._treeKeys.length);
   }
@@ -313,10 +317,14 @@ public abstract class SharedTreeModel<
   }
 
   protected double[] score0(double[] data, double[] preds, double offset, int ntrees) {
+    Arrays.fill(preds,0);
+    return score0(data, preds, offset, 0, ntrees);
+  }
+
+  protected double[] score0(double[] data, double[] preds, double offset, int startTree, int ntrees) {
     // Prefetch trees into the local cache if it is necessary
     // Invoke scoring
-    Arrays.fill(preds,0);
-    for( int tidx=0; tidx<ntrees; tidx++ )
+    for( int tidx=startTree; tidx<ntrees; tidx++ )
       score0(data, preds, tidx);
     return preds;
   }

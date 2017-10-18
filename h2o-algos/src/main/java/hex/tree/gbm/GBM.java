@@ -148,6 +148,16 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   private class GBMDriver extends Driver {
     private transient FrameMap frameMap;
 
+    @Override
+    protected Frame makeValidWorkspace() {
+      // FIXME: this is not efficient, we need a sparse volatile chunks
+      Vec[] tmp = _valid.anyVec().makeVolatileDoubles(numClassTrees());
+      String[] tmpNames = new String[tmp.length];
+      for (int i = 0; i < tmpNames.length; i++)
+        tmpNames[i] = "__P_" + i;
+      return new Frame(tmpNames, tmp);
+    }
+
     @Override protected boolean doOOBScoring() { return false; }
     @Override protected void initializeModelSpecifics() {
       frameMap = new FrameMap(GBM.this);
@@ -383,6 +393,14 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     }
 
     /**
+     * How may trees are actually calculated for the number of classes the model uses.
+     * @return number of trees
+     */
+    private int numClassTrees() {
+      return _nclass == 2 ? 1 : _nclass; // Boolean Optimization (only one tree needed for 2-class problems)
+    }
+
+    /**
      * Grow k regression trees (k=1 for regression and binomial, k=N for classification with N classes)
      * @param ktrees k trees to grow (must be properly initialized)
      * @param leaves workspace to store the leaf node starting index (k-dimensional - one per tree)
@@ -398,10 +416,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
       long rseed = rand.nextLong();
       // initialize trees
-      for (int k = 0; k < _nclass; k++) {
+      for (int k = 0; k < numClassTrees(); k++) {
         // Initially setup as-if an empty-split had just happened
         if (_model._output._distribution[k] != 0) {
-          if (k == 1 && _nclass == 2) continue; // Boolean Optimization (only one tree needed for 2-class problems)
           ktrees[k] = new DTree(_train, _ncols, (char)_nclass, _mtry, _mtry_per_tree, rseed, _parms);
           DHistogram[] hist = DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[k][0], rseed, _parms, getGlobalQuantilesKeys());
           new UndecidedNode(ktrees[k], DTree.NO_PARENT, hist); // The "root" node
