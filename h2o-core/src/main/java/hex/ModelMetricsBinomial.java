@@ -220,9 +220,8 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
 
     @Override
     public void cachePrediction(double[] cdist, Chunk[] chks, int row, int cacheChunkIdx, Model m) {
-      assert cdist.length == 2 || cdist.length == 3;
-      double pred = (cdist.length == 2) ? 1.0 - cdist[1] : cdist[cdist.length - 1];
-      chks[cacheChunkIdx].set(row, pred);
+      assert cdist.length == 3;
+      chks[cacheChunkIdx].set(row, cdist[cdist.length - 1]);
     }
 
     public String toString(){
