@@ -27,8 +27,7 @@ def test_all_params():
     try:
         model = H2OAggregatorEstimator(**params)
         model.train(training_frame=df)
-    except Exception, err:
-        print(str(err))
+    except:
         assert False, "Should not throw error on valid parameters"
 
 
