@@ -2,7 +2,6 @@ def DEFAULT_NODE_LABEL = 'docker && !mr-0xc8'
 
 def executeTestStages = null
 def buildConfig = null
-
 ansiColor('xterm') {
   timestamps {
 

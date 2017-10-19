@@ -267,33 +267,38 @@ def defaultTestPipeline(buildConfig, body) {
     def buildEnv = customEnv() + ["PYTHON_VERSION=${config.pythonVersion}", "R_VERSION=${config.rVersion}"]
 
     insideDocker(buildEnv, config.timeoutValue, 'MINUTES') {
-      stage(config.stageName) {
-        // execute stage if we should execute all stages or the stage was not successful in previous buildNumber
+      // execute stage if we should execute all stages or the stage was not successful in previous buildNumber
+      if (buildConfig.langChanged(config.lang)) {
+        echo "###### Changes for ${config.lang} detected, starting ${config.stageName}######"
         if(runAllStages(buildConfig) || !wasStageSuccessful(config.stageName)) {
-          def stageDir = stageNameToDirName(config.stageName)
-          def h2oFolder = stageDir + '/h2o-3'
-          dir(stageDir) {
-            deleteDir()
-          }
+          stage(config.stageName) {
+            def stageDir = stageNameToDirName(config.stageName)
+            def h2oFolder = stageDir + '/h2o-3'
+            dir(stageDir) {
+              deleteDir()
+            }
 
-          unpackTestPackage(config.lang, stageDir)
+            unpackTestPackage(config.lang, stageDir)
 
-          if (config.lang == 'py') {
-            installPythonPackage(h2oFolder)
-          }
+            if (config.lang == 'py') {
+              installPythonPackage(h2oFolder)
+            }
 
-          if (config.lang == 'r') {
-            installRPackage(h2oFolder)
-          }
+            if (config.lang == 'r') {
+              installRPackage(h2oFolder)
+            }
 
-          buildTarget {
-            target = config.target
-            hasJUnit = config.hasJUnit
-            h2o3dir = h2oFolder
+            buildTarget {
+              target = config.target
+              hasJUnit = config.hasJUnit
+              h2o3dir = h2oFolder
+            }
           }
         } else {
           echo "${config.stageName} was successful in previous build, skipping it in this build because RERUN FAILED STAGES is enabled"
         }
+      } else {
+        echo "###### Changes for ${config.lang} NOT detected, skipping ${config.stageName}######"
       }
     }
   }
