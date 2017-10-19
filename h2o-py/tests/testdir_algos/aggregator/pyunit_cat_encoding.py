@@ -42,10 +42,10 @@ def test_high_cardinality_eigen():
     }
     agg = H2OAggregatorEstimator(**params)
     agg.train(training_frame=df)
-    out_frame_name = agg._model_json["output"]["output_frame"]["name"]
-    out_frame = H2OFrame.get_frame(out_frame_name)
-    assert is_consistent(df.nrows, out_frame), "Exemplar counts should sum up to number of training rows"
-    assert correct_num_exemplars(out_frame, **params), "Generated number of exemplars should match target value"
+    assert agg.aggregated_frame is not None, "Trained model should produce not empty aggregated frame"
+    assert is_consistent(df.nrows, agg.aggregated_frame), "Exemplar counts should sum up to number of training rows"
+    assert correct_num_exemplars(agg.aggregated_frame, **params), \
+        "Generated number of exemplars should match target value"
 
 
 def test_high_cardinality_enum():
@@ -68,10 +68,10 @@ def test_high_cardinality_enum():
     }
     agg = H2OAggregatorEstimator(**params)
     agg.train(training_frame=df)
-    out_frame_name = agg._model_json["output"]["output_frame"]["name"]
-    out_frame = H2OFrame.get_frame(out_frame_name)
-    assert is_consistent(df.nrows, out_frame), "Exemplar counts should sum up to number of training rows"
-    assert correct_num_exemplars(out_frame, **params), "Generated number of exemplars should match target value"
+    assert agg.aggregated_frame is not None, "Trained model should produce not empty aggregated frame"
+    assert is_consistent(df.nrows, agg.aggregated_frame), "Exemplar counts should sum up to number of training rows"
+    assert correct_num_exemplars(agg.aggregated_frame, **params), \
+        "Generated number of exemplars should match target value"
 
 
 def test_low_cardinality_enum_limited():
@@ -108,11 +108,10 @@ def test_low_cardinality_enum_limited():
     df = H2OFrame(raw_data)
     agg = H2OAggregatorEstimator(target_num_exemplars=5, categorical_encoding="enum_limited")
     agg.train(training_frame=df)
-    out_frame_name = agg._model_json["output"]["output_frame"]["name"]
-    out_frame = H2OFrame.get_frame(out_frame_name)
-    assert is_consistent(df.nrows, out_frame), "Exemplar counts should sum up to number of training rows"
+    assert agg.aggregated_frame is not None, "Trained model should produce not empty aggregated frame"
+    assert is_consistent(df.nrows, agg.aggregated_frame), "Exemplar counts should sum up to number of training rows"
     # from AggregatorTest.java
-    assert out_frame.nrows == 7, "Number of exemplars of this test case should be 7"
+    assert agg.aggregated_frame.nrows == 7, "Number of exemplars of this test case should be 7"
 
 
 def test_binary():
@@ -136,10 +135,11 @@ def test_binary():
     }
     agg = H2OAggregatorEstimator(**params)
     agg.train(training_frame=df)
-    out_frame_name = agg._model_json["output"]["output_frame"]["name"]
-    out_frame = H2OFrame.get_frame(out_frame_name)
-    assert is_consistent(df.nrows, out_frame), "Exemplar counts should sum up to number of training rows"
-    assert correct_num_exemplars(out_frame, **params), "Generated number of exemplars should match target value"
+    assert agg.aggregated_frame is not None, "Trained model should produce not empty aggregated frame"
+    assert is_consistent(df.nrows, agg.aggregated_frame), \
+        "Exemplar counts should sum up to number of training rows"
+    assert correct_num_exemplars(agg.aggregated_frame, **params), \
+        "Generated number of exemplars should match target value"
 
 
 if __name__ == "__main__":

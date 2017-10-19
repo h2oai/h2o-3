@@ -348,10 +348,10 @@ def init_extra_for(algo):
 
 def class_extra_for(algo):
     if algo == "aggregator":
-        # Add output_frame to model
+        # Add aggregated_frame to model
         return """
             @property
-            def output_frame(self):
+            def aggregated_frame(self):
                 if (self._model_json is not None and
                     self._model_json.get("output", {}).get("output_frame", {}).get("name") is not None):
                     out_frame_name = self._model_json["output"]["output_frame"]["name"]
