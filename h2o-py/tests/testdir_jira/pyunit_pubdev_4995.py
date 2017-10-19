@@ -18,7 +18,7 @@ def test_4995():
     raised = False
     agg = H2OAggregatorEstimator(model_id="aggregator")
     try:
-        agg.train(training_frame=data, x="minairtemp", y="maxairtemp")
+        agg.train(training_frame=data)
     except H2OResponseError:
         raised = True
 
