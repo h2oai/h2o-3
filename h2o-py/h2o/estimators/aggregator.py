@@ -160,7 +160,7 @@ class H2OAggregatorEstimator(H2OEstimator):
 
 
     @property
-    def output_frame(self):
+    def aggregated_frame(self):
         if (self._model_json is not None and
             self._model_json.get("output", {}).get("output_frame", {}).get("name") is not None):
             out_frame_name = self._model_json["output"]["output_frame"]["name"]
