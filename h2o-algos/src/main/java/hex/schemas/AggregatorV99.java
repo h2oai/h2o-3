@@ -47,7 +47,7 @@ public class AggregatorV99 extends ModelBuilderSchema<Aggregator,AggregatorV99,A
     @API(help = "Targeted number of exemplars", direction = API.Direction.INOUT, gridable = true, level= API.Level.secondary)
     public int target_num_exemplars;
 
-    @API(help = "Relative tolerance for number of exemplars (e.g, 0.5 is +/- 50%)", direction = API.Direction.INOUT, gridable = true, level= API.Level.secondary)
+    @API(help = "Relative tolerance for number of exemplars (e.g, 0.5 is +/- 50 percents)", direction = API.Direction.INOUT, gridable = true, level= API.Level.secondary)
     public double rel_tol_num_exemplars;
 
     @API(help = "RNG seed for initialization", direction = API.Direction.INOUT, level= API.Level.secondary)
