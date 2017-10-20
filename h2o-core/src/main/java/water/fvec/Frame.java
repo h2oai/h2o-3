@@ -981,6 +981,8 @@ public class Frame extends Lockable<Frame> {
     // Compute elems-per-chunk.
     // Roll-up elem counts, so espc[i] is the starting element# of chunk i.
     int nchunk = espc.length;
+    while( nchunk > 1 && espc[nchunk-1] == 0 )
+      nchunk--;
     long espc2[] = new long[nchunk+1]; // Shorter array
     long x=0;                   // Total row count so far
     for( int i=0; i<nchunk; i++ ) {
@@ -993,6 +995,9 @@ public class Frame extends Lockable<Frame> {
     Futures fs = new Futures();
     _vecs = new Vec[_keys.length];
     for( int i=0; i<_keys.length; i++ ) {
+      // Nuke the extra chunks
+      for (int j = nchunk; j < espc.length; j++)
+        DKV.remove(Vec.chunkKey(_keys[i], j), fs);
       // Insert Vec header
       Vec vec = _vecs[i] = new Vec( _keys[i],
                                     Vec.ESPC.rowLayout(_keys[i],espc2),
