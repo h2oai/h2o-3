@@ -255,10 +255,10 @@ def gen_module(schema, algo, module):
         lines = help_extra_checks.split("\n")
         for line in lines:
             yield "%s" % line
-    if algo not in ["glm","deeplearning","drf", "gbm","xgboost"]:
+    if algo not in ["aggregator", "glm", "deeplearning", "drf", "gbm", "xgboost"]:
         yield "  # Error check and build model"
-        yield "  .h2o.modelJob('%s', parms, h2oRestApiVersion = %d) \n}" % (algo, 99 if algo in ["aggregator", "svd", "stackedensemble"] else 3)
-    if algo in ["deeplearning","drf", "gbm","xgboost"]:
+        yield "  .h2o.modelJob('%s', parms, h2oRestApiVersion = %d) \n}" % (algo, 99 if algo in ["svd", "stackedensemble"] else 3)
+    if algo in ["deeplearning", "drf", "gbm", "xgboost"]:
         yield "  # Error check and build model"
         yield "  .h2o.modelJob('%s', parms, h2oRestApiVersion = %d, verbose=verbose) \n}" % (algo, 99 if algo in ["svd", "stackedensemble"] else 3)
     if help_afterword:
@@ -520,6 +520,14 @@ def help_extra_params_for(algo):
 
 
 def help_extra_checks_for(algo):
+    if algo == "aggregator":
+        # Add aggregator@model$aggregated_frame_id reference to generated model
+        # TODO Change h2oRestApiVersion to 3, when Aggregator is not experimental
+        return """
+  m <- .h2o.modelJob('aggregator', parms, h2oRestApiVersion=99)
+  m@model$aggregated_frame_id <- m@model$output_frame$name
+  m\n}
+        """
     if algo == "glm":
         return """
   if( !missing(interactions) ) {
@@ -612,6 +620,17 @@ def help_extra_checks_for(algo):
         """
 
 def help_afterword_for(algo):
+    if algo == "aggregator":
+        return """
+            #' Retrieve an aggregated frame from the Aggregator model
+            #'
+            #' @param model an \linkS4class{H2OClusteringModel} corresponding from a \code{h2o.aggregator} call.
+            #' @export
+            h2o.aggregated_frame <- function(model) {
+              key <- model@model$aggregated_frame_id
+              h2o.getFrame(key)
+            }
+        """
     if algo == "deeplearning":
         return """
             #' Anomaly Detection via H2O Deep Learning Model

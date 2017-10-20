@@ -115,7 +115,7 @@ class H2OAggregatorEstimator(H2OEstimator):
     @property
     def rel_tol_num_exemplars(self):
         """
-        Relative tolerance for number of exemplars (e.g, 0.5 is +/- 50%)
+        Relative tolerance for number of exemplars (e.g, 0.5 is +/- 50 percents)
 
         Type: ``float``  (default: ``0.5``).
         """
