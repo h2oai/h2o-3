@@ -3,10 +3,8 @@ package water.fvec;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import water.H2O;
-import water.Key;
-import water.Scope;
-import water.TestUtil;
+import water.*;
+import water.util.FrameUtils;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -80,6 +78,44 @@ public class FrameTest extends TestUtil {
 //      subset2.delete();
       if (x != null) x.delete();
       if (y != null) y.delete();
+    }
+  }
+
+  @Test
+  public void testFinalizePartialFrameRemovesTrailingChunks() {
+    final String fName = "part_frame";
+    final long[] layout = new long[]{0, 1, 0, 3, 2, 0, 0, 0};
+
+    try {
+      Scope.enter();
+      Key<Frame> fKey = Key.make(fName);
+      Frame f = new Frame(fKey);
+      f.preparePartialFrame(new String[]{"C0"});
+      Scope.track(f);
+      f.update();
+
+      for (int i = 0; i < layout.length; i++) {
+        FrameTestUtil.createNC(fName, i, (int) layout[i], new byte[]{Vec.T_NUM});
+      }
+      f = DKV.get(fName).get();
+
+      f.finalizePartialFrame(layout, new String[][] {null}, new byte[]{Vec.T_NUM});
+
+      final long[] expectedESPC = new long[]{0, 0, 1, 1, 4, 6};
+      assertArrayEquals(expectedESPC, f.anyVec().espc());
+
+      Frame f2 = Scope.track(new MRTask(){
+        @Override
+        public void map(Chunk c, NewChunk nc) {
+          for (int i = 0; i < c._len; i++)
+            nc.addNum(c.atd(i));
+        }
+      }.doAll(Vec.T_NUM, f).outputFrame());
+
+      // the ESPC is the same
+      assertArrayEquals(expectedESPC, f2.anyVec().espc());
+    } finally {
+      Scope.exit();
     }
   }
 
