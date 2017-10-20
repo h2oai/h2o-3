@@ -25,9 +25,8 @@ def test_num_of_exemplars(target_exemplars, tol):
 
     agg = H2OAggregatorEstimator(target_num_exemplars=target_exemplars, rel_tol_num_exemplars=tol)
     agg.train(training_frame=df)
-    out_frame_name = agg._model_json["output"]["output_frame"]["name"]
-    out_frame = H2OFrame.get_frame(out_frame_name)
-    assert (1-tol)*target_exemplars <= out_frame.nrows <= (1+tol)*target_exemplars, \
+    assert agg.aggregated_frame is not None, "Trained model should produce not empty aggregated frame"
+    assert (1-tol)*target_exemplars <= agg.aggregated_frame.nrows <= (1+tol)*target_exemplars, \
         "Final number of aggregated exemplars should be in equal to target number +/- tolerance"
 
 

@@ -35,6 +35,7 @@ class H2OAggregatorEstimator(H2OEstimator):
                 setattr(self, pname, pvalue)
             else:
                 raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
+        self._parms["_rest_version"] = 99
 
     @property
     def training_frame(self):
@@ -157,3 +158,10 @@ class H2OAggregatorEstimator(H2OEstimator):
         self._parms["categorical_encoding"] = categorical_encoding
 
 
+
+    @property
+    def aggregated_frame(self):
+        if (self._model_json is not None and
+            self._model_json.get("output", {}).get("output_frame", {}).get("name") is not None):
+            out_frame_name = self._model_json["output"]["output_frame"]["name"]
+            return H2OFrame.get_frame(out_frame_name)
