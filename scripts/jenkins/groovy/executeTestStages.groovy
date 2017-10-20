@@ -1,4 +1,4 @@
-def call(mode, nodeLabel) {
+def call(buildConfig) {
 
   def MODE_PR_TESTING_CODE = -1
   def MODE_PR_CODE = 0
@@ -196,9 +196,9 @@ def call(mode, nodeLabel) {
   ]
 
   // run smoke tests, the tests relevant for this mode
-  executeInParallel(SMOKE_STAGES, nodeLabel)
+  executeInParallel(SMOKE_STAGES, buildConfig)
 
-  def modeCode = MODES.find{it['name'] == mode}['code']
+  def modeCode = MODES.find{it['name'] == buildConfig.getMode()}['code']
   // FIXME: Remove the if and KEEP only the else once the initial PR tests in real environment are completed
   def jobs = null
   if (modeCode == MODE_PR_TESTING_CODE) {
@@ -212,14 +212,14 @@ def call(mode, nodeLabel) {
       jobs += NIGHTLY_STAGES
     }
   }
-  executeInParallel(jobs, nodeLabel)
+  executeInParallel(jobs, buildConfig)
 }
 
-def executeInParallel(jobs, nodeLabel) {
+def executeInParallel(jobs, buildConfig) {
   parallel(jobs.collectEntries { c ->
     [
       c['stageName'], {
-        defaultTestPipeline(nodeLabel) {
+        defaultTestPipeline(buildConfig) {
           stageName = c['stageName']
           target = c['target']
           pythonVersion = c['pythonVersion']
@@ -233,7 +233,7 @@ def executeInParallel(jobs, nodeLabel) {
   })
 }
 
-def defaultTestPipeline(nodeLabel, body) {
+def defaultTestPipeline(buildConfig, body) {
   def config = [:]
   body.resolveStrategy = Closure.DELEGATE_FIRST
   body.delegate = config
@@ -252,7 +252,7 @@ def defaultTestPipeline(nodeLabel, body) {
     config.hasJUnit = true
   }
 
-  node(nodeLabel) {
+  node(buildConfig.getNodeLabel()) {
     echo "Pulling scripts"
     step ([$class: 'CopyArtifact',
       projectName: env.JOB_NAME,
@@ -268,26 +268,31 @@ def defaultTestPipeline(nodeLabel, body) {
 
     insideDocker(buildEnv, config.timeoutValue, 'MINUTES') {
       stage(config.stageName) {
-        def stageDir = stageNameToDirName(config.stageName)
-        def h2oFolder = stageDir + '/h2o-3'
-        dir(stageDir) {
-          deleteDir()
-        }
+        // execute stage if we should execute all stages or the stage was not successful in previous buildNumber
+        if(runAllStages(buildConfig) || !wasStageSuccessful(config.stageName)) {
+          def stageDir = stageNameToDirName(config.stageName)
+          def h2oFolder = stageDir + '/h2o-3'
+          dir(stageDir) {
+            deleteDir()
+          }
 
-        unpackTestPackage(config.lang, stageDir)
+          unpackTestPackage(config.lang, stageDir)
 
-        if (config.lang == 'py') {
-          installPythonPackage(h2oFolder)
-        }
+          if (config.lang == 'py') {
+            installPythonPackage(h2oFolder)
+          }
 
-        if (config.lang == 'r') {
-          installRPackage(h2oFolder)
-        }
+          if (config.lang == 'r') {
+            installRPackage(h2oFolder)
+          }
 
-        buildTarget {
-          target = config.target
-          hasJUnit = config.hasJUnit
-          h2o3dir = h2oFolder
+          buildTarget {
+            target = config.target
+            hasJUnit = config.hasJUnit
+            h2o3dir = h2oFolder
+          }
+        } else {
+          echo "${config.stageName} was successful in previous build, skipping it in this build because RERUN FAILED STAGES is enabled"
         }
       }
     }
@@ -327,6 +332,54 @@ def stageNameToDirName(String stageName) {
     return stageName.toLowerCase().replace(' ', '-')
   }
   return null
+}
+
+def runAllStages(buildConfig) {
+    // first check the commit message contains #rerun token, if yes, then don't run all stages,
+    // if not, then run all stages
+    def result = !buildConfig.commitMessageContains('#rerun')
+    // if we shouldn't run all stages based on the commit message, check
+    // that this is not overriden by environment
+    if (!result) {
+      result = env.overrideRerun == null || env.overrideRerun.toLowerCase() == 'true'
+    }
+    if (result) {
+      echo "###### RERUN NOT ENABLED, will execute all stages ######"
+    } else {
+      echo "###### RERUN ENABLED, will execute only stages which failed in previous build ######"
+    }
+    return result
+}
+
+@NonCPS
+def wasStageSuccessful(String stageName) {
+  // displayName of the relevant end node.
+  def STAGE_END_TYPE_DISPLAY_NAME = 'Stage : Body : End'
+
+  // There is no previous build, the stage cannot be successful.
+  if (currentBuild.previousBuild == null) {
+    return false
+  }
+
+  // Get all nodes in previous build.
+  def prevBuildNodes = currentBuild.previousBuild.rawBuild
+    .getAction(org.jenkinsci.plugins.workflow.job.views.FlowGraphAction.class)
+    .getNodes()
+  // Get all end nodes of the relevant stage in previous build. We need to check
+  // the end nodes, because errors are being recorded on the end nodes.
+  def stageEndNodesInPrevBuild = prevBuildNodes.findAll{it.getTypeDisplayName() == STAGE_END_TYPE_DISPLAY_NAME}
+    .findAll{it.getStartNode().getDisplayName() == stageName}
+
+  // If there is no start node for this stage in previous build that means the
+  // stage was not present in previous build, therefore the stage cannot be successful.
+  def stageMissingInPrevBuild = stageEndNodesInPrevBuild.isEmpty()
+  if (stageMissingInPrevBuild) {
+    return false
+  }
+
+  // If the list of end nodes for this stage having error is empty, that
+  // means the stage was successful. The errors are being recorded on the end nodes.
+  return stageEndNodesInPrevBuild.find{it.getError() != null} == null
 }
 
 return this

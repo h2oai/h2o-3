@@ -1,6 +1,7 @@
 def DEFAULT_NODE_LABEL = 'docker && !mr-0xc8'
 
 def executeTestStages = null
+def buildConfig = null
 
 ansiColor('xterm') {
   timestamps {
@@ -18,16 +19,18 @@ ansiColor('xterm') {
         }
       }
 
-      def setJobProperties = load('h2o-3/scripts/jenkins/groovy/setJobProperties.groovy')
-      setJobProperties()
-
       def prepareH2O3 = load('h2o-3/scripts/jenkins/groovy/prepareH2O3.groovy')
-      prepareH2O3()
+      buildConfig = prepareH2O3('MODE_MASTER', DEFAULT_NODE_LABEL)
+      buildConfig.setDefaultOverrideRerun(true)
+
+      def setJobProperties = load('h2o-3/scripts/jenkins/groovy/setJobProperties.groovy')
+      setJobProperties(buildConfig)
 
       // Load the executeTestStages script
       executeTestStages = load('h2o-3/scripts/jenkins/groovy/executeTestStages.groovy')
     }
 
-    executeTestStages('MODE_MASTER', DEFAULT_NODE_LABEL)
+    echo "Build Config: ${buildConfig.toString()}"
+    executeTestStages(buildConfig)
   }
 }
