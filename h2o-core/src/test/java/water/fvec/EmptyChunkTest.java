@@ -19,13 +19,14 @@ public class EmptyChunkTest extends TestUtil {
   static public void setup() {  stall_till_cloudsize(1); }
 
   /**
-   * Scenario: chunk(2-rows)|chunk(0 rows)|chunk(2-rows)|chunk(0 rows)
+   * Scenario: chunk(2-rows)|chunk(0 rows)|chunk(2-rows)|chunk(0 rows) - trailing empty chunk should be removed
    */
   @Test
   public void testEmptyChunk0() {
     String fname = "test0.hex";
     long[] chunkLayout = ar(2L, 0L, 2L, 0L);
-    testScenario(fname, chunkLayout);
+    long[] expectedLayout = ar(2L, 0L, 2L);
+    testScenario(fname, chunkLayout, expectedLayout);
   }
 
   /**
@@ -49,13 +50,16 @@ public class EmptyChunkTest extends TestUtil {
   }
 
   private void testScenario(String fname, long[] chunkLayout) {
-    int numberOfChunks = chunkLayout.length;
+    testScenario(fname, chunkLayout, chunkLayout);
+  }
+
+  private void testScenario(String fname, long[] chunkLayout, long[] chunkLens) {
+    int numberOfChunks = chunkLens.length;
     // Frame for testing
     Frame f = createFrame(fname, chunkLayout);
 
     try {
       Vec vec = f.vec(0);
-      long[] chunkLens = chunkLayout;
       assertChunkInvariants(vec, numberOfChunks, chunkLens);
     } finally {
       // Cleanup
