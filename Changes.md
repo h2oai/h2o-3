@@ -2,6 +2,24 @@
 
 ## H2O
 
+### Weierstrass (3.14.0.7) - 10/20/2017
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/7/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/7/index.html</a>
+
+<h4>Bug</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4987'>PUBDEV-4987</a>] -         h2o.H2OFrame.any() and h2o.H2OFrame.all() not working properly if frame contains only True
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4988'>PUBDEV-4988</a>] -         Don&#39;t check H2O client hash-code ( Fix )
+</li>
+</ul>
+
+<h4>Task</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4003'>PUBDEV-4003</a>] -         Generate Python API tests for Python Module Data in H2O and Data Manipulation
+</li>
+</ul>
+
 ### Weierstrass (3.14.0.6) - 10/9/2017
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/6/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/6/index.html</a>
@@ -26,19 +44,19 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/5/
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4917'>PUBDEV-4917</a>] - Only relevant clients (the ones with the same cloud name) are now reported to H2O. </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4954'>PUBDEV-4954</a>] - Improved error messaging in the case where H2O fails to parse a valid Parquet file.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4959'>PUBDEV-4959</a>] - Fixed an issue that allowed nodes from different clusters to kill different H2O clusters. 
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4959'>PUBDEV-4959</a>] - Fixed an issue that allowed nodes from different clusters to kill different H2O clusters.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4979'>PUBDEV-4979</a>] - Fixed an issue that caused K-Means to improperly calculate scaled distance.
 </li>
 </ul>
-                
+
 <h4>Task</h4>
 
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4925'>PUBDEV-4925</a>] - Nightly and stable releases will now have published sha256 hashes.
 </li>
 </ul>
-    
+
 <h4>Improvement</h4>
 
 <ul>
@@ -47,13 +65,13 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/5/
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4964'>PUBDEV-4964</a>] - H2O no longer terminates when an incompatible client tries to connect.
 </li>
 </ul>
-    
+
 <h4>Docs</h4>
 
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4949'>PUBDEV-4949</a>] - Updated the list of required packages for the H2O-3 R client on the H2O Download site and in the User Guide.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4966'>PUBDEV-4966</a>] - Added an FAQ to the <a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/faq/java.html">User Guide FAQ</a> describing how Java 9 users can switch to a supported Java version. 
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4966'>PUBDEV-4966</a>] - Added an FAQ to the <a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/faq/java.html">User Guide FAQ</a> describing how Java 9 users can switch to a supported Java version.
 </li>
 </ul>
 
@@ -79,7 +97,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/3/
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4735'>PUBDEV-4735</a>] - In Deep Learning POJOs, fixed an issue in the sharing stage between threads.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4739'>PUBDEV-4739</a>] - Fixed an issue in R that caused `h2o.sub` to fail to retain the column names of the frame.
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4757'>PUBDEV-4757</a>] - Running ifelse() on a constant column no longer results in an error. 
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4757'>PUBDEV-4757</a>] - Running ifelse() on a constant column no longer results in an error.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4846'>PUBDEV-4846</a>] - Using + on string columns now works correctly.
 </li>
@@ -89,7 +107,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/3/
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4868'>PUBDEV-4868</a>] - Fixed an issue that resulted in an AIOOB error when predicting with GLM. NA responses are now removed prior to GLM scoring.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4909'>PUBDEV-4909</a>] - The set_name method now works correctly in the Python client. 
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4909'>PUBDEV-4909</a>] - The set_name method now works correctly in the Python client.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4921'>PUBDEV-4921</a>] - Replaced the deprecated Clock class in timing.gradle.
 </li>
@@ -103,12 +121,12 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/3/
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4628'>PUBDEV-4628</a>] - MOJO support has been extended  to include the Deep Learning algorithm.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4845'>PUBDEV-4845</a>] - Added the ability to import an encrypted (AES128) file into H2O. This can be configured glovally by specifying the `-decrypt_tool` option and installing the tool in DKV. 
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4845'>PUBDEV-4845</a>] - Added the ability to import an encrypted (AES128) file into H2O. This can be configured glovally by specifying the `-decrypt_tool` option and installing the tool in DKV.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4904'>PUBDEV-4904</a>] - The Decryption API is now exposed in the REST API and in the R client.
 </li>
 </ul>
-        
+
 <h4>Docs</h4>
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4811'>PUBDEV-4811</a>] - Updated the MOJO Quick Start Guide to show separator differences between Linux/OS X and Windows. Also updated the R example to match the Python example.
@@ -124,21 +142,21 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/2/
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4804'>PUBDEV-4804</a>] - Fixed a broken link to the Hive tutorials from the Productionizing section in the User Guide.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4822'>PUBDEV-4822</a>] - Sparkling Water can now pass a data frame with a vector for conversion into H2OFrame. In prior versions, the vector was not properly expanded and resulted in a failure.  
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4822'>PUBDEV-4822</a>] - Sparkling Water can now pass a data frame with a vector for conversion into H2OFrame. In prior versions, the vector was not properly expanded and resulted in a failure.
 </li>
 </ul>
-                
+
 <h4>Task</h4>
 
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4802'>PUBDEV-4802</a>] - Added more tests to ensure that, when max_runtime_secs is set, the returned model works correctly.
 </li>
 </ul>
-    
+
 <h4>Improvement</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4812'>PUBDEV-4812</a>] - This version of H2O includes an option to force toggle (on/off) a specific extension. This enables users to enable the XGBoost REST API on a system that does not support XGBoost.  
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4812'>PUBDEV-4812</a>] - This version of H2O includes an option to force toggle (on/off) a specific extension. This enables users to enable the XGBoost REST API on a system that does not support XGBoost.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4829'>PUBDEV-4829</a>] - A warning now displays when the minimal XGBoost version is used.
 </li>
