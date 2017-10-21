@@ -20,7 +20,10 @@ import static water.TestUtil.parse_test_file;
 import static water.TestUtil.stall_till_cloudsize;
 
 /**
- * PCA benchmark micro-benchmark based on hex.pca.PCATest.testImputeMissing()
+ * PCA benchmark micro-benchmark based on hex.pca.PCATest.testCatOnlyPUBDEV3988()
+ * TODO migrate from PCATest!!!
+ * - split train & score benchs
+ * - create interface on top of it
  */
 @Fork(1)
 @Threads(1)
@@ -30,18 +33,18 @@ import static water.TestUtil.stall_till_cloudsize;
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Timeout(time = JMHConfiguration.TIMEOUT_MINUTES, timeUnit = TimeUnit.MINUTES)
-public class PCAImputeMissingScoringBench {
+public class PCACatOnlyPUBDEV3988Bench {
 
   @Param({"JAMA", "MTJ_SVD_DENSEMATRIX", "MTJ_EVD_DENSEMATRIX", "MTJ_EVD_SYMMMATRIX"})
   private PCAImplementation PCAImplementation;
 
-  private PCAParameters paramsImputeMissing;
+  private PCAParameters paramsCatOnlyPUBDEV3988;
   private PCAModel pcaModel;
   private Frame trainingFrame;
 
   public static void main(String[] args) throws RunnerException {
     Options opt = new OptionsBuilder()
-        .include(PCAImputeMissingScoringBench.class.getSimpleName())
+        .include(PCACatOnlyPUBDEV3988Bench.class.getSimpleName())
         .build();
 
     new Runner(opt).run();
@@ -65,14 +68,14 @@ public class PCAImputeMissingScoringBench {
       j.execImpl().get(); // MissingInserter is non-blocking, must block here explicitly
       DKV.remove(frame._key); // Delete the frame header (not the data)
 
-      paramsImputeMissing = new PCAParameters();
-      paramsImputeMissing._train = trainingFrame._key;
-      paramsImputeMissing._k = 4;
-      paramsImputeMissing._transform = DataInfo.TransformType.NONE;
-      paramsImputeMissing._pca_method = GramSVD;
-      paramsImputeMissing.setSvdImplementation(PCAImplementation);
-      paramsImputeMissing._impute_missing = true;   // Don't skip rows with NA entries, but impute using mean of column
-      paramsImputeMissing._seed = seed;
+      paramsCatOnlyPUBDEV3988 = new PCAParameters();
+      paramsCatOnlyPUBDEV3988._train = trainingFrame._key;
+      paramsCatOnlyPUBDEV3988._k = 4;
+      paramsCatOnlyPUBDEV3988._transform = DataInfo.TransformType.NONE;
+      paramsCatOnlyPUBDEV3988._pca_method = GramSVD;
+      paramsCatOnlyPUBDEV3988.setSvdImplementation(PCAImplementation);
+      paramsCatOnlyPUBDEV3988._impute_missing = true;   // Don't skip rows with NA entries, but impute using mean of column
+      paramsCatOnlyPUBDEV3988._seed = seed;
 
       if (!train()) {                               // prepare the model for scoring
         throw new RuntimeException("PCA model failed to be trained.");
@@ -81,7 +84,6 @@ public class PCAImputeMissingScoringBench {
       if (trainingFrame != null) {
         trainingFrame.delete();
       }
-      e.printStackTrace();
       throw e;
     }
   }
@@ -106,7 +108,7 @@ public class PCAImputeMissingScoringBench {
 
   private boolean train() {
     try {
-      pcaModel = new PCA(paramsImputeMissing).trainModel().get();
+      pcaModel = new PCA(paramsCatOnlyPUBDEV3988).trainModel().get();
     } catch (Exception exception) {
       return false;
     }

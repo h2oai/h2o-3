@@ -13,6 +13,7 @@ import water.util.FrameUtils;
 
 import java.util.concurrent.TimeUnit;
 
+import static hex.pca.JMHConfiguration.logLevel;
 import static hex.pca.PCAModel.PCAParameters;
 import static hex.pca.PCAModel.PCAParameters.Method.GramSVD;
 import static water.TestUtil.parse_test_file;
@@ -24,12 +25,16 @@ import static water.TestUtil.stall_till_cloudsize;
 @Fork(1)
 @Threads(1)
 @State(Scope.Thread)
-@Warmup(iterations = 3)
-@Measurement(iterations = 10)
+@Warmup(iterations = JMHConfiguration.WARM_UP_ITERATIONS)
+@Measurement(iterations = JMHConfiguration.MEASUREMENT_ITERATIONS)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
+@Timeout(time = JMHConfiguration.TIMEOUT_MINUTES, timeUnit = TimeUnit.MINUTES)
 public class PCAImputeMissingTrainingBench {
-	
+
+	@Param({"JAMA", "MTJ_SVD_DENSEMATRIX", "MTJ_EVD_DENSEMATRIX", "MTJ_EVD_SYMMMATRIX"})
+	private PCAImplementation PCAImplementation;
+
 	private PCAParameters paramsImputeMissing;
 	private PCAModel pcaModel;
 	private Frame trainingFrame;
@@ -44,7 +49,7 @@ public class PCAImputeMissingTrainingBench {
 	
 	@Setup(Level.Invocation)
 	public void setup() {
-		water.util.Log.setLogLevel("ERRR");
+		water.util.Log.setLogLevel(logLevel);
 		stall_till_cloudsize(1);
 		
 		trainingFrame = null;
@@ -65,6 +70,7 @@ public class PCAImputeMissingTrainingBench {
 			paramsImputeMissing._k = 4;
 			paramsImputeMissing._transform = DataInfo.TransformType.NONE;
 			paramsImputeMissing._pca_method = GramSVD;
+			paramsImputeMissing.setSvdImplementation(PCAImplementation);
 			paramsImputeMissing._impute_missing = true;   // Don't skip rows with NA entries, but impute using mean of column
 			paramsImputeMissing._seed = seed;
 			

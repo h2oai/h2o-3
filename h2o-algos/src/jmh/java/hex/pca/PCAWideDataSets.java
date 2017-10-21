@@ -7,6 +7,7 @@ import water.fvec.Frame;
 
 import java.util.Random;
 
+import static hex.pca.JMHConfiguration.logLevel;
 import static hex.pca.PCAModel.PCAParameters.Method.GramSVD;
 import static water.TestUtil.parse_test_file;
 
@@ -17,15 +18,16 @@ import static water.TestUtil.parse_test_file;
  * using GramSVD under normal setting (_wideDataset is set to false).  Next, it builds a GramSVD model with
  * _wideDataSet set to true.
  */
-public class PCAWideDataSetsBenchModel {
+public class PCAWideDataSets {
 	private static final int numberOfModels = 6;
 	private Frame trainingFrame = null;
 	private PCA pca = null;
 	private int dataSetCase;
 	private PCAModel pcaModel;
 	private Frame pcaScore;
-	
-	PCAWideDataSetsBenchModel(int dataSetCase) {
+	private PCAImplementation PCAImplementation;
+
+	PCAWideDataSets(int dataSetCase) {
 		setDataSetCase(dataSetCase);
 		setup();
 	}
@@ -39,7 +41,7 @@ public class PCAWideDataSetsBenchModel {
 	}
 	
 	public void setup() {
-		water.util.Log.setLogLevel("ERRR");
+		water.util.Log.setLogLevel(logLevel);
 		final String _smallDataSet = "smalldata/pca_test/decathlon.csv";
 		final String _prostateDataSet = "smalldata/prostate/prostate_cat.csv";
 		final DataInfo.TransformType[] _transformTypes = {DataInfo.TransformType.NONE,
@@ -104,6 +106,7 @@ public class PCAWideDataSetsBenchModel {
 		parameters._transform = transformType;
 		parameters._use_all_factor_levels = true;
 		parameters._pca_method = GramSVD;
+		parameters._pca_implementation = getPCAImplementation();
 		parameters._impute_missing = false;
 		parameters._seed = 12345;
 		
@@ -143,5 +146,12 @@ public class PCAWideDataSetsBenchModel {
 		}
 		return true;
 	}
-	
+
+	public PCAImplementation getPCAImplementation() {
+		return PCAImplementation;
+	}
+
+	public void setPCAImplementation(PCAImplementation PCAImplementation) {
+		this.PCAImplementation = PCAImplementation;
+	}
 }

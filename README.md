@@ -203,7 +203,7 @@ git pull
 - Skip tests by adding `-x test` at the end the gradle build command line.  Tests typically run for 7-10 minutes on a Macbook Pro laptop with 4 CPUs (8 hyperthreads) and 16 GB of RAM.
 
 - Syncing smalldata is not required after each pull, but if tests fail due to missing data files, then try `./gradlew syncSmalldata` as the first troubleshooting step.  Syncing smalldata downloads data files from AWS S3 to the smalldata directory in your workspace.  The sync is incremental.  Do not check in these files.  The smalldata directory is in .gitignore.  If you do not run any tests, you do not need the smalldata directory.
-- Running `./gradlew syncRPackages` is supported on Windows, OS X, and Linux, and is strongly recommended but not required. `./gradlew syncRPackages` ensures a complete and consistent environment with pre-approved versions of the packages required for tests and builds. The packages can be installed manually, but we recommend setting an ENV variable and using `./gradlew syncRPackages`. To set the ENV variable, use the following format (where `${WORKSPACE} can be any path):
+- Running `./gradlew syncRPackages` is supported on Windows, OS X, and Linux, and is strongly recommended but not required. `./gradlew syncRPackages` ensures a complete and consistent environment with pre-approved versions of the packages required for tests and builds. The packages can be installed manually, but we recommend setting an ENV variable and using `./gradlew syncRPackages`. To set the ENV variable, use the following format (where `${WORKSPACE}` can be any path):
 
   ```
   mkdir -p ${WORKSPACE}/Rlibrary

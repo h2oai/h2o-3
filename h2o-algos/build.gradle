@@ -9,6 +9,13 @@ dependencies {
   if (file("${rootDir}/lib/deepwater-all.jar").exists()) {
       compile files("${rootDir}/lib/deepwater-all.jar")
   }
+
+  // Jama dependencies
+  compile "gov.nist.math:jama:1.0.3"
+  // netlib-java / MTJ dependencies
+  compile 'com.github.fommil.netlib:all:1.1.2'
+  compile('com.googlecode.matrix-toolkits-java:mtj:1.0.4') { exclude group: 'com.github.fommil.netlib' }
+
   // Test dependencies only
   testCompile "junit:junit:${junitVersion}"
   testCompile project(path: ":h2o-core", configuration: "testArchives")
