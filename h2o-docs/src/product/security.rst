@@ -590,6 +590,30 @@ The following information is for users who authentication with LDAP on MapR, whi
 
 In order to make LDAP authentication work, add the ldap.conf definition to the MapR configuration file in **/opt/mapr/conf/mapr.login.conf**.  
 
+Debugging Server-side LDAP issues
+'''''''''''''''''''''''''''''''''
+
+To get detailed output from Jetty for LDAP debugging, you need to create the **jetty-logging.properties** file and add it to your classpath.
+
+Example **jetty-logging.properties**:
+
+::
+
+    org.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.StdErrLog
+    org.eclipse.jetty.LEVEL=DEBUG
+
+Standalone H2O example (with **jetty-logging.properties** in the current directory):
+
+::
+
+    java -cp h2o.jar:. water.H2OApp
+
+H2O on Hadoop example (with **jetty-logging.properties** in the current directory):
+
+::
+
+    hadoop jar h2odriver.jar -libjars jetty-logging.properties -n 1 -mapperXmx 5g -output hdfsOutputDirectory
+
 -------------
 
 Pluggable Authentication Module (PAM) Authentication
