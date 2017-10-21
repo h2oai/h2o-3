@@ -4,6 +4,7 @@ import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.algos.deepwater.DeepwaterMojoModel;
 import hex.genmodel.algos.word2vec.WordEmbeddingModel;
+import hex.genmodel.algos.gbm.GbmMojoModel;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.exception.PredictNumberFormatException;
 import hex.genmodel.easy.exception.PredictUnknownCategoricalLevelException;
@@ -209,7 +210,7 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
    * @return The prediction.
    * @throws PredictException
    */
-  public AbstractPrediction predict(RowData data, ModelCategory mc) throws PredictException {
+  public AbstractPrediction predict(RowData data, ModelCategory mc, double[] treeProbabilities) throws PredictException {
     switch (mc) {
       case AutoEncoder:
         return predictAutoEncoder(data);
@@ -234,7 +235,11 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
   }
 
   public AbstractPrediction predict(RowData data) throws PredictException {
-    return predict(data, m.getModelCategory());
+    return predict(data, m.getModelCategory(), null);
+  }
+
+  public AbstractPrediction predict(RowData data, double[] treeProbabilities) throws PredictException {
+    return predict(data, m.getModelCategory(), treeProbabilities);
   }
 
   /**
@@ -320,7 +325,7 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
    * @throws PredictException
    */
   public DimReductionModelPrediction predictDimReduction(RowData data) throws PredictException {
-    double[] preds = preamble(ModelCategory.DimReduction, data);
+    double[] preds = preamble(ModelCategory.DimReduction, data, null);
 
     DimReductionModelPrediction p = new DimReductionModelPrediction();
     p.dimensions = preds;
@@ -365,14 +370,21 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
    * @throws PredictException
    */
   public BinomialModelPrediction predictBinomial(RowData data) throws PredictException {
-    double[] preds = preamble(ModelCategory.Binomial, data);
-
     BinomialModelPrediction p = new BinomialModelPrediction();
+    if (m instanceof GbmMojoModel) {
+      GbmMojoModel m2 = (GbmMojoModel) m;
+      p.init_f = m2.getInit_f();
+      p.treeProbabilities = new double[m2.getNumTrees()];
+    }
+
+    double[] preds = preamble(ModelCategory.Binomial, data, p.treeProbabilities);
+
     double d = preds[0];
     p.labelIndex = (int) d;
     String[] domainValues = m.getDomainValues(m.getResponseIdx());
     p.label = domainValues[p.labelIndex];
     p.classProbabilities = new double[m.getNumResponseClasses()];
+
     System.arraycopy(preds, 1, p.classProbabilities, 0, p.classProbabilities.length);
     if (m.calibrateClassProbabilities(preds)) {
       p.calibratedClassProbabilities = new double[m.getNumResponseClasses()];
@@ -389,7 +401,7 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
    * @throws PredictException
    */
   public MultinomialModelPrediction predictMultinomial(RowData data) throws PredictException {
-    double[] preds = preamble(ModelCategory.Multinomial, data);
+    double[] preds = preamble(ModelCategory.Multinomial, data, null);
 
     MultinomialModelPrediction p = new MultinomialModelPrediction();
     p.classProbabilities = new double[m.getNumResponseClasses()];
@@ -450,7 +462,7 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
    * @throws PredictException
    */
   public ClusteringModelPrediction predictClustering(RowData data) throws PredictException {
-    double[] preds = preamble(ModelCategory.Clustering, data);
+    double[] preds = preamble(ModelCategory.Clustering, data, null);
 
     ClusteringModelPrediction p = new ClusteringModelPrediction();
     p.cluster = (int) preds[0];
@@ -466,7 +478,7 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
    * @throws PredictException
    */
   public RegressionModelPrediction predictRegression(RowData data) throws PredictException {
-    double[] preds = preamble(ModelCategory.Regression, data);
+    double[] preds = preamble(ModelCategory.Regression, data, null);
 
     RegressionModelPrediction p = new RegressionModelPrediction();
     p.value = preds[0];
@@ -530,9 +542,9 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
   }
 
   // This should have been called predict(), because that's what it does
-  private double[] preamble(ModelCategory c, RowData data) throws PredictException {
+  private double[] preamble(ModelCategory c, RowData data, double[] treeProbabilities) throws PredictException {
     validateModelCategory(c);
-    return predict(data, new double[m.getPredsSize(c)]);
+    return predict(data, new double[m.getPredsSize(c)], treeProbabilities);
   }
 
   private static double[] nanArray(int len) {
@@ -657,10 +669,10 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     return rawData;
   }
 
-  private double[] predict(RowData data, double[] preds) throws PredictException {
+  private double[] predict(RowData data, double[] preds, double[] treeProbabilities) throws PredictException {
     double[] rawData = nanArray(m.nfeatures());
     rawData = fillRawData(data, rawData);
-    preds = m.score0(rawData, preds);
+    preds = m.score0(rawData, preds, treeProbabilities);
     return preds;
   }
 

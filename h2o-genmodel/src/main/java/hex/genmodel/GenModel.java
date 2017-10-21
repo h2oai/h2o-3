@@ -212,6 +212,14 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
    *  GenModel class. */
   public abstract double[] score0(double[] row, double[] preds);
 
+  public double[] score0(double[] row, double[] preds, double[] treeProbabilities) {
+    throw new UnsupportedOperationException("not supported");
+  }
+
+  public double[] score0(double[] row, double offset, double[] preds, double[] treeProbabilities) {
+    throw new UnsupportedOperationException("`offset` column is not supported");
+  }
+
   public double[] score0(double[] row, double offset, double[] preds) {
     throw new UnsupportedOperationException("`offset` column is not supported");
   }

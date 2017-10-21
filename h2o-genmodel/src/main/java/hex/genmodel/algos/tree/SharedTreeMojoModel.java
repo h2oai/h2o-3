@@ -31,6 +31,11 @@ public abstract class SharedTreeMojoModel extends MojoModel {
      */
     protected int _ntree_groups;
     protected int _ntrees_per_group;
+
+    public int getNumTrees() {
+      return _ntree_groups * _ntrees_per_group;
+    }
+
     /**
      * Array of binary tree data, each tree being a {@code byte[]} array. The
      * trees are logically grouped into a rectangular grid of dimensions
@@ -437,7 +442,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
     /**
      * Score all trees and fill in the `preds` array.
      */
-    protected void scoreAllTrees(double[] row, double[] preds) {
+    protected void scoreAllTrees(double[] row, double[] preds, double[] treeProbabilities) {
         java.util.Arrays.fill(preds, 0);
         for (int i = 0; i < _ntrees_per_group; i++) {
             int k = _nclasses == 1? 0 : i + 1;
@@ -446,11 +451,17 @@ public abstract class SharedTreeMojoModel extends MojoModel {
                 // Skip all empty trees
                 if (_compressed_trees[itree] == null) continue;
                 if (_mojo_version.equals(1.0)) { //First version
-                    preds[k] += scoreTree0(_compressed_trees[itree], row, _nclasses, false);
+                    System.out.println("Unsupported MOJO version");
+                    // preds[k] += scoreTree0(_compressed_trees[itree], row, _nclasses, false);
                 } else if (_mojo_version.equals(1.1)) { //Second version
-                    preds[k] += scoreTree1(_compressed_trees[itree], row, _nclasses, false);
+                    System.out.println("Unsupported MOJO version");
+                    // preds[k] += scoreTree1(_compressed_trees[itree], row, _nclasses, false);
                 } else if (_mojo_version.equals(1.2)) { //CURRENT VERSION
-                    preds[k] += scoreTree(_compressed_trees[itree], row, _nclasses, false, _domains);
+                    double treePrediction = scoreTree(_compressed_trees[itree], row, _nclasses, false, _domains);
+                    if (treeProbabilities != null) {
+                      treeProbabilities[itree] = treePrediction;
+                    }
+                    preds[k] += treePrediction;
                 }
             }
         }

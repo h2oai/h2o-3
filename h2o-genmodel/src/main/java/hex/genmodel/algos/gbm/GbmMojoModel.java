@@ -13,6 +13,10 @@ public final class GbmMojoModel extends SharedTreeMojoModel {
     public DistributionFamily _family;
     public double _init_f;
 
+    public double getInit_f() {
+        return _init_f;
+    }
+
     public GbmMojoModel(String[] columns, String[][] domains, String responseColumn) {
         super(columns, domains, responseColumn);
     }
@@ -22,8 +26,8 @@ public final class GbmMojoModel extends SharedTreeMojoModel {
      * Corresponds to `hex.tree.drf.DrfMojoModel.score0()`
      */
     @Override
-    public final double[] score0(double[] row, double offset, double[] preds) {
-        super.scoreAllTrees(row, preds);
+    public final double[] score0(double[] row, double offset, double[] preds, double[] treeProbabilities) {
+        super.scoreAllTrees(row, preds, treeProbabilities);
         if (_family == bernoulli || _family == modified_huber) {
             double f = preds[1] + _init_f + offset;
             preds[2] = _family.linkInv(f);
@@ -50,4 +54,8 @@ public final class GbmMojoModel extends SharedTreeMojoModel {
         return score0(row, 0.0, preds);
     }
 
+    @Override
+    public double[] score0(double[] row, double[] preds, double[] treePredictions) {
+        return score0(row, 0.0, preds, treePredictions);
+    }
 }

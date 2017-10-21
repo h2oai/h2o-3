@@ -37,4 +37,7 @@ public class BinomialModelPrediction extends AbstractPrediction {
    */
   public double[] calibratedClassProbabilities;
 
+
+  public double init_f;
+  public double[] treeProbabilities;
 }
