@@ -42,15 +42,17 @@ RUN \
 
 # Add repositories
 RUN \
-  add-apt-repository -y ppa:webupd8team/java && \
   add-apt-repository -y ppa:deadsnakes && \
   apt-get update -q -y
 
-# Install Java
+# Set required env vars and install Java 8
+COPY scripts/install_java /usr/sbin
 RUN \
-  echo debconf shared/accepted-oracle-license-v1-1 select true | debconf-set-selections && \
-  echo debconf shared/accepted-oracle-license-v1-1 seen true | debconf-set-selections && \
-  DEBIAN_FRONTEND=noninteractive apt-get install -y oracle-java8-installer
+  chmod 700 /usr/sbin/install_java && \
+  /usr/sbin/install_java
+ENV \
+  JAVA_HOME=/usr/lib/jvm/java-8-oracle \
+  PATH=/usr/lib/jvm/java-8-oracle/bin:${PATH}
 
 # Install from source dependencies
 RUN \
