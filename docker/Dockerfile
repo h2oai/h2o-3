@@ -49,6 +49,7 @@ RUN \
 COPY scripts/install_java /usr/sbin
 RUN \
   chmod 700 /usr/sbin/install_java && \
+  sync && \
   /usr/sbin/install_java
 ENV \
   JAVA_HOME=/usr/lib/jvm/java-8-oracle \
