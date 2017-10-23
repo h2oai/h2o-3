@@ -1,0 +1,24 @@
+#! /bin/bash
+
+set -e
+
+JAVA_INSTALL_VERSION=152
+MAGIC_B_NUM=16
+JAVA_INSTALL_LINK_HASH=aa0333dd3019491ca4f6ddbe78cdb6d0
+JAVA_INSTALL_PATH=/usr/opt/java-8-${JAVA_INSTALL_VERSION}/
+
+mkdir -p ${JAVA_INSTALL_PATH}
+cd ${JAVA_INSTALL_PATH}
+
+echo "Installing Java 8u${JAVA_INSTALL_VERSION} to $(pwd)"
+
+curl -j -k -L -H "Cookie: oraclelicense=accept-securebackup-cookie" \
+  http://download.oracle.com/otn-pub/java/jdk/8u${JAVA_INSTALL_VERSION}-b${MAGIC_B_NUM}/${JAVA_INSTALL_LINK_HASH}/jdk-8u${JAVA_INSTALL_VERSION}-linux-x64.tar.gz > jdk-8u${JAVA_INSTALL_VERSION}-linux-x64.tar.gz
+
+tar zxvf jdk-8u${JAVA_INSTALL_VERSION}-linux-x64.tar.gz
+rm jdk-8u${JAVA_INSTALL_VERSION}-linux-x64.tar.gz
+
+cd jdk*
+mkdir -p /usr/lib/jvm/
+echo "Symlinking /usr/lib/jvm/java-8-oracle/ -> $(pwd)"
+ln -s -f $(pwd) /usr/lib/jvm/java-8-oracle
