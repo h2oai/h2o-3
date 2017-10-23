@@ -253,7 +253,7 @@ def defaultTestPipeline(buildConfig, body) {
   }
 
   node(buildConfig.getNodeLabel()) {
-    echo "Pulling scripts"
+    echo "###### Pulling scripts. ######"
     step ([$class: 'CopyArtifact',
       projectName: env.JOB_NAME,
       filter: "h2o-3/scripts/jenkins/groovy/*",
@@ -267,11 +267,30 @@ def defaultTestPipeline(buildConfig, body) {
     def buildEnv = customEnv() + ["PYTHON_VERSION=${config.pythonVersion}", "R_VERSION=${config.rVersion}"]
 
     insideDocker(buildEnv, config.timeoutValue, 'MINUTES') {
-      // execute stage if we should execute all stages or the stage was not successful in previous buildNumber
+      // NOTES regarding changes detection and rerun:
+      // An empty stage is a stage which is created, but does not execute any tests.
+      // Consider following scenario:
+      //  commit 1 - only Py files are changed -> only Py stages are created
+      //           - if we have created the empty R stages as well,
+      //             they are marked as SUCCESFUL (no tests -> (almost) nothing to fail)
+      //  commit 2 - we add some R changes and we use rerun -> Py stages are skipped, they were successful in previous build
+      //           - however, if we had created the empty R stages,
+      //             they will be skipped as well, because they are marked as SUCESSFUL in previous build
+      // This is why the stages for not changed langs must NOT be created.
+      // On the other hand, empty stages for those being reran must be created.
+      // Otherwise the rerun mechanism will not be able to distinguish if the
+      // stage is missing in previous build  because it was skipped due to the
+      // change detection (and it should be run in this build) or because it was
+      // skipped due to the rerun (and it shouldn't be run in this build either).
+
+      // run stage only if there is something changed for this or relevant lang.
       if (buildConfig.langChanged(config.lang)) {
-        echo "###### Changes for ${config.lang} detected, starting ${config.stageName}######"
-        if(runAllStages(buildConfig) || !wasStageSuccessful(config.stageName)) {
-          stage(config.stageName) {
+        echo "###### Changes for ${config.lang} detected, starting ${config.stageName} ######"
+        stage(config.stageName) {
+          // run tests only if all stages should be run or if this stage was FAILED in previous build
+          if(runAllStages(buildConfig) || !wasStageSuccessful(config.stageName)) {
+            echo "###### ${config.stageName} was not successful or was not executed in previous build, executing it now. ######"
+
             def stageDir = stageNameToDirName(config.stageName)
             def h2oFolder = stageDir + '/h2o-3'
             dir(stageDir) {
@@ -293,12 +312,12 @@ def defaultTestPipeline(buildConfig, body) {
               hasJUnit = config.hasJUnit
               h2o3dir = h2oFolder
             }
+          } else {
+            echo "###### ${config.stageName} was successful in previous build, skipping it in this build because RERUN FAILED STAGES is enabled. ######"
           }
-        } else {
-          echo "${config.stageName} was successful in previous build, skipping it in this build because RERUN FAILED STAGES is enabled"
         }
       } else {
-        echo "###### Changes for ${config.lang} NOT detected, skipping ${config.stageName}######"
+        echo "###### Changes for ${config.lang} NOT detected, skipping ${config.stageName}. ######"
       }
     }
   }
@@ -321,7 +340,7 @@ def installRPackage(String h2o3dir) {
 }
 
 def unpackTestPackage(lang, String stageDir) {
-  echo "Pulling test package"
+  echo "###### Pulling test package. ######"
   step ([$class: 'CopyArtifact',
     projectName: env.JOB_NAME,
     fingerprintArtifacts: true,
@@ -363,6 +382,7 @@ def wasStageSuccessful(String stageName) {
 
   // There is no previous build, the stage cannot be successful.
   if (currentBuild.previousBuild == null) {
+    echo "###### No previous build available, marking ${stageName} as FAILED. ######"
     return false
   }
 
@@ -379,6 +399,7 @@ def wasStageSuccessful(String stageName) {
   // stage was not present in previous build, therefore the stage cannot be successful.
   def stageMissingInPrevBuild = stageEndNodesInPrevBuild.isEmpty()
   if (stageMissingInPrevBuild) {
+    echo "###### ${stageName} not present in previous build, marking this stage as FAILED. ######"
     return false
   }
 

@@ -41,12 +41,19 @@ class BuildConfig {
     return changesMap[lang]
   }
 
+  def markAllLangsForTest() {
+    changesMap.each { k,v ->
+      changesMap[k] = true
+    }
+  }
+
   String toString() {
     return """
     Mode: ${getMode()}
     Node Label: ${getNodeLabel()}
     Commit Message: ${getCommitMessage()}
     Default for Override Rerun: ${getDefaultOverrideRerun()}
+    Changes: ${changesMap}
     """
   }
 
