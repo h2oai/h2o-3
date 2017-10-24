@@ -79,6 +79,7 @@ public final class PersistS3 extends Persist {
 
     @Override public AWSCredentials getCredentials() {
       File credentials = new File(DEFAULT_CREDENTIALS_LOCATION);
+      Log.info("[MK] Credentials file: " + credentials.exists());
       try {
         return new PropertiesCredentials(credentials);
       } catch (IOException e) {
