@@ -2,7 +2,6 @@ def DEFAULT_NODE_LABEL = 'docker && !mr-0xc8'
 
 def executeTestStages = null
 def buildConfig = null
-
 ansiColor('xterm') {
   timestamps {
 
@@ -33,8 +32,6 @@ ansiColor('xterm') {
       // Load the executeTestStages script
       executeTestStages = load('h2o-3/scripts/jenkins/groovy/executeTestStages.groovy')
     }
-
-    echo "Build Config: ${buildConfig.toString()}"
     executeTestStages(buildConfig)
   }
 }
