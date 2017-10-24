@@ -1,4 +1,4 @@
-def call(final String mode, final String nodeLabel) {
+def call(final String mode, final String nodeLabel, final boolean overrideDetectionChange) {
 
   // Archive scripts so we don't have to do additional checkouts when changing node
   archiveArtifacts artifacts: "h2o-3/scripts/jenkins/groovy/*", allowEmptyArchive: false
@@ -13,7 +13,7 @@ def call(final String mode, final String nodeLabel) {
 
   // load buildConfig script and initialize the object
   def buildConfig = load('h2o-3/scripts/jenkins/groovy/buildConfig.groovy')
-  buildConfig.initialize(mode, nodeLabel, commitMessage, changes)
+  buildConfig.initialize(mode, nodeLabel, commitMessage, changes, overrideDetectionChange)
   echo "Build Config: ${buildConfig.toString()}"
 
   // Load build script and execute it

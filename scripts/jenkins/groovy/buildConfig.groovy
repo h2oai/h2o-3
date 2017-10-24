@@ -9,13 +9,22 @@ class BuildConfig {
   private String nodeLabel
   private String commitMessage
   private boolean defaultOverrideRerun = false
-  private LinkedHashMap changesMap
+  private LinkedHashMap changesMap = [
+    (LANG_PY): false,
+    (LANG_R): false,
+    (LANG_JS): false,
+    (LANG_JAVA): false
+  ]
 
-  def initialize(final String mode, final String nodeLabel, final String commitMessage, final List<String> changes) {
+  def initialize(final String mode, final String nodeLabel, final String commitMessage, final List<String> changes, final boolean overrideDetectionChange) {
     this.mode = mode
     this.nodeLabel = nodeLabel
     this.commitMessage = commitMessage
-    detectChanges(changes)
+    if (overrideDetectionChange) {
+      markAllLangsForTest()
+    } else {
+      detectChanges(changes)
+    }
   }
 
   def getMode() {
@@ -46,12 +55,6 @@ class BuildConfig {
     return changesMap[lang]
   }
 
-  def markAllLangsForTest() {
-    changesMap.each { k,v ->
-      changesMap[k] = true
-    }
-  }
-
   String toString() {
     return """
     Mode: ${getMode()}
@@ -63,12 +66,8 @@ class BuildConfig {
   }
 
   private void detectChanges(List<String> changes) {
-    changesMap = [
-      (LANG_PY): false,
-      (LANG_R): false,
-      (LANG_JS): false,
-      (LANG_JAVA): false
-    ]
+    // clear the changes map
+    markAllLangsForSkip()
 
     for (change in changes) {
       if (change.startsWith('h2o-py/') || change == 'h2o-bindings/bin/gen_python.py') {
@@ -80,6 +79,18 @@ class BuildConfig {
       } else {
         markAllLangsForTest()
       }
+    }
+  }
+
+  private void markAllLangsForTest() {
+    changesMap.each { k,v ->
+      changesMap[k] = true
+    }
+  }
+
+  private void markAllLangsForSkip() {
+    changesMap.each { k,v ->
+      changesMap[k] = false
     }
   }
 
