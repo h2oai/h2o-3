@@ -56,7 +56,7 @@ pipeline {
         withCredentials([usernamePassword(credentialsId: "${params.dockerRegistry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
           sh """
           docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${params.dockerRegistry}
-          docker tag h2o-3-runtime:${currentBuild.number} docker.h2o.ai/opsh2oai/h2o-3-runtime:${currentBuild.number}
+          docker tag h2o-3-runtime:${currentBuild.number} ${params.dockerRegistry}/opsh2oai/h2o-3-runtime:${currentBuild.number}
           docker push ${params.dockerRegistry}/opsh2oai/h2o-3-runtime:${currentBuild.number}
           """
           echo "###### Docker image h2o-3-runtime:${currentBuild.number} built and pushed. ######"
@@ -79,7 +79,7 @@ pipeline {
       emailext (
         subject: "New h2o-3-runtime docker image READY!",
         body: """<p>The new h2o-3-runtime docker image is ready.</p>
-        <p>Check the build atat "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>""",
+        <p>Check the build at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>""",
         to: "michalr@h2o.ai"
       )
     }
