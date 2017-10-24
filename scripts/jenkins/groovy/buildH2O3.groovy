@@ -1,4 +1,4 @@
-def call() {
+def call(buildConfig) {
 
   def PYTHON_VERSION = '3.5'
   def R_VERSION = '3.4.1'
@@ -18,20 +18,26 @@ def call() {
           hasJUnit = false
           archiveFiles = false
         }
-        buildTarget {
-          target = 'test-package-py'
-          hasJUnit = false
-          archiveFiles = false
+        if (buildConfig.langChanged(buildConfig.LANG_PY)) {
+          buildTarget {
+            target = 'test-package-py'
+            hasJUnit = false
+            archiveFiles = false
+          }
         }
-        buildTarget {
-          target = 'test-package-r'
-          hasJUnit = false
-          archiveFiles = false
+        if (buildConfig.langChanged(buildConfig.LANG_R)) {
+          buildTarget {
+            target = 'test-package-r'
+            hasJUnit = false
+            archiveFiles = false
+          }
         }
-        buildTarget {
-          target = 'test-package-js'
-          hasJUnit = false
-          archiveFiles = false
+        if (buildConfig.langChanged(buildConfig.LANG_JS)) {
+          buildTarget {
+            target = 'test-package-js'
+            hasJUnit = false
+            archiveFiles = false
+          }
         }
       } finally {
         archiveArtifacts """

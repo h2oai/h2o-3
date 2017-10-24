@@ -15,15 +15,15 @@ def call(buildConfig) {
   def SMOKE_STAGES = [
     [
       stageName: 'Py2.7 Smoke', target: 'test-py-smoke', pythonVersion: '2.7',
-      timeoutValue: 8, lang: 'py'
+      timeoutValue: 8, lang: buildConfig.LANG_PY
     ],
     [
       stageName: 'R3.4 Smoke', target: 'test-r-smoke', rVersion: '3.4.1',
-      timeoutValue: 8, lang: 'r'
+      timeoutValue: 8, lang: buildConfig.LANG_R
     ],
     [
       stageName: 'PhantomJS Smoke', target: 'test-phantom-js-smoke',
-      timeoutValue: 10, lang: 'js'
+      timeoutValue: 10, lang: buildConfig.LANG_JS
     ]
   ]
 
@@ -31,47 +31,47 @@ def call(buildConfig) {
   def PR_TESTING_STAGES = [
     [
       stageName: 'Py2.7 Demos', target: 'test-py-demos', pythonVersion: '2.7',
-      timeoutValue: 15, lang: 'py'
+      timeoutValue: 15, lang: buildConfig.LANG_PY
     ],
     [
       stageName: 'Py2.7 Init', target: 'test-py-init', pythonVersion: '2.7',
-      timeoutValue: 5, hasJUnit: false, lang: 'py'
+      timeoutValue: 5, hasJUnit: false, lang: buildConfig.LANG_PY
     ],
     [
       stageName: 'Py2.7 Small', target: 'test-pyunit-small', pythonVersion: '2.7',
-      timeoutValue: 45, lang: 'py'
+      timeoutValue: 45, lang: buildConfig.LANG_PY
     ],
     [
       stageName: 'Py3.5 Small', target: 'test-pyunit-small', pythonVersion: '3.5',
-      timeoutValue: 45, lang: 'py'
+      timeoutValue: 45, lang: buildConfig.LANG_PY
     ],
     [
       stageName: 'Py3.6 Small', target: 'test-pyunit-small', pythonVersion: '3.6',
-      timeoutValue: 45, lang: 'py'
+      timeoutValue: 45, lang: buildConfig.LANG_PY
     ],
     [
       stageName: 'R3.4 Init', target: 'test-r-init', rVersion: '3.4.1',
-      timeoutValue: 5, hasJUnit: false, lang: 'r'
+      timeoutValue: 5, hasJUnit: false, lang: buildConfig.LANG_R
     ],
     [
       stageName: 'R3.4 Small', target: 'test-r-small', rVersion: '3.4.1',
-      timeoutValue: 90, lang: 'r'
+      timeoutValue: 90, lang: buildConfig.LANG_R
     ],
     [
       stageName: 'R3.4 Medium-large', target: 'test-r-medium-large', rVersion: '3.4.1',
-      timeoutValue: 70, lang: 'r'
+      timeoutValue: 70, lang: buildConfig.LANG_R
     ],
     [
       stageName: 'R3.4 CMD Check', target: 'test-r-cmd-check', rVersion: '3.4.1',
-      timeoutValue: 15, hasJUnit: false, lang: 'r'
+      timeoutValue: 15, hasJUnit: false, lang: buildConfig.LANG_R
     ],
     [
       stageName: 'R3.4 CMD Check as CRAN', target: 'test-r-cmd-check-as-cran', rVersion: '3.4.1',
-      timeoutValue: 10, hasJUnit: false, lang: 'r'
+      timeoutValue: 10, hasJUnit: false, lang: buildConfig.LANG_R
     ],
     [
       stageName: 'R3.4 Demos Small', target: 'test-r-demos-small', rVersion: '3.4.1',
-      timeoutValue: 15, lang: 'r'
+      timeoutValue: 15, lang: buildConfig.LANG_R
     ]
   ]
 
@@ -79,71 +79,71 @@ def call(buildConfig) {
   def PR_STAGES = [
     [
       stageName: 'Py2.7 Booklets', target: 'test-py-booklets', pythonVersion: '2.7',
-      timeoutValue: 40, lang: 'py'
+      timeoutValue: 40, lang: buildConfig.LANG_PY
     ],
     [
       stageName: 'Py2.7 Demos', target: 'test-py-demos', pythonVersion: '2.7',
-      timeoutValue: 15, lang: 'py'
+      timeoutValue: 15, lang: buildConfig.LANG_PY
     ],
     [
       stageName: 'Py2.7 Init', target: 'test-py-init', pythonVersion: '2.7',
-      timeoutValue: 5, hasJUnit: false, lang: 'py'
+      timeoutValue: 5, hasJUnit: false, lang: buildConfig.LANG_PY
     ],
     [
       stageName: 'Py2.7 Small', target: 'test-pyunit-small', pythonVersion: '2.7',
-      timeoutValue: 45, lang: 'py'
+      timeoutValue: 45, lang: buildConfig.LANG_PY
     ],
     [
       stageName: 'Py3.5 Small', target: 'test-pyunit-small', pythonVersion: '3.5',
-      timeoutValue: 45, lang: 'py'
+      timeoutValue: 45, lang: buildConfig.LANG_PY
     ],
     [
       stageName: 'Py3.6 Small', target: 'test-pyunit-small', pythonVersion: '3.6',
-      timeoutValue: 45, lang: 'py'
+      timeoutValue: 45, lang: buildConfig.LANG_PY
     ],
     [
       stageName: 'R3.4 Init', target: 'test-r-init', rVersion: '3.4.1',
-      timeoutValue: 5, hasJUnit: false, lang: 'r'
+      timeoutValue: 5, hasJUnit: false, lang: buildConfig.LANG_R
     ],
     [
       stageName: 'R3.4 Small', target: 'test-r-small', rVersion: '3.4.1',
-      timeoutValue: 90, lang: 'r'
+      timeoutValue: 90, lang: buildConfig.LANG_R
     ],
     [
       stageName: 'R3.4 Small Client Mode', target: 'test-r-small-client-mode', rVersion: '3.4.1',
-      timeoutValue: 120, lang: 'r'
+      timeoutValue: 120, lang: buildConfig.LANG_R
     ],
     [
       stageName: 'R3.4 CMD Check', target: 'test-r-cmd-check', rVersion: '3.4.1',
-      timeoutValue: 15, hasJUnit: false, lang: 'r'
+      timeoutValue: 15, hasJUnit: false, lang: buildConfig.LANG_R
     ],
     [
       stageName: 'R3.4 CMD Check as CRAN', target: 'test-r-cmd-check-as-cran', rVersion: '3.4.1',
-      timeoutValue: 10, hasJUnit: false, lang: 'r'
+      timeoutValue: 10, hasJUnit: false, lang: buildConfig.LANG_R
     ],
     [
       stageName: 'R3.4 Booklets', target: 'test-r-booklets', rVersion: '3.4.1',
-      timeoutValue: 50, lang: 'r'
+      timeoutValue: 50, lang: buildConfig.LANG_R
     ],
     [
       stageName: 'R3.4 Demos Small', target: 'test-r-demos-small', rVersion: '3.4.1',
-      timeoutValue: 15, lang: 'r'
+      timeoutValue: 15, lang: buildConfig.LANG_R
     ],
     [
       stageName: 'PhantomJS', target: 'test-phantom-js',
-      timeoutValue: 45, lang: 'js'
+      timeoutValue: 45, lang: buildConfig.LANG_JS
     ],
     [
       stageName: 'Py3.6 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
-      timeoutValue: 90, lang: 'py'
+      timeoutValue: 90, lang: buildConfig.LANG_PY
     ],
     [
       stageName: 'R3.4 Medium-large', target: 'test-r-medium-large', rVersion: '3.4.1',
-      timeoutValue: 70, lang: 'r'
+      timeoutValue: 70, lang: buildConfig.LANG_R
     ],
     [
       stageName: 'R3.4 Demos Medium-large', target: 'test-r-demos-medium-large', rVersion: '3.4.1',
-      timeoutValue: 120, lang: 'r'
+      timeoutValue: 120, lang: buildConfig.LANG_R
     ]
   ]
 
@@ -151,23 +151,23 @@ def call(buildConfig) {
   def MASTER_STAGES = [
     [
       stageName: 'Py2.7 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '2.7',
-      timeoutValue: 90, lang: 'py'
+      timeoutValue: 90, lang: buildConfig.LANG_PY
     ],
     [
       stageName: 'Py3.5 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
-      timeoutValue: 90, lang: 'py'
+      timeoutValue: 90, lang: buildConfig.LANG_PY
     ],
     [
       stageName: 'R3.4 Datatable', target: 'test-r-datatable', rVersion: '3.4.1',
-      timeoutValue: 20, lang: 'r'
+      timeoutValue: 20, lang: buildConfig.LANG_R
     ],
     [
       stageName: 'PhantomJS Small', target: 'test-phantom-js-small',
-      timeoutValue: 45, lang: 'js'
+      timeoutValue: 45, lang: buildConfig.LANG_JS
     ],
     [
       stageName: 'PhantomJS Medium', target: 'test-phantom-js-medium',
-      timeoutValue: 45, lang: 'js'
+      timeoutValue: 45, lang: buildConfig.LANG_JS
     ]
   ]
 
@@ -175,23 +175,23 @@ def call(buildConfig) {
   def NIGHTLY_STAGES = [
     [
       stageName: 'R3.3 Medium-large', target: 'test-r-medium-large', rVersion: '3.3.3',
-      timeoutValue: 70, lang: 'r'
+      timeoutValue: 70, lang: buildConfig.LANG_R
     ],
     [
       stageName: 'R3.3 Small', target: 'test-r-small', rVersion: '3.3.3',
-      timeoutValue: 90, lang: 'r'
+      timeoutValue: 90, lang: buildConfig.LANG_R
     ],
     [
       stageName: 'R3.3 Small Client Mode', target: 'test-r-small-client-mode', rVersion: '3.3.3',
-      timeoutValue: 90, lang: 'r'
+      timeoutValue: 90, lang: buildConfig.LANG_R
     ],
     [
       stageName: 'R3.3 CMD Check', target: 'test-r-cmd-check', rVersion: '3.3.3',
-      timeoutValue: 15, hasJUnit: false, lang: 'r'
+      timeoutValue: 15, hasJUnit: false, lang: buildConfig.LANG_R
     ],
     [
       stageName: 'R3.3 CMD Check as CRAN', target: 'test-r-cmd-check-as-cran', rVersion: '3.3.3',
-      timeoutValue: 10, hasJUnit: false, lang: 'r'
+      timeoutValue: 10, hasJUnit: false, lang: buildConfig.LANG_R
     ]
   ]
 
