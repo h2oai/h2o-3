@@ -292,7 +292,7 @@ h2o.xgboost <- function(x, y, training_frame,
 #' Ask the H2O server whether a XGBoost model can be built (depends on availability of native backend)
 #' Returns True if a XGBoost model can be built, or False otherwise.
 #' @export
-h2o.xgboost.available <- function() {                
+h2o.xgboost.available <- function() {
 if (!("XGBoost" %in% h2o.list_core_extensions())) {
 print("Cannot build a XGboost model - no backend found.")
 return(FALSE)
