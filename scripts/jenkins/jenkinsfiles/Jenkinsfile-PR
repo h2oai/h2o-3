@@ -25,11 +25,10 @@ ansiColor('xterm') {
       }
 
       def prepareH2O3 = load('h2o-3/scripts/jenkins/groovy/prepareH2O3.groovy')
-      buildConfig = prepareH2O3('MODE_PR', DEFAULT_NODE_LABEL)
+      buildConfig = prepareH2O3('MODE_PR', DEFAULT_NODE_LABEL, false)
 
       def setJobProperties = load('h2o-3/scripts/jenkins/groovy/setJobProperties.groovy')
       setJobProperties(buildConfig)
-      buildConfig.setDefaultOverrideRerun(false)
 
       // Load the executeTestStages script
       executeTestStages = load('h2o-3/scripts/jenkins/groovy/executeTestStages.groovy')
