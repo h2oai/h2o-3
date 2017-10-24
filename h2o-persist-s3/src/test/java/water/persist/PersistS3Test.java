@@ -1,5 +1,6 @@
 package water.persist;
 
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
@@ -55,6 +56,7 @@ public class PersistS3Test extends TestUtil {
       v2.remove();
     } finally {
       Scope.exit();
+      Assert.fail("This test is actually being called and that is great!");
     }
   }
 }
