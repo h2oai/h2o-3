@@ -13,65 +13,69 @@ def call(buildConfig) {
 
   // Job will execute PR_STAGES only if these are green.
   def SMOKE_STAGES = [
-    [
-      stageName: 'Py2.7 Smoke', target: 'test-py-smoke', pythonVersion: '2.7',
-      timeoutValue: 8, lang: buildConfig.LANG_PY
-    ],
-    [
-      stageName: 'R3.4 Smoke', target: 'test-r-smoke', rVersion: '3.4.1',
-      timeoutValue: 8, lang: buildConfig.LANG_R
-    ],
-    [
-      stageName: 'PhantomJS Smoke', target: 'test-phantom-js-smoke',
-      timeoutValue: 10, lang: buildConfig.LANG_JS
-    ]
+    // [
+    //   stageName: 'Py2.7 Smoke', target: 'test-py-smoke', pythonVersion: '2.7',
+    //   timeoutValue: 8, lang: buildConfig.LANG_PY
+    // ],
+    // [
+    //   stageName: 'R3.4 Smoke', target: 'test-r-smoke', rVersion: '3.4.1',
+    //   timeoutValue: 8, lang: buildConfig.LANG_R
+    // ],
+    // [
+    //   stageName: 'PhantomJS Smoke', target: 'test-phantom-js-smoke',
+    //   timeoutValue: 10, lang: buildConfig.LANG_JS
+    // ]
   ]
 
   // Stages for PRs in testing phase, executed after each push to PR.
   def PR_TESTING_STAGES = [
+    // [
+    //   stageName: 'Py2.7 Demos', target: 'test-py-demos', pythonVersion: '2.7',
+    //   timeoutValue: 15, lang: buildConfig.LANG_PY
+    // ],
+    // [
+    //   stageName: 'Py2.7 Init', target: 'test-py-init', pythonVersion: '2.7',
+    //   timeoutValue: 5, hasJUnit: false, lang: buildConfig.LANG_PY
+    // ],
+    // [
+    //   stageName: 'Py2.7 Small', target: 'test-pyunit-small', pythonVersion: '2.7',
+    //   timeoutValue: 45, lang: buildConfig.LANG_PY
+    // ],
+    // [
+    //   stageName: 'Py3.5 Small', target: 'test-pyunit-small', pythonVersion: '3.5',
+    //   timeoutValue: 45, lang: buildConfig.LANG_PY
+    // ],
+    // [
+    //   stageName: 'Py3.6 Small', target: 'test-pyunit-small', pythonVersion: '3.6',
+    //   timeoutValue: 45, lang: buildConfig.LANG_PY
+    // ],
+    // [
+    //   stageName: 'R3.4 Init', target: 'test-r-init', rVersion: '3.4.1',
+    //   timeoutValue: 5, hasJUnit: false, lang: buildConfig.LANG_R
+    // ],
+    // [
+    //   stageName: 'R3.4 Small', target: 'test-r-small', rVersion: '3.4.1',
+    //   timeoutValue: 90, lang: buildConfig.LANG_R
+    // ],
+    // [
+    //   stageName: 'R3.4 Medium-large', target: 'test-r-medium-large', rVersion: '3.4.1',
+    //   timeoutValue: 70, lang: buildConfig.LANG_R
+    // ],
+    // [
+    //   stageName: 'R3.4 CMD Check', target: 'test-r-cmd-check', rVersion: '3.4.1',
+    //   timeoutValue: 15, hasJUnit: false, lang: buildConfig.LANG_R
+    // ],
+    // [
+    //   stageName: 'R3.4 CMD Check as CRAN', target: 'test-r-cmd-check-as-cran', rVersion: '3.4.1',
+    //   timeoutValue: 10, hasJUnit: false, lang: buildConfig.LANG_R
+    // ],
+    // [
+    //   stageName: 'R3.4 Demos Small', target: 'test-r-demos-small', rVersion: '3.4.1',
+    //   timeoutValue: 15, lang: buildConfig.LANG_R
+    // ],
     [
-      stageName: 'Py2.7 Demos', target: 'test-py-demos', pythonVersion: '2.7',
-      timeoutValue: 15, lang: buildConfig.LANG_PY
-    ],
-    [
-      stageName: 'Py2.7 Init', target: 'test-py-init', pythonVersion: '2.7',
-      timeoutValue: 5, hasJUnit: false, lang: buildConfig.LANG_PY
-    ],
-    [
-      stageName: 'Py2.7 Small', target: 'test-pyunit-small', pythonVersion: '2.7',
-      timeoutValue: 45, lang: buildConfig.LANG_PY
-    ],
-    [
-      stageName: 'Py3.5 Small', target: 'test-pyunit-small', pythonVersion: '3.5',
-      timeoutValue: 45, lang: buildConfig.LANG_PY
-    ],
-    [
-      stageName: 'Py3.6 Small', target: 'test-pyunit-small', pythonVersion: '3.6',
-      timeoutValue: 45, lang: buildConfig.LANG_PY
-    ],
-    [
-      stageName: 'R3.4 Init', target: 'test-r-init', rVersion: '3.4.1',
-      timeoutValue: 5, hasJUnit: false, lang: buildConfig.LANG_R
-    ],
-    [
-      stageName: 'R3.4 Small', target: 'test-r-small', rVersion: '3.4.1',
-      timeoutValue: 90, lang: buildConfig.LANG_R
-    ],
-    [
-      stageName: 'R3.4 Medium-large', target: 'test-r-medium-large', rVersion: '3.4.1',
-      timeoutValue: 70, lang: buildConfig.LANG_R
-    ],
-    [
-      stageName: 'R3.4 CMD Check', target: 'test-r-cmd-check', rVersion: '3.4.1',
-      timeoutValue: 15, hasJUnit: false, lang: buildConfig.LANG_R
-    ],
-    [
-      stageName: 'R3.4 CMD Check as CRAN', target: 'test-r-cmd-check-as-cran', rVersion: '3.4.1',
-      timeoutValue: 10, hasJUnit: false, lang: buildConfig.LANG_R
-    ],
-    [
-      stageName: 'R3.4 Demos Small', target: 'test-r-demos-small', rVersion: '3.4.1',
-      timeoutValue: 15, lang: buildConfig.LANG_R
+      stageName: 'Java 8 JUnit', target: 'test-junit',
+      timeoutValue: 90, lang: buildConfig.LANG_JAVA
     ]
   ]
 
@@ -348,7 +352,7 @@ def unpackTestPackage(lang, String stageDir) {
     selector: [$class: 'SpecificBuildSelector', buildNumber: env.BUILD_ID],
     target: stageDir + '/'
   ]);
-  sh "cd ${stageDir}/h2o-3 && unzip test-package-${lang}.zip && rm test-package-${lang}.zip"
+  sh "cd ${stageDir}/h2o-3 && unzip -o test-package-${lang}.zip && rm test-package-${lang}.zip"
 }
 
 def stageNameToDirName(String stageName) {

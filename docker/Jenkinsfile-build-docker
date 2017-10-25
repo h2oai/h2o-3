@@ -38,7 +38,7 @@ pipeline {
           if (params.noCache) {
             dockerBuildCMD += ' --no-cache'
           }
-          dockerBuildCMD += " -t h2o-3-runtime:${currentBuild.number} ."
+          dockerBuildCMD += ' -t h2o-3-runtime:${currentBuild.number} --build-arg JENKINS_UID=$(id -u) JENKINS_GID=$(id -g) .'
           sh """
           printenv
           cd docker

@@ -39,6 +39,13 @@ def call(buildConfig) {
             archiveFiles = false
           }
         }
+        if (buildConfig.langChanged(buildConfig.LANG_JAVA)) {
+          buildTarget {
+            target = 'test-package-java'
+            hasJUnit = false
+            archiveFiles = false
+          }
+        }
       } finally {
         archiveArtifacts """
           h2o-3/docker/Makefile.jenkins,

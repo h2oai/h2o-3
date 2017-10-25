@@ -11,6 +11,7 @@ build-h2o-3:
 	@echo
 	@echo "+--Building--+"
 	./gradlew build -x test
+	./gradlew testJar
 
 test-package-py:
 	cd h2o-py/tests/ && rm -f -r testdir_hdfs
@@ -120,3 +121,97 @@ test-phantom-js-medium:
 
 test-phantom-js:
 	cd h2o-web && ../scripts/run.py --wipeall --geterrs --test lib/h2o-flow/build/js/headless-test.js --jvm.xmx 4g
+
+test-package-java:
+	zip -r test-package-java \
+		docker/Makefile.jenkins \
+		gradlew \
+		gradle.properties \
+		gradle/ \
+		buildSrc/ \
+		multiNodeUtils.sh \
+		h2o-core/src/main/java/ \
+		h2o-core/src/test/java/ \
+		h2o-core/build/resources/main \
+		h2o-core/build/resources/test \
+		h2o-core/build/classes/test \
+		h2o-core/build/classes/main \
+		h2o-core/build/libs/h2o-core.jar \
+		h2o-genmodel/src/ \
+		h2o-genmodel/build/libs/h2o-genmodel.jar \
+		h2o-algos/src/ \
+		h2o-algos/build/libs/h2o-algos.jar \
+		h2o-parsers/h2o-avro-parser/src/test/java \
+		h2o-parsers/h2o-avro-parser/build/libs/h2o-avro-parser.jar \
+		h2o-parsers/h2o-orc-parser/src/test/java \
+		h2o-parsers/h2o-orc-parser/build/libs/h2o-orc-parser.jar \
+		h2o-parsers/h2o-parquet-parser/src/test/java \
+		h2o-parsers/h2o-parquet-parser/build/libs/h2o-parquet-parser.jar \
+		h2o-persist-hdfs/src/ \
+		h2o-persist-hdfs/build/libs/h2o-persist-hdfs.jar \
+		h2o-persist-s3/src/test/java \
+		h2o-persist-s3/build/libs/h2o-persist-s3.jar \
+		h2o-extensions/xgboost/ \
+		h2o-genmodel-extensions/ \
+		h2o-jaas-pam/build/libs/h2o-jaas-pam-3.15.0.jar \
+		h2o-core/build/classes/main \
+		h2o-scala/src/test/scala \
+		h2o-scala/build/h2o-scala_2.*/libs/h2o-scala_2.*.jar \
+		scripts/run.py py \
+		build/h2o.jar
+	find . -name "*.gradle" | zip -r test-package-java -@
+	find . -name "*test*.sh" | zip -r test-package-java -@
+	find . -name "*test*.jar" | zip -r test-package-java -@
+
+
+test-junit:
+	@echo "+--JUnit H2O-Algos TestMultiNode--+"
+	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
+	./gradlew h2o-algos:cpLibs
+	cd h2o-algos && ./testSingleNode.sh
+	@echo "+--JUnit H2O-Algos TestSingleNode--+"
+	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
+	cd h2o-algos && ./testSingleNode.sh
+
+	@echo "+--JUnit H2O-AVRO-Parser TestMultiNode--+"
+	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
+	./gradlew h2o-avro-parser:cpLibs
+	cd h2o-parsers/h2o-avro-parser && ./testMultiNode.sh
+
+	# echo "+--JUnit H2O-Core TestMultiNode--+"
+	# rm -f h2o-core/src/main/java/water/init/BuildVersion.java
+	# ./gradlew h2o-core:cpLibs
+	# cd h2o-core && ./testMultiNode.sh
+
+	@echo "+--JUnit H2O-Ext-XGBoost TestSingleNode--+"
+	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
+	./gradlew h2o-ext-xgboost:cpLibs
+	cd h2o-extensions/xgboost && JVM_CLASSPATH=../../h2o-extensions/xgboost/build/classes/test:../../h2o-extensions/xgboost/build/resources/test:../../h2o-extensions/xgboost/build/classes/main:../../h2o-extensions/xgboost/build/resources/main:../../h2o-genmodel-extensions/xgboost/lib/xgboost4j-0.7.jar:../../h2o-genmodel-extensions/xgboost/lib/xgboost4j-native-osx_minimum-0.7.jar:../../h2o-genmodel-extensions/xgboost/lib/xgboost4j-native-linux_minimum-0.7.jar:../../h2o-genmodel-extensions/xgboost/lib/xgboost4j-native-linux_gpu-0.7.jar:../../h2o-core/build/libs/h2o-core-3.15.0.jar:../../h2o-algos/build/libs/h2o-algos-3.15.0.jar:../../h2o-genmodel/build/libs/h2o-genmodel-3.15.0.jar:../../h2o-genmodel-extensions/xgboost/build/libs/h2o-genmodel-ext-xgboost-3.15.0.jar:../../h2o-core/build/libs/h2o-core-3.15.0-test.jar:../../h2o-jaas-pam/build/libs/h2o-jaas-pam-3.15.0.jar:../../lib/* ./testSingleNode.sh
+
+	@echo "+--JUnit H2O-ORC-Parser TestMultiNode--+"
+	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
+	./gradlew h2o-orc-parser:cpLibs
+	cd h2o-parsers/h2o-orc-parser && ./testMultiNode.sh
+
+	@echo "+--JUnit H2O-PARQUET-Parser TestMultiNode--+"
+	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
+	./gradlew h2o-parquet-parser:cpLibs
+	cd h2o-parsers/h2o-parquet-parser && ./testMultiNode.sh
+
+	@echo "+--JUnit H2O-Persist-S3 TestMultiNode--+"
+	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
+	./gradlew h2o-persist-s3:cpLibs
+	cd h2o-persist-s3/ && ./testMultiNode.sh
+
+	@echo "+--JUnit H2O-Scala_2.10 TestMultiNode--+"
+	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
+	./gradlew h2o-scala_2.10:cpLibs
+	cd h2o-scala && PROJECT_NAME=h2o-scala_2.10 BUILD_DIR=h2o-scala/build/h2o-scala_2.10 ./testMultiNode.sh
+	@echo "+--JUnit H2O-Scala_2.11 TestMultiNode--+"
+	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
+	./gradlew h2o-scala_2.11:cpLibs
+	cd h2o-scala && PROJECT_NAME=h2o-scala_2.11 BUILD_DIR=h2o-scala/build/h2o-scala_2.11 ./testMultiNode.sh
+
+	@echo "+--JUnit H2O-Test-Integ runPythonMultiJVMTests--+"
+	rm -f h2o-core/src/main/java/water/init/BuildVersion.java
+	./gradlew h2o-test-integ:runPythonMultiJVMTests

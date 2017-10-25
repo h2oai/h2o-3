@@ -19,6 +19,8 @@ MAINTAINER h2oai "h2o.ai"
 
 ARG R_VERSIONS='3.4.1,3.3.3'
 ARG PYTHON_VERSIONS='3.6,3.5,2.7'
+ARG JENKINS_UID='2017'
+ARG JENKINS_GID='2017'
 
 # Initialize apt sources
 RUN \
@@ -78,6 +80,10 @@ RUN \
 RUN \
   /usr/sbin/install_R_versions
 ENV PATH ${PATH}:/usr/local/R/current/bin/
+
+# Add the Jenkins user
+RUN \
+  adduser --uid 2117 -gid 2117 --disabled-password --gecos "" jenkins
 
 # Expose ports for services
 EXPOSE 54321
