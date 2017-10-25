@@ -1881,7 +1881,14 @@ class H2OFrame(object):
 
     def merge(self, other, all_x=False, all_y=False, by_x=None, by_y=None, method="auto"):
         """
-        Merge two datasets based on common column names.
+        Merge two datasets based on common column names.  We do not support all_x=True and all_y=True.
+        Only one can be True or none is True.  The default merge method is auto and the program will determine
+        for you which method (hash or radix) to use automatically depending on the contents of your left and right
+        frames.  If there are duplicated rows in your rite frame, they will not be included if you use the hash method.
+        Since it is rare to perform merge with duplicated rows an the right frames, this should be okay.  On the
+        other hand, radix method will return the correct merge result regardless of duplicated rows in the right frame.
+        However, it cannot merge frames containing string columns.  User will have to convert the string columns
+        to enum before proceeding.
 
         :param H2OFrame other: The frame to merge to the current one. By default, must have at least one column in common with
             this frame, and all columns in common are used as the merge key.  If you want to use only a subset of the
@@ -1891,6 +1898,7 @@ class H2OFrame(object):
         :param by_x: list of columns in the current frame to use as a merge key.
         :param by_y: list of columns in the ``other`` frame to use as a merge key. Should have the same number of
             columns as in the ``by_x`` list.
+        :param method: string representing the merge method, one of auto(default), radix or hash.
 
         :returns: New H2OFrame with the result of merging the current frame with the ``other`` frame.
         """

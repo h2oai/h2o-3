@@ -1,16 +1,18 @@
 package water.rapids.ast.prims.mungers;
 
-import water.*;
+import water.H2O;
+import water.Iced;
+import water.Key;
+import water.MRTask;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.rapids.Env;
 import water.rapids.Merge;
-import water.rapids.Val;
-import water.rapids.ast.AstRoot;
-import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNum;
 import water.rapids.ast.params.AstNumList;
+import water.rapids.vals.ValFrame;
 import water.util.IcedHashMap;
 
 import java.util.ArrayList;
@@ -35,6 +37,14 @@ import java.util.Arrays;
  * If allLeftFlag is true, all rows in the leftFrame will be included, even if
  * there is no matching row in the rightFrame, and vice-versa for
  * allRightFlag.  Missing data will appear as NAs.  Both flags can be true.
+ * </p>
+ * We support merge method hash, radix and auto.  If a user chooses auto, the
+ * algorithm will pick the most appropriate merge method based on the contents of the
+ * leftFrame and rightFrame.  Note that the radix method cannot work with String columns,
+ * they need to be casted to enums/integer columns before calling merge.  However, it
+ * gives accurate merge results even if there are duplicated rows in the rightFrame.  The
+ * hash method will tolerate string columns in the rightFrames.  However, it assumes that
+ * there are not duplicated rows in the rightFrame.
  */
 public class AstMerge extends AstPrimitive {
   @Override
@@ -105,8 +115,8 @@ public class AstMerge extends AstPrimitive {
               " found types " + lv.get_type_str() + " and " + rv.get_type_str());
         if (lv.isString())
           throw new IllegalArgumentException("Cannot merge Strings; flip toCategoricalVec first");
-        if (lv.isNumeric() && !lv.isInt())
-          throw new IllegalArgumentException("Equality tests on doubles rarely work, please round to integers only before merging");
+        if (lv.isString() && method.equals("auto"))
+          method = "hash";  // set method to hash if user choose auto but there is string column in right frame
     }
 
     // GC now to sync nodes and get them to use young gen for the working memory. This helps get stable
@@ -120,21 +130,49 @@ public class AstMerge extends AstPrimitive {
       }
     }.doAllNodes();
 
-    if (method.equals("radix")) {
+    if (method.equals("radix") || method.equals("auto")) {
       // Build categorical mappings, to rapidly convert categoricals from the left to the right
       // With the sortingMerge approach there is no variance here: always map left to right
-      if (allRite)
-        throw new IllegalArgumentException("all.y=TRUE not yet implemented for method='radix'");
+      if (allLeft && allRite)
+        throw new IllegalArgumentException("all.x=TRUE and all.y=TRUE is not supported.  Choose one only.");
+
+      boolean onlyLeftAllOff = (allLeft && !allRite) || !allRite;
       int[][] id_maps = new int[ncols][];
-      for (int i = 0; i < ncols; i++) {
-        Vec lv = l.vec(i);
-        Vec rv = r.vec(i);
-        if (lv.isCategorical()) {
-          assert rv.isCategorical();  // if not, would have thrown above
-          id_maps[i] = CategoricalWrappedVec.computeMap(lv.domain(), rv.domain());
+      for (int i = 0; i < ncols; i++) { // flip the frame orders for allRite
+        Vec lv = onlyLeftAllOff ? l.vec(i) : r.vec(i);
+        Vec rv = onlyLeftAllOff ? r.vec(i) : l.vec(i);
+        if (rv.isString()) {
+          throw new IllegalArgumentException("Your right/y frame contains String columns.  Flip toCategoricalVec" +
+                  " first or choose the hash method instead.");
+        }
+        if (onlyLeftAllOff ? lv.isCategorical() : rv.isCategorical()) {
+          assert onlyLeftAllOff ? rv.isCategorical() : lv.isCategorical();  // if not, would have thrown above
+          id_maps[i] = onlyLeftAllOff ? CategoricalWrappedVec.computeMap(lv.domain(), rv.domain()) : CategoricalWrappedVec.computeMap(rv.domain(), lv.domain());
         }
       }
-      return sortingMerge(l, r, allLeft, allRite, ncols, id_maps);
+
+      if (onlyLeftAllOff) {
+        return sortingMerge(l, r, allLeft, allRite, ncols, id_maps);
+      } else {  // implement allRite here by switching leftframe and riteframe.  However, column order is wrong, re-order before return
+        ValFrame tempFrame = sortingMerge(r, l, allRite, allLeft, ncols, id_maps);
+        Frame mergedFrame = tempFrame.getFrame();  // need to switch order of merged frame
+        int allColNum = mergedFrame.numCols();
+        int[] colMapping = new int[allColNum];  // index into combined frame but with correct order
+        for (int index = 0; index < ncols; index++) {
+          colMapping[index] = index;    // no change to column order in the key columns
+        }
+        int offset = r.numCols() - ncols;
+        for (int index = ncols; index < l.numCols(); index++) { // set the order for right frame
+          colMapping[index] = offset + index;        // move the left columns to the front
+        }
+        offset = l.numCols() - ncols;
+        for (int index = l.numCols(); index < allColNum; index++) {
+          colMapping[index] = index - offset;
+        }
+
+        mergedFrame.reOrder(colMapping);  // reorder the frame columns for allrite = true
+        return tempFrame;
+      }
     }
 
     // Pick the frame to replicate & hash.  If one set is "all" and the other

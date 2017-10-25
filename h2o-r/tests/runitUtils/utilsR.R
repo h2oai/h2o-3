@@ -805,7 +805,11 @@ compareFrames <- function(frame1, frame2, prob=0.5, tolerance=1e-6) {
     temp2=as.numeric(frame2[,colInd])
     for (rowInd in range(1,nrow(frame1))) {
       if (runif(1,0,1) < prob)
-        expect_true(abs(temp1[rowInd,1]-temp2[rowInd,1])< tolerance, info=paste0("Error at row ", rowInd, ". Frame 1 value ", temp1[rowInd, 1], ". Frame 2 value ", temp2[rowInd, 1]))
+        if (is.nan(temp1[rowInd,1])) {
+          expect_true(is.nan(temp2[rowInd,1]), info=paste0("Errow at row ", rowInd, ". Frame is value is nan but Frame 2 value is ", temp2[rowInd, 1]))
+        } else {
+          expect_true(abs(temp1[rowInd,1]-temp2[rowInd,1])< tolerance, info=paste0("Error at row ", rowInd, ". Frame 1 value ", temp1[rowInd, 1], ". Frame 2 value ", temp2[rowInd, 1]))
+        }
     }
   }
 }
