@@ -1,0 +1,20 @@
+#! /bin/bash
+
+set -e
+
+# cd home
+cd
+
+echo '###### Activate virtualenv ######'
+. /envs/h2o_env_python3.5/bin/activate
+
+echo '###### Clone H2O-3 ######'
+git clone https://github.com/h2oai/h2o-3
+cd h2o-3
+
+echo '###### Build H2O-3 ######'
+printenv
+make -f docker/Makefile.jenkins warmup-caches
+
+echo '###### Cleanup ######'
+rm -rf ~/h2o-3
