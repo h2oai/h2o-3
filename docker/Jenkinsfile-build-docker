@@ -38,7 +38,7 @@ pipeline {
           if (params.noCache) {
             dockerBuildCMD += ' --no-cache'
           }
-          dockerBuildCMD += ' -t h2o-3-runtime .'
+          dockerBuildCMD += " -t h2o-3-runtime:${currentBuild.number} ."
           sh """
           printenv
           cd docker
@@ -56,9 +56,11 @@ pipeline {
         withCredentials([usernamePassword(credentialsId: "${params.dockerRegistry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
           sh """
           docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${params.dockerRegistry}
-          docker tag h2o-3-runtime:latest docker.h2o.ai/opsh2oai/h2o-3-runtime:latest
-          docker push ${params.dockerRegistry}/opsh2oai/h2o-3-runtime:latest
+          docker tag h2o-3-runtime:${currentBuild.number} ${params.dockerRegistry}/opsh2oai/h2o-3-runtime:${currentBuild.number}
+          docker push ${params.dockerRegistry}/opsh2oai/h2o-3-runtime:${currentBuild.number}
           """
+          echo "###### Docker image h2o-3-runtime:${currentBuild.number} built and pushed. ######"
+          echo "###### Don't forget to run the release job in order to make this docker image used by the H2O-3 Pipeline jobs. ######"
         }
       }
     }
@@ -71,7 +73,15 @@ pipeline {
         body: """<p>FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
         <p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>""",
         to: "michalr@h2o.ai"
-        )
-      }
+      )
+    }
+    success {
+      emailext (
+        subject: "New h2o-3-runtime docker image READY!",
+        body: """<p>The new h2o-3-runtime docker image is ready.</p>
+        <p>Check the build at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>""",
+        to: "michalr@h2o.ai"
+      )
     }
   }
+}
