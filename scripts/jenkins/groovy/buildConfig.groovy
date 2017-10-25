@@ -1,7 +1,7 @@
 class BuildConfig {
 
   // Specifies tag of the docker image used in ALL of the pipelines
-  public static final String DOCKER_IMAGE_VERSION_TAG = '72'
+  public static final String DOCKER_IMAGE_VERSION_TAG = '82'
 
   public static final String LANG_PY = 'py'
   public static final String LANG_R = 'r'
