@@ -2,9 +2,9 @@ Grid (Hyperparameter) Search
 ============================
 
 
-H2O supports two types of grid search -- traditional (or "cartesian") grid search and random grid search.  In a cartesian grid search, the user specifies a set of values for each hyperparamter that they want to search over and H2O will train a model for every combination of the hyperparameter values.  This means that if you have three hyperparameters and you specify 5, 10 and 2 values for each, your grid will contain a total of 5*10*2 = 100 models.
+H2O supports two types of grid search -- traditional (or "cartesian") grid search and random grid search.  In a cartesian grid search, users specify a set of values for each hyperparamter that they want to search over, and H2O will train a model for every combination of the hyperparameter values.  This means that if you have three hyperparameters and you specify 5, 10 and 2 values for each, your grid will contain a total of 5*10*2 = 100 models.
 
-In random grid search, the user specifies the hyperparamter space in the exact same way, except, H2O will sample uniformly from the set of all possible hyperparamter value combinations.  In random grid search, the user also specifies a stopping criterion which controls when the random grid search is completed.  The user can tell the random grid search to stop by specifying a maximum number of models or maximum number of seconds allowed for the search.  The user may also specify a performance metric based stopping criterion which will stop the random grid search when the performance stops improving by a specified amount. 
+In random grid search, the user specifies the hyperparamter space in the exact same way, except H2O will sample uniformly from the set of all possible hyperparamter value combinations.  In random grid search, the user also specifies a stopping criterion, which controls when the random grid search is completed.  The user can tell the random grid search to stop by specifying a maximum number of models or the maximum number of seconds allowed for the search.  The user may also specify a performance-metric-based stopping criterion, which will stop the random grid search when the performance stops improving by a specified amount. 
 
 Once the grid search is complete, the user can query the grid object and sort the models by a particular performance metric (for example, "AUC").  All models are stored in the H2O cluster and are accessible by model id.
 
@@ -29,20 +29,20 @@ Grid Search in R
 Grid search in R provides the following capabilities:
 
 -  ``H2OGrid class``: Represents the results of the grid search
--  ``h2o.getGrid(<grid_id>, sort_by, decreasing)``: Display the
+-  ``h2o.getGrid(<grid_id>, sort_by, decreasing)``: Displays the
    specified grid
--  ``h2o.grid()``: Start a new grid search parameterized by
+-  ``h2o.grid()``: Starts a new grid search parameterized by
 
    -  model builder name (e.g., ``gbm``)
    -  model parameters (e.g., ``ntrees = 100``)
    -  ``hyper_parameters`` attribute for passing a list of hyper
       parameters (e.g., ``list(ntrees = c(1,100), learn_rate = c(0.1, 0.001))``)
-   -  ``search_criteria`` optional attribute for specifying more a
+   -  ``search_criteria`` optional attribute for specifying a more
       advanced search strategy  
 
 More about ``search_criteria``:  
 
-This is a named list of control parameters for smarter hyperparameter search.  The list can include values for: ``strategy``, ``max_models``, ``max_runtime_secs``, ``stopping_metric``, ``stopping_tolerance``, ``stopping_rounds`` and ``seed``. The default value for ``strategy``, "Cartesian", covers the entire space of hyperparameter combinations.  If you want to use cartesian grid search, you can leave the ``search_criteria`` argument unspecified.  Specify the "RandomDiscrete" strategy to get random search of all the combinations of your hyperparameters. RandomDiscrete should be usually combined with at least one early stopping criterion, ``max_models`` and/or ``max_runtime_secs``.  Some examples below:
+This is a named list of control parameters for smarter hyperparameter search.  The list can include values for: ``strategy``, ``max_models``, ``max_runtime_secs``, ``stopping_metric``, ``stopping_tolerance``, ``stopping_rounds`` and ``seed``. The default value for ``strategy``, "Cartesian", covers the entire space of hyperparameter combinations.  If you want to use cartesian grid search, you can leave the ``search_criteria`` argument unspecified.  Specify the "RandomDiscrete" strategy to perform a random search of all the combinations of your hyperparameters. RandomDiscrete should be usually combined with at least one early stopping criterion, ``max_models`` and/or ``max_runtime_secs``.  Some examples below:
 
 .. code:: r
 
@@ -160,10 +160,7 @@ Random Grid Search Example in R
 
 
 
-For more information, refer to the `R grid search tutorial <https://github.com/h2oai/h2o-tutorials/blob/master/h2o-open-tour-2016/chicago/grid-search-model-selection.R>`__, `R grid search
-code <https://github.com/h2oai/h2o-3/blob/master/h2o-r/h2o-package/R/grid.R>`__
-and
-`runit\_GBMGrid\_airlines.R <https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/gbm/runit_GBMGrid_airlines.R>`__.
+For more information, refer to the `R grid search tutorial <https://github.com/h2oai/h2o-tutorials/blob/master/h2o-open-tour-2016/chicago/grid-search-model-selection.R>`__, `R grid search code <https://github.com/h2oai/h2o-3/blob/master/h2o-r/h2o-package/R/grid.R>`__, and `runit\_GBMGrid\_airlines.R <https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/gbm/runit_GBMGrid_airlines.R>`__.
 
 
 Grid Search in Python
@@ -181,13 +178,13 @@ Grid Search in Python
    -  ``hyper_params`` in Python is a dictionary of string parameters
       (keys) and a list of values to be explored by grid search (values)
       (e.g., ``{'ntrees':[1,100], 'learn_rate':[0.1, 0.001]}``
-   -  ``search_criteria`` optional dictionary for specifying more a
+   -  ``search_criteria`` is the optional dictionary for specifying more a
       advanced search strategy
 
 
 More about ``search_criteria``:  
 
-This is a dictionary of control parameters for smarter hyperparameter search.  The dictionary can include values for: ``strategy``, ``max_models``, ``max_runtime_secs``, ``stopping_metric``, ``stopping_tolerance``, ``stopping_rounds`` and ``seed``. The default value for ``strategy``, "Cartesian", covers the entire space of hyperparameter combinations.  If you want to use cartesian grid search, you can leave the ``search_criteria`` argument unspecified.  Specify the "RandomDiscrete" strategy to get random search of all the combinations of your hyperparameters. RandomDiscrete should be usually combined with at least one early stopping criterion, ``max_models`` and/or ``max_runtime_secs``.  Some examples below:
+This is a dictionary of control parameters for smarter hyperparameter search.  The dictionary can include values for: ``strategy``, ``max_models``, ``max_runtime_secs``, ``stopping_metric``, ``stopping_tolerance``, ``stopping_rounds`` and ``seed``. The default value for ``strategy``, "Cartesian", covers the entire space of hyperparameter combinations.  If you want to use cartesian grid search, you can leave the ``search_criteria`` argument unspecified.  Specify the "RandomDiscrete" strategy to perform a random search of all the combinations of your hyperparameters. RandomDiscrete should be usually combined with at least one early stopping criterion, ``max_models`` and/or ``max_runtime_secs``.  Some examples below:
 
 .. code:: python
 
@@ -300,16 +297,13 @@ Random Grid Search Example in Python
 
 
 
-For more information, refer to the `Python grid search tutorial <https://github.com/h2oai/h2o-tutorials/blob/master/h2o-open-tour-2016/chicago/grid-search-model-selection.ipynb>`__, `Python grid search
-code <https://github.com/h2oai/h2o-3/blob/master/h2o-py/h2o/grid/grid_search.py>`__
-and
-`pyunit\_benign\_glm\_grid.py <https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/glm/pyunit_benign_glm_grid.py>`__.
+For more information, refer to the `Python grid search tutorial <https://github.com/h2oai/h2o-tutorials/blob/master/h2o-open-tour-2016/chicago/grid-search-model-selection.ipynb>`__, `Python grid search code <https://github.com/h2oai/h2o-3/blob/master/h2o-py/h2o/grid/grid_search.py>`__, and `pyunit\_benign\_glm\_grid.py <https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/glm/pyunit_benign_glm_grid.py>`__.
 
 Grid Search Java API
 --------------------
 
 Each parameter exposed by the schema can specify if it is supported by
-grid search by specifying the attribute ``gridable=true`` in the schema
+grid search by including the attribute ``gridable=true`` in the schema
 @API annotation. In any case, the Java API does not restrict the
 parameters supported by grid search.
 
@@ -319,11 +313,11 @@ factory and the `hyperspace walk
 strategy <https://en.wikipedia.org/wiki/Hyperparameter_optimization>`__.
 The model factory must be defined for each supported model type (DRF,
 GBM, DL, and K-means). The hyperspace walk strategy specifies how the
-user-defined space of hyper parameters is traversed. The space
+user-defined space of hyperparameters is traversed. The space
 definition is not limited. For each point in hyperspace, model
 parameters of the specified type are produced.
 
-The implementation supports a simple Cartesian grid search as well as
+The implementation supports a simple cartesian grid search as well as
 random search with several different stopping criteria. Grid build
 triggers a new model builder job for each hyperspace point returned by
 the walk strategy. If the model builder job fails, the resulting model
@@ -332,7 +326,7 @@ are returned in the grid build result.
 
 Model builder jobs are run serially in sequential order. More advanced
 job scheduling schemes are under development. Note that in cases of true
-big data sequential scheduling will yield the highest performance. It is
+big data, sequential scheduling will yield the highest performance. It is
 only with a large cluster and small data that concurrent scheduling will
 improve performance.
 
@@ -343,7 +337,7 @@ to get the models.
 
 Launch the grid search by specifying:
 
--  the common model hyperparameters (parameter values which will be
+-  the common model hyperparameters (parameter values that will be
    common across all models in the search)
 -  the search hyperparameters (a map ``<parameterName, listOfValues>``
    that defines the parameter spaces to traverse)
@@ -487,10 +481,10 @@ following endpoints:
       ``{glm, gbm, drf, kmeans, deeplearning}``
 
 Endpoints accept model-specific parameters (e.g.,
-`GBMParametersV3 <https://github.com/h2oai/h2o-3/blob/master/h2o-algos/src/main/java/hex/schemas/GBMV3.java>`__
-and an additional parameter called ``hyper_parameters`` which contains a
-dictionary of the hyper parameters which will be searched. In this
-dictionary an array of values is specified for each searched
+`GBMParametersV3 <https://github.com/h2oai/h2o-3/blob/master/h2o-algos/src/main/java/hex/schemas/GBMV3.java>`__)
+and an additional parameter called ``hyper_parameters``, which contains a
+dictionary of the hyperparameters that will be searched. In this
+dictionary, an array of values is specified for each searched
 hyperparameter.
 
 .. code:: json
@@ -503,7 +497,7 @@ hyperparameter.
 An optional ``search_criteria`` dictionary specifies options for
 controlling more advanced search strategies. Currently, full
 ``Cartesian`` is the default. ``RandomDiscrete`` allows a random search
-over the hyperparameter space, with three ways of specifying when to
+over the hyperparameter space with three ways of specifying when to
 stop the search: max number of models, max time, and metric-based early
 stopping (e.g., stop if MSE hasn't improved by 0.0001 over the 5 best
 models). An example is:
