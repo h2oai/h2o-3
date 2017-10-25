@@ -3631,7 +3631,13 @@ checkMatch = function(x,y) {
 #' Merge Two H2O Data Frames
 #'
 #' Merges two H2OFrame objects with the same arguments and meanings
-#' as merge() in base R.
+#' as merge() in base R.  However, we do not support all=TRUE, all.x=TRUE and all.y=TRUE.  The default method is auto
+#' where the program will choose for you which merge method (hash or radix) to use automatically depending on the
+#' contents of your left and right frames.  If there are duplicated
+#' rows in your rite frame, they will not be included if you use the hash method.  Since it is rare to perform merge
+#' with duplicated rows an the right frames, this should be okay.  On the other hand, the radix method will return the
+#' correct merge result regardless of duplicated rows in the right frame.  However, it cannot merge frames containing
+#' string columns.  User will have to convert the string columns to enum before proceeding.
 #'
 #' @param x,y H2OFrame objects
 #' @param by columns used for merging by default the common names
@@ -3641,7 +3647,7 @@ checkMatch = function(x,y) {
 #' @param all.x If all.x is true, all rows in the x will be included, even if there is no matching
 #'        row in y, and vice-versa for all.y.
 #' @param all.y see all.x
-#' @param method auto, radix, or hash (default)
+#' @param method auto(default), radix, hash
 #' @examples
 #' \donttest{
 #' h2o.init()
@@ -3654,7 +3660,7 @@ checkMatch = function(x,y) {
 #' left.hex <- h2o.merge(l.hex, r.hex, all.x = TRUE)
 #' }
 #' @export
-h2o.merge <- function(x, y, by=intersect(names(x), names(y)), by.x=by, by.y=by, all=FALSE, all.x=all, all.y=all, method="hash") {
+h2o.merge <- function(x, y, by=intersect(names(x), names(y)), by.x=by, by.y=by, all=FALSE, all.x=all, all.y=all, method="radix") {
   if (length(by.x) != length(by.y)) stop("`by.x` and `by.y` must be the same length.")
   if (!length(by.x)) stop("`by` or `by.x` must specify at least one column") 
   if (!is.numeric(by.x)) by.x = checkMatch(by.x, names(x))
@@ -3668,7 +3674,8 @@ h2o.merge <- function(x, y, by=intersect(names(x), names(y)), by.x=by, by.y=by, 
 }
 
 
-#' Sorts H2OFrame by the columns specified. H2OFrame should not contain any String columns.  Otherwise, an error will be thrown.  To sort column c1 in descending order, do desc(c1).  Returns a new H2OFrame, like dplyr::arrange.
+#' Sorts H2OFrame by the columns specified. H2OFrame should not contain any String columns.  Otherwise, an error will
+#'  be thrown.  To sort column c1 in descending order, do desc(c1).  Returns a new H2OFrame, like dplyr::arrange.
 #'
 #' @param x The H2OFrame input to be sorted.
 #' @param \dots The column names to sort by.

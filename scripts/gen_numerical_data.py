@@ -5,6 +5,7 @@ import h2o
 from random import randint
 from random import uniform
 from random import shuffle
+import numpy as np
 
 # This test is used to generate a dataframe that contains two columns, one integer and one double which
 # should contain both positive, negative, zero.  Used to test sort float and the new TopN command.
@@ -149,9 +150,18 @@ def genStaticData(intA, floatA, upperBoundL, lowBoundF, upperBoundF, fMult):
         upperBoundL=upperBoundL-1
     intA.reverse()
 
+# This test will generate the merged data frame, the separate frame A and
+# frame B, such that if you call merge on the separate frames, the answer is
+# in the merged data frame.
+def genMergedSeparaData(MergedRows, intUpper, intLow, doubleUpper, doubleLow, bProb):
+    # first generate the single column that will be the merge key
+    merged = h2o.create_frame(rows=MergedRows, cols=3, integer_fraction=1, integer_range=intUpper-intLow)
+    print("Done, save with Flow")
+
+
 def main(argv):
     h2o.init(strict_version_check=False)
-    gen_data()
+    genMergedSeparaData(2000000000, pow(2,30), -1*pow(2,30), 1.0*pow(2,63), -1.0*pow(2,63), 0.8)
 
 if __name__ == "__main__":
     main(sys.argv)
