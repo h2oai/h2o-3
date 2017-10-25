@@ -667,6 +667,31 @@ public class Frame extends Lockable<Frame> {
     String n=_names[lo]; _names[lo] = _names[hi]; _names[hi] = n;
   }
 
+  /**
+   * Re-order the columns according to the new order specified in newOrder.
+   *
+   * @param newOrder
+   */
+  public void reOrder(int[] newOrder) {
+    assert newOrder.length==_keys.length; // make sure column length match
+    int numCols = _keys.length;
+    Vec tmpvecs[] = vecs().clone();
+    Key<Vec> tmpkeys[] = _keys.clone();
+    String tmpnames[] = _names.clone();
+
+    for (int colIndex = 0; colIndex < numCols; colIndex++) {
+        tmpvecs[colIndex] = _vecs[newOrder[colIndex]];
+        tmpkeys[colIndex] = _keys[newOrder[colIndex]];
+        tmpnames[colIndex] = _names[newOrder[colIndex]];
+    }
+    // copy it back
+    for (int colIndex = 0; colIndex < numCols; colIndex++) {
+      _vecs[colIndex] = tmpvecs[colIndex];
+      _keys[colIndex] = tmpkeys[colIndex];
+      _names[colIndex] = tmpnames[colIndex];
+    }
+  }
+
   /** move the provided columns to be first, in-place. For Merge currently since method='hash' was coded like that */
   public void moveFirst( int cols[] ) {
     boolean colsMoved[] = new boolean[_keys.length];
