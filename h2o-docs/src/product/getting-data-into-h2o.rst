@@ -8,7 +8,7 @@ Supported File Formats
 
 H2O currently supports the following file types:
 
-- CSV (delimited) files
+- CSV (delimited) files (including GZipped CSV)
 - ORC
 - SVMLight
 - ARFF
