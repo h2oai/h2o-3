@@ -15,7 +15,7 @@ import static junit.framework.TestCase.assertEquals;
 public class PersistHdfsTest extends TestUtil {
 
   @BeforeClass
-  public static void setup() { stall_till_cloudsize(1); }
+  public static void setup() { stall_till_cloudsize(5); }
 
   @Test
   public void testS3NImport() throws Exception {
