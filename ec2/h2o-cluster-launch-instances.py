@@ -58,7 +58,7 @@ dryRun = False
 # --------------------------------------------------------
 
 regionName = 'us-east-1'
-amiId = 'ami-0b100e61'
+amiID = 'ami-0b100e61'
 
 #regionName = 'us-west-1'
 #amiID = 'ami-c1afd6a1'
